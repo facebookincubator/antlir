@@ -62,7 +62,6 @@ udev = [
 
 debug = [
     systemd.install_dropin("debug-shell.conf", "debug-shell.service"),
-    systemd.install_dropin("wait-for-debug-shell.conf", "initrd-cleanup.service"),
     systemd.install_dropin("emergency.conf", "emergency.service"),
 ]
 

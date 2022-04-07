@@ -173,29 +173,28 @@ fn metalos_existing_boot_info(
         metalos_images_dir: rootdisk.join("image"),
     };
 
-    let mut extra_deps = ExtraDependencies::new();
-
-    // This is the main link into the whole metalos flow. The snapshot
-    // target needs to download images and things in order to work so it
-    // will pull in everything it needs to get the root read for switch
-    // root
-    extra_deps.insert(
-        "metalos_boot".to_string(),
-        ExtraDependency {
-            source: "metalos-switch-root.service".into(),
-            requires: "metalos-snapshot-root.service".into(),
-        },
-    );
-
-    // We also need to make sure the host config is applied correctly before
-    // we switch into it.
-    extra_deps.insert(
-        "apply_host_config".to_string(),
-        ExtraDependency {
-            source: "metalos-switch-root.service".into(),
-            requires: "metalos-apply-host-config.service".into(),
-        },
-    );
+    let extra_deps: ExtraDependencies = vec![
+        // This is the main link into the whole metalos flow. The snapshot
+        // target needs to download images and things in order to work so it
+        // will pull in everything it needs to get the root read for switch
+        // root
+        (
+            "metalos_boot".to_string(),
+            ExtraDependency {
+                source: "metalos-switch-root.service".into(),
+                requires: "metalos-snapshot-root.service".into(),
+            },
+        ),
+        // We also need to make sure the host config is applied correctly before
+        // we switch into it.
+        (
+            "apply_host_config".to_string(),
+            ExtraDependency {
+                source: "metalos-switch-root.service".into(),
+                requires: "metalos-apply-host-config.service".into(),
+            },
+        ),
+    ];
 
     let mount_unit = make_mount_unit(root, rootdisk).context("Failed to build mount unit")?;
     let network_unit_dropin = make_network_unit_dropin(
@@ -234,13 +233,13 @@ fn metalos_reimage_boot_info(
 
     // For reimage we need to insert the image service just before we
     // mount the root disk.
-    new_boot_info_result.extra_deps.insert(
+    new_boot_info_result.extra_deps.push((
         "metalos_reimage_boot".to_string(),
         ExtraDependency {
             source: ROOTDISK_MOUNT_SERVICE.into(),
             requires: "metalos-image-root-disk.service".into(),
         },
-    );
+    ));
 
     Ok(new_boot_info_result)
 }
@@ -263,6 +262,27 @@ fn legacy_boot_info(
     })
 }
 
+fn get_initrd_break_dep(cmdline: &MetalosCmdline) -> ExtraDependencies {
+    // Transform the `initrd.break` argument into a dependency. An
+    // `initrd.break` directive without an argument will default to
+    // "initrd.target".
+    let mut extra_deps = ExtraDependencies::new();
+    if let Some(break_tgt) = &cmdline.initrd_break {
+        let break_tgt = match break_tgt {
+            None => "initrd.target",
+            Some(v) => v.as_str(),
+        };
+        extra_deps.push((
+            "wait-for-debug-shell".to_string(),
+            ExtraDependency {
+                source: break_tgt.into(),
+                requires: "debug-shell.service".into(),
+            },
+        ));
+    };
+    extra_deps
+}
+
 fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Result<BootMode> {
     let boot_mode = detect_mode(&cmdline).context("failed to detect boot mode")?;
     info!(log, "Booting with mode: {:?}", boot_mode);
@@ -270,7 +290,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
     // use the mac address in the kernel command line, otherwise try to infer it
     // using crate::net_utils::get_mac()
     let mac_address: Option<String> = match cmdline.mac_address {
-        Some(mac) => Some(mac),
+        Some(ref mac) => Some(mac.clone()),
         None => match get_mac() {
             Ok(m) => Some(m),
             Err(error) => {
@@ -280,6 +300,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
         },
     };
 
+    let mut extra_deps = get_initrd_break_dep(&cmdline);
     match &boot_mode {
         BootMode::MetalOSExisting => {
             let boot_info_result = metalos_existing_boot_info(
@@ -291,13 +312,14 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             )
             .context("Failed to build normal metalos info")?;
 
+            extra_deps.extend(boot_info_result.extra_deps);
             materialize_boot_info(
                 log,
                 &opts.normal_dir,
                 &opts.environment_dir,
                 &opts.network_unit_dir,
                 boot_info_result.env,
-                boot_info_result.extra_deps,
+                extra_deps,
                 boot_info_result.mount_unit,
                 boot_info_result.network_unit_dropin,
             )
@@ -315,13 +337,14 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             )
             .context("Failed to build normal metalos info")?;
 
+            extra_deps.extend(boot_info_result.extra_deps);
             materialize_boot_info(
                 log,
                 &opts.normal_dir,
                 &opts.environment_dir,
                 &opts.network_unit_dir,
                 boot_info_result.env,
-                boot_info_result.extra_deps,
+                extra_deps,
                 boot_info_result.mount_unit,
                 boot_info_result.network_unit_dropin,
             )
@@ -330,13 +353,14 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             let boot_info_result = legacy_boot_info(cmdline.root, mac_address)
                 .context("failed to build legacy info")?;
 
+            extra_deps.extend(boot_info_result.extra_deps);
             materialize_boot_info(
                 log,
                 &opts.normal_dir,
                 &opts.environment_dir,
                 &opts.network_unit_dir,
                 boot_info_result.env,
-                boot_info_result.extra_deps,
+                extra_deps,
                 boot_info_result.mount_unit,
                 boot_info_result.network_unit_dropin,
             )
@@ -776,20 +800,29 @@ mod tests {
 
         assert_eq!(
             boot_info_result.extra_deps,
-            btreemap! {
-                "metalos_boot".to_string() => ExtraDependency {
-                    source: "metalos-switch-root.service".into(),
-                    requires: "metalos-snapshot-root.service".into(),
-                },
-                "metalos_reimage_boot".to_string() => ExtraDependency {
-                    source: "run-fs-control.mount".into(),
-                    requires: "metalos-image-root-disk.service".into(),
-                },
-                "apply_host_config".to_string() => ExtraDependency {
-                    source: "metalos-switch-root.service".into(),
-                    requires: "metalos-apply-host-config.service".into(),
-                },
-            }
+            vec![
+                (
+                    "metalos_boot".to_string(),
+                    ExtraDependency {
+                        source: "metalos-switch-root.service".into(),
+                        requires: "metalos-snapshot-root.service".into(),
+                    }
+                ),
+                (
+                    "apply_host_config".to_string(),
+                    ExtraDependency {
+                        source: "metalos-switch-root.service".into(),
+                        requires: "metalos-apply-host-config.service".into(),
+                    }
+                ),
+                (
+                    "metalos_reimage_boot".to_string(),
+                    ExtraDependency {
+                        source: "run-fs-control.mount".into(),
+                        requires: "metalos-image-root-disk.service".into(),
+                    }
+                ),
+            ]
         );
 
         assert_eq!(
@@ -852,16 +885,22 @@ mod tests {
 
         assert_eq!(
             boot_info_result.extra_deps,
-            btreemap! {
-                "metalos_boot".to_string() => ExtraDependency {
-                    source: "metalos-switch-root.service".into(),
-                    requires: "metalos-snapshot-root.service".into(),
-                },
-                "apply_host_config".to_string() => ExtraDependency {
-                    source: "metalos-switch-root.service".into(),
-                    requires: "metalos-apply-host-config.service".into(),
-                },
-            }
+            vec![
+                (
+                    "metalos_boot".to_string(),
+                    ExtraDependency {
+                        source: "metalos-switch-root.service".into(),
+                        requires: "metalos-snapshot-root.service".into(),
+                    }
+                ),
+                (
+                    "apply_host_config".to_string(),
+                    ExtraDependency {
+                        source: "metalos-switch-root.service".into(),
+                        requires: "metalos-apply-host-config.service".into(),
+                    }
+                ),
+            ]
         );
 
         assert_eq!(

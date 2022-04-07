@@ -32,6 +32,7 @@ pub enum MetalCtlArgs {
     RootFlagRw,
     EventBackendBaseUri,
     MacAddress,
+    InitrdBreak,
 }
 
 impl KnownArgs for MetalCtlArgs {
@@ -46,6 +47,7 @@ impl KnownArgs for MetalCtlArgs {
             Self::RootFlagRw => "--rw",
             Self::EventBackendBaseUri => "--metalos.event_backend_base_uri",
             Self::MacAddress => "--macaddress",
+            Self::InitrdBreak => "--initrd.break",
         }
     }
 }
@@ -70,6 +72,9 @@ pub struct MetalosCmdline {
 
     #[structopt(long = &MetalCtlArgs::MacAddress.flag_name())]
     pub mac_address: Option<String>,
+
+    #[structopt(long = &MetalCtlArgs::InitrdBreak.flag_name())]
+    pub initrd_break: Option<Option<String>>,
 }
 
 impl KernelCmdArgs for MetalosCmdline {
@@ -159,6 +164,20 @@ mod tests {
     }
 
     #[test]
+    fn test_initrd_break_in_cmdlines() -> Result<()> {
+        let scenarios: [(&str, Option<Option<String>>); 3] = [
+            ("", None),
+            ("initrd.break", Some(None)),
+            ("initrd.break=a", Some(Some("a".to_string()))),
+        ];
+        for i in scenarios.iter() {
+            let cmdline = MetalosCmdline::from_kernel_args(i.0)?;
+            assert_eq!(i.1, cmdline.initrd_break);
+        }
+        Ok(())
+    }
+
+    #[test]
     fn real_life_cmdline() -> Result<()> {
         let cmdline = MetalosCmdline::from_kernel_args(
             "BOOT_IMAGE=(hd0,msdos1)/vmlinuz-5.2.9-229_fbk15_hardened_4185_g357f49b36602 ro root=LABEL=/ biosdevname=0 net.ifnames=0 fsck.repair=yes systemd.gpt_auto=0 ipv6.autoconf=0 erst_disable cgroup_no_v1=all nox2apic crashkernel=128M hugetlb_cma=6G console=tty0 console=ttyS0,115200 macaddress=11:22:33:44:55:66",
@@ -195,7 +214,8 @@ mod tests {
                     fstype: None,
                     ro: true,
                     rw: false,
-                }
+                },
+                initrd_break: None,
             },
             cmdline
         );
