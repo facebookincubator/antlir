@@ -97,14 +97,24 @@ class Plan9Export(Share):
     """9PFS share of a host directory to the guest"""
 
     path: Path
-    mountpoint: Path
+    mountpoint: Optional[Path] = None
     mount_tag: str = field(default_factory=_next_tag)
     generator: bool = True
     # This should be used in readonly mode unless absolutely necessary.
     readonly: bool = True
 
+    def __post_init__(self):
+        assert (
+            self.generator or self.mountpoint is None
+        ), f"`mountpoint` can not be set if `generator` is false: {self}"
+        assert (
+            not self.generator or self.mountpoint is not None
+        ), f"`mountpoint` is required if `generator` is true: {self}"
+
     @property
     def mount_unit(self) -> Tuple[str, str]:
+        assert self.generator
+        assert self.mountpoint is not None
         cache = "loose" if self.readonly else "none"
         ro_rw = "ro" if self.readonly else "rw"
         return (

@@ -64,7 +64,6 @@ Options=version=9p2000.L,posixacl,cache=loose,ro
     TestShare(
         Plan9Export(
             path=Path("/tmp/not-included"),
-            mountpoint=Path("/tmp/not-included"),
             generator=False,
         ),
         None,
