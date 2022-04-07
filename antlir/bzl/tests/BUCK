@@ -3,6 +3,7 @@
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest")
+load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -231,4 +232,16 @@ python_unittest(
     deps = [
         "//antlir/bzl:fail-with-message-library",
     ],
+)
+
+extract_rpm_manifest(
+    name = "test-rpm-manifest-json",
+    layer = "//antlir/compiler/test_images:test-layer",
+)
+
+python_unittest(
+    name = "test-basic-rpm-manifest",
+    srcs = ["test_basic_rpm_manifest.py"],
+    resources = {"//antlir/bzl/tests:test-rpm-manifest-json": "rpm-manifest.json"},
+    deps = ["//antlir:fs_utils"],
 )
