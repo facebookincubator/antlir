@@ -13,7 +13,7 @@ use structopt::StructOpt;
 use expand_partition::expand_last_partition;
 use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
 use image::download::HttpsDownloader;
-use image::AnyImage;
+use metalos_host_configs::packages::PackageId;
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);
@@ -184,21 +184,18 @@ fn find_root_disk<FD: FindRootDisk>(disk_finder: &FD) -> Result<PathBuf> {
 }
 
 async fn download_disk_image(package: String) -> Result<Bytes> {
-    // TODO: make this an image::Image all the way through (add it to HostConfig)
+    // TODO: get this from HostConfig
     let (name, id) = package
         .split_once(':')
         .context("package must have ':' separator")?;
-    let image: AnyImage = package_manifest::types::Image {
+    let pkg_id = PackageId {
         name: name.into(),
-        id: id.into(),
-        kind: package_manifest::types::Kind::GPT_ROOTDISK,
+        uuid: id.into(),
         override_uri: None,
-    }
-    .try_into()
-    .context("converting image representation")?;
+    };
 
     let dl = HttpsDownloader::new().context("while creating downloader")?;
-    let url = dl.image_url(&image).context("while getting image url")?;
+    let url = dl.package_url(&pkg_id).context("while getting image url")?;
     let client: reqwest::Client = dl.into();
     client
         .get(url.clone())

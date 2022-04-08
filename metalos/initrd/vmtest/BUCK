@@ -72,19 +72,19 @@ par_support = feature.install(
 host_config(
     name = "host-config",
     host_config = {
-        "runtime_config": {
-            "images": {
+        "boot_config": {
+            "kernel": {
                 "kernel": {
-                    "id": "1",
-                    "kind": 3,
                     "name": "kernel." + TEST_KERNEL.uname,
-                    "override_uri": "http://vmtest-host:8000/package/kernel.{}:1".format(TEST_KERNEL.uname),
+                    "override_uri": "http://vmtest-host:8000/package/kernel.{}:65cd7099cc024923969ea96ded53a64f".format(TEST_KERNEL.uname),
+                    "uuid": "65cd7099cc024923969ea96ded53a64f",
                 },
-                "rootfs": {
-                    "id": "1",
-                    "kind": 1,
+            },
+            "rootfs": {
+                "id": {
                     "name": "metalos",
-                    "override_uri": "http://vmtest-host:8000/package/metalos:1",
+                    "override_uri": "http://vmtest-host:8000/package/metalos:05d3ba2167d0408b92a6e42b92e8f61c",
+                    "uuid": "05d3ba2167d0408b92a6e42b92e8f61c",
                 },
             },
         },
@@ -337,9 +337,9 @@ buck_genrule(
     name = "image_packages",
     out = ".",
     cmd = """
-        cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:1
+        cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:05d3ba2167d0408b92a6e42b92e8f61c
         zstd -i $(location //metalos/disk:metalos-gpt-image) -o $OUT/metalos_root:1
-        cp --reflink=auto $(location {}) $OUT/kernel.{}:1
+        cp --reflink=auto $(location {}) $OUT/kernel.{}:65cd7099cc024923969ea96ded53a64f
     """.format(
         TEST_KERNEL.artifacts.modules_sendstream,
         TEST_KERNEL.uname,

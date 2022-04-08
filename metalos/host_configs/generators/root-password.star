@@ -1,6 +1,6 @@
-def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     return metalos.Output(
         pw_hashes = {
-            "root": host.root_pw_hash,
+            "root": prov.root_pw_hash,
         }
     )

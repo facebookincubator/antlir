@@ -17,6 +17,8 @@ rust_library(
         "maplit",
         "slog_glog_fmt",
         "tempfile",
+        "//metalos/host_configs:all_starklark_files",
+        "//metalos/host_configs:example_host_for_tests",
     ],
     deps = [
         "anyhow",
@@ -29,12 +31,11 @@ rust_library(
         "slog",
         "slog_glog_fmt",
         "starlark",
-        "starlark_derive",
         "thiserror",
         "walkdir",
         "xattr",
-        "//metalos/host_configs:all_starklark_files",
-        "//metalos/host_configs:host-rust",
+        "//metalos/host_configs:api-rust",
         "//metalos/lib/shadow:shadow",
+        "//metalos/lib/starlark_util:starlark_util",
     ],
 )

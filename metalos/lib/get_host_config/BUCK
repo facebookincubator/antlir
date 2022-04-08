@@ -5,10 +5,9 @@ rust_library(
     srcs = ["src/get_host_config.rs"],
     deps = [
         "anyhow",
+        "fbthrift",
         "reqwest",
-        "serde",
-        "serde_json",
         "url",
-        "//metalos/host_configs:host-rust",
+        "//metalos/host_configs:api-rust",
     ],
 )

@@ -44,11 +44,11 @@ def auto_search_domains(name: str.type) -> [str.type]:
     return reversed(search)
 
 
-def generator(host: metalos.HostIdentity) -> metalos.Output.type:
-    search = auto_search_domains(host.hostname) + host.network.dns.search_domains
+def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
+    search = auto_search_domains(prov.identity.hostname) + prov.identity.network.dns.search_domains
     network_units = []
     link_units = []
-    for i, iface in enumerate(host.network.interfaces):
+    for i, iface in enumerate(prov.identity.network.interfaces):
         ipv4_addrs = [a for a in iface.addrs if "." in a]
         ipv6_addrs = [struct(addr=a, prefix="64") for a in iface.addrs if ":" in a]
         unit = NETWORK_TEMPLATE(mac=iface.mac, ipv6_addrs=ipv6_addrs, ipv4_addrs=ipv4_addrs, search=search)

@@ -13,10 +13,6 @@ mod path;
 mod starlark;
 pub use crate::starlark::generator::StarlarkGenerator;
 pub use generator::Generator;
-pub use host;
-#[cfg(feature = "facebook")]
-pub use host::facebook;
-pub use host::HostIdentity;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -61,6 +57,8 @@ pub enum Error {
     TemplateRender(#[from] handlebars::RenderError),
     #[error("Failed to update shadow file with provided hashes: {0:?}")]
     PWHashError(anyhow::Error),
+    #[error("while serializing thrift struct for starlark: {0:?}")]
+    PrepStarlarkStruct(anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

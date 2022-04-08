@@ -45,7 +45,7 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
     ))?;
     for gen in generators {
         let output = gen
-            .eval(&host.provisioning_config.identity)
+            .eval(&host.provisioning_config)
             .context(format!("could not apply eval generator for {}", gen.name()))?;
         output.apply(log.clone(), &opts.root)?;
     }
@@ -56,7 +56,6 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
 mod tests {
     use super::{apply_host_config, Opts};
     use anyhow::{Context, Result};
-    use evalctx::HostIdentity;
     use tempfile::{tempdir, NamedTempFile};
     use url::Url;
 
@@ -66,26 +65,20 @@ mod tests {
         std::fs::write(
             generators_dir.path().join("test.star"),
             r#"
-def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     return metalos.Output(
         files=[
-            metalos.file(path="test_output_file", contents="test output for " + host.hostname),
+            metalos.file(path="test_output_file", contents="test output for " + prov.identity.hostname),
         ]
     )
 "#,
         )?;
 
         let host_config_file = NamedTempFile::new().context("while creating tempfile")?;
-        serde_json::to_writer(
-            &host_config_file,
-            &evalctx::host::HostConfig {
-                provisioning_config: evalctx::host::ProvisioningConfig {
-                    identity: HostIdentity::example_host_for_tests(),
-                    deployment_specific: Default::default(),
-                },
-                runtime_config: Default::default(),
-            },
-        )?;
+        let json = fbthrift::simplejson_protocol::serialize(
+            &example_host_for_tests::example_host_for_tests(),
+        );
+        std::fs::write(host_config_file.path(), &json).context("while writing host config file")?;
 
         let root_dir = tempdir()?;
 

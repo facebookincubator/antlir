@@ -2,12 +2,14 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use futures::{Stream, StreamExt};
 use reqwest::{Client, Url};
+use slog::{debug, Logger};
 use std::io::ErrorKind;
 use std::pin::Pin;
 use thiserror::Error;
 
-use crate::{AnyImage, Result};
+use crate::Result;
 use btrfs::sendstream::{Sendstream, SendstreamExt, Zstd};
+use metalos_host_configs::packages::PackageId;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -24,7 +26,7 @@ pub trait Downloader {
     type Sendstream: SendstreamExt;
 
     /// Open a [Sendstream] from the underlying image source.
-    async fn open_sendstream(&self, image: &AnyImage) -> Result<Self::Sendstream>;
+    async fn open_sendstream(&self, log: Logger, package: &PackageId) -> Result<Self::Sendstream>;
 }
 
 #[derive(Clone)]
@@ -56,10 +58,10 @@ impl HttpsDownloader {
         Ok(Self { client })
     }
 
-    pub fn image_url(&self, img: &AnyImage) -> Result<Url> {
-        let uri = match &img.override_uri {
+    pub fn package_url(&self, id: &PackageId) -> Result<Url> {
+        let uri = match &id.override_uri {
             Some(u) => u.clone(),
-            None => FORMAT_URI.replace("{package}", &format!("{}:{}", img.name, img.id)),
+            None => FORMAT_URI.replace("{package}", &format!("{}:{}", id.name, id.uuid)),
         };
         Url::parse(&uri).map_err(|e| {
             Error::InvalidUri {
@@ -78,13 +80,15 @@ impl From<HttpsDownloader> for Client {
 }
 
 #[async_trait]
-impl Downloader for HttpsDownloader {
+impl Downloader for &HttpsDownloader {
     type Sendstream = Sendstream<Zstd, Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>>;
 
-    async fn open_sendstream(&self, image: &AnyImage) -> Result<Self::Sendstream> {
+    async fn open_sendstream(&self, log: Logger, id: &PackageId) -> Result<Self::Sendstream> {
+        let url = self.package_url(id)?;
+        debug!(log, "{:?} -> {}", id, url);
         let stream = self
             .client
-            .get(self.image_url(image)?)
+            .get(self.package_url(id)?)
             .send()
             .await
             .map_err(Error::Open)?
@@ -107,10 +111,9 @@ mod tests {
                 "{}/abc:123",
                 FORMAT_URI.replace("{package}", "").trim_end_matches('/')
             ),
-            String::from(h.image_url(&AnyImage {
+            String::from(h.package_url(&PackageId {
                 name: "abc".into(),
-                id: "123".into(),
-                kind: crate::kinds::Kind::Rootfs,
+                uuid: "123".into(),
                 override_uri: None,
             })?)
         );

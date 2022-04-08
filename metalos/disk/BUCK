@@ -13,6 +13,7 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
     features = [
         image.ensure_dirs_exist("/image"),
+        image.ensure_subdirs_exist("/image", "initrd"),
         image.ensure_subdirs_exist("/image", "kernel"),
         image.ensure_subdirs_exist("/image", "rootfs"),
         image.ensure_subdirs_exist("/image", "service"),
