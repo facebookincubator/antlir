@@ -18,7 +18,7 @@ use xattr::FileExt;
 
 use crate::path::PathExt;
 use crate::{Error, Result};
-use host::HostIdentity;
+use metalos_host_configs::provisioning_config::ProvisioningConfig;
 
 pub type Username = String;
 pub type PWHash = String;
@@ -124,7 +124,7 @@ impl Output {
 pub trait Generator {
     fn name(&self) -> &str;
 
-    fn eval(&self, host: &HostIdentity) -> Result<Output>;
+    fn eval(&self, host: &ProvisioningConfig) -> Result<Output>;
 }
 
 // This is explicitly implemented only for infallible functions, since
@@ -132,14 +132,14 @@ pub trait Generator {
 // fail sometimes due to bugs like wrong types)
 impl<F> Generator for F
 where
-    F: Fn(&HostIdentity) -> Output,
+    F: Fn(&ProvisioningConfig) -> Output,
 {
     fn name(&self) -> &str {
         std::any::type_name::<F>()
     }
 
-    fn eval(&self, host: &HostIdentity) -> Result<Output> {
-        Ok(self(host))
+    fn eval(&self, prov: &ProvisioningConfig) -> Result<Output> {
+        Ok(self(prov))
     }
 }
 

@@ -15,8 +15,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
     # brought in by large dependencies.
     deps = [
         "//metalos/host_configs/evalctx:evalctx",
-        "//metalos/host_configs:package-manifest-rust",
-        "//metalos/host_configs:host-rust",
+        "//metalos/host_configs:api-rust",
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/kernel_cmdline:kernel_cmdline",
         "//metalos/lib/get_host_config:get_host_config",
@@ -28,6 +27,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
         "//metalos/lib/send_events:send_events",
         "//metalos/lib/systemd:systemd",
         "anyhow",  # ~9.5k, very helpful for error handling
+        "fbthrift",
         "nix",  # ~5k: access to syscalls (mount, etc)
         "libc",
         "structopt",  # ~300k, but makes iterating development much easier
@@ -73,6 +73,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
             "mockall",
             "tempfile",
             "//metalos/lib/http_test:http_test",
+            "//metalos/host_configs:example_host_for_tests",
         ],
         test_srcs = native.glob(["tests/**/*.rs"]),
         unittest_opts = shape.new(

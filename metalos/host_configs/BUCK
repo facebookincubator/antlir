@@ -2,42 +2,40 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "third_party", "thrift_library")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "rust_library", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 # @oss-disable: facebook = True 
 # @oss-enable facebook = False
 
+rust_library(
+    name = "example_host_for_tests",
+    srcs = ["example_host_for_tests.rs"],
+    deps = [":api-rust"],
+)
+
 thrift_library(
-    name = "host",
+    name = "api",
     languages = ["rust"] + [
         "cpp2",
         "py3",
     ] if facebook else [],
     # @oss-disable: py3_namespace = "metalos.host_configs", 
-    rust_crate_name = "host",
-    rust_deps = ["//metalos/metalos_macros:metalos_macros"] + third_party.libraries(
-        [
-            "derive_builder",
-            "paste",
-            "starlark",
-            "starlark_derive",
-        ],
-        platform = "rust",
-    ),
-    rust_features = ["facebook"] if facebook else [],
-    rust_include_srcs = ["host_thrift.rs"],
-    rust_unittests = True,
-    thrift_rust_options = "serde",
-    thrift_srcs = {"host.thrift": None},
+    rust_crate_name = "metalos_host_configs",
+    thrift_srcs = {
+        "api.thrift": ["Metalctl"],
+        "boot_config.thrift": [],
+        "host.thrift": [],
+        "packages.thrift": [],
+        "provisioning_config.thrift": [],
+        "runtime_config.thrift": [],
+    },
     visibility = [
         "PUBLIC",
     ],
     deps = [
-        ":runtime-config",
-    ] + [
         "//metalos/host_configs/facebook:host-facebook",
-        "//metalos/host_configs/facebook/proxy/if:config_provider",
+        "//metalos/host_configs/facebook/proxy/if:deployment_specific",
     ] if facebook else [],
 )
 
@@ -58,37 +56,4 @@ feature.new(
         for src in glob(["generators/*.star"])
     ],
     visibility = ["//metalos/..."],
-)
-
-thrift_library(
-    name = "package-manifest",
-    languages = ["rust"] + [
-        "cpp2",
-        "py3",
-    ] if facebook else [],
-    # @oss-disable: py3_namespace = "metalos.host_configs", 
-    thrift_rust_options = "serde",
-    thrift_srcs = {"package_manifest.thrift": None},
-    visibility = [
-        "PUBLIC",
-    ],
-)
-
-thrift_library(
-    name = "runtime-config",
-    languages = ["rust"] + [
-        "cpp2",
-        "py3",
-    ] if facebook else [],
-    # @oss-disable: py3_namespace = "metalos.host_configs", 
-    thrift_rust_options = "serde",
-    thrift_srcs = {"runtime_config.thrift": None},
-    visibility = [
-        "PUBLIC",
-    ],
-    deps = [
-        ":package-manifest",
-    ] + [
-        "//metalos/host_configs/facebook/proxy/if:config_provider",
-    ] if facebook else [],
 )

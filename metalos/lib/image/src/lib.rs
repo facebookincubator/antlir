@@ -1,31 +1,108 @@
 use anyhow::Context;
-use derive_more::{Deref, Display, From, FromStr};
-use std::marker::PhantomData;
-use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use async_trait::async_trait;
+use slog::{debug, Logger};
+use std::path::PathBuf;
 use thiserror::Error;
 
-/// Type parameters for [Image].
-pub mod kinds;
-pub use kinds::{ConfigImage, KernelImage, Kind, RootfsImage, ServiceImage, WdsImage};
+use btrfs::{SendstreamExt, Subvolume};
+
 pub mod download;
 
 #[cfg(test)]
 #[macro_use]
 extern crate metalos_macros;
 
-use package_manifest::types::Image as ThriftImage;
+use metalos_host_configs::packages::{Initrd, Kernel, PackageId, Rootfs};
 
 pub(crate) mod __private {
     pub trait Sealed {}
 }
 
+#[async_trait]
+pub trait Package: __private::Sealed {
+    type Artifacts;
+
+    /// Load the artifacts(s) associated with this package from disk, if they
+    /// exist.
+    fn on_disk(&self) -> Option<Self::Artifacts>;
+
+    /// Download the artifact(s) associated with this package from some
+    /// [download::Downloader] implementation.
+    async fn download<D>(&self, log: Logger, dl: D) -> anyhow::Result<Self::Artifacts>
+    where
+        D: download::Downloader + Send + Sync,
+        <D as download::Downloader>::Sendstream: Send;
+}
+
+trait SingleSubvolumePackage: __private::Sealed {
+    const KIND: &'static str;
+    fn id(&self) -> &PackageId;
+    fn path_on_disk(&self) -> PathBuf {
+        metalos_paths::images().join(Self::KIND).join(format!(
+            "{}:{}",
+            self.id().name,
+            self.id().uuid
+        ))
+    }
+}
+
+#[async_trait]
+impl<T: SingleSubvolumePackage + Sync> Package for T {
+    type Artifacts = Subvolume;
+
+    fn on_disk(&self) -> Option<Self::Artifacts> {
+        let dest = self.path_on_disk();
+        Subvolume::get(dest).ok()
+    }
+
+    async fn download<D>(&self, log: Logger, dl: D) -> anyhow::Result<Self::Artifacts>
+    where
+        D: download::Downloader + Send + Sync,
+        <D as download::Downloader>::Sendstream: Send,
+    {
+        if let Some(artifacts) = self.on_disk() {
+            return Ok(artifacts);
+        }
+
+        let dest = self.path_on_disk();
+
+        std::fs::create_dir_all(dest.parent().unwrap())
+            .with_context(|| format!("while creating parent directory for {}", dest.display()))?;
+
+        debug!(log, "receiving {:?} into {}", self.id(), dest.display());
+
+        let sendstream = dl
+            .open_sendstream(log, self.id())
+            .await
+            .with_context(|| format!("while starting sendstream for {:?}", self.id()))?;
+
+        sendstream
+            .receive_into(&dest)
+            .await
+            .context("while receiving")
+    }
+}
+
+impl __private::Sealed for Rootfs {}
+
+impl SingleSubvolumePackage for Rootfs {
+    const KIND: &'static str = "rootfs";
+    fn id(&self) -> &PackageId {
+        &self.id
+    }
+}
+
+impl __private::Sealed for Kernel {}
+
+impl SingleSubvolumePackage for Kernel {
+    const KIND: &'static str = "kernel";
+    fn id(&self) -> &PackageId {
+        &self.kernel
+    }
+}
+
 #[derive(Error, Debug)]
 pub enum Error {
-    #[error("unknown image kind ({0})")]
-    UnknownKind(i32),
-    #[error("wrong image kind (wanted {wanted}, got {actual})")]
-    WrongKind { wanted: Kind, actual: Kind },
     #[error("download error {0:?}")]
     Download(#[from] download::Error),
     #[error("btrfs error {0:?}")]
@@ -33,174 +110,3 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
-
-/// Image package name. Together with [ImageID] it uniquely (and globally)
-/// references an image.
-#[derive(
-    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From, Display, Deref, FromStr
-)]
-#[from(forward)]
-#[display(forward)]
-#[deref(forward)]
-#[repr(transparent)]
-pub struct ImageName(String);
-
-/// Image package version identifier. Together with [ImageName] it uniquely
-/// (and globally) references an image.
-#[derive(
-    Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, From, Display, Deref, FromStr
-)]
-#[from(forward)]
-#[display(forward)]
-#[deref(forward)]
-#[repr(transparent)]
-pub struct ImageID(String);
-
-/// Safer version of [AnyImage] that can constrain images to a specific kind at
-/// compile time, instead of requiring runtime checks anywhere that image-kind
-/// specialization is required.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Image<K: kinds::ConstKind>(AnyImage, PhantomData<K>);
-
-impl<K: kinds::ConstKind> Deref for Image<K> {
-    type Target = AnyImage;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl<K: kinds::ConstKind> TryFrom<AnyImage> for Image<K> {
-    type Error = Error;
-
-    fn try_from(i: AnyImage) -> Result<Self> {
-        if i.kind == K::KIND {
-            Ok(Self(i, PhantomData))
-        } else {
-            Err(Error::WrongKind {
-                wanted: K::KIND,
-                actual: i.kind,
-            })
-        }
-    }
-}
-
-impl<K: kinds::ConstKind> TryFrom<ThriftImage> for Image<K> {
-    type Error = Error;
-
-    fn try_from(i: ThriftImage) -> Result<Self> {
-        i.try_into().and_then(|i: AnyImage| i.try_into())
-    }
-}
-
-impl<K: kinds::ConstKind> TryFrom<&str> for Image<K> {
-    type Error = anyhow::Error;
-
-    fn try_from(package_str: &str) -> anyhow::Result<Self> {
-        let (name, id) = package_str
-            .split_once(':')
-            .context("expected ':' separator")?;
-
-        Ok(Self(
-            AnyImage {
-                name: ImageName(name.to_string()),
-                id: ImageID(id.to_string()),
-                kind: K::KIND,
-                override_uri: None,
-            },
-            PhantomData,
-        ))
-    }
-}
-
-impl<K: kinds::ConstKind> From<Image<K>> for ThriftImage {
-    fn from(i: Image<K>) -> Self {
-        i.0.into()
-    }
-}
-
-/// Type-erased image of an arbitrary [Kind].
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct AnyImage {
-    name: ImageName,
-    id: ImageID,
-    kind: Kind,
-    override_uri: Option<String>,
-}
-
-impl AnyImage {
-    pub fn name(&self) -> &ImageName {
-        &self.name
-    }
-
-    pub fn id(&self) -> &ImageID {
-        &self.id
-    }
-
-    pub fn kind(&self) -> Kind {
-        self.kind
-    }
-
-    pub fn path_on_disk(&self) -> PathBuf {
-        metalos_paths::images().join(format!("{}/{}:{}", self.kind.as_str(), self.name, self.id))
-    }
-}
-
-impl TryFrom<ThriftImage> for AnyImage {
-    type Error = Error;
-
-    fn try_from(i: ThriftImage) -> Result<Self> {
-        Ok(Self {
-            name: i.name.into(),
-            id: i.id.into(),
-            kind: i.kind.try_into()?,
-            override_uri: i.override_uri,
-        })
-    }
-}
-
-impl<K: kinds::ConstKind> From<Image<K>> for AnyImage {
-    fn from(i: Image<K>) -> Self {
-        i.0
-    }
-}
-
-impl From<AnyImage> for ThriftImage {
-    fn from(i: AnyImage) -> Self {
-        Self {
-            name: i.name.0,
-            id: i.id.0,
-            kind: i.kind.into(),
-            override_uri: i.override_uri,
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use package_manifest::types::{Image as ThriftImage, Kind as ThriftKind};
-
-    #[test]
-    fn conversions() -> anyhow::Result<()> {
-        let t = ThriftImage {
-            name: "hello".into(),
-            id: "world".into(),
-            kind: ThriftKind::KERNEL,
-            override_uri: None,
-        };
-        let ai: AnyImage = t.try_into()?;
-        assert_eq!(
-            AnyImage {
-                name: "hello".into(),
-                id: "world".into(),
-                kind: Kind::Kernel,
-                override_uri: None,
-            },
-            ai,
-        );
-        assert!(KernelImage::try_from(ai.clone()).is_ok());
-        assert!(RootfsImage::try_from(ai).is_err());
-        Ok(())
-    }
-}

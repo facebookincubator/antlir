@@ -7,8 +7,8 @@ rust_binary(
     srcs = ["serialize_host_struct.rs"],
     deps = [
         "anyhow",
-        "serde",
-        "serde_json",
-        "//metalos/host_configs:host-rust",
+        "bytes",
+        "fbthrift",
+        "//metalos/host_configs:api-rust",
     ],
 )

@@ -6,7 +6,8 @@
  */
 
 use anyhow::{anyhow, Context, Result};
-use host::types::HostConfig;
+use fbthrift::simplejson_protocol::deserialize;
+use metalos_host_configs::host::HostConfig;
 use reqwest::Client;
 use std::path::Path;
 use url::Url;
@@ -20,23 +21,24 @@ pub fn client() -> Result<Client> {
 }
 
 pub fn get_host_config_from_file(path: &Path) -> Result<HostConfig> {
-    let f = std::fs::File::open(path)
-        .with_context(|| format!("while opening file {}", path.display()))?;
-    serde_json::from_reader(f).context("while deserializing json")
+    let blob =
+        std::fs::read(path).with_context(|| format!("while opening file {}", path.display()))?;
+    deserialize(blob).context("while deserializing from json")
 }
 
 pub async fn get_host_config(uri: &Url) -> Result<HostConfig> {
     match uri.scheme() {
         "http" | "https" => {
             let client = client()?;
-            client
+            let bytes = client
                 .get(uri.clone())
                 .send()
                 .await
                 .with_context(|| format!("while GETting {}", uri))?
-                .json()
+                .bytes()
                 .await
-                .context("while parsing host json")
+                .context("while downloading host json")?;
+            deserialize(bytes).context("while deserializing from json")
         }
         "file" => get_host_config_from_file(Path::new(uri.path())),
         scheme => Err(anyhow!("Unsupported scheme {} in {:?}", scheme, uri)),

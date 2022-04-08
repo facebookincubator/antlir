@@ -20,7 +20,9 @@ use starlark::values::{OwnedFrozenValue, StarlarkValue, Value, ValueLike};
 
 use crate::generator::{Dir, File, Generator, Output};
 use crate::starlark::loader::{Loader, ModuleId};
-use crate::{Error, HostIdentity, Result};
+use crate::{Error, Result};
+use metalos_host_configs::provisioning_config::ProvisioningConfig;
+use starlark_util::Struct;
 
 // Macro-away all the Starlark boilerplate for structs that are _only_ returned
 // from Starlark, and are not expected to be able to be read/used from the
@@ -133,8 +135,7 @@ pub fn module(registry: &mut GlobalsBuilder) {
         })
     }
 
-    // this must match the type name returned by the HostIdentity struct
-    const HostIdentity: &str = "HostIdentity";
+    const ProvisioningConfig: &str = std::any::type_name::<ProvisioningConfig>();
 }
 
 pub struct StarlarkGenerator {
@@ -145,8 +146,9 @@ pub struct StarlarkGenerator {
 impl StarlarkGenerator {
     /// Recursively load a directory of starlark generators. These files must
     /// end in '.star' and define a function 'generator' that accepts a single
-    /// [metalos.HostIdentity](crate::HostIdentity) parameter. Starlark files in
-    /// the directory are available to be `load()`ed by generators.
+    /// [metalos.ProvisioningConfig](crate::ProvisioningConfig) parameter.
+    /// Starlark files in the directory are available to be `load()`ed by
+    /// generators.
     pub fn load(path: impl AsRef<Path>) -> Result<Vec<Self>> {
         Loader::load(path)?
             .into_iter()
@@ -171,12 +173,18 @@ impl Generator for StarlarkGenerator {
         self.id.as_str()
     }
 
-    fn eval(&self, host: &HostIdentity) -> Result<Output> {
+    fn eval(&self, prov: &ProvisioningConfig) -> Result<Output> {
         let module = Module::new();
         let mut evaluator = Evaluator::new(&module);
-        let host_value = evaluator.heap().alloc(host.clone());
+        let provisioning_config = evaluator
+            .heap()
+            .alloc(Struct::new(prov).map_err(Error::PrepStarlarkStruct)?);
         let output = evaluator
-            .eval_function(self.starlark_func.value(), &[], &[("host", host_value)])
+            .eval_function(
+                self.starlark_func.value(),
+                &[],
+                &[("prov", provisioning_config)],
+            )
             .map_err(Error::EvalGenerator)?;
         // clone the result off the heap so that the Evaluator and Module can be safely dropped
         Ok(Output::from_value(output)
@@ -209,8 +217,8 @@ mod tests {
         let mut generators = StarlarkGenerator::load(tmp_dir.path())?;
         assert_eq!(1, generators.len());
         let gen = generators.remove(0);
-        let host = HostIdentity::example_host_for_tests();
-        let result = gen.eval(&host)?;
+        let host = example_host_for_tests::example_host_for_tests();
+        let result = gen.eval(&host.provisioning_config)?;
         Ok(result)
     }
 
@@ -221,10 +229,10 @@ mod tests {
         assert_eq!(
             eval_one_generator(
                 r#"
-def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     return metalos.Output(
         files=[
-            metalos.file(path="/etc/hostname", contents=host.hostname + "\n"),
+            metalos.file(path="/etc/hostname", contents=prov.identity.hostname + "\n"),
         ]
     )
             "#
@@ -251,7 +259,7 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
         assert_eq!(
             eval_one_generator(
                 r#"
-def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     return metalos.Output(
         files=[
             metalos.file(path="/test.json", contents=json({"a":"b","c":None})),
@@ -277,7 +285,7 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
         assert_eq!(
             eval_one_generator(
                 r#"
-def generator(host: metalos.HostIdentity) -> metalos.Output.type:
+def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     return metalos.Output(
         dirs=[
             metalos.dir(path="/dir"),
@@ -330,8 +338,10 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
         let globals = crate::starlark::globals();
         evaluator.eval_module(ast, &globals)?;
 
-        let host = HostIdentity::example_host_for_tests();
-        let host_value = evaluator.heap().alloc(host);
+        let host = example_host_for_tests::example_host_for_tests();
+        let prov_value = evaluator
+            .heap()
+            .alloc(Struct::new(&host.provisioning_config).map_err(Error::PrepStarlarkStruct)?);
 
         match module.get("generator") {
             None => anyhow::bail!(
@@ -339,7 +349,7 @@ def generator(host: metalos.HostIdentity) -> metalos.Output.type:
                 file_path.file_name()
             ),
             Some(function) => {
-                evaluator.eval_function(function, &[], &[("host", host_value)])?;
+                evaluator.eval_function(function, &[], &[("prov", prov_value)])?;
                 assert_eq!(
                     to_visit_lines,
                     visited_lines.borrow().clone(),
