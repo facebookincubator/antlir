@@ -26,7 +26,7 @@ DEFAULT_MODULE_LIST = [
     "drivers/nvme/host/nvme-core.ko",
 ]
 
-def initrd(kernel, module_list = None, visibility = None):
+def initrd(kernel, module_list = None, visibility = None, mount_modules = True):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine.
@@ -70,11 +70,15 @@ def initrd(kernel, module_list = None, visibility = None):
         systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
         systemd.install_unit(antlir_dep("vm/initrd:sysroot.mount")),
         install_kernel_modules(kernel, module_list),
+    ]
+
+    if mount_modules:
         # mount kernel modules over 9p in the initrd so they are available
         # immediately in the base os.
-        systemd.install_unit(":" + name + "--modules.mount", mount_unit_name),
-        systemd.enable_unit(mount_unit_name, target = "initrd-fs.target"),
-    ]
+        initrd_vm_features.extend([
+            systemd.install_unit(":" + name + "--modules.mount", mount_unit_name),
+            systemd.enable_unit(mount_unit_name, target = "initrd-fs.target"),
+        ])
 
     image.layer(
         name = name + "--layer",
