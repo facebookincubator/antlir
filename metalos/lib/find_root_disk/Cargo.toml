@@ -20,7 +20,7 @@ anyhow = "1.0.56"
 udev = "0.6.2"
 
 [dev-dependencies]
-tempfile = "3.2"
+tempfile = "3.3"
 
 [features]
 default = ["metalos_vm_test"]
