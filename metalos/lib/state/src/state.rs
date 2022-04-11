@@ -16,15 +16,26 @@
 //! the filesystem for something like a proper database, if that ever becomes
 //! necessary.
 
-use std::fs::File;
+use std::fmt::Debug;
 use std::marker::PhantomData;
 use std::os::unix::fs::symlink;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use anyhow::{ensure, Context, Result};
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+use anyhow::{ensure, Context, Error, Result};
+use bytes::Bytes;
+use once_cell::sync::Lazy;
 use uuid::Uuid;
+
+static STATE_BASE: Lazy<PathBuf> = Lazy::new(|| {
+    #[cfg(not(test))]
+    {
+        metalos_paths::metalos_state().into()
+    }
+    #[cfg(test)]
+    {
+        tempfile::tempdir().unwrap().into_path()
+    }
+});
 
 /// Special UUID for the "staged" value which holds special meaning
 /// c4dbff2e-2c0a-4e35-85a2-2ccb7dd8d8a9
@@ -33,29 +44,112 @@ static UUID_STAGED: Uuid = Uuid::from_u128(2616709758584368441941397356234896078
 /// 80e27f0c-75dd-4855-9ada-addea2d90a1b
 static UUID_CURRENT: Uuid = Uuid::from_u128(171317219403732977053801729476395600411);
 
-pub trait State = DeserializeOwned + Serialize;
+mod __private {
+    pub trait Sealed {}
+}
 
-#[derive(PartialEq, Eq)]
+trait SerdeState = serde::de::DeserializeOwned + serde::Serialize;
+
+trait ThriftState = fbthrift::Serialize<
+        fbthrift::simplejson_protocol::SimpleJsonProtocolSerializer<bufsize::SizeCounter>,
+    > + fbthrift::Serialize<
+        fbthrift::simplejson_protocol::SimpleJsonProtocolSerializer<bytes::BytesMut>,
+    > + fbthrift::Deserialize<
+        fbthrift::simplejson_protocol::SimpleJsonProtocolDeserializer<std::io::Cursor<Bytes>>,
+    >;
+
+/// Abstraction on different serializers (thrift and serde) so that this library
+/// can operate with types that are serializable with either Thrift or Serde.
+pub trait Serialization: __private::Sealed {}
+
+pub struct Serde;
+
+impl __private::Sealed for Serde {}
+impl Serialization for Serde {}
+
+pub struct Thrift;
+
+impl __private::Sealed for Thrift {}
+impl Serialization for Thrift {}
+
+/// Any type that can be serialized to disk and loaded later with then unique id.
+pub trait State<Ser>: Sized + Debug
+where
+    Ser: Serialization,
+{
+    fn to_json(&self) -> Result<Vec<u8>>;
+    fn from_json(bytes: Vec<u8>) -> Result<Self>;
+}
+
+impl<T> State<Serde> for T
+where
+    T: Sized + Debug + SerdeState,
+{
+    fn to_json(&self) -> Result<Vec<u8>> {
+        serde_json::to_vec(self).map_err(Error::msg)
+    }
+    fn from_json(bytes: Vec<u8>) -> Result<Self> {
+        serde_json::from_slice(&bytes).map_err(Error::msg)
+    }
+}
+
+impl<T> State<Thrift> for T
+where
+    T: Sized + Debug + ThriftState,
+{
+    fn to_json(&self) -> Result<Vec<u8>> {
+        Ok(fbthrift::simplejson_protocol::serialize(self).to_vec())
+    }
+    fn from_json(bytes: Vec<u8>) -> Result<Self> {
+        fbthrift::simplejson_protocol::deserialize(bytes)
+    }
+}
+
 /// Unique reference to a piece of state of a specific type. Can be used to
 /// retrieve the state from disk via [load]
-pub struct Token<S>(Uuid, PhantomData<S>)
+pub struct Token<S, Ser = Serde>(Uuid, PhantomData<(S, Ser)>)
 where
-    S: State;
+    S: State<Ser>,
+    Ser: Serialization;
 
-impl<S> Clone for Token<S>
+impl<S, Ser> Clone for Token<S, Ser>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
 {
-    fn clone(&self) -> Token<S> {
+    fn clone(&self) -> Self {
         Token::new(self.0)
     }
 }
 
-impl<S> Copy for Token<S> where S: State {}
-
-impl<S> std::fmt::Debug for Token<S>
+impl<S, Ser> Copy for Token<S, Ser>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
+{
+}
+
+impl<S, Ser> PartialEq for Token<S, Ser>
+where
+    S: State<Ser>,
+    Ser: Serialization,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<S, Ser> Eq for Token<S, Ser>
+where
+    S: State<Ser>,
+    Ser: Serialization,
+{
+}
+
+impl<S, Ser> std::fmt::Debug for Token<S, Ser>
+where
+    S: State<Ser>,
+    Ser: Serialization,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Token")
@@ -65,21 +159,33 @@ where
     }
 }
 
-impl<S> std::fmt::Display for Token<S>
+impl<S, Ser> std::fmt::Display for Token<S, Ser>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}::{}", &std::any::type_name::<S>(), self.0.to_simple())
     }
 }
 
-unsafe impl<S> Send for Token<S> where S: State {}
-unsafe impl<S> Sync for Token<S> where S: State {}
-
-impl<S> std::str::FromStr for Token<S>
+unsafe impl<S, Ser> Send for Token<S, Ser>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
+{
+}
+unsafe impl<S, Ser> Sync for Token<S, Ser>
+where
+    S: State<Ser>,
+    Ser: Serialization,
+{
+}
+
+impl<S, Ser> std::str::FromStr for Token<S, Ser>
+where
+    S: State<Ser>,
+    Ser: Serialization,
 {
     type Err = anyhow::Error;
 
@@ -110,9 +216,10 @@ pub enum Alias {
 }
 
 impl Alias {
-    fn token<S>(self) -> Token<S>
+    fn token<S, Ser>(self) -> Token<S, Ser>
     where
-        S: State,
+        S: State<Ser>,
+        Ser: Serialization,
     {
         Token::new(match self {
             Self::Current => UUID_CURRENT,
@@ -121,9 +228,10 @@ impl Alias {
     }
 }
 
-impl<S> Token<S>
+impl<S, Ser> Token<S, Ser>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
 {
     fn new(uuid: Uuid) -> Self {
         Self(uuid, PhantomData)
@@ -133,7 +241,7 @@ where
         // the type name is used to provide somewhat human-readable information
         // about the files on disk (eg if someone runs `ls`)
         let filename = format!("{}-{}.json", std::any::type_name::<S>(), &self.0);
-        metalos_paths::metalos_state().join(filename)
+        STATE_BASE.join(filename)
     }
 
     /// Token pointing to the most recently staged state item. This may or may
@@ -167,33 +275,37 @@ where
 
 /// Persist a new version of a state type, getting back a unique key to later
 /// load it with.
-pub fn save<S>(state: &S) -> Result<Token<S>>
+pub fn save<S, Ser>(state: &S) -> Result<Token<S, Ser>>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
 {
     save_with_uuid(state, Uuid::new_v4())
 }
 
 /// Persist a new version of a state type with a preset UUID.
-pub fn save_with_uuid<S>(state: &S, uuid: Uuid) -> Result<Token<S>>
+pub fn save_with_uuid<S, Ser>(state: &S, uuid: Uuid) -> Result<Token<S, Ser>>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
 {
     let token = Token::new(uuid);
     let p = token.path();
-    let mut f = File::create(&p).with_context(|| format!("while creating {}", p.display()))?;
-    serde_json::to_writer(&mut f, state)
-        .with_context(|| format!("while serializing {}", p.display()))?;
+    let state = state
+        .to_json()
+        .with_context(|| format!("while serializing {:?}", state))?;
+    std::fs::write(&p, &state).with_context(|| format!("while serializing to {}", p.display()))?;
     Ok(token)
 }
 
 /// Save this specific token as a special [Alias]. If this alias already exists,
 /// it will be replaced.
-fn alias<S>(token: Token<S>, alias: Alias) -> Result<()>
+fn alias<S, Ser>(token: Token<S, Ser>, alias: Alias) -> Result<()>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
 {
-    let alias: Token<S> = alias.token();
+    let alias: Token<S, Ser> = alias.token();
     let alias_path = alias.path();
     std::fs::remove_file(&alias_path)
         .or_else(|e| match e.kind() {
@@ -211,29 +323,31 @@ where
 }
 
 /// Load a specific version of a state type, using the key returned by [save]
-pub fn load<S>(token: Token<S>) -> Result<Option<S>>
+pub fn load<S, Ser>(token: Token<S, Ser>) -> Result<Option<S>>
 where
-    S: State,
+    S: State<Ser>,
+    Ser: Serialization,
 {
-    let mut f =
-        match File::open(token.path()) {
-            Err(e) => match e.kind() {
+    match std::fs::read(token.path()) {
+        Err(e) => {
+            match e.kind() {
                 std::io::ErrorKind::NotFound => return Ok(None),
                 _ => Err(anyhow::Error::from(e)
                     .context(format!("while opening {}", token.path().display()))),
-            },
-            Ok(f) => Ok(f),
-        }?;
-    serde_json::from_reader(&mut f)
-        .with_context(|| format!("while deserializing {}", token.path().display()))
+            }
+        }
+        Ok(bytes) => S::from_json(bytes)
+            .map(Some)
+            .with_context(|| format!("while deserializing {}", token.path().display())),
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use anyhow::{Context, Result};
-    use metalos_macros::containertest;
-    use serde::Deserialize;
+    use serde::{Deserialize, Serialize};
+    use std::ops::Deref;
 
     #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
     struct ExampleState {
@@ -270,9 +384,9 @@ mod tests {
         Ok(())
     }
 
-    #[containertest]
+    #[test]
     fn current() -> Result<()> {
-        std::fs::create_dir_all(metalos_paths::metalos_state())?;
+        std::fs::create_dir_all(STATE_BASE.deref())?;
         let current: Option<ExampleState> =
             load(Token::current()).context("while loading non-existent current")?;
         assert_eq!(None, current);
@@ -292,20 +406,37 @@ mod tests {
         Ok(())
     }
 
-    #[containertest]
-    fn kv() -> Result<()> {
-        std::fs::create_dir_all(metalos_paths::metalos_state())?;
-        let token = save(&ExampleState {
+    fn kv_test<Ser: Serialization, T: State<Ser> + PartialEq>(t: T) -> Result<()> {
+        std::fs::create_dir_all(STATE_BASE.deref())?;
+        let token = save(&t).context("while saving")?;
+        let loaded = load(token).context("while loading")?;
+        assert_eq!(Some(t), loaded);
+        Ok(())
+    }
+
+    #[test]
+    fn kv_serde() -> Result<()> {
+        kv_test(ExampleState {
             hello: "world".into(),
         })
-        .context("while saving")?;
-        let loaded = load(token).context("while loading current")?;
-        assert_eq!(
-            Some(ExampleState {
-                hello: "world".into()
-            }),
-            loaded
-        );
-        Ok(())
+    }
+
+    #[test]
+    fn kv_thrift() -> Result<()> {
+        kv_test(example::Example {
+            hello: "world".into(),
+        })
+    }
+
+    #[test]
+    fn kv_thrift_and_serde() -> Result<()> {
+        // this thrift struct comes with multiple possible implementations, and
+        // the compiler cannot choose between them automatically
+        kv_test::<Thrift, _>(example_with_serde::Example {
+            hello: "world".into(),
+        })?;
+        kv_test::<Serde, _>(example_with_serde::Example {
+            hello: "world".into(),
+        })
     }
 }

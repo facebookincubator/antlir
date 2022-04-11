@@ -3,12 +3,17 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "state",
     srcs = glob(["src/*.rs"]),
-    unittests = [
-        "plain",
-        "container",
+    test_deps = [
+        "tempfile",
+        "//metalos/lib/state/tests:example-rust",
+        "//metalos/lib/state/tests:example_with_serde-rust",
     ],
     deps = [
         "anyhow",
+        "bufsize",
+        "bytes",
+        "fbthrift",
+        "once_cell",
         "serde",
         "serde_json",
         "uuid",
