@@ -24,7 +24,7 @@ anyhow = "1.0.56"
 btrfs = { path = "../btrfs" }
 maplit = "1.0"
 metalos_paths = { path = "../metalos_paths" }
-serde = { version = "1.0.126", features = ["derive", "rc"] }
+serde = { version = "1.0.136", features = ["derive", "rc"] }
 serde_systemd = { path = "../serde_systemd" }
 state = { path = "../state" }
 systemd = { path = "../systemd" }

@@ -22,8 +22,8 @@ path = "src/state.rs"
 [dependencies]
 anyhow = "1.0.56"
 metalos_paths = { path = "../metalos_paths" }
-serde = { version = "1.0.126", features = ["derive", "rc"] }
-serde_json = { version = "1.0.64", features = ["float_roundtrip", "unbounded_depth"] }
+serde = { version = "1.0.136", features = ["derive", "rc"] }
+serde_json = { version = "1.0.79", features = ["float_roundtrip", "unbounded_depth"] }
 uuid = { version = "0.8.1", features = ["serde", "v4", "v5"] }
 
 [features]
