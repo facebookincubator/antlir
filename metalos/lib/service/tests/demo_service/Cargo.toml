@@ -19,7 +19,7 @@ anyhow = "1.0.56"
 structopt = "0.3.23"
 
 [dev-dependencies]
-serde = { version = "1.0.126", features = ["derive", "rc"] }
+serde = { version = "1.0.136", features = ["derive", "rc"] }
 slog = { version = "2.7", features = ["max_level_trace", "nested-values"] }
 slog_glog_fmt = { path = "../../../../../common/rust/shed/slog_glog_fmt" }
 systemd = { path = "../../../systemd" }

@@ -15,7 +15,7 @@ name = "serde_systemd"
 path = "src/lib.rs"
 
 [dependencies]
-serde = { version = "1.0.126", features = ["derive", "rc"] }
+serde = { version = "1.0.136", features = ["derive", "rc"] }
 thiserror = "1.0.30"
 
 [features]
