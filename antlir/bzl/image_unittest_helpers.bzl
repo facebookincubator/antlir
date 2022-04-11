@@ -248,6 +248,7 @@ mv $TMP/out "$OUT"
         resources = {":" + test_layer: "nspawn-in-test-subvol-layer"},
         srcs = {":" + test_spec_py: "__image_python_unittest_spec__.py"},
         antlir_rule = "user-internal",
+        tags = ["no_pyre"],
     )
 
     return struct(

@@ -39,7 +39,10 @@ def image_python_unittest(
     )
 
     wrapper_props.outer_test_kwargs["tags"] = \
-        wrapper_props.outer_test_kwargs.pop("tags", []) + ["test-framework=antlir_image_test"]
+        wrapper_props.outer_test_kwargs.pop("tags", []) + [
+            "test-framework=antlir_image_test",
+            "no_pyre",
+        ]
 
     # `par_style` only applies to the inner test that runs the actual user
     # code, because there is only one working choice for the outer test.
