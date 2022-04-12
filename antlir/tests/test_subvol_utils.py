@@ -21,6 +21,7 @@ from ..bzl.loopback_opts import loopback_opts_t
 from ..fs_utils import Path, temp_dir
 from ..subvol_utils import (
     find_subvolume_on_disk,
+    KiB,
     MiB,
     Subvol,
     TempSubvolumes,
@@ -233,142 +234,6 @@ class SubvolTestCase(AntlirTestCase):
             self.assertEqual(sendstream, outfile.read())
 
     @with_temp_subvols
-    def _test_mark_readonly_and_send_to_new_loopback(self, temp_subvols):
-        loopback_opts = loopback_opts_t(
-            subvol_name="check_subvol_rename",
-        )
-        sv = temp_subvols.create("subvol")
-        sv.run_as_root(
-            [
-                "dd",
-                "if=/dev/urandom",
-                b"of=" + sv.path("d"),
-                "bs=1M",
-                "count=600",
-            ]
-        )
-        sv.run_as_root(["mkdir", sv.path("0")])
-        sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
-
-        with tempfile.NamedTemporaryFile() as loop_path:
-            self.assertEqual(
-                1,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name, loopback_opts=loopback_opts
-                ),
-            )
-
-            # Same 2-try run, but this time, exercise the free space check
-            # instead of relying on parsing `btrfs receive` output.
-            with unittest.mock.patch.object(
-                Subvol, "_OUT_OF_SPACE_SUFFIX", b"cypa"
-            ):
-                self.assertEqual(
-                    1,
-                    sv.mark_readonly_and_send_to_new_loopback(
-                        loop_path.name,
-                        loopback_opts=loopback_opts,
-                    ),
-                )
-
-    def test_mark_readonly_and_send_to_new_loopback(self):
-        self._test_mark_readonly_and_send_to_new_loopback()
-
-    @with_temp_subvols
-    def test_mark_readonly_and_send_to_new_loopback_writable(
-        self, temp_subvols
-    ):
-        # `test_package_image_as_btrfs_loopback_writable` actually
-        # tests that the subvolume is writable, here we just test that
-        # the subvol util helper method works
-        sv = temp_subvols.create("subvol")
-        sv.run_as_root(
-            ["dd", "if=/dev/zero", b"of=" + sv.path("d"), "bs=1M", "count=200"]
-        )
-        sv.run_as_root(["mkdir", sv.path("0")])
-        sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
-        with tempfile.NamedTemporaryFile() as loop_path:
-            self.assertEqual(
-                1,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name,
-                    loopback_opts=loopback_opts_t(writeable_subvolume=True),
-                ),
-            )
-
-    @with_temp_subvols
-    def test_mark_readonly_and_send_to_new_loopback_seed_device(
-        self, temp_subvols
-    ):
-        # `test_package_image_as_btrfs_seed_device` actually
-        # tests that the resulting image has the SEEDING flag set, here we just
-        # test that the subvol util helper method works
-        sv = temp_subvols.create("subvol")
-        sv.run_as_root(
-            ["dd", "if=/dev/zero", b"of=" + sv.path("d"), "bs=1M", "count=200"]
-        )
-        sv.run_as_root(["mkdir", sv.path("0")])
-        sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
-        with tempfile.NamedTemporaryFile() as loop_path:
-            self.assertEqual(
-                1,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name,
-                    loopback_opts=loopback_opts_t(
-                        writable_subvolume=True, seed_device=True
-                    ),
-                ),
-            )
-
-    @with_temp_subvols
-    def test_mark_readonly_and_send_to_new_loopback_explicit_size(
-        self, temp_subvols
-    ):
-        sv = temp_subvols.create("subvol")
-        sv.run_as_root(
-            ["dd", "if=/dev/zero", b"of=" + sv.path("d"), "bs=1M", "count=200"]
-        )
-        sv.run_as_root(["mkdir", sv.path("0")])
-        sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
-        with tempfile.NamedTemporaryFile() as loop_path:
-            self.assertEqual(
-                1,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name,
-                    loopback_opts=loopback_opts_t(
-                        # Make this size slightly larger than the subvol
-                        size_mb=225,
-                    ),
-                ),
-            )
-
-            self.assertEqual(
-                os.stat(loop_path.name).st_size,
-                225 * MiB,
-            )
-
-    @with_temp_subvols
-    def test_mark_readonly_and_send_to_new_loopback_default_subvol(
-        self, temp_subvols
-    ):
-        sv = temp_subvols.create("subvol")
-        sv.run_as_root(
-            ["dd", "if=/dev/zero", b"of=" + sv.path("d"), "bs=1M", "count=200"]
-        )
-        sv.run_as_root(["mkdir", sv.path("0")])
-        sv.run_as_root(["tee", sv.path("0/0")], input=b"0123456789")
-        with tempfile.NamedTemporaryFile() as loop_path:
-            self.assertEqual(
-                1,
-                sv.mark_readonly_and_send_to_new_loopback(
-                    loop_path.name,
-                    loopback_opts=loopback_opts_t(
-                        default_subvolume=True,
-                    ),
-                ),
-            )
-
-    @with_temp_subvols
     def test_receive(self, temp_subvols):
         new_subvol_name = "differs_from_create_ops"
         sv = temp_subvols.caller_will_create(new_subvol_name)
@@ -553,3 +418,24 @@ class SubvolTestCase(AntlirTestCase):
                 ),
                 "8ec28ee3-e2cf-3345-8871-4bc4f85a3efc",
             )
+
+    def test_estimate_content_bytes(self):
+        with TempSubvolumes() as ts:
+            sv = ts.create("test1")
+            # Write a file with random data.  53kb because the size doesn't
+            # really matter and prime is the coolest.
+            sv.overwrite_path_as_root(
+                Path("data"), contents=os.urandom(53 * KiB)
+            )
+            estimated_fs_bytes = sv.estimate_content_bytes()
+
+            # This _should_ be 54272 to match the exact number of bytes
+            # written to the file, but the way we calculate estimated size
+            # with `du` is providing us with actual "disk usage", and not
+            # the "apparent size" as provided by the `--apparent-size`
+            # switch.  See `man du` for more details.
+            n_bytes = 53 * KiB
+            self.assertGreaterEqual(estimated_fs_bytes, n_bytes)
+            self.assertLess(
+                estimated_fs_bytes, n_bytes + 4096
+            )  # 4K is the max reasonable block size?

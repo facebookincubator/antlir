@@ -34,6 +34,10 @@ MIN_CREATE_BYTES = 109 * MiB
 # limit will fail to shrink with `Invalid argument`.
 MIN_SHRINK_BYTES = 256 * MiB
 
+# Btrfs requires at least this many bytes free in the filesystem
+# for metadata
+MIN_FREE_BYTES = 81 * MiB
+
 
 class LoopbackVolume:
     def __init__(
