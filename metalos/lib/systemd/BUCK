@@ -52,7 +52,6 @@ rust_library(
 rust_library(
     name = "macros",
     srcs = ["macros.rs"],
-    autocargo = {"ignore_rule": True},
     crate = "systemd_macros",
     proc_macro = True,
     unittests = False,
