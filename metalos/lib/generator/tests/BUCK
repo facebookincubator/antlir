@@ -10,7 +10,6 @@ thrift_library(
 rust_binary(
     name = "echo-generator",
     srcs = ["echo_generator.rs"],
-    autocargo = {"ignore_rule": True},
     unittests = False,
     deps = [
         "anyhow",
