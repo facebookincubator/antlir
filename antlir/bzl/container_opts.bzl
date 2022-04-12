@@ -13,7 +13,7 @@ def _new_container_opts_t(
         # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.
         serve_rpm_snapshots = (),
         run_proxy_server = False,
-        # @oss-disable: fbpkg_db_path = None, 
+        fbpkg_db_path = None,
         **kwargs):
     # @oss-disable: if run_proxy_server and fbpkg_db_path == None: 
         # @oss-disable: fbpkg_db_path = "$(location //bot_generated/antlir/fbpkg/db:main-db)/main_db" 
