@@ -231,10 +231,20 @@ from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 
 from .bzl.loopback_opts import loopback_opts_t
-from .common import check_popen_returncode
+from .common import (
+    check_popen_returncode,
+    get_logger,
+    pipe,
+)
 from .find_built_subvol import find_built_subvol
 from .fs_utils import META_FLAVOR_FILE, Path, create_ro, generate_work_dir
+from .loopback import BtrfsLoopbackVolume, MIN_CREATE_BYTES, MIN_FREE_BYTES
 from .subvol_utils import Subvol
+from .unshare import Unshare, Namespace
+
+log = get_logger()
+KiB = 2 ** 10
+MiB = 2 ** 20
 
 
 class _Opts(NamedTuple):
@@ -329,12 +339,123 @@ class BtrfsImage(Format, format_name="btrfs"):
       mount -t btrfs image.btrfs dest/ -o loop
     """
 
+    _OUT_OF_SPACE_SUFFIX = b": No space left on device\n"
+
     def package_full(
         self, subvol: Subvol, output_path: str, opts: _Opts
     ) -> None:
-        subvol.mark_readonly_and_send_to_new_loopback(
-            output_path, loopback_opts=opts.loopback_opts
-        )
+
+        # First estimate how much space the subvolume requires.
+        # Todo: this should/could be ported to use something like btdu to
+        # get a more accurate estimate: https://github.com/CyberShadow/btdu
+        estimated_fs_bytes = subvol.estimate_content_bytes()
+        estimated_min_required_bytes = estimated_fs_bytes + MIN_FREE_BYTES
+
+        fs_bytes = max(MIN_CREATE_BYTES, estimated_min_required_bytes)
+
+        if opts.loopback_opts.size_mb:
+            requested_fs_bytes = opts.loopback_opts.size_mb * MiB
+            if requested_fs_bytes < fs_bytes:
+                raise RuntimeError(
+                    f"Unable to package subvol of {fs_bytes} bytes into "
+                    f"requested loopback size of {requested_fs_bytes} bytes"
+                )
+
+            fs_bytes = requested_fs_bytes
+
+        open(output_path, "wb").close()
+        with pipe() as (r_send, w_send), Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as ns, BtrfsLoopbackVolume(
+            unshare=ns,
+            image_path=output_path,
+            size_bytes=fs_bytes,
+            loopback_opts=opts.loopback_opts,
+        ) as loop_vol, subvol.mark_readonly_and_write_sendstream_to_file(
+            w_send
+        ):
+            w_send.close()  # This end is now fully owned by `btrfs send`.
+            with r_send:
+                recv_ret = loop_vol.receive(r_send)
+                if recv_ret.returncode != 0:
+                    err = recv_ret.stderr.decode(errors="surrogateescape")
+                    if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
+                        err = (
+                            f"Receive failed. Subvol of {estimated_fs_bytes} "
+                            f"bytes did not fit into loopback of {fs_bytes} "
+                            f"bytes: {err}"
+                        )
+                    raise RuntimeError(err)
+
+            # Optionally change the subvolume name while packaging
+            subvol_path_src = loop_vol.dir() / subvol.path().basename()
+            subvol_path_dst = (
+                (loop_vol.dir() / Path(opts.loopback_opts.subvol_name))
+                if opts.loopback_opts.subvol_name
+                else subvol_path_src
+            )
+            if subvol_path_src != subvol_path_dst:
+                subvol.run_as_root(
+                    ns.nsenter_without_sudo(
+                        "mv",
+                        str(subvol_path_src),
+                        str(subvol_path_dst),
+                    ),
+                )
+
+            # Mark received subvolume as writable
+            if opts.loopback_opts.writable_subvolume:
+                subvol.run_as_root(
+                    ns.nsenter_without_sudo(
+                        "btrfs",
+                        "property",
+                        "set",
+                        "-ts",
+                        subvol_path_dst,
+                        "ro",
+                        "false",
+                    )
+                )
+
+            # Mark received subvolume as default
+            if opts.loopback_opts.default_subvolume:
+                # Get the subvolume ID by just listing the specific
+                # subvol and getting the 2nd element.
+                # The output of this command looks like:
+                #
+                # b'ID 256 gen 7 top level 5 path volume\n'
+                #
+                subvol_id = subvol.run_as_root(
+                    ns.nsenter_without_sudo(
+                        "btrfs",
+                        "subvolume",
+                        "list",
+                        str(subvol_path_dst),
+                    ),
+                    stdout=subprocess.PIPE,
+                ).stdout.split(b" ")[1]
+
+                log.debug(f"subvol_id to set as default: {subvol_id}")
+
+                # Actually set the default
+                subvol.run_as_root(
+                    ns.nsenter_without_sudo(
+                        "btrfs",
+                        "subvolume",
+                        "set-default",
+                        subvol_id,
+                        str(loop_vol.dir()),
+                    ),
+                    stderr=subprocess.STDOUT,
+                )
+
+            if not opts.loopback_opts.size_mb:
+                loop_vol.minimize_size()
+
+        if opts.loopback_opts.seed_device:
+            subvol.run_as_root(
+                ["btrfstune", "-S", "1", output_path],
+            )
 
 
 class TarballGzipImage(Format, format_name="tar.gz"):

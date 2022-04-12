@@ -9,6 +9,7 @@ import pwd
 import stat
 import subprocess
 import tempfile
+import unittest.mock
 from contextlib import contextmanager
 from typing import Iterator
 
@@ -26,10 +27,10 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.serialize_targets_and_outputs import make_target_path_map
 from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
-from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.tests.layer_resource import layer_resource_subvol, layer_resource
 
 from ..bzl.loopback_opts import loopback_opts_t
-from ..package_image import Format, package_image
+from ..package_image import Format, package_image, _Opts
 from ..unshare import Namespace, Unshare, nsenter_as_root
 
 
@@ -92,7 +93,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     out_path,
                 )
 
-    def test_package_image_as_btrfs_loopback(self):
+    def test_package_image_as_btrfs(self):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
@@ -102,7 +103,6 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
         ) as unshare, temp_dir() as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:  # noqa: E501
-            # Future: use a LoopbackMount object here once that's checked in.
             subprocess.check_call(
                 nsenter_as_root(
                     unshare,
@@ -143,7 +143,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             finally:
                 nsenter_as_root(unshare, "umount", mount_dir)
 
-    def test_package_image_as_btrfs_loopback_fixed_size(self):
+    def test_package_image_as_btrfs_fixed_size(self):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
@@ -161,7 +161,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             os.stat(self._sibling_path("fixed-size.btrfs")).st_size, 225 * MiB
         )
 
-    def test_package_image_as_btrfs_loopback_writable(self):
+    def test_package_image_as_btrfs_writable(self):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
@@ -214,6 +214,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 stdout=subprocess.PIPE,
             )
             self.assertIn(b"SEEDING", proc.stdout)
+
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "btrfs",
@@ -281,6 +282,95 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
 
             finally:
                 nsenter_as_root(unshare, "umount", mount_dir)
+
+    def test_package_image_as_btrfs_subvol_name(self):
+        subvol_name = b"new_subvol_name"
+        with self._package_image(
+            self._sibling_path("create_ops.layer"),
+            "btrfs",
+            loopback_opts=loopback_opts_t(
+                default_subvolume=True,
+                subvol_name=subvol_name,
+            ),
+        ) as out_path, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "mount",
+                    "-t",
+                    "btrfs",
+                    "-o",
+                    "loop,discard,nobarrier",
+                    out_path,
+                    mount_dir,
+                )
+            )
+            try:
+                new_subvol_name = (
+                    subprocess.run(
+                        nsenter_as_root(
+                            unshare,
+                            "btrfs",
+                            "subvolume",
+                            "list",
+                            mount_dir,
+                        ),
+                        check=True,
+                        stdout=subprocess.PIPE,
+                    )
+                    .stdout.strip(b"\n")
+                    .split(b" ")[-1]
+                )
+
+                self.assertEqual(subvol_name, new_subvol_name)
+
+            finally:
+                nsenter_as_root(unshare, "umount", mount_dir)
+
+    def test_package_image_as_btrfs_too_small(self):
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"Unable to package subvol of \d+ bytes "
+            r"into requested loopback size of \d+ bytes",
+        ):
+            with self._package_image(
+                layer_resource(__package__, "build-appliance-testing"),
+                "btrfs",
+                loopback_opts=loopback_opts_t(
+                    # This is too small for the build appliance testing layer
+                    size_mb=255
+                ),
+            ):
+                pass
+
+        # Test with a mocked estimated size so that we can force trying to
+        # receive the subvol into a loopback that is intentionally sized
+        # too small.
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"Receive failed. Subvol of \d+ bytes "
+            r"did not fit into loopback of \d+ bytes",
+        ):
+            with temp_dir() as td:
+                out_path = td / "image.btrs"
+                subvol = layer_resource_subvol(
+                    __package__, "build-appliance-testing"
+                )
+
+                subvol.estimate_content_bytes = unittest.mock.MagicMock(
+                    return_value=125 * MiB
+                )
+
+                Format.make("btrfs").package_full(
+                    subvol,
+                    out_path,
+                    _Opts(
+                        build_appliance=None,
+                        loopback_opts=loopback_opts_t(size_mb=255),
+                    ),
+                )
 
     def test_package_image_as_tarball(self):
         with self._package_image(
