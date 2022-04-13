@@ -22,6 +22,8 @@
     "docusaurus": "^1.14.4",
     "docusaurus-plugin-internaldocs-fb": "^0.7.0",
     "internaldocs-fb-helpers": "^1.1.0",
+    "mdx-mermaid": "^1.2.2",
+    "mermaid": "^9.0.0",
     "react": "^16.8.4",
     "react-dom": "^16.8.4"
   },

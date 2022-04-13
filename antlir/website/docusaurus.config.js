@@ -116,7 +116,6 @@ module.exports = {
       require.resolve('docusaurus-plugin-internaldocs-fb/docusaurus-preset'),
       {
         docs: {
-          homePageId: 'overview',
           sidebarPath: require.resolve('./sidebars.js'),
           editUrl: fbContent({
             internal:
@@ -124,6 +123,7 @@ module.exports = {
             external:
               'https://github.com/facebookincubator/antlir/edit/master/website/',
           }),
+          remarkPlugins: [require('mdx-mermaid')],
         },
         theme: {
           customCss: require.resolve('./src/css/custom.css'),
@@ -131,7 +131,5 @@ module.exports = {
       },
     ],
   ],
-  plugins: [
-    path.resolve(__dirname, 'gen'),
-  ],
+  plugins: [path.resolve(__dirname, 'gen')],
 };

@@ -28,12 +28,12 @@ module.exports = (context, options) => {
     async loadContent() {
       const out = `${context.siteDir}/docs/api/`;
       if (isInternal()) {
-      await exec(
-      internal_cmd + files_to_generate + cp_cmd,
-        {
-          shell: '/bin/bash',
-        },
-      );
+        await exec(
+        internal_cmd + files_to_generate + cp_cmd,
+          {
+            shell: '/bin/bash',
+          },
+        );
       } else {
           await exec(
           oss_cmd + files_to_generate + cp_cmd,
