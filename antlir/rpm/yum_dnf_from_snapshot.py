@@ -309,12 +309,10 @@ def _dummies_for_protected_paths(
     """
     protected_paths = [*must_exist]
     for p in may_exist:
-        if (
-            # Convention: relative for image, or absolute for host.
-            Path(p)
-            if p.startswith("/")
-            else (install_root / p)
-        ).exists(raise_permission_error=True):
+        # Convention: relative for image, or absolute for host.
+        path = Path(p) if p.startswith("/") else (install_root / p)
+        # Don't protect symlinks
+        if path.exists(raise_permission_error=True) and not path.islink():
             protected_paths.append(p)
     with temp_dir() as td, tempfile.NamedTemporaryFile() as tf:
         # NB: There may be duplicates in protected_paths, so we normalize.
@@ -598,7 +596,6 @@ def yum_dnf_from_snapshot(
                 "/etc/rpm/",  # Also covers /etc/rpm/macros
                 log_path,
                 f"/var/lib/{prog_name}/",
-                "/var/lib/rpm/",
             ]
             + (
                 # Fedora's `yum` is a symlink to `dnf`, so `/etc/yum` is absent
@@ -607,6 +604,14 @@ def yum_dnf_from_snapshot(
                 if (has_yum() and not yum_is_dnf())
                 else []
             )
+        )
+        # Centos9 is moving the rpm db path from /var/lib/rpm/ to
+        # /usr/lib/sysimage/rpm, so protect whichever one exists.
+        optional_protected_paths.extend(
+            [
+                "/usr/lib/sysimage/rpm/",
+                "/var/lib/rpm/",
+            ]
         )
         # Also protect potentially non-hermetic files that are not required
         # to exist on the host.  We don't expect these to be written, only
