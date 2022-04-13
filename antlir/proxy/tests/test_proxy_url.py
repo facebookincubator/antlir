@@ -18,7 +18,7 @@ from antlir.proxy.proxy_url import proxy_url
 
 
 class TestHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
+    def do_GET(self) -> None:
         data = bytes(json.dumps({"test": "data"}), "ascii")
         if self.path == "/error":
             self.send_response(HTTPStatus.INTERNAL_SERVER_ERROR)
@@ -41,7 +41,7 @@ def _mock_handler():
 
 class TestProxyURL(TestCase):
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         cls.path_to_cert = None
         with importlib.resources.path(__package__, "test-cert") as p:
             cls.path_to_cert = p / "localhost.pem"
@@ -64,10 +64,10 @@ class TestProxyURL(TestCase):
         server_thread.start()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         cls.server.server_close()
 
-    def test_proxy_url(self):
+    def test_proxy_url(self) -> None:
         handler = _mock_handler()
 
         proxy_url(
@@ -80,7 +80,7 @@ class TestProxyURL(TestCase):
             bytes(json.dumps({"test": "data"}), "ascii"),
         )
 
-    def test_proxy_url_error(self):
+    def test_proxy_url_error(self) -> None:
         handler = _mock_handler()
 
         proxy_url(
@@ -93,7 +93,7 @@ class TestProxyURL(TestCase):
             HTTPStatus.INTERNAL_SERVER_ERROR
         )
 
-    def test_proxy_url_http(self):
+    def test_proxy_url_http(self) -> None:
         handler = _mock_handler()
 
         proxy_url(

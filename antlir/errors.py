@@ -20,6 +20,6 @@ class UserError(Exception):
 class ToolMissing(Exception):
     """Raised when an expected CLI tool is missing from the host system"""
 
-    def __init__(self, tool):
+    def __init__(self, tool) -> None:
         self.tool = tool
         super().__init__(f"Missing tool '{tool}'")

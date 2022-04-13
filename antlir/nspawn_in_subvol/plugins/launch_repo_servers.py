@@ -25,7 +25,7 @@ class RepoServer(ServerLauncher):
         super().__init__(**kwargs)
         self.rpm_repo_snapshot = rpm_repo_snapshot
 
-    def __format__(self, format_spec) -> str:
+    def __format__(self, format_spec: str) -> str:
         return f"RepoServer({self.rpm_repo_snapshot}, port={self.port})"
 
     @property
