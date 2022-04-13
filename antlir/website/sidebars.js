@@ -142,15 +142,16 @@ module.exports = {
       items: [
         'metalos/overview',
         'metalos/native-services',
+        'metalos/update-flows',
         'metalos/apis',
         ...fbInternalOnly([
           {
-            'type': 'doc',
-            'id': 'metalos/fb/hacking_guide',
+            type: 'doc',
+            id: 'metalos/fb/hacking_guide',
           },
           {
-            'type': 'category',
-            'label': 'Hacking items @ FB',
+            type: 'category',
+            label: 'Hacking items @ FB',
             collapsed: false,
             items: [
               {
@@ -194,9 +195,9 @@ module.exports = {
                 id: 'metalos/fb/hacking_guide/pwm_flow',
               },
             ],
-          }
+          },
         ]),
       ],
-    }
+    },
   ],
 };
