@@ -103,7 +103,7 @@ class Plan9Export(Share):
     # This should be used in readonly mode unless absolutely necessary.
     readonly: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         assert (
             self.generator or self.mountpoint is None
         ), f"`mountpoint` can not be set if `generator` is false: {self}"
