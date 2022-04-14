@@ -4,6 +4,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get", "python_unittest", "rust_binary", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:systemd.bzl", "ADMIN_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux/boot:defs.bzl", "boot")
@@ -106,6 +107,93 @@ python_unittest(
     },
     deps = [
         ":create-kernel-panic",
+        "//antlir:fs_utils",
+        "//antlir:testlib_common",
+        "//antlir/nspawn_in_subvol:common",
+    ],
+)
+
+# To test initrd.break functionality override the default
+# debug-shell.conf behavior. Instead of spawning a shell we'll dump some
+# debug information and then halt the VM.
+image.layer(
+    name = "vmtest-initrd-break-custom-initrd-layer",
+    parent_layer = "{}:{}-initrd-layer".format(
+        kernel_get.base_target,
+        kernel_get.default.uname,
+    ),
+    features = [
+        #
+        # This override is installed into ADMIN_ROOT (/etc/systemd/system)
+        # because it's overriding the existing debug-shell.conf override
+        # in PROVIDER_ROOT (/usr/lib/systemd/system).
+        #
+        image.ensure_subdirs_exist("/", ADMIN_ROOT),
+        systemd.install_dropin(
+            source = "debug-shell-exec-override.conf",
+            dest = "override.conf",
+            unit = "debug-shell.service",
+            install_root = ADMIN_ROOT,
+        ),
+    ],
+)
+
+package.new(
+    name = "vmtest-initrd-break-custom-initrd",
+    layer = ":vmtest-initrd-break-custom-initrd-layer",
+    format = "cpio.gz",
+)
+
+# Create a VM to test booting with "initrd.break" set
+vm.run(
+    name = "vmtest-initrd-break-default",
+    vm_opts = vm.types.opts.new(
+        runtime = vm.types.runtime.new(
+            connection = vm.types.connection.new(
+                # Set the options such that it fails fast when
+                # the vm crashes.  This is just to make the test
+                # run in a reasonable amount of time.
+                options = {
+                    "ServerAliveCountMax": "1",
+                    "ServerAliveInterval": "1",
+                },
+            ),
+        ),
+        append = ["initrd.break"],
+        initrd = ":vmtest-initrd-break-custom-initrd",
+    ),
+)
+
+# Create a VM to test booting with "initrd.break=sysinit.target" set
+vm.run(
+    name = "vmtest-initrd-break-custom",
+    vm_opts = vm.types.opts.new(
+        runtime = vm.types.runtime.new(
+            connection = vm.types.connection.new(
+                # Set the options such that it fails fast when
+                # the vm crashes.  This is just to make the test
+                # run in a reasonable amount of time.
+                options = {
+                    "ServerAliveCountMax": "1",
+                    "ServerAliveInterval": "1",
+                },
+            ),
+        ),
+        append = ["initrd.break=sysinit.target"],
+        initrd = ":vmtest-initrd-break-custom-initrd",
+    ),
+)
+
+python_unittest(
+    name = "test-initrd-break",
+    srcs = ["test_initrd_break.py"],
+    resources = {
+        ":vmtest-initrd-break-custom": "vmtest-initrd-break-custom",
+        ":vmtest-initrd-break-default": "vmtest-initrd-break-default",
+    },
+    deps = [
+        ":vmtest-initrd-break-custom",
+        ":vmtest-initrd-break-default",
         "//antlir:fs_utils",
         "//antlir:testlib_common",
         "//antlir/nspawn_in_subvol:common",
