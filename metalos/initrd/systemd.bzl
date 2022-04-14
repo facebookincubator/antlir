@@ -64,6 +64,8 @@ WANTS = [
     ("sysinit.target", "systemd-tmpfiles-setup.service"),
     ("sysinit.target", "systemd-udevd.service"),
     ("sysinit.target", "systemd-udev-trigger.service"),
+    ("sysinit.target", "cryptsetup.target"),
+    ("sysinit.target", "debug-shell.service"),
 ]
 
 BINARIES = [

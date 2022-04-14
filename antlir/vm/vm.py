@@ -308,21 +308,6 @@ async def vm(
     # Root disk is always first
     shares.insert(0, root_disk)
 
-    # When not booting from disk, modules are always required, insert the
-    # export for them here.  Note: This Share used "generator=False" because
-    # the initrd will mount these into the rootfs before the switch-root.
-    # (see: //antlir/vm/bzl:initrd.bzl)
-    shares.append(
-        Plan9Export(
-            path=find_built_subvol(
-                # pyre-fixme [16]: `Optional` has no attribute `path`
-                opts.kernel.artifacts.modules.path
-            ).path(),
-            mount_tag="kernel-modules",
-            generator=False,
-        )
-    )
-
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
         # so that the symlinks that buck constructs in @mode/dev work
@@ -434,6 +419,21 @@ async def vm(
     args.extend(["-L", str(opts.runtime.emulator.roms_dir.path)])
 
     if not opts.boot_from_disk:
+        # When not booting from disk, modules are always required, insert the
+        # export for them here.  Note: This Share uses "generator=False" because
+        # the initrd will mount these into the rootfs before the switch-root.
+        # (see: //antlir/vm/bzl:initrd.bzl)
+        shares.append(
+            Plan9Export(
+                path=find_built_subvol(
+                    # pyre-fixme [16]: `Optional` has no attribute `path`
+                    opts.kernel.artifacts.modules.path
+                ).path(),
+                mount_tag="kernel-modules",
+                generator=False,
+            )
+        )
+
         args.extend(
             [
                 "-kernel",

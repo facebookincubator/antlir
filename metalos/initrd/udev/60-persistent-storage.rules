@@ -71,6 +71,9 @@ ENV{DEVTYPE}=="partition", ENV{ID_PATH}=="?*", SYMLINK+="disk/by-path/$env{ID_PA
 # compatible links for ATA devices
 ENV{DEVTYPE}=="partition", ENV{ID_PATH_ATA_COMPAT}=="?*", SYMLINK+="disk/by-path/$env{ID_PATH_ATA_COMPAT}-part%n"
 
+# probe filesystem metadata of disks
+KERNEL!="sr*|mmcblk[0-9]boot[0-9]", IMPORT{builtin}="blkid"
+
 # by-label/by-uuid links (filesystem metadata)
 ENV{ID_FS_USAGE}=="filesystem|other|crypto", ENV{ID_FS_UUID_ENC}=="?*", SYMLINK+="disk/by-uuid/$env{ID_FS_UUID_ENC}"
 ENV{ID_FS_USAGE}=="filesystem|other|crypto", ENV{ID_FS_LABEL_ENC}=="?*", SYMLINK+="disk/by-label/$env{ID_FS_LABEL_ENC}"
