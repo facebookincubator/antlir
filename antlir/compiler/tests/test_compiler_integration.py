@@ -12,14 +12,16 @@ import os
 import socket
 import tempfile
 import unittest
+from uuid import UUID
 
+from antlir.btrfsutil import subvolume_info
 from antlir.bzl.constants import flavor_config_t
 from antlir.fs_utils import (
     RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
     Path,
     temp_dir,
 )
-from antlir.subvol_utils import TempSubvolumes, _query_uuid, Subvol
+from antlir.subvol_utils import TempSubvolumes, Subvol
 from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import render_subvol
@@ -108,8 +110,8 @@ class CompilerIntegrationTestCase(unittest.TestCase):
             self.assertEqual(
                 svod.SubvolumeOnDisk(
                     **{
-                        svod._BTRFS_UUID: _query_uuid(
-                            sv_nested, sv_nested.path()
+                        svod._BTRFS_UUID: str(
+                            UUID(bytes=subvolume_info(sv_nested.path()).uuid)
                         ),
                         svod._BTRFS_PARENT_UUID: None,
                         svod._HOSTNAME: socket.gethostname(),

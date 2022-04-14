@@ -16,7 +16,10 @@ python_unittest(
         100,
         "//antlir/compiler:subvolume_on_disk",
     )],
-    deps = ["//antlir/compiler:subvolume_on_disk"],
+    deps = [
+        "//antlir:subvol_utils",
+        "//antlir/compiler:subvolume_on_disk",
+    ],
 )
 
 python_unittest(

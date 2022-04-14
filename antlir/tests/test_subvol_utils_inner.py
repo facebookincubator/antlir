@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import errno
 import os
 import platform
 import unittest
-from contextlib import contextmanager
+
+from antlir import btrfsutil
 
 from ..fs_utils import temp_dir
 from ..subvol_utils import Subvol, volume_dir
@@ -30,16 +32,21 @@ class InnerSubvolTestCase(unittest.TestCase):
 
         with temp_dir(
             dir=volume_tmp_dir.decode(), prefix="delete_recursive"
-        ) as td, Subvol(
-            td / "outer"
-        ).create().delete_on_exit() as outer, Subvol(
-            td / "outer/inner1"
-        ).create().delete_on_exit() as inner1, Subvol(
-            td / "outer/inner1/inner2"
-        ).create().delete_on_exit() as inner2, Subvol(
-            td / "outer/inner3"
-        ).create().delete_on_exit():
-            inner2.set_readonly(True)
-            inner1.set_readonly(True)
-            outer.delete()
-            self.assertEqual([], td.listdir())
+        ) as td:
+            with Subvol(td / "outer").create().delete_on_exit() as outer:
+                inner1 = Subvol(td / "outer/inner1").create()
+                inner2 = Subvol(td / "outer/inner1/inner2").create()
+                Subvol(td / "outer/inner3").create()
+                inner2.set_readonly(True)
+                inner1.set_readonly(True)
+                self.assertTrue(btrfsutil.is_subvolume(outer.path()))
+                # pass useful to show if any exceptions are happening inside the
+                # context manager
+                pass
+            # show that the subvol was deleted by the delete_on_exit context,
+            # not just temp_dir
+            self.assertFalse(os.path.exists(outer.path()))
+            pass
+        with self.assertRaises(btrfsutil.BtrfsUtilError) as e:
+            self.assertFalse(btrfsutil.is_subvolume(outer.path()))
+        self.assertEqual(e.exception.errno, errno.ENOENT)

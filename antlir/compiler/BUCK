@@ -8,7 +8,10 @@ load("//antlir/bzl:oss_shim.bzl", "python_library")
 python_library(
     name = "subvolume_on_disk",
     srcs = ["subvolume_on_disk.py"],
-    deps = ["//antlir:fs_utils"],
+    deps = [
+        "//antlir:btrfsutil",
+        "//antlir:fs_utils",
+    ],
 )
 
 python_library(

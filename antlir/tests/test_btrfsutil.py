@@ -27,56 +27,57 @@ class BtrfsUtilTestCase(AntlirTestCase):
             ensure_per_repo_artifacts_dir_exists(Path(sys.argv[0]))
         )
 
-    @patch("antlir.btrfsutil._raw_btrfsutil")
-    @patch("antlir.btrfsutil._sudo_retry")
     @with_temp_subvols
-    def test_no_sudo_necessary(self, temp_subvols, sudo_retry, raw_btrfsutil):
+    def test_no_sudo_necessary(self, temp_subvols):
         """Does not use sudo when underlying call passes"""
         subvol = temp_subvols.create("no_sudo_necessary")
-        raw_btrfsutil.subvolume_info.__name__ = "subvolume_info"
-        btrfsutil.subvolume_info(subvol.path())
-        raw_btrfsutil.subvolume_info.assert_called_once()
-        sudo_retry.assert_not_called()
+        with patch(
+            "antlir.btrfsutil._raw_btrfsutil.subvolume_info"
+        ) as mock_subvolume_info, patch(
+            "antlir.btrfsutil._sudo_retry"
+        ) as mock_sudo_retry:
+            btrfsutil.subvolume_info(subvol.path())
+        mock_subvolume_info.assert_called_once()
+        mock_sudo_retry.assert_not_called()
 
-    @patch("antlir.btrfsutil._raw_btrfsutil")
+    @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @patch("antlir.btrfsutil._sudo_retry")
-    def test_non_perm_error(self, sudo_retry, raw_btrfsutil):
+    def test_non_perm_error(self, mock_sudo_retry, mock_subvolume_info):
         """Non-permission errors are not retried"""
-        raw_btrfsutil.subvolume_info.__name__ = "subvolume_info"
-        raw_btrfsutil.subvolume_info.side_effect = (
-            _raw_btrfsutil.BtrfsUtilError(errno.ENOENT, None)
+        mock_subvolume_info.side_effect = _raw_btrfsutil.BtrfsUtilError(
+            errno.ENOENT, None
         )
         with self.assertRaises(_raw_btrfsutil.BtrfsUtilError) as cm:
             btrfsutil.subvolume_info("fake-path")
         self.assertEqual(cm.exception.errno, errno.ENOENT)
-        raw_btrfsutil.subvolume_info.assert_called_once()
-        sudo_retry.assert_not_called()
+        mock_subvolume_info.assert_called_once()
+        mock_sudo_retry.assert_not_called()
 
-    @patch("antlir.btrfsutil._raw_btrfsutil")
+    @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @patch("antlir.btrfsutil._sudo_retry")
-    def test_sudo_fallback(self, sudo_retry, raw_btrfsutil):
+    def test_sudo_fallback(self, mock_sudo_retry, mock_subvolume_info):
         """Falls back to calling sudo on permissions errors"""
-        raw_btrfsutil.subvolume_info.__name__ = "subvolume_info"
-        raw_btrfsutil.subvolume_info.side_effect = (
-            _raw_btrfsutil.BtrfsUtilError(errno.EPERM, None)
+        mock_subvolume_info.__name__ = "subvolume_info"
+        mock_subvolume_info.side_effect = _raw_btrfsutil.BtrfsUtilError(
+            errno.EPERM, None
         )
         btrfsutil.subvolume_info("fake-path")
-        raw_btrfsutil.subvolume_info.assert_called_once()
-        sudo_retry.assert_called_once()
+        mock_subvolume_info.assert_called_once()
+        mock_sudo_retry.assert_called_once()
 
-    @patch("antlir.btrfsutil._raw_btrfsutil")
+    @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @patch("antlir.btrfsutil._sudo_retry")
-    def test_sudo_fallback_fails(self, sudo_retry, raw_btrfsutil):
+    def test_sudo_fallback_fails(self, mock_sudo_retry, mock_subvolume_info):
         """Exception from _sudo_retry gets raised"""
-        raw_btrfsutil.subvolume_info.__name__ = "subvolume_info"
-        raw_btrfsutil.subvolume_info.side_effect = (
-            _raw_btrfsutil.BtrfsUtilError(errno.EPERM, None)
+        mock_subvolume_info.__name__ = "subvolume_info"
+        mock_subvolume_info.side_effect = _raw_btrfsutil.BtrfsUtilError(
+            errno.EPERM, None
         )
-        sudo_retry.side_effect = RuntimeError("test")
+        mock_sudo_retry.side_effect = RuntimeError("test")
         with self.assertRaises(RuntimeError, msg="test"):
             btrfsutil.subvolume_info("fake-path")
-        raw_btrfsutil.subvolume_info.assert_called_once()
-        sudo_retry.assert_called_once()
+        mock_subvolume_info.assert_called_once()
+        mock_sudo_retry.assert_called_once()
 
     def test_sudo_fallback_subprocess_exception(self):
         """Exception in _sudo_retry subprocess is raised"""
@@ -103,18 +104,16 @@ class BtrfsUtilTestCase(AntlirTestCase):
         self.assertTrue(btrfsutil.is_subvolume(to_create))
         sudo_retry.assert_not_called()
 
-    @patch("antlir.btrfsutil._raw_btrfsutil")
-    @patch("antlir.btrfsutil._sudo_retry", wraps=btrfsutil._sudo_retry)
+    @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @with_temp_subvols
-    def test_integration_sudo_fallback(
-        self, temp_subvols, sudo_retry, raw_btrfsutil
-    ):
+    def test_integration_sudo_fallback(self, temp_subvols, mock_subvolume_info):
         """Sudo fallback works"""
         subvol = temp_subvols.create("sudo_fallback")
-        raw_btrfsutil.subvolume_info.__name__ = "subvolume_info"
-        raw_btrfsutil.subvolume_info.side_effect = (
-            _raw_btrfsutil.BtrfsUtilError(errno.EPERM, None)
+        mock_subvolume_info.__name__ = "subvolume_info"
+        mock_subvolume_info.side_effect = _raw_btrfsutil.BtrfsUtilError(
+            errno.EPERM, None
         )
-        btrfsutil.subvolume_info(subvol.path())
-        raw_btrfsutil.subvolume_info.assert_called_once()
-        sudo_retry.assert_called_once()
+        with patch("antlir.btrfsutil._sudo_retry") as mock_sudo_retry:
+            btrfsutil.subvolume_info(subvol.path())
+        mock_subvolume_info.assert_called_once()
+        mock_sudo_retry.assert_called_once()

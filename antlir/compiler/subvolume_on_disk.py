@@ -8,10 +8,11 @@
 import json
 import logging
 import socket
-import subprocess
 from collections import namedtuple
 from typing import Optional
+from uuid import UUID
 
+from antlir.btrfsutil import subvolume_info, SubvolumeInfo
 from antlir.fs_utils import Path
 
 
@@ -31,41 +32,12 @@ _DANGER = "DANGER"  # (2)
 _BUILD_APPLIANCE_PATH = "build_appliance_path"  # (1-3)
 
 
-def _btrfs_get_volume_props(subvolume_path: Path):
-    SNAPSHOTS = "Snapshot(s)"
-    props = {}
-    # It's unfair to assume that the OS encoding is UTF-8, but our JSON
-    # serialization kind of requires it, and Python3 makes it hyper-annoying
-    # to work with bytestrings, so **shrug**.
-    #
-    # If this turns out to be a problem for a practical use case, we can add
-    # `surrogateescape` all over the place, or even set
-    # `PYTHONIOENCODING=utf-8:surrogateescape` in the environment.
-    for l in (
-        subprocess.check_output(
-            ["sudo", "btrfs", "subvolume", "show", subvolume_path]
-        )
-        .decode("utf-8")
-        .split("\n")[1:]
-    ):  # Skip the header line
-        if SNAPSHOTS in props:
-            if l:  # Ignore the trailing empty line
-                TABS = 4
-                assert l[:TABS] == "\t" * TABS, "Not a snapshot line" + repr(l)
-                props[SNAPSHOTS].append(l[TABS:])
-        else:
-            k, v = l.strip().split(":", 1)
-            k = k.rstrip(":")
-            v = v.strip()
-            if k == SNAPSHOTS:
-                assert v == "", f'Should have nothing after ":" in: {l}'
-                props[SNAPSHOTS] = []
-            else:
-                assert k not in props, f"{l} already had a value {props[k]}"
-                if k.endswith(" UUID") and v == "-":
-                    v = None
-                props[k] = v
-    return props
+def _parent_uuid(info: SubvolumeInfo) -> Optional[str]:
+    return (
+        str(UUID(bytes=info.parent_uuid))
+        if info.parent_uuid != b"\0" * 16
+        else None
+    )
 
 
 class SubvolumeOnDisk(
@@ -119,11 +91,11 @@ class SubvolumeOnDisk(
         # will not commit a buggy structure to disk since
         # `to_serializable_dict` checks the idepmpotency of our
         # serialization-deserialization.
-        volume_props = _btrfs_get_volume_props(subvol_path)
+        info = subvolume_info(subvol_path)
         self = cls(
             **{
-                _BTRFS_UUID: volume_props["UUID"],
-                _BTRFS_PARENT_UUID: volume_props["Parent UUID"],
+                _BTRFS_UUID: str(UUID(bytes=info.uuid)),
+                _BTRFS_PARENT_UUID: _parent_uuid(info),
                 _HOSTNAME: socket.gethostname(),
                 _SUBVOLUMES_BASE_DIR: subvolumes_dir,
                 _SUBVOLUME_REL_PATH: subvol_rel_path,
@@ -141,11 +113,12 @@ class SubvolumeOnDisk(
         # creating the object. The assert below keeps them in sync.
         subvol_path = subvolumes_dir / subvol_rel_path
         # This incidentally checks that the subvolume exists and is btrfs.
-        volume_props = _btrfs_get_volume_props(subvol_path)
+        info = subvolume_info(subvol_path)
+        parent_uuid = _parent_uuid(info)
         self = cls(
             **{
                 _BTRFS_UUID: d[_BTRFS_UUID],
-                _BTRFS_PARENT_UUID: volume_props["Parent UUID"],
+                _BTRFS_PARENT_UUID: parent_uuid,
                 _HOSTNAME: d[_HOSTNAME],
                 _SUBVOLUMES_BASE_DIR: subvolumes_dir,
                 _SUBVOLUME_REL_PATH: subvol_rel_path,
@@ -172,10 +145,10 @@ class SubvolumeOnDisk(
                 f"instead of {[inner_dir]}"
             )
         # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `btrfs_uuid`.
-        if volume_props["UUID"] != self.btrfs_uuid:
+        if UUID(bytes=info.uuid) != UUID(self.btrfs_uuid):
             raise RuntimeError(
                 f"UUID in subvolume JSON {self} does not match that of the "
-                f"actual subvolume {volume_props}"
+                f"actual subvolume {UUID(bytes=info.uuid)}"
             )
         return self
 
