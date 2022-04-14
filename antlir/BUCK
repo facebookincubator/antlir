@@ -209,6 +209,60 @@ python_unittest(
     ],
 )
 
+btrfsutil_deps = [
+    ":common",
+    ":fs_utils",
+    third_party.library(
+        "python-btrfs-progs",
+        "btrfsutil-py",
+    ),
+]
+
+python_library(
+    name = "btrfsutil",
+    srcs = [
+        "btrfsutil.py",
+    ],
+    resources = {
+        ":btrfsutil-bin": "btrfsutil-bin",
+    },
+    type_stubs = [
+        "btrfsutil.pyi",
+    ],
+    deps = btrfsutil_deps,
+)
+
+# the btrfsutil wrapper is also packaged as a python_binary so that it can be
+# fallen back to with `sudo` in the case of permissions errors in the main
+# calling process
+python_binary(
+    name = "btrfsutil-bin",
+    srcs = ["btrfsutil.py"],
+    main_module = "antlir.btrfsutil",
+    visibility = ["//antlir:btrfsutil"],
+    deps = btrfsutil_deps,
+)
+
+python_unittest(
+    name = "test-btrfsutil",
+    srcs = ["tests/test_btrfsutil.py"],
+    needed_coverage = [(
+        100,
+        ":btrfsutil",
+    )],
+    deps = [
+        ":artifacts_dir",
+        ":btrfsutil",
+        ":subvol_utils",
+        ":testlib_common",
+        ":volume_for_repo",
+        third_party.library(
+            "python-btrfs-progs",
+            "btrfsutil-py",
+        ),
+    ],
+)
+
 python_library(
     name = "subvol_utils",
     srcs = ["subvol_utils.py"],
