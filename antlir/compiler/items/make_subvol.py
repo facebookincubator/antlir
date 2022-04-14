@@ -15,6 +15,7 @@ from antlir.fs_utils import META_FLAVOR_FILE, open_for_read_decompress
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, PhaseOrder, setup_meta_dir
+from .cpio import load_from_cpio
 from .tarball import load_from_tarball
 
 
@@ -105,6 +106,9 @@ class LayerFromPackageItem(ImageItem):
             elif item.format == "tar":
                 subvol.create()
                 load_from_tarball(item.source, subvol, layer_opts)
+            elif item.format == "cpio":
+                subvol.create()
+                load_from_cpio(item.source, subvol, layer_opts)
             else:
                 raise Exception(
                     f"Unsupported format {item.format} for layer from package."

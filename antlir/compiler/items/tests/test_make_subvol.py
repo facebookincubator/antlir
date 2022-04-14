@@ -131,6 +131,16 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             lossy_packaging="tar",
         )
 
+    def test_receive_cpio(self):
+        self._check_receive_package(
+            LayerFromPackageItem(
+                format="cpio",
+                from_target="t",
+                source=Path(__file__).dirname() / "create_ops.cpio.gz",
+            ),
+            lossy_packaging="cpio",
+        )
+
     def test_unsupported_format(self):
         with self.assertRaisesRegex(Exception, "Unsupported format"):
             self._check_receive_package(

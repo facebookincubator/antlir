@@ -292,7 +292,7 @@ def render_demo_subvols(
 
     Read carefully: the return type depends on the args!
     """
-    assert lossy_packaging in [None, "tar"], lossy_packaging
+    assert lossy_packaging in [None, "tar", "cpio"], lossy_packaging
 
     # For ease of maintenance, keep the subsequent filesystem views in
     # the order that `demo_sendstreams.py` performs the operations.
@@ -305,12 +305,15 @@ def render_demo_subvols(
     def render_create_ops(kb_nuls, kb_nuls_clone, zeros_holes_zeros, big_hole):
         kb_nuls = render_reflink(kb_nuls)
         kb_nuls_clone = render_reflink(kb_nuls_clone)
+        file_mode = "d" if lossy_packaging != "cpio" else "h"
         return render_subvols.expected_rendering(
             [
                 "(Dir)",
                 {
                     "hello": [
-                        "(Dir x'user.test_attr'='chickens')",
+                        ("(Dir x'user.test_attr'='chickens')")
+                        if lossy_packaging != "cpio"
+                        else "(Dir)",
                         {"world": [goodbye_world]},
                     ],
                     "dir_to_remove": ["(Dir)", {}],
@@ -338,14 +341,18 @@ def render_demo_subvols(
                             )
                             .encode("unicode-escape")
                             .decode("ISO-8859-1")
-                        ),
+                        )
+                        if lossy_packaging != "cpio"
+                        else "(Dir)",
                         {},
                     ],
                     "goodbye": [goodbye_world],
                     "bye_symlink": ["(Symlink hello/world)"],
                     "dir_perms_0500": ["(Dir m500)", {}],
-                    "56KB_nuls": [f"(File d{FILE_SZ}{kb_nuls})"],
-                    "56KB_nuls_clone": [f"(File d{FILE_SZ}{kb_nuls_clone})"],
+                    "56KB_nuls": [f"(File {file_mode}{FILE_SZ}{kb_nuls})"],
+                    "56KB_nuls_clone": [
+                        f"(File {file_mode}{FILE_SZ}{kb_nuls_clone})"
+                    ],
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
                     # We have 6 bytes of data, but holes are block-aligned
                     "hello_big_hole": [f"(File d4096{big_hole}h1073737728)"],
@@ -458,7 +465,9 @@ def render_demo_subvols(
         return render_create_ops(
             kb_nuls=create_clone,
             kb_nuls_clone=create,
-            zeros_holes_zeros="d16384h16384d16384",
+            zeros_holes_zeros="d16384h16384d16384"
+            if lossy_packaging != "cpio"
+            else "h49152",
             big_hole="",
         )
     elif mutate_ops:
@@ -467,10 +476,30 @@ def render_demo_subvols(
         return render_mutate_ops(
             kb_nuls=mutate_clone,
             kb_nuls_clone=mutate,
-            zeros_holes_zeros="d16384h16384d16384",
+            zeros_holes_zeros="d16384h16384d16384"
+            if lossy_packaging != "cpio"
+            else "h49152",
             big_hole="",
         )
     raise AssertionError("Set at least one of {create,mutate}_ops")
+
+
+def render_demo_as_corrupted_by_cpio(*, create_ops=None, mutate_ops=None):
+    demo_render = render_demo_subvols(create_ops=create_ops)
+    # Cpio does not preserve the original's cloned extents of
+    # zeros
+    demo_render[1]["56KB_nuls"] = ["(File h57344)"]
+    demo_render[1]["56KB_nuls_clone"] = ["(File h57344)"]
+    demo_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
+    # Cpio does not preserve ACLs
+    demo_render[1]["dir_with_acls"][0] = "(Dir)"
+    # Cpio does not preserve xattrs
+    demo_render[1]["hello"][0] = "(Dir)"
+    # Cpio does not preserve unix domain sockets, as these are usable only for
+    # the lifetime of the associated process and should therefore be safe to
+    # ignore.
+    demo_render[1].pop("unix_sock")
+    return demo_render
 
 
 def render_demo_as_corrupted_by_gnu_tar(*, create_ops=None, mutate_ops=None):
@@ -479,7 +508,7 @@ def render_demo_as_corrupted_by_gnu_tar(*, create_ops=None, mutate_ops=None):
     # zeros
     demo_render[1]["56KB_nuls"] = ["(File d57344)"]
     demo_render[1]["56KB_nuls_clone"] = ["(File d57344)"]
-    # Tar des not preserve unix domain sockets, as these are usable only for
+    # Tar does not preserve unix domain sockets, as these are usable only for
     # the lifetime of the associated process and should therefore be safe to
     # ignore.
     demo_render[1].pop("unix_sock")
