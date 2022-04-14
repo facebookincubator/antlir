@@ -1,0 +1,51 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+"""
+Partially-complete list of type hints for btrfsutil.
+
+Add any more functions here as they need to be used (see `pydoc3 btrfsutil` for
+the upstream module docs)
+"""
+
+from typing import Tuple, Union, Iterable, Optional
+
+from antlir.fs_utils import Path
+
+class SubvolumeInfo(object):
+    id: int
+    parent_id: int
+    uuid: bytes
+    parent_uuid: bytes
+
+def SubvolumeIterator(
+    path: Path, top: int = 0, info: bool = False, post_order: bool = False
+) -> Iterable[Tuple[Path, Union[int, SubvolumeInfo]]]: ...
+
+# we don't care about these
+class QGroupInherit(object):
+    pass
+
+class BtrfsUtilError(Exception):
+    errno: int
+
+def create_snapshot(
+    source: Path,
+    path: Path,
+    recursive: bool = False,
+    read_only: bool = False,
+    async_: bool = False,
+    qgroup_inherit: Optional[QGroupInherit] = None,
+) -> None: ...
+def create_subvolume(
+    path: Path,
+    async_: bool = False,
+    qgroup_inherit: Optional[QGroupInherit] = None,
+) -> None: ...
+def delete_subvolume(path: Path, recursive: bool = False) -> None: ...
+def is_subvolume(path: Path) -> bool: ...
+def set_subvolume_read_only(path: Path, ro: bool) -> None: ...
+def subvolume_info(path: Path) -> SubvolumeInfo: ...
+def sync(path: Path) -> None: ...

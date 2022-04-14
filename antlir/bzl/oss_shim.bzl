@@ -99,6 +99,7 @@ _PYTHON_LIBRARY_KWARGS = _make_rule_kwargs_dict(
         "srcs",
         "tags",
         "visibility",
+        "type_stubs",
     ],
 )
 
