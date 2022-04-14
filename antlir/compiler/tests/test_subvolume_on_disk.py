@@ -8,8 +8,11 @@ import io
 import os
 import unittest
 import unittest.mock
+from uuid import UUID
 
-from antlir.fs_utils import Path, temp_dir
+from antlir.btrfsutil import subvolume_info, BtrfsUtilError
+from antlir.fs_utils import Path
+from antlir.subvol_utils import with_temp_subvols
 
 from .. import subvolume_on_disk
 
@@ -17,32 +20,10 @@ _MY_HOST = "my_host"
 
 
 class SubvolumeOnDiskTestCase(unittest.TestCase):
-    def _test_uuid(self, subvolume_path):
-        if self._mock_uuid_stack:
-            return self._mock_uuid_stack.pop()
-        return f"test_uuid_of:{subvolume_path}"
-
     def setUp(self) -> None:
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
-
-        # Configure mocks shared by most of the tests.
-        self._mock_uuid_stack = []
-
-        self.patch_btrfs_get_volume_props = unittest.mock.patch.object(
-            subvolume_on_disk, "_btrfs_get_volume_props"
-        )
-        self.mock_btrfs_get_volume_props = (
-            self.patch_btrfs_get_volume_props.start()
-        )
-        self.mock_btrfs_get_volume_props.side_effect = lambda subvolume_path: {
-            # Since we key the uuid off the given argument, we don't have to
-            # explicitly validate the given path for each mock call.
-            "UUID": self._test_uuid(subvolume_path),
-            "Parent UUID": "zupa",
-        }
-        self.addCleanup(self.patch_btrfs_get_volume_props.stop)
 
         self.patch_gethostname = unittest.mock.patch("socket.gethostname")
         self.mock_gethostname = self.patch_gethostname.start()
@@ -56,23 +37,15 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
         # Automatically tests "normal case" serialization & deserialization
         fake_file = io.StringIO()
 
-        # `to_json` will validate UUIDs by running `from`.
-        stack_size = len(self._mock_uuid_stack)
-        self._mock_uuid_stack.append(actual_subvol.btrfs_uuid)
-
         actual_subvol.to_json_file(fake_file)
-        self.assertEqual(stack_size, len(self._mock_uuid_stack))
         fake_file.seek(0)
 
-        # The `from` validation will consume another UUID.
-        self._mock_uuid_stack.append(actual_subvol.btrfs_uuid)
         self.assertEqual(
             actual_subvol,
             subvolume_on_disk.SubvolumeOnDisk.from_json_file(
                 fake_file, actual_subvol.subvolumes_base_dir
             ),
         )
-        self.assertEqual(stack_size, len(self._mock_uuid_stack))
 
     def test_from_json_file_errors(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "Parsing subvolume JSON"):
@@ -84,198 +57,125 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                 io.StringIO("5"), Path("/subvols")
             )
 
-    def test_from_serializable_dict_and_validation(self) -> None:
-        with temp_dir() as td:
-            # Note: Unlike test_from_subvolume_path, this test uses a
-            # trailing / (to increase coverage).
-            subvols = Path(td + b"/")
-            rel_path = Path("test_subvol:v/test_subvol")
-            good_path = subvols / rel_path
-            os.makedirs(good_path)  # `from_serializable_dict` checks this
-            good_uuid = self._test_uuid(good_path)
-            good = {
-                subvolume_on_disk._BTRFS_UUID: good_uuid,
-                subvolume_on_disk._HOSTNAME: _MY_HOST,
-                subvolume_on_disk._SUBVOLUME_REL_PATH: rel_path,
-            }
+    @with_temp_subvols
+    def test_from_serializable_dict_and_validation(self, temp_subvols) -> None:
+        # Note: Unlike test_from_subvolume_path, this test uses a
+        # trailing / (to increase coverage).
+        subvols = Path(temp_subvols.temp_dir + b"/")
+        rel_path = Path("test_subvol:v/test_subvol")
+        good_path = subvols / rel_path
+        temp_subvols.create(rel_path)
+        info = subvolume_info(good_path)
+        good_uuid = str(UUID(bytes=info.uuid))
+        good = {
+            subvolume_on_disk._BTRFS_UUID: good_uuid,
+            subvolume_on_disk._HOSTNAME: _MY_HOST,
+            subvolume_on_disk._SUBVOLUME_REL_PATH: rel_path,
+        }
 
-            bad_path = good.copy()
-            bad_path[subvolume_on_disk._SUBVOLUME_REL_PATH] /= "x"
-            with self.assertRaisesRegex(RuntimeError, "must have the form"):
-                subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
-                    bad_path, subvols
-                )
-
-            wrong_inner = good.copy()
-            wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH] += b"x"
-            with self.assertRaisesRegex(
-                RuntimeError,
-                r"\[b'test_subvol'\] instead of \[b'test_subvolx'\]",
-            ):
-                subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
-                    wrong_inner, subvols
-                )
-
-            bad_uuid = good.copy()
-            bad_uuid[subvolume_on_disk._BTRFS_UUID] = "BAD_UUID"
-            with self.assertRaisesRegex(
-                RuntimeError, "UUID in subvolume JSON .* does not match"
-            ):
-                subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
-                    bad_uuid, subvols
-                )
-
-            # Parsing the `good` dict does not throw, and gets the right result
-            good_sv = subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
-                good, subvols
+        bad_path = good.copy()
+        # pyre-ignore[16]: Item `str` of `typing.Union[Path, str]` has no attribute `__itruediv__`.
+        bad_path[subvolume_on_disk._SUBVOLUME_REL_PATH] /= "x"
+        bad_path_subvol = temp_subvols.create(
+            bad_path[subvolume_on_disk._SUBVOLUME_REL_PATH]
+        )
+        with self.assertRaisesRegex(RuntimeError, "must have the form"):
+            subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
+                bad_path, subvols
             )
+        bad_path_subvol.delete()
+
+        wrong_inner = good.copy()
+        wrong_inner_relpath = (
+            wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH]
+            + b"x"  # pyre-ignore[6]
+        )
+        wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH] = wrong_inner_relpath
+        wrong_inner_subvol = temp_subvols.create(wrong_inner_relpath)
+        with self.assertRaisesRegex(
+            RuntimeError,
+            r"\[b'test_subvol'\, b'test_subvolx'\] instead of \[b'test_subvolx'\]",
+        ):
+            subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
+                wrong_inner, subvols
+            )
+        wrong_inner_subvol.delete()
+
+        wrong_uuid = good.copy()
+        wrong_uuid[
+            subvolume_on_disk._BTRFS_UUID
+        ] = "fbe20093-17f1-4ffa-86fb-54e112094f6f"
+        with self.assertRaisesRegex(
+            RuntimeError, "UUID in subvolume JSON .* does not match"
+        ):
+            subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
+                wrong_uuid, subvols
+            )
+
+        # Parsing the `good` dict does not throw, and gets the right result
+        good_sv = subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
+            good, subvols
+        )
+        self._check(
+            good_sv,
+            good_path,
+            subvolume_on_disk.SubvolumeOnDisk(
+                **{
+                    subvolume_on_disk._BTRFS_UUID: good_uuid,
+                    subvolume_on_disk._BTRFS_PARENT_UUID: None,
+                    subvolume_on_disk._HOSTNAME: _MY_HOST,
+                    subvolume_on_disk._SUBVOLUME_REL_PATH: rel_path,
+                    subvolume_on_disk._SUBVOLUMES_BASE_DIR: subvols,
+                }
+            ),
+        )
+
+    @with_temp_subvols
+    def test_from_subvolume_path(self, temp_subvols) -> None:
+        # Note: Unlike test_from_serializable_dict_and_validation, this
+        # test does NOT use a trailing / (to increase coverage).
+        subvols = Path(temp_subvols.temp_dir.rstrip(b"/"))
+        rel_path = Path("test_rule:vvv/test:subvol")
+        temp_subvols.create(rel_path)
+        subvol_path = subvols / rel_path
+        build_appliance_path = Path("build_appliance")
+        uuid = str(UUID(bytes=subvolume_info(subvol_path).uuid))
+
+        subvol = subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
+            subvol_path=subvol_path,
+            subvolumes_dir=subvols,
+            build_appliance_path=build_appliance_path,
+        )
+        with unittest.mock.patch("os.listdir") as listdir:
+            listdir.return_value = ["test:subvol"]
             self._check(
-                good_sv,
-                good_path,
+                subvol,
+                subvol_path,
                 subvolume_on_disk.SubvolumeOnDisk(
                     **{
-                        subvolume_on_disk._BTRFS_UUID: good_uuid,
-                        subvolume_on_disk._BTRFS_PARENT_UUID: "zupa",
+                        subvolume_on_disk._BTRFS_UUID: uuid,
+                        subvolume_on_disk._BTRFS_PARENT_UUID: None,
                         subvolume_on_disk._HOSTNAME: _MY_HOST,
                         subvolume_on_disk._SUBVOLUME_REL_PATH: rel_path,
                         subvolume_on_disk._SUBVOLUMES_BASE_DIR: subvols,
+                        subvolume_on_disk._BUILD_APPLIANCE_PATH: (
+                            build_appliance_path
+                        ),
                     }
                 ),
             )
-
-    def test_from_subvolume_path(self) -> None:
-        with temp_dir() as td:
-            # Note: Unlike test_from_serializable_dict_and_validation, this
-            # test does NOT use a trailing / (to increase coverage).
-            subvols = Path(td.rstrip(b"/"))
-            rel_path = Path("test_rule:vvv/test:subvol")
-            subvol_path = subvols / rel_path
-            os.makedirs(subvol_path)  # `from_serializable_dict` checks this
-            build_appliance_path = Path("build_appliance")
-
-            subvol = subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
-                subvol_path=subvol_path,
-                subvolumes_dir=subvols,
-                build_appliance_path=build_appliance_path,
+            self.assertEqual(
+                listdir.call_args_list,
+                [((os.path.dirname(subvol_path),),)] * 2,
             )
-            with unittest.mock.patch("os.listdir") as listdir:
-                listdir.return_value = ["test:subvol"]
-                self._check(
-                    subvol,
-                    subvol_path,
-                    subvolume_on_disk.SubvolumeOnDisk(
-                        **{
-                            subvolume_on_disk._BTRFS_UUID: self._test_uuid(
-                                subvol_path
-                            ),
-                            subvolume_on_disk._BTRFS_PARENT_UUID: "zupa",
-                            subvolume_on_disk._HOSTNAME: _MY_HOST,
-                            subvolume_on_disk._SUBVOLUME_REL_PATH: rel_path,
-                            subvolume_on_disk._SUBVOLUMES_BASE_DIR: subvols,
-                            subvolume_on_disk._BUILD_APPLIANCE_PATH: (
-                                build_appliance_path
-                            ),
-                        }
-                    ),
-                )
-                self.assertEqual(
-                    listdir.call_args_list,
-                    [((os.path.dirname(subvol_path),),)] * 2,
-                )
 
-            with self.assertRaisesRegex(
-                RuntimeError, "must be located inside the subvolumes directory"
-            ):
-                subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
-                    subvol_path=subvol_path,
-                    subvolumes_dir=subvols / "bad",
-                )
-
-
-class BtrfsVolumePropsTestCase(unittest.TestCase):
-    "Separate from SubvolumeOnDiskTestCase because to avoid its mocks."
-
-    @unittest.mock.patch("subprocess.check_output")
-    def test_btrfs_get_volume_props(self, check_output) -> None:
-        parent = "/subvols/dir/parent"
-        check_output.return_value = b"""\
-dir/parent
-\tName: \t\t\tparent
-\tUUID: \t\t\tf96b940f-10d3-fc4e-8b2d-9362af0ee8df
-\tParent UUID: \t\t-
-\tReceived UUID: \t\t-
-\tCreation time: \t\t2017-12-29 21:55:54 -0800
-\tSubvolume ID:  \t\t277
-\tGeneration: \t\t123
-\tGen at creation: \t103
-\tParent ID: \t\t5
-\tTop level ID: \t\t5
-\tFlags: \t\t\treadonly
-\tSnapshot(s):
-\t\t\t\tdir/foo
-\t\t\t\tdir/bar
-"""
-        self.assertEqual(
-            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
-            subvolume_on_disk._btrfs_get_volume_props(parent),
-            {
-                "Name": "parent",
-                "UUID": "f96b940f-10d3-fc4e-8b2d-9362af0ee8df",
-                "Parent UUID": None,
-                "Received UUID": None,
-                "Creation time": "2017-12-29 21:55:54 -0800",
-                "Subvolume ID": "277",
-                "Generation": "123",
-                "Gen at creation": "103",
-                "Parent ID": "5",
-                "Top level ID": "5",
-                "Flags": "readonly",
-                "Snapshot(s)": ["dir/foo", "dir/bar"],
-            },
-        )
-        check_output.assert_called_once_with(
-            ["sudo", "btrfs", "subvolume", "show", parent]
-        )
-
-        # Unlike the parent, this has no snapshots, so the format differs.
-        child = "/subvols/dir/child"
-        check_output.reset_mock()
-        check_output.return_value = b"""\
-dir/child
-\tName: \t\t\tchild
-\tUUID: \t\t\ta1a3eb3e-eb89-7743-8335-9cd5219248e7
-\tParent UUID: \t\tf96b940f-10d3-fc4e-8b2d-9362af0ee8df
-\tReceived UUID: \t\t-
-\tCreation time: \t\t2017-12-29 21:56:32 -0800
-\tSubvolume ID: \t\t278
-\tGeneration: \t\t121
-\tGen at creation: \t\t107
-\tParent ID: \t\t5
-\tTop level ID: \t\t5
-\tFlags: \t\t\t-
-\tSnapshot(s):
-"""
-        self.assertEqual(
-            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
-            subvolume_on_disk._btrfs_get_volume_props(child),
-            {
-                "Name": "child",
-                "UUID": "a1a3eb3e-eb89-7743-8335-9cd5219248e7",
-                "Parent UUID": "f96b940f-10d3-fc4e-8b2d-9362af0ee8df",
-                "Received UUID": None,
-                "Creation time": "2017-12-29 21:56:32 -0800",
-                "Subvolume ID": "278",
-                "Generation": "121",
-                "Gen at creation": "107",
-                "Parent ID": "5",
-                "Top level ID": "5",
-                "Flags": "-",
-                "Snapshot(s)": [],
-            },
-        )
-        check_output.assert_called_once_with(
-            ["sudo", "btrfs", "subvolume", "show", child]
-        )
+        with self.assertRaisesRegex(
+            RuntimeError, "must be located inside the subvolumes directory"
+        ):
+            subvolume_on_disk.SubvolumeOnDisk.from_subvolume_path(
+                subvol_path=subvol_path,
+                subvolumes_dir=subvols / "bad",
+            )
 
 
 if __name__ == "__main__":

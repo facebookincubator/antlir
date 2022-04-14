@@ -4,8 +4,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import errno
 import os
-import re
 import subprocess
 import sys
 import tempfile
@@ -15,20 +15,17 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
     render_demo_subvols,
 )
+from antlir.btrfsutil import BtrfsUtilError
 
 from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
-from ..bzl.loopback_opts import loopback_opts_t
 from ..fs_utils import Path, temp_dir
 from ..subvol_utils import (
     find_subvolume_on_disk,
     KiB,
-    MiB,
     Subvol,
     TempSubvolumes,
     volume_dir,
     with_temp_subvols,
-    _query_uuid,
-    _UUID_TO_SUBVOLS,
 )
 from ..volume_for_repo import get_volume_for_current_repo
 from .common import AntlirTestCase
@@ -57,14 +54,10 @@ class SubvolTestCase(AntlirTestCase):
 
     def _assert_subvol_exists(self, subvol):
         self.assertTrue(subvol._exists)
-        self.assertTrue(
-            re.match("[a-f0-f]{32}$", subvol._uuid.replace("-", "")),
-            subvol._uuid,
-        )
         self.assertTrue(subvol.path().exists(), subvol.path())
 
     def _assert_subvol_does_not_exist(self, subvol):
-        self.assertEqual((False, None), (subvol._exists, subvol._uuid))
+        self.assertFalse(subvol._exists)
         self.assertFalse(subvol.path().exists(), subvol.path())
 
     # Checks that `_mark_{created,deleted}` work as expected, including
@@ -72,32 +65,18 @@ class SubvolTestCase(AntlirTestCase):
     # of one another.
     @with_temp_subvols
     def test_create_and_delete_on_exit(self, temp_subvols):
-        def subvol_stats():
-            return (
-                sum(len(subvols) for subvols in _UUID_TO_SUBVOLS.values()),
-                len(_UUID_TO_SUBVOLS),
-            )
-
-        subvol_count, uuid_count = subvol_stats()
-
         s1 = temp_subvols.caller_will_create("create_and_delete")
         self._assert_subvol_does_not_exist(s1)
-        self.assertEqual((subvol_count, uuid_count), subvol_stats())
 
         with s1.create().delete_on_exit():
             self._assert_subvol_exists(s1)
-            self.assertEqual((subvol_count + 1, uuid_count + 1), subvol_stats())
 
             with Subvol(s1.path(), already_exists=True).delete_on_exit() as s2:
                 self._assert_subvol_exists(s2)
                 self._assert_subvol_exists(s2)
-                self.assertEqual(
-                    (subvol_count + 2, uuid_count + 1), subvol_stats()
-                )
 
                 nested = Subvol(s1.path("nested")).create()
-                # Cover the "nested untracked subvol" case -- this subvol
-                # will not be in `_UUID_TO_SUBVOLS`.  This deliberately
+                # Cover the "nested untracked subvol" case.  This deliberately
                 # omits `Subvol.maybe_create_externally()`.
                 s1.run_as_root(
                     ["btrfs", "subvolume", "create", s1.path("nested_extern")],
@@ -105,11 +84,6 @@ class SubvolTestCase(AntlirTestCase):
 
                 self._assert_subvol_exists(nested)
                 self.assertTrue(os.path.exists(s1.path("nested_extern")))
-                self.assertEqual(
-                    # This is not counting "nested_extern".
-                    (subvol_count + 3, uuid_count + 2),
-                    subvol_stats(),
-                )
 
                 # Verify that parents get marked RW before deleting children.
                 s2.set_readonly(True)  # is a clone of `s1`
@@ -119,9 +93,6 @@ class SubvolTestCase(AntlirTestCase):
             self._assert_subvol_does_not_exist(s1)
             self._assert_subvol_does_not_exist(s2)
             self._assert_subvol_does_not_exist(nested)
-            self.assertEqual((subvol_count, uuid_count), subvol_stats())
-
-        self.assertEqual((subvol_count, uuid_count), subvol_stats())
 
     @with_temp_subvols
     def test_maybe_create_externally(self, temp_subvols):
@@ -137,7 +108,6 @@ class SubvolTestCase(AntlirTestCase):
                     ["btrfs", "subvolume", "create", sv.path()],
                     _subvol_exists=False,
                 )
-                self.assertFalse(sv._exists)
             self.assertTrue(sv._exists)
         self.assertFalse(sv._exists)
 
@@ -198,21 +168,20 @@ class SubvolTestCase(AntlirTestCase):
         with temp_dir() as td:
             with unittest.mock.patch(
                 "antlir.subvol_utils._path_is_btrfs_subvol",
-                unittest.mock.Mock(side_effect=[True]),
-            ), unittest.mock.patch(
-                "antlir.subvol_utils._query_uuid",
-                unittest.mock.Mock(side_effect=["FAKE-UUID-000"]),
+                unittest.mock.Mock(
+                    side_effect=lambda path: path.startswith(td)
+                ),
             ):
                 sv = Subvol(td, already_exists=True)
-            os.mkdir(td / "real")
-            (td / "real/file").touch()
-            os.symlink("real/file", td / "indirect1")
-            os.mkdir(td / "indirect2")
-            os.symlink("../indirect1", td / "indirect2/link")
-            self.assertEqual(
-                b"/real/file", sv.canonicalize_path("indirect2/link")
-            )
-            self.assertEqual(b"/", sv.canonicalize_path("./."))
+                os.mkdir(td / "real")
+                (td / "real/file").touch()
+                os.symlink("real/file", td / "indirect1")
+                os.mkdir(td / "indirect2")
+                os.symlink("../indirect1", td / "indirect2/link")
+                self.assertEqual(
+                    b"/real/file", sv.canonicalize_path("indirect2/link")
+                )
+                self.assertEqual(b"/", sv.canonicalize_path("./."))
 
     @with_temp_subvols
     def test_run_as_root_input(self, temp_subvols):
@@ -397,28 +366,6 @@ class SubvolTestCase(AntlirTestCase):
             .exists()
         )
 
-    def test_query_uuid(self):
-        stdout = (
-            b"\n\tName: \t\t\tvolume\n\t"
-            b"UUID: \t\t\t8ec28ee3-e2cf-3345-8871-4bc4f85a3efc\n"
-        )
-        with unittest.mock.patch(
-            "antlir.subvol_utils.Subvol.run_as_root",
-            unittest.mock.Mock(
-                return_value=subprocess.CompletedProcess(
-                    args=[],
-                    returncode=0,
-                    stdout=stdout,
-                )
-            ),
-        ):
-            self.assertEqual(
-                _query_uuid(
-                    Subvol("/dev/null/unused"), "/dev/null/no-such-dir"
-                ),
-                "8ec28ee3-e2cf-3345-8871-4bc4f85a3efc",
-            )
-
     def test_estimate_content_bytes(self):
         with TempSubvolumes() as ts:
             sv = ts.create("test1")
@@ -439,3 +386,18 @@ class SubvolTestCase(AntlirTestCase):
             self.assertLess(
                 estimated_fs_bytes, n_bytes + 4096
             )  # 4K is the max reasonable block size?
+
+    @with_temp_subvols
+    def test_delete_error(self, ts: TempSubvolumes):
+        sv = ts.create("test_delete_error")
+        with unittest.mock.patch(
+            "antlir.subvol_utils.btrfsutil.delete_subvolume",
+            side_effect=BtrfsUtilError(errno.EINVAL, None),
+        ):
+            with self.assertRaises(BtrfsUtilError, msg="blah"):
+                sv.delete()
+        with unittest.mock.patch(
+            "antlir.subvol_utils.btrfsutil.delete_subvolume",
+            side_effect=BtrfsUtilError(errno.ENOENT, None),
+        ):
+            sv.delete()
