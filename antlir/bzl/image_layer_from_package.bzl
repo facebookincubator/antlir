@@ -39,7 +39,7 @@ def image_layer_from_package(
         if bad_kwarg in image_layer_kwargs:
             fail("Unsupported with layer_from_package", bad_kwarg)
 
-    if format not in ["sendstream", "tar"]:
+    if format not in ["cpio", "sendstream", "tar"]:
         fail("Unsupported format for layer_from_package", format)
 
     target_tagger = new_target_tagger()

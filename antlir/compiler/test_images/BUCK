@@ -1007,8 +1007,16 @@ image.layer_from_package(
     flavor = "antlir_test",
 )
 
+image.layer_from_package(
+    name = "create_ops-layer-via-cpio-package",
+    format = "cpio",
+    source = ":create_ops.cpio.gz",
+    visibility = ["//antlir/..."],
+    flavor = "antlir_test",
+)
+
 package.new(
-    name = "create_ops_cpio_gz",
+    name = "create_ops.cpio.gz",
     layer = ":create_ops",
     format = "cpio.gz",
     visibility = ["//antlir/..."],
