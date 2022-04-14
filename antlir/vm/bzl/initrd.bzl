@@ -81,17 +81,17 @@ def initrd(kernel, module_list = None, visibility = None, mount_modules = True):
         ])
 
     image.layer(
-        name = name + "--layer",
+        name = name + "-layer",
         parent_layer = "//metalos/initrd:initrd",
         # Do not add features directly here, instead add them to
         # initrd_vm_features so they are shared with the debug initrd.
         features = initrd_vm_features,
-        visibility = [],
+        visibility = visibility,
     )
 
     package.new(
         name = name,
-        layer = ":" + name + "--layer",
+        layer = ":" + name + "-layer",
         format = "cpio.gz",
         visibility = visibility,
     )
