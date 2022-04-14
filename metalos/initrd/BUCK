@@ -52,10 +52,12 @@ udev = [
         "/usr/lib/udev/rules.d/{}".format(f),
     )
     for f in [
+        "10-dm.rules",
         "50-udev-default.rules",
         "60-block.rules",
         "60-persistent-storage.rules",
         "80-drivers.rules",
+        "95-dm-notify.rules",
         "99-systemd.rules",
     ]
 ]
@@ -95,11 +97,6 @@ image.layer(
         feature.ensure_file_symlink("/usr/lib/initrd-release", "/etc/initrd-release"),
         feature.ensure_file_symlink("/usr/lib/initrd-release", "/etc/os-release"),
         feature.ensure_file_symlink("/usr/lib/initrd-release", "/usr/lib/os-release"),
-        # The metalos generator will rewrite the default target to
-        # initrd.target, so explicitly set emergency.target as the default in
-        # the image so that the boot clearly fails if the generator fails during
-        # early boot for any reason
-        systemd.set_default_target("emergency.target"),
         # With our custom setup, just enable initrd-cleanup.service directly in
         # initrd.target instead of going through initrd-parse-etc.service as normal
         systemd.enable_unit(
@@ -110,6 +107,7 @@ image.layer(
             "dropins/reload-before-cleanup.conf",
             unit = "initrd-cleanup.service",
         ),
+        debug,
         dbus,
         nss,
         users,
@@ -172,7 +170,11 @@ image.layer(
             source = ":with-metalctl",
         ),
         networking,
-        debug,
+        # The metalos generator will rewrite the default target to
+        # initrd.target, so explicitly set emergency.target as the default in
+        # the image so that the boot clearly fails if the generator fails during
+        # early boot for any reason
+        systemd.set_default_target("emergency.target"),
         image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
         feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
         systemd.install_unit("units/metalos-apply-host-config.service"),

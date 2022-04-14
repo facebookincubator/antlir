@@ -36,6 +36,7 @@ python_library(
     visibility = [
         "//antlir/...",
         "//metalos/initrd/facebook/...",
+        "//ti/platform/edgeos/...",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/scripts/...",
     ],
@@ -65,6 +66,7 @@ python_library(
         "//scripts/jtru/tw:mixin-check",
         "//scripts/jtru/tw:mixin-check-library",
         "//syseng/yard/installer/...",
+        "//ti/platform/edgeos/...",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/composable_services/tests:systemd_test_framework",
         "//tupperware/image/scripts/...",

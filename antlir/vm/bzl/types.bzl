@@ -135,15 +135,14 @@ def _new_vm_opts(
     if boot_from_disk and initrd != None:
         fail("Can't specify `initrd` when `boot_from_disk` is True")
 
-    # Convert the (optionally) provided kernel struct into a shape type
-    kernel = normalize_kernel(kernel or kernel_get.default)
-
     # Allow the user to provide their own initrd. Currently there is no way for
     # us to verify that this initrd will actually work with the given kernel,
     # but if someone is using this (eg, the vm appliance), assume they are
     # accepting the risks.
     # The default initrd target is derived from the kernel uname.
     if not boot_from_disk:
+        # Convert the (optionally) provided kernel struct into a shape type
+        kernel = normalize_kernel(kernel or kernel_get.default)
         initrd = initrd or "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
 
     disk = disk or _new_vm_disk()
