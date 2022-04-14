@@ -15,10 +15,12 @@ loopback_opts_t = shape.shape(
     # known.  Until that issue is fixed, we will just embed these
     # here.
     #
-    writable_subvolume = shape.field(bool, default = False),
-    seed_device = shape.field(bool, default = False),
+    # Set the default compression level to 1 to save CPU by default.
+    compression_level = shape.field(int, default = 1),
     default_subvolume = shape.field(bool, default = False),
+    seed_device = shape.field(bool, default = False),
     subvol_name = shape.field(str, optional = True),
+    writable_subvolume = shape.field(bool, default = False),
     # vfat-only options
     fat_size = shape.field(int, optional = True),
 )

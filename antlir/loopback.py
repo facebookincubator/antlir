@@ -47,7 +47,7 @@ class LoopbackVolume:
         fs_type: str,
         # pyre-fixme[9]: mount_options has type `Iterable[str]`; used as `None`.
         mount_options: Iterable[str] = None,
-        loopback_opts: Optional[loopback_opts_t] = None,
+        label: Optional[str] = None,
     ) -> None:
         self._unshare = unshare
         self._temp_dir_ctx = temp_dir()
@@ -56,7 +56,7 @@ class LoopbackVolume:
         self._mount_dir: Optional[Path] = None
         self._mount_options = mount_options or None
         self._temp_dir: Optional[Path] = None
-        self._loopback_opts: Optional[loopback_opts_t] = loopback_opts
+        self._label: Optional[str] = label
 
     def __enter__(self) -> "LoopbackVolume":
         self._temp_dir = self._temp_dir_ctx.__enter__().abspath()
@@ -168,13 +168,10 @@ class LoopbackVolume:
         return self._mount_dir
 
 
-def btrfs_compress_mount_opts() -> str:
-    # kernel versions pre-5.1 did not support compression level tuning
-    return "compress=zstd" if kernel_version() < (5, 1) else "compress=zstd:19"
-
-
 class BtrfsLoopbackVolume(LoopbackVolume):
-    def __init__(self, size_bytes: int, **kwargs) -> None:
+    def __init__(
+        self, size_bytes: int, compression_level: int, **kwargs
+    ) -> None:
         if size_bytes < MIN_CREATE_BYTES:
             raise AttributeError(
                 f"A btrfs loopback must be at least {MIN_CREATE_BYTES} bytes. "
@@ -182,9 +179,10 @@ class BtrfsLoopbackVolume(LoopbackVolume):
             )
 
         self._size_bytes = size_bytes
+        self._compression_level = compression_level
 
         super().__init__(
-            mount_options=[btrfs_compress_mount_opts()],
+            mount_options=[f"compress=zstd:{self._compression_level}"],
             fs_type="btrfs",
             **kwargs,
         )
@@ -258,11 +256,7 @@ class BtrfsLoopbackVolume(LoopbackVolume):
             f"Formatting btrfs {self._size_bytes}-byte FS at {self._image_path}"
         )
         self._size_bytes = self._create_or_resize_image_file(self._size_bytes)
-        maybe_label = (
-            ["--label", self._loopback_opts.label]
-            if self._loopback_opts and self._loopback_opts.label
-            else []
-        )
+        maybe_label = ["--label", self._label] if self._label else []
         # Note that this can fail with 'cannot check mount status' if the
         # host is in a bad state:
         #  - a file backing a loop device got deleted, or

@@ -14,7 +14,6 @@ from antlir.fs_utils import Path, temp_dir
 from antlir.loopback import (
     BtrfsLoopbackVolume,
     LoopbackVolume,
-    btrfs_compress_mount_opts,
     MIN_CREATE_BYTES,
     MIN_SHRINK_BYTES,
     MiB,
@@ -42,6 +41,7 @@ class LoopbackTestCases(unittest.TestCase):
                 unshare=ns,
                 image_path=image_path,
                 size_bytes=128 * MiB,
+                compression_level=1,
             ) as vol:
                 self.assertEqual(128 * MiB, vol.get_size())
                 cmd = f"echo '{test_message}' > {vol.dir()}/msg"
@@ -59,7 +59,6 @@ class LoopbackTestCases(unittest.TestCase):
                 unshare=ns,
                 image_path=image_path,
                 fs_type="btrfs",
-                mount_options=[btrfs_compress_mount_opts()],
             ) as vol:
                 msg_file = vol.dir() / "msg"
                 msg_text = subprocess.run(
@@ -86,6 +85,7 @@ class LoopbackTestCases(unittest.TestCase):
                 image_path=image_path,
                 # We want to make this a non-multiple of 4096
                 size_bytes=128 * MiB - 3,
+                compression_level=1,
             ) as vol:
                 # Confirm it has been rounded up
                 self.assertEqual(128 * MiB, vol.get_size())
@@ -103,6 +103,7 @@ class LoopbackTestCases(unittest.TestCase):
                     unshare=ns,
                     image_path=image_path,
                     size_bytes=32768,  # Pretty small
+                    compression_level=1,
                 ):
                     pass
 
@@ -117,6 +118,7 @@ class LoopbackTestCases(unittest.TestCase):
                 unshare=ns,
                 image_path=image_path,
                 size_bytes=size,
+                compression_level=1,
             ) as vol:
                 self.assertEqual(size, vol.get_size())
                 self.assertEqual(size, vol.minimize_size())
@@ -128,7 +130,10 @@ class LoopbackTestCases(unittest.TestCase):
             image_path = td / "image.btrfs"
 
             with BtrfsLoopbackVolume(
-                unshare=ns, image_path=image_path, size_bytes=size
+                unshare=ns,
+                image_path=image_path,
+                size_bytes=size,
+                compression_level=1,
             ) as vol:
                 self.assertEqual(size, vol.get_size())
                 self.assertEqual(MIN_SHRINK_BYTES, vol.minimize_size())
@@ -141,6 +146,7 @@ class LoopbackTestCases(unittest.TestCase):
                 unshare=ns,
                 image_path=image_path,
                 size_bytes=MIN_CREATE_BYTES,
+                compression_level=1,
             ) as vol, open(
                 Path(__file__).dirname() / "create_ops.sendstream"
             ) as f:

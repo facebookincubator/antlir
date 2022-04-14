@@ -370,7 +370,8 @@ class BtrfsImage(Format, format_name="btrfs"):
             unshare=ns,
             image_path=output_path,
             size_bytes=fs_bytes,
-            loopback_opts=opts.loopback_opts,
+            label=opts.loopback_opts.label,
+            compression_level=opts.loopback_opts.compression_level,
         ) as loop_vol, subvol.mark_readonly_and_write_sendstream_to_file(
             w_send
         ):
