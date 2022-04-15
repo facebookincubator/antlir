@@ -23,7 +23,15 @@ pub enum Error {
 
 #[async_trait]
 pub trait Downloader {
+    type BytesStream: Stream<Item = std::io::Result<Bytes>> + Unpin + Send;
     type Sendstream: SendstreamExt;
+
+    /// Open a bytes stream from the underlying image source.
+    async fn open_bytes_stream(
+        &self,
+        log: Logger,
+        package: &PackageId,
+    ) -> Result<Self::BytesStream>;
 
     /// Open a [Sendstream] from the underlying image source.
     async fn open_sendstream(&self, log: Logger, package: &PackageId) -> Result<Self::Sendstream>;
@@ -81,20 +89,26 @@ impl From<HttpsDownloader> for Client {
 
 #[async_trait]
 impl Downloader for &HttpsDownloader {
+    type BytesStream = Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>;
     type Sendstream = Sendstream<Zstd, Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>>;
 
-    async fn open_sendstream(&self, log: Logger, id: &PackageId) -> Result<Self::Sendstream> {
+    async fn open_bytes_stream(&self, log: Logger, id: &PackageId) -> Result<Self::BytesStream> {
         let url = self.package_url(id)?;
         debug!(log, "{:?} -> {}", id, url);
-        let stream = self
-            .client
-            .get(self.package_url(id)?)
-            .send()
-            .await
-            .map_err(Error::Open)?
-            .bytes_stream()
-            .map(|r| r.map_err(|e| std::io::Error::new(ErrorKind::Other, e)));
-        Ok(Sendstream::new(Box::pin(stream)))
+        Ok(Box::pin(
+            self.client
+                .get(self.package_url(id)?)
+                .send()
+                .await
+                .map_err(Error::Open)?
+                .bytes_stream()
+                .map(|r| r.map_err(|e| std::io::Error::new(ErrorKind::Other, e))),
+        ))
+    }
+
+    async fn open_sendstream(&self, log: Logger, package: &PackageId) -> Result<Self::Sendstream> {
+        let stream = self.open_bytes_stream(log, package).await?;
+        Ok(Sendstream::new(stream))
     }
 }
 
