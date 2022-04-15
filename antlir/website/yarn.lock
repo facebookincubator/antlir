@@ -2068,9 +2068,9 @@ ajv@^7.0.2:
     uri-js "^4.2.2"
 
 algoliasearch-helper@^3.1.1:
-  version "3.6.2"
-  resolved "https://registry.yarnpkg.com/algoliasearch-helper/-/algoliasearch-helper-3.6.2.tgz#45e19b12589cfa0c611b573287f65266ea2cc14a"
-  integrity sha512-Xx0NOA6k4ySn+R2l3UMSONAaMkyfmrZ3AP1geEMo32MxDJQJesZABZYsldO9fa6FKQxH91afhi4hO1G0Zc2opg==
+  version "3.3.4"
+  resolved "https://registry.yarnpkg.com/algoliasearch-helper/-/algoliasearch-helper-3.3.4.tgz#4a3c56d42a2a81589d5722b73653b2deaf3e7064"
+  integrity sha512-1Ts2XcgGdjGlDrp3v6zbY8VW+X9+jJ5rBmtPBmXOQLd4b5t/LpJlaBdxoAnlMfVFjywP7KSAdmyFUNNYVHDyRQ==
   dependencies:
     events "^1.1.1"
 
@@ -6129,9 +6129,9 @@ flux@^4.0.1:
     fbjs "^3.0.0"
 
 follow-redirects@^1.0.0, follow-redirects@^1.10.0:
-  version "1.14.8"
-  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.14.8.tgz#016996fb9a11a100566398b1c6839337d7bfa8fc"
-  integrity sha512-1x0S9UVJHsQprFcEC/qnNzBLcIxsjAV905f/UkQxbclCsoTWlacCNOpQa/anodLl2uaEKFhfWOvM2Qg77+15zA==
+  version "1.13.2"
+  resolved "https://registry.yarnpkg.com/follow-redirects/-/follow-redirects-1.13.2.tgz#dd73c8effc12728ba5cf4259d760ea5fb83e3147"
+  integrity sha512-6mPTgLxYm3r6Bkkg0vNM0HTjfGrOEtsfbhagQvbxDEsEkpNhw582upBaoRZylzen6krEmxXJgt9Ju6HiI4O7BA==
 
 for-in@^1.0.2:
   version "1.0.2"
@@ -10825,9 +10825,9 @@ prism-react-renderer@^1.1.1:
   integrity sha512-MgMhSdHuHymNRqD6KM3eGS0PNqgK9q4QF5P0yoQQvpB6jNjeSAi3jcSAz0Sua/t9fa4xDOMar9HJbLa08gl9ug==
 
 prismjs@^1.17.1, prismjs@^1.22.0:
-  version "1.27.0"
-  resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.27.0.tgz#bb6ee3138a0b438a3653dd4d6ce0cc6510a45057"
-  integrity sha512-t13BGPUlFDR7wRB5kQDG4jjl7XeuH6jbJGt11JHPL96qwsEHNX2+68tFXqc1/k+/jALsbSWJKUOT/hcYAZ5LkA==
+  version "1.24.0"
+  resolved "https://registry.yarnpkg.com/prismjs/-/prismjs-1.24.0.tgz#0409c30068a6c52c89ef7f1089b3ca4de56be2ac"
+  integrity sha512-SqV5GRsNqnzCL8k5dfAjCNhUrF3pR0A9lTDSCUZeh/LIshheXJEaP0hwLz2t4XHivd2J/v2HR+gRnigzeKe3cQ==
 
 process-nextick-args@~2.0.0:
   version "2.0.1"
@@ -12890,9 +12890,9 @@ tar-stream@^1.5.2:
     xtend "^4.0.0"
 
 tar@^6.0.2:
-  version "6.1.11"
-  resolved "https://registry.yarnpkg.com/tar/-/tar-6.1.11.tgz#6760a38f003afa1b2ffd0ffe9e9abbd0eab3d621"
-  integrity sha512-an/KZQzQUkZCkuoAA64hM92X0Urb6VpRhAFllDzz44U2mcD5scmT3zBc4VgVpkugF580+DQn8eAFSyoQt0tznA==
+  version "6.1.5"
+  resolved "https://registry.yarnpkg.com/tar/-/tar-6.1.5.tgz#6e25bee1cfda94317aedc3f5d49290ae68361d73"
+  integrity sha512-FiK6MQyyaqd5vHuUjbg/NpO8BuEGeSXcmlH7Pt/JkugWS8s0w8nKybWjHDJiwzCAIKZ66uof4ghm4tBADjcqRA==
   dependencies:
     chownr "^2.0.0"
     fs-minipass "^2.0.0"
@@ -13536,9 +13536,9 @@ url-parse-lax@^3.0.0:
     prepend-http "^2.0.0"
 
 url-parse@^1.4.3, url-parse@^1.4.7:
-  version "1.5.10"
-  resolved "https://registry.yarnpkg.com/url-parse/-/url-parse-1.5.10.tgz#9d3c2f736c1d75dd3bd2be507dcc111f1e2ea9c1"
-  integrity sha512-WypcfiRhfeUP9vvF0j6rw0J3hrWrw6iZv3+22h6iRMJ/8z1Tj6XfLP4DsUix5MhMPnXpiHDoKyoZ/bdCkwBCiQ==
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/url-parse/-/url-parse-1.5.3.tgz#71c1303d38fb6639ade183c2992c8cc0686df862"
+  integrity sha512-IIORyIQD9rvj0A4CLWsHkBBJuNqWpFQe224b6j9t/ABmquIS0qDU2pY6kl6AuOrL5OkCXHMCFNe1jBcuAggjvQ==
   dependencies:
     querystringify "^2.1.1"
     requires-port "^1.0.0"
