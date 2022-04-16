@@ -601,7 +601,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
 
         with self.assertRaisesRegex(
             UserError,
-            r"^/b: .* does not provide .*; "
+            r"/b: .* does not provide .*; "
             r"RequireSymlink must be explicitly fulfilled$",
         ):
             pirp.validate()
@@ -925,7 +925,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_paths_provided_different_types(self) -> None:
         with self.assertRaisesRegex(
-            UserError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -942,7 +942,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_paths_provided(self) -> None:
         with self.assertRaisesRegex(
-            UserError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -957,7 +957,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_path_provided_twice(self) -> None:
         with self.assertRaisesRegex(
-            UserError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -995,7 +995,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_symlink_paths_different_sources(self) -> None:
         with self.assertRaisesRegex(
-            UserError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -1012,7 +1012,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
 
     def test_duplicate_symlink_file_and_dir_conflict(self) -> None:
         with self.assertRaisesRegex(
-            UserError, r"^ItemProv.*conflicts with ItemProv"
+            UserError, r"ItemProv.*conflicts with ItemProv"
         ):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
@@ -1070,7 +1070,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         item = InstallFileItem(from_target="", source=_FILE1, dest="y")
         with self.assertRaises(
             UserError,
-            msg="^At /: nothing in set() matches the requirement "
+            msg="At /: nothing in set() matches the requirement "
             f'{ItemReq(requires=RequireDirectory(path=Path("/")), item=item)}$',
         ):
             # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got

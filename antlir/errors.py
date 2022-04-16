@@ -14,7 +14,10 @@ class UserError(Exception):
     user can do about that)
     """
 
-    pass
+    def __str__(self):
+        # This prefix allows automation to pick high-signal errors out of the
+        # logs (see D35687997).
+        return "AntlirUserError: " + super().__str__()
 
 
 class ToolMissing(Exception):
