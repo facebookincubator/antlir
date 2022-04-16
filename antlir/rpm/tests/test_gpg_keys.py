@@ -37,10 +37,6 @@ class OpenUrlTestCase(unittest.TestCase):
                 out_f.write("wrong contents")
             with temp_dir() as snap_dir, self.assertRaises(AssertionError):
                 try_snapshot(snap_dir)
-            # pyre-fixme[6]: For 1st param expected `Union[PathLike[str], str]` but
-            #  got `Path`.
-            # pyre-fixme[6]: For 2nd param expected `Union[PathLike[str], str]` but
-            #  got `Path`.
             shutil.copy(hello_path, allowlist_dir)
 
             with temp_dir() as snapshot_dir:

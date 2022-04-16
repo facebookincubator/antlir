@@ -50,8 +50,11 @@ from antlir.fs_utils import Path
 
 
 class RequirementKind(Enum):
+    # pyre-fixme[20]: Argument `value` expected.
     PATH = auto()
+    # pyre-fixme[20]: Argument `value` expected.
     GROUP = auto()
+    # pyre-fixme[20]: Argument `value` expected.
     USER = auto()
 
 
