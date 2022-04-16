@@ -262,6 +262,8 @@ def _download_rpms(
                 universe,
                 repo.base_url,
                 rpm_table,
+                # pyre-fixme[6]: For 6th param expected `Set[str]` but got
+                #  `FrozenSet[str]`.
                 all_snapshot_universes,
                 cfg,
                 log_sample,
