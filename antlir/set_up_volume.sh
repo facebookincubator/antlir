@@ -78,16 +78,41 @@ format_image() {
 
 ensure_mounted() {
   mkdir -p "$volume"
-  # Don't bother checking if $volume is another kind of mount, since we will
-  # just proceed to mount over it.
-  if [[ "$(findmnt --noheadings --output FSTYPE "$volume")" != btrfs ]] ; then
-    # Do a checksum scrub -- since we run with nobarrier and --direct-io, it
-    # is entirely possible that a power failure will corrupt the image.
-    btrfs check --check-data-csum "$image" || format_image
-    # If it looks like we have a valid image, just re-use it. This allows us
-    # to recover built images after a restart.
+  # `findmnt` fails and returns an empty string if:
+  #   - The image has a loop device but is not mounted.
+  #   - `losetup` found nothing ($image does not exist or has no loop
+  #     device), making `--source` the empty string.
+  local image_mounts
+  image_mounts=$(
+    findmnt --noheadings --source "$(
+      losetup --associated "$image" | cut -f 1 -d:
+    )" --output FSTYPE,TARGET || :  # We only need the output, not the error.
+  )
+  local mounted_volume_bre
+  mounted_volume_bre='^btrfs[[:space:]]\+'$(
+    # We use basic regex, so don't quote ?+{}|()
+    readlink -f "$volume" | sed 's#\([^a-zA-Z0-9/?+{|()}-]\)#\\\1#g'
+  )'$'
+
+  # If `$image` is not mounted, proceed to mount it on top of `$volume`.
+  if [[ "$image_mounts" == "" ]] ; then
+    # Try to reuse the existing image, so we can recover built images after
+    # a host restart.
+    #
+    # Format the image if it doesn't exist, or if it fails a consistency
+    # check (in the latter case, the user may need to `buck clean`).  We run
+    # with `nobarrier` and `--direct-io`, so it is entirely possible that a
+    # power failure will corrupt the image.
+    (
+      test -e "$image" && btrfs check --check-data-csum "$image"
+    ) || format_image
+    # We should now have a valid image, so the `||` fallback is just paranoia.
     mount_image || (format_image && mount_image)
+  elif ! echo "$image_mounts" | grep -q "$mounted_volume_bre" ; then
+    echo "ERROR: $image is mounted but not on $volume -- $image_mounts" >&2
+    exit 1
   fi
+
   local loop_dev
   loop_dev=$(findmnt --noheadings --output SOURCE "$volume")
   # This helps perf and avoids doubling our usage of buffer cache.
