@@ -89,7 +89,11 @@ def _extract(
         parent_layer = source,
         features = [
             image.ensure_dirs_exist("/output"),
-            feature.install_buck_runnable("//antlir/bzl/genrule/extractor:extract", "/extract"),
+            feature.install_buck_runnable(
+                "//antlir/bzl/genrule/extractor:extract",
+                "/extract",
+                runs_in_build_steps_causes_slow_rebuilds = True,
+            ),
         ],
         visibility = [],
     )

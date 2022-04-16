@@ -121,6 +121,7 @@ def rpm_repo_snapshot(
         target = "//antlir/rpm:yum-dnf-from-snapshot",
         wrap_suffix = "rpm_repo_snapshot",
         visibility = [],
+        runs_in_build_steps_causes_slow_rebuilds = True,  # Builds install RPMs
     )
 
     # Future: remove this in favor of linking it with `repo_servers.py`.
@@ -131,6 +132,7 @@ def rpm_repo_snapshot(
         ),
         wrap_suffix = "rpm_repo_snapshot",
         visibility = [],
+        runs_in_build_steps_causes_slow_rebuilds = True,  # Builds install RPMs
     )
     quoted_repo_server_ports = shell.quote(
         " ".join([

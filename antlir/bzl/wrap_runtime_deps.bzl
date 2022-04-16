@@ -12,6 +12,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         name,
         target,
         visibility,
+        runs_in_build_steps_causes_slow_rebuilds,
         path_in_output = None):
     """
     If necessary (see "When..."), wraps `target` with a new target named
@@ -34,6 +35,26 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
 
       - `path_in_output` sets the wrapper to execute a fixed file out of a
         directory that is output by an executable rule.
+
+      - `runs_in_build_steps_causes_slow_rebuilds = True` allows the target
+        being wrapped to be executed in an Antlir container as part of a
+        Buck build step. This flag exists to speed up incremental rebuilds.
+
+        Any image that installs an executable, which is later used in a
+        build, *MUST* be invalidated whenever `$(exe <target>)` is
+        invalidated. The `$(exe)` dependency is invalidated, roughly,
+        whenever the source of the target changes. This makes sense --
+        the code is doing something different, so we have to re-run it.
+
+        However, for in-place images that include executable targets that
+        NEVER run within an Antlir build step, this is invalidates too often.
+
+        For example, if you install an in-place build of
+            cxx_binary(name = "foo", srcs = ["foo.cpp"])
+        into an image, the actual byte contents of the image will not be
+        invalidated when `foo.cpp` is edited.  So, targets depending on the
+        image, such as `image.*_unittest`s, do not have to be rebuilt.  This
+        speeds up iterating on `buck test` or on `=container` targets.
 
     ## Why is wrapping needed?
 
@@ -135,18 +156,34 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         )
         return False, target
 
+    if runs_in_build_steps_causes_slow_rebuilds:
+        literal_preamble = ""
+        shell_substitutable_preamble = (
+            "# New output each build: \\$(date) $$ $PID $RANDOM $RANDOM"
+        )
+    else:
+        literal_preamble = (
+            """\
+if [[ "$ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP" != "1" ]] ; then
+    cat >&2 << 'EOF'
+AntlirUserError: Ran Buck target `{target}` from an Antlir build step, """ +
+            """\
+but it was installed without `runs_in_build_steps_causes_slow_rebuilds = True`.
+EOF
+    exit 1
+fi
+"""
+        ).format(target = target)
+        shell_substitutable_preamble = ""
+
     buck_genrule(
         name = name,
-        bash = '''
-{exec_wrapper}
-echo "# New output each build: \\$(date) $$ $PID $RANDOM $RANDOM" >> "$OUT"
-chmod a+rx "$OUT"
-        '''.format(
-            exec_wrapper = build_exec_wrapper(
-                runnable = target,
-                path_in_output = path_in_output,
-                args = '"$@"',
-            ),
+        bash = build_exec_wrapper(
+            runnable = target,
+            path_in_output = path_in_output,
+            args = '"$@"',
+            literal_preamble = literal_preamble,
+            shell_substitutable_preamble = shell_substitutable_preamble,
         ),
         # We deliberately generate a unique output on each rebuild.
         cacheable = False,

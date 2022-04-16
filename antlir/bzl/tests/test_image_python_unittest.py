@@ -28,6 +28,8 @@ class ImagePythonUnittestTest(unittest.TestCase):
         self.assertEqual("meow", os.environ.pop("kitteh"))
         # Ensure that the container's environment is sanitized.
         env_allowlist = {
+            # Antlir internals
+            "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP",
             # Session basics
             "HOME",
             "LOGNAME",

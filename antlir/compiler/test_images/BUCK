@@ -499,6 +499,7 @@ defs.buck_genrule(
         # since it relies on the linktree being its sibling.  Using this
         # wrapper prevents that.
         maybe_wrapped_ok = maybe_wrap_executable_target(
+            runs_in_build_steps_causes_slow_rebuilds = False,
             target = ":print-ok",
             visibility = [],
             wrap_suffix = "test-wrap",
