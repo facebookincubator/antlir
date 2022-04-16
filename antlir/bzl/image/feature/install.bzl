@@ -83,7 +83,13 @@ def _forbid_layer_source(source_dict):
 def TEST_ONLY_wrap_buck_runnable(target):
     return wrap_target(target, _BUCK_RUNNABLE_WRAP_SUFFIX)[1]
 
-def feature_install_buck_runnable(source, dest, mode = None, user = None, group = None):
+def feature_install_buck_runnable(
+        source,
+        dest,
+        mode = None,
+        user = None,
+        group = None,
+        runs_in_build_steps_causes_slow_rebuilds = False):
     """
 `feature.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
 buck-runnable artifact `exe` to `dir/foo` in the image. Unlike `install`,
@@ -100,7 +106,12 @@ files from inside directories output by buck-runnable rules. For everything
 else, use `install` [1].
 
 Important: failing to use `install_buck_runnable` will cause the installed
-binary to be unusable in image tests in @mode/dev.
+binary to be unusable in image tests or `=container` targets in @mode/dev.
+
+Only set `runs_in_build_steps_causes_slow_rebuilds = True` if you get a
+build-time error requesting it.  This flag allows the target being wrapped
+to be executed in an Antlir container as part of a Buck build step.  It
+defaults to `False` to speed up incremental rebuilds.
     """
 
     target_tagger = new_target_tagger()
@@ -123,6 +134,7 @@ binary to be unusable in image tests in @mode/dev.
             # the rule outputting the directory is marked executable
             # (see e.g. `print-ok-too` in `feature_install_files`).
             path_in_output = tagged_source.get("path", None),
+            runs_in_build_steps_causes_slow_rebuilds = runs_in_build_steps_causes_slow_rebuilds,
         )
         if was_wrapped:
             # The wrapper above has resolved `tagged_source["path"]`, so the

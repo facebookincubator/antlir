@@ -176,6 +176,7 @@ def nspawn_in_subvol_args():
         *[{shadow_paths_repr}],
         *{targets_and_outputs},
         '--append-console',
+        '--setenv=ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1',
         '--attach-antlir-dir-mode=off',
         {maybe_bind_artifacts_dir_rw}
         '--', {binary_path_repr},

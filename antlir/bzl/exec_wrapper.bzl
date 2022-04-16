@@ -7,7 +7,12 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
-def build_exec_wrapper(runnable, path_in_output = None, args = None):
+def build_exec_wrapper(
+        runnable,
+        path_in_output = None,
+        args = None,
+        literal_preamble = "",
+        shell_substitutable_preamble = ""):
     """Returns shell for a genrule that's intended to execute `runnable` with
     args and is compatible with buck2 repo-relative output paths.
 
@@ -20,6 +25,10 @@ def build_exec_wrapper(runnable, path_in_output = None, args = None):
       targets as those targets themselves may be cached. It should only be
       executed directly by users.
     """
+    EOF = "EXEC_WRAPPER_EOF"
+    for preamble in [literal_preamble, shell_substitutable_preamble]:
+        if EOF in preamble.splitlines():
+            fail("preamble {} had a '{}' line".format(preamble, EOF))
 
     # Note:  Notice we are using the `$(exe_target ...)` macro instead of just
     # plain old `$(exe ...)` when invoking the wrapped target binary. The
@@ -37,15 +46,22 @@ def build_exec_wrapper(runnable, path_in_output = None, args = None):
     # pretty much undocumented since this is part of a yet to be described "new"
     # behavior.  There are test cases that cover this though:
     # https://github.com/facebook/buck/tree/master/test/com/facebook/buck/cli/configurations/testdata/exe_target
-    body = """
-echo "#!/bin/sh" > "$TMP/out"
+    return """
+echo '#!/bin/sh' > "$TMP/out"
 {maybe_repo_root_preamble}
-cat >> "$TMP/out" << 'EOF'
+cat >> "$TMP/out" << {EOF}
+{shell_substitutable_preamble}
+{EOF}
+cat >> "$TMP/out" << '{EOF}'
+{literal_preamble}
 exec {maybe_repo_root_prefix}$(exe_target {runnable}){maybe_quoted_path_in_output} {args}
-EOF
+{EOF}
 chmod +x "$TMP/out"
 mv "$TMP/out" "$OUT"
-    """.format(
+""".format(
+        shell_substitutable_preamble = shell_substitutable_preamble,
+        literal_preamble = literal_preamble,
+        EOF = EOF,
         # The preamble is inserted as part of the genrule script itself as
         # opposed to the script the genule is creating.  This is used to
         # discover the repository root dynamically during build time to build a
@@ -78,4 +94,3 @@ echo "REPO_ROOT=$repo_root" >> "$TMP/out"
         ) if path_in_output else "",
         args = args if args else "",
     )
-    return body

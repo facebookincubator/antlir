@@ -48,11 +48,15 @@ class ExecuteInstalledTestCase(unittest.TestCase):
                     # cause our assertion below to fail.
                     "env",
                     "LLVM_PROFILE_FILE=/tmp/default.profraw",
+                    # Required since this test is not an `image.*_unittest`
+                    "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1",
                     print_ok,
                 ],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
+                check=False,
             )
+            self.assertEqual(0, ret.returncode, (ret.stdout, ret.stderr))
             if nspawn_version().major >= 244:
                 self.assertEqual((b"ok\n", b""), (ret.stdout, ret.stderr))
             else:

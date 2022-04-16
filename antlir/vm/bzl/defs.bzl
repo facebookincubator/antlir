@@ -140,7 +140,9 @@ def _vm_unittest(
         fail("Please provide the `kernel` attribute as part of `vm_opts`.")
 
     # Set some defaults
-    env = env or {}
+    test_env = {}
+    test_env.update(env or {})
+    test_env["ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP"] = "1"
     vm_opts = vm_opts or api.opts.new()
 
     # Construct tags for controlling/influencing the unittest runner.
@@ -189,7 +191,7 @@ def _vm_unittest(
                     ),
                 ),
             )
-            for var_name, var_value in env.items()
+            for var_name, var_value in test_env.items()
         ] + (
             [
                 # Future: This devel layer is just another mount to configure the VM with.

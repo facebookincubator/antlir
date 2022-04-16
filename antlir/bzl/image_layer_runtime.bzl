@@ -15,6 +15,7 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
         name = target,
         exe = antlir_dep("nspawn_in_subvol:run"),
         args = [
+            "--setenv=ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1",
             "--layer",
             "$(location {})".format(shell.quote(":" + name)),
         ] + (extra_args or []) + targets_and_outputs_arg_list(

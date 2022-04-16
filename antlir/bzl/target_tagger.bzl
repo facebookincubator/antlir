@@ -65,6 +65,8 @@ def image_source_as_target_tagged_dict(target_tagger, user_source):
             target = src.pop("generator"),
             wrap_suffix = "image_source_wrap_generator",
             visibility = [],  # Not visible outside of project
+            # Generators run at build-time, that's the whole point.
+            runs_in_build_steps_causes_slow_rebuilds = True,
         )
     else:
         is_layer = src["layer"] != None
