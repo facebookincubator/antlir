@@ -72,8 +72,30 @@ pub trait State<Ser>: Sized + Debug
 where
     Ser: Serialization,
 {
+    /// Convert this state object to a JSON representation
     fn to_json(&self) -> Result<Vec<u8>>;
+    /// Convert a JSON representation into this state type
     fn from_json(bytes: Vec<u8>) -> Result<Self>;
+
+    /// Load the staged version of this staged object, if any.
+    fn staged() -> Result<Option<Self>> {
+        crate::staged()
+    }
+
+    /// Load the current version of this staged object, if any.
+    fn current() -> Result<Option<Self>> {
+        crate::current()
+    }
+
+    /// Save this state object to disk.
+    fn save(&self) -> Result<Token<Self, Ser>> {
+        crate::save(self)
+    }
+
+    /// Load a state object from disk, if it exists.
+    fn load(token: Token<Self, Ser>) -> Result<Option<Self>> {
+        crate::load(token)
+    }
 }
 
 impl<T> State<Serde> for T
@@ -270,7 +292,7 @@ where
 
 /// Persist a new version of a state type, getting back a unique key to later
 /// load it with.
-pub fn save<S, Ser>(state: &S) -> Result<Token<S, Ser>>
+fn save<S, Ser>(state: &S) -> Result<Token<S, Ser>>
 where
     S: State<Ser>,
     Ser: Serialization,
@@ -308,7 +330,7 @@ where
 }
 
 /// Load a specific version of a state type, using the key returned by [save]
-pub fn load<S, Ser>(token: Token<S, Ser>) -> Result<Option<S>>
+fn load<S, Ser>(token: Token<S, Ser>) -> Result<Option<S>>
 where
     S: State<Ser>,
     Ser: Serialization,
@@ -328,7 +350,7 @@ where
 }
 
 /// Load an aliased version of a state type.
-pub fn load_alias<S, Ser>(alias: Alias) -> Result<Option<S>>
+fn load_alias<S, Ser>(alias: Alias) -> Result<Option<S>>
 where
     S: State<Ser>,
     Ser: Serialization,
@@ -349,7 +371,7 @@ where
 }
 
 /// Load the current version of S, if it exists.
-pub fn current<S, Ser>() -> Result<Option<S>>
+fn current<S, Ser>() -> Result<Option<S>>
 where
     S: State<Ser>,
     Ser: Serialization,
@@ -358,7 +380,7 @@ where
 }
 
 /// Load the staged version of S, if it exists.
-pub fn staged<S, Ser>() -> Result<Option<S>>
+fn staged<S, Ser>() -> Result<Option<S>>
 where
     S: State<Ser>,
     Ser: Serialization,
@@ -423,15 +445,15 @@ mod tests {
     #[test]
     fn current() -> Result<()> {
         std::fs::create_dir_all(STATE_BASE.deref())?;
-        let current: Option<ExampleState> =
-            super::current().context("while loading non-existent current")?;
+        let current = ExampleState::current().context("while loading non-existent current")?;
         assert_eq!(None, current);
-        let token = save(&ExampleState {
+        let token = ExampleState {
             hello: "world".into(),
-        })
+        }
+        .save()
         .context("while saving")?;
-        alias(token, Alias::Current).context("while writing current alias")?;
-        let current = super::current().context("while loading current")?;
+        token.commit().context("while writing current alias")?;
+        let current = ExampleState::current().context("while loading current")?;
         assert_eq!(
             Some(ExampleState {
                 hello: "world".into()
@@ -443,8 +465,8 @@ mod tests {
 
     fn kv_test<Ser: Serialization, T: State<Ser> + PartialEq>(t: T) -> Result<()> {
         std::fs::create_dir_all(STATE_BASE.deref())?;
-        let token = save(&t).context("while saving")?;
-        let loaded = load(token).context("while loading")?;
+        let token = t.save().context("while saving")?;
+        let loaded = T::load(token).context("while loading")?;
         assert_eq!(Some(t), loaded);
         Ok(())
     }

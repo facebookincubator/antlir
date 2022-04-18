@@ -14,7 +14,7 @@ use serde::ser::Error as _;
 use serde::ser::{SerializeSeq, Serializer};
 use serde::Serialize;
 
-use state::Token;
+use state::{State, Token};
 use systemd::UnitName;
 
 use crate::ServiceInstance;
@@ -111,8 +111,9 @@ impl Dropin {
             paths.logs().to_owned() => MOUNT_LOGS.into(),
             paths.runtime().to_owned() => MOUNT_RUNTIME.into(),
         };
-        let token: Token<ServiceInstance> =
-            state::save(svc).context("while saving ServiceInstance to the state store")?;
+        let token = svc
+            .save()
+            .context("while saving ServiceInstance to the state store")?;
         let manager_unit: UnitName = format!(
             "metalos-native-service@{}.service",
             systemd::escape(token.to_string())

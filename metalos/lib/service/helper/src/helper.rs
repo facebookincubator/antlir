@@ -9,7 +9,7 @@ use anyhow::{Context, Result};
 use structopt::StructOpt;
 
 use service::ServiceInstance;
-use state::Token;
+use state::{State, Token};
 
 mod volumes;
 use volumes::ServiceVolumes;
@@ -56,7 +56,7 @@ fn deinit(svc: ServiceInstance) -> Result<()> {
 
 fn main() -> Result<()> {
     let op = Operation::from_args();
-    let svc = state::load(op.token())
+    let svc = ServiceInstance::load(op.token())
         .with_context(|| format!("while loading {}", op.token()))?
         .with_context(|| format!("no such token {}", op.token()))?;
     match op {
