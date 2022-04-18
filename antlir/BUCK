@@ -17,6 +17,7 @@ python_library(
         "//metalos/initrd/facebook/...",
         "//tupperware/cm/...",
         "//tupperware/image/scripts/...",
+        "//tupperware/scripts/...",
     ],
 )
 
@@ -39,6 +40,7 @@ python_library(
         "//ti/platform/edgeos/...",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/scripts/...",
+        "//tupperware/scripts/...",
     ],
 )
 
@@ -70,6 +72,7 @@ python_library(
         "//tupperware/cm/antlir/...",
         "//tupperware/image/composable_services/tests:systemd_test_framework",
         "//tupperware/image/scripts/...",
+        "//tupperware/scripts/...",
     ],
     deps = [":common"],
 )
