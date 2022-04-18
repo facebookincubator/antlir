@@ -9,7 +9,6 @@ rust_library(
             "derive_more",
             "serde",
             "serde_json",
-            "structopt",
         ],
         platform = "rust",
     ),
