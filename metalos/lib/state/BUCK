@@ -13,10 +13,11 @@ rust_library(
         "bufsize",
         "bytes",
         "fbthrift",
+        "hex",
         "once_cell",
         "serde",
         "serde_json",
-        "uuid",
+        "sha2",
         "//metalos/lib/metalos_paths:metalos_paths",
     ],
 )

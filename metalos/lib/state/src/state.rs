@@ -21,10 +21,12 @@ use std::marker::PhantomData;
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
-use anyhow::{ensure, Context, Error, Result};
+use anyhow::{anyhow, ensure, Context, Error, Result};
 use bytes::Bytes;
 use once_cell::sync::Lazy;
-use uuid::Uuid;
+use sha2::{Digest, Sha256};
+
+type Sha256Value = [u8; 32];
 
 static STATE_BASE: Lazy<PathBuf> = Lazy::new(|| {
     #[cfg(not(test))]
@@ -36,13 +38,6 @@ static STATE_BASE: Lazy<PathBuf> = Lazy::new(|| {
         tempfile::tempdir().unwrap().into_path()
     }
 });
-
-/// Special UUID for the "staged" value which holds special meaning
-/// c4dbff2e-2c0a-4e35-85a2-2ccb7dd8d8a9
-static UUID_STAGED: Uuid = Uuid::from_u128(261670975858436844194139735623489607849);
-/// Special UUID for the "current" value which holds special meaning
-/// 80e27f0c-75dd-4855-9ada-addea2d90a1b
-static UUID_CURRENT: Uuid = Uuid::from_u128(171317219403732977053801729476395600411);
 
 mod __private {
     pub trait Sealed {}
@@ -107,7 +102,7 @@ where
 
 /// Unique reference to a piece of state of a specific type. Can be used to
 /// retrieve the state from disk via [load]
-pub struct Token<S, Ser = Serde>(Uuid, PhantomData<(S, Ser)>)
+pub struct Token<S, Ser = Serde>(Sha256Value, PhantomData<(S, Ser)>)
 where
     S: State<Ser>,
     Ser: Serialization;
@@ -154,7 +149,7 @@ where
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Token")
             .field("type", &std::any::type_name::<S>())
-            .field("token", &self.0)
+            .field("token", &hex::encode(&self.0))
             .finish()
     }
 }
@@ -165,7 +160,12 @@ where
     Ser: Serialization,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}::{}", &std::any::type_name::<S>(), self.0.to_simple())
+        write!(
+            f,
+            "{}::{}",
+            &std::any::type_name::<S>(),
+            hex::encode(self.0)
+        )
     }
 }
 
@@ -190,7 +190,7 @@ where
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self> {
-        let (ty, uuid) = s
+        let (ty, id_str) = s
             .rsplit_once("::")
             .with_context(|| format!("'{}' missing '::' separator", s))?;
         ensure!(
@@ -199,10 +199,12 @@ where
             std::any::type_name::<S>(),
             ty
         );
-        let uuid: Uuid = uuid
-            .parse()
-            .with_context(|| format!("'{}' is not a valid uuid", uuid))?;
-        Ok(Self(uuid, PhantomData))
+        let id =
+            hex::decode(id_str).with_context(|| format!("'{}' is not a hex sha256", id_str))?;
+        let id = id
+            .try_into()
+            .map_err(|_| anyhow!("'{}' is not the correct sha256 length", id_str))?;
+        Ok(Self(id, PhantomData))
     }
 }
 
@@ -216,15 +218,16 @@ pub enum Alias {
 }
 
 impl Alias {
-    fn token<S, Ser>(self) -> Token<S, Ser>
-    where
-        S: State<Ser>,
-        Ser: Serialization,
-    {
-        Token::new(match self {
-            Self::Current => UUID_CURRENT,
-            Self::Staged => UUID_STAGED,
-        })
+    fn path<S>(&self) -> PathBuf {
+        let filename = format!(
+            "{}-{}.json",
+            std::any::type_name::<S>(),
+            match self {
+                Self::Staged => "staged",
+                Self::Current => "current",
+            }
+        );
+        STATE_BASE.join(filename)
     }
 }
 
@@ -233,27 +236,19 @@ where
     S: State<Ser>,
     Ser: Serialization,
 {
-    fn new(uuid: Uuid) -> Self {
-        Self(uuid, PhantomData)
+    fn new(hash: Sha256Value) -> Self {
+        Self(hash, PhantomData)
     }
 
     fn path(&self) -> PathBuf {
         // the type name is used to provide somewhat human-readable information
         // about the files on disk (eg if someone runs `ls`)
-        let filename = format!("{}-{}.json", std::any::type_name::<S>(), &self.0);
+        let filename = format!(
+            "{}-{}.json",
+            std::any::type_name::<S>(),
+            hex::encode(self.0)
+        );
         STATE_BASE.join(filename)
-    }
-
-    /// Token pointing to the most recently staged state item. This may or may
-    /// not exist on disk.
-    pub fn staged() -> Self {
-        Alias::Staged.token()
-    }
-
-    /// Token pointing to the most recently committed state item. This may or
-    /// may not exist on disk.
-    pub fn current() -> Self {
-        Alias::Current.token()
     }
 
     /// Mark this token as the staged version of a state item.
@@ -280,40 +275,30 @@ where
     S: State<Ser>,
     Ser: Serialization,
 {
-    save_with_uuid(state, Uuid::new_v4())
-}
-
-/// Persist a new version of a state type with a preset UUID.
-pub fn save_with_uuid<S, Ser>(state: &S, uuid: Uuid) -> Result<Token<S, Ser>>
-where
-    S: State<Ser>,
-    Ser: Serialization,
-{
-    let token = Token::new(uuid);
-    let p = token.path();
     let state = state
         .to_json()
         .with_context(|| format!("while serializing {:?}", state))?;
+    let sha: [u8; 32] = Sha256::digest(&state).into();
+    let token = Token::new(sha);
+    let p = token.path();
     std::fs::write(&p, &state).with_context(|| format!("while serializing to {}", p.display()))?;
     Ok(token)
 }
 
-/// Save this specific token as a special [Alias]. If this alias already exists,
 /// it will be replaced.
 fn alias<S, Ser>(token: Token<S, Ser>, alias: Alias) -> Result<()>
 where
     S: State<Ser>,
     Ser: Serialization,
 {
-    let alias: Token<S, Ser> = alias.token();
-    let alias_path = alias.path();
+    let alias_path = alias.path::<S>();
     std::fs::remove_file(&alias_path)
         .or_else(|e| match e.kind() {
             std::io::ErrorKind::NotFound => Ok(()),
             _ => Err(e),
         })
         .with_context(|| format!("while removing existing alias {}", alias_path.display()))?;
-    symlink(token.path(), alias.path()).with_context(|| {
+    symlink(token.path(), &alias_path).with_context(|| {
         format!(
             "while symlinking alias {} -> {}",
             alias_path.display(),
@@ -331,7 +316,7 @@ where
     match std::fs::read(token.path()) {
         Err(e) => {
             match e.kind() {
-                std::io::ErrorKind::NotFound => return Ok(None),
+                std::io::ErrorKind::NotFound => Ok(None),
                 _ => Err(anyhow::Error::from(e)
                     .context(format!("while opening {}", token.path().display()))),
             }
@@ -340,6 +325,45 @@ where
             .map(Some)
             .with_context(|| format!("while deserializing {}", token.path().display())),
     }
+}
+
+/// Load an aliased version of a state type.
+pub fn load_alias<S, Ser>(alias: Alias) -> Result<Option<S>>
+where
+    S: State<Ser>,
+    Ser: Serialization,
+{
+    let alias_path = alias.path::<S>();
+    match std::fs::read(&alias_path) {
+        Err(e) => {
+            match e.kind() {
+                std::io::ErrorKind::NotFound => Ok(None),
+                _ => Err(anyhow::Error::from(e)
+                    .context(format!("while opening {}", alias_path.display()))),
+            }
+        }
+        Ok(bytes) => S::from_json(bytes)
+            .map(Some)
+            .with_context(|| format!("while deserializing {}", alias_path.display())),
+    }
+}
+
+/// Load the current version of S, if it exists.
+pub fn current<S, Ser>() -> Result<Option<S>>
+where
+    S: State<Ser>,
+    Ser: Serialization,
+{
+    load_alias(Alias::Current)
+}
+
+/// Load the staged version of S, if it exists.
+pub fn staged<S, Ser>() -> Result<Option<S>>
+where
+    S: State<Ser>,
+    Ser: Serialization,
+{
+    load_alias(Alias::Staged)
 }
 
 #[cfg(test)]
@@ -362,8 +386,13 @@ mod tests {
     #[test]
     fn parse() -> Result<()> {
         assert_eq!(
-            Token::new("0e2d4f4a-b09b-4a55-b6fd-fd57a60b9de8".parse().unwrap()),
-            "state::tests::ExampleState::0e2d4f4a-b09b-4a55-b6fd-fd57a60b9de8"
+            Token::new(
+                hex::decode("f40cd21f276e47d533371afce1778447e858eb5c9c0c0ed61c65f5c5d57caf63")
+                    .unwrap()
+                    .try_into()
+                    .unwrap()
+            ),
+            "state::tests::ExampleState::f40cd21f276e47d533371afce1778447e858eb5c9c0c0ed61c65f5c5d57caf63"
                 .parse::<Token<ExampleState>>()
                 .unwrap()
         );
@@ -375,8 +404,15 @@ mod tests {
                 .to_string()
         );
         assert_eq!(
-            "'not-a-uuid' is not a valid uuid",
-            "state::tests::ExampleState::not-a-uuid"
+            "'not-hex' is not a hex sha256",
+            "state::tests::ExampleState::not-hex"
+                .parse::<Token<ExampleState>>()
+                .unwrap_err()
+                .to_string()
+        );
+        assert_eq!(
+            "'deadbeef' is not the correct sha256 length",
+            "state::tests::ExampleState::deadbeef"
                 .parse::<Token<ExampleState>>()
                 .unwrap_err()
                 .to_string()
@@ -388,15 +424,14 @@ mod tests {
     fn current() -> Result<()> {
         std::fs::create_dir_all(STATE_BASE.deref())?;
         let current: Option<ExampleState> =
-            load(Token::current()).context("while loading non-existent current")?;
+            super::current().context("while loading non-existent current")?;
         assert_eq!(None, current);
         let token = save(&ExampleState {
             hello: "world".into(),
         })
         .context("while saving")?;
         alias(token, Alias::Current).context("while writing current alias")?;
-        let current_token = Token::current();
-        let current = load(current_token).context("while loading current")?;
+        let current = super::current().context("while loading current")?;
         assert_eq!(
             Some(ExampleState {
                 hello: "world".into()
