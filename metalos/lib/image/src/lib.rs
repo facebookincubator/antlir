@@ -10,10 +10,6 @@ use btrfs::{SendstreamExt, Subvolume};
 
 pub mod download;
 
-#[cfg(test)]
-#[macro_use]
-extern crate metalos_macros;
-
 use metalos_host_configs::packages::{Initrd, Kernel, PackageId, Rootfs};
 
 pub(crate) mod __private {

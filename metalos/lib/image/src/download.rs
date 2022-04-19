@@ -115,7 +115,6 @@ impl Downloader for &HttpsDownloader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use url::ParseError;
 
     #[test]
     fn image_url() -> anyhow::Result<()> {
