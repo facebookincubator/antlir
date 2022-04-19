@@ -6,6 +6,9 @@
  */
 
 #![deny(warnings)]
+// TODO(T113359879) this can be removed when there are no more separate builds
+// of metalctl
+#![allow(unused_crate_dependencies)]
 
 #[cfg(test)]
 #[macro_use]

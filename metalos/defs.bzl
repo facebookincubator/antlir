@@ -49,7 +49,10 @@ def _rust_common(
                     .format(flavor, ", ".join(_unittest_flavors)),
             )
     deps = [_normalize_rust_dep(d) for d in deps]
-    test_deps = [_normalize_rust_dep(d) for d in test_deps] + ["//metalos/metalos_macros:metalos_macros"]
+    test_deps = [_normalize_rust_dep(d) for d in test_deps]
+    if ("container" in unittests) or ("vm" in unittests):
+        test_deps += ["//metalos/metalos_macros:metalos_macros"]
+
     tests = list(tests)
     tests += [":" + name + _unittest_suffix(flavor) for flavor in unittests]
     crate = kwargs.pop("crate", name.replace("-", "_"))
