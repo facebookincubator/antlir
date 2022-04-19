@@ -23,7 +23,12 @@ pub async fn load_host_config(opts: Opts) -> Result<()> {
     let c = get_host_config(&opts.uri)
         .await
         .with_context(|| format!("while downloading host config from {}", &opts.uri))?;
+    // We want to use the actual thrift<->json serializer, but we also want pretty printing
+    // Serialize with fbthrift so any thrift-specific serializing logic runs
     let json = fbthrift::simplejson_protocol::serialize(&c);
-    std::fs::write(&opts.out, json)
+    // Then re-parse into arbitrary JSON and re-encode but pretty-printed
+    let re_decoded: serde_json::Value = serde_json::from_slice(&json).context("parsing JSON")?;
+    let prettyfied = serde_json::to_string_pretty(&re_decoded).context("prettifying JSON")?;
+    std::fs::write(&opts.out, &prettyfied)
         .with_context(|| format!("while writing host config to {:?}", opts.out))
 }
