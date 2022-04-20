@@ -450,16 +450,18 @@ mod tests {
         Transaction {
             current: set::tests::service_set! {},
             next: set::tests::service_set! {
-                "metalos.demo" => 1,
+                "metalos.service.demo" => 1,
             },
         }
         .commit(log.clone(), &sd)
         .await?;
 
         for d in &["state", "cache", "logs"] {
-            let version_log =
-                std::fs::read_to_string(format!("/run/fs/control/run/{}/metalos.demo/version", d))
-                    .with_context(|| format!("while reading version file in {}", d))?;
+            let version_log = std::fs::read_to_string(format!(
+                "/run/fs/control/run/{}/metalos.service.demo/version",
+                d
+            ))
+            .with_context(|| format!("while reading version file in {}", d))?;
             assert_eq!("00000000000040008000000000000001\n", version_log);
         }
 
@@ -476,7 +478,7 @@ mod tests {
         Transaction::with_next(
             &sd,
             service_set! {
-                "metalos.demo" => 1,
+                "metalos.service.demo" => 1,
             },
         )
         .await?
@@ -484,14 +486,14 @@ mod tests {
         .await?;
 
         assert_eq!(
-            running_service_version(&sd, "metalos.demo").await?,
+            running_service_version(&sd, "metalos.service.demo").await?,
             "00000000000040008000000000000001",
         );
 
         Transaction::with_next(
             &sd,
             service_set! {
-                "metalos.demo" => 2,
+                "metalos.service.demo" => 2,
             },
         )
         .await?
@@ -499,14 +501,14 @@ mod tests {
         .await?;
 
         assert_eq!(
-            running_service_version(&sd, "metalos.demo").await?,
+            running_service_version(&sd, "metalos.service.demo").await?,
             "00000000000040008000000000000002",
         );
 
         Transaction::with_next(
             &sd,
             service_set! {
-                "metalos.demo" => 1,
+                "metalos.service.demo" => 1,
             },
         )
         .await?
@@ -514,7 +516,7 @@ mod tests {
         .await?;
 
         assert_eq!(
-            running_service_version(&sd, "metalos.demo").await?,
+            running_service_version(&sd, "metalos.service.demo").await?,
             "00000000000040008000000000000001",
         );
 
@@ -524,7 +526,7 @@ mod tests {
             .await?;
 
         // now the service is stopped, this function should fail
-        let version = running_service_version(&sd, "metalos.demo").await;
+        let version = running_service_version(&sd, "metalos.service.demo").await;
         assert!(
             version.is_err(),
             "should not have found a running version: {:?}",
@@ -532,9 +534,11 @@ mod tests {
         );
 
         for d in &["state", "cache", "logs"] {
-            let version_log =
-                std::fs::read_to_string(format!("/run/fs/control/run/{}/metalos.demo/version", d))
-                    .with_context(|| format!("while reading version file in {}", d))?;
+            let version_log = std::fs::read_to_string(format!(
+                "/run/fs/control/run/{}/metalos.service.demo/version",
+                d
+            ))
+            .with_context(|| format!("while reading version file in {}", d))?;
             assert_eq!(
                 "00000000000040008000000000000001\n00000000000040008000000000000002\n00000000000040008000000000000001\n",
                 version_log

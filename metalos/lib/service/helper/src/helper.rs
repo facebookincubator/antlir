@@ -84,14 +84,14 @@ pub(crate) mod tests {
     fn test_init() -> Result<()> {
         wait_for_systemd()?;
         let svc = ServiceInstance::new(
-            "metalos.demo".into(),
+            "metalos.service.demo".into(),
             "00000000000040008000000000000001".parse().unwrap(),
         );
         let run_uuid = svc.run_uuid();
         init(svc)?;
         assert!(
             Path::new(&format!(
-                "/run/fs/control/run/service_roots/metalos.demo-{}-{}",
+                "/run/fs/control/run/service_roots/metalos.service.demo-{}-{}",
                 "00000000000040008000000000000001",
                 run_uuid.to_simple()
             ))

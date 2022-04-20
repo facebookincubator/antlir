@@ -183,7 +183,7 @@ mod tests {
     async fn dropin() -> Result<()> {
         crate::tests::wait_for_systemd().await.unwrap();
         let svc = ServiceInstance::new(
-            "metalos.demo".into(),
+            "metalos.service.demo".into(),
             "00000000000040008000000000000001".parse().unwrap(),
         );
         let di = Dropin::new(&svc)?;
@@ -198,9 +198,9 @@ mod tests {
                  After=metalos-native-service@{token}.service\n\
                  Requires=metalos-native-service@{token}.service\n\
                  PropagatesStopTo=metalos-native-service@{token}.service\n\
-                 Description={{\"native_service\":\"metalos.demo\",\"version\":\"00000000-0000-4000-8000-000000000001\"}}\n\
+                 Description={{\"native_service\":\"metalos.service.demo\",\"version\":\"00000000-0000-4000-8000-000000000001\"}}\n\
                  [Service]\n\
-                 RootDirectory=/run/fs/control/run/service_roots/metalos.demo-00000000000040008000000000000001-{uuid}\n\
+                 RootDirectory=/run/fs/control/run/service_roots/metalos.service.demo-00000000000040008000000000000001-{uuid}\n\
                  Environment=CACHE_DIRECTORY=/metalos/cache\n\
                  Environment=LOGS_DIRECTORY=/metalos/logs\n\
                  Environment=METALOS_RUN_ID={uuid}\n\
@@ -210,10 +210,10 @@ mod tests {
                  \n\
                  BindReadOnlyPaths=/usr/local/fbcode\n\
                  \n\
-                 BindPaths=/run/fs/control/run/cache/metalos.demo:/metalos/cache\n\
-                 BindPaths=/run/fs/control/run/logs/metalos.demo:/metalos/logs\n\
-                 BindPaths=/run/fs/control/run/runtime/metalos.demo-00000000000040008000000000000001-{uuid}:/metalos/runtime\n\
-                 BindPaths=/run/fs/control/run/state/metalos.demo:/metalos/state\n\
+                 BindPaths=/run/fs/control/run/cache/metalos.service.demo:/metalos/cache\n\
+                 BindPaths=/run/fs/control/run/logs/metalos.service.demo:/metalos/logs\n\
+                 BindPaths=/run/fs/control/run/runtime/metalos.service.demo-00000000000040008000000000000001-{uuid}:/metalos/runtime\n\
+                 BindPaths=/run/fs/control/run/state/metalos.service.demo:/metalos/state\n\
                  \n",
                 token = systemd::escape(di.token.to_string()),
                 uuid = svc.run_uuid.to_simple(),

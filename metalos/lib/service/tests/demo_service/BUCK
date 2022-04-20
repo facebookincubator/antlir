@@ -21,7 +21,7 @@ native_service(
     binary = ":demo-service",
     generator_binary = "//metalos/lib/service/tests/demo_service/generator:generator",
     service_binary_path = "/usr/bin/demo",
-    service_name = "metalos.demo",
-    systemd_service_unit = "metalos.demo.service",
+    service_name = "metalos.service.demo",
+    systemd_service_unit = "metalos.service.demo.service",
     visibility = ["//metalos/lib/service/..."],
 )
