@@ -56,6 +56,11 @@ class RepoConfigTestCase(unittest.TestCase):
         self.assertIs(config, repo_config())  # memoized!
         self.assertIsInstance(config, repo_config_t)
         self.assertEqual(config.repo_root, find_repo_root())
+        self.assertGreater(len(config.vcs_revision), 10)
+        try:
+            int(config.vcs_revision, 16)
+        except ValueError:
+            self.fail("vcs_revision is not a hex integer")
 
     @unittest.mock.patch("antlir.config.repo_config_data")
     def test_repo_config_artifacts_require_repo_false(self, mock_data) -> None:

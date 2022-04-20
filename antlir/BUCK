@@ -4,7 +4,7 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
@@ -709,9 +709,11 @@ python_library(
 python_library(
     name = "config",
     srcs = ["config.py"],
+    resources = {":vcs_revision": "vcs_revision"},
     deps = [
         ":artifacts_dir",
         ":fs_utils",
+        ":vcs-library",
         shape.python_data(
             name = "repo_config_t",
             instance = REPO_CFG,
@@ -907,4 +909,11 @@ python_unittest(
 python_library(
     name = "errors",
     srcs = ["errors.py"],
+)
+
+# Generate a vcs hash file and make it public.
+buck_genrule(
+    name = "vcs_revision",
+    cmd = "$(exe :vcs) --rev >$OUT",
+    visibility = ["PUBLIC"],
 )
