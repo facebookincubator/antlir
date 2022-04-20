@@ -27,4 +27,5 @@ metalctl(
 
 metalctl(
     name = "metalctl",
+    extra_srcs = glob(["src/update/*.rs"]),
 )
