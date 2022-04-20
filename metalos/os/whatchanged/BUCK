@@ -58,9 +58,6 @@ rust_binary(
     unittests = ["container"],
     deps = [
         "anyhow",
-        "once_cell",
-        "rayon",
-        "regex",
         "structopt",
         "xattr",
         "//metalos/lib/btrfs:btrfs",

@@ -375,7 +375,6 @@ rust_library(
     deps = third_party.libraries(
         [
             "serde",
-            "serde_json",
         ],
         platform = "rust",
     ),

@@ -29,7 +29,6 @@ rust_library(
         "serde",
         "serde_json",
         "slog",
-        "slog_glog_fmt",
         "starlark",
         "thiserror",
         "walkdir",

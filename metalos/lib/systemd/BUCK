@@ -41,7 +41,6 @@ rust_library(
         "slog",
         "thiserror",
         "tokio",
-        "tokio-stream",
         "uuid",
         "zbus",
         "zvariant",
