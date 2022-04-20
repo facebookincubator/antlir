@@ -103,7 +103,7 @@ mod tests {
 
     fn do_create() -> Result<(ServiceVolumes, ServiceInstance)> {
         let svc = ServiceInstance::new(
-            "metalos.demo".into(),
+            "metalos.service.demo".into(),
             "00000000-0000-4000-8000-000000000001".parse().unwrap(),
         );
         let svc_vols = ServiceVolumes::create(&svc)?;
@@ -114,7 +114,7 @@ mod tests {
         assert_eq!(
             svc_vols.root.path(),
             Path::new(&format!(
-                "/run/fs/control/run/service_roots/metalos.demo-{}-{}",
+                "/run/fs/control/run/service_roots/metalos.service.demo-{}-{}",
                 svc.version().to_simple(),
                 svc.run_uuid().to_simple(),
             )),
@@ -122,15 +122,15 @@ mod tests {
         assert_eq!(
             svc_vols.runtime.path(),
             Path::new(&format!(
-                "/run/fs/control/run/runtime/metalos.demo-{}-{}",
+                "/run/fs/control/run/runtime/metalos.service.demo-{}-{}",
                 svc.version().to_simple(),
                 svc.run_uuid().to_simple(),
             )),
         );
         // ensure that the other subvols exist
-        assert!(Path::new("/run/fs/control/run/state/metalos.demo").exists());
-        assert!(Path::new("/run/fs/control/run/cache/metalos.demo").exists());
-        assert!(Path::new("/run/fs/control/run/logs/metalos.demo").exists());
+        assert!(Path::new("/run/fs/control/run/state/metalos.service.demo").exists());
+        assert!(Path::new("/run/fs/control/run/cache/metalos.service.demo").exists());
+        assert!(Path::new("/run/fs/control/run/logs/metalos.service.demo").exists());
     }
 
     #[containertest]
