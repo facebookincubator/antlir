@@ -1,0 +1,19 @@
+load("//metalos:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "metalctl-dev",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "slog",
+        "slog_glog_fmt",
+        "structopt",
+        "tokio",
+        "uuid",
+        "//metalos/host_configs:api-rust",
+        "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/image:image",
+        "//metalos/lib/service:service",
+        "//metalos/lib/systemd:systemd",
+    ],
+)

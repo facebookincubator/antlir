@@ -21,6 +21,15 @@ image.layer(
             mode = "a+rx",
         ),
         feature.install_buck_runnable(
+            "//metalos/metalctl/dev:metalctl-dev",
+            "/usr/bin/metalctl-dev",
+            mode = "a+rx",
+        ),
+        feature.ensure_file_symlink(
+            "/usr/bin/metalctl-dev",
+            "/usr/bin/metal-mcmetalface",
+        ),
+        feature.install_buck_runnable(
             "//metalos/lib/service/helper:helper",
             "/usr/lib/metalos/native-service-helper",
             mode = "a+rx",

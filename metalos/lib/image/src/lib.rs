@@ -10,7 +10,7 @@ use btrfs::{SendstreamExt, Subvolume};
 
 pub mod download;
 
-use metalos_host_configs::packages::{Initrd, Kernel, PackageId, Rootfs};
+use metalos_host_configs::packages::{Initrd, Kernel, PackageId, Rootfs, Service};
 
 pub(crate) mod __private {
     pub trait Sealed {}
@@ -153,6 +153,16 @@ impl Package for Initrd {
         }
 
         Ok(self.path_on_disk())
+    }
+}
+
+impl __private::Sealed for Service {}
+
+// TODO(T111087410) also download config generator image after that is split
+impl SingleSubvolumePackage for Service {
+    const KIND: &'static str = "service";
+    fn id(&self) -> &PackageId {
+        &self.service_id
     }
 }
 

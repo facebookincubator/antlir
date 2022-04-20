@@ -23,7 +23,8 @@ mod dropin;
 mod generator;
 mod set;
 use dropin::Dropin;
-use set::{ServiceDiff, ServiceSet};
+use set::ServiceDiff;
+pub use set::ServiceSet;
 
 pub type Version = Uuid;
 

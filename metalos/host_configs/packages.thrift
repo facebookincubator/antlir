@@ -39,7 +39,7 @@ struct Kernel {
 
 struct Service {
   1: PackageId service_id;
-  2: PackageId generator_id;
+  2: optional PackageId generator_id;
 } (rust.exhaustive, rust.ord)
 
 struct GptRootdisk {
