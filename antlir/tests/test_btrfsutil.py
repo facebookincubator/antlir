@@ -16,7 +16,7 @@ from antlir.fs_utils import Path
 from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from ..subvol_utils import with_temp_subvols
 from ..volume_for_repo import get_volume_for_current_repo
-from .common import AntlirTestCase
+from .common import AntlirTestCase, is_buck2
 
 
 class BtrfsUtilTestCase(AntlirTestCase):
@@ -24,7 +24,10 @@ class BtrfsUtilTestCase(AntlirTestCase):
         super().setUp()
         # Make sure we have a volume to work with
         get_volume_for_current_repo(
-            ensure_per_repo_artifacts_dir_exists(Path(sys.argv[0]))
+            ensure_per_repo_artifacts_dir_exists(
+                path_in_repo=Path(sys.argv[0]),
+                is_buck2=is_buck2(),
+            )
         )
 
     @with_temp_subvols
