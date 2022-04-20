@@ -35,10 +35,9 @@ buck_genrule(
 set -ue -o pipefail -o noclobber
 
 mkdir "$OUT"
-openssl req -new -x509 -keyout "$OUT"/localhost.pem -out "$OUT"/localhost.pem -days 1 -nodes \
+openssl req -new -x509 -keyout "$OUT"/localhost.pem -out "$OUT"/localhost.pem -days 365 -nodes \
 -subj "/C=US/ST=YourState/L=YourCity/O=Example-Certificates/CN=localhost"
 """,
-    cacheable = False,
 )
 
 python_unittest(
