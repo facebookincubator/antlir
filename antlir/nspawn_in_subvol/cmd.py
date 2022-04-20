@@ -337,6 +337,12 @@ def _extra_nspawn_args_and_env(
                 cmd_env.insert(0, f"{k}={v}")
 
     cmd_env.extend(opts.setenv)
+    # This magic env var is also forwarded in `nspawn.py`.  We need it here
+    # is since generators aren't touched by kernel cmdline `systemd.setenv`.
+    if "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1" in opts.setenv:
+        extra_nspawn_args.append(
+            "--setenv=ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+        )
 
     return extra_nspawn_args, cmd_env
 

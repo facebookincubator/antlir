@@ -253,6 +253,24 @@ vm.rust_unittest(
     crate_root = "rust_test.rs",
 )
 
+image.layer(
+    name = "rootfs-with-buck-runnables",
+    parent_layer = vm.artifacts.rootfs.layer,
+    features = ["//antlir/compiler/test_images:systemd_buck_runnables"],
+)
+
+vm.python_unittest(
+    name = "test-buck-runnable",
+    srcs = ["test_buck_runnable.py"],
+    vm_opts = vm.types.opts.new(
+        disk = vm.types.disk.new(layer = ":rootfs-with-buck-runnables"),
+    ),
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir:testlib_common",
+    ],
+)
+
 vm.python_unittest(
     name = "test-with-kernel-devel",
     srcs = ["test_kernel_devel.py"],

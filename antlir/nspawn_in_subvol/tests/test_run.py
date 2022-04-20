@@ -679,6 +679,49 @@ class NspawnTestCase(NspawnTestBase):
         self.assertIn(b"USER", ret.stdout)
         self.assertIn(b"TERM=linux-clown", ret.stdout)
 
+    # Ensures that the special "non-build step" marking used by
+    # `wrap_runtime_deps.bzl` is correctly propagated to `systemd`,
+    # including generators and units.
+    def test_boot_marked_as_non_build_step(self):
+        # First, fail to mark the container to show the "negative" case.
+        BAD_SH = """\
+while ! systemctl status multi-user.target | grep -q "Active: active" ; do
+    sleep 0.3
+done
+set -x
+[[ "$ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP" != "1" ]] && echo env_bad
+[[ ! -e /fake-*-ran ]] && echo nothing_ran
+"""
+        ret = self._nspawn_in(
+            (__package__, "bootable-systemd-os-with-buck-runnables"),
+            ["--boot", "--", "/bin/sh", "-c", BAD_SH],
+            stdout=subprocess.PIPE,
+        )
+        self.assertIn(b"env_bad\nnothing_ran", ret.stdout)
+
+        # Now the "good case", with a properly marked container.
+        magic_env = "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+        GOOD_SH = """\
+# The services may complete after `multi-user.target` becomes active.
+for svc in fake-generated fake-static ; do
+    while ! systemctl status "$svc" | grep -q 'Process: .*code=exited' ; do
+        sleep 0.3
+    done
+done
+set -x
+[[ "$ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP" = "1" ]] && echo env_ok
+[[ -f /fake-systemd-generator-ran ]] && echo gen_ok
+[[ -f /fake-generated-service-ran ]] && echo gen_svc_ok
+[[ -f /fake-static-service-ran ]] && echo static_svc_ok
+:  # instead of using the return code, we validate stdout below
+"""
+        ret = self._nspawn_in(
+            (__package__, "bootable-systemd-os-with-buck-runnables"),
+            ["--boot", f"--setenv={magic_env}", "--", "/bin/sh", "-c", GOOD_SH],
+            stdout=subprocess.PIPE,
+        )
+        self.assertIn(b"env_ok\ngen_ok\ngen_svc_ok\nstatic_svc_ok", ret.stdout)
+
     def test_boot_proc_results(self):
         console_singleton = []
         with pipe() as (r, w):

@@ -304,7 +304,21 @@ async def run(
     async with vm(
         bind_repo_ro=bind_repo_ro,
         console=console,
-        opts=opts,
+        opts=opts.copy(
+            update={
+                "append": (
+                    *opts.append,
+                    # See the note in `nspawn.py` about why we have to set
+                    # this on the kernel command line -- otherwise it would
+                    # not be passed to all the units.  We also have to set
+                    # it below via `env`.
+                    (
+                        "systemd.setenv="
+                        "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+                    ),
+                ),
+            }
+        ),
         shares=shares,
         shell=shell,
         timeout_ms=timeout_ms,
@@ -345,7 +359,13 @@ async def run(
                 res = await instance.run(
                     cmd=cmd,
                     timeout_ms=timeout_ms,
-                    env=env,
+                    env={
+                        **env,
+                        # Sets the magic var for the vmtest command, but not
+                        # for the systemd units -- for that we append to the
+                        # kernel command-line above.
+                        "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP": "1",
+                    },
                     # Note: This is currently needed due to how some
                     # cpp_unittest targets depend on artifacts in the code
                     # repo.  Once we have proper support for `runtime_files`

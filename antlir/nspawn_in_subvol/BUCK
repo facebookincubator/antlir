@@ -154,6 +154,9 @@ python_unittest(
             TEST_IMAGE_PREFIX + "bootable-systemd-os",
         ): "tests/bootable-systemd-os",
         layer_resource(
+            TEST_IMAGE_PREFIX + "bootable-systemd-os-with-buck-runnables",
+        ): "tests/bootable-systemd-os-with-buck-runnables",
+        layer_resource(
             TEST_IMAGE_PREFIX + "test-layer-iproute",
         ): "tests/test-layer-iproute",
     },

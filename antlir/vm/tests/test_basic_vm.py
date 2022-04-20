@@ -8,7 +8,6 @@ import importlib.resources
 import multiprocessing
 import os
 import platform
-import unittest
 
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase

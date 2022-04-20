@@ -210,7 +210,7 @@ _SCRIPT_TO_EXFILTRATE_CONTAINER_PROC_PID: str = textwrap.dedent(
 )
 
 
-def _wrap_systemd_exec():
+def _wrap_systemd_exec(shell_quoted_extra_args: str):
     return [
         *_RUN_BUSYBOX_SCRIPT,
         # The helper script deliberately does not close FD 3.  Instead we
@@ -223,7 +223,9 @@ def _wrap_systemd_exec():
         # process the `SIGRTMIN+4` shutdown signal that we need to shut down
         # the container after invoking a command inside it.
         _SCRIPT_TO_EXFILTRATE_CONTAINER_PROC_PID
-        + "exec /usr/lib/systemd/systemd --log-target=console\n",
+        + "exec /usr/lib/systemd/systemd --log-target=console "
+        + shell_quoted_extra_args
+        + "\n",
     ]
 
 
@@ -273,7 +275,26 @@ def _make_nspawn_cmd(
         # PID of the `init` process.  After sending that information out,
         # the shell script `exec`s systemd.
         cmd.append("--")
-        cmd.extend(_wrap_systemd_exec())
+        cmd.extend(
+            _wrap_systemd_exec(
+                # Although this looks redundant with the analogous `--setenv` in
+                # `cmd.py`, this magic env var also needs to be forwarded to
+                # `systemd` pretending to be a **kernel command-line argument**:
+                #
+                #   - Per `man systemd.exec` under "Environment Variables in
+                #     Spawned Processes", the only ways to reliably pass an env
+                #     var to all systemd units, without touching the filesystem,
+                #     is to set it on the "kernel command line".
+                #
+                #   - In container mode, `systemd` takes the kernel command line
+                #     from the process's command-line args (see `proc_cmdline()`
+                #     in `proc-cmdline.c`).
+                "systemd.setenv=ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+                if "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+                in setup.opts.setenv
+                else ""
+            )
+        )
     else:
         # Add `--as-pid2` to run an nspawn-provided stub "init" process as
         # PID 1 of the container, which starts our dummy container workload

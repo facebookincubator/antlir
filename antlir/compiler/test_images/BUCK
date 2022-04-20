@@ -6,6 +6,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
+load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
@@ -127,6 +128,44 @@ image.layer(
 image.layer_alias(
     name = "bootable-systemd-os",
     layer = ":test-layer",
+    visibility = ["//antlir/nspawn_in_subvol/..."],
+    runtime = ["systemd"],
+)
+
+defs.python_binary(
+    name = "fake-systemd-generator",
+    srcs = ["fake_systemd_generator.py"],
+    main_module = "antlir.compiler.test_images.fake_systemd_generator",
+)
+
+defs.python_binary(
+    name = "fake-service",
+    srcs = ["fake_service.py"],
+    main_module = "antlir.compiler.test_images.fake_service",
+)
+
+feature.new(
+    name = "systemd_buck_runnables",
+    features = [
+        # This generator makes a unit for `:fake-service`, and
+        # `nspawn_in_subvol:test-run` ensures that the unit starts.
+        image.ensure_subdirs_exist("/etc/systemd", "system-generators"),
+        feature.install_buck_runnable(":fake-systemd-generator", "/etc/systemd/system-generators/fake-systemd-generator"),
+        feature.install_buck_runnable(":fake-service", "/fake-service"),
+        systemd.install_unit("fake-static.service"),
+        systemd.enable_unit("fake-static.service", "multi-user.target"),
+    ],
+    visibility = ["//antlir/vm/tests:"],
+)
+
+# Verifies that both units and generators can `install_buck_runnable`
+# without the special marking of `wrap_runtime_deps.bzl`, i.e.  that
+# `ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1` is passed to `systemd`.
+image.layer(
+    name = "bootable-systemd-os-with-buck-runnables",
+    parent_layer = ":bootable-systemd-os",
+    features = [":systemd_buck_runnables"],
+    runtime = ["systemd"],
     visibility = ["//antlir/nspawn_in_subvol/..."],
 )
 
