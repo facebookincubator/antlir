@@ -109,7 +109,7 @@ vm_visibility = [
 hoist(
     name = "qemu",
     out = "qemu",
-    layer = "build",
+    layer = ":build",
     path = "/output/bin/qemu-system-x86_64",
     visibility = vm_visibility,
 )
@@ -117,7 +117,7 @@ hoist(
 hoist(
     name = "qemu-img",
     out = "qemu-img",
-    layer = "build",
+    layer = ":build",
     path = "/output/bin/qemu-img",
     visibility = vm_visibility,
 )
@@ -126,7 +126,7 @@ hoist(
     hoist(
         name = "share/qemu/{}".format(firmware),
         out = firmware,
-        layer = "build",
+        layer = ":build",
         path = "/output/share/qemu/{}".format(firmware),
         visibility = vm_visibility,
     )

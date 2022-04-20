@@ -39,9 +39,6 @@ def hoist(name, layer, path, *, selector = None, force_dir = False, visibility =
     >>> hoist("target", layer = ":layer", path = "src_folder", selector = ["-name '*.rpm'"], force_dir = True)
     """
 
-    if visibility == None:
-        visibility = ["PUBLIC"]
-
     cp = "cp -r --reflink=auto --no-clobber \"$subvol/{}\" \"$OUT\"".format(path)
     if selector:
         cp = "find \"$subvol/{path}\" {selector} -print0".format(
@@ -49,7 +46,7 @@ def hoist(name, layer, path, *, selector = None, force_dir = False, visibility =
             selector = " ".join(selector),
         ) + " | xargs -0 -I% cp -r --reflink=auto --no-clobber \"%\" \"$OUT\""
 
-    out = "unused"
+    out = "out"
     if force_dir:
         out = "."
 
@@ -63,7 +60,7 @@ def hoist(name, layer, path, *, selector = None, force_dir = False, visibility =
 
             {cp}
         '''.format(
-            layer = ":" + layer,
+            layer = layer,
             cp = cp,
         ),
         visibility = visibility,

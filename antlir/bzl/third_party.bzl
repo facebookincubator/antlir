@@ -125,7 +125,7 @@ def _native_build(base_features, script, dependencies = [], project = None):
 
     hoist(
         name = project,
-        layer = "build-layer",
+        layer = ":build-layer",
         path = OUT_DIR.lstrip("/"),
         selector = [
             "-mindepth 1",

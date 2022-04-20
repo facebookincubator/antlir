@@ -46,26 +46,26 @@ def test_hoist(name):
 
     hoist(
         name = name + "-simple-file",
-        layer = "{}-test-layer".format(name),
+        layer = ":{}-test-layer".format(name),
         path = "test/file1",
     )
 
     hoist(
         name = name + "-simple-out-file",
-        layer = "{}-test-layer".format(name),
+        layer = ":{}-test-layer".format(name),
         path = "test/file1",
         force_dir = True,
     )
 
     hoist(
         name = name + "-simple-folder",
-        layer = "{}-test-layer".format(name),
+        layer = ":{}-test-layer".format(name),
         path = "test/folder1",
     )
 
     hoist(
         name = name + "-simple-selector",
-        layer = "{}-test-layer".format(name),
+        layer = ":{}-test-layer".format(name),
         path = "test",
         selector = [
             "-mindepth 1 -maxdepth 1",
@@ -75,7 +75,7 @@ def test_hoist(name):
 
     hoist(
         name = name + "-selector-flat",
-        layer = "{}-test-layer".format(name),
+        layer = ":{}-test-layer".format(name),
         path = "test",
         selector = [
             "-name '*.rpm'",
