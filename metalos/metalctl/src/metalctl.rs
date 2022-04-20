@@ -9,6 +9,7 @@
 // TODO(T113359879) this can be removed when there are no more separate builds
 // of metalctl
 #![allow(unused_crate_dependencies)]
+#![cfg_attr(initrd, allow(unused_imports))]
 
 #[cfg(test)]
 #[macro_use]
@@ -17,10 +18,12 @@ extern crate metalos_macros;
 use std::collections::VecDeque;
 use std::fs;
 use std::io::BufWriter;
+use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
+use std::process::Command;
 
-use anyhow::{Context, Result};
-use slog::{error, o, warn, Drain, Logger};
+use anyhow::{Context, Error, Result};
+use slog::{error, o, trace, warn, Drain, Logger};
 use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
@@ -77,10 +80,13 @@ enum Subcommand {
     #[cfg(not(initrd))]
     #[structopt(flatten)]
     Update(update::Update),
+    #[cfg(not(initrd))]
+    #[structopt(external_subcommand)]
+    External(Vec<String>),
 }
 
 #[derive(StructOpt)]
-#[structopt(name = "metalctl", setting(AppSettings::NoBinaryName))]
+#[structopt(name = "metalctl", setting(AppSettings::NoBinaryName), no_version)]
 struct MetalCtl {
     #[structopt(short, long, default_value("/etc/metalctl.toml"))]
     config: PathBuf,
@@ -169,6 +175,12 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::ApplyDiskImage(opts) => apply_disk_image::apply_disk_image(log, opts).await,
         #[cfg(not(initrd))]
         Subcommand::Update(update) => update.subcommand(log).await,
+        #[cfg(not(initrd))]
+        Subcommand::External(mut args) => {
+            let bin = format!("metalctl-{}", args.remove(0));
+            trace!(log, "exec-ing external command {}", bin);
+            Err(Error::msg(Command::new(bin).args(args).exec()))
+        }
     }
 }
 

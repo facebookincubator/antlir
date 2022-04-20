@@ -6,7 +6,7 @@
  */
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use anyhow::{Context, Result};
 
@@ -22,7 +22,7 @@ pub struct ServiceSet(BTreeMap<String, Version>);
 
 impl ServiceSet {
     /// Load the set of MetalOS native services that are currently running.
-    pub(crate) async fn current(sd: &Systemd) -> Result<Self> {
+    pub async fn current(sd: &Systemd) -> Result<Self> {
         let units = sd.list_units().await.context("while listing all units")?;
         let mut native_services = BTreeMap::new();
         for u in units {
@@ -81,6 +81,12 @@ impl Deref for ServiceSet {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for ServiceSet {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 
