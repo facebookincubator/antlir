@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import enum
+import getpass
 import logging
 import os
 import subprocess
@@ -276,6 +277,10 @@ class Unshare:
     def nsenter_as_user(self, *cmd: AnyStr) -> List[Union[str, bytes]]:
         return [
             "sudo",
+            "env",
+            "--",
+            f"USER={getpass.getuser()}",
+            f"LOGNAME={getpass.getuser()}",
             "nsenter",
             *self._nsenter_args(),
             # Pretend we did not `sudo` (see the note in the class docstring)
