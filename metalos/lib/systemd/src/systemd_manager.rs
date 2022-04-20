@@ -6,6 +6,7 @@
  */
 
 use std::collections::BTreeSet;
+use std::ffi::OsStr;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -32,6 +33,12 @@ pub struct UnitName(String);
 
 impl AsRef<Path> for UnitName {
     fn as_ref(&self) -> &Path {
+        self.0.as_ref()
+    }
+}
+
+impl AsRef<OsStr> for UnitName {
+    fn as_ref(&self) -> &OsStr {
         self.0.as_ref()
     }
 }
@@ -384,6 +391,14 @@ pub enum ServiceResult {
     /// Service has been started too frequently in a specific time frame (as
     /// configured in StartLimitInterval, StartLimitBurst).
     StartLimit,
+}
+
+#[derive(Debug, PartialEq, Eq, SystemdEnum)]
+pub enum Marker {
+    /// Restart this unit when enqueing marked jobs
+    NeedsRestart,
+    /// Reload this unit when enqueing marked jobs
+    NeedsReload,
 }
 
 #[dbus_proxy(
@@ -915,7 +930,11 @@ trait Unit {
     fn unref(&self) -> zbus::Result<()>;
 
     /// See [set_unit_properties](ManagerProxy::set_unit_properties)
-    fn set_properties(&self) -> zbus::Result<()>;
+    fn set_properties(
+        &self,
+        runtime: bool,
+        properties: &[(&str, zbus::zvariant::Value<'_>)],
+    ) -> zbus::Result<()>;
 
     /// Primary name of the unit.
     #[dbus_proxy(property)]
@@ -950,6 +969,9 @@ trait Unit {
     /// knows more fine-grained states that are unit-type-specific
     #[dbus_proxy(property)]
     fn sub_state(&self) -> zbus::Result<ActiveState>;
+
+    #[dbus_proxy(property)]
+    fn markers(&self) -> zbus::Result<Vec<Marker>>;
 }
 
 #[dbus_proxy(
@@ -960,6 +982,9 @@ trait Unit {
 trait Service {
     #[dbus_proxy(property)]
     fn result(&self) -> zbus::Result<ServiceResult>;
+
+    #[dbus_proxy(property)]
+    fn environment(&self) -> zbus::Result<Environment>;
 }
 
 #[cfg(test)]

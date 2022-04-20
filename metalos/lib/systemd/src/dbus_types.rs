@@ -319,6 +319,24 @@ impl<T> TryFrom<OwnedValue> for TypedObjectPath<T> {
     }
 }
 
+// Conversion from a typed to an untyped object path is always safe, and is
+// necessary for certain dbus calls that expect object paths
+impl<T> From<TypedObjectPath<T>> for zvariant::OwnedObjectPath {
+    fn from(t: TypedObjectPath<T>) -> Self {
+        t.0
+    }
+}
+
+impl<T> TypedObjectPath<T> {
+    /// Convert an untyped dbus object path to a type-safe version. This is
+    /// inherently unsafe as it cannot be confirmed what type of object the path
+    /// actually points to, but it can be reasonably guaranteed by the caller if
+    /// they understand the DBus api being called.
+    pub unsafe fn from_untyped<'a>(o: &zvariant::ObjectPath<'a>) -> Self {
+        Self(o.clone().into(), PhantomData)
+    }
+}
+
 impl<T> TypedObjectPath<T>
 where
     T: From<zbus::Proxy<'static>> + zbus::ProxyDefault,

@@ -1,3 +1,6 @@
+[Unit]
+DefaultDependencies=no
+
 [Service]
 Type=oneshot
 ExecStart=btrfs subvolume snapshot /test-control-subvol-src /test-control-subvol
