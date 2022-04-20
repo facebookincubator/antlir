@@ -237,30 +237,6 @@ def mounts_from_meta(volume_path: Path) -> Iterator[Mount]:
             yield mount
 
 
-def mounts_from_image_meta(image: Path) -> Iterator[Mount]:
-    """
-    Returns a list of constructed `MountItem`s built from the .meta of
-    the provided btrfs loopback image.
-    """
-
-    # Extract the mount meta from the provided image with
-    # btrfs restore
-    with temp_dir() as td:
-        subprocess.check_call(
-            [
-                "btrfs",
-                "restore",
-                f"{image}",
-                f"{td}",
-                "--path-regex",
-                "^/(volume(|/.meta(|/.*)))$",
-            ],
-        )
-
-        for mount in mounts_from_meta(td / "volume"):
-            yield mount
-
-
 def coerce_path_field_normal_relative(kwargs, field: str) -> None:
     d = kwargs.get(field)
     if d is not None:

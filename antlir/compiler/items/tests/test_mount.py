@@ -29,7 +29,6 @@ from ..mount import (
     Mount,
     MountItem,
     RuntimeSource,
-    mounts_from_image_meta,
     mounts_from_meta,
 )
 from ..phases_provide import PhasesProvideItem
@@ -395,14 +394,3 @@ class MountItemTestCase(BaseItemTestCase):
         # Test when the path doesn't have a meta dir
         with temp_dir() as td:
             self.assertEqual([], list(mounts_from_meta(td)))
-
-        # Test an image package with mounts
-        test_image_with_mounts = (
-            Path(__file__).dirname() / "small-layer-with-mounts.btrfs"
-        )
-
-        self.assertTrue(
-            set(expected_mounts).issubset(
-                set(mounts_from_image_meta(test_image_with_mounts))
-            )
-        )

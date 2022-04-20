@@ -290,7 +290,6 @@ python_unittest(
     srcs = ["test_mount.py"],
     needed_coverage = [(100, "//antlir/compiler/items:mount")],
     resources = {
-        TEST_IMAGE_PREFIX + "small-layer-with-mounts.btrfs": "small-layer-with-mounts.btrfs",
         layer_resource(
             TEST_IMAGE_PREFIX + "small-layer-with-mounts",
         ): "small-layer-with-mounts",
