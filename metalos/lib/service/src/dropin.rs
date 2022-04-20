@@ -12,7 +12,8 @@ use anyhow::{Context, Result};
 use maplit::btreemap;
 use serde::ser::Error as _;
 use serde::ser::{SerializeSeq, Serializer};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use state::{State, Token};
 use systemd::UnitName;
@@ -30,6 +31,17 @@ struct UnitSection {
     after: UnitName,
     requires: UnitName,
     propagates_stop_to: UnitName,
+    /// Description is available when listing all loaded units, so use it to
+    /// store some very high-level metadata to enable discovery of all metalos
+    /// native services
+    #[serde(with = "serde_with::json::nested")]
+    description: UnitMetadata,
+}
+
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+pub(crate) struct UnitMetadata {
+    pub(crate) native_service: String,
+    pub(crate) version: Uuid,
 }
 
 // At some point it would be nice to bootcamp moving this into `serde_systemd`
@@ -139,6 +151,10 @@ impl Dropin {
                 after: manager_unit.clone(),
                 requires: manager_unit.clone(),
                 propagates_stop_to: manager_unit,
+                description: UnitMetadata {
+                    native_service: svc.name().to_string(),
+                    version: svc.version(),
+                },
             },
             service: ServiceSection {
                 root_directory: paths.root().to_owned(),
@@ -182,6 +198,7 @@ mod tests {
                  After=metalos-native-service@{token}.service\n\
                  Requires=metalos-native-service@{token}.service\n\
                  PropagatesStopTo=metalos-native-service@{token}.service\n\
+                 Description={{\"native_service\":\"metalos.demo\",\"version\":\"00000000-0000-4000-8000-000000000001\"}}\n\
                  [Service]\n\
                  RootDirectory=/run/fs/control/run/service_roots/metalos.demo-00000000000040008000000000000001-{uuid}\n\
                  Environment=CACHE_DIRECTORY=/metalos/cache\n\

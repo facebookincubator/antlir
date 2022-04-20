@@ -225,12 +225,27 @@ impl Deref for PreparedService {
 /// offer strong, transactional semantics but MetalOS does its best to provide
 /// "transactions" on top of native service lifecycles.
 #[derive(Debug)]
-struct Transaction {
+pub struct Transaction {
     current: ServiceSet,
     next: ServiceSet,
 }
 
 impl Transaction {
+    /// Create a Transaction that will move the system from the current state to
+    /// the next desired state.
+    pub async fn with_next(sd: &Systemd, next: ServiceSet) -> Result<Self> {
+        let current = ServiceSet::current(sd)
+            .await
+            .context("while loading the current service set")?;
+        Ok(Self { current, next })
+    }
+
+    /// Create a Transaction that will move the system from a given state to the
+    /// next desired state.
+    pub(crate) fn new(current: ServiceSet, next: ServiceSet) -> Self {
+        Self { current, next }
+    }
+
     /// Attempt to commit the set of changes required to bring the system from
     /// current_state to next_state.
     /// TODO(T114714686): make this a better Error type that both attempts to
@@ -404,8 +419,8 @@ impl Transaction {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::bail;
     use metalos_macros::containertest;
+    use set::tests::service_set;
     use systemd::{ActiveState, WaitableSystemState};
 
     pub(crate) async fn wait_for_systemd() -> anyhow::Result<()> {
@@ -418,31 +433,11 @@ mod tests {
     // In the near future we probably want to assert that the running state of
     // the system matches what we expect before/during/after transactions, but
     // for now let's not do that and only check versions during test
-    async fn running_service_version(sd: &Systemd, unit: &UnitName) -> Result<String> {
-        let unit_proxy = sd
-            .get_unit(unit)
-            .await
-            .with_context(|| format!("while loading unit proxy for {}", unit))?;
-        if unit_proxy
-            .active_state()
-            .await
-            .with_context(|| format!("while getting active state {}", unit))?
-            != ActiveState::Active
-        {
-            bail!("{} is not active", unit);
-        }
-
-        let svc = sd
-            .get_service_unit(unit)
-            .await
-            .with_context(|| format!("while loading service proxy for {}", unit))?;
-        let env = svc
-            .environment()
-            .await
-            .context("while loading Environment property")?;
-        env.get("METALOS_VERSION")
-            .context("missing METALOS_VERSION env var")
-            .map(|s| s.clone())
+    async fn running_service_version(sd: &Systemd, service: &str) -> Result<String> {
+        let set = ServiceSet::current(sd).await?;
+        set.get(service)
+            .with_context(|| format!("{} was not discovered", service))
+            .map(|uuid| uuid.to_simple().to_string())
     }
 
     /// Start the demo service. If this doesn't work something is fundamentally
@@ -478,63 +473,58 @@ mod tests {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
         let sd = Systemd::connect(log.clone()).await?;
 
-        Transaction {
-            current: set::tests::service_set! {},
-            next: set::tests::service_set! {
+        Transaction::with_next(
+            &sd,
+            service_set! {
                 "metalos.demo" => 1,
             },
-        }
+        )
+        .await?
         .commit(log.clone(), &sd)
         .await?;
 
         assert_eq!(
-            running_service_version(&sd, &"metalos.demo.service".into()).await?,
+            running_service_version(&sd, "metalos.demo").await?,
             "00000000000040008000000000000001",
         );
 
-        Transaction {
-            current: set::tests::service_set! {
-                "metalos.demo" => 1,
-            },
-            next: set::tests::service_set! {
+        Transaction::with_next(
+            &sd,
+            service_set! {
                 "metalos.demo" => 2,
             },
-        }
+        )
+        .await?
         .commit(log.clone(), &sd)
         .await?;
 
         assert_eq!(
-            running_service_version(&sd, &"metalos.demo.service".into()).await?,
+            running_service_version(&sd, "metalos.demo").await?,
             "00000000000040008000000000000002",
         );
 
-        Transaction {
-            current: set::tests::service_set! {
-                "metalos.demo" => 2,
-            },
-            next: set::tests::service_set! {
+        Transaction::with_next(
+            &sd,
+            service_set! {
                 "metalos.demo" => 1,
             },
-        }
+        )
+        .await?
         .commit(log.clone(), &sd)
         .await?;
 
         assert_eq!(
-            running_service_version(&sd, &"metalos.demo.service".into()).await?,
+            running_service_version(&sd, "metalos.demo").await?,
             "00000000000040008000000000000001",
         );
 
-        Transaction {
-            current: set::tests::service_set! {
-                "metalos.demo" => 1,
-            },
-            next: set::tests::service_set! {},
-        }
-        .commit(log.clone(), &sd)
-        .await?;
+        Transaction::with_next(&sd, service_set! {})
+            .await?
+            .commit(log.clone(), &sd)
+            .await?;
 
         // now the service is stopped, this function should fail
-        let version = running_service_version(&sd, &"metalos.demo.service".into()).await;
+        let version = running_service_version(&sd, "metalos.demo").await;
         assert!(
             version.is_err(),
             "should not have found a running version: {:?}",

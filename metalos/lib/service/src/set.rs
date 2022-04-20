@@ -8,15 +8,41 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 
+use anyhow::{Context, Result};
+
+use systemd::{ActiveState, Systemd};
+
+use crate::dropin::UnitMetadata;
 use crate::Version;
 
-#[derive(Debug)]
 /// Describe a full set of native services. This may be either the versions that
 /// are currently running, or desired versions.
-pub(crate) struct ServiceSet(BTreeMap<String, Version>);
+#[derive(Debug)]
+pub struct ServiceSet(BTreeMap<String, Version>);
 
 impl ServiceSet {
-    pub(crate) fn new(map: BTreeMap<String, Version>) -> Self {
+    /// Load the set of MetalOS native services that are currently running.
+    pub(crate) async fn current(sd: &Systemd) -> Result<Self> {
+        let units = sd.list_units().await.context("while listing all units")?;
+        let mut native_services = BTreeMap::new();
+        for u in units {
+            match u.active_state {
+                ActiveState::Active | ActiveState::Reloading | ActiveState::Activating => {}
+                _ => continue,
+            }
+            // if this parses to this json struct, then it's a metalos service,
+            // otherwise just ignore it
+            match serde_json::from_str::<UnitMetadata>(&u.description) {
+                Ok(meta) => {
+                    native_services.insert(meta.native_service, meta.version);
+                }
+                Err(_) => {}
+            };
+        }
+        Ok(Self::new(native_services))
+    }
+
+    pub fn new(map: BTreeMap<String, Version>) -> Self {
         Self(map)
     }
 
@@ -47,6 +73,14 @@ impl ServiceSet {
         }
 
         Diff(diff)
+    }
+}
+
+impl Deref for ServiceSet {
+    type Target = BTreeMap<String, Version>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 

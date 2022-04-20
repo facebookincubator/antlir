@@ -31,6 +31,12 @@ use systemd_macros::{SystemdEnum, TransparentZvariant};
 )]
 pub struct UnitName(String);
 
+impl UnitName {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+}
+
 impl AsRef<Path> for UnitName {
     fn as_ref(&self) -> &Path {
         self.0.as_ref()
