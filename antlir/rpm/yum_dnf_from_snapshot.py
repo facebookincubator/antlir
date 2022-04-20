@@ -130,6 +130,13 @@ assert SHADOWED_PATHS_ROOT.startswith(b"/"), SHADOWED_PATHS_ROOT
 _LIBRENAME_SHADOWED_PATHS_ROOT = SHADOWED_PATHS_ROOT
 
 
+# To distinguish the main process from other `CalledProcessError`s
+class _YumDnfError(subprocess.CalledProcessError):
+    def __repr__(self):
+        # Compact repr for `=container` target interactive use.
+        return f"YumDnfError(returncode={self.returncode})"
+
+
 def _install_to_current_root(install_root):
     return install_root.realpath() == b"/"
 
@@ -743,7 +750,12 @@ def yum_dnf_from_snapshot(
             # which is reasonable, and easy to clean up in a post-pass.
             *yum_dnf_args,
         ]
-        subprocess.check_call(cmd)
+        try:
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as ex:
+            # In interactive use (`=container` targets), it is very jarring
+            # to see the entire internal commandline.  This hides it.
+            raise _YumDnfError(**ex.__dict__)
 
 
 # This argument-parsing logic is covered by RpmActionItem tests.
@@ -817,7 +829,7 @@ if __name__ == "__main__":  # pragma: no cover
         else:
             # Dumping a long stack trace obscures the actual yum/dnf error.
             log.error(
-                f"""{type(ex).__name__} while running {what_ran}. """
+                f"""{repr(ex)} while running {what_ran}. """
                 f"For more logs, run your container and `{args.yum_dnf.value}` "
                 "command with `ANTLIR_DEBUG=1`."
             )

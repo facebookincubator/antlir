@@ -403,6 +403,16 @@ class YumDnfFromSnapshotTestImpl:
                 self, r, prog, no_meta=True, is_makecache=True
             )
 
+    def test_error_repr(self):
+        self.assertEqual(
+            "YumDnfError(returncode=37)",
+            repr(
+                yum_dnf_from_snapshot._YumDnfError(
+                    returncode=37, cmd=["unused"]
+                )
+            ),
+        )
+
 
 @unittest.skipIf(
     "yum" not in get_rpm_installers_supported(),
