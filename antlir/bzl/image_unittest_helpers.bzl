@@ -7,7 +7,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
 load("//antlir/bzl/image/feature:install.bzl", "feature_install_buck_runnable")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
-load(":image_layer_utils.bzl", "container_target_name")
+load(":image_layer_runtime.bzl", "container_target_name", "systemd_target_name")
 load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":query.bzl", "layer_deps_query")
@@ -136,12 +136,21 @@ def _nspawn_wrapper_properties(
         parent_layer = layer,
         features = [feature_install_buck_runnable(inner_test_target, binary_path)],
         visibility = visibility,
+        runtime = ["systemd"] if boot else [],
     )
+
+    # For ergonomics, export the debug targets from the test's layer on the test
     buck_command_alias(
         name = container_target_name(name),
         antlir_rule = "user-internal",
         exe = ":" + container_target_name(test_layer),
     )
+    if boot:
+        buck_command_alias(
+            name = systemd_target_name(name),
+            antlir_rule = "user-internal",
+            exe = ":" + systemd_target_name(test_layer),
+        )
 
     # Generate a `.py` file that sets some of the key container options.
     #
