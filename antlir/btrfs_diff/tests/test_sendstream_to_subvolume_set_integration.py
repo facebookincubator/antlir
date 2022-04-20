@@ -26,7 +26,7 @@ import sys
 
 from antlir.artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from antlir.fs_utils import Path
-from antlir.tests.common import AntlirTestCase
+from antlir.tests.common import AntlirTestCase, is_buck2
 from antlir.volume_for_repo import get_volume_for_current_repo
 
 from ..freeze import freeze
@@ -40,9 +40,13 @@ from .demo_sendstreams_expected import render_demo_subvols
 class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):
     def setUp(self) -> None:
         super().setUp()
+
         # Make sure we have a volume to work with
         get_volume_for_current_repo(
-            ensure_per_repo_artifacts_dir_exists(Path(sys.argv[0]))
+            ensure_per_repo_artifacts_dir_exists(
+                path_in_repo=Path(sys.argv[0]),
+                is_buck2=is_buck2(),
+            )
         )
 
     def test_integration(self) -> None:

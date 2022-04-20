@@ -376,6 +376,7 @@ python_unittest(
     srcs = ["tests/test_artifacts_dir.py"],
     deps = [
         ":artifacts_dir",
+        ":testlib_common",
     ],
 )
 
