@@ -98,6 +98,12 @@ fn expand_systemd_enum(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
                         String::try_from(v).and_then(|v| v.parse())
                     }
                 }
+
+                impl ::std::convert::From<#name> for ::zvariant::OwnedValue {
+                    fn from(v: #name) -> Self {
+                        ::zvariant::Str::from(v.to_string()).into()
+                    }
+                }
             })
         }
         _ => Err(Error::new(input.span(), "not enum")),

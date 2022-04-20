@@ -164,8 +164,8 @@ mod tests {
     use metalos_macros::containertest;
 
     #[containertest]
-    fn dropin() -> Result<()> {
-        crate::tests::wait_for_systemd().unwrap();
+    async fn dropin() -> Result<()> {
+        crate::tests::wait_for_systemd().await.unwrap();
         let svc = ServiceInstance::new(
             "metalos.demo".into(),
             "00000000000040008000000000000001".parse().unwrap(),

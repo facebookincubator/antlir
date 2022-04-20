@@ -45,12 +45,11 @@ fn main() -> Result<()> {
         "runtime directory is not initially empty"
     );
 
-    // the full binary path contains the subvol, which is a nice way to simulate
-    // any number of service versions using the same binary
-    let current_version = std::env::current_exe()?
-        .canonicalize()?
-        .display()
-        .to_string();
+    // for convenience, we use the same binary for every "version" of the demo
+    // service, but the METALOS_VERSION environment variable can be used to
+    // simulate different versions of the native service
+    let current_version = std::env::var("METALOS_VERSION").unwrap();
+    println!("logging {} to version file", current_version);
 
     for dir in &[opts.state, opts.cache, opts.logs] {
         let path = dir.join("version");

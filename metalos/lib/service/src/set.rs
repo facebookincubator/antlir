@@ -6,6 +6,7 @@
  */
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::ops::Deref;
 
 use crate::Version;
 
@@ -15,13 +16,13 @@ use crate::Version;
 pub(crate) struct ServiceSet(BTreeMap<String, Version>);
 
 impl ServiceSet {
-    fn new(map: BTreeMap<String, Version>) -> Self {
+    pub(crate) fn new(map: BTreeMap<String, Version>) -> Self {
         Self(map)
     }
 
     /// Compute a set of service modifications that must be done in order to
     /// make the `self` set match the desired `other` set.
-    fn diff(&self, other: &Self) -> Diff {
+    pub(crate) fn diff(&self, other: &Self) -> Diff {
         let mut diff: BTreeMap<String, _> = BTreeMap::new();
         let self_keys: BTreeSet<_> = self.0.keys().collect();
         let other_keys: BTreeSet<_> = other.0.keys().collect();
@@ -62,10 +63,19 @@ pub(crate) enum ServiceDiff {
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Diff(pub(crate) BTreeMap<String, ServiceDiff>);
 
+impl Deref for Diff {
+    type Target = BTreeMap<String, ServiceDiff>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use super::*;
     use maplit::btreemap;
+    use metalos_macros::test;
     use pretty_assertions::assert_eq;
 
     impl From<(Option<Version>, Option<Version>)> for ServiceDiff {
@@ -81,13 +91,15 @@ mod tests {
 
     macro_rules! service_set {
         ($($n:literal => $v:literal,)*) => (
-            ServiceSet::new(btreemap! {
+            crate::set::ServiceSet::new(maplit::btreemap! {
                 $($n.into() => format!("00000000-0000-4000-8000-000000000{:03}", $v).parse().unwrap()),*
             })
         );
         ($n:literal => $v:literal) => (service_set! {$n => $v,});
-        () => (ServiceSet::new(BTreeMap::new()));
+        () => (crate::set::ServiceSet::new(std::collections::BTreeMap::new()));
     }
+
+    pub(crate) use service_set;
 
     macro_rules! diff {
         ($($n:literal: $old:expr => $new:expr,)*) => (

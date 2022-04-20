@@ -9,6 +9,7 @@ rust_library(
     srcs = glob(["src/*.rs"]),
     test_deps = [
         "pretty_assertions",
+        "slog_glog_fmt",
         "tokio",
     ],
     unittest_opts = shape.new(
@@ -25,9 +26,14 @@ rust_library(
     ],
     deps = [
         "anyhow",
+        "futures",
+        "itertools",
         "maplit",
         "serde",
+        "slog",
         "uuid",
+        "zbus",
+        "zvariant",
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/serde_systemd:serde_systemd",

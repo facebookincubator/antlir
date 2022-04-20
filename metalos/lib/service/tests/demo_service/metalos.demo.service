@@ -2,6 +2,9 @@
 Description=demo service
 
 [Service]
-Type=oneshot
+Type=simple
 RemainAfterExit=true
-ExecStart=/usr/bin/demo --run="${RUNTIME_DIRECTORY}" --state="${STATE_DIRECTORY}" --cache="${CACHE_DIRECTORY}" --logs="${LOGS_DIRECTORY}"
+# do some measurable work that can be validated by unit tests
+ExecStartPre=/usr/bin/demo --run="${RUNTIME_DIRECTORY}" --state="${STATE_DIRECTORY}" --cache="${CACHE_DIRECTORY}" --logs="${LOGS_DIRECTORY}"
+# simulate a real service that would needs to be restarted on version updates
+ExecStart=/bin/bash -c "sleep 12h"
