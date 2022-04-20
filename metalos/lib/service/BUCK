@@ -1,4 +1,5 @@
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "thrift_library")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//metalos:defs.bzl", "default_test_layer", "rust_library")
@@ -29,17 +30,26 @@ rust_library(
         "futures",
         "itertools",
         "maplit",
+        "nix",
         "serde",
         "slog",
         "uuid",
         "zbus",
         "zvariant",
+        ":service_config_generator_if-rust",
         "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/generator:generator",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/serde_systemd:serde_systemd",
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
     ],
+)
+
+thrift_library(
+    name = "service_config_generator_if",
+    languages = ["rust"],
+    thrift_srcs = {"service_config_generator.thrift": None},
 )
 
 image.layer(

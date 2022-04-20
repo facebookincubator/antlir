@@ -15,6 +15,7 @@
 //! consequently not tested here.
 
 use anyhow::{Context, Result};
+use nix::sys::utsname::uname;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::PathBuf;
@@ -43,6 +44,13 @@ fn main() -> Result<()> {
             .context("while reading run directory")?
             .count(),
         "runtime directory is not initially empty"
+    );
+
+    let uts = uname();
+    // the generator generates this dropin to add this to the environment
+    assert_eq!(
+        uts.release(),
+        std::env::var("GENERATOR_KERNEL_VERSION").unwrap()
     );
 
     // for convenience, we use the same binary for every "version" of the demo

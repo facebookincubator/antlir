@@ -37,7 +37,7 @@ struct UnitSection {
 // can collect a more useful set of primitives and specialized types (based
 // primarily on usage that will spring up in this crate)
 #[derive(Debug, PartialEq, Eq)]
-struct Environment(BTreeMap<String, String>);
+pub(crate) struct Environment(pub(crate) BTreeMap<String, String>);
 
 impl Serialize for Environment {
     fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>

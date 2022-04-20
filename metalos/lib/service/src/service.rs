@@ -20,6 +20,7 @@ use uuid::Uuid;
 use systemd::{EnableDisableUnitFlags, Marker, StartMode, Systemd, TypedObjectPath, UnitName};
 
 mod dropin;
+mod generator;
 mod set;
 use dropin::Dropin;
 use set::{ServiceDiff, ServiceSet};
@@ -83,8 +84,17 @@ impl ServiceInstance {
         &self.unit_name
     }
 
+    fn metalos_dir(&self) -> PathBuf {
+        self.paths.root_source.join("metalos")
+    }
+
     fn unit_file_path(&self) -> PathBuf {
-        self.paths.root_source.join("metalos").join(&self.unit_name)
+        self.metalos_dir().join(&self.unit_name)
+    }
+
+    // TODO(T111087410): this should come from a separate package
+    fn generator_path(&self) -> PathBuf {
+        self.metalos_dir().join("generator")
     }
 
     /// Prepare this service version to be run the next time this service is
@@ -105,6 +115,39 @@ impl ServiceInstance {
             .open(dropin_dir.join("99-metalos.conf"))
             .context("while creating dropin file")?;
         serde_systemd::to_writer(dropin_file, &dropin)?;
+
+        if self.generator_path().exists() {
+            let output =
+                crate::generator::evaluate_generator(self.generator_path()).with_context(|| {
+                    format!(
+                        "while running generator at {}",
+                        self.generator_path().display()
+                    )
+                })?;
+            if let Some(dropin) = output.dropin {
+                let dropin_path = dropin_dir.join("50-generator.conf");
+                let dropin_file = OpenOptions::new()
+                    .create(true)
+                    .truncate(true)
+                    .write(true)
+                    .open(&dropin_path)
+                    .with_context(|| {
+                        format!(
+                            "while creating generator dropin file ({})",
+                            dropin_path.display()
+                        )
+                    })?;
+                let dropin = crate::generator::GeneratedDropin::from(dropin);
+                serde_systemd::to_writer(dropin_file, &dropin).with_context(|| {
+                    format!(
+                        "while serializing {:?} to generator dropin file ({})",
+                        dropin,
+                        dropin_path.display()
+                    )
+                })?;
+            }
+        }
+
         let unit_file = self.unit_file_path();
         // overwrite any existing link, since a different version of the service
         // could already be running

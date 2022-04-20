@@ -27,8 +27,9 @@ def native_service(
         service_binary_path = None,
         user = "root",
         group = "root",
-        visibility = None,
-        extra_features = []):
+        generator_binary = None,
+        extra_features = [],
+        visibility = None):
     if not service_binary_path:
         service_binary_path = "/usr/bin/{}".format(service_name)
 
@@ -38,29 +39,36 @@ def native_service(
     if not parent_layer:
         parent_layer = REPO_CFG.artifact["metalos.layer.base"]
 
+    features = [
+        image.ensure_subdirs_exist(
+            "/",
+            METALOS_PATH,
+            user = user,
+            group = group,
+            mode = 0o0770,
+        ),
+        feature.install(
+            binary,
+            service_binary_path,
+            mode = "a+rx",
+        ),
+        feature.install(
+            systemd_service_unit,
+            "/{}/{}.service".format(METALOS_PATH, service_name),
+        ),
+    ]
+
+    if generator_binary:
+        features.append(feature.install(generator_binary, "/metalos/generator", mode = "a+rx"))
+
+    features.extend(extra_features)
+
     image.layer(
         name = name,
         parent_layer = parent_layer,
         flavor = REPO_CFG.antlir_linux_flavor,
         visibility = visibility,
-        features = [
-            image.ensure_subdirs_exist(
-                "/",
-                METALOS_PATH,
-                user = user,
-                group = group,
-                mode = 0o0770,
-            ),
-            feature.install(
-                binary,
-                service_binary_path,
-                mode = "a+rx",
-            ),
-            feature.install(
-                systemd_service_unit,
-                "/{}/{}.service".format(METALOS_PATH, service_name),
-            ),
-        ] + extra_features,
+        features = features,
     )
 
     _generate_systemd_expectations_test(name, service_name, systemd_service_unit, visibility)
