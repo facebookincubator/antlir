@@ -3,8 +3,8 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
-def metalctl(name, rustc_flags = None, extra_deps = [], **kwargs):
-    srcs = native.glob(["src/**/*.rs"])
+def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwargs):
+    srcs = native.glob(["src/*.rs"]) + extra_srcs
 
     # we don't yet have blkid support in oss
     have_blkid = third_party.library("util-linux", "blkid") != None
