@@ -9,6 +9,12 @@ load(":oss_shim.bzl", "buck_command_alias")
 load(":query.bzl", "layer_deps_query")
 load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 
+def container_target_name(name):
+    return name + "=container"
+
+def systemd_target_name(name):
+    return name + "=systemd"
+
 def _add_run_in_subvol_target(name, kind, extra_args = None):
     target = name + "=" + kind
     buck_command_alias(

@@ -10,9 +10,6 @@ load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "config", "is_buck2")
 load(":target_helpers.bzl", "antlir_dep")
 
-def container_target_name(name):
-    return name + "=container"
-
 def _image_layer_impl(
         _rule_type,
         _layer_name,
