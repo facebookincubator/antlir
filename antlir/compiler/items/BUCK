@@ -196,6 +196,7 @@ python_library(
     srcs = ["remove_path.py"],
     deps = [
         ":common",
+        "//antlir:errors",
         "//antlir:subvol_utils",
         "//antlir/bzl/image/feature:remove.shape-python",
     ],

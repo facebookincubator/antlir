@@ -7,6 +7,7 @@
 import tempfile
 import unittest.mock
 
+from antlir.errors import UserError
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes, Subvol
 
@@ -108,7 +109,8 @@ class RemovePathItemTestCase(BaseItemTestCase):
                     side_effect=lambda sv: protected_path_set(sv)
                     | {Path("xyz")},
                 ), self.assertRaisesRegex(
-                    AssertionError, f"Cannot remove protected .*{prot_path}"
+                    UserError,
+                    f".*Path to be removed \\({prot_path}\\) is protected.*",
                 ):
                     RemovePathItem.get_phase_builder(
                         [
@@ -131,7 +133,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
             RemovePathItem.get_phase_builder([remove], DUMMY_LAYER_OPTS_BA)(
                 subvol
             )
-            with self.assertRaisesRegex(AssertionError, "does not exist"):
+            with self.assertRaisesRegex(UserError, "does not exist"):
                 RemovePathItem.get_phase_builder(
                     [
                         RemovePathItem(
