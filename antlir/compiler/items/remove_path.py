@@ -9,6 +9,7 @@ import shutil
 from typing import Iterable
 
 from antlir.bzl.image.feature.remove import remove_paths_t
+from antlir.errors import UserError
 from antlir.subvol_utils import Subvol
 
 from .common import (
@@ -62,8 +63,8 @@ class RemovePathItem(remove_paths_t, ImageItem):
                     # For META_DIR, this is never reached because of
                     # make_path_normal_relative's check, but for other
                     # protected paths, this is required.
-                    raise AssertionError(
-                        f"Cannot remove protected {item}: {protected_paths}"
+                    raise UserError(
+                        f"Path to be removed ({item.path}) is protected ({protected_paths}) and cannot be removed"
                     )
                 # This ensures that there are no symlinks in item.path that
                 # might take us outside of the subvolume.  Since recursive
@@ -73,7 +74,9 @@ class RemovePathItem(remove_paths_t, ImageItem):
                 if not os.path.lexists(path):
                     if not item.must_exist:
                         continue
-                    raise AssertionError(f"Path does not exist: {item}")
+                    raise UserError(
+                        f"Path to be removed does not exist: {item.path}"
+                    )
 
                 if os.path.isdir(path) and not os.path.islink(path):
                     shutil.rmtree(path)
