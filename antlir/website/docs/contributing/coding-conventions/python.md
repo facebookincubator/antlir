@@ -179,6 +179,15 @@ compose a few business logic functions inline, as long as you do no
 branching.  **If in doubt, use a separate main function and write
 unit-tests.**
 
+### Use `UserError`
+
+Any user-facing Antlir binary (e.g.  `compiler:compiler`) should check for
+user errors.  Such binaries ought to have a top-level `except UserError` to
+highlight important messages for the user, and to hide confusing backtraces.
+
+Conversely, any error scenario that is correctable by the user should `raise
+UserError`.
+
 ### Logging
 
 It's the responsibility of any `__main__` to call `init_logging` (see the

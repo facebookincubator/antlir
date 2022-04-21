@@ -74,6 +74,33 @@ buck targets -c parser.default_build_file_syntax=skylark //your/proj:
 buck targets -c parser.default_build_file_syntax=python_dsl //your/proj:
 ```
 
+# Start failure messages with `AntlirUserError:` when appropriate
+
+This prefix is not necessary when you `fail()` from `.bzl`, since such
+errors are readily visible to the user.
+
+However, if you have a genrule that checks for user errors, and writes to
+stderr, it is important to prefix your error message with `AntlirUserError:`.
+If necessary, emit a newline to make sure that the "A" is first on the line.
+
+This will trigger CI automation to highlight this error in the logs.
+
+## Beware `cacheable = False`
+
+A number of Antlir rules need to be marked `cacheable = False` for various
+reasons. Avoid this feature if at all possible:
+
+  - Any cacheable rule that includes the output of the uncacheable rule will
+    (almost) necessarily encounter caching bugs. Concretely, imagine that
+    `:foo` is an uncacheable genrule, and it is included in the `resources`
+    of a `python_binary(name = "bar")`. Then, production CI will end up
+    caching `:bar` together with the now-invalid contents of `:foo`, and
+    this will cause bugs in your builds and/or tests, potentially subtle
+    ones.
+
+  - Uncacheable rules hurt build performance since they cannot be fetched
+    from distributed caches.
+
 ## Do not expose magic target names to the user
 
 If your macro defines a purely internal target, make sure it's namespaced so
