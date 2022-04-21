@@ -21,6 +21,8 @@ image.layer(
         image.rpms_install([
             "basesystem",
             "coreutils",
+            "jq",
+            "less",
         ]),
     ],
     flavor_config_override = snapshot_fedora_override,
