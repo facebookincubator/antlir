@@ -29,7 +29,7 @@ def install_kernel_modules(kernel, module_list):
 
             mods="{module_list}"
             for mod in $mods; do
-                mod_src="$mod_layer_path/kernel/$mod"
+                mod_src="$mod_layer_path/modules/kernel/$mod"
                 if [[ -f "$mod_src" ]]; then
                     mod_dir=\\$(dirname "$mod")
                     mkdir -p "$OUT/$mod_dir"
@@ -67,12 +67,12 @@ def install_kernel_modules(kernel, module_list):
             [
                 image.clone(
                     kernel.artifacts.modules,
-                    paths.join("/modules.{}".format(f)),
+                    paths.join("/modules/modules.{}".format(f)),
                     paths.join("/usr/lib/modules", kernel.uname, "modules.{}".format(f)),
                 ),
                 image.clone(
                     kernel.artifacts.modules,
-                    paths.join("/modules.{}.bin".format(f)),
+                    paths.join("/modules/modules.{}.bin".format(f)),
                     paths.join("/usr/lib/modules", kernel.uname, "modules.{}.bin".format(f)),
                 ),
             ]

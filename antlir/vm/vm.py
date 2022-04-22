@@ -428,7 +428,8 @@ async def vm(
                 path=find_built_subvol(
                     # pyre-fixme [16]: `Optional` has no attribute `path`
                     opts.kernel.artifacts.modules.path
-                ).path(),
+                ).path()
+                / "modules",
                 mount_tag="kernel-modules",
                 generator=False,
             )

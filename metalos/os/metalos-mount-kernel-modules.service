@@ -7,4 +7,4 @@ EnvironmentFile=/run/metalos/image_paths_environment
 Type=oneshot
 RemainAfterExit=true
 ExecStart=mkdir -p /usr/lib/modules/%v
-ExecStart=mount LABEL=/ -o subvolid=${METALOS_KERNEL_SUBVOLID} /usr/lib/modules/%v
+ExecStart=/bin/bash -c '[[ -n "${METALOS_KERNEL_MODULES_PATH}" ]] && mount --bind ${METALOS_KERNEL_MODULES_PATH} /usr/lib/modules/%v || mount LABEL=/ -o subvolid=${METALOS_KERNEL_SUBVOLID} /usr/lib/modules/%v'

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
@@ -95,12 +96,14 @@ def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_
         antlir_rule = "user-internal",
     )
 
-    # The modules are inserted into the layer at the root
-    # of the layer with the expectation that the layer
-    # will be mounted for use at `/lib/modules/{uname}'.
+    # The modules are inserted into the layer with the expectation that the
+    # `modules` directory inside this layer will be mounted for use at
+    # `/lib/modules/{uname}'.
     image.layer(
         name = "{}-modules".format(uname),
         features = [
+            image.ensure_subdirs_exist("/", "modules"),
+        ] + [
             feature.install(
                 image.source(
                     ":{}--precursor-of-modules".format(uname),
@@ -109,7 +112,7 @@ def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_
                         part = part,
                     ),
                 ),
-                part,
+                paths.join("modules", part),
             )
             for part in [
                 "kernel",  # The entire directory of modules
@@ -134,7 +137,7 @@ def build_kernel_artifacts(uname, devel_rpm, headers_rpm, rpm_exploded, include_
             # If the devel headers/source are needed they will be
             # bind mounted into place on this directory. This is here
             # to support that.
-            image.ensure_subdirs_exist("/", "build"),
+            image.ensure_subdirs_exist("/modules", "build"),
         ],
         flavor = REPO_CFG.antlir_linux_flavor,
         visibility = ["PUBLIC"],
