@@ -6,6 +6,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
@@ -228,14 +229,19 @@ image.layer(
 # test so that the image is sized correctly. Otherwise we
 # keep the image minimal and expand at runtime which we don't
 # do for existing boots
-package.new(
+btrfs.new(
     name = "rootdisk.btrfs",
-    layer = "//metalos/disk:control",
-    format = "btrfs",
-    loopback_opts = image.opts(
-        label = "/",
-        writable_subvolume = True,
-        size_mb = 4096,
+    opts = btrfs.opts.new(
+        subvols = {
+            "/volume": btrfs.opts.subvol.new(
+                layer = "//metalos/disk:control",
+                writable = True,
+            ),
+        },
+        loopback_opts = image.opts(
+            label = "/",
+            size_mb = 4096,
+        ),
     ),
 )
 

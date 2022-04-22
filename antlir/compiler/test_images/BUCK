@@ -512,13 +512,6 @@ image.layer(
     visibility = ["//antlir/compiler/items/..."],
 )
 
-package.new(
-    name = "small-layer-with-mounts.btrfs",
-    format = "btrfs",
-    layer = ":small-layer-with-mounts",
-    visibility = ["//antlir/compiler/..."],
-)
-
 defs.python_binary(
     name = "print-ok",
     srcs = ["print_ok.py"],
@@ -889,22 +882,6 @@ package.new(
     name = "child/layer.sendstream",
     format = "sendstream",
     layer = ":child/layer",
-)
-
-package.new(
-    name = "child/layer.btrfs",
-    format = "btrfs",
-    layer = ":child/layer",
-)
-
-package.new(
-    name = "fixed-size.btrfs",
-    layer = ":child/layer",
-    format = "btrfs",
-    loopback_opts = image.opts(
-        size_mb = 225,
-    ),
-    visibility = ["//antlir/..."],
 )
 
 # This will install /rpm_test/cheese2.txt.

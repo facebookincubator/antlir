@@ -2,6 +2,7 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":disk.bzl", "disk")
 
@@ -30,13 +31,18 @@ image.layer(
     visibility = ["//metalos/..."],
 )
 
-package.new(
+btrfs.new(
     name = "control.btrfs",
-    layer = ":control",
-    format = "btrfs",
-    loopback_opts = image.opts(
-        label = "/",
-        writable_subvolume = True,
+    opts = btrfs.opts.new(
+        subvols = {
+            "/volume": btrfs.opts.subvol.new(
+                layer = ":control",
+                writable = True,
+            ),
+        },
+        loopback_opts = image.opts(
+            label = "/",
+        ),
     ),
     visibility = ["//metalos/disk/..."],
 )

@@ -1,0 +1,119 @@
+# @noautodeps
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:layer_resource.bzl", "layer_resource")
+load("//antlir/bzl:oss_shim.bzl", "python_unittest")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
+load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+
+btrfs.new(
+    name = "single-subvol",
+    opts = btrfs.opts.new(
+        subvols = {
+            "/create-ops": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+        },
+    ),
+)
+
+btrfs.new(
+    name = "single-subvol-fixed-size",
+    opts = btrfs.opts.new(
+        subvols = {
+            "/volume": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+        },
+        loopback_opts = image.opts(
+            size_mb = 225,
+        ),
+    ),
+)
+
+btrfs.new(
+    name = "single-subvol-seed-device",
+    opts = btrfs.opts.new(
+        subvols = {
+            "/create-ops": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+        },
+        seed_device = True,
+    ),
+)
+
+btrfs.new(
+    name = "multiple-subvol",
+    opts = btrfs.opts.new(
+        subvols = {
+            "/create-ops-1": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+            "/create-ops-2": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+        },
+    ),
+)
+
+btrfs.new(
+    name = "multiple-subvol-fixed-size",
+    opts = btrfs.opts.new(
+        subvols = {
+            "/create-ops-1": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+            "/create-ops-2": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+        },
+        loopback_opts = image.opts(
+            size_mb = 225,
+        ),
+    ),
+)
+
+btrfs.new(
+    name = "nested-subvol-fixed-size",
+    opts = btrfs.opts.new(
+        subvols = {
+            "/create-ops": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+            "/create-ops/child-ops": btrfs.opts.subvol.new(
+                layer = "//antlir/compiler/test_images:create_ops",
+            ),
+        },
+        loopback_opts = image.opts(
+            size_mb = 225,
+        ),
+    ),
+)
+
+python_unittest(
+    name = "test-package-btrfs",
+    srcs = ["test_package_btrfs.py"],
+    needed_coverage = [(100, "//antlir/package:btrfs-library")],
+    resources = {
+        layer_resource(TEST_IMAGE_PREFIX + "create_ops-original.sendstream"): "create_ops-original.sendstream",
+        layer_resource(TEST_IMAGE_PREFIX + "create_ops"): "create_ops",
+        layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "build-appliance-testing",
+    },
+    deps = [
+        "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir:testlib_image_package_testbase",
+        "//antlir:testlib_layer_resource",
+        "//antlir:unshare",
+        "//antlir/package:btrfs-library",
+        # Include the test packages defined here so they are built
+        # when the test is built.
+        ":multiple-subvol",
+        ":multiple-subvol-fixed-size",
+        ":single-subvol",
+        ":single-subvol-seed-device",
+        ":single-subvol-fixed-size",
+        ":nested-subvol-fixed-size",
+    ],
+)

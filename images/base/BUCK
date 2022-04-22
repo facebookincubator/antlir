@@ -2,7 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
@@ -59,13 +59,18 @@ image.layer(
     runtime = ["systemd"],
 )
 
-package.new(
+btrfs.new(
     name = "fedora.vm.btrfs",
-    format = "btrfs",
-    layer = ":fedora.vm",
-    loopback_opts = image.opts(
-        seed_device = True,
-        writable_subvolume = True,
+    opts = btrfs.opts.new(
+        subvols = {
+            "/volume": btrfs.opts.subvol.new(
+                layer = ":fedora.vm",
+                writable = True,
+            ),
+        },
+        loopback_opts = image.opts(
+            seed_device = True,
+        ),
     ),
     visibility = [
         "//antlir/vm/...",
