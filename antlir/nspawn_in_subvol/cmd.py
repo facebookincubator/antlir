@@ -308,7 +308,7 @@ def _extra_nspawn_args_and_env(
     #
     # Don't require coverage in case any weird test hosts lack FUSE.
     if os.path.exists("/dev/fuse"):  # pragma: no cover
-        extra_nspawn_args.extend(["--bind-ro=/dev/fuse"])
+        extra_nspawn_args.extend(["--bind=/dev/fuse"])
 
     if opts.debug_only_opts.cap_net_admin:
         extra_nspawn_args.append("--capability=CAP_NET_ADMIN")
