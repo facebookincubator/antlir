@@ -20,3 +20,21 @@ template(
     ],
     deps = [":unit"],
 )
+
+template(
+    name = "timer_unit",
+    srcs = ["timer_unit.jinja2"],
+    visibility = [
+        "//metalos/os/...",
+        "//netos/...",
+    ],
+)
+
+template(
+    name = "service_unit",
+    srcs = ["service_unit.jinja2"],
+    visibility = [
+        "//metalos/os/...",
+        "//netos/...",
+    ],
+)

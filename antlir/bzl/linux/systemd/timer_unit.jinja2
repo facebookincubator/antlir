@@ -1,0 +1,18 @@
+[Unit]
+Description={{ description }}
+{% if timer_requires %}
+Requires={{ timer_requires }}
+{% endif %}
+{% if after %}
+After={{ after }}
+{% endif %}
+
+[Install]
+WantedBy=timers.target
+
+[Timer]
+OnCalendar={{ on_calendar }}
+AccuracySec={{ accuracy_sec }}
+Persistent=true
+RandomizedDelaySec={{ randomized_delay_sec}}
+Unit={{ service_unit_name }}
