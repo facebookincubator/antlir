@@ -360,11 +360,14 @@ def _ensure_private_network():
     it's very possible that `yum` / `dnf` will end up doing something
     non-deterministic by reaching out to the network.
     """
-    # From `/usr/include/uapi/linux/if_arp.h`
+    # From `/usr/include/linux/if_arp.h`
     allowed_types = {
+        1,  # ARPHRD_ETHER
         768,  # ARPHRD_TUNNEL
         769,  # ARPHRD_TUNNEL6
         772,  # ARPHRD_LOOPBACK
+        778,  # ARPHRD_IPGRE
+        823,  # ARPHRD_IP6GRE
     }
     net = Path("/sys/class/net")
     for iface in net.listdir():
