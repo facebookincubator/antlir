@@ -574,7 +574,6 @@ TEST_PACKAGE_RESOURCES = {
     TEST_IMAGE_PREFIX + "empty_bios_boot": "tests/empty_bios_boot",
     TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
     TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
-    TEST_IMAGE_PREFIX + "fixed-size.btrfs": "tests/fixed-size.btrfs",
     layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance-testing",
 }
 

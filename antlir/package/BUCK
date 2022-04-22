@@ -1,0 +1,20 @@
+# @noautodeps
+load("//antlir/bzl:oss_shim.bzl", "python_binary")
+
+python_binary(
+    name = "btrfs",
+    srcs = [
+        "btrfs.py",
+    ],
+    main_module = "antlir.package.btrfs",
+    visibility = ["PUBLIC"],
+    deps = [
+        "//antlir:common",
+        "//antlir:errors",
+        "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir:unshare",
+        "//antlir/bzl/image/package:btrfs.shape-python",
+    ],
+)

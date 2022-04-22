@@ -1,7 +1,22 @@
 load("//antlir/bzl:defs.bzl", "fake_macro_library")
+load("//antlir/bzl:shape.bzl", "shape")
 
 fake_macro_library(
     name = "new",
     srcs = ["new.bzl"],
     deps = ["//antlir/bzl:image_utils"],
+)
+
+fake_macro_library(
+    name = "btrfs",
+    srcs = ["btrfs.bzl"],
+    deps = ["//antlir/bzl:image_utils"],
+)
+
+shape.impl(
+    name = "btrfs.shape",
+    deps = [
+        "//antlir/bzl:loopback_opts.shape",
+        "//antlir/bzl:target.shape",
+    ],
 )

@@ -7,7 +7,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "kernel_get", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load("//antlir/bzl/image/package:new.bzl", "package_new")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load(":kernel.bzl", "normalize_kernel")
 load(":vm.shape.bzl", "connection_t", "disk_t", "emulator_t", "runtime_t", "vm_opts_t")
 
@@ -60,14 +60,19 @@ def _new_vm_disk(
         layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
         package_target = "{}=image.btrfs".format(layer_name)
         if not native.rule_exists(package_target):
-            package_new(
+            btrfs.new(
                 name = package_target,
-                layer = layer,
-                format = "btrfs",
-                loopback_opts = struct(
-                    label = layer_label,
-                    size_mb = layer_size_mb,
-                    writable_subvolume = True,
+                opts = btrfs.opts.new(
+                    subvols = {
+                        "/volume": btrfs.opts.subvol.new(
+                            layer = layer,
+                            writable = True,
+                        ),
+                    },
+                    loopback_opts = struct(
+                        label = layer_label,
+                        size_mb = layer_size_mb,
+                    ),
                 ),
                 visibility = [],
                 antlir_rule = "user-internal",

@@ -11,7 +11,7 @@
 import enum
 import importlib.resources
 import os
-from typing import Type, TypeVar
+from typing import Type, TypeVar, Union
 
 import pydantic
 from antlir.btrfs_diff.freeze import freeze, DoNotFreeze
@@ -86,7 +86,7 @@ class Shape(pydantic.BaseModel, DoNotFreeze, metaclass=ShapeMeta):
             return cls.parse_raw(r.read())
 
     @classmethod
-    def load(cls: Type[S], path: Path) -> S:
+    def load(cls: Type[S], path: Union[Path, str]) -> S:
         with open(path, "r") as r:
             # pyre-fixme[16]: `S` has no attribute `parse_raw`.
             return cls.parse_raw(r.read())

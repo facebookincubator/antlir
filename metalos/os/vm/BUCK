@@ -1,7 +1,7 @@
 # @noautodeps
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
@@ -24,14 +24,18 @@ image.layer(
     visibility = ["PUBLIC"],
 )
 
-package.new(
+btrfs.new(
     name = "base.btrfs",
-    layer = ":base",
-    format = "btrfs",
-    loopback_opts = image.opts(
-        seed_device = False,
-        writable_subvolume = True,
-        label = "/",
+    opts = btrfs.opts.new(
+        subvols = {
+            "/volume": btrfs.opts.subvol.new(
+                layer = ":base",
+                writable = True,
+            ),
+        },
+        loopback_opts = image.opts(
+            label = "/",
+        ),
     ),
     # Any vm run target can use this
     visibility = ["PUBLIC"],
