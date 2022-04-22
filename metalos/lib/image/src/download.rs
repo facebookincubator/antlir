@@ -19,6 +19,8 @@ pub enum Error {
     InvalidUri { uri: String, error: anyhow::Error },
     #[error("failure while opening http connection {0}")]
     Open(reqwest::Error),
+    #[error("Got non-success status code {0}. Body was {1}")]
+    StatusCode(reqwest::StatusCode, String),
 }
 
 #[async_trait]
@@ -95,15 +97,27 @@ impl Downloader for &HttpsDownloader {
     async fn open_bytes_stream(&self, log: Logger, id: &PackageId) -> Result<Self::BytesStream> {
         let url = self.package_url(id)?;
         debug!(log, "{:?} -> {}", id, url);
-        Ok(Box::pin(
-            self.client
-                .get(self.package_url(id)?)
-                .send()
-                .await
-                .map_err(Error::Open)?
-                .bytes_stream()
-                .map(|r| r.map_err(|e| std::io::Error::new(ErrorKind::Other, e))),
-        ))
+        let response = self
+            .client
+            .get(self.package_url(id)?)
+            .send()
+            .await
+            .map_err(Error::Open)?;
+
+        if response.status().is_success() {
+            Ok(Box::pin(response.bytes_stream().map(|r| {
+                r.map_err(|e| std::io::Error::new(ErrorKind::Other, e))
+            })))
+        } else {
+            Err(Error::StatusCode(
+                response.status(),
+                match response.text().await {
+                    Ok(body) => body,
+                    Err(e) => format!("Failed to ready body: {:?}", e),
+                },
+            )
+            .into())
+        }
     }
 
     async fn open_sendstream(&self, log: Logger, package: &PackageId) -> Result<Self::Sendstream> {
