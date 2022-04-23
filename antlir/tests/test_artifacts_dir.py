@@ -12,7 +12,6 @@ from antlir.artifacts_dir import (
     find_buck_cell_root,
 )
 from antlir.fs_utils import Path, temp_dir
-from antlir.tests.common import is_buck2
 
 
 class ArtifactsDirTests(unittest.TestCase):
@@ -58,17 +57,13 @@ class ArtifactsDirTests(unittest.TestCase):
             repo_subdir = td / "i/am/a/subdir/of/the/repo"
             os.makedirs(repo_subdir)
 
-            artifacts_dir = ensure_per_repo_artifacts_dir_exists(
-                path_in_repo=repo_subdir, is_buck2=is_buck2()
-            )
+            artifacts_dir = ensure_per_repo_artifacts_dir_exists(repo_subdir)
             self.assertEqual(td / "buck-image-out", artifacts_dir)
             self.assertTrue(artifacts_dir.exists())
             self.assertTrue((artifacts_dir / "clean.sh").exists())
 
             # Call it again to make sure we don't fail on the already exists
-            ensure_per_repo_artifacts_dir_exists(
-                path_in_repo=repo_subdir, is_buck2=is_buck2()
-            )
+            ensure_per_repo_artifacts_dir_exists(repo_subdir)
 
     def test_find_buck_cell_root(self) -> None:
         with temp_dir() as td:

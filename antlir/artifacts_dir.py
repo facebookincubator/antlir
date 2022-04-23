@@ -4,13 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-"""
-Setup the antlir `buck-image-out` build artifacts directory if it doesn't
-already exist.
-"""
-
 "DANGER: The resulting PAR will not work if copied outside of buck-out."
-import argparse
 import os
 import shutil
 import stat
@@ -150,8 +144,6 @@ def find_artifacts_dir(path_in_repo: Optional[Path] = None) -> Path:
 
 
 def ensure_per_repo_artifacts_dir_exists(
-    *,
-    is_buck2: bool,
     path_in_repo: Optional[Path] = None,
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
@@ -179,7 +171,6 @@ def ensure_per_repo_artifacts_dir_exists(
         artifacts_dir,
         buck_cell_root,
         is_eden_repo=maybe_edenfs,
-        is_buck2=is_buck2,
     )
     return artifacts_dir
 
@@ -188,13 +179,11 @@ def ensure_clean_sh_exists(
     artifacts_dir: Path,
     buck_cell_root: Path,
     is_eden_repo: bool,
-    is_buck2: bool,
 ) -> None:
     # Ensure these are abs
     buck_cell_root = buck_cell_root.realpath()
     artifacts_dir = artifacts_dir.realpath()
 
-    buck_cmd = "buck2" if is_buck2 else "buck"
     clean_sh_path = artifacts_dir / "clean.sh"
 
     with populate_temp_file_and_rename(
@@ -211,7 +200,7 @@ def ensure_clean_sh_exists(
                 # We must clean buck first to reset the state
                 echo "Cleansing with Buck..."
                 pushd {buck_cell_root} >/dev/null
-                {buck_cmd} clean
+                buck clean
                 popd >/dev/null
 
                 # Now it is safe to unmount and remove
@@ -239,19 +228,5 @@ def ensure_clean_sh_exists(
     )
 
 
-def parse_args(argv) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--buck2",
-        action="store_true",
-        help="Indicates that buck2 is being used.",
-    )
-    return parser.parse_args(argv)
-
-
 if __name__ == "__main__":
-    args = parse_args(sys.argv[1:])
-    print(ensure_per_repo_artifacts_dir_exists(is_buck2=args.buck2))
+    print(ensure_per_repo_artifacts_dir_exists())
