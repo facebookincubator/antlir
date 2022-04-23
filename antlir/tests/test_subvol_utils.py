@@ -28,7 +28,7 @@ from ..subvol_utils import (
     with_temp_subvols,
 )
 from ..volume_for_repo import get_volume_for_current_repo
-from .common import AntlirTestCase, is_buck2
+from .common import AntlirTestCase
 from .subvol_helpers import render_subvol
 
 
@@ -42,10 +42,7 @@ class SubvolTestCase(AntlirTestCase):
         super().setUp()
         # Make sure we have a volume to work with
         get_volume_for_current_repo(
-            ensure_per_repo_artifacts_dir_exists(
-                path_in_repo=Path(sys.argv[0]),
-                is_buck2=is_buck2(),
-            )
+            ensure_per_repo_artifacts_dir_exists(Path(sys.argv[0]))
         )
 
     @with_temp_subvols

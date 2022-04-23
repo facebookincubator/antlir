@@ -417,10 +417,6 @@ def _impl_python_unittest(
     )
 
 def _python_unittest(*args, **kwargs):
-    env = kwargs.get("env", {})
-    env["IS_BUCK2"] = ""
-    env["BUCK"] = "buck"
-    kwargs["env"] = env
     _wrap_internal(_impl_python_unittest, args, kwargs)
 
 def _split_rust_kwargs(kwargs):

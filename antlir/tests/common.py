@@ -3,19 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import os
 import unittest
 from contextlib import contextmanager
-
-
-def is_buck2() -> bool:
-    # Make sure IS_BUCK2 is set in the environment
-    assert os.getenv("IS_BUCK2", None) is not None, (
-        "IS_BUCK2 must be set in the environment for this test. "
-        "This should be set by default via: "
-        "antlir.bzl.oss_shim.python_unittest()"
-    )
-    return os.getenv("IS_BUCK2") != ""
 
 
 class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
