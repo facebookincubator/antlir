@@ -14,6 +14,7 @@ from typing import Generator, Iterable, Optional, Tuple, List
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path, temp_dir
+from antlir.vm.bzl.vm import disk_interface_t
 
 
 log = get_logger()
@@ -270,12 +271,14 @@ def _tmp_qcow2_disk(
 class QCow2RootDisk(Share):
     """
     Share a btrfs filesystem to a Qemu instance as a
-    qcow2 disk via the virtio interface.
+    qcow2 disk. Defaults to virtio-blk, but can also be attached with other
+    emulated interfaces such as nvme
     """
 
     path: Path
     qemu_img: Path
     stack: AsyncExitStack
+    interface: disk_interface_t
     subvol: str = "volume"
     dev: str = "vda"
     additional_scratch_mb: Optional[int] = None
@@ -302,7 +305,7 @@ class QCow2RootDisk(Share):
                 f"file.driver=file,file.filename={self.cow_disk!s},"
             ),
             "--device",
-            "virtio-blk,drive=root-drive,serial=ROOT_DISK_SERIAL",
+            f"{self.interface.value},drive=root-drive,serial=ROOT_DISK_SERIAL",
         )
 
     @property

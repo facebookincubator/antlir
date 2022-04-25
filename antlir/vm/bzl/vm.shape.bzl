@@ -20,6 +20,8 @@ emulator_t = shape.shape(
     tpm_binary = shape.field(target_t, optional = True),
 )
 
+disk_interface_t = shape.enum("virtio-blk", "nvme")
+
 # A disk device type.  The `package` attribute of this shape must be either
 # an `image.layer` target that will be transiently packaged via `package.new`
 # or an existing `package.new` target.
@@ -29,6 +31,7 @@ disk_t = shape.shape(
     # this might be necessary when the OS tries to dynanically
     # request more disk space (e.g creating a new GPT partition)
     additional_scratch_mb = shape.field(int, optional = True),
+    interface = shape.field(disk_interface_t, default = "virtio-blk"),
 )
 
 connection_t = shape.shape(
