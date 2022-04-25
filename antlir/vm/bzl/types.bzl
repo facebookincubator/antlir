@@ -142,6 +142,9 @@ def _new_vm_opts(
     if boot_from_disk and initrd != None:
         fail("Can't specify `initrd` when `boot_from_disk` is True")
 
+    if boot_from_disk and kwargs.get("append", None) != None:
+        fail("Can't specify `append` when `boot_from_disk` is True")
+
     # Allow the user to provide their own initrd. Currently there is no way for
     # us to verify that this initrd will actually work with the given kernel,
     # but if someone is using this (eg, the vm appliance), assume they are
