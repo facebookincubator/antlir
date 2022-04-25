@@ -123,6 +123,7 @@ where
     handlebars.register_helper("has-default-value", Box::new(has_default_value));
     handlebars.register_helper("json", Box::new(json_helper));
     handlebars.register_helper("upper", Box::new(upper_helper));
+    handlebars.register_helper("ident", Box::new(ident_helper));
 
     let handlebars = <Module as RegisterTemplates<T>>::register_templates(handlebars)
         .context("When setting up handlebars for Module")?;
@@ -139,6 +140,7 @@ where
 }
 
 handlebars_helper!(upper_helper: |x: String| x.to_uppercase());
+handlebars_helper!(ident_helper: |x: String| x.replace('-', "_"));
 
 trait ModuleExt<T>
 where
