@@ -138,6 +138,7 @@ python_unittest(
         ":run-library",
     ]],
     resources = {
+        "//antlir/nspawn_in_subvol/nisdomain:nis_domainname": "tests/nis_domainname",
         layer_resource(
             TEST_IMAGE_PREFIX + "test-layer",
         ): "tests/test-layer",
@@ -156,6 +157,9 @@ python_unittest(
         layer_resource(
             TEST_IMAGE_PREFIX + "bootable-systemd-os-with-buck-runnables",
         ): "tests/bootable-systemd-os-with-buck-runnables",
+        layer_resource(
+            TEST_IMAGE_PREFIX + "installed-executables",
+        ): "tests/has-buck-runnables",
         layer_resource(
             TEST_IMAGE_PREFIX + "test-layer-iproute",
         ): "tests/test-layer-iproute",
@@ -178,6 +182,9 @@ python_binary(
     name = "run-test",
     srcs = ["run_test.py"],
     main_module = "antlir.nspawn_in_subvol.run_test",
+    resources = {
+        "//antlir/nspawn_in_subvol/nisdomain:nis_domainname": "nis_domainname",
+    },
     visibility = ["PUBLIC"],
     deps = [
         ":args",

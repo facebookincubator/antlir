@@ -661,20 +661,6 @@ python_unittest(
     ],
 )
 
-python_unittest(
-    name = "test-execute-installed",
-    srcs = ["tests/test_execute_installed.py"],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "installed-executables",
-        ): "tests/exe-layer",
-    },
-    deps = [
-        "//antlir:testlib_layer_resource",
-        "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
 python_library(
     name = "unionfind",
     srcs = ["unionfind.py"],
