@@ -502,6 +502,7 @@ trait Manager {
     fn halt(&self) -> zbus::Result<()>;
 
     /// See [reboot](ManagerProxy::reboot)
+    #[dbus_proxy(name = "KExec")]
     fn kexec(&self) -> zbus::Result<()>;
 
     /// Send a signal to all processes of a unit.
