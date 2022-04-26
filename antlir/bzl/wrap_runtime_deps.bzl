@@ -158,13 +158,14 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
 
     if runs_in_build_steps_causes_slow_rebuilds:
         literal_preamble = ""
-        shell_substitutable_preamble = (
+        unquoted_heredoc_preamble = (
             "# New output each build: \\$(date) $$ $PID $RANDOM $RANDOM"
         )
     else:
+        # IMPORTANT: Avoid bashisms, this can run under busybox's `ash`.
         literal_preamble = (
             """\
-if [[ "$ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP" != "1" ]] ; then
+if [ "$ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP" != "1" ] ; then
     cat >&2 << 'EOF'
 AntlirUserError: Ran Buck target `{target}` from an Antlir build step, """ +
             """\
@@ -174,16 +175,15 @@ EOF
 fi
 """
         ).format(target = target)
-        shell_substitutable_preamble = ""
+        unquoted_heredoc_preamble = ""
 
     buck_genrule(
         name = name,
         bash = build_exec_wrapper(
             runnable = target,
             path_in_output = path_in_output,
-            args = '"$@"',
             literal_preamble = literal_preamble,
-            shell_substitutable_preamble = shell_substitutable_preamble,
+            unquoted_heredoc_preamble = unquoted_heredoc_preamble,
         ),
         # We deliberately generate a unique output on each rebuild.
         cacheable = False,

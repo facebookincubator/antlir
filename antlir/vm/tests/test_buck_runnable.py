@@ -31,13 +31,25 @@ class BuckRunnableVMTest(AntlirTestCase):
             ).stdout,
         ):
             time.sleep(0.3)
+
         self.assertEqual(
             "1",
             os.environ.get("ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP"),
         )
+
+        self.assertEqual(
+            "fake_service: only_write_to_stdout\n",
+            subprocess.check_output(
+                ["/fake-service", "only_write_to_stdout"],
+                text=True,
+            ),
+        )
+
         self.assertTrue(Path("/fake-static-service-ran").exists())
-        # The rootfs-based generator has no chance of running, since it's
-        # not in the `initrd`, so there's no test coverage for whether
-        # generators get the environment magic -- and since they go in the
-        # always-packaged `initrd`, this doesn't really matter.
+        # Regardless of "not a build step" marking, this
+        # `install_buck_runnable` generator has no chance of running, in
+        # MetalOS, the `rootfs` generators run after the switch-root away
+        # from `initrd` but **before** the Antlir repo is mounted.  So when
+        # the wrapper tries to execute `$REPO_ROOT/$(location ...)`, the
+        # file will not be found.
         self.assertFalse(Path("/fake-systemd-generator-ran").exists())

@@ -16,8 +16,8 @@ def build_vm_run_target(
         # An instance of a vm_opts_t shape.
         vm_opts = None,
         # A list of additional cli args to pass to the provided exe_target.
-        # This is passed directly to the `exe_target` so they should already be
-        # properly formatted.
+        # This string is passed directly as raw shell to the `exe_target` so
+        # be sure to `shell.quote()` anything that needs quoting.
         args = None,
         # The exe target to execute.
         exe_target = antlir_dep("vm:run")):
@@ -27,8 +27,7 @@ def build_vm_run_target(
         antlir_rule = "user-internal",
         bash = build_exec_wrapper(
             runnable = exe_target,
-            args = """ --opts {opts_quoted} {extra_args} "$@"
-            """.format(
+            raw_shell_args = '--opts {opts_quoted} {extra_args} "$@"'.format(
                 extra_args = " ".join(args) if args else "",
                 opts_quoted = shell.quote(shape.do_not_cache_me_json(vm_opts)),
             ),

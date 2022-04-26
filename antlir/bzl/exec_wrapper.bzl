@@ -10,11 +10,14 @@ load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 def build_exec_wrapper(
         runnable,
         path_in_output = None,
-        args = None,
+        # Keep these compliant with POSIX `sh` -- MetalOS `initrd` lacks `bash`
+        raw_shell_args = '"$@"',
         literal_preamble = "",
-        shell_substitutable_preamble = ""):
-    """Returns shell for a genrule that's intended to execute `runnable` with
-    args and is compatible with buck2 repo-relative output paths.
+        unquoted_heredoc_preamble = ""):
+    """
+    Returns shell for a genrule that's intended to execute `runnable` with
+    the same args as supplied (default) or modified ones.  Unlike a naive
+    implementation, this supports Buck2 repo-relative output paths.
 
     Important notes:
 
@@ -24,11 +27,42 @@ def build_exec_wrapper(
     - As a result of the above, this genrule should NOT be embedded into other
       targets as those targets themselves may be cached. It should only be
       executed directly by users.
+    - Stick to POSIX `sh` in `raw_shell_args` & preambles.
     """
     EOF = "EXEC_WRAPPER_EOF"
-    for preamble in [literal_preamble, shell_substitutable_preamble]:
+    for preamble in [literal_preamble, unquoted_heredoc_preamble]:
         if EOF in preamble.splitlines():
-            fail("preamble {} had a '{}' line".format(preamble, EOF))
+            fail("`preamble={}` had a '{}' line".format(repr(preamble), EOF))
+
+    # In Buck1: `$()` macro paths are absolute.  `$REPO_ROOT` is empty
+    # so that `$REPO_ROOT/abs/path` expands to `/abs/path`.
+    #
+    # In Buck2: `$()` macro paths are repo-relative.  We compute the
+    # absolute path of `$REPO_ROOT` at build-time (in this genrule), and
+    # store literal value into the wrapper script.  When the wrapper
+    # runs, `$REPO_ROOT/rel/path` expands to `/repo/root/rel/path`.
+    #
+    # Rationale: At first glance it would appear that we should just be
+    # able to use `realpath` to find the absolute path of the
+    # $(exe_target ..).  That turned out to be fragile for two reasons:
+    #   - It relies on buck/buck2 to execute the construction of the genrule
+    #     with a cwd of the repository root.  While this is currently the
+    #     case as of this commit, it has changed multiple times in the
+    #     recent past for buck2.  This approach makes the cwd irrelevant.
+    #   - buck (v1) resolves certain binary types (looking at you python)
+    #     via $(exe_target ...) as a full path + additional args, which
+    #     means that the bash would have to parse it to get the path of the
+    #     _actual_ buck runnable.  That is a nightmare.
+    if is_buck2():
+        add_repo_root_to_wrapper = """\
+binary_path=( $(exe {repo_root}))
+repo_root=\\$( $binary_path )
+echo "REPO_ROOT=$repo_root" >> "$TMP/out"
+        """.format(repo_root = antlir_dep(":repo-root"))
+    else:
+        add_repo_root_to_wrapper = '''\
+echo "REPO_ROOT=" >> "$TMP/out"
+'''
 
     # Note:  Notice we are using the `$(exe_target ...)` macro instead of just
     # plain old `$(exe ...)` when invoking the wrapped target binary. The
@@ -46,51 +80,33 @@ def build_exec_wrapper(
     # pretty much undocumented since this is part of a yet to be described "new"
     # behavior.  There are test cases that cover this though:
     # https://github.com/facebook/buck/tree/master/test/com/facebook/buck/cli/configurations/testdata/exe_target
+    #
+    # Pro-tip: If you ever find yourself debugging a wrapped systemd generator,
+    # add `-x` to the hashbang, and follow it with:
+    #   : 2>/dev/kmsg && exec 2> /dev/kmsg
+    #   : 1>/dev/kmsg && exec 1> /dev/kmsg
     return """
-echo '#!/bin/sh' > "$TMP/out"
-{maybe_repo_root_preamble}
+cat << '{EOF}' > "$TMP/out"
+#!/bin/sh
+{EOF}
+{add_repo_root_to_wrapper}
 cat >> "$TMP/out" << {EOF}
-{shell_substitutable_preamble}
+{unquoted_heredoc_preamble}
 {EOF}
 cat >> "$TMP/out" << '{EOF}'
 {literal_preamble}
-exec {maybe_repo_root_prefix}$(exe_target {runnable}){maybe_quoted_path_in_output} {args}
+exec "$REPO_ROOT/"$(exe_target {runnable}){maybe_quoted_path_in_output} {args}
 {EOF}
 chmod +x "$TMP/out"
 mv "$TMP/out" "$OUT"
 """.format(
-        shell_substitutable_preamble = shell_substitutable_preamble,
-        literal_preamble = literal_preamble,
+        add_repo_root_to_wrapper = add_repo_root_to_wrapper,
         EOF = EOF,
-        # The preamble is inserted as part of the genrule script itself as
-        # opposed to the script the genule is creating.  This is used to
-        # discover the repository root dynamically during build time to build a
-        # full ABS path to the executable when using buck2. At first glance it
-        # would appear that we should just be able to use `realpath` to find the
-        # ABS path of the $(exe_target ..). That turned out to be fragile for
-        # two reasons:
-        #   - It relies on buck/buck2 to execute the construction of the genrule
-        #     with a cwd of the repository root.  While this is currently the
-        #     case as of this commit, it has changed multiple times in the
-        #     recent past for buck2.  This approach makes the cwd irrelevant.
-        #   - buck (v1) resolves certain binary types (looking at you python)
-        #     via $(exe_target ...) as a full path + additional args, which
-        #     means that the bash would have to parse it to get the path of the
-        #     _actual_ buck runnable.  That is a nightmare.
-        maybe_repo_root_preamble = """
-binary_path=( $(exe {repo_root}))
-repo_root=\\$( $binary_path )
-echo "REPO_ROOT=$repo_root" >> "$TMP/out"
-        """.format(
-            repo_root = antlir_dep(":repo-root"),
-        ) if is_buck2() else "",
-        # The prefix is inserted into the generated script so that at runtime
-        # the repository root which is discovered at build time is properly
-        # expanded.
-        maybe_repo_root_prefix = "$REPO_ROOT/" if is_buck2() else "",
+        unquoted_heredoc_preamble = unquoted_heredoc_preamble,
+        literal_preamble = literal_preamble,
         runnable = runnable,
         maybe_quoted_path_in_output = (
             "/" + shell.quote(path_in_output)
         ) if path_in_output else "",
-        args = args if args else "",
+        args = raw_shell_args,
     )

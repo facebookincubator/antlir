@@ -6,4 +6,8 @@
 
 import sys
 
-open(f"/fake-{sys.argv[1]}-service-ran", "w").close()
+kind = sys.argv[1]
+if kind == "only_write_to_stdout":  # see `test_boot_marked_as_non_build_step`
+    print("fake_service:", kind)
+else:
+    open(f"/fake-{kind}-service-ran", "w").close()
