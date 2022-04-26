@@ -22,6 +22,9 @@ struct ProvisioningConfig {
   // MetalOS update lifecycles
   3: string root_pw_hash;
   4: packages.GptRootdisk gpt_root_disk;
+  // This is just a historical record of what the box was originally imaged using.
+  // The initrd listed here won't be used again so this field has no effect on automation
+  5: packages.ImagingInitrd imaging_initrd;
 } (rust.exhaustive)
 
 // HostIdentity is the main entrypoint to the Starlark config generator runtime.

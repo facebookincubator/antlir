@@ -28,6 +28,10 @@ struct Rootfs {
   1: PackageId id;
 } (rust.exhaustive)
 
+struct ImagingInitrd {
+  1: PackageId id;
+} (rust.exhaustive)
+
 struct Initrd {
   1: PackageId id;
 } (rust.exhaustive)
