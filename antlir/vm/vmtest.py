@@ -14,7 +14,7 @@ from typing import Any, Dict, AsyncGenerator, List, Optional, Tuple, Union
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.cli import normalize_buck_path
-from antlir.common import get_logger
+from antlir.common import get_logger, not_none
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
@@ -279,23 +279,21 @@ async def run(
         )
 
     if devel_layer:
+        devel_path = not_none(
+            find_built_subvol(opts.kernel.artifacts.devel.path)
+        ).path()
         shares += [
             Plan9Export(
-                # pyre-fixme[16]: `Optional` has no attribute `path`.
-                path=find_built_subvol(opts.kernel.artifacts.devel.path).path(),
-                # pyre-fixme[6]: Expected `Optional[Path]` for 2nd param but got
-                # `str`.
-                mountpoint="/usr/src/kernels/{}".format(opts.kernel.uname),
+                path=devel_path,
+                mountpoint=Path("/usr/src/kernels") / opts.kernel.uname,
                 mount_tag="kernel-devel-src",
                 generator=True,
             ),
             Plan9Export(
-                path=find_built_subvol(opts.kernel.artifacts.devel.path).path(),
-                # pyre-fixme[6]: Expected `Optional[Path]` for 2nd param but got
-                # `str`.
-                mountpoint="/usr/lib/modules/{}/build".format(
-                    opts.kernel.uname
-                ),
+                path=devel_path,
+                mountpoint=Path("/usr/lib/modules")
+                / opts.kernel.uname
+                / "build",
                 mount_tag="kernel-devel-build",
                 generator=True,
             ),
