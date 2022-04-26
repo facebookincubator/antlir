@@ -16,4 +16,5 @@ struct BootConfig {
   // @oss-disable: 1: deployment_specific.DeploymentBootConfig deployment_specific;
   2: packages.Rootfs rootfs;
   3: packages.Kernel kernel;
+  4: packages.Initrd initrd;
 } (rust.exhaustive)
