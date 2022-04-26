@@ -1,0 +1,14 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "metalos_kexec",
+    srcs = ["src/lib.rs"],
+    deps = [
+        "anyhow",
+        "nix",
+        "slog",
+        "//metalos/host_configs:api-rust",
+        "//metalos/lib/image:image",
+        "//metalos/lib/systemd:systemd",
+    ],
+)
