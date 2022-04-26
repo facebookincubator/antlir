@@ -8,6 +8,7 @@ import os
 import subprocess
 import tempfile
 import threading
+from contextlib import contextmanager
 from unittest import mock
 
 from antlir.artifacts_dir import find_buck_cell_root
@@ -679,6 +680,39 @@ class NspawnTestCase(NspawnTestBase):
         self.assertIn(b"USER", ret.stdout)
         self.assertIn(b"TERM=linux-clown", ret.stdout)
 
+    @contextmanager
+    def _prepend_non_build_step_args(self, args):
+        with Path.resource(__package__, "nis_domainname", exe=True) as p:
+            yield [
+                f"--container-not-part-of-build-step={p}",
+                "--setenv=ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1",
+                *args,
+            ]
+
+    # The `=systemd` counterpart is `test_boot_marked_as_non_build_step`
+    def test_execute_buck_runnable(self):
+        for print_ok in [
+            "/foo/bar/installed/print-ok",
+            "/foo/bar/installed/print-ok-too",
+        ]:
+            # Workaround: When the test is compiled with LLVM profiling
+            # (@mode/dbgo-cov), then `print-ok` will try to write to
+            # `/default.profraw`, which is not permitted to the test user
+            # `nobody`.  This would print errors to stderr and cause our
+            # assertion below to fail.
+            with self._prepend_non_build_step_args(
+                ["--setenv=LLVM_PROFILE_FILE=/tmp/default.profraw", print_ok]
+            ) as args:
+                ret = self._nspawn_in(
+                    (__package__, "has-buck-runnables"),
+                    args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    check=False,  # the next assertion shows the stderr/stdout
+                )
+            self.assertEqual(0, ret.returncode, (ret.stdout, ret.stderr))
+            self.assertEqual((b"ok\n", b""), (ret.stdout, ret.stderr))
+
     # Ensures that the special "non-build step" marking used by
     # `wrap_runtime_deps.bzl` is correctly propagated to `systemd`,
     # including generators and units.
@@ -707,8 +741,7 @@ set -x
         self.assertIn(b"env_bad\nfail_run\nuser_err\nnothing_ran", ret.stdout)
 
         # Now the "good case", with a properly marked container.
-        magic_env = "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
-        OK_SH = """\
+        GOOD_SH = """\
 # The services may complete after `multi-user.target` becomes active.
 for svc in fake-generated fake-static ; do
     while ! systemctl status "$svc" | grep -q 'Process: .*code=exited' ; do
@@ -728,11 +761,14 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
 
 :  # instead of using the return code, we validate stdout below
 """
-        ret = self._nspawn_in(
-            (__package__, "bootable-systemd-os-with-buck-runnables"),
-            ["--boot", f"--setenv={magic_env}", "--", "/bin/bash", "-c", OK_SH],
-            stdout=subprocess.PIPE,
-        )
+        with self._prepend_non_build_step_args(
+            ["--boot", "--", "/bin/bash", "-c", GOOD_SH],
+        ) as args:
+            ret = self._nspawn_in(
+                (__package__, "bootable-systemd-os-with-buck-runnables"),
+                args,
+                stdout=subprocess.PIPE,
+            )
         self.assertIn(
             b"env_ok\ncan_run\nrun_ok\ngen_ok\ngen_svc_ok\nstatic_svc_ok",
             ret.stdout,

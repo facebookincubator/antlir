@@ -142,6 +142,16 @@ class _NspawnDebugOnlyNotForProdOpts(NamedTuple):
     # This can only be used with the `--boot` option since it requires a
     # working systemd inside the container.
     register: bool = False
+    # This is used in `=container` and `=systemd` debug targets, and in
+    # image unittests, in order to activate the "not a build step" marking
+    # required for correct function of `install_buck_runnable` (enforced in
+    # `wrap_runtime_deps.bzl`).
+    #
+    # The path should point at `nspawn_in_subvol/nisdomain:nis_domainname`.
+    # It is not a resource because `nis_domainname` is built using Antlir,
+    # and making image builds depend on `nis_domainname` would make a
+    # circular dep.
+    container_not_part_of_build_step: Optional[Path] = None
 
 
 def _new_nspawn_debug_only_not_for_prod_opts(**kwargs):
@@ -200,6 +210,12 @@ def _parser_add_debug_only_not_for_prod_opts(parser: argparse.ArgumentParser):
         help="Register this container instance with `sysytemd-machined`. This "
         "is useful for local debugging and should never be relied on for CI "
         "or Production since it requires a known working, ambient systemd.",
+    )
+    parser.add_argument(
+        "--container-not-part-of-build-step",
+        default=defaults["container_not_part_of_build_step"],
+        type=lambda x: Path.from_argparse(x) if x else None,
+        help=argparse.SUPPRESS,  # Antlir-internal, see docs on the field above.
     )
 
 

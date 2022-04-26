@@ -67,7 +67,6 @@ import os
 import shutil
 import signal
 import subprocess
-import textwrap
 import time
 from contextlib import closing, contextmanager, nullcontext
 from typing import ContextManager, Iterable, List, Tuple
@@ -94,6 +93,7 @@ log = get_logger()
 # `/proc` inside the container.  It is unmounted and removed before the user
 # command starts.
 _TMP_MOUNT = "/nspawn_tmp_mount"
+_TMP_MOUNT_NIS_DOMAINNAME = Path(f"{_TMP_MOUNT}/nis_domainname")
 
 
 def run_nspawn(
@@ -182,6 +182,7 @@ _RUN_BUSYBOX_SCRIPT = [
     "-c",
 ]
 
+
 # This script will be invoked with a writable FD 3.
 #
 # It will write to this FD the parent PID of the 'grep' process **as seen by
@@ -195,22 +196,31 @@ _RUN_BUSYBOX_SCRIPT = [
 #     parentheses are required because `bbexec` calls `exec`.
 #   - We don't close the forwarded FD 3 in this script, because
 #     `_wrap_systemd_exec` relies on it.
-_SCRIPT_TO_EXFILTRATE_CONTAINER_PROC_PID: str = textwrap.dedent(
-    f"""\
-    function bbexec() {{
-        applet="$1"
-        shift
-        exec -a "$applet" /proc/$$/exe "$@"
-    }}
-    outer_pid=$(bbexec grep ^PPid: {_TMP_MOUNT}/outerproc/self/status)
-    (bbexec umount -l {_TMP_MOUNT})
-    (bbexec rmdir {_TMP_MOUNT})
-    echo "$outer_pid" >&3  # report PID only ater unmounting
-    """
-)
+def _script_to_exfiltrate_container_proc_pid(
+    *, do_set_antlir_nis_domainname: bool
+) -> str:
+    maybe_set_nis_domainname = (
+        f"{_TMP_MOUNT_NIS_DOMAINNAME} set"
+        if do_set_antlir_nis_domainname
+        else ""
+    )
+    return f"""\
+function bbexec() {{
+    applet="$1"
+    shift
+    exec -a "$applet" /proc/$$/exe "$@"
+}}
+outer_pid=$(bbexec grep ^PPid: {_TMP_MOUNT}/outerproc/self/status)
+{maybe_set_nis_domainname}
+(bbexec umount -l {_TMP_MOUNT})
+(bbexec rmdir {_TMP_MOUNT})
+echo "$outer_pid" >&3  # report PID only ater unmounting
+"""
 
 
-def _wrap_systemd_exec(shell_quoted_extra_args: str):
+def _wrap_systemd_exec(
+    shell_quoted_extra_args: str, *, do_set_antlir_nis_domainname: bool
+):
     return [
         *_RUN_BUSYBOX_SCRIPT,
         # The helper script deliberately does not close FD 3.  Instead we
@@ -222,17 +232,21 @@ def _wrap_systemd_exec(shell_quoted_extra_args: str):
         # usable) and after setting up the necessary signal handlers to
         # process the `SIGRTMIN+4` shutdown signal that we need to shut down
         # the container after invoking a command inside it.
-        _SCRIPT_TO_EXFILTRATE_CONTAINER_PROC_PID
+        _script_to_exfiltrate_container_proc_pid(
+            do_set_antlir_nis_domainname=do_set_antlir_nis_domainname,
+        )
         + "exec /usr/lib/systemd/systemd --log-target=console "
         + shell_quoted_extra_args
         + "\n",
     ]
 
 
-def _non_booted_container_dummy():
+def _non_booted_container_dummy(*, do_set_antlir_nis_domainname: bool):
     return [
         *_RUN_BUSYBOX_SCRIPT,
-        _SCRIPT_TO_EXFILTRATE_CONTAINER_PROC_PID
+        _script_to_exfiltrate_container_proc_pid(
+            do_set_antlir_nis_domainname=do_set_antlir_nis_domainname,
+        )
         # The helper script deliberately does not close FD 3.  We must do it
         # explicitly to signal to the parent that the child is ready.
         + "exec 3>&-\n"
@@ -249,13 +263,17 @@ def _non_booted_container_dummy():
 def _tmp_mount() -> Path:
     with temp_dir() as tmp_mount:
         (tmp_mount / "busybox").touch()
+        (tmp_mount / _TMP_MOUNT_NIS_DOMAINNAME.basename()).touch()
         os.mkdir(tmp_mount / "outerproc")
         # pyre-fixme[7]: Expected `Path` but got `Generator[Path, None, None]`.
         yield tmp_mount
 
 
 def _make_nspawn_cmd(
-    *, setup: _NspawnSetup, tmp_mount: Path, busybox: Path
+    *,
+    setup: _NspawnSetup,
+    tmp_mount: Path,
+    busybox: Path,
 ) -> List[MehStr]:
     # We don't set `--user` here, since booting `systemd` requires root, and
     # in the non-booted case, the user of the container dummy doesn't
@@ -269,6 +287,13 @@ def _make_nspawn_cmd(
             f"--bind-ro={busybox}:{_TMP_MOUNT}/busybox",
         ]
     )
+    nis_domainname_path = (
+        setup.opts.debug_only_opts.container_not_part_of_build_step
+    )
+    if nis_domainname_path:
+        cmd.append(
+            f"--bind-ro={nis_domainname_path}:{_TMP_MOUNT_NIS_DOMAINNAME}"
+        )
     if setup.opts.boot:
         # Instead of using the `--boot` argument to `systemd-nspawn`, tell
         # it to invoke a simple shell script so that we can exfiltrate the
@@ -276,23 +301,27 @@ def _make_nspawn_cmd(
         # the shell script `exec`s systemd.
         cmd.append("--")
         cmd.extend(
+            # Although this looks redundant with the analogous `--setenv` in
+            # `cmd.py`, this magic env var also needs to be forwarded to
+            # `systemd` pretending to be a **kernel command-line argument**:
+            #
+            #   - Per `man systemd.exec` under "Environment Variables in
+            #     Spawned Processes", the only ways to reliably pass an env
+            #     var to all systemd units, without touching the filesystem,
+            #     is to set it on the "kernel command line".
+            #
+            #   - In container mode, `systemd` takes the kernel command line
+            #     from the process's command-line args (see `proc_cmdline()`
+            #     in `proc-cmdline.c`).
             _wrap_systemd_exec(
-                # Although this looks redundant with the analogous `--setenv` in
-                # `cmd.py`, this magic env var also needs to be forwarded to
-                # `systemd` pretending to be a **kernel command-line argument**:
-                #
-                #   - Per `man systemd.exec` under "Environment Variables in
-                #     Spawned Processes", the only ways to reliably pass an env
-                #     var to all systemd units, without touching the filesystem,
-                #     is to set it on the "kernel command line".
-                #
-                #   - In container mode, `systemd` takes the kernel command line
-                #     from the process's command-line args (see `proc_cmdline()`
-                #     in `proc-cmdline.c`).
-                "systemd.setenv=ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
-                if "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
-                in setup.opts.setenv
-                else ""
+                (
+                    "systemd.setenv="
+                    "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+                    if "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+                    in setup.opts.setenv
+                    else ""
+                ),
+                do_set_antlir_nis_domainname=nis_domainname_path is not None,
             )
         )
     else:
@@ -310,7 +339,11 @@ def _make_nspawn_cmd(
         # Another reason is consistency of API -- by `nsenter`ing the
         # command, we make the "booted", "non-booted", and "VM" cases very
         # similar, and the callers mostly don't need to know the difference.
-        cmd.extend(_non_booted_container_dummy())
+        cmd.extend(
+            _non_booted_container_dummy(
+                do_set_antlir_nis_domainname=nis_domainname_path is not None,
+            )
+        )
     # pyre-fixme[7]: Expected `List[typing.Union[bytes, str]]` but got
     #  `List[Variable[typing.AnyStr <: [str, bytes]]]`.
     return cmd

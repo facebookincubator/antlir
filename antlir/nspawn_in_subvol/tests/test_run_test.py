@@ -14,6 +14,7 @@ from antlir.nspawn_in_subvol.run_test import (
     forward_env_vars,
     rewrite_testpilot_python_cmd,
     rewrite_tpx_gtest_cmd,
+    add_container_not_part_of_build_step,
 )
 
 
@@ -117,3 +118,12 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
                     new_cmd,
                 )
                 self.assertTrue(os.path.exists(tmp))  # Was created
+
+    def test_add_container_not_part_of_build_step(self):
+        with add_container_not_part_of_build_step(["a", "b"]) as args:
+            magic_flag, a, b = args
+            self.assertEqual(("a", "b"), (a, b), args)
+            self.assertRegex(
+                magic_flag,
+                "^--container-not-part-of-build-step=.*nis_domainname$",
+            )

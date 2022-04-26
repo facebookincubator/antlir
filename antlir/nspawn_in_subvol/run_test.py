@@ -24,6 +24,8 @@ import sys
 from contextlib import contextmanager
 from typing import Dict, Iterable, List, Tuple
 
+from antlir.fs_utils import Path
+
 from .cmd import PopenArgs
 from .run import _set_up_run_cli
 
@@ -194,6 +196,13 @@ _TEST_TYPE_TO_REWRITE_CMD = {
     "rust": do_not_rewrite_cmd,
 }
 
+
+@contextmanager
+def add_container_not_part_of_build_step(argv):
+    with Path.resource(__package__, "nis_domainname", exe=True) as p:
+        yield [f"--container-not-part-of-build-step={p}", *argv]
+
+
 # Integration coverage is provided by `image.python_unittest` targets, which
 # use `nspawn_in_subvol/run_test.py` in their implementation.  However, here
 # is a basic smoke test, which, incidentally, demonstrates our test error
@@ -240,9 +249,15 @@ if __name__ == "__main__":  # pragma: no cover
 
     # pyre-fixme[16]: `_CliSetup` has no attribute `__enter__`.
     # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
-    with _set_up_run_cli(argv + sys.argv[1:]) as cli_setup, rewrite_cmd(
+    with add_container_not_part_of_build_step(argv) as argv, _set_up_run_cli(
+        argv + sys.argv[1:]
+    ) as cli_setup, rewrite_cmd(
         cli_setup.opts.cmd, next_fd=3 + len(cli_setup.opts.forward_fd)
-    ) as (new_cmd, fds_to_forward):
+    ) as (
+        new_cmd,
+        fds_to_forward,
+    ):
+
         # This should only used only for `image.*_unittest` targets.
         assert cli_setup.opts.cmd[0] == "/layer-test-binary.par"
         # Always use the default `console` -- let it go to stderr so that

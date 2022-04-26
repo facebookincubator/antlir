@@ -162,10 +162,15 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
             "# New output each build: \\$(date) $$ $PID $RANDOM $RANDOM"
         )
     else:
+        # NB: The env var marking is now redundant with the more robust
+        # NIS domainname marking, so we could just rip it out. However,
+        # it should be cheaper NOT to run a subprocess, so keep it for now.
+        #
         # IMPORTANT: Avoid bashisms, this can run under busybox's `ash`.
         literal_preamble = (
             """\
-if [ "$ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP" != "1" ] ; then
+if [ "$ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP" != "1" ] &&
+   [ "`"$REPO_ROOT"/$(location {nis_domain})`" != "AntlirNotABuildStep" ] ; then
     cat >&2 << 'EOF'
 AntlirUserError: Ran Buck target `{target}` from an Antlir build step, """ +
             """\
@@ -174,7 +179,12 @@ EOF
     exit 1
 fi
 """
-        ).format(target = target)
+        ).format(
+            # No attempt at shell-quoting since the Buck target charset
+            # doesn't need quoting in heredocs.
+            target = target,
+            nis_domain = "//antlir/nspawn_in_subvol/nisdomain:nis_domainname",
+        )
         unquoted_heredoc_preamble = ""
 
     buck_genrule(

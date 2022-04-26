@@ -18,6 +18,7 @@ image.layer(
         notify.install(),
         ssh.test_only_login(),
         ssh.hostkey_setup(),
+        "//antlir/linux/vm/vmtest:maybe_mark_non_build_step",
     ],
     # Any vm unittest or run target can have a custom layer
     # built on top of this.
