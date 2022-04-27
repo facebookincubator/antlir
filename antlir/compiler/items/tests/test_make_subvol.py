@@ -21,7 +21,6 @@ from ..ensure_dirs_exist import (
     ensure_subdirs_exist_factory,
 )
 from ..make_subvol import (
-    _check_parent_flavor,
     FilesystemRootItem,
     LayerFromPackageItem,
     ParentLayerItem,
@@ -42,7 +41,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             self.assertEqual(
                 [
                     "(Dir)",
-                    {".meta": get_meta_dir_contents()},
+                    {".meta": get_meta_dir_contents(subvol)},
                 ],
                 render_subvol(subvol),
             )
@@ -77,7 +76,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             child_content = copy.deepcopy(parent_content)
             child_content[1]["a"][1]["c"] = ["(Dir)", {}]
             # Since the parent lacked a /.meta, the child added it.
-            child_content[1][".meta"] = get_meta_dir_contents()
+            child_content[1][".meta"] = get_meta_dir_contents(child)
             self.assertEqual(child_content, render_subvol(child))
 
     def test_parent_layer_flavor_error(self):
@@ -102,7 +101,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(subvol)
             rendered_subvol = render_subvol(subvol)
             self.assertEqual(
-                get_meta_dir_contents(),
+                get_meta_dir_contents(subvol),
                 pop_path(rendered_subvol, ".meta"),
             )
             self.assertEqual(

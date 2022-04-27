@@ -25,7 +25,10 @@ from antlir.fs_utils import (
 from antlir.subvol_utils import TempSubvolumes, Subvol
 from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
-from antlir.tests.subvol_helpers import render_subvol
+from antlir.tests.subvol_helpers import (
+    render_subvol,
+    render_meta_build_contents,
+)
 
 from .. import subvolume_on_disk as svod
 from ..compiler import build_image, parse_args
@@ -112,6 +115,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
+                                "build": render_meta_build_contents(sv_nested),
                                 "flavor": [render_flavor(flavor="antlir_test")],
                                 "private": [
                                     "(Dir)",

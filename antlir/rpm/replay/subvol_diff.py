@@ -39,6 +39,7 @@ for p in [
     "var/log/dnf.librepo.log",
     "var/log/dnf.log",
     "var/log/dnf.rpm.log",
+    ".meta/build/target",
 ]:
     assert not p.startswith("/"), p
     _PATH_PATTERNS_EXPECTED_TO_DIFFER.add(p.encode())

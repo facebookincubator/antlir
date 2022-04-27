@@ -5,12 +5,16 @@
 # LICENSE file in the root directory of this source tree.
 
 import copy
+import os
 import subprocess
+from typing import Optional
 
 from antlir.btrfs_diff.tests.render_subvols import (
     RenderedTree,
     render_sendstream,
 )
+from antlir.config import repo_config
+from antlir.fs_utils import Path
 from antlir.tests.flavor_helpers import render_flavor
 
 from ..subvol_utils import Subvol
@@ -49,6 +53,7 @@ def check_common_rpm_render(
     test,
     rendered_subvol,
     yum_dnf: str,
+    subvol: Subvol,
     *,
     no_meta: bool = False,
     is_makecache: bool = False,
@@ -92,6 +97,7 @@ def check_common_rpm_render(
         ".meta": [
             "(Dir)",
             {
+                "build": render_meta_build_contents(subvol),
                 "flavor": [render_flavor("antlir_test")],
                 "private": [
                     "(Dir)",
@@ -118,8 +124,8 @@ def check_common_rpm_render(
     )
 
 
-def get_meta_dir_contents():
-    return [
+def get_meta_dir_contents(subvol: Optional[Subvol] = None):
+    ret = [
         "(Dir)",
         {
             "flavor": [render_flavor("antlir_test")],
@@ -132,5 +138,26 @@ def get_meta_dir_contents():
                     ]
                 },
             ],
+        },
+    ]
+
+    if subvol and os.path.isdir(subvol.path("/.meta/build")):
+        # pyre-fixme[16]: Undefined attribute `__setitem__`
+        ret[1]["build"] = render_meta_build_contents(subvol)
+
+    return ret
+
+
+def render_meta_build_contents(subvol: Subvol):
+    # Target varies for each python_unittest.
+    if not os.path.isdir(subvol.path("/.meta/build")):
+        return []
+
+    target = subvol.read_path_text(Path("/.meta/build/target"))
+    return [
+        "(Dir)",
+        {
+            "revision": [f"(File d{len(repo_config().vcs_revision) + 1})"],
+            "target": [f"(File d{len(target)})"],
         },
     ]

@@ -53,7 +53,7 @@ def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
     return repo_config_t(
         repo_root=repo_root,
         host_mounts_for_repo_artifacts=host_mounts_for_repo_artifacts,
-        vcs_revision=_read_text(__package__, "vcs_revision"),
+        vcs_revision=_read_text(__package__, "vcs_revision").strip(),
         **data,
     )
 
