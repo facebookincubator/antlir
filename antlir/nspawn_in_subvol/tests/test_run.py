@@ -13,7 +13,7 @@ from unittest import mock
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import pipe
-from antlir.config import _unmemoized_repo_config, antlir_dep
+from antlir.config import _unmemoized_repo_config, antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import temp_dir, Path
 from antlir.subvol_utils import with_temp_subvols
@@ -738,7 +738,16 @@ set -x
             ["--boot", "--", "/bin/bash", "-c", BAD_SH],
             stdout=subprocess.PIPE,
         )
-        self.assertIn(b"env_bad\nfail_run\nuser_err\nnothing_ran", ret.stdout)
+        self.assertIn(
+            "env_bad\n{}nothing_ran".format(
+                # Self-contained binaries don't need "non-build step"
+                # markings to run.
+                "fail_run\nuser_err\n"
+                if repo_config().artifacts_require_repo
+                else "",
+            ),
+            ret.stdout.decode(),
+        )
 
         # Now the "good case", with a properly marked container.
         GOOD_SH = """\
