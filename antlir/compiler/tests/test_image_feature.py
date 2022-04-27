@@ -11,6 +11,7 @@ import unittest
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
+from antlir.compiler.items.metadata import LayerInfoItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmActionItem
@@ -87,11 +88,16 @@ class ImageFeatureTestCase(unittest.TestCase):
             self._items_for_features(target_to_path={})
 
     def test_install_order(self):
+        self.maxDiff = None
         dg = DependencyGraph(si.ID_TO_ITEM.values(), layer_target="ttt")
         builders_and_phases = list(dg.ordered_phases())
         self.assertEqual(
             [
                 (FilesystemRootItem.get_phase_builder, (si.ID_TO_ITEM["/"],)),
+                (
+                    LayerInfoItem.get_phase_builder,
+                    (LayerInfoItem(from_target="ttt"),),
+                ),
                 (
                     RpmActionItem.get_phase_builder,
                     (
@@ -129,9 +135,14 @@ class ImageFeatureTestCase(unittest.TestCase):
                     )
                 )
             )
-        self.assertEqual(set(si.ID_TO_ITEM.values()), set(doi + phase_items))
         self.assertEqual(
-            len(si.ID_TO_ITEM),
+            set(si.ID_TO_ITEM.values()).union(
+                {LayerInfoItem(from_target="ttt")}
+            ),
+            set(doi + phase_items),
+        )
+        self.assertEqual(
+            len(si.ID_TO_ITEM) + 1,
             len(doi) + len(phase_items),
             msg="Duplicate items?",
         )

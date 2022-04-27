@@ -88,6 +88,9 @@ class PhaseOrder(enum.Enum):
     # There can only ever be one item in this phase.
     # pyre-fixme[20]: Argument `value` expected.
     MAKE_SUBVOL = enum.auto()
+    # A special phase that automatically adds layer metadata.
+    # pyre-fixme[20]: Argument `value` expected.
+    LAYER_INFO = enum.auto()
     # Genrule layers cannot be combined with any item besides a single
     # `MAKE_SUBVOL`, so the ordering with respect to other items is
     # unimportant.

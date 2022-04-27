@@ -360,7 +360,7 @@ class YumDnfFromSnapshotTestImpl:
             )
             if self._YUM_DNF == YumDnf.yum:
                 self.assertEqual(["(Dir)", {}], pop_path(r, "etc"))
-            check_common_rpm_render(self, r, prog, no_meta=True)
+            check_common_rpm_render(self, r, prog, no_meta=True, subvol=sv)
 
     def test_makecache(self) -> None:
         # The preceding tests implicitly assert that we leak no cache in
@@ -400,7 +400,7 @@ class YumDnfFromSnapshotTestImpl:
             )
             self.assertEqual(["(Dir)", {snap_name: ["(Dir)", {}]}], snap_r)
             check_common_rpm_render(
-                self, r, prog, no_meta=True, is_makecache=True
+                self, r, prog, no_meta=True, is_makecache=True, subvol=sv
             )
 
     def test_error_repr(self):
@@ -439,7 +439,9 @@ class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
                 ["(Dir)", {"carrot.txt": ["(File d13)"]}],
                 pop_path(r, "rpm_test"),
             )
-            check_common_rpm_render(self, r, self._YUM_DNF.value, no_meta=True)
+            check_common_rpm_render(
+                self, r, self._YUM_DNF.value, no_meta=True, subvol=sv
+            )
             self.assertEqual(
                 "carrot 2 rc0\n", sv.path("rpm_test/carrot.txt").read_text()
             )

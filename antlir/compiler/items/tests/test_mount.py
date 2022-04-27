@@ -228,7 +228,7 @@ class MountItemTestCase(BaseItemTestCase):
             "(Dir)",
             {
                 "meow": ["(Dir)", {}],
-                ".meta": get_meta_dir_contents(),
+                ".meta": get_meta_dir_contents(subvol),
             },
         ]
         expected_subvol[1][".meta"][1]["private"][1]["mount"] = mount

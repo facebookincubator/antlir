@@ -92,7 +92,12 @@ class ImagePackageTestCaseBase(AntlirTestCase):
     def _assert_meta_valid_and_sendstreams_equal(
         self, expected_stream, stream
     ) -> None:
-        self.assertEqual(get_meta_dir_contents(), pop_path(stream, ".meta"))
+        real_meta_contents = pop_path(stream, ".meta")
+        if "build" in real_meta_contents[1]:
+            # Don't check "build" key because length of target is unknown
+            del real_meta_contents[1]["build"]
+
+        self.assertEqual(get_meta_dir_contents(), real_meta_contents)
         self.assertEqual(
             expected_stream,
             stream,

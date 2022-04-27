@@ -28,6 +28,7 @@ from antlir.tests.subvol_helpers import (
     get_meta_dir_contents,
     pop_path,
     render_subvol,
+    render_meta_build_contents,
 )
 
 from ..procfs_serde import deserialize_int
@@ -219,7 +220,8 @@ class ImageLayerTestCase(unittest.TestCase):
             ) as sv:
                 rendered_subvol = render_subvol(sv)
                 self.assertEqual(
-                    get_meta_dir_contents(), pop_path(rendered_subvol, ".meta")
+                    get_meta_dir_contents(subvol=sv),
+                    pop_path(rendered_subvol, ".meta"),
                 )
                 self.assertEqual(
                     render_demo_subvols(**{original_name: original_name}),
@@ -265,7 +267,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 pop_path(r, "shadow_me"),
             )
 
-            check_common_rpm_render(self, r, yum_dnf)
+            check_common_rpm_render(self, r, yum_dnf, subvol=sv)
 
     @unittest.skipUnless(
         "dnf" in get_rpm_installers_supported(),
@@ -388,6 +390,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 self,
                 r,
                 REPO_CFG.flavor_to_config["centos7"].rpm_installer,
+                subvol=sv,
             )
 
     def _check_installed_files_bar(self, r, clones_re=""):
@@ -448,6 +451,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
+                                "build": render_meta_build_contents(sv),
                                 "flavor": [render_flavor(flavor="antlir_test")],
                                 "private": [
                                     "(Dir)",
@@ -487,6 +491,7 @@ class ImageLayerTestCase(unittest.TestCase):
                         ".meta": [
                             "(Dir)",
                             {
+                                "build": render_meta_build_contents(sv),
                                 "flavor": [render_flavor(flavor="antlir_test")],
                                 "private": [
                                     "(Dir)",

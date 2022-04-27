@@ -8,7 +8,10 @@ import unittest
 
 from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource_subvol
-from antlir.tests.subvol_helpers import render_subvol
+from antlir.tests.subvol_helpers import (
+    render_subvol,
+    get_meta_dir_contents,
+)
 
 
 def _test_feature_target(feature_target):
@@ -26,30 +29,23 @@ class AddRemoveConflictTestCase(unittest.TestCase):
         self.maxDiff = 12345
 
     def test_check_layers(self):
-        meta = {
-            ".meta": [
-                "(Dir)",
-                {
-                    "flavor": [render_flavor(flavor="antlir_test")],
-                    "private": [
-                        "(Dir)",
-                        {
-                            "opts": [
-                                "(Dir)",
-                                {"artifacts_may_require_repo": ["(File d2)"]},
-                            ]
-                        },
-                    ],
-                },
-            ]
-        }
+        meta_parent = get_meta_dir_contents(
+            subvol=layer_resource_subvol(__package__, "parent")
+        )
+        meta_child = get_meta_dir_contents(
+            subvol=layer_resource_subvol(__package__, "child")
+        )
+
         # The parent has a couple of directories.
         self.assertEqual(
-            ["(Dir)", {"a": ["(Dir)", {"b": ["(Dir)", {}]}], **meta}],
+            [
+                "(Dir)",
+                {"a": ["(Dir)", {"b": ["(Dir)", {}]}], ".meta": meta_parent},
+            ],
             render_subvol(layer_resource_subvol(__package__, "parent")),
         )
         # The child is near-empty because the `remove_paths` cleaned it up.
         self.assertEqual(
-            ["(Dir)", {**meta}],
+            ["(Dir)", {".meta": meta_child}],
             render_subvol(layer_resource_subvol(__package__, "child")),
         )

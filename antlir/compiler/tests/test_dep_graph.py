@@ -21,6 +21,7 @@ from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
+from antlir.compiler.items.metadata import LayerInfoItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
@@ -57,8 +58,14 @@ _FILE1 = "/etc/passwd"
 _FILE2 = "/etc/group"
 
 
-def _fs_root_phases(item):
-    return [(FilesystemRootItem.get_phase_builder, (item,))]
+def _fs_root_phases(item, layer_target=None):
+    return [
+        (FilesystemRootItem.get_phase_builder, (item,)),
+        (
+            LayerInfoItem.get_phase_builder,
+            (LayerInfoItem(from_target=layer_target or item.from_target),),
+        ),
+    ]
 
 
 def _build_req_prov(path, req_items, prov_items, prov_t=None):
@@ -1243,7 +1250,10 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
         #  `List[typing.Any]`.
         dg_ok = DependencyGraph([second, first, third], layer_target="t")
-        self.assertEqual(_fs_root_phases(first), list(dg_ok.ordered_phases()))
+        self.assertEqual(
+            _fs_root_phases(first, layer_target="t"),
+            list(dg_ok.ordered_phases()),
+        )
 
         # `dg_bad`: changes `second` to get a cycle
         dg_bad = DependencyGraph(
@@ -1256,7 +1266,10 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
             ],
             layer_target="t",
         )
-        self.assertEqual(_fs_root_phases(first), list(dg_bad.ordered_phases()))
+        self.assertEqual(
+            _fs_root_phases(first, layer_target="t"),
+            list(dg_bad.ordered_phases()),
+        )
 
         self.assertEqual(
             [{second}, {third}],
@@ -1283,7 +1296,7 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         #  `List[Union[FakeRemovePaths, EnsureDirsExistItem, FilesystemRootItem]]`.
         dg = DependencyGraph([second, first, *rest], layer_target="t")
         self.assertEqual(
-            _fs_root_phases(first)
+            _fs_root_phases(first, layer_target="t")
             + [(FakeRemovePaths.get_phase_builder, (second,))],
             list(dg.ordered_phases()),
         )

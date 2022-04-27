@@ -84,7 +84,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 pop_path(r, "rpm_test"),
             )
 
-            yield r
+            yield (r, subvol)
 
     def _check_rpm_action_item_subvol(
         self, subvol, rpm_item: RpmActionItem, fs_render, *, opts=None
@@ -376,8 +376,8 @@ class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
 
     @with_mocked_temp_volume_dir
     def test_rpm_action_item_install_local_yum(self) -> None:
-        with self._test_rpm_action_item_install_local_setup() as r:
-            check_common_rpm_render(self, r, "yum")
+        with self._test_rpm_action_item_install_local_setup() as (r, subvol):
+            check_common_rpm_render(self, r, "yum", subvol=subvol)
 
 
 class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
@@ -385,7 +385,7 @@ class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
 
     @with_mocked_temp_volume_dir
     def test_rpm_action_item_install_local_dnf(self) -> None:
-        with self._test_rpm_action_item_install_local_setup() as r:
+        with self._test_rpm_action_item_install_local_setup() as (r, subvol):
             pop_path(r, "var/lib/yum", None)
             pop_path(r, "var/log/yum.log", None)
-            check_common_rpm_render(self, r, "dnf")
+            check_common_rpm_render(self, r, "dnf", subvol=subvol)
