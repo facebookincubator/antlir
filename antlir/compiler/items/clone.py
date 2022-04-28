@@ -63,13 +63,13 @@ class CloneItem(clone_t, ImageItem):
     def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         # The compiler should have caught this, this is just paranoia.
         if self.pre_existing_dest:
-            subvol.run_as_root(["test", "-d", subvol.path(self.dest)])
+            subprocess.run(["test", "-d", subvol.path(self.dest)], check=True)
         if self.omit_outer_dir:
             # Like `ls`, but NUL-separated.  Needs `root` since the repo
             # user may not be able to access the source subvol.
             sources = [
                 self.source / p
-                for p in subvol.run_as_root(
+                for p in subprocess.run(
                     [
                         "find",
                         self.source,
@@ -80,6 +80,7 @@ class CloneItem(clone_t, ImageItem):
                         "-printf",
                         "%f\\0",
                     ],
+                    check=True,
                     stdout=subprocess.PIPE,
                 )
                 .stdout.strip(b"\0")
@@ -87,4 +88,8 @@ class CloneItem(clone_t, ImageItem):
             ]
         else:
             sources = [self.source]
-        subvol.run_as_root([*CP_CLONE_CMD, *sources, subvol.path(self.dest)])
+
+        subprocess.run(
+            [*CP_CLONE_CMD, *sources, subvol.path(self.dest)],
+            check=True,
+        )
