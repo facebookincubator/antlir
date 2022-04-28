@@ -1,0 +1,50 @@
+load("//antlir/bzl:oss_shim.bzl", "thrift_library")
+load("//metalos:defs.bzl", "rust_library", "rust_unittest")
+
+rust_library(
+    name = "thrift_wrapper",
+    srcs = glob(["src/**/*.rs"]),
+    unittests = False,
+    deps = [
+        "anyhow",
+        "fbthrift",
+        "thiserror",
+        "url",
+        "uuid",
+        ":derive",
+    ],
+)
+
+rust_unittest(
+    name = "thrift_wrapper-unittests",
+    srcs = ["tests.rs"],
+    crate_root = "tests.rs",
+    deps = [
+        "anyhow",
+        "url",
+        "uuid",
+        ":test_if-rust",
+        ":thrift_wrapper",
+    ],
+)
+
+rust_library(
+    name = "derive",
+    srcs = ["derive.rs"],
+    crate = "thrift_wrapper_derive",
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        "convert_case",
+        "proc-macro2",
+        "quote",
+        "syn",
+    ],
+)
+
+thrift_library(
+    name = "test_if",
+    languages = ["rust"],
+    thrift_srcs = {"test.thrift": None},
+    visibility = [],
+)
