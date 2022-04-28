@@ -93,6 +93,7 @@ def _nspawn_wrapper_properties(
         k
         for k in structs.to_dict(container_opts).keys()
         if not k.startswith("_") and not k in [
+            "allow_mknod",
             "attach_antlir_dir",
             "internal_only_logs_tmpfs",
             "serve_rpm_snapshots",
@@ -174,6 +175,7 @@ def nspawn_in_subvol_args():
             '--setenv={{}}={{}}'.format(k, os.environ.get(k, ''))
                 for k in {pass_through_env_repr}
         ],
+        *[{maybe_allow_mknod}],
         *[{maybe_boot}],
         *[{maybe_hostname}],
         {maybe_logs_tmpfs}
@@ -194,6 +196,7 @@ EOF
 mv $TMP/out "$OUT"
         """.format(
             binary_path_repr = repr(binary_path),
+            maybe_allow_mknod = "'--allow-mknod'" if container_opts.allow_mknod else "",
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
             # The next 3 would be nice to pass as `container_opts_t`, but
