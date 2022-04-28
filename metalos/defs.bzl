@@ -34,11 +34,13 @@ def _rust_common(
         unittests = True,
         unittest_opts = None,
         deps = (),
+        rustc_flags = None,
         test_deps = (),
         test_env = None,
         tests = (),
         features = (),
         vm_opts = (),
+        __metalctl_only_allow_unused_deps = False,
         **kwargs):
     if types.is_bool(unittests):
         unittests = ["plain"] if unittests else []
@@ -49,12 +51,23 @@ def _rust_common(
                     .format(flavor, ", ".join(_unittest_flavors)),
             )
     deps = [_normalize_rust_dep(d) for d in deps]
-    test_deps = [_normalize_rust_dep(d) for d in test_deps]
+    test_deps = list(test_deps)
     if ("container" in unittests) or ("vm" in unittests):
-        test_deps += ["//metalos/metalos_macros:metalos_macros"]
+        test_deps += ["//metalos/metalos_macros:metalos_macros", "tokio"]
+    test_deps = [_normalize_rust_dep(d) for d in test_deps]
+
+    rustc_flags = rustc_flags or []
+    # @oss-disable: rustc_flags.append("--cfg=facebook") 
+    if not __metalctl_only_allow_unused_deps:
+        rustc_flags.append("--forbid=unused_crate_dependencies")
+    kwargs["rustc_flags"] = rustc_flags
 
     tests = list(tests)
     tests += [":" + name + _unittest_suffix(flavor) for flavor in unittests]
+    if kwargs.get("proc_macro", False):
+        unittests = []
+        tests = []
+
     crate = kwargs.pop("crate", name.replace("-", "_"))
     if len(srcs) == 1 and not kwargs.get("crate_root", None):
         kwargs["crate_root"] = srcs[0]

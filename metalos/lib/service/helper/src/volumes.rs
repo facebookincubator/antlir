@@ -134,16 +134,16 @@ mod tests {
     }
 
     #[containertest]
-    fn create() -> Result<()> {
-        crate::tests::wait_for_systemd()?;
+    async fn create() -> Result<()> {
+        crate::tests::wait_for_systemd().await?;
         let (svc_vols, svc) = do_create()?;
         assert_paths(svc_vols, svc);
         Ok(())
     }
 
     #[containertest]
-    fn get() -> Result<()> {
-        crate::tests::wait_for_systemd()?;
+    async fn get() -> Result<()> {
+        crate::tests::wait_for_systemd().await?;
         let (_, svc) = do_create()?;
         let svc_vols = ServiceVolumes::get(&svc)?;
         assert_paths(svc_vols, svc);

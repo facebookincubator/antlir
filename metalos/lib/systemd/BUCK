@@ -56,7 +56,6 @@ rust_library(
     unittests = False,
     deps = [
         "convert_case",
-        "paste",
         "proc-macro2",
         "quote",
         "syn",

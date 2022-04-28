@@ -5,8 +5,6 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "image",
     srcs = glob(["src/*.rs"]),
-    # @oss-disable: rustc_flags = ["--cfg=facebook"], 
-    test_deps = ["url"],
     visibility = [
         "PUBLIC",
     ],
@@ -19,8 +17,6 @@ rust_library(
         "slog",
         "thiserror",
         "tokio",
-        "uuid",
-        "zstd",
         "//metalos/host_configs:api-rust",
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/metalos_paths:metalos_paths",

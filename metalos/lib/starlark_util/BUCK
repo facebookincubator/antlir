@@ -3,7 +3,10 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "starlark_util",
     srcs = glob(["src/*.rs"]),
-    test_deps = ["maplit"],
+    test_deps = [
+        "maplit",
+        "//metalos/lib/starlark_util/tests:example-rust",
+    ],
     visibility = [
         "//metalos/...",
         "//netos/...",
@@ -14,8 +17,6 @@ rust_library(
         "gazebo",
         "itertools",
         "serde",
-        "serde_json",
         "starlark",
-        "//metalos/lib/starlark_util/tests:example-rust",
     ],
 )

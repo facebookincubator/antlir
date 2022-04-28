@@ -6,6 +6,11 @@ load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest
 rust_binary(
     name = "helper",
     srcs = glob(["src/*.rs"]),
+    test_deps = [
+        "slog",
+        "slog_glog_fmt",
+        "//metalos/lib/systemd:systemd",
+    ],
     unittest_opts = shape.new(
         unittest_opts_t,
         container = shape.new(
@@ -22,11 +27,9 @@ rust_binary(
         "anyhow",
         "structopt",
         "thiserror",
-        "uuid",
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/service:service",
         "//metalos/lib/state:state",
-        "//metalos/lib/systemd:systemd",
     ],
 )
 

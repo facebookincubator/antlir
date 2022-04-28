@@ -35,6 +35,8 @@ static STATE_BASE: Lazy<PathBuf> = Lazy::new(|| {
     }
     #[cfg(test)]
     {
+        // prevent unused_crate_dependencies in test mode
+        let _ = metalos_paths::metalos_state();
         tempfile::tempdir().unwrap().into_path()
     }
 });
