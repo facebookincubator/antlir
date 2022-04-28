@@ -285,9 +285,11 @@ python_unittest(
     ],
 )
 
-python_unittest(
+image_python_unittest(
     name = "test-mount",
     srcs = ["test_mount.py"],
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
+    layer = ":test_compiler_item_layer",
     needed_coverage = [(100, "//antlir/compiler/items:mount")],
     resources = {
         layer_resource(
@@ -297,6 +299,7 @@ python_unittest(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "test-layer-without-mounts",
     },
+    run_as_user = "root",
     deps = [
         ":common_testlib",
         "//antlir/compiler/items:make_subvol",

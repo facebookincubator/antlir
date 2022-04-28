@@ -32,7 +32,12 @@ from ..mount import (
     mounts_from_meta,
 )
 from ..phases_provide import PhasesProvideItem
-from .common import DUMMY_LAYER_OPTS, BaseItemTestCase, render_subvol
+from .common import (
+    DUMMY_LAYER_OPTS,
+    BaseItemTestCase,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
 
 
 def _mount_item_new(from_target, mount_config):
@@ -48,6 +53,7 @@ def _mount_item_new(from_target, mount_config):
 
 
 class MountItemTestCase(BaseItemTestCase):
+    @with_mocked_temp_volume_dir
     def test_mount_item_file_from_host(self):
         mount_config = {
             "is_directory": False,
@@ -64,7 +70,7 @@ class MountItemTestCase(BaseItemTestCase):
 
         mount_item = _mount_item_new("//dummy/host_mounts:t", mount_config)
 
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("mounter")
             mount_item.build(
                 subvol,
@@ -260,10 +266,9 @@ class MountItemTestCase(BaseItemTestCase):
             ).to_json_file(f)
         return subvolumes_dir
 
+    @with_mocked_temp_volume_dir
     def test_mount_item(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:
+        with TempSubvolumes() as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:  # noqa: E501
             runtime_source = {"so": "me", "arbitrary": {"j": "son"}}
             mount_config = {
                 "is_directory": True,
