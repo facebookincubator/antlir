@@ -20,14 +20,25 @@ image.layer(
     ],
 )
 
-python_unittest(
+image_python_unittest(
     name = "test-clone",
     srcs = ["test_clone.py"],
+    container_opts = {
+        # Required because we test cloning of special files
+        "allow_mknod": True,
+        # needed because clone uses --reflink=always when
+        # operating and therefore needs the "real" build volume
+        # for creating tmp subvols.
+        "internal_only_bind_artifacts_dir_rw": True,
+    },
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
+    layer = ":test_compiler_item_layer",
     needed_coverage = [(100, "//antlir/compiler/items:clone")],
     resources = {
         layer_resource(TEST_IMAGE_PREFIX + "parent_layer"): "src-layer",
         layer_resource(TEST_IMAGE_PREFIX + "create_ops"): "create_ops",
     },
+    run_as_user = "root",
     deps = [
         ":common_testlib",
         "//antlir:common",
