@@ -422,7 +422,7 @@ mod tests {
     use super::*;
     use metalos_macros::containertest;
     use set::tests::service_set;
-    use systemd::{ActiveState, WaitableSystemState};
+    use systemd::WaitableSystemState;
 
     pub(crate) async fn wait_for_systemd() -> anyhow::Result<()> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());

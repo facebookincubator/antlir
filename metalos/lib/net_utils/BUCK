@@ -5,7 +5,6 @@ rust_library(
     srcs = ["src/lib.rs"],
     unittests = [
         "plain",
-        "vm",
     ],
     deps = [
         "anyhow",

@@ -85,5 +85,8 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
         ),
         unittests = ["plain", "container", "vm"],
         rustc_flags = rustc_flags,
+        # TODO(T113359879) this can be removed when there are no more split
+        # builds of metalctl
+        __metalctl_only_allow_unused_deps = True,
         **kwargs
     )

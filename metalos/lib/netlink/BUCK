@@ -29,7 +29,6 @@ rust_library(
         "anyhow",
         "bitflags",
         "derive_more",
-        "libc",
         "nix",
         ":netlink-sys",
     ] + third_party.libraries(

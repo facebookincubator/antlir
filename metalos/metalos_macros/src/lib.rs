@@ -67,6 +67,7 @@ fn test_attr(item: TokenStream, feature: &str) -> TokenStream {
         false => quote!(std::prelude::v1::test),
     };
     let expanded = quote! {
+        use tokio as _;
         #[cfg_attr(feature = #feature, #test_attr)]
         #[allow(dead_code)]
         #f

@@ -11,7 +11,6 @@ rust_library(
     test_deps = [
         "pretty_assertions",
         "slog_glog_fmt",
-        "tokio",
     ],
     unittest_opts = shape.new(
         unittest_opts_t,
@@ -39,7 +38,6 @@ rust_library(
         "zbus",
         "zvariant",
         ":service_config_generator_if-rust",
-        "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/generator:generator",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/serde_systemd:serde_systemd",
