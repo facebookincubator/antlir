@@ -194,9 +194,13 @@ class InstallFileItem(install_files_t, ImageItem):
             # on installing large amounts of files with one `image.install`.
             # xargs will break up the command for us if we overrun the maximum
             # args size limit.
+            #
             # `chmod` follows symlinks, and there's no option to stop it.
             # However, `customize_fields` should have failed on symlinks.
-            paths = b"\0".join(subvol.path(p) for _, p in modes_and_paths)
+            sv_root = subvol.path()  # This is slow, don't do it in the loop.
+            paths = b"\0".join(
+                sv_root / p.lstrip(b"/") for _, p in modes_and_paths
+            )
             subvol.run_as_root(
                 ["xargs", "-0", "chmod", mode_str],
                 input=paths,
