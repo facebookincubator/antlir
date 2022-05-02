@@ -1,10 +1,13 @@
 use std::collections::BTreeMap;
 use std::io::Write;
+use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
 use anyhow::{anyhow, Context, Result};
 use serde::Serialize;
 use slog::{info, Logger};
+use structopt::StructOpt;
 use systemd::render::{MountSection, NetworkUnit, Render, Unit, UnitBody, UnitSection};
 use systemd::UnitName;
 
@@ -223,6 +226,40 @@ fn write_dropin_to_disk<UNIT: Render>(
     );
 
     write_unit_to_disk(&dropin.unit, log, base_dir, &unit_dir.join(filename))
+}
+
+#[derive(StructOpt, Debug, Clone)]
+pub struct GeneratorArgs {
+    pub normal_dir: PathBuf,
+    pub early_dir: PathBuf,
+    pub late_dir: PathBuf,
+}
+
+pub fn setup_generator_test(name: &'static str) -> Result<(PathBuf, GeneratorArgs)> {
+    let ts = SystemTime::now()
+        .duration_since(SystemTime::UNIX_EPOCH)
+        .context("Failed to get timestamp")?;
+    let tmpdir = std::env::temp_dir().join(format!("test_generator_{}_{:?}", name, ts));
+
+    let normal = tmpdir.join("normal");
+    let early = tmpdir.join("early");
+    let late = tmpdir.join("late");
+
+    std::fs::create_dir(&tmpdir).context("failed to create tmpdir")?;
+    std::fs::create_dir(&normal).context("failed to create normal dir")?;
+    std::fs::create_dir(&early).context("failed to create early dir")?;
+    std::fs::create_dir(&late).context("failed to create late dir")?;
+
+    symlink("emergency.target", early.join("default.target"))?;
+
+    Ok((
+        tmpdir,
+        GeneratorArgs {
+            normal_dir: normal,
+            early_dir: early,
+            late_dir: late,
+        },
+    ))
 }
 
 #[cfg(test)]

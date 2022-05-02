@@ -18,8 +18,8 @@ use kernel_cmdline::KernelCmdArgs;
 use net_utils::get_mac;
 use systemd::render::{MountSection, NetworkUnit, NetworkUnitMatchSection, UnitSection};
 use systemd_generator_lib::{
-    materialize_boot_info, Dropin, Environment, ExtraDependencies, ExtraDependency, MountUnit,
-    ROOTDISK_MOUNT_SERVICE,
+    materialize_boot_info, Dropin, Environment, ExtraDependencies, ExtraDependency, GeneratorArgs,
+    MountUnit, ROOTDISK_MOUNT_SERVICE,
 };
 
 // WARNING: keep in sync with the bzl/TARGETS file unit
@@ -28,19 +28,16 @@ const ETH_NETWORK_UNIT_FILENAME: &str = "50-eth.network";
 #[derive(StructOpt)]
 #[cfg_attr(test, derive(Clone))]
 pub struct Opts {
-    normal_dir: PathBuf,
-    #[allow(unused)]
-    early_dir: PathBuf,
-    #[allow(unused)]
-    late_dir: PathBuf,
-
-    /// What directory to place the environment file in.
-    #[structopt(default_value = "/run/systemd/generator/")]
-    environment_dir: PathBuf,
+    #[structopt(flatten)]
+    generator_args: GeneratorArgs,
 
     /// What directory to place the network unit dropin/override in
     #[structopt(default_value = "/usr/lib/systemd/network/")]
     network_unit_dir: PathBuf,
+
+    /// What directory to place the environment file in.
+    #[structopt(long, default_value = "/run/systemd/generator/")]
+    environment_dir: PathBuf,
 }
 
 #[derive(Debug, PartialEq)]
@@ -315,7 +312,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             extra_deps.extend(boot_info_result.extra_deps);
             materialize_boot_info(
                 log,
-                &opts.normal_dir,
+                &opts.generator_args.normal_dir,
                 &opts.environment_dir,
                 &opts.network_unit_dir,
                 boot_info_result.env,
@@ -340,7 +337,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             extra_deps.extend(boot_info_result.extra_deps);
             materialize_boot_info(
                 log,
-                &opts.normal_dir,
+                &opts.generator_args.normal_dir,
                 &opts.environment_dir,
                 &opts.network_unit_dir,
                 boot_info_result.env,
@@ -356,7 +353,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
             extra_deps.extend(boot_info_result.extra_deps);
             materialize_boot_info(
                 log,
-                &opts.normal_dir,
+                &opts.generator_args.normal_dir,
                 &opts.environment_dir,
                 &opts.network_unit_dir,
                 boot_info_result.env,
@@ -371,7 +368,7 @@ fn generator_maybe_err(cmdline: MetalosCmdline, log: Logger, opts: Opts) -> Resu
     // IMPORTANT: this MUST be the last thing that the generator does, otherwise
     // any bugs in the generator can be masked and cause future hard-to-diagnose
     // failures
-    let default_target_path = opts.early_dir.join("default.target");
+    let default_target_path = opts.generator_args.early_dir.join("default.target");
     match std::fs::remove_file(&default_target_path) {
         // NotFound error is Ok, others are not
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(()),
@@ -437,30 +434,16 @@ mod tests {
 
     fn setup_generator_test(name: &'static str) -> Result<(Logger, PathBuf, Opts, String)> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
-        let ts = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .context("Failed to get timestamp")?;
-        let tmpdir = std::env::temp_dir().join(format!("test_generator_{}_{:?}", name, ts));
 
-        let normal = tmpdir.join("normal");
-        let early = tmpdir.join("early");
-        let late = tmpdir.join("late");
+        let (tmpdir, generator_args) = systemd_generator_lib::setup_generator_test(name)?;
+
         let env = tmpdir.join("env");
         let network = tmpdir.join("network");
-
-        std::fs::create_dir(&tmpdir).context("failed to create tmpdir")?;
-        std::fs::create_dir(&normal).context("failed to create normal dir")?;
-        std::fs::create_dir(&early).context("failed to create early dir")?;
-        std::fs::create_dir(&late).context("failed to create late dir")?;
         std::fs::create_dir(&env).context("failed to create env dir")?;
         std::fs::create_dir(&network).context("failed to create network dir")?;
 
-        symlink("emergency.target", early.join("default.target"))?;
-
         let opts = Opts {
-            normal_dir: normal,
-            early_dir: early,
-            late_dir: late,
+            generator_args,
             environment_dir: env,
             network_unit_dir: network,
         };
@@ -594,7 +577,7 @@ mod tests {
         compare_dir(
             &tmpdir,
             btreemap! {
-                opts.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
+                opts.generator_args.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
                     [Unit]\n\
                     [Mount]\n\
                     What=LABEL=unittest\n\
@@ -602,17 +585,17 @@ mod tests {
                     Options=\n\
                     Type=btrfs\n\
                 ".into(),
-                opts.normal_dir.join("metalos-switch-root.service.d/metalos_boot.conf") => "\
+                opts.generator_args.normal_dir.join("metalos-switch-root.service.d/metalos_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-snapshot-root.service\n\
                     Requires=metalos-snapshot-root.service\n\
                     ".into(),
-                opts.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
+                opts.generator_args.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
                     [Unit]\n\
                     After=metalos-apply-host-config.service\n\
                     Requires=metalos-apply-host-config.service\n\
                     ".into(),
-                opts.normal_dir.join("run-fs-control.mount.d/metalos_reimage_boot.conf") => "\
+                opts.generator_args.normal_dir.join("run-fs-control.mount.d/metalos_reimage_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-image-root-disk.service\n\
                     Requires=metalos-image-root-disk.service\n\
@@ -632,7 +615,7 @@ mod tests {
                     Name=eth*\n\
                     MACAddress=11:22:33:44:55:66\n\
                     ".into(),
-                opts.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
+                opts.generator_args.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -662,7 +645,7 @@ mod tests {
         compare_dir(
             &tmpdir,
             btreemap! {
-                opts.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
+                opts.generator_args.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
                     [Unit]\n\
                     [Mount]\n\
                     What=LABEL=unittest\n\
@@ -670,12 +653,12 @@ mod tests {
                     Options=\n\
                     Type=btrfs\n\
                 ".into(),
-                opts.normal_dir.join("metalos-switch-root.service.d/metalos_boot.conf") => "\
+                opts.generator_args.normal_dir.join("metalos-switch-root.service.d/metalos_boot.conf") => "\
                     [Unit]\n\
                     After=metalos-snapshot-root.service\n\
                     Requires=metalos-snapshot-root.service\n\
                     ".into(),
-                opts.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
+                opts.generator_args.normal_dir.join("metalos-switch-root.service.d/apply_host_config.conf") => "\
                     [Unit]\n\
                     After=metalos-apply-host-config.service\n\
                     Requires=metalos-apply-host-config.service\n\
@@ -694,7 +677,7 @@ mod tests {
                     Name=eth*\n\
                     MACAddress=11:22:33:44:55:66\n\
                     ".into(),
-                opts.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
+                opts.generator_args.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -714,7 +697,7 @@ mod tests {
         compare_dir(
             &tmpdir,
             btreemap! {
-                opts.early_dir.join("default.target") => PathBuf::from("emergency.target").into(),
+                opts.generator_args.early_dir.join("default.target") => PathBuf::from("emergency.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
@@ -744,7 +727,7 @@ mod tests {
         compare_dir(
             &tmpdir,
             btreemap! {
-                opts.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
+                opts.generator_args.normal_dir.join(ROOTDISK_MOUNT_SERVICE) => "\
                     [Unit]\n\
                     [Mount]\n\
                     What=LABEL=unittest\n\
@@ -757,7 +740,7 @@ mod tests {
                     Name=eth*\n\
                     MACAddress=11:22:33:44:55:66\n\
                     ".into(),
-                opts.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
+                opts.generator_args.early_dir.join("default.target") => PathBuf::from("/usr/lib/systemd/system/initrd.target").into(),
             },
         )
         .context("Failed to ensure tmpdir is setup correctly")?;
