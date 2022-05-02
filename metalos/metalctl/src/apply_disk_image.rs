@@ -6,6 +6,7 @@ use structopt::StructOpt;
 
 use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
 use metalos_host_configs::packages::{GptRootdisk, PackageId};
+use metalos_mount::RealMounter;
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -50,6 +51,7 @@ pub async fn cmd_apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
         &package,
         &opts.tmp_mounts_dir,
         opts.buffer_size,
+        RealMounter {},
     )
     .await?;
 

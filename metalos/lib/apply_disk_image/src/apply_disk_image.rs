@@ -13,6 +13,7 @@ use expand_partition::{expand_last_partition, PartitionDelta};
 use image::download::HttpsDownloader;
 use metalos_disk::DiskDevPath;
 use metalos_host_configs::packages::GptRootdisk;
+use metalos_mount::Mounter;
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);
@@ -33,27 +34,23 @@ fn rescan_partitions(file: &fs::File) -> Result<()> {
     Ok(())
 }
 
-fn expand_filesystem(device: &Path, mount_path: &Path) -> Result<()> {
+fn expand_filesystem<M: Mounter>(device: &Path, mount_path: &Path, mounter: M) -> Result<()> {
     if !mount_path.exists() {
         fs::create_dir_all(mount_path).context("failed to create temporary mount directory")?;
     }
 
-    let output = Command::new("mount")
-        .arg(device)
-        .arg("-t")
-        .arg("btrfs")
-        .arg(mount_path)
-        .output()
-        .context(format!("Failed to mount {:?} to {:?}", device, mount_path))?;
-
-    if !output.status.success() {
-        return Err(anyhow!(
-            "mount of {:?} to {:?} failed: {:?}",
+    mounter
+        .mount(
             device,
             mount_path,
-            output
-        ));
-    }
+            Some("btrfs"),
+            nix::mount::MsFlags::empty(),
+            None,
+        )
+        .context(format!(
+            "failed to mount root partition {:?} to {:?}",
+            device, mount_path,
+        ))?;
 
     let output = Command::new("btrfs")
         .arg("filesystem")
@@ -71,16 +68,9 @@ fn expand_filesystem(device: &Path, mount_path: &Path) -> Result<()> {
         ));
     }
 
-    let output = Command::new("umount")
-        .args(&[mount_path])
-        .output()
-        .context(format!("Failed to umount {:?}", mount_path))?;
-
-    if !output.status.success() {
-        return Err(anyhow!("umount {:?} failed: {:?}", mount_path, output));
-    }
-
-    Ok(())
+    mounter
+        .umount(mount_path, false)
+        .context(format!("Failed to umount {:?}", mount_path))
 }
 
 fn get_partition_device(
@@ -182,12 +172,13 @@ async fn download_disk_image(package: &GptRootdisk) -> Result<Bytes> {
         .with_context(|| format!("while reading {}", url))
 }
 
-pub async fn apply_disk_image(
+pub async fn apply_disk_image<M: Mounter>(
     log: Logger,
     disk: DiskDevPath,
     package: &GptRootdisk,
     tmp_mounts_dir: &Path,
     dd_buffer_size: usize,
+    mounter: M,
 ) -> Result<DiskImageSummary> {
     let log = log.new(o!("package" => format!("{:?}", package)));
     let src = download_disk_image(package).await?;
@@ -241,7 +232,7 @@ pub async fn apply_disk_image(
         ))?;
 
     info!(log, "Expanding filesystem in {:?}", partition_dev);
-    expand_filesystem(&partition_dev, tmp_mounts_dir)
+    expand_filesystem(&partition_dev, tmp_mounts_dir, mounter)
         .context("Failed to expand filesystem after expanding partition")?;
 
     Ok(DiskImageSummary {

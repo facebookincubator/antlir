@@ -16,14 +16,16 @@
 /// This is definitely not an exhaustive implementation of everything
 /// /usr/bin/mount usually does, but is enough to cover all the calls in the
 /// initrd environment.
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
-use anyhow::{anyhow, bail, Context, Result};
+use anyhow::{bail, Context, Result};
 use nix::mount::MsFlags;
 use slog::Logger;
 use std::fs::File;
 use std::io::{BufRead, BufReader};
 use structopt::StructOpt;
+
+use metalos_mount::{Mounter, RealMounter};
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -70,59 +72,6 @@ fn parse_proc_file_systems_file(path: PathBuf) -> Result<Vec<String>> {
 }
 
 // The Mounter trait is used for dependency injection purposes.
-#[cfg_attr(test, mockall::automock)]
-trait Mounter {
-    fn mount<'a>(
-        &'a self,
-        source: &'a Path,
-        target: &'a Path,
-        fstype: Option<&'a str>,
-        flags: MsFlags,
-        data: Option<&'a str>,
-    ) -> Result<()>;
-}
-
-// RealMounter is an implementation of the Mounter trait that calls nix::mount::mount for real.
-struct RealMounter {}
-impl Mounter for RealMounter {
-    fn mount(
-        &self,
-        source: &Path,
-        target: &Path,
-        fstype: Option<&str>,
-        flags: MsFlags,
-        data: Option<&str>,
-    ) -> Result<()> {
-        match nix::mount::mount(Some(source), target, fstype, flags, data) {
-            Ok(()) => Ok(()),
-            Err(nix::errno::Errno::ENOENT) => {
-                if !target.exists() {
-                    Err(anyhow!(
-                        "No such file or directory: Mount target {:?} doesn't exist",
-                        target
-                    ))
-                } else if !source.exists() {
-                    Err(anyhow!(
-                        "No such file or directory: Mount source {:?} doesn't exist",
-                        source
-                    ))
-                } else {
-                    Err(anyhow!(
-                        "No such file or directory: \
-                        Unknown reason - both source/target exist"
-                    ))
-                }
-            }
-            Err(e) => Err(e.into()),
-        }
-        .context(format!(
-            "mounting {} to {} failed",
-            source.display(),
-            target.display()
-        ))
-    }
-}
-
 // this is the public facing mount function used by the main and switch_root
 pub fn mount(log: Logger, opts: Opts) -> Result<()> {
     let fs_types = parse_proc_file_systems_file(PathBuf::from("/proc/filesystems"))?;
@@ -204,9 +153,9 @@ pub fn evaluate_device_spec(spec: &str) -> Result<PathBuf> {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_options, parse_proc_file_systems_file, MockMounter, Opts, _mount};
-    use anyhow::anyhow;
+    use super::{parse_options, parse_proc_file_systems_file, Opts, _mount};
     use anyhow::Result;
+    use metalos_mount::{MockMounter, MountError};
     use mockall::predicate::*;
     use nix::mount::MsFlags;
     use std::path::Path;
@@ -383,7 +332,7 @@ nodev   rpc_pipefs\n",
         // default behavior is to bail for any other filesystem
         mock_mounter
             .expect_mount()
-            .returning(|_, _, _, _, _| Err(anyhow!("boom")));
+            .returning(|_, _, _, _, _| Err(MountError::MissingUnknown));
 
         _mount(log, opts, &fs_types, mock_mounter)?;
         std::fs::remove_dir_all(&tmpdir)?;

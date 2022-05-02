@@ -8,7 +8,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
-use nix::mount::{umount2, MntFlags};
+use metalos_mount::{Mounter, RealMounter};
 use structopt::StructOpt;
 
 #[derive(StructOpt)]
@@ -21,10 +21,7 @@ pub struct Opts {
 }
 
 pub fn umount(opts: Opts) -> Result<()> {
-    let mut flags = MntFlags::empty();
-    if opts.force {
-        flags.insert(MntFlags::MNT_FORCE);
-    }
-    umount2(&opts.mountpoint, flags)
+    RealMounter {}
+        .umount(&opts.mountpoint, opts.force)
         .with_context(|| format!("failed to unmount {}", opts.mountpoint.display()))
 }
