@@ -205,7 +205,7 @@ fn write_unit_to_disk<UNIT: Render>(
     Ok(())
 }
 
-fn write_dropin_to_disk<UNIT: Render>(
+pub fn write_dropin_to_disk<UNIT: Render>(
     dropin: &Dropin<UNIT>,
     log: Logger,
     base_dir: &Path,

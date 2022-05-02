@@ -1,0 +1,22 @@
+load("//metalos:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "network_generator",
+    srcs = [
+        "src/main.rs",
+    ],
+    test_deps = ["maplit"],
+    deps = [
+        "anyhow",
+        "slog",
+        "slog-async",
+        "slog-term",
+        "slog_glog_fmt",
+        "structopt",
+        "strum",
+        "strum_macros",
+        "//metalos/lib/kernel_cmdline:kernel_cmdline",
+        "//metalos/lib/systemd:systemd",
+        "//metalos/lib/systemd_generator_lib:systemd_generator_lib",
+    ],
+)
