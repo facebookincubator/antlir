@@ -76,7 +76,7 @@ enum Subcommand {
     /// Apply a provided disk image to a specified disk and then
     /// upsize it to the maximum size
     #[cfg(initrd)]
-    ApplyDiskImage(apply_disk_image::Opts),
+    ApplyDiskImage(crate::apply_disk_image::Opts),
     #[cfg(not(initrd))]
     #[structopt(flatten)]
     Update(update::Update),
@@ -172,7 +172,9 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::LoadHostConfig(opts) => load_host_config::load_host_config(opts).await,
         Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
         #[cfg(initrd)]
-        Subcommand::ApplyDiskImage(opts) => apply_disk_image::apply_disk_image(log, opts).await,
+        Subcommand::ApplyDiskImage(opts) => {
+            crate::apply_disk_image::cmd_apply_disk_image(log, opts).await
+        }
         #[cfg(not(initrd))]
         Subcommand::Update(update) => update.subcommand(log).await,
         #[cfg(not(initrd))]

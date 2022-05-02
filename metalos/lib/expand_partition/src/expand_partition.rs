@@ -8,12 +8,13 @@
 use std::collections::BTreeMap;
 use std::fs::{File, OpenOptions};
 use std::os::unix::io::AsRawFd;
-use std::path::Path;
 
 use anyhow::{Context, Result};
 use gpt::disk::LogicalBlockSize;
 use gpt::header::read_header_from_arbitrary_device;
 use gpt::partition::{file_read_partitions, Partition};
+
+use metalos_disk::DiskDevPath;
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_read!(ioctl_blkgetsize64, 0x12, 114, u64);
@@ -28,7 +29,7 @@ pub struct PartitionDelta {
     pub new_last_lb: u64,
 }
 
-pub fn expand_last_partition(device: &Path) -> Result<PartitionDelta> {
+pub fn expand_last_partition(device: &DiskDevPath) -> Result<PartitionDelta> {
     // First we read the current device GPT header and it's partitions.
     // We can't use the top level GptConfig logic from the crate because that
     // assumes that the backup is in the correct place which it won't necessarily be
@@ -36,7 +37,7 @@ pub fn expand_last_partition(device: &Path) -> Result<PartitionDelta> {
     let mut disk_device = OpenOptions::new()
         .write(false)
         .read(true)
-        .open(&device)
+        .open(&device.0)
         .context("failed to open device")?;
 
     let (lb_size, primary_header) =
@@ -71,7 +72,7 @@ pub fn expand_last_partition(device: &Path) -> Result<PartitionDelta> {
         .writable(true)
         .initialized(false)
         .logical_block_size(lb_size)
-        .open(&device)
+        .open(&device.0)
         .context("failed to load gpt table")?;
 
     new_gpt_table
@@ -145,6 +146,7 @@ fn get_block_device_size(file: &File) -> Result<u64> {
 }
 
 pub mod test_utils {
+    use crate::DiskDevPath;
     use anyhow::{Context, Result};
 
     pub fn setup_test_loopback(img_file: &str) -> Result<String> {
@@ -176,7 +178,7 @@ pub mod test_utils {
         Ok(lo.to_string())
     }
 
-    pub fn setup_test_device() -> Result<(String, String)> {
+    pub fn setup_test_device() -> Result<(DiskDevPath, String)> {
         let img_file = "/tmp/loopbackfile.img".to_string();
         let lo = setup_test_loopback(&img_file).context("Failed to setup loopback device")?;
         let output = std::process::Command::new("parted")
@@ -225,7 +227,7 @@ pub mod test_utils {
         println!("{:#?}", output);
         assert!(output.status.success());
 
-        Ok((lo, img_file))
+        Ok((DiskDevPath(lo.into()), img_file))
     }
 }
 
@@ -235,9 +237,9 @@ pub mod tests {
     use super::*;
     use metalos_macros::vmtest;
 
-    fn get_guid(disk_path: &Path) -> Result<String> {
+    fn get_guid(disk_path: &DiskDevPath) -> Result<String> {
         let cfg = gpt::GptConfig::new().writable(false);
-        let disk = cfg.open(disk_path).context("failed to open disk")?;
+        let disk = cfg.open(&disk_path.0).context("failed to open disk")?;
 
         Ok(disk.guid().to_hyphenated_ref().to_string())
     }
@@ -245,10 +247,9 @@ pub mod tests {
     #[vmtest]
     fn test_expand_last_partition() -> Result<()> {
         let (lo, _) = setup_test_device().context("failed to setup loopback device")?;
-        let start_guid = get_guid(Path::new(&lo)).context("failed to get starting guid")?;
-        let delta =
-            expand_last_partition(&Path::new(&lo)).context("failed to expand last partition")?;
-        let ending_guid = get_guid(Path::new(&lo)).context("failed to get starting guid")?;
+        let start_guid = get_guid(&lo).context("failed to get starting guid")?;
+        let delta = expand_last_partition(&lo).context("failed to expand last partition")?;
+        let ending_guid = get_guid(&lo).context("failed to get starting guid")?;
 
         println!("{:#?}", delta);
         assert_eq!(delta.partition_num, 2);
