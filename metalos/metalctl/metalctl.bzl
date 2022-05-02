@@ -21,6 +21,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
         "//metalos/lib/get_host_config:get_host_config",
         "//metalos/lib/expand_partition:expand_partition",
         "//metalos/lib/find_root_disk:find_root_disk",
+        "//metalos/lib/apply_disk_image:apply_disk_image",
         "//metalos/lib/image:image",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/net_utils:net_utils",

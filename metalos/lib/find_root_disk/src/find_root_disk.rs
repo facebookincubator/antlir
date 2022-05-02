@@ -9,8 +9,10 @@
 // to something like: third-party/rust/fixups/libparted-sys/fixups.toml
 
 use anyhow::{anyhow, Context, Result};
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use udev::Enumerator;
+
+use metalos_disk::DiskDevPath;
 
 const IGNORED_PREFIXES: &[&str] = &["/sys/devices/virtual/"];
 
@@ -24,16 +26,18 @@ const POSSIBLE_SERIAL_PROPERTIES: &[&str] = &[
 ];
 
 pub trait DiskPath {
-    fn dev_node(&self) -> Result<PathBuf>;
+    fn dev_node(&self) -> Result<DiskDevPath>;
     fn sys_path(&self) -> &Path;
 }
 
 impl DiskPath for udev::Device {
-    fn dev_node(&self) -> Result<PathBuf> {
-        self.devnode().map(|p| p.to_path_buf()).context(format!(
-            "No dev path found for device at {:?}",
-            self.sys_path()
-        ))
+    fn dev_node(&self) -> Result<DiskDevPath> {
+        self.devnode()
+            .map(|p| DiskDevPath(p.to_path_buf()))
+            .context(format!(
+                "No dev path found for device at {:?}",
+                self.sys_path()
+            ))
     }
 
     fn sys_path(&self) -> &Path {
@@ -199,7 +203,7 @@ mod tests {
         assert_eq!(
             dev.dev_node()
                 .context("expected to find devnode for returned device")?,
-            Path::new("/dev/vda")
+            DiskDevPath("/dev/vda".into())
         );
 
         Ok(())
