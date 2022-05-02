@@ -1,0 +1,11 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "metalos_mount",
+    srcs = ["src/lib.rs"],
+    deps = [
+        "mockall",
+        "nix",
+        "thiserror",
+    ],
+)

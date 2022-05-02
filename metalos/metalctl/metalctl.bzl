@@ -24,6 +24,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
         "//metalos/lib/apply_disk_image:apply_disk_image",
         "//metalos/lib/image:image",
         "//metalos/lib/metalos_paths:metalos_paths",
+        "//metalos/lib/mount:metalos_mount",
         "//metalos/lib/net_utils:net_utils",
         "//metalos/lib/send_events:send_events",
         "//metalos/lib/systemd:systemd",
