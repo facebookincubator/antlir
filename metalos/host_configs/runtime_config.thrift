@@ -19,29 +19,10 @@ struct RuntimeConfig {
   // @oss-disable: 1: deployment_specific.DeploymentRuntimeConfig deployment_specific;
   // The complete set of services that should be running on a host after this
   // runtime config is committed.
-  2: list<packages.Service> services;
+  2: list<Service> services;
 } (rust.exhaustive)
 
-struct ServiceResponse {
-  1: ServiceOperation operation;
-  2: ServiceStatus status;
-}
-
-enum ServiceOperation {
-  // Service was started
-  STARTED = 1,
-  // Service was removed
-  STOPPED = 2,
-  // Service version changed (upgrade or downcrade)
-  CHANGED = 3,
-  // Running service version already matched, this service was not touched
-  ALREADY_CORRECT = 4,
-}
-
-enum ServiceStatus {
-  // Service was started successfully - it may not be healthy but systemd
-  // reported that it started
-  RUNNING = 1,
-  // Service did not start successfully
-  FAILED = 2,
-}
+struct Service {
+  1: packages.Package svc;
+  2: optional packages.Package config_generator;
+} (rust.exhaustive)

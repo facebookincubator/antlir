@@ -74,20 +74,50 @@ host_config(
     name = "host-config",
     host_config = {
         "boot_config": {
+            "deployment_specific": {"metalos": {}},
+            "initrd": {
+                "format": 2,
+                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
+                "kind": 3,
+                "name": "metalos.initrd",
+                "override_uri": None,
+            },
             "kernel": {
-                "kernel": {
+                "pkg": {
+                    "format": 1,
+                    "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
+                    "kind": 2,
                     "name": "kernel." + TEST_KERNEL.uname,
-                    "override_uri": "http://vmtest-host:8000/package/kernel.{}:65cd7099cc024923969ea96ded53a64f".format(TEST_KERNEL.uname),
-                    "uuid": "65cd7099cc024923969ea96ded53a64f",
+                    "override_uri": "http://vmtest-host:8000/package/kernel.{}:deadbeefdeadbeefdeadbeefdeadbeef".format(TEST_KERNEL.uname),
                 },
             },
             "rootfs": {
-                "id": {
-                    "name": "metalos",
-                    "override_uri": "http://vmtest-host:8000/package/metalos:05d3ba2167d0408b92a6e42b92e8f61c",
-                    "uuid": "05d3ba2167d0408b92a6e42b92e8f61c",
-                },
+                "format": 1,
+                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
+                "kind": 1,
+                "name": "metalos",
+                "override_uri": "http://vmtest-host:8000/package/metalos:deadbeefdeadbeefdeadbeefdeadbeef",
             },
+        },
+        "provisioning_config": {
+            "deployment_specific": {"metalos": {}},
+            "gpt_root_disk": {
+                "format": 2,
+                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
+                "kind": 7,
+                "name": "metalos.gpt-root-disk",
+                "override_uri": "http://vmtest-host:8000/package/metalos.gpt-root-disk:deadbeefdeadbeefdeadbeefdeadbeef",
+            },
+            "imaging_initrd": {
+                "format": 2,
+                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
+                "kind": 4,
+                "name": "metalos.imaging-initrd",
+                "override_uri": None,
+            },
+        },
+        "runtime_config": {
+            "deployment_specific": {"metalos": {}},
         },
     },
 )
@@ -343,9 +373,9 @@ buck_genrule(
     name = "image_packages",
     out = ".",
     cmd = """
-        cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:05d3ba2167d0408b92a6e42b92e8f61c
-        zstd -i $(location //metalos/disk:metalos-gpt-image) -o $OUT/metalos_root:1
-        cp --reflink=auto $(location {}) $OUT/kernel.{}:65cd7099cc024923969ea96ded53a64f
+        cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:deadbeefdeadbeefdeadbeefdeadbeef
+        zstd -i $(location //metalos/disk:metalos-gpt-image) -o $OUT/metalos.gpt-root-disk:deadbeefdeadbeefdeadbeefdeadbeef
+        cp --reflink=auto $(location {}) $OUT/kernel.{}:deadbeefdeadbeefdeadbeefdeadbeef
     """.format(
         TEST_KERNEL.artifacts.modules_sendstream,
         TEST_KERNEL.uname,

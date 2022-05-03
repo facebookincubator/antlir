@@ -7,64 +7,27 @@ use anyhow::{Context, Result};
 use nix::libc::{syscall, SYS_kexec_file_load};
 use slog::{info, Logger};
 
-use image::Package;
+use image::PackageExt;
+use metalos_host_configs::boot_config::Kernel;
 use metalos_host_configs::host::HostConfig;
-use metalos_host_configs::packages::{Initrd, Kernel};
+use metalos_host_configs::packages::Initrd;
 use systemd::Systemd;
 
 /// A small wrapper struct around the on-disk path to the kernel
 /// to use for kexec
-pub struct KernelPath(PathBuf);
-
-impl TryFrom<&Kernel> for KernelPath {
-    type Error = anyhow::Error;
-
-    fn try_from(kernel: &Kernel) -> Result<Self, Self::Error> {
-        Ok(Self(
-            kernel
-                .on_disk()
-                .context("Failed to find kernel on disk")?
-                .path()
-                .join("vmlinuz"),
-        ))
-    }
-}
+pub struct VmlinuzPath(PathBuf);
 
 /// A small wrapper struct around the on-disk path to the kernel
 /// modules to use for kexec
-pub struct ModulesPath(PathBuf);
-
-impl TryFrom<&Kernel> for ModulesPath {
-    type Error = anyhow::Error;
-
-    fn try_from(kernel: &Kernel) -> Result<Self, Self::Error> {
-        Ok(Self(
-            kernel
-                .on_disk()
-                .context("Failed to find kernel on disk")?
-                .path()
-                .join("disk-boot-modules.cpio.gz"),
-        ))
-    }
-}
+pub struct DiskBootModulesPath(PathBuf);
 
 /// A small wrapper struct around the on-disk path to the initrd
 /// to use for kexec
 pub struct InitrdPath(PathBuf);
 
-impl TryFrom<&Initrd> for InitrdPath {
-    type Error = anyhow::Error;
-
-    fn try_from(initrd: &Initrd) -> Result<Self, Self::Error> {
-        Ok(Self(
-            initrd.on_disk().context("Failed to find initrd on disk")?,
-        ))
-    }
-}
-
 pub struct KexecInfo {
-    kernel_path: KernelPath,
-    modules_path: ModulesPath,
+    vmlinuz_path: VmlinuzPath,
+    disk_boot_modules_path: DiskBootModulesPath,
     initrd_path: InitrdPath,
     //TODO(T117583671): Make this structured
     cmdline: String,
@@ -72,12 +35,15 @@ pub struct KexecInfo {
 
 impl KexecInfo {
     pub fn new_from_packages(kernel: &Kernel, initrd: &Initrd, cmdline: String) -> Result<Self> {
+        let kernel_path = kernel.pkg.on_disk().context("kernel not on disk")?;
+        let vmlinuz_path = VmlinuzPath(kernel_path.join("vmlinuz"));
+        let disk_boot_modules_path =
+            DiskBootModulesPath(kernel_path.join("disk-boot-modules.cpio.gz"));
+        let initrd_path = InitrdPath(initrd.on_disk().context("initrd not on disk")?);
         Ok(Self {
-            kernel_path: kernel.try_into().context("failed to build kernel path")?,
-            modules_path: kernel
-                .try_into()
-                .context("failed to build kernel modules path")?,
-            initrd_path: initrd.try_into().context("failed to build initrd path")?,
+            vmlinuz_path,
+            disk_boot_modules_path,
+            initrd_path,
             cmdline,
         })
     }
@@ -87,10 +53,10 @@ impl KexecInfo {
         let mut initrd = File::open(&self.initrd_path.0)
             .with_context(|| format!("while opening initrd {}", self.initrd_path.0.display()))?;
 
-        let mut modules = File::open(&self.modules_path.0).with_context(|| {
+        let mut modules = File::open(&self.disk_boot_modules_path.0).with_context(|| {
             format!(
                 "while opening kernel modules {}",
-                self.modules_path.0.display()
+                self.disk_boot_modules_path.0.display()
             )
         })?;
 
@@ -124,14 +90,14 @@ impl KexecInfo {
         info!(
             log,
             "Loading file for kexec. kernel = {}, modules = {}, initrd = {} and cmdline = {}",
-            self.kernel_path.0.display(),
-            self.modules_path.0.display(),
+            self.vmlinuz_path.0.display(),
+            self.disk_boot_modules_path.0.display(),
             self.initrd_path.0.display(),
             self.cmdline,
         );
 
-        let kernel = File::open(&self.kernel_path.0)
-            .with_context(|| format!("while opening kernel {}", self.kernel_path.0.display()))?;
+        let kernel = File::open(&self.vmlinuz_path.0)
+            .with_context(|| format!("while opening kernel {}", self.vmlinuz_path.0.display()))?;
 
         let initrd = self
             .prepare_initrd_image()

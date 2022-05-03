@@ -8,6 +8,6 @@ rust_library(
         "fbthrift",
         "reqwest",
         "url",
-        "//metalos/host_configs:api-rust",
+        "//metalos/host_configs/rust:metalos_host_configs",
     ],
 )

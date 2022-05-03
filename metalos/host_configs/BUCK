@@ -2,17 +2,11 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "rust_library", "thrift_library")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 # @oss-disable: facebook = True 
 # @oss-enable facebook = False
-
-rust_library(
-    name = "example_host_for_tests",
-    srcs = ["example_host_for_tests.rs"],
-    deps = [":api-rust"],
-)
 
 thrift_library(
     name = "api",
@@ -21,7 +15,7 @@ thrift_library(
         "py3",
     ] if facebook else [],
     # @oss-disable: py3_namespace = "metalos.host_configs", 
-    rust_crate_name = "metalos_host_configs",
+    rust_crate_name = "metalos_thrift_host_configs",
     thrift_srcs = {
         "api.thrift": ["Metalctl"],
         "boot_config.thrift": [],
@@ -30,8 +24,20 @@ thrift_library(
         "provisioning_config.thrift": [],
         "runtime_config.thrift": [],
     },
+    # very few targets should be able to have visibility into the raw thrift
+    # interfaces, since it is much easier to use it incorrectly than this safer
+    # native rust wrapper
     visibility = [
-        "PUBLIC",
+        # safe rust wrapper and its tests
+        "//metalos/host_configs/rust:metalos_host_configs",
+        "//metalos/host_configs/rust:metalos_host_configs-unittest",
+        # easier to use thrift defaults in this contained lib
+        "//metalos/host_configs/tests:example_host_for_tests",
+        "//metalos/host_configs/tests:example_host_for_tests-unittest",
+        # the proxy needs raw thrift for a variety of reasons, among them the
+        # fact that certain internal parts of the proxy don't respect some of
+        # the type guarantees we normally do (eg uuid is an actual uuid)
+        "//metalos/host_configs/facebook/proxy/...",
     ],
     deps = [
         "//metalos/host_configs/facebook:host-facebook",

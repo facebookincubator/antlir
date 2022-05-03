@@ -222,6 +222,12 @@ fn common_impls(thrift_type: syn::Type, name: syn::Ident) -> proc_macro2::TokenS
                 ::thrift_wrapper::ThriftWrapper::into_thrift(owned_self).write(p)
             }
         }
+
+        impl std::default::Default for #name {
+            fn default() -> Self {
+                <#thrift_type>::default().try_into().expect("Default::default must be convertible")
+            }
+        }
     }
 }
 

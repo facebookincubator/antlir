@@ -10,7 +10,7 @@ rust_binary(
         "structopt",
         "tokio",
         "uuid",
-        "//metalos/host_configs:api-rust",
+        "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/image:image",
         "//metalos/lib/service:service",
         "//metalos/lib/systemd:systemd",

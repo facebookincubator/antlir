@@ -49,7 +49,7 @@ impl ServiceInstance {
                 name,
                 version.to_simple()
             )),
-            root: base.join("service_roots").join(&unique),
+            root: base.join("service-roots").join(&unique),
             state: base.join("state").join(&name),
             cache: base.join("cache").join(&name),
             logs: base.join("logs").join(&name),

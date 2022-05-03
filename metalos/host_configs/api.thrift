@@ -8,6 +8,7 @@
 namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
 
+include "metalos/host_configs/boot_config.thrift"
 include "metalos/host_configs/packages.thrift"
 include "metalos/host_configs/runtime_config.thrift"
 
@@ -19,34 +20,65 @@ struct OnlineUpdateRequest {
 } (rust.exhaustive)
 
 struct OnlineUpdateStageResponse {
-  // Full set of packages that were downloaded (or already present) as a result
-  // of this operation
-  1: map<packages.PackageId, packages.Status> packages;
+  1: list<packages.PackageStatus> packages;
 } (rust.exhaustive)
 
 /// Currently, the only thing that can go wrong while trying to stage an online
 /// update is one or more packages failing to download
 exception OnlineUpdateStageError {
-  1: map<packages.PackageId, packages.Status> packages;
+  1: list<packages.PackageStatus> packages;
 }
 
 struct OnlineUpdateCommitResponse {
   /// Full set of services that were acted on as a result of this operation
   /// (started/stopped/updated/already-correct)
-  1: map<packages.Service, runtime_config.ServiceResponse> services;
+  1: list<ServiceResponse> services;
 } (rust.exhaustive)
+
+struct ServiceResponse {
+  1: runtime_config.Service svc;
+  2: ServiceOperation operation;
+  3: ServiceStatus status;
+} (rust.exhaustive)
+
+enum ServiceOperation {
+  // Service was started
+  STARTED = 1,
+  // Service was removed
+  STOPPED = 2,
+  // Service version changed (upgrade or downcrade)
+  CHANGED = 3,
+  // Running service version already matched, this service was not touched
+  ALREADY_CORRECT = 4,
+}
+
+enum ServiceStatus {
+  // Service was started successfully - it may not be healthy but systemd
+  // reported that it started
+  RUNNING = 1,
+  // Service did not start successfully
+  FAILED = 2,
+}
 
 exception OnlineUpdateCommitError {
   1: OnlineUpdateCommitErrorCode code;
   2: string error;
   /// Status of each service
-  3: list<runtime_config.ServiceResponse> services;
+  3: list<ServiceResponse> services;
 }
 
 enum OnlineUpdateCommitErrorCode {
   OTHER = 1,
   // Tried to commit a config that was not previously staged
   NOT_STAGED = 2,
+}
+
+struct Status {
+  1: boot_config.BootConfig staged_boot_config;
+  2: boot_config.BootConfig current_boot_config;
+  3: runtime_config.RuntimeConfig staged_runtime_config;
+  4: runtime_config.RuntimeConfig current_runtime_config;
+  5: list<packages.Package> packages_on_disk;
 }
 
 // TODO(T115253909) Offline updates will also be supported, but online is more
@@ -67,4 +99,6 @@ service Metalctl {
   OnlineUpdateCommitResponse online_update_commit(
     1: OnlineUpdateRequest req,
   ) throws (1: OnlineUpdateCommitError e);
+
+  Status status();
 }

@@ -15,7 +15,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
     # brought in by large dependencies.
     deps = [
         "//metalos/host_configs/evalctx:evalctx",
-        "//metalos/host_configs:api-rust",
+        "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/kernel_cmdline:kernel_cmdline",
         "//metalos/lib/get_host_config:get_host_config",
@@ -75,7 +75,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
             "mockall",
             "tempfile",
             "//metalos/lib/http_test:http_test",
-            "//metalos/host_configs:example_host_for_tests",
+            "//metalos/host_configs/tests:example_host_for_tests",
         ],
         test_srcs = native.glob(["tests/**/*.rs"]),
         unittest_opts = shape.new(

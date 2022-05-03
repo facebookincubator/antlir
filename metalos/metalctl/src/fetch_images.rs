@@ -11,7 +11,7 @@ use structopt::StructOpt;
 use url::Url;
 
 use image::download::HttpsDownloader;
-use image::Package;
+use image::PackageExt;
 
 use get_host_config::get_host_config;
 
@@ -32,16 +32,16 @@ pub async fn fetch_images(log: Logger, opts: Opts) -> Result<()> {
 
     let (root_subvol, kernel_subvol) = tokio::join!(
         host.boot_config.rootfs.download(log.clone(), &dl),
-        host.boot_config.kernel.download(log, &dl),
+        host.boot_config.kernel.pkg.download(log, &dl),
     );
     let root_subvol = root_subvol.context("while downloading rootfs")?;
     let kernel_subvol = kernel_subvol.context("while downloading kernel")?;
     // TODO: download service images as well
 
-    let kernel_modules_subdir = kernel_subvol.path().join("modules");
+    let kernel_modules_subdir = kernel_subvol.join("modules");
     let kernel_modules_path = match kernel_modules_subdir.exists() {
         true => kernel_modules_subdir,
-        false => kernel_subvol.path().into(),
+        false => kernel_subvol,
     };
 
     // TODO: onboard this to systemd_generator_lib if there is a lot more that
@@ -49,10 +49,9 @@ pub async fn fetch_images(log: Logger, opts: Opts) -> Result<()> {
     std::fs::write(
         "/run/metalos/image_paths_environment",
         format!(
-            "METALOS_OS_VOLUME={}\nMETALOS_KERNEL_MODULES_PATH={}\nMETALOS_KERNEL_SUBVOLID={}\n",
-            root_subvol.path().display(),
+            "METALOS_OS_VOLUME={}\nMETALOS_KERNEL_MODULES_PATH={}\n",
+            root_subvol.display(),
             kernel_modules_path.display(),
-            kernel_subvol.id(),
         ),
     )
     .context("while writing /run/metalos/image_paths_environment")?;
