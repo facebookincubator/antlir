@@ -347,7 +347,9 @@ python_library(
     visibility = ["PUBLIC"],
     deps = [
         ":common",
+        ":errors",
         ":fs_utils",
+        "//antlir/bzl/buck_isolation:buck_isolation",
     ],
 )
 

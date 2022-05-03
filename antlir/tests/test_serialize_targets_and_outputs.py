@@ -12,6 +12,7 @@ import unittest
 from contextlib import contextmanager
 from typing import Generator, Mapping
 
+from antlir.errors import UserError
 from antlir.fs_utils import Path, temp_dir
 from antlir.serialize_targets_and_outputs import (
     BuckConfigParser,
@@ -126,7 +127,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
 
     def test_cannot_find_cell_root(self) -> None:
         self.assertRaises(
-            RuntimeError,
+            UserError,
             self._run_test,
             targets_and_locs={
                 "//foo:bar": "/foo/bar",
