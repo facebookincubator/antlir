@@ -78,16 +78,39 @@ fn expand_thriftwrapper_enum(
 ) -> proc_macro2::TokenStream {
     let mut match_thrift_variant = vec![];
     let mut match_to_thrift = vec![];
+    let mut is_union = false;
     for var in &enm.variants {
         let rust_name = &var.ident;
-        let thrift_name = format_ident!("{}", var.ident.to_string().to_case(Case::UpperSnake));
-        match_thrift_variant.push(quote! {
-            #thrift_type::#thrift_name => Ok(Self::#rust_name),
-        });
-        match_to_thrift.push(quote! {
-            Self::#rust_name => #thrift_type::#thrift_name,
-        });
+        // with no variant, it is a thrift enum (aka, constant value)
+        if var.fields.is_empty() {
+            let thrift_name = format_ident!("{}", var.ident.to_string().to_case(Case::UpperSnake));
+            match_thrift_variant.push(quote! {
+                #thrift_type::#thrift_name => Ok(Self::#rust_name),
+            });
+            match_to_thrift.push(quote! {
+                Self::#rust_name => #thrift_type::#thrift_name,
+            });
+        }
+        // there's a variant so it's a union field
+        else {
+            is_union = true;
+            let thrift_name = format_ident!("{}", var.ident.to_string().to_case(Case::Snake));
+            match_thrift_variant.push(quote! {
+                #thrift_type::#thrift_name(x) => x.try_into().map(Self::#rust_name),
+            });
+            match_to_thrift.push(quote! {
+                Self::#rust_name(x) => #thrift_type::#thrift_name(x.into()),
+            });
+        }
     }
+    let unknown_variant_from_thrift = match is_union {
+        false => quote! {
+            _ => Err(::thrift_wrapper::Error::Enum(format!("{:?}", t))),
+        },
+        true => quote! {
+            #thrift_type::UnknownField(i) => Err(::thrift_wrapper::Error::Union(i)),
+        },
+    };
     quote! {
         impl ::thrift_wrapper::ThriftWrapper for #name {
             type Thrift = #thrift_type;
@@ -95,7 +118,7 @@ fn expand_thriftwrapper_enum(
             fn from_thrift(t: #thrift_type) -> ::thrift_wrapper::Result<Self> {
                 match t {
                     #(#match_thrift_variant)*
-                    _ => Err(::thrift_wrapper::Error::Enum(format!("{:?}", t))),
+                    #unknown_variant_from_thrift
                 }
             }
 
