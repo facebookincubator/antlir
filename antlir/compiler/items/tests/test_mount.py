@@ -6,7 +6,6 @@
 
 import json
 import os
-import sys
 import tempfile
 
 from antlir.compiler.requires_provides import (
@@ -19,8 +18,7 @@ from antlir.compiler.requires_provides import (
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import antlir_dep
 from antlir.fs_utils import Path, temp_dir
-from antlir.subvol_utils import TempSubvolumes
-from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.subvol_utils import TempSubvolumes, Subvol
 from antlir.tests.subvol_helpers import get_meta_dir_contents
 
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
@@ -348,9 +346,7 @@ class MountItemTestCase(BaseItemTestCase):
             self._check_subvol_mounts_meow(mounter_child)
 
     def test_parse_mount_meta(self):
-        test_subvol = layer_resource_subvol(
-            __package__, "small-layer-with-mounts"
-        )
+        test_subvol = Subvol("small-layer-with-mounts", already_exists=True)
 
         expected_mounts = [
             Mount(
@@ -388,8 +384,9 @@ class MountItemTestCase(BaseItemTestCase):
         )
 
         # Test a layer that has no mounts
-        test_subvol_no_mounts = layer_resource_subvol(
-            __package__, "test-layer-without-mounts"
+        test_subvol_no_mounts = Subvol(
+            "test-layer-without-mounts",
+            already_exists=True,
         )
 
         self.assertEqual(
