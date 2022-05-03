@@ -14,7 +14,12 @@ include "metalos/host_configs/packages.thrift"
 // Complete boot-time config for a MetalOS host. Requires a reboot to update.
 struct BootConfig {
   // @oss-disable: 1: deployment_specific.DeploymentBootConfig deployment_specific;
-  2: packages.Rootfs rootfs;
-  3: packages.Kernel kernel;
-  4: packages.Initrd initrd;
+  2: packages.Package rootfs;
+  3: Kernel kernel;
+  4: packages.Package initrd;
+} (rust.exhaustive)
+
+struct Kernel {
+  1: packages.Package pkg;
+  2: string cmdline;
 } (rust.exhaustive)

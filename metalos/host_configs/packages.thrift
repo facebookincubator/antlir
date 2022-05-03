@@ -15,44 +15,47 @@
 namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
 
+union PackageId {
+  // Fully resolved UUID that always points to the same exact package version
+  1: string uuid;
+  // Arbitrary string that points to a specific package version at a given point
+  // in time. It may change to point to a different package version at any time,
+  // so it must be resolved before being saved / provided to a MetalOS host.
+  // This will fail to deserialize using the safe Rust wrappers, unless
+  // explicitly allowed by the calling code.
+  2: string tag;
+}
+
 // How to download an individual package. Each package is uniquely identified by
-// a (name, uuid) pair, and can optionally be redirected to a specific URI for
+// a (name, id) pair, and can optionally be redirected to a specific URI for
 // development purposes.
-struct PackageId {
+struct Package {
   1: string name;
-  2: string uuid;
+  2: PackageId id;
   3: optional string override_uri;
+  4: Kind kind;
+  5: Format format;
 } (rust.exhaustive)
 
-struct Rootfs {
-  1: PackageId id;
-} (rust.exhaustive)
+enum Kind {
+  ROOTFS = 1,
+  KERNEL = 2,
+  INITRD = 3,
+  IMAGING_INITRD = 4,
+  SERVICE = 5,
+  SERVICE_CONFIG_GENERATOR = 6,
+  GPT_ROOT_DISK = 7,
+}
 
-struct ImagingInitrd {
-  1: PackageId id;
-} (rust.exhaustive)
+enum Format {
+  SENDSTREAM = 1,
+  FILE = 2,
+}
 
-struct Initrd {
-  1: PackageId id;
-} (rust.exhaustive)
-
-struct Kernel {
-  1: PackageId kernel;
-  2: string cmdline;
-} (rust.exhaustive)
-
-struct Service {
-  1: PackageId service_id;
-  2: optional PackageId generator_id;
-} (rust.exhaustive, rust.ord)
-
-struct GptRootdisk {
-  1: PackageId id;
-} (rust.exhaustive)
-
-struct Status {
-  1: InstallationStatus installation_status;
-  2: optional string error;
+struct PackageStatus {
+  1: Package pkg;
+  2: InstallationStatus installation_status;
+  3: optional string error;
 } (rust.exhaustive)
 
 enum InstallationStatus {

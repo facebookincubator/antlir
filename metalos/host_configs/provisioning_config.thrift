@@ -21,10 +21,10 @@ struct ProvisioningConfig {
   // initial root pw hash, will be rotated at runtime outside of the typical
   // MetalOS update lifecycles
   3: string root_pw_hash;
-  4: packages.GptRootdisk gpt_root_disk;
+  4: packages.Package gpt_root_disk;
   // This is just a historical record of what the box was originally imaged using.
   // The initrd listed here won't be used again so this field has no effect on automation
-  5: packages.ImagingInitrd imaging_initrd;
+  5: packages.Package imaging_initrd;
   // The base URI for where to send events. See lib/send_events/send_events.rs. HttpSink
   // has documentation of the format.
   6: string event_backend_base_uri;

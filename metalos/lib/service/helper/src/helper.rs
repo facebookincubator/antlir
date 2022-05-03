@@ -90,7 +90,7 @@ pub(crate) mod tests {
         init(svc)?;
         assert!(
             Path::new(&format!(
-                "/run/fs/control/run/service_roots/metalos.service.demo-{}-{}",
+                "/run/fs/control/run/service-roots/metalos.service.demo-{}-{}",
                 "00000000000040008000000000000001",
                 run_uuid.to_simple()
             ))

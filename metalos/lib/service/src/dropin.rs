@@ -200,7 +200,7 @@ mod tests {
                  PropagatesStopTo=metalos-native-service@{token}.service\n\
                  Description={{\"native_service\":\"metalos.service.demo\",\"version\":\"00000000-0000-4000-8000-000000000001\"}}\n\
                  [Service]\n\
-                 RootDirectory=/run/fs/control/run/service_roots/metalos.service.demo-00000000000040008000000000000001-{uuid}\n\
+                 RootDirectory=/run/fs/control/run/service-roots/metalos.service.demo-00000000000040008000000000000001-{uuid}\n\
                  Environment=CACHE_DIRECTORY=/metalos/cache\n\
                  Environment=LOGS_DIRECTORY=/metalos/logs\n\
                  Environment=METALOS_RUN_ID={uuid}\n\

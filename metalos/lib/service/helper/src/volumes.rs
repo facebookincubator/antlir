@@ -114,7 +114,7 @@ mod tests {
         assert_eq!(
             svc_vols.root.path(),
             Path::new(&format!(
-                "/run/fs/control/run/service_roots/metalos.service.demo-{}-{}",
+                "/run/fs/control/run/service-roots/metalos.service.demo-{}-{}",
                 svc.version().to_simple(),
                 svc.run_uuid().to_simple(),
             )),

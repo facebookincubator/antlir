@@ -5,7 +5,7 @@ use slog::{info, Logger};
 use structopt::StructOpt;
 
 use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
-use metalos_host_configs::packages::{GptRootdisk, PackageId};
+use metalos_host_configs::packages::{Format, GptRootDisk};
 use metalos_mount::RealMounter;
 
 #[derive(StructOpt)]
@@ -32,18 +32,18 @@ pub async fn cmd_apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
     info!(log, "Selected {:?} as root disk", disk);
 
     // TODO: make this an image::Image all the way through (add it to HostConfig)
-    let (name, id) = opts
+    let (name, uuid) = opts
         .package
         .split_once(':')
         .context("package must have ':' separator")?;
 
-    let package = GptRootdisk {
-        id: PackageId {
-            name: name.into(),
-            uuid: id.into(),
-            override_uri: None,
-        },
-    };
+    let package = GptRootDisk::new(
+        name.into(),
+        uuid.parse()
+            .with_context(|| format!("{} is not a uuid", uuid))?,
+        None,
+        Format::File,
+    );
 
     ::apply_disk_image::apply_disk_image(
         log,

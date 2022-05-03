@@ -12,8 +12,9 @@ use structopt::StructOpt;
 use uuid::Uuid;
 
 use image::download::HttpsDownloader;
-use image::Package;
-use metalos_host_configs::packages::{PackageId, Service};
+use image::PackageExt;
+use metalos_host_configs::packages::{Format, Service as ServicePackage};
+use metalos_host_configs::runtime_config::Service;
 use service::{ServiceSet, Transaction};
 use systemd::Systemd;
 
@@ -43,12 +44,8 @@ impl FromStr for ServiceID {
 impl From<&ServiceID> for Service {
     fn from(sid: &ServiceID) -> Service {
         Service {
-            service_id: PackageId {
-                name: sid.0.clone(),
-                uuid: sid.1.to_simple().to_string(),
-                override_uri: None,
-            },
-            generator_id: None,
+            svc: ServicePackage::new(sid.0.clone(), sid.1, None, Format::Sendstream),
+            config_generator: None,
         }
     }
 }
@@ -70,7 +67,7 @@ pub(crate) async fn service(log: Logger, opts: Opts) -> Result<()> {
             let dl = HttpsDownloader::new().context("while creating downloader")?;
             for svc in &start.services {
                 let svc: Service = svc.into();
-                svc.download(log.clone(), &dl).await?;
+                svc.svc.download(log.clone(), &dl).await?;
             }
 
             let mut set = ServiceSet::current(&sd).await?;

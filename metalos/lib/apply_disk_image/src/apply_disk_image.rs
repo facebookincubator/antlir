@@ -12,7 +12,7 @@ use slog::{info, o, warn, Logger};
 use expand_partition::{expand_last_partition, PartitionDelta};
 use image::download::HttpsDownloader;
 use metalos_disk::DiskDevPath;
-use metalos_host_configs::packages::GptRootdisk;
+use metalos_host_configs::packages::GptRootDisk;
 use metalos_mount::Mounter;
 
 // define ioctl macros based on the codes in linux/fs.h
@@ -156,11 +156,9 @@ fn get_partition_device(
     ))
 }
 
-async fn download_disk_image(package: &GptRootdisk) -> Result<Bytes> {
+async fn download_disk_image(package: &GptRootDisk) -> Result<Bytes> {
     let dl = HttpsDownloader::new().context("while creating downloader")?;
-    let url = dl
-        .package_url(&package.id)
-        .context("while getting image url")?;
+    let url = dl.package_url(package).context("while getting image url")?;
     let client: reqwest::Client = dl.into();
     client
         .get(url.clone())
@@ -175,7 +173,7 @@ async fn download_disk_image(package: &GptRootdisk) -> Result<Bytes> {
 pub async fn apply_disk_image<M: Mounter>(
     log: Logger,
     disk: DiskDevPath,
-    package: &GptRootdisk,
+    package: &GptRootDisk,
     tmp_mounts_dir: &Path,
     dd_buffer_size: usize,
     mounter: M,

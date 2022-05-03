@@ -6,10 +6,11 @@ use slog::{debug, Logger};
 use std::io::ErrorKind;
 use std::pin::Pin;
 use thiserror::Error;
+use uuid::Uuid;
 
 use crate::Result;
 use btrfs::sendstream::{Sendstream, SendstreamExt, Zstd};
-use metalos_host_configs::packages::PackageId;
+use metalos_host_configs::packages::{Kind, Package};
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -29,14 +30,18 @@ pub trait Downloader {
     type Sendstream: SendstreamExt;
 
     /// Open a bytes stream from the underlying image source.
-    async fn open_bytes_stream(
+    async fn open_bytes_stream<K: Kind>(
         &self,
         log: Logger,
-        package: &PackageId,
+        package: &Package<K, Uuid>,
     ) -> Result<Self::BytesStream>;
 
     /// Open a [Sendstream] from the underlying image source.
-    async fn open_sendstream(&self, log: Logger, package: &PackageId) -> Result<Self::Sendstream>;
+    async fn open_sendstream<K: Kind>(
+        &self,
+        log: Logger,
+        package: &Package<K, Uuid>,
+    ) -> Result<Self::Sendstream>;
 }
 
 #[derive(Clone)]
@@ -68,18 +73,20 @@ impl HttpsDownloader {
         Ok(Self { client })
     }
 
-    pub fn package_url(&self, id: &PackageId) -> Result<Url> {
-        let uri = match &id.override_uri {
-            Some(u) => u.clone(),
-            None => FORMAT_URI.replace("{package}", &format!("{}:{}", id.name, id.uuid)),
-        };
-        Url::parse(&uri).map_err(|e| {
-            Error::InvalidUri {
-                uri,
-                error: e.into(),
+    pub fn package_url<K: Kind>(&self, id: &Package<K, Uuid>) -> Result<Url> {
+        match &id.override_uri {
+            Some(u) => Ok(u.clone()),
+            None => {
+                let uri = FORMAT_URI.replace("{package}", &id.identifier());
+                Url::parse(&uri).map_err(|e| {
+                    Error::InvalidUri {
+                        uri,
+                        error: e.into(),
+                    }
+                    .into()
+                })
             }
-            .into()
-        })
+        }
     }
 }
 
@@ -94,7 +101,11 @@ impl Downloader for &HttpsDownloader {
     type BytesStream = Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>;
     type Sendstream = Sendstream<Zstd, Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>>;
 
-    async fn open_bytes_stream(&self, log: Logger, id: &PackageId) -> Result<Self::BytesStream> {
+    async fn open_bytes_stream<K: Kind>(
+        &self,
+        log: Logger,
+        id: &Package<K, Uuid>,
+    ) -> Result<Self::BytesStream> {
         let url = self.package_url(id)?;
         debug!(log, "{:?} -> {}", id, url);
         let response = self
@@ -120,7 +131,11 @@ impl Downloader for &HttpsDownloader {
         }
     }
 
-    async fn open_sendstream(&self, log: Logger, package: &PackageId) -> Result<Self::Sendstream> {
+    async fn open_sendstream<K: Kind>(
+        &self,
+        log: Logger,
+        package: &Package<K, Uuid>,
+    ) -> Result<Self::Sendstream> {
         let stream = self.open_bytes_stream(log, package).await?;
         Ok(Sendstream::new(stream))
     }
@@ -129,20 +144,22 @@ impl Downloader for &HttpsDownloader {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use metalos_host_configs::packages::{Format, Rootfs};
 
     #[test]
     fn image_url() -> anyhow::Result<()> {
         let h = HttpsDownloader::new()?;
         assert_eq!(
             format!(
-                "{}/abc:123",
+                "{}/abc:deadbeefdeadbeefdeadbeefdeadbeef",
                 FORMAT_URI.replace("{package}", "").trim_end_matches('/')
             ),
-            String::from(h.package_url(&PackageId {
-                name: "abc".into(),
-                uuid: "123".into(),
-                override_uri: None,
-            })?)
+            String::from(h.package_url(&Rootfs::new(
+                "abc".into(),
+                "deadbeefdeadbeefdeadbeefdeadbeef".parse().unwrap(),
+                None,
+                Format::Sendstream,
+            ))?)
         );
         Ok(())
     }
