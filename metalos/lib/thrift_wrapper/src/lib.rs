@@ -30,6 +30,8 @@ pub enum Error {
     },
     #[error("unrecognized enum variant {0}")]
     Enum(String),
+    #[error("unrecognized union variant {0}")]
+    Union(i32),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }

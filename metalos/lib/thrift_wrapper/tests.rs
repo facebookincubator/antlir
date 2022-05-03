@@ -28,6 +28,25 @@ struct Nested {
     uuid: uuid::Uuid,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(test_if::UnionA)]
+struct UnionA {
+    foo: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(test_if::UnionB)]
+struct UnionB {
+    bar: i32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(test_if::MyUnion)]
+enum MyUnion {
+    A(UnionA),
+    B(UnionB),
+}
+
 #[test]
 fn to_thrift() {
     let uuid = Uuid::new_v4();
@@ -114,5 +133,33 @@ fn from_thrift_bad_top_field() -> Result<()> {
         }
         _ => panic!("should have failed"),
     };
+    Ok(())
+}
+
+#[test]
+fn thrift_union() -> Result<()> {
+    assert_eq!(
+        MyUnion::A(UnionA { foo: "bar".into() }),
+        test_if::MyUnion::a(test_if::UnionA { foo: "bar".into() }).try_into()?
+    );
+    assert_eq!(
+        MyUnion::B(UnionB { bar: 2 }),
+        test_if::MyUnion::b(test_if::UnionB { bar: 2 }).try_into()?
+    );
+    match MyUnion::try_from(test_if::MyUnion::UnknownField(42)) {
+        Ok(_) => panic!("should have failed"),
+        Err(e) => match e {
+            Error::Union(42) => (),
+            _ => panic!("expected Error::Union(42)"),
+        },
+    };
+    assert_eq!(
+        test_if::MyUnion::a(test_if::UnionA { foo: "bar".into() }),
+        MyUnion::A(UnionA { foo: "bar".into() }).into(),
+    );
+    assert_eq!(
+        test_if::MyUnion::b(test_if::UnionB { bar: 2 }),
+        MyUnion::B(UnionB { bar: 2 }).into(),
+    );
     Ok(())
 }

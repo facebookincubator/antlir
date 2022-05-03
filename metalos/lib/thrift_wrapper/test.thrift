@@ -9,3 +9,16 @@ struct MyStruct {
 struct Nested {
   1: string uuid;
 } (rust.exhaustive)
+
+struct UnionA {
+  1: string foo;
+} (rust.exhaustive)
+
+struct UnionB {
+  1: i32 bar;
+} (rust.exhaustive)
+
+union MyUnion {
+  1: UnionA a;
+  2: UnionB b;
+}
