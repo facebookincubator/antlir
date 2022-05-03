@@ -1,0 +1,11 @@
+# @noautodeps
+
+load("//antlir/bzl:oss_shim.bzl", "python_library")
+load(":defs.bzl", "buck_isolation_py")
+
+buck_isolation_py(name = "buck_isolation.py")
+
+python_library(
+    name = "buck_isolation",
+    srcs = {":buck_isolation.py": "buck_isolation.py"},
+)

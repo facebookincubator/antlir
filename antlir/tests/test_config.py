@@ -15,6 +15,7 @@ from antlir.config import (
     repo_config_t,
     _unmemoized_repo_config,
 )
+from antlir.errors import UserError
 from antlir.fs_utils import Path, temp_dir
 
 
@@ -98,7 +99,7 @@ class RepoConfigTestCase(unittest.TestCase):
             artifacts_require_repo=True,
         )
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(UserError):
             _unmemoized_repo_config(path_in_repo=Path("/"))
 
     @unittest.mock.patch("antlir.config.find_artifacts_dir")

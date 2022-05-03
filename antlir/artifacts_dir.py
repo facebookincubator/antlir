@@ -13,6 +13,9 @@ import sys
 import textwrap
 from typing import Optional
 
+from antlir.bzl.buck_isolation.buck_isolation import is_buck_using_isolation
+
+from .errors import UserError
 from .fs_utils import Path, populate_temp_file_and_rename
 
 
@@ -41,7 +44,7 @@ def _make_eden_redirection(
 ) -> None:
 
     if artifacts_dir.exists() and not _is_edenfs_redirection(artifacts_dir):
-        raise RuntimeError(
+        raise UserError(
             f"{artifacts_dir} is not a proper Edenfs redirection.\n\n"
             "Please run `buck-image-out/clean.sh` and then remove "
             "`buck-image-out` before moving forward."
@@ -106,7 +109,7 @@ def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
     if repo_root:
         return repo_root
 
-    raise RuntimeError(
+    raise UserError(
         f"No hg or git root found in any ancestor of {path_in_repo}."
         f" Is this an hg or git repo?"
     )
@@ -133,13 +136,29 @@ def find_buck_cell_root(path_in_repo: Optional[Path] = None) -> Path:
     if cell_path:
         return cell_path
 
-    raise RuntimeError(
+    raise UserError(
         f"Could not find .buckconfig in any ancestor of {path_in_repo}"
     )
 
 
 def find_artifacts_dir(path_in_repo: Optional[Path] = None) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
+    if is_buck_using_isolation():
+        # Future: This could be improved:
+        #   - To make Pyre type-check `python_unittest`s that take
+        #     dependencies on layers (e.g. `test-extract-nested-features`)
+        #     we can stub out image dependencies of such tests, T118563829.
+        #   - To allow layer builds in isolation settings, we'd need to
+        #     extend artifact dirs to be namespaced, e.g.
+        #         repo/sub_cell/ISOLATION_PREFIX-buck-out/antlir-buck1
+        #         repo/buck-out/antlir-buck2-ISOLATION_DIR/
+        #     Note that Buck2 will soon disallow / characters in isolation
+        #     dirs, which will enable us to deduce the isolation dir.
+        raise UserError(
+            "Cannot build Antlir targets with --isolation_prefix or "
+            "--isolation-dir. In fbsource, the likely cause is "
+            "https://fburl.com/pyre-no-antlir"
+        )
     return find_buck_cell_root(path_in_repo=path_in_repo) / "buck-image-out"
 
 
@@ -167,7 +186,7 @@ def ensure_per_repo_artifacts_dir_exists(
         except FileExistsError:
             pass  # We might race with another instance
 
-    ensure_clean_sh_exists(
+    _ensure_clean_sh_exists(
         artifacts_dir,
         buck_cell_root,
         is_eden_repo=maybe_edenfs,
@@ -175,7 +194,7 @@ def ensure_per_repo_artifacts_dir_exists(
     return artifacts_dir
 
 
-def ensure_clean_sh_exists(
+def _ensure_clean_sh_exists(
     artifacts_dir: Path,
     buck_cell_root: Path,
     is_eden_repo: bool,
