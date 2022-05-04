@@ -34,7 +34,7 @@ def native_service(
         service_binary_path = "/usr/bin/{}".format(service_name)
 
     if not visibility:
-        visibility = ["//metalos//...", "//netos/..."]
+        visibility = ["//metalos/...", "//netos/..."]
 
     if not parent_layer:
         parent_layer = REPO_CFG.artifact["metalos.layer.base"]
