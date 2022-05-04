@@ -12,4 +12,4 @@ Type=oneshot
 RemainAfterExit=true
 # We only reimage in provisioning  so we should report that we rebooted into the ramdisk successfully
 ExecStartPre=metalctl send-event "RAMDISK_IMAGE.READY" "metalctl-initrd"
-ExecStart=metalctl apply-disk-image ${METALOS_DISK_IMAGE_PKG}
+ExecStart=metalctl apply-disk-image file:///run/metalos/host-config
