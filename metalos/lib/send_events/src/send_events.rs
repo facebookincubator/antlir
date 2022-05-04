@@ -104,11 +104,14 @@ where
     pub async fn send<T, E>(&self, event: T) -> Result<S::EventId>
     where
         T: TryInto<Event, Error = E>,
-        E: Into<anyhow::Error> + std::error::Error + 'static + Send + Sync,
+        E: Into<anyhow::Error> + 'static + Send + Sync,
     {
         self.sink
             .send(
-                event.try_into().context("Trying to convert to Event")?,
+                event
+                    .try_into()
+                    .map_err(|e| e.into())
+                    .context("Trying to convert to Event")?,
                 &self.identity,
             )
             .await

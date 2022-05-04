@@ -1,0 +1,24 @@
+[Unit]
+Description=Switch Root into Snapshot
+DefaultDependencies=no
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly
+AllowIsolate=yes
+
+Requires=systemd-networkd.service
+After=systemd-networkd.service
+
+# We must communicate with the systemd manager over dbus
+Requires=dbus.socket
+After=dbus.socket
+
+[Service]
+Type=oneshot
+StandardOutput=kmsg+console
+ExecStart=/usr/bin/metalimage
+#
+# Setting KillMode to none is deprecated in systemd and comes with dire warnings
+# that the functionality will be removed, but this seems to be the least
+# racy way we can have metalctl survive the systemd killing spree.
+#
+KillMode=none

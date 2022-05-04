@@ -1,0 +1,53 @@
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:defs.bzl", "package")
+
+image.layer(
+    name = "with-imagining-initrd-bins",
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
+    features = [
+        feature.install(
+            "//metalos/imaging_initrd/metalimage:metalimage",
+            "/usr/bin/metalimage",
+            mode = "a+rx",
+        ),
+        feature.install(
+            "//metalos/imaging_initrd/network_generator:network_generator",
+            "/usr/lib/systemd/system-generators/metalos-network-generator",
+            mode = "a+rx",
+        ),
+    ],
+)
+
+image.layer(
+    name = "imaging-initrd",
+    parent_layer = "//metalos/initrd:initrd-common",
+    features = [
+        systemd.install_unit("units/metalos-reimage.service"),
+        systemd.enable_unit("metalos-reimage.service", "initrd-switch-root.target", "requires"),
+        extract.extract(
+            binaries = [
+                "/usr/lib/systemd/system-generators/metalos-network-generator",
+                "/usr/bin/metalimage",
+            ],
+            dest = "/",
+            source = ":with-imagining-initrd-bins",
+        ),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+    visibility = [
+        "//antlir/vm/...",
+        "//metalos/...",
+        "//scripts/dschatzberg/vm:",
+    ],
+)
+
+package.new(
+    name = "imaging-initrd.cpio.gz",
+    format = "cpio.gz",
+    layer = ":imaging-initrd",
+    visibility = ["PUBLIC"],
+)
