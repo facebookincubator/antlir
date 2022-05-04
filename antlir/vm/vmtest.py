@@ -273,14 +273,14 @@ async def run(
 
     shares = []
 
-    if devel_layer and opts.kernel.artifacts.devel is None:
+    if devel_layer and opts.kernel.derived_targets.devel is None:
         raise Exception(
-            "--devel-layer requires kernel.artifacts.devel set in vm_opts"
+            "--devel-layer requires kernel.derived_targets.devel set in vm_opts"
         )
 
     if devel_layer:
         devel_path = not_none(
-            find_built_subvol(opts.kernel.artifacts.devel.path)
+            find_built_subvol(opts.kernel.derived_targets.devel.path)
         ).path()
         shares += [
             Plan9Export(

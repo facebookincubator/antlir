@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":boot_loader_entry.shape.bzl", "boot_loader_entry_t")
@@ -41,14 +41,11 @@ def ble_build(
 
         features.extend([
             feature.install(
-                "{}:{}-initrd".format(
-                    kernel_get.base_target,
-                    kernel.uname,
-                ),
+                antlir_dep("vm/initrd:{}-initrd".format(kernel.uname)),
                 "/initrd-{}.img".format(kernel.uname),
             ),
             feature.install(
-                kernel.artifacts.vmlinuz,
+                kernel.derived_targets.vmlinuz,
                 "/vmlinuz-{}".format(kernel.uname),
             ),
             feature.install(

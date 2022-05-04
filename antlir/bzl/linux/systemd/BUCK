@@ -1,4 +1,3 @@
-load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:template.bzl", "template")
 
 template(
@@ -13,7 +12,7 @@ template(
         "mount.jinja2",
     ],
     visibility = [
-        kernel_get.base_target + "/...",
+        "//antlir/vm/...",
         "//metalos/...",
         "//scripts/dschatzberg/vm:",
         "//ti/platform/edgeos/...",

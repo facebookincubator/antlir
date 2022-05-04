@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -10,33 +11,14 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//antlir/vm/bzl:install_kernel_modules.bzl", "install_kernel_modules")
 
-DEFAULT_MODULE_LIST = [
-    "drivers/block/virtio_blk.ko",
-    "drivers/block/loop.ko",
-    "drivers/char/hw_random/virtio-rng.ko",
-    "drivers/net/net_failover.ko",
-    "drivers/net/virtio_net.ko",
-    "fs/9p/9p.ko",
-    "net/9p/9pnet.ko",
-    "net/9p/9pnet_virtio.ko",
-    "net/core/failover.ko",
-    "drivers/nvme/host/nvme.ko",
-    "drivers/nvme/host/nvme-core.ko",
-]
-
-def initrd(kernel, module_list = None, visibility = None, mount_modules = True):
+def initrd(kernel, visibility = None, mount_modules = True):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine.
-
-    The init is built "from scratch" with busybox which allows us easier
-    customization as well as much faster build time than using dracut.
     """
 
     name = "{}-initrd".format(kernel.uname)
-    module_list = module_list or DEFAULT_MODULE_LIST
     visibility = get_visibility(visibility)
 
     systemd.units.mount_file(
@@ -69,7 +51,10 @@ def initrd(kernel, module_list = None, visibility = None, mount_modules = True):
         systemd.install_unit(antlir_dep("vm/initrd:initrd-switch-root.service")),
         systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
         systemd.install_unit(antlir_dep("vm/initrd:sysroot.mount")),
-        install_kernel_modules(kernel, module_list),
+        image.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
+        feature.install("//antlir/vm/initrd:modules.conf", "/usr/lib/modules-load.d/vm.conf"),
+        image.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
+        feature.install(kernel.derived_targets.disk_boot_modules, paths.join("/usr/lib/modules", kernel.uname)),
     ]
 
     if mount_modules:

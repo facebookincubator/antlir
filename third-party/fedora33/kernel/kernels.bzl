@@ -1,4 +1,4 @@
-kernels = {
+versions = {
     "5.8.15-301.fc33.x86_64": struct(
         uname = "5.8.15-301.fc33.x86_64",
         artifacts = struct(
@@ -16,3 +16,18 @@ kernels = {
         ),
     ),
 }
+
+def _get(uname):
+    return versions[uname]
+
+def _selection():
+    fail("not supported in oss")
+
+kernels = struct(
+    get = _get,
+    select = struct(
+        selection = _selection,
+    ),
+    versions = versions,
+    default = versions["5.8.15-301.fc33.x86_64"],
+)

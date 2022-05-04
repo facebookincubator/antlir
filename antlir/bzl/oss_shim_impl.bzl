@@ -700,12 +700,6 @@ shim = struct(
     http_file = _http_file,
     http_archive = _http_archive,
     is_buck2 = _is_buck2,
-    kernel_get = struct(
-        base_target = "//third-party/fedora33/kernel",
-        default = _kernel("5.8.15-301.fc33.x86_64"),
-        get = _kernel,
-        versions = kernels,
-    ),
     platform_utils = None,
     python_binary = _python_binary,
     python_library = _python_library,

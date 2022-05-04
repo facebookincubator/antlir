@@ -3,7 +3,6 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -195,7 +194,7 @@ image.layer(
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
-        kernel_get.base_target + "/...",
+        "//antlir/vm/...",
         "//metalos/...",
         "//scripts/dschatzberg/vm:",
     ],
