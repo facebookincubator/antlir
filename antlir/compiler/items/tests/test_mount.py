@@ -6,6 +6,7 @@
 
 import json
 import os
+import sys
 import tempfile
 
 from antlir.compiler.requires_provides import (
@@ -18,7 +19,8 @@ from antlir.compiler.requires_provides import (
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import antlir_dep
 from antlir.fs_utils import Path, temp_dir
-from antlir.subvol_utils import TempSubvolumes, Subvol
+from antlir.subvol_utils import TempSubvolumes
+from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import get_meta_dir_contents
 
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
@@ -51,7 +53,6 @@ def _mount_item_new(from_target, mount_config):
 
 
 class MountItemTestCase(BaseItemTestCase):
-    @with_mocked_temp_volume_dir
     def test_mount_item_file_from_host(self):
         mount_config = {
             "is_directory": False,
@@ -68,7 +69,7 @@ class MountItemTestCase(BaseItemTestCase):
 
         mount_item = _mount_item_new("//dummy/host_mounts:t", mount_config)
 
-        with TempSubvolumes() as temp_subvolumes:
+        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("mounter")
             mount_item.build(
                 subvol,
@@ -264,9 +265,10 @@ class MountItemTestCase(BaseItemTestCase):
             ).to_json_file(f)
         return subvolumes_dir
 
-    @with_mocked_temp_volume_dir
     def test_mount_item(self):
-        with TempSubvolumes() as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:  # noqa: E501
+        with TempSubvolumes(
+            Path(sys.argv[0])
+        ) as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:
             runtime_source = {"so": "me", "arbitrary": {"j": "son"}}
             mount_config = {
                 "is_directory": True,
@@ -346,7 +348,9 @@ class MountItemTestCase(BaseItemTestCase):
             self._check_subvol_mounts_meow(mounter_child)
 
     def test_parse_mount_meta(self):
-        test_subvol = Subvol("small-layer-with-mounts", already_exists=True)
+        test_subvol = layer_resource_subvol(
+            __package__, "small-layer-with-mounts"
+        )
 
         expected_mounts = [
             Mount(
@@ -384,9 +388,8 @@ class MountItemTestCase(BaseItemTestCase):
         )
 
         # Test a layer that has no mounts
-        test_subvol_no_mounts = Subvol(
-            "test-layer-without-mounts",
-            already_exists=True,
+        test_subvol_no_mounts = layer_resource_subvol(
+            __package__, "test-layer-without-mounts"
         )
 
         self.assertEqual(
