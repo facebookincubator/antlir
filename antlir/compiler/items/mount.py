@@ -175,15 +175,13 @@ class MountItem(ImageItem):
         is_dir = os.path.isdir(source_path)
         assert is_dir == self.is_directory, self
         if is_dir:
-            os.makedirs(
-                subvol.path(self.mountpoint),
-                mode=0o755,
-                exist_ok=False,  # be explicit
+            subvol.run_as_root(
+                ["mkdir", "--mode=0755", subvol.path(self.mountpoint)]
             )
         else:  # Regular files, device nodes, FIFOs, you name it.
-            # The mode of this mountpoint will be shadowed,
-            # so it doesn't matter waht the mode is.
-            subvol.path(self.mountpoint).touch()
+            # `touch` lacks a `--mode` argument, but the mode of this
+            # mountpoint will be shadowed anyway, so let it be whatever.
+            subvol.run_as_root(["touch", subvol.path(self.mountpoint)])
 
 
 # Not covering, since this would require META_MOUNTS_DIR to be unreadable.
