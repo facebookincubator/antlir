@@ -1,8 +1,10 @@
 # @noautodeps
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "kernel_get", "third_party")
+load("//antlir/bzl:kernel_shim.bzl", "kernels")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -14,15 +16,11 @@ load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 load("//antlir/vm/bzl:defs.bzl", "vm")
-load("//antlir/vm/bzl:initrd.bzl", "DEFAULT_MODULE_LIST")
-load("//antlir/vm/bzl:install_kernel_modules.bzl", "install_kernel_modules")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/disk:disk.bzl", "disk")
 load("//metalos/host_configs/tests:host.bzl", "host_config")
 
-TEST_KERNEL = kernel_get.default
-
-TEST_KERNEL_MODULES = install_kernel_modules(TEST_KERNEL, DEFAULT_MODULE_LIST)
+TEST_KERNEL = kernels.get("5.6.13-0_fbk7_4335_g9d5dc3fbc3c2")
 
 image.layer(
     name = "deps",
@@ -122,6 +120,17 @@ host_config(
     },
 )
 
+test_kernel_modules = [
+    image.ensure_subdirs_exist("/usr/lib", "modules"),
+    feature.install(
+        TEST_KERNEL.derived_targets.disk_boot_modules,
+        paths.join(
+            "/usr/lib/modules",
+            TEST_KERNEL.uname,
+        ),
+    ),
+]
+
 # Generic features that are needed to support vmtests that _stay_ in the
 # initrd, meant to test the initrd itself.
 image.layer(
@@ -145,7 +154,7 @@ image.layer(
         feature.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
         systemd.install_dropin("after-network.conf", "sshd.service"),
         # don't use the full test-kernel initrd, but we do need the modules
-        TEST_KERNEL_MODULES,
+        test_kernel_modules,
         # We want to stay in the initrd, so mask out the units that switch-root
         # into the base os
         image.ensure_dirs_exist("/etc/systemd/system"),
@@ -211,7 +220,7 @@ image.layer(
         feature.remove("/etc/resolv.conf"),
         network.host(),
         # don't use the full test-kernel initrd, but we do need the modules
-        TEST_KERNEL_MODULES,
+        test_kernel_modules,
         # install a host config in the initrd directly
         image.ensure_subdirs_exist("/", "test"),
         feature.install(":host-config", "/test/fake-host-config.json"),
@@ -369,15 +378,21 @@ rust_binary(
     ],
 )
 
+package.new(
+    name = "kernel.{}.sendstream.zst".format(TEST_KERNEL.uname),
+    layer = TEST_KERNEL.derived_targets.image,
+    format = "sendstream.zst",
+)
+
 buck_genrule(
     name = "image_packages",
     out = ".",
     cmd = """
         cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:deadbeefdeadbeefdeadbeefdeadbeef
         zstd -i $(location //metalos/disk:metalos-gpt-image) -o $OUT/metalos.gpt-root-disk:deadbeefdeadbeefdeadbeefdeadbeef
-        cp --reflink=auto $(location {}) $OUT/kernel.{}:deadbeefdeadbeefdeadbeefdeadbeef
+        cp --reflink=auto $(location :kernel.{}.sendstream.zst) $OUT/kernel.{}:deadbeefdeadbeefdeadbeefdeadbeef
     """.format(
-        TEST_KERNEL.artifacts.modules_sendstream,
+        TEST_KERNEL.uname,
         TEST_KERNEL.uname,
     ),
 )

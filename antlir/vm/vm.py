@@ -428,7 +428,7 @@ async def vm(
             Plan9Export(
                 path=find_built_subvol(
                     # pyre-fixme [16]: `Optional` has no attribute `path`
-                    opts.kernel.artifacts.modules.path
+                    opts.kernel.derived_targets.image.path
                 ).path()
                 / "modules",
                 mount_tag="kernel-modules",
@@ -439,7 +439,7 @@ async def vm(
         args.extend(
             [
                 "-kernel",
-                str(opts.kernel.artifacts.vmlinuz.path),
+                str(opts.kernel.derived_targets.vmlinuz.path),
                 "-initrd",
                 str(opts.initrd.path),
                 "-append",

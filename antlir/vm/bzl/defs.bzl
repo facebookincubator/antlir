@@ -60,7 +60,8 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "cpp_unittest", "kernel_get", "python_unittest", "rust_unittest")
+load("//antlir/bzl:kernel_shim.bzl", "kernels")
+load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":build_vm_run_target.bzl", "build_vm_run_target")
@@ -277,13 +278,13 @@ def _vm_rust_unittest(
 def _vm_multi_kernel_unittest(
         name,
         vm_unittest,
-        kernels,
+        kernel_list,
         vm_opts = None,
         **kwargs):
-    if len(kernels) == 0:
+    if len(kernel_list) == 0:
         fail("{}: will not run on any kernels, check the selection query!".format(name))
-    for uname in kernels:
-        kernel = kernel_get.get(uname)
+    for uname in kernel_list:
+        kernel = kernels.get(uname)
         suffix = uname
         if vm_opts:
             merged_vm_opts = shape.as_dict_shallow(vm_opts)
@@ -304,19 +305,23 @@ def _vm_multi_kernel_unittest(
 
 def _vm_multi_kernel_cpp_unittest(
         name,
+        kernels,
         **kwargs):
     _vm_multi_kernel_unittest(
         name,
         _vm_cpp_unittest,
+        kernel_list = kernels,
         **kwargs
     )
 
 def _vm_multi_kernel_python_unittest(
         name,
+        kernels,
         **kwargs):
     _vm_multi_kernel_unittest(
         name,
         _vm_python_unittest,
+        kernel_list = kernels,
         **kwargs
     )
 

@@ -2,7 +2,8 @@
 
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get", "python_unittest", "rust_binary", "third_party")
+load("//antlir/bzl:kernel_shim.bzl", "kernels")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "ADMIN_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -119,9 +120,8 @@ python_unittest(
 # debug information and then halt the VM.
 image.layer(
     name = "vmtest-initrd-break-custom-initrd-layer",
-    parent_layer = "{}:{}-initrd-layer".format(
-        kernel_get.base_target,
-        kernel_get.default.uname,
+    parent_layer = "//antlir/vm/initrd:{}-initrd-layer".format(
+        kernels.default.uname,
     ),
     features = [
         #
@@ -316,7 +316,7 @@ boot.systemd.build(
     # The target name of the boot partition
     name = "systemd-boot",
     kernels = [
-        kernel_get.default,
+        kernels.default,
     ],
     args = [
         "audit=0",
@@ -372,7 +372,7 @@ boot.grub2.build(
     # The target name of the boot partition
     name = "grub2-boot",
     kernels = [
-        kernel_get.default,
+        kernels.default,
     ],
     args = [
         "audit=0",

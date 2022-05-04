@@ -1,8 +1,9 @@
 # @noautodeps
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "kernel_get", "python_binary", "python_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
@@ -188,7 +189,7 @@ python_binary(
 vm.run(
     name = "default",
     vm_opts = vm.types.opts.new(
-        kernel = kernel_get.default,
+        kernel = kernels.default,
         disk = vm.artifacts.rootfs.disk,
     ),
 )
@@ -196,7 +197,7 @@ vm.run(
 vm.run(
     name = "default-initrd-debug",
     vm_opts = vm.types.opts.new(
-        kernel = kernel_get.default,
+        kernel = kernels.default,
         disk = vm.artifacts.rootfs.disk,
         append = [
             "initrd.break",

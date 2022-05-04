@@ -1,11 +1,12 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get")
+load("//antlir/bzl:kernel_shim.bzl", "kernels")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/vm/bzl:initrd.bzl", "initrd")
 
 [export_file(
     name = f,
     visibility = [
-        kernel_get.base_target + "/...",
         "//metalos/...",
         "//scripts/dschatzberg/vm:",
     ],
@@ -14,3 +15,6 @@ load("//antlir/bzl:oss_shim.bzl", "export_file", "kernel_get")
     "*.mount",
     "*.conf",
 ])]
+
+# build a vmtest initrd for every kernel
+[initrd(kernel = kernels.get(uname)) for uname in kernels.versions.keys()]

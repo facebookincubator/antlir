@@ -13,7 +13,8 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":kernel.shape.bzl", "derived_kernel_targets_t", "kernel_t", "upstream_kernel_targets_t")
 
-__DEFAULT_VISIBILITY = ["//antlir/...", "//metalos/..."]
+__METALOS_VISIBILITY = ["//antlir/...", "//metalos/..."]
+__METALOS_AND_VMTEST_VISIBILITY = ["PUBLIC"]
 
 # All modules that are ever needed for disk boot (on any host). On some kernels
 # these may be compiled in already, in which case they are skipped in the
@@ -23,17 +24,21 @@ __DEFAULT_VISIBILITY = ["//antlir/...", "//metalos/..."]
 #
 # TODO(T110770106) audit whether some of these can be removed (mainly 9p)
 __DISK_BOOT_INITRD_MODULES = [
-    "drivers/block/virtio_blk.ko",
-    "drivers/block/loop.ko",
-    "drivers/char/hw_random/virtio-rng.ko",
-    "drivers/net/net_failover.ko",
-    "drivers/net/virtio_net.ko",
-    "fs/9p/9p.ko",
-    # "net/9p/9pnet.ko",
-    "net/9p/9pnet_virtio.ko",
-    "net/core/failover.ko",
+    # lots of hosts are nvme
     "drivers/nvme/host/nvme.ko",
     "drivers/nvme/host/nvme-core.ko",
+    # below modules specifically needed by edgeos
+    "drivers/block/loop.ko",  # rootfs is loop
+    "drivers/md/dm-crypt.ko",  # edgeos
+    # below modules for vm support in early-boot
+    "drivers/block/virtio_blk.ko",
+    "drivers/char/hw_random/virtio-rng.ko",
+    "drivers/net/net_failover.ko",  # needed by virtio_net
+    "drivers/net/virtio_net.ko",
+    "fs/9p/9p.ko",
+    "net/9p/9pnet.ko",
+    "net/9p/9pnet_virtio.ko",
+    "net/core/failover.ko",  # needed by virtio_net
 ]
 
 def _name(uname, artifact):
@@ -49,9 +54,10 @@ def _derived_targets_shape(uname, base = ""):
         modules_directory = _target(uname, "modules", base),
         disk_boot_modules = _target(uname, "disk-boot-modules", base),
         image = _target(uname, "image", base),
+        devel = _target(uname, "devel", base),
     )
 
-def _derived_targets(uname, upstream_artifacts):
+def _derived_targets(uname, upstream_targets):
     buck_genrule(
         name = _name(uname, "rpm-contents"),
         out = ".",
@@ -61,7 +67,7 @@ def _derived_targets(uname, upstream_artifacts):
             # this is an abs symlink that ends up broken when the
             # rpm is unpacked
             rm "$OUT/boot/vmlinux-{uname}"
-        """.format(main_rpm = upstream_artifacts.main_rpm, uname = uname),
+        """.format(main_rpm = upstream_targets.main_rpm, uname = uname),
         labels = ["uses_cpio"],
         visibility = [],
         antlir_rule = "user-internal",
@@ -73,7 +79,7 @@ def _derived_targets(uname, upstream_artifacts):
             uname = uname,
         ),
         antlir_rule = "user-internal",
-        visibility = __DEFAULT_VISIBILITY,
+        visibility = __METALOS_AND_VMTEST_VISIBILITY,
     )
     buck_genrule(
         name = _name(uname, "System.map"),
@@ -102,7 +108,7 @@ def _derived_targets(uname, upstream_artifacts):
             uname = uname,
         ),
         antlir_rule = "user-internal",
-        visibility = __DEFAULT_VISIBILITY,
+        visibility = __METALOS_AND_VMTEST_VISIBILITY,
     )
 
     buck_genrule(
@@ -131,7 +137,7 @@ def _derived_targets(uname, upstream_artifacts):
             modules = _target(uname, "modules"),
             module_list = " ".join(__DISK_BOOT_INITRD_MODULES),
         ),
-        visibility = __DEFAULT_VISIBILITY,
+        visibility = __METALOS_AND_VMTEST_VISIBILITY,
         antlir_rule = "user-internal",
     )
 
@@ -140,10 +146,6 @@ def _derived_targets(uname, upstream_artifacts):
         features = [
             image.ensure_dirs_exist("/usr/lib/modules"),
             feature.install(_target(uname, "disk-boot-modules"), paths.join("/usr/lib/modules", uname)),
-            # If the devel headers/source are needed they will be bind mounted
-            # into place on this directory, but this image is readonly so the
-            # mountpoint must be created ahead of time
-            image.ensure_subdirs_exist(paths.join("/usr/lib/modules", uname), "build"),
         ],
         flavor = REPO_CFG.antlir_linux_flavor,
         visibility = [],
@@ -162,9 +164,47 @@ def _derived_targets(uname, upstream_artifacts):
             feature.install(_target(uname, "vmlinuz"), "/vmlinuz"),
             feature.install(_target(uname, "modules"), "/modules"),
             feature.install(_target(uname, "disk-boot-modules.cpio.gz"), "/disk-boot-modules.cpio.gz"),
+            # If the devel headers/source are needed they will be bind mounted
+            # into place on this directory, but this image is readonly so the
+            # mountpoint must be created ahead of time
+            image.ensure_subdirs_exist("/modules", "build"),
         ],
         flavor = REPO_CFG.antlir_linux_flavor,
-        visibility = __DEFAULT_VISIBILITY,
+        visibility = __METALOS_AND_VMTEST_VISIBILITY,
+    )
+
+    # Install the devel rpm into a layer.
+    # The reasons for this instead of using the same pattern as the
+    # `rpm-exploded` targets are:
+    #  - The devel rpm contains some internally consistent symlinks that
+    #    we'd like to preserve when creating the image layer.  Currently
+    #    the only way to do that is via the `image.clone` operation, which
+    #    requires the source of the clone to be a layer.
+    #  - The destination of the contents need to be installed at the root
+    #    of the image layer (./).  This is currently not possible with the
+    #    implementation of `image.source` since `./` ends up conflicting
+    #    with the always provided /.
+    image.layer(
+        name = _name(uname, "devel-installed"),
+        # This is used because we need the gpg keys that this rpm is signed
+        # by and the build appliance should have it.
+        parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+        features = [
+            image.rpms_install([upstream_targets.devel_rpm]),
+        ],
+        visibility = [],
+    )
+    image.layer(
+        name = _name(uname, "devel"),
+        features = [
+            image.clone(
+                _target(uname, "devel-installed"),
+                "usr/src/kernels/{}/".format(uname),
+                "./",
+            ),
+        ],
+        flavor = REPO_CFG.antlir_linux_flavor,
+        visibility = __METALOS_AND_VMTEST_VISIBILITY,
     )
 
     return _derived_targets_shape(uname)
@@ -200,11 +240,19 @@ def _kernel(kernel):
             visibility = ["PUBLIC"],
         )
 
-    upstream = _upstream_kernel_targets_shape(
+    return _kernel_from_rpms(
         uname = uname,
-        base = "",
-        has_devel = hasattr(kernel.urls, "devel_rpm"),
-        has_headers = hasattr(kernel.urls, "headers_rpm"),
+        main_rpm = _target(uname, "main.rpm"),
+        devel_rpm = _target(uname, "devel.rpm") if hasattr(kernel.urls, "devel_rpm") else None,
+        headers_rpm = _target(uname, "headers.rpm") if hasattr(kernel.urls, "headers_rpm") else None,
+    )
+
+def _kernel_from_rpms(uname, main_rpm, devel_rpm = None, headers_rpm = None):
+    upstream = shape.new(
+        upstream_kernel_targets_t,
+        main_rpm = main_rpm,
+        devel_rpm = devel_rpm,
+        headers_rpm = headers_rpm,
     )
     derived = _derived_targets(uname, upstream)
     return shape.new(
@@ -235,5 +283,6 @@ def _pre_instantiated_kernel(uname):
 
 metalos_kernel = struct(
     kernel = _kernel,
+    kernel_from_rpms = _kernel_from_rpms,
     pre_instantiated_kernel = _pre_instantiated_kernel,
 )

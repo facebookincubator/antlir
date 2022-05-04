@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target.shape.bzl", "target_t")
-load(":kernel.shape.bzl", "kernel_t")
+load("//metalos/kernel:kernel.shape.bzl", "kernel_t")
 
 emulator_t = shape.shape(
     # The actual emulator binary to invoke

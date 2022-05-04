@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:oss_shim.bzl", "kernel_get", "third_party")
+load("//antlir/bzl:kernel_shim.bzl", "kernels")
+load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
@@ -152,8 +153,8 @@ def _new_vm_opts(
     # The default initrd target is derived from the kernel uname.
     if not boot_from_disk:
         # Convert the (optionally) provided kernel struct into a shape type
-        kernel = normalize_kernel(kernel or kernel_get.default)
-        initrd = initrd or "{}:{}-initrd".format(kernel_get.base_target, kernel.uname)
+        kernel = normalize_kernel(kernel or kernels.default)
+        initrd = initrd or antlir_dep("vm/initrd:{}-initrd".format(kernel.uname))
 
     disk = disk or _new_vm_disk()
 
