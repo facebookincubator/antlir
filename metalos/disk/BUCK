@@ -41,6 +41,7 @@ btrfs.new(
                 writable = True,
             ),
         },
+        default_subvol = "/volume",
         loopback_opts = image.opts(
             label = "/",
         ),
