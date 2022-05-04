@@ -154,7 +154,10 @@ def build_stat_options(
             )
 
         target_path_for_run = work_dir / os.path.relpath(
-            full_target_path, subvol.path()
+            full_target_path,
+            # pyre-fixme[6]: For 2nd param expected `Union[None, PathLike[str],
+            #  str]` but got `Path`.
+            subvol.path(),
         )
     else:
         run = subvol.run_as_root
