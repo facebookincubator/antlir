@@ -124,6 +124,7 @@ image.layer(
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
+        "//metalos/imaging_initrd/...",
         "//ti/platform/edgeos/...",
     ],
 )
@@ -141,9 +142,9 @@ image.layer(
     ],
 )
 
-# Kernel-agnostic base initrd
+# things we expect to exist in all the metalos related initrds
 image.layer(
-    name = "initrd",
+    name = "initrd-common",
     parent_layer = ":bare-systemd",
     features = [
         linux.busybox.install(
@@ -157,6 +158,27 @@ image.layer(
                 ]),
             ),
         ),
+        networking,
+        # The metalos generator will rewrite the default target to
+        # initrd.target, so explicitly set emergency.target as the default in
+        # the image so that the boot clearly fails if the generator fails during
+        # early boot for any reason
+        systemd.set_default_target("emergency.target"),
+        image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
+        feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
+        # @oss-disable: "//metalos/initrd/facebook:features", 
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+    visibility = [
+        "//metalos/...",
+    ],
+)
+
+# Kernel-agnostic base initrd
+image.layer(
+    name = "initrd",
+    parent_layer = ":initrd-common",
+    features = [
         # metalctl's implementation of (u)mount works better, systemd passes
         # some options that busybox does not understand
         feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
@@ -168,14 +190,6 @@ image.layer(
             dest = "/",
             source = ":with-metalctl",
         ),
-        networking,
-        # The metalos generator will rewrite the default target to
-        # initrd.target, so explicitly set emergency.target as the default in
-        # the image so that the boot clearly fails if the generator fails during
-        # early boot for any reason
-        systemd.set_default_target("emergency.target"),
-        image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
-        feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
         systemd.install_unit("units/metalos-apply-host-config.service"),
         systemd.install_unit("units/metalos-fetch-images.service"),
         # We would one day like to make it so that
@@ -190,7 +204,6 @@ image.layer(
         systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
         feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
-        # @oss-disable: "//metalos/initrd/facebook:features", 
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
