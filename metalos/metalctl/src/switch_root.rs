@@ -13,6 +13,7 @@ use structopt::StructOpt;
 use systemd::{FilePath, Systemd};
 
 use crate::mount::{mount, Opts as MountOpts};
+use image::PackageExt;
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -48,6 +49,44 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
         },
     )
     .with_context(|| format!("failed to mount '{}' on /sysroot {:?}", device, options))?;
+
+    // If we have a host config, mount the kernel modules pre-switch-root
+    // instead of waiting for a unit in the rootfs. This way, modules can be
+    // used by a systemd generator if necessary
+    if let Ok(host_config_uri) = std::env::var("HOST_CONFIG_URI") {
+        let uri = host_config_uri
+            .parse()
+            .with_context(|| format!("'{}' is not a valid uri", host_config_uri))?;
+        let host_config = get_host_config::get_host_config(&uri)
+            .await
+            .with_context(|| format!("while getting host config from {}", uri))?;
+        let kernel_subvol = host_config
+            .boot_config
+            .kernel
+            .pkg
+            .on_disk()
+            .context("kernel subvol not on disk")?;
+        let utsname = nix::sys::utsname::uname();
+        let mountpoint = Path::new("/sysroot/usr/lib/modules").join(utsname.release());
+        std::fs::create_dir_all(&mountpoint).with_context(|| {
+            format!(
+                "while creating kernel modules mountpoint {}",
+                mountpoint.display()
+            )
+        })?;
+        let modules_dir = kernel_subvol.join("modules").to_str().map(str::to_string);
+        mount(
+            log.clone(),
+            MountOpts {
+                bind: true,
+                source: modules_dir.context("modules dir not a string")?,
+                target: mountpoint.clone(),
+                fstype: Some("btrfs".into()),
+                options: vec![],
+            },
+        )
+        .with_context(|| format!("while mounting kernel modules at {}", mountpoint.display()))?;
+    }
 
     let sd = Systemd::connect(log.clone()).await?;
     // systemctl daemon-reload is necessary after mounting the
