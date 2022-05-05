@@ -35,24 +35,14 @@ pub async fn fetch_images(log: Logger, opts: Opts) -> Result<()> {
         host.boot_config.kernel.pkg.download(log, &dl),
     );
     let root_subvol = root_subvol.context("while downloading rootfs")?;
-    let kernel_subvol = kernel_subvol.context("while downloading kernel")?;
+    kernel_subvol.context("while downloading kernel")?;
     // TODO: download service images as well
-
-    let kernel_modules_subdir = kernel_subvol.join("modules");
-    let kernel_modules_path = match kernel_modules_subdir.exists() {
-        true => kernel_modules_subdir,
-        false => kernel_subvol,
-    };
 
     // TODO: onboard this to systemd_generator_lib if there is a lot more that
     // needs to be included here
     std::fs::write(
         "/run/metalos/image_paths_environment",
-        format!(
-            "METALOS_OS_VOLUME={}\nMETALOS_KERNEL_MODULES_PATH={}\n",
-            root_subvol.display(),
-            kernel_modules_path.display(),
-        ),
+        format!("METALOS_OS_VOLUME={}\n", root_subvol.display()),
     )
     .context("while writing /run/metalos/image_paths_environment")?;
 
