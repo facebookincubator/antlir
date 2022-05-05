@@ -25,6 +25,7 @@ use anyhow::{anyhow, ensure, Context, Error, Result};
 use bytes::Bytes;
 use once_cell::sync::Lazy;
 use sha2::{Digest, Sha256};
+use url::Url;
 
 type Sha256Value = [u8; 32];
 
@@ -289,6 +290,12 @@ where
     /// and can be used to retrieve states without knowing the unique [Token].
     pub fn commit(&self) -> Result<()> {
         alias(*self, Alias::Current)
+    }
+
+    /// Get a file:// uri that points to this config
+    pub fn uri(&self) -> Url {
+        Url::from_file_path(self.path())
+            .expect("Token::path is always absolute so this cannot fail")
     }
 }
 
