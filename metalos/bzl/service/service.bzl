@@ -18,6 +18,10 @@ METALOS_PATH = "metalos"
 # - user and group are the unix groups
 # - visibility is a list of path that can use this macro, defaults to //metalos/... and //netos/...
 # - extra_features is used to personalise your layer
+# - use_install_buck_runnable: you should never need to change this, this is set to False in tests because the original binary is wrapped
+#   by a shell script that points to the binary in the FBCODE repo mounted into the image...
+#   This breaks native service tests because the systemd unit file is configured to sandbox the process into a new root directory, and the FBCODE
+#   path is not accessible.
 def native_service(
         name,
         service_name,
@@ -29,7 +33,9 @@ def native_service(
         group = "root",
         generator_binary = None,
         extra_features = [],
-        visibility = None):
+        user_home_dir = None,
+        visibility = None,
+        use_install_buck_runnable = True):
     if not service_binary_path:
         service_binary_path = "/usr/bin/{}".format(service_name)
 
@@ -39,7 +45,25 @@ def native_service(
     if not parent_layer:
         parent_layer = REPO_CFG.artifact["metalos.layer.base"]
 
-    features = [
+    if not user_home_dir and user != "root":
+        user_home_dir = "/home/{}".format(user)
+
+    features = []
+
+    if user != "root":
+        features.append(feature.setup_standard_user(user, group, user_home_dir))
+
+    install_binary_feature = feature.install_buck_runnable(
+        binary,
+        service_binary_path,
+        mode = "a+rx",
+    ) if use_install_buck_runnable else feature.install(
+        binary,
+        service_binary_path,
+        mode = "a+rx",
+    )
+
+    features.extend([
         image.ensure_subdirs_exist(
             "/",
             METALOS_PATH,
@@ -47,16 +71,12 @@ def native_service(
             group = group,
             mode = 0o0770,
         ),
-        feature.install(
-            binary,
-            service_binary_path,
-            mode = "a+rx",
-        ),
+        install_binary_feature,
         feature.install(
             systemd_service_unit,
             "/{}/{}.service".format(METALOS_PATH, service_name),
         ),
-    ]
+    ])
 
     if generator_binary:
         features.append(feature.install(generator_binary, "/metalos/generator", mode = "a+rx"))
