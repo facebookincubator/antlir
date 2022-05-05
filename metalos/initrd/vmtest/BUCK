@@ -320,9 +320,6 @@ vm.rust_unittest(
         platform = "rust",
     ),
     crate_root = "test_switch_root.rs",
-    # TODO(vmagro): re-enable this when the container runtime environment is
-    # done and the sidecars can reliably run on Sandcastle
-    tags = ["local_only"],
 )
 
 vm.rust_unittest(

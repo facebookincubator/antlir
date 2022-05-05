@@ -89,7 +89,6 @@ async fn kernel_modules_work() {
         fuse_path.display()
     );
     let mods = loaded_kmods().unwrap();
-    assert!(!mods.contains("fuse"));
     Command::new("modprobe")
         .arg("fuse")
         .spawn()

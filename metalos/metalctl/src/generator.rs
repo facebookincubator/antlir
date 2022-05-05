@@ -191,6 +191,15 @@ fn metalos_existing_boot_info(
                 requires: "metalos-apply-host-config.service".into(),
             },
         ),
+        // Images must be downloaded while all other services it may need are
+        // still active
+        (
+            "stage_before_isolate".to_string(),
+            ExtraDependency {
+                source: "initrd.target".into(),
+                requires: "metalos-fetch-images.service".into(),
+            },
+        ),
     ];
 
     let mount_unit = make_mount_unit(root, rootdisk).context("Failed to build mount unit")?;
@@ -600,6 +609,11 @@ mod tests {
                     After=metalos-image-root-disk.service\n\
                     Requires=metalos-image-root-disk.service\n\
                     ".into(),
+                opts.generator_args.normal_dir.join("initrd.target.d/stage_before_isolate.conf") => "\
+                    [Unit]\n\
+                    After=metalos-fetch-images.service\n\
+                    Requires=metalos-fetch-images.service\n\
+                    ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
                     METALOS_BOOTS_DIR=/run/fs/control/run/boot\n\
@@ -662,6 +676,11 @@ mod tests {
                     [Unit]\n\
                     After=metalos-apply-host-config.service\n\
                     Requires=metalos-apply-host-config.service\n\
+                    ".into(),
+                opts.generator_args.normal_dir.join("initrd.target.d/stage_before_isolate.conf") => "\
+                    [Unit]\n\
+                    After=metalos-fetch-images.service\n\
+                    Requires=metalos-fetch-images.service\n\
                     ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
@@ -799,6 +818,13 @@ mod tests {
                     }
                 ),
                 (
+                    "stage_before_isolate".to_string(),
+                    ExtraDependency {
+                        source: "initrd.target".into(),
+                        requires: "metalos-fetch-images.service".into(),
+                    },
+                ),
+                (
                     "metalos_reimage_boot".to_string(),
                     ExtraDependency {
                         source: "run-fs-control.mount".into(),
@@ -882,6 +908,13 @@ mod tests {
                         source: "metalos-switch-root.service".into(),
                         requires: "metalos-apply-host-config.service".into(),
                     }
+                ),
+                (
+                    "stage_before_isolate".to_string(),
+                    ExtraDependency {
+                        source: "initrd.target".into(),
+                        requires: "metalos-fetch-images.service".into(),
+                    },
                 ),
             ]
         );
