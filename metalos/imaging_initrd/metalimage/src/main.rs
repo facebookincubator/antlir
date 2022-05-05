@@ -151,7 +151,7 @@ async fn main() -> Result<()> {
             metalos_paths::control(),
             Some("btrfs"),
             MsFlags::empty(),
-            Some("subvol=volume"),
+            None,
         )
         .context(format!(
             "failed to mount root partition {:?} to {:?}",
