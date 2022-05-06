@@ -124,8 +124,11 @@ class BtrfsUtilTestCase(AntlirTestCase):
     def test_in_namespace(self, temp_subvols, mock_subvolume_info):
         """in_namespace calls nsenter"""
         subvol = temp_subvols.create("sudo_fallback")
+        mock_subvolume_info.__name__ = "subvolume_info"
         with Unshare([Namespace.PID]) as ns:
-            with patch("antlir.btrfsutil._sudo_retry") as mock_sudo_retry:
+            with patch(
+                "antlir.btrfsutil._sudo_retry", wraps=btrfsutil._sudo_retry
+            ) as mock_sudo_retry:
                 btrfsutil.subvolume_info(subvol.path(), in_namespace=ns)
         mock_subvolume_info.assert_not_called()
         mock_sudo_retry.assert_called_once()
