@@ -13,6 +13,7 @@ the upstream module docs)
 from typing import Tuple, Union, Iterable, Optional
 
 from antlir.fs_utils import Path
+from antlir.unshare import Unshare
 
 class SubvolumeInfo(object):
     id: int
@@ -38,14 +39,38 @@ def create_snapshot(
     read_only: bool = False,
     async_: bool = False,
     qgroup_inherit: Optional[QGroupInherit] = None,
+    in_namespace: Optional[Unshare] = None,
 ) -> None: ...
 def create_subvolume(
     path: Path,
     async_: bool = False,
     qgroup_inherit: Optional[QGroupInherit] = None,
+    in_namespace: Optional[Unshare] = None,
 ) -> None: ...
-def delete_subvolume(path: Path, recursive: bool = False) -> None: ...
-def is_subvolume(path: Path) -> bool: ...
-def set_subvolume_read_only(path: Path, ro: bool) -> None: ...
-def subvolume_info(path: Path) -> SubvolumeInfo: ...
-def sync(path: Path) -> None: ...
+def delete_subvolume(
+    path: Path,
+    recursive: bool = False,
+    in_namespace: Optional[Unshare] = None,
+) -> None: ...
+def is_subvolume(
+    path: Path,
+    in_namespace: Optional[Unshare] = None,
+) -> bool: ...
+def set_subvolume_read_only(
+    path: Path, ro: bool, in_namespace: Optional[Unshare] = None
+) -> None: ...
+def subvolume_id(
+    path: Path,
+    in_namespace: Optional[Unshare] = None,
+) -> int: ...
+def subvolume_info(
+    path: Path,
+    in_namespace: Optional[Unshare] = None,
+) -> SubvolumeInfo: ...
+def sync(
+    path: Path,
+    in_namespace: Optional[Unshare] = None,
+) -> None: ...
+def set_default_subvolume(
+    path: Path, id: int, in_namespace: Optional[Unshare] = None
+) -> None: ...

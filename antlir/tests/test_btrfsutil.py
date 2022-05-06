@@ -7,11 +7,12 @@
 import errno
 import os.path
 import sys
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 import btrfsutil as _raw_btrfsutil  # pyre-ignore[21]
 from antlir import btrfsutil
 from antlir.fs_utils import Path
+from antlir.unshare import Unshare, Namespace
 
 from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from ..subvol_utils import with_temp_subvols
@@ -116,4 +117,15 @@ class BtrfsUtilTestCase(AntlirTestCase):
         with patch("antlir.btrfsutil._sudo_retry") as mock_sudo_retry:
             btrfsutil.subvolume_info(subvol.path())
         mock_subvolume_info.assert_called_once()
+        mock_sudo_retry.assert_called_once()
+
+    @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
+    @with_temp_subvols
+    def test_in_namespace(self, temp_subvols, mock_subvolume_info):
+        """in_namespace calls nsenter"""
+        subvol = temp_subvols.create("sudo_fallback")
+        with Unshare([Namespace.PID]) as ns:
+            with patch("antlir.btrfsutil._sudo_retry") as mock_sudo_retry:
+                btrfsutil.subvolume_info(subvol.path(), in_namespace=ns)
+        mock_subvolume_info.assert_not_called()
         mock_sudo_retry.assert_called_once()

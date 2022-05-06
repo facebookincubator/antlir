@@ -220,6 +220,7 @@ import collections
 import subprocess
 from typing import Dict, NamedTuple, Optional
 
+from antlir import btrfsutil
 from antlir.bzl.image.package.btrfs import btrfs_opts_t
 from antlir.cli import (
     init_cli,
@@ -257,18 +258,7 @@ class BtrfsImage:
     def _mark_subvol_readonly(
         self, ns: Unshare, path: Path, readonly: bool
     ) -> None:
-        subprocess.run(
-            ns.nsenter_as_root(
-                "btrfs",
-                "property",
-                "set",
-                "-ts",
-                path,
-                "ro",
-                "true" if readonly else "false",
-            ),
-            check=True,
-        )
+        btrfsutil.set_subvolume_read_only(path, readonly, in_namespace=ns)
 
     def package(
         self,
@@ -433,28 +423,13 @@ class BtrfsImage:
                 # The output of this command looks like:
                 #
                 # b'ID 256 gen 7 top level 5 path volume\n'
-                subvol_id = subprocess.run(
-                    ns.nsenter_as_root(
-                        "btrfs",
-                        "subvolume",
-                        "list",
-                        loop_vol.dir() / default_subvol[1:],
-                    ),
-                    stdout=subprocess.PIPE,
-                    check=True,
-                ).stdout.split(b" ")[1]
+                subvol_id = btrfsutil.subvolume_id(
+                    loop_vol.dir() / default_subvol[1:], in_namespace=ns
+                )
                 log.debug(f"subvol_id to set as default: {subvol_id}")
                 # Actually set the default
-                subprocess.run(
-                    ns.nsenter_as_root(
-                        "btrfs",
-                        "subvolume",
-                        "set-default",
-                        subvol_id,
-                        str(loop_vol.dir()),
-                    ),
-                    stderr=subprocess.STDOUT,
-                    check=True,
+                btrfsutil.set_default_subvolume(
+                    loop_vol.dir(), subvol_id, in_namespace=ns
                 )
 
             if not size_mb:

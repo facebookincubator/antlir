@@ -11,30 +11,36 @@ import multiprocessing.connection
 import os
 import subprocess
 import sys
+from typing import Optional
 
 import btrfsutil
 import btrfsutil as _raw_btrfsutil
 from antlir.common import get_logger
 from antlir.fs_utils import Path
+from antlir.unshare import Unshare
 
 
 log = get_logger()
 
 
-def _sudo_retry(f, args, kwargs):
+def _sudo_retry(f, args, kwargs, in_namespace: Optional[Unshare] = None):
     func = f.__name__
     with Path.resource("antlir", "btrfsutil-bin", exe=True) as btrfsutil_bin:
         (args_pipe_r, args_pipe_w) = multiprocessing.Pipe(duplex=False)
         (return_pipe_r, return_pipe_w) = multiprocessing.Pipe(duplex=False)
         args_pipe_w.send(args)
         args_pipe_w.send(kwargs)
+        cmd = [
+            btrfsutil_bin,
+            func,
+        ]
+        if in_namespace is not None:
+            cmd = in_namespace.nsenter_as_root(*cmd)
+        else:
+            cmd = ["sudo"] + cmd
         try:
             subprocess.run(
-                [
-                    "sudo",
-                    btrfsutil_bin,
-                    func,
-                ],
+                cmd,
                 stdin=args_pipe_r,
                 stdout=return_pipe_w,
                 check=True,
@@ -62,11 +68,11 @@ def __with_sudo_retry(name):
     f = getattr(_raw_btrfsutil, name)
 
     @functools.wraps(f)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args, in_namespace: Optional[Unshare] = None, **kwargs):
         f = getattr(_raw_btrfsutil, name)
 
-        if name in __ALWAYS_SUDO_CALLS:
-            return _sudo_retry(f, args, kwargs)
+        if name in __ALWAYS_SUDO_CALLS or in_namespace is not None:
+            return _sudo_retry(f, args, kwargs, in_namespace=in_namespace)
 
         try:
             res = f(*args, **kwargs)
