@@ -1,6 +1,6 @@
 [Unit]
 Description=Send a notification that the machine has booted
-After=sshd.service systemd-networkd-wait-online.service
+After=sshd.service network-online.target
 Requires=sshd.service
 ConditionPathExists=/dev/virtio-ports/notify-host
 
