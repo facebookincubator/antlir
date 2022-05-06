@@ -9,6 +9,7 @@ python_binary(
     main_module = "antlir.package.btrfs",
     visibility = ["PUBLIC"],
     deps = [
+        "//antlir:btrfsutil",
         "//antlir:common",
         "//antlir:errors",
         "//antlir:find_built_subvol",

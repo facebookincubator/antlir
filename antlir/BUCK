@@ -215,6 +215,7 @@ python_unittest(
 btrfsutil_deps = [
     ":common",
     ":fs_utils",
+    ":unshare",
     third_party.library(
         "python-btrfs-progs",
         "btrfsutil-py",
@@ -258,6 +259,7 @@ python_unittest(
         ":btrfsutil",
         ":subvol_utils",
         ":testlib_common",
+        ":unshare",
         ":volume_for_repo",
         third_party.library(
             "python-btrfs-progs",
