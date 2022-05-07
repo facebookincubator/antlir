@@ -8,7 +8,7 @@ rust_library(
         "nix",
         "slog",
         "//metalos/host_configs/rust:metalos_host_configs",
-        "//metalos/lib/image:image",
+        "//metalos/lib/package_download:package_download",
         "//metalos/lib/systemd:systemd",
     ],
 )

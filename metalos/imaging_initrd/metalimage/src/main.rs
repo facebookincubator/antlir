@@ -1,6 +1,7 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use futures::{try_join, FutureExt};
 use nix::mount::MsFlags;
 use reqwest::Url;
 use slog::{info, o, Logger};
@@ -11,13 +12,12 @@ use strum_macros::EnumIter;
 use apply_disk_image::apply_disk_image;
 use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
 use get_host_config::get_host_config;
-use image::download::HttpsDownloader;
-use image::PackageExt;
 use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
 use metalos_host_configs::host::HostConfig;
 use metalos_kexec::KexecInfo;
 use metalos_mount::{Mounter, RealMounter};
 use net_utils::get_mac;
+use package_download::{ensure_package_on_disk, HttpsDownloader};
 use send_events::{EventSender, HttpSink, Source};
 use state::State;
 
@@ -125,7 +125,7 @@ async fn main() -> Result<()> {
     let summary = apply_disk_image(
         log.clone(),
         disk,
-        &config.provisioning_config.gpt_root_disk,
+        config.provisioning_config.gpt_root_disk.clone(),
         &args.tmp_mounts_dir,
         args.buffer_size,
         RealMounter {},
@@ -175,24 +175,19 @@ async fn main() -> Result<()> {
     // Download the next stage initrd
     let downloader = HttpsDownloader::new().context("while creating downloader")?;
 
-    let initrd_path = config
-        .boot_config
-        .initrd
-        .download(log.clone(), &downloader)
-        .await
-        .context("failed to download next stage initrd")?;
+    let (initrd, kernel) = try_join!(
+        ensure_package_on_disk(log.clone(), &downloader, config.boot_config.initrd.clone())
+            .map(|r| r.context("failed to download next stage initrd")),
+        ensure_package_on_disk(
+            log.clone(),
+            &downloader,
+            config.boot_config.kernel.pkg.clone()
+        )
+        .map(|r| r.context("failed to download kernel")),
+    )?;
 
-    info!(log, "Downloaded initrd to: {:?}", initrd_path);
-
-    let kernel_path = config
-        .boot_config
-        .kernel
-        .pkg
-        .download(log.clone(), &downloader)
-        .await
-        .context("failed to download kernel")?;
-
-    info!(log, "Downloaded kernel to: {:?}", kernel_path);
+    info!(log, "Downloaded initrd to: {:?}", initrd.display());
+    info!(log, "Downloaded kernel to: {:?}", kernel.path().display());
 
     KexecInfo::try_from(&config)
         .context("Failed to build kexec info")?

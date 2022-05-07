@@ -237,6 +237,99 @@ package_kind_param!(
 );
 package_kind_param!(GptRootDisk, GptRootDiskKind, GPT_ROOT_DISK);
 
+/// Generic versions of the types above, useful for cases where code wants to
+/// (less safely) operate on a collection of heterogenous package kinds.
+pub mod generic {
+    use super::Format;
+    use strum_macros::Display;
+    use thrift_wrapper::ThriftWrapper;
+    use url::Url;
+    use uuid::Uuid;
+
+    #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper, Display)]
+    #[thrift(metalos_thrift_host_configs::packages::Kind)]
+    pub enum Kind {
+        Rootfs,
+        Kernel,
+        Initrd,
+        ImagingInitrd,
+        Service,
+        ServiceConfigGenerator,
+        GptRootDisk,
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+    #[thrift(metalos_thrift_host_configs::packages::PackageId)]
+    pub enum PackageId {
+        Tag(String),
+        Uuid(Uuid),
+    }
+
+    /// Generic version of a Package, without any static type information about
+    /// the nature of the package.
+    #[derive(Clone, PartialEq, Eq, ThriftWrapper)]
+    #[thrift(metalos_thrift_host_configs::packages::Package)]
+    pub struct Package {
+        pub name: String,
+        pub id: PackageId,
+        pub override_uri: Option<Url>,
+        pub format: Format,
+        pub kind: Kind,
+    }
+
+    impl Package {
+        pub fn identifier(&self) -> String {
+            format!(
+                "{}:{}",
+                self.name,
+                match &self.id {
+                    PackageId::Uuid(u) => u.to_simple().to_string(),
+                    PackageId::Tag(t) => t.clone(),
+                }
+            )
+        }
+    }
+
+    impl std::fmt::Debug for Package {
+        #[deny(unused_variables)]
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            let Package {
+                name,
+                id,
+                override_uri,
+                format,
+                kind: _,
+            } = self;
+            let mut s = f.debug_struct("Package");
+            s.field("name", name)
+                .field("id", id)
+                .field("format", format);
+            if let Some(u) = override_uri {
+                s.field("override_uri", &u.to_string());
+            }
+            s.finish()
+        }
+    }
+
+    /// Only allow conversion from a UUID-identified Package to discourage
+    /// on-host usage of tags (the HostConfig will already only be deserialized
+    /// if it only contains uuids, but that doesn't stop people from
+    /// constructing less-safe structs locally).
+    impl<K: super::Kind> From<super::Package<K, Uuid>> for Package {
+        fn from(p: super::Package<K, Uuid>) -> Self {
+            Self {
+                name: p.name,
+                id: PackageId::Uuid(p.id),
+                override_uri: p.override_uri,
+                format: p.format,
+                kind: K::THRIFT
+                    .try_into()
+                    .expect("compiler statically ensures all variants are covered"),
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;

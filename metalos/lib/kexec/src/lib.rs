@@ -7,10 +7,10 @@ use anyhow::{Context, Result};
 use nix::libc::{syscall, SYS_kexec_file_load};
 use slog::{info, Logger};
 
-use image::PackageExt;
 use metalos_host_configs::boot_config::Kernel;
 use metalos_host_configs::host::HostConfig;
 use metalos_host_configs::packages::Initrd;
+use package_download::PackageExt;
 use systemd::Systemd;
 
 /// A small wrapper struct around the on-disk path to the kernel
@@ -35,7 +35,8 @@ pub struct KexecInfo {
 
 impl KexecInfo {
     pub fn new_from_packages(kernel: &Kernel, initrd: &Initrd, cmdline: String) -> Result<Self> {
-        let kernel_path = kernel.pkg.on_disk().context("kernel not on disk")?;
+        let kernel_subvol = kernel.pkg.on_disk().context("kernel not on disk")?;
+        let kernel_path = kernel_subvol.path();
         let vmlinuz_path = VmlinuzPath(kernel_path.join("vmlinuz"));
         let disk_boot_modules_path =
             DiskBootModulesPath(kernel_path.join("disk-boot-modules.cpio.gz"));

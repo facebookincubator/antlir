@@ -3,7 +3,7 @@
 load("//metalos:defs.bzl", "rust_library")
 
 rust_library(
-    name = "image",
+    name = "package_download",
     srcs = glob(["src/*.rs"]),
     visibility = [
         "PUBLIC",
@@ -14,15 +14,17 @@ rust_library(
         "bytes",
         "fbthrift",
         "futures",
+        "once_cell",
+        "percent-encoding",
         "reqwest",
         "slog",
+        "tempfile",
         "thiserror",
         "tokio",
-        "uuid",
+        "url",
         "xattr",
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/metalos_paths:metalos_paths",
-        "//metalos/lib/thrift_wrapper:thrift_wrapper",
     ],
 )

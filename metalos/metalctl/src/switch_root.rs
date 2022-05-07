@@ -13,7 +13,7 @@ use structopt::StructOpt;
 use systemd::{FilePath, Systemd};
 
 use crate::mount::{mount, Opts as MountOpts};
-use image::PackageExt;
+use package_download::PackageExt;
 
 #[derive(StructOpt)]
 pub struct Opts {
@@ -74,7 +74,11 @@ pub async fn switch_root(log: Logger, opts: Opts) -> Result<()> {
                 mountpoint.display()
             )
         })?;
-        let modules_dir = kernel_subvol.join("modules").to_str().map(str::to_string);
+        let modules_dir = kernel_subvol
+            .path()
+            .join("modules")
+            .to_str()
+            .map(str::to_string);
         mount(
             log.clone(),
             MountOpts {

@@ -40,7 +40,7 @@ pub async fn cmd_apply_disk_image(log: Logger, opts: Opts) -> Result<()> {
     ::apply_disk_image::apply_disk_image(
         log,
         disk,
-        &host.provisioning_config.gpt_root_disk,
+        host.provisioning_config.gpt_root_disk,
         &opts.tmp_mounts_dir,
         opts.buffer_size,
         RealMounter {},

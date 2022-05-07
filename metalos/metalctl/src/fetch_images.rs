@@ -10,8 +10,7 @@ use slog::Logger;
 use structopt::StructOpt;
 use url::Url;
 
-use image::download::HttpsDownloader;
-use image::PackageExt;
+use package_download::{ensure_package_on_disk, HttpsDownloader};
 
 use get_host_config::get_host_config;
 
@@ -31,8 +30,8 @@ pub async fn fetch_images(log: Logger, opts: Opts) -> Result<()> {
     let dl = HttpsDownloader::new().context("while creating downloader")?;
 
     let (root_subvol, kernel_subvol) = tokio::join!(
-        host.boot_config.rootfs.download(log.clone(), &dl),
-        host.boot_config.kernel.pkg.download(log, &dl),
+        ensure_package_on_disk(log.clone(), &dl, host.boot_config.rootfs),
+        ensure_package_on_disk(log, &dl, host.boot_config.kernel.pkg),
     );
     let root_subvol = root_subvol.context("while downloading rootfs")?;
     kernel_subvol.context("while downloading kernel")?;
@@ -42,7 +41,7 @@ pub async fn fetch_images(log: Logger, opts: Opts) -> Result<()> {
     // needs to be included here
     std::fs::write(
         "/run/metalos/image_paths_environment",
-        format!("METALOS_OS_VOLUME={}\n", root_subvol.display()),
+        format!("METALOS_OS_VOLUME={}\n", root_subvol.path().display()),
     )
     .context("while writing /run/metalos/image_paths_environment")?;
 
