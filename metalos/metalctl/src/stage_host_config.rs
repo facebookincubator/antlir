@@ -6,11 +6,13 @@
  */
 
 use anyhow::{Context, Result};
+use futures::{try_join, FutureExt};
 use slog::Logger;
 use structopt::StructOpt;
 use url::Url;
 
-use package_download::{ensure_package_on_disk, HttpsDownloader};
+use lifecycle::stage;
+use package_download::PackageExt;
 
 use get_host_config::get_host_config;
 
@@ -19,23 +21,22 @@ pub struct Opts {
     host_config_uri: Url,
 }
 
-/// Fetch all the immediately-necessary images from the host config. If in the
-/// initrd, this is just the rootfs and kernel.
-pub async fn fetch_images(log: Logger, opts: Opts) -> Result<()> {
+/// Fetch all the images from the host config.
+pub async fn stage_host_config(log: Logger, opts: Opts) -> Result<()> {
     let host = get_host_config(&opts.host_config_uri)
         .await
         .with_context(|| format!("while loading host config from {} ", opts.host_config_uri))?;
 
-    // TODO: use fbpkg.proxy when in the rootfs
-    let dl = HttpsDownloader::new().context("while creating downloader")?;
+    try_join!(
+        stage(log.clone(), host.boot_config.clone()).map(|r| r.context("while staging BootConfig")),
+        stage(log.clone(), host.runtime_config).map(|r| r.context("while staging RuntimeConfig")),
+    )?;
 
-    let (root_subvol, kernel_subvol) = tokio::join!(
-        ensure_package_on_disk(log.clone(), &dl, host.boot_config.rootfs),
-        ensure_package_on_disk(log, &dl, host.boot_config.kernel.pkg),
-    );
-    let root_subvol = root_subvol.context("while downloading rootfs")?;
-    kernel_subvol.context("while downloading kernel")?;
-    // TODO: download service images as well
+    let root_subvol = host
+        .boot_config
+        .rootfs
+        .on_disk()
+        .context("rootfs not on disk")?;
 
     // TODO: onboard this to systemd_generator_lib if there is a lot more that
     // needs to be included here

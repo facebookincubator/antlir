@@ -197,7 +197,7 @@ fn metalos_existing_boot_info(
             "stage_before_isolate".to_string(),
             ExtraDependency {
                 source: "initrd.target".into(),
-                requires: "metalos-fetch-images.service".into(),
+                requires: "metalos-stage.service".into(),
             },
         ),
     ];
@@ -611,8 +611,8 @@ mod tests {
                     ".into(),
                 opts.generator_args.normal_dir.join("initrd.target.d/stage_before_isolate.conf") => "\
                     [Unit]\n\
-                    After=metalos-fetch-images.service\n\
-                    Requires=metalos-fetch-images.service\n\
+                    After=metalos-stage.service\n\
+                    Requires=metalos-stage.service\n\
                     ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
@@ -679,8 +679,8 @@ mod tests {
                     ".into(),
                 opts.generator_args.normal_dir.join("initrd.target.d/stage_before_isolate.conf") => "\
                     [Unit]\n\
-                    After=metalos-fetch-images.service\n\
-                    Requires=metalos-fetch-images.service\n\
+                    After=metalos-stage.service\n\
+                    Requires=metalos-stage.service\n\
                     ".into(),
                 opts.environment_dir.join(ENVIRONMENT_FILENAME) => format!("\
                     HOST_CONFIG_URI=https://server:8000/config\n\
@@ -821,7 +821,7 @@ mod tests {
                     "stage_before_isolate".to_string(),
                     ExtraDependency {
                         source: "initrd.target".into(),
-                        requires: "metalos-fetch-images.service".into(),
+                        requires: "metalos-stage.service".into(),
                     },
                 ),
                 (
@@ -913,7 +913,7 @@ mod tests {
                     "stage_before_isolate".to_string(),
                     ExtraDependency {
                         source: "initrd.target".into(),
-                        requires: "metalos-fetch-images.service".into(),
+                        requires: "metalos-stage.service".into(),
                     },
                 ),
             ]

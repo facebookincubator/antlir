@@ -76,8 +76,7 @@ macro_rules! subvol_package {
             type Artifact = Subvolume;
 
             fn on_disk(&self) -> Option<Self::Artifact> {
-                let owned: Self = self.clone();
-                Subvolume::get(path_on_disk(&owned.into())).ok()
+                Subvolume::get(self.path()).ok()
             }
         }
     };
@@ -89,8 +88,7 @@ macro_rules! file_package {
             type Artifact = PathBuf;
 
             fn on_disk(&self) -> Option<Self::Artifact> {
-                let owned: Self = self.clone();
-                let dest = path_on_disk(&owned.into());
+                let dest = self.path();
                 if dest.exists() { Some(dest) } else { None }
             }
         }
@@ -103,14 +101,6 @@ subvol_package!(packages::Service);
 file_package!(packages::Initrd);
 file_package!(packages::ImagingInitrd);
 file_package!(packages::GptRootDisk);
-
-/// Return the path where the artifact(s) for this package should be
-/// installed on the local disk.
-fn path_on_disk(package: &packages::generic::Package) -> PathBuf {
-    metalos_paths::images()
-        .join(package.kind.to_string().to_lowercase().replace('_', "-"))
-        .join(package.identifier())
-}
 
 /// Make sure that a given package is on disk, downloading it if it is not
 /// already locally available.
@@ -148,7 +138,7 @@ pub async fn ensure_package_on_disk_ignoring_artifacts<D>(
 where
     D: PackageDownloader,
 {
-    let dest = path_on_disk(pkg);
+    let dest = pkg.path();
 
     if dest.exists() {
         return Ok(());
