@@ -11,10 +11,9 @@ use slog::Logger;
 use structopt::StructOpt;
 use uuid::Uuid;
 
-use image::download::HttpsDownloader;
-use image::PackageExt;
 use metalos_host_configs::packages::{Format, Service as ServicePackage};
 use metalos_host_configs::runtime_config::Service;
+use package_download::{ensure_package_on_disk, HttpsDownloader};
 use service::{ServiceSet, Transaction};
 use systemd::Systemd;
 
@@ -67,7 +66,7 @@ pub(crate) async fn service(log: Logger, opts: Opts) -> Result<()> {
             let dl = HttpsDownloader::new().context("while creating downloader")?;
             for svc in &start.services {
                 let svc: Service = svc.into();
-                svc.svc.download(log.clone(), &dl).await?;
+                ensure_package_on_disk(log.clone(), &dl, svc.svc).await?;
             }
 
             let mut set = ServiceSet::current(&sd).await?;

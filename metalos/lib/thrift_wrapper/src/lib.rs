@@ -34,6 +34,8 @@ pub enum Error {
     Union(i32),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
+    #[error("infallible conversion failed - impossible")]
+    Infallible(#[from] std::convert::Infallible),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;

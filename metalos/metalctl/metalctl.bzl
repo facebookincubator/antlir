@@ -22,10 +22,10 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
         "//metalos/lib/expand_partition:expand_partition",
         "//metalos/lib/find_root_disk:find_root_disk",
         "//metalos/lib/apply_disk_image:apply_disk_image",
-        "//metalos/lib/image:image",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/mount:metalos_mount",
         "//metalos/lib/net_utils:net_utils",
+        "//metalos/lib/package_download:package_download",
         "//metalos/lib/send_events:send_events",
         "//metalos/lib/systemd:systemd",
         "anyhow",  # ~9.5k, very helpful for error handling

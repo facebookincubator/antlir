@@ -96,10 +96,13 @@ fn expand_thriftwrapper_enum(
             is_union = true;
             let thrift_name = format_ident!("{}", var.ident.to_string().to_case(Case::Snake));
             match_thrift_variant.push(quote! {
-                #thrift_type::#thrift_name(x) => x.try_into().map(Self::#rust_name),
+                #thrift_type::#thrift_name(x) => {
+                    ::thrift_wrapper::ThriftWrapper::from_thrift(x)
+                        .map(Self::#rust_name)
+                }
             });
             match_to_thrift.push(quote! {
-                Self::#rust_name(x) => #thrift_type::#thrift_name(x.into()),
+                Self::#rust_name(x) => #thrift_type::#thrift_name(::thrift_wrapper::ThriftWrapper::into_thrift(x)),
             });
         }
     }
