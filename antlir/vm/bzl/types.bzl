@@ -51,7 +51,8 @@ def _new_vm_disk(
         layer_size_mb = None,
         layer_label = "/",
         additional_scratch_mb = None,
-        interface = "virtio-blk"):
+        interface = "virtio-blk",
+        subvol = "volume"):
     if package and layer:
         fail("disk.new() accepts `package` OR `layer`, not both")
 
@@ -66,7 +67,7 @@ def _new_vm_disk(
                 name = package_target,
                 opts = btrfs.opts.new(
                     subvols = {
-                        "/volume": btrfs.opts.subvol.new(
+                        "/" + subvol: btrfs.opts.subvol.new(
                             layer = layer,
                             writable = True,
                         ),
@@ -89,6 +90,7 @@ def _new_vm_disk(
         package = package,
         additional_scratch_mb = additional_scratch_mb,
         interface = interface,
+        subvol = subvol,
     )
 
 _vm_disk_api = struct(

@@ -303,6 +303,7 @@ async def vm(
         qemu_img=opts.runtime.emulator.img_util.path,
         additional_scratch_mb=opts.disk.additional_scratch_mb,
         interface=opts.disk.interface,
+        subvol=opts.disk.subvol,
         stack=stack,
     )
 

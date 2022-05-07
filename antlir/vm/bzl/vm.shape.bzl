@@ -32,6 +32,7 @@ disk_t = shape.shape(
     # request more disk space (e.g creating a new GPT partition)
     additional_scratch_mb = shape.field(int, optional = True),
     interface = shape.field(disk_interface_t, default = "virtio-blk"),
+    subvol = shape.field(str, default = "volume"),
 )
 
 connection_t = shape.shape(
