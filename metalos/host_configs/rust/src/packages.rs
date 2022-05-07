@@ -7,6 +7,7 @@
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::path::{Path, PathBuf};
 
 use anyhow::anyhow;
 use strum_macros::Display;
@@ -81,6 +82,12 @@ where
 
     pub fn identifier(&self) -> String {
         format!("{}:{}", self.name, self.id.to_simple())
+    }
+
+    /// Return the path where the artifact(s) for this package should be
+    /// installed on the local disk.
+    pub fn path(&self) -> PathBuf {
+        generic::Package::from(self.clone()).path()
     }
 }
 
@@ -237,10 +244,26 @@ package_kind_param!(
 );
 package_kind_param!(GptRootDisk, GptRootDiskKind, GPT_ROOT_DISK);
 
+// Some package kinds have some extra data that we can use, so expose it nicely
+// via the `Package<K>` structs
+
+impl<K: Kind> Package<K, Uuid> {
+    /// Get absolute path to a file given a relative path. Checks to ensure that
+    /// the file exists, otherwise will return None
+    pub(crate) fn file_in_image(&self, relpath: impl AsRef<Path>) -> Option<PathBuf> {
+        let path = self.path().join(relpath.as_ref());
+        match path.exists() {
+            true => Some(path),
+            false => None,
+        }
+    }
+}
+
 /// Generic versions of the types above, useful for cases where code wants to
 /// (less safely) operate on a collection of heterogenous package kinds.
 pub mod generic {
     use super::Format;
+    use std::path::PathBuf;
     use strum_macros::Display;
     use thrift_wrapper::ThriftWrapper;
     use url::Url;
@@ -287,6 +310,14 @@ pub mod generic {
                     PackageId::Tag(t) => t.clone(),
                 }
             )
+        }
+
+        /// Return the path where the artifact(s) for this package should be
+        /// installed on the local disk.
+        pub fn path(&self) -> PathBuf {
+            metalos_paths::images()
+                .join(self.kind.to_string().to_lowercase().replace('_', "-"))
+                .join(self.identifier())
         }
     }
 

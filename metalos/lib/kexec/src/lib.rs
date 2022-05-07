@@ -35,11 +35,12 @@ pub struct KexecInfo {
 
 impl KexecInfo {
     pub fn new_from_packages(kernel: &Kernel, initrd: &Initrd, cmdline: String) -> Result<Self> {
-        let kernel_subvol = kernel.pkg.on_disk().context("kernel not on disk")?;
-        let kernel_path = kernel_subvol.path();
-        let vmlinuz_path = VmlinuzPath(kernel_path.join("vmlinuz"));
-        let disk_boot_modules_path =
-            DiskBootModulesPath(kernel_path.join("disk-boot-modules.cpio.gz"));
+        let vmlinuz_path = VmlinuzPath(kernel.vmlinuz().context("missing vmlinuz")?);
+        let disk_boot_modules_path = DiskBootModulesPath(
+            kernel
+                .disk_boot_modules()
+                .context("missing disk-boot-modules")?,
+        );
         let initrd_path = InitrdPath(initrd.on_disk().context("initrd not on disk")?);
         Ok(Self {
             vmlinuz_path,

@@ -12,7 +12,7 @@ use thrift_wrapper::ThriftWrapper;
 #[thrift(metalos_thrift_host_configs::provisioning_config::ProvisioningConfig)]
 pub struct ProvisioningConfig {
     #[cfg(facebook)]
-    deployment_specific: crate::facebook::deployment_specific::DeploymentProvisioningConfig,
+    pub deployment_specific: crate::facebook::deployment_specific::DeploymentProvisioningConfig,
     pub identity: HostIdentity,
     pub root_pw_hash: String,
     pub gpt_root_disk: packages::GptRootDisk,

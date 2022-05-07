@@ -28,6 +28,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
         "//metalos/lib/package_download:package_download",
         "//metalos/lib/send_events:send_events",
         "//metalos/lib/systemd:systemd",
+        "//metalos/host_configs/lifecycle:lifecycle",
         "anyhow",  # ~9.5k, very helpful for error handling
         "fbthrift",
         "nix",  # ~5k: access to syscalls (mount, etc)

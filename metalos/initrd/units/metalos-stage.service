@@ -1,5 +1,5 @@
 [Unit]
-Description=Fetch required images
+Description=MetalOS stage HostConfig
 Requires=network-online.target
 After=network-online.target
 
@@ -16,4 +16,4 @@ AssertPathExists=/run/metalos/host-config
 EnvironmentFile=/run/systemd/generator/metalos_environment
 Type=oneshot
 RemainAfterExit=true
-ExecStart=metalctl fetch-images file:///run/metalos/host-config
+ExecStart=metalctl stage-host-config file:///run/metalos/host-config

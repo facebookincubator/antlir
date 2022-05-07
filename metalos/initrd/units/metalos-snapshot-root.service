@@ -8,10 +8,8 @@ AllowIsolate=yes
 Requires=run-fs-control.mount
 After=run-fs-control.mount
 
-# This lists all the packages require for assembling
-# the boot. Currently this is only the rootfs.
-Requires=metalos-fetch-images.service
-After=metalos-fetch-images.service
+Requires=metalos-stage.service
+After=metalos-stage.service
 
 [Service]
 EnvironmentFile=/run/systemd/generator/metalos_environment

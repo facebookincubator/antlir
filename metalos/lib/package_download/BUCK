@@ -25,6 +25,5 @@ rust_library(
         "xattr",
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/btrfs:btrfs",
-        "//metalos/lib/metalos_paths:metalos_paths",
     ],
 )

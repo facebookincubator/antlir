@@ -32,7 +32,6 @@ use structopt::StructOpt;
 mod apply_disk_image;
 mod apply_host_config;
 mod config;
-mod fetch_images;
 #[cfg(initrd)]
 mod generator;
 mod kernel_cmdline;
@@ -41,6 +40,7 @@ mod mount;
 #[cfg(initrd)]
 mod network_cleanup;
 mod send_event;
+mod stage_host_config;
 mod switch_root;
 #[cfg(initrd)]
 mod umount;
@@ -60,8 +60,8 @@ enum Subcommand {
     /// Unmount a filesystem
     #[cfg(initrd)]
     Umount(umount::Opts),
-    /// Download images specified in the MetalOS host config
-    FetchImages(fetch_images::Opts),
+    /// Download all images specified in the MetalOS host config
+    StageHostConfig(stage_host_config::Opts),
     /// Cleanup networking in preperation for switchroot
     #[cfg(initrd)]
     NetworkCleanup(network_cleanup::Opts),
@@ -164,7 +164,7 @@ async fn run_command(mut args: VecDeque<std::ffi::OsString>, log: Logger) -> Res
         Subcommand::Mount(opts) => mount::mount(log, opts),
         #[cfg(initrd)]
         Subcommand::Umount(opts) => umount::umount(opts),
-        Subcommand::FetchImages(opts) => fetch_images::fetch_images(log, opts).await,
+        Subcommand::StageHostConfig(opts) => stage_host_config::stage_host_config(log, opts).await,
         #[cfg(initrd)]
         Subcommand::NetworkCleanup(opts) => network_cleanup::network_cleanup(log, opts),
         Subcommand::SwitchRoot(opts) => switch_root::switch_root(log, opts).await,

@@ -79,7 +79,7 @@ host_config(
                 "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
                 "kind": 3,
                 "name": "metalos.initrd",
-                "override_uri": None,
+                "override_uri": "http://vmtest-host:8000/package/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef",
             },
             "kernel": {
                 "pkg": {
@@ -376,9 +376,10 @@ buck_genrule(
     name = "image_packages",
     out = ".",
     cmd = """
-        cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:deadbeefdeadbeefdeadbeefdeadbeef
         zstd -i $(location //metalos/disk:metalos-gpt-image) -o $OUT/metalos.gpt-root-disk:deadbeefdeadbeefdeadbeefdeadbeef
+        cp --reflink=auto $(location :metalos-vmtest.sendstream.zst) $OUT/metalos:deadbeefdeadbeefdeadbeefdeadbeef
         cp --reflink=auto $(location :kernel.{}.sendstream.zst) $OUT/kernel.{}:deadbeefdeadbeefdeadbeefdeadbeef
+        cp --reflink=auto $(location //metalos/initrd:initrd.cpio.gz) $OUT/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef
     """.format(
         TEST_KERNEL.uname,
         TEST_KERNEL.uname,

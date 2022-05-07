@@ -141,6 +141,7 @@ module.exports = {
       collapsed: false,
       items: [
         'metalos/overview',
+        'metalos/lifecycle',
         'metalos/native-services',
         'metalos/update-flows',
         'metalos/apis',

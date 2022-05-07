@@ -51,16 +51,16 @@ fn fetch_unit() -> Result<()> {
 
     let fetch_output = Command::new("systemctl")
         .arg("start")
-        .arg("metalos-fetch-images.service")
+        .arg("metalos-stage.service")
         .output()
-        .expect("failed to start metalos-fetch-images");
+        .expect("failed to start metalos-stage.service");
 
     println!("{:#?}", fetch_output);
 
     let journal = String::from_utf8(
         Command::new("journalctl")
             .arg("-u")
-            .arg("metalos-fetch-images.service")
+            .arg("metalos-stage.service")
             .output()
             .expect("failed to get journal output")
             .stdout,
