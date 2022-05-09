@@ -7,6 +7,7 @@
 
 namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
+// @oss-disable: namespace go metalos.host_configs.provisioning_config
 
 include "metalos/host_configs/packages.thrift"
 // @oss-disable: include "metalos/host_configs/facebook/host.thrift"
