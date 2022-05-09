@@ -33,7 +33,7 @@ from typing import (
 
 from antlir.compiler import procfs_serde
 from antlir.config import repo_config
-from antlir.fs_utils import META_DIR, META_FLAVOR_FILE, Path
+from antlir.fs_utils import META_DIR, META_FLAVOR_FILE, META_BUILD_DIR, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 from pydantic import validator
@@ -87,8 +87,6 @@ class PhaseOrder(enum.Enum):
     # This phase creates the subvolume, so it must precede all others.
     # There can only ever be one item in this phase.
     MAKE_SUBVOL = enum.auto()
-    # A special phase that automatically adds layer metadata.
-    LAYER_INFO = enum.auto()
     # Genrule layers cannot be combined with any item besides a single
     # `MAKE_SUBVOL`, so the ordering with respect to other items is
     # unimportant.
@@ -304,6 +302,21 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
 
     build_appliance = layer_opts.build_appliance
     flavor = layer_opts.flavor
+
+    # Add metadata info
+    if not os.path.isdir(subvol.path(META_BUILD_DIR)):
+        subvol.run_as_root(
+            ["mkdir", "--mode=0755", subvol.path(META_BUILD_DIR)]
+        )
+
+    subvol.overwrite_path_as_root(
+        META_BUILD_DIR / "target", f"{layer_opts.layer_target}\n"
+    )
+
+    subvol.overwrite_path_as_root(
+        META_BUILD_DIR / "revision",
+        f"{repo_config().vcs_revision}\n",
+    )
 
     if layer_opts.unsafe_bypass_flavor_check:
         subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)

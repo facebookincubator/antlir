@@ -203,18 +203,6 @@ python_library(
     ],
 )
 
-python_library(
-    name = "metadata",
-    srcs = ["metadata.py"],
-    deps = [
-        ":common",
-        "//antlir:config",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir/compiler:requires_provides",
-    ],
-)
-
 # `items_for_features` and `sample_items` always depend on ~all items.
 python_library(
     name = "all-items",
@@ -225,7 +213,6 @@ python_library(
         ":group",
         ":install_file",
         ":make_subvol",
-        ":metadata",
         ":mount",
         ":phases_provide",
         ":remove_path",
