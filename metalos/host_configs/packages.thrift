@@ -14,6 +14,7 @@
 
 namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
+// @oss-disable: namespace go metalos.host_configs.packages
 
 union PackageId {
   // Fully resolved UUID that always points to the same exact package version

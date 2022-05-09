@@ -10,9 +10,33 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 thrift_library(
     name = "api",
+    go_thrift_namespaces = {
+        "api.thrift": "metalos.host_configs.api",
+        "boot_config.thrift": "metalos.host_configs.boot_config",
+        "host.thrift": "metalos.host_configs.host",
+        "packages.thrift": "metalos.host_configs.packages",
+        "provisioning_config.thrift": "metalos.host_configs.provisioning_config",
+        "runtime_config.thrift": "metalos.host_configs.runtime_config",
+    # @oss-disable: }, 
+    go_thrift_src_inter_deps = {
+        "api": [
+            "boot_config",
+            "packages",
+            "runtime_config",
+        ],
+        "boot_config": ["packages"],
+        "host": [
+            "boot_config",
+            "runtime_config",
+            "provisioning_config",
+        ],
+        "provisioning_config": ["packages"],
+        "runtime_config": ["packages"],
+    # @oss-disable: }, 
     languages = ["rust"] + [
         "cpp2",
         "py3",
+        "go",
     ] if facebook else [],
     # @oss-disable: py3_namespace = "metalos.host_configs", 
     rust_crate_name = "metalos_thrift_host_configs",
