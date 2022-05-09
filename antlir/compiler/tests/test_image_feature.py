@@ -11,7 +11,6 @@ import unittest
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
-from antlir.compiler.items.metadata import LayerInfoItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmActionItem
@@ -95,10 +94,6 @@ class ImageFeatureTestCase(unittest.TestCase):
             [
                 (FilesystemRootItem.get_phase_builder, (si.ID_TO_ITEM["/"],)),
                 (
-                    LayerInfoItem.get_phase_builder,
-                    (LayerInfoItem(from_target="ttt"),),
-                ),
-                (
                     RpmActionItem.get_phase_builder,
                     (
                         si.ID_TO_ITEM[".rpms/remove_if_exists/rpm-test-carrot"],
@@ -136,13 +131,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                 )
             )
         self.assertEqual(
-            set(si.ID_TO_ITEM.values()).union(
-                {LayerInfoItem(from_target="ttt")}
-            ),
-            set(doi + phase_items),
-        )
-        self.assertEqual(
-            len(si.ID_TO_ITEM) + 1,
+            len(si.ID_TO_ITEM),
             len(doi) + len(phase_items),
             msg="Duplicate items?",
         )

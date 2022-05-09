@@ -35,7 +35,6 @@ python_library(
         "//antlir:fs_utils",
         "//antlir/compiler/items:genrule_layer",
         "//antlir/compiler/items:make_subvol",
-        "//antlir/compiler/items:metadata",
         "//antlir/compiler/items:phases_provide",
     ],
 )

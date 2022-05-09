@@ -385,18 +385,3 @@ image_python_unittest(
     layer = ":test_compiler_item_layer",
     deps = ["//antlir:config"],
 )
-
-python_unittest(
-    name = "test-metadata",
-    srcs = ["test_metadata.py"],
-    needed_coverage = [
-        (100, "//antlir/compiler/items:metadata"),
-    ],
-    deps = [
-        ":common_testlib",
-        "//antlir:config",
-        "//antlir/compiler/items:ensure_dirs_exist",
-        "//antlir/compiler/items:install_file",
-        "//antlir/compiler/items:metadata",
-    ],
-)

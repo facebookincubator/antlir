@@ -21,7 +21,6 @@ from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
-from antlir.compiler.items.metadata import LayerInfoItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
@@ -61,10 +60,6 @@ _FILE2 = "/etc/group"
 def _fs_root_phases(item, layer_target=None):
     return [
         (FilesystemRootItem.get_phase_builder, (item,)),
-        (
-            LayerInfoItem.get_phase_builder,
-            (LayerInfoItem(from_target=layer_target or item.from_target),),
-        ),
     ]
 
 

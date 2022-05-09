@@ -26,7 +26,6 @@ from typing import (
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
-from antlir.compiler.items.metadata import LayerInfoItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.errors import UserError
@@ -386,13 +385,9 @@ class DependencyGraph:
             [FilesystemRootItem(from_target=layer_target)],
         )
         assert len(make_subvol_items) == 1, make_subvol_items
-        # Inject metadata
-        self.order_to_phase_items[PhaseOrder.LAYER_INFO] = [
-            LayerInfoItem(from_target=layer_target)
-        ]
 
         # If we have a genrule layer, it must be the only item, besides the
-        # mandatory `MAKE_SUBVOL` and `LAYER_INFO` added above.
+        # mandatory `MAKE_SUBVOL`.
         genrule = self.order_to_phase_items.get(PhaseOrder.GENRULE_LAYER)
         if genrule:
             assert len(genrule) == 1, genrule
@@ -401,7 +396,6 @@ class DependencyGraph:
             assert set(self.order_to_phase_items.keys()) == {
                 PhaseOrder.GENRULE_LAYER,
                 PhaseOrder.MAKE_SUBVOL,
-                PhaseOrder.LAYER_INFO,
             }, self.order_to_phase_items
 
     # Like ImageItems, the generated phases have a build(s: Subvol) operation.

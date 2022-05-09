@@ -467,6 +467,9 @@ ANTLIR_DIR = Path("/__antlir__")
 # The name of the flavor file in the meta directory
 META_FLAVOR_FILE: Path = META_DIR / "flavor"
 
+# The name of the build directory in the meta directory
+META_BUILD_DIR: Path = META_DIR / "build"
+
 
 # Future: If it becomes necessary to serialize dict keys that are `Path`,
 # the `json` module currently does not support custom key serialization.  In
