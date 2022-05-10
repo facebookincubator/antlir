@@ -110,8 +110,7 @@ extract_rpm_manifest(
 
 systemd_expectations_test(
     name = "systemd-expectations",
-    # @oss-disable: expectations = "//metalos/os/facebook/tests:systemd-expectations.toml", 
-    expectations = "//metalos/os/tests:systemd-expectations.toml", # @oss-enable
+    expectations = "//metalos/os/tests:systemd-expectations.toml",
     layer = ":metalos",
 )
 
