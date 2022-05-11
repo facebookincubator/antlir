@@ -1,6 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "rust_library")
 load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
@@ -8,7 +8,7 @@ load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest
 rust_bindgen_library(
     name = "btrfsutil-sys",
     cpp_deps = [
-        third_party.library("btrfs-progs", "btrfsutil"),
+        "third-party//btrfs-progs:btrfsutil",
     ],
     generate = ("types", "functions", "vars"),
     header = "btrfsutil-sys/bridge.h",

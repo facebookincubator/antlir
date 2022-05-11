@@ -1,13 +1,11 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library")
 load("//metalos:defs.bzl", "rust_library")
 
 rust_bindgen_library(
     name = "blkid-sys",
-    cpp_deps = [
-        third_party.library("util-linux", "blkid"),
-    ],
+    cpp_deps = ["third-party//util-linux:blkid"],
     generate = ("types", "functions", "vars"),
     header = "blkid-sys/bridge.h",
     visibility = ["//antlir/..."],
