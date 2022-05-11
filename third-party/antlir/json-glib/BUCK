@@ -18,6 +18,7 @@ BASE_FEATURES = [
 ]
 
 third_party.native_build(
+    name = "json-glib",
     base_features = BASE_FEATURES,
     script = third_party.script(
         prepare = "meson _build . -Ddefault_library=static -Dprefix=\"${STAGE}\"",
