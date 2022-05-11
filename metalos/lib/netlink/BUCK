@@ -1,6 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_bindgen_library")
 load("//metalos:defs.bzl", "rust_library")
 
 rust_bindgen_library(
@@ -10,8 +10,8 @@ rust_bindgen_library(
         "IPPORT_RESERVED",
     ],
     cpp_deps = [
-        third_party.library("libnl", "nl-3"),
-        third_party.library("libnl", "nl-route-3"),
+        "third-party//libnl:nl-3",
+        "third-party//libnl:nl-route-3",
     ],
     generate = ("types", "functions", "vars"),
     header = "netlink-sys/netlink.h",
@@ -30,12 +30,8 @@ rust_library(
         "bitflags",
         "derive_more",
         "nix",
+        "num-derive",
+        "num-traits",
         ":netlink-sys",
-    ] + third_party.libraries(
-        [
-            "num-derive",
-            "num-traits",
-        ],
-        platform = "rust",
-    ),
+    ],
 )

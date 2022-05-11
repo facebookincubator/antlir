@@ -1,13 +1,9 @@
-load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
 def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwargs):
     srcs = native.glob(["src/*.rs"]) + extra_srcs
-
-    # we don't yet have blkid support in oss
-    have_blkid = third_party.library("util-linux", "blkid") != None
 
     # WARNING: these common_deps are included in both the initrd and rootfs builds
     # of metalctl. The size of the initrd is constrained and must remain small if we
@@ -22,6 +18,16 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
         "//metalos/lib/expand_partition:expand_partition",
         "//metalos/lib/find_root_disk:find_root_disk",
         "//metalos/lib/apply_disk_image:apply_disk_image",
+        # Apparently dep ordering matters to the linker.  If the `blkid` dep
+        # is moved _above_ the `find_root_disk` dep the linker will complain
+        # about duplicate symbols contained in both:
+        # `util-linux/lib/libblkid.a`
+        # and
+        # `systemd/lib/libudev.a`
+        # when this is compiled statically, as is done for the `metalctl-initrd`
+        # target.  So, tl;dr is that this `blkid` dep nees to be underneath
+        # `find_root_disk`...
+        "//metalos/lib/blkid:blkid",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/mount:metalos_mount",
         "//metalos/lib/net_utils:net_utils",
@@ -58,9 +64,7 @@ def metalctl(name, rustc_flags = None, extra_deps = [], extra_srcs = [], **kwarg
     ] + extra_deps
 
     rustc_flags = rustc_flags or []
-    if have_blkid:
-        rustc_flags.append("--cfg=blkid")
-        deps.append("//metalos/lib/blkid:blkid")
+    rustc_flags.append("--cfg=blkid")
 
     # metalctl is split into two binary targets, so that code that requires
     # features only found in the rootfs, or larger dependencies can be excluded
