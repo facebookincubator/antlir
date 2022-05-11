@@ -8,6 +8,17 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # @oss-disable: facebook = True 
 # @oss-enable facebook = False
 
+generators = [
+    "generators/hostname.star",
+    "generators/machine-id.star",
+    "generators/root-password.star",
+    "generators/systemd-networkd.star",
+] + ([
+    "generators/facebook/fbwhoami.star",
+    "generators/facebook/opus.star",
+    "generators/facebook/smc_tiers.star",
+] if facebook else [])
+
 thrift_library(
     name = "api",
     go_thrift_namespaces = {
@@ -71,7 +82,7 @@ thrift_library(
 
 buck_filegroup(
     name = "all_starklark_files",
-    srcs = glob(["**/*.star"]),
+    srcs = generators,
 )
 
 feature.new(
@@ -83,7 +94,7 @@ feature.new(
             src,
             "/usr/lib/metalos/generators/{}".format(paths.basename(src)),
         )
-        for src in glob(["generators/*.star"])
+        for src in generators
     ],
     visibility = ["//metalos/..."],
 )
