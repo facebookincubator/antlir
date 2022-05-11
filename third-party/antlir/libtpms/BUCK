@@ -19,6 +19,7 @@ BASE_FEATURES = [
         "tpm-tools",
         "expect",
         "socat",
+        "openssl-devel",
         # static deps
         "glibc-static",
         "glib2-static",
@@ -29,9 +30,6 @@ BASE_FEATURES = [
 third_party.native_build(
     name = "libtpms",
     base_features = BASE_FEATURES,
-    deps = [
-        third_party.library("openssl"),
-    ],
     script = third_party.script(
         prepare = """
 export MAKEFLAGS=-j
@@ -44,7 +42,7 @@ export PKG_CONFIG_PATH="${STAGE}/lib/pkgconfig"
 # later on due to static linkage
 sed -i 's/char state_directory/static char state_directory/' ./src/tpm12/tpm_nvfile.c
 
-./autogen.sh --with-openssl --prefix="${STAGE}" --with-tpm2 --disable-shared
+./autogen.sh --prefix="${STAGE}" --with-openssl --with-tpm2 --disable-shared
         """,
         build = "make",
         install = "make install",
