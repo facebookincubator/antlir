@@ -5,8 +5,20 @@
 # LICENSE file in the root directory of this source tree.
 
 import subprocess
+from typing import Set
 
 from antlir.fs_utils import Path
+
+
+def get_rpms() -> Set[str]:
+    return {
+        rpm
+        for rpm in subprocess.check_output(
+            ["rpm", "-qa", "--queryformat", "%{NAME}\n"],
+            text=True,
+        ).split("\n")
+        if rpm
+    }
 
 
 def check_rpm_names(test_case, package, resource: str) -> None:
@@ -20,12 +32,5 @@ def check_rpm_names(test_case, package, resource: str) -> None:
         }
     test_case.assertEqual(
         expected,
-        {
-            rpm
-            for rpm in subprocess.check_output(
-                ["rpm", "-qa", "--queryformat", "%{NAME}\n"],
-                text=True,
-            ).split("\n")
-            if rpm
-        },
+        get_rpms(),
     )
