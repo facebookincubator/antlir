@@ -28,8 +28,8 @@ from .fs_utils import Path, temp_dir
 
 
 log = get_logger()
-KiB = 2 ** 10
-MiB = 2 ** 20
+KiB = 2**10
+MiB = 2**20
 
 
 # Exposed as a helper so that test_compiler.py can mock it.

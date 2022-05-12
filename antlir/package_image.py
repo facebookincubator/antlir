@@ -31,8 +31,8 @@ from .subvol_utils import Subvol
 from .unshare import Unshare, Namespace
 
 log = get_logger()
-KiB = 2 ** 10
-MiB = 2 ** 20
+KiB = 2**10
+MiB = 2**20
 
 
 class _Opts(NamedTuple):

@@ -239,7 +239,7 @@ from antlir.subvol_utils import Subvol
 from antlir.unshare import Unshare, Namespace
 
 log = get_logger()
-MiB = 2 ** 20
+MiB = 2**20
 
 
 class _FoundSubvolOpts(NamedTuple):

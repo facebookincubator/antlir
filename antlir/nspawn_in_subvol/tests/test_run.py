@@ -655,9 +655,9 @@ class NspawnTestCase(NspawnTestBase):
         # the fedora appliance image it is 65543:65543
         self.assertRegex(
             ret.stdout.decode(),
-            fr"uid={_NOBODY_USER.pw_uid}(\(nobody\))? "
-            fr"gid={_NOBODY_USER.pw_gid}(\(nobody\))? "
-            fr"groups={_NOBODY_USER.pw_gid}(\(nobody\))?\n",
+            rf"uid={_NOBODY_USER.pw_uid}(\(nobody\))? "
+            rf"gid={_NOBODY_USER.pw_gid}(\(nobody\))? "
+            rf"groups={_NOBODY_USER.pw_gid}(\(nobody\))?\n",
         )
         self.assertEqual(b"", ret.stderr)
 

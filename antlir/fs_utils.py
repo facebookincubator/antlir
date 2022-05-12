@@ -397,7 +397,7 @@ class Path(bytes):
                         # not be backed by a real FD.
                         while True:
                             # Read 512KiB chunks to mask the syscall cost
-                            chunk = rsrc_in.read(2 ** 19)
+                            chunk = rsrc_in.read(2**19)
                             if not chunk:
                                 break
                             rsrc_out.write(chunk)

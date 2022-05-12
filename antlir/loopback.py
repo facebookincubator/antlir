@@ -19,8 +19,8 @@ from .fs_utils import Path, temp_dir
 from .unshare import Unshare, nsenter_as_root, nsenter_as_user
 
 log = get_logger()
-KiB = 2 ** 10
-MiB = 2 ** 20
+KiB = 2**10
+MiB = 2**20
 
 # Otherwise, `mkfs.btrfs` fails with:
 #   ERROR: minimum size for each btrfs device is 114294784

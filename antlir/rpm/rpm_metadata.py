@@ -145,9 +145,9 @@ def compare_rpm_versions(a: RpmMetadata, b: RpmMetadata) -> int:
         return _compare_values(a.release, b.release)
 
 
-R_NON_ALPHA_NUM_TILDE_CARET = re.compile(br"^([^a-zA-Z0-9~\^]*)(.*)$")
-R_NUM = re.compile(br"^([\d]+)(.*)$")
-R_ALPHA = re.compile(br"^([a-zA-Z]+)(.*)$")
+R_NON_ALPHA_NUM_TILDE_CARET = re.compile(rb"^([^a-zA-Z0-9~\^]*)(.*)$")
+R_NUM = re.compile(rb"^([\d]+)(.*)$")
+R_ALPHA = re.compile(rb"^([a-zA-Z]+)(.*)$")
 
 
 def _compare_values(left: str, right: str) -> int:

@@ -37,14 +37,14 @@ def _parse_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
 class ParseBtrfsDumpTestCase(AntlirTestCase):
     def test_unquote(self) -> None:
         self.assertEqual(
-            (b"\a\b\x1b\f\n\r\t\v " br"\XYZ\F\0\O\P"),
+            (b"\a\b\x1b\f\n\r\t\v " rb"\XYZ\F\0\O\P"),
             unquote_btrfs_progs_path(
                 # Special escapes
-                br"\a\b\e\f\n\r\t\v\ \\"
+                rb"\a\b\e\f\n\r\t\v\ \\"
                 # Octal escapes
                 + "".join(f"\\{ord(c):o}" for c in "XYZ").encode("ascii")
                 # Unrecognized escapes will be left alone
-                + br"\F\0\O\P"
+                + rb"\F\0\O\P"
             ),
         )
 

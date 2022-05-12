@@ -75,7 +75,7 @@ def main(argv):
         metavar=("START_SEC", "START_NSEC", "END_SEC", "END_NSEC"),
         type=int,
         nargs=4,
-        default=(0, 0, 2 ** 64, 10 ** 9),
+        default=(0, 0, 2**64, 10**9),
         help="By default, we will hide all file timestamps. Pass four -1s "
         "to show all timestamps. Or pass a range specified as 2 pairs "
         "of second + nanosecond integers. This is intended to hide "

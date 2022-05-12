@@ -37,7 +37,7 @@ class OsReleaseTest(unittest.TestCase):
         # Validate the Pretty Name has the names + a valid vcs rev
         self.assertTrue(
             re.match(
-                fr"AntlirTest\ Test\ \({rev_id_regex}\)",
+                rf"AntlirTest\ Test\ \({rev_id_regex}\)",
                 os_release["PRETTY_NAME"],
             )
         )

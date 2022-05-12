@@ -41,7 +41,7 @@ class TestImpl:
                 check_ret_fn=functools.partial(
                     self._check_yum_dnf_ret,
                     "carrot 1 lockme\n",
-                    br"Installing\s+: rpm-test-carrot-1-lockme.x86_64",
+                    rb"Installing\s+: rpm-test-carrot-1-lockme.x86_64",
                 ),
                 build_appliance_pair=build_appliance_pair,
             )

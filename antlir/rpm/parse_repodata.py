@@ -94,7 +94,7 @@ class SQLiteRpmParser(AbstractContextManager):
                 # Don't use arbitrary amounts of RAM for decompression.
                 # Bigger is better, within reason.  See the note on `zlib`
                 # incremental complexity in `XMLRpmParser.feed`.
-                self._unpacker.decompress(chunk, max_length=2 ** 23)
+                self._unpacker.decompress(chunk, max_length=2**23)
             )
             needs_input, chunk = self._unpacker_needs_input_and_next_chunk()
             if needs_input or self._unpacker.eof:
@@ -211,7 +211,7 @@ class XMLRpmParser(AbstractContextManager):
             # add an extra layer of input chunking to mitigate this, but in
             # practice it seems ok to just limit the incoming chunk size.
             self.xml_parser.feed(
-                self.decompressor.decompress(chunk, max_length=2 ** 14)
+                self.decompressor.decompress(chunk, max_length=2**14)
             )
             chunk = self.decompressor.unconsumed_tail
             for _, elt in self.xml_parser.read_events():

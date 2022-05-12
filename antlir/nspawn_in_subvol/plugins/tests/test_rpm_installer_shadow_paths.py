@@ -29,7 +29,7 @@ class TestImpl:
             check_ret_fn=functools.partial(
                 self._check_yum_dnf_ret,
                 "mice 0.1 a\n",
-                br"Installing\s+: rpm-test-mice-0.1-a.x86_64",
+                rb"Installing\s+: rpm-test-mice-0.1-a.x86_64",
             ),
             run_prog_as_is=True,
         )
@@ -52,7 +52,7 @@ class TestImpl:
             check_ret_fn=functools.partial(
                 self._check_yum_dnf_ret,
                 "cheese 0 0\n",
-                br"Installing\s+: rpm-test-cheese-0-0.x86_64",
+                rb"Installing\s+: rpm-test-cheese-0-0.x86_64",
             ),
             # Enable default shadowing, and handle `prog` being be a
             # filename, or a in-container absolute path.
@@ -104,7 +104,7 @@ class TestImpl:
         with dest_subvol.maybe_create_externally():
             self._check_yum_dnf_ret(
                 "i will shadow\n",
-                br"Installing\s+: rpm-test-carrot-2-rc0.x86_64",
+                rb"Installing\s+: rpm-test-carrot-2-rc0.x86_64",
                 self._yum_or_dnf_install(
                     self._PROG,
                     "rpm-test-carrot",

@@ -36,7 +36,7 @@ from antlir.rpm.repo_snapshot import ReportableError
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
-REPODATA_MAX_RETRY_S = [2 ** i for i in range(10)]  # 1024sec == 17m4s
+REPODATA_MAX_RETRY_S = [2**i for i in range(10)]  # 1024sec == 17m4s
 log = get_logger()
 
 
