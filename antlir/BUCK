@@ -775,6 +775,7 @@ python_library(
     srcs = [
         "render_template.py",
     ],
+    visibility = ["PUBLIC"],
     deps = [
         third_party.library(
             "jinja2",
@@ -789,6 +790,7 @@ python_binary(
         "compile_template.py",
     ],
     main_module = "antlir.compile_template",
+    visibility = ["PUBLIC"],
     deps = [
         third_party.library(
             "jinja2",
