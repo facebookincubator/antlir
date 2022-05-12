@@ -27,5 +27,5 @@ sys.stdout.buffer.write(
     + b64(os.getpid())
     + b"."
     # For good measure, add 4 B64 bytes of randomness.
-    + b64(random.randrange(2 ** 24))
+    + b64(random.randrange(2**24))
 )

@@ -30,7 +30,7 @@ class InodeOwner(NamedTuple):
         return f"{self.uid}:{self.gid}"
 
 
-MSEC_TO_NSEC = 10 ** 6
+MSEC_TO_NSEC = 10**6
 SEC_TO_NSEC = 1000 * MSEC_TO_NSEC
 MIN_TO_SEC = 60
 HOUR_TO_SEC = 60 * MIN_TO_SEC

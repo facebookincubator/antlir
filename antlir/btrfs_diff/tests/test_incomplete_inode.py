@@ -60,7 +60,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
         ino.apply_item(SSI.chown(path=b"a", uid=10, gid=20))
         self.assertEqual(InodeOwner(uid=10, gid=20), ino.owner)
 
-        t = 10 ** 8  # tenth of a second in nanoseconds
+        t = 10**8  # tenth of a second in nanoseconds
         ino.apply_item(
             SSI.utimes(
                 path=b"a", ctime=(1, 9 * t), mtime=(2, 8 * t), atime=(1, 7 * t)

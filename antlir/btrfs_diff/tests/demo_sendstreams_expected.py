@@ -213,7 +213,7 @@ def get_filtered_and_expected_items(
                 di.mkfile(path=temp_path("create_ops")), b"hello_big_hole"
             ),
             write("hello_big_hole", offset=0, data=b"hello\n" + b"\0" * 4090),
-            di.truncate(path=p("hello_big_hole"), size=2 ** 30),
+            di.truncate(path=p("hello_big_hole"), size=2**30),
             *base_metadata("hello_big_hole", mode=0o644),
             *and_rename(
                 di.mkfile(path=temp_path("create_ops")), b"selinux_xattrs"

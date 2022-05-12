@@ -15,7 +15,7 @@ from antlir.rpm.common import read_chunks
 from .storage import Storage
 
 
-_CHUNK_SIZE = 2 ** 20  # Not too important, anything large enough is fine.
+_CHUNK_SIZE = 2**20  # Not too important, anything large enough is fine.
 
 
 def put(args) -> None:

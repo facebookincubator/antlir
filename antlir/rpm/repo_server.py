@@ -48,7 +48,7 @@ from .storage import Storage
 log = get_logger()
 
 # How big are our reads against Storage? Exposed for the unit test.
-_CHUNK_SIZE = 2 ** 21
+_CHUNK_SIZE = 2**21
 
 
 # Future: we could query the RPM table lazily, which would save ~1 second of

@@ -50,7 +50,7 @@ def add_sendstream_to_subvol_set(subvols: SubvolumeSet, sendstream: bytes):
 def prepare_subvol_set_for_render(
     subvols: SubvolumeSet,
     build_start_time: Tuple[int, int] = (0, 0),
-    build_end_time: Tuple[int, int] = (2 ** 64 - 1, 2 ** 32 - 1),
+    build_end_time: Tuple[int, int] = (2**64 - 1, 2**32 - 1),
 ):
     # Check that our sendstreams completely specified the subvolumes.
     for ino in btrfs_diff_freeze(subvols).inodes():

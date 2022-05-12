@@ -41,7 +41,7 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 from urllib3.exceptions import ProtocolError  # import a name in case it changes
 
 
-RPM_MAX_RETRY_S = [2 ** i for i in range(9)]  # 512 sec ==  8m32s
+RPM_MAX_RETRY_S = [2**i for i in range(9)]  # 512 sec ==  8m32s
 log = get_logger()
 
 
@@ -368,7 +368,7 @@ def gen_rpms_from_repodatas(
                 universe=res.repo_universe,
                 repo_name=res.repo.name,
                 repo_num_rpms=num_rpms,
-                repo_downloaded_gb=total_dl / 10 ** 9,
-                repo_weight_gb=repo_weight_bytes / 10 ** 9,
+                repo_downloaded_gb=total_dl / 10**9,
+                repo_weight_gb=repo_weight_bytes / 10**9,
                 error=traceback.format_exc() if any(sys.exc_info()) else None,
             )

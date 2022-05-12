@@ -78,7 +78,7 @@ class TestImpl:
                 check_ret_fn=functools.partial(
                     self._check_yum_dnf_ret,
                     "mice 0.1 a\n",
-                    br"Installing\s+: rpm-test-mice-0.1-a.x86_64",
+                    rb"Installing\s+: rpm-test-mice-0.1-a.x86_64",
                 ),
                 # The other case turns off binary shadowing, and runs
                 # unwrapped `yum` or `dnf`, which would break caching.

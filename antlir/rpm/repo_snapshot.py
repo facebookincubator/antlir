@@ -173,7 +173,7 @@ class RepoSnapshot(NamedTuple):
             )
         )
 
-    _STORAGE_CHUNK_SIZE = 2 ** 20  # Anything that's not too small is OK.
+    _STORAGE_CHUNK_SIZE = 2**20  # Anything that's not too small is OK.
     _STORAGE_ID_FILE = "snapshot.storage_id"
 
     @classmethod

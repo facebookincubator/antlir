@@ -35,7 +35,7 @@ class InodeTestCase(AntlirTestCase):
         return Inode(
             file_type=file_type,
             owner=InodeOwner(uid=3, gid=5),
-            utimes=InodeUtimes(ctime=(2, 1), mtime=(7, 1), atime=(9, 10 ** 6)),
+            utimes=InodeUtimes(ctime=(2, 1), mtime=(7, 1), atime=(9, 10**6)),
             **kwargs,
         )
 

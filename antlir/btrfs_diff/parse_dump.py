@@ -68,15 +68,15 @@ from .send_stream import SendStreamItem, SendStreamItems
 
 _ESCAPED_TO_UNESCAPED = OrderedDict(
     [
-        (br"\a", b"\a"),
-        (br"\b", b"\b"),
-        (br"\e", b"\x1b"),
-        (br"\f", b"\f"),
-        (br"\n", b"\n"),
-        (br"\r", b"\r"),
-        (br"\t", b"\t"),
-        (br"\v", b"\v"),
-        (br"\ ", b" "),
+        (rb"\a", b"\a"),
+        (rb"\b", b"\b"),
+        (rb"\e", b"\x1b"),
+        (rb"\f", b"\f"),
+        (rb"\n", b"\n"),
+        (rb"\r", b"\r"),
+        (rb"\t", b"\t"),
+        (rb"\v", b"\v"),
+        (rb"\ ", b" "),
         (b"\\\\", b"\\"),
         *[(f"\\{i:03o}".encode("ascii"), bytes([i])) for i in range(256)],
         # For now: leave alone any backslashes not involved in a known path
@@ -165,16 +165,16 @@ class SendStreamItemParsers:
 
     class subvol(RegexItemParser):
         regex = re.compile(
-            br"uuid=(?P<uuid>[-0-9a-f]+) " br"transid=(?P<transid>[0-9]+)"
+            rb"uuid=(?P<uuid>[-0-9a-f]+) " rb"transid=(?P<transid>[0-9]+)"
         )
         conv_transid = staticmethod(int)
 
     class snapshot(RegexItemParser):
         regex = re.compile(
-            br"uuid=(?P<uuid>[-0-9a-f]+) "
-            br"transid=(?P<transid>[0-9]+) "
-            br"parent_uuid=(?P<parent_uuid>[-0-9a-f]+) "
-            br"parent_transid=(?P<parent_transid>[0-9]+)"
+            rb"uuid=(?P<uuid>[-0-9a-f]+) "
+            rb"transid=(?P<transid>[0-9]+) "
+            rb"parent_uuid=(?P<parent_uuid>[-0-9a-f]+) "
+            rb"parent_transid=(?P<parent_transid>[0-9]+)"
         )
         conv_transid = staticmethod(int)
         conv_parent_transid = staticmethod(int)
@@ -186,7 +186,7 @@ class SendStreamItemParsers:
         pass
 
     class mknod(RegexItemParser):
-        regex = re.compile(br"mode=(?P<mode>[0-7]+) dev=0x(?P<dev>[0-9a-f]+)")
+        regex = re.compile(rb"mode=(?P<mode>[0-7]+) dev=0x(?P<dev>[0-9a-f]+)")
         conv_mode = staticmethod(_from_octal)
 
         @staticmethod
@@ -204,16 +204,16 @@ class SendStreamItemParsers:
         # arbitrary string with no filesystem signficance, so we do not
         # process it at all.  Unfortunately, `dest` is not quoted in
         # `send-dump.c`.
-        regex = re.compile(br"dest=(?P<dest>.*)")
+        regex = re.compile(rb"dest=(?P<dest>.*)")
 
     class rename(RegexItemParser):
         # This path is not quoted in `send-dump.c`
-        regex = re.compile(br"dest=(?P<dest>.*)")
+        regex = re.compile(rb"dest=(?P<dest>.*)")
         context_conv_dest = _normalize_subvolume_path
 
     class link(RegexItemParser):
         # This path is not quoted in `send-dump.c`
-        regex = re.compile(br"dest=(?P<dest>.*)")
+        regex = re.compile(rb"dest=(?P<dest>.*)")
 
         # `btrfs receive` is inconsistent -- unlike other paths, its `dest`
         # does not start with the subvolume path.
@@ -231,11 +231,11 @@ class SendStreamItemParsers:
         # The path `from` is not quoted in `send-dump.c`, but a greedy
         # regex can still parse this fixed format correctly.
         regex = re.compile(
-            br"offset=(?P<offset>[0-9]+) "
-            br"len=(?P<len>[0-9]+) "
-            br"from=(?P<from_path>.+) "  # the field is `from_path`, not `from`
-            br"clone_offset=(?P<clone_offset>[0-9]+)"
-            br"(?P<from_uuid>)(?P<from_transid>)"
+            rb"offset=(?P<offset>[0-9]+) "
+            rb"len=(?P<len>[0-9]+) "
+            rb"from=(?P<from_path>.+) "  # the field is `from_path`, not `from`
+            rb"clone_offset=(?P<clone_offset>[0-9]+)"
+            rb"(?P<from_uuid>)(?P<from_transid>)"
         )
         conv_offset = staticmethod(int)
         conv_len = staticmethod(int)
@@ -249,8 +249,8 @@ class SendStreamItemParsers:
         # This cannot be parsed unambiguously with a single regex because
         # both `name` and `data` can contain arbitrary bytes, and neither is
         # quoted.
-        first_regex = re.compile(br"(.*) len=([0-9]+)")
-        second_regex = re.compile(br"name=(.*) data=")
+        first_regex = re.compile(rb"(.*) len=([0-9]+)")
+        second_regex = re.compile(rb"name=(.*) data=")
 
         @classmethod
         def parse_details(
@@ -293,26 +293,26 @@ class SendStreamItemParsers:
 
     class remove_xattr(RegexItemParser):
         # This name is not quoted in `send-dump.c`
-        regex = re.compile(br"name=(?P<name>.*)")
+        regex = re.compile(rb"name=(?P<name>.*)")
 
     class truncate(RegexItemParser):
-        regex = re.compile(br"size=(?P<size>[0-9]+)")
+        regex = re.compile(rb"size=(?P<size>[0-9]+)")
         conv_size = staticmethod(int)
 
     class chmod(RegexItemParser):
-        regex = re.compile(br"mode=(?P<mode>[0-7]+)")
+        regex = re.compile(rb"mode=(?P<mode>[0-7]+)")
         conv_mode = staticmethod(_from_octal)
 
     class chown(RegexItemParser):
-        regex = re.compile(br"gid=(?P<gid>[0-9]+) uid=(?P<uid>[0-9]+)")
+        regex = re.compile(rb"gid=(?P<gid>[0-9]+) uid=(?P<uid>[0-9]+)")
         conv_gid = staticmethod(int)
         conv_uid = staticmethod(int)
 
     class utimes(RegexItemParser):
         regex = re.compile(
-            br"atime=(?P<atime>[^ ]+) "
-            br"mtime=(?P<mtime>[^ ]+) "
-            br"ctime=(?P<ctime>[^ ]+)"
+            rb"atime=(?P<atime>[^ ]+) "
+            rb"mtime=(?P<mtime>[^ ]+) "
+            rb"ctime=(?P<ctime>[^ ]+)"
         )
 
         @classmethod
@@ -331,7 +331,7 @@ class SendStreamItemParsers:
 
     # This is used instead of `write` when `btrfs send --no-data` is used.
     class update_extent(RegexItemParser):
-        regex = re.compile(br"offset=(?P<offset>[0-9]+) len=(?P<len>[0-9]+)")
+        regex = re.compile(rb"offset=(?P<offset>[0-9]+) len=(?P<len>[0-9]+)")
         conv_offset = staticmethod(int)
         conv_len = staticmethod(int)
 
@@ -355,7 +355,7 @@ def parse_btrfs_dump(
     binary_infile: BinaryIO,
     fix_fields: Optional[Dict[bytes, Dict[str, bytes]]] = None,
 ) -> Iterable[SendStreamItem]:
-    reg = re.compile(br"([^ ]+) +((\\ |[^ ])+) *(.*)\n")
+    reg = re.compile(rb"([^ ]+) +((\\ |[^ ])+) *(.*)\n")
     subvol_name = None
     for l in binary_infile:
         m = reg.fullmatch(l)

@@ -24,7 +24,7 @@ class RepoSizerTestCase(unittest.TestCase):
 
     def _set_expected_unions(self, *expected_unions) -> None:
         for union in expected_unions:
-            size = randint(10 ** 3, 10 ** 6)
+            size = randint(10**3, 10**6)
             self.final_size += size
             for chk in union:
                 self.sizes[chk] = size

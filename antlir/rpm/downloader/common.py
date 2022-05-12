@@ -44,8 +44,8 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 # avoid small-buffer overheads, but not too large, since we use `zlib` for
 # incremental decompression in `parse_repodata.py`, and its API has a
 # complexity bug that makes it slow for large INPUT_CHUNK/OUTPUT_CHUNK.
-BUFFER_BYTES = 2 ** 19
-DB_MAX_RETRY_S = [2 ** i for i in range(8)]  # 255 sec == 4m15s
+BUFFER_BYTES = 2**19
+DB_MAX_RETRY_S = [2**i for i in range(8)]  # 255 sec == 4m15s
 log = get_logger()
 
 
