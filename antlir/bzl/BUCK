@@ -84,8 +84,8 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "image_utils",
-    srcs = ["image_utils.bzl"],
+    name = "bash",
+    srcs = ["bash.bzl"],
 )
 
 fake_macro_library(
@@ -143,6 +143,7 @@ fake_macro_library(
     name = "image_bzl",
     srcs = ["image.bzl"],
     deps = [
+        ":bash",
         ":compile_image_features",
         ":constants",
         ":image_cpp_unittest",
@@ -157,7 +158,6 @@ fake_macro_library(
         ":image_rust_unittest",
         ":image_source",
         ":image_test_rpm_names",
-        ":image_utils",
         "//antlir/bzl/image/feature:install",
         "//antlir/bzl/image/feature:remove",
         "//antlir/bzl/image/feature:symlink",
@@ -173,10 +173,10 @@ fake_macro_library(
     name = "image_genrule_layer",
     srcs = ["image_genrule_layer.bzl"],
     deps = [
+        ":bash",
         ":compile_image_features",
         ":container_opts",
         ":image_layer_utils",
-        ":image_utils",
         ":shape",
         ":structs",
         ":target_tagger",
@@ -192,9 +192,9 @@ fake_macro_library(
     name = "image_layer",
     srcs = ["image_layer.bzl"],
     deps = [
+        ":bash",
         ":compile_image_features",
         ":image_layer_utils",
-        ":image_utils",
     ],
 )
 
@@ -210,10 +210,10 @@ fake_macro_library(
     name = "image_layer_from_package",
     srcs = ["image_layer_from_package.bzl"],
     deps = [
+        ":bash",
         ":compile_image_features",
         ":constants",
         ":image_layer_utils",
-        ":image_utils",
         ":target_tagger",
     ],
 )
@@ -236,17 +236,17 @@ fake_macro_library(
 fake_macro_library(
     name = "image_gpt",
     srcs = ["image_gpt.bzl"],
-    deps = [":image_utils"],
+    deps = [":bash"],
 )
 
 fake_macro_library(
     name = "image_unittest_helpers",
     srcs = ["image_unittest_helpers.bzl"],
     deps = [
+        ":bash",
         ":constants",
         ":container_opts",
         ":image_layer",
-        ":image_utils",
         ":snapshot_install_dir",
         ":structs",
         "//antlir/bzl/image/feature:install",

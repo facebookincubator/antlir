@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
-load(":oss_shim.bzl", "target_utils")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
-def _wrap_bash_build_in_common_boilerplate(
+def wrap_bash_build_in_common_boilerplate(
         self_dependency,
         bash,
         rule_type,
@@ -104,19 +103,3 @@ def _wrap_bash_build_in_common_boilerplate(
         self_dependency = self_dependency,
         volume_for_repo = antlir_dep(":volume-for-repo"),
     )
-
-def _current_target(target_name):
-    return normalize_target(
-        target_utils.to_label(
-            "",
-            # @lint-ignore BUCKLINT
-            native.package_name(),
-            target_name,
-        ),
-    )
-
-image_utils = struct(
-    current_target = _current_target,
-    wrap_bash_build_in_common_boilerplate =
-        _wrap_bash_build_in_common_boilerplate,
-)

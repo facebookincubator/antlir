@@ -91,7 +91,7 @@ The consequences of this information hiding are:
 
 load(":compile_image_features.bzl", "compile_image_features")
 load(":image_layer_utils.bzl", "image_layer_utils")
-load(":image_utils.bzl", "image_utils")
+load(":target_helpers.bzl", "normalize_target")
 
 def image_layer(
         name,
@@ -129,7 +129,7 @@ def image_layer(
         # Build a new layer. It may be empty.
         _make_subvol_cmd = compile_image_features(
             name = name,
-            current_target = image_utils.current_target(name),
+            current_target = normalize_target(":" + name),
             parent_layer = parent_layer,
             features = features,
             flavor = flavor,

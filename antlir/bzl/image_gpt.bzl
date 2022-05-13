@@ -6,9 +6,9 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
+load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":gpt.shape.bzl", "gpt_partition_t", "gpt_t")
-load(":image_utils.bzl", "image_utils")
 
 def image_gpt_partition(package, is_esp = False, is_bios_boot = False, name = None):
     return shape.new(
@@ -31,7 +31,7 @@ def image_gpt(
     gpt = shape.new(gpt_t, name = name, table = table, disk_guid = disk_guid)
     buck_genrule(
         name = name,
-        bash = image_utils.wrap_bash_build_in_common_boilerplate(
+        bash = wrap_bash_build_in_common_boilerplate(
             self_dependency = "//antlir/bzl:image_gpt",
             bash = '''
             $(exe //antlir:gpt) \

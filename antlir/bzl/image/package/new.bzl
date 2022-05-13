@@ -9,7 +9,7 @@ files, as described by the specified `format`.
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:image_utils.bzl", "image_utils")
+load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:query.bzl", "layer_deps_query")
@@ -50,7 +50,7 @@ def package_new(
         type = _IMAGE_PACKAGE,  # For queries
         # This is very temporary to work around an FB-internal issue.
         cacheable = False,
-        bash = image_utils.wrap_bash_build_in_common_boilerplate(
+        bash = wrap_bash_build_in_common_boilerplate(
             self_dependency = antlir_dep("bzl/image/package:new"),
             # We don't need to hold any subvolume lock because we trust
             # that (a) Buck will keep our input JSON alive, and (b) the

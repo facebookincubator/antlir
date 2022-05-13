@@ -4,10 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_command_alias")
 load(":query.bzl", "layer_deps_query")
-load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
+load(":target_helpers.bzl", "antlir_dep", "normalize_target", "targets_and_outputs_arg_list")
 
 def container_target_name(name):
     return name + "=container"
@@ -30,9 +29,7 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
             "$(location {})".format(shell.quote(":" + name)),
         ] + (extra_args or []) + targets_and_outputs_arg_list(
             name = target,
-            query = layer_deps_query(
-                layer = image_utils.current_target(name),
-            ),
+            query = layer_deps_query(layer = normalize_target(":" + name)),
         ),
         antlir_rule = "user-internal",
     )

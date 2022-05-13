@@ -8,12 +8,11 @@ load("//antlir/bzl/image/feature:install.bzl", "feature_install_buck_runnable")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_runtime.bzl", "container_target_name", "systemd_target_name")
-load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":query.bzl", "layer_deps_query")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
-load(":target_helpers.bzl", "targets_and_outputs_arg_list")
+load(":target_helpers.bzl", "normalize_target", "targets_and_outputs_arg_list")
 
 def _hidden_test_name(name, test_type = None):
     # This is the test binary that is supposed to run inside the image.
@@ -224,7 +223,7 @@ mv $TMP/out "$OUT"
             targets_and_outputs = targets_and_outputs_arg_list(
                 name = name,
                 query = layer_deps_query(
-                    layer = image_utils.current_target(test_layer),
+                    layer = normalize_target(":" + test_layer),
                 ),
             ),
             test_type_repr = repr(test_type),

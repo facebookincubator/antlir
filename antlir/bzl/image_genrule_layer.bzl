@@ -9,9 +9,8 @@ load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":genrule_layer.shape.bzl", "genrule_layer_t")
 load(":image_layer_utils.bzl", "image_layer_utils")
-load(":image_utils.bzl", "image_utils")
 load(":shape.bzl", "shape")
-load(":target_helpers.bzl", "antlir_dep")
+load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
 def image_genrule_layer(
@@ -83,7 +82,7 @@ Optional arguments:
         # Build a new layer. It may be empty.
         _make_subvol_cmd = compile_image_features(
             name = name,
-            current_target = image_utils.current_target(name),
+            current_target = normalize_target(":" + name),
             parent_layer = parent_layer,
             features = [target_tagger_to_feature(
                 target_tagger,
