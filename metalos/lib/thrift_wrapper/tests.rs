@@ -44,6 +44,7 @@ struct UnionB {
 #[thrift(test_if::MyUnion)]
 enum MyUnion {
     A(UnionA),
+    #[thrift_field_name("nEw")]
     B(UnionB),
 }
 
@@ -144,7 +145,7 @@ fn thrift_union() -> Result<()> {
     );
     assert_eq!(
         MyUnion::B(UnionB { bar: 2 }),
-        test_if::MyUnion::b(test_if::UnionB { bar: 2 }).try_into()?
+        test_if::MyUnion::nEw(test_if::UnionB { bar: 2 }).try_into()?
     );
     match MyUnion::try_from(test_if::MyUnion::UnknownField(42)) {
         Ok(_) => panic!("should have failed"),
@@ -158,7 +159,7 @@ fn thrift_union() -> Result<()> {
         MyUnion::A(UnionA { foo: "bar".into() }).into(),
     );
     assert_eq!(
-        test_if::MyUnion::b(test_if::UnionB { bar: 2 }),
+        test_if::MyUnion::nEw(test_if::UnionB { bar: 2 }),
         MyUnion::B(UnionB { bar: 2 }).into(),
     );
     Ok(())
