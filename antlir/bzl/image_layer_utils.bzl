@@ -5,10 +5,10 @@
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load(":image_layer_runtime.bzl", "add_runtime_targets")
-load(":image_utils.bzl", "image_utils")
 load(":oss_shim.bzl", "buck_genrule", "config", "is_buck2")
-load(":target_helpers.bzl", "antlir_dep")
+load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
 def _image_layer_impl(
         _rule_type,
@@ -67,7 +67,7 @@ def _image_layer_impl(
     # IMPORTANT: If you touch this genrule, update `image_layer_alias`.
     buck_genrule(
         name = _layer_name,
-        bash = image_utils.wrap_bash_build_in_common_boilerplate(
+        bash = wrap_bash_build_in_common_boilerplate(
             self_dependency = antlir_dep("bzl:image_layer"),
             bash = '''
             # We want subvolume names to be user-controllable. To permit
@@ -129,7 +129,7 @@ def _image_layer_impl(
                     _layer_name.replace("/", "=="),
                 ),
                 layer_target_quoted = shell.quote(
-                    image_utils.current_target(_layer_name),
+                    normalize_target(":" + _layer_name),
                 ),
                 # The `buck-out` path is configurable in buck and we should not
                 # hard code it. Unfortunately there is no good way to discover

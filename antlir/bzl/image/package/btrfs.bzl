@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:image_utils.bzl", "image_utils")
+load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -77,7 +77,7 @@ def _new_btrfs(
         name = name,
         out = "image.btrfs",
         type = _rule_type,
-        bash = image_utils.wrap_bash_build_in_common_boilerplate(
+        bash = wrap_bash_build_in_common_boilerplate(
             self_dependency = antlir_dep("bzl/image/package:btrfs"),
             bash = '''
             $(exe {package_btrfs}) \

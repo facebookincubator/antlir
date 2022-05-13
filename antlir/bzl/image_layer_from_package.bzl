@@ -5,7 +5,7 @@
 
 load(":compile_image_features.bzl", "compile_image_features")
 load(":image_layer_utils.bzl", "image_layer_utils")
-load(":image_utils.bzl", "image_utils")
+load(":target_helpers.bzl", "normalize_target")
 load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
 
 # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`) for all
@@ -48,7 +48,7 @@ def image_layer_from_package(
         _layer_name = name,
         _make_subvol_cmd = compile_image_features(
             name = name,
-            current_target = image_utils.current_target(name),
+            current_target = normalize_target(":" + name),
             parent_layer = None,
             features = [target_tagger_to_feature(
                 target_tagger,
