@@ -539,8 +539,9 @@ python_library(
         "//tupperware/image/scripts/...",
     ],
     deps = [
-        "//antlir:common",
-        "//antlir:fs_utils",
+        ":common",
+        ":fs_utils",
+        ":signed_source",
     ],
 )
 
@@ -874,6 +875,27 @@ python_unittest(
     name = "test-vcs",
     srcs = ["tests/test_vcs.py"],
     deps = [":vcs-library"],
+)
+
+python_library(
+    name = "signed_source",
+    srcs = ["signed_source.py"],
+    deps = [":errors"],
+    # DO NOT ADD `visibility` here.  This unofficial reimplementation exists
+    # only for Antlir OSS.
+)
+
+python_unittest(
+    name = "test-signed-source",
+    srcs = ["tests/test_signed_source.py"],
+    needed_coverage = [(
+        100,
+        ":signed_source",
+    )],
+    deps = [
+        ":signed_source",
+        ":testlib_common",
+    ],
 )
 
 python_library(

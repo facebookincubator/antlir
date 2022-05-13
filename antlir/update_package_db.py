@@ -31,7 +31,6 @@ Pay careful attention to the description of their `OPTIONS` parameter.
 import argparse
 import asyncio
 import copy
-import hashlib
 import json
 import os
 from collections import defaultdict
@@ -51,6 +50,7 @@ from typing import (
 
 from .common import get_logger, init_logging
 from .fs_utils import Path, populate_temp_dir_and_rename
+from .signed_source import signed_source_sigil, sign_source
 
 
 _GENERATED: str = "@" + "generated"
@@ -145,21 +145,12 @@ def _with_generated_header_impl(s, token, how_to_generate) -> str:
 
 
 def _with_generated_header(contents, how_to_generate) -> str:
-    # We'll inject the MD5 of the contents of the file into the header.
-    # Lint complains if the MD5 in the header does not match the contents.
-    # This is not a security measure.  It is only intended to discourage
-    # people from manually resolving merge conflicts, which is error-prone
-    # and can break trunk if a bad merge is accidentally committed.
-    hex_hash = hashlib.md5(
+    return sign_source(
         _with_generated_header_impl(
             contents,
-            # This is the same magic value that lint uses, yay.
-            "<<SignedSource::*O*zOeWoEQle#+L!plEphiEmie@IsG>>",
+            signed_source_sigil(),
             how_to_generate,
-        ).encode()
-    ).hexdigest()
-    return _with_generated_header_impl(
-        contents, f"SignedSource<<{hex_hash}>>", how_to_generate
+        )
     )
 
 
