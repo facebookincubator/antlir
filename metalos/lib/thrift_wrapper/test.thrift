@@ -20,5 +20,5 @@ struct UnionB {
 
 union MyUnion {
   1: UnionA a;
-  2: UnionB b;
+  2: UnionB nEw;
 }

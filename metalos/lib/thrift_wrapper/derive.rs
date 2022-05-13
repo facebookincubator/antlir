@@ -9,7 +9,8 @@ use convert_case::{Case, Casing};
 use proc_macro::TokenStream;
 use quote::{format_ident, quote, ToTokens};
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DataEnum, DeriveInput, Error, Fields, Meta};
+use syn::NestedMeta::Lit;
+use syn::{parse_macro_input, Data, DataEnum, DeriveInput, Error, Fields, Meta, MetaList};
 
 fn get_fields(input: DeriveInput) -> syn::Result<syn::FieldsNamed> {
     let span = input.span();
@@ -31,15 +32,12 @@ fn expand_thriftwrapper_struct(
     fields: syn::FieldsNamed,
 ) -> proc_macro2::TokenStream {
     let mut field_idents = vec![];
-    for f in &fields.named {
-        let id = f.ident.as_ref().expect("fields are named");
-        field_idents.push(id);
-    }
     let mut fields_from_thrift = vec![];
     let mut fields_into_thrift = vec![];
     for f in &fields.named {
         let ty = &f.ty;
         let id = f.ident.as_ref().expect("fields are named");
+        field_idents.push(id);
         fields_from_thrift.push(quote! {
             #id: <#ty as ::thrift_wrapper::ThriftWrapper>::from_thrift(#id).in_field(stringify!(#id))?,
         });
@@ -71,11 +69,50 @@ fn expand_thriftwrapper_struct(
     }
 }
 
+fn get_meta_str(meta: MetaList) -> syn::Result<String> {
+    if meta.nested.len() != 1 {
+        return Err(Error::new(
+            meta.span(),
+            "thrift_field_name must have only one value",
+        ));
+    }
+
+    let meta_field_opt = meta.nested.first();
+    match meta_field_opt {
+        Some(meta_field) => match meta_field {
+            Lit(syn::Lit::Str(litstr)) => Ok(litstr.value()),
+            _ => Err(Error::new(
+                meta_field.span(),
+                "thrift_field_name must be a string",
+            )),
+        },
+        None => Err(Error::new(
+            meta_field_opt.span(),
+            "thrift_field_name must have a value",
+        )),
+    }
+}
+
+fn get_overriden_name(attrs: &Vec<syn::Attribute>) -> syn::Result<Option<String>> {
+    for attr in attrs {
+        if attr.path.is_ident("thrift_field_name") {
+            return match attr.parse_meta() {
+                Ok(Meta::List(meta)) => get_meta_str(meta).map(|x| Some(x)),
+                e => Err(Error::new(
+                    attr.span(),
+                    format!("thrift_field_name must have a value: {:?}", e),
+                )),
+            };
+        }
+    }
+    Ok(None)
+}
+
 fn expand_thriftwrapper_enum(
     thrift_type: syn::Type,
     name: syn::Ident,
     enm: &DataEnum,
-) -> proc_macro2::TokenStream {
+) -> syn::Result<proc_macro2::TokenStream> {
     let mut match_thrift_variant = vec![];
     let mut match_to_thrift = vec![];
     let mut is_union = false;
@@ -83,7 +120,11 @@ fn expand_thriftwrapper_enum(
         let rust_name = &var.ident;
         // with no variant, it is a thrift enum (aka, constant value)
         if var.fields.is_empty() {
-            let thrift_name = format_ident!("{}", var.ident.to_string().to_case(Case::UpperSnake));
+            let thrift_name = match get_overriden_name(&var.attrs)? {
+                Some(v) => format_ident!("{}", v),
+                None => format_ident!("{}", var.ident.to_string().to_case(Case::UpperSnake)),
+            };
+
             match_thrift_variant.push(quote! {
                 #thrift_type::#thrift_name => Ok(Self::#rust_name),
             });
@@ -94,7 +135,10 @@ fn expand_thriftwrapper_enum(
         // there's a variant so it's a union field
         else {
             is_union = true;
-            let thrift_name = format_ident!("{}", var.ident.to_string().to_case(Case::Snake));
+            let thrift_name = match get_overriden_name(&var.attrs)? {
+                Some(v) => format_ident!("{}", v),
+                None => format_ident!("{}", var.ident.to_string().to_case(Case::Snake)),
+            };
             match_thrift_variant.push(quote! {
                 #thrift_type::#thrift_name(x) => {
                     ::thrift_wrapper::ThriftWrapper::from_thrift(x)
@@ -114,7 +158,7 @@ fn expand_thriftwrapper_enum(
             #thrift_type::UnknownField(i) => Err(::thrift_wrapper::Error::Union(i)),
         },
     };
-    quote! {
+    Ok(quote! {
         impl ::thrift_wrapper::ThriftWrapper for #name {
             type Thrift = #thrift_type;
 
@@ -131,7 +175,7 @@ fn expand_thriftwrapper_enum(
                 }
             }
         }
-    }
+    })
 }
 
 fn expand_thriftwrapper_newtype_struct(
@@ -267,11 +311,7 @@ fn expand_thriftwrapper(input: DeriveInput) -> syn::Result<proc_macro2::TokenStr
                 fields,
             ))
         }
-        Data::Enum(enm) => Ok(expand_thriftwrapper_enum(
-            thrift_type.clone(),
-            name.clone(),
-            enm,
-        )),
+        Data::Enum(enm) => expand_thriftwrapper_enum(thrift_type.clone(), name.clone(), enm),
         _ => Err(Error::new(span, "only structs/enums are supported")),
     }?;
 
@@ -283,7 +323,7 @@ fn expand_thriftwrapper(input: DeriveInput) -> syn::Result<proc_macro2::TokenStr
     })
 }
 
-#[proc_macro_derive(ThriftWrapper, attributes(thrift))]
+#[proc_macro_derive(ThriftWrapper, attributes(thrift, thrift_field_name))]
 pub fn derive_thriftwrapper(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
