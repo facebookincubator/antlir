@@ -8,7 +8,7 @@ import importlib.resources
 from typing import AnyStr
 
 from antlir.cli import normalize_buck_path
-from antlir.find_built_subvol import Subvol, find_built_subvol
+from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path
 
 

@@ -222,10 +222,7 @@ from typing import Dict, NamedTuple, Optional
 
 from antlir import btrfsutil
 from antlir.bzl.image.package.btrfs import btrfs_opts_t
-from antlir.cli import (
-    init_cli,
-    normalize_buck_path,
-)
+from antlir.cli import init_cli, normalize_buck_path
 from antlir.common import get_logger, pipe
 from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
@@ -236,7 +233,7 @@ from antlir.loopback import (
     MIN_FREE_BYTES,
 )
 from antlir.subvol_utils import Subvol
-from antlir.unshare import Unshare, Namespace
+from antlir.unshare import Namespace, Unshare
 
 log = get_logger()
 MiB = 2**20

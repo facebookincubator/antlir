@@ -10,8 +10,8 @@ import unittest
 from antlir.compiler.requires_provides import (
     Provider,
     ProvidesGroup,
-    RequireGroup,
     RequireFile,
+    RequireGroup,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes

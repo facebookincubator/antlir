@@ -4,14 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed, ThreadPoolExecutor
 from typing import Iterable, Iterator, Tuple
 
 from antlir.common import get_logger, retryable
 from antlir.rpm.downloader.common import (
+    download_resource,
     DownloadConfig,
     DownloadResult,
-    download_resource,
 )
 from antlir.rpm.repo_objects import RepoMetadata
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo

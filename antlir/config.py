@@ -12,8 +12,8 @@ from antlir.bzl.buck_isolation.buck_isolation import is_buck_using_isolation
 from antlir.errors import UserError
 from antlir.fs_utils import Path
 from antlir.repo_config_t import (
-    repo_config_t as base_repo_config_t,
     data as repo_config_data,
+    repo_config_t as base_repo_config_t,
 )
 
 _read_text = importlib.resources.read_text

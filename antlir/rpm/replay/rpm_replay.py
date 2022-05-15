@@ -7,9 +7,8 @@
 import itertools
 import logging
 import pwd
-from contextlib import ExitStack, contextmanager
-from typing import Any, List, Tuple
-from typing import Callable, Iterator, Mapping, Sequence
+from contextlib import contextmanager, ExitStack
+from typing import Any, Callable, Iterator, List, Mapping, Sequence, Tuple
 
 from antlir.common import get_logger, not_none
 from antlir.compiler.compiler import (
@@ -18,8 +17,7 @@ from antlir.compiler.compiler import (
     LayerOpts,
 )
 from antlir.compiler.items.make_subvol import ParentLayerItem
-from antlir.fs_utils import Path
-from antlir.fs_utils import temp_dir
+from antlir.fs_utils import Path, temp_dir
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.rpm.replay.subvol_rpm_compare import NEVRA, RpmDiff

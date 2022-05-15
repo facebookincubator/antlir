@@ -13,15 +13,7 @@ already been installed.  This is known as dependency order or topological
 sort.
 """
 from collections import defaultdict
-from typing import (
-    Dict,
-    Generator,
-    Iterator,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-)
+from typing import Dict, Generator, Iterator, List, NamedTuple, Optional, Set
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem

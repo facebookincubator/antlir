@@ -20,10 +20,10 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
+    ProvidesGroup,
     ProvidesPath,
     ProvidesSymlink,
     ProvidesUser,
-    ProvidesGroup,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol

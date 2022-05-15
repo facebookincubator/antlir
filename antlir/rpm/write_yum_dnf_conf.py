@@ -21,7 +21,7 @@ import textwrap
 from typing import Iterable, List, TextIO
 from urllib.parse import urlparse, urlunparse
 
-from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
+from antlir.fs_utils import create_ro, Path, populate_temp_dir_and_rename
 from antlir.rpm.yum_dnf_conf import YumDnf, YumDnfConfParser
 
 

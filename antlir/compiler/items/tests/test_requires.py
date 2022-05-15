@@ -5,9 +5,9 @@
 # LICENSE file in the root directory of this source tree.
 
 from antlir.compiler.requires_provides import (
+    RequireFile,
     RequireGroup,
     RequireUser,
-    RequireFile,
 )
 from antlir.fs_utils import Path
 

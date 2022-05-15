@@ -17,14 +17,14 @@ built by the `rpm_repo_snapshot()` target, and installed via
 Also starts FBPKG proxy server if needed.
 """
 import textwrap
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager, ExitStack
 from dataclasses import dataclass
 from io import BytesIO
-from typing import Iterable, List, Optional, Tuple, Dict, Generator, Any
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple
 
 from antlir.common import get_logger, pipe
 from antlir.fs_utils import Path
-from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
+from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
 from antlir.nspawn_in_subvol.netns_socket import create_sockets_inside_netns
 from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetup,

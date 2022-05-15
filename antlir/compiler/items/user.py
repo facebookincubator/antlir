@@ -7,21 +7,15 @@
 import collections
 import re
 from dataclasses import dataclass
-from typing import (
-    AnyStr,
-    Dict,
-    Generator,
-    NamedTuple,
-    OrderedDict,
-)
+from typing import AnyStr, Dict, Generator, NamedTuple, OrderedDict
 
 from antlir.bzl.image.feature.usergroup import user_t
 from antlir.compiler.requires_provides import (
     Provider,
-    RequireGroup,
-    Requirement,
     ProvidesUser,
     RequireFile,
+    RequireGroup,
+    Requirement,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -32,8 +26,8 @@ from .group import (
     _read_group_file,
     _write_group_file,
     GROUP_FILE_PATH,
-    USERGROUP_LOCK,
     GroupFile,
+    USERGROUP_LOCK,
 )
 
 

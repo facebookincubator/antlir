@@ -9,7 +9,7 @@ import time
 import traceback
 import urllib.parse
 from contextlib import contextmanager
-from enum import Enum, auto
+from enum import auto, Enum
 from io import BytesIO
 from typing import (
     Callable,

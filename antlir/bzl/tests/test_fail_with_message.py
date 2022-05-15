@@ -8,7 +8,7 @@ import unittest
 
 from antlir.fs_utils import Path
 
-from ..fail_with_message import log_failure_message, log
+from ..fail_with_message import log, log_failure_message
 
 
 class FailWithMessageTestCase(unittest.TestCase):

@@ -36,7 +36,7 @@ from io import StringIO
 from typing import Callable, Dict, FrozenSet, Iterable, List, Optional
 
 from antlir.common import get_logger, init_logging
-from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
+from antlir.fs_utils import create_ro, Path, populate_temp_dir_and_rename
 from antlir.rpm.downloader.common import DownloadConfig
 from antlir.rpm.downloader.repo_downloader import download_repos
 

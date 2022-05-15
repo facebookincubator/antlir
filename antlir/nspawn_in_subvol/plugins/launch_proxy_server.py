@@ -7,7 +7,7 @@
 import logging
 import socket
 import subprocess
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager, ExitStack
 from typing import Generator
 
 from antlir.common import get_logger

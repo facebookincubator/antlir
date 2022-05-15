@@ -39,9 +39,9 @@ from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.nspawn_in_subvol.args import (
-    PopenArgs,
     new_nspawn_opts,
     NspawnPluginArgs,
+    PopenArgs,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins

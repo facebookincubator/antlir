@@ -12,11 +12,7 @@ from antlir.fs_utils import CP_CLONE_CMD, Path
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
 
-from .common import (
-    ImageItem,
-    LayerOpts,
-    validate_path_field_normal_relative,
-)
+from .common import ImageItem, LayerOpts, validate_path_field_normal_relative
 from .phases_provide import gen_subvolume_subtree_provides
 
 

@@ -10,11 +10,11 @@ from unittest import mock
 
 from antlir.fs_utils import temp_dir
 from antlir.nspawn_in_subvol.run_test import (
+    add_container_not_part_of_build_step,
     do_not_rewrite_cmd,
     forward_env_vars,
     rewrite_testpilot_python_cmd,
     rewrite_tpx_gtest_cmd,
-    add_container_not_part_of_build_step,
 )
 
 

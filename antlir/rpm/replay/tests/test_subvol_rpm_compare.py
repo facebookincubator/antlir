@@ -12,10 +12,10 @@ from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..subvol_rpm_compare import (
-    subvol_rpm_compare,
-    SubvolsToCompare,
-    subvol_rpm_compare_and_download,
     NEVRA,
+    subvol_rpm_compare,
+    subvol_rpm_compare_and_download,
+    SubvolsToCompare,
 )
 
 

@@ -112,7 +112,7 @@ from typing import Iterable, NamedTuple, Tuple, Union
 from antlir.common import init_logging
 from antlir.fs_utils import Path
 
-from .args import PopenArgs, _NspawnOpts, _parse_cli_args
+from .args import _NspawnOpts, _parse_cli_args, PopenArgs
 from .common import UserFacingError
 from .nspawn import run_nspawn
 from .plugins import NspawnPlugin

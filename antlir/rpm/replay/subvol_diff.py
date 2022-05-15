@@ -8,7 +8,7 @@ import fnmatch
 import os
 import re
 import subprocess
-from typing import Iterator, Iterable
+from typing import Iterable, Iterator
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path

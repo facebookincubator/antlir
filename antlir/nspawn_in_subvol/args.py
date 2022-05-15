@@ -35,10 +35,7 @@ from typing import (
 
 from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
-from antlir.find_built_subvol import (
-    Subvol,
-    find_built_subvol,
-)
+from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path
 from antlir.subvol_utils import find_subvolume_on_disk
 

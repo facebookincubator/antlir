@@ -13,7 +13,7 @@ from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource
 
 from ..gpt import make_gpt
-from ..unshare import Namespace, Unshare, nsenter_as_root
+from ..unshare import Namespace, nsenter_as_root, Unshare
 
 
 class GptTestCase(ImagePackageTestCaseBase):

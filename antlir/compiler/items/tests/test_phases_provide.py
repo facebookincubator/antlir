@@ -19,7 +19,7 @@ from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
 from ..group import GROUP_FILE_PATH
-from ..phases_provide import PhasesProvideItem, gen_subvolume_subtree_provides
+from ..phases_provide import gen_subvolume_subtree_provides, PhasesProvideItem
 from ..user import PASSWD_FILE_PATH
 from .common import (
     BaseItemTestCase,

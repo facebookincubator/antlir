@@ -8,7 +8,7 @@ from http import HTTPStatus
 from http.client import HTTPConnection, HTTPSConnection
 from http.server import BaseHTTPRequestHandler
 from shutil import copyfileobj
-from typing import Optional, Callable
+from typing import Callable, Optional
 from urllib.parse import urlparse
 
 from antlir.common import get_logger

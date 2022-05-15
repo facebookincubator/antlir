@@ -7,7 +7,7 @@
 import configparser
 import json
 import sys
-from typing import Dict, Sequence, Generator, Mapping
+from typing import Dict, Generator, Mapping, Sequence
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.fs_utils import Path

@@ -5,7 +5,7 @@
 
 from socket import socket
 from unittest import TestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from antlir.proxy.http_socket_server import HTTPSocketServer
 

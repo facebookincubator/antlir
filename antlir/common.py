@@ -21,15 +21,15 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import (
     AnyStr,
-    NamedTuple,
-    Union,
     Callable,
     Iterable,
     Iterator,
     List,
+    NamedTuple,
     Optional,
     Tuple,
     TypeVar,
+    Union,
 )
 
 

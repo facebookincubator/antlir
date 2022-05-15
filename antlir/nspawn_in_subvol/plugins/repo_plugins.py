@@ -33,9 +33,9 @@ from typing import Iterable
 
 from antlir.fs_utils import ANTLIR_DIR, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.nspawn_in_subvol.args import (
+    _NspawnOpts,
     AttachAntlirDirMode,
     NspawnPluginArgs,
-    _NspawnOpts,
 )
 from antlir.nspawn_in_subvol.common import AttachAntlirDirError
 

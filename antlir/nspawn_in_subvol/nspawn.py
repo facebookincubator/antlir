@@ -76,7 +76,7 @@ from antlir.errors import ToolMissing
 from antlir.fs_utils import MehStr, Path, temp_dir
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 
-from .args import PopenArgs, _NspawnOpts
+from .args import _NspawnOpts, PopenArgs
 from .cmd import _NspawnSetup, maybe_popen_and_inject_fds
 from .common import (
     DEFAULT_PATH_ENV,

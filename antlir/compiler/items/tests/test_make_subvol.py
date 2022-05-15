@@ -17,8 +17,8 @@ from antlir.tests.subvol_helpers import get_meta_dir_contents, pop_path
 
 from ..common import PhaseOrder
 from ..ensure_dirs_exist import (
-    EnsureDirsExistItem,
     ensure_subdirs_exist_factory,
+    EnsureDirsExistItem,
 )
 from ..make_subvol import (
     FilesystemRootItem,

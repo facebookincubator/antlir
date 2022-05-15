@@ -14,8 +14,8 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
     RequireDirectory,
-    RequireUser,
     RequireGroup,
+    RequireUser,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -23,9 +23,9 @@ from pydantic import PrivateAttr
 
 from .common import ImageItem, LayerOpts, make_path_normal_relative
 from .stat_options import (
-    Mode,
     build_stat_options,
     customize_stat_options,
+    Mode,
     mode_to_str,
 )
 

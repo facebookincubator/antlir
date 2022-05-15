@@ -14,7 +14,7 @@ import pwd
 from typing import Union
 
 from antlir.fs_utils import generate_work_dir
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 

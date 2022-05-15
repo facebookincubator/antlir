@@ -10,17 +10,14 @@ from contextlib import contextmanager
 
 from antlir.bzl_const import BZL_CONST
 from antlir.fs_utils import Path, temp_dir
-from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
+from antlir.rpm.rpm_metadata import compare_rpm_versions, RpmMetadata
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol, TempSubvolumes
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
 from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path
 
 from ..common import PhaseOrder
-from ..rpm_action import (
-    RpmAction,
-    RpmActionItem,
-)
+from ..rpm_action import RpmAction, RpmActionItem
 from .common import BaseItemTestCase, render_subvol, with_mocked_temp_volume_dir
 from .rpm_action_base import create_rpm_action_item, RpmActionItemTestBase
 

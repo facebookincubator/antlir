@@ -10,7 +10,7 @@ import contextlib
 import os.path
 import sys
 import uuid
-from typing import Any, Dict, AsyncGenerator, List, Optional, Tuple, Union
+from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Union
 
 from antlir.artifacts_dir import find_buck_cell_root
 from antlir.cli import normalize_buck_path

@@ -12,8 +12,8 @@ from antlir.bzl.image.feature.usergroup import group_t
 from antlir.compiler.requires_provides import (
     Provider,
     ProvidesGroup,
-    Requirement,
     RequireFile,
+    Requirement,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol

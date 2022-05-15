@@ -15,13 +15,14 @@ import os
 import sqlite3
 import sys
 import textwrap
-from contextlib import ExitStack, contextmanager
-from typing import (
+from contextlib import contextmanager, ExitStack
+from typing import (  # This is a 3.8+ feature
     Any,
     Callable,
     FrozenSet,
     Iterable,
     List,
+    Literal,
     Mapping,
     NamedTuple,
     Set,
@@ -29,10 +30,9 @@ from typing import (
     Tuple,
     Union,
 )
-from typing import Literal  # This is a 3.8+ feature
 
 from antlir.common import get_logger, init_logging, set_new_key
-from antlir.fs_utils import Path, create_ro, populate_temp_dir_and_rename
+from antlir.fs_utils import create_ro, Path, populate_temp_dir_and_rename
 from antlir.rpm.common import readonly_snapshot_db
 
 from .envra import SortableENVRA, SortableEVRA

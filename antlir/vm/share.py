@@ -10,7 +10,7 @@ import tempfile
 from abc import ABC, abstractmethod
 from contextlib import AsyncExitStack, contextmanager
 from dataclasses import dataclass, field
-from typing import Generator, Iterable, Optional, Tuple, List
+from typing import Generator, Iterable, List, Optional, Tuple
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path, temp_dir

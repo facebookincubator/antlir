@@ -15,20 +15,20 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 from antlir.compiler.items.mount import mounts_from_meta
-from antlir.config import repo_config, antlir_dep
+from antlir.config import antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.tests.flavor_helpers import (
     get_rpm_installers_supported,
     render_flavor,
 )
-from antlir.tests.layer_resource import LAYER_SLASH_ENCODE, layer_resource
+from antlir.tests.layer_resource import layer_resource, LAYER_SLASH_ENCODE
 from antlir.tests.subvol_helpers import (
     check_common_rpm_render,
     get_meta_dir_contents,
     pop_path,
-    render_subvol,
     render_meta_build_contents,
+    render_subvol,
 )
 
 from ..procfs_serde import deserialize_int

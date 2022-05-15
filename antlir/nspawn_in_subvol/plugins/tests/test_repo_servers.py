@@ -15,9 +15,8 @@ from contextlib import contextmanager
 from antlir.common import check_popen_returncode
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
-from .. import launch_repo_servers
-from .. import server_launcher
-from .rpm_base import RpmNspawnTestBase, NspawnTestBase
+from .. import launch_repo_servers, server_launcher
+from .rpm_base import NspawnTestBase, RpmNspawnTestBase
 
 
 class TestImpl:

@@ -14,8 +14,8 @@ from typing import Dict, Iterator, Optional, Set, Tuple
 from antlir.bzl.genrule_layer import genrule_layer_t
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import (
-    EnsureDirsExistItem,
     ensure_subdirs_exist_factory,
+    EnsureDirsExistItem,
 )
 from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem

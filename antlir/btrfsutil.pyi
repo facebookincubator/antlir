@@ -10,7 +10,7 @@ Add any more functions here as they need to be used (see `pydoc3 btrfsutil` for
 the upstream module docs)
 """
 
-from typing import Tuple, Union, Iterable, Optional
+from typing import Iterable, Optional, Tuple, Union
 
 from antlir.fs_utils import Path
 from antlir.unshare import Unshare

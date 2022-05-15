@@ -14,8 +14,8 @@ import unittest.mock
 from ..common import (
     async_retry_fn,
     async_retryable,
-    kernel_version,
     async_run,
+    kernel_version,
     log as common_log,
     retry_fn,
     retryable,

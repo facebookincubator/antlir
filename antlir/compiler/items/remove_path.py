@@ -14,9 +14,9 @@ from antlir.subvol_utils import Subvol
 
 from .common import (
     ImageItem,
+    is_path_protected,
     LayerOpts,
     PhaseOrder,
-    is_path_protected,
     protected_path_set,
     validate_path_field_normal_relative,
 )

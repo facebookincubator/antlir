@@ -16,9 +16,9 @@ from typing import Iterator, List, NamedTuple, Optional, Set, Tuple
 from antlir.common import get_logger
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
+    new_nspawn_opts,
     NspawnPluginArgs,
     PopenArgs,
-    new_nspawn_opts,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins

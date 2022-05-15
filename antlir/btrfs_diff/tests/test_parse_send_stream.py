@@ -16,9 +16,9 @@ from antlir.tests.common import AntlirTestCase
 
 from ..parse_send_stream import (
     AttributeKind,
-    CommandKind,
     check_magic,
     check_version,
+    CommandKind,
     file_unpack,
     parse_send_stream,
     read_attribute,

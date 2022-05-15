@@ -9,9 +9,9 @@ from unittest import mock
 from unittest.mock import mock_open, patch
 
 from ..common import (
-    NSpawnVersion,
     find_cgroup2_mountpoint,
     nspawn_version,
+    NSpawnVersion,
     parse_cgroup2_path,
 )
 

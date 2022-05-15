@@ -20,19 +20,19 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
 from antlir.fs_utils import (
     generate_work_dir,
     open_for_read_decompress,
-    temp_dir,
     Path,
+    temp_dir,
 )
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.serialize_targets_and_outputs import make_target_path_map
-from antlir.subvol_utils import with_temp_subvols, get_subvolumes_dir, MiB
+from antlir.subvol_utils import get_subvolumes_dir, MiB, with_temp_subvols
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
-from antlir.tests.layer_resource import layer_resource_subvol, layer_resource
+from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 
 from ..bzl.loopback_opts import loopback_opts_t
-from ..package_image import Format, package_image, _Opts
-from ..unshare import Namespace, Unshare, nsenter_as_root
+from ..package_image import _Opts, Format, package_image
+from ..unshare import Namespace, nsenter_as_root, Unshare
 
 
 class PackageImageTestCase(ImagePackageTestCaseBase):

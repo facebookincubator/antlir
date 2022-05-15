@@ -8,8 +8,8 @@ import unittest
 
 from antlir.compiler.requires_provides import (
     ProvidesUser,
-    RequireGroup,
     RequireFile,
+    RequireGroup,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
@@ -17,21 +17,21 @@ from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..group import GROUP_FILE_PATH
 from ..user import (
-    PASSWD_FILE_PATH,
-    SHADOW_FILE_PATH,
-    SHADOW_DEFAULT_LASTCHANGED_DAYS,
-    PasswdFile,
-    PasswdFileLine,
-    ShadowFile,
-    ShadowFileLine,
-    pwconv,
-    UserItem,
-    new_passwd_file_line,
-    new_shadow_file_line,
     _read_passwd_file,
     _read_shadow_file,
     _write_passwd_file,
     _write_shadow_file,
+    new_passwd_file_line,
+    new_shadow_file_line,
+    PASSWD_FILE_PATH,
+    PasswdFile,
+    PasswdFileLine,
+    pwconv,
+    SHADOW_DEFAULT_LASTCHANGED_DAYS,
+    SHADOW_FILE_PATH,
+    ShadowFile,
+    ShadowFileLine,
+    UserItem,
 )
 from .common import BaseItemTestCase
 

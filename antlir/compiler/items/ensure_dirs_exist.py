@@ -12,24 +12,20 @@ from antlir.bzl.image_actions.ensure_subdirs_exist import ensure_subdirs_exist_t
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
-    RequireUser,
     RequireGroup,
+    RequireUser,
 )
-from antlir.fs_utils import Path, generate_work_dir
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.fs_utils import generate_work_dir, Path
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator, validator
 
-from .common import (
-    ImageItem,
-    LayerOpts,
-    make_path_normal_relative,
-)
+from .common import ImageItem, LayerOpts, make_path_normal_relative
 from .stat_options import (
-    Mode,
     build_stat_options,
     customize_stat_options,
+    Mode,
     mode_to_octal_str,
 )
 

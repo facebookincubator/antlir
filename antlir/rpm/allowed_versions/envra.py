@@ -6,7 +6,7 @@
 from functools import total_ordering
 from typing import NamedTuple, Optional
 
-from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
+from antlir.rpm.rpm_metadata import compare_rpm_versions, RpmMetadata
 
 
 @total_ordering

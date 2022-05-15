@@ -9,7 +9,7 @@ import unittest.mock
 
 from antlir.errors import UserError
 from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes, Subvol
+from antlir.subvol_utils import Subvol, TempSubvolumes
 
 from ..common import PhaseOrder, protected_path_set
 from ..ensure_dirs_exist import ensure_subdirs_exist_factory

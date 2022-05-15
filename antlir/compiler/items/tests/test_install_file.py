@@ -14,16 +14,16 @@ from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
     RequireDirectory,
-    RequireUser,
     RequireGroup,
+    RequireUser,
 )
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import TempSubvolumes
 
 from ..common import image_source_item
-from ..install_file import InstallFileItem, _InstallablePath
-from .common import DUMMY_LAYER_OPTS, BaseItemTestCase, render_subvol
+from ..install_file import _InstallablePath, InstallFileItem
+from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
 
 
 def _install_file_item(**kwargs):

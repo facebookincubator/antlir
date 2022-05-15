@@ -18,13 +18,13 @@ bind-mounts them into the snapshots that already exist in the container's
 image.  This allows us to change version selections on a more frequent
 cadence than we change repo snapshots.
 """
-from contextlib import ExitStack, contextmanager
+from contextlib import contextmanager, ExitStack
 from types import MappingProxyType
 from typing import Dict, Iterable, Tuple
 
 from antlir.common import get_logger, set_new_key
-from antlir.fs_utils import Path, create_ro, temp_dir
-from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
+from antlir.fs_utils import create_ro, Path, temp_dir
+from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
 from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetup,
     _NspawnSetupCtxMgr,

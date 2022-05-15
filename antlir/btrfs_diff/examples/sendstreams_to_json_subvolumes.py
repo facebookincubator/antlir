@@ -43,10 +43,10 @@ import sys
 from ..freeze import freeze
 from ..inode import InodeOwner
 from ..inode_utils import (
-    SELinuxXAttrStats,
     erase_mode_and_owner,
     erase_selinux_xattr,
     erase_utimes_in_range,
+    SELinuxXAttrStats,
 )
 from ..parse_send_stream import parse_send_stream
 from ..rendered_tree import emit_non_unique_traversal_ids

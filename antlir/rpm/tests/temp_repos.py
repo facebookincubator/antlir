@@ -15,8 +15,8 @@ from configparser import ConfigParser
 from contextlib import contextmanager
 from typing import Dict, List, NamedTuple, Optional
 
-from antlir.fs_utils import Path, generate_work_dir, temp_dir
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.fs_utils import generate_work_dir, Path, temp_dir
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol

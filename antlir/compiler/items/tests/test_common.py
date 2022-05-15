@@ -10,26 +10,26 @@ from typing import List
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
-    RequireUser,
     RequireGroup,
+    RequireUser,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..common import (
-    META_DIR,
-    META_FLAVOR_FILE,
-    ImageItem,
     image_source_item,
-    protected_path_set,
-    setup_meta_dir,
+    ImageItem,
     is_path_protected,
     make_path_normal_relative,
+    META_DIR,
+    META_FLAVOR_FILE,
+    protected_path_set,
+    setup_meta_dir,
 )
 from ..ensure_dirs_exist import EnsureDirsExistItem
 from ..install_file import InstallFileItem
-from .common import DUMMY_LAYER_OPTS, BaseItemTestCase
+from .common import BaseItemTestCase, DUMMY_LAYER_OPTS
 
 
 @dataclass(init=False, frozen=True)

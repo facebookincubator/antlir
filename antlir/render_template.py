@@ -9,7 +9,7 @@ import importlib.resources
 import json
 import sys
 
-from jinja2 import Environment, BaseLoader, TemplateNotFound
+from jinja2 import BaseLoader, Environment, TemplateNotFound
 
 
 class PrecompiledLoader(BaseLoader):

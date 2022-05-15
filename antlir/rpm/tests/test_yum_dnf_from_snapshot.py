@@ -13,7 +13,7 @@ from typing import FrozenSet
 from unittest import mock
 
 from antlir.config import antlir_dep
-from antlir.fs_utils import META_DIR, Path, create_ro, temp_dir
+from antlir.fs_utils import create_ro, META_DIR, Path, temp_dir
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
