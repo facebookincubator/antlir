@@ -50,7 +50,7 @@ from typing import (
 
 from .common import get_logger, init_logging
 from .fs_utils import Path, populate_temp_dir_and_rename
-from .signed_source import signed_source_sigil, sign_source
+from .signed_source import sign_source, signed_source_sigil
 
 
 _GENERATED: str = "@" + "generated"

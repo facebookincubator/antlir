@@ -21,19 +21,11 @@ import inspect
 import os
 import subprocess
 import tempfile
-from typing import (
-    AnyStr,
-    FrozenSet,
-    List,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Set,
-)
+from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from antlir.compiler import procfs_serde
 from antlir.config import repo_config
-from antlir.fs_utils import META_DIR, META_FLAVOR_FILE, META_BUILD_DIR, Path
+from antlir.fs_utils import META_BUILD_DIR, META_DIR, META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 from pydantic import validator

@@ -14,7 +14,7 @@ import os
 from typing import Type, TypeVar, Union
 
 import pydantic
-from antlir.btrfs_diff.freeze import freeze, DoNotFreeze
+from antlir.btrfs_diff.freeze import DoNotFreeze, freeze
 from antlir.fs_utils import Path
 
 

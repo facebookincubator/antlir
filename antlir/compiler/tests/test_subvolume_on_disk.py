@@ -10,7 +10,7 @@ import unittest
 import unittest.mock
 from uuid import UUID
 
-from antlir.btrfsutil import subvolume_info, BtrfsUtilError
+from antlir.btrfsutil import BtrfsUtilError, subvolume_info
 from antlir.fs_utils import Path
 from antlir.subvol_utils import with_temp_subvols
 

@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed, ThreadPoolExecutor
 from contextlib import ExitStack
 from types import MappingProxyType
 from typing import (
@@ -22,9 +22,9 @@ from antlir.common import get_logger, retryable, set_new_key, shuffled
 from antlir.rpm.common import read_chunks
 from antlir.rpm.downloader.common import (
     BUFFER_BYTES,
+    download_resource,
     DownloadConfig,
     DownloadResult,
-    download_resource,
     log_size,
     maybe_write_id,
     verify_chunk_stream,

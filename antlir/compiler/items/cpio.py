@@ -6,8 +6,8 @@
 
 import pwd
 
-from antlir.fs_utils import Path, generate_work_dir, open_for_read_decompress
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.fs_utils import generate_work_dir, open_for_read_decompress, Path
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 

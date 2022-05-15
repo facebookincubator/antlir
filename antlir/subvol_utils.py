@@ -18,11 +18,7 @@ import antlir.btrfsutil as btrfsutil
 
 from .artifacts_dir import find_artifacts_dir
 from .btrfs_diff.freeze import DoNotFreeze
-from .common import (
-    check_popen_returncode,
-    get_logger,
-    open_fd,
-)
+from .common import check_popen_returncode, get_logger, open_fd
 from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path, temp_dir
 

@@ -23,7 +23,7 @@ from typing import Any, AnyStr, Iterable, List, Mapping, NamedTuple, Tuple
 
 from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import Path
-from antlir.nspawn_in_subvol.args import PopenArgs, _NspawnOpts
+from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
 from antlir.nspawn_in_subvol.common import DEFAULT_SEARCH_PATHS
 from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetup,

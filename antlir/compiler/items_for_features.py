@@ -7,11 +7,11 @@
 "Makes Items from the JSON that was produced by a Buck `feature` target"
 import json
 from contextlib import ExitStack
-from typing import Any, Iterable, Union, Mapping, Optional, NamedTuple
+from typing import Any, Iterable, Mapping, NamedTuple, Optional, Union
 
 from antlir.common import get_logger
 from antlir.compiler.items.clone import CloneItem
-from antlir.compiler.items.common import LayerOpts, image_source_item
+from antlir.compiler.items.common import image_source_item, LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
 from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem

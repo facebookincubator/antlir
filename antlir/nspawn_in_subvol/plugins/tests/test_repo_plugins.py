@@ -11,13 +11,13 @@ from unittest import mock
 
 from antlir.fs_utils import (
     ANTLIR_DIR,
-    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
     Path,
+    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
 )
 from antlir.nspawn_in_subvol.args import (
     AttachAntlirDirMode,
-    NspawnPluginArgs,
     new_nspawn_opts,
+    NspawnPluginArgs,
 )
 from antlir.nspawn_in_subvol.common import AttachAntlirDirError
 from antlir.tests.flavor_helpers import get_rpm_installers_supported

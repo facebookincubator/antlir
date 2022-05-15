@@ -18,16 +18,16 @@ from uuid import UUID
 from antlir.btrfsutil import subvolume_info
 from antlir.bzl.constants import flavor_config_t
 from antlir.fs_utils import (
-    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
     Path,
+    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
     temp_dir,
 )
-from antlir.subvol_utils import TempSubvolumes, Subvol
+from antlir.subvol_utils import Subvol, TempSubvolumes
 from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 from antlir.tests.subvol_helpers import (
-    render_subvol,
     render_meta_build_contents,
+    render_subvol,
 )
 
 from .. import subvolume_on_disk as svod

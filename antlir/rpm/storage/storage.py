@@ -19,7 +19,7 @@ Then, the only thing we then need to version is an index of "repo file" to
 import logging
 import re
 from contextlib import AbstractContextManager
-from typing import IO, Callable, ContextManager
+from typing import Callable, ContextManager, IO
 
 from antlir.rpm.pluggable import Pluggable
 

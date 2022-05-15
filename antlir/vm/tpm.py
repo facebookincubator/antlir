@@ -9,7 +9,7 @@ import os
 import subprocess
 import threading
 from dataclasses import dataclass, field
-from typing import Iterable, List, Union, Awaitable
+from typing import Awaitable, Iterable, List, Union
 
 from antlir.fs_utils import Path
 from antlir.unshare import Unshare

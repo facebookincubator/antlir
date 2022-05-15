@@ -12,13 +12,13 @@ from antlir.compiler.requires_provides import (
     RequireFile,
 )
 from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes, Subvol
+from antlir.subvol_utils import Subvol, TempSubvolumes
 
 from ..install_file import InstallFileItem
 from ..symlink import SymlinkToDirItem, SymlinkToFileItem
 from .common import (
-    DUMMY_LAYER_OPTS,
     BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
     get_dummy_layer_opts_ba,
     render_subvol,
     with_mocked_temp_volume_dir,

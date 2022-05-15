@@ -12,10 +12,7 @@ from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol, TempSubvolumes
 from pydantic import ValidationError
 
-from ..rpm_action import (
-    RpmAction,
-    RpmActionItem,
-)
+from ..rpm_action import RpmAction, RpmActionItem
 from .common import DUMMY_LAYER_OPTS, render_subvol, with_mocked_temp_volume_dir
 
 

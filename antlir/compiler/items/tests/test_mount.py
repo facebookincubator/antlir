@@ -12,8 +12,8 @@ import tempfile
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
-    ProvidesUser,
     ProvidesGroup,
+    ProvidesUser,
     RequireDirectory,
 )
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
@@ -28,13 +28,13 @@ from ..mount import (
     BuildSource,
     Mount,
     MountItem,
-    RuntimeSource,
     mounts_from_meta,
+    RuntimeSource,
 )
 from ..phases_provide import PhasesProvideItem
 from .common import (
-    DUMMY_LAYER_OPTS,
     BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
     render_subvol,
     with_mocked_temp_volume_dir,
 )

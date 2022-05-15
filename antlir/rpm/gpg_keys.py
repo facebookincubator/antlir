@@ -15,7 +15,7 @@ import os
 from typing import Iterable
 from urllib.parse import urlparse
 
-from antlir.fs_utils import Path, create_ro
+from antlir.fs_utils import create_ro, Path
 
 from .open_url import open_url
 

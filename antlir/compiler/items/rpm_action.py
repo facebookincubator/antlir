@@ -25,20 +25,17 @@ from antlir.bzl.image_actions.rpms import rpm_action_item_t
 from antlir.bzl_const import BZL_CONST
 from antlir.common import get_logger, not_none
 from antlir.config import repo_config
-from antlir.fs_utils import (
-    Path,
-    generate_work_dir,
-)
+from antlir.fs_utils import generate_work_dir, Path
 from antlir.nspawn_in_subvol.args import (
-    PopenArgs,
-    new_nspawn_opts,
     _new_nspawn_debug_only_not_for_prod_opts,
+    new_nspawn_opts,
+    PopenArgs,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.yum_dnf_versionlock import (
     YumDnfVersionlock,
 )
-from antlir.rpm.rpm_metadata import RpmMetadata, compare_rpm_versions
+from antlir.rpm.rpm_metadata import compare_rpm_versions, RpmMetadata
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
 

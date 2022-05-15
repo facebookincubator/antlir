@@ -10,23 +10,19 @@ from itertools import zip_longest
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
-    RequireUser,
     RequireGroup,
+    RequireUser,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 from pydantic import ValidationError
 
 from ..ensure_dirs_exist import (
+    ensure_subdirs_exist_factory,
     EnsureDirsExistItem,
     MismatchError,
-    ensure_subdirs_exist_factory,
 )
-from .common import (
-    BaseItemTestCase,
-    get_dummy_layer_opts_ba,
-    render_subvol,
-)
+from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
 
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()

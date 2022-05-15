@@ -7,8 +7,8 @@
 import logging
 import socket
 import subprocess
-from contextlib import ExitStack, contextmanager
-from typing import List, Generator
+from contextlib import contextmanager, ExitStack
+from typing import Generator, List
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path

@@ -15,11 +15,11 @@ from antlir.bzl.loopback_opts import loopback_opts_t
 from antlir.bzl.target import target_t
 from antlir.errors import UserError
 from antlir.fs_utils import Path, temp_dir
-from antlir.package.btrfs import BtrfsImage, package_btrfs, _FoundSubvolOpts
+from antlir.package.btrfs import _FoundSubvolOpts, BtrfsImage, package_btrfs
 from antlir.subvol_utils import get_subvolumes_dir, MiB
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
-from antlir.tests.layer_resource import layer_resource_subvol, layer_resource
-from antlir.unshare import Unshare, Namespace, nsenter_as_root
+from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
+from antlir.unshare import Namespace, nsenter_as_root, Unshare
 
 
 class PackageImageTestCase(ImagePackageTestCaseBase):

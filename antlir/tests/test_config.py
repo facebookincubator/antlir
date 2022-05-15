@@ -9,11 +9,11 @@ import unittest.mock
 
 from antlir.artifacts_dir import find_repo_root
 from antlir.config import (
+    _unmemoized_repo_config,
     antlir_dep,
     base_repo_config_t,
     repo_config,
     repo_config_t,
-    _unmemoized_repo_config,
 )
 from antlir.errors import UserError
 from antlir.fs_utils import Path, temp_dir

@@ -9,7 +9,7 @@ import asyncio
 import os
 import sys
 
-from antlir.common import init_logging, get_logger, pipe
+from antlir.common import get_logger, init_logging, pipe
 from antlir.fs_utils import Path
 
 log = get_logger()

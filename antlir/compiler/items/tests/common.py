@@ -20,7 +20,7 @@ from antlir.compiler.requires_provides import (
     ProvidesSymlink,
 )
 from antlir.fs_utils import Path
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol

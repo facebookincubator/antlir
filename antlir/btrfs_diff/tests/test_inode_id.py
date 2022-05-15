@@ -9,11 +9,11 @@ from types import SimpleNamespace
 
 from ..freeze import freeze, frozendict
 from ..inode_id import (
+    _PathEntry,
+    _ReversePathEntry,
     _ROOT_REVERSE_ENTRY,
     InodeID,
     InodeIDMap,
-    _PathEntry,
-    _ReversePathEntry,
 )
 from .deepcopy_test import DeepCopyTestCase
 

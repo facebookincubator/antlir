@@ -10,8 +10,8 @@ from antlir.bzl.image.feature.requires import requires_t
 from antlir.compiler.requires_provides import (
     RequireFile,
     RequireGroup,
-    RequireUser,
     Requirement,
+    RequireUser,
 )
 
 from .common import ImageItem

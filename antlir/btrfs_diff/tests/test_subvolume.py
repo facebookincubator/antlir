@@ -12,14 +12,14 @@ from ..freeze import freeze
 from ..inode_id import InodeIDMap
 from ..parse_dump import SendStreamItems
 from ..rendered_tree import (
-    TraversalID,
     emit_all_traversal_ids,
     emit_non_unique_traversal_ids,
     map_bottom_up,
+    TraversalID,
 )
 from ..subvolume import Subvolume
 from .deepcopy_test import DeepCopyTestCase
-from .subvolume_utils import InodeRepr, expected_subvol_add_traversal_ids
+from .subvolume_utils import expected_subvol_add_traversal_ids, InodeRepr
 
 
 class SubvolumeTestCase(DeepCopyTestCase):

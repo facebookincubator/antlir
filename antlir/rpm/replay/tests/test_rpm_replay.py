@@ -7,15 +7,15 @@ import os
 import unittest
 
 from antlir.compiler.items_for_features import ItemFactory
-from antlir.config import repo_config, antlir_dep
+from antlir.config import antlir_dep, repo_config
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..rpm_replay import (
-    replay_rpms_and_compiler_items,
     filter_features_to_replay,
     LayerOpts,
+    replay_rpms_and_compiler_items,
 )
 from ..subvol_diff import subvol_diff
 from ..subvol_rpm_compare import (

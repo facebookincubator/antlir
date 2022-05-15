@@ -23,7 +23,7 @@ from contextlib import contextmanager
 from typing import Any, Callable, Iterable, Mapping, NamedTuple, Union
 
 from antlir.common import get_logger
-from antlir.fs_utils import Path, create_ro
+from antlir.fs_utils import create_ro, Path
 
 from .common import read_chunks
 from .repo_objects import Repodata, RepoMetadata, Rpm

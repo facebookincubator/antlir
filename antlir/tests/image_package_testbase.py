@@ -19,7 +19,7 @@ from antlir.tests.subvol_helpers import (
     RenderedTree,
 )
 
-from ..unshare import Unshare, nsenter_as_root
+from ..unshare import nsenter_as_root, Unshare
 from .common import AntlirTestCase
 
 

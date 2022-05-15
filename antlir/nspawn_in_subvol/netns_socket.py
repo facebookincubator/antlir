@@ -11,8 +11,8 @@ import time
 from typing import List
 
 from antlir.common import (
-    FD_UNIX_SOCK_TIMEOUT,
     check_popen_returncode,
+    FD_UNIX_SOCK_TIMEOUT,
     get_logger,
     listen_temporary_unix_socket,
     recv_fds_from_unix_sock,

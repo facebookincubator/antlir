@@ -13,10 +13,10 @@ from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import repo_config
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
+    AttachAntlirDirMode,
+    new_nspawn_opts,
     NspawnPluginArgs,
     PopenArgs,
-    new_nspawn_opts,
-    AttachAntlirDirMode,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins

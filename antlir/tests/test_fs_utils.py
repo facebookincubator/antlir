@@ -20,10 +20,10 @@ from typing import AnyStr, Dict, Iterator, Optional
 
 from ..common import byteme, check_popen_returncode
 from ..fs_utils import (
-    Path,
     create_ro,
     generate_work_dir,
     open_for_read_decompress,
+    Path,
     populate_temp_dir_and_rename,
     populate_temp_file_and_rename,
     temp_dir,

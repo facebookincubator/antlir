@@ -20,12 +20,7 @@ from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..clone import CloneItem
 from ..common import image_source_item
-from .common import (
-    DUMMY_LAYER_OPTS,
-    BaseItemTestCase,
-    pop_path,
-    render_subvol,
-)
+from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, pop_path, render_subvol
 
 
 _SRC_SUBVOL = layer_resource_subvol(__package__, "src-layer")

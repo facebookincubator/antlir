@@ -5,9 +5,9 @@
 
 from ..errors import UserError
 from ..signed_source import (
-    signed_source_sigil,
-    sign_source,
     assert_signed_source,
+    sign_source,
+    signed_source_sigil,
 )
 from .common import AntlirTestCase
 

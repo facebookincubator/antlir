@@ -8,21 +8,21 @@ import hashlib
 import sys
 import time
 import traceback
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import as_completed, ThreadPoolExecutor
 from functools import partial
 from types import MappingProxyType
-from typing import Dict, FrozenSet, Iterable, Iterator, Set, Tuple, Callable
+from typing import Callable, Dict, FrozenSet, Iterable, Iterator, Set, Tuple
 
 from antlir.common import get_logger, not_none, retryable, shuffled
 from antlir.rpm.common import read_chunks
 from antlir.rpm.db_connection import DBConnectionContext
 from antlir.rpm.downloader.common import (
     BUFFER_BYTES,
+    download_resource,
     DownloadConfig,
     DownloadResult,
-    LogOp,
-    download_resource,
     log_size,
+    LogOp,
     maybe_write_id,
     retryable_db_ctx,
     timeit,

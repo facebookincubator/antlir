@@ -15,12 +15,12 @@ from antlir.fs_utils import temp_dir
 from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..rpm_metadata import (
-    RpmMetadata,
     _compare_values,
-    compare_rpm_versions,
     _repo_query,
+    compare_rpm_versions,
+    RpmMetadata,
 )
-from .temp_repos import Repo, Rpm, get_test_signing_key, temp_repos_steps
+from .temp_repos import get_test_signing_key, Repo, Rpm, temp_repos_steps
 
 
 class RpmMetadataTestCase(unittest.TestCase):

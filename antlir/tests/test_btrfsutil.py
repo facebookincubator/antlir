@@ -7,12 +7,12 @@
 import errno
 import os.path
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import btrfsutil as _raw_btrfsutil  # pyre-ignore[21]
 from antlir import btrfsutil
 from antlir.fs_utils import Path
-from antlir.unshare import Unshare, Namespace
+from antlir.unshare import Namespace, Unshare
 
 from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
 from ..subvol_utils import with_temp_subvols

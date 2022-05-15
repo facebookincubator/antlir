@@ -45,7 +45,7 @@ as opposed to a sheared mix of the repo at various points in time) if:
   - `repomd.xml` is replaced atomically (i.e.  via `rename`) after making
     available all the new RPMs & repodatas.
 """
-from typing import Iterable, Iterator, Tuple, Callable
+from typing import Callable, Iterable, Iterator, Tuple
 
 from antlir.common import get_logger, not_none
 from antlir.rpm.downloader.common import DownloadConfig, DownloadResult

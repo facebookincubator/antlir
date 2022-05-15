@@ -13,8 +13,8 @@ from typing import Callable, ContextManager, Iterable, Tuple
 
 from antlir.subvol_utils import Subvol
 
-from .args import PopenArgs, _NspawnOpts
-from .cmd import _nspawn_setup, _NspawnSetup, _nspawn_subvol_setup
+from .args import _NspawnOpts, PopenArgs
+from .cmd import _nspawn_setup, _nspawn_subvol_setup, _NspawnSetup
 from .plugins import NspawnPlugin
 
 

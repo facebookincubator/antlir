@@ -10,8 +10,8 @@ import subprocess
 from typing import Optional
 
 from antlir.btrfs_diff.tests.render_subvols import (
-    RenderedTree,
     render_sendstream,
+    RenderedTree,
 )
 from antlir.config import repo_config
 from antlir.fs_utils import Path

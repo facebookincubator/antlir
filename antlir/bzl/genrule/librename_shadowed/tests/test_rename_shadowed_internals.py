@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from contextlib import contextmanager
 
-from antlir.fs_utils import Path, create_ro, temp_dir
+from antlir.fs_utils import create_ro, Path, temp_dir
 
 
 class _Namespace:

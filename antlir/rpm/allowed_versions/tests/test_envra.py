@@ -8,7 +8,7 @@ from unittest import TestCase
 
 from antlir.rpm.rpm_metadata import RpmMetadata
 
-from ..envra import SortableEVRA, SortableENVRA
+from ..envra import SortableENVRA, SortableEVRA
 
 
 class EnvraTestCase(TestCase):

@@ -4,7 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from typing import Mapping, Any, Dict
+from typing import Any, Dict, Mapping
 
 from antlir.fs_utils import Path
 from antlir.serialize_targets_and_outputs import make_target_path_map

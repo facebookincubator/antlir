@@ -12,7 +12,7 @@ from typing import AnyStr, ContextManager
 
 from antlir.fs_utils import Path
 
-from .storage import Storage, StorageInput, StorageOutput, _CommitCallback
+from .storage import _CommitCallback, Storage, StorageInput, StorageOutput
 
 
 class FilesystemStorage(Storage, plugin_kind="filesystem"):

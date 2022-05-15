@@ -16,7 +16,7 @@ from typing import Iterable, Optional
 from .bzl.loopback_opts import loopback_opts_t
 from .common import get_logger, kernel_version, run_stdout_to_err
 from .fs_utils import Path, temp_dir
-from .unshare import Unshare, nsenter_as_root, nsenter_as_user
+from .unshare import nsenter_as_root, nsenter_as_user, Unshare
 
 log = get_logger()
 KiB = 2**10

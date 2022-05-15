@@ -17,8 +17,8 @@ from antlir.fs_utils import Path
 from ..parse_repodata import get_rpm_parser, pick_primary_repodata
 from ..repo_objects import Repodata, RepoMetadata
 from ..tests.temp_repos import (
-    SAMPLE_STEPS,
     get_test_signing_key,
+    SAMPLE_STEPS,
     temp_repos_steps,
 )
 

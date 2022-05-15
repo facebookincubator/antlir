@@ -19,8 +19,8 @@ from antlir.subvol_utils import TempSubvolumes
 from ..common import _hash_path, image_source_item
 from ..tarball import TarballItem
 from .common import (
-    DUMMY_LAYER_OPTS,
     BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
     get_dummy_layer_opts_ba,
     render_subvol,
     temp_filesystem,

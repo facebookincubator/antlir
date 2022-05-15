@@ -15,20 +15,16 @@ from antlir.cli import (
     normalize_buck_path,
 )
 from antlir.config import repo_config
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
 
 from .bzl.loopback_opts import loopback_opts_t
-from .common import (
-    check_popen_returncode,
-    get_logger,
-    pipe,
-)
+from .common import check_popen_returncode, get_logger, pipe
 from .find_built_subvol import find_built_subvol
-from .fs_utils import META_FLAVOR_FILE, Path, create_ro, generate_work_dir
+from .fs_utils import create_ro, generate_work_dir, META_FLAVOR_FILE, Path
 from .loopback import BtrfsLoopbackVolume, MIN_CREATE_BYTES, MIN_FREE_BYTES
 from .subvol_utils import Subvol
-from .unshare import Unshare, Namespace
+from .unshare import Namespace, Unshare
 
 log = get_logger()
 KiB = 2**10

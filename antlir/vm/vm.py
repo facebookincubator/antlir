@@ -13,19 +13,12 @@ import sys
 import tempfile
 import time
 import uuid
-from contextlib import AsyncExitStack, asynccontextmanager
+from contextlib import asynccontextmanager, AsyncExitStack
 from enum import Enum
 from itertools import chain
-from typing import (
-    cast,
-    AsyncGenerator,
-    Optional,
-    List,
-    Tuple,
-    Union,
-)
+from typing import AsyncGenerator, cast, List, Optional, Tuple, Union
 
-from antlir.common import init_logging, get_logger, not_none
+from antlir.common import get_logger, init_logging, not_none
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
@@ -33,14 +26,14 @@ from antlir.shape import Shape
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.bzl.vm import vm_opts_t
 from antlir.vm.common import (
+    create_sidecar_subprocess,
     insertstack,
     SidecarProcess,
-    create_sidecar_subprocess,
 )
 from antlir.vm.guest_ssh import GuestSSHConnection
-from antlir.vm.share import Plan9Export, Share, QCow2RootDisk
+from antlir.vm.share import Plan9Export, QCow2RootDisk, Share
 from antlir.vm.tap import VmTap
-from antlir.vm.tpm import VmTPM, TPMError
+from antlir.vm.tpm import TPMError, VmTPM
 
 
 logger = get_logger()

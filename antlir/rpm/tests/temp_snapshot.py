@@ -12,7 +12,7 @@ from antlir.fs_utils import Path, populate_temp_dir_and_rename, temp_dir
 
 from ..common import RpmShard
 from ..snapshot_repos import snapshot_repos
-from ..tests.temp_repos import SAMPLE_STEPS, Repo, Rpm, temp_repos_steps
+from ..tests.temp_repos import Repo, Rpm, SAMPLE_STEPS, temp_repos_steps
 
 
 def _make_test_yum_dnf_conf(

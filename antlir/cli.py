@@ -14,7 +14,7 @@ from typing import AnyStr, Iterable, Iterator, Mapping, Optional, Union
 
 from antlir.common import init_logging
 from antlir.config import repo_config
-from antlir.fs_utils import Path, MehStr
+from antlir.fs_utils import MehStr, Path
 
 
 def normalize_buck_path(bucked: Union[MehStr, Path]) -> Path:

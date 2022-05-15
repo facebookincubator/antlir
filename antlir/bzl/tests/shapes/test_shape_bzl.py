@@ -8,12 +8,12 @@ import json
 import unittest
 
 from .shape_bzl import (
-    Fail,
     _check_type,
+    _recursive_copy_transform,
+    Fail,
     shape,
     struct,
     structs,
-    _recursive_copy_transform,
 )
 
 

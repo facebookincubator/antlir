@@ -14,10 +14,7 @@ from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.mount import MountItem
 from antlir.compiler.items.remove_path import RemovePathItem
-from antlir.compiler.items.rpm_action import (
-    RpmAction,
-    RpmActionItem,
-)
+from antlir.compiler.items.rpm_action import RpmAction, RpmActionItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
 from antlir.compiler.items.user import UserItem

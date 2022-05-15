@@ -14,11 +14,11 @@ from antlir.fs_utils import Path, temp_dir
 from antlir.loopback import (
     BtrfsLoopbackVolume,
     LoopbackVolume,
+    MiB,
     MIN_CREATE_BYTES,
     MIN_SHRINK_BYTES,
-    MiB,
 )
-from antlir.unshare import Unshare, Namespace
+from antlir.unshare import Namespace, Unshare
 
 
 class LoopbackTestCases(unittest.TestCase):

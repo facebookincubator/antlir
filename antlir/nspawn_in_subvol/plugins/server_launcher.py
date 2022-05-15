@@ -9,7 +9,7 @@ import subprocess
 from contextlib import contextmanager
 from typing import Generator, List
 
-from antlir.common import get_logger, check_popen_returncode
+from antlir.common import check_popen_returncode, get_logger
 from antlir.fs_utils import Path
 
 

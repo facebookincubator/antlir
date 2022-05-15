@@ -5,7 +5,7 @@
 
 import argparse
 
-from antlir.common import init_logging, get_logger
+from antlir.common import get_logger, init_logging
 
 log = get_logger()
 

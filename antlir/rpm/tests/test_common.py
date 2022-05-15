@@ -15,10 +15,10 @@ from antlir.fs_utils import Path, temp_dir
 from ..common import (
     Checksum,
     DecorateContextEntry,
-    readonly_snapshot_db,
-    RpmShard,
     has_yum,
     read_chunks,
+    readonly_snapshot_db,
+    RpmShard,
     yum_is_dnf,
 )
 

@@ -14,12 +14,12 @@ from antlir.tests.common import AntlirTestCase
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.bzl.vm import vm_opts_t
 from antlir.vm.vm import (
+    _create_tpm,
     _wait_for_boot,
     ShellMode,
+    vm,
     VMBootError,
     VMExecOpts,
-    vm,
-    _create_tpm,
 )
 
 

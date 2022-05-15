@@ -7,9 +7,9 @@ import os
 import unittest
 
 from antlir.artifacts_dir import (
-    find_repo_root,
     ensure_per_repo_artifacts_dir_exists,
     find_buck_cell_root,
+    find_repo_root,
 )
 from antlir.errors import UserError
 from antlir.fs_utils import Path, temp_dir

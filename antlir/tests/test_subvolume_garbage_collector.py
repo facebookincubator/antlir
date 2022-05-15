@@ -11,8 +11,8 @@ import tempfile
 import unittest
 
 from .. import subvolume_garbage_collector as sgc
-from ..fs_utils import temp_dir, Path
-from ..subvol_utils import with_temp_subvols, TempSubvolumes
+from ..fs_utils import Path, temp_dir
+from ..subvol_utils import TempSubvolumes, with_temp_subvols
 
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):

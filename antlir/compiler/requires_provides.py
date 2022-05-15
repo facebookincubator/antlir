@@ -44,7 +44,7 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
   )
 '''
 import dataclasses
-from enum import Enum, auto
+from enum import auto, Enum
 
 from antlir.fs_utils import Path
 

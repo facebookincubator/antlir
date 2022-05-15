@@ -16,12 +16,12 @@ from enum import Enum
 
 from antlir.bzl.gpt import gpt_t
 from antlir.cli import normalize_buck_path
-from antlir.nspawn_in_subvol.args import PopenArgs, new_nspawn_opts
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 
 from .common import init_logging
 from .find_built_subvol import find_built_subvol
-from .fs_utils import Path, generate_work_dir
+from .fs_utils import generate_work_dir, Path
 from .subvol_utils import MiB
 
 

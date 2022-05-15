@@ -11,15 +11,15 @@ from antlir.tests.common import AntlirTestCase
 from ..extent import Extent
 from ..extents_to_chunks import extents_to_chunks_with_clones
 from ..inode import (
+    _repr_time,
+    _repr_time_delta,
+    _time_delta,
     Chunk,
     ChunkClone,
     Clone,
     Inode,
     InodeOwner,
     InodeUtimes,
-    _repr_time,
-    _repr_time_delta,
-    _time_delta,
 )
 from ..inode_id import InodeIDMap
 
