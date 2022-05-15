@@ -86,7 +86,7 @@ where
 #[starlark_module]
 pub fn module(registry: &mut GlobalsBuilder) {
     // TODO: accept symbolic strings in 'mode' as well
-    #[starlark(type("File"))]
+    #[starlark(type = "File")]
     fn file(path: &str, contents: &str, mode: Option<i32>) -> anyhow::Result<File> {
         Ok(File {
             path: path.into(),
@@ -95,12 +95,12 @@ pub fn module(registry: &mut GlobalsBuilder) {
         })
     }
 
-    #[starlark(type("Dir"))]
+    #[starlark(type = "Dir")]
     fn dir(path: &str) -> anyhow::Result<Dir> {
         Ok(Dir { path: path.into() })
     }
 
-    #[starlark(type("Output"))]
+    #[starlark(type = "Output")]
     fn Output(
         files: Option<ListOf<Value>>,
         dirs: Option<ListOf<Value>>,
