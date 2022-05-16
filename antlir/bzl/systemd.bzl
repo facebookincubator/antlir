@@ -25,6 +25,7 @@ _ALLOWED_UNIT_SUFFIXES = (
     ".socket",
     ".target",
     ".timer",
+    ".conf",
 )
 
 def _fail_if_path(thing, monkeymsg):
