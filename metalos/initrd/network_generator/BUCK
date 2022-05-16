@@ -1,0 +1,17 @@
+load("//metalos:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "network_generator",
+    srcs = [
+        "src/main.rs",
+    ],
+    deps = [
+        "anyhow",
+        "structopt",
+        "strum",
+        "strum_macros",
+        "//metalos/lib/kernel_cmdline:kernel_cmdline",
+        "//metalos/lib/net_utils:net_utils",
+        "//metalos/lib/network_generator_lib:network_generator_lib",
+    ],
+)
