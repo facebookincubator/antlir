@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use futures::{try_join, FutureExt};
 use nix::mount::MsFlags;
 use reqwest::Url;
-use slog::{info, o, Logger};
+use slog::{error, info, o, Logger};
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 use strum_macros::EnumIter;
@@ -18,10 +18,10 @@ use metalos_kexec::KexecInfo;
 use metalos_mount::{Mounter, RealMounter};
 use net_utils::get_mac;
 use package_download::{ensure_package_on_disk, HttpsDownloader};
-use send_events::{EventSender, HttpSink, Source};
+use send_events::{Event, EventSender, HttpSink, Source};
 use state::State;
 
-use crate::events::RamdiskReady;
+use crate::events::*;
 
 mod events;
 
@@ -95,105 +95,186 @@ async fn main() -> Result<()> {
         log,
         "Running metalimage with args:\n{:?}\nand kernel args:\n {:?}", args, kernel_args
     );
-    // get config
+
     let config = get_host_config(&kernel_args.host_config_uri)
         .await
         .context("failed to load the host config")?;
 
     info!(log, "Got config: {:?}", config);
 
-    let event_sender =
-        build_event_sender(&config, &args).context("failed to build event sender")?;
+    let events = build_event_sender(&config, &args).context("failed to build event sender")?;
 
-    event_sender
+    events
         .send(RamdiskReady {})
         .await
         .context("failed to send event")?;
-
     info!(log, "Sent ramdisk ready event");
 
-    // select root disk
-    let disk_finder = SingleDiskFinder::new();
-    let disk = disk_finder
-        .get_root_device()
-        .context("Failed to find root device to write root_disk_package to")?
-        .dev_node()
-        .context("Failed to get the devnode for root disk")?;
+    let bootloader = Bootloader {
+        log: log.clone(),
+        args,
+        config,
+        events,
+    };
 
-    info!(log, "Found root disk {:?}", disk);
+    match bootloader.boot().await {
+        Ok(()) => Ok(()),
+        Err(err) => {
+            error!(log, "failed to boot into next stage: {:?}", err);
+            bootloader.send_event(Failure { error: &err }).await;
+            Err(err)
+        }
+    }
+}
 
-    let summary = apply_disk_image(
-        log.clone(),
-        disk,
-        config.provisioning_config.gpt_root_disk.clone(),
-        &args.tmp_mounts_dir,
-        args.buffer_size,
-        RealMounter {},
-    )
-    .await
-    .context("Failed to apply disk image")?;
+struct Bootloader {
+    log: Logger,
+    args: Args,
+    config: HostConfig,
+    events: EventSender<HttpSink>,
+}
 
-    info!(
-        log,
-        "Applied disk image to {:?}. Summary:\n{:?}",
-        summary.partition_device,
-        summary.partition_delta
-    );
+impl Bootloader {
+    async fn send_event<T, E>(&self, event: T)
+    where
+        T: TryInto<Event, Error = E>,
+        E: std::error::Error,
+    {
+        let event = match event.try_into() {
+            Ok(event) => event,
+            Err(err) => {
+                error!(self.log, "failed to convert event: {:?}", err);
+                return;
+            }
+        };
 
-    if !metalos_paths::control().exists() {
-        std::fs::create_dir_all(metalos_paths::control())
-            .context("failed to create control mount directory")?;
+        match self.events.send(event).await {
+            Ok(_) => {}
+            Err(err) => {
+                error!(self.log, "failed to send event: {:?}", err);
+            }
+        }
     }
 
-    RealMounter {}
-        .mount(
-            &summary.partition_device,
-            metalos_paths::control(),
-            Some("btrfs"),
-            MsFlags::empty(),
-            None,
+    async fn boot(&self) -> Result<()> {
+        // Select root disk
+        let disk_finder = SingleDiskFinder::new();
+        let disk = disk_finder
+            .get_root_device()
+            .context("Failed to find root device to write root_disk_package to")?
+            .dev_node()
+            .context("Failed to get the devnode for root disk")?;
+
+        self.send_event(FoundRootDisk { path: &disk }).await;
+        info!(self.log, "Found root disk {:?}", disk);
+
+        // Download and apply disk image
+        let summary = apply_disk_image(
+            self.log.clone(),
+            disk,
+            self.config.provisioning_config.gpt_root_disk.clone(),
+            &self.args.tmp_mounts_dir,
+            self.args.buffer_size,
+            RealMounter {},
         )
-        .context(format!(
-            "failed to mount root partition {:?} to {:?}",
-            summary.partition_device,
-            metalos_paths::control(),
-        ))?;
-
-    info!(
-        log,
-        "Mounted rootfs {:?} to {:?}",
-        &summary.partition_device,
-        metalos_paths::control()
-    );
-
-    // Write config
-    let token = config.save().context("failed to save config to disk")?;
-    token.commit().context("Failed to commit config")?;
-
-    info!(log, "Wrote config to disk");
-
-    // Download the next stage initrd
-    let downloader = HttpsDownloader::new().context("while creating downloader")?;
-
-    let (initrd, kernel) = try_join!(
-        ensure_package_on_disk(log.clone(), &downloader, config.boot_config.initrd.clone())
-            .map(|r| r.context("failed to download next stage initrd")),
-        ensure_package_on_disk(
-            log.clone(),
-            &downloader,
-            config.boot_config.kernel.pkg.clone()
-        )
-        .map(|r| r.context("failed to download kernel")),
-    )?;
-
-    info!(log, "Downloaded initrd to: {:?}", initrd.display());
-    info!(log, "Downloaded kernel to: {:?}", kernel.path().display());
-
-    KexecInfo::try_from(&config)
-        .context("Failed to build kexec info")?
-        .kexec(log)
         .await
-        .context("failed to perform kexec")?;
+        .context("Failed to apply disk image")?;
 
-    Ok(())
+        self.send_event(AppliedDiskImage {
+            package: &self.config.provisioning_config.gpt_root_disk,
+        })
+        .await;
+        info!(
+            self.log,
+            "Applied disk image to {:?}. Summary:\n{:?}",
+            summary.partition_device,
+            summary.partition_delta
+        );
+
+        // Mount rootfs
+        if !metalos_paths::control().exists() {
+            std::fs::create_dir_all(metalos_paths::control())
+                .context("failed to create control mount directory")?;
+        }
+
+        RealMounter {}
+            .mount(
+                &summary.partition_device,
+                metalos_paths::control(),
+                Some("btrfs"),
+                MsFlags::empty(),
+                None,
+            )
+            .context(format!(
+                "failed to mount root partition {:?} to {:?}",
+                summary.partition_device,
+                metalos_paths::control(),
+            ))?;
+
+        self.send_event(MountedRootfs {
+            source: &summary.partition_device,
+            target: metalos_paths::control(),
+        })
+        .await;
+        info!(
+            self.log,
+            "Mounted rootfs {:?} to {:?}",
+            &summary.partition_device,
+            metalos_paths::control()
+        );
+
+        // Write config
+        let token = self
+            .config
+            .save()
+            .context("failed to save config to disk")?;
+        token.commit().context("Failed to commit config")?;
+
+        self.send_event(WrittenConfig {}).await;
+        info!(self.log, "Wrote config to disk");
+
+        // Download the next stage initrd
+        let downloader = HttpsDownloader::new().context("while creating downloader")?;
+
+        let (initrd, kernel) = try_join!(
+            ensure_package_on_disk(
+                self.log.clone(),
+                &downloader,
+                self.config.boot_config.initrd.clone()
+            )
+            .map(|r| r.context("failed to download next stage initrd")),
+            ensure_package_on_disk(
+                self.log.clone(),
+                &downloader,
+                self.config.boot_config.kernel.pkg.clone()
+            )
+            .map(|r| r.context("failed to download kernel")),
+        )?;
+
+        self.send_event(DownloadedNextStage {
+            kernel_package: &self.config.boot_config.kernel.pkg,
+            initrd_package: &self.config.boot_config.initrd,
+        })
+        .await;
+        info!(self.log, "Downloaded initrd to: {:?}", initrd.display());
+        info!(
+            self.log,
+            "Downloaded kernel to: {:?}",
+            kernel.path().display()
+        );
+
+        // Try to kexec
+        self.send_event(StartingKexec {
+            cmdline: &self.config.boot_config.kernel.cmdline,
+        })
+        .await;
+        info!(self.log, "Trying to kexec");
+        KexecInfo::try_from(&self.config)
+            .context("Failed to build kexec info")?
+            .kexec(self.log.clone())
+            .await
+            .context("failed to perform kexec")?;
+
+        Ok(())
+    }
 }
