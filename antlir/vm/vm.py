@@ -455,14 +455,7 @@ async def vm(
         )
 
     if os.access("/dev/kvm", os.R_OK | os.W_OK):
-        # nested kvm is wildly unreliable, so let's take the performance hit in
-        # exchange for reliability (CI is not using nested kvm, so on-diff tests
-        # will still be fast)
-        proc = subprocess.run(["systemd-detect-virt", "--vm", "--quiet"])
-        if proc.returncode == 0:  # pragma: no cover
-            logger.warning("Inside a VM - refusing to use nested kvm")
-        else:  # pragma: no cover
-            args.append("-enable-kvm")
+        args.append("-enable-kvm")
     else:  # pragma: no cover
         logger.warning(
             "KVM not available - falling back to slower, emulated CPU: "
