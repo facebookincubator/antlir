@@ -11,7 +11,6 @@ load("//antlir/bzl:shape.bzl", "shape")
 # Prefer to keep this default-initializable to avoid having to update a
 # bunch of tests and other Python callsites.
 container_opts_t = shape.shape(
-    allow_mknod = shape.field(bool, default = False),
     shadow_proxied_binaries = shape.field(bool, default = False),
     serve_rpm_snapshots = shape.field(shape.list(shape.path), default = []),
     # See `--shadow-path` in `args.py`.
@@ -29,6 +28,9 @@ container_opts_t = shape.shape(
     run_proxy_server = shape.field(bool, default = False),
     # @oss-disable: fbpkg_db_path = shape.field(shape.path, optional = True), 
 
+    # Do not use this, it is only exposed so that certain interal
+    # unittests that need to create devices can run.
+    internal_only_allow_mknod = shape.field(bool, default = False),
     # Do not use this, it is only exposed so that Antlir can populate the
     # repodata caches for the RPM snapshots.
     internal_only_unprotect_antlir_dir = shape.field(bool, default = False),
