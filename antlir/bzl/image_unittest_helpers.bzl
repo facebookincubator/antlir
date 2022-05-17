@@ -92,7 +92,6 @@ def _nspawn_wrapper_properties(
         k
         for k in structs.to_dict(container_opts).keys()
         if not k.startswith("_") and not k in [
-            "allow_mknod",
             "attach_antlir_dir",
             "internal_only_logs_tmpfs",
             "serve_rpm_snapshots",
@@ -100,6 +99,7 @@ def _nspawn_wrapper_properties(
             "shadow_proxied_binaries",
             "run_proxy_server",
             # @oss-disable: "fbpkg_db_path", 
+            "internal_only_allow_mknod",
             "internal_only_unprotect_antlir_dir",  # Unavailable in tests
             "internal_only_bind_artifacts_dir_rw",
         ]
@@ -195,7 +195,7 @@ EOF
 mv $TMP/out "$OUT"
         """.format(
             binary_path_repr = repr(binary_path),
-            maybe_allow_mknod = "'--allow-mknod'" if container_opts.allow_mknod else "",
+            maybe_allow_mknod = "'--allow-mknod'" if container_opts.internal_only_allow_mknod else "",
             maybe_boot = "'--boot'" if boot else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
             # The next 3 would be nice to pass as `container_opts_t`, but

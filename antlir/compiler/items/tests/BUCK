@@ -25,7 +25,7 @@ image_python_unittest(
     srcs = ["test_clone.py"],
     container_opts = {
         # Required because we test cloning of special files
-        "allow_mknod": True,
+        "internal_only_allow_mknod": True,
         # needed because clone uses --reflink=always when
         # operating and therefore needs the "real" build volume
         # for creating tmp subvols.
