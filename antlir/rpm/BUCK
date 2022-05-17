@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
@@ -20,7 +18,6 @@ python_library(
         "//tupperware/cm/antlir/...",
     ],
     deps = [
-        ":yum_dnf_conf",
         "//antlir:common",
         "//antlir:fs_utils",
     ],
@@ -53,6 +50,7 @@ python_unittest(
 )
 
 python_library(
+    # @autodeps-skip
     name = "open_url",
     srcs = ["open_url.py"],
     deps = [
@@ -76,6 +74,7 @@ python_unittest(
 # NB: For Facebook-internal binaries, add `facebook:db_connection` to
 # your `deps`, but import this regular `antlir.rpm.db_connection` module.
 python_library(
+    # @autodeps-skip
     name = "db_connection",
     srcs = ["db_connection.py"],
     deps = [
@@ -100,8 +99,9 @@ python_library(
     },
     deps = [
         "//antlir:fs_utils",
+        "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
-        "//antlir/compiler/items:common",
+        "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
     ],
 )
@@ -113,6 +113,7 @@ python_unittest(
         (100, ":repo_objects"),
     ],
     deps = [
+        ":common",
         ":repo_objects",
         ":temp_repos",
     ],
@@ -134,7 +135,11 @@ python_unittest(
     needed_coverage = [
         (100, ":repo_sizer"),
     ],
-    deps = [":repo_sizer"],
+    deps = [
+        ":common",
+        ":repo_objects",
+        ":repo_sizer",
+    ],
 )
 
 python_library(
@@ -151,7 +156,9 @@ python_unittest(
     ],
     deps = [
         ":parse_repodata",
+        ":repo_objects",
         ":temp_repos",
+        "//antlir:fs_utils",
     ],
 )
 
@@ -161,6 +168,7 @@ python_library(
     deps = [
         ":common",
         ":repo_objects",
+        "//antlir:common",
         "//antlir:fs_utils",
         "//antlir/rpm/storage:storage",
     ],
@@ -172,7 +180,13 @@ python_unittest(
     needed_coverage = [
         (100, ":repo_snapshot"),
     ],
-    deps = [":repo_snapshot"],
+    deps = [
+        ":common",
+        ":repo_objects",
+        ":repo_snapshot",
+        "//antlir:fs_utils",
+        "//antlir/rpm/storage:filesystem_storage",
+    ],
 )
 
 python_library(
@@ -191,8 +205,10 @@ python_unittest(
         (100, ":repo_db"),
     ],
     deps = [
+        ":common",
         ":db_connection",
         ":repo_db",
+        ":repo_objects",
     ],
 )
 
@@ -202,6 +218,7 @@ python_library(
     deps = [
         ":common",
         ":repo_snapshot",
+        "//antlir:common",
         "//antlir:fs_utils",
         "//antlir/proxy:http_socket_server",
         "//antlir/rpm/storage:storage",
@@ -209,6 +226,7 @@ python_library(
 )
 
 python_unittest(
+    # @autodeps-skip
     name = "test-repo-server",
     srcs = ["tests/test_repo_server.py"],
     needed_coverage = [
@@ -255,19 +273,22 @@ python_unittest(
     name = "test-gpg-keys",
     srcs = ["tests/test_gpg_keys.py"],
     needed_coverage = [(100, ":gpg_keys")],
-    deps = [":gpg_keys"],
+    deps = [
+        ":gpg_keys",
+        "//antlir:fs_utils",
+    ],
 )
 
 python_library(
     name = "snapshot_repo",
     srcs = ["snapshot_repo.py"],
     deps = [
-        ":common",
         ":common_args",
         ":gpg_keys",
         ":repo_sizer",
         ":repo_snapshot",
         ":yum_dnf_conf",
+        "//antlir:common",
         "//antlir:fs_utils",
         "//antlir/rpm/downloader:common",
         "//antlir/rpm/downloader:repo_downloader",
@@ -292,8 +313,11 @@ python_unittest(
         (100, ":snapshot_repo"),
     ],
     deps = [
+        ":repo_snapshot",
         ":snapshot_repo",
         ":temp_repos",
+        "//antlir:fs_utils",
+        "//antlir/rpm/storage:storage",
     ],
 )
 
@@ -322,6 +346,7 @@ python_binary(
 )
 
 python_unittest(
+    # @autodeps-skip
     name = "test-write-yum-dnf-conf",
     srcs = ["tests/test_write_yum_dnf_conf.py"],
     needed_coverage = [
@@ -338,6 +363,7 @@ python_binary(
         ":common",
         ":yum_dnf_conf",
         "//antlir:cli",
+        "//antlir:common",
         "//antlir:fs_utils",
         "//antlir/nspawn_in_subvol/plugins:shadow_paths",
     ],
@@ -348,10 +374,10 @@ python_binary(
     srcs = ["tests/temp_snapshot.py"],
     main_module = "antlir.rpm.tests.temp_snapshot",
     deps = [
-        ":db_connection",
+        ":common",
         ":snapshot_repos",
         ":temp_repos",
-        "//antlir/rpm/storage:storage",
+        "//antlir:fs_utils",
     ],
 )
 
@@ -384,7 +410,9 @@ test_rpm_repo_snapshot(
     rpm_installers = ("dnf", "yum"),
 )
 
-export_file(name = "tests/needs-carrot.spec")
+export_file(
+    name = "tests/needs-carrot.spec",
+)
 
 # Run the same test in two different container configurations to add
 # integration testing for `container_opts` covering both implicitly and
@@ -437,11 +465,14 @@ python_library(
         ":gpg_keys",
         ":repo_db",
         ":repo_sizer",
+        ":repo_snapshot",
         ":yum_dnf_conf",
+        "//antlir:common",
         "//antlir:fs_utils",
         "//antlir/rpm/downloader:common",
         "//antlir/rpm/downloader:repo_downloader",
         "//antlir/rpm/facebook:validate_universe_name",
+        "//antlir/rpm/storage:storage",
     ],
 )
 
@@ -462,8 +493,12 @@ python_unittest(
         (100, ":snapshot_repos"),
     ],
     deps = [
+        ":repo_db",
+        ":repo_snapshot",
         ":snapshot_repos",
         ":temp_repos",
+        "//antlir:fs_utils",
+        "//antlir/rpm/storage:storage",
     ],
 )
 
@@ -494,9 +529,10 @@ python_unittest(
         ): "tests/test-build-appliance",
     },
     deps = [
-        ":common",
         ":rpm_metadata",
         ":temp_repos",
         "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
+        "//antlir:testlib_layer_resource",
     ],
 )
