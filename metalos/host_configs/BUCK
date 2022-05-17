@@ -15,7 +15,6 @@ generators = [
     "generators/systemd-networkd.star",
 ] + ([
     "generators/facebook/fbwhoami.star",
-    "generators/facebook/opus.star",
     "generators/facebook/smc_tiers.star",
 ] if facebook else [])
 
