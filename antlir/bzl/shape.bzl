@@ -644,7 +644,7 @@ def _json_file(name, instance, visibility = None):  # pragma: no cover
     )
     return normalize_target(":" + name)
 
-def _render_template(name, instance, template):  # pragma: no cover
+def _render_template(name, instance, template, visibility = None):  # pragma: no cover
     """
     Render the given Jinja2 template with the shape instance data to a file.
 
@@ -657,6 +657,7 @@ def _render_template(name, instance, template):  # pragma: no cover
         name = name,
         cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
         antlir_rule = "user-internal",
+        visibility = visibility,
     )
     return normalize_target(":" + name)
 
