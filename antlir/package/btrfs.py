@@ -327,7 +327,9 @@ class _BtrfsLoopbackVolume:
 
         return size_bytes
 
-    def receive(self, send: int) -> subprocess.CompletedProcess:
+    def receive(
+        self, send: int, receive_dir: Path
+    ) -> subprocess.CompletedProcess:
         """
         Receive a btrfs sendstream from the `send` fd
         """
@@ -335,7 +337,7 @@ class _BtrfsLoopbackVolume:
             [
                 "btrfs",
                 "receive",
-                self._mount_dir,
+                receive_dir,
             ],
             stdin=send,
             stderr=subprocess.PIPE,
@@ -556,6 +558,17 @@ class BtrfsImage:
             )
         )
 
+        # Note that `receive_dir` is a temp_dir created inside the mounted
+        # loopback volume.  The ordering is important here so that cleanup
+        # occurs in the correct order.  The good news is that if this order
+        # is accidentally changed everything will blow up because receive_dir
+        # cannot be cleaned up if `mount_dir` is unmounted first.
+        #
+        # Also, `receive_dir` is important because we need to first receive
+        # the subvols in a different directory. This is so that multiple subvols
+        # whose `receive` names are all the same (as Antlir uses `volume`
+        # by default) can be safely packaged if one of the subvols doesn't
+        # get renamed.
         with temp_dir() as mount_dir, _BtrfsLoopbackVolume(
             image_path=output_path,
             size_bytes=fs_bytes,
@@ -564,11 +577,12 @@ class BtrfsImage:
             mount_options=[
                 f"compress=zstd:{compression_level}",
             ],
-        ).mount() as loop_vol:
+        ).mount() as loop_vol, temp_dir(dir=mount_dir) as receive_dir:
+
             for subvol_name, (subvol, _) in subvols.items():
                 log.info(
                     f"Receiving {subvol.path()} -> "
-                    f"{output_path}/{subvol_name}"
+                    f"{receive_dir}{subvol_name}"
                 )
                 with pipe() as (
                     r_send,
@@ -577,7 +591,12 @@ class BtrfsImage:
                     # This end is now fully owned by `btrfs send`
                     w_send.close()
                     with r_send:
-                        recv_ret = loop_vol.receive(r_send)
+
+                        recv_ret = loop_vol.receive(
+                            send=r_send,
+                            receive_dir=receive_dir,
+                        )
+
                         if recv_ret.returncode != 0:
                             err = recv_ret.stderr.decode(
                                 errors="surrogateescape"
@@ -594,25 +613,23 @@ class BtrfsImage:
                             raise UserError(err)
 
                 # Mark as read-write for potential future operations.
-                subvol_path_src = mount_dir / subvol.path().basename()
+                subvol_path_src = receive_dir / subvol.path().basename()
                 btrfsutil.set_subvolume_read_only(subvol_path_src, False)
 
                 # Optionally change the subvolume name, stripping the
-                # / first
+                # leading / off the requested subvol name first
                 subvol_path_dst = mount_dir / Path(subvol_name[1:])
-                if subvol_path_src != subvol_path_dst:
-                    log.info(f"Renaming {subvol_path_src} -> {subvol_path_dst}")
-                    # If we have any parent paths that don't exist yet, make
-                    # them here.  Note these are regular directories, not
-                    # subvols.
-                    log.info(
-                        f"Making parent paths: {subvol_path_dst.dirname()}"
-                    )
-                    os.makedirs(
-                        subvol_path_dst.dirname(),
-                        exist_ok=True,
-                    )
-                    os.rename(subvol_path_src, subvol_path_dst)
+
+                log.info(f"Renaming {subvol_path_src} -> {subvol_path_dst}")
+                # If we have any parent paths that don't exist yet, make
+                # them here.  Note these are regular directories, not
+                # subvols.
+                log.info(f"Making parent paths: {subvol_path_dst.dirname()}")
+                os.makedirs(
+                    subvol_path_dst.dirname(),
+                    exist_ok=True,
+                )
+                os.rename(subvol_path_src, subvol_path_dst)
 
             # Iterate through the subvol list in reverse and mark
             # all subvols as read-only unless explicitly told otherwise
