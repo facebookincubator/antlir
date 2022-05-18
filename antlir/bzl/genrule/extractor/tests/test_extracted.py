@@ -38,7 +38,7 @@ class TestExtracted(unittest.TestCase):
         )
 
         subvol = layer_resource_subvol(__package__, "layer")
-        self.assertFalse(subvol.path("/lib64").exists())
+        self.assertEqual(subvol.path("/lib64").readlink(), Path("usr/lib64"))
         self.assertTrue(subvol.path("/usr/lib64/libc.so.6"))
 
     def test_permissions(self):
@@ -59,9 +59,15 @@ class TestExtracted(unittest.TestCase):
             [subvol.path("/usr/bin/repo-built-binary")], check=True
         )
 
-        # binaries from rpms
+        # binary from rpms
         for binary in (
             "/usr/lib/systemd/systemd",
             "/usr/bin/strace",
         ):
-            subvol.run_as_root([subvol.path(binary), "--help"], check=True)
+            # Note: we have to run this via chroot so that the shared libs
+            # are properly loaded from within the image.layer and _not_ the
+            # host environment.  We don't use systemd-nspawn here because it
+            # requires a "real" os that has a passwd db and everything.
+            subvol.run_as_root(
+                ["chroot", subvol.path(), binary, "--help"], check=True
+            )
