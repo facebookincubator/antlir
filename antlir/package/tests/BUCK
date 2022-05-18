@@ -1,8 +1,7 @@
 # @noautodeps
-load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
+load("//antlir/bzl:oss_shim.bzl", "python_unittest")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
@@ -91,22 +90,15 @@ btrfs.new(
     ),
 )
 
-image_python_unittest(
+python_unittest(
     name = "test-package-btrfs",
     srcs = ["test_package_btrfs.py"],
-    container_opts = {
-        "allow_mknod": True,
-        "internal_only_bind_artifacts_dir_rw": True,
-    },
-    hostname = BZL_CONST.hostname_for_compiler_in_ba,
-    layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     needed_coverage = [(100, "//antlir/package:btrfs-library")],
     resources = {
         layer_resource(TEST_IMAGE_PREFIX + "create_ops-original.sendstream"): "create_ops-original.sendstream",
         layer_resource(TEST_IMAGE_PREFIX + "create_ops"): "create_ops",
         layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "build-appliance-testing",
     },
-    run_as_user = "root",
     deps = [
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",

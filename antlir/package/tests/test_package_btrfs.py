@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import stat
 import subprocess
 import tempfile
 import unittest.mock
@@ -20,14 +19,16 @@ from antlir.package.btrfs import _FoundSubvolOpts, BtrfsImage, package_btrfs
 from antlir.subvol_utils import get_subvolumes_dir, MiB
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
+from antlir.unshare import Namespace, nsenter_as_root, Unshare
 
 
 class PackageImageTestCase(ImagePackageTestCaseBase):
     @contextmanager
-    def _mount(self, image_path: Path) -> Path:
+    def _mount(self, unshare: Unshare, image_path: Path) -> Path:
         with temp_dir() as mount_dir:
             subprocess.check_call(
-                [
+                nsenter_as_root(
+                    unshare,
                     "mount",
                     "-t",
                     "btrfs",
@@ -35,15 +36,16 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     "loop,discard,nobarrier",
                     image_path,
                     mount_dir,
-                ]
+                )
             )
             yield mount_dir
 
             subprocess.check_call(
-                [
+                nsenter_as_root(
+                    unshare,
                     "umount",
                     mount_dir,
-                ]
+                )
             )
 
     @contextmanager
@@ -69,20 +71,6 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             )
             yield out_path
 
-    @classmethod
-    def setUpClass(cls) -> None:
-        os.mknod(
-            "/dev/loop-control",
-            mode=stat.S_IFCHR | 0o660,
-            device=os.makedev(10, 237),
-        )
-        for i in range(63):
-            os.mknod(
-                f"/dev/loop{i}",
-                mode=stat.S_IFBLK | 0o666,
-                device=os.makedev(7, i),
-            )
-
     def test_package_btrfs_estimated_size(self):
         with self._package_image(
             opts=btrfs_opts_t(
@@ -101,33 +89,26 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     label="test-label",
                 ),
             ),
-        ) as out_path, self._mount(
-            image_path=out_path
+        ) as out_path, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, self._mount(
+            unshare=unshare, image_path=out_path
         ) as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:
-            self.assertEqual(
-                subprocess.check_output(
-                    [
-                        "findmnt",
-                        "--mountpoint",
-                        mount_dir,
-                        "--noheadings",
-                        "-o",
-                        "LABEL",
-                    ]
-                )
-                .decode()
-                .strip(),
+            self._assert_filesystem_label(
+                unshare,
+                mount_dir,
                 "test-label",
             )
 
             subprocess.check_call(
-                [
+                nsenter_as_root(
+                    unshare,
                     "btrfs",
                     "send",
                     "-f",
                     temp_sendstream.name,
                     mount_dir / "create_ops",
-                ]
+                )
             )
 
             self._assert_meta_valid_and_sendstreams_equal(
@@ -205,12 +186,17 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     ),
                 },
             ),
-        ) as out_path, self._mount(image_path=out_path) as mount_dir:
+        ) as out_path, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, self._mount(
+            unshare=unshare, image_path=out_path
+        ) as mount_dir:
             subprocess.check_call(
-                [
+                nsenter_as_root(
+                    unshare,
                     "touch",
                     mount_dir / "volume" / "foo",
-                ]
+                )
             )
 
     def test_package_btrfs_seed_device(self):
@@ -269,7 +255,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 },
                 default_subvol=Path("/volume"),
             ),
-        ) as out_path, self._mount(
+        ) as out_path, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, self._mount(
+            unshare=unshare,
             image_path=out_path,
         ) as mount_dir:
             # The output of this command looks something like:
@@ -279,12 +268,13 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             # The last element is the name of the subvol.
             default_subvol_name = (
                 subprocess.run(
-                    [
+                    nsenter_as_root(
+                        unshare,
                         "btrfs",
                         "subvolume",
                         "get-default",
                         mount_dir,
-                    ],
+                    ),
                     check=True,
                     stdout=subprocess.PIPE,
                 )
@@ -391,19 +381,23 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     ),
                 },
             ),
-        ) as out_path, self._mount(
+        ) as out_path, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, self._mount(
+            unshare=unshare,
             image_path=out_path,
         ) as mount_dir:
             # List all the subvols in the loopback
             subvol_list = [
                 line.split(b" ")[-1]
                 for line in subprocess.run(
-                    [
+                    nsenter_as_root(
+                        unshare,
                         "btrfs",
                         "subvolume",
                         "list",
                         mount_dir,
-                    ],
+                    ),
                     check=True,
                     stdout=subprocess.PIPE,
                 )
@@ -437,18 +431,22 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     ),
                 },
             ),
-        ) as out_path, self._mount(
+        ) as out_path, Unshare(
+            [Namespace.MOUNT, Namespace.PID]
+        ) as unshare, self._mount(
+            unshare=unshare,
             image_path=out_path,
         ) as mount_dir:
             subvol_list = [
                 line.split(b" ")[-1]
                 for line in subprocess.run(
-                    [
+                    nsenter_as_root(
+                        unshare,
                         "btrfs",
                         "subvolume",
                         "list",
                         mount_dir,
-                    ],
+                    ),
                     check=True,
                     stdout=subprocess.PIPE,
                 )
