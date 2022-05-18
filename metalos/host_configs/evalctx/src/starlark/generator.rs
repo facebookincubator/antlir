@@ -262,7 +262,7 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
 def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     return metalos.Output(
         files=[
-            metalos.file(path="/test.json", contents=json({"a":"b","c":None})),
+            metalos.file(path="/test.json", contents=json.encode({"a":"b","c":None})),
         ]
     )
         "#
