@@ -5,6 +5,7 @@ rust_binary(
     srcs = [
         "src/main.rs",
     ],
+    link_style = "static",
     deps = [
         "anyhow",
         "structopt",
