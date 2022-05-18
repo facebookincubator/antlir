@@ -219,7 +219,7 @@ base images. Specific advantages to this include:
 import collections
 import subprocess
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, NamedTuple, Optional, List
+from typing import Any, Dict, Generator, List, NamedTuple, Optional
 
 from antlir import btrfsutil
 from antlir.bzl.image.package.btrfs import btrfs_opts_t
@@ -229,7 +229,7 @@ from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol
-from antlir.unshare import Unshare, Namespace, nsenter_as_user, nsenter_as_root
+from antlir.unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
 
 log = get_logger()
 MiB = 2**20
