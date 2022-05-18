@@ -217,6 +217,7 @@ base images. Specific advantages to this include:
 """
 
 import collections
+import os
 import subprocess
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, List, NamedTuple, Optional
@@ -229,7 +230,6 @@ from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol
-from antlir.unshare import Namespace, nsenter_as_root, nsenter_as_user, Unshare
 
 log = get_logger()
 MiB = 2**20
@@ -259,7 +259,6 @@ class _FoundSubvolOpts(NamedTuple):
 class _BtrfsLoopbackVolume:
     def __init__(
         self,
-        unshare: Unshare,
         image_path: Path,
         size_bytes: int,
         mount_dir: Path,
@@ -267,7 +266,6 @@ class _BtrfsLoopbackVolume:
         mount_options: Optional[List[str]] = None,
     ) -> None:
         self._image_path = Path(image_path).abspath()
-        self._unshare = unshare
         self._label: Optional[str] = label
         self._mount_dir: Path = Path(mount_dir).abspath()
         self._mount_options = [
@@ -334,11 +332,11 @@ class _BtrfsLoopbackVolume:
         Receive a btrfs sendstream from the `send` fd
         """
         return run_stdout_to_err(
-            self._unshare.nsenter_as_root(
+            [
                 "btrfs",
                 "receive",
                 self._mount_dir,
-            ),
+            ],
             stdin=send,
             stderr=subprocess.PIPE,
         )
@@ -352,8 +350,7 @@ class _BtrfsLoopbackVolume:
         )
         # Explicitly set filesystem type to detect shenanigans.
         run_stdout_to_err(
-            nsenter_as_root(
-                self._unshare,
+            [
                 "mount",
                 "-t",
                 "btrfs",
@@ -361,20 +358,19 @@ class _BtrfsLoopbackVolume:
                 mount_opts,
                 self._image_path,
                 self._mount_dir,
-            ),
+            ],
             check=True,
         )
 
         # pyre-fixme[16]: `Optional` has no attribute `_loop_dev`
         self._loop_dev = subprocess.check_output(
-            nsenter_as_user(
-                self._unshare,
+            [
                 "findmnt",
                 "--noheadings",
                 "--output",
                 "SOURCE",
                 self._mount_dir,
-            )
+            ]
         ).rstrip(b"\n")
 
         # This increases the chances that --direct-io=on will succeed, since one
@@ -383,7 +379,7 @@ class _BtrfsLoopbackVolume:
         # we've seen in production have sector sizes of 512, 1024, or 4096).
         if (
             run_stdout_to_err(
-                ["sudo", "losetup", "--sector-size=4096", self._loop_dev]
+                ["losetup", "--sector-size=4096", self._loop_dev]
             ).returncode
             != 0
         ):  # pragma: nocover
@@ -395,7 +391,7 @@ class _BtrfsLoopbackVolume:
         # Also, when the image is on tmpfs, setting direct IO fails.
         if (
             run_stdout_to_err(
-                ["sudo", "losetup", "--direct-io=on", self._loop_dev]
+                ["losetup", "--direct-io=on", self._loop_dev]
             ).returncode
             != 0
         ):  # pragma: nocover
@@ -404,14 +400,10 @@ class _BtrfsLoopbackVolume:
                 "worse performance."
             )
 
-        yield self
-
-        # This is a best effort unmount.  This is running in an unshare
-        # so if this fails the mount namespace exiting would clean this
-        # up.
-        run_stdout_to_err(
-            nsenter_as_root(self._unshare, "umount", self._mount_dir)
-        )
+        try:
+            yield self
+        finally:
+            run_stdout_to_err(["umount", self._mount_dir])
 
     def minimize_size(self) -> int:
         """
@@ -421,13 +413,12 @@ class _BtrfsLoopbackVolume:
         Returns the new size of the loopback in bytes.
         """
         min_size_out = subprocess.check_output(
-            nsenter_as_root(
-                self._unshare,
+            [
                 "btrfs",
                 "inspect-internal",
                 "min-dev-size",
                 self._mount_dir,
-            )
+            ]
         ).split(b" ")
         assert min_size_out[1] == b"bytes"
         maybe_min_size_bytes = int(min_size_out[0])
@@ -452,34 +443,32 @@ class _BtrfsLoopbackVolume:
             f"{min_size_bytes} bytes."
         )
         run_stdout_to_err(
-            nsenter_as_root(
-                self._unshare,
+            [
                 "btrfs",
                 "filesystem",
                 "resize",
                 str(min_size_bytes),
                 self._mount_dir,
-            ),
+            ],
             check=True,
         )
 
         fs_bytes = int(
             subprocess.check_output(
-                nsenter_as_user(
-                    self._unshare,
+                [
                     "findmnt",
                     "--bytes",
                     "--noheadings",
                     "--output",
                     "SIZE",
                     self._mount_dir,
-                )
+                ]
             )
         )
         self._create_or_resize_image_file(fs_bytes)
         run_stdout_to_err(
             # pyre-fixme[16]: `Optional` has no attribute `_loop_dev`
-            ["sudo", "losetup", "--set-capacity", self._loop_dev],
+            ["losetup", "--set-capacity", self._loop_dev],
             check=True,
         )
 
@@ -496,11 +485,6 @@ class BtrfsImage:
     """
 
     _OUT_OF_SPACE_SUFFIX = b": No space left on device\n"
-
-    def _mark_subvol_readonly(
-        self, ns: Unshare, path: Path, readonly: bool
-    ) -> None:
-        btrfsutil.set_subvolume_read_only(path, readonly, in_namespace=ns)
 
     def package(
         self,
@@ -572,11 +556,7 @@ class BtrfsImage:
             )
         )
 
-        open(output_path, "wb").close()
-        with Unshare(
-            [Namespace.MOUNT, Namespace.PID]
-        ) as ns, temp_dir() as mount_dir, _BtrfsLoopbackVolume(
-            unshare=ns,
+        with temp_dir() as mount_dir, _BtrfsLoopbackVolume(
             image_path=output_path,
             size_bytes=fs_bytes,
             label=label,
@@ -615,11 +595,7 @@ class BtrfsImage:
 
                 # Mark as read-write for potential future operations.
                 subvol_path_src = mount_dir / subvol.path().basename()
-                self._mark_subvol_readonly(
-                    ns=ns,
-                    path=subvol_path_src,
-                    readonly=False,
-                )
+                btrfsutil.set_subvolume_read_only(subvol_path_src, False)
 
                 # Optionally change the subvolume name, stripping the
                 # / first
@@ -632,23 +608,11 @@ class BtrfsImage:
                     log.info(
                         f"Making parent paths: {subvol_path_dst.dirname()}"
                     )
-                    subprocess.run(
-                        ns.nsenter_as_root(
-                            "mkdir",
-                            "-p",
-                            subvol_path_dst.dirname(),
-                        ),
-                        check=True,
+                    os.makedirs(
+                        subvol_path_dst.dirname(),
+                        exist_ok=True,
                     )
-
-                    subprocess.run(
-                        ns.nsenter_as_root(
-                            "mv",
-                            str(subvol_path_src),
-                            str(subvol_path_dst),
-                        ),
-                        check=True,
-                    )
+                    os.rename(subvol_path_src, subvol_path_dst)
 
             # Iterate through the subvol list in reverse and mark
             # all subvols as read-only unless explicitly told otherwise
@@ -657,9 +621,7 @@ class BtrfsImage:
 
                 if not writable:
                     log.info(f"Marking {subvol_path} as read-only")
-                    self._mark_subvol_readonly(
-                        ns=ns, path=subvol_path, readonly=True
-                    )
+                    btrfsutil.set_subvolume_read_only(subvol_path, True)
 
             # Mark a subvol as default
             if default_subvol:
@@ -669,13 +631,12 @@ class BtrfsImage:
                 #
                 # b'ID 256 gen 7 top level 5 path volume\n'
                 subvol_id = btrfsutil.subvolume_id(
-                    mount_dir / default_subvol[1:], in_namespace=ns
+                    mount_dir / default_subvol[1:]
                 )
                 log.debug(f"subvol_id to set as default: {subvol_id}")
+
                 # Actually set the default
-                btrfsutil.set_default_subvolume(
-                    mount_dir, subvol_id, in_namespace=ns
-                )
+                btrfsutil.set_default_subvolume(mount_dir, subvol_id)
 
             if not size_mb:
                 loop_vol.minimize_size()

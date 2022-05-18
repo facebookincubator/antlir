@@ -80,10 +80,20 @@ def _new_btrfs(
         bash = wrap_bash_build_in_common_boilerplate(
             self_dependency = antlir_dep("bzl/image/package:btrfs"),
             bash = '''
-            $(exe {package_btrfs}) \
-                --subvolumes-dir "$subvolumes_dir" \
-                --output-path "$OUT" \
-                --opts $(location :{opts_name})
+            # Create the file as the build user first
+            touch "$OUT"
+            # Packaging currently requires root but to avoid
+            # sprinkling sudo calls through out we just run the
+            # entire packaging engine as root.  This makes it
+            # less fragile for future improvements when we can
+            # run this in a user namespace or container to avoid
+            # root execution on the build host.
+            sudo \
+            unshare --mount --pid --fork \
+                $(exe {package_btrfs}) \
+                    --subvolumes-dir "$subvolumes_dir" \
+                    --output-path "$OUT" \
+                    --opts $(location :{opts_name})
             '''.format(
                 package_btrfs = antlir_dep("package:btrfs"),
                 opts_name = opts_name,
