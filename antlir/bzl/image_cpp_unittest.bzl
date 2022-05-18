@@ -51,7 +51,7 @@ def image_cpp_unittest(
         antlir_rule = "user-internal",
     )
 
-    env = wrapper_props.outer_test_kwargs.pop("env")
+    env = wrapper_props.outer_test_kwargs.pop("env", {})
     env.update({
         # These dependencies must be on the user-visible "porcelain"
         # target, see the helper code for the explanation.
@@ -73,6 +73,7 @@ def image_cpp_unittest(
     buck_sh_test(
         name = name,
         test = ":" + wrapper_binary,
+        antlir_rule = "user-facing",
         type = "gtest",
         env = env,
         visibility = visibility,
