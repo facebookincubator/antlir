@@ -53,4 +53,5 @@ image.rust_unittest(
         ],
         platform = "rust",
     ),
+    container_opts = image.opts(boot_await_dbus = False),
 )

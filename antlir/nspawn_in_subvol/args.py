@@ -22,7 +22,6 @@ import subprocess
 from enum import Enum
 from typing import (
     Any,
-    AnyStr,
     Iterable,
     Mapping,
     NamedTuple,
@@ -36,7 +35,7 @@ from typing import (
 from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.find_built_subvol import find_built_subvol, Subvol
-from antlir.fs_utils import Path
+from antlir.fs_utils import MehStr, Path
 from antlir.subvol_utils import find_subvolume_on_disk
 
 
@@ -231,24 +230,19 @@ class _NspawnOpts(NamedTuple):
     layer: Subvol
     subvolume_on_disk: Optional[SubvolumeOnDisk] = None
     boot: bool = False
+    boot_await_dbus: bool = True
     bind_repo_ro: bool = False  # to support @mode/dev
     bind_artifacts_dir_rw: bool = False
     chdir: Optional[Path] = None
     # Future: maybe make these `Path`?
-    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
-    #  bytes]]`.
-    bindmount_ro: Iterable[Tuple[AnyStr, AnyStr]] = ()  # for `RpmActionItem`
-    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
-    #  bytes]]`.
-    bindmount_rw: Iterable[Tuple[AnyStr, AnyStr]] = ()  # for `RpmActionItem`
+    bindmount_ro: Iterable[Tuple[MehStr, MehStr]] = ()  # for `RpmActionItem`
+    bindmount_rw: Iterable[Tuple[MehStr, MehStr]] = ()  # for `RpmActionItem`
     forward_fd: Iterable[int] = ()  # for `image.*_unittest`
     # The default is to let `systemd-nspawn` pick a random hostname.
     hostname: Optional[str] = None  # for `image.*_unittest`
     quiet: bool = True
     # For now, these have the form `K=V`. Future: make this a map?
-    # pyre-fixme[34]: Current class isn't generic over `Variable[AnyStr <: [str,
-    #  bytes]]`.
-    setenv: Iterable[AnyStr] = ()  # for `image.*_unittest`
+    setenv: Iterable[MehStr] = ()  # for `image.*_unittest`
     snapshot: bool = True  # For `GenruleLayerItem`
     user: pwd.struct_passwd = _NOBODY_USER
     debug_only_opts: _NspawnDebugOnlyNotForProdOpts = _DEBUG_OPTS_FOR_PROD
@@ -289,6 +283,15 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         default=defaults["boot"],
         help="Boot the container with nspawn.  This means invoke `systemd` "
         "as PID 1 and let it start up services",
+    )
+    parser.add_argument(
+        "--boot-no-await-dbus",
+        dest="boot_await_dbus",
+        action="store_false",
+        help="By default, if `--boot` is specified, your command will not "
+        "run until the dbus socket for `systemd` exists in the container "
+        "(a prerequisite for `systemctl` to work). If you are debugging "
+        "early bootup, you may need to disable this wait.",
     )
     parser.add_argument(
         "--chdir",

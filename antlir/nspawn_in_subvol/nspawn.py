@@ -64,6 +64,7 @@ synthesize keystrokes on the host.
 """
 import functools
 import os
+import shlex
 import shutil
 import signal
 import subprocess
@@ -228,10 +229,9 @@ def _wrap_systemd_exec(
         # during its initialization sequence.
         #
         # We rely on this because `systemd` will only close FDs after it
-        # creates the `/run/systemd/private` socket (which makes `systemctl`
-        # usable) and after setting up the necessary signal handlers to
-        # process the `SIGRTMIN+4` shutdown signal that we need to shut down
-        # the container after invoking a command inside it.
+        # sets up the necessary signal handlers to process the `SIGRTMIN+4`
+        # shutdown signal that we need to shut down the container after
+        # invoking a command inside it.
         _script_to_exfiltrate_container_proc_pid(
             do_set_antlir_nis_domainname=do_set_antlir_nis_domainname,
         )
@@ -520,10 +520,7 @@ def _popen_nsenter_into_container(
         # cgroup will be unmanageable via `systemd`' view of `/sys/fs/cgroup`,
         # and it will be unable to move it into a user session. The specific
         # failure mode is described by `SlowSudoTestCase`.
-        f"""
-        echo $$ > {cgroup_procs}
-        exec "$@"
-        """,
+        "\n".join([f"echo $$ > {cgroup_procs}", 'exec "$@"']),
         "bash",  # $0 for `bash` above
         # `systemd-nspawn` chooses which capabilities to shed, and we will
         # shed the same ones here.  We do it this way because in the booted
@@ -557,8 +554,32 @@ def _popen_nsenter_into_container(
             if opts.chdir
             else []
         ),
-        *opts.cmd,
     ]
+    if setup.opts.boot and setup.opts.boot_await_dbus:
+        nsenter_cmd += [
+            # NB: We could make this also handle `busybox`-only
+            # containers, but the complexity not worth it -- `systemd`
+            # is much larger than `bash`.
+            "/bin/bash",
+            "-c",
+            # Avoid using `sleep`, since that's not a builtin, and the
+            # container need not have `coreutils`.  As a bonus, avoiding
+            # a subprocess saves ~2ms CPU per invocation.
+            #
+            # NB: The `{var}<> <(:)` hack for obtaining an FD for a
+            # blocking read comes from here:
+            # https://unix.stackexchange.com/questions/68236
+            """\
+exec {sleep_fd}<> <(:)
+while [ ! -e /run/dbus/system_bus_socket ] ; do
+    read -t 0.01 -u "$sleep_fd"
+done
+exec {sleep_fd}>&-
+"""
+            + f"exec {' '.join(shlex.quote(c) for c in opts.cmd)}",
+        ]
+    else:
+        nsenter_cmd += opts.cmd
 
     # This never returns a bare Popen, so it's fine not to use @contextmanager
     # pyre-fixme[7]: Expected `ContextManager[subprocess.Popen[typing.Any]]`

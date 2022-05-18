@@ -560,7 +560,7 @@ class NspawnTestCase(NspawnTestBase):
             ret.stderr, b"mknod: (|')/foo(|'): Operation not permitted\n"
         )
 
-    def test_boot_cmd_is_system_running(self):
+    def _check_boot_cmd_is_system_running(self, *, wait: bool):
         ret = self._nspawn_in(
             (__package__, "bootable-systemd-os"),
             [
@@ -573,7 +573,7 @@ class NspawnTestCase(NspawnTestBase):
                 "--",
                 "/usr/bin/systemctl",
                 "is-system-running",
-                "--wait",
+                *(["--wait"] if wait else []),
             ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -591,7 +591,15 @@ class NspawnTestCase(NspawnTestBase):
         self.assertIn(ret.returncode, [0, 1], msg=ret.stderr.strip())
         self.assertIn(
             ret.stdout.strip(),
-            [b"running", b"degraded"],
+            [b"running", b"degraded"]
+            + (
+                # Without `--wait`, this is testing `opts.boot_await_dbus`,
+                # which ensures that `systemctl` is available, but does not
+                # guarantee a "final" boot state.
+                []
+                if wait
+                else [b"initializing", b"starting"]
+            ),
             msg=ret.stderr.strip(),
         )
         # versions < 244 did not properly respect --quiet
@@ -604,6 +612,14 @@ class NspawnTestCase(NspawnTestBase):
                     if not l.startswith(b"DEBUG recv_fds_and_run.py")
                 ],
             )
+
+    def test_boot_cmd_is_system_running_no_wait(self):
+        # NB: This test would fail the vast majority of the time
+        # if the `boot_await_dbus` option did not work.
+        self._check_boot_cmd_is_system_running(wait=False)
+
+    def test_boot_cmd_is_system_running_wait(self):
+        self._check_boot_cmd_is_system_running(wait=True)
 
     def test_boot_cmd_failure(self):
         ret = self._nspawn_in(
