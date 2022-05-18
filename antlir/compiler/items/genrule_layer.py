@@ -70,6 +70,7 @@ class GenruleLayerItem(genrule_layer_t):
                 targets_and_outputs=layer_opts.target_to_path,
                 bind_repo_ro=item.bind_repo_ro,
                 boot=item.boot,
+                boot_await_dbus=c_opts.boot_await_dbus,
                 subvolume_on_disk=SubvolumeOnDisk.from_subvolume_path(
                     subvol.path(),
                     layer_opts.subvolumes_dir,

@@ -11,6 +11,8 @@ load("//antlir/bzl:shape.bzl", "shape")
 # Prefer to keep this default-initializable to avoid having to update a
 # bunch of tests and other Python callsites.
 container_opts_t = shape.shape(
+    # Future: move `boot` in here, too.
+    boot_await_dbus = shape.field(bool, default = True),
     shadow_proxied_binaries = shape.field(bool, default = False),
     serve_rpm_snapshots = shape.field(shape.list(shape.path), default = []),
     # See `--shadow-path` in `args.py`.
