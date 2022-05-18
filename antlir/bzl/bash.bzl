@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
+load(":oss_shim.bzl", "is_buck2")
 
 def wrap_bash_build_in_common_boilerplate(
         self_dependency,
@@ -30,7 +31,7 @@ def wrap_bash_build_in_common_boilerplate(
     # `image/package/new.bzl`.  We need `binary_path` because the `exe` macro
     # won't get expanded inside a \\$( ...  ) context.
     binary_path=( $(exe {artifacts_dir}) )
-    artifacts_dir=\\$( "${{binary_path[@]}}" )
+    artifacts_dir=\\$( ANTLIR_BUCK="{antlir_buck}" "${{binary_path[@]}}" )
 
     # Future-proofing: keep all Buck target subvolumes under
     # "targets/" in the per-repo volume, so that we can easily
@@ -93,6 +94,7 @@ def wrap_bash_build_in_common_boilerplate(
     )
     """.format(
         artifacts_dir = antlir_dep(":artifacts-dir"),
+        antlir_buck = "buck2" if is_buck2() else "buck",
         bash = bash,
         min_free_bytes = volume_min_free_bytes if volume_min_free_bytes else "None",
         log_description = "{}:{}(name={})".format(
