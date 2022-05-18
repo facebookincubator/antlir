@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load(":oss_shim.bzl", "is_buck2")
+load(":oss_shim.bzl", "antlir_buck_env")
 
 def wrap_bash_build_in_common_boilerplate(
         self_dependency,
@@ -94,7 +94,7 @@ def wrap_bash_build_in_common_boilerplate(
     )
     """.format(
         artifacts_dir = antlir_dep(":artifacts-dir"),
-        antlir_buck = "buck2" if is_buck2() else "buck",
+        antlir_buck = antlir_buck_env(),
         bash = bash,
         min_free_bytes = volume_min_free_bytes if volume_min_free_bytes else "None",
         log_description = "{}:{}(name={})".format(

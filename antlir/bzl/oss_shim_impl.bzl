@@ -416,9 +416,12 @@ def _impl_python_unittest(
         **kwargs
     )
 
+def _antlir_buck_env():
+    return "buck"
+
 def _python_unittest(*args, **kwargs):
     env = kwargs.get("env", {})
-    env["ANTLIR_BUCK"] = "buck"
+    env["ANTLIR_BUCK"] = _antlir_buck_env()
     kwargs["env"] = env
     _wrap_internal(_impl_python_unittest, args, kwargs)
 
@@ -682,6 +685,7 @@ shim = struct(
     #
     # Utility functions -- use `_assert_package()`, if at all possible.
     #
+    antlir_buck_env = _antlir_buck_env,
     config = struct(
         get_buck_out_path = _get_buck_out_path,
         get_antlir_cell_name = _get_antlir_cell_name,
