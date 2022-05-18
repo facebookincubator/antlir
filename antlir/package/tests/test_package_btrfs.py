@@ -24,6 +24,31 @@ from antlir.unshare import Namespace, nsenter_as_root, Unshare
 
 class PackageImageTestCase(ImagePackageTestCaseBase):
     @contextmanager
+    def _mount(self, unshare: Unshare, image_path: Path) -> Path:
+        with temp_dir() as mount_dir:
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "mount",
+                    "-t",
+                    "btrfs",
+                    "-o",
+                    "loop,discard,nobarrier",
+                    image_path,
+                    mount_dir,
+                )
+            )
+            yield mount_dir
+
+            subprocess.check_call(
+                nsenter_as_root(
+                    unshare,
+                    "umount",
+                    mount_dir,
+                )
+            )
+
+    @contextmanager
     def _package_image(
         self,
         opts: btrfs_opts_t = None,
@@ -66,21 +91,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, temp_dir() as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:  # noqa: E501
-
-            subprocess.check_call(
-                nsenter_as_root(
-                    unshare,
-                    "mount",
-                    "-t",
-                    "btrfs",
-                    "-o",
-                    "loop,discard,nobarrier",
-                    out_path,
-                    mount_dir,
-                )
-            )
-
+        ) as unshare, self._mount(
+            unshare=unshare, image_path=out_path
+        ) as mount_dir, tempfile.NamedTemporaryFile() as temp_sendstream:
             self._assert_filesystem_label(
                 unshare,
                 mount_dir,
@@ -107,6 +120,36 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 self._render_sendstream_path(
                     Path(temp_sendstream.name),
                 ),
+            )
+
+        # Test with a mocked estimated size that is much larger than the
+        # actual subvol so that we can force minimizing the final volume
+        with temp_dir() as td:
+            out_path = td / "image.btrs"
+            subvol = layer_resource_subvol(
+                __package__, "build-appliance-testing"
+            )
+
+            subvol.estimate_content_bytes = unittest.mock.MagicMock(
+                return_value=2048 * MiB
+            )
+
+            subvols = {
+                Path("/volume"): _FoundSubvolOpts(
+                    subvol=subvol,
+                    writable=False,
+                )
+            }
+
+            BtrfsImage().package(
+                out_path,
+                subvols,
+            )
+
+            # Confirm that the image got downsized
+            self.assertLess(
+                os.stat(out_path).st_size,
+                2048 * MiB,
             )
 
     def test_package_btrfs_fixed_size(self):
@@ -145,22 +188,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, temp_dir() as mount_dir:
-
-            # Verify that we can write to the subvol
-            subprocess.check_call(
-                nsenter_as_root(
-                    unshare,
-                    "mount",
-                    "-t",
-                    "btrfs",
-                    "-o",
-                    "loop,discard,nobarrier",
-                    out_path,
-                    mount_dir,
-                )
-            )
-
+        ) as unshare, self._mount(
+            unshare=unshare, image_path=out_path
+        ) as mount_dir:
             subprocess.check_call(
                 nsenter_as_root(
                     unshare,
@@ -227,20 +257,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, tempfile.TemporaryDirectory() as mount_dir:
-            subprocess.check_call(
-                nsenter_as_root(
-                    unshare,
-                    "mount",
-                    "-t",
-                    "btrfs",
-                    "-o",
-                    "loop,discard,nobarrier",
-                    out_path,
-                    mount_dir,
-                )
-            )
-
+        ) as unshare, self._mount(
+            unshare=unshare,
+            image_path=out_path,
+        ) as mount_dir:
             # The output of this command looks something like:
             #
             # b'ID 256 gen 9 top level 5 path create_ops\n'
@@ -363,20 +383,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, temp_dir() as mount_dir:
-            subprocess.check_call(
-                nsenter_as_root(
-                    unshare,
-                    "mount",
-                    "-t",
-                    "btrfs",
-                    "-o",
-                    "loop,discard,nobarrier",
-                    out_path,
-                    mount_dir,
-                )
-            )
-
+        ) as unshare, self._mount(
+            unshare=unshare,
+            image_path=out_path,
+        ) as mount_dir:
             # List all the subvols in the loopback
             subvol_list = [
                 line.split(b" ")[-1]
@@ -423,20 +433,10 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             ),
         ) as out_path, Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as unshare, temp_dir() as mount_dir:
-            subprocess.check_call(
-                nsenter_as_root(
-                    unshare,
-                    "mount",
-                    "-t",
-                    "btrfs",
-                    "-o",
-                    "loop,discard,nobarrier",
-                    out_path,
-                    mount_dir,
-                )
-            )
-
+        ) as unshare, self._mount(
+            unshare=unshare,
+            image_path=out_path,
+        ) as mount_dir:
             subvol_list = [
                 line.split(b" ")[-1]
                 for line in subprocess.run(

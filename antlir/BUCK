@@ -185,33 +185,6 @@ python_unittest(
     ],
 )
 
-python_library(
-    name = "loopback",
-    srcs = ["loopback.py"],
-    deps = [
-        ":common",
-        ":unshare",
-        "//antlir/bzl:loopback_opts.shape-python",
-    ],
-)
-
-python_unittest(
-    name = "test-loopback",
-    srcs = ["tests/test_loopback.py"],
-    needed_coverage = [(
-        100,
-        ":loopback",
-    )],
-    resources = {
-        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
-    },
-    deps = [
-        ":common",
-        ":fs_utils",
-        ":loopback",
-    ],
-)
-
 btrfsutil_deps = [
     ":common",
     ":fs_utils",
@@ -276,7 +249,6 @@ python_library(
         ":btrfsutil",
         ":common",
         ":fs_utils",
-        ":loopback",
         ":unshare",
         "//antlir/btrfs_diff:freeze",
         "//antlir/bzl:loopback_opts.shape-python",
