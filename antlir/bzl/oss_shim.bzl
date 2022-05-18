@@ -142,6 +142,7 @@ def rust_python_extension(*args, **kwargs):
         fail("rust_python_extension is taking a step backwards without pyre")
     shim.rust_python_extension(*args, **kwargs)
 
+antlir_buck_env = shim.antlir_buck_env
 buck_command_alias = shim.buck_command_alias
 buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
