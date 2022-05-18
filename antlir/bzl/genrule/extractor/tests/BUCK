@@ -30,6 +30,7 @@ image.layer(
             ],
             source = ":source",
         ),
+        feature.ensure_dir_symlink("/usr/lib64", "/lib64"),
     ],
     visibility = ["//antlir/bzl/genrule/extractor/tests/..."],
 )
