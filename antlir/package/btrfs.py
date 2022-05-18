@@ -218,30 +218,275 @@ base images. Specific advantages to this include:
 
 import collections
 import subprocess
-from typing import Dict, NamedTuple, Optional
+from contextlib import contextmanager
+from typing import Any, Dict, Generator, NamedTuple, Optional, List
 
 from antlir import btrfsutil
 from antlir.bzl.image.package.btrfs import btrfs_opts_t
 from antlir.cli import init_cli, normalize_buck_path
-from antlir.common import get_logger, pipe
+from antlir.common import get_logger, pipe, run_stdout_to_err
 from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
-from antlir.fs_utils import Path
-from antlir.loopback import (
-    BtrfsLoopbackVolume,
-    MIN_CREATE_BYTES,
-    MIN_FREE_BYTES,
-)
+from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol
-from antlir.unshare import Namespace, Unshare
+from antlir.unshare import Unshare, Namespace, nsenter_as_user, nsenter_as_root
 
 log = get_logger()
 MiB = 2**20
+
+# Otherwise, `mkfs.btrfs` fails with:
+#   ERROR: minimum size for each btrfs device is 114294784
+MIN_CREATE_BYTES = 109 * MiB
+# The smallest size, to which btrfs will GROW a tiny filesystem. For
+# lower values, `btrfs resize` prints:
+#   ERROR: unable to resize '_foo/volume': Invalid argument
+# MIN_GROW_BYTES = 175 * MiB
+#
+# When a filesystem's `min-dev-size` is small, `btrfs resize` below this
+# limit will fail to shrink with `Invalid argument`.
+MIN_SHRINK_BYTES = 256 * MiB
+
+# Btrfs requires at least this many bytes free in the filesystem
+# for metadata
+MIN_FREE_BYTES = 81 * MiB
 
 
 class _FoundSubvolOpts(NamedTuple):
     subvol: Subvol
     writable: bool
+
+
+class _BtrfsLoopbackVolume:
+    def __init__(
+        self,
+        unshare: Unshare,
+        image_path: Path,
+        size_bytes: int,
+        mount_dir: Path,
+        label: Optional[str] = None,
+        mount_options: Optional[List[str]] = None,
+    ) -> None:
+        self._image_path = Path(image_path).abspath()
+        self._unshare = unshare
+        self._label: Optional[str] = label
+        self._mount_dir: Path = Path(mount_dir).abspath()
+        self._mount_options = [
+            "loop",
+            "discard",
+            "nobarrier",
+        ] + (mount_options or [])
+        self._size_bytes = size_bytes
+
+        self._format()
+
+    def _format(self) -> None:
+        """
+        Format the loopback image with a btrfs filesystem of size
+        `self._size_bytes`
+        """
+
+        log.info(
+            f"Formatting btrfs {self._size_bytes}-byte FS at {self._image_path}"
+        )
+        self._size_bytes = self._create_or_resize_image_file(self._size_bytes)
+        maybe_label = ["--label", self._label] if self._label else []
+        # Note that this can fail with 'cannot check mount status' if the
+        # host is in a bad state:
+        #  - a file backing a loop device got deleted, or
+        #  - multiple filesystems with the same UUID got mounted as a loop
+        #    device, breaking the metadata for the affected loop device (this
+        #    latter issue is a kernel bug).
+        # We don't check for this error case since there's nothing we can do to
+        # remediate it.
+        # The default profile for btrfs filesystem is the DUP. The man page
+        # says:
+        # > The mkfs utility will let the user create a filesystem with profiles
+        # > that write the logical blocks to 2 physical locations.
+        # Switching to the SINGLE profile (below) saves a lot of space (30-40%)
+        # as reported by `btrfs inspect-internal min-dev-size`), and loses some
+        # redundancy on rotational hard drives. Long history of using
+        # `-m single` never showed any issues with such lesser redundancy.
+        run_stdout_to_err(
+            [
+                "mkfs.btrfs",
+                "--metadata",
+                "single",
+                *maybe_label,
+                self._image_path,
+            ],
+            check=True,
+        )
+
+    def _create_or_resize_image_file(self, size_bytes: int) -> int:
+        """
+        If this is resizing an existing loopback that is mounted, then
+        be sure to call `btrfs filesystem resize` and `losetup --set-capacity`
+        in the appropriate order.
+        """
+        run_stdout_to_err(
+            ["truncate", "-s", str(size_bytes), self._image_path], check=True
+        )
+
+        return size_bytes
+
+    def receive(self, send: int) -> subprocess.CompletedProcess:
+        """
+        Receive a btrfs sendstream from the `send` fd
+        """
+        return run_stdout_to_err(
+            self._unshare.nsenter_as_root(
+                "btrfs",
+                "receive",
+                self._mount_dir,
+            ),
+            stdin=send,
+            stderr=subprocess.PIPE,
+        )
+
+    @contextmanager
+    def mount(self) -> Generator["_BtrfsLoopbackVolume", Any, Any]:
+        mount_opts = "{}".format(",".join(self._mount_options))
+        log.info(
+            f"Mounting btrfs {self._image_path} at {self._mount_dir} "
+            f"with {mount_opts}"
+        )
+        # Explicitly set filesystem type to detect shenanigans.
+        run_stdout_to_err(
+            nsenter_as_root(
+                self._unshare,
+                "mount",
+                "-t",
+                "btrfs",
+                "-o",
+                mount_opts,
+                self._image_path,
+                self._mount_dir,
+            ),
+            check=True,
+        )
+
+        # pyre-fixme[16]: `Optional` has no attribute `_loop_dev`
+        self._loop_dev = subprocess.check_output(
+            nsenter_as_user(
+                self._unshare,
+                "findmnt",
+                "--noheadings",
+                "--output",
+                "SOURCE",
+                self._mount_dir,
+            )
+        ).rstrip(b"\n")
+
+        # This increases the chances that --direct-io=on will succeed, since one
+        # of the common failure modes is that the loopback's sector size is NOT
+        # a multiple of the sector size of the underlying device (the devices
+        # we've seen in production have sector sizes of 512, 1024, or 4096).
+        if (
+            run_stdout_to_err(
+                ["sudo", "losetup", "--sector-size=4096", self._loop_dev]
+            ).returncode
+            != 0
+        ):  # pragma: nocover
+            log.error(
+                f"Failed to set --sector-size=4096 for {self._loop_dev}, "
+                "setting direct IO is more likely to fail."
+            )
+        # This helps perf and avoids doubling our usage of buffer cache.
+        # Also, when the image is on tmpfs, setting direct IO fails.
+        if (
+            run_stdout_to_err(
+                ["sudo", "losetup", "--direct-io=on", self._loop_dev]
+            ).returncode
+            != 0
+        ):  # pragma: nocover
+            log.error(
+                f"Could not enable --direct-io for {self._loop_dev}, expect "
+                "worse performance."
+            )
+
+        yield self
+
+        # This is a best effort unmount.  This is running in an unshare
+        # so if this fails the mount namespace exiting would clean this
+        # up.
+        run_stdout_to_err(
+            nsenter_as_root(self._unshare, "umount", self._mount_dir)
+        )
+
+    def minimize_size(self) -> int:
+        """
+        Minimizes the loopback as much as possibly by inspecting
+        the btrfs internals and resizing the filesystem explicitly.
+
+        Returns the new size of the loopback in bytes.
+        """
+        min_size_out = subprocess.check_output(
+            nsenter_as_root(
+                self._unshare,
+                "btrfs",
+                "inspect-internal",
+                "min-dev-size",
+                self._mount_dir,
+            )
+        ).split(b" ")
+        assert min_size_out[1] == b"bytes"
+        maybe_min_size_bytes = int(min_size_out[0])
+        # Btrfs filesystems cannot be resized below a certain limit, if if we
+        # have a smaller fs than the limit, we just use the limit.
+        min_size_bytes = (
+            maybe_min_size_bytes
+            if maybe_min_size_bytes >= MIN_SHRINK_BYTES
+            else MIN_SHRINK_BYTES
+        )
+
+        if min_size_bytes >= self._size_bytes:
+            log.info(
+                f"Nothing to do: the minimum resize limit {min_size_bytes} "
+                "is no less than the current filesystem size of "
+                f"{self._size_bytes} bytes."
+            )
+            return self._size_bytes
+
+        log.info(
+            f"Shrinking {self._image_path} to the btrfs minimum: "
+            f"{min_size_bytes} bytes."
+        )
+        run_stdout_to_err(
+            nsenter_as_root(
+                self._unshare,
+                "btrfs",
+                "filesystem",
+                "resize",
+                str(min_size_bytes),
+                self._mount_dir,
+            ),
+            check=True,
+        )
+
+        fs_bytes = int(
+            subprocess.check_output(
+                nsenter_as_user(
+                    self._unshare,
+                    "findmnt",
+                    "--bytes",
+                    "--noheadings",
+                    "--output",
+                    "SIZE",
+                    self._mount_dir,
+                )
+            )
+        )
+        self._create_or_resize_image_file(fs_bytes)
+        run_stdout_to_err(
+            # pyre-fixme[16]: `Optional` has no attribute `_loop_dev`
+            ["sudo", "losetup", "--set-capacity", self._loop_dev],
+            check=True,
+        )
+
+        assert min_size_bytes == fs_bytes
+
+        self._size_bytes = fs_bytes
+        return self._size_bytes
 
 
 class BtrfsImage:
@@ -330,17 +575,20 @@ class BtrfsImage:
         open(output_path, "wb").close()
         with Unshare(
             [Namespace.MOUNT, Namespace.PID]
-        ) as ns, BtrfsLoopbackVolume(
+        ) as ns, temp_dir() as mount_dir, _BtrfsLoopbackVolume(
             unshare=ns,
             image_path=output_path,
             size_bytes=fs_bytes,
             label=label,
-            compression_level=compression_level,
-        ) as loop_vol:
+            mount_dir=mount_dir,
+            mount_options=[
+                f"compress=zstd:{compression_level}",
+            ],
+        ).mount() as loop_vol:
             for subvol_name, (subvol, _) in subvols.items():
                 log.info(
                     f"Receiving {subvol.path()} -> "
-                    f"{loop_vol._image_path}/{subvol_name}"
+                    f"{output_path}/{subvol_name}"
                 )
                 with pipe() as (
                     r_send,
@@ -366,7 +614,7 @@ class BtrfsImage:
                             raise UserError(err)
 
                 # Mark as read-write for potential future operations.
-                subvol_path_src = loop_vol.dir() / subvol.path().basename()
+                subvol_path_src = mount_dir / subvol.path().basename()
                 self._mark_subvol_readonly(
                     ns=ns,
                     path=subvol_path_src,
@@ -375,7 +623,7 @@ class BtrfsImage:
 
                 # Optionally change the subvolume name, stripping the
                 # / first
-                subvol_path_dst = loop_vol.dir() / Path(subvol_name[1:])
+                subvol_path_dst = mount_dir / Path(subvol_name[1:])
                 if subvol_path_src != subvol_path_dst:
                     log.info(f"Renaming {subvol_path_src} -> {subvol_path_dst}")
                     # If we have any parent paths that don't exist yet, make
@@ -405,7 +653,7 @@ class BtrfsImage:
             # Iterate through the subvol list in reverse and mark
             # all subvols as read-only unless explicitly told otherwise
             for subvol_name, (_, writable) in reversed(subvols.items()):
-                subvol_path = loop_vol.dir() / Path(subvol_name[1:])
+                subvol_path = mount_dir / Path(subvol_name[1:])
 
                 if not writable:
                     log.info(f"Marking {subvol_path} as read-only")
@@ -421,12 +669,12 @@ class BtrfsImage:
                 #
                 # b'ID 256 gen 7 top level 5 path volume\n'
                 subvol_id = btrfsutil.subvolume_id(
-                    loop_vol.dir() / default_subvol[1:], in_namespace=ns
+                    mount_dir / default_subvol[1:], in_namespace=ns
                 )
                 log.debug(f"subvol_id to set as default: {subvol_id}")
                 # Actually set the default
                 btrfsutil.set_default_subvolume(
-                    loop_vol.dir(), subvol_id, in_namespace=ns
+                    mount_dir, subvol_id, in_namespace=ns
                 )
 
             if not size_mb:

@@ -22,7 +22,6 @@ from .bzl.loopback_opts import loopback_opts_t
 from .common import check_popen_returncode, get_logger, pipe
 from .find_built_subvol import find_built_subvol
 from .fs_utils import create_ro, generate_work_dir, META_FLAVOR_FILE, Path
-from .loopback import BtrfsLoopbackVolume, MIN_CREATE_BYTES, MIN_FREE_BYTES
 from .subvol_utils import Subvol
 from .unshare import Namespace, Unshare
 

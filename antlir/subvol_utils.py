@@ -631,12 +631,6 @@ class TempSubvolumes:
 
         sudo btrfs sub del buck-image-out/volume/tmp/TempSubvolumes_*/subvol &&
             rmdir buck-image-out/volume/tmp/TempSubvolumes_*
-
-        Instead of polluting `buck-image-out/volume`, it  would be possible to
-        put these on a separate `BtrfsLoopbackVolume`, to rely on `Unshare` to
-        guarantee unmounting it, and to rely on `tmpwatch` to delete the stale
-        loopbacks from `/tmp/`.  At present, this doesn't seem worthwhile since
-        it would require using an `Unshare` object throughout `Subvol`.
     """
 
     def __init__(self, path_in_repo: Optional[Path] = None) -> None:
