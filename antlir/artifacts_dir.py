@@ -203,6 +203,10 @@ def _ensure_clean_sh_exists(
     buck_cell_root = buck_cell_root.realpath()
     artifacts_dir = artifacts_dir.realpath()
 
+    buck_cmd = os.getenv("ANTLIR_BUCK", None)
+    assert (
+        buck_cmd is not None
+    ), "ANTLIR_BUCK must be set in the environment for this utility."
     clean_sh_path = artifacts_dir / "clean.sh"
 
     with populate_temp_file_and_rename(
@@ -219,7 +223,7 @@ def _ensure_clean_sh_exists(
                 # We must clean buck first to reset the state
                 echo "Cleansing with Buck..."
                 pushd {buck_cell_root} >/dev/null
-                buck clean
+                {buck_cmd} clean
                 popd >/dev/null
 
                 # Now it is safe to unmount and remove
