@@ -1,0 +1,16 @@
+# @noautodeps
+
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "disk_wipe",
+    srcs = ["src/disk_wipe.rs"],
+    unittests = [
+        "vm",
+    ],
+    deps = [
+        "anyhow",
+        "rand",
+        "//metalos/lib/disk:metalos_disk",
+    ],
+)

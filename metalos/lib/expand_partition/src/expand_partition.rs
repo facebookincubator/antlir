@@ -13,9 +13,7 @@ use gpt::disk::LogicalBlockSize;
 use gpt::header::read_header_from_arbitrary_device;
 use gpt::partition::{file_read_partitions, Partition};
 
-use metalos_disk::{DiskDevPath, DiskFile};
-
-static MEGABYTE: u64 = 1024 * 1024;
+use metalos_disk::{DiskDevPath, DiskFile, MEGABYTE};
 
 #[derive(Debug)]
 pub struct PartitionDelta {
@@ -30,7 +28,7 @@ pub fn expand_last_partition(device: &DiskDevPath) -> Result<PartitionDelta> {
     // We can't use the top level GptConfig logic from the crate because that
     // assumes that the backup is in the correct place which it won't necessarily be
     // because we have just dd'd the image to this disk.
-    let mut disk_file = device.open_as_file()?;
+    let mut disk_file = device.open_as_file(false)?;
 
     let (lb_size, primary_header) =
         match read_header_from_arbitrary_device(&mut disk_file.0, LogicalBlockSize::Lb512) {

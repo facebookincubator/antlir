@@ -10,6 +10,8 @@ use std::fs::{File, OpenOptions};
 use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 
+pub static MEGABYTE: u64 = 1024 * 1024;
+
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_read!(ioctl_blkgetsize64, 0x12, 114, u64);
 
@@ -17,9 +19,9 @@ nix::ioctl_read!(ioctl_blkgetsize64, 0x12, 114, u64);
 pub struct DiskDevPath(pub PathBuf);
 
 impl DiskDevPath {
-    pub fn open_as_file(&self) -> Result<DiskFile> {
+    pub fn open_as_file(&self, write: bool) -> Result<DiskFile> {
         let file = OpenOptions::new()
-            .write(false)
+            .write(write)
             .read(true)
             .open(&self.0)
             .context("failed to open device")?;
@@ -66,7 +68,7 @@ pub mod tests {
             .context(format!("Failed to parse output {:?} as u64", output))?;
 
         assert_eq!(
-            disk.open_as_file()
+            disk.open_as_file(false)
                 .context("Failed to open disk as file")?
                 .get_block_device_size()
                 .context("Failed to get block device size")?,
