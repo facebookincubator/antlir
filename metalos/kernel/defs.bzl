@@ -217,26 +217,40 @@ def _upstream_kernel_targets_shape(uname, base = "", has_devel = False, has_head
         headers_rpm = _target(uname, "headers.rpm", base) if has_headers else None,
     )
 
+def _remote_file(name, url_struct, visibility):
+    if hasattr(url_struct, "key") and url_struct.key:
+        buck_genrule(
+            name = name,
+            visibility = visibility,
+            cmd = "$(exe //os_foundation/kernel-sync:download) --key={} --sha256={} --out=$OUT".format(url_struct.key, url_struct.sha256),
+            out = name,
+            antlir_rule = "user-internal",
+        )
+    else:
+        http_file(
+            name = name,
+            urls = [url_struct.url],
+            sha256 = url_struct.sha256,
+            visibility = visibility,
+        )
+
 def _kernel(kernel):
     uname = kernel.uname
-    http_file(
+    _remote_file(
         name = _name(uname, "main.rpm"),
-        urls = [kernel.urls.main_rpm.url],
-        sha256 = kernel.urls.main_rpm.sha256,
+        url_struct = kernel.urls.main_rpm,
         visibility = ["PUBLIC"],
     )
     if hasattr(kernel.urls, "devel_rpm"):
-        http_file(
+        _remote_file(
             name = _name(uname, "devel.rpm"),
-            urls = [kernel.urls.devel_rpm.url],
-            sha256 = kernel.urls.devel_rpm.sha256,
+            url_struct = kernel.urls.devel_rpm,
             visibility = ["PUBLIC"],
         )
     if hasattr(kernel.urls, "headers_rpm"):
-        http_file(
+        _remote_file(
             name = _name(uname, "headers.rpm"),
-            urls = [kernel.urls.headers_rpm.url],
-            sha256 = kernel.urls.headers_rpm.sha256,
+            url_struct = kernel.urls.headers_rpm,
             visibility = ["PUBLIC"],
         )
 
