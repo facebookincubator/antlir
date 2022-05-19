@@ -3,5 +3,11 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "metalos_disk",
     srcs = ["src/lib.rs"],
-    deps = [],
+    unittests = [
+        "vm",
+    ],
+    deps = [
+        "anyhow",
+        "nix",
+    ],
 )

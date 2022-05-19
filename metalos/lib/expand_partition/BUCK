@@ -11,7 +11,6 @@ rust_library(
     deps = [
         "anyhow",
         "gpt",
-        "nix",
         "//metalos/lib/disk:metalos_disk",
     ],
 )
