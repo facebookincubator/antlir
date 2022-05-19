@@ -7,17 +7,13 @@
 
 use std::collections::BTreeMap;
 use std::fs::{File, OpenOptions};
-use std::os::unix::io::AsRawFd;
 
 use anyhow::{Context, Result};
 use gpt::disk::LogicalBlockSize;
 use gpt::header::read_header_from_arbitrary_device;
 use gpt::partition::{file_read_partitions, Partition};
 
-use metalos_disk::DiskDevPath;
-
-// define ioctl macros based on the codes in linux/fs.h
-nix::ioctl_read!(ioctl_blkgetsize64, 0x12, 114, u64);
+use metalos_disk::{DiskDevPath, DiskFile};
 
 static MEGABYTE: u64 = 1024 * 1024;
 
@@ -34,17 +30,13 @@ pub fn expand_last_partition(device: &DiskDevPath) -> Result<PartitionDelta> {
     // We can't use the top level GptConfig logic from the crate because that
     // assumes that the backup is in the correct place which it won't necessarily be
     // because we have just dd'd the image to this disk.
-    let mut disk_device = OpenOptions::new()
-        .write(false)
-        .read(true)
-        .open(&device.0)
-        .context("failed to open device")?;
+    let mut disk_file = device.open_as_file()?;
 
     let (lb_size, primary_header) =
-        match read_header_from_arbitrary_device(&mut disk_device, LogicalBlockSize::Lb512) {
+        match read_header_from_arbitrary_device(&mut disk_file.0, LogicalBlockSize::Lb512) {
             Ok(header) => Ok((LogicalBlockSize::Lb512, header)),
             Err(e) => {
-                match read_header_from_arbitrary_device(&mut disk_device, LogicalBlockSize::Lb4096)
+                match read_header_from_arbitrary_device(&mut disk_file.0, LogicalBlockSize::Lb4096)
                 {
                     Ok(header) => Ok((LogicalBlockSize::Lb4096, header)),
                     Err(_) => Err(e),
@@ -53,7 +45,7 @@ pub fn expand_last_partition(device: &DiskDevPath) -> Result<PartitionDelta> {
         }
         .context("Failed to read the primary header from disk")?;
 
-    let original_partitions = file_read_partitions(&mut disk_device, &primary_header, lb_size)
+    let original_partitions = file_read_partitions(&mut disk_file.0, &primary_header, lb_size)
         .context("failed to read partitions from disk_device file")?;
 
     // Now we must find the end of the disk that we are allowed to expand up to and transform our
@@ -61,7 +53,7 @@ pub fn expand_last_partition(device: &DiskDevPath) -> Result<PartitionDelta> {
     let (new_partitions, delta) = transform_partitions(
         original_partitions.clone(),
         lb_size,
-        get_last_usable_lb(&disk_device, lb_size)
+        get_last_usable_lb(&disk_file, lb_size)
             .context("failed to find last usable block of device")?,
     )
     .context("failed to transform partitions")?;
@@ -121,28 +113,16 @@ fn transform_partitions(
     Ok((partitions, delta))
 }
 
-fn get_last_usable_lb(disk_device: &File, lb_size: LogicalBlockSize) -> Result<u64> {
+fn get_last_usable_lb(disk_file: &DiskFile, lb_size: LogicalBlockSize) -> Result<u64> {
     let lb_size_bytes: u64 = lb_size.clone().into();
-
-    let disk_size = get_block_device_size(disk_device).context("Failed to find disk size")?;
+    let disk_size = disk_file
+        .get_block_device_size()
+        .context("Failed to find disk size")?;
 
     // I am not sure why this is the forumla. I copied it from D26917298
     // I believe it has something to do with making sure that the last lb lies on a MB
     // boundary
     Ok(((disk_size - MEGABYTE) / lb_size_bytes) - 1)
-}
-
-fn get_block_device_size(file: &File) -> Result<u64> {
-    let fd = file.as_raw_fd();
-
-    let mut cap = 0u64;
-    let cap_ptr = &mut cap as *mut u64;
-
-    unsafe {
-        ioctl_blkgetsize64(fd, cap_ptr)?;
-    }
-
-    Ok(cap)
 }
 
 pub mod test_utils {
@@ -266,32 +246,6 @@ pub mod tests {
         // Ensure this conversion didn't mess up the guid
         assert_eq!(start_guid, ending_guid);
 
-        Ok(())
-    }
-
-    #[vmtest]
-    fn test_get_block_device_size() -> Result<()> {
-        let disk_device = OpenOptions::new()
-            .write(false)
-            .read(true)
-            .open("/dev/vda")
-            .context("failed to open device")?;
-
-        let output = std::process::Command::new("cat")
-            .args(&["/sys/block/vda/size"])
-            .output()
-            .context("Failed to run cat /sys/block/vda/size")?;
-
-        let size: u64 = std::str::from_utf8(&output.stdout)
-            .context(format!("Invalid UTF-8 in output: {:?}", output))?
-            .trim()
-            .parse()
-            .context(format!("Failed to parse output {:?} as u64", output))?;
-
-        assert_eq!(
-            get_block_device_size(&disk_device).context("Failed to get block device size")?,
-            size * 512
-        );
         Ok(())
     }
 }
