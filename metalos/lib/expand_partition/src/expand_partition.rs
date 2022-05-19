@@ -6,14 +6,13 @@
  */
 
 use std::collections::BTreeMap;
-use std::fs::{File, OpenOptions};
 
 use anyhow::{Context, Result};
 use gpt::disk::LogicalBlockSize;
 use gpt::header::read_header_from_arbitrary_device;
 use gpt::partition::{file_read_partitions, Partition};
 
-use metalos_disk::{DiskDevPath, DiskFile, MEGABYTE};
+use metalos_disk::{DiskDevPath, ReadDisk, MEGABYTE};
 
 #[derive(Debug)]
 pub struct PartitionDelta {
@@ -28,14 +27,13 @@ pub fn expand_last_partition(device: &DiskDevPath) -> Result<PartitionDelta> {
     // We can't use the top level GptConfig logic from the crate because that
     // assumes that the backup is in the correct place which it won't necessarily be
     // because we have just dd'd the image to this disk.
-    let mut disk_file = device.open_as_file(false)?;
+    let mut disk_file = device.open_ro_file()?;
 
     let (lb_size, primary_header) =
-        match read_header_from_arbitrary_device(&mut disk_file.0, LogicalBlockSize::Lb512) {
+        match read_header_from_arbitrary_device(&mut disk_file, LogicalBlockSize::Lb512) {
             Ok(header) => Ok((LogicalBlockSize::Lb512, header)),
             Err(e) => {
-                match read_header_from_arbitrary_device(&mut disk_file.0, LogicalBlockSize::Lb4096)
-                {
+                match read_header_from_arbitrary_device(&mut disk_file, LogicalBlockSize::Lb4096) {
                     Ok(header) => Ok((LogicalBlockSize::Lb4096, header)),
                     Err(_) => Err(e),
                 }
@@ -43,7 +41,7 @@ pub fn expand_last_partition(device: &DiskDevPath) -> Result<PartitionDelta> {
         }
         .context("Failed to read the primary header from disk")?;
 
-    let original_partitions = file_read_partitions(&mut disk_file.0, &primary_header, lb_size)
+    let original_partitions = file_read_partitions(&mut disk_file, &primary_header, lb_size)
         .context("failed to read partitions from disk_device file")?;
 
     // Now we must find the end of the disk that we are allowed to expand up to and transform our
@@ -111,7 +109,7 @@ fn transform_partitions(
     Ok((partitions, delta))
 }
 
-fn get_last_usable_lb(disk_file: &DiskFile, lb_size: LogicalBlockSize) -> Result<u64> {
+fn get_last_usable_lb<D: ReadDisk>(disk_file: &D, lb_size: LogicalBlockSize) -> Result<u64> {
     let lb_size_bytes: u64 = lb_size.clone().into();
     let disk_size = disk_file
         .get_block_device_size()
