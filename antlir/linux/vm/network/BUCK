@@ -17,6 +17,11 @@ export_file(
     visibility = ["PUBLIC"],
 )
 
+export_file(
+    name = "require-udevd.conf",
+    visibility = ["PUBLIC"],
+)
+
 # empty resolv.conf since the only mechanism to refer to the host (by name) is via /etc/hosts
 feature.new(
     name = "resolvconf",
