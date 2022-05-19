@@ -7,6 +7,7 @@
 import argparse
 import asyncio
 import contextlib
+import logging
 import os.path
 import sys
 import uuid
@@ -385,4 +386,6 @@ async def run(
 
 
 if __name__ == "__main__":
+    # we don't want to terminate a test on simple logging errors
+    logging.raiseExceptions = False
     asyncio.run(run(**dict(VMTestExecOpts.parse_cli(sys.argv[1:]))))
