@@ -208,7 +208,7 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn field<'v>(
         ty: Value<'v>,
-        optional @ false: bool,
+        #[starlark(default = false)] optional: bool,
         default: Option<Value<'v>>,
     ) -> anyhow::Result<StarlarkField> {
         let reg = get_type_registry(eval)?.try_borrow()?;
