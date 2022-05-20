@@ -112,6 +112,8 @@ class SquashfsImage(Format, format_name="squashfs"):
                 "-comp",
                 "zstd",
                 "-noappend",
+                # If the image has mounts, don't accidentally package them
+                "-one-file-system",
             ]
         )
 
