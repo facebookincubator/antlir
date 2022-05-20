@@ -27,30 +27,9 @@ class InitrdBreakTest(AntlirTestCase):
             )
 
             # Check for the expected `systectl list-jobs` output.
-            console_output = str(console_f.read())
-            for i in [
+            console_output = console_f.read().decode("utf-8")
+            print(console_output)
+            self.assertRegex(
+                console_output,
                 r"debug-shell\.service +start running",
-                r"initrd\.target +start waiting",
-            ]:
-                self.assertRegex(console_output, i)
-
-    def test_vmtest_initrd_break_custom(self):
-        with importlib.resources.path(
-            __package__, "vmtest-initrd-break-custom"
-        ) as vmtest, tempfile.NamedTemporaryFile() as console_f:
-
-            # Run the buck built vmtest target instance.
-            subprocess.run(
-                [
-                    Path(vmtest),
-                    "--append-console={}".format(console_f.name),
-                ],
             )
-
-            # Check for the expected `systectl list-jobs` output.
-            console_output = str(console_f.read())
-            for i in [
-                r"debug-shell\.service +start running",
-                r"sysinit\.target +start waiting",
-            ]:
-                self.assertRegex(console_output, i)

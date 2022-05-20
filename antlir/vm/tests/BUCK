@@ -165,41 +165,20 @@ vm.run(
     ),
 )
 
-# Create a VM to test booting with "initrd.break=sysinit.target" set
-vm.run(
-    name = "vmtest-initrd-break-custom",
-    vm_opts = vm.types.opts.new(
-        runtime = vm.types.runtime.new(
-            connection = vm.types.connection.new(
-                # Set the options such that it fails fast when
-                # the vm crashes.  This is just to make the test
-                # run in a reasonable amount of time.
-                options = {
-                    "ServerAliveCountMax": "1",
-                    "ServerAliveInterval": "1",
-                },
-            ),
-        ),
-        append = ["initrd.break=sysinit.target"],
-        initrd = ":vmtest-initrd-break-custom-initrd",
-    ),
-)
-
-python_unittest(
-    name = "test-initrd-break",
-    srcs = ["test_initrd_break.py"],
-    resources = {
-        ":vmtest-initrd-break-custom": "vmtest-initrd-break-custom",
-        ":vmtest-initrd-break-default": "vmtest-initrd-break-default",
-    },
-    deps = [
-        ":vmtest-initrd-break-custom",
-        ":vmtest-initrd-break-default",
-        "//antlir:fs_utils",
-        "//antlir:testlib_common",
-        "//antlir/nspawn_in_subvol:common",
-    ],
-)
+# TODO(T120961487) Fix this later
+# python_unittest(
+#     name = "test-initrd-break",
+#     srcs = ["test_initrd_break.py"],
+#     resources = {
+#         ":vmtest-initrd-break-default": "vmtest-initrd-break-default",
+#     },
+#     deps = [
+#         ":vmtest-initrd-break-default",
+#         "//antlir:fs_utils",
+#         "//antlir:testlib_common",
+#         "//antlir/nspawn_in_subvol:common",
+#     ],
+# )
 
 export_file(name = "resource.txt")
 

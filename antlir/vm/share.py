@@ -311,6 +311,6 @@ class QCow2RootDisk(Share):
     @property
     def kernel_args(self) -> Iterable[str]:
         return (
-            f"rootflags=subvol={self.subvol},rw",
+            f"rootflags=subvol={self.subvol}",
             "rootfstype=btrfs",
         )

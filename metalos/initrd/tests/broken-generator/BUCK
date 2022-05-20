@@ -19,10 +19,10 @@ image.layer(
     name = "layer",
     parent_layer = "//metalos/initrd:initrd",
     features = [
-        feature.remove("/usr/lib/systemd/system-generators/metalos-generator"),
+        feature.remove("/usr/lib/systemd/system-generators/metalos-network-generator"),
         feature.install(
             ":bin",
-            "/usr/lib/systemd/system-generators/metalos-generator",
+            "/usr/lib/systemd/system-generators/metalos-network-generator",
             mode = "a+rx",
         ),
         image.ensure_subdirs_exist("/etc", "systemd/system"),

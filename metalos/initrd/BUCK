@@ -1,6 +1,5 @@
 # @noautodeps
 
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -129,18 +128,6 @@ image.layer(
     ],
 )
 
-image.layer(
-    name = "with-metalctl",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
-    features = [
-        feature.install(
-            "//metalos/metalctl:metalctl-initrd",
-            "/usr/bin/metalctl",
-            mode = "a+rx",
-        ),
-    ],
-)
-
 # things we expect to exist in all the metalos related initrds
 image.layer(
     name = "initrd-common",
@@ -149,13 +136,7 @@ image.layer(
         linux.busybox.install(
             src = ":busybox",
             src_path = "/sbin/busybox",
-            applets = sets.difference(
-                DEFAULT_APPLETS,
-                sets.make([
-                    "mount",
-                    "umount",
-                ]),
-            ),
+            applets = DEFAULT_APPLETS,
         ),
         networking,
         # The metalos generator will rewrite the default target to
@@ -169,7 +150,25 @@ image.layer(
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
+        "//antlir/vm/...",
         "//metalos/...",
+    ],
+)
+
+image.layer(
+    name = "with-initrd-bins",
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
+    features = [
+        feature.install(
+            "//metalos/initrd/metalinit:metalinit",
+            "/usr/bin/metalinit",
+            mode = "a+rx",
+        ),
+        feature.install(
+            "//metalos/initrd/network_generator:network_generator",
+            "/usr/lib/systemd/system-generators/metalos-network-generator",
+            mode = "a+rx",
+        ),
     ],
 )
 
@@ -178,35 +177,19 @@ image.layer(
     name = "initrd",
     parent_layer = ":initrd-common",
     features = [
-        # metalctl's implementation of (u)mount works better, systemd passes
-        # some options that busybox does not understand
-        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/mount"),
-        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/bin/umount"),
+        systemd.install_unit("units/metalos-init.service"),
+        systemd.enable_unit("metalos-init.service", "initrd-switch-root.target", "requires"),
         extract.extract(
             binaries = [
-                "/usr/bin/metalctl",
+                "/usr/lib/systemd/system-generators/metalos-network-generator",
+                "/usr/bin/metalinit",
             ],
             dest = "/",
-            source = ":with-metalctl",
+            source = ":with-initrd-bins",
         ),
-        systemd.install_unit("units/metalos-apply-host-config.service"),
-        systemd.install_unit("units/metalos-stage.service"),
-        # We would one day like to make it so that
-        # metalos-image-root-disk.service isn't even present in the normal
-        # initrd and instead we have a separate one that is allowed to wipe the
-        # disks. This would give an extra layer of safety and make it so that
-        # disk reimage is a very explicit operation.
-        systemd.install_unit("units/metalos-image-root-disk.service"),
-        systemd.install_unit("units/metalos-load-host-config.service"),
-        systemd.install_unit("units/metalos-snapshot-root.service"),
-        systemd.install_unit("units/metalos-switch-root.service"),
-        systemd.enable_unit("metalos-switch-root.service", "initrd-switch-root.target", "requires"),
-        feature.ensure_file_symlink("/usr/bin/metalctl", "/usr/lib/systemd/system-generators/metalos-generator"),
-        image.ensure_subdirs_exist("/usr/lib", "metalos"),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
-        "//antlir/vm/...",
         "//metalos/...",
         "//scripts/dschatzberg/vm:",
     ],

@@ -6,6 +6,11 @@ rust_binary(
         "src/events.rs",
         "src/main.rs",
     ],
+    link_style = "static",
+    linker_flags = [
+        "-Wl,--strip-all",
+    ],
+    nodefaultlibs = True,
     deps = [
         "anyhow",
         "futures",

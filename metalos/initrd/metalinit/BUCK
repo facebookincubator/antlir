@@ -5,6 +5,11 @@ rust_binary(
     srcs = [
         "src/main.rs",
     ],
+    link_style = "static",
+    linker_flags = [
+        "-Wl,--strip-all",
+    ],
+    nodefaultlibs = True,
     deps = [
         "anyhow",
         "futures-util",

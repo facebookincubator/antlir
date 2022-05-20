@@ -10,8 +10,8 @@ def switch_root_test(name, kernel, disk = ":metalos-gpt-image", disk_interface =
             initrd = ":switch-root-initrd.cpio.gz",
             kernel = kernel,
             append = [
-                "metalos.host-config-uri=file:///test/fake-host-config.json",
                 "rd.systemd.journald.forward_to_console=1",
+                "macaddress=11:22:33:44:55:66",
             ],
             runtime = vm.types.runtime.new(
                 sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"] if images_sidecar else [],
@@ -19,7 +19,7 @@ def switch_root_test(name, kernel, disk = ":metalos-gpt-image", disk_interface =
             disk = vm.types.disk.new(
                 package = disk,
                 interface = disk_interface,
-                subvol = "control",
+                subvol = "volume",
             ),
         ),
         timeout_secs = 600,

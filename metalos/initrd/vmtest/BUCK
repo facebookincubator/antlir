@@ -164,9 +164,6 @@ image.layer(
             "initrd-parse-etc.service",
             "initrd-switch-root.service",
         ]),
-        # install a host config in the initrd directly
-        image.ensure_subdirs_exist("/", "test"),
-        feature.install(":host-config", "/test/fake-host-config.json"),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
@@ -222,9 +219,6 @@ image.layer(
         network.host(),
         # don't use the full test-kernel initrd, but we do need the modules
         test_kernel_modules,
-        # install a host config in the initrd directly
-        image.ensure_subdirs_exist("/", "test"),
-        feature.install(":host-config", "/test/fake-host-config.json"),
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
 )
@@ -265,6 +259,21 @@ image.layer(
     flavor = REPO_CFG.antlir_linux_flavor,
 )
 
+image.layer(
+    name = "control-with-config",
+    parent_layer = "//metalos/disk:control",
+    features = [
+        feature.install(
+            "//metalos/initrd/vmtest:host-config",
+            "/run/state/metalos/metalos_host_configs::host::HostConfig-current.json",
+        ),
+        feature.install(
+            "//metalos/initrd/vmtest:host-config-boot_config",
+            "/run/state/metalos/metalos_host_configs::boot_config::BootConfig-staged.json",
+        ),
+    ],
+)
+
 # We need to build a new gpt image for the switch-root
 # test so that the image is sized correctly. Otherwise we
 # keep the image minimal and expand at runtime which we don't
@@ -273,12 +282,12 @@ btrfs.new(
     name = "rootdisk.btrfs",
     opts = btrfs.opts.new(
         subvols = {
-            "/control": btrfs.opts.subvol.new(
-                layer = "//metalos/disk:control",
+            "/volume": btrfs.opts.subvol.new(
+                layer = ":control-with-config",
                 writable = True,
             ),
         },
-        default_subvol = "/control",
+        default_subvol = "/volume",
         loopback_opts = image.opts(
             label = "/",
             size_mb = 4096,
@@ -287,8 +296,8 @@ btrfs.new(
 )
 
 image.layer(
-    name = "control",
-    parent_layer = "//metalos/disk:control",
+    name = "control-with-config-and-initrd",
+    parent_layer = ":control-with-config",
     features = [
         feature.install("//metalos/initrd:initrd.cpio.gz", "/image/initrd/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef"),
     ],
@@ -297,16 +306,16 @@ image.layer(
 btrfs.new(
     name = "full-rootdisk.btrfs",
     opts = btrfs.opts.new(
-        default_subvol = "/control",
+        default_subvol = "/volume",
         subvols = {
-            "/control": btrfs.opts.subvol.new(
-                layer = ":control",
+            "/volume": btrfs.opts.subvol.new(
+                layer = ":control-with-config-and-initrd",
                 writable = True,
             ),
-            "/control/image/kernel/kernel." + TEST_KERNEL.uname + ":deadbeefdeadbeefdeadbeefdeadbeef": btrfs.opts.subvol.new(
+            "/volume/image/kernel/kernel." + TEST_KERNEL.uname + ":deadbeefdeadbeefdeadbeefdeadbeef": btrfs.opts.subvol.new(
                 layer = TEST_KERNEL.derived_targets.image,
             ),
-            "/control/image/rootfs/metalos:deadbeefdeadbeefdeadbeefdeadbeef": btrfs.opts.subvol.new(
+            "/volume/image/rootfs/metalos:deadbeefdeadbeefdeadbeefdeadbeef": btrfs.opts.subvol.new(
                 layer = "//metalos/os/vm:base",
             ),
         },
@@ -384,36 +393,4 @@ buck_genrule(
         TEST_KERNEL.uname,
         TEST_KERNEL.uname,
     ),
-)
-
-vm.rust_unittest(
-    name = "images",
-    vm_opts = vm.types.opts.new(
-        initrd = ":vmtest-initrd.cpio.gz",
-        kernel = TEST_KERNEL,
-        append = [
-            "metalos.host-config-uri=file:///test/fake-host-config.json",
-            "rd.systemd.journald.forward_to_console=1",
-        ],
-        runtime = vm.types.runtime.new(
-            sidecar_services = [
-                "$(exe :images-sidecar) $(location :image_packages)",
-            ],
-        ),
-        disk = vm.types.disk.new(
-            layer = "//metalos/disk:control",
-            layer_size_mb = 4096,
-        ),
-    ),
-    deps = [
-        third_party.library(
-            name,
-            platform = "rust",
-        )
-        for name in [
-            "anyhow",
-        ]
-    ],
-    srcs = ["test_images.rs"],
-    crate_root = "test_images.rs",
 )
