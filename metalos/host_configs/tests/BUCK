@@ -10,6 +10,7 @@ rust_binary(
     deps = [
         "anyhow",
         "bytes",
+        "clap",
         "fbthrift",
         ":example_host_for_tests",
         "//metalos/host_configs/rust:metalos_host_configs",
@@ -27,6 +28,6 @@ rust_library(
 
 buck_genrule(
     name = "example-host-for-tests.json",
-    cmd = "$(exe :serialize-host-struct) example > $OUT",
+    cmd = "$(exe :serialize-host-struct) --example > $OUT",
     visibility = ["PUBLIC"],
 )

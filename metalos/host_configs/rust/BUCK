@@ -3,6 +3,7 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "metalos_host_configs",
     srcs = glob(["src/**/*.rs"]),
+    visibility = ["PUBLIC"],
     deps = [
         "anyhow",
         "strum_macros",
