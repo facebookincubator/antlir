@@ -1,0 +1,20 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_binary")
+
+rust_binary(
+    name = "btrfs_send_stream_upgrade",
+    srcs = glob(["src/*.rs"]),
+    deps = [
+        "fbsource//third-party/rust:anyhow",
+        "fbsource//third-party/rust:crc",
+        "fbsource//third-party/rust:lazy_static",
+        "fbsource//third-party/rust:maplit",
+        "fbsource//third-party/rust:num",
+        "fbsource//third-party/rust:num-derive",
+        "fbsource//third-party/rust:num-traits",
+        "fbsource//third-party/rust:slog",
+        "fbsource//third-party/rust:slog-term",
+        "fbsource//third-party/rust:structopt",
+        "fbsource//third-party/rust:thiserror",
+        "fbsource//third-party/rust:zstd",
+    ],
+)
