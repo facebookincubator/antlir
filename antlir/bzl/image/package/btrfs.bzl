@@ -88,7 +88,7 @@ def _new_btrfs(
             # less fragile for future improvements when we can
             # run this in a user namespace or container to avoid
             # root execution on the build host.
-            sudo \
+            sudo PYTHONDONTWRITEBYTECODE=1 \
             unshare --mount --pid --fork \
                 $(exe {package_btrfs}) \
                     --subvolumes-dir "$subvolumes_dir" \
