@@ -1,0 +1,31 @@
+load("//metalos:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "metalinit",
+    srcs = [
+        "src/main.rs",
+    ],
+    deps = [
+        "anyhow",
+        "futures-util",
+        "nix",
+        "slog",
+        "slog_glog_fmt",
+        "structopt",
+        "strum",
+        "strum_macros",
+        "tokio",
+        "//metalos/host_configs/evalctx:evalctx",
+        "//metalos/host_configs/lifecycle:lifecycle",
+        "//metalos/host_configs/rust:metalos_host_configs",
+        "//metalos/lib/blkid:blkid",
+        "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/kernel_cmdline:kernel_cmdline",
+        "//metalos/lib/metalos_paths:metalos_paths",
+        "//metalos/lib/mount:metalos_mount",
+        "//metalos/lib/netlink:netlink",
+        "//metalos/lib/package_download:package_download",
+        "//metalos/lib/state:state",
+        "//metalos/lib/systemd:systemd",
+    ],
+)

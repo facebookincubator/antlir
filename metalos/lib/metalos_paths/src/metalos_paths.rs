@@ -41,3 +41,10 @@ pub fn metalos_state() -> &'static Path {
 pub fn scratch() -> &'static Path {
     Path::new("/run/fs/control/run/scratch")
 }
+
+/// This directory stores all the current and previously built boot environments
+/// each has the unique uuid of the boot and is a snapshot of that boots rootfs with
+/// all the necessary packages mounted into it and the generators run inside of it.
+pub fn boots() -> &'static Path {
+    Path::new("/run/fs/control/run/boot")
+}
