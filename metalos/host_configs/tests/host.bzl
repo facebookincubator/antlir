@@ -12,3 +12,18 @@ def host_config(name, host_config, **kwargs):
         cmd = "echo {} | $(location //metalos/host_configs/tests:serialize-host-struct) > $OUT".format(shell.quote(struct(**host_config).to_json())),
         **kwargs
     )
+    buck_genrule(
+        name = name + "-provisioning_config",
+        cmd = "echo {} | $(location //metalos/host_configs/tests:serialize-host-struct) provisioning > $OUT".format(shell.quote(struct(**host_config).to_json())),
+        **kwargs
+    )
+    buck_genrule(
+        name = name + "-boot_config",
+        cmd = "echo {} | $(location //metalos/host_configs/tests:serialize-host-struct) boot > $OUT".format(shell.quote(struct(**host_config).to_json())),
+        **kwargs
+    )
+    buck_genrule(
+        name = name + "-runtime_config",
+        cmd = "echo {} | $(location //metalos/host_configs/tests:serialize-host-struct) runtime > $OUT".format(shell.quote(struct(**host_config).to_json())),
+        **kwargs
+    )
