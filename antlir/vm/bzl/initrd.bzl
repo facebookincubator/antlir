@@ -44,10 +44,6 @@ def initrd(kernel, visibility = None, mount_modules = True):
     # MetalOS initrd and modified to support 9p shared mounts for the repository,
     # kernel modules, and others.
     initrd_vm_features = [
-        # The switchroot behavior is different for the vmtest based initrd so
-        # lets remove the metalos-switch-root.service and install our own
-        feature.remove("/usr/lib/systemd/system/metalos-switch-root.service"),
-        feature.remove("/usr/lib/systemd/system/initrd-switch-root.target.requires/metalos-switch-root.service"),
         systemd.install_unit(antlir_dep("vm/initrd:initrd-switch-root.service")),
         systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
         systemd.install_unit(antlir_dep("vm/initrd:sysroot.mount")),
@@ -67,7 +63,7 @@ def initrd(kernel, visibility = None, mount_modules = True):
 
     image.layer(
         name = name + "-layer",
-        parent_layer = "//metalos/initrd:initrd",
+        parent_layer = "//metalos/initrd:initrd-common",
         # Do not add features directly here, instead add them to
         # initrd_vm_features so they are shared with the debug initrd.
         features = initrd_vm_features,
