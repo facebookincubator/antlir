@@ -68,10 +68,12 @@ import shlex
 import shutil
 import signal
 import subprocess
+import sys
 import time
 from contextlib import closing, contextmanager, nullcontext
 from typing import ContextManager, Iterable, List, Tuple
 
+from antlir.cli import normalize_buck_path
 from antlir.common import byteme, get_logger, pipe
 from antlir.errors import ToolMissing
 from antlir.fs_utils import MehStr, Path, temp_dir
@@ -496,6 +498,11 @@ def _popen_nsenter_into_container(
     term_env = os.environ.get("TERM")
     if term_env is not None:
         default_env["TERM"] = term_env
+
+    if opts.bind_repo_ro:
+        # Use the path of this binary being executed so that buck2/buck1
+        # both work
+        default_env["ANTLIR_PATH_IN_REPO"] = normalize_buck_path(sys.argv[0])
 
     with open(f"/proc/{container_proc_pid}/cgroup", "rb") as f:
         cgroup = parse_cgroup2_path(f.read()).strip_leading_slashes()

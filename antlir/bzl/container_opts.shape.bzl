@@ -40,5 +40,9 @@ container_opts_t = shape.shape(
     # centric feature in FB container image tests.  A future refactor should
     # take this away and put it into a FB-internal overlay.
     internal_only_logs_tmpfs = shape.field(bool, default = False),
+    # This is exposed here to allow certain internal test cases to always
+    # bind mount the repo root into the test case regardless of the build
+    # mode.
+    internal_only_bind_repo_ro = shape.field(bool, default = False),
     internal_only_bind_artifacts_dir_rw = shape.field(bool, default = False),
 )

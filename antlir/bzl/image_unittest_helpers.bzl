@@ -102,6 +102,7 @@ def _nspawn_wrapper_properties(
             # @oss-disable: "fbpkg_db_path", 
             "internal_only_allow_mknod",
             "internal_only_unprotect_antlir_dir",  # Unavailable in tests
+            "internal_only_bind_repo_ro",
             "internal_only_bind_artifacts_dir_rw",
         ]
     ]
@@ -190,6 +191,7 @@ def nspawn_in_subvol_args():
         '--append-console',
         '--setenv=ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1',
         '--attach-antlir-dir-mode=off',
+        {maybe_bind_repo_ro}
         {maybe_bind_artifacts_dir_rw}
         '--', {binary_path_repr},
     ]
@@ -210,6 +212,9 @@ mv $TMP/out "$OUT"
             ),
             maybe_no_shadow_proxied_binaries = (
                 "" if container_opts.shadow_proxied_binaries else "'--no-shadow-proxied-binaries',"
+            ),
+            maybe_bind_repo_ro = (
+                "'--bind-repo-ro'," if container_opts.internal_only_bind_repo_ro else ""
             ),
             maybe_bind_artifacts_dir_rw = (
                 "'--bind-artifacts-dir-rw'," if container_opts.internal_only_bind_artifacts_dir_rw else ""
