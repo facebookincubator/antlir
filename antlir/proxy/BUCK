@@ -1,5 +1,3 @@
-# @noautodepsclear
-
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 
 python_library(
