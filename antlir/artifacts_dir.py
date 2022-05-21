@@ -89,6 +89,14 @@ def _first_parent_containing_sigil(
         root_path = root_path.dirname()
 
 
+def _ensure_path_in_repo(path_in_repo: Optional[Path]) -> Path:
+
+    # pyre-fixme [9]: path_in_repo is declared to have type `Optional[Path]`
+    #                 but is used as type `Union[None, Path, str]`
+    path_in_repo = path_in_repo or os.environ.get("ANTLIR_PATH_IN_REPO")
+    return path_in_repo or Path(sys.argv[0]).dirname()
+
+
 def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
     """
     Find the path of the VCS repository root.  This could be the same thing
@@ -100,7 +108,7 @@ def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
 
     # We have to start somewhere reasonable.  If we don't get an explicit path
     # start from the location of the binary being executed.
-    path_in_repo = path_in_repo or Path(sys.argv[0]).dirname()
+    path_in_repo = path_in_repo or Path(_ensure_path_in_repo(path_in_repo))
 
     repo_root = _first_parent_containing_sigil(
         path_in_repo, ".hg", is_dir=True
@@ -128,7 +136,7 @@ def find_buck_cell_root(path_in_repo: Optional[Path] = None) -> Path:
     This is functionally equivalent to `buck root`, but we opt to do it here as
     `buck root` takes >2s to execute (due to CLI startup time).
     """
-    path_in_repo = path_in_repo or Path(sys.argv[0]).dirname()
+    path_in_repo = path_in_repo or Path(_ensure_path_in_repo(path_in_repo))
 
     cell_path = _first_parent_containing_sigil(
         path_in_repo, ".buckconfig", is_dir=False

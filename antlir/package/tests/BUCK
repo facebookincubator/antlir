@@ -96,6 +96,7 @@ image_python_unittest(
     container_opts = {
         "internal_only_allow_mknod": True,
         "internal_only_bind_artifacts_dir_rw": True,
+        "internal_only_bind_repo_ro": True,
     },
     layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     needed_coverage = [(100, "//antlir/package:btrfs-library")],
