@@ -3,7 +3,7 @@
 # NB: There is no binary here because the image compiler does not get built
 # by Buck, it is executed in-place using the system Python.
 
-load("//antlir/bzl:oss_shim.bzl", "python_library")
+load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library")
 
 python_library(
     name = "subvolume_on_disk",
@@ -54,6 +54,7 @@ python_library(
     srcs = ["compiler.py"],
     deps = [
         ":dep_graph",
+        ":helpers",
         ":items_for_features",
         ":subvolume_on_disk",
         "//antlir:cli",
@@ -62,4 +63,25 @@ python_library(
         "//antlir:fs_utils",
         "//antlir/bzl:constants.shape-python",
     ],
+)
+
+python_library(
+    name = "helpers",
+    srcs = ["helpers.py"],
+    deps = [
+        ":dep_graph",
+        ":items_for_features",
+        "//antlir:cli",
+        "//antlir:config",
+        "//antlir:errors",
+        "//antlir:fs_utils",
+        "//antlir/bzl:constants.shape-python",
+    ],
+)
+
+python_binary(
+    name = "compile-items-to-subvol-bin",
+    main_module = "antlir.compiler.helpers",
+    visibility = ["PUBLIC"],
+    deps = [":helpers"],
 )

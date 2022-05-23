@@ -1,5 +1,6 @@
 # @noautodeps
 
+load("@bazel_skylib//lib:dicts.bzl", "dicts")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
@@ -194,7 +195,10 @@ python_unittest(
 python_unittest(
     name = "test-rpm-replay",
     srcs = ["test_rpm_replay.py"],
-    env = test_env_map([("leaf", ":leaf")]),
+    env = dicts.add(
+        test_env_map([("leaf", ":leaf")]),
+        {"compile_items_to_subvol_bin_path": "$(location //antlir/compiler:compile-items-to-subvol-bin)"},
+    ),
     needed_coverage = [
         (100, "//antlir/rpm/replay:rpm_replay"),
     ],

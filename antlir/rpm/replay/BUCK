@@ -47,6 +47,9 @@ python_library(
 python_library(
     name = "rpm_replay",
     srcs = ["rpm_replay.py"],
+    resources = {
+        "//antlir/compiler:compile-items-to-subvol-bin": "compile-items-to-subvol-bin",
+    },
     visibility = [
         "//antlir/rpm/replay/tests/...",
         "//tupperware/cm/antlir/...",

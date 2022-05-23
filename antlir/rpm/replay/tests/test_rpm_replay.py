@@ -74,6 +74,9 @@ class RpmReplayTestCase(unittest.TestCase):
                     debug=True,
                 ),
                 gen_replay_items=gen_replay_items,
+                compile_items_to_subvol_bin_path=os.environ[
+                    "compile_items_to_subvol_bin_path"
+                ],
             ) as install_subvol:
                 diff = list(subvol_diff(subvols.leaf, install_subvol))
                 self.assertEqual(diff, [])
