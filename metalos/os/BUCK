@@ -14,6 +14,11 @@ image.layer(
     name = "metalos",
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
+        feature.install(
+            "init-systemd-workaround",
+            "/init",
+            mode = "a+rx",
+        ),
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
         feature.install_buck_runnable(
             "//metalos/metalctl:metalctl",
