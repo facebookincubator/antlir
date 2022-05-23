@@ -40,7 +40,7 @@ def image_python_unittest(
 
     wrapper_props.outer_test_kwargs["tags"] = \
         wrapper_props.outer_test_kwargs.pop("tags", []) + [
-            validate_test_framework_label("test-framework=antlir_image_test"),
+            validate_test_framework_label("test-framework=7:antlir_image_test"),
             "no_pyre",
         ]
 
@@ -67,7 +67,7 @@ def image_python_unittest(
     python_unittest(
         name = helpers.hidden_test_name(name),
         tags = helpers.tags_to_hide_test() +
-               [validate_test_framework_label("test-framework=antlir_image_test")] + (
+               [validate_test_framework_label("test-framework=7:antlir_image_test")] + (
             [] if _TEMP_TP_TAG not in wrapper_props.outer_test_kwargs.get(
                 "tags",
                 {},
