@@ -258,6 +258,7 @@ image.layer(
         feature.remove("/etc/hosts"),
         network.host(),
         notify.install(),
+        systemd.enable_unit("notify-host.service", "default.target"),
         # Technically, sshd.service is already enabled in the base metalos
         # image, but this indicates that in the vmtest use-case, sshd _is_ the
         # workload.
