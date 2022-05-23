@@ -27,6 +27,8 @@ pub enum Error {
     RootSetup(btrfs::Error),
     #[error("failed to delete one or more subvols: {0:?}")]
     Delete(Vec<btrfs::Error>),
+    #[error("failed to change ownership of one or more subvols: {0:?}")]
+    Permissions(anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -66,6 +68,8 @@ impl ServiceVolumes {
 
         let runtime = Subvolume::create(paths.runtime()).map_err(Error::Create)?;
 
+        svc.set_paths_onwership().map_err(Error::Permissions)?;
+
         Ok(Self { root, runtime })
     }
 
@@ -99,6 +103,9 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use metalos_macros::containertest;
+    use nix::unistd::{Group, User};
+    use std::fs;
+    use std::os::linux::fs::MetadataExt;
     use std::path::Path;
 
     fn do_create() -> Result<(ServiceVolumes, ServiceInstance)> {
@@ -110,7 +117,21 @@ mod tests {
         Ok((svc_vols, svc))
     }
 
-    fn assert_paths(svc_vols: ServiceVolumes, svc: ServiceInstance) {
+    fn check_path_ownership<P>(path: P, owner_username: &str, owner_group: &str) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let metadata = fs::metadata(path)?;
+        let uid = metadata.st_uid();
+        let gid = metadata.st_gid();
+        let owner_uid = User::from_name(owner_username)?.unwrap().uid.as_raw();
+        let owner_gid = Group::from_name(owner_group)?.unwrap().gid.as_raw();
+        assert_eq!(uid, owner_uid);
+        assert_eq!(gid, owner_gid);
+        Ok(())
+    }
+
+    fn assert_paths(svc_vols: ServiceVolumes, svc: ServiceInstance) -> Result<()> {
         assert_eq!(
             svc_vols.root.path(),
             Path::new(&format!(
@@ -127,10 +148,29 @@ mod tests {
                 svc.run_uuid().to_simple(),
             )),
         );
+        check_path_ownership(
+            format!(
+                "/run/fs/control/run/runtime/metalos.service.demo-{}-{}",
+                svc.version().to_simple(),
+                svc.run_uuid().to_simple()
+            ),
+            "demoservice",
+            "demoservice",
+        )?;
+
         // ensure that the other subvols exist
         assert!(Path::new("/run/fs/control/run/state/metalos.service.demo").exists());
         assert!(Path::new("/run/fs/control/run/cache/metalos.service.demo").exists());
         assert!(Path::new("/run/fs/control/run/logs/metalos.service.demo").exists());
+
+        for dir in &["state", "cache", "logs"] {
+            check_path_ownership(
+                format!("/run/fs/control/run/{}/metalos.service.demo", dir),
+                "demoservice",
+                "demoservice",
+            )?;
+        }
+        Ok(())
     }
 
     #[containertest]

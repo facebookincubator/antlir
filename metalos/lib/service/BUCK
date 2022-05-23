@@ -34,6 +34,7 @@ rust_library(
         "serde_json",
         "serde_with",
         "slog",
+        "systemd-parser",
         "uuid",
         "zbus",
         "zvariant",

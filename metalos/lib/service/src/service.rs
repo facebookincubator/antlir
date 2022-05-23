@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use nix::unistd::chown;
+use nix::unistd::{Gid, Group, Uid, User};
 use std::collections::HashSet;
 use std::fs::read_dir;
 use std::fs::OpenOptions;
@@ -20,6 +22,7 @@ use slog::{o, trace, Logger};
 use uuid::Uuid;
 
 use systemd::{EnableDisableUnitFlags, Marker, StartMode, Systemd, TypedObjectPath, UnitName};
+use systemd_parser::items::*;
 
 mod dropin;
 mod generator;
@@ -98,6 +101,38 @@ impl ServiceInstance {
     // TODO(T111087410): this should come from a separate package
     fn generator_path(&self) -> PathBuf {
         self.metalos_dir().join("generator")
+    }
+
+    /// Makes sure to assign proper ownership to the cache/logs/state directories.
+    /// This is needed if the .service file has User/Group directives.
+    pub fn set_paths_onwership(&self) -> Result<()> {
+        let mut uid = Uid::from_raw(0);
+        let mut gid = Gid::from_raw(0);
+        let file_content = std::fs::read_to_string(self.unit_file_path()).with_context(|| {
+            format!(
+                "while reading unit file {}",
+                self.unit_file_path().display()
+            )
+        })?;
+        // NOTE: ideally I would use dbus to get the User/Group for a unit, however
+        // when this function runs the service might not be loaded....
+        // Thefore we have to parse the unit file with the systemd_parser crate.
+        let systemd_unit = systemd_parser::parse_string(&file_content)?;
+        if let Some(&DirectiveEntry::Solo(ref u)) = systemd_unit.lookup_by_key("User") {
+            if let Some(user) = u.value() {
+                uid = User::from_name(user).unwrap().unwrap().uid;
+            }
+        }
+        if let Some(&DirectiveEntry::Solo(ref g)) = systemd_unit.lookup_by_key("Group") {
+            if let Some(group) = g.value() {
+                gid = Group::from_name(group).unwrap().unwrap().gid;
+            }
+        }
+        chown(self.paths().cache(), Some(uid), Some(gid))?;
+        chown(self.paths().logs(), Some(uid), Some(gid))?;
+        chown(self.paths().state(), Some(uid), Some(gid))?;
+        chown(self.paths().runtime(), Some(uid), Some(gid))?;
+        Ok(())
     }
 
     /// Prepare this service version to be run the next time this service is
@@ -451,6 +486,8 @@ mod tests {
     use super::*;
     use metalos_macros::containertest;
     use set::tests::service_set;
+    use std::fs;
+    use std::os::linux::fs::MetadataExt;
     use systemd::WaitableSystemState;
 
     pub(crate) async fn wait_for_systemd() -> anyhow::Result<()> {
@@ -470,6 +507,20 @@ mod tests {
             .map(|uuid| uuid.to_simple().to_string())
     }
 
+    fn check_path_ownership<P>(path: P, owner_username: &str, owner_group: &str) -> Result<()>
+    where
+        P: AsRef<Path>,
+    {
+        let metadata = fs::metadata(path)?;
+        let uid = metadata.st_uid();
+        let gid = metadata.st_gid();
+        let owner_uid = User::from_name(owner_username)?.unwrap().uid.as_raw();
+        let owner_gid = Group::from_name(owner_group)?.unwrap().gid.as_raw();
+        assert_eq!(uid, owner_uid);
+        assert_eq!(gid, owner_gid);
+        Ok(())
+    }
+
     /// Start the demo service. If this doesn't work something is fundamentally
     /// broken and should be easier to debug than the `lifecycle_dance` test below
     #[containertest]
@@ -487,12 +538,12 @@ mod tests {
         .await?;
 
         for d in &["state", "cache", "logs"] {
-            let version_log = std::fs::read_to_string(format!(
-                "/run/fs/control/run/{}/metalos.service.demo/version",
-                d
-            ))
-            .with_context(|| format!("while reading version file in {}", d))?;
+            let path = format!("/run/fs/control/run/{}/metalos.service.demo/version", d);
+            let version_log = std::fs::read_to_string(path.clone())
+                .with_context(|| format!("while reading version file in {}", path))?;
             assert_eq!("00000000000040008000000000000001\n", version_log);
+
+            check_path_ownership(path, "demoservice", "demoservice")?;
         }
 
         Ok(())
@@ -564,15 +615,14 @@ mod tests {
         );
 
         for d in &["state", "cache", "logs"] {
-            let version_log = std::fs::read_to_string(format!(
-                "/run/fs/control/run/{}/metalos.service.demo/version",
-                d
-            ))
-            .with_context(|| format!("while reading version file in {}", d))?;
+            let path = format!("/run/fs/control/run/{}/metalos.service.demo/version", d);
+            let version_log = std::fs::read_to_string(path.clone())
+                .with_context(|| format!("while reading version file in {}", path))?;
             assert_eq!(
                 "00000000000040008000000000000001\n00000000000040008000000000000002\n00000000000040008000000000000001\n",
                 version_log
             );
+            check_path_ownership(path, "demoservice", "demoservice")?;
         }
 
         Ok(())

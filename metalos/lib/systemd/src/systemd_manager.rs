@@ -543,6 +543,11 @@ trait Manager {
     #[dbus_proxy(object = "Unit")]
     fn load_unit(&self, name: &UnitName);
 
+    /// Similar to [get_unit](ManagerProxy::get_service_unit) but will load the unit
+    /// from disk if possible and necessary.
+    #[dbus_proxy(object = "Service", name = "LoadUnit")]
+    fn load_service_unit(&self, name: &UnitName);
+
     /// Mask unit files.
     /// See [enable_unit_files](ManagerProxy::enable_unit_files) for details on
     /// the boolean flags.
@@ -992,6 +997,12 @@ trait Service {
 
     #[dbus_proxy(property)]
     fn environment(&self) -> zbus::Result<Environment>;
+
+    #[dbus_proxy(property)]
+    fn user(&self) -> zbus::Result<String>;
+
+    #[dbus_proxy(property)]
+    fn group(&self) -> zbus::Result<String>;
 }
 
 #[cfg(test)]

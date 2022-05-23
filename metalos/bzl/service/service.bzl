@@ -69,7 +69,10 @@ def native_service(
             METALOS_PATH,
             user = user,
             group = group,
-            mode = 0o0770,
+            # NOTE: it's very important /metalos has permissions 775
+            # otherwise services would not be able to access subdirs if they
+            # run as user different from root.
+            mode = 0o0775,
         ),
         install_binary_feature,
         feature.install(

@@ -7,6 +7,7 @@ rust_binary(
     name = "helper",
     srcs = glob(["src/*.rs"]),
     test_deps = [
+        "nix",
         "slog",
         "slog_glog_fmt",
         "//metalos/lib/systemd:systemd",
