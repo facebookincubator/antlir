@@ -1,0 +1,6 @@
+[Unit]
+Requires=metalos-bootloader.service
+After=metalos-bootloader.service
+AllowIsolate=yes
+OnFailure=emergency.target
+OnFailureJobMode=replace-irreversibly

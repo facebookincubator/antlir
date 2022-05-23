@@ -21,7 +21,7 @@ load("//metalos/disk:disk.bzl", "disk")
 load("//metalos/host_configs/tests:host.bzl", "host_config")
 load(":switch_root.bzl", "switch_root_test")
 
-TEST_KERNEL = kernels.get("5.6.13-0_fbk7_4335_g9d5dc3fbc3c2")
+TEST_KERNEL = kernels.default
 
 image.layer(
     name = "deps",
@@ -82,6 +82,7 @@ host_config(
                 "override_uri": "http://vmtest-host:8000/package/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef",
             },
             "kernel": {
+                "cmdline": "console=ttyS0,57600 systemd.unified_cgroup_hierarchy=1 selinux=0 cgroup_no_v1=all",
                 "pkg": {
                     "format": 1,
                     "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
@@ -106,6 +107,19 @@ host_config(
                 "kind": 7,
                 "name": "metalos.gpt-root-disk",
                 "override_uri": "http://vmtest-host:8000/package/metalos.gpt-root-disk:deadbeefdeadbeefdeadbeefdeadbeef",
+            },
+            "identity": {
+                "hostname": "vm00.abc00.facebook.com",
+                "id": "1",
+                "network": {
+                    "interfaces": [
+                        {
+                            "addrs": ["fd00::2/64"],
+                            "mac": "00:00:00:00:00:01",
+                            "name": "eth0",
+                        },
+                    ],
+                },
             },
             "imaging_initrd": {
                 "format": 2,

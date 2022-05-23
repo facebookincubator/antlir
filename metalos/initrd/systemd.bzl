@@ -46,6 +46,7 @@ UNITS = [
     "systemd-poweroff.service",
     "systemd-tmpfiles-setup-dev.service",
     "systemd-tmpfiles-setup.service",
+    "systemd-udev-settle.service",
     "systemd-udev-trigger.service",
     "systemd-udevd-control.socket",
     "systemd-udevd-kernel.socket",

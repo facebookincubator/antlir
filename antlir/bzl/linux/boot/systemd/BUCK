@@ -9,16 +9,17 @@ image.layer(
     features = [
         image.ensure_subdirs_exist("/", "EFI"),
         image.ensure_subdirs_exist("/EFI", "BOOT"),
+        image.ensure_subdirs_exist("/EFI", "Linux"),
         image.ensure_subdirs_exist("/EFI", "systemd"),
         image.ensure_subdirs_exist("/", "loader"),
         image.ensure_subdirs_exist("/loader", "entries"),
         image.clone(
-            "//metalos/os:metalos",
+            REPO_CFG.artifact["metalos.layer.base"],
             "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
             "/EFI/systemd/systemd-bootx64.efi",
         ),
         image.clone(
-            "//metalos/os:metalos",
+            REPO_CFG.artifact["metalos.layer.base"],
             "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
             "/EFI/BOOT/BOOTX64.efi",
         ),
