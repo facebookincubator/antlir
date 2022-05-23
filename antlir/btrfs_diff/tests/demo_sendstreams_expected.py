@@ -370,7 +370,7 @@ def render_demo_subvols(
                 {
                     "hello_renamed": [
                         "(Dir)",
-                        {"een": ["(File x'btrfs.compression'='zlib' d5)"]},
+                        {"een": ["(File x'btrfs.compression'='zstd' d5)"]},
                     ],
                     "buffered": [f"(Block m600 {os.makedev(42, 31):x})"],
                     "unbuffered": [f"(Char {os.makedev(42, 31):x})"],
