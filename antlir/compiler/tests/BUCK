@@ -139,10 +139,10 @@ python_unittest(
             READ_MY_DOC_image_feature_target(":test-compiler-feature"),
         ),
     },
-    needed_coverage = [(
-        100,
-        "//antlir/compiler:compiler",
-    )],
+    needed_coverage = [
+        (100, "//antlir/compiler:compiler"),
+        (100, "//antlir/compiler:helpers"),
+    ],
     resources = {
         layer_resource(
             TEST_IMAGE_PREFIX + "build_appliance_testing",

@@ -4,18 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 "See `replay_rpms_and_compiler_items()`"
-import itertools
-import logging
+import pickle
 import pwd
 from contextlib import contextmanager, ExitStack
-from typing import Any, Callable, Iterator, List, Mapping, Sequence, Tuple
+from typing import Any, Callable, Iterator, List, Sequence, Tuple
 
 from antlir.common import get_logger, not_none
-from antlir.compiler.compiler import (
-    compile_items_to_subvol,
-    ImageItem,
-    LayerOpts,
-)
+from antlir.compiler.dep_graph import ImageItem
+from antlir.compiler.helpers import get_compiler_nspawn_opts
+from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.make_subvol import ParentLayerItem
 from antlir.fs_utils import Path, temp_dir
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
@@ -107,6 +104,7 @@ def replay_rpms_and_compiler_items(
     root: Subvol,
     layer_opts: LayerOpts,
     gen_replay_items: ReplayItemsGenerator,
+    compile_items_to_subvol_bin_path: Path,
 ) -> Iterator[Subvol]:
     """
     Chain this after `subvol_rpm_compare_and_download()`.
@@ -124,19 +122,27 @@ def replay_rpms_and_compiler_items(
 
         # Replay the non-RPM compiler items on top of `root`.
         install_subvol = tmp_subvols.caller_will_create("rpm_replay")
-        compile_items_to_subvol(
-            exit_stack=exit_stack,
-            subvol=install_subvol,
-            layer_opts=layer_opts,
-            iter_items=itertools.chain(
-                [
-                    ParentLayerItem(
-                        from_target="//FAKE:ordered_nevras_for_rpm_replay",
-                        subvol=root,
-                    )
+        compile_items_to_subvol_args = {
+            "subvol": install_subvol,
+            "layer_opts": layer_opts,
+            "iter_items": [
+                ParentLayerItem(
+                    from_target="//FAKE:ordered_nevras_for_rpm_replay",
+                    subvol=root,
+                ),
+                *list(gen_replay_items(exit_stack, layer_opts)),
+            ],
+        }
+        run_nspawn(
+            get_compiler_nspawn_opts(
+                cmd=[
+                    compile_items_to_subvol_bin_path,
+                    # use protocol 0 to avoid generating any null bytes
+                    pickle.dumps(compile_items_to_subvol_args, 0),
                 ],
-                gen_replay_items(exit_stack, layer_opts),
+                build_appliance=not_none(layer_opts.build_appliance),
             ),
+            PopenArgs(),
         )
 
         # Install the specified RPMs in the specified order via `/bin/rpm`
