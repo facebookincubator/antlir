@@ -61,7 +61,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+load("//antlir/bzl:oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest", "validate_test_framework_label")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":build_vm_run_target.bzl", "build_vm_run_target")
@@ -104,8 +104,8 @@ def _build_test_tags(unittest_rule, tags):
         inner_tags.append("use-testpilot-adapter")
 
         # annotate both inner and wrapper target with a framework
-        wrapper_tags.append("test-framework=vmtest")
-        inner_tags.append("test-framework=vmtest")
+        wrapper_tags.append(validate_test_framework_label("test-framework=vmtest"))
+        inner_tags.append(validate_test_framework_label("test-framework=vmtest"))
 
     return inner_tags, wrapper_tags
 

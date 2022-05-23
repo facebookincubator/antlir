@@ -671,6 +671,9 @@ def _get_antlir_cell_name():
 def _is_buck2():
     return False
 
+def _validate_test_framework_label(test_framework_label):
+    return test_framework_label
+
 # Please keep each section lexicographically sorted.
 shim = struct(
     #
@@ -718,6 +721,7 @@ shim = struct(
     rust_python_extension = _rust_python_extension,
     rust_unittest = _rust_unittest,
     rpm_vset = _rpm_vset,  # Not wrapped due to perf paranoia.
+    validate_test_framework_label = _validate_test_framework_label,
     thrift_library = _thrift_library,
     target_utils = struct(
         parse_target = _parse_target,
