@@ -1,6 +1,7 @@
 # @noautodeps
 
 load("//antlir/bzl:oss_shim.bzl", "third_party")
+load("//antlir/vm/bzl:constants.bzl", "VM_GUEST_MAC_ADDRESS")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
 def switch_root_test(name, kernel, disk = ":metalos-gpt-image", disk_interface = "virtio-blk", images_sidecar = False):
@@ -11,7 +12,7 @@ def switch_root_test(name, kernel, disk = ":metalos-gpt-image", disk_interface =
             kernel = kernel,
             append = [
                 "rd.systemd.journald.forward_to_console=1",
-                "macaddress=11:22:33:44:55:66",
+                "macaddress={}".format(VM_GUEST_MAC_ADDRESS),
             ],
             runtime = vm.types.runtime.new(
                 sidecar_services = ["$(exe :images-sidecar) $(location :image_packages)"] if images_sidecar else [],
