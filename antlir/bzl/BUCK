@@ -99,12 +99,21 @@ fake_macro_library(
 )
 
 fake_macro_library(
+    name = "target_tagger_helper",
+    srcs = ["target_tagger_helper.bzl"],
+    deps = [
+        ":target_helpers",
+    ],
+)
+
+fake_macro_library(
     name = "target_tagger",
     srcs = ["target_tagger.bzl"],
     deps = [
         ":image_source",
         ":structs",
         ":target_helpers",
+        ":target_tagger_helper",
         ":wrap_runtime_deps",
     ],
 )

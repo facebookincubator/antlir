@@ -25,29 +25,15 @@ targets whose paths the `image_layer` converter would need to resolve.
 
 load(":image_source.bzl", "image_source")
 load(":shape.bzl", "shape")
-load(":target_helpers.bzl", "normalize_target")
 load(":target_tagger.shape.bzl", "target_tagged_image_source_t")
+load(":target_tagger_helper.bzl", "target_tagger_helper")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
-_TargetTaggerInfo = provider(fields = ["targets"])
-
-def new_target_tagger():
-    return _TargetTaggerInfo(targets = {})
-
-def tag_target(target_tagger, target, is_layer = False):
-    target = normalize_target(target)
-    target_tagger.targets[target] = 1  # Use a dict, since a target may recur
-    return {("__BUCK_LAYER_TARGET" if is_layer else "__BUCK_TARGET"): target}
-
-def extract_tagged_target(tagged):
-    return tagged.get("__BUCK_TARGET") or tagged["__BUCK_LAYER_TARGET"]
-
-def tag_required_target_key(tagger, d, target_key, is_layer = False):
-    if target_key not in d:
-        fail(
-            "{} must contain the key {}".format(d, target_key),
-        )
-    d[target_key] = tag_target(tagger, target = d[target_key], is_layer = is_layer)
+new_target_tagger = target_tagger_helper.new_target_tagger
+tag_target = target_tagger_helper.tag_target
+tag_required_target_key = target_tagger_helper.tag_required_target_key
+extract_tagged_target = target_tagger_helper.extract_tagged_target
+target_tagger_to_feature = target_tagger_helper.target_tagger_to_feature
 
 def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_suffix, **kwargs):
     was_wrapped, wrapped_target = maybe_wrap_executable_target(
@@ -82,21 +68,4 @@ def image_source_as_target_tagged_t(target_tagger, user_source):
     return shape.new(
         target_tagged_image_source_t,
         **image_source_as_target_tagged_dict(target_tagger, user_source)
-    )
-
-def target_tagger_to_feature(target_tagger, items, extra_deps = None):
-    return struct(
-        items = items,
-        # We need to tell Buck that we depend on these targets, so
-        # that `image_layer` can use `deps()` to discover its
-        # transitive dependencies.
-        #
-        # This is a little hacky, because we are forcing these
-        # targets to be built or fetched from cache even though we
-        # don't actually use them until a later build step --- which
-        # might be on a different host.
-        #
-        # Future: Talk with the Buck team to see if we can eliminate
-        # this inefficiency.
-        deps = list(target_tagger.targets.keys()) + (extra_deps or []),
     )
