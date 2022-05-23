@@ -6,8 +6,10 @@
  */
 
 use std::collections::HashSet;
+use std::fs::read_dir;
 use std::fs::OpenOptions;
 use std::ops::Deref;
+use std::os::unix::fs::symlink;
 use std::path::{Path, PathBuf};
 
 use anyhow::{ensure, Context, Error, Result};
@@ -116,6 +118,33 @@ impl ServiceInstance {
             .open(dropin_dir.join("99-metalos.conf"))
             .context("while creating dropin file")?;
         serde_systemd::to_writer(dropin_file, &dropin)?;
+
+        // symlink all default dropin found in /usr/lib/metalos/native-service/dropins/<file>
+        // into /run/systemd/system/{unit_name}.d/<file>
+        let entries = read_dir("/usr/lib/metalos/native-service/dropins")
+            .context("Can't find dropins directory for native services")?;
+        for entry in entries {
+            let entry = entry?;
+            if entry.path().is_dir() {
+                continue;
+            }
+            if let Some(file_name) = entry.path().file_name() {
+                let dest = Path::new("/run/systemd/system")
+                    .join(format!("{}.d/", &self.unit_name))
+                    .join(file_name);
+                if dest.exists() {
+                    std::fs::remove_file(dest.clone()).context(format!(
+                        "while deleting existent symlink {:#?}",
+                        dest.clone()
+                    ))?;
+                }
+                symlink(entry.path(), dest.clone()).context(format!(
+                    "when symlinking dropin {:?} to {:?}",
+                    entry.path(),
+                    dest
+                ))?;
+            }
+        }
 
         if self.generator_path().exists() {
             let output =
