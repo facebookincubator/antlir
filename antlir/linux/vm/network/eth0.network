@@ -3,9 +3,3 @@ Name=eth0
 
 [Network]
 Address=fd00::2/64
-IPv6AcceptRA=yes
-
-[IPv6AcceptRA]
-# Force SLAAC only for early boot, otherwise systemd-networkd will start the
-# dhcpv6 client after receiving a RA.
-DHCPv6Client=false

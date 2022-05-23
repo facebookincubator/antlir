@@ -86,7 +86,7 @@ fn is_eth_network_drop_in_in_place() {
         .expect("Can't read /usr/lib/systemd/network/50-eth.network file");
 
     assert!(
-        !static_unit.contains("MACAddress=11:22:33:44:55:66"),
+        !static_unit.contains("MACAddress=00:00:00:00:00:01"),
         "{}",
         static_unit
     );
@@ -97,7 +97,7 @@ fn is_eth_network_drop_in_in_place() {
         "\
         [Match]\n\
         Name=eth*\n\
-        MACAddress=11:22:33:44:55:66\n\
+        MACAddress=00:00:00:00:00:01\n\
         "
     );
 }
