@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "python_unittest")
+load(":oss_shim.bzl", "python_unittest", "validate_test_framework_label")
 
 # This exists to hack around a complex FB-internal migration. *sigh*
 # It should be removable when this is done:  https://fburl.com/nxc3u5mk
@@ -40,7 +40,7 @@ def image_python_unittest(
 
     wrapper_props.outer_test_kwargs["tags"] = \
         wrapper_props.outer_test_kwargs.pop("tags", []) + [
-            "test-framework=antlir_image_test",
+            validate_test_framework_label("test-framework=antlir_image_test"),
             "no_pyre",
         ]
 
@@ -66,7 +66,8 @@ def image_python_unittest(
 
     python_unittest(
         name = helpers.hidden_test_name(name),
-        tags = helpers.tags_to_hide_test() + ["test-framework=antlir_image_test"] + (
+        tags = helpers.tags_to_hide_test() +
+               [validate_test_framework_label("test-framework=antlir_image_test")] + (
             [] if _TEMP_TP_TAG not in wrapper_props.outer_test_kwargs.get(
                 "tags",
                 {},
