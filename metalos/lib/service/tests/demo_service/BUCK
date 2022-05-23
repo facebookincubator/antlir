@@ -3,7 +3,7 @@ load("//metalos/bzl/service:service.bzl", "native_service")
 
 rust_binary(
     name = "demo-service",
-    srcs = glob(["src/*.rs"]),
+    srcs = glob(["src/**/*.rs"]),
     link_style = "static",
     linker_flags = [
         "-Wl,--strip-all",
@@ -13,6 +13,7 @@ rust_binary(
         "anyhow",
         "nix",
         "structopt",
+        # @oss-disable: "//metalos/lib/service/tests/demo_service/facebook:facebook_checks", 
     ],
 )
 

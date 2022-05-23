@@ -21,6 +21,9 @@ use std::io::prelude::*;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
+#[cfg(facebook)]
+use facebook_checks::do_facebook_checks;
+
 #[derive(Debug, StructOpt)]
 struct Opts {
     #[structopt(long, env = "RUNTIME_DIRECTORY")]
@@ -52,6 +55,9 @@ fn main() -> Result<()> {
         uts.release(),
         std::env::var("GENERATOR_KERNEL_VERSION").unwrap()
     );
+
+    #[cfg(facebook)]
+    do_facebook_checks()?;
 
     // for convenience, we use the same binary for every "version" of the demo
     // service, but the METALOS_VERSION environment variable can be used to

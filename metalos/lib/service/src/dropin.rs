@@ -88,7 +88,6 @@ where
 struct ServiceSection {
     root_directory: PathBuf,
     environment: Environment,
-    bind_read_only_paths: Vec<PathBuf>,
     #[serde(rename = "BindPaths", serialize_with = "serialize_bind_rw_paths")]
     bind_rw_paths: BTreeMap<PathBuf, PathBuf>,
 }
@@ -166,7 +165,6 @@ impl Dropin {
                     "METALOS_RUN_ID".into() => svc.run_uuid().to_simple().to_string(),
                     "METALOS_VERSION".into() => svc.version().to_simple().to_string(),
                 }),
-                bind_read_only_paths: vec!["/usr/local/fbcode".into()],
                 bind_rw_paths,
             },
         })
@@ -207,8 +205,6 @@ mod tests {
                  Environment=METALOS_VERSION=00000000000040008000000000000001\n\
                  Environment=RUNTIME_DIRECTORY=/metalos/runtime\n\
                  Environment=STATE_DIRECTORY=/metalos/state\n\
-                 \n\
-                 BindReadOnlyPaths=/usr/local/fbcode\n\
                  \n\
                  BindPaths=/run/fs/control/run/cache/metalos.service.demo:/metalos/cache\n\
                  BindPaths=/run/fs/control/run/logs/metalos.service.demo:/metalos/logs\n\
