@@ -15,6 +15,7 @@ load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
+load("//antlir/vm/bzl:constants.bzl", "VM_GUEST_MAC_ADDRESS")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/disk:disk.bzl", "disk")
@@ -205,7 +206,7 @@ vm.rust_unittest(
         initrd = ":vmtest-initrd.cpio.gz",
         kernel = TEST_KERNEL,
         append = [
-            "macaddress=11:22:33:44:55:66",
+            "macaddress={}".format(VM_GUEST_MAC_ADDRESS),
         ],
     ),
     srcs = ["test_slaac.rs"],

@@ -19,6 +19,11 @@ logger = logging.getLogger(__name__)
 # all to have the same name.
 TAPDEV = "vm0"
 
+# MAC address for use in virtual machines.  Each VM is in its own network
+# namespace, so this value is constant for all VMs.  Keep this in sync with
+# bzl/constants.bzl.
+VM_GUEST_MAC_ADDRESS = "00:00:00:00:00:01"
+
 
 class TapError(Exception):
     pass
@@ -117,7 +122,7 @@ class VmTap(object):
         deterministic (compared to allowing qemu to create a random one), so
         that the corresponding IPv6 link-local address is deterministic.
         """
-        return "00:00:00:00:00:01"
+        return VM_GUEST_MAC_ADDRESS
 
     @property
     def guest_ipv6_ll(self) -> str:
