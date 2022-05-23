@@ -123,6 +123,7 @@ image.layer(
     ],
     flavor = REPO_CFG.antlir_linux_flavor,
     visibility = [
+        "//metalos/bootloader/...",
         "//metalos/imaging_initrd/...",
         "//ti/platform/edgeos/...",
     ],

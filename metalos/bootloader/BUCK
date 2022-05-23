@@ -1,0 +1,236 @@
+# @noautodeps
+
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:hoist.bzl", "hoist")
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:kernel_shim.bzl", "kernels")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "third_party")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
+load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//antlir/bzl/linux:defs.bzl", "linux")
+load("//antlir/vm/bzl:defs.bzl", "vm")
+load("//metalos:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "metalos-bootloader",
+    srcs = ["metalos_bootloader.rs"],
+    # set some flags for a more size-optimized and statically-linked binary
+    link_style = "static",
+    linker_flags = [
+        "-Wl,--strip-all",
+    ],
+    nodefaultlibs = True,
+    rustc_flags = [
+        "-C",
+        "opt-level=z",
+    ],
+    deps = [
+        "anyhow",
+        "nix",
+        "slog",
+        "slog_glog_fmt",
+        "tokio",
+        "//metalos/host_configs/rust:metalos_host_configs",
+        "//metalos/lib/blkid:blkid",
+        "//metalos/lib/kexec:metalos_kexec",
+        "//metalos/lib/metalos_paths:metalos_paths",
+        "//metalos/lib/state:state",
+    ],
+)
+
+image.layer(
+    name = "with-metalos-bootloader",
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
+    features = [
+        feature.install(
+            ":metalos-bootloader",
+            "/usr/bin/metalos-bootloader",
+            mode = "a+rx",
+        ),
+    ],
+)
+
+# Use the default kernel as the base for the EFI bootloader for two reasons:
+# 1) compiling the kernel is slow and requires a large git clone
+# 2) we can count on some small amount of support if we're using an official
+#  kernel
+KERNEL = kernels.default
+
+image.layer(
+    name = "initrd",
+    parent_layer = "//metalos/initrd:bare-systemd",
+    features = [
+        extract.extract(
+            source = ":with-metalos-bootloader",
+            binaries = ["/usr/bin/metalos-bootloader"],
+        ),
+        systemd.install_unit("metalos-bootloader.service"),
+        feature.remove("/usr/lib/systemd/system/initrd.target"),
+        systemd.install_unit("metalos-bootloader.target"),
+        systemd.set_default_target("metalos-bootloader.target"),
+        feature.remove("/usr/lib/initrd-release"),
+        linux.release.install(
+            path = "/usr/lib/os-release",
+            layer = ":initrd",
+            os_name = "MetalOS",
+            variant = "Bootloader",
+        ),
+        image.ensure_subdirs_exist(
+            "/usr/lib",
+            paths.join(
+                "modules",
+                KERNEL.uname,
+            ),
+        ),
+        feature.install(
+            KERNEL.derived_targets.disk_boot_modules,
+            paths.join(
+                "/usr/lib/modules",
+                KERNEL.uname,
+            ),
+        ),
+    ],
+)
+
+package.new(
+    name = "initrd.cpio.gz",
+    format = "cpio.gz",
+    layer = ":initrd",
+)
+
+export_file(
+    name = "cmdline",
+)
+
+# man 7 systemd-stub
+hoist(
+    name = "systemd-stub",
+    layer = REPO_CFG.artifact["metalos.layer.base"],
+    path = "/usr/lib/systemd/boot/efi/linuxx64.efi.stub",
+)
+
+buck_genrule(
+    name = "bootloader.efi",
+    out = "out",
+    cmd = """
+        objcopy \
+            --add-section .osrel="$(location :initrd__os-release)" --change-section-vma .osrel=0x20000 \
+            --add-section .cmdline="$(location :cmdline)" --change-section-vma .cmdline=0x30000 \
+            --add-section .linux="$(location {vmlinuz})" --change-section-vma .linux=0x2000000 \
+            --add-section .initrd="$(location :initrd.cpio.gz)" --change-section-vma .initrd=0x3000000 \
+            "$(location :systemd-stub)" $OUT
+    """.format(
+        vmlinuz = KERNEL.derived_targets.vmlinuz,
+    ),
+)
+
+image.layer(
+    name = "efi",
+    parent_layer = "//antlir/bzl/linux/boot/systemd:base",
+    features = [
+        feature.install(":bootloader.efi", "/EFI/Linux/metalos.efi"),
+    ],
+    flavor = REPO_CFG.antlir_linux_flavor,
+    visibility = ["//metalos/disk/..."],
+)
+
+package.new(
+    name = "efi.vfat",
+    format = "vfat",
+    layer = ":efi",
+    loopback_opts = image.opts(
+        size_mb = 256,
+        label = "efi",
+    ),
+)
+
+TEST_KERNEL = kernels.default
+
+image.layer(
+    name = "control",
+    parent_layer = "//metalos/disk:control",
+    features = [
+        feature.install(
+            "//metalos/initrd/vmtest:host-config",
+            "/run/state/metalos/metalos_host_configs::host::HostConfig-current.json",
+        ),
+        feature.install(
+            "//metalos/initrd/vmtest:host-config-boot_config",
+            "/run/state/metalos/metalos_host_configs::boot_config::BootConfig-staged.json",
+        ),
+        feature.install("//metalos/initrd:initrd.cpio.gz", "/image/initrd/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef"),
+    ],
+)
+
+btrfs.new(
+    name = "test-root-disk",
+    opts = btrfs.opts.new(
+        default_subvol = "/volume",
+        subvols = {
+            "/volume": btrfs.opts.subvol.new(
+                layer = ":control",
+                writable = True,
+            ),
+            "/volume/image/kernel/kernel." + TEST_KERNEL.uname + ":deadbeefdeadbeefdeadbeefdeadbeef": btrfs.opts.subvol.new(
+                layer = TEST_KERNEL.derived_targets.image,
+            ),
+            "/volume/image/rootfs/metalos:deadbeefdeadbeefdeadbeefdeadbeef": btrfs.opts.subvol.new(
+                layer = "//metalos/os/vm:base",
+            ),
+        },
+        loopback_opts = image.opts(
+            label = "/",
+            size_mb = 4096,
+        ),
+    ),
+    visibility = [],
+    antlir_rule = "user-internal",
+)
+
+image.gpt(
+    name = "gpt-boot-disk",
+    table = [
+        image.gpt_partition(
+            package = ":efi.vfat",
+            is_esp = True,
+        ),
+        image.gpt_partition(
+            package = ":test-root-disk",
+        ),
+    ],
+)
+
+vm.run(
+    name = "boot-from-disk",
+    vm_opts = vm.types.opts.new(
+        boot_from_disk = True,
+        disk = vm.types.disk.new(
+            package = ":gpt-boot-disk",
+            interface = "nvme",
+        ),
+    ),
+)
+
+vm.rust_unittest(
+    name = "test-boots-nvme",
+    vm_opts = vm.types.opts.new(
+        boot_from_disk = True,
+        disk = vm.types.disk.new(
+            package = ":gpt-boot-disk",
+            interface = "nvme",
+        ),
+    ),
+    srcs = ["test_boot.rs"],
+    crate_root = "test_boot.rs",
+    deps = third_party.libraries(
+        [
+            "anyhow",
+            "nix",
+        ],
+        platform = "rust",
+    ),
+)
