@@ -251,6 +251,8 @@ def invoke_compiler_inside_build_appliance(
             "--is-nested",
             *argv,
         ],
+        # Buck2 $() macros give us repo-relative paths.
+        chdir=repo_config().repo_root,
         # Needed to btrfs receive subvol sendstreams
         allow_mknod=True,
         layer=build_appliance,
