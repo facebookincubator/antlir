@@ -12,10 +12,10 @@ After=systemd-networkd-wait-online.service
 Requires=dbus.socket
 After=dbus.socket
 
-# Forcibly stop this service so that the systemd in the post-switch-root os will
-# restart it and process the rules that are in the rootfs
-Conflicts=systemd-tmpfiles-setup.service
-After=systemd-tmpfiles-setup.service
+# Forcibly stop these services so that the systemd in the post-switch-root os will
+# restart them and process the rules that are in the rootfs
+Conflicts=systemd-tmpfiles-setup.service systemd-modules-load.service
+After=systemd-tmpfiles-setup.service systemd-modules-load.service
 
 [Service]
 Type=oneshot
