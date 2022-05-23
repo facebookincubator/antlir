@@ -1,6 +1,7 @@
 # @noautodeps
 
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
@@ -16,6 +17,7 @@ image.layer(
         generator.mounts(),
         network.host(),
         notify.install(),
+        systemd.enable_unit("notify-host.service", "default.target"),
         ssh.test_only_login(),
         ssh.hostkey_setup(),
         "//antlir/linux/vm/vmtest:maybe_mark_non_build_step",
