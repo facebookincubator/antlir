@@ -32,11 +32,12 @@ rust_binary(
         "container",
     ],
     deps = [
+        "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/host_configs/evalctx:evalctx",
         "//metalos/host_configs/lifecycle:lifecycle",
         "//metalos/lib/get_host_config:get_host_config",
-        "//metalos/lib/kernel_cmdline:kernel_cmdline",
         "//metalos/lib/net_utils:net_utils",
+        "//metalos/lib/state:state",
         "//metalos/lib/package_download:package_download",
         "//metalos/lib/send_events:send_events",
         "anyhow",  # ~9.5k, very helpful for error handling
@@ -44,15 +45,10 @@ rust_binary(
         # all the slog crates together add about 50k
         "slog",
         "slog_glog_fmt",
-        "toml",  # load config files
-        "serde",  # load config files
+        "serde",
         "serde_json",
-        "strum",
-        "strum_macros",  # I <3 zero cost abstractions!
-        # Needed for HTTPS requests to download images
         "url",
         "futures",
-        "reqwest",
         "tokio",  # async runtime for http client
     ],
 )

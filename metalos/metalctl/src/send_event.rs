@@ -10,8 +10,10 @@ use serde_json;
 use slog::{info, Logger};
 use structopt::StructOpt;
 
+use metalos_host_configs::host::HostConfig;
 use net_utils::get_mac;
 use send_events::{Event, EventSender, EventSink, HttpSink, Source, SourceArgs};
+use state::State;
 
 #[derive(StructOpt, Debug, Clone)]
 pub struct Opts {
@@ -27,14 +29,7 @@ pub struct Opts {
     pub source_args: SourceArgs,
 }
 
-pub(crate) fn default_sink(config: &crate::Config) -> impl EventSink {
-    HttpSink::new(config.event_backend.event_backend_base_uri().clone())
-}
-
-/// Send an event to the https endpoint configured in the metalctl.toml config file.
-/// This subcommand can be used in scripts, systemd unit files and so on.
-pub(super) async fn send_event(log: Logger, config: crate::Config, opts: Opts) -> Result<()> {
-    let sink = default_sink(&config);
+async fn send_event(log: Logger, opts: Opts, sink: impl EventSink) -> Result<()> {
     let event_sender = EventSender::new(
         match opts.source_args.into() {
             Some(source) => source,
@@ -56,10 +51,27 @@ pub(super) async fn send_event(log: Logger, config: crate::Config, opts: Opts) -
     Ok(())
 }
 
+/// Send an event to the https endpoint configured in the HostConfig.
+/// This subcommand can be used in scripts, systemd unit files and so on.
+pub(super) async fn cmd_send_event(log: Logger, opts: Opts) -> Result<()> {
+    let config = HostConfig::current()
+        .context("failed to load latest config from disk")?
+        .context("No host config available")?;
+
+    let sink = HttpSink::new(
+        config
+            .provisioning_config
+            .event_backend_base_uri
+            .parse()
+            .context("Failed to parse event backend uri")?,
+    );
+
+    send_event(log, opts, sink).await
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::config::{Config, EventBackend};
     use anyhow::Result;
     use http_test::make_test_server;
     use maplit::hashmap;
@@ -91,15 +103,14 @@ mod tests {
                 let test_payload_inner = test_payload_inner.clone();
                 async move {
                     let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
+
+                    let sink = HttpSink::new(
+                        format!("http://{}/sendEvent", addr)
+                            .parse()
+                            .context("failed to build URL")?,
+                    );
                     send_event(
                         log,
-                        Config {
-                            event_backend: EventBackend {
-                                event_backend_base_uri: format!("http://{}/sendEvent", addr)
-                                    .parse()
-                                    .context("failed to build URL")?,
-                            },
-                        },
                         Opts::from_iter_safe(&[
                             "send-event",
                             "test-event",
@@ -110,6 +121,7 @@ mod tests {
                                 .context("failed to convert payload to json")?,
                         ])
                         .context("failed to parse args")?,
+                        sink,
                     )
                     .await
                     .context("failed to run send event cmd")?;

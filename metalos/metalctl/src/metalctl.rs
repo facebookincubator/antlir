@@ -12,21 +12,16 @@
 extern crate metalos_macros;
 
 use std::os::unix::process::CommandExt;
-use std::path::PathBuf;
 use std::process::Command;
 
-use anyhow::{Context, Error, Result};
-use slog::{error, o, trace, warn, Logger};
+use anyhow::{Error, Result};
+use slog::{error, o, trace, Logger};
 use structopt::StructOpt;
 
 mod apply_host_config;
-mod config;
-mod kernel_cmdline;
 mod send_event;
 mod stage_host_config;
 mod update;
-
-pub use config::Config;
 
 #[derive(StructOpt)]
 enum Subcommand {
@@ -47,29 +42,15 @@ enum Subcommand {
 #[derive(StructOpt)]
 #[structopt(name = "metalctl", no_version)]
 struct MetalCtl {
-    #[structopt(short, long, default_value("/etc/metalctl.toml"))]
-    config: PathBuf,
     #[structopt(subcommand)]
     command: Subcommand,
 }
 
 async fn run_command(options: MetalCtl, log: Logger) -> Result<()> {
-    let mut config: config::Config = match std::fs::read_to_string(&options.config) {
-        Ok(config_str) => toml::from_str(&config_str).context("invalid config")?,
-        Err(e) => {
-            warn!(
-                log,
-                "failed to read config from {:?}, using defaults: {}", options.config, e
-            );
-            Default::default()
-        }
-    };
-    config.apply_kernel_cmdline_overrides().unwrap();
-
     match options.command {
         Subcommand::StageHostConfig(opts) => stage_host_config::stage_host_config(log, opts).await,
         Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
-        Subcommand::SendEvent(opts) => send_event::send_event(log, config, opts).await,
+        Subcommand::SendEvent(opts) => send_event::cmd_send_event(log, opts).await,
         Subcommand::Update(update) => update.subcommand(log).await,
         Subcommand::External(mut args) => {
             let bin = format!("metalctl-{}", args.remove(0));
