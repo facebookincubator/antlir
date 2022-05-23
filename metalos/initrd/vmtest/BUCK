@@ -195,6 +195,9 @@ vm.rust_unittest(
     vm_opts = vm.types.opts.new(
         initrd = ":vmtest-initrd.cpio.gz",
         kernel = TEST_KERNEL,
+        append = [
+            "macaddress={}".format(VM_GUEST_MAC_ADDRESS),
+        ],
     ),
     srcs = ["test_boots.rs"],
     crate_root = "test_boots.rs",
