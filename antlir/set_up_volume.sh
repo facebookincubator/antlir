@@ -37,7 +37,7 @@ mount_image() {
   ensure_permissions
   echo "Mounting btrfs $image at $volume"
   # Explicitly set filesystem type to detect shenanigans.
-  mount -t btrfs -o loop,discard,nobarrier "$image" "$volume"
+  mount -t btrfs -o loop,discard,nobarrier,compress-force=zstd:1 "$image" "$volume"
   # Mark our mount "private".  We do not accept propagation events from the
   # parent mount, and will not send events outside of "$volume".  And any
   # mounts made within the volume should be contained to the volume.
