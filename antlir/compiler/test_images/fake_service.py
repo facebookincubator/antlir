@@ -6,6 +6,7 @@
 
 import sys
 
+# pyre-fixme[5]: Global expression must be annotated.
 kind = sys.argv[1]
 if kind == "only_write_to_stdout":  # see `test_boot_marked_as_non_build_step`
     print("fake_service:", kind)

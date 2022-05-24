@@ -43,9 +43,12 @@ def _make_rsync_style_dest_path(dest: str, source: str) -> str:
 
 
 class SymlinkBase(symlink_t, ImageItem):
+    # pyre-fixme[4]: Attribute must be annotated.
     _normalize_source = validate_path_field_normal_relative("source")
 
     @root_validator(pre=True)
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def dest_is_rsync_style(cls, values):  # noqa B902
         # Validators are classmethods but flake8 doesn't catch that.
         values["dest"] = _make_rsync_style_dest_path(  # def provides(self):
@@ -55,6 +58,7 @@ class SymlinkBase(symlink_t, ImageItem):
         )
         return values
 
+    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         yield ProvidesSymlink(path=self.dest, target=self.source)
 
@@ -108,6 +112,7 @@ class SymlinkBase(symlink_t, ImageItem):
 
 
 class SymlinkToDirItem(SymlinkBase):
+    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         yield RequireDirectory(path=self.source)
         yield RequireDirectory(path=self.dest.dirname())
@@ -120,6 +125,7 @@ def _allowlisted_symlink_source(source: Path) -> bool:
 
 
 class SymlinkToFileItem(SymlinkBase):
+    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         if not _allowlisted_symlink_source(self.source):
             yield RequireFile(path=self.source)

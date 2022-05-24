@@ -23,6 +23,10 @@ class OpenUrlTestCase(unittest.TestCase):
             allowlist_dir = td / "allowlist"
             os.mkdir(allowlist_dir)
 
+            # pyre-fixme[53]: Captured variable `allowlist_dir` is not annotated.
+            # pyre-fixme[53]: Captured variable `hello_path` is not annotated.
+            # pyre-fixme[3]: Return type must be annotated.
+            # pyre-fixme[2]: Parameter must be annotated.
             def try_snapshot(snapshot_dir):
                 snapshot_gpg_keys(
                     key_urls=[hello_path.file_url()],

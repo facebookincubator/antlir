@@ -42,6 +42,7 @@ from pydantic import root_validator
 from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -76,6 +77,7 @@ class YumDnfCommand(enum.Enum):
 # When several of the commands land in the same phase, we need to order them
 # deterministically.  This is meant to be temporary, until this code can be
 # re-tooled to use `yum/dnf shell` to run all operations in one transaction.
+# pyre-fixme[5]: Global expression must be annotated.
 YUM_DNF_COMMAND_ORDER = {
     cmd: i
     for i, cmd in enumerate(
@@ -98,6 +100,7 @@ assert len(YUM_DNF_COMMAND_ORDER) == len(YumDnfCommand)
 
 
 # The actual resolution is more complicated, see `_action_to_command()`
+# pyre-fixme[5]: Global expression must be annotated.
 ACTION_TO_DEFAULT_CMD = {
     RpmAction.install: YumDnfCommand.install_name,
     RpmAction.remove_if_exists: YumDnfCommand.remove_name_if_exists,
@@ -105,9 +108,13 @@ ACTION_TO_DEFAULT_CMD = {
 
 
 class _RpmActionConflictDetector:
+    # pyre-fixme[3]: Return type must be annotated.
     def __init__(self):
+        # pyre-fixme[4]: Attribute must be annotated.
         self.name_to_actions = {}
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def add(self, rpm_name, item):
         actions = self.name_to_actions.setdefault(rpm_name, [])
         actions.append((item.action, item.from_target))
@@ -280,6 +287,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     name: Optional[str] = None
     source: Optional[Path] = None
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __init__(self, *args: Any, **kwargs: Any):
         rpm_action_item_t.__init__(self, *args, **kwargs)
         ImageItem.__init__(self, from_target=kwargs.get("from_target"))
@@ -293,6 +301,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
         ), f"Exactly one of `name` or `source` must be set in {values}"
         return values
 
+    # pyre-fixme[3]: Return type must be annotated.
     def phase_order(self):
         return {
             RpmAction.install: PhaseOrder.RPM_INSTALL,
@@ -300,6 +309,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
         }[self.action]
 
     @classmethod
+    # pyre-fixme[3]: Return type must be annotated.
     def get_phase_builder(
         cls, items: Iterable["RpmActionItem"], layer_opts: LayerOpts
     ):
@@ -356,6 +366,9 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
                 ]
             )
 
+        # pyre-fixme[53]: Captured variable `action_to_names_or_rpms` is not annotated.
+        # pyre-fixme[53]: Captured variable `build_appliance` is not annotated.
+        # pyre-fixme[53]: Captured variable `version_sets` is not annotated.
         def builder(subvol: Subvol) -> None:
             # pyre-fixme[16]: `Path` has no attribute `__enter__`.
             with _prepare_versionlock(

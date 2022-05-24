@@ -231,11 +231,14 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
+# pyre-fixme[5]: Global expression must be annotated.
 MiB = 2**20
 
 # Otherwise, `mkfs.btrfs` fails with:
 #   ERROR: minimum size for each btrfs device is 114294784
+# pyre-fixme[5]: Global expression must be annotated.
 MIN_CREATE_BYTES = 109 * MiB
 # The smallest size, to which btrfs will GROW a tiny filesystem. For
 # lower values, `btrfs resize` prints:
@@ -244,10 +247,12 @@ MIN_CREATE_BYTES = 109 * MiB
 #
 # When a filesystem's `min-dev-size` is small, `btrfs resize` below this
 # limit will fail to shrink with `Invalid argument`.
+# pyre-fixme[5]: Global expression must be annotated.
 MIN_SHRINK_BYTES = 256 * MiB
 
 # Btrfs requires at least this many bytes free in the filesystem
 # for metadata
+# pyre-fixme[5]: Global expression must be annotated.
 MIN_FREE_BYTES = 81 * MiB
 
 
@@ -265,9 +270,11 @@ class _BtrfsLoopbackVolume:
         label: Optional[str] = None,
         mount_options: Optional[List[str]] = None,
     ) -> None:
+        # pyre-fixme[4]: Attribute must be annotated.
         self._image_path = Path(image_path).abspath()
         self._label: Optional[str] = label
         self._mount_dir: Path = Path(mount_dir).abspath()
+        # pyre-fixme[4]: Attribute must be annotated.
         self._mount_options = [
             "loop",
             "discard",
@@ -328,7 +335,11 @@ class _BtrfsLoopbackVolume:
         return size_bytes
 
     def receive(
-        self, send: int, receive_dir: Path
+        self,
+        send: int,
+        receive_dir: Path
+        # pyre-fixme[24]: Generic type `subprocess.CompletedProcess` expects 1 type
+        #  parameter.
     ) -> subprocess.CompletedProcess:
         """
         Receive a btrfs sendstream from the `send` fd
@@ -344,6 +355,7 @@ class _BtrfsLoopbackVolume:
         )
 
     @contextmanager
+    # pyre-fixme[3]: Return annotation cannot contain `Any`.
     def mount(self) -> Generator["_BtrfsLoopbackVolume", Any, Any]:
         mount_opts = "{}".format(",".join(self._mount_options))
         log.info(
@@ -666,6 +678,7 @@ class BtrfsImage:
             )
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def package_btrfs(args) -> None:
     with init_cli(description=__doc__, argv=args) as cli:
         cli.parser.add_argument(

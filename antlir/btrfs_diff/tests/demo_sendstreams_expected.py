@@ -88,16 +88,27 @@ def get_filtered_and_expected_items(
 
     di = SendStreamItems
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def p(p):
         # forgive missing `b`s, it's a test
         return os.path.normpath(p.encode() if isinstance(p, str) else p)
 
+    # pyre-fixme[53]: Captured variable `di` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def chown(path, gid=0, uid=0):
         return di.chown(path=p(path), gid=gid, uid=uid)
 
+    # pyre-fixme[53]: Captured variable `di` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def chmod(path, mode=0o644):
         return di.chmod(path=p(path), mode=mode)
 
+    # pyre-fixme[53]: Captured variable `di` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def utimes(path):
         return di.utimes(
             path=p(path),
@@ -106,11 +117,16 @@ def get_filtered_and_expected_items(
             ctime=build_start_time,
         )
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def base_metadata(path, mode=0o644, gid=0, uid=0):
         return [chown(path, gid, uid), chmod(path, mode), utimes(path)]
 
     # Future: if we end up doing a lot of mid-list insertions, we can
     # autogenerate the temporary names to match what btrfs does.
+    # pyre-fixme[53]: Captured variable `di` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def and_rename(item, real_name, utimes_parent=True):
         yield item
         renamed_item = di.rename(
@@ -121,11 +137,17 @@ def get_filtered_and_expected_items(
         if utimes_parent:  # Rarely, `btrfs send` breaks the pattern.
             yield utimes(os.path.dirname(bytes(renamed_item.dest)))
 
+    # pyre-fixme[53]: Captured variable `temp_path_counter` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def temp_path(prefix):
         return p(
             f"o{next(temp_path_counter)}-" f"{TEMP_PATH_MIDDLES[prefix]}-0"
         )
 
+    # pyre-fixme[53]: Captured variable `di` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def write(path, *, offset: int, data: bytes):
         if dump_mode:
             return di.update_extent(path=p(path), offset=offset, len=len(data))
@@ -280,8 +302,15 @@ def get_filtered_and_expected_items(
     )
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def render_demo_subvols(
-    *, create_ops=None, mutate_ops=None, lossy_packaging=None
+    *,
+    # pyre-fixme[2]: Parameter must be annotated.
+    create_ops=None,
+    # pyre-fixme[2]: Parameter must be annotated.
+    mutate_ops=None,
+    # pyre-fixme[2]: Parameter must be annotated.
+    lossy_packaging=None,
 ):
     """
     Test-friendly renderings of the subvolume contents that should be
@@ -299,9 +328,14 @@ def render_demo_subvols(
 
     goodbye_world = InodeRepr("(File)")  # This empty file gets hardlinked
 
+    # pyre-fixme[53]: Captured variable `lossy_packaging` is not annotated.
     def render_reflink(s: str) -> str:
         return "" if lossy_packaging else f"({s})"
 
+    # pyre-fixme[53]: Captured variable `goodbye_world` is not annotated.
+    # pyre-fixme[53]: Captured variable `lossy_packaging` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def render_create_ops(kb_nuls, kb_nuls_clone, zeros_holes_zeros, big_hole):
         kb_nuls = render_reflink(kb_nuls)
         kb_nuls_clone = render_reflink(kb_nuls_clone)
@@ -361,6 +395,10 @@ def render_demo_subvols(
             ]
         )
 
+    # pyre-fixme[53]: Captured variable `goodbye_world` is not annotated.
+    # pyre-fixme[53]: Captured variable `lossy_packaging` is not annotated.
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def render_mutate_ops(kb_nuls, kb_nuls_clone, zeros_holes_zeros, big_hole):
         kb_nuls = render_reflink(kb_nuls)
         kb_nuls_clone = render_reflink(kb_nuls_clone)
@@ -484,6 +522,8 @@ def render_demo_subvols(
     raise AssertionError("Set at least one of {create,mutate}_ops")
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def render_demo_as_corrupted_by_cpio(*, create_ops=None, mutate_ops=None):
     demo_render = render_demo_subvols(create_ops=create_ops)
     # Cpio does not preserve the original's cloned extents of
@@ -502,6 +542,8 @@ def render_demo_as_corrupted_by_cpio(*, create_ops=None, mutate_ops=None):
     return demo_render
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def render_demo_as_corrupted_by_gnu_tar(*, create_ops=None, mutate_ops=None):
     demo_render = render_demo_subvols(create_ops=create_ops)
     # Tar does not preserve the original's cloned extents of

@@ -16,6 +16,7 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -67,6 +68,7 @@ def _repo_query(
     db_path: Optional[Path] = None,
     package_name: Optional[str] = None,
     package_path: Optional[Path] = None,
+    # pyre-fixme[2]: Parameter must be annotated.
     check_output_fn,
 ) -> "RpmMetadata":
     query_args: List[MehStr] = [
@@ -145,8 +147,11 @@ def compare_rpm_versions(a: RpmMetadata, b: RpmMetadata) -> int:
         return _compare_values(a.release, b.release)
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 R_NON_ALPHA_NUM_TILDE_CARET = re.compile(rb"^([^a-zA-Z0-9~\^]*)(.*)$")
+# pyre-fixme[5]: Global expression must be annotated.
 R_NUM = re.compile(rb"^([\d]+)(.*)$")
+# pyre-fixme[5]: Global expression must be annotated.
 R_ALPHA = re.compile(rb"^([a-zA-Z]+)(.*)$")
 
 

@@ -33,6 +33,7 @@ from .common import find_cgroup2_mountpoint, parse_cgroup2_path
 
 
 # For test mocking
+# pyre-fixme[5]: Global expression must be annotated.
 _load_repo_config = repo_config
 
 
@@ -41,10 +42,14 @@ def _colon_quote_path(path: AnyStr) -> Path:
 
 
 # NB: This assumes the path is readable to unprivileged users.
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _exists_in_image(subvol, path):
     return os.path.exists(subvol.path(path))
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def bind_args(src, dest=None, *, readonly: bool = True):
     "dest is relative to the nspawn container root"
     if dest is None:
@@ -60,6 +65,8 @@ def bind_args(src, dest=None, *, readonly: bool = True):
     ]
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _inject_os_release_args(subvol):
     """
     nspawn requires os-release to be present as a "sanity check", but does
@@ -115,6 +122,7 @@ def _temp_cgroup(subvol: Subvol) -> Path:
         )
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _nspawn_cmd(
     nspawn_subvol: Subvol,
     temp_cgroup: Path,
@@ -367,6 +375,7 @@ def _snapshot_subvol(
             yield nspawn_subvol
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def nspawn_sanitize_env():
     env = os.environ.copy()
     # `systemd-nspawn` responds to a bunch of semi-private and intentionally
@@ -391,7 +400,13 @@ def nspawn_sanitize_env():
 # be used, while that of `popen_and_inject_fds` must be.
 @contextmanager
 def maybe_popen_and_inject_fds(
-    cmd: List[str], opts: _NspawnOpts, popen, *, set_listen_fds: bool
+    cmd: List[str],
+    opts: _NspawnOpts,
+    # pyre-fixme[2]: Parameter must be annotated.
+    popen,
+    *,
+    set_listen_fds: bool
+    # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 ) -> Iterable[subprocess.Popen]:
     with (
         popen_and_inject_fds_after_sudo(

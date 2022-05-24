@@ -18,6 +18,8 @@ MOUNT_MARKER = Path("MOUNT")
 
 
 # Not covering, since this would require META_MOUNTS_DIR to be unreadable.
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _raise(ex):  # pragma: no cover
     raise ex
 

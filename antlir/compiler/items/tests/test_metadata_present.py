@@ -13,6 +13,7 @@ _TEST_TARGET_PATH = (
 
 
 class TestMetadataPresent(TestCase):
+    # pyre-fixme[3]: Return type must be annotated.
     def test_metadata_prsent(self):
         with open("/.meta/build/target") as f:
             self.assertEqual(f.readline().strip(), _TEST_TARGET_PATH)

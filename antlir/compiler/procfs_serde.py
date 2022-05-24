@@ -98,6 +98,7 @@ from typing import Any, List
 from antlir.fs_utils import Path
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _make_script(dest: bytes, cmds: List[str]):
     return [
         # Write with `noclobber` to ensure that we fail if the file exists.
@@ -127,6 +128,8 @@ def _make_script(dest: bytes, cmds: List[str]):
     ]
 
 
+# pyre-fixme[2]: Parameter annotation cannot be `Any`.
+# pyre-fixme[2]: Parameter must be annotated.
 def serialize(data: Any, subvol, path_with_ext: str) -> None:
     """
     Writes `data` to `path_with_ext` inside `subvol`.  The extension
@@ -186,6 +189,7 @@ def serialize(data: Any, subvol, path_with_ext: str) -> None:
     )
 
 
+# pyre-fixme[3]: Return annotation cannot be `Any`.
 def deserialize_untyped(path: Path, path_with_ext: str) -> Any:
     # `isdir` and `isfile` follow symbolic links so use `normalized_subpath`
     # to prevent the use of symlinks that take us outside the base path.
@@ -219,5 +223,6 @@ def deserialize_untyped(path: Path, path_with_ext: str) -> Any:
         raise AssertionError(f"{path_with_ext} is neither a file nor a dir")
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def deserialize_int(*args, **kwargs) -> int:
     return int(deserialize_untyped(*args, **kwargs))

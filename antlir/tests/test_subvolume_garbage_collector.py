@@ -16,6 +16,7 @@ from ..subvol_utils import TempSubvolumes, with_temp_subvols
 
 
 class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
+    # pyre-fixme[2]: Parameter must be annotated.
     def _touch(self, *path) -> None:
         with open(os.path.join(*path), "a"):
             pass
@@ -79,6 +80,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
     def test_has_new_subvolume(self) -> None:
 
         # Instead of creating a fake namespace, actually parse some args
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def dir_json(wrapper_dir, json):
             args = ["--refcounts-dir=fake", "--subvolumes-dir=fake"]
             if wrapper_dir is not None:
@@ -131,6 +134,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 )
 
     @with_temp_subvols
+    # pyre-fixme[2]: Parameter must be annotated.
     def test_gc_clean_nspawn_lockfile(self, tmp_subvols) -> None:
         with temp_dir() as refs_dir:
             subs_dir = tmp_subvols.temp_dir
@@ -148,6 +152,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             self.assertEqual([], refs_dir.listdir())
 
     @contextlib.contextmanager
+    # pyre-fixme[3]: Return type must be annotated.
     def _gc_test_case(self):
         # NB: I'm too lazy to test that `refs_dir` is created if missing.
         with TempSubvolumes() as tmp_subvols, temp_dir() as refs_dir:
@@ -216,6 +221,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
                 subs_dir=subs_dir,
             )
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _gc_only(self, n) -> None:
         sgc.subvolume_garbage_collector(
             [f"--refcounts-dir={n.refs_dir}", f"--subvolumes-dir={n.subs_dir}"]

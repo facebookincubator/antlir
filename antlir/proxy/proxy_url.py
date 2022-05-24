@@ -16,6 +16,7 @@ from antlir.common import get_logger
 _ALWAYS_COPY_HEADERS = ["content-type", "content-length"]
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 

@@ -23,6 +23,7 @@ from ..repo_snapshot import (
 from ..storage.filesystem_storage import FilesystemStorage
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _get_db_rows(db: sqlite3.Connection, table: str):
     cur = db.execute(f'SELECT * FROM "{table}"')
     return [

@@ -10,6 +10,7 @@ from antlir.common import not_none
 from antlir.config import repo_config
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def render_flavor(flavor=None) -> str:
     "A Subvolume rendering of `flavor`, or `flavor_default` if None."
     flavor = flavor or repo_config().flavor_default

@@ -39,6 +39,7 @@ class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
                 ):
                     rm.remove(sid)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def _test_uncommited(self, storage_type: Storage):
         # pyre-fixme[16]: `CLIObjectStorageBaseTestCase` has no attribute
         #  `_decorate_id`.
@@ -72,6 +73,7 @@ class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
 
             return proc
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _test_error_cleanup(self, storage_kind: str, **kwargs) -> None:
         # Without a commit, all our failed cleanup is "behind the
         # scenes", and even though it errors and logs, it does not raise

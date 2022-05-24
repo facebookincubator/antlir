@@ -152,6 +152,8 @@ class TestFsUtils(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             to_wait_for = Path(td) / "will_you_wait_for_me"
 
+            # pyre-fixme[53]: Captured variable `to_wait_for` is not annotated.
+            # pyre-fixme[3]: Return type must be annotated.
             def _make_file():
                 to_wait_for.touch()
 
@@ -386,6 +388,7 @@ class TestFsUtils(unittest.TestCase):
             with open(td / "hello_rw") as in_f:
                 self.assertEqual("world_rw -- appended", in_f.read())
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _check_has_one_file(self, dir_path, filename, contents) -> None:
         self.assertEqual([filename.encode()], os.listdir(dir_path))
         with open(dir_path / filename) as in_f:
@@ -459,6 +462,7 @@ class TestFsUtils(unittest.TestCase):
             # Original file is modified
             self.assertEqual(path.read_text(), "meow")
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_populate_temp_file_and_rename_error(self):
         with temp_dir() as td:
             path = td / "dog"

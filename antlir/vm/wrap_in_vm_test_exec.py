@@ -12,9 +12,11 @@ import sys
 from antlir.common import get_logger, init_logging, pipe
 from antlir.fs_utils import Path
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 async def _pump(r, w) -> None:
     while True:
         data = r.read(4096)
@@ -27,6 +29,8 @@ async def _pump(r, w) -> None:
     await w.wait_closed()
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def rewrite_testpilot_python_cmd(cmd, env, fd):
     log.debug(f"Rewrite python cmd: {cmd}, {env}, {fd}")
     env["TEST_PILOT"] = "True"
@@ -38,18 +42,22 @@ def rewrite_testpilot_python_cmd(cmd, env, fd):
     ], env
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def rewrite_tpx_gtest_cmd(cmd, env, fd):
     log.debug(f"Rewrite gtest cmd: {cmd}, {env}, {fd}")
     env["GTEST_OUTPUT"] = f"xml:/proc/self/fd/{fd}"
     return [*cmd], env
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 _TEST_TYPE_TO_REWRITE_CMD = {
     "pyunit": rewrite_testpilot_python_cmd,
     "gtest": rewrite_tpx_gtest_cmd,
 }
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 async def main(argv) -> int:
     init_logging(debug=True)
 

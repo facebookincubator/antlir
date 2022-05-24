@@ -19,16 +19,20 @@ from .test import character_collection_t, character_t, hashable_t
 
 
 # pyre-fixme[16]: `character_t` has no attribute `types`.
+# pyre-fixme[5]: Global expression must be annotated.
 lightsaber_t = character_t.types.weapon.__args__[0]
+# pyre-fixme[5]: Global expression must be annotated.
 characters = character_collection_t.from_env("characters").characters
 
 
 class TestShape(unittest.TestCase):
+    # pyre-fixme[3]: Return type must be annotated.
     def setUp(self):
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_load(self):
         c = characters[0]
         self.assertEqual(c.name, "Luke Skywalker")
@@ -65,6 +69,7 @@ class TestShape(unittest.TestCase):
         )
         self.assertIsInstance(c.personnel_file, Path)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_data_and_resources(self):
         # hashable_t is just a (incomplete) subset of the character type that
         # is both hashable and serializable to python_data/json_file
@@ -72,6 +77,7 @@ class TestShape(unittest.TestCase):
         self.assertEqual(res.name, "Stormtrooper")
         # load the same thing from a file path
         with importlib.resources.path(__package__, "data.json") as path:
+            # pyre-fixme[6]: For 1st param expected `Union[Path, str]` but got `Path`.
             f = hashable_t.load(path)
         self.assertEqual(f, res)
         # lastly, the directly imported python_data version should also be
@@ -81,6 +87,7 @@ class TestShape(unittest.TestCase):
         self.assertEqual(imp, res)
         self.assertTrue(isinstance(imp, hashable_t))
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_hash(self):
         trooper1 = hashable_t(
             name="Stormtrooper",
@@ -94,9 +101,12 @@ class TestShape(unittest.TestCase):
         )
         self.assertEqual(trooper1.__hash__(), trooper2.__hash__())
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_typehints(self):
         """check type hints on generated classes"""
 
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def _deep_typehints(obj):
             hints = {}
             for key, val in getattr(obj, "__annotations__", {}).items():
@@ -111,6 +121,8 @@ class TestShape(unittest.TestCase):
         expected = {
             "name": str,
             "appears_in": Tuple[int, ...],
+            # pyre-fixme[6]: For 1st param expected `Type[Variable[_T]]` but got
+            #  `object`.
             "callsign": Optional[Tuple[str, int]],
             "metadata": Mapping[str, str],
         }
@@ -118,6 +130,7 @@ class TestShape(unittest.TestCase):
             expected, {k: v for k, v in hints.items() if k in expected}
         )
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_instance_repr(self):
         # The on-disk path for resolved targets will be different between
         # environments, so we assign a static value so that we can compare
@@ -161,6 +174,7 @@ class TestShape(unittest.TestCase):
             + "))",
         )
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_class_repr(self):
         # The generated classes also have a custom repr, which is much more
         # readable. However, it's a huge pain to test that it actually looks
@@ -169,10 +183,12 @@ class TestShape(unittest.TestCase):
         self.assertNotIn("<class", repr(character_t))
         self.assertTrue(repr(character_t).startswith("shape("))
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_immutable_fields(self):
         with self.assertRaises(TypeError):
             characters[0].name = "Darth Vader's son"
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_subclass(self):
         """
         Demonstrate a pure Python subclass of a shape type with added fields
@@ -198,6 +214,7 @@ class TestShape(unittest.TestCase):
             # with the same fields works and is properly validated.
             friends=[{"name": "Yoda"}, {"name": "Padme Amidala"}],
             weapon=lightsaber_t(color="blue"),
+            # pyre-fixme[16]: `character_t` has no attribute `types`.
             affiliations=character_t.types.affiliations(faction="Jedi Temple"),
         )
         # subclass should still be immutable by default
@@ -227,8 +244,10 @@ class TestShape(unittest.TestCase):
 
         self.assertEqual(obi_wan.train(), "Training Anakin Skywalker")
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_nested_shape_class(self):
         self.assertEqual(
+            # pyre-fixme[16]: `character_t` has no attribute `types`.
             character_t.types.affiliations(faction="shape.bzl").faction,
             "shape.bzl",
         )
@@ -243,12 +262,14 @@ class TestShape(unittest.TestCase):
             character_t.__annotations__["friends"].__args__[0],
         )
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_default_shape(self):
         """default values for nested shapes must be deserialized"""
         c3po = characters[2]
         self.assertEqual(c3po.name, "C-3PO")
         self.assertEqual(c3po.affiliations.faction, "Rebellion")
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_failure_when_has_types_field(self):
         with self.assertRaises(KeyError):
 
@@ -266,6 +287,7 @@ class TestShape(unittest.TestCase):
                 # this is reserved for the type definitions class
                 types: Sequence[str] = ("hello", "world")
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_rendered_template(self):
         self.assertEqual(
             "Stormtrooper is a character that appears in episode(s) 1, 2, 3, 4, 5, 6 of\n"

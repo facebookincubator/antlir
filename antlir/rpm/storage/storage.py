@@ -24,6 +24,7 @@ from typing import Callable, ContextManager, IO
 from antlir.rpm.pluggable import Pluggable
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = logging.getLogger(__name__)
 
 
@@ -34,17 +35,22 @@ class StorageOutput:
     """
 
     _commit_callback: Callable[[bool], str]
+    # pyre-fixme[24]: Generic type `IO` expects 1 type parameter.
     _output: IO
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[24]: Generic type `IO` expects 1 type parameter.
     def __init__(self, *, output: IO, commit_callback: "_CommitCallback"):
         self._output = output
         # pyre-fixme[8]: Attribute has type `(bool) -> str`; used as
         # `_CommitCallback`.
         self._commit_callback = commit_callback
 
+    # pyre-fixme[3]: Return type must be annotated.
     def write(self, data: bytes):
         self._output.write(data)
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def commit(self, *, remove_on_exception=False) -> str:
         """
         Prevents further writes to the blob, and returns its ID.  Frees any
@@ -72,11 +78,16 @@ class StorageInput:
     previously stored blob.
     """
 
+    # pyre-fixme[24]: Generic type `IO` expects 1 type parameter.
     _input: IO
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[24]: Generic type `IO` expects 1 type parameter.
     def __init__(self, *, input: IO):
         self._input = input
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def read(self, size=None):
         return self._input.read() if size is None else self._input.read(size)
 
@@ -110,6 +121,7 @@ class Storage(Pluggable):
         storage.remove(sid)
     """
 
+    # pyre-fixme[4]: Attribute must be annotated.
     _KEY_REGEX = re.compile("[-_a-zA-Z0-9]+$")
 
     def _add_key(self, sid: str) -> str:
@@ -143,15 +155,21 @@ class _CommitCallback(AbstractContextManager):
                 release_resources_that_were_held_for_the_blob_write()
     """
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __init__(
-        self, storage: Storage, get_id_and_release_resources: ContextManager
+        self,
+        storage: Storage,
+        # pyre-fixme[24]: Generic type `ContextManager` expects 1 type parameter.
+        get_id_and_release_resources: ContextManager,
     ):
         self.storage = storage
         self.get_id_and_release_resources = get_id_and_release_resources
+        # pyre-fixme[4]: Attribute must be annotated.
         self.id = None  # Populated via `get_id_and_release_resources()`
         self.remove = True  # Remove the blob if commit is not called
         self.remove_on_exception = False
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __call__(self, *, remove_on_exception: bool):
         if self.get_id_and_release_resources is None:
             raise AssertionError("Cannot commit twice")
@@ -182,6 +200,7 @@ class _CommitCallback(AbstractContextManager):
 
         return self.id
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         # The end user never called `commit`, so they did not get an ID, and
         # we should try to clean up.

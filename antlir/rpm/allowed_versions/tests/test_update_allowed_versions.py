@@ -21,6 +21,8 @@ try:
     from ..facebook.tests.mock_snapshots import patch_snapshots
 except ImportError:
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def patch_snapshots(fn):
         return fn
 
@@ -40,6 +42,8 @@ _DUP_JSON = "dup_json"
 _VSET_NAME = "test_vset"
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def prepare_rpm_repo_snapshot_dir(dir_path, foo_epoch=0):
     os.makedirs(dir_path / "snapshot")
     with sqlite3.connect(dir_path / "snapshot/snapshot.sql3") as db:
@@ -56,12 +60,17 @@ def prepare_rpm_repo_snapshot_dir(dir_path, foo_epoch=0):
         )
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def prepare_version_sets_dir(dir_path):
     os.makedirs(dir_path / _VSET_NAME)
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 _EMPTY_VERSIONS = {}
+# pyre-fixme[5]: Global expression must be annotated.
 _STR_VERSIONS = {_FOO_BAR_NO_ARCH: [f"{_FOO_BAR_VER}-{_FOO_BAR_REL}"]}
+# pyre-fixme[5]: Global expression must be annotated.
 _DICT_VERSIONS = {
     _FOO_BAR_ARCH: [
         {
@@ -73,6 +82,8 @@ _DICT_VERSIONS = {
 }
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def get_vset_to_policy(version_set, policy, versions):
     return {
         version_set: {
@@ -82,6 +93,7 @@ def get_vset_to_policy(version_set, policy, versions):
     }
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def get_packages(
     packages_source: str, package_names: Optional[List[str]] = None
 ):
@@ -93,7 +105,11 @@ def get_packages(
     }
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def prepare_package_groups_dir(dir_path, json_name, packages, vset_to_policy):
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def _package_group(packages, vset_to_policy):
         return {
             "packages": packages,
@@ -112,6 +128,7 @@ def prepare_package_groups_dir(dir_path, json_name, packages, vset_to_policy):
 # This dummy contextmanager exists only to make linter happy about its call-site
 # below (otherwise, "with ..." line becomes too long)
 @contextmanager
+# pyre-fixme[3]: Return type must be annotated.
 def four_temp_dirs():
     with temp_dir() as td1:
         with temp_dir() as td2:
@@ -124,9 +141,13 @@ def four_temp_dirs():
 def _test_args(
     packages_source: str = "manual",
     package_names: Optional[List[str]] = None,
+    # pyre-fixme[2]: Parameter must be annotated.
     version_set=_VSET_NAME,
+    # pyre-fixme[2]: Parameter must be annotated.
     policy="manual",
+    # pyre-fixme[2]: Parameter must be annotated.
     versions=_STR_VERSIONS,
+    # pyre-fixme[2]: Parameter must be annotated.
     foo_epoch=0,
 ) -> Iterator[Tuple[List[str], Path]]:
     with four_temp_dirs() as (
@@ -167,6 +188,7 @@ _RESULT_VSET_JSON = f"{_VSET_NAME}/rpm/some_oncall/{_FOO_JSON}"
 class UpdateAllowedVersionsTestCase(TestCase):
     # evra.epoch is None in _resolve_envras_for_package_group()
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_versions_str(self):
         with _test_args() as (args, output_dir):
             with self.assertLogs(log) as log_ctx:
@@ -184,6 +206,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
 
     # evra.epoch is not None in _resolve_envras_for_package_group()
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_versions_dict(self):
         with _test_args(versions=_DICT_VERSIONS) as (args, output_dir):
             update_allowed_versions(parse_args(args))
@@ -192,6 +215,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
 
     # _load_package_names() raises RuntimeError if fails to load package_group
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_wrong_packages_source(self):
         with _test_args(packages_source="WRONG") as (args, output_dir):
             parsed_args = parse_args(args)
@@ -200,6 +224,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
 
     # _load_version_sets() should work if the version set directory is missing
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_missing_version_set(self):
         with _test_args(versions=_DICT_VERSIONS) as (args, output_dir):
             parsed_args = parse_args(args)
@@ -210,6 +235,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
 
     # _load_version_sets() should work if the version set directory is empty
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_empty_version_set(self):
         with _test_args(versions=_DICT_VERSIONS) as (args, output_dir):
             parsed_args = parse_args(args)
@@ -222,6 +248,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
     # _load_version_sets() raises RuntimeError if
     # _load_policy_versions_for_packages() fails
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_wrong_policy(self):
         with _test_args(policy="WRONG") as (args, output_dir):
             parsed_args = parse_args(args)
@@ -231,6 +258,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
     # _load_version_sets() raises RuntimeError if a package was already added to
     # this version set by another package group config
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_duplicate_package(self):
         with _test_args() as (args, output_dir):
             fixed_index = 2
@@ -252,6 +280,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
 
     # _resolve_envras_for_package_group() returns empty set if not vpgroup.evras
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_no_versions(self):
         with _test_args(versions=_EMPTY_VERSIONS) as (args, output_dir):
             with self.assertLogs(log) as log_ctx:
@@ -268,6 +297,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
     # _resolve_envras_for_package_group() tries to find EVRs that are valid for
     # all packages in the group, foo_epoch=1 makes it impossible
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_no_suitable_evr(self):
         with _test_args(foo_epoch=1) as (args, output_dir):
             with self.assertLogs(log) as log_ctx:
@@ -284,6 +314,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
     # _resolve_envras_for_package_group() returns empty set if there are no
     # rpms with a matching name
     @patch_snapshots
+    # pyre-fixme[3]: Return type must be annotated.
     def test_no_name_match(self):
         with _test_args(package_names=[_NON_RPM]) as (args, output_dir):
             with self.assertLogs(log) as log_ctx:

@@ -15,6 +15,7 @@ from .storage_base_test import Storage, StorageBaseTestCase
 
 class FilesystemStorageTestCase(StorageBaseTestCase):
     @contextmanager
+    # pyre-fixme[3]: Return type must be annotated.
     def _temp_storage(self):
         with tempfile.TemporaryDirectory() as td:
             yield Storage.make(key="test", kind="filesystem", base_dir=td)
@@ -42,6 +43,7 @@ class FilesystemStorageTestCase(StorageBaseTestCase):
 
     # This test cannot be in the base since there's no generic way to check
     # if we left a trace on the storage system -- there's no ID to fetch.
+    # pyre-fixme[3]: Return type must be annotated.
     def test_uncommitted(self):
         with self._temp_storage() as storage:
             self.assertEqual([], os.listdir(storage.base_dir))

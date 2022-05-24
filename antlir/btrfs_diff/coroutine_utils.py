@@ -17,20 +17,28 @@ class CoroutineContext:
     result:  Only available after the `with`
     """
 
+    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     result: Any = None  # see `test_throw_from_sender` for why this is set.
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, coroutine) -> None:
+        # pyre-fixme[4]: Attribute must be annotated.
         self.coroutine = coroutine
 
     # Syntax sugar -- remember that `send` and `throw` will exit the `with`
     # block if they cause the generator to exit.
 
+    # pyre-fixme[3]: Return type must be annotated.
     def close(self):
         return self.coroutine.close()
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def send(self, value):
         return self.coroutine.send(value)
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def throw(self, ex):
         return self.coroutine.throw(ex)
 
@@ -48,6 +56,7 @@ class GeneratorExitWithResult(Exception):
 
 
 @contextmanager
+# pyre-fixme[2]: Parameter must be annotated.
 def while_not_exited(coroutine) -> Iterator[CoroutineContext]:
     """
     A helper for sending a sequence of values to a co-routine, and capturing

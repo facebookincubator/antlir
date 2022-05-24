@@ -45,14 +45,18 @@ from .repo_snapshot import FileIntegrityError, ReportableError
 from .storage import Storage
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 # How big are our reads against Storage? Exposed for the unit test.
+# pyre-fixme[5]: Global expression must be annotated.
 _CHUNK_SIZE = 2**21
 
 
 # Future: we could query the RPM table lazily, which would save ~1 second of
 # startup time for the FB production repo snapshot.
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def add_snapshot_db_objs(db):
     location_to_obj = {}
     for repo, build_timestamp, metadata_xml in db.execute(
@@ -104,6 +108,7 @@ def add_snapshot_db_objs(db):
     return location_to_obj
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def read_snapshot_dir(snapshot_dir: Path):
     with readonly_snapshot_db(snapshot_dir) as db:
         location_to_obj = add_snapshot_db_objs(db)
@@ -130,15 +135,20 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
 
     def __init__(
         self,
+        # pyre-fixme[2]: Parameter must be annotated.
         *args,
+        # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, use
+        #  `typing.Dict` to avoid runtime subscripting errors.
         location_to_obj: Mapping[str, dict],
         storage: Storage,
+        # pyre-fixme[2]: Parameter must be annotated.
         **kwargs,
     ) -> None:
         self.location_to_obj = location_to_obj
         self.storage = storage
         super().__init__(*args, **kwargs)
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _memoize_error(self, obj, error: ReportableError) -> None:
         """
         Any size or checksum errors we see are likely to be permanent, so we
@@ -152,6 +162,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         set_new_key(obj, "error", error_dict)
 
     # The default logging implementation does not flush. Gross.
+    # pyre-fixme[2]: Parameter must be annotated.
     def log_message(self, format: str, *args, _antlir_logger=log.debug) -> None:
         _antlir_logger(
             "%s - - [%s] %s\n"
@@ -162,6 +173,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             )
         )
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def log_error(self, format: str, *args) -> None:
         # `repo-server` errors should be visible when e.g.  `yum` or `dnf`
         # are running in a default `buck run :foo=container`.
@@ -248,6 +260,8 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_HEAD(self) -> None:
         self.send_head()
 
+    # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, use
+    #  `typing.Dict` to avoid runtime subscripting errors.
     def send_head(self) -> Tuple[str, dict]:
         "Returns (location, obj) from the repo snapshot."
         # Ignore query parameters & fragment, remove leading / if present.
@@ -316,7 +330,12 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
 
 
 def repo_server(
-    sock, location_to_obj: Mapping[str, dict], storage: Storage
+    # pyre-fixme[2]: Parameter must be annotated.
+    sock,
+    # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, use
+    #  `typing.Dict` to avoid runtime subscripting errors.
+    location_to_obj: Mapping[str, dict],
+    storage: Storage,
 ) -> HTTPSocketServer:
     """
     BEWARE: `location_to_obj` is mutated if we discover checksum errors to

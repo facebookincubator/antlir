@@ -14,6 +14,7 @@ from typing import AnyStr, Iterable, List, Union
 
 
 # This module is never __main__, so the module name should be sane
+# pyre-fixme[5]: Global expression must be annotated.
 log = logging.getLogger(__name__)
 
 
@@ -86,6 +87,7 @@ class Unshare:
     it's just an approximation (e.g. supplementary groups are dropped).
     """
 
+    # pyre-fixme[4]: Attribute must be annotated.
     _NS_TO_PROC_FILENAME = {
         # Namespace.CGROUP: 'cgroup',
         # Namespace.IPC: 'ipc',
@@ -96,13 +98,18 @@ class Unshare:
     }
     assert set(Namespace) == set(_NS_TO_PROC_FILENAME.keys())
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __init__(self, namespaces: Iterable[Namespace]):
+        # pyre-fixme[4]: Attribute must be annotated.
         self._namespaces = frozenset(namespaces)
+        # pyre-fixme[4]: Attribute must be annotated.
         self._keepalive_proc = None
         # Instead of using `nsenter --target KEEPALIVE_PID`, we will
         # actually open all the namespace FDs in the current process.  This
         # eliminates an important failure mode at runtime.
+        # pyre-fixme[4]: Attribute must be annotated.
         self._namespace_to_file = None
+        # pyre-fixme[4]: Attribute must be annotated.
         self._root_fd = None
 
     def __enter__(self) -> "Unshare":
@@ -199,6 +206,8 @@ class Unshare:
         return self
 
     # This context does not suppress exception
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self._namespace_to_file is not None:
             # We need to close the files to let the namespaces be destroyed
@@ -292,6 +301,7 @@ class Unshare:
         ]
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def nsenter_as_root(unshare, *cmd: AnyStr) -> List[Union[str, bytes]]:
     "Unshare.nsenter_as_root that also handles unshare=None"
     if unshare is None:
@@ -299,6 +309,7 @@ def nsenter_as_root(unshare, *cmd: AnyStr) -> List[Union[str, bytes]]:
     return unshare.nsenter_as_root(*cmd)
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def nsenter_as_user(unshare, *cmd: AnyStr) -> List[Union[str, bytes]]:
     "Unshare.nsenter_as_user that also handles unshare=None"
     if unshare is None:

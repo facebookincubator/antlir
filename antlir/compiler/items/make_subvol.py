@@ -21,6 +21,7 @@ from .tarball import load_from_tarball
 
 # This checks to make sure that the parent layer of an layer has the same flavor
 # as the flavor specified by the current layer.
+# pyre-fixme[2]: Parameter must be annotated.
 def _check_parent_flavor(parent_subvol, flavor) -> None:
     flavor_path = parent_subvol.path(META_FLAVOR_FILE)
     if flavor_path.exists():
@@ -36,16 +37,20 @@ def _check_parent_flavor(parent_subvol, flavor) -> None:
 class ParentLayerItem(ImageItem):
     subvol: Subvol
 
+    # pyre-fixme[3]: Return type must be annotated.
     def phase_order(self):
         return PhaseOrder.MAKE_SUBVOL
 
     @classmethod
+    # pyre-fixme[3]: Return type must be annotated.
     def get_phase_builder(
         cls, items: Iterable["ParentLayerItem"], layer_opts: LayerOpts
     ):
         (parent,) = items
         assert isinstance(parent, ParentLayerItem), parent
 
+        # pyre-fixme[53]: Captured variable `parent` is not annotated.
+        # pyre-fixme[3]: Return type must be annotated.
         def builder(subvol: Subvol):
             subvol.snapshot(parent.subvol)
             if not layer_opts.unsafe_bypass_flavor_check:
@@ -60,16 +65,19 @@ class ParentLayerItem(ImageItem):
 class FilesystemRootItem(ImageItem):
     "A simple item to endow parent-less layers with a standard-permissions /"
 
+    # pyre-fixme[3]: Return type must be annotated.
     def phase_order(self):
         return PhaseOrder.MAKE_SUBVOL
 
     @classmethod
+    # pyre-fixme[3]: Return type must be annotated.
     def get_phase_builder(
         cls, items: Iterable["FilesystemRootItem"], layer_opts: LayerOpts
     ):
         (parent,) = items
         assert isinstance(parent, FilesystemRootItem), parent
 
+        # pyre-fixme[3]: Return type must be annotated.
         def builder(subvol: Subvol):
             subvol.create()
             # Guarantee standard / permissions.  This could be a setting,
@@ -88,15 +96,19 @@ class LayerFromPackageItem(ImageItem):
     format: str
     source: str
 
+    # pyre-fixme[3]: Return type must be annotated.
     def phase_order(self):
         return PhaseOrder.MAKE_SUBVOL
 
     @classmethod
+    # pyre-fixme[3]: Return type must be annotated.
     def get_phase_builder(
         cls, items: Iterable["LayerFromPackageItem"], layer_opts: LayerOpts
     ):
         (item,) = items
 
+        # pyre-fixme[53]: Captured variable `item` is not annotated.
+        # pyre-fixme[3]: Return type must be annotated.
         def builder(subvol: Subvol):
             if item.format == "sendstream":
                 with open_for_read_decompress(

@@ -16,6 +16,7 @@ from antlir.repo_config_t import (
     repo_config_t as base_repo_config_t,
 )
 
+# pyre-fixme[5]: Global expression must be annotated.
 _read_text = importlib.resources.read_text
 
 
@@ -25,6 +26,7 @@ class repo_config_t(base_repo_config_t):
 
 
 # Separated for tests, which mock and thus don't want memoization.
+# pyre-fixme[2]: Parameter must be annotated.
 def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
     data = repo_config_data.dict()
 
@@ -60,6 +62,7 @@ def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
 
 
 # Memoize so that most callers can just use `repo_config().field`
+# pyre-fixme[5]: Global expression must be annotated.
 repo_config = functools.lru_cache(maxsize=None)(_unmemoized_repo_config)
 
 

@@ -125,7 +125,10 @@ class _CliSetup(NamedTuple):
     plugins: Iterable[NspawnPlugin]
 
     def _run_nspawn(
-        self, popen_args: PopenArgs
+        self,
+        popen_args: PopenArgs
+        # pyre-fixme[24]: Generic type `subprocess.CompletedProcess` expects 1 type
+        #  parameter.
     ) -> Tuple[subprocess.CompletedProcess, subprocess.CompletedProcess]:
         # Enforce a single source of truth for `PopenArgs.console`.
         assert (
@@ -171,6 +174,7 @@ if __name__ == "__main__":  # pragma: no cover
     try:
         # pyre-fixme[16]: `_CliSetup` has no attribute `__enter__`.
         with _set_up_run_cli(sys.argv[1:]) as cli_setup:
+            # pyre-fixme[5]: Global expression must be annotated.
             ret, _boot_ret = cli_setup._run_nspawn(
                 PopenArgs(
                     check=False,  # We forward the return code below

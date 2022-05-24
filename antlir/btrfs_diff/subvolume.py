@@ -109,6 +109,7 @@ class Subvolume(NamedTuple):
     id_to_inode: Mapping[Optional[InodeID], Union[IncompleteInode, Inode]]
 
     @classmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def new(cls, *, id_map, **kwargs) -> "Subvolume":
         kwargs.setdefault("id_to_inode", {})
         kwargs["id_to_inode"][id_map.get_id(b".")] = IncompleteDir(
@@ -209,6 +210,7 @@ class Subvolume(NamedTuple):
             # pyre-fixme[16]: Inode doesn't have apply_item() ...
             self._require_inode_at_path(item, item.path).apply_item(item=item)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def apply_clone(
         self, item: SendStreamItems.clone, from_subvol: "Subvolume"
     ):
@@ -219,9 +221,12 @@ class Subvolume(NamedTuple):
         )
 
     # Exposed as a method for the benefit of `SubvolumeSet`.
+    # pyre-fixme[3]: Return type must be annotated.
     def _inode_ids_and_extents(self):
         for id, ino in self.id_to_inode.items():
             if hasattr(ino, "extent"):
+                # pyre-fixme[16]: Item `IncompleteInode` of `Union[IncompleteInode,
+                #  Inode]` has no attribute `extent`.
                 yield (id, ino.extent)
 
     def freeze(
@@ -261,6 +266,7 @@ class Subvolume(NamedTuple):
     def inodes(self) -> ValuesView[Union[Inode, IncompleteInode]]:
         return self.id_to_inode.values()
 
+    # pyre-fixme[3]: Return annotation cannot contain `Any`.
     def gather_bottom_up(
         self, top_path: bytes = b"."
     ) -> Coroutine[
@@ -340,6 +346,7 @@ class Subvolume(NamedTuple):
             yield (top_path, self.id_to_inode[ino_id], child_results)
         )
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def map_bottom_up(self, fn, top_path: bytes = b".") -> RenderedTree:
         """
         Applies `fn` to each inode from `top_path` down, in the

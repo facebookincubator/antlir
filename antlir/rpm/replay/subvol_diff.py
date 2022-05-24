@@ -14,9 +14,11 @@ from antlir.common import get_logger
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 # See _match_or_child to understand how these are matched with paths
+# pyre-fixme[5]: Global expression must be annotated.
 _PATH_PATTERNS_EXPECTED_TO_DIFFER = set()
 for p in [
     "etc/shadow",  # FIXME: Only "days since pwd change may differ"

@@ -186,6 +186,8 @@ class SendStreamItems:
         len: int
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def get_frequency_of_selinux_xattrs(items):
     'Returns {"xattr_value": <count>}. Useful for ItemFilters.selinux_xattr.'
     counter = Counter()
@@ -230,6 +232,8 @@ class ItemFilters:
         build time-range by `start_time`.
         """
 
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def normalize_time(t):
             return start_time if start_time <= t <= end_time else t
 

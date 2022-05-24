@@ -35,6 +35,7 @@ from antlir.subvol_utils import Subvol
 from . import NspawnPlugin
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 

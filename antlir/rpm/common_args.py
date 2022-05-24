@@ -15,6 +15,7 @@ from .storage import Storage
 # BEWARE: If your script calls this helper, it is responsible for supporting
 # **all** of its arguments.  Just go through the code and make sure that
 # each one is accessed appropriately.
+# pyre-fixme[2]: Parameter must be annotated.
 def add_standard_args(parser) -> None:
     parser.add_argument(  # Pass this to `populate_temp_dir_and_rename`
         "--snapshot-dir",

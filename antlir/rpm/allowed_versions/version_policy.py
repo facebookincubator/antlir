@@ -31,6 +31,8 @@ except ImportError:  # pragma: no cover
 def _deserialize_evra(
     arch: str, evr: Union[str, Mapping[str, Any]]
 ) -> SortableEVRA:
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def evr_to_evra(e, v, r):
         # Fixme: this EVRA is implemented as an ENVRA
         return SortableEVRA(
@@ -38,6 +40,7 @@ def _deserialize_evra(
             epoch=e,
             version=v,
             release=r,
+            # pyre-fixme[6]: For 5th param expected `str` but got `Optional[str]`.
             arch=None if arch == "*" else arch,
         )
 
@@ -89,6 +92,8 @@ class ManualVersionPolicy(VersionPolicy, plugin_kind="manual"):
         [here](/docs/concepts/rpms/version-selection/#version-policy).
         """
 
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def load_config(*, packages, versions):
             # Not worried about mutable aliases since it's a brand-new dict.
             return frozenset(

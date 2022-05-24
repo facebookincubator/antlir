@@ -22,6 +22,7 @@ class RepoSizerTestCase(unittest.TestCase):
         self.sizes = {}
         self.final_size = 0
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _set_expected_unions(self, *expected_unions) -> None:
         for union in expected_unions:
             size = randint(10**3, 10**6)

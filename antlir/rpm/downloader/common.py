@@ -44,8 +44,11 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 # avoid small-buffer overheads, but not too large, since we use `zlib` for
 # incremental decompression in `parse_repodata.py`, and its API has a
 # complexity bug that makes it slow for large INPUT_CHUNK/OUTPUT_CHUNK.
+# pyre-fixme[5]: Global expression must be annotated.
 BUFFER_BYTES = 2**19
+# pyre-fixme[5]: Global expression must be annotated.
 DB_MAX_RETRY_S = [2**i for i in range(8)]  # 255 sec == 4m15s
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -105,9 +108,11 @@ class DownloadConfig(NamedTuple):
         )
         return conn_ctx
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def new_db_ctx(self, **kwargs) -> ContextManager[RepoDBContext]:
         return retryable_db_ctx(self.new_db_conn(**kwargs))
 
+    # pyre-fixme[3]: Return type must be annotated.
     def new_storage(self):
         return Storage.from_json(self.storage_cfg)
 
@@ -124,6 +129,7 @@ class DownloadResult(NamedTuple):
     rpms: Optional[FrozenSet[Rpm]] = None
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def verify_chunk_stream(
     chunks: Iterable[bytes],
     checksums: Iterable[Checksum],
@@ -154,6 +160,7 @@ def verify_chunk_stream(
             )
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def _log_if_storage_ids_differ(obj, storage_id, db_storage_id) -> None:
     if db_storage_id != storage_id:
         log.warning(
@@ -166,6 +173,8 @@ def log_size(what_str: str, total_bytes: float) -> None:
 
 
 @contextmanager
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
 def timeit(callback: Callable):
     """`callback` should be a function that accepts kwargs `duration_s` and `error`,
     which will be called when the context manager exits.

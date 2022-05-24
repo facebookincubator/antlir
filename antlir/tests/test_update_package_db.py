@@ -21,6 +21,7 @@ def _get_js_content(ss_hash: str, content: str) -> str:
 """
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def _write_json_db(json_path, dct) -> None:
     os.makedirs(json_path.dirname())
     with open(json_path, "w") as outfile:
@@ -30,6 +31,8 @@ def _write_json_db(json_path, dct) -> None:
         json.dump(dct, outfile)
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 async def _base_get_db_info_fn(pkg, tag, opts):
     return pkg, tag, opts if opts else {"x": "z"}
 
@@ -38,17 +41,23 @@ async def _base_get_db_info_fn(pkg, tag, opts):
 # test both to ensure behaviour doesn't diverge. We thus use a base class to
 # define most shared test cases.
 class UpdatePackageDbTestBase:
+    # pyre-fixme[2]: Parameter must be annotated.
     def _check_file(self, path, content) -> None:
         with open(path) as infile:
             # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute `assertEqual`.
             self.assertEqual(content, infile.read())
 
+    # pyre-fixme[3]: Return type must be annotated.
     async def _update(
         self,
+        # pyre-fixme[2]: Parameter must be annotated.
         db,
+        # pyre-fixme[2]: Parameter must be annotated.
         pkg_updates=None,
+        # pyre-fixme[2]: Parameter must be annotated.
         out_db=None,
         update_all: bool = True,
+        # pyre-fixme[2]: Parameter must be annotated.
         get_db_info_fn=None,
     ):
         raise NotImplementedError
@@ -183,6 +192,8 @@ class UpdatePackageDbTestBase:
                 )
 
     async def test_tag_deletion(self) -> None:
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         async def _get_db_info_fn_none(pkg, tag, opts):
             return pkg, tag, opts if opts else None
 
@@ -229,10 +240,14 @@ class UpdatePackageDbCliTestCase(
 ):
     async def _update(
         self,
+        # pyre-fixme[2]: Parameter must be annotated.
         db,
+        # pyre-fixme[2]: Parameter must be annotated.
         pkg_updates=None,
+        # pyre-fixme[2]: Parameter must be annotated.
         out_db=None,
         update_all: bool = True,
+        # pyre-fixme[2]: Parameter must be annotated.
         get_db_info_fn=None,
     ) -> None:
         args = [
@@ -323,10 +338,14 @@ class UpdatePackageDbLibraryTestCase(
 ):
     async def _update(
         self,
+        # pyre-fixme[2]: Parameter must be annotated.
         db,
+        # pyre-fixme[2]: Parameter must be annotated.
         pkg_updates=None,
+        # pyre-fixme[2]: Parameter must be annotated.
         out_db=None,
         update_all: bool = True,
+        # pyre-fixme[2]: Parameter must be annotated.
         get_db_info_fn=None,
     ) -> None:
         if get_db_info_fn is None:

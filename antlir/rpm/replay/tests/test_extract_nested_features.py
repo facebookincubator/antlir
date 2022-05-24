@@ -16,6 +16,7 @@ from antlir.rpm.replay.tests.test_utils import (
 from ..extract_nested_features import log as enf_log
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _extract_features(infix: str):
     return extract_features_from_env_map(build_env_map(os.environ, infix))
 
@@ -26,6 +27,7 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
         cls.maxDiff = None
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _check_base_plus_one(self, ef) -> None:
         # There are a bunch of empty `image_source` implementation fields
         # here that we don't want to assert since that'd be fragile.
@@ -76,6 +78,8 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self._check_base_plus_one(ef)
         self.assertEqual(set(), ef.features_needing_custom_image)
 
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def feature_target(layer_name):
             return antlir_dep(f"rpm/replay/tests:{layer_name}__layer-feature")
 

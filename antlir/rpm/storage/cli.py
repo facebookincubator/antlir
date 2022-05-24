@@ -15,9 +15,11 @@ from antlir.rpm.common import read_chunks
 from .storage import Storage
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 _CHUNK_SIZE = 2**20  # Not too important, anything large enough is fine.
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def put(args) -> None:
     storage = Storage.from_json(args.storage)
     # pyre-fixme[16]: `Pluggable` has no attribute `writer`.
@@ -27,6 +29,7 @@ def put(args) -> None:
         args.to_file.write((fout.commit() + "\n").encode())
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def get(args) -> None:
     storage = Storage.from_json(args.storage)
     # pyre-fixme[16]: `Pluggable` has no attribute `reader`.
@@ -35,6 +38,7 @@ def get(args) -> None:
             args.to_file.write(chunk)
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def main(argv, from_file: BytesIO, to_file: BytesIO) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,

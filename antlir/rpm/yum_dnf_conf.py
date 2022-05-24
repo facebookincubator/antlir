@@ -40,6 +40,7 @@ class YumDnfConfRepo(NamedTuple):
     gpg_key_urls: Tuple[str]
 
     @classmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def from_config_section(cls, name, cfg_sec) -> "YumDnfConfRepo":
         assert "/" not in name and "\0" not in name, f"Bad repo name {name}"
         return YumDnfConfRepo(
@@ -53,6 +54,7 @@ class YumDnfConfRepo(NamedTuple):
         )
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def _isolate_ssl_options(cfg) -> None:
     # We don't actually need the SSL options, because we serve everything
     # over HTTP from the local `repo-server`, so they shouldn't affect

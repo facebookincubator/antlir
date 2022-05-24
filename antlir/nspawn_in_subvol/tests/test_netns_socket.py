@@ -25,6 +25,7 @@ class NetnsSocketTestCase(AntlirTestCase):
         "antlir.nspawn_in_subvol.netns_socket.recv_fds_from_unix_sock",
     )
     @patch("antlir.nspawn_in_subvol.netns_socket._mockable_popen")
+    # pyre-fixme[2]: Parameter must be annotated.
     def test_create_sockets_inside_netns(self, s_patch, r_patch) -> None:
         expected_cmd = [
             "sudo",

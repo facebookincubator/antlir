@@ -13,7 +13,9 @@ from antlir.common import check_popen_returncode, get_logger
 from antlir.fs_utils import Path
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
+# pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 _mockable_popen_for_server = subprocess.Popen
 
 

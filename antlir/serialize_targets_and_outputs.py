@@ -73,6 +73,7 @@ def make_target_path_map(targets_locations: Sequence[str]) -> Dict[str, str]:
     return targets_to_outputs
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def main(stdin, stdout, delim) -> None:
     """
     This reads a list that contains a delimited list of buck target ->

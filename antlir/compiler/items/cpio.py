@@ -18,6 +18,7 @@ def load_from_cpio(
     source: str,
     subvol: Subvol,
     layer_opts: LayerOpts,
+    # pyre-fixme[2]: Parameter must be annotated.
     into_dir=None,
     force_root_ownership: bool = False,
 ) -> None:

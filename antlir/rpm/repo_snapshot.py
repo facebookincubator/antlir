@@ -30,6 +30,7 @@ from .repo_objects import Repodata, RepoMetadata, Rpm
 from .storage import Storage
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 # Places making this assumption should be findable by the string "3.7"
@@ -42,13 +43,16 @@ class ReportableError(Exception):
     as part of RepoSnapshot.
     """
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, **kwargs) -> None:
         # Even though this is morally a dict, writing a tuple to `args`
         # better honors Python's interesting exception norms, and gets us
         # usable-looking backtraces for "free".
+        # pyre-fixme[4]: Attribute must be annotated.
         self.args = tuple(sorted(kwargs.items()))
         log.error(f"{type(self).__name__}{self.args}")
 
+    # pyre-fixme[3]: Return type must be annotated.
     def to_dict(self):
         """
         Returns a POD dictionary to be output as an `'error'` field in the
@@ -58,6 +62,7 @@ class ReportableError(Exception):
 
 
 class FileIntegrityError(ReportableError):
+    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, *, location, failed_check, expected, actual) -> None:
         super().__init__(
             error="file_integrity",
@@ -70,6 +75,7 @@ class FileIntegrityError(ReportableError):
 
 
 class HTTPError(ReportableError):
+    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, *, location, http_status) -> None:
         super().__init__(
             error="http",
@@ -81,7 +87,16 @@ class HTTPError(ReportableError):
 
 class MutableRpmError(ReportableError):
     def __init__(
-        self, *, location, storage_id, checksum, other_checksums_and_universes
+        self,
+        *,
+        # pyre-fixme[2]: Parameter must be annotated.
+        location,
+        # pyre-fixme[2]: Parameter must be annotated.
+        storage_id,
+        # pyre-fixme[2]: Parameter must be annotated.
+        checksum,
+        # pyre-fixme[2]: Parameter must be annotated.
+        other_checksums_and_universes,
     ) -> None:
         super().__init__(
             error="mutable_rpm",
@@ -106,6 +121,7 @@ class RepoSnapshot(NamedTuple):
     storage_id_to_repodata: Mapping[MaybeStorageID, Repodata]
     storage_id_to_rpm: Mapping[MaybeStorageID, Rpm]
 
+    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     _RPM_COLUMNS = {  # We're on 3.7+, so this dict is ordered
         "repo": "TEXT NOT NULL",
         "path": "TEXT NOT NULL",
@@ -125,6 +141,7 @@ class RepoSnapshot(NamedTuple):
         "storage_id": "TEXT",
     }
 
+    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     _REPODATA_COLUMNS = {  # We're on 3.7+, so this dict is ordered
         "repo": "TEXT NOT NULL",
         "path": "TEXT NOT NULL",
@@ -136,6 +153,7 @@ class RepoSnapshot(NamedTuple):
         "storage_id": "TEXT",
     }
 
+    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     _REPOMD_COLUMNS = {  # We're on 3.7+, so this dict is ordered
         "repo": "TEXT NOT NULL",
         "build_timestamp": "INTEGER NOT NULL",
@@ -173,7 +191,9 @@ class RepoSnapshot(NamedTuple):
             )
         )
 
+    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     _STORAGE_CHUNK_SIZE = 2**20  # Anything that's not too small is OK.
+    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     _STORAGE_ID_FILE = "snapshot.storage_id"
 
     @classmethod
@@ -215,6 +235,7 @@ class RepoSnapshot(NamedTuple):
                 db_out.write(chunk)
         return dest
 
+    # pyre-fixme[3]: Return type must be annotated.
     def _gen_object_rows(
         self,
         repo: str,
@@ -304,6 +325,7 @@ class RepoSnapshot(NamedTuple):
                 ([d[k] for k in columns] for d in gen_rows),
             )
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def visit(self, visitor) -> "RepoSnapshot":
         "Visits the objects in this snapshot (i.e. this shard)"
         visitor.visit_repomd(self.repomd)

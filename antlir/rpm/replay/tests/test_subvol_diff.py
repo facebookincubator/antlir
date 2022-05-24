@@ -16,6 +16,7 @@ from ..subvol_diff import subvol_diff
 class SubvolDiffTestCase(unittest.TestCase):
     def mock_subvol_run_as_root_and_assert_raises(
         self,
+        # pyre-fixme[2]: Parameter must be annotated.
         exception,
         msg: str,
         returncode: int,

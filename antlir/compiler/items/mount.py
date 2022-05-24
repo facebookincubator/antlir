@@ -91,6 +91,7 @@ class MountItem(ImageItem):
     layer_publisher: str
 
     @classmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def customize_fields(cls, kwargs) -> None:
         layer_opts = kwargs.pop("layer_opts", None)
         target = kwargs.pop("target")
@@ -143,11 +144,13 @@ class MountItem(ImageItem):
 
         assert cfg == {}, f"Unparsed fields in {kwargs} mount_config: {cfg}"
 
+    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         # For now, nesting of mounts is not supported, and we certainly
         # cannot allow regular items to write inside a mount.
         yield ProvidesDoNotAccess(path=Path(self.mountpoint))
 
+    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         # We don't require the mountpoint itself since it will be shadowed,
         # so this item just makes it with default permissions.
@@ -185,6 +188,8 @@ class MountItem(ImageItem):
 
 
 # Not covering, since this would require META_MOUNTS_DIR to be unreadable.
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _raise(ex):  # pragma: no cover
     raise ex
 
@@ -236,6 +241,7 @@ def mounts_from_meta(volume_path: Path) -> Iterator[Mount]:
             yield mount
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def coerce_path_field_normal_relative(kwargs, field: str) -> None:
     d = kwargs.get(field)
     if d is not None:

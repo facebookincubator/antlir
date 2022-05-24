@@ -18,7 +18,9 @@ from .server_launcher import ServerLauncher
 PROXY_SERVER_PORT = 45063
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
+# pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 _mockable_popen_for_repo_server = subprocess.Popen
 
 
@@ -37,6 +39,7 @@ class ProxyServer(ServerLauncher):
         return f"ProxyServer(port={self.port})"
 
     @property
+    # pyre-fixme[3]: Return type must be annotated.
     def command_line(self):
         return [
             self.bin_path,

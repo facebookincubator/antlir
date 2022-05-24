@@ -19,11 +19,13 @@ from antlir.rpm.storage import Storage, StorageInput, StorageOutput
 from antlir.rpm.storage.storage import _CommitCallback
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
 class _StorageRemover(NamedTuple):
     storage: Storage
+    # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
     procs: List[subprocess.Popen]
 
     def remove(self, sid: str) -> None:
@@ -56,22 +58,27 @@ class CLIObjectStorage(Storage):
         ...  # pragma: no cover
 
     @abstractmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def _read_cmd(self, *args, path: str) -> List[str]:
         ...  # pragma: no cover
 
     @abstractmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def _write_cmd(self, *args, path: str) -> List[str]:
         ...  # pragma: no cover
 
     @abstractmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def _remove_cmd(self, *args, path: str) -> List[str]:
         ...  # pragma: no cover
 
     @abstractmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def _exists_cmd(self, *args, path: str) -> List[str]:
         ...  # pragma: no cover
 
     @abstractmethod
+    # pyre-fixme[24]: Generic type `Mapping` expects 2 type parameters.
     def _configured_env(self) -> Mapping:
         ...  # pragma: no cover
 
@@ -97,6 +104,11 @@ class CLIObjectStorage(Storage):
         ) as proc:
 
             @contextmanager
+            # pyre-fixme[53]: Captured variable `log_prefix` is not annotated.
+            # pyre-fixme[53]: Captured variable `path` is not annotated.
+            # pyre-fixme[53]: Captured variable `sid` is not annotated.
+            # pyre-fixme[53]: Captured variable `proc` is not annotated.
+            # pyre-fixme[3]: Return type must be annotated.
             def get_id_and_release_resources():
                 # Wait for `cli` to exit cleanly to make sure the
                 # `sid` is available to read after the `yield`.

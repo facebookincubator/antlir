@@ -21,8 +21,10 @@ from antlir.vm.tap import VmTap
 
 DEFAULT_TIMEOUT_SEC = 60
 
+# pyre-fixme[5]: Global expression must be annotated.
 DEFAULT_ENV = {"PATH": DEFAULT_PATH_ENV}
 
+# pyre-fixme[5]: Global expression must be annotated.
 logger = get_logger()
 
 
@@ -32,17 +34,23 @@ class GuestSSHConnection:
     options: Mapping[str, Union[str, int]]
     privkey: Optional[Path] = None
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __enter__(self):
         self.privkey = Path(tempfile.NamedTemporaryFile(delete=False).name)
         logger.debug(f"Enter ssh context. Load private key: {self.privkey}")
+        # pyre-fixme[16]: `Optional` has no attribute `open`.
         with self.privkey.open(mode="w") as f:
             f.write(importlib.resources.read_text(__package__, "privkey"))
             f.flush()
         return self
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_value, traceback):
         logger.debug(f"Exit ssh context.  Remove private key: {self.privkey}")
         try:
+            # pyre-fixme[6]: For 1st param expected `Union[PathLike[bytes],
+            #  PathLike[str], bytes, str]` but got `Optional[Path]`.
             os.remove(self.privkey)
         except Exception as e:  # pragma: no cover
             logger.error(f"Error removing privkey: {self.privkey}: {e}")
@@ -94,7 +102,9 @@ class GuestSSHConnection:
         cwd: Optional[Path] = None,
         env: Optional[Mapping[str, str]] = None,
         forward: Optional[Mapping[Path, Path]] = None,
+        # pyre-fixme[2]: Parameter must be annotated.
         stdout=None,
+        # pyre-fixme[2]: Parameter must be annotated.
         stderr=None,
     ) -> asyncio.subprocess.Process:
         """
