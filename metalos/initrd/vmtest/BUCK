@@ -309,7 +309,7 @@ btrfs.new(
         default_subvol = "/volume",
         loopback_opts = image.opts(
             label = "/",
-            size_mb = 4096,
+            size_mb = 5120,  # 5GB (HUGE!)
         ),
     ),
 )
@@ -340,7 +340,7 @@ btrfs.new(
         },
         loopback_opts = image.opts(
             label = "/",
-            size_mb = 4096,
+            size_mb = 5120,  # 5GB (HUGE!)
         ),
     ),
     visibility = [],
