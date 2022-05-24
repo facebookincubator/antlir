@@ -19,6 +19,7 @@ from antlir.subvol_utils import Subvol
 from .dep_graph import DependencyGraph, ImageItem
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def get_compiler_nspawn_opts(
     *,
     cmd: Iterable[AnyStr],
@@ -97,6 +98,7 @@ if __name__ == "__main__":  # pragma: no cover
         "compile_items_to_subvol_kwargs",
         type=lambda s: pickle.loads(bytes(s, encoding="utf-8")),
     )
+    # pyre-fixme[5]: Global expression must be annotated.
     args = parser.parse_args()
 
     compile_items_to_subvol(**args.compile_items_to_subvol_kwargs)
