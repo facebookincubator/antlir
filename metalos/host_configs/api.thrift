@@ -9,6 +9,7 @@ namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
 // @oss-disable: namespace go metalos.host_configs.api
 
+include "common/fb303/if/fb303.thrift"
 include "metalos/host_configs/boot_config.thrift"
 include "metalos/host_configs/packages.thrift"
 include "metalos/host_configs/runtime_config.thrift"
@@ -87,7 +88,7 @@ struct Status {
 
 // This thrift service is primarily (read: exclusively) exposed as subcommands
 // of the `metalctl` binary that more or-less match the methods defined here.
-service Metalctl {
+service Metalctl extends fb303.FacebookService {
   // Prepare an online update to change the running versions of native
   // services.
   // Corresponds to `metalctl online-update stage`
