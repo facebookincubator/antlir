@@ -50,6 +50,7 @@ thrift_library(
     ] if facebook else [],
     # @oss-disable: py3_namespace = "metalos.host_configs", 
     rust_crate_name = "metalos_thrift_host_configs",
+    rust_gen_metadata = True,
     thrift_srcs = {
         "api.thrift": ["Metalctl"],
         "boot_config.thrift": [],
@@ -72,8 +73,10 @@ thrift_library(
         # fact that certain internal parts of the proxy don't respect some of
         # the type guarantees we normally do (eg uuid is an actual uuid)
         "//metalos/host_configs/facebook/proxy/...",
+        "//metalos/host_configs/facebook/metald/...",
     ],
     deps = [
+        "//common/fb303/if:fb303",
         "//metalos/host_configs/facebook:host-facebook",
         "//metalos/host_configs/facebook/proxy/if:deployment_specific",
     ] if facebook else [],
