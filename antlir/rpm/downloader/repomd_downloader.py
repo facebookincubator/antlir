@@ -17,8 +17,10 @@ from antlir.rpm.repo_objects import RepoMetadata
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 REPOMD_MAX_RETRY_S = [2**i for i in range(8)]  # 256 sec ==  4m16s
 LOOP_LIMIT = 5  # Times we'll loop downloading repomds before exiting
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 

@@ -19,11 +19,14 @@ class PrecompiledLoader(BaseLoader):
         self.base = base
 
     @staticmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def get_template_key(name) -> str:
         if name.endswith(".jinja2"):
             name = name[: -len(".jinja2")]
         return "tmpl_" + name
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def load(self, environment, name, globals=None):
         key = self.get_template_key(name)
         try:

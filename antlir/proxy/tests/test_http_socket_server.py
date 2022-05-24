@@ -14,6 +14,7 @@ class TestHTTPSocketServer(TestCase):
     @patch.object(socket, "accept")
     @patch.object(socket, "fileno")
     @patch.object(socket, "listen")
+    # pyre-fixme[2]: Parameter must be annotated.
     def test_http_socket_server(self, l_patch, f_patch, a_patch) -> None:
         with HTTPSocketServer(socket(), None) as server:
             server.server_activate()

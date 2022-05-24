@@ -27,9 +27,12 @@ class CloneItem(clone_t, ImageItem):
     #  inconsistently.
     source_layer: Subvol
 
+    # pyre-fixme[4]: Attribute must be annotated.
     _normalize_dest = validate_path_field_normal_relative("dest")
 
     @root_validator
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def check_flags(cls, values):  # noqa B902
         # Validators are classmethods but flake8 doesn't catch that.
 
@@ -37,6 +40,7 @@ class CloneItem(clone_t, ImageItem):
         assert not values["omit_outer_dir"] or values["pre_existing_dest"]
         return values
 
+    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         img_rel_src = self.source.relpath(self.source_layer.path())
         assert not img_rel_src.has_leading_dot_dot(), (
@@ -51,6 +55,7 @@ class CloneItem(clone_t, ImageItem):
                 rel_to_src = img_rel_src.basename() / rel_to_src
             yield p.with_new_path(self.dest / rel_to_src)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         yield RequireDirectory(
             path=self.dest if self.pre_existing_dest else self.dest.dirname()

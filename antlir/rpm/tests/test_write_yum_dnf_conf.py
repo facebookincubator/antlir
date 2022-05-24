@@ -113,8 +113,10 @@ class WriteYumDnfConfTestImpl:
 
 
 class WriteDnfConfTest(WriteYumDnfConfTestImpl, unittest.TestCase):
+    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.dnf
 
 
 class WriteYumConfTest(WriteYumDnfConfTestImpl, unittest.TestCase):
+    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.yum

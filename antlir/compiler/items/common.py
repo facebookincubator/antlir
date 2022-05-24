@@ -139,9 +139,13 @@ class ImageItem:
         return None
 
     @classmethod
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def customize_fields(cls, kwargs):
         pass
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, **kwargs):
         """Constructor for ImageItem subclass.
 
@@ -161,11 +165,16 @@ class ImageItem:
         # we need to cope with the API change introduced to that function in
         # Python 3.9, adding a new `globals` argument. We use `inspect` to
         # detect that case.
+        # pyre-fixme[16]: Module `dataclasses` has no attribute `_init_fn`.
         dataclasses._init_fn(
             fields=[
                 f
                 for f in dataclasses.fields(self)
+                # pyre-fixme[16]: `Field` has no attribute `_field_type`.
                 if f._field_type
+                # pyre-fixme[16]: Module `dataclasses` has no attribute `_FIELD`.
+                # pyre-fixme[16]: Module `dataclasses` has no attribute
+                #  `_FIELD_INITVAR`.
                 in (dataclasses._FIELD, dataclasses._FIELD_INITVAR)
             ],
             frozen=True,
@@ -174,17 +183,20 @@ class ImageItem:
             **(
                 {"globals": {}}
                 if "globals"
+                # pyre-fixme[16]: Module `dataclasses` has no attribute `_init_fn`.
                 in inspect.getfullargspec(dataclasses._init_fn).args
                 else {}
             ),
         )(self, **kwargs)
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 META_ARTIFACTS_REQUIRE_REPO = (
     META_DIR / "private/opts/artifacts_may_require_repo"
 )
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _validate_artifacts_require_repo(
     dependency: Subvol, layer_opts: LayerOpts, message: str
 ):
@@ -219,6 +231,7 @@ def make_path_normal_relative(orig_d: str, *, meta_check: bool = True) -> str:
     return d
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def validate_path_field_normal_relative(field: str):
     return validator(field, allow_reuse=True, pre=True)(
         lambda value: make_path_normal_relative(value)
@@ -266,6 +279,7 @@ def is_path_protected(path: Path, protected_paths: Set[Path]) -> bool:
     return False
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
     subvol.run_as_root(
         ["mkdir", "--mode=0755", "--parents", subvol.path(META_DIR)]
@@ -406,12 +420,16 @@ def _image_source_path(
     return Path(layer.path(path))
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _make_image_source_item(
+    # pyre-fixme[2]: Parameter must be annotated.
     item_cls,
+    # pyre-fixme[2]: Parameter must be annotated.
     exit_stack,
     layer_opts: LayerOpts,
     *,
     source: Optional[Mapping[str, Path]],
+    # pyre-fixme[2]: Parameter must be annotated.
     **kwargs,
 ):
     if source is None:
@@ -461,6 +479,8 @@ def _make_image_source_item(
     return item_cls(**kwargs, source=source_path)
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def image_source_item(item_cls, exit_stack, layer_opts: LayerOpts):
     return lambda **kwargs: _make_image_source_item(
         item_cls, exit_stack, layer_opts, **kwargs

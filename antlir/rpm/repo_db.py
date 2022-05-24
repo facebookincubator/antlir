@@ -113,9 +113,12 @@ from .repo_objects import Checksum, Repodata, RepoMetadata, Rpm
 # Keeping `-` out of universe names allows `U-N-E:V-R.A` as a possible
 # format, though we don't currently rely on that -- and probably should not,
 # since it's 2020 and `json.dumps` / `repr` are cheap enough.
+# pyre-fixme[5]: Global expression must be annotated.
 _VALID_UNIVERSE_REGEX = re.compile("^[a-zA-Z0-9.]*$")
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def validate_universe_name(u):
     if not _VALID_UNIVERSE_REGEX.match(u):
         raise RuntimeError(
@@ -130,6 +133,7 @@ class StorageTable:
     Its child classes represent tables in our repo DB.
     """
 
+    # pyre-fixme[3]: Return type must be annotated.
     def _column_funcs(self):
         "Ensures that column_{names,values} have the same order."
         # NB: We do not store `obj.location` in the DB, because the same
@@ -140,9 +144,12 @@ class StorageTable:
             ("size", lambda obj: obj.size),
         ]
 
+    # pyre-fixme[3]: Return type must be annotated.
     def column_names(self):
         return tuple(c for c, _ in self._column_funcs())
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def column_values(self, obj):
         return tuple(fn(obj) for _, fn in self._column_funcs())
 
@@ -179,9 +186,12 @@ class RpmTable(StorageTable):
         "checksum",
     )
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __init__(self, universe: str):
+        # pyre-fixme[4]: Attribute must be annotated.
         self._universe = validate_universe_name(universe)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def _column_funcs(self):
         return [
             ("name", lambda obj: obj.name),
@@ -194,6 +204,8 @@ class RpmTable(StorageTable):
             *super()._column_funcs(),
         ]
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
         return (
             obj.name,
@@ -220,6 +232,8 @@ class RepodataTable(StorageTable):
     NAME = "repodata"
     KEY_COLUMNS = ("checksum",)
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def key(self, obj):  # Update KEY_COLUMNS, _TABLE_KEYS if changing this
         return (str(obj.checksum),)
 
@@ -252,7 +266,9 @@ class RepoDBContext(AbstractContextManager):
         deployment is more work than supporting SQLite.
     """
 
+    # pyre-fixme[4]: Attribute must be annotated.
     _DIALECT_TO_PLACEHOLDER = {SQLDialect.SQLITE3: "?", SQLDialect.MYSQL: "%s"}
+    # pyre-fixme[4]: Attribute must be annotated.
     _DIALECT_TO_COLUMN_TYPE = {
         SQLDialect.SQLITE3: {
             "checksum": "TEXT",
@@ -287,6 +303,7 @@ class RepoDBContext(AbstractContextManager):
             "xml": "BLOB",  # 64KB ought to be enough
         },
     }
+    # pyre-fixme[4]: Attribute must be annotated.
     _TABLE_COLUMNS = {
         RpmTable.NAME: {
             "name": "NOT NULL",
@@ -318,6 +335,7 @@ class RepoDBContext(AbstractContextManager):
             "xml": "NOT NULL",
         },
     }
+    # pyre-fixme[4]: Attribute must be annotated.
     _TABLE_KEYS = {
         # The key includes NEVRA because we try to detect when the same
         # NEVRA occurs with different contents in a set of repos.
@@ -370,6 +388,7 @@ class RepoDBContext(AbstractContextManager):
         ],
     }
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __init__(
         self,
         # This should be a multi-use context manager, which returns a
@@ -382,20 +401,24 @@ class RepoDBContext(AbstractContextManager):
         dialect: SQLDialect,
     ):
         self._conn_ctx = conn_ctx
+        # pyre-fixme[4]: Attribute must be annotated.
         self._conn = None  # __enter__ this context to get a connection.
         self._dialect = dialect
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __enter__(self):
         assert self._conn is None, "RepoDBContext is not reentrant"
         self._conn = self._conn_ctx.__enter__()
         return self
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         self._conn = None
         # pyre-fixme[7]: Expected `bool` but got `Optional[bool]`.
         return self._conn_ctx.__exit__(exc_type, exc_val, exc_tb)
 
     @contextmanager
+    # pyre-fixme[3]: Return type must be annotated.
     def _cursor(self):
         cursor = self._conn.cursor()
         try:
@@ -403,15 +426,19 @@ class RepoDBContext(AbstractContextManager):
         finally:
             cursor.close()
 
+    # pyre-fixme[3]: Return type must be annotated.
     def _placeholder(self):
         return self._DIALECT_TO_PLACEHOLDER[self._dialect]
 
     def _or_ignore(self) -> str:
         return f"{'' if self._dialect == SQLDialect.MYSQL else 'OR'} IGNORE"
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def _identifiers(self, identifiers):
         return ", ".join(f"`{i}`" for i in identifiers)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def ensure_tables_exist(self, _ensure_line_is_covered=lambda: None):
         # Future: it would be better if this function checked that the table
         # schemas in the DB are exactly as we would create them, and that
@@ -637,6 +664,7 @@ class RepoDBContext(AbstractContextManager):
                     assert db_val == val, (db_val, val, obj)
             return db_values[-1]  # We put `storage_id` last
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def maybe_store(self, table: StorageTable, obj, storage_id: str) -> str:
         """
         Records `obj` with `storage_id` in the DB, or if `obj` had already
@@ -668,5 +696,6 @@ class RepoDBContext(AbstractContextManager):
             # pyre-fixme[7]: Expected `str` but got `Optional[str]`.
             return self.get_storage_id(table, obj)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def commit(self):
         self._conn.commit()

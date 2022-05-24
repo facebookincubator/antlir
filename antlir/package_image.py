@@ -25,8 +25,11 @@ from .fs_utils import create_ro, generate_work_dir, META_FLAVOR_FILE, Path
 from .subvol_utils import Subvol
 from .unshare import Namespace, Unshare
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
+# pyre-fixme[5]: Global expression must be annotated.
 KiB = 2**10
+# pyre-fixme[5]: Global expression must be annotated.
 MiB = 2**20
 
 
@@ -40,6 +43,7 @@ class Format:
 
     NAME_TO_CLASS: Mapping[str, "Format"] = {}
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def __init_subclass__(cls, format_name: str, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         prev_cls = cls.NAME_TO_CLASS.get(format_name)
@@ -350,6 +354,7 @@ def _get_build_appliance_from_layer_flavor_config(
     ]
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def package_image(args) -> None:
     with init_cli(description=__doc__, argv=args) as cli:
         cli.parser.add_argument(

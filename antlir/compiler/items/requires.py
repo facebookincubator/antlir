@@ -18,6 +18,7 @@ from .common import ImageItem
 
 
 class RequiresItem(requires_t, ImageItem):
+    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         return []
 

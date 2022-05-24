@@ -8,6 +8,7 @@
 import json
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def main(stdin, stdout, layer_target) -> None:
     mount_config = json.load(stdin)
 

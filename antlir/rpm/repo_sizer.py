@@ -27,6 +27,7 @@ from .repo_objects import Repodata, RepoMetadata, Rpm
 #   def visit_rpm(self, rpm: Rpm) -> None:
 #
 # Future: Define a concrete interface for this.
+# pyre-fixme[33]: Aliased annotation cannot be `Any`.
 RepoObjectVisitor = Any
 
 
@@ -48,6 +49,7 @@ class _ObjectCounter:
         # and keeps this code generic.
         self._synonyms = Synonyms({}, UnionFind())
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _set_size(self, chk, obj_size: int) -> None:
         """Helper to add a key into `checksum_size` while also performing
         a sanity check to ensure that, if the checksum already existed in the
@@ -87,6 +89,7 @@ class _ObjectCounter:
 class RepoSizer:
     def __init__(self) -> None:
         # Count each type of objects separately
+        # pyre-fixme[4]: Attribute must be annotated.
         self._type_to_counter = defaultdict(_ObjectCounter)
 
     def __iadd__(self, other: "RepoSizer") -> "RepoSizer":
@@ -94,12 +97,16 @@ class RepoSizer:
             self._type_to_counter[typ] += ctr
         return self
 
+    # pyre-fixme[2]: Parameter annotation cannot be `Any`.
     def _add_object(self, obj: Any) -> None:
         self._type_to_counter[type(obj)].add_repo_obj(obj)
 
     # Separate visitor methods in case we want to stop doing type introspection
+    # pyre-fixme[4]: Attribute must be annotated.
     visit_repodata = _add_object
+    # pyre-fixme[4]: Attribute must be annotated.
     visit_rpm = _add_object
+    # pyre-fixme[4]: Attribute must be annotated.
     visit_repomd = _add_object
 
     def _get_classname_to_size(self) -> Dict[str, int]:

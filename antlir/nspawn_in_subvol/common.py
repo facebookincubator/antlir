@@ -14,6 +14,7 @@ from antlir.fs_utils import Path
 # Our container runtimes are required to make this the `PATH` for the user
 # command in the container.  This also determines which container binaries
 # get shadowed by `--shadow-path`.
+# pyre-fixme[5]: Global expression must be annotated.
 DEFAULT_SEARCH_PATHS = tuple(
     Path(p)
     for p in (
@@ -25,10 +26,12 @@ DEFAULT_SEARCH_PATHS = tuple(
         "/bin",
     )
 )
+# pyre-fixme[5]: Global expression must be annotated.
 DEFAULT_PATH_ENV = b":".join(DEFAULT_SEARCH_PATHS)
 
 
 # alias open(/proc/self/mounts) so that it is more easily mocked
+# pyre-fixme[3]: Return type must be annotated.
 def _open_mounts():  # pragma: no cover
     return open("/proc/self/mounts", "rb")
 

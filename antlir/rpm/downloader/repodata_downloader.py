@@ -36,7 +36,9 @@ from antlir.rpm.repo_snapshot import ReportableError
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 REPODATA_MAX_RETRY_S = [2**i for i in range(10)]  # 1024sec == 17m4s
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 

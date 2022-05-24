@@ -29,6 +29,8 @@ class InodeTestCase(AntlirTestCase):
         super().setUp()
         self.id_map = InodeIDMap.new()
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def _complete_inode(self, file_type, **kwargs):
         kwargs.setdefault("mode", 0o644)
         kwargs.setdefault("xattrs", {})

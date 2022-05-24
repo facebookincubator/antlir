@@ -36,6 +36,8 @@ class SgdiskTypeCodes(Enum):
     LINUX = "8300"
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -62,6 +64,7 @@ def parse_args(argv):
     return Path.parse_args(parser, argv)
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def make_gpt(argv) -> None:
     args = parse_args(argv)
     output_path = args.output_path

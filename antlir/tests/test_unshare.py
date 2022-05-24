@@ -26,6 +26,7 @@ class UnshareTestCase(unittest.TestCase):
         self.assertEqual(["a", "b"], nsenter_as_user(None, "a", "b"))
         self.assertEqual(["sudo", "c", "d"], nsenter_as_root(None, "c", "d"))
 
+    # pyre-fixme[3]: Return type must be annotated.
     def _popen_sleep_forever(self, unshare: Unshare):
         # We need the ready signal to know when we've actually executed the
         # payload -- otherwise, we might try to interact with it while we're
@@ -120,6 +121,7 @@ class UnshareTestCase(unittest.TestCase):
             with self.assertRaises(subprocess.CalledProcessError):
                 subprocess.check_call(good_echo)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def test_context_enter_error(self):
         "Exercise triggering __exit__ when __enter__ raises"
         unshare = Unshare([Namespace.MOUNT])  # This does not fail
@@ -158,6 +160,7 @@ class UnshareTestCase(unittest.TestCase):
                 with open(os.path.join(mnt_src, "cypa"), "w") as outfile:
                     outfile.write("kvoh")
 
+                # pyre-fixme[3]: Return type must be annotated.
                 def check_mnt_dest(mnt_dest: str):
                     cypa = os.path.join(mnt_dest, "cypa")
                     # The outer NS cannot see the mount

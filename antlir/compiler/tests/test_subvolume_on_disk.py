@@ -30,6 +30,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
         self.mock_gethostname.side_effect = lambda: _MY_HOST
         self.addCleanup(self.patch_gethostname.stop)
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _check(self, actual_subvol, expected_path, expected_subvol) -> None:
         self.assertEqual(expected_path, actual_subvol.subvolume_path())
         self.assertEqual(expected_subvol, actual_subvol)
@@ -58,6 +59,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
             )
 
     @with_temp_subvols
+    # pyre-fixme[2]: Parameter must be annotated.
     def test_from_serializable_dict_and_validation(self, temp_subvols) -> None:
         # Note: Unlike test_from_subvolume_path, this test uses a
         # trailing / (to increase coverage).
@@ -131,6 +133,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
         )
 
     @with_temp_subvols
+    # pyre-fixme[2]: Parameter must be annotated.
     def test_from_subvolume_path(self, temp_subvols) -> None:
         # Note: Unlike test_from_serializable_dict_and_validation, this
         # test does NOT use a trailing / (to increase coverage).

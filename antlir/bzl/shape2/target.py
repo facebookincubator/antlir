@@ -16,5 +16,6 @@ class target_t(Shape):
     path: Path
 
     @pydantic.validator("path")
+    # pyre-fixme[2]: Parameter must be annotated.
     def normalize_path(cls, v) -> Path:  # noqa: B902 - This _is_ a class method
         return normalize_buck_path(v)

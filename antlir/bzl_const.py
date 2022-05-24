@@ -7,11 +7,15 @@ from antlir.bzl_const_t import data as BZL_CONST
 
 
 # IMPORTANT: Keep in sync with `bzl/image/feature/new.bzl`
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def feature_target_name(name):
     return name + BZL_CONST.PRIVATE_feature_suffix
 
 
 # IMPORTANT: Keep in sync with `bzl/compile_image_features.bzl`
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def feature_for_layer(layer_name):
     assert (
         BZL_CONST.PRIVATE_feature_suffix not in layer_name
@@ -19,5 +23,6 @@ def feature_for_layer(layer_name):
     return feature_target_name(layer_name + BZL_CONST.layer_feature_suffix)
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def hostname_for_compiler_in_ba():
     return BZL_CONST.hostname_for_compiler_in_ba

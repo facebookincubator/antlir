@@ -109,11 +109,16 @@ class TestCommon(unittest.TestCase):
         class ExCustomErr(Exception):
             pass
 
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def catch_it(fn):
             """Decorator that simply catches `ExCustomErr` and returns whether
             an error was raised by `fn` or not.
             """
 
+            # pyre-fixme[53]: Captured variable `fn` is not annotated.
+            # pyre-fixme[3]: Return type must be annotated.
+            # pyre-fixme[2]: Parameter must be annotated.
             def decorated(*args, **kwargs):
                 try:
                     fn(*args, **kwargs)

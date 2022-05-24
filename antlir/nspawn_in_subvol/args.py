@@ -40,10 +40,12 @@ from antlir.subvol_utils import find_subvolume_on_disk
 
 
 _DEFAULT_LOGIN_SHELL = ["/bin/bash", "--login"]
+# pyre-fixme[5]: Global expression must be annotated.
 _NOBODY_USER = pwd.getpwnam("nobody")
 T = TypeVar("T")
 # This typehint marks values that accept the types that are allowed by
 # `subprocess`'s `std{in,out,err}` redirects.
+# pyre-fixme[33]: Aliased annotation cannot be `Any`.
 SubprocessRedirect = Any
 
 
@@ -52,6 +54,7 @@ class AttachAntlirDirMode(Enum):
     DEFAULT_ON = "default_on"  # Fails silently when ANTLIR_DIR is not available
     EXPLICIT_ON = "explicit_on"  # Errors out when ANTLIR_DIR is not available
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __str__(self):
         return self.value
 
@@ -150,13 +153,17 @@ class _NspawnDebugOnlyNotForProdOpts(NamedTuple):
     container_not_part_of_build_step: Optional[Path] = None
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _new_nspawn_debug_only_not_for_prod_opts(**kwargs):
     return _NspawnDebugOnlyNotForProdOpts(**kwargs)
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 _DEBUG_OPTS_FOR_PROD = _new_nspawn_debug_only_not_for_prod_opts()
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _parser_add_debug_only_not_for_prod_opts(parser: argparse.ArgumentParser):
     "Keep in sync with `_NspawnDebugOnlyNotForProdOpts`"
     defaults = _NspawnDebugOnlyNotForProdOpts._field_defaults
@@ -250,6 +257,8 @@ class _NspawnOpts(NamedTuple):
     targets_and_outputs: Mapping[str, Path] = {}
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def new_nspawn_opts(**kwargs):
     """
     When a part of `antlir` needs to call `nspawn_in_subvol`, it should
@@ -274,6 +283,7 @@ def new_nspawn_opts(**kwargs):
     return opts
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
     "Keep in sync with `_NspawnOpts`"
     defaults = _NspawnOpts._field_defaults
@@ -436,6 +446,7 @@ def _extract_opts_from_dict(
     ctor: Type[T],
     fields: Iterable[str],
     dct: Mapping[str, Any],  # keys matching `ctor` fields are removed
+    # pyre-fixme[2]: Parameter must be annotated.
     **extra_fields,  # Pass any fields that won't be set via `dct`
 ) -> T:
     for k in fields:
@@ -492,6 +503,7 @@ class NspawnPluginArgs(NamedTuple):
     fbpkg_db_path: Path = Path("")
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def _parser_add_plugin_args(parser: argparse.ArgumentParser):
     "Keep in sync with `NspawnPluginArgs`"
     parser.add_argument(
@@ -611,6 +623,7 @@ class _NspawnCLIArgs(NamedTuple):
 
 # Normally, you should call this via `_parse_cli_args`.  You're testing the
 # CLI, so check the parsing also!
+# pyre-fixme[2]: Parameter must be annotated.
 def _new_nspawn_cli_args(**kwargs) -> _NspawnCLIArgs:
     args = _NspawnCLIArgs(**kwargs)
     # Please don't add more plugin validation here, let's find a more
@@ -626,6 +639,7 @@ def _new_nspawn_cli_args(**kwargs) -> _NspawnCLIArgs:
     return args
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     "Keep in sync with `_NspawnCLIArgs`"
     parser = argparse.ArgumentParser(

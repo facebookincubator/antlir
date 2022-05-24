@@ -30,6 +30,7 @@ from antlir.compiler.items.user import UserItem
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -44,6 +45,8 @@ class UnknownTarget(NamedTuple):
     target: str
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter annotation cannot be `Any`.
 def replace_targets_by_paths(x: Any, ctx: GenFeaturesContext):
     """
     Converts target_tagger.bzl sigils to buck-out paths or Subvol objects.
@@ -86,7 +89,10 @@ def replace_targets_by_paths(x: Any, ctx: GenFeaturesContext):
     raise AssertionError(f"Unknown {type(x)} for {x}")  # pragma: no cover
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def gen_included_features(
+    # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, use
+    #  `typing.Dict` to avoid runtime subscripting errors.
     features_or_paths: Iterable[Union[str, dict, Path]],
     features_ctx: GenFeaturesContext,
 ):
@@ -118,6 +124,7 @@ class ItemFactory:
     def __init__(self, exit_stack: ExitStack, layer_opts: LayerOpts) -> None:
         self._exit_stack = exit_stack
         self._layer_opts = layer_opts
+        # pyre-fixme[4]: Attribute must be annotated.
         self._key_to_item_factory = {
             "clone": self._image_sourcify(CloneItem),
             "genrule_layer": GenruleLayerItem,
@@ -138,15 +145,20 @@ class ItemFactory:
             "users": UserItem,
             "requires": RequiresItem,
         }
+        # pyre-fixme[4]: Attribute must be annotated.
         self._key_to_items_factory = {
             "ensure_subdirs_exist": ensure_subdirs_exist_factory,
         }
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def _image_sourcify(self, item_cls):
         return image_source_item(
             item_cls, exit_stack=self._exit_stack, layer_opts=self._layer_opts
         )
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def gen_items_for_feature(self, feature_key: str, target: str, config):
         if feature_key in self._key_to_item_factory:
             yield self._key_to_item_factory[feature_key](
@@ -160,9 +172,13 @@ class ItemFactory:
             raise AssertionError(f"Unsupported item: {feature_key}")
 
 
+# pyre-fixme[3]: Return type must be annotated.
 def gen_items_for_features(
     *,
+    # pyre-fixme[2]: Parameter must be annotated.
     exit_stack,
+    # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, use
+    #  `typing.Dict` to avoid runtime subscripting errors.
     features_or_paths: Iterable[Union[str, dict, Path]],
     layer_opts: LayerOpts,
 ):

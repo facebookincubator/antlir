@@ -19,6 +19,7 @@ from .deepcopy_test import DeepCopyTestCase
 
 
 class InodeIDTestCase(DeepCopyTestCase):
+    # pyre-fixme[3]: Return type must be annotated.
     def _check_id_and_map(self):
         """
         The `yield` statements in this generator allow `DeepCopyTestCase`
@@ -34,21 +35,29 @@ class InodeIDTestCase(DeepCopyTestCase):
         # Stores inode objects pointing at the un-frozen (mutable) `id_map`.
         mut_ns = SimpleNamespace()
 
+        # pyre-fixme[53]: Captured variable `STEP_MADE_ANON_INODE` is not annotated.
+        # pyre-fixme[53]: Captured variable `mut_ns` is not annotated.
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def maybe_replace_map(id_map, step_name):
             new_map = yield step_name, id_map
             if new_map is not id_map:
                 # If the map was replaced, we must fix up our inode objects.
+                # pyre-fixme[16]: `None` has no attribute `get_id`.
                 mut_ns.ino_root = new_map.get_id(b".")
                 if hasattr(mut_ns, "ino1"):
                     mut_ns.ino1 = new_map.get_id(b"a")
                 if hasattr(mut_ns, "ino2"):
                     if step_name == STEP_MADE_ANON_INODE:
+                        # pyre-fixme[16]: `None` has no attribute `inner`.
                         mut_ns.ino2 = InodeID(id=2, inner_id_map=new_map.inner)
                     else:
                         # we add a/c later, remove a/c earlier, this is enough
                         mut_ns.ino2 = new_map.get_id(b"a/d")
             return new_map  # noqa: B901
 
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def unfrozen_and_frozen_impl(id_map, mut_ns):
             "Run all checks on the mutable map and on its frozen counterpart"
             yield id_map, mut_ns
@@ -63,6 +72,8 @@ class InodeIDTestCase(DeepCopyTestCase):
                 }
             )
 
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def unfrozen_and_frozen(id_map, mut_ns):
             res = list(unfrozen_and_frozen_impl(id_map, mut_ns))
             # The whole test would be useless if the generator didn't return
@@ -73,6 +84,8 @@ class InodeIDTestCase(DeepCopyTestCase):
         id_map = yield from maybe_replace_map(InodeIDMap.new(), "empty")
 
         # Check the root inode
+        # pyre-fixme[16]: `SimpleNamespace` has no attribute `ino_root`.
+        # pyre-fixme[16]: `None` has no attribute `get_id`.
         mut_ns.ino_root = id_map.get_id(b".")
         for im, ns in unfrozen_and_frozen(id_map, mut_ns):
             self.assertEqual(".", repr(ns.ino_root))
@@ -80,6 +93,9 @@ class InodeIDTestCase(DeepCopyTestCase):
             self.assertEqual(set(), im.get_children(ns.ino_root))
 
         # Make a new ID with a path
+        # pyre-fixme[16]: `SimpleNamespace` has no attribute `ino1`.
+        # pyre-fixme[16]: `None` has no attribute `add_dir`.
+        # pyre-fixme[16]: `None` has no attribute `next`.
         mut_ns.ino1 = id_map.add_dir(id_map.next(), b"./a/")
         id_map = yield from maybe_replace_map(id_map, "made a")
         for im, ns in unfrozen_and_frozen(id_map, mut_ns):
@@ -90,12 +106,14 @@ class InodeIDTestCase(DeepCopyTestCase):
             self.assertEqual(set(), im.get_children(ns.ino1))
 
         # Anonymous inode, then add multiple paths
+        # pyre-fixme[16]: `SimpleNamespace` has no attribute `ino2`.
         mut_ns.ino2 = id_map.next()  # initially anonymous
         id_map = yield from maybe_replace_map(id_map, STEP_MADE_ANON_INODE)
         for im, ns in unfrozen_and_frozen(id_map, mut_ns):
             self.assertEqual(INO2_ID, ns.ino2.id)
             self.assertIs(im.inner, ns.ino2.inner_id_map)
             self.assertEqual("ANON_INODE#2", repr(ns.ino2))
+        # pyre-fixme[16]: `None` has no attribute `add_file`.
         id_map.add_file(mut_ns.ino2, b"a/d")
         id_map = yield from maybe_replace_map(id_map, "added a/d name")
         for im, ns in unfrozen_and_frozen(id_map, mut_ns):
@@ -113,6 +131,7 @@ class InodeIDTestCase(DeepCopyTestCase):
             TypeError, "'frozendict' object does not support item deletion"
         ):
             freeze(id_map).remove_path(b"a/c")
+        # pyre-fixme[16]: `None` has no attribute `remove_path`.
         self.assertIs(mut_ns.ino2, id_map.remove_path(b"a/c"))
         saved_frozen_map = freeze(id_map)  # We'll check this later
         id_map = yield from maybe_replace_map(id_map, "removed a/c name")
@@ -140,6 +159,7 @@ class InodeIDTestCase(DeepCopyTestCase):
         # Test a rename that fails on the add after the remove. Note that
         # this does not affect any subsequent tests -- a/d still exists.
         with self.assertRaisesRegex(RuntimeError, "Adding #2 to .* has #1"):
+            # pyre-fixme[16]: `None` has no attribute `rename_path`.
             id_map.rename_path(b"a/d", b"a")
 
         # Check that we clean up empty path sets
@@ -228,6 +248,7 @@ class InodeIDTestCase(DeepCopyTestCase):
         # (1) Let us specifically aims to cover the cases when, of the path
         # and the `ReversePathEntry`, one is a suffix of the other.  For
         # example: `e/d/c/b/a` and `c/b/a`.
+        # pyre-fixme[16]: `SimpleNamespace` has no attribute `ino_id`.
         mut_ns.ino_id = id_map.next()
         # To see such suffixes we must get lucky with iteration order of the
         # reverse entries `set`.  The solution is to have many entries,
@@ -252,7 +273,9 @@ class InodeIDTestCase(DeepCopyTestCase):
                 b"/".join(str(i).encode() for i in range(depth + 1, -1, -1))
             )
         id_map = yield from maybe_replace_map(id_map, "removed hardlinks")
+        # pyre-fixme[16]: `None` has no attribute `inner`.
         mut_ns.ino_id = InodeID(id=mut_ns.ino_id.id, inner_id_map=id_map.inner)
+        # pyre-fixme[16]: `None` has no attribute `get_paths`.
         self.assertEqual(set(), id_map.get_paths(mut_ns.ino_id))
         # (2) Let's try a few hardlinks, neither a suffix of the other, to
         # make sure we hit the "different paths" branch.

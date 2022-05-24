@@ -6,6 +6,9 @@
 
 
 class NspawnPlugin:
+    # pyre-fixme[4]: Attribute must be annotated.
     wrap_setup_subvol = None
+    # pyre-fixme[4]: Attribute must be annotated.
     wrap_setup = None
+    # pyre-fixme[4]: Attribute must be annotated.
     wrap_post_setup_popen = None

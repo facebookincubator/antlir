@@ -7,6 +7,7 @@ import argparse
 
 from antlir.common import get_logger, init_logging
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -30,6 +31,7 @@ def log_failure_message(msg: str) -> None:
 
 # This is covered by `test_fail_with_message_e2e` in `test-fail-with-message`.
 if __name__ == "__main__":  # pragma: no cover
+    # pyre-fixme[5]: Global expression must be annotated.
     args = _parse_cmdline_args()
     init_logging()
     log_failure_message(args.message)

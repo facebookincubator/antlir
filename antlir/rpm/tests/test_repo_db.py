@@ -35,6 +35,8 @@ _FAKE_RPM = Rpm(
 )
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _get_schema(conn):
     return conn.execute(
         'SELECT `name`, `sql` FROM `sqlite_master` where `type` = "table"'
@@ -47,6 +49,7 @@ class RepoDBTestCase(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
         self.maxDiff = 12345
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _check_schema(self, conn) -> None:
         for (a_name, a_sql), (e_name, e_sql) in zip(
             _get_schema(conn),
@@ -105,6 +108,7 @@ class RepoDBTestCase(unittest.TestCase):
             self.assertEqual(e_sql, re.sub(r"\s+", " ", a_sql))
 
     @contextmanager
+    # pyre-fixme[3]: Return type must be annotated.
     def _make_conn_ctx(self):
         with tempfile.NamedTemporaryFile() as tf:
             yield DBConnectionContext.make(
@@ -112,6 +116,7 @@ class RepoDBTestCase(unittest.TestCase):
             )
 
     @contextmanager
+    # pyre-fixme[3]: Return type must be annotated.
     def _make_db_ctx(self):
         with self._make_conn_ctx() as conn_ctx:
             with RepoDBContext(conn_ctx, SQLDialect.SQLITE3) as db_ctx:
@@ -133,6 +138,8 @@ class RepoDBTestCase(unittest.TestCase):
                 with conn_ctx as conn:
                     self._check_schema(conn)
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def _fake_repomd(self, fetch_timestamp):
         repomd_xml = b"""
         <repomd>
@@ -182,6 +189,7 @@ class RepoDBTestCase(unittest.TestCase):
                     if do_commit:
                         db_ctx.commit()
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def _check_maybe_store_and_get_storage_id(self, table, obj) -> None:
         with self._make_db_ctx() as db_ctx:
             self.assertIs(None, db_ctx.get_storage_id(table, obj))

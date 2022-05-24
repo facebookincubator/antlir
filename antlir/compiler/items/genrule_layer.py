@@ -26,16 +26,20 @@ from .common import LayerOpts, PhaseOrder
 
 
 class GenruleLayerItem(genrule_layer_t):
+    # pyre-fixme[3]: Return type must be annotated.
     def phase_order(self):
         return PhaseOrder.GENRULE_LAYER
 
     @classmethod
+    # pyre-fixme[3]: Return type must be annotated.
     def get_phase_builder(
         cls, items: Iterable["GenruleLayerItem"], layer_opts: LayerOpts
     ):
         (item,) = items
         assert isinstance(item, GenruleLayerItem), item
 
+        # pyre-fixme[53]: Captured variable `item` is not annotated.
+        # pyre-fixme[3]: Return type must be annotated.
         def builder(subvol: Subvol):
             c_opts = item.container_opts
 

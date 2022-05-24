@@ -92,6 +92,8 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((8,), ex_ctx.exception.args)
 
         # Test is_exception_retriable
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def _is_retryable(e):
             if isinstance(e, RuntimeError):
                 return False
@@ -108,6 +110,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
 
     def test_retryable(self) -> None:
         @retryable("got {a}, {b}, {c}", [0])
+        # pyre-fixme[3]: Return type must be annotated.
         def to_be_retried(a: int, b: int, c: int = 5):
             raise RuntimeError("retrying...")
 
@@ -191,6 +194,8 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
         self.assertEqual((8,), ex_ctx.exception.args)
 
         # Test is_exception_retriable
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def _is_retryable(e):
             if isinstance(e, RuntimeError):
                 return False
@@ -207,6 +212,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
 
     async def test_async_retryable(self) -> None:
         @async_retryable("got {a}, {b}, {c}", [0])
+        # pyre-fixme[3]: Return type must be annotated.
         async def to_be_retried(a: int, b: int, c: int = 5):
             raise RuntimeError("retrying...")
 
@@ -224,6 +230,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             [0, 0, 0],
             is_exception_retryable=lambda _: False,
         )
+        # pyre-fixme[3]: Return type must be annotated.
         def to_be_retried(a: int, b: int, c: int = 5):
             nonlocal iters
             iters += 1
@@ -234,6 +241,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(1, iters)
 
     @unittest.mock.patch("antlir.common._mockable_platform_release")
+    # pyre-fixme[2]: Parameter must be annotated.
     def test_kernel_version(self, platform_release) -> None:
         uname_to_tuples = {
             "5.2.9-129_fbk13_hardened_3948_ga3d2430737fa": (5, 2),

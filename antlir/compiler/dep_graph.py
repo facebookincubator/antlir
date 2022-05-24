@@ -361,8 +361,10 @@ class DependencyGraph:
     ) -> None:
         # Without deduping, dependency diamonds would cause a lot of
         # redundant work below.  `_prep_item_predecessors` mutates this.
+        # pyre-fixme[4]: Attribute must be annotated.
         self.items = set()
         # While deduplicating `ImageItem`s, let's also split out the phases.
+        # pyre-fixme[4]: Attribute must be annotated.
         self.order_to_phase_items = {}
         for item in iter_items:
             if item.phase_order() is None:
@@ -391,6 +393,7 @@ class DependencyGraph:
             }, self.order_to_phase_items
 
     # Like ImageItems, the generated phases have a build(s: Subvol) operation.
+    # pyre-fixme[3]: Return type must be annotated.
     def ordered_phases(self):
         for _, items in sorted(
             self.order_to_phase_items.items(), key=lambda kv: kv[0].value
@@ -401,6 +404,7 @@ class DependencyGraph:
             yield all_builder_makers.pop(), tuple(items)
 
     @staticmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def _add_dir_deps_for_item_provs(ns, item_provs: Set[ItemProv]) -> None:
         """EnsureDirsExist items are a special case in the dependency graph in
         that, for a given path, we want to ensure they're the last providers to
@@ -432,6 +436,7 @@ class DependencyGraph:
                 ns.predecessor_to_items[item_prov.item].add(ede_item_prov.item)
 
     # Separated so that unit tests can check the internal state.
+    # pyre-fixme[3]: Return type must be annotated.
     def _prep_item_predecessors(self, phases_provide: PhasesProvideItem):
         # The `ImageItem` part of the build needs an item that `provides`
         # the filesystem as it exists after the phases get built.

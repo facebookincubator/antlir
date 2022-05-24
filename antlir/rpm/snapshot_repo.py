@@ -25,9 +25,11 @@ from .storage import Storage
 from .yum_dnf_conf import YumDnfConfRepo
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def snapshot_repo(argv) -> None:
     parser = argparse.ArgumentParser(
         description=__doc__,

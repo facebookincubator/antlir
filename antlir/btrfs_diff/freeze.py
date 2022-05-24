@@ -30,41 +30,58 @@ class DoNotFreeze:
     pass
 
 
+# pyre-fixme[24]: Generic type `tuple` expects at least 1 type parameter.
 class frozendict(Mapping, tuple, DoNotFreeze):
     __slots__ = ()
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __new__(cls, *args, **kwargs):
         return tuple.__new__(cls, (MappingProxyType(dict(*args, **kwargs)),))
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __contains__(self, key):
         return key in tuple.__getitem__(self, 0)
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __getitem__(self, key):
         return tuple.__getitem__(self, 0)[key]
 
     def __len__(self) -> int:
         return len(tuple.__getitem__(self, 0))
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __iter__(self):
         return iter(tuple.__getitem__(self, 0))
 
+    # pyre-fixme[3]: Return type must be annotated.
     def keys(self):
         return tuple.__getitem__(self, 0).keys()
 
+    # pyre-fixme[3]: Return type must be annotated.
     def values(self):
         return tuple.__getitem__(self, 0).values()
 
+    # pyre-fixme[3]: Return type must be annotated.
     def items(self):
         return tuple.__getitem__(self, 0).items()
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def get(self, key, default=None):
         return tuple.__getitem__(self, 0).get(key, default)
 
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __eq__(self, other):
+        # pyre-fixme[10]: Name `__class__` is used but not defined.
         if isinstance(other, __class__):
             other = tuple.__getitem__(other, 0)
         return tuple.__getitem__(self, 0).__eq__(other)
 
+    # pyre-fixme[2]: Parameter must be annotated.
     def __ne__(self, other) -> bool:
         return not self == other
 
@@ -79,6 +96,8 @@ class frozendict(Mapping, tuple, DoNotFreeze):
         return hash(frozenset(self.items()))  # Future: more efficient hash?
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def freeze(obj, *, _memo=None, **kwargs):
     # Don't bother memoizing primitive types
     if isinstance(obj, (bytes, Enum, float, int, str, type(None))):
@@ -105,6 +124,7 @@ def freeze(obj, *, _memo=None, **kwargs):
             and hasattr(obj, "_fields")
             and hasattr(obj, "_make")
         ):
+            # pyre-fixme[16]: `tuple` has no attribute `_make`.
             frozen = obj._make(freeze(i, _memo=_memo) for i in obj)
         elif isinstance(obj, (list, tuple)):
             frozen = tuple(freeze(i, _memo=_memo) for i in obj)

@@ -12,6 +12,7 @@ from typing import Iterable
 from antlir.unshare import Unshare
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 logger = logging.getLogger(__name__)
 
 
@@ -50,6 +51,7 @@ class VmTap(object):
     uid: int
     gid: int
 
+    # pyre-fixme[3]: Return type must be annotated.
     def __post_init__(self):
         self._ensure_dev_net_tun()
         logger.debug(f"creating tap device {TAPDEV} in namespace")

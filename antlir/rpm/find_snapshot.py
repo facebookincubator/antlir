@@ -34,5 +34,6 @@ def mangle_target(normalized_target: str, min_abbrev: int = 15) -> str:
 
 
 # KEEP IN SYNC with its copy in `bzl/snapshot_install_dir.bzl`
+# pyre-fixme[3]: Return type must be annotated.
 def snapshot_install_dir(snapshot: str):
     return RPM_SNAPSHOT_BASE_DIR / mangle_target(snapshot)

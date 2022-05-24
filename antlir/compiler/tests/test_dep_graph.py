@@ -57,12 +57,16 @@ _FILE1 = "/etc/passwd"
 _FILE2 = "/etc/group"
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _fs_root_phases(item, layer_target=None):
     return [
         (FilesystemRootItem.get_phase_builder, (item,)),
     ]
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _build_req_prov(path, req_items, prov_items, prov_t=None):
     prov_t = ProvidesDirectory if prov_t is None else prov_t
     return ItemReqsProvs(
@@ -233,9 +237,11 @@ class TestImageItem(ImageItem):
         reqs = tuple(reqs) if reqs else ()
         super().__init__(from_target="t", provs=provs, reqs=reqs)
 
+    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         yield from self.provs
 
+    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         yield from self.reqs
 
@@ -1185,6 +1191,7 @@ class DependencyGraphTestCase(DepGraphTestBase):
 
 
 class DependencyOrderItemsTestCase(DepGraphTestBase):
+    # pyre-fixme[2]: Parameter must be annotated.
     def assert_before(self, res, x, y) -> None:
         self.assertLess(res.index(x), res.index(y))
 
@@ -1232,9 +1239,15 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
                 )
 
     def test_cycle_detection(self) -> None:
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def requires_provides_directory_class(requires_dir, provides_dirs):
             return TestImageItem(
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+                #  `List[RequireDirectory]`.
                 reqs=[RequireDirectory(path=Path(requires_dir))],
+                # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]` but got
+                #  `List[ProvidesDirectory]`.
                 provs=[ProvidesDirectory(path=Path(d)) for d in provides_dirs],
             )
 
@@ -1305,9 +1318,15 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         )
 
     def test_parallel_items(self) -> None:
+        # pyre-fixme[3]: Return type must be annotated.
+        # pyre-fixme[2]: Parameter must be annotated.
         def requires_provides_directory_class(requires_dir, provides_dirs):
             return TestImageItem(
+                # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
+                #  `List[RequireDirectory]`.
                 reqs=[RequireDirectory(path=Path(requires_dir))],
+                # pyre-fixme[6]: For 2nd param expected `Iterator[ItemProv]` but got
+                #  `List[ProvidesDirectory]`.
                 provs=[ProvidesDirectory(path=Path(d)) for d in provides_dirs],
             )
 

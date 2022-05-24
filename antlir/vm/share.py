@@ -17,6 +17,7 @@ from antlir.fs_utils import Path, temp_dir
 from antlir.vm.bzl.vm import disk_interface_t
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 __next_tag_index = 0
@@ -193,6 +194,8 @@ Options=subvol={self.subvol},{ro_rw}
         )
 
 
+# pyre-fixme[24]: Generic type `list` expects 1 type parameter, use `typing.List` to
+#  avoid runtime subscripting errors.
 def _run_qemu_img(qemu_img: Path, args: List) -> None:
     cmd = [qemu_img, *args]
     log.debug(f"Running qemu-img: {cmd}")

@@ -23,6 +23,7 @@ class Pluggable:
     """
 
     # pyre-fixme[9]: plugin_kind has type `str`; used as `None`.
+    # pyre-fixme[2]: Parameter must be annotated.
     def __init_subclass__(cls, plugin_kind: str = None, **kwargs) -> None:
         super().__init_subclass__(**kwargs)
         # We're in the base of this family of plugins, set it up.
@@ -30,6 +31,7 @@ class Pluggable:
             assert plugin_kind is None
             # pyre-fixme[11]: Annotation `cls` is not defined as a type.
             cls._pluggable_kind_to_cls: Mapping[str, cls] = {}
+            # pyre-fixme[4]: Attribute must be annotated.
             cls._pluggable_base = cls
         else:  # Register plugin class on its base
             d = cls._pluggable_base._pluggable_kind_to_cls
@@ -38,6 +40,7 @@ class Pluggable:
                     f"{cls} and {d[plugin_kind]} have the same plugin kind"
                 )
             d[plugin_kind] = cls
+            # pyre-fixme[4]: Attribute must be annotated.
             cls._pluggable_kind = plugin_kind
 
     @classmethod
@@ -47,6 +50,7 @@ class Pluggable:
         return cls.make(**json_cfg)
 
     @classmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def make(cls, kind: str, **kwargs) -> "Pluggable":
         return cls._pluggable_base._pluggable_kind_to_cls[kind](**kwargs)
 
@@ -58,6 +62,7 @@ class Pluggable:
         return json_cfg
 
     @classmethod
+    # pyre-fixme[2]: Parameter must be annotated.
     def add_argparse_arg(cls, parser, *args, help: str = "", **kwargs) -> None:
         plugins = "; ".join(
             f"""`{n}` taking {', '.join(

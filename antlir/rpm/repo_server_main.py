@@ -22,6 +22,8 @@ up their allocated resources.
 import signal
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
 def _sig_raise_keyboard_interrupt(signum, stackframe):
     raise KeyboardInterrupt
 

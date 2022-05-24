@@ -41,7 +41,9 @@ from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 from urllib3.exceptions import ProtocolError  # import a name in case it changes
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 RPM_MAX_RETRY_S = [2**i for i in range(9)]  # 512 sec ==  8m32s
+# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -181,6 +183,7 @@ def _handle_rpm(
     rpm_table: RpmTable,
     all_snapshot_universes: Set[str],
     cfg: DownloadConfig,
+    # pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
     log_sample: Callable,
 ) -> Tuple[Rpm, MaybeStorageID, float]:
     """Fetches the specified RPM from the repo DB and downloads it if needed.
@@ -247,6 +250,7 @@ def _download_rpms(
     rpms: Iterable[Rpm],
     all_snapshot_universes: FrozenSet[str],
     cfg: DownloadConfig,
+    # pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
     log_sample: Callable,
 ) -> Tuple[Dict[MaybeStorageID, Rpm], float]:
     storage_id_to_rpm = {}
@@ -337,6 +341,7 @@ def gen_rpms_from_repodatas(
     cfg: DownloadConfig,
     all_snapshot_universes: FrozenSet[str],
     *,
+    # pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
     log_sample: Callable = lambda *_, **__: None,
 ) -> Iterator[DownloadResult]:
     for res in repodata_results:

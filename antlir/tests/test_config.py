@@ -20,6 +20,8 @@ from antlir.fs_utils import Path, temp_dir
 
 
 class RepoConfigTestCase(unittest.TestCase):
+    # pyre-fixme[3]: Return type must be annotated.
+    # pyre-fixme[2]: Parameter must be annotated.
     def _test_repo_config(self, **kwargs):
         # These are just hand constructed values that have no
         # real meaning outside of the context of this test case.
@@ -64,6 +66,7 @@ class RepoConfigTestCase(unittest.TestCase):
             self.fail("vcs_revision is not a hex integer")
 
     @unittest.mock.patch("antlir.config.repo_config_data")
+    # pyre-fixme[2]: Parameter must be annotated.
     def test_repo_config_artifacts_require_repo_false(self, mock_data) -> None:
         # Test case for loading the config and finding the repo root
         # where the artifacts don't require the repo.  This is a possible
@@ -87,7 +90,9 @@ class RepoConfigTestCase(unittest.TestCase):
 
     @unittest.mock.patch("antlir.config.repo_config_data")
     def test_repo_config_fail_artifacts_require_repo_true(
-        self, mock_data
+        self,
+        # pyre-fixme[2]: Parameter must be annotated.
+        mock_data,
     ) -> None:
         # Test the case where the artifacts require the repo, but we can't
         # find it.
@@ -105,7 +110,11 @@ class RepoConfigTestCase(unittest.TestCase):
     @unittest.mock.patch("antlir.config.find_artifacts_dir")
     @unittest.mock.patch("antlir.config.repo_config_data")
     def test_repo_config_host_mounts(
-        self, mock_data, artifacts_dir_mock
+        self,
+        # pyre-fixme[2]: Parameter must be annotated.
+        mock_data,
+        # pyre-fixme[2]: Parameter must be annotated.
+        artifacts_dir_mock,
     ) -> None:
         # Force the value of `artifacts_require_repo` to True so we can force
         # looking for the artifacts_dir

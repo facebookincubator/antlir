@@ -102,6 +102,7 @@ if __name__ == "__main__":
         action="store_true",
         help="Print the current revision timestamp in ISO8601 format.",
     )
+    # pyre-fixme[5]: Global expression must be annotated.
     opts = parser.parse_args(sys.argv[1:])
 
     if opts.rev:

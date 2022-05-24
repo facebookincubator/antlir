@@ -11,6 +11,7 @@ import sys
 import time
 
 
+# pyre-fixme[2]: Parameter must be annotated.
 def b64(i) -> bytes:
     return base64.urlsafe_b64encode(i.to_bytes(16, "big").lstrip(b"\0")).strip(
         b"="
