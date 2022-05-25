@@ -10,6 +10,7 @@ use structopt::StructOpt;
 use strum_macros::EnumIter;
 
 use apply_disk_image::apply_disk_image;
+use disk_wipe::lazy_wipe;
 use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
 use get_host_config::get_host_config;
 use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
@@ -159,7 +160,7 @@ impl Bootloader {
     async fn boot(&self) -> Result<()> {
         // Select root disk
         let disk_finder = SingleDiskFinder::new();
-        let disk = disk_finder
+        let mut disk = disk_finder
             .get_root_device()
             .context("Failed to find root device to write root_disk_package to")?
             .dev_node()
@@ -167,6 +168,12 @@ impl Bootloader {
 
         self.send_event(FoundRootDisk { path: &disk }).await;
         info!(self.log, "Found root disk {:?}", disk);
+
+        // Clear any existing partition information
+        let rwdisk = disk
+            .open_rw_file()
+            .context("Failed to open root disk devnode")?;
+        lazy_wipe(rwdisk).context("Failed to wipe the root disk")?;
 
         // Download and apply disk image
         let summary = apply_disk_image(
