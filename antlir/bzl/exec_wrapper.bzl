@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
+load("//antlir/bzl:oss_shim.bzl", "antlir_buck_env", "is_buck2")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
 def build_exec_wrapper(
@@ -94,6 +94,7 @@ cat >> "$TMP/out" << {EOF}
 {unquoted_heredoc_preamble}
 {EOF}
 cat >> "$TMP/out" << '{EOF}'
+export ANTLIR_BUCK="{antlir_buck}"
 {literal_preamble}
 exec "$REPO_ROOT/"$(exe_target {runnable}){maybe_quoted_path_in_output} {args}
 {EOF}
@@ -109,4 +110,5 @@ mv "$TMP/out" "$OUT"
             "/" + shell.quote(path_in_output)
         ) if path_in_output else "",
         args = raw_shell_args,
+        antlir_buck = antlir_buck_env(),
     )
