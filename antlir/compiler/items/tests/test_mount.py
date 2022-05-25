@@ -6,8 +6,8 @@
 
 import json
 import os
-import sys
 import tempfile
+from typing import Any, Dict, List, Optional, Union
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
@@ -19,8 +19,7 @@ from antlir.compiler.requires_provides import (
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import antlir_dep
 from antlir.fs_utils import Path, temp_dir
-from antlir.subvol_utils import TempSubvolumes
-from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.subvol_utils import Subvol, TempSubvolumes
 from antlir.tests.subvol_helpers import get_meta_dir_contents
 
 from ..make_subvol import FilesystemRootItem, ParentLayerItem
@@ -40,7 +39,9 @@ from .common import (
 )
 
 
-def _mount_item_new(from_target, mount_config):
+def _mount_item_new(
+    from_target: str, mount_config: Dict[str, Any]
+) -> MountItem:
     return MountItem(
         layer_opts=DUMMY_LAYER_OPTS._replace(
             allowed_host_mount_targets=["//dummy/host_mounts:t"]
@@ -53,7 +54,8 @@ def _mount_item_new(from_target, mount_config):
 
 
 class MountItemTestCase(BaseItemTestCase):
-    def test_mount_item_file_from_host(self):
+    @with_mocked_temp_volume_dir
+    def test_mount_item_file_from_host(self) -> None:
         mount_config = {
             "is_directory": False,
             "build_source": {"type": "host", "source": "/dev/null"},
@@ -69,7 +71,7 @@ class MountItemTestCase(BaseItemTestCase):
 
         mount_item = _mount_item_new("//dummy/host_mounts:t", mount_config)
 
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("mounter")
             mount_item.build(
                 subvol,
@@ -139,8 +141,13 @@ class MountItemTestCase(BaseItemTestCase):
                 )
 
     def _make_mount_item(
-        self, *, mountpoint, target, mount_config, from_target="t"
-    ):
+        self,
+        *,
+        mountpoint: Optional[str],
+        target: str,
+        mount_config: Dict[str, Any],
+        from_target: str = "t",
+    ) -> MountItem:
         "Ensures that `target` and `mount_config` make the same item."
         item_from_file = MountItem(
             layer_opts=DUMMY_LAYER_OPTS,
@@ -161,9 +168,9 @@ class MountItemTestCase(BaseItemTestCase):
         )
         return item_from_file
 
-    def test_mount_item_default_mountpoint(self):
+    def test_mount_item_default_mountpoint(self) -> None:
         with tempfile.TemporaryDirectory() as mnt_target:
-            mount_config = {
+            mount_config: Dict[str, Any] = {
                 "is_directory": True,
                 "build_source": {"type": "layer", "source": "//fake:path"},
             }
@@ -193,7 +200,7 @@ class MountItemTestCase(BaseItemTestCase):
                 "potato",
             )
 
-    def _check_subvol_mounts_meow(self, subvol):
+    def _check_subvol_mounts_meow(self, subvol: Subvol) -> None:
         mount = [
             "(Dir)",
             {
@@ -229,13 +236,16 @@ class MountItemTestCase(BaseItemTestCase):
                 ]
             },
         ]
-        expected_subvol = [
+        expected_subvol: List[Union[Dict[str, Any], str]] = [
             "(Dir)",
             {
                 "meow": ["(Dir)", {}],
                 ".meta": get_meta_dir_contents(subvol),
             },
         ]
+        # pyre-fixme[6]: In call `dict.__setitem__`, for 2nd positional only
+        # parameter expected `Union[Dict[str, str], bool]` but got `str`.
+        # pyre-ignore[16]: `str` has no attribute `__setitem__`.
         expected_subvol[1][".meta"][1]["private"][1]["mount"] = mount
         self.assertEqual(
             expected_subvol,
@@ -255,7 +265,7 @@ class MountItemTestCase(BaseItemTestCase):
                 ),
             )
 
-    def _write_layer_json_into(self, subvol, out_dir):
+    def _write_layer_json_into(self, subvol: Subvol, out_dir: str) -> Path:
         subvol_path = subvol.path()
         # subvolumes_dir is the grandparent of the subvol by convention
         subvolumes_dir = subvol_path.dirname().dirname()
@@ -265,10 +275,9 @@ class MountItemTestCase(BaseItemTestCase):
             ).to_json_file(f)
         return subvolumes_dir
 
-    def test_mount_item(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:
+    @with_mocked_temp_volume_dir
+    def test_mount_item(self) -> None:
+        with TempSubvolumes() as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:  # noqa: E501
             runtime_source = {"so": "me", "arbitrary": {"j": "son"}}
             mount_config = {
                 "is_directory": True,
@@ -347,10 +356,8 @@ class MountItemTestCase(BaseItemTestCase):
             # The child has the same mount, and the same metadata
             self._check_subvol_mounts_meow(mounter_child)
 
-    def test_parse_mount_meta(self):
-        test_subvol = layer_resource_subvol(
-            __package__, "small-layer-with-mounts"
-        )
+    def test_parse_mount_meta(self) -> None:
+        test_subvol = Subvol("small-layer-with-mounts", already_exists=True)
 
         expected_mounts = [
             Mount(
@@ -388,8 +395,9 @@ class MountItemTestCase(BaseItemTestCase):
         )
 
         # Test a layer that has no mounts
-        test_subvol_no_mounts = layer_resource_subvol(
-            __package__, "test-layer-without-mounts"
+        test_subvol_no_mounts = Subvol(
+            "test-layer-without-mounts",
+            already_exists=True,
         )
 
         self.assertEqual(
