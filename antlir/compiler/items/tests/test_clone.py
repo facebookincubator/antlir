@@ -23,9 +23,6 @@ from ..common import image_source_item
 from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, pop_path, render_subvol
 
 
-_SRC_SUBVOL = layer_resource_subvol(__package__, "src-layer")
-
-
 class InstallFileItemTestCase(BaseItemTestCase):
     def _clone_item(
         self,
@@ -36,7 +33,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         pre_existing_dest=False,
         subvol=None,
     ):
-        subvol = subvol or _SRC_SUBVOL
+        subvol = subvol or layer_resource_subvol(__package__, "src-layer")
         # The dummy object works here because `subvolumes_dir` of `None`
         # runs `artifacts_dir` internally, while our "prod" path uses the
         # already-computed value.

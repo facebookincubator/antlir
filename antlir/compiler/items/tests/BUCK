@@ -30,6 +30,7 @@ image_python_unittest(
         # operating and therefore needs the "real" build volume
         # for creating tmp subvols.
         "internal_only_bind_artifacts_dir_rw": True,
+        "internal_only_bind_repo_ro": True,
     },
     hostname = BZL_CONST.hostname_for_compiler_in_ba,
     layer = ":test_compiler_item_layer",
