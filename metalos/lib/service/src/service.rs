@@ -120,12 +120,18 @@ impl ServiceInstance {
         let systemd_unit = systemd_parser::parse_string(&file_content)?;
         if let Some(&DirectiveEntry::Solo(ref u)) = systemd_unit.lookup_by_key("User") {
             if let Some(user) = u.value() {
-                uid = User::from_name(user).unwrap().unwrap().uid;
+                uid = User::from_name(user)
+                    .with_context(|| format!("user {} not found", user))?
+                    .with_context(|| format!("can't find uid for user {}", user))?
+                    .uid;
             }
         }
         if let Some(&DirectiveEntry::Solo(ref g)) = systemd_unit.lookup_by_key("Group") {
             if let Some(group) = g.value() {
-                gid = Group::from_name(group).unwrap().unwrap().gid;
+                gid = Group::from_name(group)
+                    .with_context(|| format!("group {} not found", group))?
+                    .with_context(|| format!("can't find gid for group {}", group))?
+                    .gid;
             }
         }
         chown(self.paths().cache(), Some(uid), Some(gid))?;
