@@ -30,6 +30,7 @@ class ImagePythonUnittestTest(unittest.TestCase):
         env_allowlist = {
             # Antlir internals
             "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP",
+            "ANTLIR_BUCK",
             # Session basics
             "HOME",
             "LOGNAME",
