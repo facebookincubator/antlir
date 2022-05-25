@@ -19,10 +19,12 @@ import enum
 import hashlib
 import inspect
 import os
+import socket
 import subprocess
 import tempfile
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
+from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
 from antlir.config import repo_config
 from antlir.fs_utils import META_BUILD_DIR, META_DIR, META_FLAVOR_FILE, Path
@@ -485,3 +487,9 @@ def image_source_item(item_cls, exit_stack, layer_opts: LayerOpts):
     return lambda **kwargs: _make_image_source_item(
         item_cls, exit_stack, layer_opts, **kwargs
     )
+
+
+def assert_running_inside_ba() -> None:  # pragma: no cover
+    assert (
+        socket.gethostname() == hostname_for_compiler_in_ba()
+    ), "This compiler item expects to be compiled inside a BA."

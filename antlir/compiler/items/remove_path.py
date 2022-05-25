@@ -13,6 +13,7 @@ from antlir.errors import UserError
 from antlir.subvol_utils import Subvol
 
 from .common import (
+    assert_running_inside_ba,
     ImageItem,
     is_path_protected,
     LayerOpts,
@@ -85,6 +86,7 @@ class RemovePathItem(remove_paths_t, ImageItem):
                         f"Path to be removed does not exist: {item.path}"
                     )
 
+                assert_running_inside_ba()
                 if os.path.isdir(path) and not os.path.islink(path):
                     shutil.rmtree(path)
                 else:
