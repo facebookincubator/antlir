@@ -26,9 +26,20 @@ struct ProvisioningConfig {
   // This is just a historical record of what the box was originally imaged using.
   // The initrd listed here won't be used again so this field has no effect on automation
   5: packages.Package imaging_initrd;
+  6: string event_backend_base_uri;
+  7: EventBackend event_backend;
+} (rust.exhaustive)
+
+union EventSource {
+  1: i32 asset_id;
+  2: string mac;
+}
+
+struct EventBackend {
   // The base URI for where to send events. See lib/send_events/send_events.rs. HttpSink
   // has documentation of the format.
-  6: string event_backend_base_uri;
+  1: string base_uri;
+  2: EventSource source;
 } (rust.exhaustive)
 
 // HostIdentity is the main entrypoint to the Starlark config generator runtime.

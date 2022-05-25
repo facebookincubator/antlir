@@ -59,6 +59,7 @@ pub(super) async fn cmd_send_event(log: Logger, opts: Opts) -> Result<()> {
         .context("No host config available")?;
 
     let sink = HttpSink::new(
+        #[allow(deprecated)]
         config
             .provisioning_config
             .event_backend_base_uri
