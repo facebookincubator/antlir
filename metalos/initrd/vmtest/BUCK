@@ -4,9 +4,8 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:systemd.bzl", "systemd")
-load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
@@ -15,60 +14,12 @@ load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
-load("//antlir/vm/bzl:constants.bzl", "VM_GUEST_MAC_ADDRESS")
-load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/disk:disk.bzl", "disk")
 load("//metalos/host_configs/tests:host.bzl", "host_config")
 load(":switch_root.bzl", "switch_root_test")
 
 TEST_KERNEL = kernels.default
-
-image.layer(
-    name = "deps",
-    parent_layer = "//metalos/os:metalos",
-    features = [
-        image.rpms_install([
-            "dropbear",
-        ]),
-    ],
-    visibility = ["//metalos/initrd/..."],
-)
-
-binaries = extract.extract(
-    binaries = [
-        "/usr/sbin/dropbear",
-        "/usr/bin/dropbearkey",
-        # this is unlikely to be useful in the base initrd, so keep it here in
-        # vmtest-land unless anything changes
-        "/usr/bin/systemd-run",
-    ],
-    dest = "/",
-    source = ":deps",
-)
-
-ssh_server = [
-    image.clone(":deps", "/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/dropbear.service"),
-    image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
-    feature.install("dropbear.tmpfiles.conf", "/usr/lib/tmpfiles.d/dropbear.conf"),
-    image.ensure_dirs_exist("/etc/sysconfig"),
-    feature.install("dropbear", "/etc/sysconfig/dropbear"),
-    systemd.install_unit("dropbear-keygen.service"),
-    systemd.enable_unit(
-        "dropbear.service",
-        target = "initrd.target",
-    ),
-    # vmtest synchronizes on sshd.service, so alias it to dropbear
-    feature.ensure_file_symlink("/usr/lib/systemd/system/dropbear.service", "/usr/lib/systemd/system/sshd.service"),
-    image.ensure_dirs_exist("/root"),
-    ssh.test_only_login(),
-]
-
-par_support = feature.install(
-    "bash",
-    "/usr/bin/bash",
-    mode = "a+rx",
-)
 
 host_config(
     name = "host-config",
@@ -160,84 +111,6 @@ test_kernel_modules = [
     ),
 ]
 
-# Generic features that are needed to support vmtests that _stay_ in the
-# initrd, meant to test the initrd itself.
-image.layer(
-    name = "initrd-vmtest",
-    parent_layer = "//metalos/initrd:initrd",
-    features = [
-        # shared features straight from vmtest
-        console.autologin(),
-        generator.mounts(),
-        feature.remove(
-            "/etc/resolv.conf",
-            must_exist = False,
-        ),
-        network.host(),
-        par_support,
-        ssh_server,
-        notify.install(),
-        # initrd-specific things below:
-        binaries,
-        # Some fixups for vmtest features in the limited initrd environment
-        feature.install("udev.rules", "/usr/lib/udev/rules.d/50-vmtest.rules"),
-        systemd.install_dropin("after-network.conf", "sshd.service"),
-        # don't use the full test-kernel initrd, but we do need the modules
-        test_kernel_modules,
-        # We want to stay in the initrd, so mask out the units that switch-root
-        # into the base os
-        image.ensure_dirs_exist("/etc/systemd/system"),
-        systemd.mask_units([
-            "initrd-cleanup.service",
-            "initrd-parse-etc.service",
-            "initrd-switch-root.service",
-        ]),
-    ],
-    flavor = REPO_CFG.antlir_linux_flavor,
-)
-
-package.new(
-    name = "vmtest-initrd.cpio.gz",
-    format = "cpio.gz",
-    layer = ":initrd-vmtest",
-    visibility = [],
-)
-
-vm.rust_unittest(
-    name = "boots",
-    vm_opts = vm.types.opts.new(
-        initrd = ":vmtest-initrd.cpio.gz",
-        kernel = TEST_KERNEL,
-        append = [
-            "macaddress={}".format(VM_GUEST_MAC_ADDRESS),
-        ],
-    ),
-    srcs = ["test_boots.rs"],
-    crate_root = "test_boots.rs",
-)
-
-vm.rust_unittest(
-    name = "slaac",
-    vm_opts = vm.types.opts.new(
-        initrd = ":vmtest-initrd.cpio.gz",
-        kernel = TEST_KERNEL,
-        append = [
-            "macaddress={}".format(VM_GUEST_MAC_ADDRESS),
-        ],
-    ),
-    srcs = ["test_slaac.rs"],
-    crate_root = "test_slaac.rs",
-    deps = [
-        third_party.library(
-            name,
-            platform = "rust",
-        )
-        for name in [
-            "nix",
-        ]
-    ],
-)
-
 # This needs to be as close as possible the prod initrd, with only the bare
 # minimum of extra features to get baseline functionality in vmtest. Tests that
 # exercise this initrd are run in the post-switch-root image, so this can be as
@@ -251,7 +124,6 @@ image.layer(
         # don't use the full test-kernel initrd, but we do need the modules
         test_kernel_modules,
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 package.new(
@@ -277,7 +149,6 @@ image.layer(
         # workload.
         systemd.enable_unit("sshd.service", "workload.target"),
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
 )
 
 package.new(
