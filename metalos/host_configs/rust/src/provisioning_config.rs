@@ -52,6 +52,10 @@ pub struct HostIdentity {
 pub struct Network {
     pub dns: DNS,
     pub interfaces: Vec<NetworkInterface>,
+    /// This network interface absolutely must be up for the network to be
+    /// considered ready, and is additionally used to setup the default route in
+    /// the kernel's routing table
+    pub primary_interface: NetworkInterface,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
@@ -67,4 +71,7 @@ pub struct NetworkInterface {
     pub mac: String,
     pub addrs: Vec<String>,
     pub name: Option<String>,
+    /// This interface is considered necessary and the network will not be
+    /// considered up until this interface is configured and up
+    pub essential: bool,
 }
