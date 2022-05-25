@@ -1,0 +1,10 @@
+# @noautodeps
+
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:image.bzl", "image")
+
+# centos7 image with test directory
+image.layer(
+    name = "test_image",
+    parent_layer = REPO_CFG.flavor_to_config["centos7"].build_appliance,
+)
