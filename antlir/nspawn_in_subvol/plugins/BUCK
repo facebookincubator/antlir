@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
@@ -70,6 +72,7 @@ python_library(
         "//antlir:common",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
+        "//antlir/bzl:proxy_server_config.shape-python",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:netns_socket",
         "//antlir/nspawn_in_subvol:plugin_hooks",

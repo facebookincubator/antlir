@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:proxy_server_config.shape.bzl", "proxy_server_config_t")
 load("//antlir/bzl:shape.bzl", "shape")
 
 # Forward container runtime configuration to the Python implementation.
@@ -27,8 +28,7 @@ container_opts_t = shape.shape(
     attach_antlir_dir = shape.field(bool, default = False),
 
     # Run proxy
-    run_proxy_server = shape.field(bool, default = False),
-    # @oss-disable: fbpkg_db_path = shape.field(shape.path, optional = True), 
+    proxy_server_config = shape.field(proxy_server_config_t, optional = True),
 
     # Do not use this, it is only exposed so that certain interal
     # unittests that need to create devices can run.

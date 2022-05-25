@@ -16,12 +16,14 @@ built by the `rpm_repo_snapshot()` target, and installed via
 
 Also starts FBPKG proxy server if needed.
 """
+import logging
 import textwrap
 from contextlib import contextmanager, ExitStack
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple
 
+from antlir.bzl.proxy_server_config import proxy_server_config_t
 from antlir.common import get_logger, pipe
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
@@ -41,9 +43,7 @@ from .launch_proxy_server import (
 )
 from .launch_repo_servers import launch_repo_servers_for_netns
 
-
-# pyre-fixme[5]: Global expression must be annotated.
-log = get_logger()
+log: logging.Logger = get_logger()
 
 # This is a temporary mountpoint for the host's `/proc` inside the
 # container.  It is unmounted and removed before the user command starts.
@@ -167,17 +167,19 @@ class RepoServers(NspawnPlugin):
     def __init__(
         self,
         serve_rpm_snapshots: Iterable[Path],
-        run_proxy_server: bool = False,
-        fbpkg_db_path: Optional[Path] = None,
+        proxy_server_config: Optional[proxy_server_config_t] = None,
     ) -> None:
         self._serve_rpm_snapshots = serve_rpm_snapshots
-        self._run_proxy_server = run_proxy_server
-        self._fbpkg_db_path = fbpkg_db_path
+        self._run_proxy_server: bool = False
+        self._fbpkg_db_path: Optional[Path] = None
+        if proxy_server_config:
+            self._run_proxy_server = True
+            if not proxy_server_config.fbpkg_db_path.path:  # pragma: no cover
+                raise RuntimeError(
+                    "fbpkg_db_path is requiered to run proxy_server"
+                )
 
-        if (
-            self._run_proxy_server and not self._fbpkg_db_path
-        ):  # pragma: no cover
-            raise RuntimeError("fbpkg_db_path is requiered to run proxy_server")
+            self._fbpkg_db_path = proxy_server_config.fbpkg_db_path.path
 
     @staticmethod
     def _ns_sockets_needed(
@@ -307,8 +309,6 @@ class RepoServers(NspawnPlugin):
                 stack.enter_context(
                     launch_proxy_server_for_netns(
                         ns_socket=ns_sockets_pool.pop(),
-                        # pyre-fixme[6]: For seconde parameter expected Path
-                        # but got Optional[Path]
                         fbpkg_db_path=self._fbpkg_db_path,
                     )
                 )

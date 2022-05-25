@@ -8,7 +8,7 @@ import logging
 import socket
 import subprocess
 from contextlib import contextmanager, ExitStack
-from typing import Generator
+from typing import Generator, Optional
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path
@@ -18,14 +18,15 @@ from .server_launcher import ServerLauncher
 PROXY_SERVER_PORT = 45063
 
 
-# pyre-fixme[5]: Global expression must be annotated.
-log = get_logger()
+log: logging.Logger = get_logger()
 # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 _mockable_popen_for_repo_server = subprocess.Popen
 
 
 class ProxyServer(ServerLauncher):
-    def __init__(self, sock: socket.socket, fbpkg_db_path: Path) -> None:
+    def __init__(
+        self, sock: socket.socket, fbpkg_db_path: Optional[Path]
+    ) -> None:
         bin_path = ""
         with Path.resource(__package__, "proxy-server", exe=True) as p:
             bin_path = p
@@ -51,7 +52,7 @@ class ProxyServer(ServerLauncher):
 
 @contextmanager
 def launch_proxy_server_for_netns(
-    *, ns_socket: socket.socket, fbpkg_db_path: Path
+    *, ns_socket: socket.socket, fbpkg_db_path: Optional[Path]
 ) -> Generator[ProxyServer, None, None]:
     """
     Yields ProxyServer object where the server will listen.

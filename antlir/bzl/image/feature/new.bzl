@@ -333,6 +333,7 @@ def feature_new(
     # this will fail (128KB on the Linux system I checked).
     #
     # TODO: Print friendlier error messages on user error.
+
     private_do_not_use_feature_json_genrule(
         name = name,
         deps = feature.deps,

@@ -32,12 +32,12 @@ from typing import (
     Union,
 )
 
+from antlir.bzl.proxy_server_config import proxy_server_config_t
 from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import MehStr, Path
 from antlir.subvol_utils import find_subvolume_on_disk
-
 
 _DEFAULT_LOGIN_SHELL = ["/bin/bash", "--login"]
 # pyre-fixme[5]: Global expression must be annotated.
@@ -455,6 +455,7 @@ def _extract_opts_from_dict(
         else:
             # pyre-fixme[16]: `Mapping` has no attribute `pop`.
             extra_fields[k] = dct.pop(k)
+
     return ctor(
         **{
             k: (
@@ -499,12 +500,10 @@ class NspawnPluginArgs(NamedTuple):
     shadow_paths: Iterable[Tuple[Path, Path]] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
     attach_antlir_dir: AttachAntlirDirMode = AttachAntlirDirMode.OFF
-    run_proxy_server: bool = False
-    fbpkg_db_path: Path = Path("")
+    proxy_server_config: Optional[proxy_server_config_t] = None
 
 
-# pyre-fixme[3]: Return type must be annotated.
-def _parser_add_plugin_args(parser: argparse.ArgumentParser):
+def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
     "Keep in sync with `NspawnPluginArgs`"
     parser.add_argument(
         "--no-shadow-proxied-binaries",
@@ -677,6 +676,13 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     del args.layer_path
     args.layer = find_built_subvol(layer_path)
     args.subvolume_on_disk = find_subvolume_on_disk(layer_path)
+
+    proxy_server_config = (
+        proxy_server_config_t(fbpkg_db_path={"path": args.fbpkg_db_path})
+        if args.run_proxy_server
+        else None
+    )
+
     return _extract_opts_from_dict(
         _new_nspawn_cli_args,
         _NspawnCLIArgs._fields,
@@ -694,6 +700,9 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
             ),
         ),
         plugin_args=_extract_opts_from_dict(
-            NspawnPluginArgs, NspawnPluginArgs._fields, args.__dict__
+            NspawnPluginArgs,
+            NspawnPluginArgs._fields,
+            args.__dict__,
+            proxy_server_config=proxy_server_config,
         ),
     )

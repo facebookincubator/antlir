@@ -121,7 +121,7 @@ class ProxyServerTestCase(NspawnTestBase):
                     "--",
                     "/bin/sh",
                     "-c",
-                    "curl -X GET -I http://localhost:45063/blah 2>/dev/null \
+                    "curl -X GET -I http://localhost:45063/blah -m 3 2>/dev/null \
                     | head -1 > /proc/self/fd/3",
                 ],
             )

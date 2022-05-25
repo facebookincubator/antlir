@@ -12,20 +12,15 @@ load(":structs.bzl", "structs")
 def _new_container_opts_t(
         # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.
         serve_rpm_snapshots = (),
-        run_proxy_server = False,
-        fbpkg_db_path = None,
+        proxy_server_config = None,
         **kwargs):
-    # @oss-disable: if run_proxy_server and fbpkg_db_path == None: 
-        # @oss-disable: fbpkg_db_path = "$(location //bot_generated/antlir/fbpkg/db:main-db)/main_db" 
-
     return shape.new(
         container_opts_t,
         serve_rpm_snapshots = [
             snapshot_install_dir(s)
             for s in serve_rpm_snapshots
         ],
-        run_proxy_server = run_proxy_server,
-        # @oss-disable: fbpkg_db_path = fbpkg_db_path, 
+        proxy_server_config = proxy_server_config,
         **kwargs
     )
 

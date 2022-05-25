@@ -147,11 +147,10 @@ def repo_nspawn_plugins(
                 ),
                 RepoServers(
                     serve_rpm_snapshots,
-                    plugin_args.run_proxy_server,
-                    plugin_args.fbpkg_db_path,
+                    plugin_args.proxy_server_config,
                 ),
             ]
-            if serve_rpm_snapshots or plugin_args.run_proxy_server
+            if serve_rpm_snapshots or plugin_args.proxy_server_config
             else ()
         ),
     )

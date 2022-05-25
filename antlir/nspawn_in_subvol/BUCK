@@ -15,6 +15,7 @@ python_library(
         "//antlir:cli",
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
+        "//antlir/bzl:proxy_server_config.shape-python",
     ],
 )
 
