@@ -83,7 +83,7 @@ host_config(
                 "override_uri": "http://vmtest-host:8000/package/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef",
             },
             "kernel": {
-                "cmdline": "console=ttyS0,57600 systemd.unified_cgroup_hierarchy=1 selinux=0 cgroup_no_v1=all",
+                "cmdline": "console=ttyS0,57600 systemd.unified_cgroup_hierarchy=1 selinux=0 cgroup_no_v1=all root=LABEL=/ macaddress=00:00:00:00:00:01",
                 "pkg": {
                     "format": 1,
                     "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},

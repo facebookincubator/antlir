@@ -72,30 +72,12 @@ async fn real_main(log: Logger) -> Result<()> {
         .context("while committing merged HostConfig")?;
     info!(log, "marked merged HostConfig as committed");
 
-    // TODO(T121220867) directly indicate the primary nic in the HostConfig
-    let interfaces: HashMap<_, _> = host_config
-        .provisioning_config
-        .identity
-        .network
-        .interfaces
-        .iter()
-        .filter_map(|iface| {
-            iface
-                .name
-                .as_ref()
-                .map(|name| (name.clone(), iface.clone()))
-        })
-        .collect();
-    let primary_interface = interfaces
-        .get("eth0")
-        .context("bootloader currently requires eth0 to exist in the HostConfig")?;
-
     let kexec_info = KexecInfo::new_from_packages(
         &host_config.boot_config.kernel,
         &host_config.boot_config.initrd,
         format!(
-            "{} root=LABEL=/ metalos.bootloader=1 macaddress={}",
-            host_config.boot_config.kernel.cmdline, primary_interface.mac,
+            "{} metalos.bootloader=1",
+            host_config.boot_config.kernel.cmdline,
         ),
     )
     .context("while building KexecInfo")?;
