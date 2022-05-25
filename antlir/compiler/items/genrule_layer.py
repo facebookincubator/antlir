@@ -83,6 +83,7 @@ class GenruleLayerItem(genrule_layer_t):
                 if c_opts.attach_antlir_dir
                 else None,
             )
+
             run_nspawn(  # NB: stdout redirects to stderr by default
                 opts,
                 PopenArgs(),
@@ -92,8 +93,7 @@ class GenruleLayerItem(genrule_layer_t):
                         serve_rpm_snapshots=c_opts.serve_rpm_snapshots,
                         shadow_proxied_binaries=c_opts.shadow_proxied_binaries,
                         shadow_paths=c_opts.shadow_paths,
-                        run_proxy_server=c_opts.run_proxy_server,
-                        fbpkg_db_path=c_opts.fbpkg_db_path,
+                        proxy_server_config=c_opts.proxy_server_config,
                         attach_antlir_dir=(
                             AttachAntlirDirMode.EXPLICIT_ON
                             if c_opts.attach_antlir_dir

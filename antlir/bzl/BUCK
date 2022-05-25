@@ -49,11 +49,13 @@ fake_macro_library(
     deps = [
         ":shape",
         ":snapshot_install_dir",
+        "//antlir/bzl:proxy_server_config.shape",
     ],
 )
 
 shape.impl(
     name = "container_opts.shape",
+    deps = ["//antlir/bzl:proxy_server_config.shape"],
 )
 
 fake_macro_library(
@@ -425,4 +427,9 @@ shape.impl(
 
 shape.impl(
     name = "target_tagger.shape",
+)
+
+shape.impl(
+    name = "proxy_server_config.shape",
+    deps = ["//antlir/bzl:target.shape"],
 )

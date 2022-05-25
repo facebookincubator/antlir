@@ -76,6 +76,7 @@ Optional arguments:
         fail("Genrule layers do not allow setting up a `/logs` tmpfs")
 
     target_tagger = new_target_tagger()
+
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer_genrule_" + rule_type,
         _layer_name = name,
@@ -87,14 +88,17 @@ Optional arguments:
             features = [target_tagger_to_feature(
                 target_tagger,
                 struct(genrule_layer = [
-                    shape.as_serializable_dict(shape.new(
-                        genrule_layer_t,
-                        cmd = cmd,
-                        user = user,
-                        container_opts = container_opts,
-                        bind_repo_ro = bind_repo_ro,
-                        boot = boot,
-                    )),
+                    shape.as_target_tagged_dict(
+                        target_tagger,
+                        shape.new(
+                            genrule_layer_t,
+                            cmd = cmd,
+                            user = user,
+                            container_opts = container_opts,
+                            bind_repo_ro = bind_repo_ro,
+                            boot = boot,
+                        ),
+                    ),
                 ]),
                 extra_deps = [antlir_dep("bzl:image_genrule_layer")],
             )],

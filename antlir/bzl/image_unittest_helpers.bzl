@@ -98,8 +98,7 @@ def _nspawn_wrapper_properties(
             "serve_rpm_snapshots",
             "shadow_paths",
             "shadow_proxied_binaries",
-            "run_proxy_server",
-            # @oss-disable: "fbpkg_db_path", 
+            "proxy_server_config",
             "internal_only_allow_mknod",
             "internal_only_unprotect_antlir_dir",  # Unavailable in tests
             "internal_only_bind_repo_ro",

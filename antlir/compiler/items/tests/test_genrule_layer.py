@@ -10,11 +10,15 @@ import sys
 import textwrap
 import unittest
 from contextlib import contextmanager
-from typing import AnyStr, Iterable
+from typing import Any, AnyStr, Iterable, Optional
+from unittest.mock import patch
 
 from antlir.bzl.genrule_layer import genrule_layer_t
+from antlir.bzl.proxy_server_config import proxy_server_config_t
+from antlir.bzl.target import target_t
 from antlir.config import antlir_dep
 from antlir.fs_utils import Path
+from antlir.nspawn_in_subvol.args import AttachAntlirDirMode
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -29,17 +33,27 @@ def _touch_cmd(path: str):
     return ("/bin/touch", path)
 
 
-def _item(cmd: Iterable[AnyStr]) -> GenruleLayerItem:
+def _item(
+    cmd: Iterable[AnyStr],
+    container_opts: Optional[Any] = None,
+) -> GenruleLayerItem:
+    if not container_opts:
+        container_opts = genrule_layer_t.types.container_opts()
     return GenruleLayerItem(
         from_target="t",
         user="root",
         cmd=cmd,
-        container_opts=genrule_layer_t.types.container_opts(),
+        container_opts=container_opts,
     )
 
 
-def _builder(cmd: Iterable[AnyStr]):
-    return GenruleLayerItem.get_phase_builder([_item(cmd)], DUMMY_LAYER_OPTS)
+def _builder(
+    cmd: Iterable[AnyStr],
+    container_opts: Optional[Any] = None,
+):
+    return GenruleLayerItem.get_phase_builder(
+        [_item(cmd=cmd, container_opts=container_opts)], DUMMY_LAYER_OPTS
+    )
 
 
 class GenruleLayerItemTestCase(unittest.TestCase):
@@ -124,4 +138,36 @@ class GenruleLayerItemTestCase(unittest.TestCase):
             item = _item(["/bin/bash", "-c", "systemctl status > /status"])
             item = item.copy(update={"boot": True})
             GenruleLayerItem.get_phase_builder([item], DUMMY_LAYER_OPTS)(subvol)
-            self.assertTrue(subvol.path("/status").exists())
+
+    def test_genrule_proxy_server(self):
+        # This test only ensures proper calls to nspawn plugins.
+        # @oss-disable: # Full integration tests are done in           
+        # @oss-disable: # antlir/bzl/genrule/facebook/chef_solo/tests  
+        # @oss-disable: # and antlir/proxy/facebook/tests              
+        fbpkg_db_path = target_t(name="fbpkg_db_path", path="path")
+
+        with self._temp_resource_subvol(
+            "genrule-layer-busybox-base"
+        ) as sv, patch(
+            "antlir.compiler.items.genrule_layer.run_nspawn"
+        ) as run_nspawn, patch(
+            "antlir.compiler.items.genrule_layer.NspawnPluginArgs"
+        ) as plugin_args:
+            _builder(
+                ["/bin/sh", "-c", "echo ohai"],
+                container_opts=genrule_layer_t.types.container_opts(
+                    proxy_server_config=proxy_server_config_t(
+                        fbpkg_db_path=fbpkg_db_path
+                    )
+                ),
+            )(sv)
+            run_nspawn.assert_called_once()
+            plugin_args.assert_called_once_with(
+                serve_rpm_snapshots=(),
+                shadow_proxied_binaries=False,
+                shadow_paths=(),
+                proxy_server_config=proxy_server_config_t(
+                    fbpkg_db_path=fbpkg_db_path
+                ),
+                attach_antlir_dir=(AttachAntlirDirMode.OFF),
+            )
