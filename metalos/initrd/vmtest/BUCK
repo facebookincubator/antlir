@@ -102,6 +102,12 @@ host_config(
         },
         "provisioning_config": {
             "deployment_specific": {"metalos": {}},
+            "event_backend": {
+                "base_uri": "http://vmtest-host:8001/send-event",
+                "source": {
+                    "asset_id": 1,
+                },
+            },
             "gpt_root_disk": {
                 "format": 2,
                 "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},

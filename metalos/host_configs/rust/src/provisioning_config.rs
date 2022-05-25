@@ -7,6 +7,7 @@
 
 use crate::packages;
 use thrift_wrapper::ThriftWrapper;
+use url::Url;
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::ProvisioningConfig)]
@@ -17,7 +18,23 @@ pub struct ProvisioningConfig {
     pub root_pw_hash: String,
     pub gpt_root_disk: packages::GptRootDisk,
     pub imaging_initrd: packages::ImagingInitrd,
+    #[deprecated = "use event_backend struct instead"]
     pub event_backend_base_uri: String,
+    pub event_backend: EventBackend,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::EventSource)]
+pub enum EventSource {
+    AssetId(i32),
+    Mac(String),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::EventBackend)]
+pub struct EventBackend {
+    pub base_uri: Url,
+    pub source: EventSource,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
