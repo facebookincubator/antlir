@@ -59,6 +59,10 @@ struct Network {
   // as it already is in the initrd
   1: DNS dns;
   2: list<NetworkInterface> interfaces;
+  // This network interface absolutely must be up for the network to be
+  // considered ready, and is additionally used to setup the default route in
+  // the kernel's routing table
+  3: NetworkInterface primary_interface;
 } (rust.exhaustive)
 
 // Configuration for DNS resolvers.
@@ -72,4 +76,7 @@ struct NetworkInterface {
   1: string mac;
   2: list<string> addrs;
   3: optional string name;
+  // this interface is considered necessary and the network will not be
+  // considered up until this interface is configured and up
+  4: bool essential;
 } (rust.exhaustive)

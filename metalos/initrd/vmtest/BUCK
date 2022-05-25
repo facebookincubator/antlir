@@ -122,10 +122,17 @@ host_config(
                     "interfaces": [
                         {
                             "addrs": ["fd00::2/64"],
+                            "essential": True,
                             "mac": "00:00:00:00:00:01",
                             "name": "eth0",
                         },
                     ],
+                    "primary_interface": {
+                        "addrs": ["fd00::2/64"],
+                        "essential": True,
+                        "mac": "00:00:00:00:00:01",
+                        "name": "eth0",
+                    },
                 },
             },
             "imaging_initrd": {
