@@ -1,5 +1,6 @@
 # @noautodeps
 
+load("//antlir/bzl:defs.bzl", "bzl_to_py")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest", "third_party")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
@@ -173,22 +174,29 @@ template(
     srcs = ["template.jinja2"],
 )
 
-# construct a file with some shims to allow the python_unittest below to import
+# construct files with some shims to allow the python_unittest below to import
 # shape.bzl as a valid python source file
-buck_genrule(
+
+bzl_to_py(
+    name = "target_tagger_helper_bzl.py",
+    bzl_target = "//antlir/bzl:target_tagger_helper.bzl",
+    imports = ["from .shape_bzl_shims import *"],
+)
+
+bzl_to_py(
     name = "shape_bzl.py",
-    cmd = """
-    echo "from .shape_bzl_shims import *" > $OUT
-    # small hack to keep line numbers the same as the original source, just
-    # remove the first line which is a comment anyway
-    tail -n +2 $(location //antlir/bzl:shape.bzl) >> $OUT
-    """,
+    bzl_target = "//antlir/bzl:shape.bzl",
+    imports = [
+        "from .shape_bzl_shims import *",
+        "from .target_tagger_helper_bzl import target_tagger_helper",
+    ],
 )
 
 python_library(
     name = "shape_bzl",
     srcs = {
         ":shape_bzl.py": "shape_bzl.py",
+        ":target_tagger_helper_bzl.py": "target_tagger_helper_bzl.py",
         "shape_bzl_shims.py": "shape_bzl_shims.py",
     },
 )

@@ -106,6 +106,10 @@ fake_macro_library(
     ],
 )
 
+export_file(
+    name = "target_tagger_helper.bzl",
+)
+
 fake_macro_library(
     name = "target_tagger",
     srcs = ["target_tagger.bzl"],
@@ -298,6 +302,7 @@ fake_macro_library(
         ":sha256",
         ":structs",
         ":target_helpers",
+        ":target_tagger_helper",
     ],
 )
 

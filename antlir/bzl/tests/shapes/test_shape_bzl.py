@@ -15,6 +15,7 @@ from .shape_bzl import (
     struct,
     structs,
 )
+from .target_tagger_helper_bzl import target_tagger_helper
 
 
 # pyre-fixme[5]: Global expression must be annotated.
@@ -271,9 +272,27 @@ class TestShapeBzl(unittest.TestCase):
             ),
         )
         self.assertEqual(
-            shape.as_dict_for_target_tagger(i),
+            shape.DEPRECATED_as_dict_for_target_tagger(i),
             # Preserves target paths, but removes `__shape__`.
             {"num": 5, "targ": {"inner": "//foo:bar"}},
+        )
+
+    def test_as_target_tagged_dict(self) -> None:
+        shape_with_target = shape.shape(target=target_t)
+        target = shape.new(
+            shape_with_target,
+            target="//example:target",
+        )
+
+        self.assertEqual(
+            shape.as_target_tagged_dict(
+                target_tagger_helper.new_target_tagger(), target
+            ),
+            {
+                "target": {
+                    "path": {"__BUCK_TARGET": "//example:target"},
+                }
+            },
         )
 
     def test_as_dict_shallow(self) -> None:
@@ -376,3 +395,51 @@ class TestShapeBzl(unittest.TestCase):
     def test_target_and_path_unsupported(self) -> None:
         with self.assertRaisesRegex(Fail, "no longer supported"):
             shape.path()
+
+    # Tetst for target_tagger_helper to get full coverage
+    def test_extract_tagged_target(self) -> None:
+        self.assertEqual(
+            target_tagger_helper.extract_tagged_target(
+                {"__BUCK_TARGET": "buck_target"}
+            ),
+            "buck_target",
+        )
+        self.assertEqual(
+            target_tagger_helper.extract_tagged_target(
+                {"__BUCK_LAYER_TARGET": "buck_layer_target"}
+            ),
+            "buck_layer_target",
+        )
+
+    def test_tag_required_target_key(self) -> None:
+        tagger = target_tagger_helper.new_target_tagger()
+
+        target = {"target": "target_path"}
+        target_tagger_helper.tag_required_target_key(
+            tagger, target, "target", False
+        )
+        self.assertEqual(
+            target,
+            {"target": {"__BUCK_TARGET": "target_path"}},
+        )
+
+        layer = {"layer": "layer_path"}
+        target_tagger_helper.tag_required_target_key(
+            tagger, layer, "layer", True
+        )
+        self.assertEqual(
+            layer,
+            {"layer": {"__BUCK_LAYER_TARGET": "layer_path"}},
+        )
+
+        self.assertEqual(tagger.targets, {"target_path": 1, "layer_path": 1})
+
+    def test_target_tagger_to_feature(self) -> None:
+        self.assertEqual(
+            target_tagger_helper.target_tagger_to_feature(
+                target_tagger_helper.new_target_tagger(),
+                items=["item"],
+                extra_deps=["extra_deps"],
+            ),
+            struct(items=["item"], deps=["extra_deps"]),
+        )

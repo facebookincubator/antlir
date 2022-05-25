@@ -19,7 +19,7 @@ def _extract_tagged_target(tagged):
     return tagged.get("__BUCK_TARGET") or tagged["__BUCK_LAYER_TARGET"]
 
 def _tag_required_target_key(tagger, d, target_key, is_layer = False):
-    if target_key not in d:
+    if target_key not in d:  # pragma: no cover
         fail(
             "{} must contain the key {}".format(d, target_key),
         )
