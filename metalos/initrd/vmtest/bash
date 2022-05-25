@@ -1,4 +1,0 @@
-#!/bin/sh
-# fbcode PARs are built with /bin/bash as the executor shebang, but actually
-# work just fine with busybox's /bin/sh, so lie and pretend to be bash
-exec /bin/sh "$@"
