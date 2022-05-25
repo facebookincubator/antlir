@@ -12,11 +12,9 @@ NB: Surprisingly, we don't need any special cleanup for the `mount` operations
 """
 import json
 import os
-import socket
 from dataclasses import dataclass
 from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
-from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
 from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
@@ -27,7 +25,12 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 
-from .common import ImageItem, LayerOpts, make_path_normal_relative
+from .common import (
+    assert_running_inside_ba,
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+)
 from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
 
 
@@ -179,9 +182,7 @@ class MountItem(ImageItem):
         # follows symlinks for the mount source, which seems correct.
         is_dir = os.path.isdir(source_path)
         assert is_dir == self.is_directory, self
-        assert (
-            socket.gethostname() == hostname_for_compiler_in_ba()
-        ), "This compiler item expects to be compiled inside a BA."
+        assert_running_inside_ba()
         if is_dir:
             os.makedirs(
                 subvol.path(self.mountpoint),

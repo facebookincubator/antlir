@@ -5,10 +5,8 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import socket
 
 from antlir.bzl.image.feature.symlink import symlink_t
-from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler.requires_provides import (
     ProvidesSymlink,
     RequireDirectory,
@@ -19,6 +17,7 @@ from antlir.subvol_utils import Subvol
 from pydantic import root_validator
 
 from .common import (
+    assert_running_inside_ba,
     ImageItem,
     LayerOpts,
     make_path_normal_relative,
@@ -98,9 +97,7 @@ class SymlinkBase(symlink_t, ImageItem):
                 f"{self}: {self.dest} -> {self.source} exists to {current_link}"
             )
         if layer_opts.build_appliance:
-            assert (
-                socket.gethostname() == hostname_for_compiler_in_ba()
-            ), "This compiler item expects to be compiled inside a BA."
+            assert_running_inside_ba()
             os.symlink(
                 src=rel_source,
                 dst=dest,

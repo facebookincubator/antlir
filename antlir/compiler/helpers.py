@@ -52,6 +52,12 @@ def compile_items_to_subvol(
     iter_items: Iterator[ImageItem],
     use_threads: bool = True,
 ) -> None:
+    """
+    IMPORTANT: This function will build many compiler items that assume they
+    are running inside a specific BA environment that conforms with the options
+    in `get_compiler_nspawn_opts`. If you run this outside that context, you
+    are at risk of corrupting your host's filesystem!
+    """
     dep_graph = DependencyGraph(
         iter_items=iter_items,
         layer_target=layer_opts.layer_target,

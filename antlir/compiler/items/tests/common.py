@@ -6,14 +6,12 @@
 
 import functools
 import os
-import socket
 import subprocess
 import tempfile
 import unittest
 from contextlib import contextmanager
 from unittest import mock
 
-from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -26,7 +24,7 @@ from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path, render_subvol
 
-from ..common import LayerOpts
+from ..common import assert_running_inside_ba, LayerOpts
 
 
 # Re-export for legacy reasons
@@ -155,9 +153,7 @@ class BaseItemTestCase(unittest.TestCase):
 # pyre-fixme[3]: Return type must be annotated.
 # pyre-fixme[2]: Parameter must be annotated.
 def with_mocked_temp_volume_dir(method):
-    assert (
-        socket.gethostname() == hostname_for_compiler_in_ba()
-    ), "Only mock the volume dir for compiler tests that are run inside the BA"
+    assert_running_inside_ba()
 
     @functools.wraps(method)
     # pyre-fixme[53]: Captured variable `method` is not annotated.
