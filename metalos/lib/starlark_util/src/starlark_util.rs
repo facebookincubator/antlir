@@ -8,7 +8,7 @@
 use anyhow::{anyhow, Result};
 use gazebo::any::ProvidesStaticType;
 use serde::Serialize;
-use starlark::const_frozen_string;
+use starlark::starlark_type;
 use starlark::values::{
     AllocFrozenValue, AllocValue, FrozenHeap, FrozenValue, Heap, StarlarkValue, Value,
 };
@@ -55,12 +55,10 @@ impl<'v, T> StarlarkValue<'v> for Struct<T>
 where
     T: Debug + 'static,
 {
-    fn get_type(&self) -> &'static str {
-        std::any::type_name::<T>()
-    }
+    starlark_type!("ThriftStruct");
 
-    fn get_type_value_static() -> starlark::values::FrozenStringValue {
-        const_frozen_string!("ThriftStruct")
+    fn matches_type(&self, ty: &str) -> bool {
+        std::any::type_name::<T>() == ty
     }
 
     fn dir_attr(&self) -> Vec<String> {
@@ -121,8 +119,10 @@ impl std::fmt::Display for ThriftValue {
 }
 
 impl<'v> StarlarkValue<'v> for ThriftValue {
-    fn get_type(&self) -> &'static str {
-        match self {
+    starlark_type!("ThriftValue");
+
+    fn matches_type(&self, ty: &str) -> bool {
+        let me = match self {
             Self::Bool(_) => "bool",
             Self::Float(_) | Self::Double(_) => "float",
             Self::Byte(_) | Self::I16(_) | Self::I32(_) | Self::I64(_) => "int",
@@ -132,11 +132,8 @@ impl<'v> StarlarkValue<'v> for ThriftValue {
             Self::List(_) => "list",
             Self::Set(_) => "tuple",
             Self::Binary(_) => "binary",
-        }
-    }
-
-    fn get_type_value_static() -> starlark::values::FrozenStringValue {
-        const_frozen_string!("ThriftValue")
+        };
+        me == ty
     }
 
     fn dir_attr(&self) -> Vec<String> {
