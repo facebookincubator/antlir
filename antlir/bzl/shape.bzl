@@ -439,7 +439,7 @@ def _new_shape(shape, **fields):
             fail("field `{}` is not defined in the shape".format(field))
         error = _check_type(value, shape.fields[field])
         if error:
-            fail(error)
+            fail("field {}, value {}: {}".format(field, value, error))
 
     return struct(
         __shape__ = shape,
