@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:exec_wrapper.bzl", "build_exec_wrapper")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:oss_shim.bzl", "antlir_buck_env", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "api")
@@ -31,6 +31,7 @@ def build_vm_run_target(
                 extra_args = " ".join(args) if args else "",
                 opts_quoted = shell.quote(shape.do_not_cache_me_json(vm_opts)),
             ),
+            literal_preamble = "export ANTLIR_BUCK={} ; ".format(antlir_buck_env()),
         ),
         cacheable = False,
         executable = True,

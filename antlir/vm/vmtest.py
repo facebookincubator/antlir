@@ -300,6 +300,10 @@ async def run(
             ),
         ]
 
+    buck_out_base_dir = repo_config().repo_root
+    if os.environ["ANTLIR_BUCK"] != "buck2":
+        buck_out_base_dir /= repo_config().antlir_cell_name
+
     async with vm(
         bind_repo_ro=bind_repo_ro,
         console=console,
@@ -370,8 +374,7 @@ async def run(
                     # repo.  Once we have proper support for `runtime_files`
                     # this can be removed.  See here for more details:
                     # https://fburl.com/xt322rks
-                    cwd=repo_config().repo_root
-                    / repo_config().antlir_cell_name,
+                    cwd=buck_out_base_dir,
                     # Always dump stderr/stdout back to the calling terminal
                     stderr=None,
                     stdout=None,
