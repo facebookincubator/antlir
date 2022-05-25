@@ -7,6 +7,6 @@ load("//antlir/bzl:shape.bzl", "shape")
 
 target_t = shape.shape(
     __I_AM_TARGET__ = True,
-    name = str,
+    name = shape.field(str, optional = True),
     path = shape.path,
 )

@@ -44,6 +44,19 @@ def load(_file, *_symbols) -> None:
     pass
 
 
+# pyre-fixme[3]: Return type must be annotated.
+# pyre-fixme[2]: Parameter must be annotated.
+def provider(fields):
+    return dataclasses.make_dataclass(
+        "provider",
+        fields=fields,
+    )
+
+
+def normalize_target(target: str) -> str:
+    return target
+
+
 class Fail(Exception):
     pass
 
