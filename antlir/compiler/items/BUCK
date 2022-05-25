@@ -114,6 +114,7 @@ python_library(
     deps = [
         ":common",
         ":mount_utils",
+        "//antlir:bzl_const",
         "//antlir:find_built_subvol",
         "//antlir:subvol_utils",
         "//antlir/compiler:requires_provides",

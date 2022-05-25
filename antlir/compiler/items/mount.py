@@ -12,9 +12,11 @@ NB: Surprisingly, we don't need any special cleanup for the `mount` operations
 """
 import json
 import os
+import socket
 from dataclasses import dataclass
 from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
+from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
 from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
@@ -22,7 +24,7 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.config import antlir_dep
 from antlir.find_built_subvol import find_built_subvol
-from antlir.fs_utils import Path, temp_dir
+from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 
 from .common import ImageItem, LayerOpts, make_path_normal_relative
@@ -177,14 +179,19 @@ class MountItem(ImageItem):
         # follows symlinks for the mount source, which seems correct.
         is_dir = os.path.isdir(source_path)
         assert is_dir == self.is_directory, self
+        assert (
+            socket.gethostname() == hostname_for_compiler_in_ba()
+        ), "This compiler item expects to be compiled inside a BA."
         if is_dir:
-            subvol.run_as_root(
-                ["mkdir", "--mode=0755", subvol.path(self.mountpoint)]
+            os.makedirs(
+                subvol.path(self.mountpoint),
+                mode=0o755,
+                exist_ok=False,  # be explicit
             )
         else:  # Regular files, device nodes, FIFOs, you name it.
-            # `touch` lacks a `--mode` argument, but the mode of this
-            # mountpoint will be shadowed anyway, so let it be whatever.
-            subvol.run_as_root(["touch", subvol.path(self.mountpoint)])
+            # The mode of this mountpoint will be shadowed,
+            # so it doesn't matter waht the mode is.
+            subvol.path(self.mountpoint).touch()
 
 
 # Not covering, since this would require META_MOUNTS_DIR to be unreadable.

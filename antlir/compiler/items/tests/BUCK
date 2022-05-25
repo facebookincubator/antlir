@@ -297,18 +297,28 @@ python_unittest(
     ],
 )
 
-python_unittest(
+image.layer(
+    name = "test_mount_layer",
+    parent_layer = ":test_compiler_item_layer",
+    features = [
+        image.layer_mount(
+            TEST_IMAGE_PREFIX + "small-layer-with-mounts",
+            "/small-layer-with-mounts",
+        ),
+        image.layer_mount(
+            TEST_IMAGE_PREFIX + "hello_world_base",
+            "/test-layer-without-mounts",
+        ),
+    ],
+)
+
+image_python_unittest(
     name = "test-mount",
     srcs = ["test_mount.py"],
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
+    layer = ":test_mount_layer",
     needed_coverage = [(100, "//antlir/compiler/items:mount")],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "small-layer-with-mounts",
-        ): "small-layer-with-mounts",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "hello_world_base",
-        ): "test-layer-without-mounts",
-    },
+    run_as_user = "root",
     deps = [
         ":common_testlib",
         "//antlir/compiler/items:make_subvol",
