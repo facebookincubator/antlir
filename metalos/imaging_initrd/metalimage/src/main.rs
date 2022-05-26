@@ -33,11 +33,6 @@ struct Args {
     #[structopt(long, parse(from_os_str), default_value = "/tmp/expand_root_mnt")]
     tmp_mounts_dir: PathBuf,
 
-    /// Size of the read/write buffer to use in bytes
-    /// defaults to the same as real dd
-    #[structopt(default_value = "512")]
-    buffer_size: usize,
-
     #[structopt(long, default_value = "metalimage")]
     event_sender: String,
 }
@@ -181,7 +176,6 @@ impl Bootloader {
             disk,
             self.config.provisioning_config.gpt_root_disk.clone(),
             &self.args.tmp_mounts_dir,
-            self.args.buffer_size,
             RealMounter {},
         )
         .await
