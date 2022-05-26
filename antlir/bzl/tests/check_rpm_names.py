@@ -21,7 +21,6 @@ def get_rpms() -> Set[str]:
     }
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def check_rpm_names(test_case, package, resource: str) -> None:
     with Path.resource(package, resource, exe=False) as expected_path, open(
         expected_path

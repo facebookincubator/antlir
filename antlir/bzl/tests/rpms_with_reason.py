@@ -54,7 +54,6 @@ import re
 import subprocess
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def print_required_by(rpm, wanted, required_by, cost=None) -> None:
     notes = []
     if rpm in wanted:
@@ -69,7 +68,6 @@ def print_required_by(rpm, wanted, required_by, cost=None) -> None:
     print(f"{rpm}\t{'; '.join(notes)}")
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def print_rpms_with_reason(wanted_rpms) -> None:
     wanted = set(wanted_rpms)
     # Bug alert: I was too lazy to make this handle packages that exist in

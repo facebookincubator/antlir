@@ -24,14 +24,11 @@ from .common import (
 
 
 class RemovePathItem(remove_paths_t, ImageItem):
-    # pyre-fixme[4]: Attribute must be annotated.
     _normalize_path = validate_path_field_normal_relative("path")
 
-    # pyre-fixme[3]: Return type must be annotated.
     def phase_order(self):
         return PhaseOrder.REMOVE_PATHS
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __sort_key(self):
         # We sort in reverse order when building so the natural
         # sort order of must_exist will cause must_exist=True
@@ -39,13 +36,10 @@ class RemovePathItem(remove_paths_t, ImageItem):
         # resolved naturally.
         return (self.path, self.must_exist)
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def __lt__(self, other):
         return self.__sort_key() < other.__sort_key()
 
     @classmethod
-    # pyre-fixme[3]: Return type must be annotated.
     def get_phase_builder(
         cls, items: Iterable["RemovePathItem"], layer_opts: LayerOpts
     ):
@@ -60,7 +54,6 @@ class RemovePathItem(remove_paths_t, ImageItem):
         # NB: We could detect collisions between two `must_exist` removes
         # early, but again, it doesn't seem worth the complexity.
 
-        # pyre-fixme[3]: Return type must be annotated.
         def builder(subvol: Subvol):
             protected_paths = protected_path_set(subvol)
             # Reverse-lexicographic order deletes inner paths before

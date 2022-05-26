@@ -66,7 +66,6 @@ class _ContainerPidExfiltrator:
 
     @classmethod
     @contextmanager
-    # pyre-fixme[3]: Return annotation cannot contain `Any`.
     def new(
         cls, exfil_w_dest_fd: int, ready_r_dest_fd: int
     ) -> Generator["_ContainerPidExfiltrator", Any, Any]:
@@ -86,7 +85,6 @@ class _ContainerPidExfiltrator:
                 ready_w=ready_w,
             )
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def wrap_user_cmd(self, cmd) -> List[str]:
         # This script will exfiltrate the outer PID of a process inside the
         # container's namespace. (See _wrap_systemd_exec for more details.)
@@ -112,7 +110,6 @@ class _ContainerPidExfiltrator:
         return ["/bin/bash", "-eu", "-o", "pipefail", "-c", wrap, "--", *cmd]
 
     @contextmanager
-    # pyre-fixme[3]: Return annotation cannot contain `Any`.
     def exfiltrate_container_pid(self) -> Generator[int, Any, Any]:
         "Yields the outer PID of a process inside the container."
         assert self._ready_sent is None, "exfiltrate_container_pid called twice"
@@ -141,7 +138,6 @@ class _ContainerPidExfiltrator:
 
 
 @contextmanager
-# pyre-fixme[3]: Return annotation cannot contain `Any`.
 def _wrap_opts_with_container_pid_exfiltrator(
     opts: _NspawnOpts,
 ) -> Generator[Tuple[_NspawnOpts, Any], Any, Any]:
@@ -197,7 +193,6 @@ class RepoServers(NspawnPlugin):
         return socks_needed, socks_per_snapshot
 
     @contextmanager
-    # pyre-fixme[3]: Return annotation cannot contain `Any`.
     def wrap_setup(
         self,
         setup_ctx: _NspawnSetupCtxMgr,
@@ -240,7 +235,6 @@ class RepoServers(NspawnPlugin):
             yield setup
 
     @contextmanager
-    # pyre-fixme[3]: Return annotation cannot contain `Any`.
     def wrap_post_setup_popen(
         self, post_setup_popen_ctx: _PostSetupPopenCtxMgr, setup: _NspawnSetup
     ) -> Generator[_PopenResult, Any, Any]:

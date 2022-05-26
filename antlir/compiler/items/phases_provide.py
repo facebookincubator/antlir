@@ -144,7 +144,6 @@ def gen_subvolume_subtree_provides(
 class PhasesProvideItem(ImageItem):
     subvol: Subvol
 
-    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         for path in gen_subvolume_subtree_provides(self.subvol, Path("/")):
             yield path
@@ -170,6 +169,5 @@ class PhasesProvideItem(ImageItem):
         else:
             yield ProvidesUser("root")
 
-    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         return ()

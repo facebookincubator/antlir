@@ -466,8 +466,6 @@ class ExtentTestCase(AntlirTestCase):
             ),
         ]
 
-        # pyre-fixme[3]: Return type must be annotated.
-        # pyre-fixme[2]: Parameter must be annotated.
         def compose_ops(ops_it):
             return functools.reduce(
                 lambda extent, op: op(extent), ops_it, Extent.empty()

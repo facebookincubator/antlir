@@ -89,11 +89,9 @@ from .coroutine_utils import while_not_exited
 # This is intended to be:
 # RenderedTree = Union[Tuple[Any], Tuple[Any, Mapping[bytes, 'RenderedTree']]]
 # But recursive types don't work for now so YOLO
-# pyre-fixme[33]: Aliased annotation cannot contain `Any`.
 RenderedTree = Union[Tuple[Any], Tuple[Any, Mapping[bytes, Any]]]
 
 
-# pyre-fixme[3]: Return annotation cannot contain `Any`.
 def gather_bottom_up(
     ser: RenderedTree,
     *,
@@ -142,7 +140,6 @@ def gather_bottom_up(
     return (yield (_path, ino, child_results))  # noqa: B901
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def map_bottom_up(ser: RenderedTree, fn) -> RenderedTree:
     """
     Like `gather_bottom_up`, but applies `fn` to all the inodes and produces
@@ -158,7 +155,6 @@ def map_bottom_up(ser: RenderedTree, fn) -> RenderedTree:
     return ctx.result
 
 
-# pyre-fixme[2]: Parameter annotation cannot be `Any`.
 class TraversalIDWrapper(NamedTuple):
     """
     Do not construct this directly -- instead call `TraversalID.wrap`.
@@ -171,7 +167,6 @@ class TraversalIDWrapper(NamedTuple):
     """
 
     id: "TraversalID"
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     wrapped: Any
 
 
@@ -199,12 +194,9 @@ class TraversalID:
     # Instead, you should call an `emit_*` function on the `RenderedTree`,
     # and operate with the resulting plain-old-data structure.
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def __eq__(self, other):  # pragma: no cover
         raise NotImplementedError
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __hash__(self):  # pragma: no cover
         raise NotImplementedError
 
@@ -213,7 +205,6 @@ class TraversalID:
         # but should rather always emit them to finish the rendering.
         return f"TraversalID({self.id}/{self.refcount})"
 
-    # pyre-fixme[2]: Parameter annotation cannot be `Any`.
     def wrap(self, wrapped: Any) -> TraversalIDWrapper:
         return TraversalIDWrapper(id=self, wrapped=wrapped)
 
@@ -230,9 +221,7 @@ class TraversalIDMaker:
     """
 
     def __init__(self) -> None:
-        # pyre-fixme[4]: Attribute must be annotated.
         self.counter = count()
-        # pyre-fixme[4]: Attribute must be annotated.
         self.nonce_to_id = {}
 
     def next_with_nonce(self, nonce: Hashable) -> TraversalID:
@@ -263,7 +252,6 @@ def emit_all_traversal_ids(ser: RenderedTree) -> RenderedTree:
     )
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def emit_non_unique_traversal_ids(ser: RenderedTree):
     """
     Inodes that occur more than once become `[ino, integer ID]`, with
@@ -272,9 +260,6 @@ def emit_non_unique_traversal_ids(ser: RenderedTree):
     """
     id_maker = TraversalIDMaker()
 
-    # pyre-fixme[53]: Captured variable `id_maker` is not annotated.
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def maybe_emit_id(wrapped_ino):
         if wrapped_ino.id.refcount < 2:
             return wrapped_ino.wrapped

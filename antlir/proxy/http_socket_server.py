@@ -13,7 +13,6 @@ class HTTPSocketServer(BaseServer):
     around the fact that they do not accept pre-existing sockets.
     """
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, sock: socket.socket, RequestHandlerClass) -> None:
         """
         We just listen on `sock`. It may or may not be bound to any host or
@@ -25,7 +24,6 @@ class HTTPSocketServer(BaseServer):
         self.socket = sock
 
     # This is only here as part of the BaseServer API, never to be run.
-    # pyre-fixme[3]: Return type must be annotated.
     def server_bind(self):  # pragma: no cover
         raise AssertionError(
             "self.socket must be bound externally before self.server_activate"
@@ -40,11 +38,9 @@ class HTTPSocketServer(BaseServer):
     def fileno(self) -> int:
         return self.socket.fileno()
 
-    # pyre-fixme[3]: Return type must be annotated.
     def get_request(self):
         return self.socket.accept()
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def shutdown_request(self, request) -> None:
         try:
             # Explicitly shutdown -- `socket.close()` merely releases the
@@ -56,6 +52,5 @@ class HTTPSocketServer(BaseServer):
             pass  # Some platforms may raise ENOTCONN here
         self.close_request(request)
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def close_request(self, request) -> None:
         request.close()

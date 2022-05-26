@@ -18,10 +18,8 @@ from .shape_bzl import (
 from .target_tagger_helper_bzl import target_tagger_helper
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 TestUnionType = shape.union_t(bool, int)
 
-# pyre-fixme[5]: Global expression must be annotated.
 target_t = shape.shape(
     __I_AM_TARGET__=True,
     name=str,
@@ -35,8 +33,6 @@ class TestShapeBzl(unittest.TestCase):
         unittest.util._MAX_LENGTH = 12345
 
     def test_check_type(self) -> None:
-        # pyre-fixme[3]: Return type must be annotated.
-        # pyre-fixme[2]: Parameter must be annotated.
         def check_type(x, t):
             res = _check_type(x, t)
             assert res is None, res

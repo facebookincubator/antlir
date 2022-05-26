@@ -23,11 +23,8 @@ from .compiler.subvolume_on_disk import SubvolumeOnDisk
 from .fs_utils import Path, temp_dir
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
-# pyre-fixme[5]: Global expression must be annotated.
 KiB = 2**10
-# pyre-fixme[5]: Global expression must be annotated.
 MiB = 2**20
 
 
@@ -102,7 +99,6 @@ class Subvol(DoNotFreeze):
         subvolumes.  Unless already_exists=True, you must call create() or
         snapshot() to actually make the subvolume.
         """
-        # pyre-fixme[4]: Attribute must be annotated.
         self._path = Path(path).abspath()
         if already_exists:
             if not self._exists:
@@ -111,7 +107,6 @@ class Subvol(DoNotFreeze):
             assert not self._exists, self._path
 
     @property
-    # pyre-fixme[3]: Return type must be annotated.
     def _exists(self):
         return _path_is_btrfs_subvol(self._path)
 
@@ -178,17 +173,13 @@ class Subvol(DoNotFreeze):
     # `_subvol_exists` is a private kwarg letting us `run_as_root` to create
     # new subvolumes, and not just touch existing ones.
     @contextmanager
-    # pyre-fixme[3]: Return type must be annotated.
     def popen_as_root(
         self,
-        # pyre-fixme[2]: Parameter must be annotated.
         args,
         *,
         _subvol_exists: bool = True,
-        # pyre-fixme[2]: Parameter must be annotated.
         stdout=None,
         check: bool = True,
-        # pyre-fixme[2]: Parameter must be annotated.
         **kwargs,
     ):
         if "cwd" in kwargs:
@@ -239,18 +230,13 @@ class Subvol(DoNotFreeze):
         if check:
             check_popen_returncode(pr)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def run_as_root(
         self,
-        # pyre-fixme[2]: Parameter must be annotated.
         args,
-        # pyre-fixme[2]: Parameter must be annotated.
         timeout=None,
-        # pyre-fixme[2]: Parameter must be annotated.
         input=None,
         _subvol_exists: bool = True,
         check: bool = True,
-        # pyre-fixme[2]: Parameter must be annotated.
         **kwargs,
     ):
         """
@@ -349,12 +335,10 @@ class Subvol(DoNotFreeze):
     def _mark_readonly_and_send(
         self,
         *,
-        # pyre-fixme[2]: Parameter must be annotated.
         stdout,
         no_data: bool = False,
         # pyre-fixme[9]: parent has type `Subvol`; used as `None`.
         parent: "Subvol" = None,
-        # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
     ) -> Iterator[subprocess.Popen]:
         self.set_readonly(True)
 
@@ -395,7 +379,6 @@ class Subvol(DoNotFreeze):
         ) as proc:
             yield proc
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def mark_readonly_and_get_sendstream(self, **kwargs) -> bytes:
         with self._mark_readonly_and_send(
             stdout=subprocess.PIPE, **kwargs
@@ -405,20 +388,14 @@ class Subvol(DoNotFreeze):
 
     @contextmanager
     def mark_readonly_and_write_sendstream_to_file(
-        self,
-        outfile: BinaryIO,
-        # pyre-fixme[2]: Parameter must be annotated.
-        **kwargs,
+        self, outfile: BinaryIO, **kwargs
     ) -> Iterator[None]:
         with self._mark_readonly_and_send(stdout=outfile, **kwargs):
             yield
 
     @contextmanager
     def write_tarball_to_file(
-        self,
-        outfile: BinaryIO,
-        # pyre-fixme[2]: Parameter must be annotated.
-        **kwargs,
+        self, outfile: BinaryIO, **kwargs
     ) -> Iterator[None]:
         # gnu tar has a nasty bug where even if you specify `--one-file-system`
         # it still tries to perform various operations on other mount points.
@@ -534,7 +511,6 @@ class Subvol(DoNotFreeze):
         return size
 
     @contextmanager
-    # pyre-fixme[2]: Parameter must be annotated.
     def receive(self, from_file) -> Iterator[None]:
         # At present, we always have an empty wrapper dir to receive into.
         # If this changes, we could make a tempdir inside `parent_fd`.
@@ -604,8 +580,6 @@ class Subvol(DoNotFreeze):
         ).check_returncode()
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def with_temp_subvols(method):
     """
     A test that needs a TempSubvolumes instance should use this decorator.
@@ -619,9 +593,6 @@ def with_temp_subvols(method):
     """
 
     @functools.wraps(method)
-    # pyre-fixme[53]: Captured variable `method` is not annotated.
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def decorated(self, *args, **kwargs):
         with TempSubvolumes(Path(sys.argv[0])) as temp_subvols:
             return method(self, temp_subvols, *args, **kwargs)
@@ -671,7 +642,6 @@ class TempSubvolumes:
         except FileExistsError:
             pass
         self._stack = ExitStack()
-        # pyre-fixme[4]: Attribute must be annotated.
         self._temp_dir_ctx = temp_dir(
             dir=volume_tmp_dir.decode(), prefix=self.__class__.__name__ + "_"
         )
@@ -682,21 +652,16 @@ class TempSubvolumes:
         self._temp_dir = self._stack.enter_context(self._temp_dir_ctx)
         return self
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         # pyre-fixme[16]: `TempSubvolumes` has no attribute `_temp_dir`.
         self._temp_dir = None
         return self._stack.__exit__(exc_type, exc_val, exc_tb)
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _new_subvol(self, subvol):
         return self._stack.enter_context(subvol.delete_on_exit())
 
     @property
-    # pyre-fixme[3]: Return type must be annotated.
     def temp_dir(self):
-        # pyre-fixme[16]: `TempSubvolumes` has no attribute `_temp_dir`.
         return self._temp_dir
 
     def _prep_rel_path(self, rel_path: AnyStr) -> Path:

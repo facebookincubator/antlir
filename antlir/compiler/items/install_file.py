@@ -91,7 +91,6 @@ class InstallFileItem(install_files_t, ImageItem):
 
     _paths: Optional[Iterable[_InstallablePath]] = PrivateAttr()
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, **kwargs) -> None:
         customize_stat_options(kwargs, default_mode=None)  # Defaulted later
 
@@ -140,16 +139,12 @@ class InstallFileItem(install_files_t, ImageItem):
 
         super().__init__(dest=dest, **kwargs)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
-        # pyre-fixme[16]: `Optional` has no attribute `__iter__`.
         for i in self._paths:
             yield i.provides
 
-    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         yield RequireDirectory(path=self.dest.dirname())
-        # pyre-fixme[16]: `Optional` has no attribute `split`.
         user, group = self.user_group.split(":")
         yield RequireUser(user)
         yield RequireGroup(group)

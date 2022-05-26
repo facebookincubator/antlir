@@ -58,7 +58,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
         )
 
     @contextmanager
-    # pyre-fixme[3]: Return type must be annotated.
     def _test_rpm_action_item_install_local_setup(self):
         parent_subvol = Subvol("test-with-no-rpm", already_exists=True)
         local_rpm_path = "/rpm-test-cheese-2-1.rpm"
@@ -77,7 +76,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
             r = render_subvol(subvol)
 
-            # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEqual`.
             self.assertEqual(
                 ["(Dir)", {"cheese2.txt": ["(File d45)"]}],
                 pop_path(r, "rpm_test"),
@@ -86,15 +84,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             yield (r, subvol)
 
     def _check_rpm_action_item_subvol(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        subvol,
-        rpm_item: RpmActionItem,
-        # pyre-fixme[2]: Parameter must be annotated.
-        fs_render,
-        *,
-        # pyre-fixme[2]: Parameter must be annotated.
-        opts=None,
+        self, subvol, rpm_item: RpmActionItem, fs_render, *, opts=None
     ) -> None:
         RpmActionItem.get_phase_builder(
             [rpm_item], opts if opts else self._opts()
@@ -165,9 +155,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             subvol = temp_subvolumes.create("rpm_ver_lock")
             subvol.run_as_root(["mkdir", subvol.path(".meta")])
 
-            # pyre-fixme[53]: Captured variable `subvol` is not annotated.
-            # pyre-fixme[53]: Captured variable `td` is not annotated.
-            # pyre-fixme[3]: Return type must be annotated.
             def _self_check():
                 layer_opts = self._opts(version_set_override=td / "vset")
                 self._check_rpm_action_item_subvol(
@@ -382,7 +369,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
 
 class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
-    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.yum
 
     @with_mocked_temp_volume_dir
@@ -392,7 +378,6 @@ class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
 
 
 class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
-    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.dnf
 
     @with_mocked_temp_volume_dir

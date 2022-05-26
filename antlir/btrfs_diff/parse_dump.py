@@ -66,7 +66,6 @@ from typing import Any, BinaryIO, Dict, Iterable, Optional, Pattern, Tuple
 from .send_stream import SendStreamItem, SendStreamItems
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 _ESCAPED_TO_UNESCAPED = OrderedDict(
     [
         (rb"\a", b"\a"),
@@ -96,14 +95,11 @@ _ESCAPED_TO_UNESCAPED = OrderedDict(
 #           fillvalue=(None, None),
 #       )
 #   ))
-# pyre-fixme[5]: Global expression must be annotated.
 _ESCAPED_REGEX = re.compile(
     b"|".join(re.escape(e) for e in _ESCAPED_TO_UNESCAPED)
 )
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def unquote_btrfs_progs_path(s):
     """
     `btrfs receive --dump` always quotes the first field of an item -- the
@@ -118,7 +114,6 @@ def unquote_btrfs_progs_path(s):
 class RegexItemParser:
     "Almost all item types can be parsed with a single regex."
 
-    # pyre-fixme[24]: Generic type `Pattern` expects 1 type parameter.
     regex: Pattern = re.compile(b"")
 
     @classmethod
@@ -169,24 +164,19 @@ class SendStreamItemParsers:
     """
 
     class subvol(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(
             rb"uuid=(?P<uuid>[-0-9a-f]+) " rb"transid=(?P<transid>[0-9]+)"
         )
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_transid = staticmethod(int)
 
     class snapshot(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(
             rb"uuid=(?P<uuid>[-0-9a-f]+) "
             rb"transid=(?P<transid>[0-9]+) "
             rb"parent_uuid=(?P<parent_uuid>[-0-9a-f]+) "
             rb"parent_transid=(?P<parent_transid>[0-9]+)"
         )
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_transid = staticmethod(int)
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_parent_transid = staticmethod(int)
 
     class mkfile(RegexItemParser):
@@ -196,9 +186,7 @@ class SendStreamItemParsers:
         pass
 
     class mknod(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"mode=(?P<mode>[0-7]+) dev=0x(?P<dev>[0-9a-f]+)")
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_mode = staticmethod(_from_octal)
 
         @staticmethod
@@ -216,23 +204,19 @@ class SendStreamItemParsers:
         # arbitrary string with no filesystem signficance, so we do not
         # process it at all.  Unfortunately, `dest` is not quoted in
         # `send-dump.c`.
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"dest=(?P<dest>.*)")
 
     class rename(RegexItemParser):
         # This path is not quoted in `send-dump.c`
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"dest=(?P<dest>.*)")
         context_conv_dest = _normalize_subvolume_path
 
     class link(RegexItemParser):
         # This path is not quoted in `send-dump.c`
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"dest=(?P<dest>.*)")
 
         # `btrfs receive` is inconsistent -- unlike other paths, its `dest`
         # does not start with the subvolume path.
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_dest = os.path.normpath
 
     class unlink(RegexItemParser):
@@ -246,7 +230,6 @@ class SendStreamItemParsers:
     class clone(RegexItemParser):
         # The path `from` is not quoted in `send-dump.c`, but a greedy
         # regex can still parse this fixed format correctly.
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(
             rb"offset=(?P<offset>[0-9]+) "
             rb"len=(?P<len>[0-9]+) "
@@ -254,12 +237,9 @@ class SendStreamItemParsers:
             rb"clone_offset=(?P<clone_offset>[0-9]+)"
             rb"(?P<from_uuid>)(?P<from_transid>)"
         )
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_offset = staticmethod(int)
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_len = staticmethod(int)
         context_conv_from_path = _normalize_subvolume_path
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_clone_offset = staticmethod(int)
 
     class set_xattr:
@@ -269,9 +249,7 @@ class SendStreamItemParsers:
         # This cannot be parsed unambiguously with a single regex because
         # both `name` and `data` can contain arbitrary bytes, and neither is
         # quoted.
-        # pyre-fixme[4]: Attribute must be annotated.
         first_regex = re.compile(rb"(.*) len=([0-9]+)")
-        # pyre-fixme[4]: Attribute must be annotated.
         second_regex = re.compile(rb"name=(.*) data=")
 
         @classmethod
@@ -315,31 +293,22 @@ class SendStreamItemParsers:
 
     class remove_xattr(RegexItemParser):
         # This name is not quoted in `send-dump.c`
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"name=(?P<name>.*)")
 
     class truncate(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"size=(?P<size>[0-9]+)")
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_size = staticmethod(int)
 
     class chmod(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"mode=(?P<mode>[0-7]+)")
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_mode = staticmethod(_from_octal)
 
     class chown(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"gid=(?P<gid>[0-9]+) uid=(?P<uid>[0-9]+)")
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_gid = staticmethod(int)
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_uid = staticmethod(int)
 
     class utimes(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(
             rb"atime=(?P<atime>[^ ]+) "
             rb"mtime=(?P<mtime>[^ ]+) "
@@ -357,30 +326,23 @@ class SendStreamItemParsers:
                 0,
             )  # --dump discards nanoseconds
 
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_mtime = conv_atime
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_ctime = conv_atime
 
     # This is used instead of `write` when `btrfs send --no-data` is used.
     class update_extent(RegexItemParser):
-        # pyre-fixme[4]: Attribute must be annotated.
         regex = re.compile(rb"offset=(?P<offset>[0-9]+) len=(?P<len>[0-9]+)")
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_offset = staticmethod(int)
-        # pyre-fixme[4]: Attribute must be annotated.
         conv_len = staticmethod(int)
 
 
 # The inner classes of SendStreamItems, omitting internals like __doc__.
 # The keys must be bytes because `btrfs` does not give us unicode.
-# pyre-fixme[5]: Global expression must be annotated.
 NAME_TO_PARSER_TYPE = {
     k.encode(): v
     for k, v in SendStreamItemParsers.__dict__.items()
     if k[0] != "_"
 }
-# pyre-fixme[5]: Global expression must be annotated.
 NAME_TO_ITEM_TYPE = {
     k.encode(): v
     for k, v in SendStreamItems.__dict__.items()

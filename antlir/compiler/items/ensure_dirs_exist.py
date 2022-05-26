@@ -84,8 +84,6 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
     subdirs_to_create: Optional[str]
 
     @validator("subdirs_to_create")
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def validate_subdirs_to_create(cls, subdirs_to_create):  # noqa B902
         # subdirs_to_create should only exist on the config args being
         # passed to `ensure_subdirs_exist_factory` and must not be
@@ -93,7 +91,6 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         raise AssertionError(subdirs_to_create)
 
     @validator("into_dir")
-    # pyre-fixme[2]: Parameter must be annotated.
     def validate_into_dir(cls, into_dir) -> str:  # noqa B902
         # Validators are classmethods but flake8 doesn't catch that.
         return make_path_normal_relative(_validate_into_dir(into_dir))
@@ -106,20 +103,15 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         return basename
 
     @root_validator
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def set_default_stat_options(cls, values):  # noqa B902
         customize_stat_options(values, default_mode=0o755)
         return values
 
-    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         yield ProvidesDirectory(path=Path(self.into_dir) / self.basename)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         yield RequireDirectory(path=Path(self.into_dir))
-        # pyre-fixme[16]: `Optional` has no attribute `split`.
         user, group = self.user_group.split(":")
         yield RequireUser(user)
         yield RequireGroup(group)
@@ -171,11 +163,7 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
 
 
 def ensure_subdirs_exist_factory(
-    *,
-    into_dir: str,
-    subdirs_to_create: str,
-    # pyre-fixme[2]: Parameter must be annotated.
-    **kwargs,
+    *, into_dir: str, subdirs_to_create: str, **kwargs
 ) -> Iterator[EnsureDirsExistItem]:
     """Convenience factory to create a set of EnsureDirsExistItems. This allows
     us to provide a single API for the creation of a given directory, and then

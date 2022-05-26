@@ -18,7 +18,6 @@ from .cmd import _nspawn_setup, _nspawn_subvol_setup, _NspawnSetup
 from .plugins import NspawnPlugin
 
 
-# pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 _PopenResult = Tuple[subprocess.Popen, subprocess.Popen]
 _SetupSubvolCtxMgr = Callable[[_NspawnOpts], ContextManager[Subvol]]
 _NspawnSetupCtxMgr = Callable[

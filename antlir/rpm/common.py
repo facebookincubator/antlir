@@ -24,7 +24,6 @@ from antlir.common import byteme, get_logger
 from antlir.fs_utils import Path
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 _UINT64_STRUCT = struct.Struct("=Q")
 T = TypeVar("T")
@@ -45,18 +44,13 @@ def readonly_snapshot_db(snapshot_dir: Path) -> sqlite3.Connection:
 class DecorateContextEntry(Generic[T], AbstractContextManager):
     """Lightweight helper class to decorate context manager __enter__"""
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, ctx_mgr: ContextManager[T], decorator) -> None:
         self._ctx_mgr = ctx_mgr
-        # pyre-fixme[4]: Attribute must be annotated.
         self._decorator = decorator
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __enter__(self):
         return self._decorator(self._ctx_mgr.__enter__)()
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, *args, **kwargs):
         return self._ctx_mgr.__exit__(*args, **kwargs)
 
@@ -77,8 +71,6 @@ class RpmShard(NamedTuple):
         assert 0 <= shard < mod, f"Bad RPM shard: {shard_name}"
         return RpmShard(shard=shard, modulo=mod)
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def in_shard(self, rpm):
         (  # Our contract is that the RPM NEVRA is the global primary key,
             #
@@ -105,7 +97,6 @@ class Checksum(NamedTuple):
     def __str__(self) -> str:
         return f"{self.algorithm}:{self.hexdigest}"
 
-    # pyre-fixme[3]: Return type must be annotated.
     def hasher(self):
         # Certain repos use "sha" to refer to "SHA-1", whereas in `hashlib`,
         # "sha" goes through OpenSSL and refers to a different digest.
@@ -129,7 +120,6 @@ def has_yum() -> bool:
     return True
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def yum_is_dnf():
     """Determine if yum is really just dnf by looking at `which yum`"""
     yum_path = shutil.which("yum")
@@ -142,8 +132,6 @@ def yum_is_dnf():
         return False
 
     maybe_dnf = os.path.basename(os.readlink(yum_path))
-    # pyre-fixme[6]: For 1st param expected `Union[PathLike[bytes], PathLike[str],
-    #  bytes, int, str]` but got `Optional[str]`.
     dnf_exists = os.path.exists(shutil.which(maybe_dnf))
     assert dnf_exists, f"Yum points to invalid path: {maybe_dnf}"
 

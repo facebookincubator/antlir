@@ -42,9 +42,7 @@ class DeepCopyTestCase(AntlirTestCase):
     """
 
     def check_deepcopy_at_each_step(
-        self,
-        # pyre-fixme[2]: Parameter annotation cannot contain `Any`.
-        gen_fn: Callable[[], Generator[Tuple[str, Any], Any, None]],
+        self, gen_fn: Callable[[], Generator[Tuple[str, Any], Any, None]]
     ) -> None:
         """
         `gen_fn` makes a generator that yields `(step_name, obj)`, and gets
@@ -60,13 +58,10 @@ class DeepCopyTestCase(AntlirTestCase):
 
     def _check_deepcopy(
         self,
-        # pyre-fixme[2]: Parameter annotation cannot contain `Any`.
         gen_fn: Callable[
             [], Generator[Tuple[str, Any], Any, Optional[List[str]]]
         ],
-        # pyre-fixme[2]: Parameter must be annotated.
         replace_step=None,
-        # pyre-fixme[2]: Parameter must be annotated.
         expected_name=None,
         *,
         _replace_by=None,

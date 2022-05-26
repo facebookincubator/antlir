@@ -18,13 +18,10 @@ from antlir.common import (
     recv_fds_from_unix_sock,
 )
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
-# pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 _mockable_popen = subprocess.Popen
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def _make_debug_print(logger_name, fstring) -> str:
     t = time.time()
     ymdhms = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(t))
@@ -37,7 +34,6 @@ def _make_debug_print(logger_name, fstring) -> str:
     )
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _make_sockets_and_send_via(*, num_socks: int, unix_sock_fd: int):
     """
     Creates a TCP stream socket and sends it elsewhere via the provided Unix

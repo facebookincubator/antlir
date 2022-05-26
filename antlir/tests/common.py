@@ -20,7 +20,6 @@ class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
         unittest.util._MAX_LENGTH = 20000  # 250 lines of 80 chars
         self.maxDiff = 20000
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def assert_call_count(self, mock, expected_count) -> None:
         self.assertEqual(
             len(mock.mock_calls),
@@ -29,7 +28,6 @@ class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
             f"{expected_count}: {mock.mock_calls}",
         )
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def assert_call_equality(self, mock, expected_calls, **kwargs) -> None:
         """Helper to ensure a given mock had *only* the expected calls by also
         asserting the length of the iterable.
@@ -38,8 +36,6 @@ class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
         mock.assert_has_calls(expected_calls, **kwargs)
 
     @contextmanager
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def patch_ctx_mgr(self, to_patch):
         """Mocks a context manager by returning the 'entered' object. To use,
         pass in an unstarted patch.
@@ -51,8 +47,6 @@ class AntlirTestCase(unittest.IsolatedAsyncioTestCase):
         with to_patch as patched:
             yield patched.return_value.__enter__.return_value
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def mock_enter_context(self, patched_ctx_mgr):
         """Returns 'entered' mocked context manager for further mocking.
 

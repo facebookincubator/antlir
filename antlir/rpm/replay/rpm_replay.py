@@ -20,7 +20,6 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.rpm.replay.subvol_rpm_compare import NEVRA, RpmDiff
 from antlir.subvol_utils import Subvol, TempSubvolumes
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 ReplayItemsGenerator = Callable[[ExitStack, LayerOpts], Iterator[ImageItem]]
@@ -35,9 +34,7 @@ _RPM_INSTALL_CMD = [
 ]
 
 
-# pyre-fixme[3]: Return annotation cannot contain `Any`.
 def filter_features_to_replay(
-    # pyre-fixme[2]: Parameter annotation cannot contain `Any`.
     features_to_replay: List[Tuple[str, str, Any]]
 ) -> List[Tuple[str, str, Any]]:
     return [

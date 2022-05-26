@@ -21,7 +21,6 @@ class SubvolumeSetTestCase(AntlirTestCase):
     `IncompleteInode` becasuse those classes have their own tests.
     """
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _check_repr(self, expected, subvol_set: SubvolumeSet) -> None:
         self.assertEqual(
             *[
@@ -271,10 +270,6 @@ class SubvolumeSetTestCase(AntlirTestCase):
                 ),
             )
 
-        # pyre-fixme[53]: Captured variable `si` is not annotated.
-        # pyre-fixme[53]: Captured variable `subvols` is not annotated.
-        # pyre-fixme[3]: Return type must be annotated.
-        # pyre-fixme[2]: Parameter must be annotated.
         def insert_cat(transid):
             SubvolumeSetMutator.new(
                 subvols, si.subvol(path=b"cat", uuid=b"a", transid=transid)

@@ -52,7 +52,6 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
                 ret[target[len(main_cell) :]] = str(loc)
         return ret
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _run_test(self, targets_and_locs, delim, main_cell: str = "") -> None:
         with self._cell_root(main_cell) as cell_root:
             targets_and_locs = {

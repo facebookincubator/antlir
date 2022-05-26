@@ -16,14 +16,12 @@ _HELLO_WORLD = "hello SignedSource<<9f94b0b1eddcee39813128cd51ef0e47>> world!"
 
 
 class SignedSourceTestCase(AntlirTestCase):
-    # pyre-fixme[3]: Return type must be annotated.
     def test_sign(self):
         self.assertEqual(
             _HELLO_WORLD,
             sign_source(f"hello {signed_source_sigil()} world!"),
         )
 
-    # pyre-fixme[3]: Return type must be annotated.
     def test_sign_error(self):
         with self.assertRaisesRegex(
             RuntimeError,
@@ -31,7 +29,6 @@ class SignedSourceTestCase(AntlirTestCase):
         ):
             sign_source("aaa")
 
-    # pyre-fixme[3]: Return type must be annotated.
     def test_verify(self):
         assert_signed_source(_HELLO_WORLD, "_HELLO_WORLD")
         with self.assertRaisesRegex(

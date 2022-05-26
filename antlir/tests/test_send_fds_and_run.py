@@ -15,8 +15,6 @@ from ..common import pipe
 from ..send_fds_and_run import parse_opts, send_fds_and_popen
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _run(argv):
     env = os.environ
     env.pop("SUDO_COMMAND", None)  # So we can assert whether `sudo` was used
@@ -30,8 +28,6 @@ def _run(argv):
     return proc.returncode, stdout.decode(), stderr.decode()
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _clean_err(err):
     logging.info(f"From wrapper:\n{err}")
     err = [

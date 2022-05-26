@@ -169,7 +169,6 @@ class _CloneExtentRef(NamedTuple):
     # However, the denormalized approach seemed cleaner.
     leaf_idx: int
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):  # pragma: no cover
         return (
             f"{self.clone.inode_id}:{self.clone.offset}"
@@ -198,7 +197,6 @@ assert _CloneExtentRef._fields.index("clone") == 0
 #  - making `Inode`s comparable (a bit ugly, comparing Extents is pricy,
 #    comparing InodeIDs would require some comparator boilerplate)
 # Luckily, being explicit is not *that* painful.
-# pyre-fixme[3]: Return type must be annotated.
 def _clone_op_compare_key(c: "_CloneOp"):
     return (
         # The preceding asserts make these [1:] hacks tolerable.
@@ -210,12 +208,8 @@ def _clone_op_compare_key(c: "_CloneOp"):
     )
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _clone_op_compare(fn):
     @functools.wraps(fn)
-    # pyre-fixme[53]: Captured variable `fn` is not annotated.
-    # pyre-fixme[3]: Return type must be annotated.
     def cmp(self: "_CloneOp", other: "_CloneOp"):
         assert isinstance(other, _CloneOp)
         # We only compare ops within one extent. The tests assume this to
@@ -230,11 +224,8 @@ def _clone_op_compare(fn):
     return cmp
 
 
-# pyre-fixme[2]: Parameter annotation cannot be `Any`.
 class _CloneOp(NamedTuple):
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     PUSH = "push"
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     POP = "pop"
     assert POP < PUSH  # We want to sort all POPs before any PUSHes
 
@@ -243,21 +234,14 @@ class _CloneOp(NamedTuple):
     ref: _CloneExtentRef
 
     # NamedTuple confuses functools.total_ordering, so define all 6 comparators
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     __eq__ = _clone_op_compare(tuple.__eq__)
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     __ne__ = _clone_op_compare(tuple.__ne__)
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     __lt__ = _clone_op_compare(tuple.__lt__)
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     __le__ = _clone_op_compare(tuple.__le__)
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     __gt__ = _clone_op_compare(tuple.__gt__)
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     __ge__ = _clone_op_compare(tuple.__ge__)
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _leaf_extent_id_to_clone_ops(
     ids_and_extents: Iterable[Tuple[InodeID, Extent]]
 ):
@@ -293,7 +277,6 @@ def _leaf_extent_id_to_clone_ops(
     return leaf_extent_id_to_clone_ops
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _leaf_ref_to_chunk_clones_from_clone_ops(
     extent_id: int, clone_ops: Iterable[_CloneOp]
 ):
@@ -351,7 +334,6 @@ def _leaf_ref_to_chunk_clones_from_clone_ops(
     return leaf_ref_to_chunk_clones
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _id_to_leaf_idx_to_chunk_clones(
     ids_and_extents: Iterable[Tuple[InodeID, Extent]]
 ):

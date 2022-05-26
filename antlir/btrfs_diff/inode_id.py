@@ -28,8 +28,6 @@ from typing import (
 from .freeze import freeze
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def tail(n: int, iterable):
     "Return an iterator over the last n items"
     return iter(deque(iterable, maxlen=n))  # tail(3, 'ABCDEFG') --> E F G
@@ -79,8 +77,6 @@ class InodeID(NamedTuple):
     def __hash__(self) -> int:
         return hash((self.id, id(self.inner_id_map)))
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def __eq__(self, other):
         return (
             type(self) is type(other)
@@ -126,10 +122,8 @@ class _ReversePathEntry(NamedTuple):
 _ROOT_REVERSE_ENTRY = _ReversePathEntry(name=b"", parent_int_id=None)
 
 
-# pyre-fixme[2]: Parameter annotation cannot be `Any`.
 class _InnerInodeIDMap(NamedTuple):
     "Explained where `InodeIDMap.inner` is declared."
-    # pyre-fixme[4]: Attribute annotation cannot be `Any`.
     description: Any  # repr()able, to be used for repr()ing InodeIDs
     # The key is not an `InodeID` to avoid a circular dependency.  The
     # values correspond to different hardlinks to the same file inode.
@@ -196,7 +190,6 @@ class InodeIDMap(NamedTuple):
     inner: _InnerInodeIDMap
 
     @classmethod
-    # pyre-fixme[2]: Parameter annotation cannot be `Any`.
     def new(cls, *, description: Any = "") -> "InodeIDMap":
         inner = _InnerInodeIDMap(
             description=description, id_to_reverse_entries=defaultdict(set)
@@ -215,7 +208,6 @@ class InodeIDMap(NamedTuple):
         )
         return self
 
-    # pyre-fixme[3]: Return type must be annotated.
     def freeze(self, *, _memo):
         "Returns a recursively immutable copy of `self`."
         return self._make(
@@ -326,8 +318,6 @@ class InodeIDMap(NamedTuple):
         # a suffix of this `_ReversePathEntry`, but it's not a match.
         return reverse_entry.is_root()
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _matching_reverse_path_entry(self, reverse_entries, parts):
         """
         File hardlinks means an inode will have many `reverse_path_entries`,

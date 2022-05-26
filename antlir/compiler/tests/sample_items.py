@@ -40,7 +40,6 @@ _NONPORTABLE_ARTIFACTS = int(
     os.environ.get("test_image_feature_built_artifacts_require_repo")
 )
 
-# pyre-fixme[5]: Global expression must be annotated.
 T_BASE = antlir_dep("compiler/test_images")
 # Use the "debug", human-readable forms of the `feature`s targets here,
 # since that's what we are testing.
@@ -51,13 +50,11 @@ T_MOUNT = f"{T_BASE}:feature_mount"
 T_SYMLINKS = f"{T_BASE}:feature_symlinks"
 T_TAR = f"{T_BASE}:feature_tar_and_rpms"
 T_PRINT_OK = f"{T_BASE}:print-ok"
-# pyre-fixme[5]: Global expression must be annotated.
 T_EXE_WRAP_PRINT_OK = f"{T_BASE}:" + wrap_buck_runnable_target(
     f"{T_BASE}:print-ok"
 )
 T_DIR_PRINT_OK = f"{T_BASE}:dir-print-ok"
 T_DIR_WITH_SCRIPT = f"{T_BASE}:dir-with-script"
-# pyre-fixme[5]: Global expression must be annotated.
 T_EXE_WRAP_DIR_PRINT_OK = f"{T_BASE}:" + wrap_buck_runnable_target(
     f"{T_BASE}:dir-print-ok"
 )
@@ -69,7 +66,6 @@ T_RPM_TEST_CHEESE = f"{T_BASE}:rpm-test-cheese-2-1.rpm"
 T_SHADOW_ME = f"{T_BASE}:shadow_me"
 
 TARGET_ENV_VAR_PREFIX = "test_image_feature_path_to_"
-# pyre-fixme[5]: Global expression must be annotated.
 TARGET_TO_PATH = {
     "{}:{}".format(T_BASE, target[len(TARGET_ENV_VAR_PREFIX) :]): path
     for target, path in os.environ.items()
@@ -80,8 +76,6 @@ TARGET_TO_PATH = {
 assert T_HELLO_WORLD_TAR in TARGET_TO_PATH, "You must use `buck test`"
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def mangle(feature_target):
     return feature_target + (
         "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
@@ -347,7 +341,6 @@ ID_TO_ITEM = {
 
 
 # Imitates the output of `DependencyGraph.ordered_phases` for `test-compiler`
-# pyre-fixme[5]: Global expression must be annotated.
 ORDERED_PHASES = (
     (FilesystemRootItem.get_phase_builder, ["/"]),
     (

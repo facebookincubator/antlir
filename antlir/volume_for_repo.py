@@ -29,8 +29,6 @@ VOLUME_DIR = "volume"
 LOOP_SIZE = 1e11
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def get_volume_for_current_repo(artifacts_dir: Path, min_free_bytes=LOOP_SIZE):
     """
     Multiple repos need to be able to concurrently build images on the same
@@ -98,10 +96,8 @@ if __name__ == "__main__":  # pragma: no cover
         )
         sys.exit(1)
 
-    # pyre-fixme[5]: Global expression must be annotated.
     second_arg = [] if sys.argv[2] == "None" else [float(sys.argv[2])]
     # pyre-fixme[58]: `+` is not supported for operand types `List[Path]` and
     #  `Union[typing.List[typing.Any], typing.List[float]]`.
-    # pyre-fixme[5]: Global expression must be annotated.
     args = [Path(sys.argv[1])] + second_arg
     print(get_volume_for_current_repo(*args))

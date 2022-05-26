@@ -24,16 +24,12 @@ from functools import wraps
 from typing import Callable
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _sig_raise_keyboard_interrupt(signum, stackframe):
     raise KeyboardInterrupt
 
 
-# pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
 def handle_sigterm(start_func: Callable) -> Callable:
     @wraps(start_func)
-    # pyre-fixme[2]: Parameter must be annotated.
     def start_wrapper(*args, **kwargs) -> None:
         try:
             signal.signal(signal.SIGTERM, _sig_raise_keyboard_interrupt)

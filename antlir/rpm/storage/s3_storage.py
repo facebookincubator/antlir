@@ -19,7 +19,6 @@ from ..open_url import open_url
 from ..storage import Storage, StorageInput, StorageOutput
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -56,7 +55,6 @@ class S3Storage(Storage, plugin_kind="s3"):
             yield StorageInput(input=f)
 
     @property
-    # pyre-fixme[3]: Return type must be annotated.
     def s3(self):
         # botocore does not support running from a pex/zip (aka a 'standalone'
         # binary that gets installed in an image), so only import it when on
@@ -83,9 +81,6 @@ class S3Storage(Storage, plugin_kind="s3"):
         buf = io.BytesIO()
 
         @contextmanager
-        # pyre-fixme[53]: Captured variable `buf` is not annotated.
-        # pyre-fixme[53]: Captured variable `key` is not annotated.
-        # pyre-fixme[3]: Return type must be annotated.
         def get_id_and_release_resources():
             buf.seek(0)
             # boto3 spews unclosed resource warnings everywhere, without a

@@ -21,12 +21,10 @@ from antlir.subvol_utils import Subvol
 
 # `mode` can be an integer fully specifying the bits, or a chmod symbolic string
 # like `u+rx`.  In the latter case, the changes are applied on top of mode 0.
-# pyre-fixme[5]: Global expression must be annotated.
 STAT_OPTION_FIELDS = [("mode", None), ("user_group", None)]
 
 Mode = Union[str, int]  # human-readable chmod symbolic string, or octal
 
-# pyre-fixme[5]: Global expression must be annotated.
 _STAT_CLASSES = {
     "u": lambda b: b << 6,
     "g": lambda b: b << 3,
@@ -51,8 +49,6 @@ _STAT_EXTRA_PERMS = {
 }
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def customize_stat_options(kwargs, *, default_mode):
     "Mutates `kwargs`."
     if kwargs.get("mode") is None:
@@ -117,16 +113,12 @@ def mode_to_str(mode: Mode) -> str:
 # Future: this should validate that the user & group actually exist in the
 # image's passwd/group databases (blocked on having those be first-class
 # objects in the image build process).
-# pyre-fixme[3]: Return type must be annotated.
 def build_stat_options(
-    # pyre-fixme[2]: Parameter must be annotated.
     item,
     subvol: Subvol,
     full_target_path: str,
     *,
-    # pyre-fixme[2]: Parameter must be annotated.
     do_not_set_mode=False,
-    # pyre-fixme[2]: Parameter must be annotated.
     build_appliance=None,
 ):
     assert full_target_path.startswith(
@@ -145,12 +137,6 @@ def build_stat_options(
             etc_passwd = "/etc/passwd"
             etc_group = "/etc/group"
 
-        # pyre-fixme[53]: Captured variable `etc_group` is not annotated.
-        # pyre-fixme[53]: Captured variable `etc_passwd` is not annotated.
-        # pyre-fixme[53]: Captured variable `work_dir` is not annotated.
-        # pyre-fixme[53]: Captured variable `build_appliance` is not annotated.
-        # pyre-fixme[3]: Return type must be annotated.
-        # pyre-fixme[2]: Parameter must be annotated.
         def run(cmd, **kwargs):
             run_nspawn(
                 new_nspawn_opts(

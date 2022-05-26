@@ -22,12 +22,9 @@ from .find_built_subvol import find_built_subvol
 from .fs_utils import Path
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 CVE_REGEX = re.compile(r"""\bCVE-[0-9]{4}-[0-9]+\b""")
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -52,16 +49,12 @@ def parse_args(argv):
     return Path.parse_args(parser, argv)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _str_or_none(txt):
     if txt is None or txt == "(none)":
         return None
     return txt
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _int_or_none(txt):
     x = _str_or_none(txt)
     if x is None:
@@ -69,24 +62,18 @@ def _int_or_none(txt):
     return int(x)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _xpath_to_integer(elems):
     if not elems:
         return None
     return _int_or_none(elems[0].text)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _xpath_to_string(elems):
     if not elems:
         return None
     return _str_or_none(elems[0].text)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _xpath_to_cves(elems):
     mset = set()
     for elem in elems:
@@ -94,15 +81,12 @@ def _xpath_to_cves(elems):
     return sorted(mset, reverse=True)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _nvra_to_name(n, v, r, a):
     if a is not None:
         return "{}-{}-{}.{}".format(n, v, r, a)
     return "{}-{}-{}".format(n, v, r)
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def extract_rpm_manifest(argv) -> None:
     args = parse_args(argv)
     output_path = args.output_path

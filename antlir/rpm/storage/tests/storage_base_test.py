@@ -14,7 +14,6 @@ from .. import Storage  # Module import to ensure we get plugins
 class StorageBaseTestCase(unittest.TestCase):
     "A tiny test suite that can be used to check any Storage implementation."
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _check_write_and_read(self, storage: Storage, writes: List[bytes]):
         # pyre-fixme[16]: `Storage` has no attribute `writer`.
         with storage.writer() as output:

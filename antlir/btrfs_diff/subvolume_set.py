@@ -80,19 +80,16 @@ class SubvolumeDescription(NamedTuple):
     # See the IMPORTANT note in the docblock about this member:
     name_uuid_prefix_counts: Mapping[str, int]
 
-    # pyre-fixme[3]: Return type must be annotated.
     def name_uuid_prefixes(self):
         name = self.name.decode(errors="surrogateescape")
         for i in range(len(self.id.uuid) + 1):
             yield (name + "@" + self.id.uuid[:i]) if i else name
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         for prefix in self.name_uuid_prefixes():
             if self.name_uuid_prefix_counts.get(prefix, 0) < 2:
                 return prefix
         # Happens when one uuid is a prefix of another, i.e. in tests.
-        # pyre-fixme[61]: `prefix` is undefined, or not always defined.
         return f"{prefix}-ERROR"
 
 
@@ -108,7 +105,6 @@ class SubvolumeSet(NamedTuple):
     name_uuid_prefix_counts: Mapping[str, int]
 
     @classmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def new(cls, **kwargs) -> "SubvolumeSet":
         kwargs.setdefault("uuid_to_subvolume", {})
         kwargs.setdefault("name_uuid_prefix_counts", Counter())
@@ -154,7 +150,6 @@ class SubvolumeSet(NamedTuple):
             sv.inodes() for sv in self.uuid_to_subvolume.values()
         )
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def map(self, fn) -> Mapping[str, RenderedTree]:
         """
         Applies `fn` to each subvolume. Returns results indexed by a string
@@ -246,7 +241,6 @@ class SubvolumeSetMutator(NamedTuple):
 
         return cls(subvolume=subvol, subvolume_set=subvol_set)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def apply_item(self, item: SendStreamItem):
         if isinstance(item, SendStreamItems.clone):
             from_subvol = self.subvolume_set.uuid_to_subvolume.get(

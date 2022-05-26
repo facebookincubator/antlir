@@ -16,14 +16,11 @@ from antlir.fs_utils import Path
 from .server_launcher import ServerLauncher
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
-# pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 _mockable_popen_for_repo_server = subprocess.Popen
 
 
 class RepoServer(ServerLauncher):
-    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, rpm_repo_snapshot: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.rpm_repo_snapshot = rpm_repo_snapshot
@@ -32,7 +29,6 @@ class RepoServer(ServerLauncher):
         return f"RepoServer({self.rpm_repo_snapshot}, port={self.port})"
 
     @property
-    # pyre-fixme[3]: Return type must be annotated.
     def command_line(self):
         return [
             self.bin_path,

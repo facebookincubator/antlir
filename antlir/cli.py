@@ -34,11 +34,7 @@ def _load_targets_and_outputs(arg: AnyStr) -> Mapping[AnyStr, Path]:
 
 
 def add_targets_and_outputs_arg(
-    parser: argparse.ArgumentParser,
-    *,
-    # pyre-fixme[2]: Parameter must be annotated.
-    action=None,
-    suppress_help: bool = False
+    parser: argparse.ArgumentParser, *, action=None, suppress_help: bool = False
 ) -> None:
     parser.add_argument(
         "--targets-and-outputs",

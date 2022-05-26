@@ -90,7 +90,6 @@ from .plugin_hooks import _popen_plugin_driver
 from .plugins import NspawnPlugin
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 # This is a temporary mountpoint where we inject `busybox` and the host's
@@ -105,7 +104,6 @@ def run_nspawn(
     popen_args: PopenArgs,
     *,
     plugins: Iterable[NspawnPlugin] = (),
-    # pyre-fixme[24]: Generic type `subprocess.CompletedProcess` expects 1 type parameter.
 ) -> Tuple[subprocess.CompletedProcess, subprocess.CompletedProcess]:
     """
     The first `CompletedProcess` reflects for the user command `opts.cmd`
@@ -141,7 +139,6 @@ def popen_nspawn(
     popen_args: PopenArgs,
     *,
     plugins: Iterable[NspawnPlugin] = (),
-    # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     log.debug(f"popen_nspawn {opts.cmd}")
     # pyre-fixme[7]: Expected `Iterable[Tuple[subprocess.Popen[typing.Any],
@@ -160,7 +157,6 @@ def popen_nspawn(
 @contextmanager
 def _post_setup_popen_nspawn(
     setup: _NspawnSetup,
-    # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
     with _popen_nspawn(setup) as (
@@ -225,7 +221,6 @@ echo "$outer_pid" >&3  # report PID only ater unmounting
 """
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _wrap_systemd_exec(
     shell_quoted_extra_args: str, *, do_set_antlir_nis_domainname: bool
 ):
@@ -248,7 +243,6 @@ def _wrap_systemd_exec(
     ]
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _non_booted_container_dummy(*, do_set_antlir_nis_domainname: bool):
     return [
         *_RUN_BUSYBOX_SCRIPT,
@@ -358,8 +352,6 @@ def _make_nspawn_cmd(
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _systemd_reaper(setup, nspawn_proc, systemd_pid):
     try:
         yield
@@ -395,7 +387,6 @@ def _systemd_reaper(setup, nspawn_proc, systemd_pid):
 @contextmanager
 def _popen_nspawn(
     setup: _NspawnSetup,
-    # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 ) -> Iterable[Tuple[subprocess.Popen, int]]:
     if setup.popen_args.console == subprocess.PIPE:
         raise RuntimeError(
@@ -487,12 +478,10 @@ def _popen_nspawn(
 
 def _popen_nsenter_into_container(
     setup: _NspawnSetup,
-    # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
     nspawn_proc: subprocess.Popen,
     *,
     clonecaps: Path,
     container_proc_pid: int,
-    # pyre-fixme[24]: Generic type `subprocess.Popen` expects 1 type parameter.
 ) -> ContextManager[subprocess.Popen]:
     opts = setup.opts
 

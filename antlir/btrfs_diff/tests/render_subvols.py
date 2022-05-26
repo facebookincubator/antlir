@@ -25,8 +25,6 @@ from ..subvolume_set import SubvolumeSet, SubvolumeSetMutator
 from .subvolume_utils import expected_subvol_add_traversal_ids
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def expected_rendering(expected_subvol):
     "Takes a `RenderedTree` with `InodeRepr` for some of the inodes."
     return emit_non_unique_traversal_ids(
@@ -38,7 +36,6 @@ def render_subvolume(subvol: "Subvolume") -> "RenderedTree":
     return emit_non_unique_traversal_ids(btrfs_diff_freeze(subvol).render())
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def add_sendstream_to_subvol_set(subvols: SubvolumeSet, sendstream: bytes):
     parsed = parse_send_stream(BytesIO(sendstream))
     mutator = SubvolumeSetMutator.new(subvols, next(parsed))
@@ -50,7 +47,6 @@ def add_sendstream_to_subvol_set(subvols: SubvolumeSet, sendstream: bytes):
 # We could do this on each `mutator.subvol` in `add_...`, but that would
 # make `add_...` less reusable.  E.g., it would preclude cross-subvolume
 # clone detection.
-# pyre-fixme[3]: Return type must be annotated.
 def prepare_subvol_set_for_render(
     subvols: SubvolumeSet,
     build_start_time: Tuple[int, int] = (0, 0),

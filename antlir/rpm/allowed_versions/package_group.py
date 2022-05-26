@@ -48,8 +48,6 @@ class ManualPackageGroup(PackageGroup, plugin_kind="manual"):
         It returns the package names unchanged.
         """
 
-        # pyre-fixme[3]: Return type must be annotated.
-        # pyre-fixme[2]: Parameter must be annotated.
         def load_config(*, names):
             return tuple(names)  # Tuple to avoid mutable alias bugs
 

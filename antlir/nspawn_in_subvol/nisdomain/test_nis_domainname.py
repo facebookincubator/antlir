@@ -18,7 +18,6 @@ def _get_nis_domain() -> str:
 
 
 class TestSetAntlirNISDomainName(unittest.TestCase):
-    # pyre-fixme[3]: Return type must be annotated.
     def test_set_domainname(self):
         magic_name = "AntlirNotABuildStep"
 

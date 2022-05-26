@@ -17,7 +17,6 @@ from ..run import _set_up_run_cli
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
 def _mocks_for_parse_cli_args():
     with mock.patch(
         "antlir.nspawn_in_subvol.args.pwd.getpwnam"
@@ -39,8 +38,6 @@ def _mocks_for_parse_cli_args():
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _mocks_for_extra_nspawn_args(*, artifacts_require_repo):
     with mock.patch(
         "antlir.nspawn_in_subvol.cmd._artifacts_require_repo"
@@ -61,10 +58,7 @@ class NspawnTestBase(TestCase):
             b"\n" if self.nspawn_version.major < 242 else b""
         )
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _nspawn_in_boot_ret(self, rsrc_pair, argv, **kwargs):
-        # pyre-fixme[16]: `_CliSetup` has no attribute `__enter__`.
         with _set_up_run_cli(
             ["--layer", layer_resource(*rsrc_pair), *argv]
         ) as cli_setup:
@@ -72,19 +66,12 @@ class NspawnTestBase(TestCase):
                 cli_setup = cli_setup._replace(console=kwargs.pop("console"))
             return cli_setup._run_nspawn(PopenArgs(**kwargs))
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _nspawn_in(self, rsrc_pair, argv, **kwargs):
         ret, _boot_ret = self._nspawn_in_boot_ret(rsrc_pair, argv, **kwargs)
         return ret
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _wrapper_args_to_nspawn_args(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        argv,
-        *,
-        artifacts_require_repo: bool = False
+        self, argv, *, artifacts_require_repo: bool = False
     ):
         with _mocks_for_parse_cli_args():
             args = _parse_cli_args(argv, allow_debug_only_opts=True)

@@ -57,7 +57,6 @@ from antlir.rpm.repo_snapshot import RepoSnapshot
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -92,7 +91,6 @@ def download_repos(
     *,
     cfg: DownloadConfig,
     visitors: Iterable[RepoObjectVisitor] = (),
-    # pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
     log_sample: Callable = lambda *_, **__: None,
 ) -> Iterator[Tuple[YumDnfConfRepo, RepoSnapshot]]:
     all_snapshot_universes = frozenset(u for _, u in repos_and_universes)

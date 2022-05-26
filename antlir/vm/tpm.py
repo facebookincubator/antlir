@@ -15,7 +15,6 @@ from antlir.fs_utils import Path
 from antlir.unshare import Unshare
 from antlir.vm.common import SidecarProcess
 
-# pyre-fixme[5]: Global expression must be annotated.
 logger = logging.getLogger(__name__)
 
 
@@ -30,7 +29,6 @@ class TPMError(Exception):
 # reader thread that pipes to logger.
 # The wait method here is marked async for the same reason.
 class PseudoAsyncProcess(SidecarProcess):
-    # pyre-fixme[3]: Return type must be annotated.
     def __init__(self, args: List[Union[str, bytes]]):
         env = os.environ.copy()
         env["PYTHONDONTWRITEBYTECODE"] = "1"
@@ -49,12 +47,10 @@ class PseudoAsyncProcess(SidecarProcess):
         )
         self.__reader.start()
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __pipe_output(self):
         for line in self._proc.stderr:
             logger.debug("TPM: {}".format(line.strip()))
 
-    # pyre-fixme[3]: Return type must be annotated.
     async def wait(self):
         # other side of the read pipe is closed by the kill
         self.__reader.join()
@@ -70,7 +66,6 @@ class VmTPM(object):
     sock_path: Path = field(init=False)
     state_path: Path = field(init=False)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __post_init__(self):
         # sacrifices for a frozen instance with init fields, see:
         # https://docs.python.org/3/library/dataclasses.html#frozen-instances

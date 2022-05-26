@@ -21,7 +21,6 @@ from .common import AntlirTestCase
 
 
 class BtrfsUtilTestCase(AntlirTestCase):
-    # pyre-fixme[3]: Return type must be annotated.
     def setUp(self):
         super().setUp()
         # Make sure we have a volume to work with
@@ -30,8 +29,6 @@ class BtrfsUtilTestCase(AntlirTestCase):
         )
 
     @with_temp_subvols
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_no_sudo_necessary(self, temp_subvols):
         """Does not use sudo when underlying call passes"""
         subvol = temp_subvols.create("no_sudo_necessary")
@@ -46,15 +43,12 @@ class BtrfsUtilTestCase(AntlirTestCase):
 
     @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @patch("antlir.btrfsutil._sudo_retry")
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_non_perm_error(self, mock_sudo_retry, mock_subvolume_info):
         """Non-permission errors are not retried"""
         mock_subvolume_info.side_effect = _raw_btrfsutil.BtrfsUtilError(
             errno.ENOENT, None
         )
         with self.assertRaises(_raw_btrfsutil.BtrfsUtilError) as cm:
-            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             btrfsutil.subvolume_info("fake-path")
         self.assertEqual(cm.exception.errno, errno.ENOENT)
         mock_subvolume_info.assert_called_once()
@@ -62,23 +56,18 @@ class BtrfsUtilTestCase(AntlirTestCase):
 
     @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @patch("antlir.btrfsutil._sudo_retry")
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_sudo_fallback(self, mock_sudo_retry, mock_subvolume_info):
         """Falls back to calling sudo on permissions errors"""
         mock_subvolume_info.__name__ = "subvolume_info"
         mock_subvolume_info.side_effect = _raw_btrfsutil.BtrfsUtilError(
             errno.EPERM, None
         )
-        # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
         btrfsutil.subvolume_info("fake-path")
         mock_subvolume_info.assert_called_once()
         mock_sudo_retry.assert_called_once()
 
     @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @patch("antlir.btrfsutil._sudo_retry")
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_sudo_fallback_fails(self, mock_sudo_retry, mock_subvolume_info):
         """Exception from _sudo_retry gets raised"""
         mock_subvolume_info.__name__ = "subvolume_info"
@@ -87,32 +76,23 @@ class BtrfsUtilTestCase(AntlirTestCase):
         )
         mock_sudo_retry.side_effect = RuntimeError("test")
         with self.assertRaises(RuntimeError, msg="test"):
-            # pyre-fixme[6]: For 1st param expected `Path` but got `str`.
             btrfsutil.subvolume_info("fake-path")
         mock_subvolume_info.assert_called_once()
         mock_sudo_retry.assert_called_once()
 
-    # pyre-fixme[3]: Return type must be annotated.
     def test_sudo_fallback_subprocess_exception(self):
         """Exception in _sudo_retry subprocess is raised"""
         # this name must be unittest_fail
-        # pyre-fixme[3]: Return type must be annotated.
         def unittest_fail():
             pass
 
         with self.assertRaises(
             RuntimeError, msg="failing for unittest coverage"
         ):
-            # pyre-fixme[16]: Module `btrfsutil` has no attribute `_sudo_retry`.
             btrfsutil._sudo_retry(unittest_fail, None, None)
 
-    # pyre-fixme[56]: Pyre was not able to infer the type of argument
-    #  `antlir.btrfsutil._sudo_retry` to decorator factory `unittest.mock.patch`.
-    # pyre-fixme[16]: Module `btrfsutil` has no attribute `_sudo_retry`.
     @patch("antlir.btrfsutil._sudo_retry", wraps=btrfsutil._sudo_retry)
     @with_temp_subvols
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_integration_unpriv(self, temp_subvols, sudo_retry):
         """Regular unprivileged calls work"""
         to_create = temp_subvols.temp_dir / "create-subvol-unpriv"
@@ -127,8 +107,6 @@ class BtrfsUtilTestCase(AntlirTestCase):
 
     @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @with_temp_subvols
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_integration_sudo_fallback(self, temp_subvols, mock_subvolume_info):
         """Sudo fallback works"""
         subvol = temp_subvols.create("sudo_fallback")
@@ -143,17 +121,13 @@ class BtrfsUtilTestCase(AntlirTestCase):
 
     @patch("antlir.btrfsutil._raw_btrfsutil.subvolume_info")
     @with_temp_subvols
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_in_namespace(self, temp_subvols, mock_subvolume_info):
         """in_namespace calls nsenter"""
         subvol = temp_subvols.create("sudo_fallback")
         mock_subvolume_info.__name__ = "subvolume_info"
         with Unshare([Namespace.PID]) as ns:
             with patch(
-                "antlir.btrfsutil._sudo_retry",
-                # pyre-fixme[16]: Module `btrfsutil` has no attribute `_sudo_retry`.
-                wraps=btrfsutil._sudo_retry,
+                "antlir.btrfsutil._sudo_retry", wraps=btrfsutil._sudo_retry
             ) as mock_sudo_retry:
                 btrfsutil.subvolume_info(subvol.path(), in_namespace=ns)
         mock_subvolume_info.assert_not_called()

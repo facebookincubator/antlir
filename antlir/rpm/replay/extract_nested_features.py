@@ -16,7 +16,6 @@ from antlir.compiler.items_for_features import (
 from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -36,7 +35,6 @@ class ExtractedFeatures:
     )
     # Arguments to `gen_items_for_feature`.  This is a list if and only if
     # `features_needing_custom_image` is empty.
-    # pyre-fixme[4]: Attribute annotation cannot contain `Any`.
     features_to_replay: Optional[
         List[Tuple[str, str, Any]]
     ] = dataclasses.field(default_factory=list)

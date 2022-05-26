@@ -19,17 +19,14 @@ class S3StorageTestCase(StorageBaseTestCase):
 
     # some methods to mock an in-memory s3 bucket
     # this matches the read-after-write consistency guarantee from the real s3
-    # pyre-fixme[2]: Parameter must be annotated.
     def _mock_upload_fileobj(self, contents, key: str) -> None:
         self.objects[key] = contents.getbuffer()
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _mock_delete_objects(self, Delete) -> None:
         for key in [o["Key"] for o in Delete["Objects"]]:
             del self.objects[key]
 
     @contextmanager
-    # pyre-fixme[3]: Return type must be annotated.
     def _mock_open_url(self, url: str):
         urlprefix = f"https://{self.bucket}.s3-{self.region}.amazonaws.com/"
         assert url.startswith(urlprefix)

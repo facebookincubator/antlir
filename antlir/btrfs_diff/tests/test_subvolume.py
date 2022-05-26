@@ -24,11 +24,7 @@ from .subvolume_utils import expected_subvol_add_traversal_ids, InodeRepr
 
 class SubvolumeTestCase(DeepCopyTestCase):
     def _check_render(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        expected_ser,
-        subvol: Subvolume,
-        path: str = ".",
+        self, expected_ser, subvol: Subvolume, path: str = "."
     ) -> None:
         self.assertEqual(
             *[
@@ -41,17 +37,12 @@ class SubvolumeTestCase(DeepCopyTestCase):
         )
 
     def _check_both_renders(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        expected_ser,
-        subvol: Subvolume,
-        path: str = ".",
+        self, expected_ser, subvol: Subvolume, path: str = "."
     ) -> None:
         self._check_render(expected_ser, subvol, path)
         # Always check the frozen variant, too.
         self._check_render(expected_ser, freeze(subvol), path)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _check_subvolume(self):
         """
         The `yield` statements in this generator allow `DeepCopyTestCase`
@@ -68,27 +59,20 @@ class SubvolumeTestCase(DeepCopyTestCase):
         # Make a tiny subvolume
         cat = Subvolume.new(id_map=InodeIDMap.new(description="cat"))
         cat = yield "empty cat", cat
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(["(Dir)", {}], cat)
 
-        # pyre-fixme[16]: `None` has no attribute `apply_item`.
         cat.apply_item(si.mkfile(path=b"dog"))
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(["(Dir)", {"dog": ["(File)"]}], cat)
 
         cat.apply_item(si.chmod(path=b"dog", mode=0o755))
         cat = yield "cat with chmodded dog", cat
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(["(Dir)", {"dog": ["(File m755)"]}], cat)
 
-        # pyre-fixme[6]: For 3rd param expected `bytes` but got `str`.
         cat.apply_item(si.write(path=b"dog", offset=0, data="bbb"))
         cat = yield "cat with dog with data", cat
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(["(Dir)", {"dog": ["(File m755 d3)"]}], cat)
 
         cat.apply_item(si.chmod(path=b"dog", mode=0o744))
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(["(Dir)", {"dog": ["(File m744 d3)"]}], cat)
         with self.assertRaisesRegex(RuntimeError, "Missing ancestor "):
             cat.apply_item(si.mkfifo(path=b"dir_to_del/fifo_to_del"))
@@ -103,7 +87,6 @@ class SubvolumeTestCase(DeepCopyTestCase):
             },
         ]
         cat = yield "final cat", cat
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(cat_final_repr, cat)
 
         # Check some rename errors
@@ -136,17 +119,13 @@ class SubvolumeTestCase(DeepCopyTestCase):
 
         # Testing the above errors caused no changes
         cat = yield "cat after error testing", cat
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(cat_final_repr, cat)
 
         # Make a snapshot using the hack from `SubvolumeSetMutator`
         tiger = copy.deepcopy(
-            cat,
-            # pyre-fixme[16]: `None` has no attribute `id_map`.
-            memo={id(cat.id_map.inner.description): "tiger"},
+            cat, memo={id(cat.id_map.inner.description): "tiger"}
         )
         tiger = yield "freshly copied tiger", tiger
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(cat_final_repr, tiger)
 
         # rmdir/unlink errors, followed by successful removal
@@ -160,13 +139,11 @@ class SubvolumeTestCase(DeepCopyTestCase):
         tiger = yield "tiger after rmdir/unlink errors", tiger
         tiger.apply_item(si.rmdir(path=b"dir_to_del"))
         tiger = yield "tiger after rmdir", tiger
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(["(Dir)", {"dog": ["(File m744 d3)"]}], tiger)
 
         # Rename where the target does not exist
         tiger.apply_item(si.rename(path=b"dog", dest=b"wolf"))
         tiger = yield "tiger after rename", tiger
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(["(Dir)", {"wolf": ["(File m744 d3)"]}], tiger)
 
         # Hardlinks, and modifying the root directory
@@ -179,13 +156,11 @@ class SubvolumeTestCase(DeepCopyTestCase):
             "(Dir o123:456)",
             {"wolf": [wolf], "tamaskan": [wolf]},
         ]
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(tiger_penultimate_repr, tiger)
 
         # Renaming the same inode is a no-op
         tiger.apply_item(si.rename(path=b"tamaskan", dest=b"wolf"))
         tiger = yield "tiger after same-inode rename", tiger
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(tiger_penultimate_repr, tiger)
 
         # Hardlinks do not overwrite targets
@@ -201,7 +176,6 @@ class SubvolumeTestCase(DeepCopyTestCase):
                 "wolf": [wolf],
             },
         ]
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(frozen_repr, tiger)
         # Also ensure that `emit_non_unique_traversal_ids` does what it says
         # on the tin.
@@ -231,22 +205,18 @@ class SubvolumeTestCase(DeepCopyTestCase):
                 "(Dir o123:456)",
                 {"wolf": ["(Char m444 4321)"], "tamaskan": [wolf]},
             ],
-            # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
             tiger,
         )
 
         # Graceful error on paths that cannot be resolved
         for fail_fn in [
             lambda: tiger.apply_item(si.truncate(path=b"not there", size=15)),
-            # pyre-fixme[16]: `None` has no attribute `apply_clone`.
             lambda: tiger.apply_clone(
                 si.clone(
                     path=b"not there",
                     offset=0,
                     len=1,
-                    # pyre-fixme[6]: For 4th param expected `bytes` but got `str`.
                     from_uuid="",
-                    # pyre-fixme[6]: For 5th param expected `bytes` but got `int`.
                     from_transid=0,
                     from_path=b"tamaskan",
                     clone_offset=0,
@@ -258,9 +228,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
                     path=b"tamaskan",
                     offset=0,
                     len=1,
-                    # pyre-fixme[6]: For 4th param expected `bytes` but got `str`.
                     from_uuid="",
-                    # pyre-fixme[6]: For 5th param expected `bytes` but got `int`.
                     from_transid=0,
                     from_path=b"tamaskan",
                     clone_offset=0,
@@ -279,9 +247,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
                 path=b"dolly",
                 offset=0,
                 len=10,
-                # pyre-fixme[6]: For 4th param expected `bytes` but got `str`.
                 from_uuid="",
-                # pyre-fixme[6]: For 5th param expected `bytes` but got `int`.
                 from_transid=0,
                 from_path=b"tamaskan",
                 clone_offset=5,
@@ -298,7 +264,6 @@ class SubvolumeTestCase(DeepCopyTestCase):
                     "dolly": ["(File h5d5)"],
                 },
             ],
-            # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
             tiger,
         )
         self._check_render(
@@ -324,7 +289,6 @@ class SubvolumeTestCase(DeepCopyTestCase):
         )
         # We're about to clone from `cat`, so allow it do be `deepcopy`d here.
         cat = yield "tiger clones from cat", cat
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(cat_final_repr, cat)
 
         tiger.apply_clone(
@@ -332,9 +296,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
                 path=b"dolly",
                 offset=2,
                 len=2,
-                # pyre-fixme[6]: For 4th param expected `bytes` but got `str`.
                 from_uuid="",
-                # pyre-fixme[6]: For 5th param expected `bytes` but got `int`.
                 from_transid=0,
                 from_path=b"dog",
                 clone_offset=1,
@@ -343,7 +305,6 @@ class SubvolumeTestCase(DeepCopyTestCase):
         )
 
         # The big comment below explains why we need `deepcopy_shenanigan`.
-        # pyre-fixme[16]: `None` has no attribute `inode_at_path`.
         dog_extent = cat.inode_at_path(b"dog").extent
         first_tamaskan_leaf = next(
             tiger.inode_at_path(b"tamaskan").extent.gen_trimmed_leaves()
@@ -364,7 +325,6 @@ class SubvolumeTestCase(DeepCopyTestCase):
                     "dolly": ["(File h2d2h1d5)"],
                 },
             ],
-            # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
             tiger,
         )
         # We do not see the `cat` clone -- that requires `SubvolumeSet`.
@@ -412,12 +372,10 @@ class SubvolumeTestCase(DeepCopyTestCase):
 
         # Mutating the snapshot leaves the parent subvol intact
         cat = yield "cat after tiger mutations", cat
-        # pyre-fixme[6]: For 2nd param expected `Subvolume` but got `None`.
         self._check_both_renders(cat_final_repr, cat)
         # Test the inode iterator
         self.assertEqual(
             ["(Dir)", "(Dir)", "(FIFO)", "(File m744 d3)"],
-            # pyre-fixme[16]: `None` has no attribute `inodes`.
             sorted(repr(ino) for ino in cat.inodes()),
         )
 

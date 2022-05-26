@@ -27,7 +27,6 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
 
     def __init__(self, *, key: str, base_dir: AnyStr) -> None:
         self.key = key
-        # pyre-fixme[4]: Attribute must be annotated.
         self.base_dir = Path(base_dir).abspath()
 
     def _path_for_storage_id(self, sid: str) -> str:
@@ -58,9 +57,6 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
         ) as outfile:
 
             @contextmanager
-            # pyre-fixme[53]: Captured variable `sid` is not annotated.
-            # pyre-fixme[53]: Captured variable `outfile` is not annotated.
-            # pyre-fixme[3]: Return type must be annotated.
             def get_id_and_release_resources():
                 try:
                     yield sid

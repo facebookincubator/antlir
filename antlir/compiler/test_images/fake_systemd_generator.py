@@ -7,12 +7,10 @@
 import os
 import sys
 
-# pyre-fixme[5]: Global expression must be annotated.
 multi_user_wants = sys.argv[1] + "/multi-user.target.wants"
 os.makedirs(multi_user_wants, exist_ok=True)
 
 fake_service = "fake-generated.service"
-# pyre-fixme[5]: Global expression must be annotated.
 fake_service_path = sys.argv[1] + "/" + fake_service
 
 with open(fake_service_path, "w") as f:

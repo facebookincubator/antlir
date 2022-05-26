@@ -27,11 +27,9 @@ from antlir.tests.subvol_helpers import (
 from .. import yum_dnf_from_snapshot
 
 _INSTALL_ARGS = ["install", "--assumeyes", "rpm-test-carrot", "rpm-test-milk"]
-# pyre-fixme[5]: Global expression must be annotated.
 _SNAPSHOT_DIR = snapshot_install_dir(antlir_dep("rpm:repo-snapshot-for-tests"))
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _temp_subvol(name: str):
     return (
         Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
@@ -46,7 +44,6 @@ class YumDnfFromSnapshotTestImpl:
         # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `maxDiff`.
         self.maxDiff = 12345
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _yum_dnf_from_snapshot(self, **kwargs) -> None:
         yum_dnf_from_snapshot.yum_dnf_from_snapshot(
             # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `_YUM_DNF`.
@@ -56,13 +53,10 @@ class YumDnfFromSnapshotTestImpl:
         )
 
     @contextmanager
-    # pyre-fixme[3]: Return type must be annotated.
     def _install(
         self,
         *,
-        # pyre-fixme[2]: Parameter must be annotated.
         protected_paths,
-        # pyre-fixme[2]: Parameter must be annotated.
         install_args=None,
         # Create IMAGE_ROOT/<META_DIR> by default, since it's always
         # protected, if it exists.
@@ -90,7 +84,6 @@ class YumDnfFromSnapshotTestImpl:
             )
             yield install_root
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _check_installed_content(self, install_root, installed_content) -> None:
         # Remove known content so we can check there is nothing else.
         remove = []
@@ -172,7 +165,6 @@ class YumDnfFromSnapshotTestImpl:
         # are more than one package in the list. Yum will only exit with an
         # error code here when specific options are explicitly set in the
         # yum.conf file.
-        # pyre-fixme[3]: Return type must be annotated.
         def _install_by_provides():
             return self._install(
                 protected_paths=[],
@@ -253,8 +245,6 @@ class YumDnfFromSnapshotTestImpl:
         self.assertEqual("stuff\n", Path("/rpm_test/post.txt").read_text())
 
     @contextmanager
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _set_up_shadow(self, replacement, to_shadow):
         # Create the mountpoint at the shadowed location, and the file
         # that will shadow it.
@@ -315,7 +305,6 @@ class YumDnfFromSnapshotTestImpl:
                 # But we updated the shadowed file
                 self.assertEqual("carrot 2 rc0\n", shadowed.read_text())
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _check_test_macro_contents(self, install_root: Path, prog) -> None:
         # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
         # `assertEqual`.
@@ -414,9 +403,7 @@ class YumDnfFromSnapshotTestImpl:
                 self, r, prog, no_meta=True, is_makecache=True, subvol=sv
             )
 
-    # pyre-fixme[3]: Return type must be annotated.
     def test_error_repr(self):
-        # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `assertEqual`.
         self.assertEqual(
             "YumDnfError(returncode=37)",
             repr(
@@ -432,7 +419,6 @@ class YumDnfFromSnapshotTestImpl:
     f"yum is not a supported rpm installer in {get_rpm_installers_supported()}",
 )
 class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
-    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.yum
 
     def test_yum_builddep(self) -> None:
@@ -462,5 +448,4 @@ class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
 
 
 class DnfFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
-    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.dnf

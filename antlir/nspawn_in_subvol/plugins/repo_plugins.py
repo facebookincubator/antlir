@@ -46,7 +46,6 @@ from .shadow_paths import ShadowPaths
 from .yum_dnf_versionlock import YumDnfVersionlock
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _get_snapshot_dir(opts: _NspawnOpts, plugin_args: NspawnPluginArgs):
     # Shadow RPM installers by default, when running as "root".  It is ugly
     # to condition this on "root", but in practice, it is a significant

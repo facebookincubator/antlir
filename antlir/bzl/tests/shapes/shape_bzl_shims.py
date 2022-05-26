@@ -15,20 +15,16 @@ import dataclasses
 import json
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def __dataclass_eq(left, right) -> bool:
     if not dataclasses.is_dataclass(right):
         return False
     return dataclasses.asdict(left) == dataclasses.asdict(right)
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def __struct_to_json(s) -> str:
     return json.dumps(dataclasses.asdict(s))
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def struct(**kwargs):
     cls = dataclasses.make_dataclass(
         "struct",
@@ -39,13 +35,10 @@ def struct(**kwargs):
     return cls(**kwargs)
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def load(_file, *_symbols) -> None:
     pass
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def provider(fields):
     return dataclasses.make_dataclass(
         "provider",
@@ -61,8 +54,6 @@ class Fail(Exception):
     pass
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def fail(msg: str, attr=None):
     if attr:  # pragma: no cover
         msg = f"{attr}: {msg}"
@@ -71,50 +62,35 @@ def fail(msg: str, attr=None):
 
 class structs(object):
     @staticmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def is_struct(x) -> bool:
         return dataclasses.is_dataclass(x)
 
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def to_dict(x):
         return dataclasses.asdict(x)
 
 
 class types(object):
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def is_bool(x):
         return type(x) == bool
 
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def is_int(x):
         return type(x) == int
 
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def is_string(x):
         return type(x) == str
 
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def is_dict(x):
         return type(x) == dict
 
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def is_list(x):
         return type(x) == list
 
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def is_tuple(x):
         return type(x) == tuple

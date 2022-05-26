@@ -21,7 +21,6 @@ from antlir.tests.common import AntlirTestCase
 
 
 class BuckRunnableVMTest(AntlirTestCase):
-    # pyre-fixme[3]: Return type must be annotated.
     def test_marked_as_non_build_step(self):
         while not re.search(
             "Process: .*code=exited",

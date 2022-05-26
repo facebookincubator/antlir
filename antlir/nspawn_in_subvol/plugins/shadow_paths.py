@@ -34,7 +34,6 @@ from antlir.subvol_utils import Subvol
 from . import NspawnPlugin
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 SHADOWED_PATHS_ROOT = Path("/__antlir__/shadowed")
 
@@ -64,7 +63,6 @@ def _shadow_search_dirs(setenv: Iterable[AnyStr]) -> Iterable[Path]:
         seen_search_dirs.add(search_dir)
 
 
-# pyre-fixme[3]: Return annotation cannot contain `Any`.
 def _nul_separated_tuples(n: int, data: bytes) -> List[Any]:
     "For `data` separated by NUL bytes, interpret it as a list of n-tuples."
     flat = data.split(b"\0")
@@ -184,7 +182,6 @@ printf '%s\\0%s\\0%s\\0' "$dst" {c.input_dest.shell_quote()} "$src"
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
 def _copy_to_shadowed_root(subvol: Subvol, container_paths: Iterable[Path]):
     originals_and_backups = [
         (
