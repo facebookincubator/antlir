@@ -63,6 +63,10 @@ image.layer(
         # post-switch-root root fs.
         systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
         systemd.enable_unit("sshd.service", "core-services.target"),
+        systemd.install_dropin(
+            "require-sshd-keygen.service",
+            "sshd.service",
+        ),
         feature.remove("/etc/ssh/sshd_config"),
         feature.install("sshd_config", "/etc/ssh/sshd_config"),
         # Add a cool metalos motd
