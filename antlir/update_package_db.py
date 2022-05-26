@@ -56,7 +56,6 @@ from .signed_source import sign_source, signed_source_sigil
 _GENERATED: str = "@" + "generated"
 _JSON = ".json"
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 Package = str
@@ -141,12 +140,10 @@ class PackageDoesNotExistError(InvalidCommandError):
 ExplicitUpdates = Dict[Package, Dict[Tag, PackageDbUpdate]]
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def _with_generated_header_impl(s, token, how_to_generate) -> str:
     return f"# {_GENERATED} {token}\n# Update via `{how_to_generate}`\n" + s
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def _with_generated_header(contents, how_to_generate) -> str:
     return sign_source(
         _with_generated_header_impl(
@@ -174,7 +171,6 @@ def _write_json_dir_db(
                     )
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def _read_generated_header(infile) -> None:
     generated_header = infile.readline()
     # Note: We don't verify the signature verification on read, since it's
@@ -323,7 +319,6 @@ def _parse_update_args(
     return pkg_updates
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _parse_args(
     argv: List[str],
     *,

@@ -72,9 +72,6 @@ def _make_create_ops_subvolume(subvols: TempSubvolumes, path: bytes) -> Subvol:
     run = subvol.run_as_root
 
     # `cwd` is intentionally prohibited with `run_as_root`
-    # pyre-fixme[53]: Captured variable `subvol` is not annotated.
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def p(sv_path):
         return subvol.path(sv_path).decode()
 
@@ -233,9 +230,6 @@ def _make_mutate_ops_subvolume(
     run = subvol.run_as_root
 
     # `cwd` is intentionally prohibited with `run_as_root`
-    # pyre-fixme[53]: Captured variable `subvol` is not annotated.
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def p(sv_path):
         return subvol.path(sv_path).decode()
 
@@ -267,8 +261,6 @@ def _float_to_sec_nsec_tuple(t: float) -> Tuple[int, int]:
 
 
 @contextlib.contextmanager
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _populate_sendstream_dict(d):
     d["build_start_time"] = _float_to_sec_nsec_tuple(time.time())
     yield d
@@ -288,7 +280,6 @@ def _populate_sendstream_dict(d):
 
 # Takes `path_in_repo` because this is part of the library interface, and
 # thus must work in @mode/opt, and thus we cannot use `__file__` here.
-# pyre-fixme[3]: Return type must be annotated.
 def make_demo_sendstreams(path_in_repo: Path):
     with TempSubvolumes(path_in_repo) as subvols:
         res = {}
@@ -368,7 +359,6 @@ def _main() -> None:
                 f.write(data)
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def gold_demo_sendstreams():
     with Path.resource(
         __package__, "gold_demo_sendstreams.pickle", exe=False

@@ -9,7 +9,6 @@ import unittest
 
 
 class VmtestKernelPanic(unittest.TestCase):
-    # pyre-fixme[3]: Return type must be annotated.
     def test_trigger_kernel_panic(self):
         with open("/proc/sysrq-trigger", "w") as f:
             f.write("c")

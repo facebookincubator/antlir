@@ -190,8 +190,6 @@ def garbage_collect_subvolumes(
         os.rmdir(wrapper_path)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def parse_args(argv):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -229,7 +227,6 @@ def parse_args(argv):
     return Path.parse_args(parser, argv)
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def has_new_subvolume(args) -> bool:
     new_subvolume_args = (
         args.new_subvolume_wrapper_dir,
@@ -257,7 +254,6 @@ def has_new_subvolume(args) -> bool:
     return False
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def subvolume_garbage_collector(argv) -> None:
     """
     IMPORTANT:

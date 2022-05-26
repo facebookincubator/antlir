@@ -15,7 +15,6 @@ from .pluggable import Pluggable
 from .repo_db import SQLDialect
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -33,7 +32,6 @@ class DBConnectionContext(AbstractContextManager, Pluggable):
 
 
 class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
-    # pyre-fixme[4]: Attribute must be annotated.
     SQL_DIALECT = SQLDialect.SQLITE3
     _warned_about_sqlite_force_master = False
 
@@ -51,10 +49,8 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
             type(self)._warned_about_sqlite_force_master = True
         self.readonly = readonly
         self.db_path = db_path
-        # pyre-fixme[4]: Attribute must be annotated.
         self._conn = None
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __enter__(self):
         if self.readonly:
             self._conn = sqlite3.connect(
@@ -65,7 +61,6 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
         return self._conn
 
     # Does not suppress exceptions
-    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         # We must act equivalently to the MySQL context in rolling back
         # uncommitted changes on context exit.

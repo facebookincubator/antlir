@@ -160,9 +160,6 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
     def test_set_xattr_errors(self) -> None:
         uuid = "01234567-0123-0123-0123-012345678901"
 
-        # pyre-fixme[53]: Captured variable `uuid` is not annotated.
-        # pyre-fixme[3]: Return type must be annotated.
-        # pyre-fixme[2]: Parameter must be annotated.
         def make_lines(len_k="len", len_v=7, name_k="name", data_k="data"):
             return [
                 f"subvol ./s uuid={uuid} transid=7".encode(),

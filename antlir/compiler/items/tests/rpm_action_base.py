@@ -16,13 +16,8 @@ from ..rpm_action import RpmAction, RpmActionItem
 from .common import DUMMY_LAYER_OPTS, render_subvol, with_mocked_temp_volume_dir
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def create_rpm_action_item(
-    from_target: str = "t",
-    # pyre-fixme[2]: Parameter must be annotated.
-    flavor_to_version_set=None,
-    # pyre-fixme[2]: Parameter must be annotated.
-    **kwargs
+    from_target: str = "t", flavor_to_version_set=None, **kwargs
 ):
     flavor_to_version_set = flavor_to_version_set or {
         "antlir_test": BZL_CONST.version_set_allow_all_versions
@@ -35,14 +30,11 @@ def create_rpm_action_item(
 
 
 class RpmActionItemTestBase:
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _opts(self, *, build_appliance=None, **kwargs):
         return DUMMY_LAYER_OPTS._replace(
             **kwargs,
             build_appliance=build_appliance
             or Subvol("test-build-appliance", already_exists=True),
-            # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute `_YUM_DNF`.
             rpm_installer=self._YUM_DNF,
             rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
             / self._YUM_DNF.value,
@@ -54,7 +46,6 @@ class RpmActionItemTestBase:
         )
 
     @with_mocked_temp_volume_dir
-    # pyre-fixme[2]: Parameter must be annotated.
     def _check_rpm_action_item(self, layer_opts) -> None:
         with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("rpm_action")

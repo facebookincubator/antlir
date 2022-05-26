@@ -105,7 +105,6 @@ from .common import has_yum, yum_is_dnf
 from .yum_dnf_conf import YumDnf
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 # We expect this to be provided as part of the layer that's executing `yum`
@@ -128,20 +127,16 @@ assert SHADOWED_PATHS_ROOT.startswith(b"/"), SHADOWED_PATHS_ROOT
 # This is yucky, but `test_update_shadowed` must not mock ALL uses of
 # `SHADOWED_PATHS_ROOT`, or it will be unable to find the original RPM
 # installer binary.  So we make this mock point available.
-# pyre-fixme[5]: Global expression must be annotated.
 _LIBRENAME_SHADOWED_PATHS_ROOT = SHADOWED_PATHS_ROOT
 
 
 # To distinguish the main process from other `CalledProcessError`s
 class _YumDnfError(subprocess.CalledProcessError):
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         # Compact repr for `=container` target interactive use.
         return f"YumDnfError(returncode={self.returncode})"
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _install_to_current_root(install_root):
     return install_root.realpath() == b"/"
 
@@ -192,14 +187,11 @@ def _install_to_current_root(install_root):
 #     /usr/lib/rpm/macros /usr/lib/rpm/redhat/macros
 #   on the premise that unlike the local customizations, these may be
 #   required for `rpm` to function.
-# pyre-fixme[3]: Return type must be annotated.
 def _isolate_yum_dnf(
     yum_dnf: YumDnf,
-    # pyre-fixme[2]: Parameter must be annotated.
     install_root,
     *,
     dummy_dev: Path,
-    # pyre-fixme[2]: Parameter must be annotated.
     protected_path_to_dummy,
     cache_dir: Path,
 ):
@@ -348,7 +340,6 @@ def _dummies_for_protected_paths(
             ), f"Some RPM wrote {actual} to {protected_paths}"
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _ensure_antlir_container():
     """
     Forbid running this outside of an `antlir/nspawn_in_subvol` container.
@@ -362,7 +353,6 @@ def _ensure_antlir_container():
     # Future: are there other checks we can add?
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _ensure_private_network():
     """
     Normally, we run under `systemd-nspawn --private-network`.  We don't
@@ -565,7 +555,6 @@ def _set_up_yum_dnf_cache(
         subprocess.check_call(["sudo", "rm", "-rf", cache_dest])
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def yum_dnf_from_snapshot(
     *,
     yum_dnf: YumDnf,
@@ -825,7 +814,6 @@ if __name__ == "__main__":  # pragma: no cover
             "may not be foolproof.",
         )
 
-    # pyre-fixme[5]: Global expression must be annotated.
     args = cli.args
     try:
         yum_dnf_from_snapshot(

@@ -106,10 +106,7 @@ class SubvolumeOnDisk(
 
     @classmethod
     def from_serializable_dict(
-        cls,
-        # pyre-fixme[2]: Parameter must be annotated.
-        d,
-        subvolumes_dir: Path,
+        cls, d, subvolumes_dir: Path
     ) -> "SubvolumeOnDisk":
         subvol_rel_path = Path(d[_SUBVOLUME_REL_PATH])
         # This is copypasta of subvolume_path() but I need it before
@@ -155,33 +152,26 @@ class SubvolumeOnDisk(
             )
         return self
 
-    # pyre-fixme[3]: Return type must be annotated.
     def to_serializable_dict(self):
         # `subvolumes_dir` is an absolute path to a known location inside
         # the repo.  We must not serialize it inside a Buck outputs, since
         # that will break if the repo is moved.  Instead, we always
         # recompute the path relative to the current subvolumes directory.
         d = {
-            # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `btrfs_uuid`.
             _BTRFS_UUID: self.btrfs_uuid,
             # Not serializing _BTRFS_PARENT_UUID since it's always deduced.
-            # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `hostname`.
             _HOSTNAME: self.hostname,
-            # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `subvolume_rel_path`.
             _SUBVOLUME_REL_PATH: self.subvolume_rel_path.decode(),
             _DANGER: "Do NOT edit manually: this can break future builds, or "
             "break refcounting, causing us to leak or prematurely destroy "
             "subvolumes.",
             **(
-                # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute
-                #  `build_appliance_path`.
                 {_BUILD_APPLIANCE_PATH: self.build_appliance_path.decode()}
                 if self.build_appliance_path
                 else {}
             ),
         }
         # Self-test -- there should be no way for this assertion to fail
-        # pyre-fixme[16]: `SubvolumeOnDisk` has no attribute `subvolumes_base_dir`.
         new_self = self.from_serializable_dict(d, self.subvolumes_base_dir)
         assert (
             self == new_self
@@ -189,7 +179,6 @@ class SubvolumeOnDisk(
         return d
 
     @classmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def from_json_file(cls, infile, subvolumes_dir: Path) -> "SubvolumeOnDisk":
         parsed_json = "<NO JSON PARSED>"
         try:
@@ -204,6 +193,5 @@ class SubvolumeOnDisk(
                 f"Parsed subvolume JSON from {infile}: {parsed_json}"
             ) from ex
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def to_json_file(self, outfile) -> None:
         outfile.write(json.dumps(self.to_serializable_dict()))

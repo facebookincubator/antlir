@@ -38,8 +38,6 @@ def render_subvol(subvol: Subvol) -> RenderedTree:
         subvol.set_readonly(was_readonly)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def pop_path(render, path, *default):
     assert not isinstance(path, bytes), path  # Renderings are `str`
     parts = path.lstrip("/").split("/")
@@ -52,9 +50,7 @@ def pop_path(render, path, *default):
 # 2 places that need it, and it's annoying to create a whole new module just
 # for this helper.
 def check_common_rpm_render(
-    # pyre-fixme[2]: Parameter must be annotated.
     test,
-    # pyre-fixme[2]: Parameter must be annotated.
     rendered_subvol,
     yum_dnf: str,
     subvol: Subvol,
@@ -128,7 +124,6 @@ def check_common_rpm_render(
     )
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def get_meta_dir_contents(subvol: Optional[Subvol] = None):
     ret = [
         "(Dir)",
@@ -153,7 +148,6 @@ def get_meta_dir_contents(subvol: Optional[Subvol] = None):
     return ret
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def render_meta_build_contents(subvol: Subvol):
     # Target varies for each python_unittest.
     if not os.path.isdir(subvol.path("/.meta/build")):

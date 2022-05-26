@@ -53,12 +53,10 @@ try:
     from .facebook.validate_universe_name import fb_validate_universe_name
 except ImportError:  # pragma: no cover
 
-    # pyre-fixme[3]: Return type must be annotated.
     def fb_validate_universe_name(repo: YumDnfConfRepo, name: str):
         return name
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -119,7 +117,6 @@ def _write_confs_get_repos(
     return dnf_repos
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def snapshot_repos(
     dest: Path,
     *,
@@ -132,7 +129,6 @@ def snapshot_repos(
     gpg_key_allowlist_dir: str,
     exclude: FrozenSet[str],
     threads: int,
-    # pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
     log_sample: Callable = lambda *_, **__: None,
 ):
     all_repos_sizer = RepoSizer()
@@ -196,12 +192,8 @@ def snapshot_repos(
     log.info(shard_sizer.get_report(f"This {rpm_shard} snapshot weighs"))
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def snapshot_repos_from_args(
-    argv: List[str],
-    *,
-    # pyre-fixme[24]: Generic type `Callable` expects 2 type parameters.
-    log_sample: Callable = lambda *_, **__: None,
+    argv: List[str], *, log_sample: Callable = lambda *_, **__: None
 ):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -257,9 +249,6 @@ def snapshot_repos_from_args(
         with open(args.repo_to_universe_json) as ru_json:
             repo_to_universe_json = json.load(ru_json)
 
-        # pyre-fixme[53]: Captured variable `repo_to_universe_json` is not annotated.
-        # pyre-fixme[3]: Return type must be annotated.
-        # pyre-fixme[2]: Parameter must be annotated.
         def repo_to_universe(repo):
             return repo_to_universe_json[repo.name]
 

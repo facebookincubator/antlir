@@ -23,7 +23,6 @@ from .common import (
     with_mocked_temp_volume_dir,
 )
 
-# pyre-fixme[5]: Global expression must be annotated.
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
     Subvol("test-build-appliance", already_exists=True)
 )

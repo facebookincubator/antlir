@@ -68,7 +68,6 @@ class PasswdFileLine(NamedTuple):
     directory: Path
     shell: Path
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __str__(self):
         return ":".join(
             (
@@ -101,7 +100,6 @@ class PasswdFile:
     lines: OrderedDict[int, PasswdFileLine]
     nameToUID: Dict[str, int]
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __init__(self, passwd_file: str = ""):
         """
         Parse `passwd_file` as /etc/passwd file. See `man 5 passwd`
@@ -132,7 +130,6 @@ class PasswdFile:
             raise RuntimeError(f"user ids exhausted (max: {_UID_MAX})")
         return next_uid
 
-    # pyre-fixme[3]: Return type must be annotated.
     def add(self, pfl: PasswdFileLine):
         if pfl.uid in self.lines:
             line = self.lines[pfl.uid]
@@ -146,7 +143,6 @@ class PasswdFile:
         for name in self.nameToUID:
             yield ProvidesUser(name)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __str__(self):
         return "\n".join((str(pfl) for pfl in self.lines.values())) + "\n"
 
@@ -180,7 +176,6 @@ class ShadowFileLine:
     expiration: int = -1
     reserved_field: str = ""
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __str__(self):
         return ":".join(
             (
@@ -222,7 +217,6 @@ def new_shadow_file_line(line: str) -> ShadowFileLine:
 class ShadowFile:
     lines: OrderedDict[str, ShadowFileLine]
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __init__(self, shadow_file: str = ""):
         """
         Parse `shadow_file` as /etc/shadow file. See `man 5 shadow`
@@ -237,14 +231,12 @@ class ShadowFile:
                 raise RuntimeError(f"Duplicate username in shadow file: {l}")
             self.lines[sfl.name] = new_shadow_file_line(l)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def add(self, sfl: ShadowFileLine):
         if sfl.name in self.lines:
             line = self.lines[sfl.name]
             raise ValueError(f"new user {sfl} conflicts with {line}")
         self.lines[sfl.name] = sfl
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __str__(self):
         return "\n".join((str(sfl) for sfl in self.lines.values())) + "\n"
 
@@ -266,7 +258,6 @@ def pwconv(passwd_file: PasswdFile) -> str:
     return "\n".join(shadow_entries[name] for name in shadow_entries) + "\n"
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 _VALID_USERNAME_RE = re.compile(
     r"^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$"
 )
@@ -277,7 +268,6 @@ def _read_passwd_file(subvol: Subvol) -> str:
     return subvol.read_path_text(PASSWD_FILE_PATH)
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _write_passwd_file(subvol: Subvol, contents: AnyStr):
     subvol.overwrite_path_as_root(PASSWD_FILE_PATH, str(contents))
 
@@ -286,15 +276,12 @@ def _read_shadow_file(subvol: Subvol) -> str:
     return subvol.read_path_text_as_root(SHADOW_FILE_PATH)
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _write_shadow_file(subvol: Subvol, contents: AnyStr):
     subvol.overwrite_path_as_root(SHADOW_FILE_PATH, str(contents))
 
 
 class UserItem(user_t, ImageItem):
     @validator("name")
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _validate_name(cls, name):  # noqa B902
         # Validators are classmethods but flake8 doesn't catch that.
         if len(name) < 1 or len(name) > 32:
@@ -320,7 +307,6 @@ class UserItem(user_t, ImageItem):
         yield ProvidesUser(self.name)
 
     # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
-    # pyre-fixme[3]: Return type must be annotated.
     def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
         with USERGROUP_LOCK:
             group_file = GroupFile(_read_group_file(subvol))

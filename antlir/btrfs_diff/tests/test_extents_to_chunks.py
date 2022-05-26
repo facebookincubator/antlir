@@ -18,7 +18,6 @@ from ..inode import Chunk
 from ..inode_id import InodeID, InodeIDMap
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _gen_ranges_from_figure(figure: str):
     for s in textwrap.dedent(figure.strip("\n")).split("\n"):
         s = s.rstrip()
@@ -36,7 +35,6 @@ def _gen_ranges_from_figure(figure: str):
             offset += len(v)
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _repr_ids_and_chunks(ids_and_chunks: Iterable[Tuple[InodeID, Chunk]]):
     return {
         repr(id): [
@@ -132,7 +130,6 @@ class ExtentsToChunksTestCase(AntlirTestCase):
         super().setUp()
         self.id_map = InodeIDMap.new()
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _gen_ids_and_extents_from_figure(
         self,
         s: str,
@@ -184,8 +181,6 @@ class ExtentsToChunksTestCase(AntlirTestCase):
                 file_extent,
             )
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _repr_chunks_from_figure(self, s: str, **kwargs):
         return _repr_ids_and_chunks(
             # pyre-fixme[6]: For 1st param expected `Iterable[Tuple[InodeID,

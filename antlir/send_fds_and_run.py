@@ -55,12 +55,10 @@ from .common import (
 from .fs_utils import Path
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
 # NB: This was copy-pasta'd from yum_dnf_from_snapshot.py
-# pyre-fixme[2]: Parameter must be annotated.
 def send_fds(sock, fds) -> None:
     msg = b"unused"
     num_sent = sock.sendmsg(
@@ -78,8 +76,6 @@ def send_fds(sock, fds) -> None:
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds: bool):
     """
     This is a context manager intended to let you imitate the as-CLI
@@ -129,8 +125,6 @@ def popen_and_inject_fds_after_sudo(cmd, fds, popen, *, set_listen_fds: bool):
         yield proc
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def parse_opts(argv):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -178,8 +172,6 @@ def parse_opts(argv):
     return opts
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def send_fds_and_popen(opts, **popen_kwargs):
     return popen_and_inject_fds_after_sudo(
         opts.cmd,
@@ -200,7 +192,6 @@ def send_fds_and_popen(opts, **popen_kwargs):
 #     buck run //antlir:send-fds-and-run -- --no-set-listen-fds -- \
 #         printenv LISTEN_FDS LISTEN_PID ; echo $?
 if __name__ == "__main__":  # pragma: no cover
-    # pyre-fixme[5]: Global expression must be annotated.
     opts = parse_opts(sys.argv[1:])
     init_logging(debug=opts.debug)
     with send_fds_and_popen(opts) as proc:

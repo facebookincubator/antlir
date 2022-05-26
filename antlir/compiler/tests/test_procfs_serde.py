@@ -25,15 +25,8 @@ class TestProcfsSerDe(unittest.TestCase):
         self._next_dir_idx += 1
         return str(self._next_dir_idx)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _check_serialize_deserialize_idempotence(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        subvol,
-        # pyre-fixme[2]: Parameter must be annotated.
-        orig_dir,
-        # pyre-fixme[2]: Parameter must be annotated.
-        name_with_ext,
+        self, subvol, orig_dir, name_with_ext
     ):
         data = deserialize_untyped(
             subvol.path(), os.path.join(orig_dir, name_with_ext)
@@ -50,15 +43,7 @@ class TestProcfsSerDe(unittest.TestCase):
         )
 
     def _check_serialize_scalar(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        expected,
-        # pyre-fixme[2]: Parameter must be annotated.
-        data,
-        # pyre-fixme[2]: Parameter must be annotated.
-        subvol,
-        # pyre-fixme[2]: Parameter must be annotated.
-        name_with_ext,
+        self, expected, data, subvol, name_with_ext
     ) -> None:
         outer_dir = self._next_dir()
         path_with_ext = os.path.join(outer_dir, name_with_ext)
@@ -74,15 +59,7 @@ class TestProcfsSerDe(unittest.TestCase):
             self.assertEqual(expected, f.read())
 
     def _check_serialize_dict(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        expect_render,
-        # pyre-fixme[2]: Parameter must be annotated.
-        data,
-        # pyre-fixme[2]: Parameter must be annotated.
-        subvol,
-        # pyre-fixme[2]: Parameter must be annotated.
-        name_with_ext,
+        self, expect_render, data, subvol, name_with_ext
     ) -> None:
         outer_dir = self._next_dir()
         path_with_ext = os.path.join(outer_dir, name_with_ext)
@@ -96,7 +73,6 @@ class TestProcfsSerDe(unittest.TestCase):
         # NB: Not checking file contents because the scalar test cover that.
 
     @with_temp_subvols
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_serialize(self, temp_subvols) -> None:
         subvol = temp_subvols.create("x")
 
@@ -155,7 +131,6 @@ class TestProcfsSerDe(unittest.TestCase):
         )
 
     @with_temp_subvols
-    # pyre-fixme[2]: Parameter must be annotated.
     def test_deserialize(self, temp_subvols) -> None:
         subvol = temp_subvols.create("y")
         # Writing this test is easier if we don't need to write as root.

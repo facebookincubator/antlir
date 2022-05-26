@@ -32,7 +32,6 @@ Design rationale: These "remediated" hashes are not in the database, because:
     current source tree, but this is just a more complicated way of pinning
     the remediated RPMs to the source tree.
 """
-# pyre-fixme[5]: Global expression must be annotated.
 deleted_mutable_rpms = {
     # ("universe", Rpm.nevra()): {Checksum(...), Checksum(...)},
 }

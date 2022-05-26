@@ -15,10 +15,8 @@ class CoroutineTestError(Exception):
 
 
 class SendToCoroutineTestCase(unittest.TestCase):
-    # pyre-fixme[4]: Attribute annotation cannot contain `Any`.
     events: List[Any] = []
 
-    # pyre-fixme[3]: Return type must be annotated.
     def demo_coroutine(self, coroutine_steps: int):
         try:
             for i in range(coroutine_steps):
@@ -29,7 +27,6 @@ class SendToCoroutineTestCase(unittest.TestCase):
         except GeneratorExit:
             raise GeneratorExitWithResult("coroutine closed")
 
-    # pyre-fixme[3]: Return type must be annotated.
     def send_to_demo(
         self, coroutine_steps: int, close_on_step: int, *, do_close: bool
     ):
@@ -47,8 +44,6 @@ class SendToCoroutineTestCase(unittest.TestCase):
     def test_while_not_exited(self) -> None:
         for do_close in [False, True]:
 
-            # pyre-fixme[53]: Captured variable `do_close` is not annotated.
-            # pyre-fixme[3]: Return type must be annotated.
             def send_to_demo(coroutine_steps: int, close_on_step: int):
                 return self.send_to_demo(
                     coroutine_steps, close_on_step, do_close=do_close
@@ -83,14 +78,12 @@ class SendToCoroutineTestCase(unittest.TestCase):
                     send_to_demo(i, 3), ("coroutine closed", yielded3)
                 )
 
-    # pyre-fixme[3]: Return type must be annotated.
     def yield_and_raise_coroutine(self):
         self.events.append("yielding")
         v = yield "init"
         self.events.append(("received", v))
         raise CoroutineTestError
 
-    # pyre-fixme[3]: Return type must be annotated.
     def raise_immediately_coroutine(self):
         raise CoroutineTestError
         yield "init"  # we need a `yield` to make this a generator

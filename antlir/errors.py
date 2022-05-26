@@ -14,7 +14,6 @@ class UserError(Exception):
     user can do about that)
     """
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __str__(self):
         # This prefix allows automation to pick high-signal errors out of the
         # logs (see D35687997).
@@ -24,8 +23,6 @@ class UserError(Exception):
 class ToolMissing(Exception):
     """Raised when an expected CLI tool is missing from the host system"""
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, tool) -> None:
-        # pyre-fixme[4]: Attribute must be annotated.
         self.tool = tool
         super().__init__(f"Missing tool '{tool}'")

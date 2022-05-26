@@ -27,7 +27,6 @@ from antlir.subvol_utils import Subvol, TempSubvolumes
 
 from .fake_pty_wrapper import fake_pty_cmd, fake_pty_resource
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -159,7 +158,6 @@ def _gen_nevras_from_installer_output(
     ), f"{requested_nevras - installed_nevras} were never installed"
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def _cmd_to_quoted_bash(cmd) -> str:
     return " ".join(
         c.shell_quote() if isinstance(c, Path) else shlex.quote(c) for c in cmd

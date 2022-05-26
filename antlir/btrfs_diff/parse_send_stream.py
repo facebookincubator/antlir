@@ -18,8 +18,6 @@ from .send_stream import SendStreamItem, SendStreamItems
 BTRFS_SEND_STREAM_MAGIC = b"btrfs-stream\0"
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def file_unpack(fmt, infile):
     size = struct.calcsize(fmt)
     b = infile.read(size)
@@ -28,14 +26,12 @@ def file_unpack(fmt, infile):
     return struct.unpack(fmt, b)
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def check_magic(infile) -> None:
     magic = infile.read(len(BTRFS_SEND_STREAM_MAGIC))
     if magic != BTRFS_SEND_STREAM_MAGIC:
         raise RuntimeError(f'Magic {magic}, not "{BTRFS_SEND_STREAM_MAGIC}"')
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def check_version(infile) -> None:
     (version,) = file_unpack("<I", infile)
     if version != 1:
@@ -81,7 +77,6 @@ class CommandHeader(NamedTuple):
     crc: int  # including the header, with this field set to 0
 
     @staticmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def from_file(infile) -> "CommandHeader":
         length, kind, crc = file_unpack("<IHI", infile)
         return CommandHeader(kind=CommandKind(kind), length=length, crc=crc)
@@ -128,7 +123,6 @@ class AttributeHeader(NamedTuple):
     length: int  # excluding the header
 
     @staticmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def from_file(infile) -> "AttributeHeader":
         kind, length = file_unpack("<HH", infile)
         return AttributeHeader(kind=AttributeKind(kind), length=length)
@@ -150,8 +144,6 @@ def conv_time(s: bytes) -> Tuple[int, int]:
     return s, us
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def read_attribute(infile):
     attr_header = AttributeHeader.from_file(infile)
     attr_data = infile.read(attr_header.length)
@@ -209,8 +201,6 @@ def read_attribute(infile):
     raise RuntimeError(f"Fix me: unhandled {attr_header}")  # pragma: no cover
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def read_command(infile):
     cmd_header = CommandHeader.from_file(infile)
 
@@ -337,7 +327,6 @@ def read_command(infile):
     raise AssertionError(f"Fix me: unhandled {cmd_header}")  # pragma: no cover
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def parse_send_stream(infile) -> Iterator[SendStreamItem]:
     check_magic(infile)
     check_version(infile)

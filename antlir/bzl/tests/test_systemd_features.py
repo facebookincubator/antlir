@@ -77,8 +77,6 @@ unit_test_specs: List[SystemdUnitTestSpec] = [
 ]
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def _tdep(target, dep):
     """Make a target name into a '.wants/requires' dir as a Path type."""
     return Path(target + "." + dep)

@@ -165,10 +165,8 @@ class YumDnfConfTestCaseImpl:
 
 
 class YumConfTestCase(YumDnfConfTestCaseImpl, unittest.TestCase):
-    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.yum
 
 
 class DnfConfTestCase(YumDnfConfTestCaseImpl, unittest.TestCase):
-    # pyre-fixme[4]: Attribute must be annotated.
     _YUM_DNF = YumDnf.dnf

@@ -47,9 +47,7 @@ class SQLiteRpmParser(AbstractContextManager):
         self._path = path
         # Sadly, we must support both formats. Luckily, the APIs are similar.
         if path.endswith(".gz"):
-            # pyre-fixme[4]: Attribute must be annotated.
             self._unpacker = zlib.decompressobj(wbits=zlib.MAX_WBITS + 16)
-            # pyre-fixme[4]: Attribute must be annotated.
             self._unpacker_needs_input_and_next_chunk = lambda: (
                 not self._unpacker.unconsumed_tail,
                 self._unpacker.unconsumed_tail,
@@ -76,7 +74,6 @@ class SQLiteRpmParser(AbstractContextManager):
         self._tmp_db = self._tmp_db_ctx.__enter__()
         return self
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         # Clean up before maybe raising our own exception
         # pyre-fixme[16]: `SQLiteRpmParser` has no attribute `_tmp_db_ctx`.
@@ -184,21 +181,17 @@ class XMLRpmParser(AbstractContextManager):
     assert len(_KNOWN_TAGS) == len(set(_KNOWN_TAGS))
 
     def __init__(self) -> None:
-        # pyre-fixme[4]: Attribute must be annotated.
         self.decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS + 16)
         self.xml_parser = ElementTree.XMLPullParser(["end"])
         # ElementTree mangles the tags thus: '{xml_namespace}tag_name'
-        # pyre-fixme[4]: Attribute must be annotated.
         self.tag_re = re.compile(
             "({[^}]+}|)(" + "|".join(self._KNOWN_TAGS) + ")$"
         )
         # Package state must persist across `feed()` calls, since a
         # package element may straddle a chunk boundary.
-        # pyre-fixme[4]: Attribute must be annotated.
         self._package = {}
 
     # This context manager does not suppress exceptions.
-    # pyre-fixme[2]: Parameter must be annotated.
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         # Closing the parser detects incomplete XML files. It also breaks
         # some circular refs to speed up GC.

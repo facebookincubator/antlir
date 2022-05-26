@@ -127,7 +127,6 @@ class Extent(NamedTuple):
         HOLE = 2
 
         # The default `__repr__` was not `eval`able :/
-        # pyre-fixme[3]: Return type must be annotated.
         def __repr__(self):
             # Assume every reasonable user will have `Extent` in their scope
             return f"Extent.Kind.{self.name}"
@@ -135,7 +134,6 @@ class Extent(NamedTuple):
     # NB: we do not want this to be `__new__`, since it is allowed **NOT**
     # to return a new object, but instead to extract one from `content`.
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
     def __new(
         # IMPORTANT: `Extent` may rewrite its inputs before storing them in
         # the object, so do not try to read them back.  Example: if `offset`
@@ -183,13 +181,10 @@ class Extent(NamedTuple):
 
         if isinstance(content, tuple):
 
-            # pyre-fixme[3]: Return type must be annotated.
             def optimize_content():
                 "Drop hidden and 0-length extents"
                 nonlocal offset  # Will be reduced if we skip initial extents
                 new_content_len = 0
-                # pyre-fixme[16]: Item `Kind` of `Union[Iterable[Extent], Extent,
-                #  Kind]` has no attribute `__iter__`.
                 for e in content:
                     if e.length == 0:
                         continue  # Skip empty extents
@@ -215,18 +210,15 @@ class Extent(NamedTuple):
         return Extent(content=content, offset=offset, length=length)
 
     @staticmethod
-    # pyre-fixme[3]: Return type must be annotated.
     def empty():
         return Extent.__new(())
 
-    # pyre-fixme[3]: Return type must be annotated.
     def truncate(self, length: int):
         return Extent.__new(
             (self, Extent.__new(Extent.Kind.HOLE, length=length - self.length)),
             length=length,
         )
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __put(self, offset: int, what: "Extent"):
         "Overwrites with `what` a portion of `self` starting at `offset`."
         # E.g., should `extent.Extent.empty().write(offset=5, length=0)`
@@ -241,11 +233,9 @@ class Extent(NamedTuple):
             )
         )
 
-    # pyre-fixme[3]: Return type must be annotated.
     def write(self, *, offset: int, length: int):
         return self.__put(offset, Extent.__new(Extent.Kind.DATA, length=length))
 
-    # pyre-fixme[3]: Return type must be annotated.
     def clone(
         self,
         *,
@@ -259,7 +249,6 @@ class Extent(NamedTuple):
             Extent.__new(from_extent, offset=from_offset, length=length),
         )
 
-    # pyre-fixme[3]: Return type must be annotated.
     def gen_trimmed_leaves(
         self, *, offset: int = 0, length: Optional[int] = None
     ):
@@ -305,7 +294,6 @@ class Extent(NamedTuple):
             # pyre-fixme[6]: craziness
             stack.append([0, res])
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _gen_leaf_reprs(self):
         for _, length, leaf in self.gen_trimmed_leaves():
             if leaf.content == Extent.Kind.HOLE:
@@ -327,6 +315,5 @@ class Extent(NamedTuple):
     def __copy__(self) -> "Extent":
         return self  # See the docstring
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __deepcopy__(self, memo) -> "Extent":
         return self  # See the docstring

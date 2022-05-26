@@ -26,19 +26,14 @@ class InodeOwner(NamedTuple):
     uid: int
     gid: int
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         return f"{self.uid}:{self.gid}"
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 MSEC_TO_NSEC = 10**6
-# pyre-fixme[5]: Global expression must be annotated.
 SEC_TO_NSEC = 1000 * MSEC_TO_NSEC
 MIN_TO_SEC = 60
-# pyre-fixme[5]: Global expression must be annotated.
 HOUR_TO_SEC = 60 * MIN_TO_SEC
-# pyre-fixme[5]: Global expression must be annotated.
 DAY_TO_SEC = 24 * HOUR_TO_SEC
 
 
@@ -83,14 +78,12 @@ class InodeUtimes(NamedTuple):
     mtime: Tuple[int, int]
     atime: Tuple[int, int]
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         c_to_m = _repr_time_delta(*_time_delta(self.mtime, self.ctime))
         m_to_a = _repr_time_delta(*_time_delta(self.atime, self.mtime))
         return f"{_repr_time(*self.ctime)}{c_to_m}{m_to_a}"
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 S_IFMT_TO_FILE_TYPE_NAME = {
     stat.S_IFBLK: "Block",
     stat.S_IFCHR: "Char",
@@ -101,7 +94,6 @@ S_IFMT_TO_FILE_TYPE_NAME = {
     stat.S_IFSOCK: "Sock",
 }
 
-# pyre-fixme[5]: Global expression must be annotated.
 EXTENT_KIND_TO_ABBREV = {Extent.Kind.HOLE: "h", Extent.Kind.DATA: "d"}
 
 
@@ -137,7 +129,6 @@ class Inode(NamedTuple):
     # SYMLINK
     dest: Optional[bytes] = None
 
-    # pyre-fixme[3]: Return type must be annotated.
     def assert_valid_and_complete(self):
         if None in (self.file_type, self.owner, self.utimes):
             raise RuntimeError(f"{self} must have file_type, owner & utimes")
@@ -155,7 +146,6 @@ class Inode(NamedTuple):
         if (self.dest is not None) ^ stat.S_ISLNK(self.file_type):
             raise RuntimeError(f"{self} must have .dest iff it is a symlink")
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _repr_fields(self):
         yield S_IFMT_TO_FILE_TYPE_NAME.get(self.file_type, str(self.file_type))
         if self.mode is not None:
@@ -191,7 +181,6 @@ class Inode(NamedTuple):
         if self.dest is not None:
             yield f"{_repr_decode(self.dest)}"
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         return "(" + " ".join(self._repr_fields()) + ")"
 
@@ -206,7 +195,6 @@ class Clone(NamedTuple):
     offset: int  # The byte offset into the data fork of the `inode_id` Inode.
     length: int
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         return f"{self.inode_id}:{self.offset}+{self.length}"
 
@@ -217,7 +205,6 @@ class ChunkClone(NamedTuple):
     offset: int  # Offset into the `Chunk`
     clone: Clone  # What byte range in which Inode does this clone?
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         return f"{repr(self.clone)}@{self.offset}"
 
@@ -227,7 +214,6 @@ class Chunk(NamedTuple):
     length: int
     chunk_clones: Set[ChunkClone]
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         return (
             f"({self.kind.name}/{self.length}"

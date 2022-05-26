@@ -42,13 +42,10 @@ from .version_policy import VersionPolicy
 
 # XXX just accept Pluggable in place of a Union?
 # Dirty hack... fix this later?
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def Literalish(x):
     return Literal[x]
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 # Must match `rpm_vset` in `oss_shim*` Starlark files.
@@ -59,7 +56,6 @@ _PLUGGABLE_TO_DIR_NAME = {
     VersionPolicy: "version_policy",
 }
 # Not sure how to make the next 2 derive from _PLUGGABLE_TO_DIR_NAME
-# pyre-fixme[5]: Global expression must be annotated.
 LiteralKnownPluggable = Union[
     Literalish(PackageGroup), Literalish(VersionPolicy)
 ]
@@ -67,13 +63,11 @@ KnownPluggable = Union[PackageGroup, VersionPolicy]
 # pyre-fixme[6]: Expected `Tuple[typing.Any,
 #  typing.Type[Variable[$synthetic_attribute_resolution_variable]]]` for 1st
 #  param but got `Tuple[typing.Any, object]`.
-# pyre-fixme[5]: Global expression must be annotated.
 LoadConfigFns = Mapping[LiteralKnownPluggable, Mapping[str, Callable[..., Any]]]
 
 
 # FB's TARGETS file auto-formatting requires double-quotes, while Python
 # (much more reasonably) prefers single quotes.
-# pyre-fixme[2]: Parameter must be annotated.
 def _drepr(s) -> str:
     return (
         '"'
@@ -82,7 +76,6 @@ def _drepr(s) -> str:
     )
 
 
-# pyre-fixme[4]: Attribute must be annotated.
 class _PluginRef(NamedTuple):
     # NB: This could be inferred from plugin, but being explicit is cleaner
     # pyre-fixme[11]: Annotation `LiteralKnownPluggable` is not defined as a
@@ -119,14 +112,12 @@ class _PluginDriver:
         #             help='Snapshot data needed to run this plugin. '
         #                 'May be repeated. ',
         #         )
-        # pyre-fixme[4]: Attribute must be annotated.
         self._plugins = [
             _PluginRef(pluggable=pluggable, plugin=cls())
             for pluggable in _PLUGGABLE_TO_DIR_NAME
             for cls in pluggable._pluggable_kind_to_cls.values()
         ]
 
-    # pyre-fixme[2]: Parameter must be annotated.
     async def _update_snapshot(self, plugin) -> None:
         if hasattr(plugin.plugin, "snapshot"):
             plugin_dir = plugin.dir(self._snapshot_root)
@@ -217,10 +208,7 @@ class VersionedPackageGroup(NamedTuple):
 
 
 def _load_version_sets(
-    config_paths: Iterable[Path],
-    # pyre-fixme[2]: Parameter must be annotated.
-    load_config_fns,
-    version_sets: Set[str],
+    config_paths: Iterable[Path], load_config_fns, version_sets: Set[str]
 ) -> Mapping[str, Iterable[VersionedPackageGroup]]:
     log.info(f"XXX Known version sets: {version_sets}")
     load_config_fns = load_config_fns.copy()
@@ -544,7 +532,6 @@ def update_allowed_versions(args: argparse.Namespace) -> None:
         # grabbing all changes per oncall across version sets.
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def parse_args(argv: List[str]):
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -604,7 +591,6 @@ def parse_args(argv: List[str]):
 
 # XXX: Do the source-only package group source
 if __name__ == "__main__":  # pragma: no cover
-    # pyre-fixme[5]: Global expression must be annotated.
     args = parse_args(sys.argv[1:])
     init_logging(debug=args.debug)
     update_allowed_versions(args)

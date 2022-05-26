@@ -54,8 +54,6 @@ class IncompleteInode(ABC):
     utimes: Optional[InodeUtimes]
     xattrs: Dict[bytes, bytes]
     # these are pure virtual for children to implement/assign
-    # pyre-fixme[24]: Generic type `type` expects 1 type parameter, use
-    #  `typing.Type` to avoid runtime subscripting errors.
     INITIAL_ITEM: Type
     FILE_TYPE: int
     # If any of these are None, the filesystem was created badly.
@@ -78,7 +76,6 @@ class IncompleteInode(ABC):
         assert (ino.chunks is not None) ^ (chunks is None)
         return ino
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _freeze_kwargs(self, *, _memo, chunks: Sequence[Chunk]):
         return {
             "file_type": self.file_type,
@@ -115,13 +112,11 @@ class IncompleteInode(ABC):
     ) -> None:
         raise RuntimeError(f"{self} cannot clone via {item} from {from_ino}")
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         return repr(freeze(self, chunks=None))
 
 
 class IncompleteDir(IncompleteInode):
-    # pyre-fixme[4]: Attribute must be annotated.
     FILE_TYPE = stat.S_IFDIR
     INITIAL_ITEM = SendStreamItems.mkdir
 
@@ -129,7 +124,6 @@ class IncompleteDir(IncompleteInode):
 class IncompleteFile(IncompleteInode):
     extent: Extent
 
-    # pyre-fixme[4]: Attribute must be annotated.
     FILE_TYPE = stat.S_IFREG
     INITIAL_ITEM = SendStreamItems.mkfile
 
@@ -137,7 +131,6 @@ class IncompleteFile(IncompleteInode):
         super().__init__(item=item)
         self.extent = Extent.empty()
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _freeze_kwargs(self, *, _memo, chunks: Sequence[Chunk]):
         assert (chunks is None) ^ (self.extent is not None)
         # Future: we could make some assertions to check that the chunks
@@ -180,7 +173,6 @@ class IncompleteFile(IncompleteInode):
             length=item.len,
         )
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __repr__(self):
         return repr(
             freeze(
@@ -189,8 +181,6 @@ class IncompleteFile(IncompleteInode):
                     Chunk(
                         kind=kind,
                         length=sum(length for _, length in chunks),
-                        # pyre-fixme[6]: For 3rd param expected `Set[ChunkClone]`
-                        #  but got `Tuple[]`.
                         chunk_clones=(),
                     )
                     for kind, chunks in itertools.groupby(
@@ -206,13 +196,11 @@ class IncompleteFile(IncompleteInode):
 
 
 class IncompleteSocket(IncompleteInode):
-    # pyre-fixme[4]: Attribute must be annotated.
     FILE_TYPE = stat.S_IFSOCK
     INITIAL_ITEM = SendStreamItems.mksock
 
 
 class IncompleteFifo(IncompleteInode):
-    # pyre-fixme[4]: Attribute must be annotated.
     FILE_TYPE = stat.S_IFIFO
     INITIAL_ITEM = SendStreamItems.mkfifo
 
@@ -227,18 +215,15 @@ class IncompleteDevice(IncompleteInode):
             raise RuntimeError(
                 f"unexpected {type(item)}, expected {self.INITIAL_ITEM}"
             )
-        # pyre-fixme[4]: Attribute must be annotated.
         self.FILE_TYPE = stat.S_IFMT(item.mode)
         if self.FILE_TYPE not in (stat.S_IFBLK, stat.S_IFCHR):
             raise RuntimeError(f"unexpected device mode in {item}")
         super().__init__(item=item)
         # NB: At present, `btrfs send` redundantly sends a `chmod` after
         # device creation, but we've already saved the file type.
-        # pyre-fixme[4]: Attribute must be annotated.
         self.mode = item.mode & ~self.FILE_TYPE
         self.dev = item.dev
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _freeze_kwargs(self, *, _memo, chunks: Sequence[Chunk]):
         return {
             "dev": self.dev,
@@ -249,7 +234,6 @@ class IncompleteDevice(IncompleteInode):
 class IncompleteSymlink(IncompleteInode):
     dest: bytes
 
-    # pyre-fixme[4]: Attribute must be annotated.
     FILE_TYPE = stat.S_IFLNK
     INITIAL_ITEM = SendStreamItems.symlink
 
@@ -261,7 +245,6 @@ class IncompleteSymlink(IncompleteInode):
         super().__init__(item=item)
         self.dest = item.dest
 
-    # pyre-fixme[3]: Return type must be annotated.
     def _freeze_kwargs(self, *, _memo, chunks: Sequence[Chunk]):
         return {
             "dest": self.dest,

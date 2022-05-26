@@ -24,7 +24,6 @@ class InodeRepr(NamedTuple):
     ino_repr: str
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def expected_subvol_add_traversal_ids(ser: RenderedTree):
     id_maker = TraversalIDMaker()
     return map_bottom_up(

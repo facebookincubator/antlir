@@ -27,7 +27,6 @@ from typing import AnyStr, Generator, IO, Iterable, Iterator, List, Union
 from .common import byteme, check_popen_returncode, get_logger
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 log = get_logger()
 
 
@@ -71,24 +70,19 @@ class Path(bytes):
       - `urllib`: `file_url`
     """
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def __new__(cls, arg, *args, **kwargs):
         return super().__new__(cls, byteme(arg), *args, **kwargs)
 
     @classmethod
-    # pyre-fixme[3]: Return type must be annotated.
     def __get_validators__(cls):
         # force Pydantic to deserialize a string to an actual Path, instead of
         # str/bytes
         yield cls._validate
 
     @classmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def _validate(cls, v) -> "Path":
         return cls(v)
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __eq__(self, obj) -> bool:
         if not isinstance(obj, (bytes, type(None))):
             # NB: The verbose error can be expensive, but this error must
@@ -99,16 +93,12 @@ class Path(bytes):
             )
         return super().__eq__(obj)
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __ne__(self, obj) -> bool:
         return not self.__eq__(obj)
 
-    # pyre-fixme[4]: Attribute must be annotated.
     __hash__ = bytes.__hash__
 
     @classmethod
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def or_none(cls, arg, *args, **kwargs):
         if arg is None:
             return None
@@ -116,7 +106,6 @@ class Path(bytes):
 
     @classmethod
     # pyre-fixme[14]: `join` overrides method defined in `bytes` inconsistently.
-    # pyre-fixme[2]: Parameter must be annotated.
     def join(cls, *paths) -> "Path":
         if not paths:
             # pyre-fixme[7]: Expected `Path` but got `None`.
@@ -356,7 +345,6 @@ class Path(bytes):
             return infile.read()
 
     @contextmanager
-    # pyre-fixme[24]: Generic type `IO` expects 1 type parameter.
     def open(self, mode: str = "r") -> IO:
         with open(self, mode=mode) as f:
             # pyre-fixme[7]: Expected `IO[typing.Any]` but got
@@ -365,7 +353,6 @@ class Path(bytes):
 
     @classmethod
     @contextmanager
-    # pyre-fixme[2]: Parameter must be annotated.
     def resource(cls, package, name: str, *, exe: bool) -> Iterator["Path"]:
         """
         An improved `importlib.resources.path`. The main differences:
@@ -438,14 +425,12 @@ class Path(bytes):
         return os.unlink(self)
 
     @classmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def json_dumps(cls, *args, **kwargs) -> str:
         "Use instead of `json.dumps` to serializing `Path` values."
         assert "cls" not in kwargs
         return json.dumps(*args, **kwargs, cls=_PathJSONEncoder)
 
     @classmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def json_dump(cls, *args, **kwargs) -> str:
         "Use instead of `json.dump` to allow serializing `Path` values."
         assert "cls" not in kwargs
@@ -502,7 +487,6 @@ class _PathJSONEncoder(json.JSONEncoder):
 
 
 @contextmanager
-# pyre-fixme[2]: Parameter must be annotated.
 def temp_dir(**kwargs) -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory(**kwargs) as td:
         yield Path(td)
@@ -518,7 +502,6 @@ def generate_work_dir() -> Path:
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
 def open_for_read_decompress(path: Path):
     'Wraps `open(path, "rb")` to add transparent `.zst` or `.gz` decompression.'
     path = Path(path)
@@ -550,13 +533,9 @@ def open_for_read_decompress(path: Path):
         check_popen_returncode(proc)
 
 
-# pyre-fixme[3]: Return type must be annotated.
-# pyre-fixme[2]: Parameter must be annotated.
 def create_ro(path, mode):
     "`open` that creates (and never overwrites) a file with mode `a+r`."
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def ro_opener(path, flags):
         return os.open(
             path,
@@ -568,7 +547,6 @@ def create_ro(path, mode):
 
 
 @contextmanager
-# pyre-fixme[2]: Parameter must be annotated.
 def populate_temp_dir_and_rename(dest_path, *, overwrite: bool = False) -> Path:
     """
     Returns a Path to a temporary directory. The context block may populate
@@ -626,7 +604,6 @@ def populate_temp_dir_and_rename(dest_path, *, overwrite: bool = False) -> Path:
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
 def populate_temp_file_and_rename(
     dest_path: Path, *, overwrite: bool = False, mode: str = "w"
 ):

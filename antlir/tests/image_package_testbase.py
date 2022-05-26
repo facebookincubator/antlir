@@ -62,7 +62,6 @@ class ImagePackageTestCaseBase(AntlirTestCase):
             label,
         )
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _assert_ignore_original_extents(self, original_render) -> None:
         """
         Some filesystem formats do not preserve the original's cloned extents
@@ -91,11 +90,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
         original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
 
     def _assert_meta_valid_and_sendstreams_equal(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        expected_stream,
-        # pyre-fixme[2]: Parameter must be annotated.
-        stream,
+        self, expected_stream, stream
     ) -> None:
         real_meta_contents = pop_path(stream, ".meta")
         if "build" in real_meta_contents[1]:
@@ -110,14 +105,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
 
     @with_temp_subvols
     def _verify_ext3_mount(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        temp_subvolumes,
-        # pyre-fixme[2]: Parameter must be annotated.
-        unshare,
-        # pyre-fixme[2]: Parameter must be annotated.
-        mount_dir,
-        label: str,
+        self, temp_subvolumes, unshare, mount_dir, label: str
     ) -> None:
         self._assert_filesystem_label(unshare, mount_dir, label)
         subvol = temp_subvolumes.create("subvol")
@@ -159,14 +147,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
 
     @with_temp_subvols
     def _verify_vfat_mount(
-        self,
-        # pyre-fixme[2]: Parameter must be annotated.
-        temp_subvolumes,
-        # pyre-fixme[2]: Parameter must be annotated.
-        unshare,
-        # pyre-fixme[2]: Parameter must be annotated.
-        mount_dir,
-        label: str,
+        self, temp_subvolumes, unshare, mount_dir, label: str
     ) -> None:
         self._assert_filesystem_label(unshare, mount_dir, label)
         subvol = temp_subvolumes.create("subvol")

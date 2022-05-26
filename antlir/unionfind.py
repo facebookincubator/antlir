@@ -33,10 +33,8 @@ class UnionFind(object):
         """
         # This variable holds a map from any node to its ultimate parent
         # (representative)
-        # pyre-fixme[4]: Attribute must be annotated.
         self._representative_dict = {}
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def union(self, id1, id2) -> None:
         """Join two nodes <id1> and <id2> by connecting the representatives.
         The function adds nodes to the data structure if they do not already
@@ -48,8 +46,6 @@ class UnionFind(object):
         representative2 = self.find(id2)
         self._representative_dict[representative1] = representative2
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def find(self, id):
         """Find and return the representative node for <id>.
         The path from <id> to the representative will be compressed by
@@ -76,13 +72,11 @@ class UnionFind(object):
         for key in self._representative_dict:
             self.find(key)
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def add(self, id) -> None:
         """Add a new node as a representative of itself"""
         if id not in self._representative_dict:
             self._representative_dict[id] = id
 
-    # pyre-fixme[3]: Return type must be annotated.
     def items(self):
         """Return a generator for <id>, <representative> pairs"""
         for key in self._representative_dict:
@@ -91,15 +85,12 @@ class UnionFind(object):
     # -----------------------------
     # End of public interface
 
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def _parent(self, id):
         """Returns the current parent for <id>. Unlike find it does not find
         the representative (aka root grandparent).
         """
         return self._representative_dict[id]
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __iter__(self):
         """Enables iterations over ids"""
         for id in self._representative_dict:

@@ -19,7 +19,6 @@ class _Namespace:
 
 
 @contextmanager
-# pyre-fixme[3]: Return type must be annotated.
 def _capture_fd(fd: int, *, inheritable: bool = True):
     with tempfile.TemporaryFile() as tf_out:
         fd_backup = os.dup(fd)
@@ -40,7 +39,6 @@ def _capture_fd(fd: int, *, inheritable: bool = True):
 # Note: we gleefully leak the returned pointers here. #ramischeap
 class TestRenameShadowedInternals(unittest.TestCase):
     @classmethod
-    # pyre-fixme[2]: Parameter must be annotated.
     def addClassCleanup(cls, func, *args, **kwargs) -> None:
         cls._fakeClassCleanup = []
         # If we're not on 3.8, use our own, leakier cleanup strategy.  Test
@@ -197,7 +195,6 @@ class TestRenameShadowedInternals(unittest.TestCase):
                 ),
             )
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def _check_file_contents(self, file_contents) -> None:
         for f, c in file_contents:
             with open(f, "r") as f:

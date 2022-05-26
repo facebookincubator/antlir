@@ -22,8 +22,6 @@ S = TypeVar("S")
 
 
 class ShapeMeta(pydantic.main.ModelMetaclass):
-    # pyre-fixme[3]: Return type must be annotated.
-    # pyre-fixme[2]: Parameter must be annotated.
     def __new__(metacls, name, bases, dct):  # noqa: B902
         cls = super().__new__(metacls, name, bases, dct)
         # Only apply shape meta hacks to generated classes, not user-written
@@ -76,7 +74,6 @@ class Shape(pydantic.BaseModel, DoNotFreeze, metaclass=ShapeMeta):
     class Config:
         allow_mutation = False
 
-    # pyre-fixme[2]: Parameter must be annotated.
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         for k, v in self.__dict__.items():
@@ -121,7 +118,6 @@ class Enum(enum.Enum):
     def __repr__(self) -> str:
         return self.name
 
-    # pyre-fixme[3]: Return type must be annotated.
     def __eq__(self, o: object):  # pragma: no cover
         # it can sometimes be hard to get the exact same instance of this enum
         # class due to the way the codegen works, so allow comparisons by value

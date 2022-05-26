@@ -31,7 +31,6 @@ class TestHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def _mock_handler():
     handler = MagicMock()
     handler.send_error = MagicMock()

@@ -47,7 +47,6 @@ from antlir.subvol_utils import Subvol
 from .subvolume_on_disk import SubvolumeOnDisk
 
 
-# pyre-fixme[2]: Parameter must be annotated.
 def parse_args(args) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawTextHelpFormatter
@@ -168,7 +167,6 @@ def construct_profile_filename(
     )
 
 
-# pyre-fixme[3]: Return type must be annotated.
 def invoke_compiler_inside_build_appliance(
     *,
     build_appliance: Subvol,
@@ -335,15 +333,12 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
 if __name__ == "__main__":  # pragma: no cover
     from antlir.common import init_logging
 
-    # pyre-fixme[5]: Global expression must be annotated.
     argv = sys.argv[1:]
-    # pyre-fixme[5]: Global expression must be annotated.
     args = parse_args(argv)
     init_logging(debug=args.debug)
 
     with (cProfile.Profile() if args.profile_dir else nullcontext()) as pr:
         try:
-            # pyre-fixme[5]: Global expression must be annotated.
             subvol = build_image(args, argv)
             if not args.is_nested:
                 subvol.to_json_file(sys.stdout)
@@ -355,7 +350,6 @@ if __name__ == "__main__":  # pragma: no cover
             sys.exit(1)
     if args.profile_dir:
         assert pr is not None
-        # pyre-fixme[5]: Global expression must be annotated.
         filename = construct_profile_filename(
             args.child_layer_target, is_nested=args.is_nested
         )

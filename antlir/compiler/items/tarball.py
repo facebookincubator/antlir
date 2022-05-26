@@ -30,7 +30,6 @@ def load_from_tarball(
     source: str,
     subvol: Subvol,
     layer_opts: LayerOpts,
-    # pyre-fixme[2]: Parameter must be annotated.
     into_dir=None,
     force_root_ownership: bool = False,
 ) -> None:
@@ -130,10 +129,8 @@ def load_from_tarball(
 class TarballItem(tarball_t, ImageItem):
     source: Path
 
-    # pyre-fixme[4]: Attribute must be annotated.
     _normalize_into_dir = validate_path_field_normal_relative("into_dir")
 
-    # pyre-fixme[3]: Return type must be annotated.
     def provides(self):
         # We own ZST decompression, tarfile handles other gz, bz2, etc.
         import tarfile  # Lazy since only this method needs it.
@@ -165,7 +162,6 @@ class TarballItem(tarball_t, ImageItem):
                 else:
                     yield ProvidesFile(path=path)
 
-    # pyre-fixme[3]: Return type must be annotated.
     def requires(self):
         yield RequireDirectory(path=self.into_dir)
 

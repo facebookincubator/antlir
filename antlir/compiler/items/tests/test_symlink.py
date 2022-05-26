@@ -25,7 +25,6 @@ from .common import (
 )
 
 
-# pyre-fixme[5]: Global expression must be annotated.
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
     Subvol("test-build-appliance", already_exists=True)
 )
@@ -119,7 +118,6 @@ class SymlinkItemsTestCase(BaseItemTestCase):
                 )
 
     @with_mocked_temp_volume_dir
-    # pyre-fixme[2]: Parameter must be annotated.
     def _test_symlink_command(self, layer_opts) -> None:
         with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")

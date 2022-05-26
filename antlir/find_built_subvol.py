@@ -13,12 +13,7 @@ from .subvol_utils import get_subvolumes_dir, Subvol
 
 
 def find_built_subvol(
-    # pyre-fixme[2]: Parameter must be annotated.
-    layer_output,
-    *,
-    # pyre-fixme[2]: Parameter must be annotated.
-    path_in_repo=None,
-    subvolumes_dir: Optional[Path] = None
+    layer_output, *, path_in_repo=None, subvolumes_dir: Optional[Path] = None
 ) -> Subvol:
     # It's OK for both to be None (uses the current file to find repo), but
     # it's not OK to set both.
