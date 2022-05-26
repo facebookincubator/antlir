@@ -1,0 +1,11 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "root_disk_image",
+    srcs = [
+        "src/lib.rs",
+    ],
+    deps = [
+        "//metalos/antlir_image/antlir_image:antlir_image",
+    ],
+)
