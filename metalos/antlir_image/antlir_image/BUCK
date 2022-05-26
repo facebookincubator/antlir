@@ -1,0 +1,18 @@
+load("//metalos:defs.bzl", "rust_library")
+
+rust_library(
+    name = "antlir_image",
+    srcs = [
+        "src/layer.rs",
+        "src/lib.rs",
+        "src/partition.rs",
+        "src/path.rs",
+        "src/subvolume.rs",
+    ],
+    test_deps = [
+        "maplit",
+    ],
+    deps = [
+        "thiserror",
+    ],
+)
