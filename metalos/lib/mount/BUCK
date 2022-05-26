@@ -8,5 +8,6 @@ rust_library(
         "nix",
         "slog",
         "thiserror",
+        "//metalos/antlir_image/antlir_image:antlir_image",
     ],
 )
