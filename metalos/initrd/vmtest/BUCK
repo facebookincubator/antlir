@@ -5,15 +5,10 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
-load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//antlir/linux/vm/console:defs.bzl", "console")
-load("//antlir/linux/vm/generator:defs.bzl", "generator")
 load("//antlir/linux/vm/network:defs.bzl", "network")
-load("//antlir/linux/vm/notify:defs.bzl", "notify")
-load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/disk:disk.bzl", "disk")
 load("//metalos/host_configs/tests:host.bzl", "host_config")
@@ -133,27 +128,9 @@ package.new(
     visibility = [],
 )
 
-image.layer(
-    name = "metalos-vmtest",
-    parent_layer = "//metalos/os:metalos",
-    features = [
-        ssh.test_only_login(),
-        console.autologin(),
-        generator.mounts(),
-        feature.remove("/etc/hosts"),
-        network.host(),
-        notify.install(),
-        systemd.enable_unit("notify-host.service", "default.target"),
-        # Technically, sshd.service is already enabled in the base metalos
-        # image, but this indicates that in the vmtest use-case, sshd _is_ the
-        # workload.
-        systemd.enable_unit("sshd.service", "workload.target"),
-    ],
-)
-
 package.new(
     name = "metalos-vmtest.sendstream.zst",
-    layer = ":metalos-vmtest",
+    layer = "//metalos/os/vm:base",
     format = "sendstream.zst",
 )
 
