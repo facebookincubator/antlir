@@ -3,6 +3,10 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "metalos_disk",
     srcs = ["src/lib.rs"],
+    test_deps = [
+        "maplit",
+        "slog_glog_fmt",
+    ],
     unittests = [
         "vm",
     ],
@@ -10,5 +14,6 @@ rust_library(
         "anyhow",
         "delegate",
         "nix",
+        "slog",
     ],
 )

@@ -121,96 +121,10 @@ fn get_last_usable_lb<D: ReadDisk>(disk_file: &D, lb_size: LogicalBlockSize) -> 
     Ok(((disk_size - MEGABYTE) / lb_size_bytes) - 1)
 }
 
-pub mod test_utils {
-    use crate::DiskDevPath;
-    use anyhow::{Context, Result};
-
-    pub fn setup_test_loopback(img_file: &str) -> Result<String> {
-        std::process::Command::new("dd")
-            .args(&[
-                "if=/dev/zero",
-                &format!("of={}", img_file),
-                "bs=512",
-                "count=100000",
-            ])
-            .output()
-            .context(format!("Failed to run dd to make {}", img_file))?;
-
-        let output = std::process::Command::new("losetup")
-            .arg("-f")
-            .arg("--show")
-            .arg(&img_file)
-            .output()
-            .context(format!("Failed to run dd to make /tmp/{}", img_file))?;
-        println!("losetup output: {:?}", output);
-        assert!(output.status.success());
-
-        let lo = std::str::from_utf8(&output.stdout)
-            .context(format!("Invalid UTF-8 in output: {:?}", output))?
-            .trim();
-
-        println!("lo: {}", lo);
-        assert!(lo.starts_with("/dev/loop"));
-        Ok(lo.to_string())
-    }
-
-    pub fn setup_test_device() -> Result<(DiskDevPath, String)> {
-        let img_file = "/tmp/loopbackfile.img".to_string();
-        let lo = setup_test_loopback(&img_file).context("Failed to setup loopback device")?;
-        let output = std::process::Command::new("parted")
-            .args(&["--script", &lo, "mklabel", "gpt"])
-            .output()
-            .context("Failed to make gpt label")?;
-        println!("mklabel: {:?}", output);
-        assert!(output.status.success());
-
-        let output = std::process::Command::new("parted")
-            .args(&["--script", &lo, "mkpart", "primary", "btrfs", "50s", "100s"])
-            .output()
-            .context("Failed to make p1")?;
-        println!("p1: {:?}", output);
-        assert!(output.status.success());
-
-        let output = std::process::Command::new("parted")
-            .args(&[
-                "--script", &lo, "mkpart", "primary", "btrfs", "201s", "800s",
-            ])
-            .output()
-            .context("Failed to make p2")?;
-        println!("p2: {:?}", output);
-        assert!(output.status.success());
-
-        let output = std::process::Command::new("parted")
-            .args(&[
-                "--script", &lo, "mkpart", "primary", "btrfs", "101s", "200s",
-            ])
-            .output()
-            .context("Failed to make p3")?;
-        println!("p3: {:?}", output);
-        assert!(output.status.success());
-
-        let output = std::process::Command::new("fdisk")
-            .args(&["-l", &lo])
-            .output()
-            .context("Failed to run fdisk")?;
-
-        println!("{:#?}", output);
-        assert!(output.status.success());
-
-        let output = std::process::Command::new("sync")
-            .output()
-            .context("Failed to run sync")?;
-        println!("{:#?}", output);
-        assert!(output.status.success());
-
-        Ok((DiskDevPath(lo.into()), img_file))
-    }
-}
-
 #[cfg(test)]
 pub mod tests {
-    use super::test_utils::*;
     use super::*;
+    use metalos_disk::test_utils::*;
     use metalos_macros::vmtest;
 
     fn get_guid(disk_path: &DiskDevPath) -> Result<String> {

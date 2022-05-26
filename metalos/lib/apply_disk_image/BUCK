@@ -3,13 +3,6 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "apply_disk_image",
     srcs = ["src/apply_disk_image.rs"],
-    test_deps = [
-        "slog_glog_fmt",
-    ],
-    unittests = [
-        "plain",
-        "vm",
-    ],
     deps = [
         "anyhow",
         "bytes",
