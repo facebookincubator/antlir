@@ -8,6 +8,7 @@
 use std::path::{Path, PathBuf};
 
 use nix::mount::{MntFlags, MsFlags};
+use slog::{info, Logger};
 
 #[derive(thiserror::Error, Debug)]
 pub enum MountError {
@@ -36,7 +37,10 @@ pub trait Mounter {
 }
 
 // RealMounter is an implementation of the Mounter trait that calls nix::mount::mount for real.
-pub struct RealMounter {}
+pub struct RealMounter {
+    pub log: Logger,
+}
+
 impl Mounter for RealMounter {
     fn mount(
         &self,
@@ -46,6 +50,15 @@ impl Mounter for RealMounter {
         flags: MsFlags,
         data: Option<&str>,
     ) -> Result<(), MountError> {
+        info!(
+            self.log,
+            "Mounting {} to {} with fstype {:?}, flags {:?} and options {:?}",
+            source.display(),
+            target.display(),
+            fstype,
+            flags,
+            data
+        );
         match nix::mount::mount(Some(source), target, fstype, flags, data) {
             Ok(()) => Ok(()),
             Err(nix::errno::Errno::ENOENT) => Err(if !target.exists() {
@@ -64,6 +77,12 @@ impl Mounter for RealMounter {
         if force {
             flags.insert(MntFlags::MNT_FORCE);
         }
+        info!(
+            self.log,
+            "Unmounting {} with flags {:?}",
+            mountpoint.display(),
+            flags
+        );
         nix::mount::umount2(mountpoint, flags)
     }
 }

@@ -176,7 +176,9 @@ impl Bootloader {
             disk,
             self.config.provisioning_config.gpt_root_disk.clone(),
             &self.args.tmp_mounts_dir,
-            RealMounter {},
+            RealMounter {
+                log: self.log.clone(),
+            },
         )
         .await
         .context("Failed to apply disk image")?;
@@ -198,19 +200,21 @@ impl Bootloader {
                 .context("failed to create control mount directory")?;
         }
 
-        RealMounter {}
-            .mount(
-                &summary.partition_device,
-                metalos_paths::control(),
-                Some("btrfs"),
-                MsFlags::empty(),
-                None,
-            )
-            .context(format!(
-                "failed to mount root partition {:?} to {:?}",
-                summary.partition_device,
-                metalos_paths::control(),
-            ))?;
+        RealMounter {
+            log: self.log.clone(),
+        }
+        .mount(
+            &summary.partition_device,
+            metalos_paths::control(),
+            Some("btrfs"),
+            MsFlags::empty(),
+            None,
+        )
+        .context(format!(
+            "failed to mount root partition {:?} to {:?}",
+            summary.partition_device,
+            metalos_paths::control(),
+        ))?;
 
         self.send_event(MountedRootfs {
             source: &summary.partition_device,
