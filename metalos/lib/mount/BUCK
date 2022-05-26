@@ -6,6 +6,7 @@ rust_library(
     deps = [
         "mockall",
         "nix",
+        "slog",
         "thiserror",
     ],
 )

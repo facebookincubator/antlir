@@ -264,7 +264,7 @@ async fn main() -> Result<()> {
     std::fs::create_dir_all(metalos_paths::control())
         .context(format!("failed to mkdir {:?}", metalos_paths::control()))?;
     mount_root(
-        &RealMounter {},
+        &RealMounter { log: log.clone() },
         &kernel_args.mount_options,
         metalos_paths::control(),
     )
@@ -323,8 +323,8 @@ async fn main() -> Result<()> {
     // switch root
     network_cleanup(log.clone()).context("failed to cleanup network before switchroot")?;
     switch_root(
-        log,
-        RealMounter {},
+        log.clone(),
+        RealMounter { log },
         kernel_args.mount_options,
         current_boot_subvol.path(),
         &config,
