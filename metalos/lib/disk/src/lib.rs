@@ -7,12 +7,17 @@
 #![feature(read_buf)]
 #![feature(can_vector)]
 
-use anyhow::{Context, Result};
-use delegate::delegate;
-use std::fs::{File, OpenOptions};
+use std::collections::HashMap;
+use std::fs::{self, File, OpenOptions};
 use std::io::{Read, ReadBuf, Seek, SeekFrom, Write};
 use std::os::unix::io::AsRawFd;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
+
+use anyhow::{Context, Result};
+use delegate::delegate;
+use slog::{info, warn, Logger};
+
+const SYS_BLOCK: &str = "/sys/block";
 
 pub static MEGABYTE: u64 = 1024 * 1024;
 
@@ -161,11 +166,182 @@ impl Write for DiskFileRW {
 
 /* END File Traits pass-through */
 
+pub fn scan_disk_partitions(
+    log: Logger,
+    disk_device: &DiskDevPath,
+) -> Result<HashMap<u32, PathBuf>> {
+    let mut out = HashMap::new();
+
+    let filename = disk_device
+        .0
+        .file_name()
+        .context("Provided disk path doesn't have a file name")?
+        .to_str()
+        .context(format!(
+            "Provided path {:?} contained invalid unicode",
+            disk_device
+        ))?;
+
+    let sys_dir = Path::new(SYS_BLOCK).join(filename);
+
+    let entries =
+        fs::read_dir(&sys_dir).context(format!("failed to read sys_dir {:?}", sys_dir))?;
+    for entry in entries {
+        let path = entry
+            .context(format!(
+                "failed to read next dir from sys_dir {:?}",
+                sys_dir
+            ))?
+            .path();
+
+        let entry_filename = path
+            .file_name()
+            .context(format!("failed to get filename for path {:?}", path))?
+            .to_str()
+            .context(format!("Path {:?} contained invalid unicode", path))?;
+
+        // each partition will have it's own directory with the full name of the partition
+        // device that we are looking for. For example /sys/block/vda will have vda1, vda2 etc
+        // and /sys/block/nvme0n1/ will have nvme0n1p1, nvme0n1p2 etc.
+        if !entry_filename.starts_with(filename) {
+            continue;
+        }
+
+        // Now that we have a possible block device which could be our target parition we look
+        // inside that directory for a file called 'partition' which will contain the partition
+        // number.
+        let partition_file = path.join("partition");
+
+        // I am not entirely confident for every disk type that we will always find this file
+        // there may be some cases where this file doesn't exist so I am going to make this
+        // an non-fatal condition and instead we will error out at the bottom if we don't find
+        // the target partition. The error might be a bit more vague but I think the resilience
+        // to any unexpected files being here is worth it.
+        if !partition_file.exists() {
+            warn!(
+                log,
+                "Found path {:?} which looked like a partition directory but it was missing the partition file",
+                path,
+            );
+            continue;
+        }
+
+        let content = fs::read_to_string(&partition_file)
+            .context(format!("Can't read partition file {:?}", partition_file))?;
+
+        let current_partition_number: u32 = content.trim().parse().context(format!(
+            "Failed to parse contents of partition file, found: '{:?}'",
+            content
+        ))?;
+
+        info!(
+            log,
+            "Found partition {} at {:?}", current_partition_number, path
+        );
+        out.insert(
+            current_partition_number,
+            Path::new("/dev/").join(entry_filename),
+        );
+    }
+
+    Ok(out)
+}
+
+pub mod test_utils {
+    use crate::DiskDevPath;
+    use anyhow::{Context, Result};
+
+    pub fn setup_test_loopback(img_file: &str) -> Result<String> {
+        std::process::Command::new("dd")
+            .args(&[
+                "if=/dev/zero",
+                &format!("of={}", img_file),
+                "bs=512",
+                "count=100000",
+            ])
+            .output()
+            .context(format!("Failed to run dd to make {}", img_file))?;
+
+        let output = std::process::Command::new("losetup")
+            .arg("-f")
+            .arg("--show")
+            .arg(&img_file)
+            .output()
+            .context(format!("Failed to run dd to make /tmp/{}", img_file))?;
+        println!("losetup output: {:?}", output);
+        assert!(output.status.success());
+
+        let lo = std::str::from_utf8(&output.stdout)
+            .context(format!("Invalid UTF-8 in output: {:?}", output))?
+            .trim();
+
+        println!("lo: {}", lo);
+        assert!(lo.starts_with("/dev/loop"));
+        Ok(lo.to_string())
+    }
+
+    pub fn setup_test_device() -> Result<(DiskDevPath, String)> {
+        let img_file = "/tmp/loopbackfile.img".to_string();
+        let lo = setup_test_loopback(&img_file).context("Failed to setup loopback device")?;
+        let output = std::process::Command::new("parted")
+            .args(&["--script", &lo, "mklabel", "gpt"])
+            .output()
+            .context("Failed to make gpt label")?;
+        println!("mklabel: {:?}", output);
+        assert!(output.status.success());
+
+        let output = std::process::Command::new("parted")
+            .args(&["--script", &lo, "mkpart", "primary", "btrfs", "50s", "100s"])
+            .output()
+            .context("Failed to make p1")?;
+        println!("p1: {:?}", output);
+        assert!(output.status.success());
+
+        let output = std::process::Command::new("parted")
+            .args(&[
+                "--script", &lo, "mkpart", "primary", "btrfs", "201s", "800s",
+            ])
+            .output()
+            .context("Failed to make p2")?;
+        println!("p2: {:?}", output);
+        assert!(output.status.success());
+
+        let output = std::process::Command::new("parted")
+            .args(&[
+                "--script", &lo, "mkpart", "primary", "btrfs", "101s", "200s",
+            ])
+            .output()
+            .context("Failed to make p3")?;
+        println!("p3: {:?}", output);
+        assert!(output.status.success());
+
+        let output = std::process::Command::new("fdisk")
+            .args(&["-l", &lo])
+            .output()
+            .context("Failed to run fdisk")?;
+
+        println!("{:#?}", output);
+        assert!(output.status.success());
+
+        let output = std::process::Command::new("sync")
+            .output()
+            .context("Failed to run sync")?;
+        println!("{:#?}", output);
+        assert!(output.status.success());
+
+        Ok((DiskDevPath(lo.into()), img_file))
+    }
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
+    use crate::test_utils::*;
     use crate::DiskDevPath;
+    use anyhow::Result;
+    use maplit::hashmap;
     use metalos_macros::vmtest;
+    use slog::o;
 
     #[vmtest]
     fn test_get_block_device_size() -> Result<()> {
@@ -189,6 +365,33 @@ pub mod tests {
                 .context("Failed to get block device size")?,
             size * 512
         );
+
+        Ok(())
+    }
+
+    #[vmtest]
+    fn test_get_partition_device() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
+
+        let (lo, _) = setup_test_device().context("failed to setup loopback device")?;
+
+        let parts = scan_disk_partitions(log.clone(), &lo)
+            .context(format!("failed to scan partitions of {:?}", lo))?;
+
+        let lo_str =
+            lo.0.to_str()
+                .context("Failed to convert disk dev path to str")?
+                .to_string();
+
+        assert_eq!(
+            parts,
+            hashmap! {
+                1 => PathBuf::from(format!("{}{}", lo_str, "p1")),
+                2 => PathBuf::from(format!("{}{}", lo_str, "p2")),
+                3 => PathBuf::from(format!("{}{}", lo_str, "p3")),
+            }
+        );
+
         Ok(())
     }
 }
