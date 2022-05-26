@@ -1,19 +1,20 @@
 use std::fs;
-use std::io;
-use std::io::{Read, Write};
+use std::fs::File;
+use std::io::Write;
 use std::os::unix::io::AsRawFd;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use anyhow::{anyhow, Context, Result};
-use bytes::{Buf, Bytes};
+use bytes::Bytes;
+use futures::StreamExt;
 use slog::{info, o, warn, Logger};
 
 use expand_partition::{expand_last_partition, PartitionDelta};
 use metalos_disk::DiskDevPath;
 use metalos_host_configs::packages::GptRootDisk;
 use metalos_mount::Mounter;
-use package_download::HttpsDownloader;
+use package_download::{HttpsDownloader, PackageDownloader};
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);
@@ -156,18 +157,21 @@ fn get_partition_device(
     ))
 }
 
-async fn download_disk_image(package: GptRootDisk) -> Result<Bytes> {
+async fn download_disk_image(log: Logger, package: GptRootDisk, dest: &mut File) -> Result<usize> {
+    let package = metalos_host_configs::packages::generic::Package::from(package);
     let dl = HttpsDownloader::new().context("while creating downloader")?;
-    let url = dl.package_url(&package.into());
-    let client: reqwest::Client = dl.into();
-    client
-        .get(url.clone())
-        .send()
-        .await
-        .with_context(|| format!("while opening {}", url))?
-        .bytes()
-        .await
-        .with_context(|| format!("while reading {}", url))
+    let mut stream = (&dl).open_bytes_stream(log.clone(), &package).await?;
+
+    let mut size = 0;
+    while let Some(item) = stream.next().await {
+        let bytes: Bytes = item.context("while reading chunk from downloader")?;
+        size += bytes.len();
+
+        dest.write_all(&bytes)
+            .context("while writing chunk to disk")?;
+    }
+
+    Ok(size)
 }
 
 pub async fn apply_disk_image<M: Mounter>(
@@ -175,34 +179,21 @@ pub async fn apply_disk_image<M: Mounter>(
     disk: DiskDevPath,
     package: GptRootDisk,
     tmp_mounts_dir: &Path,
-    dd_buffer_size: usize,
     mounter: M,
 ) -> Result<DiskImageSummary> {
     let log = log.new(o!("package" => format!("{:?}", package)));
-    let src = download_disk_image(package).await?;
-    let src_len = src.len();
-    let mut src = src.reader();
 
     let mut dst = fs::OpenOptions::new()
         .write(true)
         .open(&disk.0)
         .context("Failed to open destination file")?;
 
-    let mut buf = vec![0; dd_buffer_size];
-    loop {
-        let len = match src.read(&mut buf) {
-            Ok(0) => break,
-            Ok(len) => len,
-            Err(ref e) if e.kind() == io::ErrorKind::Interrupted => continue,
-            Err(e) => {
-                return Err(e).context("Failed to read next block from file");
-            }
-        };
-        dst.write_all(&buf[..len])
-            .context("Failed to write next block to file")?;
-    }
-    info!(log, "Wrote {} bytes to {:?}", src_len, disk);
+    info!(log, "downloading {:?} to {}", package, disk.0.display());
+    let bytes_written = download_disk_image(log.clone(), package, &mut dst)
+        .await
+        .context("Failed to write disk image")?;
 
+    info!(log, "Wrote {} bytes to {:?}", bytes_written, disk);
     info!(log, "Expanding last partition of {:?}", disk);
     let delta = expand_last_partition(&disk)
         .context(format!("Failed to expand last partition of: {:?}", disk))?;
