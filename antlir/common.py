@@ -54,7 +54,7 @@ _ANTLIR_ROOT_LOGGER = "antlir"
 
 class ColorFormatter(logging.Formatter):
     _base_fmt = (
-        "\x1b[90m %(asctime)s.%(msecs)03d %(filename)s:%(lineno)d "
+        "\x1b[90m %(asctime)s.%(msecs)03d %(process)d %(filename)s:%(lineno)d "
         "\x1b[0m%(message)s"
     )
     _level_to_prefix = {
