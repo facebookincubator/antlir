@@ -33,7 +33,7 @@ _buck_bin_dir="${_repo_root}/.tools"
 
 source "${_repo_root}/.buckversion"
 
-BUCK="${_buck_bin_dir}/buck-$(expected_buck_version)-java11.pex"
+BUCK="${_buck_bin_dir}/buck-${BUCK_VERSION}-java11.pex"
 
 run_buck() {
   "${BUCK}" "${@}"
