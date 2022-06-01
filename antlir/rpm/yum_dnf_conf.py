@@ -21,6 +21,8 @@ from enum import Enum
 from typing import Iterable, Iterator, NamedTuple, TextIO, Tuple
 
 
+MAX_PARALLEL_DOWNLOADS = 16
+
 # NB: The 'main' section in `{yum,dnf}.conf` acts similarly to
 # ConfigParser's magic 'DEFAULT', in that it provides default values for
 # some of the repo options.  I did not investigate this in enough detail to
@@ -177,9 +179,14 @@ class YumDnfConfIsolator:
         # See the note about `persistdir` -- the same logic applies.
         main_sec["logfile"] = f"/var/log/{prog_name}.log"  # default
         main_sec["config_file_path"] = config_path
-        # Our download path isn't very fast, nor are the CI hosts. So, we make
-        # the fetch timeout higher than might be desired on bare-metal hosts.
-        main_sec["timeout"] = "60"
+        # Having `dnf` download with high concurrency from the FB-internal
+        # repo snapshot storage results in a speedup of over 2x.  This is
+        # because concurrency masks significant per-blob setup overheads.
+        main_sec["max_parallel_downloads"] = str(MAX_PARALLEL_DOWNLOADS)
+        # CI hosts can experience resource starvation and slowdowns.  We
+        # never expect to see timeouts in interactive use, so err on the
+        # side of making them higher to improve CI reliability.
+        main_sec["timeout"] = "90"
         main_sec.pop("proxy", None)  # We talk only to a local reposerver.
 
         # This forces that any incoming repo or RPM installation MUST be signed
