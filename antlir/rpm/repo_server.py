@@ -34,7 +34,8 @@ import urllib.parse
 
 # pyre-fixme[21]: Could not find name `HTTPStatus` in `http.server`.
 from http.server import BaseHTTPRequestHandler, HTTPStatus
-from typing import Mapping, Tuple
+from socketserver import ThreadingMixIn
+from typing import Dict, Mapping, Tuple
 
 from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path
@@ -48,7 +49,8 @@ from .storage import Storage
 log = get_logger()
 
 # How big are our reads against Storage? Exposed for the unit test.
-_CHUNK_SIZE = 2**21
+# Note: 2 MiB is plenty for good perf, but 16 reduces debug-mode logspam.
+_CHUNK_SIZE = 16 * (2**20)
 
 
 # Future: we could query the RPM table lazily, which would save ~1 second of
@@ -124,6 +126,46 @@ def read_snapshot_dir(snapshot_dir: Path):
     return location_to_obj
 
 
+def _abbrev_ns(ns: int) -> str:
+    if ns < 1000:  # pragma: no cover
+        return f"{ns}ns"
+    us = ns // 1000
+    if us < 1000:
+        return f"{us}us"
+    # Don't further abbreviate to "s", so that seconds stick out visually.
+    return f"{us // 1000}ms"
+
+
+class _Timer:
+    def __init__(self):
+        self.t_start_ns = time.perf_counter_ns()
+        self.timings_ns = {}
+
+    def add(self, name: str):
+        self.timings_ns[name] = time.perf_counter_ns()  # relies on dict order
+
+    def __str__(self):
+        prev = self.t_start_ns
+        pieces = []
+        for k, v in self.timings_ns.items():
+            pieces.append(f"{k}: {_abbrev_ns(v - prev)}")
+            prev = v
+        return ", ".join(pieces)
+
+
+class _ChunkLogger:
+    def __init__(self, location):
+        self.timer = _Timer()
+        self.location = location
+        self.size = None
+        self.error = None
+
+    def log(self):
+        sz = "" if self.size is None else f"{self.size}-byte "
+        err = "" if self.error is None else " - {self.error}"
+        log.debug(f"{sz}chunk for {self.location}: {self.timer}{err}")
+
+
 class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
     server_version = "RPMRepoSnapshot"
     protocol_version = "HTTP/1.0"
@@ -132,24 +174,23 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         self,
         *args,
         location_to_obj: Mapping[str, dict],
+        # SHARED across requests and MUTABLE: worry about thread-safety
+        location_to_memoized_err: Dict[str, dict],
         storage: Storage,
         **kwargs,
     ) -> None:
         self.location_to_obj = location_to_obj
+        self.location_to_memoized_err = location_to_memoized_err
         self.storage = storage
         super().__init__(*args, **kwargs)
 
-    def _memoize_error(self, obj, error: ReportableError) -> None:
+    def _memoize_error(self, location, error: ReportableError) -> None:
         """
         Any size or checksum errors we see are likely to be permanent, so we
         MUTATE `obj` with the error, hiding the old `storage_id` inside.
         """
-        error_dict = {
-            **error.to_dict(),
-            # Since `storage_id` is hidden, `send_head` will show the error.
-            "storage_id": obj.pop("storage_id"),
-        }
-        set_new_key(obj, "error", error_dict)
+        # Thread-safe: one-key write to `location_to_memoized_err`.
+        self.location_to_memoized_err[location] = error.to_dict()
 
     # The default logging implementation does not flush. Gross.
     def log_message(self, format: str, *args, _antlir_logger=log.debug) -> None:
@@ -185,20 +226,23 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             log.debug(f"Got storage for {location}")
             hash = checksum.hasher()
             while True:
+                chunk_log = _ChunkLogger(location)
                 chunk = input.read(_CHUNK_SIZE)
-                log.debug(f"{len(chunk)}-byte chunk for {location}")
+                chunk_log.timer.add("read")
+
+                chunk_log.size = len(chunk)
                 bytes_left -= len(chunk)
+
                 if not chunk:
                     if bytes_left != 0:  # The client will see an error.
-                        self._memoize_error(
-                            obj,
-                            FileIntegrityError(
-                                location=location,
-                                failed_check="size",
-                                expected=obj["size"],
-                                actual=obj["size"] - bytes_left,
-                            ),
+                        chunk_log.error = FileIntegrityError(
+                            location=location,
+                            failed_check="size",
+                            expected=obj["size"],
+                            actual=obj["size"] - bytes_left,
                         )
+                        self._memoize_error(location, chunk_log.error)
+                    chunk_log.log()
                     break
 
                 #
@@ -214,34 +258,37 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
                     # The next `if` will error if we get a non-empty chunk.
                     # The error's `actual=` might be an underestimate.
                     bytes_left -= len(input.read())
+                    chunk_log.timer.add("end_read")
 
                 if bytes_left < 0:
-                    self._memoize_error(
-                        obj,
-                        FileIntegrityError(
-                            location=location,
-                            failed_check="size",
-                            expected=obj["size"],
-                            actual=obj["size"] - bytes_left,
-                        ),
+                    chunk_log.error = FileIntegrityError(
+                        location=location,
+                        failed_check="size",
+                        expected=obj["size"],
+                        actual=obj["size"] - bytes_left,
                     )
+                    self._memoize_error(location, chunk_log.error)
+                    chunk_log.log()
                     break  # Incomplete content, client will see an error.
 
                 hash.update(chunk)
+                chunk_log.timer.add("hash")
+
                 if bytes_left == 0 and hash.hexdigest() != checksum.hexdigest:
-                    self._memoize_error(
-                        obj,
-                        FileIntegrityError(
-                            location=location,
-                            failed_check=checksum.algorithm,
-                            expected=checksum.hexdigest,
-                            actual=hash.hexdigest(),
-                        ),
+                    chunk_log.error = FileIntegrityError(
+                        location=location,
+                        failed_check=checksum.algorithm,
+                        expected=checksum.hexdigest,
+                        actual=hash.hexdigest(),
                     )
+                    self._memoize_error(location, chunk_log.error)
+                    chunk_log.log()
                     break  # Incomplete content, client will see an error.
 
                 # If this is the last chunk, the stream was error-free.
                 self.wfile.write(chunk)
+                chunk_log.timer.add("write")
+                chunk_log.log()
 
         log.debug(f"Normal exit for GET {location}")
 
@@ -267,21 +314,23 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             # pyre-fixme[7]: Expected `Tuple[str, typing.Dict[typing.Any,
             #  typing.Any]]` but got `Tuple[None, None]`.
             return None, None
+        # Thread-safe: one-key read from `location_to_memoized_err`.
+        obj_error = obj.get("error") or self.location_to_memoized_err.get(
+            location
+        )
         if (
             ("storage_id" not in obj and "content_bytes" not in obj)
             # `error` is not currently populated simultaneously with
-            # `storage_id`, but better safe than sorry.
-            or ("error" in obj)
+            # `storage_id`, but memoized errors can be.
+            or obj_error
         ):
             self.send_error(
                 # pyre-fixme[16]: Module `server` has no attribute `HTTPStatus`.
                 HTTPStatus.INTERNAL_SERVER_ERROR,
-                f'Repo snapshot error: {obj.get("error")}',
+                f"Repo snapshot error: {obj_error}",
             )
             # Future: we may add an option to grab the `storage_id` out of
-            # 'mutable_rpm' errors, if appropriate.  Note that
-            # `_memoize_error` hacks other errors to include a `storage_id`
-            # in our in-memory representation -- do check the error type!
+            # 'mutable_rpm' errors, if appropriate.
             # pyre-fixme[7]: Expected `Tuple[str, typing.Dict[typing.Any,
             #  typing.Any]]` but got `Tuple[None, None]`.
             return None, None
@@ -315,17 +364,50 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         return mimetype
 
 
+# Threading is necessary because for each mirror (aka Antlir host:port)
+# `dnf` can make simultaneous requests equal to the smaller of:
+#  - `max_parallel_downloads`, defaulting to 3 in `dnf`, but Antlir
+#    increases it for better performance.
+#  - 3 (librepo default mirror concurrency) times the number of repos.
+# Whatever this value is, it's definitely higher than 1.
+#
+# Without threading, only 1 connection will be serviced, and the rest will
+# starve, and potentially hit `dnf`'s options of `timeout` and `minrate` --
+# which will can even fail the download on the `dnf` side.
+#
+# So, threading, while pretty inefficient in Python, here helps both
+# performance and reliability, and we need to have it.
+#
+# Thread-safety for concurrent `RequestHandler`s is pretty straightforward:
+#  - most data in the request handler is const (e.g. `location_to_obj`)
+#  - accesses to `location_to_memoized_err` are deliberately thread-safe
+#  - each handler has its own `wfile`, so no problem there
+class ThreadedHTTPSocketServer(ThreadingMixIn, HTTPSocketServer):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # On Antlir shutdown, `repo-server` should exit promptly, there's no
+        # point to gracefully terminating outstanding request threads.
+        self.daemon_threads = True
+
+
 def repo_server(
     sock, location_to_obj: Mapping[str, dict], storage: Storage
-) -> HTTPSocketServer:
+) -> ThreadedHTTPSocketServer:
     """
     BEWARE: `location_to_obj` is mutated if we discover checksum errors to
     prevent client retries from succeeding.
     """
-    return HTTPSocketServer(
+    # For error memoization to work, this must be shared across handlers:
+    # They must take care to read and write it in a thread-safe way.
+    location_to_memoized_err = {}
+    return ThreadedHTTPSocketServer(
         sock,
         lambda *args, **kwargs: RepoSnapshotHTTPRequestHandler(
-            *args, location_to_obj=location_to_obj, storage=storage, **kwargs
+            *args,
+            location_to_obj=location_to_obj,
+            location_to_memoized_err=location_to_memoized_err,
+            storage=storage,
+            **kwargs,
         ),
     )
 
