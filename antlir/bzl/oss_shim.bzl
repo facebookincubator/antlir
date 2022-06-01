@@ -82,6 +82,7 @@ _PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
         "srcs",
         "tags",
         "visibility",
+        "package_style",
     ],
 )
 
