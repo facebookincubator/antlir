@@ -6,6 +6,7 @@
  */
 
 #![deny(warnings)]
+use std::collections::HashMap;
 use std::env;
 use std::net::IpAddr;
 use std::path::PathBuf;
@@ -37,9 +38,19 @@ async fn main() -> Result<()> {
         );
     });
 
-    let routes = warp::path("package")
-        .and(warp::filters::fs::dir(images_dir))
-        .with(log);
+    let packages = warp::path("package").and(warp::filters::fs::dir(images_dir));
+    let send_event = warp::path("send-event")
+        .and(warp::query::<HashMap<String, String>>())
+        .map(|query: HashMap<String, String>| {
+            eprintln!(
+                "images_sidecar: received event {} ({})",
+                query.get("name").map_or("None", String::as_str),
+                query.get("payload").map_or("None", String::as_str),
+            );
+            "OK"
+        });
+
+    let routes = packages.or(send_event).with(log);
 
     let addr = IpAddr::V6("::".parse()?);
     warp::serve(routes).run((addr, 8000)).await;
