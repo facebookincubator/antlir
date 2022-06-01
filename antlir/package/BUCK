@@ -1,7 +1,7 @@
-# @noautodeps
 load("//antlir/bzl:oss_shim.bzl", "python_binary")
 
 python_binary(
+    # @autodeps-skip
     name = "btrfs",
     srcs = [
         "btrfs.py",

@@ -1,4 +1,3 @@
-# @noautodeps
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
