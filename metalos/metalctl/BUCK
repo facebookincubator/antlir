@@ -5,8 +5,7 @@ load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest
 rust_binary(
     name = "metalctl",
     srcs = glob([
-        "src/*.rs",
-        "src/update/*.rs",
+        "src/**/*.rs",
     ]),
     crate_root = "src/metalctl.rs",
     rustc_flags = ["--cfg=blkid"],
@@ -32,23 +31,23 @@ rust_binary(
         "container",
     ],
     deps = [
-        "//metalos/host_configs/rust:metalos_host_configs",
-        "//metalos/host_configs/evalctx:evalctx",
-        "//metalos/host_configs/lifecycle:lifecycle",
-        "//metalos/lib/get_host_config:get_host_config",
-        "//metalos/lib/net_utils:net_utils",
-        "//metalos/lib/state:state",
-        "//metalos/lib/package_download:package_download",
-        "//metalos/lib/send_events:send_events",
-        "anyhow",  # ~9.5k, very helpful for error handling
-        "structopt",  # ~300k, but makes iterating development much easier
-        # all the slog crates together add about 50k
+        "anyhow",
+        "fbthrift",
+        "futures",
+        "serde_json",
         "slog",
         "slog_glog_fmt",
-        "serde",
-        "serde_json",
+        "structopt",
+        "tokio",
         "url",
-        "futures",
-        "tokio",  # async runtime for http client
+        "//metalos/host_configs/evalctx:evalctx",
+        "//metalos/host_configs/lifecycle:lifecycle",
+        "//metalos/host_configs/rust:metalos_host_configs",
+        "//metalos/lib/get_host_config:get_host_config",
+        "//metalos/lib/kexec:metalos_kexec",
+        "//metalos/lib/net_utils:net_utils",
+        "//metalos/lib/package_download:package_download",
+        "//metalos/lib/send_events:send_events",
+        "//metalos/lib/state:state",
     ],
 )
