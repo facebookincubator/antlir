@@ -53,6 +53,7 @@ enum Format {
   FILE = 2,
 }
 
+// TODO(T121059111) make this a union
 struct PackageStatus {
   1: Package pkg;
   2: InstallationStatus installation_status;

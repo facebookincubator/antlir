@@ -259,6 +259,24 @@ impl<K: Kind> Package<K, Uuid> {
     }
 }
 
+#[derive(Debug, Display, Copy, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::packages::InstallationStatus)]
+pub enum InstallationStatus {
+    Success,
+    FailedToDownload,
+    FailedToInstall,
+    PackageNotFound,
+    Unknown,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::packages::PackageStatus)]
+pub struct PackageStatus {
+    pub pkg: generic::Package,
+    pub installation_status: InstallationStatus,
+    pub error: Option<String>,
+}
+
 /// Generic versions of the types above, useful for cases where code wants to
 /// (less safely) operate on a collection of heterogenous package kinds.
 pub mod generic {

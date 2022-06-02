@@ -7,13 +7,17 @@
 
 #![deny(warnings)]
 
-use std::fs::File;
+use std::future::Future;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use anyhow::{Context, Result};
-use serde::Deserialize;
+use anyhow::{anyhow, Context, Result};
 use slog::Logger;
 use structopt::StructOpt;
+
+use fbthrift::simplejson_protocol::Serializable;
+use metalos_host_configs::api::OfflineUpdateRequest;
+use state::State;
 
 mod offline;
 mod online;
@@ -24,9 +28,21 @@ mod online;
 #[derive(StructOpt)]
 pub(crate) enum Subcommand {
     /// Download images and do some preflight checks
-    Stage(StageOpts),
+    Stage(CommonOpts),
     /// Apply the new config
-    Commit,
+    Commit(CommonOpts),
+}
+
+impl Subcommand {
+    pub(self) fn load_input<S, Ser>(&self) -> Result<S>
+    where
+        S: State<Ser>,
+        Ser: state::Serialization,
+    {
+        match self {
+            Self::Stage(c) | Self::Commit(c) => c.load(),
+        }
+    }
 }
 
 #[derive(StructOpt)]
@@ -40,22 +56,57 @@ pub(crate) enum Update {
 }
 
 #[derive(StructOpt)]
-pub(crate) struct StageOpts {
+pub(crate) struct CommonOpts {
     json_path: PathBuf,
 }
 
-impl StageOpts {
-    pub(self) fn load<I>(&self) -> Result<I>
+impl CommonOpts {
+    pub(self) fn load<S, Ser>(&self) -> Result<S>
     where
-        I: for<'de> Deserialize<'de>,
+        S: State<Ser>,
+        Ser: state::Serialization,
     {
-        if self.json_path == Path::new("-") {
-            serde_json::from_reader(std::io::stdin()).context("while deserializing stdin as json")
+        let input = if self.json_path == Path::new("-") {
+            let mut input = Vec::new();
+            std::io::stdin()
+                .read_to_end(&mut input)
+                .context("while reading stdin")?;
+            input
         } else {
-            let f = File::open(&self.json_path)
-                .with_context(|| format!("while opening {:?}", &self.json_path))?;
-            serde_json::from_reader(f)
-                .with_context(|| format!("while deserializing {:?} as json", &self.json_path))
+            std::fs::read(&self.json_path)
+                .with_context(|| format!("while reading {}", self.json_path.display()))?
+        };
+        S::from_json(input).context("while deserializing")
+    }
+}
+
+async fn run_subcommand<F, Fut, Input, Return, Error>(
+    func: F,
+    log: Logger,
+    input: Input,
+) -> anyhow::Result<()>
+where
+    Return: Serializable,
+    Error: std::fmt::Debug + Serializable,
+    F: Fn(Logger, Input) -> Fut,
+    Fut: Future<Output = std::result::Result<Return, Error>>,
+{
+    match func(log, input).await {
+        Ok(resp) => {
+            let output = fbthrift::simplejson_protocol::serialize(&resp);
+            std::io::stdout()
+                .write_all(&output)
+                .context("while writing response")?;
+            println!();
+            Ok(())
+        }
+        Err(err) => {
+            let output = fbthrift::simplejson_protocol::serialize(&err);
+            std::io::stdout()
+                .write_all(&output)
+                .with_context(|| format!("while writing error {:?}", err))?;
+            println!();
+            Err(anyhow!("{:?}", err))
         }
     }
 }
@@ -63,8 +114,28 @@ impl StageOpts {
 impl Update {
     pub(crate) async fn subcommand(self, log: Logger) -> Result<()> {
         match self {
-            Self::Online(sub) => online::run(log, sub).await,
-            Self::Offline(sub) => offline::run(log, sub).await,
+            Self::Offline(sub) => {
+                let req: OfflineUpdateRequest = sub.load_input()?;
+                match sub {
+                    Subcommand::Stage(_) => {
+                        run_subcommand(offline::stage, log, req.boot_config).await
+                    }
+                    Subcommand::Commit(_) => {
+                        run_subcommand(offline::commit, log, req.boot_config).await
+                    }
+                }
+            }
+            Self::Online(sub) => {
+                let runtime_config = sub.load_input()?;
+                match sub {
+                    Subcommand::Stage(_) => {
+                        run_subcommand(online::stage, log, runtime_config).await
+                    }
+                    Subcommand::Commit(_) => {
+                        run_subcommand(online::commit, log, runtime_config).await
+                    }
+                }
+            }
         }
     }
 }

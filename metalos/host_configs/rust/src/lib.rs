@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+pub mod api;
 pub mod boot_config;
 pub mod host;
 pub mod packages;

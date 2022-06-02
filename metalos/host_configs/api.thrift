@@ -14,22 +14,25 @@ include "metalos/host_configs/boot_config.thrift"
 include "metalos/host_configs/packages.thrift"
 include "metalos/host_configs/runtime_config.thrift"
 
+struct UpdateStageResponse {
+  // Full set of packages that were downloaded (or already present) as a result
+  // of this operation
+  1: list<packages.PackageStatus> packages;
+} (rust.exhaustive)
+
+/// Currently, the only thing that can go wrong while trying to stage an update
+/// is one or more packages failing to download
+exception UpdateStageError {
+  1: list<packages.PackageStatus> packages;
+  2: string message;
+} (rust.exhaustive)
+
 // Requests to stage or commit an online update both include the full
 // RuntimeConfig, so that clients don't have to keep around any state as long as
 // they can recompute the config.
 struct OnlineUpdateRequest {
   1: runtime_config.RuntimeConfig runtime_config;
 } (rust.exhaustive)
-
-struct OnlineUpdateStageResponse {
-  1: list<packages.PackageStatus> packages;
-} (rust.exhaustive)
-
-/// Currently, the only thing that can go wrong while trying to stage an online
-/// update is one or more packages failing to download
-exception OnlineUpdateStageError {
-  1: list<packages.PackageStatus> packages;
-}
 
 struct OnlineUpdateCommitResponse {
   /// Full set of services that were acted on as a result of this operation
@@ -64,10 +67,10 @@ enum ServiceStatus {
 
 exception OnlineUpdateCommitError {
   1: OnlineUpdateCommitErrorCode code;
-  2: string error;
+  2: string message;
   /// Status of each service
   3: list<ServiceResponse> services;
-}
+} (rust.exhaustive)
 
 enum OnlineUpdateCommitErrorCode {
   OTHER = 1,
@@ -75,16 +78,24 @@ enum OnlineUpdateCommitErrorCode {
   NOT_STAGED = 2,
 }
 
-struct Status {
-  1: boot_config.BootConfig staged_boot_config;
-  2: boot_config.BootConfig current_boot_config;
-  3: runtime_config.RuntimeConfig staged_runtime_config;
-  4: runtime_config.RuntimeConfig current_runtime_config;
-  5: list<packages.Package> packages_on_disk;
-}
+struct OfflineUpdateRequest {
+  1: boot_config.BootConfig boot_config;
+} (rust.exhaustive)
 
-// TODO(T115253909) Offline updates will also be supported, but online is more
-// important now, since an offline update can be accomplished by reprovisioning
+exception OfflineUpdateCommitError {
+  1: OfflineUpdateCommitErrorCode code;
+  2: string message;
+} (rust.exhaustive)
+
+enum OfflineUpdateCommitErrorCode {
+  OTHER = 1,
+  // Tried to commit a config that was not previously staged
+  NOT_STAGED = 2,
+  // Kernel could not be loaded
+  KEXEC_LOAD = 3,
+  // Kexec exec failed for some reason
+  KEXEC_EXEC = 4,
+}
 
 // This thrift service is primarily (read: exclusively) exposed as subcommands
 // of the `metalctl` binary that more or-less match the methods defined here.
@@ -92,9 +103,9 @@ service Metalctl extends fb303.FacebookService {
   // Prepare an online update to change the running versions of native
   // services.
   // Corresponds to `metalctl online-update stage`
-  OnlineUpdateStageResponse online_update_stage(
-    1: OnlineUpdateRequest req,
-  ) throws (1: OnlineUpdateStageError e);
+  UpdateStageResponse online_update_stage(1: OnlineUpdateRequest req) throws (
+    1: UpdateStageError e,
+  );
 
   // Commit a previously-prepared online update.
   // Corresponds to `metalctl online-update commit`
@@ -102,5 +113,15 @@ service Metalctl extends fb303.FacebookService {
     1: OnlineUpdateRequest req,
   ) throws (1: OnlineUpdateCommitError e);
 
-  Status status();
+  // Prepare an offline update to change the host's BootConfig.  Corresponds to
+  // `metalctl offline-update stage`
+  UpdateStageResponse offline_update_stage(1: OfflineUpdateRequest req) throws (
+    1: UpdateStageError e,
+  );
+
+  // Commit a previously-prepared offline update.
+  // Corresponds to `metalctl offline-update commit`
+  void offline_update_commit(1: OfflineUpdateRequest req) throws (
+    1: OfflineUpdateCommitError e,
+  );
 }
