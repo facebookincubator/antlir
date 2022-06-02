@@ -6,6 +6,7 @@ rust_library(
     deps = [
         "anyhow",
         "fbthrift",
+        "http",
         "reqwest",
         "url",
         "//metalos/host_configs/rust:metalos_host_configs",
