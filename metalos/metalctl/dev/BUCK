@@ -5,14 +5,18 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "anyhow",
+        "fbthrift",
+        "nix",
         "slog",
         "slog_glog_fmt",
         "structopt",
         "tokio",
         "uuid",
+        "//metalos/host_configs/lifecycle:lifecycle",
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/package_download:package_download",
         "//metalos/lib/service:service",
+        "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
     ],
 )
