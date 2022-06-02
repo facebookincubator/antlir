@@ -96,7 +96,8 @@ class Path(bytes):
     def __ne__(self, obj) -> bool:
         return not self.__eq__(obj)
 
-    __hash__ = bytes.__hash__
+    def __hash__(self) -> int:
+        return super().__hash__()
 
     @classmethod
     def or_none(cls, arg, *args, **kwargs):
