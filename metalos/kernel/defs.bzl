@@ -54,7 +54,6 @@ def _derived_targets_shape(uname, base = ""):
         modules_directory = _target(uname, "modules", base),
         disk_boot_modules = _target(uname, "disk-boot-modules", base),
         image = _target(uname, "image", base),
-        devel = _target(uname, "devel", base),
     )
 
 def _derived_targets(uname, upstream_targets):
@@ -158,21 +157,6 @@ def _derived_targets(uname, upstream_targets):
         visibility = [],
     )
 
-    image.layer(
-        name = _name(uname, "image"),
-        features = [
-            feature.install(_target(uname, "vmlinuz"), "/vmlinuz"),
-            feature.install(_target(uname, "modules"), "/modules"),
-            feature.install(_target(uname, "disk-boot-modules.cpio.gz"), "/disk-boot-modules.cpio.gz"),
-            # If the devel headers/source are needed they will be bind mounted
-            # into place on this directory, but this image is readonly so the
-            # mountpoint must be created ahead of time
-            image.ensure_subdirs_exist("/modules", "build"),
-        ],
-        flavor = REPO_CFG.antlir_linux_flavor,
-        visibility = __METALOS_AND_VMTEST_VISIBILITY,
-    )
-
     # Install the devel rpm into a layer.
     # The reasons for this instead of using the same pattern as the
     # `rpm-exploded` targets are:
@@ -194,14 +178,24 @@ def _derived_targets(uname, upstream_targets):
         ],
         visibility = [],
     )
+
     image.layer(
-        name = _name(uname, "devel"),
+        name = _name(uname, "image"),
         features = [
+            feature.install(_target(uname, "vmlinuz"), "/vmlinuz"),
+            feature.install(_target(uname, "modules"), "/modules"),
+            feature.install(_target(uname, "disk-boot-modules.cpio.gz"), "/disk-boot-modules.cpio.gz"),
+            # Lots of production features require files from kernel-devel to
+            # run, so just always install it in this image
             image.clone(
                 _target(uname, "devel-installed"),
-                "usr/src/kernels/{}/".format(uname),
-                "./",
+                "usr/src/kernels/{}".format(uname),
+                "/devel",
             ),
+            # empty mountpoints for bind-mounting devel sources under
+            # /usr/lib/modules/$(uname -r)
+            image.ensure_subdirs_exist("/modules", "build"),
+            image.ensure_subdirs_exist("/modules", "source"),
         ],
         flavor = REPO_CFG.antlir_linux_flavor,
         visibility = __METALOS_AND_VMTEST_VISIBILITY,

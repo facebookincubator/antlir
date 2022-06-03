@@ -134,6 +134,7 @@ _TEST_TYPE_TO_WRAP_CMD = {
     "rust": do_not_wrap_cmd,
 }
 
+
 # pyre-fixme[13]: Attributes `test_binary`, `test_binary_image`, and
 #   `test_type` are never initialized.
 class VMTestExecOpts(VMExecOpts):
@@ -272,15 +273,13 @@ async def run(
 
     shares = []
 
-    if devel_layer and opts.kernel.derived_targets.devel is None:
-        raise Exception(
-            "--devel-layer requires kernel.derived_targets.devel set in vm_opts"
-        )
-
     if devel_layer:
-        devel_path = not_none(
-            find_built_subvol(opts.kernel.derived_targets.devel.path)
-        ).path()
+        devel_path = (
+            not_none(
+                find_built_subvol(opts.kernel.derived_targets.image.path)
+            ).path()
+            / "devel"
+        )
         shares += [
             Plan9Export(
                 path=devel_path,
@@ -294,6 +293,14 @@ async def run(
                 / opts.kernel.uname
                 / "build",
                 mount_tag="kernel-devel-build",
+                generator=True,
+            ),
+            Plan9Export(
+                path=devel_path,
+                mountpoint=Path("/usr/lib/modules")
+                / opts.kernel.uname
+                / "source",
+                mount_tag="kernel-devel-modules-source",
                 generator=True,
             ),
         ]

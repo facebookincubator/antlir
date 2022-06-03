@@ -19,7 +19,6 @@ derived_kernel_targets_t = shape.shape(
     modules_directory = target_t,
     disk_boot_modules = target_t,
     image = target_t,
-    devel = target_t,
 )
 
 kernel_t = shape.shape(
