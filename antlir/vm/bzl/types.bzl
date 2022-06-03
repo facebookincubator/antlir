@@ -48,7 +48,7 @@ _vm_emulator_api = struct(
 def _new_vm_disk(
         package = None,
         layer = None,
-        layer_size_mb = None,
+        layer_free_mb = 0,
         layer_label = "/",
         additional_scratch_mb = None,
         interface = "virtio-blk",
@@ -72,9 +72,9 @@ def _new_vm_disk(
                             writable = True,
                         ),
                     },
+                    free_mb = layer_free_mb,
                     loopback_opts = struct(
                         label = layer_label,
-                        size_mb = layer_size_mb,
                     ),
                 ),
                 visibility = [],

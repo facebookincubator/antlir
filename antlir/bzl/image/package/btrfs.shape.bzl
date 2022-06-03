@@ -20,4 +20,6 @@ btrfs_opts_t = shape.shape(
     default_subvol = shape.field(shape.path, optional = True),
     seed_device = shape.field(bool, default = False),
     loopback_opts = shape.field(loopback_opts_t, optional = True),
+    # free_mb is not percise, the actual amount of free space will vary.
+    free_mb = shape.field(int, default = 0),
 )

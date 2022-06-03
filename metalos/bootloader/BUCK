@@ -182,9 +182,9 @@ btrfs.new(
                 layer = "//metalos/os/vm:base",
             ),
         },
+        free_mb = 2560,  # 2.5G
         loopback_opts = image.opts(
             label = "/",
-            size_mb = 5120,
         ),
     ),
     visibility = [],

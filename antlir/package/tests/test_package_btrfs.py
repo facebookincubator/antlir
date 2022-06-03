@@ -23,6 +23,10 @@ from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
 
 
 class PackageImageTestCase(ImagePackageTestCaseBase):
+    def _sibling_path(self, rel_path: str) -> Path:
+        """Override ImagePackageTestCaseBase._sibling_path()."""
+        return Path(__file__).dirname() / rel_path
+
     @contextmanager
     def _mount(self, image_path: Path) -> Path:
         with temp_dir() as mount_dir:
@@ -171,7 +175,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 2048 * MiB,
             )
 
-    def test_package_btrfs_fixed_size(self):
+    def test_package_btrfs_default_size(self):
         with self._package_image(
             opts=btrfs_opts_t(
                 subvols={
@@ -182,15 +186,71 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                         ),
                     ),
                 },
-                loopback_opts=loopback_opts_t(
-                    size_mb=225,
-                ),
             ),
         ) as out_path:
-            self.assertEqual(
-                os.stat(out_path).st_size,
-                225 * MiB,
-            )
+            test_size = os.stat(out_path).st_size
+
+        # Verify the size of the package created via the bzl
+        self.assertEqual(
+            os.stat(
+                layer_resource(__package__, "create_ops_btrfs"),
+            ).st_size,
+            test_size,
+        )
+
+    def test_package_image_as_btrfs_free_mb(self):
+        with self._package_image(
+            opts=btrfs_opts_t(
+                subvols={
+                    "/volume": btrfs_subvol_t(
+                        layer=target_t(
+                            name="",
+                            path=layer_resource(__package__, "create_ops"),
+                        ),
+                    ),
+                },
+            ),
+        ) as out_path:
+            baseline_size = os.stat(out_path).st_size
+
+        free_mb_tgt = 1024
+        with self._package_image(
+            opts=btrfs_opts_t(
+                subvols={
+                    "/volume": btrfs_subvol_t(
+                        layer=target_t(
+                            name="",
+                            path=layer_resource(__package__, "create_ops"),
+                        ),
+                    ),
+                },
+                free_mb=free_mb_tgt,
+            ),
+        ) as out_path:
+            test_size = os.stat(out_path).st_size
+
+        # Check the rough size (within 100 Mb)
+        free_bytes = test_size - baseline_size
+        free_bytes_tgt = free_mb_tgt * MiB
+        self.assertLessEqual(baseline_size, test_size)
+        self.assertLessEqual(
+            abs(free_bytes - free_bytes_tgt),
+            100 * MiB,
+            msg=(
+                f"free_bytes is not within 100 MiB of target: {free_bytes_tgt}"
+                + f", baseline_size: {baseline_size}"
+                + f", test_size: {test_size}"
+                + f", free_bytes: {free_bytes}"
+            ),
+        )
+
+        # Verify the size of the package created via the bzl
+        self.assertEqual(
+            os.stat(
+                layer_resource(__package__, "create_ops_free_mb_btrfs")
+            ).st_size,
+            test_size,
+        )
 
     def test_package_btrfs_writable(self):
         with self._package_image(
@@ -313,33 +373,6 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     default_subvol=Path("/doesnotexist"),
                 ),
             ) as out_path:
-                pass
-
-    def test_package_btrfs_too_small(self):
-        with self.assertRaisesRegex(
-            UserError,
-            r"AntlirUserError: Unable to package subvol of \d+ bytes "
-            r"into requested loopback size of \d+ bytes",
-        ):
-            with self._package_image(
-                opts=btrfs_opts_t(
-                    subvols={
-                        "/volume": btrfs_subvol_t(
-                            layer=target_t(
-                                name="",
-                                path=layer_resource(
-                                    __package__, "build-appliance-testing"
-                                ),
-                            ),
-                        ),
-                    },
-                    loopback_opts=loopback_opts_t(
-                        # This is too small for the testing layer, which is
-                        # a full OS image
-                        size_mb=255
-                    ),
-                )
-            ):
                 pass
 
         # Test with a mocked estimated size so that we can force trying to
@@ -500,6 +533,29 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                         ),
                     },
                     default_subvol="noslash",
+                ),
+            ):
+                pass
+
+    def test_package_image_bad_params(self):
+        with self.assertRaisesRegex(
+            UserError,
+            (
+                "The 'loopback_opts.size_mb' parameter is not supported for "
+                "btrfs packages. Use 'free_mb' instead."
+            ),
+        ):
+            with self._package_image(
+                opts=btrfs_opts_t(
+                    subvols={
+                        "/volume": btrfs_subvol_t(
+                            layer=target_t(
+                                name="",
+                                path=layer_resource(__package__, "create_ops"),
+                            ),
+                        ),
+                    },
+                    loopback_opts=loopback_opts_t(size_mb=255),
                 ),
             ):
                 pass

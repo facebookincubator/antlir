@@ -169,9 +169,9 @@ btrfs.new(
             ),
         },
         default_subvol = "/volume",
+        free_mb = 4864,  # 4.75GB (HUGE!)
         loopback_opts = image.opts(
             label = "/",
-            size_mb = 5120,  # 5GB (HUGE!)
         ),
     ),
 )
@@ -200,9 +200,9 @@ btrfs.new(
                 layer = "//metalos/os/vm:base",
             ),
         },
+        free_mb = 3072,  # 3G (HUGE!)
         loopback_opts = image.opts(
             label = "/",
-            size_mb = 5120,  # 5GB (HUGE!)
         ),
     ),
     visibility = [],

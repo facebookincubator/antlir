@@ -12,6 +12,7 @@ load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
+load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":defs.bzl", "defs")
 
@@ -1160,6 +1161,23 @@ package.new(
     loopback_opts = image.opts(
         size_mb = 256,
         label = "cats",
+    ),
+    visibility = ["//antlir/..."],
+)
+
+btrfs.new(
+    name = "create_ops_btrfs",
+    opts = btrfs.opts.new(
+        subvols = {"/volume": btrfs.opts.subvol.new(layer = ":create_ops")},
+    ),
+    visibility = ["//antlir/..."],
+)
+
+btrfs.new(
+    name = "create_ops_free_mb_btrfs",
+    opts = btrfs.opts.new(
+        subvols = {"/volume": btrfs.opts.subvol.new(layer = ":create_ops")},
+        free_mb = 1024,
     ),
     visibility = ["//antlir/..."],
 )

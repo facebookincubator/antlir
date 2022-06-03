@@ -8,6 +8,7 @@ load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":btrfs.shape.bzl", "btrfs_opts_t", "btrfs_subvol_t")
 
@@ -26,11 +27,18 @@ def _new_btrfs_opts(subvols, default_subvol = None, loopback_opts = None, **kwar
     if default_subvol and not default_subvol.startswith("/"):
         fail("Default subvol must be an absolute path: " + default_subvol)
 
+    loopback_opts = normalize_loopback_opts(loopback_opts)
+    if structs.to_dict(loopback_opts).get("size_mb", None) != None:
+        fail(
+            "The 'size_mb' parameter is not supported for btrfs packages." +
+            " Use 'free_mb' instead.",
+        )
+
     return shape.new(
         btrfs_opts_t,
         subvols = subvols,
         default_subvol = default_subvol,
-        loopback_opts = normalize_loopback_opts(loopback_opts),
+        loopback_opts = loopback_opts,
         **kwargs
     )
 
