@@ -407,7 +407,7 @@ class _BtrfsLoopbackVolume:
         finally:
             run_stdout_to_err(["umount", self._mount_dir])
 
-    def minimize_size(self) -> int:
+    def minimize_size(self, free_mb: Optional[int] = None) -> int:
         """
         Minimizes the loopback as much as possibly by inspecting
         the btrfs internals and resizing the filesystem explicitly.
@@ -423,7 +423,9 @@ class _BtrfsLoopbackVolume:
             ]
         ).split(b" ")
         assert min_size_out[1] == b"bytes"
-        maybe_min_size_bytes = int(min_size_out[0])
+        if free_mb is None:
+            free_mb = 0
+        maybe_min_size_bytes = int(min_size_out[0]) + (free_mb * MiB)
         # Btrfs filesystems cannot be resized below a certain limit, if if we
         # have a smaller fs than the limit, we just use the limit.
         min_size_bytes = (
@@ -497,7 +499,7 @@ class BtrfsImage:
         label: Optional[str] = None,
         compression_level: int = 0,
         seed_device: bool = False,
-        size_mb: int = 0,
+        free_mb: Optional[int] = None,
     ) -> None:
 
         # Sanity check to make sure that the requested default_subvol
@@ -537,15 +539,8 @@ class BtrfsImage:
             else MIN_CREATE_BYTES
         )
 
-        if size_mb:
-            requested_fs_bytes = size_mb * MiB
-            if requested_fs_bytes < fs_bytes:
-                raise UserError(
-                    f"Unable to package subvol of {fs_bytes} bytes into "
-                    f"requested loopback size of {requested_fs_bytes} bytes"
-                )
-
-            fs_bytes = requested_fs_bytes
+        if free_mb is not None:
+            fs_bytes += free_mb * MiB
 
         # Sort the subvols by their desired paths so that we can ensure the
         # hierarchy is created in order.  We do this here so that we can
@@ -655,8 +650,7 @@ class BtrfsImage:
                 # Actually set the default
                 btrfsutil.set_default_subvolume(mount_dir, subvol_id)
 
-            if not size_mb:
-                loop_vol.minimize_size()
+            loop_vol.minimize_size(free_mb)
 
         # This can only be done when the loopback is unmounted
         if seed_device:
@@ -690,6 +684,15 @@ def package_btrfs(args) -> None:
             "configuration options for loopback formats",
         )
 
+    if (
+        cli.args.opts.loopback_opts is not None
+        and cli.args.opts.loopback_opts.size_mb is not None
+    ):
+        raise UserError(
+            "The 'loopback_opts.size_mb' parameter is not supported for "
+            "btrfs packages. Use 'free_mb' instead.",
+        )
+
     # Map the subvols into actual _found_ subvols on disk
     subvols = {}
     for subvol_name, subvol_opts in cli.args.opts.subvols.items():
@@ -712,9 +715,7 @@ def package_btrfs(args) -> None:
         label=cli.args.opts.loopback_opts.label
         if cli.args.opts.loopback_opts
         else None,
-        size_mb=cli.args.opts.loopback_opts.size_mb
-        if cli.args.opts.loopback_opts
-        else None,
+        free_mb=cli.args.opts.free_mb,
     )
 
 
