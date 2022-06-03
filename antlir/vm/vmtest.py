@@ -224,8 +224,6 @@ async def run(
     test_type: str,
 ) -> Optional[int]:
 
-    # pyre-fixme[6]: Expected `SupportsKeysAndGetItem[Variable[_KT],
-    #  Variable[_VT]]` for 1st param but got `Generator[List[str], None, None]`.
     env = dict(s.split("=", maxsplit=1) for s in setenv)
 
     # Start the test binary directly to list out test cases instead of

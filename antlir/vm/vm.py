@@ -333,10 +333,6 @@ async def vm(
     # to already exist and have an IP address
     tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
     sidecar_procs: List[SidecarProcess] = []
-    with importlib.resources.path(__package__, "router-advertiser") as rad:
-        sidecar_procs.append(
-            await create_sidecar_subprocess(*ns.nsenter_as_root(str(rad)))
-        )
 
     logger.debug(
         f"Starting custom sidecars {opts.runtime.sidecar_services} before QEMU"
@@ -350,6 +346,9 @@ async def vm(
             # expansion of `python_binary` rules into `python3 -Es $par`
             *(
                 create_sidecar_subprocess(
+                    # pyre-fixme[6]: In call `create_sidecar_subprocess`, for
+                    # 1st positional only parameter expected `str` but got
+                    # `Union[bytes, str]`.
                     *ns.nsenter_as_user(
                         "/bin/sh",
                         "-c",
@@ -421,7 +420,6 @@ async def vm(
         shares.append(
             Plan9Export(
                 path=find_built_subvol(
-                    # pyre-fixme [16]: `Optional` has no attribute `path`
                     opts.kernel.derived_targets.image.path
                 ).path()
                 / "modules",
