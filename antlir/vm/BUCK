@@ -1,10 +1,7 @@
 # @noautodeps
 
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "third_party")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
 roms = [
@@ -67,9 +64,6 @@ python_library(
     srcs = [
         "vm.py",
     ],
-    resources = {
-        ":router-advertiser": "router-advertiser",
-    },
     deps = [
         ":common",
         ":guest-ssh",
@@ -114,26 +108,6 @@ python_library(
         ":common",
         "//antlir:fs_utils",
         "//antlir:unshare",
-    ],
-)
-
-python_binary(
-    name = "router-advertiser",
-    srcs = ["router_advertiser.py"],
-    main_module = "antlir.vm.router_advertiser",
-    resources = {layer_resource(":radvd"): "radvd-layer"},
-    deps = [
-        "//antlir:testlib_layer_resource",
-    ],
-)
-
-image.layer(
-    name = "radvd",
-    parent_layer = vm.artifacts.rootfs.layer,
-    features = [
-        image.rpms_install(["radvd"]),
-        feature.remove("/etc/radvd.conf"),
-        feature.install("radvd.conf", "/etc/radvd.conf"),
     ],
 )
 
