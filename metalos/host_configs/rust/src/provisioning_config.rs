@@ -9,7 +9,7 @@ use crate::packages;
 use thrift_wrapper::ThriftWrapper;
 use url::Url;
 
-#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[derive(Debug, Clone, PartialEq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::ProvisioningConfig)]
 pub struct ProvisioningConfig {
     #[cfg(facebook)]

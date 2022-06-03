@@ -11,7 +11,7 @@ use crate::runtime_config;
 use thrift_wrapper::ThriftWrapper;
 
 /// Main entrypoint for a MetalOS host.
-#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[derive(Debug, Clone, PartialEq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::host::HostConfig)]
 pub struct HostConfig {
     pub provisioning_config: provisioning_config::ProvisioningConfig,
