@@ -3,14 +3,22 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "sandbox",
     srcs = ["src/sandbox.rs"],
-    test_deps = ["maplit"],
+    test_deps = [
+        "serde",
+        "serde_json",
+        "strum",
+        "strum_macros",
+    ],
     deps = [
         "anyhow",
         "derive_builder",
         "goblin",
+        "libc",
+        "maplit",
         "nix",
         "once_cell",
         "regex",
+        "seccompiler",
         "tempfile",
     ],
 )

@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(io_error_other)]
+
 use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::ops::{Deref, DerefMut};
@@ -14,10 +16,12 @@ use std::path::{Path, PathBuf};
 use anyhow::{Context, Result};
 use derive_builder::Builder;
 use goblin::elf::Elf;
+use maplit::btreemap;
 use nix::mount::{mount, MsFlags};
 use nix::sched::{unshare, CloneFlags};
 use once_cell::sync::Lazy;
 use regex::Regex;
+use seccompiler::{BpfProgram, SeccompAction, SeccompFilter};
 
 /// Simple regex to parse the ouput of `ld.so --list` which is used to resolve
 /// the dependencies of a binary.
@@ -53,7 +57,7 @@ fn so_dependencies<S: AsRef<OsStr>>(binary: S) -> Result<Vec<PathBuf>> {
         .collect())
 }
 
-#[derive(Debug, Builder, Default)]
+#[derive(Debug, Builder)]
 #[builder(default, setter(into))]
 pub struct SandboxOpts {
     /// Allow readonly access to certain files from the host. The key is the
@@ -61,6 +65,18 @@ pub struct SandboxOpts {
     /// in the container. The binary and it's .so dependencies are implicitly
     /// included in this list.
     ro_files: HashMap<PathBuf, PathBuf>,
+    /// Blocklist the sandboxed binary from making non-deterministic / unsafe
+    /// syscalls.
+    seccomp: bool,
+}
+
+impl Default for SandboxOpts {
+    fn default() -> Self {
+        Self {
+            seccomp: true,
+            ro_files: Default::default(),
+        }
+    }
 }
 
 impl SandboxOpts {
@@ -90,6 +106,73 @@ impl DerefMut for Command {
     }
 }
 
+/// Block syscalls that either are:
+/// a) likely to lead to non-determinism (such as `gethostname` or `uname`)
+/// b) possibly used to communicate outside the sandbox (such as `connect`)
+/// c) generally seem dangerous and will fail anyway (such as `reboot`)
+fn apply_seccomp_sandbox() -> Result<()> {
+    let filter: BpfProgram = SeccompFilter::new(
+        btreemap! {
+            libc::SYS_accept => vec![],
+            libc::SYS_accept4 => vec![],
+            libc::SYS_chroot => vec![],
+            libc::SYS_clock_adjtime => vec![],
+            libc::SYS_clock_nanosleep => vec![],
+            libc::SYS_clock_settime => vec![],
+            libc::SYS_connect => vec![],
+            libc::SYS_getcpu => vec![],
+            libc::SYS_geteuid => vec![],
+            libc::SYS_getgid => vec![],
+            libc::SYS_getpeername => vec![],
+            libc::SYS_getsockname => vec![],
+            libc::SYS_getsockopt => vec![],
+            libc::SYS_getuid => vec![],
+            libc::SYS_kexec_file_load => vec![],
+            libc::SYS_kexec_load => vec![],
+            libc::SYS_keyctl => vec![],
+            libc::SYS_mount => vec![],
+            libc::SYS_mount_setattr => vec![],
+            libc::SYS_nanosleep => vec![],
+            libc::SYS_nfsservctl => vec![],
+            libc::SYS_personality => vec![],
+            libc::SYS_pivot_root => vec![],
+            libc::SYS_reboot => vec![],
+            libc::SYS_recvfrom => vec![],
+            libc::SYS_recvmmsg => vec![],
+            libc::SYS_recvmsg => vec![],
+            libc::SYS_seccomp => vec![],
+            libc::SYS_sendmmsg => vec![],
+            libc::SYS_sendmsg => vec![],
+            libc::SYS_sendto => vec![],
+            libc::SYS_setdomainname => vec![],
+            libc::SYS_setgid => vec![],
+            libc::SYS_sethostname => vec![],
+            libc::SYS_setsockopt => vec![],
+            libc::SYS_settimeofday => vec![],
+            libc::SYS_setuid => vec![],
+            libc::SYS_socket => vec![],
+            libc::SYS_socketpair => vec![],
+            libc::SYS_swapoff => vec![],
+            libc::SYS_swapon => vec![],
+            libc::SYS_uname => vec![],
+            libc::SYS_unshare => vec![],
+        },
+        // allow all syscalls not listed above
+        SeccompAction::Allow,
+        // kill process that makes blocked syscall
+        SeccompAction::Trap,
+        std::env::consts::ARCH
+            .try_into()
+            .context("while preparing current arch for seccomp")?,
+    )
+    .context("while creating SeccompFilter")?
+    .try_into()
+    .context("while compiling SeccompFilter to bpf program")?;
+
+    seccompiler::apply_filter(&filter).context("while applying seccomp filter")?;
+    Ok(())
+}
+
 /// Wrap a binary in a sandbox. This sandbox is not meant for security, so there
 /// are no guarantees that it's impossible (or even necessarily difficult) to
 /// break out of - but it is designed to be annoying and/or obvious to escape,
@@ -111,9 +194,9 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
         cmd.pre_exec(move || {
             unshare(
                 CloneFlags::CLONE_NEWUSER
-                    | CloneFlags::CLONE_NEWNS
-                    | CloneFlags::CLONE_NEWNET
                     | CloneFlags::CLONE_NEWCGROUP
+                    | CloneFlags::CLONE_NEWNET
+                    | CloneFlags::CLONE_NEWNS
                     | CloneFlags::CLONE_NEWUTS,
                 // CLONE_NEWPID causes hang for some reason, but it shouldn't
                 // really matter
@@ -138,6 +221,9 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
                 MsFlags::MS_BIND | MsFlags::MS_RDONLY,
                 None,
             )?;
+            if opts.seccomp {
+                apply_seccomp_sandbox().map_err(std::io::Error::other)?;
+            }
             Ok(())
         });
     }
@@ -150,29 +236,40 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::anyhow;
     use maplit::hashmap;
     use nix::net::if_::InterfaceFlags;
+    use serde::{de::DeserializeOwned, Deserialize, Serialize};
     use std::collections::HashMap;
     use std::io::Write;
+    use strum::IntoEnumIterator;
+    use strum_macros::EnumIter;
 
-    fn is_sandboxed() -> bool {
-        std::env::var_os("IN_SANDBOX").is_some()
+    fn sandbox_data<D: DeserializeOwned>() -> D {
+        serde_json::from_str(&std::env::var("SANDBOX_DATA").unwrap()).unwrap()
     }
 
-    fn run_test_in_sandbox(name: &str, opts: SandboxOpts) {
+    fn is_sandboxed() -> bool {
+        std::env::var_os("SANDBOX_DATA").is_some()
+    }
+
+    fn run_test_in_sandbox<D: Serialize>(name: &str, opts: SandboxOpts, data: D) -> Result<()> {
         let path = std::env::current_exe().unwrap();
         let mut cmd = super::sandbox(path, opts).unwrap();
         cmd.arg(name);
-        cmd.env("IN_SANDBOX", "1");
+        cmd.env("SANDBOX_DATA", serde_json::to_string(&data).unwrap());
         let out = cmd.output().unwrap();
         std::io::stdout().write_all(&out.stdout).unwrap();
         std::io::stderr().write_all(&out.stderr).unwrap();
-        assert!(
-            out.status.success(),
-            "{}\n{}",
-            std::str::from_utf8(&out.stdout).unwrap_or("not utf8"),
-            std::str::from_utf8(&out.stderr).unwrap_or("not utf8")
-        );
+        match out.status.success() {
+            true => Ok(()),
+            false => Err(anyhow!(
+                "{}\n{}\n{}",
+                out.status,
+                std::str::from_utf8(&out.stdout).unwrap_or("not utf8"),
+                std::str::from_utf8(&out.stderr).unwrap_or("not utf8")
+            )),
+        }
     }
 
     #[test]
@@ -188,12 +285,25 @@ mod tests {
                 nix::mount::umount("/").unwrap_err()
             );
         } else {
-            run_test_in_sandbox("mount_sandboxed", Default::default());
+            run_test_in_sandbox("mount_sandboxed", Default::default(), ()).unwrap();
         }
     }
 
     #[test]
-    fn network_sandboxed() -> Result<()> {
+    fn network_sandboxed_seccomp() -> Result<()> {
+        if is_sandboxed() {
+            nix::ifaddrs::getifaddrs().unwrap();
+        } else {
+            run_test_in_sandbox("network_sandboxed_seccomp", Default::default(), ())
+                .expect_err("getifaddrs should have been blocked");
+        }
+        Ok(())
+    }
+
+    /// When the seccomp sandbox is disabled, we can verify that network
+    /// interfaces normally on the host are missing from within the sandbox
+    #[test]
+    fn network_sandboxed_no_seccomp() -> Result<()> {
         if is_sandboxed() {
             let mut ifaddrs: HashMap<String, InterfaceFlags> = nix::ifaddrs::getifaddrs()?
                 .map(|i| (i.interface_name, i.flags))
@@ -224,7 +334,51 @@ mod tests {
             }
         } else {
             assert!(nix::ifaddrs::getifaddrs()?.count() > 1);
-            run_test_in_sandbox("network_sandboxed", Default::default());
+            run_test_in_sandbox(
+                "network_sandboxed_no_seccomp",
+                SandboxOpts {
+                    seccomp: false,
+                    ..Default::default()
+                },
+                (),
+            )
+            .unwrap();
+        }
+        Ok(())
+    }
+
+    #[derive(Debug, Copy, Clone, Serialize, Deserialize, EnumIter)]
+    enum Syscall {
+        Uname,
+        Getuid,
+        Geteuid,
+        Gethostname,
+    }
+
+    #[test]
+    fn blocked_syscalls() -> Result<()> {
+        if is_sandboxed() {
+            let syscall: Syscall = sandbox_data();
+            match syscall {
+                Syscall::Uname => {
+                    nix::sys::utsname::uname();
+                }
+                Syscall::Getuid => {
+                    nix::unistd::getuid();
+                }
+                Syscall::Geteuid => {
+                    nix::unistd::getuid();
+                }
+                Syscall::Gethostname => {
+                    let mut buf = [0u8; 64];
+                    nix::unistd::gethostname(&mut buf).unwrap();
+                }
+            }
+        } else {
+            for syscall in Syscall::iter() {
+                run_test_in_sandbox("blocked_syscalls", Default::default(), syscall)
+                    .expect_err(&format!("{:?} should have been blocked", syscall));
+            }
         }
         Ok(())
     }
@@ -241,7 +395,9 @@ mod tests {
                     .ro_files(hashmap! {"/etc/os-release".into() => "/etc/os-release2".into()})
                     .build()
                     .unwrap(),
-            );
+                (),
+            )
+            .unwrap();
         }
         Ok(())
     }
