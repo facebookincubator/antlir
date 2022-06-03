@@ -6,7 +6,7 @@
  */
 
 use anyhow::{anyhow, Context, Result};
-use metalos_disk::{DiskFileRW, ReadDisk, MEGABYTE};
+use metalos_disk::{DiskDevPath, ReadDisk, MEGABYTE};
 use std::io::{Seek, SeekFrom, Write};
 
 /**
@@ -16,7 +16,8 @@ use std::io::{Seek, SeekFrom, Write};
  * This is convenient for recreating partition tables, but *NOT* meant
  * as sanitisation of the disk.
  */
-pub fn lazy_wipe(mut disk_file: DiskFileRW) -> Result<DiskFileRW> {
+pub fn quick_wipe_disk(disk: &mut DiskDevPath) -> Result<()> {
+    let mut disk_file = disk.open_rw_file()?;
     let size: u64 = disk_file.get_block_device_size()?;
     if size < (MEGABYTE * 64) {
         return Err(anyhow!("Expected disk size > 64M"));
@@ -43,13 +44,13 @@ pub fn lazy_wipe(mut disk_file: DiskFileRW) -> Result<DiskFileRW> {
     disk_file.flush()?;
     disk_file.seek(SeekFrom::Start(0))?;
 
-    Ok(disk_file)
+    Ok(())
 }
 
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use metalos_disk::DiskDevPath;
+    use metalos_disk::{DiskDevPath, DiskFileRW};
     use metalos_macros::vmtest;
     use rand::*;
     use std::io::Read;
@@ -88,7 +89,7 @@ pub mod tests {
     }
 
     #[vmtest]
-    fn test_lazy_wipe() -> Result<()> {
+    fn test_quick_wipe_disk() -> Result<()> {
         // Open disk
         let mut disk = DiskDevPath("/dev/vda".into());
         let mut disk_file = disk.open_rw_file()?;
@@ -98,7 +99,7 @@ pub mod tests {
         write_random(&mut disk_file, SeekFrom::End((MEGABYTE as i64) * -64), 64)?;
 
         // Wipe
-        disk_file = lazy_wipe(disk_file)?;
+        quick_wipe_disk(&mut disk)?;
 
         // Check whether the expected area's are zeroes
         check_empty(&mut disk_file, SeekFrom::Start(0), 64)?;

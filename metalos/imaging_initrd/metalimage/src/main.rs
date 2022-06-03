@@ -10,7 +10,7 @@ use structopt::StructOpt;
 use strum_macros::EnumIter;
 
 use apply_disk_image::apply_disk_image;
-use disk_wipe::lazy_wipe;
+use disk_wipe::quick_wipe_disk;
 use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
 use get_host_config::get_host_config;
 use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
@@ -165,10 +165,7 @@ impl Bootloader {
         info!(self.log, "Found root disk {:?}", disk);
 
         // Clear any existing partition information
-        let rwdisk = disk
-            .open_rw_file()
-            .context("Failed to open root disk devnode")?;
-        lazy_wipe(rwdisk).context("Failed to wipe the root disk")?;
+        quick_wipe_disk(&mut disk).context("Failed to wipe the root disk")?;
 
         // Download and apply disk image
         let summary = apply_disk_image(
