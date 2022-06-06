@@ -5,8 +5,13 @@
 
 load("//antlir/compiler/image/feature/buck2:new.bzl", "feature_new")
 load("//antlir/compiler/image/feature/buck2:remove.bzl", "feature_remove")
+load("//antlir/compiler/image/feature/buck2:requires.bzl", "feature_requires")
 
 feature = struct(
     new = feature_new,
     remove = feature_remove,
+    requires = feature_requires,
 )
+
+# Remove when buck1 features aren't needed
+feature_buck2 = feature
