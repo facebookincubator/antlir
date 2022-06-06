@@ -198,16 +198,13 @@ impl Generator for StarlarkGenerator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use starlark::codemap::FileSpanRef;
     use starlark::environment::Module;
-    use starlark::eval::Evaluator;
+    use starlark::eval::{Evaluator, ProfileMode};
     use starlark::syntax::{AstModule, Dialect};
-    use std::cell::{RefCell, RefMut};
     use std::collections::BTreeSet;
     use std::env;
     use std::ffi::OsStr;
     use std::path::Path;
-    use std::rc::Rc;
     use tempfile::TempDir;
     use walkdir::WalkDir;
 
@@ -326,15 +323,9 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
             .map(|line| line.resolve_span().begin_line as u16)
             .collect();
 
-        let visited_lines: Rc<RefCell<_>> = Rc::new(RefCell::new(BTreeSet::new()));
-        let before_stmt = |span: FileSpanRef, _eval: &mut Evaluator<'_, '_>| {
-            let mut set: RefMut<_> = visited_lines.borrow_mut();
-            set.insert(span.resolve_span().begin_line as u16);
-        };
-
         let module = Module::new();
         let mut evaluator = Evaluator::new(&module);
-        evaluator.before_stmt(&before_stmt);
+        evaluator.enable_profile(&ProfileMode::Statement);
         let globals = crate::starlark::globals();
         evaluator.eval_module(ast, &globals)?;
 
@@ -350,9 +341,14 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
             ),
             Some(function) => {
                 evaluator.eval_function(function, &[], &[("prov", prov_value)])?;
+                let visited_lines: BTreeSet<_> = evaluator
+                    .coverage()?
+                    .into_iter()
+                    .map(|s| s.span.begin_line as u16)
+                    .collect();
                 assert_eq!(
                     to_visit_lines,
-                    visited_lines.borrow().clone(),
+                    visited_lines,
                     "Starlark file {:?} has branches that are not executed",
                     file_path.file_name()
                 );
