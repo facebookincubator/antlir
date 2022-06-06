@@ -8,7 +8,7 @@
 #![feature(get_mut_unchecked)]
 use anyhow::{anyhow, bail, Context, Result};
 use derive_more::{Deref, Display};
-use gazebo::any::AnyLifetime;
+use gazebo::any::ProvidesStaticType;
 use serde::Deserialize;
 use slotmap::SlotMap;
 use starlark::environment::{FrozenModule, Globals, GlobalsBuilder, Module};
@@ -57,7 +57,7 @@ fn eval_and_freeze_module(
 slotmap::new_key_type! {
     /// TypeId and TypeRegistry exist to store unique references to complex types.
     /// These are types that end up getting codegenned, not primitives.
-    #[derive(AnyLifetime, NoSerialize)]
+    #[derive(ProvidesStaticType, NoSerialize)]
     struct TypeId;
 }
 impl std::fmt::Display for TypeId {
@@ -70,10 +70,10 @@ impl<'v> StarlarkValue<'v> for TypeId {
     starlark_type!("TypeId");
 }
 
-#[derive(Debug, AnyLifetime, Default, Deref)]
+#[derive(Debug, ProvidesStaticType, Default, Deref)]
 struct TypeRegistryRefCell(RefCell<TypeRegistry>);
 
-#[derive(Debug, AnyLifetime, Default)]
+#[derive(Debug, ProvidesStaticType, Default)]
 struct TypeRegistry(SlotMap<TypeId, Rc<ir::Type>>);
 
 impl TypeRegistry {
@@ -86,7 +86,7 @@ impl TypeRegistry {
     }
 }
 
-#[derive(Debug, Clone, Display, AnyLifetime, NoSerialize)]
+#[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize)]
 #[display(fmt = "{:?}", self)]
 #[repr(transparent)]
 struct StarlarkType(Rc<ir::Type>);
@@ -139,7 +139,7 @@ impl<'v> TryToField for Value<'v> {
     }
 }
 
-#[derive(Debug, Clone, Display, AnyLifetime, NoSerialize)]
+#[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize)]
 #[display(fmt = "{:?}", self)]
 #[repr(transparent)]
 struct StarlarkField(ir::Field);
