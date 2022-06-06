@@ -101,10 +101,10 @@ pub fn module(registry: &mut GlobalsBuilder) {
     }
 
     #[starlark(type = "Output")]
-    fn Output(
-        files: Option<ListOf<Value>>,
-        dirs: Option<ListOf<Value>>,
-        pw_hashes: Option<DictOf<Value, Value>>,
+    fn Output<'v>(
+        files: Option<ListOf<'v, Value<'v>>>,
+        dirs: Option<ListOf<'v, Value<'v>>>,
+        pw_hashes: Option<DictOf<'v, Value<'v>, Value<'v>>>,
     ) -> anyhow::Result<Output> {
         let files = files.map_or_else(|| Ok(vec![]), collect_list_of)?;
         let dirs = dirs.map_or_else(|| Ok(vec![]), collect_list_of)?;
