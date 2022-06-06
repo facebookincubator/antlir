@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "python_unittest", "validate_test_framework_label")
+load(":oss_shim.bzl", "add_test_framework_label", "python_unittest")
 
 # This exists to hack around a complex FB-internal migration. *sigh*
 # It should be removable when this is done:  https://fburl.com/nxc3u5mk
@@ -39,10 +39,10 @@ def image_python_unittest(
     )
 
     wrapper_props.outer_test_kwargs["tags"] = \
-        wrapper_props.outer_test_kwargs.pop("tags", []) + [
-            validate_test_framework_label("test-framework=7:antlir_image_test"),
-            "no_pyre",
-        ]
+        add_test_framework_label(
+            wrapper_props.outer_test_kwargs.pop("tags", []),
+            "test-framework=7:antlir_image_test",
+        ) + ["no_pyre"]
 
     # `par_style` only applies to the inner test that runs the actual user
     # code, because there is only one working choice for the outer test.
@@ -64,15 +64,17 @@ def image_python_unittest(
             "par_style",
         )
 
+    inner_tags = add_test_framework_label(
+        helpers.tags_to_hide_test(),
+        "test-framework=7:antlir_image_test",
+    )
+
+    if _TEMP_TP_TAG in wrapper_props.outer_test_kwargs.get("tags", {}):
+        inner_tags = inner_tags + [_TEMP_TP_TAG]
+
     python_unittest(
         name = helpers.hidden_test_name(name),
-        tags = helpers.tags_to_hide_test() +
-               [validate_test_framework_label("test-framework=7:antlir_image_test")] + (
-            [] if _TEMP_TP_TAG not in wrapper_props.outer_test_kwargs.get(
-                "tags",
-                {},
-            ) else [_TEMP_TP_TAG]
-        ),
+        tags = inner_tags,
         par_style = par_style,
         visibility = visibility,
         antlir_rule = "user-internal",
