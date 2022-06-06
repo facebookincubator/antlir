@@ -165,8 +165,8 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> Result<&'a TypeRegistryRefCell>
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
-        kwargs: DictOf<'v, &str, Value<'v>>,
-        eval: &mut Evaluator,
+        kwargs: DictOf<'v, &'v str, Value<'v>>,
+        eval: &mut Evaluator<'v, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let fields = kwargs
@@ -192,7 +192,7 @@ fn shape(builder: &mut GlobalsBuilder) {
             .map(StarlarkType)
     }
 
-    fn r#enum<'v>(args: Value<'v>, eval: &mut Evaluator) -> anyhow::Result<TypeId> {
+    fn r#enum<'v>(args: Value<'v>, eval: &mut Evaluator<'v, '_>) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let options = args
             .iterate_collect(eval.heap())
@@ -260,7 +260,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         })))
     }
 
-    fn tuple<'v>(args: Value<'v>, eval: &mut Evaluator) -> anyhow::Result<StarlarkType> {
+    fn tuple<'v>(args: Value<'v>, eval: &mut Evaluator<'v, '_>) -> anyhow::Result<StarlarkType> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         let item_types = args
             .iterate_collect(eval.heap())?
@@ -274,7 +274,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         Ok(StarlarkType(Rc::new(ir::Type::Tuple { item_types })))
     }
 
-    fn union<'v>(args: Value<'v>, eval: &mut Evaluator) -> anyhow::Result<TypeId> {
+    fn union<'v>(args: Value<'v>, eval: &mut Evaluator<'v, '_>) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let types = args
             .iterate_collect(eval.heap())?
