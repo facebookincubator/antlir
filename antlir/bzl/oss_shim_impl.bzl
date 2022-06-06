@@ -671,8 +671,8 @@ def _get_antlir_cell_name():
 def _is_buck2():
     return False
 
-def _validate_test_framework_label(test_framework_label):
-    return test_framework_label
+def _add_test_framework_label(labels, test_framework_label):
+    return labels + [test_framework_label]
 
 # Please keep each section lexicographically sorted.
 shim = struct(
