@@ -16,7 +16,7 @@ use handlebars::{Handlebars, RenderError};
 use once_cell::sync::Lazy;
 use starlark::environment::GlobalsBuilder;
 use starlark::eval::{Arguments, Evaluator};
-use starlark::values::{AnyLifetime, NoSerialize, StarlarkValue, Value};
+use starlark::values::{NoSerialize, ProvidesStaticType, StarlarkValue, Value};
 use starlark::{starlark_module, starlark_simple_value, starlark_type};
 
 use crate::{Error, Result};
@@ -38,7 +38,7 @@ static HANDLEBARS: Lazy<RwLock<Handlebars>> = Lazy::new(|| {
 /// hello = metalos.template("Hello {{who}}!")
 /// hello(who="world") == "Hello world!"
 /// ```
-#[derive(Debug, Display, AnyLifetime, NoSerialize)]
+#[derive(Debug, Display, ProvidesStaticType, NoSerialize)]
 pub struct Template(String);
 starlark_simple_value!(Template);
 
