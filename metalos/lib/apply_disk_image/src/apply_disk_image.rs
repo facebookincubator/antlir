@@ -174,11 +174,22 @@ pub async fn apply_disk_image<M: Mounter>(
     expand_filesystem(&partition_dev, tmp_mounts_dir, mounter)
         .context("Failed to expand filesystem after expanding partition")?;
 
-    Ok(DiskImageSummary {
-        partition_device: partition_dev,
-        partition_delta: delta,
-        disk,
-    })
+    // this is awful, but for some reason the partition device frequently
+    // disappears after expanding the fs, then it comes back again
+    // sleep a little bit to make sure that it has time to disappear
+    tokio::time::sleep(Duration::from_secs(5)).await;
+    for _ in 0..10 {
+        if partition_dev.exists() {
+            return Ok(DiskImageSummary {
+                partition_device: partition_dev.clone(),
+                partition_delta: delta,
+                disk,
+            });
+        } else {
+            tokio::time::sleep(Duration::from_millis(100)).await;
+        }
+    }
+    Err(anyhow!("{:?} has vanished", partition_dev))
 }
 
 // TODO(T108026401): We want to test this on it's own however we need multiple disks
