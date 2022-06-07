@@ -1,16 +1,24 @@
 [Unit]
-Description=Switch Root into Snapshot
 DefaultDependencies=no
 OnFailure=emergency.target
 OnFailureJobMode=replace-irreversibly
 AllowIsolate=yes
 
-Requires=systemd-networkd.service
-After=systemd-networkd.service
+# Brought in by initrd.target, but this unit is also part of initrd.target so we
+# must wait for it explicitly
+Requires=basic.target
+After=basic.target
+
+Requires=network-online.target
+After=network-online.target
 
 # We must communicate with the systemd manager over dbus
 Requires=dbus.socket
 After=dbus.socket
+
+# Ensure that this unit finishes before systemd shuts down everything else (like
+# systemd-networkd)
+Before=initrd.target
 
 [Service]
 Type=oneshot
