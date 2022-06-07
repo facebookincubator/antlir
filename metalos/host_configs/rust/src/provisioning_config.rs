@@ -30,11 +30,21 @@ pub enum EventSource {
     Mac(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[derive(Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::EventBackend)]
 pub struct EventBackend {
     pub base_uri: Url,
     pub source: EventSource,
+}
+
+impl std::fmt::Debug for EventBackend {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let Self { base_uri, source } = self;
+        f.debug_struct("EventBackend")
+            .field("base_uri", &base_uri.to_string())
+            .field("source", source)
+            .finish()
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
