@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//metalos:defs.bzl", "rust_binary", "rust_library")
 
