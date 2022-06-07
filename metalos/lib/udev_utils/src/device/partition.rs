@@ -18,7 +18,7 @@ pub struct Partition {
     device: Device,
     path: PathBuf,
     parent_disk: Disk,
-    partnum: u8,
+    partnum: u32,
 }
 
 impl Partition {
@@ -33,7 +33,7 @@ impl Partition {
     }
 
     /// Integer partition number on the disk
-    pub fn number(&self) -> u8 {
+    pub fn number(&self) -> u32 {
         self.partnum
     }
 }

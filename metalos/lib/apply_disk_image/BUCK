@@ -10,10 +10,12 @@ rust_library(
         "libc",
         "nix",
         "slog",
+        "tokio",
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/disk:metalos_disk",
         "//metalos/lib/expand_partition:expand_partition",
         "//metalos/lib/mount:metalos_mount",
         "//metalos/lib/package_download:package_download",
+        "//metalos/lib/udev_utils:udev_utils",
     ],
 )
