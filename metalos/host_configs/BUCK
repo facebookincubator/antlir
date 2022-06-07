@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "thrift_library")
@@ -19,6 +17,7 @@ generators = [
 ] if facebook else [])
 
 thrift_library(
+    # @autodeps-skip
     name = "api",
     go_thrift_namespaces = {
         "api.thrift": "metalos.host_configs.api",

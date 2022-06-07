@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//metalos:defs.bzl", "rust_library")
 
 # @oss-disable: facebook = True 
