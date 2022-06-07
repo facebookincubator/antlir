@@ -216,6 +216,34 @@ fn udev_stream_thread_main(
     }
 }
 
+pub fn blocking_stream(opts: StreamOpts) -> Result<impl Iterator<Item = Event>> {
+    let (err_tx, err_rx) = std::sync::mpsc::channel();
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        match futures::executor::block_on(crate::stream(opts)) {
+            Ok(stream) => {
+                err_tx.send(None).expect("failed to send ready message");
+                for event in futures::executor::block_on_stream(stream) {
+                    tx.send(event).expect("failed to send event");
+                }
+            }
+            Err(e) => {
+                err_tx
+                    .send(Some(e))
+                    .expect("failed to pass error to parent thread");
+            }
+        };
+    });
+    match err_rx
+        .recv()
+        .context("async thread dropped senders")
+        .map_err(Error::Async)?
+    {
+        Some(err) => Err(err),
+        None => Ok(rx.into_iter()),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -362,6 +390,30 @@ mod tests {
         let vda_by_dev = device::Disk::from_path("/dev/vda")?;
         assert_eq!(vda_by_dev.path(), Path::new("/dev/vda"));
         assert_eq!(vda_by_dev, vda_by_sys);
+        Ok(())
+    }
+
+    #[vmtest]
+    fn blocking_stream_no_tokio() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+        let stream = super::blocking_stream(StreamOpts {
+            listen: false,
+            logger: Some(log),
+            ..Default::default()
+        })?;
+        assert!(stream.count() > 0);
+        Ok(())
+    }
+
+    #[vmtest]
+    async fn blocking_stream_within_tokio_runtime() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+        let stream = super::blocking_stream(StreamOpts {
+            listen: false,
+            logger: Some(log),
+            ..Default::default()
+        })?;
+        assert!(stream.count() > 0);
         Ok(())
     }
 }
