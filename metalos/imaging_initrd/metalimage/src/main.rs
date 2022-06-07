@@ -66,13 +66,7 @@ impl KernelCmdArgs for MetalImageArgs {
 }
 
 fn build_event_sender(config: &HostConfig, args: &Args) -> Result<EventSender<HttpSink>> {
-    let sink = HttpSink::new(
-        config
-            .provisioning_config
-            .event_backend_base_uri
-            .parse()
-            .context("Failed to parse event backend uri")?,
-    );
+    let sink = HttpSink::new(config.provisioning_config.event_backend.base_uri.clone());
 
     Ok(EventSender::new(
         Source::Mac(get_mac().context("Failed to find mac address")?),
