@@ -8,16 +8,15 @@
 #![feature(can_vector)]
 
 use std::collections::HashMap;
-use std::fs::{self, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io::{Read, ReadBuf, Seek, SeekFrom, Write};
 use std::os::unix::io::AsRawFd;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use delegate::delegate;
-use slog::{info, warn, Logger};
 
-const SYS_BLOCK: &str = "/sys/block";
+use udev_utils::device::{Disk, SpecificDevice};
 
 pub static MEGABYTE: u64 = 1024 * 1024;
 
@@ -166,85 +165,24 @@ impl Write for DiskFileRW {
 
 /* END File Traits pass-through */
 
-pub fn scan_disk_partitions(
-    log: Logger,
-    disk_device: &DiskDevPath,
-) -> Result<HashMap<u32, PathBuf>> {
-    let mut out = HashMap::new();
+pub fn scan_disk_partitions(disk_device_path: &DiskDevPath) -> Result<HashMap<u32, PathBuf>> {
+    let disk_device = Disk::from_path(&disk_device_path.0).with_context(|| {
+        format!(
+            "while creating udev_utils::device::Disk for {}",
+            disk_device_path.0.display()
+        )
+    })?;
 
-    let filename = disk_device
-        .0
-        .file_name()
-        .context("Provided disk path doesn't have a file name")?
-        .to_str()
-        .context(format!(
-            "Provided path {:?} contained invalid unicode",
-            disk_device
-        ))?;
-
-    let sys_dir = Path::new(SYS_BLOCK).join(filename);
-
-    let entries =
-        fs::read_dir(&sys_dir).context(format!("failed to read sys_dir {:?}", sys_dir))?;
-    for entry in entries {
-        let path = entry
-            .context(format!(
-                "failed to read next dir from sys_dir {:?}",
-                sys_dir
-            ))?
-            .path();
-
-        let entry_filename = path
-            .file_name()
-            .context(format!("failed to get filename for path {:?}", path))?
-            .to_str()
-            .context(format!("Path {:?} contained invalid unicode", path))?;
-
-        // each partition will have it's own directory with the full name of the partition
-        // device that we are looking for. For example /sys/block/vda will have vda1, vda2 etc
-        // and /sys/block/nvme0n1/ will have nvme0n1p1, nvme0n1p2 etc.
-        if !entry_filename.starts_with(filename) {
-            continue;
-        }
-
-        // Now that we have a possible block device which could be our target parition we look
-        // inside that directory for a file called 'partition' which will contain the partition
-        // number.
-        let partition_file = path.join("partition");
-
-        // I am not entirely confident for every disk type that we will always find this file
-        // there may be some cases where this file doesn't exist so I am going to make this
-        // an non-fatal condition and instead we will error out at the bottom if we don't find
-        // the target partition. The error might be a bit more vague but I think the resilience
-        // to any unexpected files being here is worth it.
-        if !partition_file.exists() {
-            warn!(
-                log,
-                "Found path {:?} which looked like a partition directory but it was missing the partition file",
-                path,
-            );
-            continue;
-        }
-
-        let content = fs::read_to_string(&partition_file)
-            .context(format!("Can't read partition file {:?}", partition_file))?;
-
-        let current_partition_number: u32 = content.trim().parse().context(format!(
-            "Failed to parse contents of partition file, found: '{:?}'",
-            content
-        ))?;
-
-        info!(
-            log,
-            "Found partition {} at {:?}", current_partition_number, path
-        );
-        out.insert(
-            current_partition_number,
-            Path::new("/dev/").join(entry_filename),
-        );
-    }
-
-    Ok(out)
+    Ok(udev_utils::blocking_stream(udev_utils::StreamOpts {
+        listen: false,
+        ..Default::default()
+    })
+    .context("while creating udev stream for")?
+    .filter_map(|event| event.into_attached_device())
+    .filter_map(|dev| udev_utils::device::Partition::try_from(dev).ok())
+    .filter(|part| part.parent().map_or(false, |p| *p == disk_device))
+    .map(|part| (part.number(), part.path().into()))
+    .collect())
 }
 
 pub mod test_utils {
@@ -341,7 +279,6 @@ pub mod tests {
     use anyhow::Result;
     use maplit::hashmap;
     use metalos_macros::vmtest;
-    use slog::o;
 
     #[vmtest]
     fn test_get_block_device_size() -> Result<()> {
@@ -371,12 +308,10 @@ pub mod tests {
 
     #[vmtest]
     fn test_get_partition_device() -> Result<()> {
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
-
         let (lo, _) = setup_test_device().context("failed to setup loopback device")?;
 
-        let parts = scan_disk_partitions(log.clone(), &lo)
-            .context(format!("failed to scan partitions of {:?}", lo))?;
+        let parts =
+            scan_disk_partitions(&lo).context(format!("failed to scan partitions of {:?}", lo))?;
 
         let lo_str =
             lo.0.to_str()

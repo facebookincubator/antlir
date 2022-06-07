@@ -4,17 +4,20 @@ use std::io::Write;
 use std::os::unix::io::AsRawFd;
 use std::path::{Path, PathBuf};
 use std::process::Command;
+use std::time::Duration;
 
 use anyhow::{anyhow, Context, Result};
 use bytes::Bytes;
-use futures::StreamExt;
-use slog::{info, o, warn, Logger};
+use futures::{future, StreamExt};
+use slog::{info, o, Logger};
+use tokio::time::timeout;
 
 use expand_partition::{expand_last_partition, PartitionDelta};
-use metalos_disk::{scan_disk_partitions, DiskDevPath};
+use metalos_disk::DiskDevPath;
 use metalos_host_configs::packages::GptRootDisk;
 use metalos_mount::Mounter;
 use package_download::{HttpsDownloader, PackageDownloader};
+use udev_utils::device::{Disk, SpecificDevice};
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);
@@ -127,21 +130,45 @@ pub async fn apply_disk_image<M: Mounter>(
     }
 
     info!(log, "Rescanning partition table for {:?}", disk);
+
+    // wait for udev to load the device info for the partition number we are
+    // looking for
+    let disk_device = Disk::from_path(&disk.0).with_context(|| {
+        format!(
+            "while creating udev_utils::device::Disk for {}",
+            disk.0.display()
+        )
+    })?;
+
     rescan_partitions(&dst).context("Failed to rescan partitions after writing image")?;
 
-    let partition_devs = scan_disk_partitions(log.clone(), &disk)
-        .context(format!("failed to scan partitions for {:?}", disk))?;
-
-    let partition_dev = match partition_devs.get(&delta.partition_num) {
-        Some(dev) => dev.clone(),
-        None => {
-            return Err(anyhow!(
-                "Unable to find partition {} for {:?}",
-                delta.partition_num,
-                disk
-            ));
-        }
-    };
+    let partition_dev: PathBuf = timeout(
+        Duration::from_secs(1),
+        udev_utils::stream(Default::default())
+            .await
+            .context("while creating udev stream for")?
+            .filter_map(|event| future::ready(event.into_attached_device()))
+            .filter_map(|dev| future::ready(udev_utils::device::Partition::try_from(dev).ok()))
+            .filter(|part| future::ready(part.parent().map_or(false, |p| *p == disk_device)))
+            .filter(|part| future::ready(part.number() == delta.partition_num))
+            .map(|part| part.path().to_path_buf())
+            .next(),
+    )
+    .await
+    .with_context(|| {
+        format!(
+            "Partition {} on {} did not show up within 1s",
+            delta.partition_num,
+            disk.0.display()
+        )
+    })?
+    .with_context(|| {
+        format!(
+            "Partition {} on {} never appeared",
+            delta.partition_num,
+            disk.0.display()
+        )
+    })?;
 
     info!(log, "Expanding filesystem in {:?}", partition_dev);
     expand_filesystem(&partition_dev, tmp_mounts_dir, mounter)

@@ -5,7 +5,6 @@ rust_library(
     srcs = ["src/lib.rs"],
     test_deps = [
         "maplit",
-        "slog_glog_fmt",
     ],
     unittests = [
         "vm",
@@ -14,6 +13,6 @@ rust_library(
         "anyhow",
         "delegate",
         "nix",
-        "slog",
+        "//metalos/lib/udev_utils:udev_utils",
     ],
 )
