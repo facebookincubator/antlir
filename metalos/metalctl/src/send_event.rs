@@ -58,14 +58,7 @@ pub(super) async fn cmd_send_event(log: Logger, opts: Opts) -> Result<()> {
         .context("failed to load latest config from disk")?
         .context("No host config available")?;
 
-    let sink = HttpSink::new(
-        #[allow(deprecated)]
-        config
-            .provisioning_config
-            .event_backend_base_uri
-            .parse()
-            .context("Failed to parse event backend uri")?,
-    );
+    let sink = HttpSink::new(config.provisioning_config.event_backend.base_uri);
 
     send_event(log, opts, sink).await
 }

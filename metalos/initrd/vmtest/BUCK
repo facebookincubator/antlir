@@ -54,7 +54,6 @@ host_config(
                     "asset_id": 1,
                 },
             },
-            "event_backend_base_uri": "http://vmtest-host:8000/send-event",
             "gpt_root_disk": {
                 "format": 2,
                 "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
