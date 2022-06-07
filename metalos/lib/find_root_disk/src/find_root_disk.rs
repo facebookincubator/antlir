@@ -178,15 +178,21 @@ impl FindRootDisk for SerialDiskFinder {
     type Discovery = UdevDiscovery;
 
     fn find_root_disk(&self, devices: Vec<Self::Output>) -> Result<Self::Output> {
+        let mut seen = Vec::new();
         for device in devices {
             if let Some(serial) = Self::get_serial(&device)? {
                 if serial == self.serial {
                     return Ok(device);
                 }
+                seen.push(serial.to_string());
             }
         }
 
-        Err(anyhow!("None of the provided devices matched the serial"))
+        Err(anyhow!(
+            "None of the provided devices matched the serial {} found: {:?}",
+            self.serial,
+            seen
+        ))
     }
 }
 
