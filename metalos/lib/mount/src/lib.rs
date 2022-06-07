@@ -17,9 +17,9 @@ use antlir_image::subvolume::{AntlirSubvolume, AntlirSubvolumes};
 
 #[derive(thiserror::Error, Debug)]
 pub enum MountError {
-    #[error("No such file or directory: Mount target {0:?} doesn't exist")]
-    MissingSource(PathBuf),
     #[error("No such file or directory: Mount source {0:?} doesn't exist")]
+    MissingSource(PathBuf),
+    #[error("No such file or directory: Mount target {0:?} doesn't exist")]
     MissingTarget(PathBuf),
     #[error("No such file or directory: Unknown reason - both source/target exist")]
     MissingUnknown,
