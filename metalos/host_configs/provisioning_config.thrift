@@ -13,6 +13,20 @@ include "metalos/host_configs/packages.thrift"
 // @oss-disable: include "metalos/host_configs/facebook/host.thrift"
 // @oss-disable: include "metalos/host_configs/facebook/proxy/if/deployment_specific.thrift"
 
+// Empty placeholder for any disk info we might need
+struct DiskConfiguration {} (rust.exhaustive)
+
+struct SingleDiskSerial {
+  1: string serial;
+  2: DiskConfiguration config;
+} (rust.exhaustive)
+
+union RootDiskConfiguration {
+  1: DiskConfiguration single_disk;
+  2: SingleDiskSerial single_serial;
+  99: list<string> invalid_multi_disk;
+} (rust.exhaustive)
+
 // ProvisioningConfig contains immutable host identity information, and anything
 // else required for provisioning a box. This is only allowed to change on
 // reprovisions, not during a host's normal lifecycle.
@@ -28,6 +42,9 @@ struct ProvisioningConfig {
   5: packages.Package imaging_initrd;
   6: string event_backend_base_uri;
   7: EventBackend event_backend;
+
+  // How should we select and configure the root disk
+  8: optional RootDiskConfiguration root_disk_config;
 } (rust.exhaustive)
 
 union EventSource {
