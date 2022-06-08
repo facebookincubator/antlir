@@ -324,7 +324,6 @@ python_library(
         ":errors",
         ":fs_utils",
         "//antlir/bzl/buck_isolation:buck_isolation",
-        "//antlir/rust:rust",
     ],
 )
 
@@ -739,7 +738,6 @@ python_unittest(
         (100, ":serialize-targets-and-outputs-library"),
     ],
     deps = [
-        ":artifacts_dir",
         ":fs_utils",
         ":serialize-targets-and-outputs-library",
     ],

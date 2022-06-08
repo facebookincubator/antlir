@@ -20,9 +20,7 @@ rust_python_extension(
     ],
     types = glob(["**/*.pyi"]),
     visibility = [],
-    deps = [
-        "//antlir:find_root",
-    ] + third_party.libraries(
+    deps = third_party.libraries(
         ["pyo3"],
         platform = "rust",
     ),
