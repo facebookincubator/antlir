@@ -208,6 +208,7 @@ def _fetched_package_layer(
             quoted_package = shell.quote(package),
         ),
         antlir_rule = "user-internal",
+        labels = ["uses_fbpkg"],
     )
 
     package_feature = name + "-fetched-package-feature"
@@ -293,4 +294,5 @@ def _fetched_package_with_nondeterministic_fs_metadata(
         type = "fetched_package_with_nondeterministic_fs_metadata",
         visibility = get_visibility(visibility),
         antlir_rule = "user-internal",
+        labels = ["uses_fbpkg"],
     )
