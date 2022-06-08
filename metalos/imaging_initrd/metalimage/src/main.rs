@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::{anyhow, Context, Result};
 use futures::{try_join, FutureExt};
 use nix::mount::MsFlags;
 use reqwest::Url;
@@ -11,10 +11,11 @@ use strum_macros::EnumIter;
 
 use apply_disk_image::apply_disk_image;
 use disk_wipe::quick_wipe_disk;
-use find_root_disk::{DiskPath, FindRootDisk, SingleDiskFinder};
+use find_root_disk::{DiskPath, FindRootDisk, SerialDiskFinder, SingleDiskFinder};
 use get_host_config::get_host_config;
 use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
 use metalos_host_configs::host::HostConfig;
+use metalos_host_configs::provisioning_config::RootDiskConfiguration;
 use metalos_kexec::KexecInfo;
 use metalos_mount::{Mounter, RealMounter};
 use net_utils::get_mac;
@@ -148,12 +149,18 @@ impl Bootloader {
 
     async fn boot(&self) -> Result<()> {
         // Select root disk
-        let disk_finder = SingleDiskFinder::new();
-        let mut disk = disk_finder
-            .get_root_device()
-            .context("Failed to find root device to write root_disk_package to")?
-            .dev_node()
-            .context("Failed to get the devnode for root disk")?;
+        let mut disk = match &self.config.provisioning_config.root_disk_config {
+            RootDiskConfiguration::SingleDisk(_) => SingleDiskFinder::new().get_root_device(),
+            RootDiskConfiguration::SingleSerial(cfg) => {
+                SerialDiskFinder::new(cfg.serial.clone()).get_root_device()
+            }
+            RootDiskConfiguration::InvalidMultiDisk(serials) => {
+                return Err(anyhow!("Got invalid multi disk config: {:?}", serials));
+            }
+        }
+        .context("Failed to find root device to write root_disk_package to")?
+        .dev_node()
+        .context("Failed to get the devnode for root disk")?;
 
         self.send_event(FoundRootDisk { path: &disk }).await;
         info!(self.log, "Found root disk {:?}", disk);
