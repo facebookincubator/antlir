@@ -10,8 +10,8 @@ from antlir.artifacts_dir import (
     ensure_per_repo_artifacts_dir_exists,
     find_buck_cell_root,
     find_repo_root,
+    SigilNotFound,
 )
-from antlir.errors import UserError
 from antlir.fs_utils import Path, temp_dir
 
 
@@ -77,5 +77,5 @@ class ArtifactsDirTests(unittest.TestCase):
             self.assertEqual(td, have)
 
     def test_find_buck_cell_root_missing(self) -> None:
-        with temp_dir() as td, self.assertRaises(UserError):
+        with temp_dir() as td, self.assertRaises(SigilNotFound):
             find_buck_cell_root(td)
