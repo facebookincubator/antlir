@@ -88,6 +88,12 @@ host_config(
                 "name": "metalos.imaging-initrd",
                 "override_uri": None,
             },
+            "root_disk_config": {
+                "single_serial": {
+                    "config": {},
+                    "serial": "ROOT_DISK_SERIAL",
+                },
+            },
         },
         "runtime_config": {
             "deployment_specific": {"metalos": {}},

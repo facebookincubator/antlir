@@ -9,7 +9,8 @@ use metalos_host_configs::host::HostConfig;
 use metalos_thrift_host_configs::boot_config::{BootConfig, Kernel};
 use metalos_thrift_host_configs::packages::{Format, Kind, Package, PackageId};
 use metalos_thrift_host_configs::provisioning_config::{
-    EventBackend, EventSource, HostIdentity, Network, NetworkInterface, ProvisioningConfig, DNS,
+    DiskConfiguration, EventBackend, EventSource, HostIdentity, Network, NetworkInterface,
+    ProvisioningConfig, RootDiskConfiguration, SingleDiskSerial, DNS,
 };
 use metalos_thrift_host_configs::runtime_config::RuntimeConfig;
 
@@ -57,6 +58,10 @@ pub fn example_host_for_tests() -> HostConfig {
                 source: EventSource::asset_id(1),
                 base_uri: "https://metalos/send-event".into(),
             },
+            root_disk_config: RootDiskConfiguration::single_serial(SingleDiskSerial {
+                serial: "deadbeef".into(),
+                config: DiskConfiguration {},
+            }),
             #[cfg(facebook)]
             deployment_specific:
                 metalos_host_configs::facebook::deployment_specific::DeploymentProvisioningConfig::Metalos(
