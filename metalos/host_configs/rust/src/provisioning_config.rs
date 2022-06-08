@@ -21,7 +21,27 @@ pub struct ProvisioningConfig {
     #[deprecated = "use event_backend struct instead"]
     pub event_backend_base_uri: String,
     pub event_backend: EventBackend,
+    pub root_disk_config: Option<RootDiskConfiguration>,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::RootDiskConfiguration)]
+pub enum RootDiskConfiguration {
+    SingleDisk(DiskConfiguration),
+    SingleSerial(SingleDiskSerial),
+    InvalidMultiDisk(Vec<String>),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::SingleDiskSerial)]
+pub struct SingleDiskSerial {
+    pub serial: String,
+    pub config: DiskConfiguration,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::DiskConfiguration)]
+pub struct DiskConfiguration {}
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::EventSource)]
