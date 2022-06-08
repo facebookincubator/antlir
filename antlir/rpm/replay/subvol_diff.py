@@ -30,6 +30,15 @@ for p in [
     "usr/share/fonts/*/.uuid",
     "usr/share/X11/fonts/.uuid",
     "usr/share/X11/fonts/*/.uuid",
+    # Ordering of `info` sections is non-deterministic here:
+    "usr/share/info/dir",
+    "usr/share/info/dir.old",
+    # Web2C `.log` files include timestamps
+    "var/lib/texmf/web2c/*/*.log",
+    # Web2C transpiles Pascal to C and builds fonts via scriptlets,
+    # and these builds are *not* bitwise-deterministic.
+    "var/lib/texmf/web2c/metafont/mf.base",
+    "var/lib/texmf/web2c/*/*.fmt",
     "var/cache/ldconfig/aux-cache",
     "var/lib/rpm",
     "var/lib/yum",
