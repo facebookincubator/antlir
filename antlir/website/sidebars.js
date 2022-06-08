@@ -103,6 +103,7 @@ module.exports = {
             'contributing/coding-conventions/bzl-and-targets',
             'contributing/coding-conventions/pyre',
             'contributing/coding-conventions/python',
+            'contributing/coding-conventions/rust',
           ],
           TODOs: [
             'contributing/todos/btrfs_diff',
