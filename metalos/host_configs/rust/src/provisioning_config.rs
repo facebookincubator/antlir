@@ -21,7 +21,7 @@ pub struct ProvisioningConfig {
     #[deprecated = "use event_backend struct instead"]
     pub event_backend_base_uri: String,
     pub event_backend: EventBackend,
-    pub root_disk_config: Option<RootDiskConfiguration>,
+    pub root_disk_config: RootDiskConfiguration,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]

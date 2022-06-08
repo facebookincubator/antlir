@@ -44,7 +44,7 @@ struct ProvisioningConfig {
   7: EventBackend event_backend;
 
   // How should we select and configure the root disk
-  8: optional RootDiskConfiguration root_disk_config;
+  8: RootDiskConfiguration root_disk_config;
 } (rust.exhaustive)
 
 union EventSource {
