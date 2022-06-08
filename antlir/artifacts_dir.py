@@ -6,6 +6,7 @@
 
 "DANGER: The resulting PAR will not work if copied outside of buck-out."
 import os
+import shutil
 import stat
 import subprocess
 import sys
@@ -13,13 +14,6 @@ import textwrap
 from typing import Optional
 
 from antlir.bzl.buck_isolation.buck_isolation import is_buck_using_isolation
-
-# for re-export
-from antlir.rust.artifacts_dir import (  # noqa: F401
-    find_buck_cell_root,
-    find_repo_root,
-    SigilNotFound,
-)
 
 from .errors import UserError
 from .fs_utils import Path, populate_temp_file_and_rename
@@ -76,6 +70,83 @@ def _make_eden_redirection(
         # Let the api raise
         print(ret.stderr, file=sys.stderr)
         ret.check_returncode()
+
+
+def _first_parent_containing_sigil(
+    start_path: Path, sigil_name: str, is_dir: bool
+) -> Optional[Path]:
+    root_path = start_path.abspath()
+    while True:
+        if root_path.realpath() == Path("/"):  # No infinite loop on //
+            return None
+        maybe_sigil_path = root_path / sigil_name
+        if maybe_sigil_path.exists() and (
+            os.path.isdir(maybe_sigil_path)
+            if is_dir
+            else os.path.isfile(maybe_sigil_path)
+        ):
+            return root_path
+        root_path = root_path.dirname()
+
+
+def _ensure_path_in_repo(path_in_repo: Optional[Path]) -> Path:
+
+    # pyre-fixme [9]: path_in_repo is declared to have type `Optional[Path]`
+    #                 but is used as type `Union[None, Path, str]`
+    path_in_repo = path_in_repo or os.environ.get("ANTLIR_PATH_IN_REPO")
+    return path_in_repo or Path(sys.argv[0]).dirname()
+
+
+def find_repo_root(path_in_repo: Optional[Path] = None) -> Path:
+    """
+    Find the path of the VCS repository root.  This could be the same thing
+    as `find_buck_cell_root` but importantly, it might not be.  Buck has the
+    concept of cells, of which many can be contained within a single VCS
+    repository.  When you need to know the actual root of the VCS repo, use
+    this method.
+    """
+
+    # We have to start somewhere reasonable.  If we don't get an explicit path
+    # start from the location of the binary being executed.
+    path_in_repo = path_in_repo or Path(_ensure_path_in_repo(path_in_repo))
+
+    repo_root = _first_parent_containing_sigil(
+        path_in_repo, ".hg", is_dir=True
+    ) or _first_parent_containing_sigil(path_in_repo, ".git", is_dir=True)
+
+    if repo_root:
+        return repo_root
+
+    raise UserError(
+        f"No hg or git root found in any ancestor of {path_in_repo}."
+        f" Is this an hg or git repo?"
+    )
+
+
+def find_buck_cell_root(path_in_repo: Optional[Path] = None) -> Path:
+    """
+    If the caller does not provide a path known to be in the repo, a reasonable
+    default of sys.argv[0] will be used. This is reasonable as binaries/tests
+    calling this library are also very likely to be in repo.
+
+    This is intended to work:
+     - under Buck's internal macro interpreter, and
+     - using the system python from `facebookincubator/antlir`.
+
+    This is functionally equivalent to `buck root`, but we opt to do it here as
+    `buck root` takes >2s to execute (due to CLI startup time).
+    """
+    path_in_repo = path_in_repo or Path(_ensure_path_in_repo(path_in_repo))
+
+    cell_path = _first_parent_containing_sigil(
+        path_in_repo, ".buckconfig", is_dir=False
+    )
+    if cell_path:
+        return cell_path
+
+    raise UserError(
+        f"Could not find .buckconfig in any ancestor of {path_in_repo}"
+    )
 
 
 def find_artifacts_dir(path_in_repo: Optional[Path] = None) -> Path:

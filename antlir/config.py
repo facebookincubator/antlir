@@ -7,11 +7,7 @@ import functools
 import importlib
 from typing import Optional
 
-from antlir.artifacts_dir import (
-    find_artifacts_dir,
-    find_repo_root,
-    SigilNotFound,
-)
+from antlir.artifacts_dir import find_artifacts_dir, find_repo_root
 from antlir.bzl.buck_isolation.buck_isolation import is_buck_using_isolation
 from antlir.errors import UserError
 from antlir.fs_utils import Path
@@ -19,11 +15,6 @@ from antlir.repo_config_t import (
     data as repo_config_data,
     repo_config_t as base_repo_config_t,
 )
-
-
-class ConfigNotFound(UserError):
-    pass
-
 
 _read_text = importlib.resources.read_text
 
@@ -56,9 +47,9 @@ def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
         # build volume is included.
         if artifact_dir.islink():
             host_mounts_for_repo_artifacts.append(artifact_dir.realpath())
-    except SigilNotFound:
+    except UserError:
         if data.get("artifacts_require_repo") or is_buck_using_isolation():
-            raise ConfigNotFound()
+            raise
 
     return repo_config_t(
         repo_root=repo_root,
