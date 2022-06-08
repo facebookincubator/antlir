@@ -73,6 +73,8 @@ thrift_library(
         # the type guarantees we normally do (eg uuid is an actual uuid)
         "//metalos/host_configs/facebook/proxy/...",
         "//metalos/host_configs/facebook/metald/...",
+        # this is a config provider for corp
+        # @oss-disable: "//ee_provisioning/corp_config_provider/...", 
     ],
     deps = [
         "//common/fb303/if:fb303",
