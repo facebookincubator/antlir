@@ -7,6 +7,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
 load(":flavor_helpers.bzl", "flavor_helpers")
@@ -167,10 +168,12 @@ EOF
             "--child-feature-json $(location {})".format(t)
             for t in normalized_features.targets
         ] + (
-            ["--child-feature-json <(echo {})".format(shell.quote(struct(
-                features = normalized_features.inline_features,
-                target = current_target,
-            ).to_json()))] if normalized_features.inline_features else []
+            ["--child-feature-json <(echo {})".format(shell.quote(
+                structs.as_json(struct(
+                    features = normalized_features.inline_features,
+                    target = current_target,
+                )),
+            ))] if normalized_features.inline_features else []
         )),
         maybe_flavor_config = (
             "--flavor-config {}".format(

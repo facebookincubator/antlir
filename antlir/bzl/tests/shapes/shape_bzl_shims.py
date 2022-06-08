@@ -69,6 +69,10 @@ class structs(object):
     def to_dict(x):
         return dataclasses.asdict(x)
 
+    @staticmethod
+    def as_json(x):
+        return globals()["__struct_to_json"](x)
+
 
 class types(object):
     @staticmethod

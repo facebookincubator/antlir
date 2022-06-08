@@ -83,6 +83,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "get_visibility
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
 load(":constants.bzl", "REPO_CFG")
 load(":image_layer.bzl", "image_layer")
+load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
 
 _PackageFetcherInfo = provider(fields = [
@@ -164,7 +165,7 @@ def fetched_package_layers_from_json_dir_db(
 #     first line, and JSON on subsequent lines.
 def _print_how_to_fetch_json(how_to_fetch):
     if types.is_dict(how_to_fetch):
-        return "echo " + shell.quote(struct(**how_to_fetch).to_json())
+        return "echo " + shell.quote(structs.as_json(struct(**how_to_fetch)))
     elif types.is_string(how_to_fetch):
         return "tail -n +3 $(location {})".format(how_to_fetch)
     fail("`how_to_fetch` must be str/dict, not {}".format(how_to_fetch))

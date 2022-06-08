@@ -15,6 +15,7 @@ load(":image_layer.bzl", "image_layer")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "RPM_SNAPSHOT_BASE_DIR", "snapshot_install_dir")
+load(":structs.bzl", "structs")
 load(":wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
 _FB_INTERNAL_STORAGE = "manifold"
@@ -203,11 +204,15 @@ echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
 {per_installer_cmds}
         '''.format(
             src = maybe_export_file(src),
-            quoted_cli_storage_cfg = shell.quote(struct(**cli_storage).to_json()),
+            quoted_cli_storage_cfg = shell.quote(
+                structs.as_json(struct(**cli_storage)),
+            ),
             yum_dnf_from_snapshot_wrapper = yum_dnf_from_snapshot_wrapper,
             repo_server_wrapper = repo_server_wrapper,
             quoted_repo_server_ports = quoted_repo_server_ports,
-            quoted_storage_cfg = shell.quote(struct(**storage).to_json()),
+            quoted_storage_cfg = shell.quote(
+                structs.as_json(struct(**storage)),
+            ),
             per_installer_cmds = "\n".join(per_installer_cmds),
             fb_dir = "/facebook" if cli_storage["kind"] == _FB_INTERNAL_STORAGE else "",
         ),

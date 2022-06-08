@@ -8,6 +8,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load(":image_layer_runtime.bzl", "add_runtime_targets")
 load(":oss_shim.bzl", "buck_genrule", "config", "is_buck2")
+load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
 def _image_layer_impl(
@@ -157,7 +158,7 @@ def _image_layer_impl(
                 ) if types.is_string(mount_config) else (
                     # inline `mount_config` dict
                     "echo {}".format(
-                        shell.quote(struct(**mount_config).to_json()),
+                        shell.quote(structs.as_json(struct(**mount_config))),
                     )
                 ),
                 subvolume_garbage_collector = antlir_dep(":subvolume-garbage-collector"),
