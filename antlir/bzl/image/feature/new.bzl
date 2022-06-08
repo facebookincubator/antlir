@@ -338,7 +338,7 @@ def feature_new(
         name = name,
         deps = feature.deps,
         output_feature_cmd = 'echo {out} > "$OUT"'.format(
-            out = shell.quote(feature.items.to_json()),
+            out = shell.quote(structs.as_json(feature.items)),
         ),
         visibility = visibility,
     )

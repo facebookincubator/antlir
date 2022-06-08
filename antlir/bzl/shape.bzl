@@ -513,7 +513,7 @@ _SERIALIZING_LOCATION_MSG = (
 #
 #   - Set `opts.include_dunder_shape == False` to strip `__shape__` from the
 #     resulting instance structs.  This is desirable when serializing,
-#     because that field will e.g. fail with `struct.to_json()`.
+#     because that field will e.g. fail with `structs.as_json()`.
 #
 #   - `opts.on_target_fields` has 3 possible values:
 #
@@ -629,7 +629,7 @@ def _do_not_cache_me_json(instance):
     Warning: Do not ever put this into a target that can be cached, it should
     only be used in cmdline args or environment variables.
     """
-    return _recursive_copy_transform(
+    return structs.as_json(_recursive_copy_transform(
         instance,
         instance.__shape__,
         struct(
@@ -637,7 +637,7 @@ def _do_not_cache_me_json(instance):
             on_target_fields = "uncacheable_location_macro",
             target_tagger = None,
         ),
-    ).to_json()
+    ))
 
 def _json_file(name, instance, visibility = None):  # pragma: no cover
     """
@@ -648,7 +648,7 @@ def _json_file(name, instance, visibility = None):  # pragma: no cover
     Warning: this will fail to serialize any shape type that contains a
     reference to a target location, as that cannot be safely cached by buck.
     """
-    instance = _safe_to_serialize_instance(instance).to_json()
+    instance = structs.as_json(_safe_to_serialize_instance(instance))
     buck_genrule(
         name = name,
         cmd = "echo {} > $OUT".format(shell.quote(instance)),
@@ -728,7 +728,7 @@ def _python_data(
             type_name = type_name,
             data = shell.quote("data = {classname}.parse_raw({shape_json})".format(
                 classname = type_name,
-                shape_json = repr(instance.to_json()),
+                shape_json = repr(structs.as_json(instance)),
             )),
         ),
         # Antlir users should not directly use `shape`, but we do use it
