@@ -1,0 +1,27 @@
+# @noautodeps
+
+load("//antlir/bzl:oss_shim.bzl", "python_library", "rust_python_extension", "third_party")
+
+# Main entrypoint to the rust python extension modules
+# This exists because Python import resolution is annoying and would otherwise
+# make it impossible to have any python_{library,binary,unittest} targets under
+# antlir/rust
+python_library(
+    name = "rust",
+    srcs = ["__init__.py"],
+    deps = [":native"],
+)
+
+rust_python_extension(
+    name = "native",
+    srcs = glob(["src/**/*.rs"]),
+    python_deps = [
+        "//antlir:fs_utils",
+    ],
+    types = glob(["**/*.pyi"]),
+    visibility = [],
+    deps = third_party.libraries(
+        ["pyo3"],
+        platform = "rust",
+    ),
+)
