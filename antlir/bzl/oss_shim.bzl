@@ -138,10 +138,28 @@ def _third_party_libraries(names, platform = None):
         for name in names
     ]
 
-def rust_python_extension(*args, **kwargs):
+def _rust_common(rule, kwargs):
+    rustc_flags = kwargs.pop("rustc_flags", [])
+    rustc_flags.append("--forbid=unused_crate_dependencies")
+    kwargs["rustc_flags"] = rustc_flags
+    rule(**kwargs)
+
+def rust_python_extension(**kwargs):
     if not kwargs.get("types", []):
         fail("rust_python_extension is taking a step backwards without pyre")
-    shim.rust_python_extension(*args, **kwargs)
+    _rust_common(shim.rust_python_extension, kwargs)
+
+def rust_library(**kwargs):
+    _rust_common(shim.rust_library, kwargs)
+
+def rust_binary(**kwargs):
+    _rust_common(shim.rust_binary, kwargs)
+
+def rust_unittest(**kwargs):
+    _rust_common(shim.rust_unittest, kwargs)
+
+def rust_bindgen_library(**kwargs):
+    _rust_common(shim.rust_bindgen_library, kwargs)
 
 antlir_buck_env = shim.antlir_buck_env
 buck_command_alias = shim.buck_command_alias
@@ -159,10 +177,6 @@ is_buck2 = shim.is_buck2
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 rpm_vset = shim.rpm_vset
 repository_name = shim.repository_name
-rust_binary = shim.rust_binary
-rust_bindgen_library = shim.rust_bindgen_library
-rust_library = shim.rust_library
-rust_unittest = shim.rust_unittest
 target_utils = shim.target_utils
 add_test_framework_label = shim.add_test_framework_label
 third_party = struct(
