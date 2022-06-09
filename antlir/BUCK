@@ -685,6 +685,12 @@ python_library(
     ],
 )
 
+python_binary(
+    name = "print-config",
+    main_module = "antlir.config",
+    deps = [":config"],
+)
+
 rust_binary(
     name = "repo-root",
     srcs = ["repo_root.rs"],
