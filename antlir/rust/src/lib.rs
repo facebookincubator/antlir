@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+// antlir macros disallow unused crate dependencies to stop the linter from
+// complaining, but this is always added to python modules
+use cpython as _;
 use pyo3::prelude::*;
 
 mod fs_utils;

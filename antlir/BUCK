@@ -339,7 +339,7 @@ rust_library(
         platform = "rust",
     ),
     visibility = ["PUBLIC"],
-    deps = third_party.libraries(
+    deps = ["//antlir/filesystem/absolute_path:absolute_path"] + third_party.libraries(
         [
             "thiserror",
         ],
