@@ -4,15 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from __future__ import annotations
-
 import io
 import json
 import unittest
 from contextlib import contextmanager
 from typing import Generator, Mapping
 
-from antlir.errors import UserError
+from antlir.artifacts_dir import SigilNotFound
+
 from antlir.fs_utils import Path, temp_dir
 from antlir.serialize_targets_and_outputs import (
     BuckConfigParser,
@@ -127,7 +126,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
 
     def test_cannot_find_cell_root(self) -> None:
         self.assertRaises(
-            UserError,
+            SigilNotFound,
             self._run_test,
             targets_and_locs={
                 "//foo:bar": "/foo/bar",
