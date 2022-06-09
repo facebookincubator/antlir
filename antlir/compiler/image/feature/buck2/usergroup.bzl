@@ -7,32 +7,26 @@ load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
-load(":providers.bzl", "ItemInfo")
+load(":providers.bzl", "feature_provider")
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
 NO_UID, NO_GID = -1, -1
 
 def feature_user_add_rule_impl(ctx: "context") -> ["provider"]:
-    user = shape.new(
-        user_t,
-        name = ctx.attr.username,
-        id = ctx.attr.uid if ctx.attr.uid != NO_UID else None,
-        primary_group = ctx.attr.primary_group,
-        supplementary_groups = ctx.attr.supplementary_groups,
-        shell = ctx.attr.shell,
-        home_dir = ctx.attr.home_dir,
-        comment = ctx.attr.comment or None,
-    )
-
-    return [
-        DefaultInfo(),
-        ItemInfo(
-            items = struct(
-                users = [user],
-            ),
+    return feature_provider(
+        "users",
+        shape.new(
+            user_t,
+            name = ctx.attr.username,
+            id = ctx.attr.uid if ctx.attr.uid != NO_UID else None,
+            primary_group = ctx.attr.primary_group,
+            supplementary_groups = ctx.attr.supplementary_groups,
+            shell = ctx.attr.shell,
+            home_dir = ctx.attr.home_dir,
+            comment = ctx.attr.comment or None,
         ),
-    ]
+    )
 
 feature_user_add_rule = rule(
     implementation = feature_user_add_rule_impl,
@@ -112,20 +106,14 @@ user's initial login group or home directory.
     return ":" + target_name
 
 def feature_group_add_rule_impl(ctx: "context") -> ["provider"]:
-    groups = shape.new(
-        group_t,
-        name = ctx.attr.groupname,
-        id = ctx.attr.gid if ctx.attr.gid != NO_GID else None,
-    )
-
-    return [
-        DefaultInfo(),
-        ItemInfo(
-            items = struct(
-                groups = [groups],
-            ),
+    return feature_provider(
+        "groups",
+        shape.new(
+            group_t,
+            name = ctx.attr.groupname,
+            id = ctx.attr.gid if ctx.attr.gid != NO_GID else None,
         ),
-    ]
+    )
 
 feature_group_add_rule = rule(
     implementation = feature_group_add_rule_impl,
