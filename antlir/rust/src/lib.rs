@@ -10,6 +10,7 @@
 use cpython as _;
 use pyo3::prelude::*;
 
+mod artifacts_dir;
 mod fs_utils;
 
 /// Register a Rust module as a Python submodule. The Rust module must provide a
@@ -40,6 +41,7 @@ macro_rules! submodule {
 
 #[pymodule]
 fn native(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    submodule!(artifacts_dir, py, m)?;
     submodule!(fs_utils, py, m)?;
     Ok(())
 }
