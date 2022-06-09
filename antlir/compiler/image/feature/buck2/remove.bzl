@@ -6,23 +6,17 @@
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
-load(":providers.bzl", "ItemInfo")
+load(":providers.bzl", "feature_provider")
 
 def feature_remove_rule_impl(ctx: "context") -> ["provider"]:
-    remove_spec = shape.new(
-        remove_paths_t,
-        path = ctx.attr.dest,
-        must_exist = ctx.attr.must_exist,
-    )
-
-    return [
-        DefaultInfo(),
-        ItemInfo(
-            items = struct(
-                remove_paths = [remove_spec],
-            ),
+    return feature_provider(
+        "remove_paths",
+        shape.new(
+            remove_paths_t,
+            path = ctx.attr.dest,
+            must_exist = ctx.attr.must_exist,
         ),
-    ]
+    )
 
 feature_remove_rule = rule(
     implementation = feature_remove_rule_impl,

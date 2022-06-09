@@ -7,23 +7,17 @@ load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:symlink.shape.bzl", "symlink_t")
-load(":providers.bzl", "ItemInfo")
+load(":providers.bzl", "feature_provider")
 
 def feature_ensure_symlink_rule_impl(ctx: "context") -> ["provider"]:
-    symlink_spec = shape.new(
-        symlink_t,
-        dest = ctx.attr.link_name,
-        source = ctx.attr.link_target,
-    )
-
-    return [
-        DefaultInfo(),
-        ItemInfo(
-            items = struct(
-                **{ctx.attr.symlinks_to_arg: [symlink_spec]}
-            ),
+    return feature_provider(
+        ctx.attr.symlinks_to_arg,
+        shape.new(
+            symlink_t,
+            dest = ctx.attr.link_name,
+            source = ctx.attr.link_target,
         ),
-    ]
+    )
 
 feature_ensure_symlink_rule = rule(
     implementation = feature_ensure_symlink_rule_impl,

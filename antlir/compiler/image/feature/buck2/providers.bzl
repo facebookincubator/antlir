@@ -14,3 +14,9 @@ ItemInfo = provider(
         "items",
     ],
 )
+
+def feature_provider(feature_key, feature_shape):
+    return [
+        DefaultInfo(),
+        ItemInfo(items = struct(**{feature_key: [feature_shape]})),
+    ]

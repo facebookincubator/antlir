@@ -7,24 +7,18 @@ load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:requires.shape.bzl", "requires_t")
-load(":providers.bzl", "ItemInfo")
+load(":providers.bzl", "feature_provider")
 
 def feature_requires_rule_impl(ctx: "context") -> ["provider"]:
-    req = shape.new(
-        requires_t,
-        users = ctx.attr.users,
-        groups = ctx.attr.groups,
-        files = ctx.attr.files,
-    )
-
-    return [
-        DefaultInfo(),
-        ItemInfo(
-            items = struct(
-                requires = [req],
-            ),
+    return feature_provider(
+        "requires",
+        shape.new(
+            requires_t,
+            users = ctx.attr.users,
+            groups = ctx.attr.groups,
+            files = ctx.attr.files,
         ),
-    ]
+    )
 
 feature_requires_rule = rule(
     implementation = feature_requires_rule_impl,
