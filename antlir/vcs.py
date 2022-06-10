@@ -17,7 +17,13 @@ from antlir.fs_utils import Path
 class _Hg:
     def rev_id(self, rev: Optional[str], cwd: Optional[Path]) -> str:
         return subprocess.check_output(
-            ["hg", "log", "-T", "{node}", "-r", rev or "."], text=True, cwd=cwd
+            (
+                ["hg", "log", "-T", "{node}", "-r", rev]
+                if rev
+                else ["hg", "whereami"]  # 10x faster
+            ),
+            text=True,
+            cwd=cwd,
         ).strip()
 
     def rev_timestamp(
