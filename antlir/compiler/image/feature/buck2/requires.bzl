@@ -5,8 +5,8 @@
 
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:requires.shape.bzl", "requires_t")
+load(":helpers.bzl", "generate_feature_target_name")
 load(":providers.bzl", "feature_provider")
 
 def feature_requires_rule_impl(ctx: "context") -> ["provider"]:
@@ -46,12 +46,14 @@ that generates systemd units that run as a specific user, where
 `feature.requires` can be used for additional compile-time safety that the user,
 groups or files do indeed exist.
 """
-    name = "USERS__{users}__GROUPS__{groups}__FILES__{files}".format(
-        users = _sha256_list(users),
-        groups = _sha256_list(groups),
-        files = _sha256_list(files),
+    target_name = generate_feature_target_name(
+        name = "requires",
+        include_in_name = {
+            "files": files,
+            "groups": groups,
+            "users": users,
+        },
     )
-    target_name = PRIVATE_DO_NOT_USE_feature_target_name(name + "__feature_requires")
 
     if not native.rule_exists(target_name):
         feature_requires_rule(

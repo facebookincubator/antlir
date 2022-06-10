@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:symlink.shape.bzl", "symlink_t")
+load(":helpers.bzl", "generate_feature_target_name")
 load(":providers.bzl", "feature_provider")
 
 def feature_ensure_symlink_rule_impl(ctx: "context") -> ["provider"]:
@@ -29,11 +28,13 @@ feature_ensure_symlink_rule = rule(
 )
 
 def feature_ensure_symlink(link_target, link_name, symlink_type):
-    name = "LINK_TARGET__{link_target}__LINK_NAME__{link_name}".format(
-        link_target = sha256_b64(link_target),
-        link_name = sha256_b64(link_name),
+    target_name = generate_feature_target_name(
+        name = symlink_type,
+        include_in_name = {
+            "link_name": link_name,
+            "link_target": link_target,
+        },
     )
-    target_name = PRIVATE_DO_NOT_USE_feature_target_name(name + "__feature_" + symlink_type)
 
     if not native.rule_exists(target_name):
         feature_ensure_symlink_rule(

@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
+load(":helpers.bzl", "generate_feature_target_name")
 load(":providers.bzl", "feature_provider")
 
 def feature_remove_rule_impl(ctx: "context") -> ["provider"]:
@@ -39,7 +39,11 @@ not to conflict with each other.
 By default, it is an error if the specified path is missing from the image,
 though this can be avoided by setting `must_exist` to `False`.
     """
-    target_name = PRIVATE_DO_NOT_USE_feature_target_name(dest + "__feature_remove")
+    target_name = generate_feature_target_name(
+        name = "remove",
+        include_in_name = {"dest": dest},
+        include_only_in_hash = {"must_exist": must_exist},
+    )
 
     if not native.rule_exists(target_name):
         feature_remove_rule(
