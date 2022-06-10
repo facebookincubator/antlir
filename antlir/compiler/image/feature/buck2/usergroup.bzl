@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
+load(":helpers.bzl", "generate_feature_target_name")
 load(":providers.bzl", "feature_provider")
 
 SHELL_BASH = "/bin/bash"
@@ -79,16 +78,17 @@ user's initial login group or home directory.
 - `home_dir` should exist, but this item does not ensure/depend on it to avoid
     a circular dependency on directory's owner user.
     """
-    target_name = PRIVATE_DO_NOT_USE_feature_target_name(
-        "USERNAME__{username}__PRIMARY_GROUP__{primary_group}__HOME_DIR__{home_dir}__SHELL__{shell}__UID__{uid}__SUPPLEMENTARY_GROUPS__{supplementary_groups}__COMMENT__{comment}".format(
-            username = sha256_b64(username),
-            primary_group = sha256_b64(primary_group),
-            home_dir = sha256_b64(home_dir),
-            shell = sha256_b64(shell),
-            uid = sha256_b64(str(uid)),
-            supplementary_groups = sha256_b64(str(sorted(supplementary_groups) if supplementary_groups else None)),
-            comment = sha256_b64(str(comment)),
-        ),
+    target_name = generate_feature_target_name(
+        name = "user_add",
+        include_in_name = {"username": username},
+        include_only_in_hash = {
+            "comment": comment,
+            "home_dir": home_dir,
+            "primary_group": primary_group,
+            "shell": shell,
+            "supplementary_groups": supplementary_groups,
+            "uid": uid,
+        },
     )
 
     if not native.rule_exists(target_name):
@@ -118,7 +118,6 @@ def feature_group_add_rule_impl(ctx: "context") -> ["provider"]:
 feature_group_add_rule = rule(
     implementation = feature_group_add_rule_impl,
     attrs = {
-        # add NO_GID constant
         "gid": attr.int(default = NO_GID),
         "groupname": attr.string(),
     },
@@ -136,11 +135,12 @@ specifying GID unless absolutely necessary.
 It is also recommended to always reference groupnames and not GIDs; since GIDs
 are auto-assigned, they may change if underlying layers add/remove groups.
     """
-    target_name = PRIVATE_DO_NOT_USE_feature_target_name(
-        "{groupname}_{gid}__feature_group_add".format(
-            groupname = groupname,
-            gid = str(gid),
-        ),
+    target_name = generate_feature_target_name(
+        name = "group_add",
+        include_in_name = {
+            "gid": gid,
+            "groupname": groupname,
+        },
     )
 
     if not native.rule_exists(target_name):
