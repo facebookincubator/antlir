@@ -11,7 +11,7 @@ load(":providers.bzl", "FeatureInfo", "ItemInfo")
 
 def feature_new_rule_impl(ctx: "context") -> ["provider"]:
     inline_features = []
-    for idx, feature in enumerate(ctx.attr.features):
+    for feature in ctx.attr.features:
         # If `feature[FeatureInfo]` exists, then `feature` was generated using the
         # `feature_new` macro and the `inline_features` of that feature are appended
         # onto this feature's `inline_features`.
