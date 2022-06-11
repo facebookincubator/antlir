@@ -10,7 +10,7 @@ load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load(":helpers.bzl", "generate_feature_target_name")
 load(":image_source.shape.bzl", "image_source_t")
 load(":install.shape.bzl", "install_files_t")
-load(":providers.bzl", "feature_provider")
+load(":rules.bzl", "maybe_add_feature_rule")
 
 def _forbid_layer_source(source_dict):
     if source_dict["layer"] != None:
@@ -19,34 +19,18 @@ def _forbid_layer_source(source_dict):
             "actions: {}".format(source_dict),
         )
 
-def feature_install_rule_impl(ctx: "context") -> ["provider"]:
-    source_dict = shape.as_dict_shallow(image_source(ctx.attr.source_str))
+def _generate_install_shape(source, dest, mode, user, group):
+    source_dict = shape.as_dict_shallow(image_source(source))
     source_dict["source"] = {"__BUCK_TARGET": source_dict["source"]}
     _forbid_layer_source(source_dict)
 
     install_spec = {
-        "dest": ctx.attr.dest,
+        "dest": dest,
         "source": shape.new(image_source_t, **source_dict),
     }
-    add_stat_options(install_spec, ctx.attr.mode or None, ctx.attr.user or None, ctx.attr.group or None)
+    add_stat_options(install_spec, mode, user, group)
 
-    return feature_provider(
-        "install_files",
-        shape.new(install_files_t, **install_spec),
-    )
-
-feature_install_rule = rule(
-    implementation = feature_install_rule_impl,
-    attrs = {
-        "dest": attr.string(),
-        "group": attr.string(default = ""),
-        "mode": attr.string(default = ""),
-        "source": attr.source(),
-        "source_str": attr.string(),
-        "type": attr.string(default = "image_feature"),  # for query
-        "user": attr.string(default = ""),
-    },
-)
+    return shape.new(install_files_t, **install_spec)
 
 def feature_install(source, dest, mode = None, user = None, group = None):
     """
@@ -89,15 +73,13 @@ image) is used. The default for `user` and `group` is `root`.
         },
     )
 
-    if not native.rule_exists(target_name):
-        feature_install_rule(
-            name = target_name,
-            source = source,
-            source_str = normalize_target(source),
-            dest = dest,
-            mode = mode,
-            user = user,
-            group = group,
-        )
+    source = normalize_target(source)
 
-    return ":" + target_name
+    feature_shape = _generate_install_shape(source, dest, mode, user, group)
+
+    return maybe_add_feature_rule(
+        target_name,
+        "install_files",
+        feature_shape,
+        deps = [source],
+    )

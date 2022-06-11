@@ -3,31 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:requires.shape.bzl", "requires_t")
 load(":helpers.bzl", "generate_feature_target_name")
-load(":providers.bzl", "feature_provider")
-
-def feature_requires_rule_impl(ctx: "context") -> ["provider"]:
-    return feature_provider(
-        "requires",
-        shape.new(
-            requires_t,
-            users = ctx.attr.users,
-            groups = ctx.attr.groups,
-            files = ctx.attr.files,
-        ),
-    )
-
-feature_requires_rule = rule(
-    implementation = feature_requires_rule_impl,
-    attrs = {
-        "files": attr.list(attr.string(), default = []),
-        "groups": attr.list(attr.string(), default = []),
-        "users": attr.list(attr.string(), default = []),
-    },
-)
+load(":rules.bzl", "maybe_add_feature_rule")
 
 def feature_requires(
         users = None,
@@ -55,15 +34,11 @@ groups or files do indeed exist.
         },
     )
 
-    if not native.rule_exists(target_name):
-        feature_requires_rule(
-            name = target_name,
-            users = users,
-            groups = groups,
-            files = files,
-        )
+    feature_shape = shape.new(
+        requires_t,
+        users = users,
+        groups = groups,
+        files = files,
+    )
 
-    return ":" + target_name
-
-def _sha256_list(lst):
-    return sha256_b64(str(sorted(lst or [])))
+    return maybe_add_feature_rule(target_name, "requires", feature_shape)

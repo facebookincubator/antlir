@@ -6,39 +6,10 @@
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
 load(":helpers.bzl", "generate_feature_target_name")
-load(":providers.bzl", "feature_provider")
+load(":rules.bzl", "maybe_add_feature_rule")
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
-NO_UID, NO_GID = -1, -1
-
-def feature_user_add_rule_impl(ctx: "context") -> ["provider"]:
-    return feature_provider(
-        "users",
-        shape.new(
-            user_t,
-            name = ctx.attr.username,
-            id = ctx.attr.uid if ctx.attr.uid != NO_UID else None,
-            primary_group = ctx.attr.primary_group,
-            supplementary_groups = ctx.attr.supplementary_groups,
-            shell = ctx.attr.shell,
-            home_dir = ctx.attr.home_dir,
-            comment = ctx.attr.comment or None,
-        ),
-    )
-
-feature_user_add_rule = rule(
-    implementation = feature_user_add_rule_impl,
-    attrs = {
-        "comment": attr.string(default = ""),
-        "home_dir": attr.string(),
-        "primary_group": attr.string(),
-        "shell": attr.string(),
-        "supplementary_groups": attr.list(attr.string(), default = []),
-        "uid": attr.int(default = NO_UID),
-        "username": attr.string(),
-    },
-)
 
 def feature_user_add(
         username,
@@ -91,37 +62,18 @@ user's initial login group or home directory.
         },
     )
 
-    if not native.rule_exists(target_name):
-        feature_user_add_rule(
-            name = target_name,
-            username = username,
-            primary_group = primary_group,
-            home_dir = home_dir,
-            shell = shell,
-            uid = uid,
-            supplementary_groups = supplementary_groups,
-            comment = comment,
-        )
-
-    return ":" + target_name
-
-def feature_group_add_rule_impl(ctx: "context") -> ["provider"]:
-    return feature_provider(
-        "groups",
-        shape.new(
-            group_t,
-            name = ctx.attr.groupname,
-            id = ctx.attr.gid if ctx.attr.gid != NO_GID else None,
-        ),
+    feature_shape = shape.new(
+        user_t,
+        name = username,
+        id = uid,
+        primary_group = primary_group,
+        supplementary_groups = supplementary_groups or [],
+        shell = shell,
+        home_dir = home_dir,
+        comment = comment,
     )
 
-feature_group_add_rule = rule(
-    implementation = feature_group_add_rule_impl,
-    attrs = {
-        "gid": attr.int(default = NO_GID),
-        "groupname": attr.string(),
-    },
-)
+    return maybe_add_feature_rule(target_name, "users", feature_shape)
 
 def feature_group_add(groupname, gid = None):
     """
@@ -143,11 +95,10 @@ are auto-assigned, they may change if underlying layers add/remove groups.
         },
     )
 
-    if not native.rule_exists(target_name):
-        feature_group_add_rule(
-            name = target_name,
-            groupname = groupname,
-            gid = gid,
-        )
+    feature_shape = shape.new(
+        group_t,
+        name = groupname,
+        id = gid,
+    )
 
-    return ":" + target_name
+    return maybe_add_feature_rule(target_name, "groups", feature_shape)
