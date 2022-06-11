@@ -6,25 +6,7 @@
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
 load(":helpers.bzl", "generate_feature_target_name")
-load(":providers.bzl", "feature_provider")
-
-def feature_remove_rule_impl(ctx: "context") -> ["provider"]:
-    return feature_provider(
-        "remove_paths",
-        shape.new(
-            remove_paths_t,
-            path = ctx.attr.dest,
-            must_exist = ctx.attr.must_exist,
-        ),
-    )
-
-feature_remove_rule = rule(
-    implementation = feature_remove_rule_impl,
-    attrs = {
-        "dest": attr.string(),
-        "must_exist": attr.bool(),
-    },
-)
+load(":rules.bzl", "maybe_add_feature_rule")
 
 def feature_remove(dest, must_exist = True):
     """
@@ -45,11 +27,10 @@ though this can be avoided by setting `must_exist` to `False`.
         include_only_in_hash = {"must_exist": must_exist},
     )
 
-    if not native.rule_exists(target_name):
-        feature_remove_rule(
-            name = target_name,
-            dest = dest,
-            must_exist = must_exist,
-        )
+    feature_shape = shape.new(
+        remove_paths_t,
+        path = dest,
+        must_exist = must_exist,
+    )
 
-    return ":" + target_name
+    return maybe_add_feature_rule(target_name, "remove_paths", feature_shape)

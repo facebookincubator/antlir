@@ -6,26 +6,7 @@
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:symlink.shape.bzl", "symlink_t")
 load(":helpers.bzl", "generate_feature_target_name")
-load(":providers.bzl", "feature_provider")
-
-def feature_ensure_symlink_rule_impl(ctx: "context") -> ["provider"]:
-    return feature_provider(
-        ctx.attr.symlinks_to_arg,
-        shape.new(
-            symlink_t,
-            dest = ctx.attr.link_name,
-            source = ctx.attr.link_target,
-        ),
-    )
-
-feature_ensure_symlink_rule = rule(
-    implementation = feature_ensure_symlink_rule_impl,
-    attrs = {
-        "link_name": attr.string(),
-        "link_target": attr.string(),
-        "symlinks_to_arg": attr.string(),
-    },
-)
+load(":rules.bzl", "maybe_add_feature_rule")
 
 def feature_ensure_symlink(link_target, link_name, symlink_type):
     target_name = generate_feature_target_name(
@@ -36,15 +17,13 @@ def feature_ensure_symlink(link_target, link_name, symlink_type):
         },
     )
 
-    if not native.rule_exists(target_name):
-        feature_ensure_symlink_rule(
-            name = target_name,
-            link_name = link_name,
-            link_target = link_target,
-            symlinks_to_arg = symlink_type,
-        )
+    feature_shape = shape.new(
+        symlink_t,
+        dest = link_name,
+        source = link_target,
+    )
 
-    return ":" + target_name
+    return maybe_add_feature_rule(target_name, symlink_type, feature_shape)
 
 def feature_ensure_dir_symlink(link_target, link_name):
     """

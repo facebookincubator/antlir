@@ -4,10 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
-load(":providers.bzl", "FeatureInfo", "ItemInfo")
+load("//antlir/compiler/image/feature/buck2:providers.bzl", "FeatureInfo", "ItemInfo")
 
 def feature_new_rule_impl(ctx: "context") -> ["provider"]:
     inline_features = []
@@ -18,29 +17,7 @@ def feature_new_rule_impl(ctx: "context") -> ["provider"]:
         if feature[FeatureInfo]:
             inline_features += feature[FeatureInfo].inline_features
         else:
-            feature_dict = {
-                feature_key: [
-                    (
-                        shape.as_serializable_dict(f) if
-                        # Some features have been converted to `shape`.  To make
-                        # them serializable together with legacy features, we must
-                        # turn these shapes into JSON-ready dicts.
-                        #
-                        # Specifically, this transformation removes the private
-                        # `__shape__` field, and asserts that there are no
-                        # `shape.target()` fields -- shapes are not integrated with
-                        # target_tagger yet, so one has to explicitly target-tag the
-                        # stuff that goes into these shapes.
-                        #
-                        # Future: once we shapify all features, this explicit
-                        # conversion can be removed since shape serialization will
-                        # just do the right thing.
-                        shape.is_any_instance(f) else f
-                    )
-                    for f in features
-                ]
-                for feature_key, features in structs.to_dict(feature[ItemInfo].items).items()
-            }
+            feature_dict = structs.to_dict(feature[ItemInfo].items)
             feature_dict["target"] = ctx.attr.name
             inline_features.append(feature_dict)
 

@@ -3,8 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKRESTRICTEDSYNTAX
+
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@fbsource//tools/build_defs:type_defs.bzl", "type_utils")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 
 def _clean_arg_to_str(arg):
@@ -57,3 +62,23 @@ def generate_feature_target_name(name, include_in_name = None, include_only_in_h
             include_only_in_hash = include_only_in_hash_str,
         ),
     )
+
+def recursive_as_serializable_dict(val):
+    """
+    When `shape.as_serializable_dict` is used, nested shapes are converted to
+    structs instead of dicts, which causes issues when passing to the
+    `feature_shape` argument of feature_rule.
+    """
+
+    if type_utils.is_struct(val):
+        val = shape.as_serializable_dict(val) if shape.is_any_instance(val) else structs.to_dict(val)
+
+    elif type_utils.is_list(val) or type_utils.is_tuple(val):
+        val = [recursive_as_serializable_dict(item) for item in val]
+        if type_utils.is_tuple(val):
+            val = tuple(val)
+
+    if type_utils.is_dict(val):
+        val = {k: recursive_as_serializable_dict(v) for k, v in val.items()}
+
+    return val
