@@ -1,8 +1,9 @@
 # @noautodeps
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 export_file(
     name = "systemd_expectations.rs",
@@ -27,6 +28,20 @@ mock_run_fs_control = [
     image.ensure_dirs_exist("/test-control-subvol-addons"),
 ]
 
+# TODO(T123302276) it might be better to just pass the whole antlir config into
+# containers automatically, but that is more controversial and this quick hack
+# will make native service container tests work better right now
+buck_genrule(
+    name = "bind-antlir-dirs.conf",
+    cmd = """
+        echo '[Service]' > $OUT
+        {jq} < $(location //antlir:config.json) -r 'if .artifacts_require_repo == true then .host_mounts_for_repo_artifacts += [.repo_root] else . end | .host_mounts_for_repo_artifacts | .[] | "BindReadOnlyPaths=" + .' >> $OUT
+    """.format(
+        # @oss-disable: jq = "$(exe fbsource//tools/third-party/jq:jq)", 
+        # @oss-enable jq = "jq",
+    ),
+)
+
 test_features = [
     mock_run_fs_control,
     # Otherwise systemd-networkd will wait for a non-lo link that will never come
@@ -35,6 +50,10 @@ test_features = [
         "attestd2.service",  # no tpm
         "metalos-report-boot.service",  # no network
     ]),
+    feature.install(
+        ":bind-antlir-dirs.conf",
+        "/usr/lib/metalos/native-service/dropins/bind-antlir-dirs.conf",
+    ),
     # @oss-disable: "//metalos/os/tests/facebook:test-features", 
 ]
 

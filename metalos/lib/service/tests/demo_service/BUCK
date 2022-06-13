@@ -4,10 +4,6 @@ load("//metalos/bzl/service:service.bzl", "native_service")
 rust_binary(
     name = "demo-service",
     srcs = glob(["src/**/*.rs"]),
-    link_style = "static",
-    linker_flags = [
-        "-Wl,--strip-all",
-    ],
     unittests = False,
     deps = [
         "anyhow",
@@ -24,10 +20,5 @@ native_service(
     service_binary_path = "/usr/bin/demo",
     service_name = "metalos.service.demo",
     systemd_service_unit = "metalos.service.demo.service",
-    # When using feature.install_buck_runnable the original path
-    # of the binary is wrapped  by antlir to point to the repo... like so:
-    # exec "$REPO_ROOT/"/data/users/pallotron/fbsource/fbcode/buck-out/dev/gen/aab7ed39/metalos/lib/service/tests/demo_service/demo-service#binary/demo_service "$@"
-    # this breaks the unit tests because native service are sandboxed into the snapshotted root directory and they can't access that path.
-    use_install_buck_runnable = False,
     visibility = ["//metalos/lib/service/..."],
 )

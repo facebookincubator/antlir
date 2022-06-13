@@ -18,10 +18,6 @@ METALOS_PATH = "metalos"
 # - user and group are the unix groups
 # - visibility is a list of path that can use this macro, defaults to //metalos/... and //netos/...
 # - extra_features is used to personalise your layer
-# - use_install_buck_runnable: you should never need to change this, this is set to False in tests because the original binary is wrapped
-#   by a shell script that points to the binary in the FBCODE repo mounted into the image...
-#   This breaks native service tests because the systemd unit file is configured to sandbox the process into a new root directory, and the FBCODE
-#   path is not accessible.
 def native_service(
         name,
         service_name,
@@ -34,8 +30,7 @@ def native_service(
         generator_binary = None,
         extra_features = [],
         user_home_dir = None,
-        visibility = None,
-        use_install_buck_runnable = True):
+        visibility = None):
     if not service_binary_path:
         service_binary_path = "/usr/bin/{}".format(service_name)
 
@@ -53,16 +48,6 @@ def native_service(
     if user != "root":
         features.append(feature.setup_standard_user(user, group, user_home_dir))
 
-    install_binary_feature = feature.install_buck_runnable(
-        binary,
-        service_binary_path,
-        mode = "a+rx",
-    ) if use_install_buck_runnable else feature.install(
-        binary,
-        service_binary_path,
-        mode = "a+rx",
-    )
-
     features.extend([
         image.ensure_subdirs_exist(
             "/",
@@ -74,7 +59,11 @@ def native_service(
             # run as user different from root.
             mode = 0o0775,
         ),
-        install_binary_feature,
+        feature.install_buck_runnable(
+            binary,
+            service_binary_path,
+            mode = "a+rx",
+        ),
         feature.install(
             systemd_service_unit,
             "/{}/{}.service".format(METALOS_PATH, service_name),
