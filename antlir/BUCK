@@ -691,6 +691,12 @@ python_binary(
     deps = [":config"],
 )
 
+buck_genrule(
+    name = "config.json",
+    out = "config.json",
+    cmd = "$(exe :print-config) > $OUT",
+)
+
 rust_binary(
     name = "repo-root",
     srcs = ["repo_root.rs"],
