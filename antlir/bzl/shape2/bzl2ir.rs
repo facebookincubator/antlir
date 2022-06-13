@@ -165,7 +165,7 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> Result<&'a TypeRegistryRefCell>
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
-        kwargs: DictOf<'v, &'v str, Value<'v>>,
+        #[starlark(kwargs)] kwargs: DictOf<'v, &'v str, Value<'v>>,
         eval: &mut Evaluator<'v, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
@@ -192,7 +192,10 @@ fn shape(builder: &mut GlobalsBuilder) {
             .map(StarlarkType)
     }
 
-    fn r#enum<'v>(args: Value<'v>, eval: &mut Evaluator<'v, '_>) -> anyhow::Result<TypeId> {
+    fn r#enum<'v>(
+        #[starlark(args)] args: Value<'v>,
+        eval: &mut Evaluator<'v, '_>,
+    ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let options = args
             .iterate_collect(eval.heap())
@@ -235,7 +238,7 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn new<'v>(
         _shape: Value<'v>,
-        kwargs: DictOf<'v, StringValue<'v>, Value<'v>>,
+        #[starlark(kwargs)] kwargs: DictOf<'v, StringValue<'v>, Value<'v>>,
     ) -> anyhow::Result<StructGen<'v, Value<'v>>> {
         // no need to type-check, since it will already be done at buck parse
         // time, and will also be done when loading the json
@@ -260,7 +263,10 @@ fn shape(builder: &mut GlobalsBuilder) {
         })))
     }
 
-    fn tuple<'v>(args: Value<'v>, eval: &mut Evaluator<'v, '_>) -> anyhow::Result<StarlarkType> {
+    fn tuple<'v>(
+        #[starlark(args)] args: Value<'v>,
+        eval: &mut Evaluator<'v, '_>,
+    ) -> anyhow::Result<StarlarkType> {
         let reg = get_type_registry(eval)?.try_borrow()?;
         let item_types = args
             .iterate_collect(eval.heap())?
@@ -274,7 +280,10 @@ fn shape(builder: &mut GlobalsBuilder) {
         Ok(StarlarkType(Rc::new(ir::Type::Tuple { item_types })))
     }
 
-    fn union<'v>(args: Value<'v>, eval: &mut Evaluator<'v, '_>) -> anyhow::Result<TypeId> {
+    fn union<'v>(
+        #[starlark(args)] args: Value<'v>,
+        eval: &mut Evaluator<'v, '_>,
+    ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let types = args
             .iterate_collect(eval.heap())?
