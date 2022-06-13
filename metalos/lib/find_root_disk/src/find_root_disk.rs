@@ -181,7 +181,7 @@ impl FindRootDisk for SerialDiskFinder {
         let mut seen = Vec::new();
         for device in devices {
             if let Some(serial) = Self::get_serial(&device)? {
-                if serial == self.serial {
+                if serial.trim() == self.serial.trim() {
                     return Ok(device);
                 }
                 seen.push(serial.to_string());
