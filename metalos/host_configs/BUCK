@@ -75,6 +75,7 @@ thrift_library(
         "//metalos/host_configs/facebook/metald/...",
         # this is a config provider for corp
         # @oss-disable: "//ee_provisioning/corp_config_provider/...", 
+        # @oss-disable: "//netos/...", 
     ],
     deps = [
         "//common/fb303/if:fb303",
