@@ -458,7 +458,7 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
         cmd = """
             $(exe {}) {} $(location :{}.bzl) {} > $OUT
         """.format(
-            antlir_dep("bzl/shape2:bzl2ir"),
+            antlir_dep("bzl/shape2:bzl2ir.rc"),
             normalize_target(":" + name),
             name,
             shell.quote(repr({d: "$(location {})".format(d) for d in deps})),

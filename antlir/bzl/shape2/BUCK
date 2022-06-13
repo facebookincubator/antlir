@@ -15,8 +15,9 @@ rust_library(
 )
 
 rust_binary(
-    name = "bzl2ir",
+    name = "bzl2ir.rc",
     srcs = ["bzl2ir.rs"],
+    crate = "bzl2ir",
     test_deps = third_party.libraries(
         ["maplit"],
         platform = "rust",
