@@ -1,5 +1,4 @@
-# @noautodeps
-
+load("@fbcode_macros//build_defs:rust_python_extension.bzl", "rust_python_extension")
 load("//metalos:defs.bzl", "rust_library")
 
 rust_library(
@@ -12,5 +11,20 @@ rust_library(
     deps = [
         "anyhow",
         "//metalos/lib/disk:metalos_disk",
+    ],
+)
+
+rust_python_extension(
+    name = "disk_wipe_py",
+    srcs = ["src/disk_wipe_py.rs"],
+    crate_root = "src/disk_wipe_py.rs",
+    types = ["disk_wipe_py.pyi"],
+    deps = [
+        "fbsource//third-party/rust:cpython",
+        ":disk_wipe",
+        "//metalos/lib/disk:metalos_disk",
+    ],
+    external_deps = [
+        ("python", None, "python"),
     ],
 )
