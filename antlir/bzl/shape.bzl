@@ -753,8 +753,17 @@ def _python_data(
 # Converts a shape to a dict, as you would expected (field names are keys,
 # values are scalars & collections as in the shape -- and nested shapes are
 # also dicts).
-def _as_serializable_dict(instance):
-    return structs.to_dict(_safe_to_serialize_instance(instance))
+def _as_serializable_dict(val):
+    if structs.is_struct(val):
+        val = structs.to_dict(
+            _safe_to_serialize_instance(val) if _is_any_instance(val) else val,
+        )
+    if types.is_dict(val):
+        val = {k: _as_serializable_dict(v) for k, v in val.items()}
+    if types.is_list(val):
+        val = [_as_serializable_dict(item) for item in val]
+
+    return val
 
 # Do not use this outside of `target_tagger.bzl`.  Eventually, target tagger
 # should be replaced by shape, so this is meant as a temporary shim.
