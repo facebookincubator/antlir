@@ -1,7 +1,7 @@
 # @noautodeps
 
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
@@ -31,15 +31,16 @@ mock_run_fs_control = [
 # TODO(T123302276) it might be better to just pass the whole antlir config into
 # containers automatically, but that is more controversial and this quick hack
 # will make native service container tests work better right now
+python_binary(
+    name = "gen-bind-antlir-dirs",
+    srcs = ["gen_bind_antlir_dirs.py"],
+    main_module = "metalos.os.tests.gen_bind_antlir_dirs",
+    deps = ["//antlir:config"],
+)
+
 buck_genrule(
     name = "bind-antlir-dirs.conf",
-    cmd = """
-        echo '[Service]' > $OUT
-        {jq} < $(location //antlir:config.json) -r 'if .artifacts_require_repo == true then .host_mounts_for_repo_artifacts += [.repo_root] else . end | .host_mounts_for_repo_artifacts | .[] | "BindReadOnlyPaths=" + .' >> $OUT
-    """.format(
-        # @oss-disable: jq = "$(exe fbsource//tools/third-party/jq:jq)", 
-        # @oss-enable jq = "jq",
-    ),
+    cmd = "$(exe :gen-bind-antlir-dirs) > $OUT",
 )
 
 test_features = [
