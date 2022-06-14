@@ -18,9 +18,15 @@ struct BootConfig {
   2: packages.Package rootfs;
   3: Kernel kernel;
   4: packages.Package initrd;
+  5: optional Bootloader bootloader;
 } (rust.exhaustive)
 
 struct Kernel {
+  1: packages.Package pkg;
+  2: string cmdline;
+} (rust.exhaustive)
+
+struct Bootloader {
   1: packages.Package pkg;
   2: string cmdline;
 } (rust.exhaustive)

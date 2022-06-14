@@ -101,6 +101,7 @@ subvol_package!(packages::Service);
 file_package!(packages::Initrd);
 file_package!(packages::ImagingInitrd);
 file_package!(packages::GptRootDisk);
+file_package!(packages::Bootloader);
 
 /// Make sure that a given package is on disk, downloading it if it is not
 /// already locally available.

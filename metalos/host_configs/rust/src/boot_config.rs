@@ -18,6 +18,7 @@ pub struct BootConfig {
     pub rootfs: packages::Rootfs,
     pub kernel: Kernel,
     pub initrd: packages::Initrd,
+    pub bootloader: Option<Bootloader>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
@@ -42,4 +43,11 @@ impl Kernel {
     pub fn modules(&self) -> Option<PathBuf> {
         self.pkg.file_in_image("modules")
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::boot_config::Bootloader)]
+pub struct Bootloader {
+    pub pkg: packages::Bootloader,
+    pub cmdline: String,
 }

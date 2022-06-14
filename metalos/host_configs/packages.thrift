@@ -46,6 +46,7 @@ enum Kind {
   SERVICE = 5,
   SERVICE_CONFIG_GENERATOR = 6,
   GPT_ROOT_DISK = 7,
+  BOOTLOADER = 8,
 }
 
 enum Format {

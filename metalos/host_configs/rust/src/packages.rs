@@ -243,6 +243,7 @@ package_kind_param!(
     SERVICE_CONFIG_GENERATOR
 );
 package_kind_param!(GptRootDisk, GptRootDiskKind, GPT_ROOT_DISK);
+package_kind_param!(Bootloader, BootloaderKind, BOOTLOADER);
 
 // Some package kinds have some extra data that we can use, so expose it nicely
 // via the `Package<K>` structs
