@@ -5,7 +5,6 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
-load(":helpers.bzl", "generate_feature_target_name")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 SHELL_BASH = "/bin/bash"
@@ -49,31 +48,21 @@ user's initial login group or home directory.
 - `home_dir` should exist, but this item does not ensure/depend on it to avoid
     a circular dependency on directory's owner user.
     """
-    target_name = generate_feature_target_name(
+    return maybe_add_feature_rule(
         name = "user_add",
-        include_in_name = {"username": username},
-        include_only_in_hash = {
-            "comment": comment,
-            "home_dir": home_dir,
-            "primary_group": primary_group,
-            "shell": shell,
-            "supplementary_groups": supplementary_groups,
-            "uid": uid,
-        },
+        key = "users",
+        include_in_target_name = {"username": username},
+        shape = shape.new(
+            user_t,
+            name = username,
+            id = uid,
+            primary_group = primary_group,
+            supplementary_groups = supplementary_groups or [],
+            shell = shell,
+            home_dir = home_dir,
+            comment = comment,
+        ),
     )
-
-    feature_shape = shape.new(
-        user_t,
-        name = username,
-        id = uid,
-        primary_group = primary_group,
-        supplementary_groups = supplementary_groups or [],
-        shell = shell,
-        home_dir = home_dir,
-        comment = comment,
-    )
-
-    return maybe_add_feature_rule(target_name, "users", feature_shape)
 
 def feature_group_add(groupname, gid = None):
     """
@@ -87,18 +76,15 @@ specifying GID unless absolutely necessary.
 It is also recommended to always reference groupnames and not GIDs; since GIDs
 are auto-assigned, they may change if underlying layers add/remove groups.
     """
-    target_name = generate_feature_target_name(
+    return maybe_add_feature_rule(
         name = "group_add",
-        include_in_name = {
-            "gid": gid,
+        key = "groups",
+        include_in_target_name = {
             "groupname": groupname,
         },
+        shape = shape.new(
+            group_t,
+            name = groupname,
+            id = gid,
+        ),
     )
-
-    feature_shape = shape.new(
-        group_t,
-        name = groupname,
-        id = gid,
-    )
-
-    return maybe_add_feature_rule(target_name, "groups", feature_shape)

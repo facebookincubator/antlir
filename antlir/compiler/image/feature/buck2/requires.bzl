@@ -5,7 +5,6 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:requires.shape.bzl", "requires_t")
-load(":helpers.bzl", "generate_feature_target_name")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 def feature_requires(
@@ -25,20 +24,17 @@ that generates systemd units that run as a specific user, where
 `feature.requires` can be used for additional compile-time safety that the user,
 groups or files do indeed exist.
 """
-    target_name = generate_feature_target_name(
+    return maybe_add_feature_rule(
         name = "requires",
-        include_in_name = {
+        include_in_target_name = {
             "files": files,
             "groups": groups,
             "users": users,
         },
+        shape = shape.new(
+            requires_t,
+            users = users,
+            groups = groups,
+            files = files,
+        ),
     )
-
-    feature_shape = shape.new(
-        requires_t,
-        users = users,
-        groups = groups,
-        files = files,
-    )
-
-    return maybe_add_feature_rule(target_name, "requires", feature_shape)

@@ -7,7 +7,6 @@ load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
-load(":helpers.bzl", "generate_feature_target_name")
 load(":image_source.shape.bzl", "image_source_t")
 load(":install.shape.bzl", "install_files_t")
 load(":rules.bzl", "maybe_add_feature_rule")
@@ -60,26 +59,21 @@ directories in `dest`. `user` and `group` can be integers or symbolic strings.
 In the latter case, the passwd/group database from the host (not from the
 image) is used. The default for `user` and `group` is `root`.
     """
-    target_name = generate_feature_target_name(
+    normalized_source = normalize_target(source)
+
+    return maybe_add_feature_rule(
         name = "install",
-        include_in_name = {
+        key = "install_files",
+        include_in_target_name = {
             "dest": dest,
             "source": source,
         },
-        include_only_in_hash = {
-            "group": group,
-            "mode": mode,
-            "user": user,
-        },
-    )
-
-    source = normalize_target(source)
-
-    feature_shape = _generate_install_shape(source, dest, mode, user, group)
-
-    return maybe_add_feature_rule(
-        target_name,
-        "install_files",
-        feature_shape,
-        deps = [source],
+        shape = _generate_install_shape(
+            normalized_source,
+            dest,
+            mode,
+            user,
+            group,
+        ),
+        deps = [normalized_source],
     )

@@ -5,25 +5,22 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:symlink.shape.bzl", "symlink_t")
-load(":helpers.bzl", "generate_feature_target_name")
 load(":rules.bzl", "maybe_add_feature_rule")
 
-def feature_ensure_symlink(link_target, link_name, symlink_type):
-    target_name = generate_feature_target_name(
-        name = symlink_type,
-        include_in_name = {
+def feature_ensure_symlink(link_target, link_name, key):
+    return maybe_add_feature_rule(
+        name = "symlink",
+        key = key,
+        include_in_target_name = {
             "link_name": link_name,
             "link_target": link_target,
         },
+        shape = shape.new(
+            symlink_t,
+            dest = link_name,
+            source = link_target,
+        ),
     )
-
-    feature_shape = shape.new(
-        symlink_t,
-        dest = link_name,
-        source = link_target,
-    )
-
-    return maybe_add_feature_rule(target_name, symlink_type, feature_shape)
 
 def feature_ensure_dir_symlink(link_target, link_name):
     """
