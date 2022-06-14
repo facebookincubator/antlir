@@ -5,15 +5,22 @@
 
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
-load("//antlir/compiler/image/feature/buck2:providers.bzl", "FeatureInfo", "ItemInfo")
+load(
+    "//antlir/bzl/image/feature:new.bzl",
+    "PRIVATE_DO_NOT_USE_feature_target_name",
+)
+load(
+    "//antlir/compiler/image/feature/buck2:providers.bzl",
+    "FeatureInfo",
+    "ItemInfo",
+)
 
-def feature_new_rule_impl(ctx: "context") -> ["provider"]:
+def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
     inline_features = []
     for feature in ctx.attr.features:
-        # If `feature[FeatureInfo]` exists, then `feature` was generated using the
-        # `feature_new` macro and the `inline_features` of that feature are appended
-        # onto this feature's `inline_features`.
+        # If `feature[FeatureInfo]` exists, then `feature` was generated using
+        # the `feature_new` macro and the `inline_features` of that feature are
+        # appended onto this feature's `inline_features`.
         if feature[FeatureInfo]:
             inline_features += feature[FeatureInfo].inline_features
         else:
@@ -36,8 +43,8 @@ def feature_new_rule_impl(ctx: "context") -> ["provider"]:
         ),
     ]
 
-feature_new_rule = rule(
-    implementation = feature_new_rule_impl,
+_feature_new_rule = rule(
+    implementation = _feature_new_rule_impl,
     attrs = {
         "features": attr.list(attr.dep(), default = []),
     },
@@ -75,7 +82,7 @@ def feature_new(
     ]
 
     if not native.rule_exists(target_name):
-        feature_new_rule(
+        _feature_new_rule(
             name = target_name,
             features = features,
         )

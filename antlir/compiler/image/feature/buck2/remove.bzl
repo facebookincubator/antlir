@@ -9,16 +9,16 @@ load(":rules.bzl", "maybe_add_feature_rule")
 
 def feature_remove(dest, must_exist = True):
     """
-`feature.remove("/a/b")` recursively removes the file or directory `/a/b` --
+    `feature.remove("/a/b")` recursively removes the file or directory `/a/b` --
 
-These are allowed to remove paths inherited from the parent layer, or those
-installed by RPMs even in this layer. However, removing other items
-explicitly added by the current layer is not allowed since that seems like a
-design smell -- you should probably refactor the constituent image features
-not to conflict with each other.
+    These are allowed to remove paths inherited from the parent layer, or those
+    installed by RPMs even in this layer. However, removing other items
+    explicitly added by the current layer is not allowed since that seems like a
+    design smell -- you should probably refactor the constituent image features
+    not to conflict with each other.
 
-By default, it is an error if the specified path is missing from the image,
-though this can be avoided by setting `must_exist` to `False`.
+    By default, it is an error if the specified path is missing from the image,
+    though this can be avoided by setting `must_exist` to `False`.
     """
     return maybe_add_feature_rule(
         name = "remove",

@@ -7,14 +7,14 @@ load("//antlir/bzl:shape.bzl", "shape")
 load(":helpers.bzl", "generate_feature_target_name")
 load(":providers.bzl", "feature_provider")
 
-def feature_rule_impl(ctx: "context") -> ["provider"]:
+def _feature_rule_impl(ctx: "context") -> ["provider"]:
     return feature_provider(
         ctx.attr.key,
         ctx.attr.shape,
     )
 
-feature_rule = rule(
-    implementation = feature_rule_impl,
+_feature_rule = rule(
+    implementation = _feature_rule_impl,
     attrs = {
         "deps": attr.list(attr.dep(), default = []),
 
@@ -47,7 +47,7 @@ def maybe_add_feature_rule(
     )
 
     if not native.rule_exists(target_name):
-        feature_rule(
+        _feature_rule(
             name = target_name,
             key = key,
             shape = shape.as_serializable_dict(feature_shape),
