@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":helpers.bzl", "recursive_as_serializable_dict")
+load(":helpers.bzl", "generate_feature_target_name", "recursive_as_serializable_dict")
 load(":providers.bzl", "feature_provider")
 
 def feature_rule_impl(ctx: "context") -> ["provider"]:
@@ -29,8 +29,17 @@ feature_rule = rule(
     },
 )
 
-def maybe_add_feature_rule(target_name, key, shape, deps = []):
-    # TODO: generate target name from shape in this function
+def maybe_add_feature_rule(name, include_in_target_name, shape, key = None, deps = []):
+    # if `key` is not provided, then it is assumed that `key` is same as `name`
+    key = key or name
+
+    target_name = generate_feature_target_name(
+        name = name,
+        key = key,
+        feature_shape = shape,
+        include_in_name = include_in_target_name,
+    )
+
     if not native.rule_exists(target_name):
         feature_rule(
             name = target_name,

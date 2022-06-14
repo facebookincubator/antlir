@@ -5,7 +5,6 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
-load(":helpers.bzl", "generate_feature_target_name")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 def feature_remove(dest, must_exist = True):
@@ -21,16 +20,13 @@ not to conflict with each other.
 By default, it is an error if the specified path is missing from the image,
 though this can be avoided by setting `must_exist` to `False`.
     """
-    target_name = generate_feature_target_name(
+    return maybe_add_feature_rule(
         name = "remove",
-        include_in_name = {"dest": dest},
-        include_only_in_hash = {"must_exist": must_exist},
+        key = "remove_paths",
+        include_in_target_name = {"dest": dest},
+        shape = shape.new(
+            remove_paths_t,
+            path = dest,
+            must_exist = must_exist,
+        ),
     )
-
-    feature_shape = shape.new(
-        remove_paths_t,
-        path = dest,
-        must_exist = must_exist,
-    )
-
-    return maybe_add_feature_rule(target_name, "remove_paths", feature_shape)
