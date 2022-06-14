@@ -24,7 +24,7 @@ though this can be avoided by setting `must_exist` to `False`.
         name = "remove",
         key = "remove_paths",
         include_in_target_name = {"dest": dest},
-        shape = shape.new(
+        feature_shape = shape.new(
             remove_paths_t,
             path = dest,
             must_exist = must_exist,

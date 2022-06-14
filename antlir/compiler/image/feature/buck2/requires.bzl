@@ -31,7 +31,7 @@ groups or files do indeed exist.
             "groups": groups,
             "users": users,
         },
-        shape = shape.new(
+        feature_shape = shape.new(
             requires_t,
             users = users,
             groups = groups,

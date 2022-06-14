@@ -52,7 +52,7 @@ user's initial login group or home directory.
         name = "user_add",
         key = "users",
         include_in_target_name = {"username": username},
-        shape = shape.new(
+        feature_shape = shape.new(
             user_t,
             name = username,
             id = uid,
@@ -82,7 +82,7 @@ are auto-assigned, they may change if underlying layers add/remove groups.
         include_in_target_name = {
             "groupname": groupname,
         },
-        shape = shape.new(
+        feature_shape = shape.new(
             group_t,
             name = groupname,
             id = gid,
