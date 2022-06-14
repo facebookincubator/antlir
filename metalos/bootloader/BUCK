@@ -62,7 +62,7 @@ KERNEL = kernels.default
 
 image.layer(
     name = "initrd",
-    parent_layer = "//metalos/initrd:bare-systemd",
+    parent_layer = "//metalos/initrd:initrd-common",
     features = [
         extract.extract(
             source = ":with-metalos-bootloader",
@@ -71,7 +71,10 @@ image.layer(
         systemd.install_unit("metalos-bootloader.service"),
         feature.remove("/usr/lib/systemd/system/initrd.target"),
         systemd.install_unit("metalos-bootloader.target"),
-        systemd.set_default_target("metalos-bootloader.target"),
+        systemd.set_default_target(
+            "metalos-bootloader.target",
+            force = True,
+        ),
         feature.remove("/usr/lib/initrd-release"),
         linux.release.install(
             path = "/usr/lib/os-release",
