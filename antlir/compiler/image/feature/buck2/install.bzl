@@ -68,7 +68,7 @@ image) is used. The default for `user` and `group` is `root`.
             "dest": dest,
             "source": source,
         },
-        shape = _generate_install_shape(
+        feature_shape = _generate_install_shape(
             normalized_source,
             dest,
             mode,

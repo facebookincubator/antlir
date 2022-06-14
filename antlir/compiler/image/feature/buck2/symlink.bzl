@@ -15,7 +15,7 @@ def feature_ensure_symlink(link_target, link_name, key):
             "link_name": link_name,
             "link_target": link_target,
         },
-        shape = shape.new(
+        feature_shape = shape.new(
             symlink_t,
             dest = link_name,
             source = link_target,
