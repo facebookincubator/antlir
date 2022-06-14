@@ -62,7 +62,6 @@ image.layer(
         # process that ends up leaving udev rules unprocessed in the
         # post-switch-root root fs.
         systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
-        systemd.enable_unit("sshd.service", "core-services.target"),
         systemd.install_dropin(
             "require-sshd-keygen.service",
             "sshd.service",
