@@ -7,8 +7,16 @@ load("//antlir/compiler/image/feature/buck2:install.bzl", "feature_install")
 load("//antlir/compiler/image/feature/buck2:new.bzl", "feature_new")
 load("//antlir/compiler/image/feature/buck2:remove.bzl", "feature_remove")
 load("//antlir/compiler/image/feature/buck2:requires.bzl", "feature_requires")
-load("//antlir/compiler/image/feature/buck2:symlink.bzl", "feature_ensure_dir_symlink", "feature_ensure_file_symlink")
-load("//antlir/compiler/image/feature/buck2:usergroup.bzl", "feature_group_add", "feature_user_add")
+load(
+    "//antlir/compiler/image/feature/buck2:symlink.bzl",
+    "feature_ensure_dir_symlink",
+    "feature_ensure_file_symlink",
+)
+load(
+    "//antlir/compiler/image/feature/buck2:usergroup.bzl",
+    "feature_group_add",
+    "feature_user_add",
+)
 
 feature = struct(
     install = feature_install,
@@ -20,6 +28,3 @@ feature = struct(
     group_add = feature_group_add,
     user_add = feature_user_add,
 )
-
-# Remove when buck1 features aren't needed
-feature_buck2 = feature

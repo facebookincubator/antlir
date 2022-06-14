@@ -8,19 +8,28 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
+load(
+    "//antlir/bzl/image/feature:new.bzl",
+    "PRIVATE_DO_NOT_USE_feature_target_name",
+)
 
 def _clean_arg_to_str(arg):
-    valid_target_chars = sets.make(("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-                                    "abcdefghijklmnopqrstuvwxyz" +
-                                    "0123456789" +
-                                    "_,.=-\\/~@!+$").split(""))
+    valid_target_chars = sets.make(
+        (
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+            "abcdefghijklmnopqrstuvwxyz" +
+            "0123456789" +
+            "_,.=-\\/~@!+$"
+        ).split(""),
+    )
 
-    return "".join([
-        char
-        for char in str(arg).split("")
-        if sets.contains(valid_target_chars, char)
-    ])
+    return "".join(
+        [
+            char
+            for char in str(arg).split("")
+            if sets.contains(valid_target_chars, char)
+        ],
+    )
 
 def generate_feature_target_name(
         name,
@@ -33,23 +42,29 @@ def generate_feature_target_name(
     - `name`: type of feature
     - `feature_shape`: feature shape generated in `feature_{name}`
     - `include_in_name`: feature arguments that are wanted in their original
-    form (perhaps for debugging purposes).
+        form (perhaps for debugging purposes).
     """
 
     if include_in_name:
         # only include collections if they are not empty in name
-        include_in_name = sorted(filter(
-            lambda x: x[1],
-            include_in_name.items(),
-        ))
-
-    include_in_name_str = "".join([
-        "{arg_name}_{arg}_".format(
-            arg_name = arg_name.upper(),
-            arg = _clean_arg_to_str(arg),
+        include_in_name = sorted(
+            filter(
+                lambda x: x[1],
+                include_in_name.items(),
+            ),
         )
-        for arg_name, arg in include_in_name
-    ])[:-1] if include_in_name else ""
+
+    include_in_name_str = (
+        "".join(
+            [
+                "{arg_name}_{arg}_".format(
+                    arg_name = arg_name.upper(),
+                    arg = _clean_arg_to_str(arg),
+                )
+                for arg_name, arg in include_in_name
+            ],
+        )[:-1] if include_in_name else ""
+    )
 
     shape_hash = sha256_b64(shape.do_not_cache_me_json(feature_shape))
 
@@ -100,15 +115,22 @@ def _self_test():
         },
     )
 
-    test_1_answer = "antlir_feature__foo__KEY_key1__BAR_baz__bINw2KkLqCDPdHGk1Zq3xcFnfHpglxM_H4v2UxBoj80_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
-    test_2_answer = "antlir_feature__bar__KEY_key2____FlaeIVArr0LvDeMArSqZ3MVXyWViBveI7_Eh2auc2MY_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
+    test_1_answer = (
+        "antlir_feature__foo__KEY_key1__BAR_baz__" +
+        "bINw2KkLqCDPdHGk1Zq3xcFnfHpglxM_H4v2UxBoj80" +
+        "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
+    )
+    test_2_answer = (
+        "antlir_feature__bar__KEY_key2____" +
+        "FlaeIVArr0LvDeMArSqZ3MVXyWViBveI7_Eh2auc2MY" +
+        "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
+    )
 
-    if (
-        test_1 != test_1_answer or
-        test_2 != test_2_answer
-    ):
-        fail("{function} failed test".format(
-            function = "generate_feature_target_name",
-        ))
+    if test_1 != test_1_answer or test_2 != test_2_answer:
+        fail(
+            "{function} failed test".format(
+                function = "generate_feature_target_name",
+            ),
+        )
 
 _self_test()

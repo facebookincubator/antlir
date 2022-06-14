@@ -19,34 +19,34 @@ def feature_user_add(
         supplementary_groups = None,
         comment = None):
     """
-`feature.user_add` adds a user entry to /etc/passwd.
+    `feature.user_add` adds a user entry to /etc/passwd.
 
-Example usage:
+    Example usage:
 
-```
-feature.group_add("myuser")
-feature.user_add(
-    "myuser",
-    primary_group = "myuser",
-    home_dir = "/home/myuser",
-)
-image.ensure_dirs_exist(
-    "/home/myuser",
-    mode = 0o755,
-    user = "myuser",
-    group = "myuser",
-)
-```
+    ```
+    feature.group_add("myuser")
+    feature.user_add(
+        "myuser",
+        primary_group = "myuser",
+        home_dir = "/home/myuser",
+    )
+    image.ensure_dirs_exist(
+        "/home/myuser",
+        mode = 0o755,
+        user = "myuser",
+        group = "myuser",
+    )
+    ```
 
-Unlike shadow-utils `useradd`, this item does not automatically create the new
-user's initial login group or home directory.
+    Unlike shadow-utils `useradd`, this item does not automatically create the
+    new user's initial login group or home directory.
 
-- If `username` or `uid` conflicts with existing entries, image build will
-    fail. It is recommended to avoid specifying UID unless absolutely
-    necessary.
-- `primary_group` and `supplementary_groups` are specified as groupnames.
-- `home_dir` should exist, but this item does not ensure/depend on it to avoid
-    a circular dependency on directory's owner user.
+    - If `username` or `uid` conflicts with existing entries, image build will
+        fail. It is recommended to avoid specifying UID unless absolutely
+        necessary.
+    - `primary_group` and `supplementary_groups` are specified as groupnames.
+    - `home_dir` should exist, but this item does not ensure/depend on it to
+        avoid a circular dependency on directory's owner user.
     """
     return maybe_add_feature_rule(
         name = "user_add",
@@ -66,15 +66,16 @@ user's initial login group or home directory.
 
 def feature_group_add(groupname, gid = None):
     """
-`feature.group_add("leet")` adds a group `leet` with an auto-assigned group ID.
-`feature.group_add("leet", 1337)` adds a group `leet` with GID 1337.
+    `feature.group_add("leet")` adds a group `leet` with an auto-assigned group
+    ID. `feature.group_add("leet", 1337)` adds a group `leet` with GID 1337.
 
-Group add semantics generally follow `groupadd`. If groupname or GID conflicts
-with existing entries, image build will fail. It is recommended to avoid
-specifying GID unless absolutely necessary.
+    Group add semantics generally follow `groupadd`. If groupname or GID
+    conflicts with existing entries, image build will fail. It is recommended to
+    avoid specifying GID unless absolutely necessary.
 
-It is also recommended to always reference groupnames and not GIDs; since GIDs
-are auto-assigned, they may change if underlying layers add/remove groups.
+    It is also recommended to always reference groupnames and not GIDs; since
+    GIDs are auto-assigned, they may change if underlying layers add/remove
+    groups.
     """
     return maybe_add_feature_rule(
         name = "group_add",
