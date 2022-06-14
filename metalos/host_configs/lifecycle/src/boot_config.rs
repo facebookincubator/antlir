@@ -22,8 +22,13 @@ impl StagableConfig for BootConfig {
             rootfs,
             kernel,
             initrd,
+            bootloader,
         } = self.clone();
-        vec![rootfs.into(), kernel.pkg.into(), initrd.into()]
+        let mut pkgs = vec![rootfs.into(), kernel.pkg.into(), initrd.into()];
+        if let Some(b) = bootloader {
+            pkgs.push(b.pkg.into());
+        }
+        pkgs
     }
 
     fn check_downloaded_artifacts(&self) -> anyhow::Result<()> {
