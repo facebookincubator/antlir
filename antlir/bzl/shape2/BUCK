@@ -22,7 +22,8 @@ rust_binary(
         ["maplit"],
         platform = "rust",
     ),
-    visibility = ["PUBLIC"],
+    # @oss-disable: visibility = [], 
+    # @oss-enable visibility = ["PUBLIC"],
     deps = [":ir"] +
            third_party.libraries(
                [
