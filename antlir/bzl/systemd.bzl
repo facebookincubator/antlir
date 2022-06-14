@@ -272,11 +272,21 @@ def _install_dropin(
 
 def _set_default_target(
         # An existing systemd target to be set as the default
-        target):
-    return feature.ensure_file_symlink(
-        paths.join(PROVIDER_ROOT, target),
-        paths.join(PROVIDER_ROOT, "default.target"),
-    )
+        target,
+        # Delete any default target that may already exist
+        force = False):
+    features = [
+        feature.ensure_file_symlink(
+            paths.join(PROVIDER_ROOT, target),
+            paths.join(PROVIDER_ROOT, "default.target"),
+        ),
+    ]
+    if force:
+        features.append(feature.remove(
+            paths.join(PROVIDER_ROOT, "default.target"),
+            must_exist = False,
+        ))
+    return features
 
 def _alias(unit, alias):
     return feature.ensure_file_symlink(
