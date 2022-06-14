@@ -297,13 +297,30 @@ class TestShapeBzl(unittest.TestCase):
         self.assertEqual({"x": "a", "y": i.y}, shape.as_dict_shallow(i))
 
     def test_as_serializable_dict(self) -> None:
-        t = shape.shape(x=str, y=shape.shape(z=shape.field(int, optional=True)))
+        s = shape.shape(z=shape.field(int, optional=True))
+        t = shape.shape(
+            x=str,
+            y=shape.shape(z=shape.field(int, optional=True)),
+            lst=shape.list(s),
+            tup=shape.tuple(s, s),
+        )
         # Cover the `t.optional and val == None`, and the `val` is set branches
         for z in [3, None]:
             self.assertEqual(
-                {"x": "a", "y": {"z": z}},
+                {
+                    "x": "a",
+                    "y": {"z": z},
+                    "lst": [{"z": z}, {"z": 1}],
+                    "tup": [{"z": 2}, {"z": z}],
+                },
                 shape.as_serializable_dict(
-                    shape.new(t, x="a", y=shape.new(t.y, z=z)),
+                    shape.new(
+                        t,
+                        x="a",
+                        y=shape.new(t.y, z=z),
+                        lst=[shape.new(s, z=z), shape.new(s, z=1)],
+                        tup=(shape.new(s, z=2), shape.new(s, z=z)),
+                    )
                 ),
             )
 
