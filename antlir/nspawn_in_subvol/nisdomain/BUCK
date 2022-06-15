@@ -1,52 +1,46 @@
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "setup",
     parent_layer = flavor_helpers.default_flavor_build_appliance,
     features = [
-        image.ensure_subdirs_exist("/", "build"),
-        feature.install("nis_domainname.c", "/build/nis_domainname.c"),
-        # We could move `glibc-static` to the base BA, but `hostname` is
-        # here just for the our self-tests.
         image.rpms_install([
-            "glibc-static",
             "hostname",
         ]),
     ],
 )
 
-image.genrule_layer(
-    name = "build",
-    # Keep this in sync with the `cc` call in `TARGETS`.
-    cmd = [
-        "bash",
-        "-c",
-        """\
-# Drive-by test: make sure that `domainname` is not special in build steps
-[[ `domainname` == "AntlirNotABuildStep" ]] && echo "
-ASSERTION FAILURE: Build steps must not set NIS domain to AntlirNotABuildStep.
-" >&2 && exit 1
-
-gcc -static -Os -o /build/nis_domainname /build/nis_domainname.c
-strip /build/nis_domainname
-""",
-    ],
-    parent_layer = ":setup",
-    rule_type = "build_antlir_nis_domainname",
-    # FIXME: `nobody` in the BA is not what we expect, use `root` for now
-    user = "root",
-    antlir_rule = "user-internal",
+rust_binary(
+    name = "nis_domainname",
+    srcs = ["nis_domainname.rs"],
+    allocator = "malloc",
+    link_style = "static",
+    nodefaultlibs = True,
+    unittests = False,
+    visibility = ["PUBLIC"],
+    deps = third_party.libraries(
+        [
+            "nix",
+            "clap",
+        ],
+        platform = "rust",
+    ),
 )
 
-hoist(
-    name = "nis_domainname",
-    layer = ":build",
-    path = "/build/nis_domainname",
-    # All =container targets take a direct dep on this.
-    visibility = ["PUBLIC"],
+image.layer(
+    name = "test-layer",
+    parent_layer = ":setup",
+    features = [
+        image.ensure_dirs_exist("/build"),
+        feature.install(
+            ":nis_domainname",
+            "/build/nis_domainname",
+            mode = "a+rx",
+        ),
+    ],
 )
 
 # Exercise both the "booted" and "unbooted" code paths, they differ slightly
@@ -54,7 +48,7 @@ hoist(
     image.python_unittest(
         name = "test-nis-domainname-" + ("booted" if boot else "unbooted"),
         srcs = ["test_nis_domainname.py"],
-        layer = ":build",
+        layer = ":test-layer",
         run_as_user = "root",
         boot = boot,
     )
