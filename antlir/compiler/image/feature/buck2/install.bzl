@@ -5,6 +5,7 @@
 
 load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:image_source.bzl", "image_source")
+load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load(":image_source.shape.bzl", "image_source_t")
@@ -18,9 +19,10 @@ def _forbid_layer_source(source_dict):
             "actions: {}".format(source_dict),
         )
 
-def _generate_install_shape(source, dest, mode, user, group):
-    source_dict = shape.as_dict_shallow(image_source(source))
-    source_dict["source"] = {"__BUCK_TARGET": source_dict["source"]}
+def _generate_shape(source_dict, dest, mode, user, group):
+    source_dict["source"] = {
+        "__BUCK_TARGET": normalize_target(source_dict["source"]),
+    }
     _forbid_layer_source(source_dict)
 
     install_spec = {
@@ -60,7 +62,8 @@ def feature_install(source, dest, mode = None, user = None, group = None):
     strings. In the latter case, the passwd/group database from the host (not
     from the image) is used. The default for `user` and `group` is `root`.
     """
-    normalized_source = normalize_target(source)
+    source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
+    normalized_source_target = normalize_target(source_dict["source"])
 
     return maybe_add_feature_rule(
         name = "install",
@@ -69,12 +72,12 @@ def feature_install(source, dest, mode = None, user = None, group = None):
             "dest": dest,
             "source": source,
         },
-        feature_shape = _generate_install_shape(
-            normalized_source,
+        feature_shape = _generate_shape(
+            source_dict,
             dest,
             mode,
             user,
             group,
         ),
-        deps = [normalized_source],
+        deps = [normalized_source_target],
     )

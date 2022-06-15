@@ -6,7 +6,6 @@
 
 import importlib.resources
 import json
-import os
 import unittest
 from contextlib import contextmanager
 
@@ -139,3 +138,40 @@ class ImageFeatureTestCase(unittest.TestCase):
             b"symlink/test_symlink_file",
         ]:
             self.assertEqual("symlink\n", (subvol_path / path).read_text())
+
+    def test_install(self):
+        with self.target_subvol("install-layer") as subvol:
+            rendered_subvol = render_subvol(subvol)
+
+        install_dir = pop_path(rendered_subvol, "install")
+        test_install_dir = [
+            "(Dir)",
+            {
+                "bar": [
+                    "(Dir)",
+                    {
+                        "baz": ["(Dir)", {}],
+                        "hello_world.tar": ["(File m444 d10240)"],
+                        "hello_world_again.tar": ["(File m444 d10240)"],
+                        "installed": [
+                            "(Dir)",
+                            {
+                                "script-dir": [
+                                    "(Dir)",
+                                    {
+                                        "data.txt": ["(File m444 d6)"],
+                                        "subdir": [
+                                            "(Dir)",
+                                            {"exe.sh": ["(File m555 d21)"]},
+                                        ],
+                                    },
+                                ],
+                                "solo-exe.sh": ["(File m555 d21)"],
+                                "yittal-kitteh": ["(File m444 d5)"],
+                            },
+                        ],
+                    },
+                ]
+            },
+        ]
+        self.assertEquals(install_dir, test_install_dir)
