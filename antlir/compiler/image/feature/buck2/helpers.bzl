@@ -8,6 +8,7 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load(
     "//antlir/bzl/image/feature:new.bzl",
     "PRIVATE_DO_NOT_USE_feature_target_name",
@@ -76,6 +77,15 @@ def generate_feature_target_name(
             shape_hash = shape_hash,
         ),
     )
+
+def normalize_target_and_mark_path(source_dict, key):
+    """
+    Adds __BUCK_TARGET tag to target at `source_dict[key]` so target can be
+    converted to path in items_for_features.py.
+    """
+    normalized_target = normalize_target(source_dict[key])
+    source_dict[key] = {"__BUCK_TARGET": normalized_target}
+    return normalized_target
 
 def _self_test():
     test_shape = shape.shape(

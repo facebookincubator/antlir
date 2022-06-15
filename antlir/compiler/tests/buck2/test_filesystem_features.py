@@ -175,3 +175,28 @@ class ImageFeatureTestCase(unittest.TestCase):
             },
         ]
         self.assertEquals(install_dir, test_install_dir)
+
+    def test_tarball(self):
+        with self.target_subvol("tarball-layer") as subvol:
+            rendered_subvol = render_subvol(subvol)
+
+        tarball_dir = pop_path(rendered_subvol, "tarball")
+        test_tarball_dir = [
+            "(Dir)",
+            {
+                "foo": [
+                    "(Dir)",
+                    {
+                        "borf": [
+                            "(Dir)",
+                            {
+                                "barf": ["(Dir)", {"hello_world": ["(File)"]}],
+                                "hello_world": ["(File)"],
+                            },
+                        ],
+                        "hello_world": ["(File)"],
+                    },
+                ]
+            },
+        ]
+        self.assertEquals(tarball_dir, test_tarball_dir)
