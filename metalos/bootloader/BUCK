@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:hoist.bzl", "hoist")
