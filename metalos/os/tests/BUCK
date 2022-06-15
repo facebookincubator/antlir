@@ -64,5 +64,8 @@ image.layer(
     name = "test-layer",
     parent_layer = "//metalos/os:metalos",
     features = test_features,
-    visibility = ["//metalos/..."],
+    visibility = [
+        "//metalos/...",
+        # @oss-disable: "//tupperware/agent/hostagent/metalos/...", 
+    ],
 )

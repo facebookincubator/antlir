@@ -8,5 +8,6 @@ template(
     visibility = [
         "//metalos/...",
         "//netos/...",
+        # @oss-disable: "//tupperware/agent/hostagent/metalos/...", 
     ],
 )
