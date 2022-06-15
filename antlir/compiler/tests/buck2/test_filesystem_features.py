@@ -54,6 +54,56 @@ class ImageFeatureTestCase(unittest.TestCase):
                 self.assertEqual(expected_config, json.load(infile))
             yield find_built_subvol(TARGET_TO_PATH[target])
 
+    def test_ensure_dirs_exist(self):
+        with self.target_subvol("ensure-dirs-exist-layer") as subvol:
+            rendered_subvol = render_subvol(subvol)
+
+        ensure_dirs_exist_dir = pop_path(rendered_subvol, "ensure_dirs_exist")
+        test_ensure_dirs_exist_dir = [
+            "(Dir)",
+            {
+                "a": ["(Dir)", {}],
+                "b": ["(Dir)", {"c": ["(Dir)", {}]}],
+            },
+        ]
+        self.assertEquals(ensure_dirs_exist_dir, test_ensure_dirs_exist_dir)
+
+    def test_ensure_subdirs_exist(self):
+        with self.target_subvol("ensure-subdirs-exist-layer") as subvol:
+            rendered_subvol = render_subvol(subvol)
+
+        remove_dir = pop_path(rendered_subvol, "remove")
+        test_remove_dir = [
+            "(Dir)",
+            {
+                "a": ["(Dir)", {"b": ["(Dir)", {"c": ["(Dir)", {}]}]}],
+                "b": ["(Dir)", {"c": ["(Dir)", {"d": ["(Dir)", {}]}]}],
+                "c": ["(Dir)", {}],
+            },
+        ]
+        self.assertEquals(remove_dir, test_remove_dir)
+
+        ensure_subdirs_exist_dir = pop_path(
+            rendered_subvol, "ensure_subdirs_exist"
+        )
+        test_ensure_subdirs_exist_dir = [
+            "(Dir)",
+            {
+                "foo": [
+                    "(Dir m555 o1111:1234)",
+                    {
+                        "bar": [
+                            "(Dir m555 o1111:1234)",
+                            {"baz": ["(Dir m555 o1111:1234)", {}]},
+                        ]
+                    },
+                ]
+            },
+        ]
+        self.assertEquals(
+            ensure_subdirs_exist_dir, test_ensure_subdirs_exist_dir
+        )
+
     def test_remove(self):
         with self.target_subvol("remove-layer") as subvol:
             rendered_subvol = render_subvol(subvol)
