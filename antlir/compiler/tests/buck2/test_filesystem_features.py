@@ -6,6 +6,7 @@
 
 import importlib.resources
 import json
+import os
 import unittest
 from contextlib import contextmanager
 
@@ -67,3 +68,24 @@ class ImageFeatureTestCase(unittest.TestCase):
             },
         ]
         self.assertEquals(remove_dir, test_remove_dir)
+
+    def test_symlink(self):
+        with self.target_subvol("symlink-layer") as subvol:
+            subvol_path = subvol.path()
+            rendered_subvol = render_subvol(subvol)
+
+        symlink_dir = pop_path(rendered_subvol, "symlink")
+        test_symlink_dir = [
+            "(Dir)",
+            {
+                "test_symlink_dir": ["(Symlink ../foo/bar)"],
+                "test_symlink_file": ["(Symlink ../foo/bar/test_symlink.txt)"],
+            },
+        ]
+        self.assertEquals(symlink_dir, test_symlink_dir)
+
+        for path in [
+            b"symlink/test_symlink_dir/test_symlink.txt",
+            b"symlink/test_symlink_file",
+        ]:
+            self.assertEqual("symlink\n", (subvol_path / path).read_text())
