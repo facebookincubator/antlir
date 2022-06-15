@@ -7,6 +7,13 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
+def _generate_shape(dest, must_exist):
+    return shape.new(
+        remove_paths_t,
+        path = dest,
+        must_exist = must_exist,
+    )
+
 def feature_remove(dest, must_exist = True):
     """
     `feature.remove("/a/b")` recursively removes the file or directory `/a/b` --
@@ -24,9 +31,5 @@ def feature_remove(dest, must_exist = True):
         name = "remove",
         key = "remove_paths",
         include_in_target_name = {"dest": dest},
-        feature_shape = shape.new(
-            remove_paths_t,
-            path = dest,
-            must_exist = must_exist,
-        ),
+        feature_shape = _generate_shape(dest, must_exist),
     )
