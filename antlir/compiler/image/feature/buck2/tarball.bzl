@@ -6,34 +6,10 @@
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/image/feature:tarball.shape.bzl", "tarball_t")
 load(":helpers.bzl", "normalize_target_and_mark_path")
 load(":image_source.shape.bzl", "image_source_t")
 load(":rules.bzl", "maybe_add_feature_rule")
-
-def _generate_source_dict_and_normalize_target(source):
-    source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
-    normalized_target = None
-    if source_dict.get("source"):
-        normalized_target = normalize_target_and_mark_path(
-            source_dict,
-            "source",
-        )
-    elif source_dict.get("generator"):
-        _was_wrapped, source_dict["generator"] = maybe_wrap_executable_target(
-            target = source_dict["generator"],
-            wrap_suffix = "image_source_wrap_generator",
-            visibility = [],  # Not visible outside of project
-            # Generators run at build-time, that's the whole point.
-            runs_in_build_steps_causes_slow_rebuilds = True,
-        )
-        normalized_target = normalize_target_and_mark_path(
-            source_dict,
-            "generator",
-        )
-
-    return source_dict, normalized_target
 
 def _generate_shape(source_dict, dest, force_root_ownership):
     return shape.new(
@@ -55,10 +31,8 @@ def feature_tarball(source, dest, force_root_ownership = False):
         This is an image-absolute path to a directory that must be created
         by another `feature_new` item.
     """
-
-    source_dict, normalized_target = _generate_source_dict_and_normalize_target(
-        source,
-    )
+    source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
+    source_dict, normalized_target = normalize_target_and_mark_path(source_dict)
 
     return maybe_add_feature_rule(
         name = "tarball",

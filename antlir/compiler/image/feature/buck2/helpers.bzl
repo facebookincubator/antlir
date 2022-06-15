@@ -9,6 +9,7 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load(
     "//antlir/bzl/image/feature:new.bzl",
     "PRIVATE_DO_NOT_USE_feature_target_name",
@@ -78,16 +79,51 @@ def generate_feature_target_name(
         ),
     )
 
-def normalize_target_and_mark_path(source_dict, key):
-    """
-    Adds __BUCK_TARGET tag to target at `source_dict[key]` so target can be
-    converted to path in items_for_features.py.
-    """
+def _normalize_target_and_mark_path_helper(source_dict, key, is_layer = False):
     normalized_target = normalize_target(source_dict[key])
-    source_dict[key] = {"__BUCK_TARGET": normalized_target}
+    source_dict[key] = {
+        ("__BUCK_LAYER_TARGET" if is_layer else "__BUCK_TARGET"): normalized_target,
+    }
     return normalized_target
 
-def _self_test():
+def normalize_target_and_mark_path(source_dict):
+    """
+    Adds tag to target at `source_dict[{source,layer,generator}}]` so target can
+    be converted to path in items_for_features.py.
+    """
+    if not (source_dict.get("source") or
+            source_dict.get("generator") or
+            source_dict.get("layer")):
+        fail("One of source, generator, layer must contain a target")
+
+    normalized_target = None
+    if source_dict.get("source"):
+        normalized_target = _normalize_target_and_mark_path_helper(
+            source_dict,
+            "source",
+        )
+    elif source_dict.get("generator"):
+        _was_wrapped, source_dict["generator"] = maybe_wrap_executable_target(
+            target = source_dict["generator"],
+            wrap_suffix = "image_source_wrap_generator",
+            visibility = [],  # Not visible outside of project
+            # Generators run at build-time, that's the whole point.
+            runs_in_build_steps_causes_slow_rebuilds = True,
+        )
+        normalized_target = _normalize_target_and_mark_path_helper(
+            source_dict,
+            "generator",
+        )
+    elif source_dict.get("layer"):
+        normalized_target = _normalize_target_and_mark_path_helper(
+            source_dict,
+            "layer",
+            is_layer = True,
+        )
+
+    return source_dict, normalized_target
+
+def _self_test_generate_feature_target_name():
     test_shape = shape.shape(
         str_f = shape.field(str, optional = True),
         int_f = shape.field(int, optional = True),
@@ -143,4 +179,4 @@ def _self_test():
             ),
         )
 
-_self_test()
+_self_test_generate_feature_target_name()
