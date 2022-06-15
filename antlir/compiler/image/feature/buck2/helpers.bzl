@@ -19,7 +19,7 @@ def _clean_arg_to_str(arg):
             "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
             "abcdefghijklmnopqrstuvwxyz" +
             "0123456789" +
-            "_,.=-\\/~@!+$"
+            "_,.=-\\~@!+$"
         ).split(""),
     )
 
