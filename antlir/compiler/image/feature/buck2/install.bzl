@@ -7,7 +7,7 @@ load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load(":helpers.bzl", "normalize_target_and_mark_path")
 load(":image_source.shape.bzl", "image_source_t")
 load(":install.shape.bzl", "install_files_t")
 load(":rules.bzl", "maybe_add_feature_rule")
@@ -20,9 +20,6 @@ def _forbid_layer_source(source_dict):
         )
 
 def _generate_shape(source_dict, dest, mode, user, group):
-    source_dict["source"] = {
-        "__BUCK_TARGET": normalize_target(source_dict["source"]),
-    }
     _forbid_layer_source(source_dict)
 
     install_spec = {
@@ -63,7 +60,7 @@ def feature_install(source, dest, mode = None, user = None, group = None):
     from the image) is used. The default for `user` and `group` is `root`.
     """
     source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
-    normalized_source_target = normalize_target(source_dict["source"])
+    source_dict, normalized_target = normalize_target_and_mark_path(source_dict)
 
     return maybe_add_feature_rule(
         name = "install",
@@ -79,5 +76,5 @@ def feature_install(source, dest, mode = None, user = None, group = None):
             user,
             group,
         ),
-        deps = [normalized_source_target],
+        deps = [normalized_target],
     )

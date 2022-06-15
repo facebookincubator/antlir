@@ -29,6 +29,37 @@ TARGET_TO_PATH = {
 
 
 class ImageFeatureTestCase(unittest.TestCase):
+    test_install_dir = [
+        "(Dir)",
+        {
+            "bar": [
+                "(Dir)",
+                {
+                    "baz": ["(Dir)", {}],
+                    "hello_world.tar": ["(File m444 d10240)"],
+                    "hello_world_again.tar": ["(File m444 d10240)"],
+                    "installed": [
+                        "(Dir)",
+                        {
+                            "script-dir": [
+                                "(Dir)",
+                                {
+                                    "data.txt": ["(File m444 d6)"],
+                                    "subdir": [
+                                        "(Dir)",
+                                        {"exe.sh": ["(File m555 d21)"]},
+                                    ],
+                                },
+                            ],
+                            "solo-exe.sh": ["(File m555 d21)"],
+                            "yittal-kitteh": ["(File m444 d5)"],
+                        },
+                    ],
+                },
+            ]
+        },
+    ]
+
     def setUp(self):
         # More output for easier debugging
         unittest.util._MAX_LENGTH = 12345
@@ -144,37 +175,7 @@ class ImageFeatureTestCase(unittest.TestCase):
             rendered_subvol = render_subvol(subvol)
 
         install_dir = pop_path(rendered_subvol, "install")
-        test_install_dir = [
-            "(Dir)",
-            {
-                "bar": [
-                    "(Dir)",
-                    {
-                        "baz": ["(Dir)", {}],
-                        "hello_world.tar": ["(File m444 d10240)"],
-                        "hello_world_again.tar": ["(File m444 d10240)"],
-                        "installed": [
-                            "(Dir)",
-                            {
-                                "script-dir": [
-                                    "(Dir)",
-                                    {
-                                        "data.txt": ["(File m444 d6)"],
-                                        "subdir": [
-                                            "(Dir)",
-                                            {"exe.sh": ["(File m555 d21)"]},
-                                        ],
-                                    },
-                                ],
-                                "solo-exe.sh": ["(File m555 d21)"],
-                                "yittal-kitteh": ["(File m444 d5)"],
-                            },
-                        ],
-                    },
-                ]
-            },
-        ]
-        self.assertEquals(install_dir, test_install_dir)
+        self.assertEquals(install_dir, self.test_install_dir)
 
     def test_tarball(self):
         with self.target_subvol("tarball-layer") as subvol:
@@ -200,3 +201,21 @@ class ImageFeatureTestCase(unittest.TestCase):
             },
         ]
         self.assertEquals(tarball_dir, test_tarball_dir)
+
+    def test_clone(self):
+        with self.target_subvol("clone-layer") as subvol:
+            rendered_subvol = render_subvol(subvol)
+
+        clone_dir = pop_path(rendered_subvol, "clone")
+        test_clone_dir = [
+            "(Dir)",
+            {
+                "case1": [
+                    "(Dir)",
+                    {"install": self.test_install_dir},
+                ],
+                "case2": self.test_install_dir,
+                "case3": self.test_install_dir,
+            },
+        ]
+        self.assertEquals(clone_dir, test_clone_dir)
