@@ -21,6 +21,7 @@ from contextlib import contextmanager
 from functools import wraps
 from typing import (
     AnyStr,
+    Awaitable,
     Callable,
     Iterable,
     Iterator,
@@ -389,7 +390,7 @@ def kernel_version() -> Tuple[int, int]:
 
 
 class AsyncCompletedProc(NamedTuple):
-    args: List[Union[str, bytes]]
+    args: Union[List[Union[str, bytes]], Union[str, bytes]]
     returncode: int
     stdout: Optional[bytes]
     stderr: Optional[bytes]
@@ -402,21 +403,19 @@ class AsyncCompletedProc(NamedTuple):
             )
 
 
-async def async_run(
-    cmd: List[Union[str, bytes]],
+async def _async_run_impl(
+    run_fn: Callable[[], Awaitable[asyncio.subprocess.Process]],
+    cmd: Union[List[Union[str, bytes]], str, bytes],
     input: Optional[bytes] = None,
     check: bool = True,
     **kwargs,
-) -> AsyncCompletedProc:
-    """Helper function to run an async subprocess and report the result in a
-    canonical format.
-    """
+):
     if input is not None:
         assert kwargs.get("stdin") == asyncio.subprocess.PIPE, (
             "You must set `stdin=asyncio.subprocess.PIPE` for the provided "
             "`input` to be sent to the process' stdin."
         )
-    proc = await asyncio.create_subprocess_exec(*cmd, **kwargs)
+    proc = await run_fn()
     stdout, stderr = await proc.communicate(input)
     ret = AsyncCompletedProc(
         args=cmd,
@@ -427,3 +426,37 @@ async def async_run(
     if check:
         ret.check_returncode()
     return ret
+
+
+async def async_run(
+    cmd: List[Union[str, bytes]],
+    input: Optional[bytes] = None,
+    check: bool = True,
+    **kwargs,
+) -> AsyncCompletedProc:
+    """Helper function to run an async subprocess and report the result in a
+    canonical format.
+    """
+    return await _async_run_impl(
+        lambda: asyncio.create_subprocess_exec(*cmd, **kwargs),
+        cmd=cmd,
+        input=input,
+        check=check,
+    )
+
+
+async def async_run_shell(
+    cmd: Union[str, bytes],
+    input: Optional[bytes] = None,
+    check: bool = True,
+    **kwargs,
+) -> AsyncCompletedProc:
+    """Helper function to run an async subprocess shell command and report the
+    result in a canonical format.
+    """
+    return await _async_run_impl(
+        lambda: asyncio.create_subprocess_shell(cmd, **kwargs),
+        cmd=cmd,
+        input=input,
+        check=check,
+    )

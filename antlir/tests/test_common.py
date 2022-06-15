@@ -10,6 +10,9 @@ import subprocess
 import time
 import unittest
 import unittest.mock
+from typing import List, Union
+
+from antlir.common import async_run_shell
 
 from ..common import (
     async_retry_fn,
@@ -247,9 +250,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(kernel_version(), parsed)
 
     async def test_async_run(self) -> None:
-        cmd = ["echo", "-n", "hithere"]
-        # pyre-fixme[6]: For 1st param expected `List[Union[bytes, str]]` but got
-        #  `List[str]`.
+        cmd: List[Union[bytes, str]] = ["echo", "-n", "hithere"]
         res = await async_run(cmd, check=True, stdout=asyncio.subprocess.PIPE)
         self.assertEqual(b"hithere", res.stdout)
         self.assertFalse(res.stderr)
@@ -263,3 +264,13 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
     async def test_async_run_missing_pipe_stdin(self) -> None:
         with self.assertRaisesRegex(AssertionError, "You must set"):
             await async_run(["foo"], input=b"hello there")
+
+    async def test_async_run_shell(self) -> None:
+        cmd = "echo -n hithere"
+        res = await async_run_shell(
+            cmd, check=True, shell=True, stdout=asyncio.subprocess.PIPE
+        )
+        self.assertEqual(b"hithere", res.stdout)
+        self.assertFalse(res.stderr)
+        self.assertEqual(0, res.returncode)
+        self.assertEqual(cmd, res.args)
