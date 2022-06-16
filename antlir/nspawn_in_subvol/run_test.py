@@ -250,7 +250,9 @@ if __name__ == "__main__":  # pragma: no cover
     # pyre-fixme[16]: `_CliSetup` has no attribute `__enter__`.
     # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
     with add_container_not_part_of_build_step(argv) as argv, _set_up_run_cli(
-        argv + sys.argv[1:]
+        argv
+        + sys.argv[1:]
+        # pyre-fixme[16]: `Tuple` has no attribute `__enter__`.
     ) as cli_setup, rewrite_cmd(
         cli_setup.opts.cmd, next_fd=3 + len(cli_setup.opts.forward_fd)
     ) as (
