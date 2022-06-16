@@ -73,6 +73,20 @@ systemd_target_graph = [
     ),
 ]
 
+systemd_drop_state_shim = [
+    image.ensure_subdirs_exist("/usr/lib", "metalos"),
+    feature.install(
+        "init-systemd-workaround",
+        "/usr/lib/metalos/init-drop-systemd-state",
+        mode = "a+rx",
+    ),
+    feature.remove("/usr/sbin/init"),
+    feature.ensure_file_symlink(
+        "/usr/lib/metalos/init-drop-systemd-state",
+        "/usr/sbin/init",
+    ),
+]
+
 # @rmikey is working on moving these back to multi-user.target
 legacy_systemd_deps = [
     systemd.enable_unit("systemd-networkd.service", "core-services.target"),
@@ -124,12 +138,8 @@ image.layer(
         sshd,
         systemd_resolved,
         systemd_target_graph,
+        systemd_drop_state_shim,
         # TODO: clean up other features here so that all are in named lists
-        feature.install(
-            "init-systemd-workaround",
-            "/init",
-            mode = "a+rx",
-        ),
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "basic.target", "requires"),
         "//metalos/host_configs:generators",
