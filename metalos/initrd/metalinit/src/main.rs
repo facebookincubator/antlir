@@ -235,7 +235,7 @@ async fn switch_root<M: Mounter>(
     info!(log, "switch-rooting into {:?}", target_path);
 
     // ask systemd to switch-root to the new root fs
-    sd.switch_root(FilePath::new(target_path), FilePath::new(""))
+    sd.switch_root(FilePath::new(target_path), FilePath::new("/sbin/init"))
         .await
         .context(format!(
             "failed to trigger switch-root (systemctl switch-root {:?})",

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 # Why this script?
 #
 # TL;DR this is how we trick the rootfs systemd that, it is not "switched-root" from an initrd systemd.
@@ -30,5 +32,4 @@
 # 1. https://man7.org/linux/man-pages/man1/systemctl.1.html (grep for switch-root ROOT [INIT])
 # 2. https://unix.stackexchange.com/a/197485
 
-#!/bin/sh
 exec /usr/lib/systemd/systemd
