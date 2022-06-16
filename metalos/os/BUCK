@@ -132,8 +132,6 @@ image.layer(
         ),
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "basic.target", "requires"),
-        systemd.install_unit("metalos-mount-kernel-modules.service"),
-        systemd.enable_unit("metalos-mount-kernel-modules.service", "basic.target", "requires"),
         "//metalos/host_configs:generators",
         # @oss-disable: "//metalos/os/facebook:features", 
     ],
