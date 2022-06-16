@@ -237,9 +237,10 @@ fn shape(builder: &mut GlobalsBuilder) {
     }
 
     fn new<'v>(
-        _shape: Value<'v>,
+        shape: Value<'v>,
         #[starlark(kwargs)] kwargs: DictOf<'v, StringValue<'v>, Value<'v>>,
     ) -> anyhow::Result<StructGen<'v, Value<'v>>> {
+        let _ = shape;
         // no need to type-check, since it will already be done at buck parse
         // time, and will also be done when loading the json
         Ok(StructGen::new(kwargs.to_dict()))
