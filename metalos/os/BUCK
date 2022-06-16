@@ -1,100 +1,135 @@
 # @noautodeps
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
-load("//antlir/bzl:systemd.bzl", "systemd", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
+load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
 
+metalctl = [
+    feature.install_buck_runnable(
+        "//metalos/metalctl:metalctl",
+        "/usr/bin/metalctl",
+        mode = "a+rx",
+    ),
+    feature.install_buck_runnable(
+        "//metalos/metalctl/dev:metalctl-dev",
+        "/usr/bin/metalctl-dev",
+        mode = "a+rx",
+    ),
+    feature.ensure_file_symlink(
+        "/usr/bin/metalctl-dev",
+        "/usr/bin/metal-mcmetalface",
+    ),
+]
+
+native_service_support = [
+    feature.install_buck_runnable(
+        "//metalos/lib/service/helper:helper",
+        "/usr/lib/metalos/native-service-helper",
+        mode = "a+rx",
+    ),
+    systemd.install_unit(
+        "//metalos/lib/service/helper:metalos-native-service@.service",
+    ),
+]
+
+sshd = [
+    systemd.install_dropin(
+        "require-sshd-keygen.service",
+        "sshd.service",
+    ),
+    feature.remove("/etc/ssh/sshd_config"),
+    feature.install("sshd_config", "/etc/ssh/sshd_config"),
+]
+
+metalos_branding = [
+    # Add a cool metalos motd
+    feature.install("metalos-motd.sh", "/etc/profile.d/metalos-motd.sh"),
+    # Install a MetalOS specific os-release
+    linux.release.install(
+        "/usr/lib/os-release",
+        os_name = "MetalOS",
+        # The layer we are inserting into, this is a bit of a wart but there
+        # is currently no way to know this from within the macro so we
+        # have to provide it explicitly.
+        layer = ":metalos",
+        variant = "MetalOS",
+    ),
+    feature.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
+]
+
+systemd_target_graph = [
+    systemd.install_unit("core-services.target"),
+    systemd.install_unit("workload-pre.target"),
+    systemd.install_unit("workload.target"),
+    # in the default CentOS packages, this points to graphical.target which makes no sense in our context
+    systemd.set_default_target(
+        "workload.target",
+        force = True,
+    ),
+]
+
+# @rmikey is working on moving these back to multi-user.target
+legacy_systemd_deps = [
+    systemd.enable_unit("systemd-networkd.service", "core-services.target"),
+    systemd.enable_unit("systemd-resolved.service", "core-services.target"),
+    systemd.enable_unit("dbus.service", "core-services.target"),
+    systemd.enable_unit("systemd-hostnamed.service", "core-services.target"),
+    systemd.enable_unit("systemd-tmpfiles-setup.service", "core-services.target"),
+    # TODO(T12351899): this is a workaround for a likely bug in the initrd shutdown
+    # process that ends up leaving udev rules unprocessed in the
+    # post-switch-root root fs.
+    systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
+]
+
+# some tweaks to make systemd-resolved actually work
+# TODO(T12351899): it may not be necessary anymore after the init hack
+systemd_resolved = [
+    systemd.alias("systemd-resolved.service", "dbus-org.freedesktop.resolve1.service"),
+    feature.install("systemd-resolved.tmpfiles.conf", "/usr/lib/tmpfiles.d/systemd-resolved.conf"),
+]
+
+root_cgroup = [
+    # Ensure the root cgroup has all controllers enabled
+    systemd.install_unit("systemd-workaround.service"),
+    systemd.enable_unit("systemd-workaround.service", "core-services.target"),
+]
+
+# Mask out some units that aren't needed in MetalOS. There are
+# probably more we can mask. See D20987301 for ideas.
+mask_unneeded_units = systemd.mask_units([
+    # There is really no need to rebuild the ld cache with a
+    # pre-built image
+    "ldconfig.service",
+    # The hwdb should be pre-built in the image, negating
+    # the need to udpate it at runtime.
+    "systemd-hwdb-update.service",
+])
+
 image.layer(
     name = "metalos",
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
+        image.ensure_subdirs_exist("/usr/lib", "metalos"),
+        legacy_systemd_deps,
+        mask_unneeded_units,
+        metalctl,
+        metalos_branding,
+        native_service_support,
+        root_cgroup,
+        sshd,
+        systemd_resolved,
+        systemd_target_graph,
+        # TODO: clean up other features here so that all are in named lists
         feature.install(
             "init-systemd-workaround",
             "/init",
             mode = "a+rx",
         ),
-        image.ensure_subdirs_exist("/usr/lib", "metalos"),
-        feature.install_buck_runnable(
-            "//metalos/metalctl:metalctl",
-            "/usr/bin/metalctl",
-            mode = "a+rx",
-        ),
-        feature.install_buck_runnable(
-            "//metalos/metalctl/dev:metalctl-dev",
-            "/usr/bin/metalctl-dev",
-            mode = "a+rx",
-        ),
-        feature.ensure_file_symlink(
-            "/usr/bin/metalctl-dev",
-            "/usr/bin/metal-mcmetalface",
-        ),
-        feature.install_buck_runnable(
-            "//metalos/lib/service/helper:helper",
-            "/usr/lib/metalos/native-service-helper",
-            mode = "a+rx",
-        ),
-        systemd.install_unit(
-            "//metalos/lib/service/helper:metalos-native-service@.service",
-        ),
-        systemd.install_unit("core-services.target"),
-        systemd.install_unit("workload-pre.target"),
-        systemd.install_unit("workload.target"),
-        # in the default CentOS packages, this points to graphical.target which makes no sense in our context
-        feature.remove(paths.join(SYSTEMD_PROVIDER_ROOT, "default.target")),
-        systemd.set_default_target("workload.target"),
-        # networking config to use DHCP is a generic workload-pre.target
-        # dependency
-        systemd.enable_unit("systemd-networkd.service", "core-services.target"),
-        systemd.enable_unit("systemd-resolved.service", "core-services.target"),
-        systemd.alias("systemd-resolved.service", "dbus-org.freedesktop.resolve1.service"),
-        feature.install("systemd-resolved.tmpfiles.conf", "/usr/lib/tmpfiles.d/systemd-resolved.conf"),
-        systemd.enable_unit("systemd-tmpfiles-setup.service", "core-services.target"),
-        systemd.enable_unit("dbus.service", "core-services.target"),
-        # Use the hostname service to manage the hostname
-        systemd.enable_unit("systemd-hostnamed.service", "core-services.target"),
-        # TODO: this is a workaround for a likely bug in the initrd shutdown
-        # process that ends up leaving udev rules unprocessed in the
-        # post-switch-root root fs.
-        systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
-        systemd.enable_unit("sshd.service", "core-services.target"),
-        systemd.install_dropin(
-            "require-sshd-keygen.service",
-            "sshd.service",
-        ),
-        feature.remove("/etc/ssh/sshd_config"),
-        feature.install("sshd_config", "/etc/ssh/sshd_config"),
-        # Add a cool metalos motd
-        feature.install("metalos-motd.sh", "/etc/profile.d/metalos-motd.sh"),
-        # Install a MetalOS specific os-release
-        linux.release.install(
-            "/usr/lib/os-release",
-            os_name = "MetalOS",
-            # The layer we are inserting into, this is a bit of a wart but there
-            # is currently no way to know this from within the macro so we
-            # have to provide it explicitly.
-            layer = ":metalos",
-            variant = "MetalOS",
-        ),
-        feature.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
-        # Ensure the root cgroup has all controllers enabled
-        systemd.install_unit("systemd-workaround.service"),
-        systemd.enable_unit("systemd-workaround.service", "core-services.target"),
-        # Mask out some units that aren't needed in MetalOS. There are
-        # probably more we can mask. See D20987301 for ideas.
-        systemd.mask_units([
-            # There is really no need to rebuild the ld cache with a
-            # pre-built image
-            "ldconfig.service",
-            # The hwdb should be pre-built in the image, negating
-            # the need to udpate it at runtime.
-            "systemd-hwdb-update.service",
-        ]),
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "basic.target", "requires"),
         systemd.install_unit("metalos-mount-kernel-modules.service"),
