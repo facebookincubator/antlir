@@ -6,6 +6,7 @@
 
 import importlib.resources
 import json
+import subprocess
 import unittest
 from contextlib import contextmanager
 
@@ -171,11 +172,27 @@ class ImageFeatureTestCase(unittest.TestCase):
             self.assertEqual("symlink\n", (subvol_path / path).read_text())
 
     def test_install(self):
-        with self.target_subvol("install-layer") as subvol:
+        with self.target_subvol("install-files-layer") as subvol:
             rendered_subvol = render_subvol(subvol)
 
         install_dir = pop_path(rendered_subvol, "install")
         self.assertEquals(install_dir, self.test_install_dir)
+
+    def test_install_buck_runnable(self):
+        with self.target_subvol("install-buck-runnable-layer") as subvol:
+            subvol_path = subvol.path()
+            rendered_subvol = render_subvol(subvol)
+
+        install_buck_runnable_dir = set(pop_path(rendered_subvol, "install")[1])
+        test_install_buck_runnable_dir = {"print-ok", "print-ok-too"}
+        self.assertEquals(
+            install_buck_runnable_dir, test_install_buck_runnable_dir
+        )
+
+        self.assertEquals(
+            subprocess.check_output(str(subvol_path) + "/install/print-ok"),
+            b"ok\n",
+        )
 
     def test_tarball(self):
         with self.target_subvol("tarball-layer") as subvol:
