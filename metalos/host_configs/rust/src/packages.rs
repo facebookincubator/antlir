@@ -298,6 +298,7 @@ pub mod generic {
         Service,
         ServiceConfigGenerator,
         GptRootDisk,
+        Bootloader,
     }
 
     #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
