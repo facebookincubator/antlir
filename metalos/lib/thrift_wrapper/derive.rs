@@ -115,6 +115,7 @@ fn expand_thriftwrapper_enum(
 ) -> syn::Result<proc_macro2::TokenStream> {
     let mut match_thrift_variant = vec![];
     let mut match_to_thrift = vec![];
+    let mut rm_rust_variant_from_thrift_set = vec![];
     let mut is_union = false;
     for var in &enm.variants {
         let rust_name = &var.ident;
@@ -130,6 +131,9 @@ fn expand_thriftwrapper_enum(
             });
             match_to_thrift.push(quote! {
                 Self::#rust_name => #thrift_type::#thrift_name,
+            });
+            rm_rust_variant_from_thrift_set.push(quote! {
+                thrift_variants.remove(&#thrift_type::#thrift_name);
             });
         }
         // there's a variant so it's a union field
@@ -158,7 +162,30 @@ fn expand_thriftwrapper_enum(
             #thrift_type::UnknownField(i) => Err(::thrift_wrapper::Error::Union(i)),
         },
     };
+    let test_enum_variants = match is_union {
+        true => quote!(),
+        false => {
+            // create a unit test that will fail if the rust version doesn't have all
+            // the variants that are defined in thrift
+            let test_enum_variants_name = format_ident!("rust_{}_has_all_variants", name);
+            quote! {
+                #[cfg(test)]
+                #[test]
+                #[allow(non_snake_case)]
+                fn #test_enum_variants_name () {
+                    let mut thrift_variants = ::std::collections::HashSet::new();
+                    for kind in <#thrift_type as ::thrift_wrapper::__deps::fbthrift::ThriftEnum>::variant_values() {
+                        thrift_variants.insert(kind);
+                    }
+                    #(#rm_rust_variant_from_thrift_set)*
+                    assert!(thrift_variants.is_empty(), "Rust version is missing {:?}", thrift_variants);
+                }
+            }
+        }
+    };
     Ok(quote! {
+        #test_enum_variants
+
         impl ::thrift_wrapper::ThriftWrapper for #name {
             type Thrift = #thrift_type;
 
