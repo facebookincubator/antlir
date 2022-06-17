@@ -31,6 +31,7 @@ plugins. Specifically:
 
 from typing import Iterable
 
+from antlir.bzl.container_opts import shadow_path_t
 from antlir.fs_utils import ANTLIR_DIR, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.nspawn_in_subvol.args import (
     _NspawnOpts,
@@ -96,7 +97,10 @@ def repo_nspawn_plugins(
             snapshot_dir = RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / prog_name
             serve_rpm_snapshots.add(snapshot_dir)
             shadow_paths.append(
-                (prog_name, snapshot_dir / prog_name / "bin" / prog_name)
+                shadow_path_t(
+                    dst=prog_name,
+                    src=snapshot_dir / prog_name / "bin" / prog_name,
+                )
             )
             if plugin_args.attach_antlir_dir == AttachAntlirDirMode.DEFAULT_ON:
                 shadow_paths_allow_unmatched.append(prog_name)

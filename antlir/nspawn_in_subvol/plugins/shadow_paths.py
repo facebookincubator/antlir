@@ -21,6 +21,7 @@ import subprocess
 from contextlib import contextmanager
 from typing import Any, AnyStr, Iterable, List, Mapping, NamedTuple, Tuple
 
+from antlir.bzl.container_opts import shadow_path_t
 from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
@@ -79,7 +80,7 @@ class _ShadowCandidate(NamedTuple):
 
 def _resolve_to_canonical_shadow_paths(
     *,
-    shadow_paths: Iterable[Tuple[Path, Path]],
+    shadow_paths: Iterable[shadow_path_t],
     subvol: Subvol,
     search_dirs: List[Path],
     shadow_paths_allow_unmatched: List[Path],
@@ -93,7 +94,8 @@ def _resolve_to_canonical_shadow_paths(
     # to "search_dir / <dest filename>".  We check for duplicates later.
     candidates = []
     unmatched_inputs = {}  # Checked below
-    for dest, src in shadow_paths:
+    for sp in shadow_paths:
+        dest, src = sp.dst, sp.src
         # If `dest` has duplicates, we'll show the error for the first `src`
         unmatched_inputs[dest] = src
         if dest.startswith(b"/"):
@@ -297,7 +299,7 @@ class ShadowPaths(NspawnPlugin):
 
     def __init__(
         self,
-        shadow_paths: Iterable[Tuple[Path, Path]],
+        shadow_paths: Iterable[shadow_path_t],
         shadow_paths_allow_unmatched: List[Path],
     ) -> None:
         self._shadow_paths = shadow_paths

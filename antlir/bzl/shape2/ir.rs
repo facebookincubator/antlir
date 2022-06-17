@@ -177,11 +177,6 @@ pub enum Type {
     List {
         item_type: Rc<Type>,
     },
-    // TODO: this is not easily definable in thrift, which may pose a problem in
-    // the future
-    Tuple {
-        item_types: Vec<Rc<Type>>,
-    },
     Map {
         key_type: Rc<Type>,
         value_type: Rc<Type>,

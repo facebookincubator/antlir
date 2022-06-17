@@ -264,23 +264,6 @@ fn shape(builder: &mut GlobalsBuilder) {
         })))
     }
 
-    fn tuple<'v>(
-        #[starlark(args)] args: Value<'v>,
-        eval: &mut Evaluator<'v, '_>,
-    ) -> anyhow::Result<StarlarkType> {
-        let reg = get_type_registry(eval)?.try_borrow()?;
-        let item_types = args
-            .iterate_collect(eval.heap())?
-            .into_iter()
-            .enumerate()
-            .map(|(i, v)| {
-                v.try_to_type(&reg)
-                    .with_context(|| format!("tuple item at {} is not a type", i))
-            })
-            .collect::<Result<_>>()?;
-        Ok(StarlarkType(Rc::new(ir::Type::Tuple { item_types })))
-    }
-
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
         eval: &mut Evaluator<'v, '_>,
@@ -548,23 +531,6 @@ shape.dict(str, 42)
             .unwrap_err()
             .to_string();
         assert!(err.contains("dict value must be a type"), "{:?}", err,);
-        Ok(())
-    }
-
-    #[test]
-    fn bad_tuple_item() -> Result<()> {
-        let ast = AstModule::parse(
-            "simple_module",
-            r#"load("//antlir/bzl:shape.bzl", "shape")
-shape.tuple(str, 42, int)
-"#
-            .to_string(),
-            &Dialect::Extended,
-        )?;
-        let err = eval_and_freeze_module(&Dependencies(BTreeMap::new()), ast)
-            .unwrap_err()
-            .to_string();
-        assert!(err.contains("tuple item at 1 is not a type"), "{:?}", err);
         Ok(())
     }
 

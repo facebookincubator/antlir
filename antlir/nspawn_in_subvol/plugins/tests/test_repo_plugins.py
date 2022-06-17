@@ -9,6 +9,7 @@ import pwd
 import unittest
 from unittest import mock
 
+from antlir.bzl.container_opts import shadow_path_t
 from antlir.fs_utils import (
     ANTLIR_DIR,
     Path,
@@ -75,7 +76,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                 ),
                 plugin_args=NspawnPluginArgs(
                     shadow_proxied_binaries=False,
-                    shadow_paths=[("src", "dest")],
+                    shadow_paths=[shadow_path_t(dst="src", src="dest")],
                     serve_rpm_snapshots=("a", "b", "c"),
                     snapshots_and_versionlocks=[("a", "vla"), ("c", "vlc")],
                     attach_antlir_dir=attach_antlir_dir,
@@ -147,7 +148,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                 ),
                 (
                     "fake_shadow_paths",
-                    [("src", "dest")],
+                    [shadow_path_t(dst="src", src="dest")],
                     set(),
                 ),
                 (
@@ -166,7 +167,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                 ),
                 plugin_args=NspawnPluginArgs(
                     shadow_proxied_binaries=shadow_proxied_binaries,
-                    shadow_paths=[("src", "dest")],
+                    shadow_paths=[shadow_path_t(dst="src", src="dest")],
                     serve_rpm_snapshots=("a", "b", "c"),
                     snapshots_and_versionlocks=[("a", "vla"), ("c", "vlc")],
                     attach_antlir_dir=attach_antlir_dir,
@@ -268,10 +269,10 @@ class RpmPluginsTestCase(unittest.TestCase):
                 (
                     "fake_shadow_paths",
                     [
-                        (b"src", b"dest"),
-                        (
-                            b"fake_dnf",
-                            RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+                        shadow_path_t(dst=b"src", src=b"dest"),
+                        shadow_path_t(
+                            dst=b"fake_dnf",
+                            src=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
                             / "fake_dnf/fake_dnf/bin/fake_dnf",
                         ),
                     ],
@@ -295,7 +296,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                     shadow_proxied_binaries=True,
                     # These are here to show that our shadowing defaults do
                     # not break explicitly requested inputs.
-                    shadow_paths=[(b"src", b"dest")],
+                    shadow_paths=[shadow_path_t(dst=b"src", src=b"dest")],
                     serve_rpm_snapshots=["explicit_snap"],
                 ),
             ),
@@ -345,9 +346,9 @@ class RpmPluginsTestCase(unittest.TestCase):
                     (
                         "fake_shadow_paths",
                         [
-                            (
-                                rpm,
-                                RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
+                            shadow_path_t(
+                                dst=rpm,
+                                src=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
                                 / f"{rpm}/{rpm}/bin/{rpm}",
                             )
                             for rpm in sorted(rpm_installers)

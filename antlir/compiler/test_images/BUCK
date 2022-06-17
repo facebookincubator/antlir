@@ -3,9 +3,11 @@
 # IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
 # the shim in `defs.bzl`.
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:container_opts.shape.bzl", "shadow_path_t")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
@@ -209,7 +211,11 @@ image.genrule_layer(
     container_opts = image.opts(
         # `shadow_proxied_binaries` and `serve_rpm_snapshots` are covered by
         # `rpmbuild.bzl` tests.
-        shadow_paths = [("/shadow_me", "/rpm_test/milk.txt")],
+        shadow_paths = [shape.new(
+            shadow_path_t,
+            dst = "/shadow_me",
+            src = "/rpm_test/milk.txt",
+        )],
         # The `internal_only_*` things are covered by the stuff that uses them.
     ),
     parent_layer = ":validates-dnf-build-appliance",

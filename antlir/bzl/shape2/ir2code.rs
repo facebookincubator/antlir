@@ -233,10 +233,6 @@ impl TypeExt for Type {
                 }
                 .to_string(),
             ),
-            Self::Tuple { item_types } => TypeName(format!(
-                "typing.Tuple[{}]",
-                item_types.iter().map(|i| i.py_type_hint()).join(",")
-            )),
             Self::List { item_type } => {
                 // lie and say that lists are tuples to discourage mutation
                 TypeName(format!("typing.Tuple[{}, ...]", item_type.py_type_hint()))
@@ -272,10 +268,6 @@ impl TypeExt for Type {
                 }
                 .to_string(),
             ),
-            Self::Tuple { item_types } => TypeName(format!(
-                "({},)",
-                item_types.iter().map(|i| i.rs_type()).join(",")
-            )),
             Self::List { item_type } => TypeName(format!("Vec<{}>", item_type.rs_type())),
             Self::Map {
                 key_type,
@@ -308,10 +300,6 @@ impl TypeExt for Type {
                 }
                 .to_string(),
             ),
-            Self::Tuple { item_types } => TypeName(format!(
-                "Tuple_{}",
-                item_types.iter().map(|i| i.rs_union_name()).join("_")
-            )),
             Self::List { item_type } => TypeName(format!("ListOf_{}", item_type.rs_union_name())),
             Self::Map {
                 key_type,
@@ -336,10 +324,6 @@ impl TypeExt for Type {
     fn transitive_dependency_count(&self) -> usize {
         match self {
             Self::Primitive(_) => 0,
-            Self::Tuple { item_types } => item_types
-                .iter()
-                .map(|i| 1 + i.transitive_dependency_count())
-                .sum(),
             Self::List { item_type } => 1 + item_type.transitive_dependency_count(),
             Self::Map {
                 key_type,

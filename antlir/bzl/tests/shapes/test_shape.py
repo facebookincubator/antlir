@@ -58,7 +58,6 @@ class TestShape(unittest.TestCase):
                 ),
             ),
         )
-        self.assertEqual(c.callsign, ("Red", 5))
         self.assertEqual(c.metadata, frozendict({"species": "human"}))
         self.assertEqual(
             c.personnel_file, Path("/rebellion/luke_skywalker.txt")
@@ -111,7 +110,6 @@ class TestShape(unittest.TestCase):
         expected = {
             "name": str,
             "appears_in": Tuple[int, ...],
-            "callsign": Optional[Tuple[str, int]],
             "metadata": Mapping[str, str],
         }
         self.assertEqual(
@@ -140,7 +138,6 @@ class TestShape(unittest.TestCase):
             "shape("
             "affiliations=shape(faction='Rebellion'), "
             "appears_in=(4, 5, 6), "
-            "callsign=('Red', 5), "
             "friends=("
             + (
                 "shape(name='Han Solo'), "
@@ -211,7 +208,6 @@ class TestShape(unittest.TestCase):
             "Jedi("
             "affiliations=shape(faction='Jedi Temple'), "
             "appears_in=(1, 2, 3, 4, 5, 6), "
-            "callsign=None, "
             "friends=(shape(name='Yoda'), shape(name='Padme Amidala')), "
             "metadata=frozendict({'species': 'human'}), "
             "name='Obi-Wan Kenobi', "
@@ -235,8 +231,6 @@ class TestShape(unittest.TestCase):
         # collection fields should do the sane thing
         # dicts go to value type
         self.assertEqual(character_t.types.metadata, str)
-        # tuples go to a tuple of element types
-        self.assertEqual(character_t.types.callsign, (str, int))
         # lists go to the homogenous element type
         self.assertEqual(
             character_t.types.friends,
