@@ -23,7 +23,6 @@ lightsaber_t = shape.shape(
 )
 
 weapon_t = shape.union(lightsaber_t, str)
-callsign_t = shape.tuple(str, int)
 metadata_t = shape.dict(str, str)
 friend_t = shape.shape(name = str)
 
@@ -34,10 +33,6 @@ character_t = shape.shape(
     friends = shape.list(friend_t),
     weapon = shape.field(
         weapon_t,
-        optional = True,
-    ),
-    callsign = shape.field(
-        callsign_t,
         optional = True,
     ),
     metadata = shape.field(
@@ -62,10 +57,6 @@ hashable_t = shape.shape(
     appears_in = shape.list(int),
     lightsaber_color = shape.field(
         str,
-        optional = True,
-    ),
-    callsign = shape.field(
-        callsign_t,
         optional = True,
     ),
     metadata = shape.field(

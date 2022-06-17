@@ -8,6 +8,12 @@ load("//antlir/bzl:shape.bzl", "shape")
 
 # Forward container runtime configuration to the Python implementation.
 # This currently maps to `NspawnPluginArgs`.
+
+shadow_path_t = shape.shape(
+    dst = shape.path,
+    src = shape.path,
+)
+
 #
 # Prefer to keep this default-initializable to avoid having to update a
 # bunch of tests and other Python callsites.
@@ -18,9 +24,7 @@ container_opts_t = shape.shape(
     serve_rpm_snapshots = shape.field(shape.list(shape.path), default = []),
     # See `--shadow-path` in `args.py`.
     shadow_paths = shape.field(
-        shape.list(
-            shape.tuple(shape.path, shape.path),
-        ),
+        shape.list(shadow_path_t),
         default = [],
     ),
     # Setting this to `True` corresponds to `--attach-antlir-dir=explicit_on`,

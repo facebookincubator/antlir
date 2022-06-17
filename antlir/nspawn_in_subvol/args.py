@@ -32,6 +32,7 @@ from typing import (
     Union,
 )
 
+from antlir.bzl.container_opts import shadow_path_t
 from antlir.bzl.proxy_server_config import proxy_server_config_t
 from antlir.cli import add_targets_and_outputs_arg
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
@@ -486,7 +487,7 @@ class NspawnPluginArgs(NamedTuple):
     # about where we need this.
     shadow_proxied_binaries: bool
     serve_rpm_snapshots: Iterable[Path] = ()
-    shadow_paths: Iterable[Tuple[Path, Path]] = ()
+    shadow_paths: Iterable[shadow_path_t] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
     attach_antlir_dir: AttachAntlirDirMode = AttachAntlirDirMode.OFF
     proxy_server_config: Optional[proxy_server_config_t] = None
@@ -669,6 +670,10 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
         if args.run_proxy_server
         else None
     )
+
+    args.shadow_paths = [
+        shadow_path_t(dst=dst, src=src) for (dst, src) in args.shadow_paths
+    ]
 
     return _extract_opts_from_dict(
         _new_nspawn_cli_args,

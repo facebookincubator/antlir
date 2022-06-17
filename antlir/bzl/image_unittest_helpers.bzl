@@ -224,8 +224,8 @@ mv $TMP/out "$OUT"
                 for s in container_opts.serve_rpm_snapshots
             ]),
             shadow_paths_repr = ", ".join([
-                "'--shadow-paths', {}, {}".format(repr(d), repr(s))
-                for d, s in container_opts.shadow_paths
+                "'--shadow-paths', {}, {}".format(repr(sp.dst), repr(sp.src))
+                for sp in container_opts.shadow_paths
             ]),
             targets_and_outputs = targets_and_outputs_arg_list(
                 name = name,

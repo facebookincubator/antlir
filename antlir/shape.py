@@ -39,15 +39,6 @@ class ShapeMeta(pydantic.main.ModelMetaclass):
             types_cls = {}
             for key, f in cls.__fields__.items():
                 types_cls[key] = f.type_
-                # pydantic already does some magic to extract list element
-                # types and dict value types, but export tuples as a tuple of
-                # types instead of typing.Tuple
-                # NOTE: pydantic extracts the dict value type as the type,
-                # which is a little bit of a strange interface, so that is
-                # liable to change if we ever care about making a dict key
-                # accessible (for example, if the key is a shape)
-                if getattr(f.type_, "__origin__", None) == tuple:
-                    types_cls[key] = f.type_.__args__
             cls.types = type("types", (object,), types_cls)
 
         return cls

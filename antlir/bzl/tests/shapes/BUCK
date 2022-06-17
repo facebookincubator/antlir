@@ -54,7 +54,6 @@ characters = [
             color = "green",
             target = ":luke-lightsaber",
         ),
-        callsign = ("Red", 5),
         affiliations = shape.new(
             affiliations_t,
             faction = "Rebellion",

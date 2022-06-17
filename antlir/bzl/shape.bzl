@@ -25,7 +25,6 @@ types available:
   other shapes
   homogenous lists of a single `field` element type
   dicts with homogenous key `field` types and homogenous `field` value type
-  heterogenous tuples with `field` element types
   enums with string values
   unions via shape.union(type1, type2, ...)
 
@@ -156,7 +155,7 @@ def _check_type(x, t):
     """Check that x is an instance of t.
     This is a little more complicated than `isinstance(x, t)`, and supports
     more use cases. _check_type handles primitive types (bool, int, str),
-    shapes and collections (dict, list, tuple).
+    shapes and collections (dict, list).
 
     Return: None if successful, otherwise a str to be passed to `fail` at a
                 site that has more context for the user
@@ -223,28 +222,6 @@ def _find_union_type(x, t):
         "; ".join(type_errors),
     )
 
-# Returns a mutually exclusive tuple:
-#   ([tuple type, tuple element] or None, "type error" or None)
-def _values_and_types_for_tuple(x, t):
-    if not _is_collection(t) or t.collection != tuple:  # pragma: no cover
-        # This is an assertion, not a user error.
-        fail("{} is not a tuple type (value {})".format(_pretty(t), _pretty(x)))
-    if not types.is_list(x) and not types.is_tuple(x):
-        return None, "{} is not tuple".format(x)
-    if len(x) != len(t.item_type):
-        return None, "length of {} does not match {}".format(
-            _pretty(x),
-            _pretty(t.item_type),
-        )
-
-    # Explicit `list` since the tests run as Python, where `zip` is a generator
-    values_and_types = list(zip(x, t.item_type))
-    for i, (val, item_type) in enumerate(values_and_types):
-        type_error = _check_type(val, item_type)
-        if type_error:
-            return None, "item {}: {}".format(i, type_error)
-    return values_and_types, None
-
 def _check_collection_type(x, t):
     if t.collection == dict:
         if not types.is_dict(x):
@@ -266,9 +243,6 @@ def _check_collection_type(x, t):
             if type_error:
                 return "item {}: {}".format(i, type_error)
         return None
-    if t.collection == tuple:
-        _values_and_types, error = _values_and_types_for_tuple(x, t)
-        return error
     return "unsupported collection type {}".format(t.collection)  # pragma: no cover
 
 def _field(type, optional = False, default = _NO_DEFAULT):
@@ -303,15 +277,6 @@ def _list(item_type, **field_kwargs):
         type = struct(
             collection = list,
             item_type = item_type,
-        ),
-        **field_kwargs
-    )
-
-def _tuple(*item_types, **field_kwargs):
-    return _field(
-        type = struct(
-            collection = tuple,
-            item_type = item_types,
         ),
         **field_kwargs
     )
@@ -595,14 +560,6 @@ def _recursive_copy_transform(val, t, opts):
                 _recursive_copy_transform(v, t.item_type, opts)
                 for v in val
             ]
-        elif t.collection == tuple:
-            values_and_types, error = _values_and_types_for_tuple(val, t)
-            if error:  # pragma: no cover
-                fail(error)
-            return [
-                _recursive_copy_transform(item_val, item_t, opts)
-                for (item_val, item_t) in values_and_types
-            ]
 
         # fall through to fail
     elif _is_union(t):
@@ -850,7 +807,6 @@ shape = struct(
     path = _path,
     pretty = _pretty,
     shape = _shape,
-    tuple = _tuple,
     union = _union,
     union_t = _union_type,
     # generate implementation of various client libraries

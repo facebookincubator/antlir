@@ -68,7 +68,6 @@ class TestShapeBzl(unittest.TestCase):
             ({1: "b"}, shape.dict(str, str)),
             ("nope", shape.dict(str, str)),
             ("nope", shape.list(str)),
-            ("nope", shape.tuple(str)),
             ("goodbye", shape.enum("hello", "world")),
             (1, shape.path),
             (2, target_t),
@@ -142,17 +141,6 @@ class TestShapeBzl(unittest.TestCase):
         )
         with self.assertRaises(Fail):
             shape.new(t, dct={"a": "b"})
-
-    def test_simple_tuple(self) -> None:
-        t = shape.shape(tup=shape.tuple(str, int))
-        self.assertEqual(
-            shape.new(t, tup=("hello", 1)),
-            struct(tup=("hello", 1), __shape__=t),
-        )
-        with self.assertRaisesRegex(Fail, "item 1:"):
-            shape.new(t, tup=("hello", "2"))
-        with self.assertRaisesRegex(Fail, "length of .* does not match"):
-            shape.new(t, tup=("hello",))
 
     def test_enum(self) -> None:
         t = shape.shape(e=shape.enum("hello", "world"))
@@ -234,10 +222,6 @@ class TestShapeBzl(unittest.TestCase):
                 dct={"a": target},
             ),
             shape.new(
-                shape.shape(tup=shape.tuple(str, shape_with_target)),
-                tup=("a", target),
-            ),
-            shape.new(
                 shape.shape(uni=shape.union(int, shape_with_target)),
                 uni=target,
             ),
@@ -302,7 +286,6 @@ class TestShapeBzl(unittest.TestCase):
             x=str,
             y=shape.shape(z=shape.field(int, optional=True)),
             lst=shape.list(s),
-            tup=shape.tuple(s, s),
         )
         # Cover the `t.optional and val == None`, and the `val` is set branches
         for z in [3, None]:
@@ -311,7 +294,6 @@ class TestShapeBzl(unittest.TestCase):
                     "x": "a",
                     "y": {"z": z},
                     "lst": [{"z": z}, {"z": 1}],
-                    "tup": [{"z": 2}, {"z": z}],
                 },
                 shape.as_serializable_dict(
                     shape.new(
@@ -319,7 +301,6 @@ class TestShapeBzl(unittest.TestCase):
                         x="a",
                         y=shape.new(t.y, z=z),
                         lst=[shape.new(s, z=z), shape.new(s, z=1)],
-                        tup=(shape.new(s, z=2), shape.new(s, z=z)),
                     )
                 ),
             )
