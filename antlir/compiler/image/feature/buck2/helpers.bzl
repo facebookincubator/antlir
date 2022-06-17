@@ -86,22 +86,44 @@ def _normalize_target_and_mark_path_helper(source_dict, key, is_layer = False):
     }
     return normalized_target
 
-def normalize_target_and_mark_path(source_dict):
+def normalize_target_and_mark_path(source_dict, **kwargs):
     """
-    Adds tag to target at `source_dict[{source,layer,generator}}]` so target can
-    be converted to path in items_for_features.py.
+    Adds tag to target at `source_dict[{source,layer,generator}}]` and
+    normalizes target so target can be converted to path in
+    items_for_features.py.
     """
     if not (source_dict.get("source") or
             source_dict.get("generator") or
             source_dict.get("layer")):
         fail("One of source, generator, layer must contain a target")
 
-    normalized_target = None
     if source_dict.get("source"):
         normalized_target = _normalize_target_and_mark_path_helper(
             source_dict,
             "source",
         )
+
+        if kwargs.get("is_buck_runnable"):
+            was_wrapped, source_dict["source"] = maybe_wrap_executable_target(
+                target = source_dict.pop("source").get("__BUCK_TARGET"),
+                wrap_suffix = "install_buck_runnable_wrap_source",
+                visibility = None,
+                # NB: Buck makes it hard to execute something out of an
+                # output that is a directory, but it is possible so long as
+                # the rule outputting the directory is marked executable
+                # (see e.g. `print-ok-too` in `feature_install_files`).
+                path_in_output = source_dict.get("path", None),
+                runs_in_build_steps_causes_slow_rebuilds = kwargs.get("runs_in_build_steps_causes_slow_rebuilds"),
+            )
+            if was_wrapped:
+                # The wrapper above has resolved `source_dict["path"]`, so the
+                # compiler does not have to.
+                source_dict["path"] = None
+            normalized_target = _normalize_target_and_mark_path_helper(
+                source_dict,
+                "source",
+            )
+
     elif source_dict.get("generator"):
         _was_wrapped, source_dict["generator"] = maybe_wrap_executable_target(
             target = source_dict["generator"],
@@ -114,7 +136,8 @@ def normalize_target_and_mark_path(source_dict):
             source_dict,
             "generator",
         )
-    elif source_dict.get("layer"):
+
+    else:
         normalized_target = _normalize_target_and_mark_path_helper(
             source_dict,
             "layer",
