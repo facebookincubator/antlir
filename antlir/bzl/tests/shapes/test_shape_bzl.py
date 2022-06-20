@@ -27,6 +27,15 @@ target_t = shape.shape(
 )
 
 
+def shape_from_ctor(ctor):
+    return ctor(__internal_get_shape=True)
+
+
+# useful for assertions that compare the full return value of a shape constructor
+def expected_shape(__shape__, **kwargs):
+    return struct(__shape__=shape_from_ctor(__shape__), **kwargs)
+
+
 class TestShapeBzl(unittest.TestCase):
     def setUp(self) -> None:
         self.maxDiff = None
@@ -82,8 +91,10 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_shape_with_defaults(self) -> None:
         t = shape.shape(answer=shape.field(int, default=42))
-        self.assertEqual(shape.new(t), struct(answer=42, __shape__=t))
-        self.assertEqual(shape.new(t, answer=3), struct(answer=3, __shape__=t))
+        self.assertEqual(shape.new(t), expected_shape(answer=42, __shape__=t))
+        self.assertEqual(
+            shape.new(t, answer=3), expected_shape(answer=3, __shape__=t)
+        )
 
     def test_simple_shape(self) -> None:
         t = shape.shape(answer=int)
@@ -94,7 +105,7 @@ class TestShapeBzl(unittest.TestCase):
         with self.assertRaises(Fail):
             shape.new(t, answer=1, undefined_field="boo")
         actual = shape.new(t, answer=42)
-        expected = struct(answer=42, __shape__=t)
+        expected = expected_shape(answer=42, __shape__=t)
         self.assertEqual(actual, expected)
         # Test the `include_dunder_shape=True` branch.  It isn't actually
         # used for anything (yet), but the `opts` field exists for the sake
@@ -102,7 +113,7 @@ class TestShapeBzl(unittest.TestCase):
         self.assertEqual(
             _recursive_copy_transform(
                 actual,
-                t,
+                shape_from_ctor(t),
                 struct(
                     include_dunder_shape=True,
                     on_target_fields="fail",
@@ -120,17 +131,15 @@ class TestShapeBzl(unittest.TestCase):
                     shape.new(t, nested=shape.new(nested, answer=answer))
         self.assertEqual(
             shape.new(t, nested=shape.new(nested, answer=42)),
-            struct(
-                nested=struct(answer=42, __shape__=nested),
+            expected_shape(
+                nested=expected_shape(answer=42, __shape__=nested),
                 __shape__=t,
             ),
         )
 
     def test_simple_list(self) -> None:
         t = shape.shape(lst=shape.list(int))
-        self.assertEqual(
-            shape.new(t, lst=[1, 2, 3]), struct(lst=[1, 2, 3], __shape__=t)
-        )
+        self.assertEqual(shape.new(t, lst=[1, 2, 3]).lst, [1, 2, 3])
         with self.assertRaises(Fail):
             shape.new(t, lst=[1, 2, "3"])
 
@@ -138,7 +147,7 @@ class TestShapeBzl(unittest.TestCase):
         t = shape.shape(dct=shape.dict(str, int))
         self.assertEqual(
             shape.new(t, dct={"a": 1, "b": 2}),
-            struct(dct={"a": 1, "b": 2}, __shape__=t),
+            expected_shape(dct={"a": 1, "b": 2}, __shape__=t),
         )
         with self.assertRaises(Fail):
             shape.new(t, dct={"a": "b"})
@@ -146,8 +155,7 @@ class TestShapeBzl(unittest.TestCase):
     def test_enum(self) -> None:
         t = shape.shape(e=shape.enum("hello", "world"))
         self.assertEqual(
-            shape.new(t, e="world"),
-            struct(e="world", __shape__=t),
+            shape.new(t, e="world"), expected_shape(e="world", __shape__=t)
         )
         with self.assertRaises(Fail):
             shape.new(t, e="goodbye")
@@ -159,8 +167,8 @@ class TestShapeBzl(unittest.TestCase):
         t = shape.shape(lst=shape.list(item_type))
         self.assertEqual(
             shape.new(t, lst=[shape.new(item_type, answer=42)]),
-            struct(
-                lst=[struct(__shape__=item_type, answer=42)],
+            expected_shape(
+                lst=[expected_shape(__shape__=item_type, answer=42)],
                 __shape__=t,
             ),
         )
@@ -170,8 +178,8 @@ class TestShapeBzl(unittest.TestCase):
         t = shape.shape(dct=shape.dict(str, val_type))
         self.assertEqual(
             shape.new(t, dct={"a": shape.new(val_type, answer=42)}),
-            struct(
-                dct={"a": struct(__shape__=val_type, answer=42)},
+            expected_shape(
+                dct={"a": expected_shape(__shape__=val_type, answer=42)},
                 __shape__=t,
             ),
         )
@@ -181,8 +189,8 @@ class TestShapeBzl(unittest.TestCase):
         t = shape.shape(dct=shape.dict(str, shape.list(bottom)))
         self.assertEqual(
             shape.new(t, dct={"a": [shape.new(bottom, answer=42)]}),
-            struct(
-                dct={"a": [struct(answer=42, __shape__=bottom)]},
+            expected_shape(
+                dct={"a": [expected_shape(answer=42, __shape__=bottom)]},
                 __shape__=t,
             ),
         )
@@ -249,9 +257,9 @@ class TestShapeBzl(unittest.TestCase):
         i = shape.new(t, num=5, targ=shape.new(targ_t, inner="//foo:bar"))
         self.assertEqual(
             i,
-            struct(
+            expected_shape(
                 num=5,
-                targ=struct(inner="//foo:bar", __shape__=targ_t),
+                targ=expected_shape(inner="//foo:bar", __shape__=targ_t),
                 __shape__=t,
             ),
         )
@@ -365,9 +373,9 @@ class TestShapeBzl(unittest.TestCase):
         inner_t = shape.shape(is_in=shape.dict(str, str, optional=True))
         outer_t = shape.shape(is_out=shape.path, nested=inner_t)
         self.assertEqual(
-            struct(
+            expected_shape(
                 is_out="/a/path",
-                nested=struct(
+                nested=expected_shape(
                     is_in={"hello": "world"},
                     __shape__=inner_t,
                 ),
