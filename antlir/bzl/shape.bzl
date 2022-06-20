@@ -365,8 +365,6 @@ def _shape(**fields):
 
     return struct(
         fields = fields,
-        # for external usage, make the fields top-level attributes
-        **{key: f.type for key, f in fields.items()}
     )
 
 def _is_shape(x):
@@ -376,7 +374,7 @@ def _is_shape(x):
         return False
     if hasattr(x, "__I_AM_TARGET__"):
         return True
-    return sorted(structs.to_dict(x).keys()) == sorted(["fields"] + list(x.fields.keys()))
+    return list(structs.to_dict(x).keys()) == ["fields"]
 
 def _shape_defaults_dict(shape):
     defaults = {}
