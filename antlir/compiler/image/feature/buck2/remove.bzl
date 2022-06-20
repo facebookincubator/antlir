@@ -3,13 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 def _generate_shape(dest, must_exist):
-    return shape.new(
-        remove_paths_t,
+    return remove_paths_t(
         path = dest,
         must_exist = must_exist,
     )

@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:requires.shape.bzl", "requires_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
@@ -28,8 +27,7 @@ def feature_requires(users = None, groups = None, files = None):
             "groups": groups,
             "users": users,
         },
-        feature_shape = shape.new(
-            requires_t,
+        feature_shape = requires_t(
             users = users,
             groups = groups,
             files = files,

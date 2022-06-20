@@ -74,11 +74,11 @@ def _forbid_layer_source(source_dict):
 def _generate_shape(source_dict, dest, mode, user, group):
     install_spec = {
         "dest": dest,
-        "source": shape.new(image_source_t, **source_dict),
+        "source": image_source_t(**source_dict),
     }
     add_stat_options(install_spec, mode, user, group)
 
-    return shape.new(install_files_t, **install_spec)
+    return install_files_t(**install_spec)
 
 def feature_install_buck_runnable(
         source,

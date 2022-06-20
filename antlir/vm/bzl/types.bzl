@@ -6,7 +6,6 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/bzl:oss_shim.bzl", "third_party")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load(":kernel.bzl", "normalize_kernel")
@@ -30,8 +29,7 @@ def _new_vm_emulator(
     roms_dir = roms_dir or antlir_dep("vm:roms")
     tpm_binary = tpm_binary or third_party.library("swtpm", "bin", "antlir")
 
-    return shape.new(
-        emulator_t,
+    return emulator_t(
         binary = binary,
         firmware = firmware,
         img_util = img_util,
@@ -85,8 +83,7 @@ def _new_vm_disk(
     elif not package:
         package = REPO_CFG.artifact["vm.rootfs.btrfs"]
 
-    return shape.new(
-        disk_t,
+    return disk_t(
         package = package,
         additional_scratch_mb = additional_scratch_mb,
         interface = interface,
@@ -99,8 +96,7 @@ _vm_disk_api = struct(
 )
 
 def _new_vm_connection(**kwargs):
-    return shape.new(
-        connection_t,
+    return connection_t(
         **kwargs
     )
 
@@ -114,8 +110,7 @@ def _new_vm_runtime(
         emulator = None,
         sidecar_services = None,
         tpm = False):
-    runtime = shape.new(
-        runtime_t,
+    runtime = runtime_t(
         connection = connection or _new_vm_connection(),
         emulator = emulator or _new_vm_emulator(tpm = tpm),
         sidecar_services = sidecar_services or [],
@@ -162,8 +157,7 @@ def _new_vm_opts(
 
     runtime = runtime or _new_vm_runtime()
 
-    return shape.new(
-        vm_opts_t,
+    return vm_opts_t(
         cpus = cpus,
         initrd = initrd,
         kernel = kernel,

@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":ensure_subdirs_exist.shape.bzl", "ensure_subdirs_exist_t")
@@ -43,7 +42,7 @@ def image_ensure_subdirs_exist(into_dir, subdirs_to_create, mode = None, user = 
 
     dir_spec = {"into_dir": into_dir, "subdirs_to_create": subdirs_to_create}
     add_stat_options(dir_spec, mode, user, group)
-    ensure_subdirs_exist = shape.new(ensure_subdirs_exist_t, **dir_spec)
+    ensure_subdirs_exist = ensure_subdirs_exist_t(**dir_spec)
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(ensure_subdirs_exist = [ensure_subdirs_exist]),

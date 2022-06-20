@@ -90,8 +90,7 @@ Optional arguments:
                 struct(genrule_layer = [
                     shape.as_target_tagged_dict(
                         target_tagger,
-                        shape.new(
-                            genrule_layer_t,
+                        genrule_layer_t(
                             cmd = cmd,
                             user = user,
                             container_opts = container_opts,

@@ -5,7 +5,6 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":usergroup.shape.bzl", "group_t", "user_t")
 
@@ -51,8 +50,7 @@ user's initial login group or home directory.
     a circular dependency on directory's owner user.
     """
 
-    user = shape.new(
-        user_t,
+    user = user_t(
         name = username,
         id = uid,
         primary_group = primary_group,
@@ -83,7 +81,7 @@ are auto-assigned, they may change if underlying layers add/remove groups.
 
     return target_tagger_to_feature(
         new_target_tagger(),
-        items = struct(groups = [shape.new(group_t, name = groupname, id = gid)]),
+        items = struct(groups = [group_t(name = groupname, id = gid)]),
         # The `fake_macro_library` docblock explains this self-dependency
         extra_deps = ["//antlir/bzl/image/feature:usergroup"],
     )

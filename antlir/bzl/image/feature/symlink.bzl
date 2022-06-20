@@ -3,14 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":symlink.shape.bzl", "symlink_t")
 
 def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
-    symlink_spec = shape.new(
-        symlink_t,
+    symlink_spec = symlink_t(
         dest = link_name,
         source = link_target,
     )

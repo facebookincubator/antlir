@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":requires.shape.bzl", "requires_t")
 
@@ -24,8 +23,7 @@ that generates systemd units that run as a specific user, where
 `feature.requires` can be used for additional compile-time safety that the user,
 groups or files do indeed exist.
 """
-    req = shape.new(
-        requires_t,
+    req = requires_t(
         users = users,
         groups = groups,
         files = files,

@@ -101,8 +101,7 @@ def _image_source_impl(
             "hashlib)",
         )
 
-    return shape.new(
-        image_source_t,
+    return image_source_t(
         source = maybe_export_file(source),
         layer = layer,
         path = path,

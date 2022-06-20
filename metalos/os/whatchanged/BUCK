@@ -48,8 +48,7 @@ rust_binary(
     test_deps = [
         "maplit",
     ],
-    unittest_opts = shape.new(
-        unittest_opts_t,
+    unittest_opts = unittest_opts_t(
         container = shape.new(
             container_unittest_opts_t,
             layer = ":test-layer",

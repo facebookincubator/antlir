@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:image_source.bzl", "image_source")
-load("//antlir/bzl:shape.bzl", "shape")
 load(
     "//antlir/bzl:target_tagger.bzl",
     "image_source_as_target_tagged_t",
@@ -70,8 +69,7 @@ metadata to a deterministic state, while the state of the on-disk metadata in
 
     target_tagger = new_target_tagger()
 
-    clone = shape.new(
-        clone_t,
+    clone = clone_t(
         dest = dest_path,
         omit_outer_dir = omit_outer_dir,
         pre_existing_dest = pre_existing_dest,

@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
-load("//antlir/bzl:shape.bzl", "shape")
 load(
     "//antlir/bzl/image_actions:ensure_subdirs_exist.shape.bzl",
     "ensure_subdirs_exist_t",
@@ -17,7 +16,7 @@ load(
 def _generate_shape(into_dir, subdirs_to_create, mode, user, group):
     dir_spec = {"into_dir": into_dir, "subdirs_to_create": subdirs_to_create}
     add_stat_options(dir_spec, mode, user, group)
-    return shape.new(ensure_subdirs_exist_t, **dir_spec)
+    return ensure_subdirs_exist_t(**dir_spec)
 
 def _image_ensure_subdirs_exist(
         into_dir,
@@ -90,15 +89,13 @@ def image_ensure_dirs_exist(path, mode = None, user = None, group = None):
 
 def _self_test():
     # Tests to make sure that _generate_shape returns proper shape
-    shape_1 = shape.new(
-        ensure_subdirs_exist_t,
+    shape_1 = ensure_subdirs_exist_t(
         into_dir = "/foo/bar",
         subdirs_to_create = "baz",
         mode = "a+rwx",
         user_group = "root:1234",
     )
-    shape_2 = shape.new(
-        ensure_subdirs_exist_t,
+    shape_2 = ensure_subdirs_exist_t(
         into_dir = "foo/bar/baz",
         subdirs_to_create = "foo",
         mode = 0o765,

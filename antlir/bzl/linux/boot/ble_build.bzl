@@ -27,8 +27,7 @@ def ble_build(
     for kernel in kernels:
         shape.render_template(
             name = "loader-{}-{}".format(name, kernel.uname),
-            instance = shape.new(
-                boot_loader_entry_t,
+            instance = boot_loader_entry_t(
                 title = "Metal OS - {}".format(kernel.uname),
                 kernel = "/vmlinuz-{}".format(kernel.uname),
                 initrds = [

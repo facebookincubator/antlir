@@ -12,8 +12,7 @@ load(":image_source.shape.bzl", "image_source_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 def _generate_shape(source_dict, dest, force_root_ownership):
-    return shape.new(
-        tarball_t,
+    return tarball_t(
         force_root_ownership = force_root_ownership,
         into_dir = dest,
         source = shape.new(image_source_t, **source_dict),

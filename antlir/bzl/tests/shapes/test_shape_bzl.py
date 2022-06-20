@@ -91,20 +91,18 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_shape_with_defaults(self) -> None:
         t = shape.shape(answer=shape.field(int, default=42))
-        self.assertEqual(shape.new(t), expected_shape(answer=42, __shape__=t))
-        self.assertEqual(
-            shape.new(t, answer=3), expected_shape(answer=3, __shape__=t)
-        )
+        self.assertEqual(t(), expected_shape(answer=42, __shape__=t))
+        self.assertEqual(t(answer=3), expected_shape(answer=3, __shape__=t))
 
     def test_simple_shape(self) -> None:
         t = shape.shape(answer=int)
         for answer in ("hello", True, {"a": "b"}):
             with self.subTest(answer=answer):
                 with self.assertRaises(Fail):
-                    shape.new(t, answer=answer)
+                    t(answer=answer)
         with self.assertRaises(Fail):
-            shape.new(t, answer=1, undefined_field="boo")
-        actual = shape.new(t, answer=42)
+            t(answer=1, undefined_field="boo")
+        actual = t(answer=42)
         expected = expected_shape(answer=42, __shape__=t)
         self.assertEqual(actual, expected)
         # Test the `include_dunder_shape=True` branch.  It isn't actually
@@ -128,9 +126,9 @@ class TestShapeBzl(unittest.TestCase):
         for answer in ("hello", True, {"a": "b"}):
             with self.subTest(answer=answer):
                 with self.assertRaises(Fail):
-                    shape.new(t, nested=shape.new(nested, answer=answer))
+                    t(nested=shape.new(nested, answer=answer))
         self.assertEqual(
-            shape.new(t, nested=shape.new(nested, answer=42)),
+            t(nested=shape.new(nested, answer=42)),
             expected_shape(
                 nested=expected_shape(answer=42, __shape__=nested),
                 __shape__=t,
@@ -139,26 +137,24 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_simple_list(self) -> None:
         t = shape.shape(lst=shape.list(int))
-        self.assertEqual(shape.new(t, lst=[1, 2, 3]).lst, [1, 2, 3])
+        self.assertEqual(t(lst=[1, 2, 3]).lst, [1, 2, 3])
         with self.assertRaises(Fail):
-            shape.new(t, lst=[1, 2, "3"])
+            t(lst=[1, 2, "3"])
 
     def test_simple_dict(self) -> None:
         t = shape.shape(dct=shape.dict(str, int))
         self.assertEqual(
-            shape.new(t, dct={"a": 1, "b": 2}),
+            t(dct={"a": 1, "b": 2}),
             expected_shape(dct={"a": 1, "b": 2}, __shape__=t),
         )
         with self.assertRaises(Fail):
-            shape.new(t, dct={"a": "b"})
+            t(dct={"a": "b"})
 
     def test_enum(self) -> None:
         t = shape.shape(e=shape.enum("hello", "world"))
-        self.assertEqual(
-            shape.new(t, e="world"), expected_shape(e="world", __shape__=t)
-        )
+        self.assertEqual(t(e="world"), expected_shape(e="world", __shape__=t))
         with self.assertRaises(Fail):
-            shape.new(t, e="goodbye")
+            t(e="goodbye")
         with self.assertRaises(Fail):
             shape.shape(e=shape.enum("hello", 42))
 
@@ -166,7 +162,7 @@ class TestShapeBzl(unittest.TestCase):
         item_type = shape.shape(answer=int)
         t = shape.shape(lst=shape.list(item_type))
         self.assertEqual(
-            shape.new(t, lst=[shape.new(item_type, answer=42)]),
+            t(lst=[shape.new(item_type, answer=42)]),
             expected_shape(
                 lst=[expected_shape(__shape__=item_type, answer=42)],
                 __shape__=t,
@@ -177,7 +173,7 @@ class TestShapeBzl(unittest.TestCase):
         val_type = shape.shape(answer=int)
         t = shape.shape(dct=shape.dict(str, val_type))
         self.assertEqual(
-            shape.new(t, dct={"a": shape.new(val_type, answer=42)}),
+            t(dct={"a": shape.new(val_type, answer=42)}),
             expected_shape(
                 dct={"a": expected_shape(__shape__=val_type, answer=42)},
                 __shape__=t,
@@ -188,7 +184,7 @@ class TestShapeBzl(unittest.TestCase):
         bottom = shape.shape(answer=int)
         t = shape.shape(dct=shape.dict(str, shape.list(bottom)))
         self.assertEqual(
-            shape.new(t, dct={"a": [shape.new(bottom, answer=42)]}),
+            t(dct={"a": [shape.new(bottom, answer=42)]}),
             expected_shape(
                 dct={"a": [expected_shape(answer=42, __shape__=bottom)]},
                 __shape__=t,
@@ -204,7 +200,7 @@ class TestShapeBzl(unittest.TestCase):
             nested=shape.union_t(shape.union_t(str, int), shape.union_t(bool))
         )
         for v in ("hi", 1, True):
-            shape.new(t, nested=v)
+            t(nested=v)
 
     def test_union_of_shapes(self) -> None:
         s = shape.shape(s=str)
@@ -212,28 +208,25 @@ class TestShapeBzl(unittest.TestCase):
         b = shape.shape(b=bool)
         t = shape.shape(u=shape.union(s, n, b))
         for v in (
-            shape.new(s, s="foo"),
-            shape.new(n, n=10),
-            shape.new(b, b=False),
+            s(s="foo"),
+            n(n=10),
+            b(b=False),
         ):
-            shape.new(t, u=v)
+            t(u=v)
 
     def test_location_serialization(self) -> None:
         shape_with_target = shape.shape(target=target_t)
-        target = shape.new(shape_with_target, target="//example:target")
+        target = shape_with_target(target="//example:target")
         for i in [
             target,
-            shape.new(shape.shape(nested=shape_with_target), nested=target),
-            shape.new(
-                shape.shape(lst=shape.list(shape_with_target)),
+            shape.shape(nested=shape_with_target)(nested=target),
+            shape.shape(lst=shape.list(shape_with_target))(
                 lst=[target],
             ),
-            shape.new(
-                shape.shape(dct=shape.dict(str, shape_with_target)),
+            shape.shape(dct=shape.dict(str, shape_with_target))(
                 dct={"a": target},
             ),
-            shape.new(
-                shape.shape(uni=shape.union(int, shape_with_target)),
+            shape.shape(uni=shape.union(int, shape_with_target))(
                 uni=target,
             ),
         ]:
@@ -254,7 +247,7 @@ class TestShapeBzl(unittest.TestCase):
     def test_as_dict_for_target_tagger(self) -> None:
         targ_t = shape.shape(inner=target_t)
         t = shape.shape(num=int, targ=targ_t)
-        i = shape.new(t, num=5, targ=shape.new(targ_t, inner="//foo:bar"))
+        i = t(num=5, targ=shape.new(targ_t, inner="//foo:bar"))
         self.assertEqual(
             i,
             expected_shape(
@@ -271,8 +264,7 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_as_target_tagged_dict(self) -> None:
         shape_with_target = shape.shape(target=target_t)
-        target = shape.new(
-            shape_with_target,
+        target = shape_with_target(
             target="//example:target",
         )
 
@@ -290,7 +282,7 @@ class TestShapeBzl(unittest.TestCase):
     def test_as_dict_shallow(self) -> None:
         y = shape.shape(z=int)
         t = shape.shape(x=str, y=y)
-        i = shape.new(t, x="a", y=shape.new(y, z=3))
+        i = t(x="a", y=shape.new(y, z=3))
         self.assertEqual({"x": "a", "y": i.y}, shape.as_dict_shallow(i))
 
     def test_as_serializable_dict(self) -> None:
@@ -310,8 +302,7 @@ class TestShapeBzl(unittest.TestCase):
                     "lst": [{"z": z}, {"z": 1}],
                 },
                 shape.as_serializable_dict(
-                    shape.new(
-                        t,
+                    t(
                         x="a",
                         y=shape.new(y, z=z),
                         lst=[shape.new(s, z=z), shape.new(s, z=1)],
@@ -326,7 +317,7 @@ class TestShapeBzl(unittest.TestCase):
     def test_is_instance(self) -> None:
         y_t = shape.shape(z=int)
         t = shape.shape(x=str, y=y_t)
-        i = shape.new(t, x="a", y=shape.new(y_t, z=3))
+        i = t(x="a", y=shape.new(y_t, z=3))
 
         # Good cases
         self.assertTrue(shape.is_any_instance(i))
@@ -381,15 +372,13 @@ class TestShapeBzl(unittest.TestCase):
                 ),
                 __shape__=outer_t,
             ),
-            shape.new(
-                outer_t,
+            outer_t(
                 is_out="/a/path",
                 nested=shape.new(inner_t, is_in={"hello": "world"}),
             ),
         )
         with self.assertRaisesRegex(Fail, " is not an instance of "):
-            shape.new(
-                outer_t,
+            outer_t(
                 is_out="/a/path",
                 # Identical to above, except this is `dict` and not `shape.new`
                 nested={"is_in": {"hello": "world"}},

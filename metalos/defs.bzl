@@ -84,7 +84,7 @@ def _rust_common(
     )
 
     if not unittest_opts:
-        unittest_opts = shape.new(unittest_opts_t, container = shape.new(container_unittest_opts_t))
+        unittest_opts = unittest_opts_t(container = shape.new(container_unittest_opts_t))
 
     features = list(features)
     test_kwargs = dict(kwargs)
@@ -156,4 +156,4 @@ def rust_unittest(name, srcs, deps, **kwargs):
     )
 
 def default_test_layer():
-    return shape.new(container_unittest_opts_t).layer
+    return container_unittest_opts_t().layer

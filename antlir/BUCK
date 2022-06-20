@@ -594,9 +594,9 @@ python_unittest(
     srcs = ["tests/test_gpt.py"],
     env = {
         "test-gpt-json": shape.do_not_cache_me_json(
-            shape.new(
-                gpt_t,
+            gpt_t(
                 name = "gpt_test",
+                disk_guid = "93fb3e53-4350-44ee-a98b-6a1e8fe7488f",
                 table = [
                     shape.new(
                         gpt_partition_t,
@@ -618,7 +618,6 @@ python_unittest(
                         is_bios_boot = True,
                     ),
                 ],
-                disk_guid = "93fb3e53-4350-44ee-a98b-6a1e8fe7488f",
             ),
         ),
     },
