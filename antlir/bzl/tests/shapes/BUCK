@@ -27,60 +27,44 @@ buck_genrule(
 )
 
 characters = [
-    shape.new(
-        character_t,
+    character_t(
         name = "Luke Skywalker",
+        affiliations = affiliations_t(
+            faction = "Rebellion",
+        ),
         appears_in = [
             4,
             5,
             6,
         ],
         friends = [
-            shape.new(
-                friend_t,
-                name = "Han Solo",
-            ),
-            shape.new(
-                friend_t,
-                name = "Leia Organa",
-            ),
-            shape.new(
-                friend_t,
-                name = "C-3PO",
-            ),
+            friend_t(name = "Han Solo"),
+            friend_t(name = "Leia Organa"),
+            friend_t(name = "C-3PO"),
         ],
-        weapon = shape.new(
-            lightsaber_t,
+        personnel_file = "/rebellion/luke_skywalker.txt",
+        weapon = lightsaber_t(
             color = "green",
             target = ":luke-lightsaber",
         ),
-        affiliations = shape.new(
-            affiliations_t,
-            faction = "Rebellion",
-        ),
-        personnel_file = "/rebellion/luke_skywalker.txt",
     ),
-    shape.new(
-        character_t,
+    character_t(
         name = "Darth Vader",
+        affiliations = affiliations_t(
+            faction = "Empire",
+        ),
         appears_in = [
             4,
             5,
             6,
         ],
         friends = [],
-        weapon = shape.new(
-            lightsaber_t,
+        weapon = lightsaber_t(
             color = "red",
             target = ":vader-lightsaber",
         ),
-        affiliations = shape.new(
-            affiliations_t,
-            faction = "Empire",
-        ),
     ),
-    shape.new(
-        character_t,
+    character_t(
         name = "C-3PO",
         appears_in = [
             1,
@@ -91,8 +75,7 @@ characters = [
             6,
         ],
         friends = [
-            shape.new(
-                friend_t,
+            friend_t(
                 name = "R2-D2",
             ),
         ],

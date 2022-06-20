@@ -15,8 +15,7 @@ validated to match the shape type spec as described below.
 
 ## Shape Types
 Shape types are a collection of strongly typed fields that can be validated
-at Buck parse time (by `shape.new`) and at Python runtime (by `shape.loader`
-implementations).
+at Buck parse time and at runtime (aka image build time).
 
 ## Field Types
 A shape field is a named member of a shape type. There are a variety of field
@@ -33,8 +32,7 @@ coerce to the types in the order listed
 (see https://pydantic-docs.helpmanual.io/usage/types/#unions) for more info.
 
 ## Optional and Defaulted Fields
-By default, fields are required to be set at instantiation time
-(`shape.new`).
+By default, fields are required to be set at instantiation time.
 
 Fields declared with `shape.field(..., default='val')` do not have to be
 instantiated explicitly.
@@ -82,25 +80,26 @@ declared (usually snake_case variables).
 ## Example usage
 
 ```
+build_source_t = shape.shape(
+    source=str,
+    type=str,
+)
+
+mount_config_t = shape.shape(
+    build_source = build_source_t,
+    default_mountpoint=str,
+    is_directory=bool,
+)
+
 mount_t = shape.shape(
-    mount_config=shape.shape(
-        build_source=shape.shape(
-            source=str,
-            type=str,
-        ),
-        default_mountpoint=str,
-        is_directory=bool,
-    ),
+    mount_config = mount_config_t,
     mountpoint = shape.field(str, optional=True),
     target = shape.field(str, optional=True),
 )
 
-mount = shape.new(
-    mount_t,
-    mount_config=shape.new(
-        mount.mount_config,
-        build_source=shape.new(
-            mount.mount_config.build_source,
+mount = mount_t(
+    mount_config=mount_config_t(
+        build_source=build_source_t(
             source="/etc/fbwhoami",
             type="host",
         ),
@@ -128,6 +127,8 @@ def _pretty(x):
 
 # Returns True iff `instance` is a `shape.new(shape, ...)`.
 def _is_instance(instance, shape):
+    if _is_shape_constructor(shape):
+        shape = shape(__internal_get_shape = True)
     if not _is_shape(shape):
         fail("Checking if {} is a shape instance, but {} is not a shape".format(
             _pretty(instance),
@@ -254,6 +255,8 @@ def _field(type, optional = False, default = _NO_DEFAULT):
         fail("default_value must not be specified with optional")
     if optional:
         default = None
+
+    type = _normalize_type(type)
     return struct(
         default = default,
         optional = optional,
@@ -267,7 +270,7 @@ def _dict(key_type, val_type, **field_kwargs):
     return _field(
         type = struct(
             collection = dict,
-            item_type = (key_type, val_type),
+            item_type = (_normalize_type(key_type), _normalize_type(val_type)),
         ),
         **field_kwargs
     )
@@ -276,7 +279,7 @@ def _list(item_type, **field_kwargs):
     return _field(
         type = struct(
             collection = list,
-            item_type = item_type,
+            item_type = _normalize_type(item_type),
         ),
         **field_kwargs
     )
@@ -304,7 +307,7 @@ def _union_type(*union_types):
     if len(union_types) == 0:
         fail("union must specify at least one type")
     return struct(
-        union_types = union_types,
+        union_types = tuple([_normalize_type(t) for t in union_types]),
     )
 
 def _union(*union_types, **field_kwargs):
@@ -363,9 +366,37 @@ def _shape(**fields):
             fields = fields,
         )
 
-    return struct(
+    shape_struct = struct(
         fields = fields,
     )
+
+    # the name of this function is important and makes the
+    # backwards-compatibility hack in _new_shape work!
+    def shape_constructor_function(
+            __internal_get_shape = False,
+            **kwargs):
+        # starlark does not allow attaching arbitrary data to a function object,
+        # so we have to make these internal parameters to return it
+        if __internal_get_shape:
+            return shape_struct
+        return _new_shape(shape_struct, **kwargs)
+
+    return shape_constructor_function
+
+def _is_shape_constructor(x):
+    """Check if input x is a shape constructor function"""
+
+    # starlark doesn't have callable() so we have to do this
+    if ((repr(x).endswith("antlir/bzl/shape.bzl.shape_constructor_function")) or  # buck2
+        (repr(x) == "<function shape_constructor_function>") or  # buck1
+        (repr(x).startswith("<function _shape.<locals>.shape_constructor_function"))):  # python mock
+        return True
+    return False
+
+def _normalize_type(x):
+    if _is_shape_constructor(x):
+        return x(__internal_get_shape = True)
+    return x
 
 def _is_shape(x):
     if not structs.is_struct(x):
@@ -394,6 +425,11 @@ def _new_shape(shape, **fields):
     example = shape.new(example_t, hello="world")
     ```
     """
+
+    # if this looks like the new constructor api, call it as a function
+    if _is_shape_constructor(shape):
+        return shape(**fields)
+
     with_defaults = _shape_defaults_dict(shape)
     with_defaults.update(fields)
 
