@@ -1,3 +1,5 @@
+# @noautodeps
+
 load("//antlir/bzl:oss_shim.bzl", "python_unittest")
 
 python_unittest(
