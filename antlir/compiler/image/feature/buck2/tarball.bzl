@@ -38,7 +38,7 @@ def feature_tarball(source, dest, force_root_ownership = False):
         key = "tarballs",
         include_in_target_name = {
             "dest": dest,
-            "source": source,
+            "source": source_dict,
         },
         feature_shape = _generate_shape(
             source_dict,
