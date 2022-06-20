@@ -1,4 +1,5 @@
 [Unit]
 Description=Host workload (Pre)
 RefuseManualStart=yes
-Requires=core-services.target network-online.target
+After=core-services.target
+Requires=multi-user.target core-services.target network-online.target
