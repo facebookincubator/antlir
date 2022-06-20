@@ -5,7 +5,6 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load(":rpms.shape.bzl", "rpm_action_item_t")
@@ -48,8 +47,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
         #
         # should not throw an error.
         res_rpms.append(
-            shape.new(
-                rpm_action_item_t,
+            rpm_action_item_t(
                 name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
                 action = action,
                 flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
@@ -84,8 +82,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
             else:
                 flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
 
-        rpm_action_item = shape.new(
-            rpm_action_item_t,
+        rpm_action_item = rpm_action_item_t(
             action = action,
             flavors_specified = flavors_specified,
             flavor_to_version_set = flavor_to_version_set,

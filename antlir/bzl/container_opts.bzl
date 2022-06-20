@@ -5,7 +5,6 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":container_opts.shape.bzl", "container_opts_t")
-load(":shape.bzl", "shape")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
@@ -14,8 +13,7 @@ def _new_container_opts_t(
         serve_rpm_snapshots = (),
         proxy_server_config = None,
         **kwargs):
-    return shape.new(
-        container_opts_t,
+    return container_opts_t(
         serve_rpm_snapshots = [
             snapshot_install_dir(s)
             for s in serve_rpm_snapshots

@@ -11,7 +11,6 @@
 #
 load("//antlir/bzl:oss_shim.bzl", "config", "do_not_use_repo_cfg")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl:shape.bzl", "shape")
 load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 load(":target_helpers.bzl", "normalize_target")
@@ -19,8 +18,7 @@ load(":target_helpers.bzl", "normalize_target")
 DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 CONFIG_KEY = "antlir"
 
-BZL_CONST = shape.new(
-    bzl_const_t,
+BZL_CONST = bzl_const_t(
     layer_feature_suffix = "__layer-feature",
     # Do NOT use this outside of Antlir internals.  See "Why are `feature`s
     # forbidden as dependencies?" in `bzl/image/feature/new.bzl` for a
@@ -88,7 +86,7 @@ def _get_artifact_key_to_path():
     return key_to_path
 
 def new_nevra(**kwargs):
-    return shape.new(nevra_t, **kwargs)
+    return nevra_t(**kwargs)
 
 def new_flavor_config(
         name,
@@ -139,8 +137,7 @@ def new_flavor_config(
     if build_appliance:
         build_appliance = normalize_target(build_appliance)
 
-    return shape.new(
-        flavor_config_t,
+    return flavor_config_t(
         name = name,
         build_appliance = build_appliance,
         rpm_installer = rpm_installer,
@@ -176,13 +173,7 @@ def _get_flavor_to_config():
 
     return flavor_to_config
 
-REPO_CFG = shape.new(
-    repo_config_t,
-    # This one is not using the access methods to provide the precedence order
-    # because the way this is determined is *always* based on the build mode
-    # provided, ie `@mode/opt` vs `@mode/dev`.  And the build mode provided
-    # determines the value of the `.buckconfig` properties used. There is no
-    # way to override this value except to use a different build mode.
+REPO_CFG = repo_config_t(
     artifacts_require_repo = (
         (native.read_config("defaults.cxx_library", "type") == "shared") or
         (native.read_config("python", "package_style") == "inplace")

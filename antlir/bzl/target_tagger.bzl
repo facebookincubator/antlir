@@ -65,7 +65,6 @@ def image_source_as_target_tagged_dict(target_tagger, user_source):
     return src
 
 def image_source_as_target_tagged_t(target_tagger, user_source):
-    return shape.new(
-        target_tagged_image_source_t,
+    return target_tagged_image_source_t(
         **image_source_as_target_tagged_dict(target_tagger, user_source)
     )

@@ -23,8 +23,7 @@ def initrd(kernel, visibility = None, mount_modules = True):
 
     systemd.units.mount_file(
         name = name + "--modules.mount",
-        mount = shape.new(
-            systemd.units.mount,
+        mount = systemd.units.mount(
             unit = shape.new(
                 systemd.units.unit,
                 description = "Full set of kernel modules",

@@ -87,8 +87,7 @@ def native_service(
 
 def _generate_systemd_expectations_test(layer_name, service_name, systemd_service_unit, visibility):
     service_name_t = shape.shape(service_name = str)
-    service_name_instance = shape.new(
-        service_name_t,
+    service_name_instance = service_name_t(
         service_name = service_name,
     )
 

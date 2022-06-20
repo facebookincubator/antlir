@@ -9,7 +9,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":resolv.shape.bzl", "conf_t")
 
 def _new(**kwargs):
-    return shape.new(conf_t, **kwargs)
+    return conf_t(**kwargs)
 
 def _render(name, instance):
     return shape.render_template(
@@ -23,7 +23,7 @@ def _install(instance = None, **kwargs):
     name = "resolv.conf--" + contents_hash
 
     if not instance:
-        instance = shape.new(conf_t, **kwargs)
+        instance = conf_t(**kwargs)
 
     file = _render(
         name = name,
@@ -39,8 +39,7 @@ resolv = struct(
     t = conf_t,
     new = _new,
     install = _install,
-    default = shape.new(
-        conf_t,
+    default = conf_t(
         search_domains = [],
         nameservers = ["1.1.1.1", "1.0.0.1", "2606:4700:4700::1111", "2606:4700:4700::1001"],
     ),

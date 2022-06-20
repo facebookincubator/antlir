@@ -153,13 +153,11 @@ def _self_test_generate_feature_target_name():
         dict_f = shape.field(shape.dict(str, str), optional = True),
     )
 
-    test_shape_1 = shape.new(
-        test_shape,
+    test_shape_1 = test_shape(
         str_f = "foo",
         int_f = 12345,
     )
-    test_shape_2 = shape.new(
-        test_shape,
+    test_shape_2 = test_shape(
         str_f = "bar",
         dict_f = {
             "bar": "baz",

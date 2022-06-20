@@ -13,8 +13,7 @@ load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":btrfs.shape.bzl", "btrfs_opts_t", "btrfs_subvol_t")
 
 def _new_btrfs_subvol(**kwargs):
-    return shape.new(
-        btrfs_subvol_t,
+    return btrfs_subvol_t(
         **kwargs
     )
 
@@ -34,8 +33,7 @@ def _new_btrfs_opts(subvols, default_subvol = None, loopback_opts = None, **kwar
             " Use 'free_mb' instead.",
         )
 
-    return shape.new(
-        btrfs_opts_t,
+    return btrfs_opts_t(
         subvols = subvols,
         default_subvol = default_subvol,
         loopback_opts = loopback_opts,

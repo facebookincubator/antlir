@@ -11,8 +11,7 @@ load(":flavor_helpers.bzl", "flavor_helpers")
 load(":gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 
 def image_gpt_partition(package, is_esp = False, is_bios_boot = False, name = None):
-    return shape.new(
-        gpt_partition_t,
+    return gpt_partition_t(
         package = package,
         is_esp = is_esp,
         is_bios_boot = is_bios_boot,
@@ -28,7 +27,7 @@ def image_gpt(
     visibility = visibility or []
     build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
 
-    gpt = shape.new(gpt_t, name = name, table = table, disk_guid = disk_guid)
+    gpt = gpt_t(name = name, table = table, disk_guid = disk_guid)
     buck_genrule(
         name = name,
         bash = wrap_bash_build_in_common_boilerplate(

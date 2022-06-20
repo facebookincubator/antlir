@@ -12,8 +12,7 @@ rust_binary(
         "slog_glog_fmt",
         "//metalos/lib/systemd:systemd",
     ],
-    unittest_opts = shape.new(
-        unittest_opts_t,
+    unittest_opts = unittest_opts_t(
         container = shape.new(
             container_unittest_opts_t,
             boot = True,

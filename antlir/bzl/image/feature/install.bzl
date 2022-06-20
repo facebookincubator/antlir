@@ -57,7 +57,6 @@ directory output by a Buck-runnable target, then you should use
 
 load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
 load(
     "//antlir/bzl:target_tagger.bzl",
@@ -143,11 +142,11 @@ defaults to `False` to speed up incremental rebuilds.
 
     install_spec = {
         "dest": dest,
-        "source": shape.new(target_tagged_image_source_t, **tagged_source),
+        "source": target_tagged_image_source_t(**tagged_source),
     }
     add_stat_options(install_spec, mode, user, group)
 
-    install_files = shape.new(install_files_t, **install_spec)
+    install_files = install_files_t(**install_spec)
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [install_files]),
@@ -193,7 +192,7 @@ image) is used. The default for `user` and `group` is `root`.
 
     install_spec = {
         "dest": dest,
-        "source": shape.new(target_tagged_image_source_t, **source_dict),
+        "source": target_tagged_image_source_t(**source_dict),
     }
     add_stat_options(install_spec, mode, user, group)
 
@@ -203,7 +202,7 @@ image) is used. The default for `user` and `group` is `root`.
     # bugs everywhere.  A possible reason NOT to do this is that it would
     # require fixes to `install` invocations that extract non-executable
     # contents out of a directory target that is executable.
-    install_files = shape.new(install_files_t, **install_spec)
+    install_files = install_files_t(**install_spec)
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [install_files]),

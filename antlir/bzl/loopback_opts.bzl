@@ -5,13 +5,11 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":loopback_opts.shape.bzl", "loopback_opts_t")
-load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 
 def _new_loopback_opts_t(
         **kwargs):
-    return shape.new(
-        loopback_opts_t,
+    return loopback_opts_t(
         **kwargs
     )
 

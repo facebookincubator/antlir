@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:shape.bzl", "shape")
 load(
     "//antlir/bzl:target_tagger.bzl",
     "image_source_as_target_tagged_t",
@@ -25,8 +24,7 @@ def feature_tarball(source, dest, force_root_ownership = False):
     by another `feature_new` item.
     """
     target_tagger = new_target_tagger()
-    tarball = shape.new(
-        tarball_t,
+    tarball = tarball_t(
         force_root_ownership = force_root_ownership,
         into_dir = dest,
         source = image_source_as_target_tagged_t(

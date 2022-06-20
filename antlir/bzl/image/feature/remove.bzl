@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":remove.shape.bzl", "remove_paths_t")
 
@@ -20,8 +19,7 @@ not to conflict with each other.
 By default, it is an error if the specified path is missing from the image,
 though this can be avoided by setting `must_exist` to `False`.
     """
-    remove_spec = shape.new(
-        remove_paths_t,
+    remove_spec = remove_paths_t(
         path = dest,
         must_exist = must_exist,
     )

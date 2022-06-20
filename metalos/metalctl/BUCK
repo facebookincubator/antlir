@@ -19,8 +19,7 @@ rust_binary(
         "//metalos/lib/systemd:systemd",
     ],
     test_srcs = glob(["tests/**/*.rs"]),
-    unittest_opts = shape.new(
-        unittest_opts_t,
+    unittest_opts = unittest_opts_t(
         container = shape.new(
             container_unittest_opts_t,
             boot = True,

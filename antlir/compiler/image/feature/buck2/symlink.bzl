@@ -3,13 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:symlink.shape.bzl", "symlink_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 def _generate_shape(link_target, link_name):
-    return shape.new(
-        symlink_t,
+    return symlink_t(
         dest = link_name,
         source = link_target,
     )

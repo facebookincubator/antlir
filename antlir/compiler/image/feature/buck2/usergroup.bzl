@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
@@ -52,8 +51,7 @@ def feature_user_add(
         name = "user_add",
         key = "users",
         include_in_target_name = {"username": username},
-        feature_shape = shape.new(
-            user_t,
+        feature_shape = user_t(
             name = username,
             id = uid,
             primary_group = primary_group,
@@ -83,8 +81,7 @@ def feature_group_add(groupname, gid = None):
         include_in_target_name = {
             "groupname": groupname,
         },
-        feature_shape = shape.new(
-            group_t,
+        feature_shape = group_t(
             name = groupname,
             id = gid,
         ),

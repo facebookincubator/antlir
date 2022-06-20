@@ -31,8 +31,7 @@ def _generate_shape(source_dict, src_layer, src_path, dest_path):
             "dest_path",
         )
 
-    return shape.new(
-        clone_t,
+    return clone_t(
         dest = dest_path,
         omit_outer_dir = omit_outer_dir,
         pre_existing_dest = pre_existing_dest,

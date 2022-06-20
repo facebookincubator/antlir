@@ -9,7 +9,6 @@ load(":constants.bzl", "REPO_CFG")
 load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "buck_genrule", third_party_shim = "third_party")
-load(":shape.bzl", "shape")
 load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third_party_build"
@@ -143,16 +142,14 @@ chmod +x $OUT
     )
 
 def _new_script(build, install, prepare = ""):
-    return shape.new(
-        script_t,
+    return script_t(
         prepare = prepare,
         build = build,
         install = install,
     )
 
 def _library(name, *, include_path = "include", lib_path = "lib"):
-    return shape.new(
-        dep_t,
+    return dep_t(
         name = name,
         source = third_party_shim.library(name, name, "antlir"),
         paths = [include_path, lib_path],

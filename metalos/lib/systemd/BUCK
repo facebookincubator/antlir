@@ -13,8 +13,7 @@ rust_library(
         "os_pipe",
         "slog_glog_fmt",
     ],
-    unittest_opts = shape.new(
-        unittest_opts_t,
+    unittest_opts = unittest_opts_t(
         container = shape.new(
             container_unittest_opts_t,
             boot = True,

@@ -7,7 +7,6 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
@@ -48,8 +47,7 @@ def _target(uname, artifact, base = ""):
     return normalize_target(base + ":" + _name(uname, artifact))
 
 def _derived_targets_shape(uname, base = ""):
-    return shape.new(
-        derived_kernel_targets_t,
+    return derived_kernel_targets_t(
         vmlinuz = _target(uname, "vmlinuz", base),
         modules_directory = _target(uname, "modules", base),
         disk_boot_modules = _target(uname, "disk-boot-modules", base),
@@ -204,8 +202,7 @@ def _derived_targets(uname, upstream_targets):
     return _derived_targets_shape(uname)
 
 def _upstream_kernel_targets_shape(uname, base = "", has_devel = False, has_headers = False):
-    return shape.new(
-        upstream_kernel_targets_t,
+    return upstream_kernel_targets_t(
         main_rpm = _target(uname, "main.rpm", base),
         devel_rpm = _target(uname, "devel.rpm", base) if has_devel else None,
         headers_rpm = _target(uname, "headers.rpm", base) if has_headers else None,
@@ -256,15 +253,13 @@ def _kernel(kernel):
     )
 
 def _kernel_from_rpms(uname, main_rpm, devel_rpm = None, headers_rpm = None):
-    upstream = shape.new(
-        upstream_kernel_targets_t,
+    upstream = upstream_kernel_targets_t(
         main_rpm = main_rpm,
         devel_rpm = devel_rpm,
         headers_rpm = headers_rpm,
     )
     derived = _derived_targets(uname, upstream)
-    return shape.new(
-        kernel_t,
+    return kernel_t(
         uname = uname,
         upstream_targets = upstream,
         derived_targets = derived,
@@ -275,8 +270,7 @@ def _pre_instantiated_kernel(uname):
     Return a kernel_t from a uname that must have already been built with
     metalos_kernel.kernel()
     """
-    return shape.new(
-        kernel_t,
+    return kernel_t(
         uname = uname,
         upstream_targets = _upstream_kernel_targets_shape(
             uname,
