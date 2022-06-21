@@ -5,7 +5,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "setup",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         image.rpms_install([
             "hostname",

@@ -21,7 +21,7 @@ image.layer(name = "my-image", ...)
 
 image.layer(
   name = "inspect-my-image",
-  parent_layer = flavor_helpers.default_flavor_build_appliance,
+  parent_layer = flavor_helpers.get_build_appliance(),
   features = [image.layer_mount(":my-image", "/my")]
 )
 ```
@@ -125,7 +125,7 @@ SELECT * from "rpm" WHERE "name" IS "netperf";
 ### How do I download RPMs from a particular snapshot?
 
 First, you need a build appliance target path. By default, the build appliance
-is specified by `REPO_CFG.default_flavor_build_appliance`.  If its target path
+is specified by `flavor_helpers.get_build_appliance()`.  If its target path
 is `//BUILD:APPLIANCE`, and it uses `dnf`, then the following code will
 put any RPMs matching `jq` into your current directory:
 

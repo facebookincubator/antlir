@@ -1,6 +1,7 @@
 # @noautodeps
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
@@ -67,7 +68,7 @@ debug = [
 
 image.layer(
     name = "busybox",
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     features = [
         image.rpms_install([
             "busybox",
@@ -121,7 +122,7 @@ image.layer(
             source = REPO_CFG.artifact["metalos.layer.base"],
         ),
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = [
         "//metalos/bootloader/...",
         "//metalos/imaging_initrd/...",
@@ -149,7 +150,7 @@ image.layer(
         feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
         # @oss-disable: "//metalos/initrd/facebook:features", 
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = [
         "//antlir/vm/...",
         "//metalos/...",
@@ -189,7 +190,7 @@ image.layer(
             source = ":with-initrd-bins",
         ),
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = [
         "//metalos/...",
         "//scripts/dschatzberg/vm:",

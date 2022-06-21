@@ -1,4 +1,4 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
@@ -50,6 +50,6 @@ image.layer(
         )
         for i in grub2_modules
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = ["PUBLIC"],
 )

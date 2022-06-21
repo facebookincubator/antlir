@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
@@ -144,7 +144,7 @@ def _derived_targets(uname, upstream_targets):
             image.ensure_dirs_exist("/usr/lib/modules"),
             feature.install(_target(uname, "disk-boot-modules"), paths.join("/usr/lib/modules", uname)),
         ],
-        flavor = REPO_CFG.antlir_linux_flavor,
+        flavor = flavor_helpers.get_antlir_linux_flavor(),
         visibility = [],
     )
 
@@ -170,7 +170,7 @@ def _derived_targets(uname, upstream_targets):
         name = _name(uname, "devel-installed"),
         # This is used because we need the gpg keys that this rpm is signed
         # by and the build appliance should have it.
-        parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.antlir_linux_flavor].build_appliance,
+        parent_layer = flavor_helpers.get_build_appliance(flavor_helpers.get_antlir_linux_flavor()),
         features = [
             image.rpms_install([upstream_targets.devel_rpm]),
         ],
@@ -195,7 +195,7 @@ def _derived_targets(uname, upstream_targets):
             image.ensure_subdirs_exist("/modules", "build"),
             image.ensure_subdirs_exist("/modules", "source"),
         ],
-        flavor = REPO_CFG.antlir_linux_flavor,
+        flavor = flavor_helpers.get_antlir_linux_flavor(),
         visibility = __METALOS_AND_VMTEST_VISIBILITY,
     )
 

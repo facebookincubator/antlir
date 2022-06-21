@@ -1,4 +1,4 @@
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:oss_shim.bzl", "python_unittest", "rust_binary")
@@ -47,7 +47,7 @@ extract.source_layer(
             "/usr/bin/repo-built-binary",
         ),
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
 )
 
 rust_binary(

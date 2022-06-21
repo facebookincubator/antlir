@@ -9,7 +9,7 @@ load(":oss_shim.bzl", "buck_genrule")
 load(":target_helpers.bzl", "antlir_dep")
 
 def extract_rpm_manifest(name, layer, visibility = None, build_appliance = None):
-    build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
+    build_appliance = build_appliance or flavor_helpers.get_build_appliance()
 
     buck_genrule(
         name = name,

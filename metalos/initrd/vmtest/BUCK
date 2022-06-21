@@ -1,7 +1,7 @@
 # @noautodeps
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
@@ -142,7 +142,7 @@ package.new(
 
 image.layer(
     name = "empty-layer",
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
 )
 
 image.layer(
