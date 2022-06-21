@@ -78,7 +78,6 @@ def native_service(
     image.layer(
         name = name,
         parent_layer = parent_layer,
-        flavor = REPO_CFG.antlir_linux_flavor,
         visibility = visibility,
         features = features,
     )

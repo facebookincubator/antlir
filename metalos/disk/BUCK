@@ -1,6 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
@@ -11,7 +11,7 @@ load(":disk.bzl", "disk")
 # store subvolumes for MetalOS images and runtime state
 image.layer(
     name = "control",
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     features = [
         image.ensure_dirs_exist("/image"),
         image.ensure_subdirs_exist("/image", "initrd"),
@@ -51,7 +51,7 @@ btrfs.new(
 
 image.layer(
     name = "empty-efi",
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     features = [
         image.ensure_dirs_exist("/EFI"),
     ],

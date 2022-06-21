@@ -50,18 +50,28 @@ def _get_flavor_config(flavor, flavor_config_override):
 
     return new_flavor_config(**flavor_config)
 
-def _get_build_appliance(flavor):
+def _get_flavor_default():
+    return REPO_CFG.flavor_default
+
+def _get_antlir_linux_flavor():
+    return REPO_CFG.antlir_linux_flavor
+
+def _get_build_appliance(flavor = None):
     """
     Arguments
     - `flavor`: The flavor of the build appliance to return.
     """
+    if flavor == None:
+        flavor = _get_flavor_default()
     return REPO_CFG.flavor_to_config[flavor].build_appliance
 
-def _get_rpm_installer(flavor):
+def _get_rpm_installer(flavor = None):
     """
     Arguments
     - `flavor`: The flavor of the rpm installer to return.
     """
+    if flavor == None:
+        flavor = _get_flavor_default()
     return REPO_CFG.flavor_to_config[flavor].rpm_installer
 
 def _get_rpm_installers_supported():
@@ -75,8 +85,9 @@ def _get_rpm_installers_supported():
     return rpm_installers.keys()
 
 flavor_helpers = struct(
-    default_flavor_build_appliance = _get_build_appliance(REPO_CFG.flavor_default),
     get_build_appliance = _get_build_appliance,
+    get_flavor_default = _get_flavor_default,
+    get_antlir_linux_flavor = _get_antlir_linux_flavor,
     get_flavor_config = _get_flavor_config,
     get_rpm_installer = _get_rpm_installer,
     get_rpm_installers_supported = _get_rpm_installers_supported,

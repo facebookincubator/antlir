@@ -1,8 +1,5 @@
 # @noautodeps
 
-# IMPORTANT: Do NOT use `oss_shim.bzl` here, instead load fbcode macros via
-# the shim in `defs.bzl`.
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:container_opts.shape.bzl", "shadow_path_t")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
@@ -90,7 +87,7 @@ defs.buck_genrule(
 # that does not impose a circular dependency.  But for now, this works.
 image.layer(
     name = "test-layer",
-    parent_layer = REPO_CFG.flavor_to_config["antlir_test"].build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance("antlir_test"),
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
         image.ensure_subdirs_exist(
@@ -111,7 +108,7 @@ image.layer(
 
 image.layer(
     name = "test-layer-iproute",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         image.rpms_install(
             [
@@ -1087,7 +1084,7 @@ add_rpm_repo_snapshots_layer(
 
 image.layer(
     name = "groups-added",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         feature.group_add("foo"),
         feature.group_add("leet", 1337),
@@ -1101,7 +1098,7 @@ image.layer(
 # on a host.
 image.layer(
     name = "users-added",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         feature.group_add("newuser"),
         feature.user_add(

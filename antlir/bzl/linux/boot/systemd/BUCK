@@ -1,4 +1,5 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 
 # The base image.layer for a systemd boot partition
@@ -24,6 +25,6 @@ image.layer(
             "/EFI/BOOT/BOOTX64.efi",
         ),
     ],
-    flavor = REPO_CFG.antlir_linux_flavor,
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = ["PUBLIC"],
 )

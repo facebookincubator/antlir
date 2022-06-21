@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load(":constants.bzl", "REPO_CFG")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
 load(":oss_shim.bzl", "buck_genrule", third_party_shim = "third_party")
@@ -86,7 +86,7 @@ chmod +x $OUT
 
     image.layer(
         name = name + "__setup_layer",
-        parent_layer = REPO_CFG.flavor_to_config[REPO_CFG.flavor_default].build_appliance,
+        parent_layer = flavor_helpers.get_build_appliance(),
         features = [
             image.ensure_dirs_exist(SRC_DIR),
             image.ensure_dirs_exist(DEPS_DIR),
@@ -109,7 +109,7 @@ chmod +x $OUT
             )
             for dep in deps
         ],
-        flavor = REPO_CFG.antlir_linux_flavor,
+        flavor = flavor_helpers.get_antlir_linux_flavor(),
     )
 
     image.genrule_layer(

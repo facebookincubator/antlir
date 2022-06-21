@@ -14,7 +14,7 @@ image.layer(
     flavor = "antlir_test",
     features = [
         image.clone(
-            flavor_helpers.default_flavor_build_appliance,
+            flavor_helpers.get_build_appliance(),
             "/usr/sbin/busybox",
             "/busybox",
         ),
@@ -61,7 +61,7 @@ image.layer(
 # Time tests
 image.layer(
     name = "test-layer-timezone-utc",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance(),
     features = [linux.time.timezone(zone = "UTC")],
 )
 
@@ -76,7 +76,7 @@ image.python_unittest(
 
 image.layer(
     name = "test-layer-timezone-us-pacific",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance(),
     features = [linux.time.timezone(zone = "US/Pacific")],
 )
 
@@ -91,7 +91,7 @@ image.python_unittest(
 
 image.layer(
     name = "test-layer-os-release",
-    parent_layer = flavor_helpers.default_flavor_build_appliance,
+    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         linux.release.install(
             path = "/usr/lib/os-release",

@@ -94,7 +94,7 @@ python_library(
     srcs = ["tests/temp_repos.py"],
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
-        layer_resource(flavor_helpers.default_flavor_build_appliance): "tests/build-appliance",
+        layer_resource(flavor_helpers.get_build_appliance()): "tests/build-appliance",
         "//antlir/rpm/tests/gpg_test_keypair:gpg-test-signing-key": "tests/signing_key",
     },
     deps = [
@@ -392,7 +392,7 @@ test_rpm_repo_snapshot(
     #
     # All other RPM installations via one of the few build appliances that
     # install this snapshot use
-    # `flavor_helpers.get_rpm_installer(REPO_CFG.flavor_default)`.
+    # `flavor_helpers.get_rpm_installer()`.
     rpm_installers = ("dnf", "yum"),
 )
 

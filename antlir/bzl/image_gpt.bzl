@@ -25,7 +25,7 @@ def image_gpt(
         visibility = None,
         build_appliance = None):
     visibility = visibility or []
-    build_appliance = build_appliance or flavor_helpers.default_flavor_build_appliance
+    build_appliance = build_appliance or flavor_helpers.get_build_appliance()
 
     gpt = gpt_t(name = name, table = table, disk_guid = disk_guid)
     buck_genrule(

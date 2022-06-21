@@ -81,7 +81,7 @@ python_unittest(
     srcs = ["group_integration_test.py"],
     resources = {
         layer_resource(
-            flavor_helpers.default_flavor_build_appliance,
+            flavor_helpers.get_build_appliance(),
         ): "base-layer",
         layer_resource(
             TEST_IMAGE_PREFIX + "groups-added",
@@ -373,7 +373,7 @@ python_unittest(
     srcs = ["user_integration_test.py"],
     resources = {
         layer_resource(
-            flavor_helpers.default_flavor_build_appliance,
+            flavor_helpers.get_build_appliance(),
         ): "base-layer",
         layer_resource(
             TEST_IMAGE_PREFIX + "users-added",

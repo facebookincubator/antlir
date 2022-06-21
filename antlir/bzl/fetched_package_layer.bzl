@@ -81,7 +81,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "get_visibility")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
-load(":constants.bzl", "REPO_CFG")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image_layer.bzl", "image_layer")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
@@ -180,7 +180,9 @@ def _fetched_package_layer(
         print_how_to_fetch_json,
         fetcher,  # `_PackageInfoFetcher`
         visibility,
-        flavor = REPO_CFG.antlir_linux_flavor):
+        flavor = None):
+    if not flavor:
+        flavor = flavor_helpers.get_antlir_linux_flavor()
     name = package + "/" + tag + name_suffix
     visibility = get_visibility(visibility)
 
