@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":oss_shim.bzl", "is_buck2")
+
 """
 Forwards-and-backwards compatible utilities for dealing with structs.
 """
@@ -19,12 +21,12 @@ def struct_to_dict(s):
     return {attr: getattr(s, attr) for attr in dir(s) if attr not in ["to_json", "to_proto"]}
 
 def _as_json(s):
-    if hasattr(s, "to_json"):
+    if is_buck2():
+        # To avoid a warning about not using native
+        my_native = native
+        return my_native.json.encode(s)
+    else:
         return s.to_json()
-
-    # To avoid a warning about not using native
-    my_native = native
-    return my_native.json.encode(s)
 
 structs = struct(
     to_dict = struct_to_dict,
