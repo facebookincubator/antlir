@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use nix::mount::{mount, MsFlags};
 use slog::{crit, info, o, Logger};
