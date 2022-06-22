@@ -30,6 +30,7 @@ def _next_tag() -> str:
     return tag
 
 
+# TODO: this assumes all disks are virtio-blk which is not accurate anymore
 def _next_drive() -> str:
     global __next_drive_index
     idx = __next_drive_index
@@ -268,7 +269,7 @@ def _tmp_qcow2_disk(
 
 
 @dataclass(frozen=True)
-class QCow2RootDisk(Share):
+class QCow2Disk(Share):
     """
     Share a btrfs filesystem to a Qemu instance as a
     qcow2 disk. Defaults to virtio-blk, but can also be attached with other
@@ -280,9 +281,9 @@ class QCow2RootDisk(Share):
     stack: AsyncExitStack
     interface: disk_interface_t
     subvol: str = "volume"
-    dev: str = "vda"
     additional_scratch_mb: Optional[int] = None
     cow_disk: Optional[Path] = None
+    dev: str = field(default_factory=_next_drive)
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -301,11 +302,11 @@ class QCow2RootDisk(Share):
         return (
             "--blockdev",
             (
-                "driver=qcow2,node-name=root-drive,"
+                f"driver=qcow2,node-name={self.dev},"
                 f"file.driver=file,file.filename={self.cow_disk!s},"
             ),
             "--device",
-            f"{self.interface.value},drive=root-drive,serial=ROOT_DISK_SERIAL",
+            f"{self.interface.value},drive={self.dev},serial=ROOT_DISK_SERIAL",
         )
 
     @property

@@ -130,6 +130,7 @@ def _new_vm_opts(
         kernel = None,
         initrd = None,
         disk = None,
+        disks = (),
         runtime = None,
         boot_from_disk = False,
         **kwargs):
@@ -153,7 +154,12 @@ def _new_vm_opts(
         kernel = normalize_kernel(kernel or kernels.default)
         initrd = initrd or antlir_dep("vm/initrd:{}-initrd".format(kernel.uname))
 
-    disk = disk or _new_vm_disk()
+    if disk and not disks:
+        disks = [disk]
+    if disk and disks:
+        disks = [disk] + list(disks)
+    if not disk and not disks:
+        disks = [_new_vm_disk()]
 
     runtime = runtime or _new_vm_runtime()
 
@@ -161,7 +167,7 @@ def _new_vm_opts(
         cpus = cpus,
         initrd = initrd,
         kernel = kernel,
-        disk = disk,
+        disks = disks,
         runtime = runtime,
         boot_from_disk = boot_from_disk,
         **kwargs
