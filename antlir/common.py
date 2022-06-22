@@ -442,6 +442,7 @@ async def async_run(
         cmd=cmd,
         input=input,
         check=check,
+        **kwargs,
     )
 
 
@@ -459,4 +460,5 @@ async def async_run_shell(
         cmd=cmd,
         input=input,
         check=check,
+        **kwargs,
     )
