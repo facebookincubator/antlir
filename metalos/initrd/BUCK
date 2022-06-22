@@ -137,7 +137,7 @@ image.layer(
     features = [
         linux.busybox.install(
             src = ":busybox",
-            src_path = "/sbin/busybox",
+            src_path = "/usr/sbin/busybox",
             applets = DEFAULT_APPLETS,
         ),
         networking,
