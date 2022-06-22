@@ -31,7 +31,7 @@ from antlir.vm.common import (
     SidecarProcess,
 )
 from antlir.vm.guest_ssh import GuestSSHConnection
-from antlir.vm.share import Plan9Export, QCow2RootDisk, Share
+from antlir.vm.share import Plan9Export, QCow2Disk, Share
 from antlir.vm.tap import VmTap
 from antlir.vm.tpm import TPMError, VmTPM
 
@@ -291,17 +291,22 @@ async def vm(
     # in-repo testing.
     repo_cfg = repo_config()
 
-    root_disk = QCow2RootDisk(
-        path=opts.disk.package.path,
-        qemu_img=opts.runtime.emulator.img_util.path,
-        additional_scratch_mb=opts.disk.additional_scratch_mb,
-        interface=opts.disk.interface,
-        subvol=opts.disk.subvol,
-        stack=stack,
-    )
+    disks = [
+        QCow2Disk(
+            path=disk.package.path,
+            qemu_img=opts.runtime.emulator.img_util.path,
+            additional_scratch_mb=disk.additional_scratch_mb,
+            interface=disk.interface,
+            subvol=disk.subvol,
+            stack=stack,
+        )
+        for disk in opts.disks
+    ]
 
     # Root disk is always first
+    root_disk = disks[0]
     shares.insert(0, root_disk)
+    shares.extend(disks[1:])
 
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
