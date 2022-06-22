@@ -265,6 +265,13 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
         with self.assertRaisesRegex(AssertionError, "You must set"):
             await async_run(["foo"], input=b"hello there")
 
+    async def test_async_run_pipe_stdin(self) -> None:
+        await async_run(
+            ["echo", "-n", "hithere"],
+            input=b"hello there",
+            stdin=asyncio.subprocess.PIPE,
+        )
+
     async def test_async_run_shell(self) -> None:
         cmd = "echo -n hithere"
         res = await async_run_shell(
