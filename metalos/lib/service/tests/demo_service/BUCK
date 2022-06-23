@@ -1,5 +1,7 @@
+load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/bzl/service:service.bzl", "native_service")
+load("//metalos/bzl/service:service.shape.bzl", "cmd_t", "exec_t", "runas_t", "service_t")
 
 rust_binary(
     name = "demo-service",
@@ -14,11 +16,33 @@ rust_binary(
 )
 
 native_service(
-    name = "layer",
-    binary = ":demo-service",
-    generator_binary = "//metalos/lib/service/tests/demo_service/generator:generator",
-    service_binary_path = "/usr/bin/demo",
-    service_name = "metalos.service.demo",
-    systemd_service_unit = "metalos.service.demo.service",
-    visibility = ["//metalos/lib/service/..."],
+    service = shape.new(
+        service_t,
+        name = "metalos.service.demo",
+        exec_info = exec_t(
+            pre = [cmd_t(
+                args = [
+                    "--run=${RUNTIME_DIRECTORY}",
+                    "--state=${STATE_DIRECTORY}",
+                    "--cache=${CACHE_DIRECTORY}",
+                    "--logs=${LOGS_DIRECTORY}",
+                ],
+                binary = "//metalos/lib/service/tests/demo_service:demo-service",
+            )],
+            # simulate a real service that would needs to be restarted on
+            # version updates
+            run = [cmd_t(
+                args = [
+                    "-c",
+                    "sleep 12h",
+                ],
+                binary = "/bin/bash",
+            )],
+            runas = runas_t(
+                group = "demoservice",
+                user = "demoservice",
+            ),
+        ),
+        config_generator = "//metalos/lib/service/tests/demo_service/generator:generator",
+    ),
 )

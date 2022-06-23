@@ -1,115 +1,134 @@
+load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
 
-METALOS_PATH = "metalos"
+METALOS_DIR = "/metalos"
 
-# this is an helper that returns an antlir layer that matches the MetalOS native
-# service specifications in antlir/docs/metalos/native-services
-#
-# - name is the name of the layer
-# - service_name is the name of the service
-# - binary is the binary of the service, could either be a buck rule or a file
-# - parent_layer is the parent layer we want to inherit from, defaults to metalos.layer.base if not provided
-# - service_binary_path is the path in the layer where the binary should be installed
-# - user and group are the unix groups
-# - visibility is a list of path that can use this macro, defaults to //metalos/... and //netos/...
-# - extra_features is used to personalise your layer
+# Create an image and an fbpkg for a MetalOS native service defined in a
+# service_t shape (from service.shape.bzl)
 def native_service(
-        name,
-        service_name,
-        systemd_service_unit,
-        binary,
-        parent_layer = None,
-        service_binary_path = None,
-        user = "root",
-        group = "root",
-        generator_binary = None,
-        extra_features = [],
-        user_home_dir = None,
+        service,
+        extra_features = None,
         visibility = None):
-    if not service_binary_path:
-        service_binary_path = "/usr/bin/{}".format(service_name)
+    features = [
+        image.ensure_dirs_exist(METALOS_DIR),
+        image.ensure_subdirs_exist(METALOS_DIR, "bin"),
+    ]
+    if service.exec_info.runas.user != "root":
+        user_home_dir = "/home/{}".format(service.exec_info.runas.user)
+        features.append(feature.setup_standard_user(
+            service.exec_info.runas.user,
+            service.exec_info.runas.group,
+            user_home_dir,
+        ))
 
-    if not visibility:
-        visibility = ["//metalos/...", "//netos/..."]
-
-    if not parent_layer:
-        parent_layer = REPO_CFG.artifact["metalos.layer.base"]
-
-    if not user_home_dir and user != "root":
-        user_home_dir = "/home/{}".format(user)
-
-    features = []
-
-    if user != "root":
-        features.append(feature.setup_standard_user(user, group, user_home_dir))
-
+    # install buck binaries at a path based on their target so that the user
+    # doesn't have to provide a unique name that would then have to be
+    # propagated to the native service lib that writes out the unit file
+    binaries = {
+        binary_target_to_path(cmd.binary): cmd.binary
+        for cmd in service.exec_info.pre + service.exec_info.run
+        if ":" in cmd.binary
+    }
+    for cmd in service.exec_info.pre + service.exec_info.run:
+        if ":" in cmd.binary and "//" not in cmd.binary:
+            fail("all binaries used in native services must be using absolute target paths ({})".format(cmd.binary))
     features.extend([
-        image.ensure_subdirs_exist(
-            "/",
-            METALOS_PATH,
-            user = user,
-            group = group,
-            # NOTE: it's very important /metalos has permissions 775
-            # otherwise services would not be able to access subdirs if they
-            # run as user different from root.
-            mode = 0o0775,
-        ),
         feature.install_buck_runnable(
-            binary,
-            service_binary_path,
-            mode = "a+rx",
-        ),
-        feature.install(
-            systemd_service_unit,
-            "/{}/{}.service".format(METALOS_PATH, service_name),
-        ),
+            src,
+            dst,
+            user = service.exec_info.runas.user,
+            group = service.exec_info.runas.group,
+        )
+        for dst, src in binaries.items()
+    ])
+    features.extend([
+        feature.install_buck_runnable(
+            src,
+            dst,
+            user = service.exec_info.runas.user,
+            group = service.exec_info.runas.group,
+        )
+        for dst, src in binaries.items()
     ])
 
-    if generator_binary:
-        features.append(feature.install(generator_binary, "/metalos/generator", mode = "a+rx"))
+    if service.config_generator:
+        features.append(feature.install(service.config_generator, "/metalos/generator", mode = "a+rx"))
 
-    features.extend(extra_features)
+    features.append(__DELETED_IN_STACK_gen_unit(service))
+
+    extra_features = extra_features or []
 
     image.layer(
-        name = name,
-        parent_layer = parent_layer,
-        visibility = visibility,
+        name = service.name + "--layer",
         features = features,
+        parent_layer = REPO_CFG.artifact["metalos.layer.base"],
+        visibility = visibility if visibility != None else ["//metalos/...", "//netos/..."],
     )
 
-    _generate_systemd_expectations_test(name, service_name, systemd_service_unit, visibility)
+# this will be deleted later in this diff stack when metalos natively
+# understands the service shape, and exists to break up this feature into two
+# smaller diffs, one that implements the build-time interface and another on the
+# runtime side
+def __DELETED_IN_STACK_gen_unit(service):
+    unit = "[Unit]\n"
+    for dep in service.dependencies:
+        if dep.mode == "after-only":
+            unit += "After={}\n".format(dep.unit)
+        if dep.mode == "requires-only":
+            unit += "Requires={}\n".format(dep.unit)
+        if dep == "requires-and-after":
+            unit += "Requires={}\n".format(dep.unit)
+            unit += "After={}\n".format(dep.unit)
 
-def _generate_systemd_expectations_test(layer_name, service_name, systemd_service_unit, visibility):
-    service_name_t = shape.shape(service_name = str)
-    service_name_instance = service_name_t(
-        service_name = service_name,
+    unit += "\n[Service]\n"
+    unit += "Type={}\n".format(service.exec_info.service_type)
+    unit += "User={}\n".format(service.exec_info.runas.user)
+    unit += "Group={}\n".format(service.exec_info.runas.group)
+    for cmd in service.exec_info.pre:
+        unit += "ExecStartPre={}\n".format(exec_line(cmd))
+    for cmd in service.exec_info.run:
+        unit += "ExecStart={}\n".format(exec_line(cmd))
+    for key, val in service.exec_info.environment.items():
+        unit += "Environment={}={}\n".format(key, val)
+    if service.exec_info.restart:
+        unit += "Restart={}\n".format(service.exec_info.restart)
+    if service.exec_info.resource_limits:
+        if service.exec_info.resource_limits.open_fds:
+            unit += "LimitNOFILE={}\n".format(service.exec_info.resource_limits.open_fds)
+        if service.exec_info.resource_limits.memory_max_bytes:
+            unit += "MemoryMax={}\n".format(service.exec_info.resource_limits.memory_max_bytes)
+
+    if service.certificates and service.certificates.needs_service_cert:
+        unit += "BindReadOnlyPaths=/var/facebook/x509_svc/{}_server.pem\n".format(service.name)
+        unit += "BindReadOnlyPaths=/var/facebook/x509_svc/{}_client.pem\n".format(service.name)
+        unit += "Environment=THRIFT_TLS_SRV_CERT=/var/facebook/x509_svc/{}_server.pem\n".format(service.name)
+        unit += "Environment=THRIFT_TLS_SRV_KEY=/var/facebook/x509_svc/{}_server.pem\n".format(service.name)
+        unit += "Environment=THRIFT_TLS_CL_CERT=/var/facebook/x509_svc/{}_client.pem\n".format(service.name)
+        unit += "Environment=THRIFT_TLS_CL_KEY=/var/facebook/x509_svc/{}_client.pem\n".format(service.name)
+    if service.certificates and service.certificates.needs_host_cert:
+        unit += "BindReadOnlyPaths=/etc/host_client.pem\n"
+        unit += "BindReadOnlyPaths=/etc/host_server.pem\n"
+
+    buck_genrule(
+        name = "{}--service-unit".format(service.name),
+        cmd = "echo {} > $OUT".format(shell.quote(unit)),
+        visibility = [],
+        antlir_rule = "user-internal",
+    )
+    return feature.install(
+        ":{}--service-unit".format(service.name),
+        paths.join(METALOS_DIR, "{}.service".format(service.name)),
     )
 
-    # because the service is installed in /metalos/<service_name>.service and not in a standard
-    # systemd path we need to create another layer where we install the unit so it will be
-    # visible to systemd and the systemd_expectations_test
-    image.layer(
-        name = "{}-native-service-systemd-expectations".format(layer_name),
-        parent_layer = ":{}".format(layer_name),
-        features = [
-            systemd.install_unit(systemd_service_unit, "{}.service".format(service_name)),
-            # we do not want the unit to start but we still want to analyse it
-            systemd.install_dropin("//metalos/os/tests:skip-unit.conf", "{}.service".format(service_name)),
-            systemd.enable_unit("{}.service".format(service_name), "multi-user.target"),
-        ],
-    )
-    systemd_expectations_rendered_template = shape.render_template(
-        name = "systemd-expectations-rendered-template",
-        instance = service_name_instance,
-        template = "//metalos/bzl/service:systemd-expectations-template",
-    )
-    systemd_expectations_test(
-        name = "systemd-expectations",
-        expectations = systemd_expectations_rendered_template,
-        layer = ":{}-native-service-systemd-expectations".format(layer_name),
-    )
+def binary_target_to_path(target):
+    return paths.join(METALOS_DIR, "bin/{}".format(target.replace("/", "."))).lstrip(".")
+
+def exec_line(cmd):
+    argv0 = cmd.binary
+    if ":" in argv0:
+        argv0 = binary_target_to_path(argv0)
+    return "{} {}".format(argv0, " ".join([shell.quote(a) for a in cmd.args]))
