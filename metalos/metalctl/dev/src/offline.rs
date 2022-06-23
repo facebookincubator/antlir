@@ -11,8 +11,8 @@ use std::os::unix::io::FromRawFd;
 use std::os::unix::process::CommandExt;
 
 use anyhow::{Context, Result};
+use clap::Parser;
 use slog::{debug, Logger};
-use structopt::StructOpt;
 
 use metalos_host_configs::api::OfflineUpdateRequest;
 use metalos_host_configs::host::HostConfig;
@@ -20,15 +20,15 @@ use state::State;
 
 use crate::{FilePackage, PackageArg, SendstreamPackage};
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub(crate) struct Opts {
-    #[structopt(long)]
+    #[clap(long)]
     rootfs: Option<PackageArg<SendstreamPackage>>,
-    #[structopt(long)]
+    #[clap(long)]
     kernel: Option<PackageArg<SendstreamPackage>>,
-    #[structopt(long)]
+    #[clap(long)]
     initrd: Option<PackageArg<FilePackage>>,
-    #[structopt(long, help = "defaults to current cmdline")]
+    #[clap(long, help = "defaults to current cmdline")]
     kernel_cmdline: Option<String>,
 }
 

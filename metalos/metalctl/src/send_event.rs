@@ -6,26 +6,26 @@
  */
 
 use anyhow::{Context, Result};
+use clap::Parser;
 use serde_json;
 use slog::{info, Logger};
-use structopt::StructOpt;
 
 use metalos_host_configs::host::HostConfig;
 use net_utils::get_mac;
 use send_events::{Event, EventSender, EventSink, HttpSink, Source, SourceArgs};
 use state::State;
 
-#[derive(StructOpt, Debug, Clone)]
+#[derive(Parser, Debug, Clone)]
 pub struct Opts {
     // struct fields have public visibility so that the struct can used by
     // code outside this crate that want to reuse the send_event function.
     pub event_name: String,
     pub sender: String,
 
-    #[structopt(long, parse(try_from_str = serde_json::from_str))]
+    #[clap(long, parse(try_from_str = serde_json::from_str))]
     pub payload: Option<serde_json::Value>,
 
-    #[structopt(flatten)]
+    #[clap(flatten)]
     pub source_args: SourceArgs,
 }
 
@@ -105,7 +105,7 @@ mod tests {
                     );
                     send_event(
                         log,
-                        Opts::from_iter_safe(&[
+                        Opts::try_parse_from(&[
                             "send-event",
                             "test-event",
                             "unit-test",

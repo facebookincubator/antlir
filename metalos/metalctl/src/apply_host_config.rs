@@ -8,18 +8,18 @@
 use std::path::PathBuf;
 
 use anyhow::{Context, Result};
+use clap::Parser;
 use slog::{o, Logger};
-use structopt::StructOpt;
 use url::Url;
 
 use evalctx::{Generator, StarlarkGenerator};
 use get_host_config::get_host_config;
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub struct Opts {
     host_config_uri: Url,
     root: PathBuf,
-    #[structopt(
+    #[clap(
         default_value = "usr/lib/metalos/generators",
         help = "Root of starlark generator files. If a relative path, it will \
         be interpreted as relative to --root."

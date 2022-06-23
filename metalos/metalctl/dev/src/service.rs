@@ -6,8 +6,8 @@
  */
 
 use anyhow::{Context, Result};
+use clap::Parser;
 use slog::Logger;
-use structopt::StructOpt;
 
 use metalos_host_configs::packages::{Format, Service as ServicePackage};
 use metalos_host_configs::runtime_config::Service;
@@ -17,7 +17,7 @@ use systemd::Systemd;
 
 use crate::{PackageArg, SendstreamPackage};
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub(crate) enum Opts {
     /// Start specific versions of a set of native services, replacing the
     /// running version if necessary.
@@ -35,12 +35,12 @@ impl<F: crate::FormatArg> From<&PackageArg<F>> for Service {
     }
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub(crate) struct Start {
     services: Vec<PackageArg<SendstreamPackage>>,
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub(crate) struct Stop {
     services: Vec<String>,
 }

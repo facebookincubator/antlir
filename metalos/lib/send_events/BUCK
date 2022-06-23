@@ -17,10 +17,10 @@ rust_library(
     deps = [
         "anyhow",
         "async-trait",
+        "clap",
         "reqwest",
         "serde_json",
         "slog",
-        "structopt",
         "tokio",
         "url",
     ],
