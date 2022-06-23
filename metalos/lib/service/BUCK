@@ -56,7 +56,7 @@ image.layer(
     name = "test-layer",
     parent_layer = default_test_layer(),
     features = [
-        image.layer_mount("//metalos/lib/service/tests/demo_service:layer", "/demo-service"),
+        image.layer_mount("//metalos/lib/service/tests/demo_service:metalos.service.demo--layer", "/demo-service"),
         systemd.install_dropin("snapshot-demo-service.conf", "snapshot-test-control.service"),
     ],
     visibility = ["//metalos/lib/service/..."],
