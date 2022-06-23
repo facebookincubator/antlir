@@ -9,9 +9,9 @@ use std::net::IpAddr;
 
 use anyhow::{anyhow, Context, Result};
 use async_trait::async_trait;
+use clap::Parser;
 use reqwest::Client;
 use slog::{info, Logger};
-use structopt::StructOpt;
 use tokio::sync::Mutex;
 use url::Url;
 
@@ -32,21 +32,21 @@ pub enum Source {
 
 /// This is a convenience struct that you can use in your argparse if you want
 /// to allow people to specify their caller source.
-#[derive(StructOpt, Debug, Clone)]
+#[derive(Parser, Debug, Clone)]
 pub struct SourceArgs {
     /// Send events with this asset_id
     /// Note: this is not the id we send the event to but rather what the source machines id is.
-    #[structopt(long, conflicts_with_all = &["mac_address", "ip_address"])]
+    #[clap(long, conflicts_with_all = &["mac-address", "ip-address"])]
     asset_id: Option<i64>,
 
     /// Send events with this mac address
     /// Note: this is not the mac we send the event to but rather what the source machines mac is.
-    #[structopt(long, conflicts_with_all = &["asset_id", "ip_address"])]
+    #[clap(long, conflicts_with_all = &["asset-id", "ip-address"])]
     mac_address: Option<String>,
 
     /// Send events with this IP Address.
     /// Note: this is not the IP we send the event to but rather what the source machines IP is.
-    #[structopt(long, conflicts_with_all = &["asset_id", "mac_address"])]
+    #[clap(long, conflicts_with_all = &["asset-id", "mac-address"])]
     ip_address: Option<IpAddr>,
 }
 
@@ -59,7 +59,7 @@ impl From<SourceArgs> for Option<Source> {
             (None, None, Some(ip_address)) => Some(Source::IpAddr(ip_address)),
             (None, None, None) => None,
             _ => {
-                panic!("StructOpt and code logic don't match. This is a bug")
+                panic!("Clap and code logic don't match. This is a bug")
             }
         }
     }

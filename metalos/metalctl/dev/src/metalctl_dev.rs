@@ -9,8 +9,8 @@ use std::marker::PhantomData;
 use std::str::FromStr;
 
 use anyhow::{Context, Error, Result};
+use clap::Parser;
 use slog::{o, Logger};
-use structopt::StructOpt;
 use uuid::Uuid;
 
 use metalos_host_configs::packages::{Format, Kind, Package};
@@ -18,18 +18,18 @@ use metalos_host_configs::packages::{Format, Kind, Package};
 mod offline;
 mod service;
 
-#[derive(StructOpt)]
-#[structopt(no_version)]
+#[derive(Parser)]
 enum Opts {
     /// Manage MetalOS kernel and rootfs versions
     Offline(offline::Opts),
     /// Manually manage MetalOS Native Services
+    #[clap(subcommand)]
     Service(service::Opts),
 }
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let opts = Opts::from_args();
+    let opts = Opts::parse();
     let log = Logger::root(slog_glog_fmt::default_drain(), o!());
     match opts {
         Opts::Offline(opts) => offline::offline(log, opts).await,

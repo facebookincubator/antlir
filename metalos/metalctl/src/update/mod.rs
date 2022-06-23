@@ -12,8 +12,9 @@ use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
 use anyhow::{anyhow, Context, Result};
+
+use clap::Parser;
 use slog::Logger;
-use structopt::StructOpt;
 
 use fbthrift::simplejson_protocol::Serializable;
 use metalos_host_configs::api::OfflineUpdateRequest;
@@ -25,7 +26,7 @@ mod online;
 // For now anyway, the interface for online and offline updates are exactly the
 // same, even though the implementation is obviously different.
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub(crate) enum Subcommand {
     /// Download images and do some preflight checks
     Stage(CommonOpts),
@@ -45,17 +46,17 @@ impl Subcommand {
     }
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub(crate) enum Update {
-    #[structopt(name = "offline-update")]
+    #[clap(subcommand, name = "offline-update")]
     /// Update boot config (with host downtime)
     Offline(Subcommand),
-    #[structopt(name = "online-update")]
+    #[clap(subcommand, name = "online-update")]
     /// Update runtime config (without host downtime)
     Online(Subcommand),
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub(crate) struct CommonOpts {
     json_path: PathBuf,
 }

@@ -6,9 +6,9 @@
  */
 
 use anyhow::{Context, Result};
+use clap::Parser;
 use futures::{try_join, FutureExt};
 use slog::Logger;
-use structopt::StructOpt;
 use url::Url;
 
 use lifecycle::stage;
@@ -16,7 +16,7 @@ use package_download::PackageExt;
 
 use get_host_config::get_host_config;
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 pub struct Opts {
     host_config_uri: Url,
 }

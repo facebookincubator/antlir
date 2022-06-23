@@ -15,15 +15,15 @@ use std::os::unix::process::CommandExt;
 use std::process::Command;
 
 use anyhow::{Error, Result};
+use clap::Parser;
 use slog::{error, o, trace, Logger};
-use structopt::StructOpt;
 
 mod apply_host_config;
 mod send_event;
 mod stage_host_config;
 mod update;
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 enum Subcommand {
     /// Download all images specified in the MetalOS host config
     StageHostConfig(stage_host_config::Opts),
@@ -33,16 +33,16 @@ enum Subcommand {
     SendEvent(send_event::Opts),
     /// Apply a provided disk image to a specified disk and then
     /// upsize it to the maximum size
-    #[structopt(flatten)]
+    #[clap(flatten)]
     Update(update::Update),
-    #[structopt(external_subcommand)]
+    #[clap(external_subcommand)]
     External(Vec<String>),
 }
 
-#[derive(StructOpt)]
-#[structopt(name = "metalctl", no_version)]
+#[derive(Parser)]
+#[clap(name = "metalctl")]
 struct MetalCtl {
-    #[structopt(subcommand)]
+    #[clap(subcommand)]
     command: Subcommand,
 }
 
@@ -63,7 +63,7 @@ async fn run_command(options: MetalCtl, log: Logger) -> Result<()> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
-    match run_command(MetalCtl::from_args(), log.clone()).await {
+    match run_command(MetalCtl::parse(), log.clone()).await {
         Ok(r) => Ok(r),
         Err(e) => {
             error!(log, "{}", e);
