@@ -76,6 +76,8 @@ thrift_library(
         # this is a config provider for corp
         # @oss-disable: "//ee_provisioning/corp_config_provider/...", 
         # @oss-disable: "//netos/...", 
+        # facebootd is a config provider
+        # @oss-disable: "//syseng/provisioning_v2/faceboot/server/...", 
     ],
     deps = [
         "//common/fb303/if:fb303",
