@@ -7,6 +7,7 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
+# @oss-disable: load("//metalos/os/facebook:pinning.bzl", "flavor_config_override") 
 load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
 
 metalctl = [
@@ -145,6 +146,8 @@ image.layer(
         "//metalos/host_configs:generators",
         # @oss-disable: "//metalos/os/facebook:features", 
     ],
+    # @oss-disable: flavor_config_override = flavor_config_override, 
+    # @oss-disable: flavor = "centos8", 
     runtime = ["systemd"],
     visibility = [
         "//antlir/...",
