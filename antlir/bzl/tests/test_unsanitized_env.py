@@ -10,11 +10,7 @@ import unittest
 
 class UnsanitizedEnvTest(unittest.TestCase):
     def test_env(self) -> None:
-        self.assertTrue(
-            # Comes from buck
-            ("BUCK_BUILD_ID" in os.environ)
-            # Comes from buck2
-            or ("BUCK_WRAPPER_UUID" in os.environ)
-        )
+        if "IS_BUCK2" not in os.environ:
+            self.assertTrue("BUCK_BUILD_ID" in os.environ)
         # Comes from the test's `env`
         self.assertEqual("meow", os.environ["kitteh"])

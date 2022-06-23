@@ -1,5 +1,6 @@
 # @noautodeps
 
+load("@fbsource//tools/build_defs/buck2:is_buck2.bzl", "is_buck2")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest")
@@ -99,7 +100,12 @@ image.cpp_unittest(
 python_unittest(
     name = "test-unsanitized-env",
     srcs = ["test_unsanitized_env.py"],
-    env = {"kitteh": "meow"},
+    env = {
+        "IS_BUCK2": "",
+        "kitteh": "meow",
+    } if is_buck2() else {
+        "kitteh": "meow",
+    },
 )
 
 image.rust_unittest(
