@@ -3,12 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:structs.bzl", "structs")
-load(
-    "//antlir/bzl/image/feature:new.bzl",
-    "PRIVATE_DO_NOT_USE_feature_target_name",
-)
 load(
     "//antlir/compiler/image/feature/buck2:providers.bzl",
     "FeatureInfo",
@@ -70,19 +65,8 @@ def feature_new(
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
-    target_name = PRIVATE_DO_NOT_USE_feature_target_name(name)
-
-    # Private suffixes need to be added to all feature targets that don't
-    # already have a private suffix because targets created by calls to
-    # `feature_new` have a private suffix, but we don't want to have to
-    # include that suffix when declaring features inline.
-    features = [
-        feature if feature.endswith(BZL_CONST.PRIVATE_feature_suffix) else PRIVATE_DO_NOT_USE_feature_target_name(feature)
-        for feature in features
-    ]
-
-    if not native.rule_exists(target_name):
+    if not native.rule_exists(name):
         _feature_new_rule(
-            name = target_name,
+            name = name,
             features = features,
         )
