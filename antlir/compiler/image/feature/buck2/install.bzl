@@ -59,7 +59,7 @@ load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
-load(":helpers.bzl", "normalize_target_and_mark_path")
+load(":helpers.bzl", "normalize_target_and_mark_path_in_source_dict")
 load(":image_source.shape.bzl", "image_source_t")
 load(":install.shape.bzl", "install_files_t")
 load(":rules.bzl", "maybe_add_feature_rule")
@@ -114,11 +114,13 @@ def feature_install_buck_runnable(
     source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
     _forbid_layer_source(source_dict)
 
-    source_dict, normalized_target = normalize_target_and_mark_path(
-        source_dict,
-        is_buck_runnable = True,
-        runs_in_build_steps_causes_slow_rebuilds = runs_in_build_steps_causes_slow_rebuilds,
-    )
+    source_dict, normalized_target = \
+        normalize_target_and_mark_path_in_source_dict(
+            source_dict,
+            is_buck_runnable = True,
+            runs_in_build_steps_causes_slow_rebuilds =
+                runs_in_build_steps_causes_slow_rebuilds,
+        )
 
     return maybe_add_feature_rule(
         name = "install",
@@ -169,7 +171,8 @@ def feature_install(source, dest, mode = None, user = None, group = None):
     source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
     _forbid_layer_source(source_dict)
 
-    source_dict, normalized_target = normalize_target_and_mark_path(source_dict)
+    source_dict, normalized_target = \
+        normalize_target_and_mark_path_in_source_dict(source_dict)
 
     return maybe_add_feature_rule(
         name = "install",

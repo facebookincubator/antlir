@@ -7,7 +7,7 @@ load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
 load(
     "//antlir/compiler/image/feature/buck2:helpers.bzl",
-    "normalize_target_and_mark_path",
+    "normalize_target_and_mark_path_in_source_dict",
 )
 load(
     "//antlir/compiler/image/feature/buck2:image_source.shape.bzl",
@@ -86,7 +86,8 @@ def image_clone(src_layer, src_path, dest_path):
         layer = src_layer,
         path = src_path,
     ))
-    source_dict, normalized_target = normalize_target_and_mark_path(source_dict)
+    source_dict, normalized_target = \
+        normalize_target_and_mark_path_in_source_dict(source_dict)
 
     return maybe_add_feature_rule(
         name = "clone",

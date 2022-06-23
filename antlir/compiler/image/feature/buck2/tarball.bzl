@@ -7,7 +7,7 @@ load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:tarball.shape.bzl", "tarball_t")
-load(":helpers.bzl", "normalize_target_and_mark_path")
+load(":helpers.bzl", "normalize_target_and_mark_path_in_source_dict")
 load(":image_source.shape.bzl", "image_source_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
@@ -31,7 +31,8 @@ def feature_tarball(source, dest, force_root_ownership = False):
         by another `feature_new` item.
     """
     source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
-    source_dict, normalized_target = normalize_target_and_mark_path(source_dict)
+    source_dict, normalized_target = \
+        normalize_target_and_mark_path_in_source_dict(source_dict)
 
     return maybe_add_feature_rule(
         name = "tarball",
