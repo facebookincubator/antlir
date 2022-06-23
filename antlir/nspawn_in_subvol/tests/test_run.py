@@ -469,18 +469,24 @@ class NspawnTestCase(NspawnTestBase):
             ],
         )
 
-    def test_hostname(self):
-        ret = self._nspawn_in(
-            (__package__, "test-layer"),
-            [
-                "--hostname=test-host.com",
-                "--",
-                "cat",
-                "/proc/sys/kernel/hostname",
-            ],
-            stdout=subprocess.PIPE,
-            check=True,
-        )
+    def test_hostname_and_umask(self):
+        # Make sure that changing the ambient umask does not break our nspawn
+        for tmp_umask in (0o022, 0o077):
+            prev_umask = os.umask(tmp_umask)
+            try:
+                ret = self._nspawn_in(
+                    (__package__, "test-layer"),
+                    [
+                        "--hostname=test-host.com",
+                        "--",
+                        "cat",
+                        "/proc/sys/kernel/hostname",
+                    ],
+                    stdout=subprocess.PIPE,
+                    check=True,
+                )
+            finally:
+                os.umask(prev_umask)
         self.assertEqual(b"test-host.com\n", ret.stdout)
 
     @mock.patch.dict(

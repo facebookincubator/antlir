@@ -507,9 +507,6 @@ def _popen_nsenter_into_container(
     with open(f"/proc/{container_proc_pid}/cgroup", "rb") as f:
         cgroup = parse_cgroup2_path(f.read()).strip_leading_slashes()
     cgroup_procs = find_cgroup2_mountpoint() / cgroup / "cgroup.procs"
-    assert (
-        cgroup_procs.exists()
-    ), f"{cgroup_procs} does not exist, cannot nsenter"
 
     # Resolve `nsenter` here, since `env` may change `PATH`
     nsenter = shutil.which("nsenter")
