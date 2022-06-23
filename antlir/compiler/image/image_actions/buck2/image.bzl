@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/compiler/image/buck2:image_layer.bzl", "image_layer")
 load(":clone.bzl", "image_clone")
 load(
     ":ensure_dirs_exist.bzl",
@@ -14,4 +15,5 @@ image = struct(
     ensure_dirs_exist = image_ensure_dirs_exist,
     ensure_subdirs_exist = image_ensure_subdirs_exist,
     clone = image_clone,
+    layer = image_layer,
 )
