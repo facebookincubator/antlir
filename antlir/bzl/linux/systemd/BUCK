@@ -14,7 +14,6 @@ template(
     visibility = [
         "//antlir/vm/...",
         "//metalos/...",
-        "//scripts/dschatzberg/vm:",
         "//ti/platform/edgeos/...",
     ],
     deps = [":unit"],
@@ -24,7 +23,7 @@ template(
     name = "timer_unit",
     srcs = ["timer_unit.jinja2"],
     visibility = [
-        "//metalos/os/...",
+        "//metalos/...",
         "//netos/...",
     ],
 )
@@ -33,7 +32,7 @@ template(
     name = "service_unit",
     srcs = ["service_unit.jinja2"],
     visibility = [
-        "//metalos/os/...",
+        "//metalos/...",
         "//netos/...",
     ],
 )
