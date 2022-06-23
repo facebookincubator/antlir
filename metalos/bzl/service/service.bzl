@@ -4,6 +4,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+# @oss-disable: load("//metalos/bzl/service/facebook:service_fbpkg.bzl", "native_service_fbpkg") 
 
 METALOS_DIR = "/metalos"
 
@@ -68,6 +69,7 @@ def native_service(
         parent_layer = REPO_CFG.artifact["metalos.layer.base"],
         visibility = visibility if visibility != None else ["//metalos/...", "//netos/..."],
     )
+    # @oss-disable: native_service_fbpkg(name = service.name, layer = ":{}--layer".format(service.name)) 
 
 # this will be deleted later in this diff stack when metalos natively
 # understands the service shape, and exists to break up this feature into two
