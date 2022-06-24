@@ -307,9 +307,15 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
                     ],
                     layer_opts=layer_opts,
                 ),
+                # Temporarily disable threading as a mitigation for this
+                # issue: https://fburl.com/7mpx5mnf
+                #
+                # IMPORTANT: If you re-enable threads be sure to remove the
+                # no-cover directive from the branch in `helper.py`.
+                #
                 # use threads to speed up normal builds, but not while profiling
                 # because multithreaded profiling is terrible
-                use_threads=not args.profile_dir,
+                use_threads=False,  # not args.profile_dir,
             )
             # Build artifacts should never change. Run this BEFORE the
             # exit_stack cleanup to enforce that the cleanup does not

@@ -78,7 +78,7 @@ def compile_items_to_subvol(
         par_items = [item for item in par_items if hasattr(item, "build")]
         if not par_items:  # pragma: no cover
             continue
-        if use_threads:
+        if use_threads:  # pragma: no cover (TEMPORARY, see D37424109)
             with concurrent.futures.ThreadPoolExecutor(
                 max_workers=len(par_items)
             ) as executor:
