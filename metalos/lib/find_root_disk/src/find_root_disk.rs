@@ -139,7 +139,7 @@ impl FindRootDisk for SingleDiskFinder {
             0 => Err(anyhow!("Found no valid root devices")),
             1 => Ok(devices.into_iter().next().unwrap()),
             n => Err(anyhow!(
-                "Found {} possible root devices which isn't yet supported. Found: {:?}",
+                "Found {} possible root devices, expected 1. Found: {:?}",
                 n,
                 devices
             )),
@@ -147,9 +147,9 @@ impl FindRootDisk for SingleDiskFinder {
     }
 }
 
-/// Finds the root disk with the given serial number. The idea of this is that we can
-/// lookup the device's serial number in advance and provide this as a kernel parameter
-/// so there is no ambiguity or searching logic the host has to do itself.
+/// Finds the root disk with the given serial number. This has a microscopic chance of
+/// failure if drives from different vendors with same serial number get installed
+/// into same machine.
 pub struct SerialDiskFinder {
     serial: String,
 }
