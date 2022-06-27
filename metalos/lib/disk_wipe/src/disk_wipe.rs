@@ -6,18 +6,59 @@
  */
 
 use anyhow::{anyhow, Context, Result};
-use metalos_disk::{DiskDevPath, ReadDisk, MEGABYTE};
-use std::io::{Seek, SeekFrom, Write};
+use metalos_disk::{DiskDevPath, DiskFileRW, ReadDisk, MEGABYTE};
+use rand::rngs::SmallRng;
+use rand::{RngCore, SeedableRng};
+use std::io::{Read, Seek, SeekFrom, Write};
 
 /**
- * This function deletes the partition table & backup of a block device
- * by zeroing out the first & last 64M of the device.
+ * This function wipes the partition table & backup of a block device
+ * Additionally, it performs some sanity checks on the device.
  *
  * This is convenient for recreating partition tables, but *NOT* meant
  * as sanitisation of the disk.
  */
 pub fn quick_wipe_disk(disk: &mut DiskDevPath) -> Result<()> {
-    let mut disk_file = disk.open_rw_file()?;
+    // Get 1MB of random data
+    let rand_buf = {
+        let mut buf = [0; 1024 * 1024];
+        let mut small_rng = SmallRng::from_entropy();
+        small_rng.fill_bytes(&mut buf);
+        buf
+    };
+
+    // Write 1MB of random data to disk
+    {
+        let mut disk_file = disk.open_rw_file()?;
+        write_mb_buf(&mut disk_file, SeekFrom::Start(0), 1, &rand_buf)?;
+    }
+
+    // Re-open disk, and read the data back to verify that the system is healthy
+    // enough to make it past partitioning
+    {
+        let mut disk_file = disk.open_rw_file()?;
+        let mut read_buf = [0; 1024 * 1024];
+        disk_file.read_exact(&mut read_buf)?;
+        if read_buf != rand_buf {
+            return Err(anyhow!(
+                "When reading the disk, it returns different data than has been written to it. This is likely an indication of hardware failure."
+            ));
+        }
+
+        // Overwrite the beginning & end of the disk
+        overwrite_beginning_end_disk(&mut disk_file);
+    }
+
+    // Re-open disk, and verify that the first 64M are empty
+    {
+        let mut disk_file = disk.open_rw_file()?;
+        check_empty(&mut disk_file, SeekFrom::Start(0), 64);
+    }
+
+    Ok(())
+}
+
+fn overwrite_beginning_end_disk(disk_file: &mut DiskFileRW) -> Result<()> {
     let size: u64 = disk_file.get_block_device_size()?;
     if size < (MEGABYTE * 64) {
         return Err(anyhow!("Expected disk size > 64M"));
@@ -47,45 +88,49 @@ pub fn quick_wipe_disk(disk: &mut DiskDevPath) -> Result<()> {
     Ok(())
 }
 
+fn write_mb_buf(
+    disk_file: &mut DiskFileRW,
+    start: SeekFrom,
+    megabytes: u64,
+    buf: &[u8; 1024 * 1024],
+) -> Result<()> {
+    disk_file.seek(start)?;
+    for _ in 0..megabytes {
+        disk_file.write_all(buf).context("Failed to write buffer")?;
+    }
+    disk_file.flush()?;
+
+    Ok(())
+}
+
+fn check_empty(disk_file: &mut DiskFileRW, start: SeekFrom, megabytes: u64) -> Result<()> {
+    let empty_buf = [0; 1024 * 1024];
+    let mut out_buf = [0; 1024 * 1024];
+    disk_file.seek(start)?;
+    for _ in 0..megabytes {
+        disk_file
+            .read_exact(&mut out_buf)
+            .context("Failed to read buffer from disk")?;
+        if (empty_buf != out_buf) {
+            return Err(anyhow!("Disk block should be empty but isn't"));
+        }
+    }
+
+    Ok(())
+}
+
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use metalos_disk::{DiskDevPath, DiskFileRW};
     use metalos_macros::vmtest;
-    use rand::*;
-    use std::io::Read;
-
-    fn check_empty(disk_file: &mut DiskFileRW, start: SeekFrom, megabytes: u64) -> Result<()> {
-        let empty_buf = [0; 1024 * 1024];
-        let mut out_buf = [0; 1024 * 1024];
-        // let mut file = &disk_file.0;
-        disk_file.seek(start)?;
-        for _ in 0..megabytes {
-            disk_file
-                .read_exact(&mut out_buf)
-                .context("Failed to read buffer from disk")?;
-            assert_eq!(
-                empty_buf, out_buf,
-                "1MB Disk block should be empty, but isn't!"
-            )
-        }
-
-        Ok(())
-    }
 
     fn write_random(disk_file: &mut DiskFileRW, start: SeekFrom, megabytes: u64) -> Result<()> {
-        let mut mb_buf = [0; 1024 * 1024];
-        rand::thread_rng().fill_bytes(&mut mb_buf);
-
-        // Write random characters
-        disk_file.seek(start)?;
-        for _ in 0..megabytes {
-            disk_file
-                .write_all(&mb_buf)
-                .context("Failed to write random characters")?
-        }
-
-        Ok(())
+        let rand_buf = {
+            let mut buf = [0; 1024 * 1024];
+            SmallRng::from_entropy().fill_bytes(&mut buf);
+            buf
+        };
+        write_mb_buf(disk_file, start, megabytes, &rand_buf)
     }
 
     #[vmtest]
