@@ -1,6 +1,7 @@
 use std::path::{Path, PathBuf};
+use std::{thread, time};
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use futures_util::FutureExt;
 use nix::mount::MsFlags;
 use slog::{info, o, Logger};
@@ -18,7 +19,7 @@ use metalos_mount::{Mounter, RealMounter};
 use netlink::{NlRoutingSocket, RtnlCachedLink, RtnlCachedLinkTrait, RtnlLinkCache};
 use package_download::PackageExt;
 use state::State;
-use systemd::{FilePath, Systemd};
+use systemd::{ActiveState, FilePath, LoadState, StartMode, Systemd, UnitName};
 
 #[derive(StructOpt, Debug)]
 struct Args {
@@ -116,7 +117,7 @@ fn get_boot_id() -> Result<String> {
     Ok(content.trim().replace('-', ""))
 }
 
-fn link_cleanup<T: RtnlCachedLinkTrait + std::fmt::Display>(
+fn link_down<T: RtnlCachedLinkTrait + std::fmt::Display>(
     log: &Logger,
     rsock: &NlRoutingSocket,
     rlc: &[T],
@@ -134,21 +135,87 @@ fn link_cleanup<T: RtnlCachedLinkTrait + std::fmt::Display>(
             continue;
         }
 
-        info!(log, "Resetting link: {}", link);
+        info!(log, "Downing link: {}", link);
         link.set_down(rsock)?;
-        link.set_up(rsock)?;
     }
     Ok(())
 }
 
-fn network_cleanup(log: Logger) -> Result<()> {
-    info!(log, "Starting network_cleanup()");
+fn network_down(log: Logger) -> Result<()> {
+    info!(log, "Starting network_down()");
 
     let rsock = NlRoutingSocket::new()?;
     let rlc = RtnlLinkCache::new(&rsock)?;
-    link_cleanup::<RtnlCachedLink>(&log, &rsock, rlc.links())?;
+    link_down::<RtnlCachedLink>(&log, &rsock, rlc.links())?;
 
-    info!(log, "Finished network_cleanup()");
+    info!(log, "Finished network_down()");
+    Ok(())
+}
+
+async fn stop_systemd_unit(sd: &Systemd, name: String, timeout_ms: u64) -> Result<()> {
+    let mut found = false;
+
+    for u in sd
+        .list_units()
+        .await
+        .context("failed to list systemd units")?
+    {
+        if name.eq(u.name.as_str()) {
+            if u.load_state != LoadState::Loaded {
+                return Ok(());
+            }
+            if u.active_state == ActiveState::Active {
+                found = true;
+                sd.stop_unit(&UnitName::from(name.as_str()), &StartMode::Replace)
+                    .await
+                    .context(format!("failed to stop unit {}", &name))?;
+                thread::sleep(time::Duration::from_millis(50));
+            }
+
+            break;
+        }
+    }
+
+    if !found {
+        return Ok(());
+    }
+
+    let deadline = time::Instant::now() + time::Duration::from_millis(timeout_ms);
+
+    loop {
+        found = false;
+
+        for u in sd
+            .list_units()
+            .await
+            .context("failed to list systemd units")?
+        {
+            if name.eq(u.name.as_str()) {
+                found = true;
+
+                if u.load_state != LoadState::Loaded || u.active_state == ActiveState::Inactive {
+                    return Ok(());
+                }
+
+                break;
+            }
+        }
+
+        if !found {
+            break;
+        }
+
+        if time::Instant::now() > deadline {
+            bail!(
+                "failed to stop unit {} in {} milliseconds",
+                name,
+                timeout_ms
+            );
+        }
+
+        thread::sleep(time::Duration::from_millis(100));
+    }
+
     Ok(())
 }
 
@@ -222,15 +289,16 @@ async fn switch_root<M: Mounter>(
         ))?;
 
     let sd = Systemd::connect(log.clone()).await?;
-    // systemctl daemon-reload is necessary after mounting the
-    // to-switch-root-into snapshot at /sysroot, since systemd will
-    // automatically reload some unit configuration from /sysroot when running
-    // inside the initrd, and this behavior is necessary to pass the correct
-    // state of units into the new systemd in the root fs.
-    info!(log, "requesting systemd reload");
-    sd.reload()
-        .await
-        .context("failed to reload systemd units (systemctl daemon-reload)")?;
+
+    info!(log, "Cleaning up networking");
+
+    try_join!(
+        stop_systemd_unit(&sd, "systemd-networkd.socket".to_string(), 5000),
+        stop_systemd_unit(&sd, "systemd-networkd.service".to_string(), 5000),
+    )
+    .context("failed to stop network before switchroot")?;
+
+    network_down(log.clone()).context("failed to cleanup network links before switchroot")?;
 
     info!(log, "switch-rooting into {:?}", target_path);
 
@@ -321,7 +389,6 @@ async fn main() -> Result<()> {
     }
 
     // switch root
-    network_cleanup(log.clone()).context("failed to cleanup network before switchroot")?;
     switch_root(
         log.clone(),
         RealMounter { log },
