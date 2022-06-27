@@ -29,6 +29,8 @@ pub struct ProvisioningConfig {
 pub enum RootDiskConfiguration {
     SingleDisk(DiskConfiguration),
     SingleSerial(SingleDiskSerial),
+    #[thrift_field_name("raid0_serials")]
+    Raid0Serials(Raid0DisksSerials),
     InvalidMultiDisk(Vec<String>),
 }
 
@@ -37,6 +39,12 @@ pub enum RootDiskConfiguration {
 pub struct SingleDiskSerial {
     pub serial: String,
     pub config: DiskConfiguration,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::Raid0DisksSerials)]
+pub struct Raid0DisksSerials {
+    pub serials: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
