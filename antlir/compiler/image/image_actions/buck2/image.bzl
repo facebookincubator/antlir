@@ -10,10 +10,12 @@ load(
     "image_ensure_dirs_exist",
     "image_ensure_subdirs_exist",
 )
+load(":rpms.bzl", "image_rpms_install")
 
 image = struct(
     ensure_dirs_exist = image_ensure_dirs_exist,
     ensure_subdirs_exist = image_ensure_subdirs_exist,
     clone = image_clone,
     layer = image_layer,
+    rpms_install = image_rpms_install,
 )

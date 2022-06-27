@@ -6,6 +6,7 @@
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
@@ -75,7 +76,15 @@ def generate_feature_target_name(
         )[:-1] if include_in_name else ""
     )
 
-    shape_hash = sha256_b64(shape.do_not_cache_me_json(feature_shape))
+    # if list of feature shapes is provided, hash all shapes, join their hashes
+    # and then hash that final string to obtain `shape_hash`.
+    if types.is_list(feature_shape):
+        shape_hash = sha256_b64("_".join([
+            sha256_b64(shape.do_not_cache_me_json(s))
+            for s in feature_shape
+        ]))
+    else:
+        shape_hash = sha256_b64(shape.do_not_cache_me_json(feature_shape))
 
     return PRIVATE_DO_NOT_USE_feature_target_name(
         "antlir_feature__{name}__KEY_{key}__{include_in_name}__{shape_hash}".format(
@@ -179,7 +188,7 @@ def _self_test_generate_feature_target_name():
     test_2 = generate_feature_target_name(
         name = "bar",
         key = "key2",
-        feature_shape = test_shape_2,
+        feature_shape = [test_shape_1, test_shape_2],
         include_in_name = {
             "bar": [],
         },
@@ -192,7 +201,7 @@ def _self_test_generate_feature_target_name():
     )
     test_2_answer = (
         "antlir_feature__bar__KEY_key2____" +
-        "FlaeIVArr0LvDeMArSqZ3MVXyWViBveI7_Eh2auc2MY" +
+        "Qd12OSdYKhcgpfd4lMJzo-PR7cs2RHxoUoAflSHBa1A" +
         "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
     )
 

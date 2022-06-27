@@ -15,8 +15,25 @@ ItemInfo = provider(
     ],
 )
 
+RpmInfo = provider(
+    fields = [
+        "action",
+        "flavors",
+    ],
+)
+
 def feature_provider(feature_key, feature_shape):
     return [
         DefaultInfo(),
         ItemInfo(items = struct(**{feature_key: [feature_shape]})),
+    ]
+
+def rpm_provider(rpm_action_items, action, flavors):
+    return [
+        DefaultInfo(),
+        ItemInfo(items = struct(**{"rpms": rpm_action_items})),
+        RpmInfo(
+            action = action,
+            flavors = flavors,
+        ),
     ]
