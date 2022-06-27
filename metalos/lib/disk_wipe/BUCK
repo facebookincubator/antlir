@@ -4,12 +4,12 @@ load("//metalos:defs.bzl", "rust_library")
 rust_library(
     name = "disk_wipe",
     srcs = ["src/disk_wipe.rs"],
-    test_deps = ["fbsource//third-party/rust:rand"],
     unittests = [
         "vm",
     ],
     deps = [
         "anyhow",
+        "fbsource//third-party/rust:rand",
         "//metalos/lib/disk:metalos_disk",
     ],
 )
