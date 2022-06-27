@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load(":helpers.bzl", "generate_feature_target_name")
-load(":providers.bzl", "feature_provider")
+load(":providers.bzl", "feature_provider", "rpm_provider")
 
 def _feature_rule_impl(ctx: "context") -> ["provider"]:
     return feature_provider(
@@ -22,7 +22,7 @@ _feature_rule = rule(
         "key": attr.string(),
 
         # gets serialized to json when `feature.new` is called and used as
-        # kwargs in compiler `ItemFactor`
+        # kwargs in compiler `ItemFactory`
         "shape": attr.dict(attr.string(), attr.any()),
 
         # for query
@@ -51,6 +51,57 @@ def maybe_add_feature_rule(
             name = target_name,
             key = key,
             shape = shape.as_serializable_dict(feature_shape),
+            deps = deps,
+        )
+
+    return ":" + target_name
+
+def _rpm_rule_impl(ctx: "context") -> ["provider"]:
+    return rpm_provider(
+        ctx.attr.rpm_items,
+        ctx.attr.action,
+        ctx.attr.flavors,
+    )
+
+_rpm_rule = rule(
+    implementation = _rpm_rule_impl,
+    attrs = {
+        "action": attr.string(),
+        "deps": attr.list(attr.dep(), default = []),
+
+        # flavors specified in call to `image.rpms_{install,remove_if_exists}`
+        "flavors": attr.list(attr.string(), default = []),
+
+        # gets serialized to json when `feature.new` is called and used as
+        # kwargs in compiler `ItemFactory`
+        "rpm_items": attr.list(attr.dict(attr.string(), attr.any())),
+
+        # for query
+        "type": attr.string(default = "image_feature"),
+    },
+)
+
+def maybe_add_rpm_rule(
+        name,
+        rpm_items,
+        flavors,
+        include_in_target_name = None,
+        deps = []):
+    key = "rpms"
+
+    target_name = generate_feature_target_name(
+        name = name,
+        key = key,
+        feature_shape = rpm_items,
+        include_in_name = include_in_target_name,
+    )
+
+    if not native.rule_exists(target_name):
+        _rpm_rule(
+            name = target_name,
+            action = name,
+            rpm_items = shape.as_serializable_dict(rpm_items),
+            flavors = flavors,
             deps = deps,
         )
 
