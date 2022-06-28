@@ -7,40 +7,40 @@
 
 #![deny(warnings)]
 
-/// This module defines the data that comprises an Intermediate Representation
-/// for shape types. This is designed to be agnostic to how shapes are actually
-/// defined (currently with macros in shape.bzl) and just defines the schema of
-/// shape types.
-/// The IR is used to generate code for Python, Rust, and eventually possible
-/// even .bzl files.
-/// # Example
-/// ## shape.bzl
-/// ```
-/// shape.shape(
-///   __typename__ = "Greet",
-///   greeting = shape.enum("hello", "good-day", default = "hello"),
-///   to = shape.shape(
-///     __typename__ = "Person",
-///     first_name = str,
-///     last_name = shape.field(str, optional=True),
-///   )
-/// )
-/// ```
-/// ## IR
-/// ```
-/// Module {
-///   name: "example_shape",
-///   target: "fbcode//antlir:example_shape",
-///   types: {
-///     "Greet": ComplexType::Struct {
-///       fields: {
-///         name: "greeting",
-///         type: ComplexType::Enum {
-///           options: ["hello", "good-day"],
-///         }
-///     ...
-/// }
-/// ```
+//! This module defines the data that comprises an Intermediate Representation
+//! for shape types. This is designed to be agnostic to how shapes are actually
+//! defined (currently with macros in shape.bzl) and just defines the schema of
+//! shape types.
+//! The IR is used to generate code for Python, Rust, and eventually possible
+//! even .bzl files.
+//! # Example
+//! ## shape.bzl
+//! ```
+//! shape.shape(
+//!   __typename__ = "Greet",
+//!   greeting = shape.enum("hello", "good-day", default = "hello"),
+//!   to = shape.shape(
+//!     __typename__ = "Person",
+//!     first_name = str,
+//!     last_name = shape.field(str, optional=True),
+//!   )
+//! )
+//! ```
+//! ## IR
+//! ```
+//! Module {
+//!   name: "example_shape",
+//!   target: "fbcode//antlir:example_shape",
+//!   types: {
+//!     "Greet": ComplexType::Struct {
+//!       fields: {
+//!         name: "greeting",
+//!         type: ComplexType::Enum {
+//!           options: ["hello", "good-day"],
+//!         }
+//!     ...
+//! }
+//! ```
 use derive_more::{Deref, Display, From};
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
