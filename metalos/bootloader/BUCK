@@ -163,6 +163,18 @@ image.layer(
     ],
 )
 
+image.layer(
+    name = "rootfs",
+    parent_layer = "//metalos/os/vm:base",
+    features = [
+        image.rpms_install([
+            "efibootmgr",
+            # required for TCTI shared libs
+            "tpm2-tools",
+        ]),
+    ],
+)
+
 btrfs.new(
     name = "test-root-disk",
     opts = btrfs.opts.new(
@@ -176,7 +188,7 @@ btrfs.new(
                 layer = TEST_KERNEL.derived_targets.image,
             ),
             "/volume/image/rootfs/metalos:deadbeefdeadbeefdeadbeefdeadbeef": btrfs.opts.subvol.new(
-                layer = "//metalos/os/vm:base",
+                layer = ":rootfs",
             ),
         },
         free_mb = 2560,  # 2.5G
@@ -227,6 +239,33 @@ vm.rust_unittest(
         [
             "anyhow",
             "nix",
+        ],
+        platform = "rust",
+    ),
+)
+
+vm.rust_unittest(
+    name = "test-measure-bootloader",
+    vm_opts = vm.types.opts.new(
+        boot_from_disk = True,
+        disk = vm.types.disk.new(
+            package = ":gpt-boot-disk",
+            interface = "nvme",
+        ),
+        runtime = vm.types.runtime.new(
+            tpm = True,
+        ),
+    ),
+    srcs = ["test_measure_bootloader.rs"],
+    crate_root = "test_measure_bootloader.rs",
+    env = {
+        "TCTI": "device:/dev/tpmrm0",
+    },
+    deps = third_party.libraries(
+        [
+            "slog",
+            "slog_glog_fmt",
+            "tss-esapi",
         ],
         platform = "rust",
     ),
