@@ -13,6 +13,7 @@ load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//metalos:defs.bzl", "rust_binary")
+load(":hash.bzl", "pe_hash")
 
 rust_binary(
     name = "metalos-bootloader",
@@ -244,6 +245,12 @@ vm.rust_unittest(
     ),
 )
 
+pe_hash(
+    name = "bootloader_hash",
+    algorithm = "sha1",
+    binary = ":bootloader.efi",
+)
+
 vm.rust_unittest(
     name = "test-measure-bootloader",
     vm_opts = vm.types.opts.new(
@@ -259,19 +266,23 @@ vm.rust_unittest(
     srcs = ["test_measure_bootloader.rs"],
     crate_root = "test_measure_bootloader.rs",
     env = {
-        "TCTI": "device:/dev/tpmrm0",
+        "BOOTLOADER_HASH_FILE": "$(location :bootloader_hash)",
+        "TCTI": "device:/dev/tpm0",
     },
     deps = third_party.libraries(
         [
+            "anyhow",
             "base64",
             "derive_more",
             "fallible-iterator",
+            "hex",
             "serde",
             "serde_json",
             "slog",
             "slog_glog_fmt",
             "tss-esapi",
             "uefi-eventlog",
+            "ring",
         ],
         platform = "rust",
     ),
