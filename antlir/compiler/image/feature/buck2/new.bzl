@@ -100,6 +100,10 @@ _feature_new_rule = rule(
     attrs = {
         "features": attr.list(attr.dep(), default = []),
         "flavors": attr.list(attr.string(), default = []),
+
+        # for query (needed because `feature.new` can depend on targets that
+        # need their on-disk location to be known)
+        "type": attr.string(default = "image_feature"),
     },
 )
 

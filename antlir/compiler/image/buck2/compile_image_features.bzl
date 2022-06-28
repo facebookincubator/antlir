@@ -123,7 +123,7 @@ EOF
                     label = "type",
                     value = "image_feature",
                     expr = query.deps(
-                        expr = query.set(features),
+                        expr = query.set(features + [":" + features_for_layer]),
                         depth = query.UNBOUNDED,
                     ),
                 ),
