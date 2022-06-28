@@ -263,9 +263,15 @@ vm.rust_unittest(
     },
     deps = third_party.libraries(
         [
+            "base64",
+            "derive_more",
+            "fallible-iterator",
+            "serde",
+            "serde_json",
             "slog",
             "slog_glog_fmt",
             "tss-esapi",
+            "uefi-eventlog",
         ],
         platform = "rust",
     ),
