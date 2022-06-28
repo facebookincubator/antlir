@@ -5,10 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-/// These tests don't have to be anywhere near as exhaustive as those of
-/// test_shape.py, because rust gives so much type-safety already. Basically, as
-/// long as `serde_json::from_str` is able to load the `character_collection_t`,
-/// everything else that can be done with shapes are safe.
+//! These tests don't have to be anywhere near as exhaustive as those of
+//! test_shape.py, because rust gives so much type-safety already. Basically, as
+//! long as `serde_json::from_str` is able to load the `character_collection_t`,
+//! everything else that can be done with shapes are safe.
 use anyhow::{Context, Result};
 use test_shape::{character_collection_t, character_t, friend_t};
 
