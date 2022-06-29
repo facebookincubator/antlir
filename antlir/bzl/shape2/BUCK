@@ -58,3 +58,17 @@ rust_binary(
                platform = "rust",
            ),
 )
+
+rust_library(
+    name = "shape",
+    srcs = ["shape.rs"],
+    visibility = ["PUBLIC"],
+    deps = third_party.libraries(
+        [
+            "anyhow",
+            "fbthrift",
+            "serde",
+        ],
+        platform = "rust",
+    ),
+)

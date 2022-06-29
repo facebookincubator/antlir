@@ -1,4 +1,4 @@
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub struct {{name}} {
     {{#each fields}}
     {{#if (has-default-value this)}}
@@ -20,4 +20,81 @@ impl {{name}} {
     }
     {{/if}}
     {{/each}}
+}
+
+impl ::fbthrift::ttype::GetTType for {{name}} {
+    const TTYPE: ::fbthrift::ttype::TType = ::fbthrift::ttype::TType::Struct;
+}
+
+impl<P> ::fbthrift::Serialize<P> for {{name}}
+where P: ::fbthrift::protocol::ProtocolWriter
+{
+    fn write(&self, p: &mut P) {
+        p.write_struct_begin("{{name}}");
+        let mut field_idx = 0;
+        {{#each fields}}
+        {{#if required}}
+        p.write_field_begin("{{@key}}", <{{type type}} as ::fbthrift::ttype::GetTType>::TTYPE, field_idx);
+        ::fbthrift::Serialize::write(&self.r#{{@key}}, p);
+        {{else}}
+        if let Some(x) = &self.r#{{@key}} {
+            p.write_field_begin("{{@key}}", <{{type type}} as ::fbthrift::ttype::GetTType>::TTYPE, field_idx);
+            ::fbthrift::Serialize::write(x, p);
+        }
+        {{/if}}
+        field_idx += 1;
+        p.write_field_end();
+        {{/each}}
+        p.write_field_stop();
+        p.write_struct_end();
+    }
+}
+
+impl<P> ::fbthrift::Deserialize<P> for {{name}}
+where
+    P: ::fbthrift::ProtocolReader,
+{
+    fn read(p: &mut P) -> ::anyhow::Result<Self> {
+        let mut field_idx = 0;
+        {{#each fields}}
+        let idx_{{@key}} = field_idx;
+        {{#if (has-default-value this)}}
+        let mut field_{{@key}} = ::std::option::Option::Some({{../name}}::default_{{@key}}());
+        {{else}}
+        let mut field_{{@key}} = ::std::option::Option::None;
+        {{/if}}
+        field_idx += 1;
+        {{/each}}
+        let FIELDS: &[::fbthrift::Field] = &[
+            {{#each fields}}
+            ::fbthrift::Field::new("{{@key}}", <{{type type}} as ::fbthrift::ttype::GetTType>::TTYPE, idx_{{@key}}),
+            {{/each}}
+        ];
+        let _ = p.read_struct_begin(|_| ())?;
+        loop {
+            let (_, fty, fid) = p.read_field_begin(|_| (), FIELDS)?;
+            if fty == ::fbthrift::TType::Stop {
+                break;
+            }
+            {{#each fields}}
+            else if (fty == <{{type type}} as ::fbthrift::ttype::GetTType>::TTYPE) && (fid == idx_{{@key}}) {
+                field_{{@key}} = ::std::option::Option::Some(::fbthrift::Deserialize::read(p)?);
+            }
+            {{/each}}
+            else {
+                p.skip(fty)?;
+            }
+            p.read_field_end()?;
+        }
+        p.read_struct_end()?;
+        ::std::result::Result::Ok(Self {
+            {{#each fields}}
+            {{#if required}}
+            r#{{@key}}: field_{{@key}}.context("required field {{@key}} is missing")?,
+            {{else}}
+            r#{{@key}}: field_{{@key}},
+            {{/if}}
+            {{/each}}
+        })
+    }
 }

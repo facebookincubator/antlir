@@ -1,7 +1,65 @@
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 #[serde(untagged)]
 pub enum {{name}} {
     {{#each types}}
     {{union-name this}}({{type this}}),
     {{/each}}
+}
+
+impl ::fbthrift::ttype::GetTType for {{name}} {
+    const TTYPE: ::fbthrift::ttype::TType = ::fbthrift::ttype::TType::Struct;
+}
+
+impl<P> ::fbthrift::Serialize<P> for {{name}}
+where P: ::fbthrift::protocol::ProtocolWriter
+{
+    fn write(&self, p: &mut P) {
+        p.write_struct_begin("{{name}}");
+        match &self {
+        {{#each types}}
+            Self::{{union-name this}}(x) => {
+                p.write_field_begin("{{union-name this}}", <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@index}});
+                ::fbthrift::Serialize::write(x, p);
+                p.write_field_end();
+            },
+        {{/each}}
+        };
+        p.write_field_stop();
+        p.write_struct_end();
+    }
+}
+
+impl<P> ::fbthrift::Deserialize<P> for {{name}}
+where
+    P: ::fbthrift::ProtocolReader,
+{
+    fn read(p: &mut P) -> ::anyhow::Result<Self> {
+        static FIELDS: &[::fbthrift::Field] = &[
+            {{#each types}}
+            ::fbthrift::Field::new("{{union-name this}}", <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@index}}),
+            {{/each}}
+        ];
+        let mut alt = ::std::option::Option::None;
+        let _ = p.read_struct_begin(|_| ())?;
+        loop {
+            let (_, fty, fid) = p.read_field_begin(|_| (), FIELDS)?;
+            if fty == ::fbthrift::TType::Stop {
+                break;
+            }
+            {{#each types}}
+            else if (fty == <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE) && (fid == {{@index}}) {
+                if let ::std::option::Option::Some(already) = alt {
+                    return ::std::result::Result::Err(::anyhow::anyhow!("extra union id {} found after {:?}", {{@index}}, already));
+                }
+                alt = ::std::option::Option::Some(Self::{{union-name this}}(::fbthrift::Deserialize::read(p)?));
+            }
+            {{/each}}
+            else {
+                p.skip(fty)?;
+            }
+            p.read_field_end()?;
+        }
+        p.read_struct_end()?;
+        alt.ok_or_else(|| ::anyhow::anyhow!("No union variant for {{name}} found"))
+    }
 }

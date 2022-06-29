@@ -1,7 +1,51 @@
-#[derive(Debug, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub enum {{name}} {
     {{#each options}}
     #[serde(rename = "{{this}}")]
     {{upper (ident this)}},
     {{/each}}
+}
+
+impl ::std::fmt::Display for {{name}} {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter) -> ::std::fmt::Result {
+        f.write_str(match self {
+            {{#each options}}
+            Self::{{upper (ident this)}} => "{{this}}",
+            {{/each}}
+        })
+    }
+}
+
+impl ::std::str::FromStr for {{name}} {
+    type Err = ::anyhow::Error;
+
+    fn from_str(s: &str) -> ::anyhow::Result<Self> {
+        match s {
+            {{#each options}}
+            "{{this}}" => ::anyhow::Result::Ok(Self::{{upper (ident this)}}),
+            {{/each}}
+            unknown => ::anyhow::Result::Err(::anyhow::anyhow!("unknown enum variant {} for {{name}}", unknown))
+        }
+    }
+}
+
+impl ::fbthrift::ttype::GetTType for {{name}} {
+    const TTYPE: ::fbthrift::ttype::TType = ::fbthrift::ttype::TType::String;
+}
+
+impl<P> ::fbthrift::Serialize<P> for {{name}}
+where P: ::fbthrift::protocol::ProtocolWriter
+{
+    fn write(&self, p: &mut P) {
+        p.write_string(&self.to_string())
+    }
+}
+
+impl<P> ::fbthrift::Deserialize<P> for {{name}}
+where P: ::fbthrift::protocol::ProtocolReader
+{
+    fn read(p: &mut P) -> ::anyhow::Result<Self>
+    where Self: Sized {
+        p.read_string()?.parse()
+    }
 }

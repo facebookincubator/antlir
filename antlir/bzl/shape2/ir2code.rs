@@ -264,7 +264,7 @@ impl TypeExt for Type {
                     Primitive::Bool => "bool",
                     Primitive::I32 => "i32",
                     Primitive::String => "String",
-                    Primitive::Path => "PathBuf",
+                    Primitive::Path => "::shape::ShapePath",
                 }
                 .to_string(),
             ),
