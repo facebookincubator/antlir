@@ -10,6 +10,8 @@
 use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
+use serde::Deserializer;
+
 /// We can guarantee that Paths in antlir shapes are strings, so store it as a
 /// string internally instead of having to deal with fallible conversions
 /// to/from Path
@@ -82,4 +84,96 @@ where
     {
         String::read(p).map(Self)
     }
+}
+
+pub fn deserialize_i64<'de, D>(deserializer: D) -> Result<i64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct StringOrI64;
+
+    impl<'de> serde::de::Visitor<'de> for StringOrI64 {
+        type Value = i64;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("string or i64")
+        }
+
+        fn visit_str<E>(self, value: &str) -> std::result::Result<i64, E>
+        where
+            E: serde::de::Error,
+        {
+            std::str::FromStr::from_str(value).map_err(E::custom)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> std::result::Result<i64, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(value)
+        }
+
+        fn visit_u64<E>(self, value: u64) -> std::result::Result<i64, E>
+        where
+            E: serde::de::Error,
+        {
+            value.try_into().map_err(E::custom)
+        }
+    }
+
+    deserializer.deserialize_any(StringOrI64)
+}
+
+pub fn deserialize_optional_i64<'de, D>(deserializer: D) -> Result<Option<i64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    struct StringOrI64;
+
+    impl<'de> serde::de::Visitor<'de> for StringOrI64 {
+        type Value = Option<i64>;
+
+        fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+            formatter.write_str("string or i64")
+        }
+
+        fn visit_str<E>(self, value: &str) -> std::result::Result<Option<i64>, E>
+        where
+            E: serde::de::Error,
+        {
+            std::str::FromStr::from_str(value)
+                .map_err(E::custom)
+                .map(Some)
+        }
+
+        fn visit_i64<E>(self, value: i64) -> std::result::Result<Option<i64>, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(Some(value))
+        }
+
+        fn visit_u64<E>(self, value: u64) -> std::result::Result<Option<i64>, E>
+        where
+            E: serde::de::Error,
+        {
+            value.try_into().map_err(E::custom).map(Some)
+        }
+
+        fn visit_none<E>(self) -> std::result::Result<Option<i64>, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(None)
+        }
+
+        fn visit_unit<E>(self) -> std::result::Result<Option<i64>, E>
+        where
+            E: serde::de::Error,
+        {
+            Ok(None)
+        }
+    }
+
+    deserializer.deserialize_any(StringOrI64)
 }

@@ -5,8 +5,14 @@ pub struct {{name}} {
     #[serde(default = "{{../name}}::default_{{@key}}")]
     {{/if}}
     {{#if required}}
+    {{#if (eq (type type) "i64")}}
+    #[serde(deserialize_with = "::shape::deserialize_i64")]
+    {{/if}}
     pub r#{{@key}}: {{type type}},
     {{else}}
+    {{#if (eq (type type) "i64")}}
+    #[serde(deserialize_with = "::shape::deserialize_optional_i64")]
+    {{/if}}
     pub r#{{@key}}: Option<{{type type}}>,
     {{/if}}
     {{/each}}
