@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use async_trait::async_trait;
 use bytes::Bytes;
+use futures::future::try_join_all;
 use futures::{Stream, StreamExt};
 use slog::{debug, Logger};
 use tempfile::NamedTempFile;
@@ -127,11 +128,29 @@ where
         })
 }
 
-/// Make sure that a given package is on disk, downloading it if it is not
+/// Make sure the provided packages are on disk, downloading if not already available.
+pub async fn ensure_packages_on_disk_ignoring_artifacts<D>(
+    log: Logger,
+    dl: D,
+    pkgs: &[packages::generic::Package],
+) -> Result<()>
+where
+    D: PackageDownloader + Clone,
+{
+    try_join_all(pkgs.iter().map(|package| {
+        let log = log.clone();
+        let downloader = dl.clone();
+        async move { ensure_package_on_disk_ignoring_artifacts(log, downloader, package).await }
+    }))
+    .await
+    .map(|_| ())
+}
+
+/// Make sure that a single package is on disk, downloading it if it is not
 /// already locally available. Unlike [ensure_package_on_disk], this function
 /// does not statically know the type of the package artifact on disk, so it
 /// does not return the downloaded artifact.
-pub async fn ensure_package_on_disk_ignoring_artifacts<D>(
+async fn ensure_package_on_disk_ignoring_artifacts<D>(
     log: Logger,
     dl: D,
     pkg: &packages::generic::Package,

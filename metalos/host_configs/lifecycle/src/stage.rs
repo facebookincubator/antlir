@@ -10,7 +10,7 @@ use futures::future::try_join_all;
 use slog::Logger;
 
 use metalos_host_configs::packages::generic::Package;
-use package_download::{ensure_package_on_disk_ignoring_artifacts, HttpsDownloader};
+use package_download::{ensure_packages_on_disk_ignoring_artifacts, HttpsDownloader};
 use state::{State, Token};
 
 /// Any config that can be staged on-host consists of a list of packages.
@@ -37,16 +37,9 @@ where
     C: StagableConfig,
 {
     let downloader = HttpsDownloader::new().context("while constructing HTTPS downloader")?;
-    try_join_all(conf.packages().into_iter().map(|package| {
-        let log = log.clone();
-        let downloader = downloader.clone();
-        async move {
-            ensure_package_on_disk_ignoring_artifacts(log, &downloader, &package).await?;
-            Ok::<_, package_download::Error>(())
-        }
-    }))
-    .await
-    .context("while downloading packages")?;
+    ensure_packages_on_disk_ignoring_artifacts(log, &downloader, &conf.packages())
+        .await
+        .context("while downloading packages")?;
     conf.check_downloaded_artifacts()
         .context("stage-blocking checks failed")?;
     let token = conf.save().context("while save config to disk")?;
