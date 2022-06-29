@@ -262,7 +262,7 @@ impl TypeExt for Type {
             Self::Primitive(p) => TypeName(
                 match p {
                     Primitive::Bool => "bool",
-                    Primitive::I32 => "i32",
+                    Primitive::I32 => "i64",
                     Primitive::String => "String",
                     Primitive::Path => "::shape::ShapePath",
                 }
@@ -294,7 +294,7 @@ impl TypeExt for Type {
             Self::Primitive(p) => TypeName(
                 match p {
                     Primitive::Bool => "Bool",
-                    Primitive::I32 => "I32",
+                    Primitive::I32 => "Int",
                     Primitive::String => "String",
                     Primitive::Path => "Path",
                 }
@@ -313,9 +313,7 @@ impl TypeExt for Type {
                 .name()
                 .expect("cannot codegen shape without top-level name")
                 .clone(),
-            Self::Foreign { target, name } => {
-                TypeName(format!("{}::{}", target.rust_crate(), name))
-            }
+            Self::Foreign { target: _, name } => name.clone(),
         }
     }
 

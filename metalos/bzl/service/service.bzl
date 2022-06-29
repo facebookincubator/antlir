@@ -3,6 +3,7 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # @oss-disable: load("//metalos/bzl/service/facebook:service_fbpkg.bzl", "native_service_fbpkg") 
 
@@ -60,6 +61,13 @@ def native_service(
         features.append(feature.install(service.config_generator, "/metalos/generator", mode = "a+rx"))
 
     features.append(__DELETED_IN_STACK_gen_unit(service))
+
+    buck_genrule(
+        name = "{}--binary-thrift".format(service.name),
+        cmd = "echo {} | $(exe //metalos/bzl/service:serialize-shape) > $OUT".format(shell.quote(shape.do_not_cache_me_json(service))),
+        antlir_rule = "user-internal",
+    )
+    features.append(feature.install(":{}--binary-thrift".format(service.name), "/metalos/service.shape"))
 
     if extra_features:
         features.extend(extra_features)

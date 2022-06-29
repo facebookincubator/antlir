@@ -507,6 +507,7 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
             visibility = visibility,
             antlir_rule = "user-facing",
             unittests = False,
+            allow_unused_crate_dependencies = True,
             **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
         )
 

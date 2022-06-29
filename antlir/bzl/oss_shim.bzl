@@ -140,7 +140,8 @@ def _third_party_libraries(names, platform = None):
 
 def _rust_common(rule, kwargs):
     rustc_flags = kwargs.pop("rustc_flags", [])
-    rustc_flags.append("--forbid=unused_crate_dependencies")
+    if not kwargs.pop("allow_unused_crate_dependencies", False):
+        rustc_flags.append("--forbid=unused_crate_dependencies")
     kwargs["rustc_flags"] = rustc_flags
     rule(**kwargs)
 
