@@ -83,6 +83,9 @@ def compile_image_features(
     # A value of `None` specifies that no flavor field was provided for the layer.
     flavors = [flavor] if flavor else None
 
+    if not flavors and "build-appliance" in parent_layer:
+        flavors = [flavor_helpers.get_flavor_from_build_appliance(parent_layer)]
+
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.
     #
@@ -92,6 +95,8 @@ def compile_image_features(
         name = features_for_layer,
         features = features,
         flavors = flavors,
+        parent_layer = parent_layer,
+        visibility = ["//antlir/..."],
     )
 
     vset_override_name = None
