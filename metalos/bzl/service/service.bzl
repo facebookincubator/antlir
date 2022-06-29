@@ -61,7 +61,8 @@ def native_service(
 
     features.append(__DELETED_IN_STACK_gen_unit(service))
 
-    extra_features = extra_features or []
+    if extra_features:
+        features.extend(extra_features)
 
     image.layer(
         name = service.name + "--layer",
