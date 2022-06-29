@@ -4,22 +4,21 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-
 use anyhow::{bail, Context, Error, Result};
 use bitflags::bitflags;
 use derive_more::Display;
 use nix::errno::errno;
 use num_derive::{FromPrimitive, ToPrimitive};
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
 use std::fmt;
 use std::marker::PhantomData;
 
 use netlink_sys::{
-    nl_cache, nl_cache_get_first, nl_cache_get_next, nl_cache_put, nl_close, nl_connect,
-    nl_geterror, nl_sock, nl_socket_alloc, nl_socket_free, rtnl_link, rtnl_link_alloc,
-    rtnl_link_alloc_cache, rtnl_link_change, rtnl_link_get_flags, rtnl_link_get_ifindex,
-    rtnl_link_get_name, rtnl_link_put, rtnl_link_set_flags, rtnl_link_unset_flags, AF_UNSPEC,
-    IFF_UP, NETLINK_ROUTE, NETLINK_XFRM,
+    nl_addr2str, nl_cache, nl_cache_get_first, nl_cache_get_next, nl_cache_put, nl_close,
+    nl_connect, nl_geterror, nl_sock, nl_socket_alloc, nl_socket_free, rtnl_link, rtnl_link_alloc,
+    rtnl_link_alloc_cache, rtnl_link_change, rtnl_link_get_addr, rtnl_link_get_flags,
+    rtnl_link_get_ifindex, rtnl_link_get_name, rtnl_link_put, rtnl_link_set_flags,
+    rtnl_link_set_name, rtnl_link_unset_flags, AF_UNSPEC, IFF_UP, NETLINK_ROUTE, NETLINK_XFRM,
 };
 
 /// Format an error message from a failed libnl* call.
@@ -161,6 +160,9 @@ pub trait RtnlLinkCommon {
     /// Lookup the link name, if any.
     fn name(&self) -> Option<String>;
 
+    // Lookup the link address and attempt to decode it.
+    fn mac_addr(&self) -> Option<String>;
+
     /// Check if an interface is up.
     fn is_up(&self) -> bool;
 
@@ -172,7 +174,14 @@ pub trait RtnlLinkCommon {
     /// Base std::fmt::Display trait implementation.
     fn display(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let link_name = self.name().unwrap_or_else(|| "<unknown>".to_string());
-        write!(f, "{} (index: {})", link_name, self.index())
+        let link_addr = self.mac_addr().unwrap_or_else(|| "<unknown>".to_string());
+        write!(
+            f,
+            "{} (index: {}, addr: {})",
+            link_name,
+            self.index(),
+            link_addr
+        )
     }
 }
 
@@ -186,6 +195,24 @@ impl<T: RtnlLinkPrivate> RtnlLinkCommon for T {
         match c_name.is_null() {
             true => None,
             false => Some(unsafe { CStr::from_ptr(c_name).to_string_lossy().into_owned() }),
+        }
+    }
+
+    fn mac_addr(&self) -> Option<String> {
+        let c_addr = unsafe { rtnl_link_get_addr(*self.rl_link()) };
+        let mut c_buf = [0i8; 32];
+        let addr_cstr = unsafe {
+            let c_buf_ptr = c_buf.as_mut_ptr();
+            CStr::from_ptr(nl_addr2str(c_addr, c_buf_ptr, 24))
+        };
+        let addr_str = addr_cstr
+            .to_str()
+            .expect("mac address was not valid utf-8")
+            .to_string();
+
+        match addr_str.chars().count() == 17 {
+            true => Some(addr_str),
+            false => None,
         }
     }
 
@@ -267,6 +294,22 @@ impl<'cache> RtnlCachedLink<'cache> {
         }
         Ok(())
     }
+    /// Set the link name.
+    fn update_name(&self, sock: &NlRoutingSocket, name: &str) -> Result<()> {
+        let cmsg = format!("Failed to rename link {}", self);
+
+        let change = RtnlLink::new().context(cmsg.clone())?;
+
+        let c_int_str =
+            CString::new(name.as_bytes()).expect("Failed to create CStr for interface rename");
+
+        unsafe { rtnl_link_set_name(change.0, c_int_str.as_ptr()) };
+        let nlerr = unsafe { rtnl_link_change(*sock.nl_sock(), self.0, change.0, 0) };
+        if nlerr != 0 {
+            return Err(Error::msg(nlerrmsg(nlerr, "rtnl_link_change() failed"))).context(cmsg);
+        }
+        Ok(())
+    }
 }
 
 impl<'cache> RtnlLinkPrivate for RtnlCachedLink<'cache> {
@@ -289,6 +332,9 @@ pub trait RtnlCachedLinkTrait: RtnlLinkCommon {
 
     /// Set the interface state to down.
     fn set_down(&self, _sock: &NlRoutingSocket) -> Result<()>;
+
+    /// Set the interface name.
+    fn set_name(&self, _sock: &NlRoutingSocket, name: &str) -> Result<()>;
 }
 
 impl<'cache> RtnlCachedLinkTrait for RtnlCachedLink<'cache> {
@@ -300,6 +346,11 @@ impl<'cache> RtnlCachedLinkTrait for RtnlCachedLink<'cache> {
     fn set_down(&self, sock: &NlRoutingSocket) -> Result<()> {
         self.update_flags(sock, RtnlLinkFlags::UP, false)
             .context(format!("Failed to set link state down for link {}", self))
+    }
+
+    fn set_name(&self, sock: &NlRoutingSocket, name: &str) -> Result<()> {
+        self.update_name(sock, name)
+            .context(format!("Failed to change link name for {}", self))
     }
 }
 
