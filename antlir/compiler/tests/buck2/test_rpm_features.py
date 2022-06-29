@@ -31,18 +31,22 @@ class RpmFeatureTest(unittest.TestCase):
     def test_rpms_install(self):
         rpms_installed = subprocess.check_output(["rpm", "-qa"], text=True)
 
-        rpms = {"chef", "cowsay", "netpbm"}
+        rpms = {"chef", "clang", "cowsay", "netpbm"}
 
         if RPM_TEST_LAYER == "rpms-install-centos7":
-            should_be_installed = {"chef", "cowsay"}
+            should_be_installed = {"chef"}
         elif RPM_TEST_LAYER == "rpms-install-centos8":
-            should_be_installed = {"chef", "netpbm"}
+            should_be_installed = {"chef"}
         elif RPM_TEST_LAYER == "rpms-install-centos8-untested":
             should_be_installed = {"chef"}
         elif RPM_TEST_LAYER == "rpms-install-centos9":
             should_be_installed = {"chef"}
         elif RPM_TEST_LAYER == "rpms-install-centos9-untested":
             should_be_installed = {"chef"}
+        elif RPM_TEST_LAYER == "rpms-install-centos7-child":
+            should_be_installed = {"chef", "clang", "cowsay"}
+        elif RPM_TEST_LAYER == "rpms-install-centos8-child":
+            should_be_installed = {"chef", "clang", "netpbm"}
 
         self.assertRpmsInstalled(rpms_installed, should_be_installed)
         self.assertRpmsNotInstalled(rpms_installed, rpms - should_be_installed)

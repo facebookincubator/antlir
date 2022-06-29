@@ -4,17 +4,71 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:structs.bzl", "structs")
 load(
     "//antlir/compiler/image/feature/buck2:providers.bzl",
     "FeatureInfo",
+    "FlavorInfo",
     "ItemInfo",
     "RpmInfo",
 )
 
+def _filter_rpm_versions(
+        feature_dict,
+        feature_flavors,
+        is_layer_feature,
+        from_feature_new = False):
+    # The rpm item dicts are immutable, so copies need to be made to
+    # allow them to be modified
+    filtered_feature_dict = {}
+    filtered_feature_dict["target"] = feature_dict["target"]
+    filtered_feature_dict["rpms"] = [dict(r) for r in feature_dict["rpms"]]
+
+    # Only include flavors which are in `feature_flavors` in
+    # `flavor_to_version_set`
+    for rpm_item in filtered_feature_dict["rpms"]:
+        flavor_to_version_set = {}
+        for flavor, version_set in rpm_item["flavor_to_version_set"].items():
+            if not feature_flavors or flavor in feature_flavors:
+                flavor_to_version_set[flavor] = version_set
+
+        # Rpm item is required to share at least one flavor with new feature,
+        # if it's from an `image.rpms_install` target. If it's from a
+        # `feature.new` target, it is allowed to be filtered out if it shares
+        # no flavors
+        if not from_feature_new and not flavor_to_version_set:
+            fail(
+                "Rpm `{rpm}` must have one of the flavors `{feature_flavors}`"
+                    .format(
+                    rpm = rpm_item["name"],
+                    feature_flavors = feature_flavors,
+                ),
+            )
+
+        # If this call to `feature.new` is for a new image layer, there should
+        # only be rpms for a single flavor since the flavor is known from a
+        # provider. This is to test that the flavor provider is working.
+        if is_layer_feature and len(flavor_to_version_set) > 1:
+            fail("Layer features must have rpms for no more than 1 flavor")
+
+        rpm_item["flavor_to_version_set"] = flavor_to_version_set
+
+    return filtered_feature_dict
+
 def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
+    parent_layer_feature = ctx.attr.parent_layer_feature
+    is_layer_feature = BZL_CONST.layer_feature_suffix in ctx.attr.name
     feature_flavors = ctx.attr.flavors
+
+    if parent_layer_feature and feature_flavors:
+        fail("`feature.new` can't be passed flavors from both `flavors` and " +
+             "`parent_layer`")
+
+    if (not feature_flavors and
+        parent_layer_feature and
+        parent_layer_feature[FlavorInfo]):
+        feature_flavors = parent_layer_feature[FlavorInfo].flavors
 
     inline_features = []
     rpm_install_flavors = sets.make()
@@ -23,40 +77,33 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
         # the `feature_new` macro and the `inline_features` of that feature are
         # appended onto this feature's `inline_features`.
         if feature[FeatureInfo]:
-            inline_features += feature[FeatureInfo].inline_features
+            for feature_dict in feature[FeatureInfo].inline_features:
+                if "rpms" in feature_dict:
+                    feature_dict = _filter_rpm_versions(
+                        feature_dict,
+                        feature_flavors,
+                        is_layer_feature,
+                        from_feature_new = True,
+                    )
+                inline_features.append(feature_dict)
+
         elif feature[ItemInfo]:
             feature_dict = structs.to_dict(feature[ItemInfo].items)
             feature_dict["target"] = ctx.attr.name
-            inline_features.append(feature_dict)
+
             if feature[RpmInfo]:
                 if feature[RpmInfo].action == "rpms_install":
                     rpm_install_flavors = sets.union(
                         rpm_install_flavors,
                         sets.make(feature[RpmInfo].flavors),
                     )
+                feature_dict = _filter_rpm_versions(
+                    feature_dict,
+                    feature_flavors,
+                    is_layer_feature,
+                )
 
-                # The rpm item dicts are immutable, so copies need to be made to
-                # allow them to be modified
-                aliased_rpms = feature_dict["rpms"]
-                feature_dict["rpms"] = [dict(r) for r in aliased_rpms]
-
-                # Only include flavors which are in `feature_flavors` in
-                # `flavor_to_version_set`
-                for rpm_item in feature_dict["rpms"]:
-                    flavor_to_version_set = {}
-                    for flavor, version_set in rpm_item["flavor_to_version_set"].items():
-                        if not feature_flavors or flavor in feature_flavors:
-                            flavor_to_version_set[flavor] = version_set
-
-                    # rpm item is required to share at least one flavor with
-                    # new feature
-                    if not flavor_to_version_set:
-                        fail(("Rpm `{rpm}` must have one of the flavors " +
-                              "`{feature_flavors}`").format(
-                            rpm = rpm_item["name"],
-                            feature_flavors = feature_flavors,
-                        ))
-                    rpm_item["flavor_to_version_set"] = flavor_to_version_set
+            inline_features.append(feature_dict)
 
     # Skip coverage check for `antlir_test` since it's just for testing purposes
     # and doesn't always need to be covered.
@@ -93,13 +140,18 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
         FeatureInfo(
             inline_features = inline_features,
         ),
-    ]
+    ] + ([
+        FlavorInfo(flavors = feature_flavors),
+    ] if BZL_CONST.layer_feature_suffix in ctx.attr.name else [])
 
 _feature_new_rule = rule(
     implementation = _feature_new_rule_impl,
     attrs = {
         "features": attr.list(attr.dep(), default = []),
         "flavors": attr.list(attr.string(), default = []),
+
+        # parent layer flavor can be fetched from parent layer feature
+        "parent_layer_feature": attr.option(attr.dep()),
 
         # for query (needed because `feature.new` can depend on targets that
         # need their on-disk location to be known)
@@ -114,7 +166,8 @@ def feature_new(
         # This is used when a user wants to declare a feature
         # that is not available for all flavors in REPO_CFG.flavor_to_config.
         # An example of this is the internal feature in `image_layer.bzl`.
-        flavors = None):
+        flavors = None,
+        parent_layer = None):
     """
     Turns a group of image actions into a Buck target, so it can be
     referenced from outside the current project via `//path/to:name`.
@@ -127,9 +180,18 @@ def feature_new(
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
+    if (BZL_CONST.layer_feature_suffix in name and
+        parent_layer and
+        not "build-appliance" in parent_layer):
+        parent_layer_feature = parent_layer + BZL_CONST.layer_feature_suffix
+    else:
+        parent_layer_feature = None
+
     if not native.rule_exists(name):
         _feature_new_rule(
             name = name,
             features = features,
             flavors = flavors,
+            parent_layer_feature = parent_layer_feature,
+            visibility = visibility,
         )

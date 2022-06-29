@@ -22,6 +22,12 @@ RpmInfo = provider(
     ],
 )
 
+FlavorInfo = provider(
+    fields = [
+        "flavors",
+    ],
+)
+
 def feature_provider(feature_key, feature_shape):
     return [
         DefaultInfo(),
