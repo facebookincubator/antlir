@@ -102,6 +102,11 @@ def unwrap_path(path_dict, is_layer = False):
     return path_dict["__BUCK_LAYER_TARGET" if is_layer else "__BUCK_TARGET"]
 
 def _mark_path_and_get_target(source_dict, key, is_layer = False):
+    if type(source_dict[key]) == dict:
+        fail("Path already marked for `{key}` in `{source_dict}`".format(
+            key = key,
+            source_dict = source_dict,
+        ))
     source_dict[key] = mark_path(source_dict[key], is_layer)
     normalized_target = unwrap_path(source_dict[key], is_layer)
     return normalized_target

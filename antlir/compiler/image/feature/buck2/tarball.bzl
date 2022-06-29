@@ -11,13 +11,6 @@ load(":helpers.bzl", "normalize_target_and_mark_path_in_source_dict")
 load(":image_source.shape.bzl", "image_source_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
-def _generate_shape(source_dict, dest, force_root_ownership):
-    return tarball_t(
-        force_root_ownership = force_root_ownership,
-        into_dir = dest,
-        source = shape.new(image_source_t, **source_dict),
-    )
-
 def feature_tarball(source, dest, force_root_ownership = False):
     """
     `feature.tarball("files/xyz.tar", "/a/b")` extracts tarball located at
@@ -41,10 +34,10 @@ def feature_tarball(source, dest, force_root_ownership = False):
             "dest": dest,
             "source": source_dict,
         },
-        feature_shape = _generate_shape(
-            source_dict,
-            dest,
-            force_root_ownership,
+        feature_shape = tarball_t(
+            force_root_ownership = force_root_ownership,
+            into_dir = dest,
+            source = shape.new(image_source_t, **source_dict),
         ),
         deps = [normalized_target],
     )
