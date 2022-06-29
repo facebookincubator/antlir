@@ -10,7 +10,7 @@
 //! long as `serde_json::from_str` is able to load the `character_collection_t`,
 //! everything else that can be done with shapes are safe.
 use anyhow::{Context, Result};
-use test_shape::{character_collection_t, character_t, friend_t};
+use test_shape::{character_collection_t, character_t, friend_t, weapon_t};
 
 #[test]
 fn load() -> Result<()> {
@@ -47,6 +47,54 @@ fn defaults() -> Result<()> {
             .context("failed to deserialize json without explicit default values")?;
     assert_eq!(c3po.name, "C-3PO");
     assert_eq!(c3po.affiliations.faction, "Rebellion");
+
+    Ok(())
+}
+
+#[test]
+fn thrift() -> Result<()> {
+    let characters_str = std::env::var("characters").context("missing 'characters' env var")?;
+    let mut characters: character_collection_t = serde_json::from_str(&characters_str)
+        .with_context(|| format!("failed to parse json '{}'", characters_str))?;
+    let luke = characters.characters.remove(0);
+    let after_roundtrip =
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(&luke))?;
+    assert_eq!(luke, after_roundtrip);
+
+    let path = match &luke.weapon {
+        Some(weapon_t::lightsaber_t(l)) => l.target.as_ref().unwrap().path.clone(),
+        _ => panic!("luke has a lightsaber"),
+    };
+
+    assert_eq!(
+        serde_json::json!({
+            "name":"Luke Skywalker",
+            "metadata":{"species":"human"},
+            "affiliations": {
+                "faction":"Rebellion"
+            },
+            "appears_in":[4,5,6],
+            "friends":[
+                {"name":"Han Solo"},
+                {"name":"Leia Organa"},
+                {"name":"C-3PO"},
+            ],
+            "personnel_file":"/rebellion/luke_skywalker.txt",
+            "weapon":{
+                "lightsaber_t":{
+                    "color": "green",
+                    "target":{
+                        "name": ":luke-lightsaber",
+                        "path": path,
+                    }
+                }
+            }
+        }),
+        serde_json::from_slice::<serde_json::Value>(&fbthrift::simplejson_protocol::serialize(
+            &luke
+        ))
+        .unwrap()
+    );
 
     Ok(())
 }

@@ -388,8 +388,10 @@ rust_library(
     crate = "target",
     crate_root = "shape2/target.rs",
     visibility = ["PUBLIC"],
-    deps = third_party.libraries(
+    deps = [antlir_dep("bzl/shape2:shape")] + third_party.libraries(
         [
+            "anyhow",
+            "fbthrift",
             "serde",
         ],
         platform = "rust",

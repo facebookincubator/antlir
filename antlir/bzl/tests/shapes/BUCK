@@ -209,6 +209,7 @@ rust_unittest(
         [
             "anyhow",
             "serde_json",
+            "fbthrift",
         ],
         platform = "rust",
     ),

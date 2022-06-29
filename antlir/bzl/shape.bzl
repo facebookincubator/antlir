@@ -493,7 +493,17 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
             name = "{}-rust".format(name),
             crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
             mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
-            deps = ["{}-rust".format(d) for d in deps] + third_party.libraries(["serde", "serde_json"], platform = "rust"),
+            deps = ["{}-rust".format(d) for d in deps] +
+                   [antlir_dep("bzl/shape2:shape")] +
+                   third_party.libraries(
+                       [
+                           "anyhow",
+                           "fbthrift",
+                           "serde",
+                           "serde_json",
+                       ],
+                       platform = "rust",
+                   ),
             visibility = visibility,
             antlir_rule = "user-facing",
             unittests = False,
