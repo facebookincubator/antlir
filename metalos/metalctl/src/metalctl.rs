@@ -19,6 +19,7 @@ use clap::Parser;
 use slog::{error, o, trace, Logger};
 
 mod apply_host_config;
+mod package;
 mod send_event;
 mod stage_host_config;
 mod update;
@@ -37,6 +38,9 @@ enum Subcommand {
     Update(update::Update),
     #[clap(external_subcommand)]
     External(Vec<String>),
+    #[clap(subcommand)]
+    /// Stage or inspect packages
+    Package(package::Opts),
 }
 
 #[derive(Parser)]
@@ -57,6 +61,9 @@ async fn run_command(options: MetalCtl, log: Logger) -> Result<()> {
             trace!(log, "exec-ing external command {}", bin);
             Err(Error::msg(Command::new(bin).args(args).exec()))
         }
+        Subcommand::Package(opts) => match opts {
+            package::Opts::Stage(stage) => package::stage_packages(log, stage).await,
+        },
     }
 }
 
