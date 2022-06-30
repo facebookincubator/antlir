@@ -4,8 +4,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import grp
+import os
 import pwd
-import subprocess
+import stat
 from typing import Iterator, Optional
 
 from antlir.bzl.image_actions.ensure_subdirs_exist import ensure_subdirs_exist_t
@@ -15,9 +17,7 @@ from antlir.compiler.requires_provides import (
     RequireGroup,
     RequireUser,
 )
-from antlir.fs_utils import generate_work_dir, Path
-from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
-from antlir.nspawn_in_subvol.nspawn import run_nspawn
+from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator, validator
 
@@ -26,32 +26,12 @@ from .stat_options import (
     build_stat_options,
     customize_stat_options,
     Mode,
-    mode_to_octal_str,
+    mode_to_int,
 )
 
 
 class MismatchError(Exception):
     pass
-
-
-_BUILD_SCRIPT = r"""
-path_to_make="$1"
-expected_stat="$2"
-if  [ -d "$path_to_make" ]; then
-    stat_res="$(stat --format="0%a %U:%G" "$path_to_make")"
-    if [ "$stat_res" != "$expected_stat" ]; then
-        echo "ERROR: stat did not match \"$expected_stat\" for $path_to_make: $stat_res"
-        exit 1
-    fi
-    xattrs_res="$(getfattr -m '-' -d --absolute-names "$path_to_make" | (grep -vE '^(# file: |security\.selinux=|$)' || :))"
-    if [ -n "$xattrs_res" ]; then
-        echo "ERROR: xattrs was not empty for $path_to_make: $xattrs_res"
-        exit 1
-    fi
-else
-    mkdir "$path_to_make"
-fi
-"""  # noqa: E501
 
 
 def _validate_into_dir(into_dir: Optional[str]) -> str:
@@ -118,40 +98,37 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         # If path already exists ensure it has expected attrs, else make it.
-        work_dir = generate_work_dir()
-        full_path = work_dir / self.into_dir / self.basename
         path_to_make = subvol.path() / self.into_dir / self.basename
         # Cannot postpone exists() check because _BUILD_SCRIPT will create the
         # directory `path_to_make`
         path_to_make_exists = path_to_make.exists()
-        opts = new_nspawn_opts(
-            cmd=[
-                "/bin/bash",
-                "-eu",
-                "-o",
-                "pipefail",
-                "-c",
-                _BUILD_SCRIPT,
-                "bash",
-                full_path,
-                # pyre-fixme[6]: Expected `Union[int, str]` for 1st param but
-                #  got `Union[None, int, str]`.
-                f"{mode_to_octal_str(self.mode)} {self.user_group}",
-            ],
-            layer=layer_opts.build_appliance,
-            bindmount_rw=[(subvol.path(), work_dir)],
-            user=pwd.getpwnam("root"),
-        )
-        try:
-            run_nspawn(opts, PopenArgs())
-        except subprocess.CalledProcessError as e:
+        if not path_to_make_exists:
+            os.mkdir(path_to_make)
+        else:
+            file_stat = os.stat(path_to_make)
+            mode = stat.S_IMODE(file_stat.st_mode)
+            assert self.mode is not None
+            desired_mode = mode_to_int(self.mode)
+            if mode != desired_mode:
+                raise MismatchError(
+                    f"{path_to_make} mode = {mode:o}, not {desired_mode:o}"
+                )
+            assert self.user_group is not None
+            desired_user, desired_group = self.user_group.split(":")
+            user = pwd.getpwuid(file_stat.st_uid).pw_name
+            group = grp.getgrgid(file_stat.st_gid).gr_name
+            if (user != desired_user) or (group != desired_group):
+                raise MismatchError(
+                    f"{path_to_make} owner {user}:{group}, "
+                    f"not {desired_user}:{desired_group}"
+                )
+
+        xattrs = os.listxattr(path_to_make)
+        if xattrs:
             raise MismatchError(
-                f"Failed to ensure_subdirs_exist for path '{full_path}' with"
-                # pyre-fixme[6]: Expected `Union[int, str]` for 1st param but
-                #  got `Union[None, int, str]`.
-                f" stat {mode_to_octal_str(self.mode)}"
-                ": see bash error above for more details",
-            ) from e
+                f"{path_to_make} had unexpected xattrs {xattrs}"
+            )
+
         if not path_to_make_exists:
             build_stat_options(
                 self,

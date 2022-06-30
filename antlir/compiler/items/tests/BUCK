@@ -194,15 +194,15 @@ python_unittest(
     ],
 )
 
-python_unittest(
+image_python_unittest(
     name = "test-ensure-dirs-exist",
     srcs = ["test_ensure_dirs_exist.py"],
-    needed_coverage = [(100, "//antlir/compiler/items:ensure_dirs_exist")],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "test-build-appliance",
-    },
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
+    layer = ":test_compiler_item_layer",
+    needed_coverage = [
+        (100, "//antlir/compiler/items:ensure_dirs_exist"),
+    ],
+    run_as_user = "root",
     deps = [
         ":common_testlib",
         "//antlir:common",

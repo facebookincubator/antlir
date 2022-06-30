@@ -4,7 +4,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import sys
 from itertools import zip_longest
 
 from antlir.compiler.requires_provides import (
@@ -14,7 +13,7 @@ from antlir.compiler.requires_provides import (
     RequireUser,
 )
 from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes
+from antlir.subvol_utils import Subvol, TempSubvolumes
 from pydantic import ValidationError
 
 from ..ensure_dirs_exist import (
@@ -22,10 +21,16 @@ from ..ensure_dirs_exist import (
     EnsureDirsExistItem,
     MismatchError,
 )
-from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
+from .common import (
+    BaseItemTestCase,
+    get_dummy_layer_opts_ba,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
 
-
-DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()
+DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
+    Subvol("test-build-appliance", already_exists=True)
+)
 
 
 class EnsureDirsExistItemTestCase(BaseItemTestCase):
@@ -76,8 +81,9 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 )
             )
 
+    @with_mocked_temp_volume_dir
     def test_ensure_subdirs_exist_command(self):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-subdirs-exist-cmd")
             ensure_items = list(
                 ensure_subdirs_exist_factory(
@@ -108,8 +114,9 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 render_subvol(subvol),
             )
 
+    @with_mocked_temp_volume_dir
     def test_ensure_dirs_exist_item_stat_check(self):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-dirs-exist-item")
             subvol.run_as_root(["mkdir", "-p", subvol.path("m")])
             good = {
@@ -136,8 +143,9 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
 
+    @with_mocked_temp_volume_dir
     def test_ensure_dirs_exist_item_xattrs_check(self):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-dirs-exist-item")
             subvol.run_as_root(["mkdir", "-p", subvol.path("alpha")])
             subvol.run_as_root(["chmod", "755", subvol.path("alpha")])
@@ -161,8 +169,9 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
             with self.assertRaises(MismatchError):
                 ede_item.build(subvol, DUMMY_LAYER_OPTS_BA)
 
+    @with_mocked_temp_volume_dir
     def test_ensure_other_files_and_dirs_are_kept_intact(self):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("ensure-dirs-exist-item")
             subvol.run_as_root(["mkdir", "-p", subvol.path("foo")])
             subvol.run_as_root(["chmod", "755", subvol.path("foo")])
