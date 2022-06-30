@@ -15,10 +15,11 @@ use std::marker::PhantomData;
 
 use netlink_sys::{
     nl_addr2str, nl_cache, nl_cache_get_first, nl_cache_get_next, nl_cache_put, nl_close,
-    nl_connect, nl_geterror, nl_sock, nl_socket_alloc, nl_socket_free, rtnl_link, rtnl_link_alloc,
-    rtnl_link_alloc_cache, rtnl_link_change, rtnl_link_get_addr, rtnl_link_get_flags,
-    rtnl_link_get_ifindex, rtnl_link_get_name, rtnl_link_put, rtnl_link_set_flags,
-    rtnl_link_set_name, rtnl_link_unset_flags, AF_UNSPEC, IFF_UP, NETLINK_ROUTE, NETLINK_XFRM,
+    nl_connect, nl_geterror, nl_sock, nl_socket_alloc, nl_socket_free, rtnl_link, rtnl_link_add,
+    rtnl_link_alloc, rtnl_link_alloc_cache, rtnl_link_change, rtnl_link_delete, rtnl_link_get_addr,
+    rtnl_link_get_flags, rtnl_link_get_ifindex, rtnl_link_get_name, rtnl_link_put,
+    rtnl_link_set_flags, rtnl_link_set_name, rtnl_link_set_type, rtnl_link_unset_flags, AF_UNSPEC,
+    IFF_UP, NETLINK_ROUTE, NETLINK_XFRM, NLM_F_ACK, NLM_F_CREATE, NLM_F_EXCL, NLM_F_REQUEST,
 };
 
 /// Format an error message from a failed libnl* call.
@@ -120,12 +121,41 @@ impl NlRoutingSocket {
     fn nl_sock(&self) -> &*mut nl_sock {
         self.0.nl_sock()
     }
+
+    // Add link
+    pub fn add_link(&self, name: String, interface_type: String) -> Result<()> {
+        let c_int_str =
+            CString::new(name.as_bytes()).expect("Failed to create CStr for interface rename");
+        let c_int_type = CString::new(interface_type.as_bytes())
+            .expect("Failed to create CStr for interface type");
+
+        let new = RtnlLink::new().context("Failed to create new RtnlLink")?;
+        unsafe { rtnl_link_set_name(new.0, c_int_str.as_ptr()) };
+        unsafe { rtnl_link_set_type(new.0, c_int_type.as_ptr()) };
+        let flags = RtnlLinkAddFlags::NLM_F_EXCL
+            | RtnlLinkAddFlags::NLM_F_CREATE
+            | RtnlLinkAddFlags::NLM_F_REQUEST
+            | RtnlLinkAddFlags::NLM_F_ACK;
+        let nlerr = unsafe { rtnl_link_add(*self.0.nl_sock(), new.0, flags.bits) };
+        if nlerr != 0 {
+            let msg = format!("add_link() failed: Netlink error {}", nlerr);
+            return Err(Error::msg(msg));
+        }
+        Ok(())
+    }
 }
 
 bitflags! {
     /// State flags associated with an Rtnl*Link struct.
     pub struct RtnlLinkFlags: u32 {
         const UP = IFF_UP;
+    }
+
+    pub struct RtnlLinkAddFlags: i32 {
+        const NLM_F_EXCL = NLM_F_EXCL as i32;
+        const NLM_F_CREATE = NLM_F_CREATE as i32;
+        const NLM_F_REQUEST = NLM_F_REQUEST as i32;
+        const NLM_F_ACK = NLM_F_ACK as i32;
     }
 }
 
@@ -160,7 +190,7 @@ pub trait RtnlLinkCommon {
     /// Lookup the link name, if any.
     fn name(&self) -> Option<String>;
 
-    // Lookup the link address and attempt to decode it.
+    /// Lookup the link address and attempt to decode it.
     fn mac_addr(&self) -> Option<String>;
 
     /// Check if an interface is up.
@@ -327,6 +357,9 @@ impl<'cache> fmt::Display for RtnlCachedLink<'cache> {
 
 /// A public trait for accessing RtnlCachedLink information.
 pub trait RtnlCachedLinkTrait: RtnlLinkCommon {
+    /// Delete/remove a virtual interface
+    fn delete(&self, _sock: &NlRoutingSocket) -> Result<()>;
+
     /// Set the interface state to up.
     fn set_up(&self, _sock: &NlRoutingSocket) -> Result<()>;
 
@@ -338,6 +371,15 @@ pub trait RtnlCachedLinkTrait: RtnlLinkCommon {
 }
 
 impl<'cache> RtnlCachedLinkTrait for RtnlCachedLink<'cache> {
+    fn delete(&self, sock: &NlRoutingSocket) -> Result<()> {
+        let nlerr = unsafe { rtnl_link_delete(*sock.nl_sock(), *self.rl_link()) };
+        if nlerr > 0 {
+            let msg = format!("rtnl_link_del() failed: Netlink error {}", nlerr);
+            return Err(Error::msg(msg));
+        }
+        Ok(())
+    }
+
     fn set_up(&self, sock: &NlRoutingSocket) -> Result<()> {
         self.update_flags(sock, RtnlLinkFlags::UP, true)
             .context(format!("Failed to set link state up for link {}", self))
@@ -411,6 +453,7 @@ impl<'a> Drop for RtnlLinkCache<'a> {
 mod tests {
     use super::*;
     use metalos_macros::{test, vmtest};
+    use rand::Rng;
 
     #[test]
     /// Test allocating a NlSocket without a connection.
@@ -499,6 +542,57 @@ mod tests {
             .find(|j| j.name().unwrap_or_else(|| "".to_string()) == "lo")
             .unwrap();
         assert!(lo2.is_up());
+
+        Ok(())
+    }
+
+    #[vmtest]
+    /// Test renaming a virtual interface in a VM
+    fn test_rename_interface() -> Result<()> {
+        // Create Interface with random index to support stress testing
+        let mut rng = rand::thread_rng();
+        let rand_int_index: i16 = rng.gen_range(0..99);
+        let int_name = format!("unittest{}", rand_int_index);
+        let rsock = NlRoutingSocket::new()?;
+        rsock.add_link(int_name.to_string(), "dummy".to_string())?;
+
+        // Find new interface + rename
+        let rlc = RtnlLinkCache::new(&rsock)?;
+        let new_interface = rlc
+            .links()
+            .iter()
+            .find(|j| j.name().unwrap_or_else(|| "".to_string()) == int_name)
+            .unwrap();
+        assert!(new_interface.is_down());
+
+        // Ensure we get a different reandom int
+        let mut rand_int_index2: i16 = rng.gen_range(0..99);
+        while rand_int_index2 == rand_int_index {
+            rand_int_index2 = rng.gen_range(0..99);
+        }
+
+        // Rename interface to new semi random name
+        let int_name2 = format!("unittest{}", rand_int_index2);
+        new_interface.set_name(&rsock, int_name2.as_str())?;
+
+        // Find new interface + delete
+        let rlc2 = RtnlLinkCache::new(&rsock)?;
+        let new_interface2 = rlc2
+            .links()
+            .iter()
+            .find(|j| j.name().unwrap_or_else(|| "".to_string()) == int_name2)
+            .unwrap();
+        assert!(new_interface2.is_down());
+        new_interface2.delete(&rsock)?;
+
+        // Ensure interface was deleted
+        let rlc3 = RtnlLinkCache::new(&rsock)?;
+        for link in rlc3.links().iter() {
+            if link.name().unwrap_or_else(|| "".to_string()) == int_name2 {
+                let emsg = format!("{} was found! It should be deleted. Debug.", int_name2);
+                return Err(Error::msg(emsg));
+            }
+        }
 
         Ok(())
     }
