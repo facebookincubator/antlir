@@ -59,9 +59,9 @@ load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
 load(":helpers.bzl", "normalize_target_and_mark_path_in_source_dict")
 load(":image_source.shape.bzl", "image_source_t")
-load(":install.shape.bzl", "install_files_t")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 def _forbid_layer_source(source_dict):
