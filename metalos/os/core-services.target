@@ -1,5 +1,5 @@
 [Unit]
 Description=Core services
-After=multi-user.target network-online.target
-Wants=multi-user.target network-online.target
+After=core-services-pre.target
+Requires=core-services-pre.target
 AllowIsolate=yes

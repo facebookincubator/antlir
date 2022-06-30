@@ -2,6 +2,7 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -64,9 +65,10 @@ metalos_branding = [
 ]
 
 systemd_target_graph = [
-    systemd.install_unit("core-services.target"),
-    systemd.install_unit("workload-pre.target"),
-    systemd.install_unit("workload.target"),
+    systemd.install_unit(":core-services-pre.target"),
+    systemd.install_unit(":core-services.target"),
+    systemd.install_unit(":workload-pre.target"),
+    systemd.install_unit(":workload.target"),
     # in the default CentOS packages, this points to graphical.target which makes no sense in our context
     systemd.set_default_target(
         "workload.target",
@@ -88,22 +90,15 @@ systemd_drop_state_shim = [
     ),
 ]
 
-# @rmikey is working on moving these back to multi-user.target
-legacy_systemd_deps = [
-    systemd.enable_unit("systemd-networkd.service", "core-services.target"),
-    systemd.enable_unit("systemd-resolved.service", "core-services.target"),
-    systemd.enable_unit("dbus.service", "core-services.target"),
-    systemd.enable_unit("systemd-hostnamed.service", "core-services.target"),
-    systemd.enable_unit("systemd-tmpfiles-setup.service", "core-services.target"),
-    # TODO(T12351899): this is a workaround for a likely bug in the initrd shutdown
-    # process that ends up leaving udev rules unprocessed in the
-    # post-switch-root root fs.
-    systemd.enable_unit("systemd-udev-trigger.service", "core-services.target"),
+systemd_hostnamed = [
+    systemd.enable_unit("systemd-hostnamed.service", "multi-user.target"),
+    systemd.alias("systemd-hostnamed.service", "dbus-org.freedesktop.hostname1.service"),
 ]
 
 # some tweaks to make systemd-resolved actually work
 # TODO(T12351899): it may not be necessary anymore after the init hack
 systemd_resolved = [
+    systemd.enable_unit("systemd-resolved.service", "multi-user.target"),
     systemd.alias("systemd-resolved.service", "dbus-org.freedesktop.resolve1.service"),
     feature.install("systemd-resolved.tmpfiles.conf", "/usr/lib/tmpfiles.d/systemd-resolved.conf"),
 ]
@@ -111,7 +106,7 @@ systemd_resolved = [
 root_cgroup = [
     # Ensure the root cgroup has all controllers enabled
     systemd.install_unit("systemd-workaround.service"),
-    systemd.enable_unit("systemd-workaround.service", "core-services.target"),
+    systemd.enable_unit("systemd-workaround.service", "core-services-pre.target"),
 ]
 
 # Mask out some units that aren't needed in MetalOS. There are
@@ -130,13 +125,13 @@ image.layer(
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
         image.ensure_subdirs_exist("/usr/lib", "metalos"),
-        legacy_systemd_deps,
         mask_unneeded_units,
         metalctl,
         metalos_branding,
         native_service_support,
         root_cgroup,
         sshd,
+        systemd_hostnamed,
         systemd_resolved,
         systemd_target_graph,
         systemd_drop_state_shim,
@@ -177,3 +172,19 @@ package.new(
         "//metalos/...",
     ],
 )
+
+[
+    export_file(
+        name = target_file,
+        visibility = [
+            "//metalos/...",
+            "//netos/...",
+        ],
+    )
+    for target_file in [
+        "core-services-pre.target",
+        "core-services.target",
+        "workload-pre.target",
+        "workload.target",
+    ]
+]
