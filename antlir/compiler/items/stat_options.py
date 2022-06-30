@@ -57,6 +57,16 @@ def customize_stat_options(kwargs, *, default_mode):
         kwargs["user_group"] = "root:root"
 
 
+def mode_to_int(mode: Mode) -> int:
+    if isinstance(mode, int):
+        return mode
+    elif isinstance(mode, str):
+        mode = mode_to_octal_str(mode)
+        return int(mode, 8)
+    else:
+        raise TypeError(f"{mode} was neither an int nor str")
+
+
 def mode_to_octal_str(mode: Mode) -> str:
     """Converts an instance of `Mode` to an octal string. If `mode` is a string,
     it's expected to be in the chmod symbolic string format with the following
