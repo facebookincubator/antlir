@@ -1,5 +1,6 @@
 [Unit]
 Description=Ensure all controllers on root cgroup are enabled
+Before=core-services-pre.target
 
 [Service]
 ExecStart=/bin/sleep infinity
@@ -7,3 +8,6 @@ MemoryAccounting=true
 CPUAccounting=true
 IOAccounting=true
 Delegate=cpu io memory pids
+
+[Install]
+RequiredBy=core-services-pre.target
