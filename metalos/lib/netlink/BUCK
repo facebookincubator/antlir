@@ -21,6 +21,9 @@ rust_bindgen_library(
 rust_library(
     name = "netlink",
     srcs = glob(["src/*.rs"]),
+    test_deps = [
+        "rand",
+    ],
     unittests = [
         "plain",
         "vm",
