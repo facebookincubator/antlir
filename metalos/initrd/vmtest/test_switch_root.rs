@@ -5,10 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-/// Test initrd features that boot through the switch-root into the image
-/// This uses the regular initrd so that it goes through the regular boot
-/// process, and this unit test is run inside a snapshot of the metalos base
-/// image.
+// Test initrd features that boot through the switch-root into the image
+// This uses the regular initrd so that it goes through the regular boot
+// process, and this unit test is run inside a snapshot of the metalos base
+// image.
+
 use anyhow::{Context, Result};
 use std::collections::{BTreeMap, HashSet};
 use std::path::Path;
