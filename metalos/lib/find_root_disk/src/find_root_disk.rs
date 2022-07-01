@@ -8,7 +8,9 @@
 // This file works for now but when we want to support multiple devices we should probably switch
 // to something like: third-party/rust/fixups/libparted-sys/fixups.toml
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use std::path::Path;
 use udev::Enumerator;
 

@@ -5,11 +5,16 @@ extern crate metalos_macros;
 use std::collections::HashMap;
 use std::convert::Infallible;
 use std::future::Future;
-use std::net::{IpAddr, SocketAddr};
-use std::sync::{Arc, Mutex};
+use std::net::IpAddr;
+use std::net::SocketAddr;
+use std::sync::Arc;
+use std::sync::Mutex;
 
-use hyper::service::{make_service_fn, service_fn};
-use hyper::{Body, Response, Server};
+use hyper::service::make_service_fn;
+use hyper::service::service_fn;
+use hyper::Body;
+use hyper::Response;
+use hyper::Server;
 
 pub async fn make_test_server<TF, TFF, TFR, HF, HFR, HFF>(
     test_fn: TF,
@@ -89,9 +94,12 @@ pub struct UnpackedRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::{anyhow, Context, Result};
+    use anyhow::anyhow;
+    use anyhow::Context;
+    use anyhow::Result;
     use maplit::hashmap;
-    use reqwest::{Client, Url};
+    use reqwest::Client;
+    use reqwest::Url;
 
     #[containertest]
     async fn test_http_test() -> Result<()> {

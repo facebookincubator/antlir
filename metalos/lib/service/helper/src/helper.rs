@@ -5,11 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use structopt::StructOpt;
 
 use service::ServiceInstance;
-use state::{State, Token};
+use state::State;
+use state::Token;
 
 mod volumes;
 use volumes::ServiceVolumes;
@@ -70,7 +72,8 @@ pub(crate) mod tests {
     use super::*;
     use metalos_macros::containertest;
     use std::path::Path;
-    use systemd::{Systemd, WaitableSystemState};
+    use systemd::Systemd;
+    use systemd::WaitableSystemState;
 
     pub(crate) async fn wait_for_systemd() -> Result<()> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());

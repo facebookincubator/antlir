@@ -7,10 +7,14 @@
 
 use std::io::Write;
 
-use serde::ser::{Impossible, Serializer};
+use serde::ser::Impossible;
+use serde::ser::Serializer;
 use serde::Serialize;
 
-use crate::ser::{Error, Result, UnitSerializer, UnsupportedValue};
+use crate::ser::Error;
+use crate::ser::Result;
+use crate::ser::UnitSerializer;
+use crate::ser::UnsupportedValue;
 
 /// UnitFileSerializer is the main entrypoint to writing out a unit file. It
 /// only supports serializing a single top-level struct, using [UnitSerializer]

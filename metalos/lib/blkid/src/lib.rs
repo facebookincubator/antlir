@@ -1,12 +1,19 @@
-use std::ffi::{CStr, CString, OsStr};
+use std::ffi::CStr;
+use std::ffi::CString;
+use std::ffi::OsStr;
 use std::os::unix::ffi::OsStrExt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{ensure, Error, Result};
-use blkid_sys::{
-    blkid_do_safeprobe, blkid_evaluate_spec, blkid_free_probe, blkid_new_probe_from_filename,
-    blkid_probe_enable_superblocks, blkid_probe_lookup_value,
-};
+use anyhow::ensure;
+use anyhow::Error;
+use anyhow::Result;
+use blkid_sys::blkid_do_safeprobe;
+use blkid_sys::blkid_evaluate_spec;
+use blkid_sys::blkid_free_probe;
+use blkid_sys::blkid_new_probe_from_filename;
+use blkid_sys::blkid_probe_enable_superblocks;
+use blkid_sys::blkid_probe_lookup_value;
 use libc::c_void;
 
 /// Evaluate a blkid tag spec. This can be either a key-value pair like LABEL=/
@@ -67,8 +74,10 @@ pub fn probe_fstype(device: impl AsRef<Path>) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::{evaluate_spec, probe_fstype};
-    use metalos_macros::{test, vmtest};
+    use super::evaluate_spec;
+    use super::probe_fstype;
+    use metalos_macros::test;
+    use metalos_macros::vmtest;
 
     #[test]
     fn test_evaluate_full_path() {

@@ -5,12 +5,22 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use convert_case::{Case, Casing};
+use convert_case::Case;
+use convert_case::Casing;
 use proc_macro::TokenStream;
-use quote::{format_ident, quote, ToTokens};
+use quote::format_ident;
+use quote::quote;
+use quote::ToTokens;
+use syn::parse_macro_input;
 use syn::spanned::Spanned;
+use syn::Data;
+use syn::DataEnum;
+use syn::DeriveInput;
+use syn::Error;
+use syn::Fields;
+use syn::Meta;
+use syn::MetaList;
 use syn::NestedMeta::Lit;
-use syn::{parse_macro_input, Data, DataEnum, DeriveInput, Error, Fields, Meta, MetaList};
 
 fn get_fields(input: DeriveInput) -> syn::Result<syn::FieldsNamed> {
     let span = input.span();

@@ -7,12 +7,18 @@
 
 //! [Value] abstraction to treat thrift structs generically.
 
-use anyhow::{Error, Result};
-use fbthrift::{MessageType, ProtocolWriter, Serialize as ThriftSerialize, TType};
+use anyhow::Error;
+use anyhow::Result;
+use fbthrift::MessageType;
+use fbthrift::ProtocolWriter;
+use fbthrift::Serialize as ThriftSerialize;
+use fbthrift::TType;
 use itertools::Itertools;
 use serde::Serialize;
-use std::cmp::{Ord, Ordering};
-use std::collections::{BTreeMap, BTreeSet};
+use std::cmp::Ord;
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::panic::RefUnwindSafe;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
@@ -348,8 +354,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use example::{Example, ListItem};
-    use maplit::{btreemap, btreeset};
+    use example::Example;
+    use example::ListItem;
+    use maplit::btreemap;
+    use maplit::btreeset;
 
     #[test]
     fn test_to_value() -> Result<()> {

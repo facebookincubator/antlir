@@ -1,4 +1,6 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use std::collections::BTreeSet;
 use structopt::StructOpt;
 use strum::IntoEnumIterator;
@@ -76,7 +78,9 @@ impl GenericCmdlineOpt {
 
 #[cfg(test)]
 mod tests {
-    use super::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
+    use super::GenericCmdlineOpt;
+    use super::KernelCmdArgs;
+    use super::KnownArgs;
     use anyhow::Result;
     use structopt::clap::AppSettings;
     use structopt::StructOpt;

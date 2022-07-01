@@ -8,15 +8,22 @@
 #![feature(can_vector)]
 
 use std::collections::HashMap;
-use std::fs::{File, OpenOptions};
-use std::io::{Read, ReadBuf, Seek, SeekFrom, Write};
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::io::Read;
+use std::io::ReadBuf;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::Write;
 use std::os::unix::io::AsRawFd;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use delegate::delegate;
 
-use udev_utils::device::{Disk, SpecificDevice};
+use udev_utils::device::Disk;
+use udev_utils::device::SpecificDevice;
 
 pub static MEGABYTE: u64 = 1024 * 1024;
 
@@ -187,7 +194,8 @@ pub fn scan_disk_partitions(disk_device_path: &DiskDevPath) -> Result<HashMap<u3
 
 pub mod test_utils {
     use crate::DiskDevPath;
-    use anyhow::{Context, Result};
+    use anyhow::Context;
+    use anyhow::Result;
 
     pub fn setup_test_loopback(img_file: &str) -> Result<String> {
         std::process::Command::new("dd")

@@ -9,19 +9,26 @@
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
+use std::ops::DerefMut;
 use std::os::unix::process::CommandExt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use derive_builder::Builder;
 use goblin::elf::Elf;
 use maplit::btreemap;
-use nix::mount::{mount, MsFlags};
-use nix::sched::{unshare, CloneFlags};
+use nix::mount::mount;
+use nix::mount::MsFlags;
+use nix::sched::unshare;
+use nix::sched::CloneFlags;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use seccompiler::{BpfProgram, SeccompAction, SeccompFilter};
+use seccompiler::BpfProgram;
+use seccompiler::SeccompAction;
+use seccompiler::SeccompFilter;
 
 /// Simple regex to parse the ouput of `ld.so --list` which is used to resolve
 /// the dependencies of a binary.
@@ -239,7 +246,9 @@ mod tests {
     use anyhow::anyhow;
     use maplit::hashmap;
     use nix::net::if_::InterfaceFlags;
-    use serde::{de::DeserializeOwned, Deserialize, Serialize};
+    use serde::de::DeserializeOwned;
+    use serde::Deserialize;
+    use serde::Serialize;
     use std::collections::HashMap;
     use std::io::Write;
     use strum::IntoEnumIterator;

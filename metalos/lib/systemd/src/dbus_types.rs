@@ -7,14 +7,24 @@
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::marker::PhantomData;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::path::Path;
+use std::path::PathBuf;
+use std::time::Duration;
+use std::time::SystemTime;
+use std::time::UNIX_EPOCH;
 
-use serde::{ser::SerializeSeq, Deserialize, Deserializer, Serialize, Serializer};
-use zvariant::{OwnedValue, Signature, Type};
+use serde::ser::SerializeSeq;
+use serde::Deserialize;
+use serde::Deserializer;
+use serde::Serialize;
+use serde::Serializer;
+use zvariant::OwnedValue;
+use zvariant::Signature;
+use zvariant::Type;
 
 use crate::Result;
 
@@ -358,15 +368,20 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{Environment, MonotonicTimestamp, Timestamp};
+    use super::Environment;
+    use super::MonotonicTimestamp;
+    use super::Timestamp;
     use crate::Systemd;
     use anyhow::Result;
     use byteorder::LE;
-    use maplit::{hashmap, hashset};
+    use maplit::hashmap;
+    use maplit::hashset;
     use std::collections::HashSet;
-    use std::time::{Duration, UNIX_EPOCH};
+    use std::time::Duration;
+    use std::time::UNIX_EPOCH;
+    use zvariant::from_slice;
+    use zvariant::to_bytes;
     use zvariant::EncodingContext as Context;
-    use zvariant::{from_slice, to_bytes};
 
     #[containertest]
     async fn test_typed_path() -> Result<()> {

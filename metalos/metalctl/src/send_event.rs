@@ -5,14 +5,21 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use clap::Parser;
 use serde_json;
-use slog::{info, Logger};
+use slog::info;
+use slog::Logger;
 
 use metalos_host_configs::host::HostConfig;
 use net_utils::get_mac;
-use send_events::{Event, EventSender, EventSink, HttpSink, Source, SourceArgs};
+use send_events::Event;
+use send_events::EventSender;
+use send_events::EventSink;
+use send_events::HttpSink;
+use send_events::Source;
+use send_events::SourceArgs;
 use state::State;
 
 #[derive(Parser, Debug, Clone)]
@@ -71,7 +78,8 @@ mod tests {
     use maplit::hashmap;
     use serde_json::Value;
     use slog::o;
-    use systemd::{Systemd, WaitableSystemState};
+    use systemd::Systemd;
+    use systemd::WaitableSystemState;
 
     #[containertest]
     async fn test_send_event() -> Result<()> {

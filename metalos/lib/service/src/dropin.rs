@@ -8,14 +8,18 @@
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use maplit::btreemap;
 use serde::ser::Error as _;
-use serde::ser::{SerializeSeq, Serializer};
-use serde::{Deserialize, Serialize};
+use serde::ser::SerializeSeq;
+use serde::ser::Serializer;
+use serde::Deserialize;
+use serde::Serialize;
 use uuid::Uuid;
 
-use state::{State, Token};
+use state::State;
+use state::Token;
 use systemd::UnitName;
 
 use crate::ServiceInstance;

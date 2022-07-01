@@ -7,10 +7,15 @@
 
 use std::io::Write;
 
-use serde::ser::{SerializeSeq, SerializeTuple, SerializeTupleStruct, SerializeTupleVariant};
+use serde::ser::SerializeSeq;
+use serde::ser::SerializeTuple;
+use serde::ser::SerializeTupleStruct;
+use serde::ser::SerializeTupleVariant;
 use serde::Serialize;
 
-use crate::ser::{Error, Result, ValueSerializer};
+use crate::ser::Error;
+use crate::ser::Result;
+use crate::ser::ValueSerializer;
 
 /// ValueSerializer is used to write out values for unit file settings that are
 /// repeated multiple times.

@@ -5,13 +5,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::path::PathBuf;
 
 use anyhow::Result;
 use serde::Deserialize;
-use systemd::analyze::verify::{verify, Problem};
-use systemd::{Systemd, UnitFileState, UnitName, WaitableSystemState};
+use systemd::analyze::verify::verify;
+use systemd::analyze::verify::Problem;
+use systemd::Systemd;
+use systemd::UnitFileState;
+use systemd::UnitName;
+use systemd::WaitableSystemState;
 
 static EXPECTATIONS: &'static str = include_str!("expectations.toml");
 

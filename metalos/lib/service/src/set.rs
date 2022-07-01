@@ -5,12 +5,16 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::ops::{Deref, DerefMut};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 
-use systemd::{ActiveState, Systemd};
+use systemd::ActiveState;
+use systemd::Systemd;
 
 use crate::dropin::UnitMetadata;
 use crate::Version;

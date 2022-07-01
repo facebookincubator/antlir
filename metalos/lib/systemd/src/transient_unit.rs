@@ -15,9 +15,14 @@ use slog::debug;
 use thiserror::Error;
 use zbus::zvariant::Value;
 
-use crate::property_stream::{property_stream, PropertyStream};
-use crate::systemd_manager::{ActiveState, ServiceResult, StartMode, UnitName};
-use crate::{Result, Systemd};
+use crate::property_stream::property_stream;
+use crate::property_stream::PropertyStream;
+use crate::systemd_manager::ActiveState;
+use crate::systemd_manager::ServiceResult;
+use crate::systemd_manager::StartMode;
+use crate::systemd_manager::UnitName;
+use crate::Result;
+use crate::Systemd;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -172,13 +177,18 @@ impl Systemd {
 #[cfg(test)]
 mod tests {
     use super::Opts;
-    use crate::{MachineExt, Machined, ServiceResult, Systemd, WaitableSystemState};
+    use crate::MachineExt;
+    use crate::Machined;
+    use crate::ServiceResult;
+    use crate::Systemd;
+    use crate::WaitableSystemState;
     use anyhow::Result;
     use os_pipe::pipe;
     use std::io::Read;
     use std::os::unix::io::AsRawFd;
     use std::time::Duration;
-    use tokio::time::{sleep, timeout};
+    use tokio::time::sleep;
+    use tokio::time::timeout;
 
     #[containertest]
     async fn test_transient_run() -> Result<()> {

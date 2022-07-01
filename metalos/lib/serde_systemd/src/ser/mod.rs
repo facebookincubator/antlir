@@ -6,7 +6,8 @@
  */
 
 use std::fmt::Display;
-use std::io::{Cursor, Write};
+use std::io::Cursor;
+use std::io::Write;
 
 use serde::ser;
 use serde::Serialize;

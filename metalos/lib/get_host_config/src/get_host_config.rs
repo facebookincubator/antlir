@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use fbthrift::binary_protocol::deserialize as binary_deserialize;
 use fbthrift::simplejson_protocol::deserialize as json_deserialize;
 use metalos_host_configs::host::HostConfig;

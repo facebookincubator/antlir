@@ -6,12 +6,22 @@
  */
 
 use metalos_host_configs::host::HostConfig;
-use metalos_thrift_host_configs::boot_config::{BootConfig, Kernel};
-use metalos_thrift_host_configs::packages::{Format, Kind, Package, PackageId};
-use metalos_thrift_host_configs::provisioning_config::{
-    DiskConfiguration, EventBackend, EventSource, HostIdentity, Network, NetworkInterface,
-    ProvisioningConfig, RootDiskConfiguration, SingleDiskSerial, DNS,
-};
+use metalos_thrift_host_configs::boot_config::BootConfig;
+use metalos_thrift_host_configs::boot_config::Kernel;
+use metalos_thrift_host_configs::packages::Format;
+use metalos_thrift_host_configs::packages::Kind;
+use metalos_thrift_host_configs::packages::Package;
+use metalos_thrift_host_configs::packages::PackageId;
+use metalos_thrift_host_configs::provisioning_config::DiskConfiguration;
+use metalos_thrift_host_configs::provisioning_config::EventBackend;
+use metalos_thrift_host_configs::provisioning_config::EventSource;
+use metalos_thrift_host_configs::provisioning_config::HostIdentity;
+use metalos_thrift_host_configs::provisioning_config::Network;
+use metalos_thrift_host_configs::provisioning_config::NetworkInterface;
+use metalos_thrift_host_configs::provisioning_config::ProvisioningConfig;
+use metalos_thrift_host_configs::provisioning_config::RootDiskConfiguration;
+use metalos_thrift_host_configs::provisioning_config::SingleDiskSerial;
+use metalos_thrift_host_configs::provisioning_config::DNS;
 use metalos_thrift_host_configs::runtime_config::RuntimeConfig;
 
 pub fn example_host_for_tests() -> HostConfig {

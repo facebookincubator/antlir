@@ -4,23 +4,54 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-use anyhow::{bail, Context, Error, Result};
+use anyhow::bail;
+use anyhow::Context;
+use anyhow::Error;
+use anyhow::Result;
 use bitflags::bitflags;
 use derive_more::Display;
 use nix::errno::errno;
-use num_derive::{FromPrimitive, ToPrimitive};
-use std::ffi::{CStr, CString};
+use num_derive::FromPrimitive;
+use num_derive::ToPrimitive;
+use std::ffi::CStr;
+use std::ffi::CString;
 use std::fmt;
 use std::marker::PhantomData;
 
-use netlink_sys::{
-    nl_addr2str, nl_cache, nl_cache_get_first, nl_cache_get_next, nl_cache_put, nl_close,
-    nl_connect, nl_geterror, nl_sock, nl_socket_alloc, nl_socket_free, rtnl_link, rtnl_link_add,
-    rtnl_link_alloc, rtnl_link_alloc_cache, rtnl_link_change, rtnl_link_delete, rtnl_link_get_addr,
-    rtnl_link_get_flags, rtnl_link_get_ifindex, rtnl_link_get_name, rtnl_link_put,
-    rtnl_link_set_flags, rtnl_link_set_name, rtnl_link_set_type, rtnl_link_unset_flags, AF_UNSPEC,
-    IFF_UP, NETLINK_ROUTE, NETLINK_XFRM, NLM_F_ACK, NLM_F_CREATE, NLM_F_EXCL, NLM_F_REQUEST,
-};
+use netlink_sys::nl_addr2str;
+use netlink_sys::nl_cache;
+use netlink_sys::nl_cache_get_first;
+use netlink_sys::nl_cache_get_next;
+use netlink_sys::nl_cache_put;
+use netlink_sys::nl_close;
+use netlink_sys::nl_connect;
+use netlink_sys::nl_geterror;
+use netlink_sys::nl_sock;
+use netlink_sys::nl_socket_alloc;
+use netlink_sys::nl_socket_free;
+use netlink_sys::rtnl_link;
+use netlink_sys::rtnl_link_add;
+use netlink_sys::rtnl_link_alloc;
+use netlink_sys::rtnl_link_alloc_cache;
+use netlink_sys::rtnl_link_change;
+use netlink_sys::rtnl_link_delete;
+use netlink_sys::rtnl_link_get_addr;
+use netlink_sys::rtnl_link_get_flags;
+use netlink_sys::rtnl_link_get_ifindex;
+use netlink_sys::rtnl_link_get_name;
+use netlink_sys::rtnl_link_put;
+use netlink_sys::rtnl_link_set_flags;
+use netlink_sys::rtnl_link_set_name;
+use netlink_sys::rtnl_link_set_type;
+use netlink_sys::rtnl_link_unset_flags;
+use netlink_sys::AF_UNSPEC;
+use netlink_sys::IFF_UP;
+use netlink_sys::NETLINK_ROUTE;
+use netlink_sys::NETLINK_XFRM;
+use netlink_sys::NLM_F_ACK;
+use netlink_sys::NLM_F_CREATE;
+use netlink_sys::NLM_F_EXCL;
+use netlink_sys::NLM_F_REQUEST;
 
 /// Format an error message from a failed libnl* call.
 fn nlerrmsg(err: i32, msg: &str) -> String {
@@ -452,7 +483,8 @@ impl<'a> Drop for RtnlLinkCache<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use metalos_macros::{test, vmtest};
+    use metalos_macros::test;
+    use metalos_macros::vmtest;
     use rand::Rng;
 
     #[test]

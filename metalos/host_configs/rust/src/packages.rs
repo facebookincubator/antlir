@@ -7,7 +7,8 @@
 
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
 use anyhow::anyhow;
 use strum_macros::Display;
@@ -15,7 +16,10 @@ use url::Url;
 use uuid::Uuid;
 
 use metalos_thrift_host_configs::packages::Kind as ThriftKind;
-use thrift_wrapper::{Error, FieldContext, Result, ThriftWrapper};
+use thrift_wrapper::Error;
+use thrift_wrapper::FieldContext;
+use thrift_wrapper::Result;
+use thrift_wrapper::ThriftWrapper;
 
 #[derive(Debug, Display, Copy, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::packages::Format)]

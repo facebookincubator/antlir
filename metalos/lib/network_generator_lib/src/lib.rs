@@ -1,15 +1,23 @@
 use std::fs;
 use std::io::BufWriter;
 use std::os::unix::fs::symlink;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{Context, Result};
-use slog::{info, o, Drain, Logger};
+use anyhow::Context;
+use anyhow::Result;
+use slog::info;
+use slog::o;
+use slog::Drain;
+use slog::Logger;
 use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
 use structopt::StructOpt;
 
-use systemd::render::{NetworkUnit, NetworkUnitMatchSection};
-use systemd_generator_lib::{write_dropin_to_disk, Dropin, GeneratorArgs};
+use systemd::render::NetworkUnit;
+use systemd::render::NetworkUnitMatchSection;
+use systemd_generator_lib::write_dropin_to_disk;
+use systemd_generator_lib::Dropin;
+use systemd_generator_lib::GeneratorArgs;
 
 // WARNING: keep in sync with the bzl/TARGETS file unit
 const ETH_NETWORK_UNIT_FILENAME: &str = "50-eth.network";
@@ -117,7 +125,8 @@ mod tests {
 
     use std::collections::BTreeMap;
 
-    use anyhow::{anyhow, bail};
+    use anyhow::anyhow;
+    use anyhow::bail;
     use maplit::btreemap;
 
     fn setup_generator_test(name: &'static str) -> Result<(Logger, PathBuf, Args)> {

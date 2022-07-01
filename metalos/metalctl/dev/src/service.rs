@@ -5,17 +5,22 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use clap::Parser;
 use slog::Logger;
 
-use metalos_host_configs::packages::{Format, Service as ServicePackage};
+use metalos_host_configs::packages::Format;
+use metalos_host_configs::packages::Service as ServicePackage;
 use metalos_host_configs::runtime_config::Service;
-use package_download::{ensure_package_on_disk, HttpsDownloader};
-use service::{ServiceSet, Transaction};
+use package_download::ensure_package_on_disk;
+use package_download::HttpsDownloader;
+use service::ServiceSet;
+use service::Transaction;
 use systemd::Systemd;
 
-use crate::{PackageArg, SendstreamPackage};
+use crate::PackageArg;
+use crate::SendstreamPackage;
 
 #[derive(Parser)]
 pub(crate) enum Opts {

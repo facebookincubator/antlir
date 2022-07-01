@@ -42,8 +42,11 @@ pub fn template_unit_name(
 
 #[cfg(test)]
 mod tests {
-    use super::{escape, template_unit_name};
-    use anyhow::{bail, Context, Result};
+    use super::escape;
+    use super::template_unit_name;
+    use anyhow::bail;
+    use anyhow::Context;
+    use anyhow::Result;
     use std::process::Command;
 
     #[test]

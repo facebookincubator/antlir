@@ -14,7 +14,8 @@
 //! in these state directories, that is up to the service itself and is
 //! consequently not tested here.
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use nix::sys::utsname::uname;
 use std::fs::OpenOptions;
 use std::io::prelude::*;

@@ -1,12 +1,15 @@
 // (c) Facebook, Inc. and its affiliates. Confidential and proprietary.
 #![deny(warnings)]
 #![feature(map_first_last)]
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fmt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use btrfs::Subvolume;
 use structopt::StructOpt;
 
@@ -238,7 +241,10 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{find_rpm_differences, get_changed_files, Rpm, RpmDiff};
+    use super::find_rpm_differences;
+    use super::get_changed_files;
+    use super::Rpm;
+    use super::RpmDiff;
     use anyhow::Result;
     use btrfs::Subvolume;
     use maplit::btreeset;

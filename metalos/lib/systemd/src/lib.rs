@@ -11,11 +11,15 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use once_cell::sync::Lazy;
-use slog::{debug, trace, Logger};
+use slog::debug;
+use slog::trace;
+use slog::Logger;
 use thiserror::Error;
 use tokio::sync::Mutex;
-use tokio::time::{sleep, timeout};
-use zbus::{Proxy, ProxyBuilder};
+use tokio::time::sleep;
+use tokio::time::timeout;
+use zbus::Proxy;
+use zbus::ProxyBuilder;
 
 #[cfg(test)]
 #[macro_use]
@@ -33,11 +37,16 @@ mod systemd_manager;
 mod transient_unit;
 pub use dbus_types::*;
 pub use escape::*;
-pub use machined_manager::{ManagerProxy as MachinedManagerProxy, *};
-pub use networkd_manager::{ManagerProxy as NetworkdManagerProxy, *};
-pub use system_state::{SystemState, WaitableSystemState};
-pub use systemd_manager::{ManagerProxy as SystemdManagerProxy, *};
-pub use transient_unit::{Error as TransientUnitError, Opts as TransientUnitOpts};
+pub use machined_manager::ManagerProxy as MachinedManagerProxy;
+pub use machined_manager::*;
+pub use networkd_manager::ManagerProxy as NetworkdManagerProxy;
+pub use networkd_manager::*;
+pub use system_state::SystemState;
+pub use system_state::WaitableSystemState;
+pub use systemd_manager::ManagerProxy as SystemdManagerProxy;
+pub use systemd_manager::*;
+pub use transient_unit::Error as TransientUnitError;
+pub use transient_unit::Opts as TransientUnitOpts;
 
 pub static PROVIDER_ROOT: &str = "/usr/lib/systemd/system";
 
@@ -195,7 +204,8 @@ pub type Networkd = DbusService<NetworkdManagerProxy<'static>>;
 
 #[cfg(test)]
 mod tests {
-    use super::{Systemd, WaitableSystemState};
+    use super::Systemd;
+    use super::WaitableSystemState;
     use anyhow::Result;
 
     #[containertest]

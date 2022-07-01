@@ -10,14 +10,18 @@ pub trait AntlirPackaged {}
 
 #[cfg(test)]
 mod test {
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
+    use std::path::PathBuf;
 
     use maplit::hashmap;
 
+    use crate::generate_layer;
+    use crate::generate_partitions;
+    use crate::generate_paths;
+    use crate::generate_subvolumes;
     use crate::partition::AntlirGPT;
     use crate::path::VerifiedPath;
     use crate::subvolume::AntlirSubvolume;
-    use crate::{generate_layer, generate_partitions, generate_paths, generate_subvolumes};
 
     generate_layer! {
         ControlLayer {

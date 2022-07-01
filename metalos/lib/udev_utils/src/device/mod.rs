@@ -6,11 +6,15 @@
  */
 
 use std::collections::HashMap;
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use crate::{Error, Result, Subsystem};
+use crate::Error;
+use crate::Result;
+use crate::Subsystem;
 
 mod disk;
 mod partition;

@@ -7,11 +7,14 @@
 
 use std::net::IpAddr;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use async_trait::async_trait;
 use clap::Parser;
 use reqwest::Client;
-use slog::{info, Logger};
+use slog::info;
+use slog::Logger;
 use tokio::sync::Mutex;
 use url::Url;
 

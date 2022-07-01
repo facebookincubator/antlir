@@ -14,18 +14,23 @@ use anyhow::Context;
 use async_trait::async_trait;
 use bytes::Bytes;
 use futures::future::try_join_all;
-use futures::{Stream, StreamExt};
-use slog::{debug, Logger};
+use futures::Stream;
+use futures::StreamExt;
+use slog::debug;
+use slog::Logger;
 use tempfile::NamedTempFile;
 use thiserror::Error;
 
-use metalos_host_configs::packages::{self, Format};
+use metalos_host_configs::packages::Format;
+use metalos_host_configs::packages::{self};
 
 mod https;
 pub use https::HttpsDownloader;
 
 use btrfs::sendstream::Zstd;
-use btrfs::{Sendstream, SendstreamExt, Subvolume};
+use btrfs::Sendstream;
+use btrfs::SendstreamExt;
+use btrfs::Subvolume;
 
 #[derive(Error, Debug)]
 pub enum Error {

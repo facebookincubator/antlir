@@ -12,7 +12,8 @@ use nix::sys::utsname::uname;
 use serde::Serialize;
 
 use crate::dropin::Environment;
-use service_config_generator_if::{Input, Output};
+use service_config_generator_if::Input;
+use service_config_generator_if::Output;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]

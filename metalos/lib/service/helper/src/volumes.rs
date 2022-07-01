@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use btrfs::{DeleteFlags, SnapshotFlags, Subvolume};
+use btrfs::DeleteFlags;
+use btrfs::SnapshotFlags;
+use btrfs::Subvolume;
 use std::path::Path;
 use thiserror::Error;
 
@@ -103,7 +105,8 @@ mod tests {
     use super::*;
     use anyhow::Result;
     use metalos_macros::containertest;
-    use nix::unistd::{Group, User};
+    use nix::unistd::Group;
+    use nix::unistd::User;
     use std::fs;
     use std::os::linux::fs::MetadataExt;
     use std::path::Path;

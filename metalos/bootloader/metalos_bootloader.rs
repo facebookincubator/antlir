@@ -5,9 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Result};
-use nix::mount::{mount, MsFlags};
-use slog::{crit, info, o, Logger};
+use anyhow::Context;
+use anyhow::Result;
+use nix::mount::mount;
+use nix::mount::MsFlags;
+use slog::crit;
+use slog::info;
+use slog::o;
+use slog::Logger;
 
 use metalos_host_configs::boot_config::BootConfig;
 use metalos_host_configs::host::HostConfig;

@@ -11,13 +11,20 @@ use std::path::Path;
 use std::str::FromStr;
 
 use bitflags::bitflags;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::Deserialize;
+use serde::Deserializer;
+use serde::Serialize;
+use serde::Serializer;
 use zbus::dbus_proxy;
-use zvariant::{derive::Type, OwnedValue, Signature, Type};
+use zvariant::derive::Type;
+use zvariant::OwnedValue;
+use zvariant::Signature;
+use zvariant::Type;
 
 use crate::dbus_types::*;
 use crate::system_state::SystemState;
-use systemd_macros::{SystemdEnum, TransparentZvariant};
+use systemd_macros::SystemdEnum;
+use systemd_macros::TransparentZvariant;
 
 #[derive(
     Debug,
@@ -1007,16 +1014,21 @@ trait Service {
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ActiveState, EnableDisableUnitFlags, KillWhom, LoadState, Taint, TaintSet, UnitFileState,
-        Virtualization,
-    };
+    use super::ActiveState;
+    use super::EnableDisableUnitFlags;
+    use super::KillWhom;
+    use super::LoadState;
+    use super::Taint;
+    use super::TaintSet;
+    use super::UnitFileState;
+    use super::Virtualization;
     use crate::Systemd;
     use anyhow::Result;
     use byteorder::LE;
     use maplit::btreeset;
+    use zvariant::from_slice;
+    use zvariant::to_bytes;
     use zvariant::EncodingContext as Context;
-    use zvariant::{from_slice, to_bytes};
 
     #[containertest]
     async fn test_virtualization() -> Result<()> {

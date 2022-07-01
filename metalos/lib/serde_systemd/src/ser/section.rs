@@ -7,10 +7,15 @@
 
 use std::io::Write;
 
-use serde::ser::{Impossible, SerializeStruct, Serializer};
+use serde::ser::Impossible;
+use serde::ser::SerializeStruct;
+use serde::ser::Serializer;
 use serde::Serialize;
 
-use crate::ser::{Error, Result, UnsupportedValue, ValueSerializer};
+use crate::ser::Error;
+use crate::ser::Result;
+use crate::ser::UnsupportedValue;
+use crate::ser::ValueSerializer;
 
 pub struct SectionSerializer<'a, W>(pub(crate) &'a mut W);
 

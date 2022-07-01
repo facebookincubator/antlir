@@ -7,10 +7,14 @@
 
 use std::io::Write;
 
-use serde::ser::{Impossible, SerializeStruct, Serializer};
+use serde::ser::Impossible;
+use serde::ser::SerializeStruct;
+use serde::ser::Serializer;
 use serde::Serialize;
 
-use crate::ser::{Error, Result, SectionSerializer};
+use crate::ser::Error;
+use crate::ser::Result;
+use crate::ser::SectionSerializer;
 
 /// UnitSerializer serializes the top level of a unit. This must consist solely
 /// of subsections, which may themselves contain key-value pairs, but not more

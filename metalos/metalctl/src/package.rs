@@ -1,10 +1,13 @@
-use anyhow::{Context, Result};
-use clap::{Args, Parser};
+use anyhow::Context;
+use anyhow::Result;
+use clap::Args;
+use clap::Parser;
 use fbthrift::simplejson_protocol::deserialize;
 use slog::Logger;
 
 use metalos_host_configs::packages::generic::Package;
-use package_download::{ensure_packages_on_disk_ignoring_artifacts, HttpsDownloader};
+use package_download::ensure_packages_on_disk_ignoring_artifacts;
+use package_download::HttpsDownloader;
 
 #[derive(Parser)]
 pub enum Opts {
