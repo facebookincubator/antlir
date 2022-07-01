@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use slog::{debug, info, trace};
+use slog::debug;
+use slog::info;
+use slog::trace;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::mem::size_of_val;
@@ -13,7 +15,8 @@ use std::time::SystemTime;
 use thiserror::Error;
 use zstd::stream::write::Encoder;
 
-pub use crate::send_attribute_header::{BtrfsSendAttributeType, SendAttributeHeader};
+pub use crate::send_attribute_header::BtrfsSendAttributeType;
+pub use crate::send_attribute_header::SendAttributeHeader;
 pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use crate::send_version::SendVersion;
 

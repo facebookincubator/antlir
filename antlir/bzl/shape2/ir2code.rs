@@ -11,15 +11,31 @@ use std::fs::File;
 use std::ops::Deref;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, Context as _, Result};
-use derive_more::{AsRef, Deref, From};
-use handlebars::{handlebars_helper, no_escape, Handlebars};
+use anyhow::anyhow;
+use anyhow::Context as _;
+use anyhow::Result;
+use derive_more::AsRef;
+use derive_more::Deref;
+use derive_more::From;
+use handlebars::handlebars_helper;
+use handlebars::no_escape;
+use handlebars::Handlebars;
 use itertools::Itertools;
 use serde::Serialize;
 use serde_json::Value;
-use structopt::{clap::arg_enum, StructOpt};
+use structopt::clap::arg_enum;
+use structopt::StructOpt;
 
-use ir::{ComplexType, Enum, Field, Module, Primitive, Struct, Target, Type, TypeName, Union};
+use ir::ComplexType;
+use ir::Enum;
+use ir::Field;
+use ir::Module;
+use ir::Primitive;
+use ir::Struct;
+use ir::Target;
+use ir::Type;
+use ir::TypeName;
+use ir::Union;
 
 arg_enum! {
     #[derive(Debug)]

@@ -6,7 +6,8 @@
  */
 
 use lazy_static::lazy_static;
-use slog::{debug, trace};
+use slog::debug;
+use slog::trace;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt::Display;

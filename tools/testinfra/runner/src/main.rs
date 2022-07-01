@@ -6,21 +6,26 @@
  */
 
 use std::fs::File;
-use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
+use std::io::BufWriter;
+use std::io::Write;
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::exit;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use itertools::Itertools;
 use rayon::iter::*;
-use structopt::{clap, StructOpt};
+use structopt::clap;
+use structopt::StructOpt;
 
 // we declare all modules here so that they may refer to each other using `super::<mod>`
 mod buck_test;
 mod pyunit;
 mod rust;
 
-use buck_test::{Test, TestResult};
+use buck_test::Test;
+use buck_test::TestResult;
 
 #[derive(StructOpt, Debug)]
 #[structopt(

@@ -6,22 +6,37 @@
  */
 
 #![feature(get_mut_unchecked)]
-use anyhow::{anyhow, bail, Context, Result};
-use derive_more::{Deref, Display};
+use anyhow::anyhow;
+use anyhow::bail;
+use anyhow::Context;
+use anyhow::Result;
+use derive_more::Deref;
+use derive_more::Display;
 use gazebo::any::ProvidesStaticType;
 use serde::Deserialize;
 use slotmap::SlotMap;
-use starlark::environment::{FrozenModule, Globals, GlobalsBuilder, Module};
-use starlark::eval::{Evaluator, FileLoader};
-use starlark::syntax::{AstModule, Dialect};
+use starlark::environment::FrozenModule;
+use starlark::environment::Globals;
+use starlark::environment::GlobalsBuilder;
+use starlark::environment::Module;
+use starlark::eval::Evaluator;
+use starlark::eval::FileLoader;
+use starlark::starlark_module;
+use starlark::starlark_simple_value;
+use starlark::starlark_type;
+use starlark::syntax::AstModule;
+use starlark::syntax::Dialect;
 use starlark::values::dict::DictOf;
 use starlark::values::docs::DocItem;
 use starlark::values::function::NativeFunction;
 use starlark::values::structs::StructGen;
-use starlark::values::{
-    AllocValue, NoSerialize, StarlarkValue, StringValue, UnpackValue, Value, ValueLike,
-};
-use starlark::{starlark_module, starlark_simple_value, starlark_type};
+use starlark::values::AllocValue;
+use starlark::values::NoSerialize;
+use starlark::values::StarlarkValue;
+use starlark::values::StringValue;
+use starlark::values::UnpackValue;
+use starlark::values::Value;
+use starlark::values::ValueLike;
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::PathBuf;

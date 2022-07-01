@@ -7,7 +7,8 @@
 
 use std::ffi::OsStr;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

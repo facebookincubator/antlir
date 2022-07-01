@@ -11,7 +11,8 @@ use std::path::PathBuf;
 
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
-use pyo3::types::{PyBytes, PyString};
+use pyo3::types::PyBytes;
+use pyo3::types::PyString;
 
 /// Wrapper for Antlir Paths (antlir.fs_utils.Path)
 /// In Rust, this is a PathBuf, and in Python it is an antlir.fs_utils.Path

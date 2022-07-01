@@ -5,15 +5,22 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
+use std::collections::HashSet;
 use std::env;
 use std::fs::File;
-use std::io::{BufReader, Read};
-use std::path::{Path, PathBuf};
-use std::process::{Command, Stdio};
-use std::time::{Duration, Instant};
+use std::io::BufReader;
+use std::io::Read;
+use std::path::Path;
+use std::path::PathBuf;
+use std::process::Command;
+use std::process::Stdio;
+use std::time::Duration;
+use std::time::Instant;
 
-use anyhow::{bail, Context, Result};
+use anyhow::bail;
+use anyhow::Context;
+use anyhow::Result;
 use serde::Deserialize;
 
 use super::pyunit;
@@ -121,7 +128,10 @@ impl Test {
 
 // a.k.a. the defaults
 pub mod shell {
-    use super::{make_command, Test, TestKind, TestSpec};
+    use super::make_command;
+    use super::Test;
+    use super::TestKind;
+    use super::TestSpec;
     use std::process::Child;
 
     /// Builds a singleton test from a given spec.

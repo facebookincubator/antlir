@@ -6,10 +6,15 @@
  */
 
 use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::BufRead;
+use std::io::BufReader;
 use std::process::Child;
 
-use super::buck_test::{make_command, shell, Test, TestKind, TestSpec};
+use super::buck_test::make_command;
+use super::buck_test::shell;
+use super::buck_test::Test;
+use super::buck_test::TestKind;
+use super::buck_test::TestSpec;
 
 pub fn list_tests(spec: TestSpec) -> Vec<Test> {
     let base_command = || {

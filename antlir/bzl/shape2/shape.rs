@@ -8,7 +8,8 @@
 //! Support library for generated shape code.
 
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
 use serde::Deserializer;
 

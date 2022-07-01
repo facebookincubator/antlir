@@ -7,16 +7,21 @@
 
 #![deny(warnings)]
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use goblin::elf::Elf;
 use once_cell::sync::Lazy;
 use serde_json::json;
-use slog::{debug, o, warn};
-use std::collections::{BTreeSet, HashMap};
+use slog::debug;
+use slog::o;
+use slog::warn;
+use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::fs;
 use std::fs::File;
 use std::os::unix::fs::PermissionsExt;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
 
