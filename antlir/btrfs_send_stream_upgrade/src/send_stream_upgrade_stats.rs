@@ -6,7 +6,8 @@
  */
 
 use std::fmt::Display;
-use std::time::{Duration, SystemTime};
+use std::time::Duration;
+use std::time::SystemTime;
 
 #[derive(Clone, Copy)]
 pub struct SendStreamUpgradeStats {

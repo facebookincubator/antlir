@@ -41,9 +41,13 @@
 //!     ...
 //! }
 //! ```
-use derive_more::{Deref, Display, From};
-use serde::{Deserialize, Serialize};
-use std::collections::{BTreeMap, BTreeSet};
+use derive_more::Deref;
+use derive_more::Display;
+use derive_more::From;
+use serde::Deserialize;
+use serde::Serialize;
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::rc::Rc;
 
 macro_rules! newtype {

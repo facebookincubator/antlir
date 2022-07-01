@@ -5,10 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use serde::Deserialize;
 use std::path::Path;
-use std::process::{Command, Stdio};
+use std::process::Command;
+use std::process::Stdio;
 
 const BUCK_ABS_PATH: &str = "/usr/local/bin/buck";
 

@@ -7,7 +7,8 @@
 
 use std::env;
 use std::fs;
-use std::io::{Read, Write};
+use std::io::Read;
+use std::io::Write;
 
 #[test]
 fn env() {

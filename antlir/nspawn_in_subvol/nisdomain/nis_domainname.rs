@@ -8,7 +8,8 @@
 use std::ffi::CStr;
 use std::os::raw::c_char;
 
-use clap::{ArgEnum, Parser};
+use clap::ArgEnum;
+use clap::Parser;
 use nix::errno::Errno;
 
 #[derive(ArgEnum, Clone, Debug)]

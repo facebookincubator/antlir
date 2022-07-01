@@ -9,10 +9,14 @@
 #![allow(non_snake_case)]
 #![allow(non_camel_case_types)]
 
-use anyhow::{Context, Result};
-use fbthrift::protocol::{ProtocolReader, ProtocolWriter};
-use fbthrift::ttype::{GetTType, TType};
-use serde::{Deserialize, Serialize};
+use anyhow::Context;
+use anyhow::Result;
+use fbthrift::protocol::ProtocolReader;
+use fbthrift::protocol::ProtocolWriter;
+use fbthrift::ttype::GetTType;
+use fbthrift::ttype::TType;
+use serde::Deserialize;
+use serde::Serialize;
 
 use shape::ShapePath;
 

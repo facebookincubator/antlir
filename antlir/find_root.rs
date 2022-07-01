@@ -7,7 +7,8 @@
 
 use thiserror::Error;
 
-use absolute_path::{AbsolutePath, AbsolutePathBuf};
+use absolute_path::AbsolutePath;
+use absolute_path::AbsolutePathBuf;
 
 #[derive(Error, Debug)]
 pub enum FindRootError {
@@ -69,8 +70,11 @@ fn first_parent_containing_sigil(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::{anyhow, Result};
-    use std::fs::{create_dir, create_dir_all, File};
+    use anyhow::anyhow;
+    use anyhow::Result;
+    use std::fs::create_dir;
+    use std::fs::create_dir_all;
+    use std::fs::File;
     use std::path::Path;
     use tempdir::TempDir;
 
