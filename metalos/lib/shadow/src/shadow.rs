@@ -8,7 +8,8 @@ use std::collections::BTreeMap;
 use std::path::Path;
 use std::time::SystemTime;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 
 pub type Username = String;
 

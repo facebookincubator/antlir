@@ -5,10 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::io::{Read, Write};
+use std::io::Read;
+use std::io::Write;
 
-use anyhow::{Context, Result};
-use fbthrift::binary_protocol::{deserialize, serialize};
+use anyhow::Context;
+use anyhow::Result;
+use fbthrift::binary_protocol::deserialize;
+use fbthrift::binary_protocol::serialize;
 
 fn main() -> Result<()> {
     let mut buf = Vec::new();

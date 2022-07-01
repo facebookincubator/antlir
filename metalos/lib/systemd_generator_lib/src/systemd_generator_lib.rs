@@ -1,14 +1,23 @@
 use std::collections::BTreeMap;
 use std::io::Write;
 use std::os::unix::fs::symlink;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 use std::time::SystemTime;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use serde::Serialize;
-use slog::{info, Logger};
+use slog::info;
+use slog::Logger;
 use structopt::StructOpt;
-use systemd::render::{MountSection, NetworkUnit, Render, Unit, UnitBody, UnitSection};
+use systemd::render::MountSection;
+use systemd::render::NetworkUnit;
+use systemd::render::Render;
+use systemd::render::Unit;
+use systemd::render::UnitBody;
+use systemd::render::UnitSection;
 use systemd::UnitName;
 
 pub const ENVIRONMENT_FILENAME: &str = "metalos_environment";
@@ -269,7 +278,8 @@ mod tests {
     use maplit::btreemap;
     use slog::o;
     use std::time::SystemTime;
-    use systemd::render::{NetworkUnit, NetworkUnitMatchSection};
+    use systemd::render::NetworkUnit;
+    use systemd::render::NetworkUnitMatchSection;
 
     #[derive(Clone, Debug, Serialize)]
     struct TestInner {

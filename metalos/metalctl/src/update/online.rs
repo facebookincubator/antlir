@@ -5,15 +5,21 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use slog::{o, trace, Logger};
+use slog::o;
+use slog::trace;
+use slog::Logger;
 
-use metalos_host_configs::api::{
-    OnlineUpdateCommitError as CommitError, OnlineUpdateCommitErrorCode as CommitErrorCode,
-    OnlineUpdateCommitResponse as CommitResponse, ServiceOperation, ServiceResponse, ServiceStatus,
-    UpdateStageError, UpdateStageResponse,
-};
+use metalos_host_configs::api::OnlineUpdateCommitError as CommitError;
+use metalos_host_configs::api::OnlineUpdateCommitErrorCode as CommitErrorCode;
+use metalos_host_configs::api::OnlineUpdateCommitResponse as CommitResponse;
+use metalos_host_configs::api::ServiceOperation;
+use metalos_host_configs::api::ServiceResponse;
+use metalos_host_configs::api::ServiceStatus;
+use metalos_host_configs::api::UpdateStageError;
+use metalos_host_configs::api::UpdateStageResponse;
 use metalos_host_configs::runtime_config::RuntimeConfig;
-use service::{ServiceSet, Transaction};
+use service::ServiceSet;
+use service::Transaction;
 use state::State;
 use systemd::Systemd;
 

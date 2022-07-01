@@ -10,11 +10,14 @@
 // process, and this unit test is run inside a snapshot of the metalos base
 // image.
 
-use anyhow::{Context, Result};
-use std::collections::{BTreeMap, HashSet};
+use anyhow::Context;
+use anyhow::Result;
+use std::collections::BTreeMap;
+use std::collections::HashSet;
 use std::path::Path;
 use std::process::Command;
-use systemd::{Systemd, WaitableSystemState};
+use systemd::Systemd;
+use systemd::WaitableSystemState;
 
 async fn wait_for_systemd() -> Result<()> {
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());

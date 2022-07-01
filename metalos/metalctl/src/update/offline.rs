@@ -5,13 +5,17 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Result};
-use slog::{info, o, trace, Logger};
+use anyhow::Context;
+use anyhow::Result;
+use slog::info;
+use slog::o;
+use slog::trace;
+use slog::Logger;
 
-use metalos_host_configs::api::{
-    OfflineUpdateCommitError as CommitError, OfflineUpdateCommitErrorCode as CommitErrorCode,
-    UpdateStageError as StageError, UpdateStageResponse as StageResponse,
-};
+use metalos_host_configs::api::OfflineUpdateCommitError as CommitError;
+use metalos_host_configs::api::OfflineUpdateCommitErrorCode as CommitErrorCode;
+use metalos_host_configs::api::UpdateStageError as StageError;
+use metalos_host_configs::api::UpdateStageResponse as StageResponse;
 use metalos_host_configs::boot_config::BootConfig;
 use metalos_host_configs::host::HostConfig;
 use metalos_kexec::KexecInfo;

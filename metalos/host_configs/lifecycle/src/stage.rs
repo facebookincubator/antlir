@@ -10,8 +10,10 @@ use futures::future::try_join_all;
 use slog::Logger;
 
 use metalos_host_configs::packages::generic::Package;
-use package_download::{ensure_packages_on_disk_ignoring_artifacts, HttpsDownloader};
-use state::{State, Token};
+use package_download::ensure_packages_on_disk_ignoring_artifacts;
+use package_download::HttpsDownloader;
+use state::State;
+use state::Token;
 
 /// Any config that can be staged on-host consists of a list of packages.
 /// Staging is downloading those packages then optionally running some kind of

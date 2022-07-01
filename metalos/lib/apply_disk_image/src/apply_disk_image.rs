@@ -2,22 +2,31 @@ use std::fs;
 use std::fs::File;
 use std::io::Write;
 use std::os::unix::io::AsRawFd;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::Command;
 use std::time::Duration;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 use bytes::Bytes;
-use futures::{future, StreamExt};
-use slog::{info, o, Logger};
+use futures::future;
+use futures::StreamExt;
+use slog::info;
+use slog::o;
+use slog::Logger;
 use tokio::time::timeout;
 
-use expand_partition::{expand_last_partition, PartitionDelta};
+use expand_partition::expand_last_partition;
+use expand_partition::PartitionDelta;
 use metalos_disk::DiskDevPath;
 use metalos_host_configs::packages::GptRootDisk;
 use metalos_mount::Mounter;
-use package_download::{HttpsDownloader, PackageDownloader};
-use udev_utils::device::{Disk, SpecificDevice};
+use package_download::HttpsDownloader;
+use package_download::PackageDownloader;
+use udev_utils::device::Disk;
+use udev_utils::device::SpecificDevice;
 
 // define ioctl macros based on the codes in linux/fs.h
 nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);

@@ -1,21 +1,32 @@
-use crate::{Result, Subvolume, __private::Sealed};
+use crate::Result;
+use crate::Subvolume;
+use crate::__private::Sealed;
 use anyhow::Context;
 use async_compression::Level;
 use async_trait::async_trait;
-use bytes::{Bytes, BytesMut};
-use futures::{Stream, StreamExt};
+use bytes::Bytes;
+use bytes::BytesMut;
+use futures::Stream;
+use futures::StreamExt;
 use nix::ioctl_write_ptr;
-use nix::sys::memfd::{memfd_create, MemFdCreateFlag};
+use nix::sys::memfd::memfd_create;
+use nix::sys::memfd::MemFdCreateFlag;
 use std::ffi::CString;
 use std::fs::File;
-use std::marker::{PhantomData, Unpin};
-use std::os::unix::io::{AsRawFd, FromRawFd, RawFd};
-use std::path::{Path, PathBuf};
+use std::marker::PhantomData;
+use std::marker::Unpin;
+use std::os::unix::io::AsRawFd;
+use std::os::unix::io::FromRawFd;
+use std::os::unix::io::RawFd;
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::Stdio;
 use thiserror::Error;
-use tokio::io::{AsyncWriteExt, BufWriter};
+use tokio::io::AsyncWriteExt;
+use tokio::io::BufWriter;
 use tokio::process::Command;
-use tokio_util::codec::{BytesCodec, FramedRead};
+use tokio_util::codec::BytesCodec;
+use tokio_util::codec::FramedRead;
 
 use btrfsutil_sys::btrfs_ioctl_send_args;
 
@@ -256,7 +267,8 @@ mod tests {
     use anyhow::Result;
     use metalos_macros::containertest;
     use std::path::Path;
-    use systemd::{Systemd, WaitableSystemState};
+    use systemd::Systemd;
+    use systemd::WaitableSystemState;
 
     async fn wait_for_systemd() -> Result<()> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());

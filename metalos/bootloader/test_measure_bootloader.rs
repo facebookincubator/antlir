@@ -2,16 +2,21 @@
 // This source code is licensed under the MIT license found in the
 // LICENSE file in the root directory of this source tree.
 
-use slog::{debug, o, Logger};
-use tss_esapi::{interface_types::algorithm::HashingAlgorithm, structures::PcrSlot};
+use slog::debug;
+use slog::o;
+use slog::Logger;
+use tss_esapi::interface_types::algorithm::HashingAlgorithm;
+use tss_esapi::structures::PcrSlot;
 
 mod tpm {
-    use anyhow::{Context, Result};
-    use tss_esapi::{
-        interface_types::algorithm::HashingAlgorithm,
-        structures::{digest_list::DigestList, PcrSelectionListBuilder, PcrSlot},
-        Context as TssContext, Tcti,
-    };
+    use anyhow::Context;
+    use anyhow::Result;
+    use tss_esapi::interface_types::algorithm::HashingAlgorithm;
+    use tss_esapi::structures::digest_list::DigestList;
+    use tss_esapi::structures::PcrSelectionListBuilder;
+    use tss_esapi::structures::PcrSlot;
+    use tss_esapi::Context as TssContext;
+    use tss_esapi::Tcti;
 
     /// Read a PCR value from the TPM for the given hash algo
     pub fn get_pcr(pcr_slot: PcrSlot, algo: HashingAlgorithm) -> Result<DigestList> {
@@ -33,11 +38,14 @@ mod tpm {
 }
 
 mod eventlog {
-    use anyhow::{Context as ErrContext, Result};
-    use ring::{digest, digest::Context};
+    use anyhow::Context as ErrContext;
+    use anyhow::Result;
+    use ring::digest;
+    use ring::digest::Context;
     use serde::Deserialize;
     use std::collections::BTreeMap;
-    use uefi_eventlog::{Event, Parser};
+    use uefi_eventlog::Event;
+    use uefi_eventlog::Parser;
 
     pub const UEFI_EVENTLOG_PATH: &str = "/sys/kernel/security/tpm0/binary_bios_measurements";
 

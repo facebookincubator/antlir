@@ -7,10 +7,14 @@
 
 use std::io::Write;
 
-use serde::ser::{Impossible, Serializer};
+use serde::ser::Impossible;
+use serde::ser::Serializer;
 use serde::Serialize;
 
-use crate::ser::{Error, Result, UnsupportedValue, ValueSeqSerializer};
+use crate::ser::Error;
+use crate::ser::Result;
+use crate::ser::UnsupportedValue;
+use crate::ser::ValueSeqSerializer;
 
 /// ValueSerializer is used to write out values for unit file settings.
 pub struct ValueSerializer<'a, W>(pub(crate) &'a mut W, pub(crate) &'static str);

@@ -7,17 +7,24 @@
 
 #![deny(warnings)]
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::path::PathBuf;
 
 use anyhow::Context;
 use futures::Stream;
-use mio::{Events, Interest, Poll, Token};
-use slog::{debug, Logger};
+use mio::Events;
+use mio::Interest;
+use mio::Poll;
+use mio::Token;
+use slog::debug;
+use slog::Logger;
 use thiserror::Error;
 
 pub mod device;
-pub use device::{Device, DeviceType, SpecificDevice};
+pub use device::Device;
+pub use device::DeviceType;
+pub use device::SpecificDevice;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -247,14 +254,17 @@ pub fn blocking_stream(opts: StreamOpts) -> Result<impl Iterator<Item = Event>> 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::{Context, Result};
-    use futures::{future, StreamExt};
+    use anyhow::Context;
+    use anyhow::Result;
+    use futures::future;
+    use futures::StreamExt;
     use maplit::hashset;
     use metalos_macros::vmtest;
     use std::collections::HashSet;
     use std::ffi::OsString;
     use std::os::unix::ffi::OsStringExt;
-    use std::path::{Path, PathBuf};
+    use std::path::Path;
+    use std::path::PathBuf;
     use std::time::Duration;
     use tokio::time::timeout;
 

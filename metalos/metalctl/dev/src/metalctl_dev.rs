@@ -8,12 +8,17 @@
 use std::marker::PhantomData;
 use std::str::FromStr;
 
-use anyhow::{Context, Error, Result};
+use anyhow::Context;
+use anyhow::Error;
+use anyhow::Result;
 use clap::Parser;
-use slog::{o, Logger};
+use slog::o;
+use slog::Logger;
 use uuid::Uuid;
 
-use metalos_host_configs::packages::{Format, Kind, Package};
+use metalos_host_configs::packages::Format;
+use metalos_host_configs::packages::Kind;
+use metalos_host_configs::packages::Package;
 
 mod offline;
 mod service;

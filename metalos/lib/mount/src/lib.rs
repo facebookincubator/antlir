@@ -5,15 +5,19 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use nix::mount::{MntFlags, MsFlags};
-use slog::{info, Logger};
+use nix::mount::MntFlags;
+use nix::mount::MsFlags;
+use slog::info;
+use slog::Logger;
 
 use antlir_image::layer::AntlirLayer;
 use antlir_image::partition::Partition;
 use antlir_image::path::VerifiedPath;
-use antlir_image::subvolume::{AntlirSubvolume, AntlirSubvolumes};
+use antlir_image::subvolume::AntlirSubvolume;
+use antlir_image::subvolume::AntlirSubvolumes;
 
 #[derive(thiserror::Error, Debug)]
 pub enum MountError {

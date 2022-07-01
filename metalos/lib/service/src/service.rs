@@ -6,22 +6,37 @@
  */
 
 use nix::unistd::chown;
-use nix::unistd::{Gid, Group, Uid, User};
+use nix::unistd::Gid;
+use nix::unistd::Group;
+use nix::unistd::Uid;
+use nix::unistd::User;
 use std::collections::HashSet;
 use std::fs::read_dir;
 use std::fs::OpenOptions;
 use std::ops::Deref;
 use std::os::unix::fs::symlink;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{ensure, Context, Error, Result};
+use anyhow::ensure;
+use anyhow::Context;
+use anyhow::Error;
+use anyhow::Result;
 use futures::StreamExt;
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use slog::{o, trace, Logger};
+use serde::Deserialize;
+use serde::Serialize;
+use slog::o;
+use slog::trace;
+use slog::Logger;
 use uuid::Uuid;
 
-use systemd::{EnableDisableUnitFlags, Marker, StartMode, Systemd, TypedObjectPath, UnitName};
+use systemd::EnableDisableUnitFlags;
+use systemd::Marker;
+use systemd::StartMode;
+use systemd::Systemd;
+use systemd::TypedObjectPath;
+use systemd::UnitName;
 use systemd_parser::items::*;
 
 mod dropin;

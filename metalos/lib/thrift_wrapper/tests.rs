@@ -6,7 +6,8 @@
  */
 
 use anyhow::Result;
-use thrift_wrapper::{Error, ThriftWrapper};
+use thrift_wrapper::Error;
+use thrift_wrapper::ThriftWrapper;
 use uuid::Uuid;
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]

@@ -10,7 +10,8 @@ extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro_error::abort;
 use quote::quote;
-use syn::{parse_macro_input, DeriveInput};
+use syn::parse_macro_input;
+use syn::DeriveInput;
 
 /// Derive implementations for structs that are to be passed through to starlark
 /// host config generators.

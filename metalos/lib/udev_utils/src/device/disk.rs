@@ -5,11 +5,17 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::ffi::{OsStr, OsString};
+use std::ffi::OsStr;
+use std::ffi::OsString;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use crate::device::{Device, DeviceType, PropertyError, SpecializationError, SpecificDevice};
+use crate::device::Device;
+use crate::device::DeviceType;
+use crate::device::PropertyError;
+use crate::device::SpecializationError;
+use crate::device::SpecificDevice;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Disk {

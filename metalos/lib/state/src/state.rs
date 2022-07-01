@@ -21,10 +21,15 @@ use std::marker::PhantomData;
 use std::os::unix::fs::symlink;
 use std::path::PathBuf;
 
-use anyhow::{anyhow, ensure, Context, Error, Result};
+use anyhow::anyhow;
+use anyhow::ensure;
+use anyhow::Context;
+use anyhow::Error;
+use anyhow::Result;
 use bytes::Bytes;
 use once_cell::sync::Lazy;
-use sha2::{Digest, Sha256};
+use sha2::Digest;
+use sha2::Sha256;
 use url::Url;
 
 type Sha256Value = [u8; 32];
@@ -400,8 +405,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use anyhow::{Context, Result};
-    use serde::{Deserialize, Serialize};
+    use anyhow::Context;
+    use anyhow::Result;
+    use serde::Deserialize;
+    use serde::Serialize;
     use std::ops::Deref;
 
     #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]

@@ -14,9 +14,13 @@ extern crate metalos_macros;
 use std::os::unix::process::CommandExt;
 use std::process::Command;
 
-use anyhow::{Error, Result};
+use anyhow::Error;
+use anyhow::Result;
 use clap::Parser;
-use slog::{error, o, trace, Logger};
+use slog::error;
+use slog::o;
+use slog::trace;
+use slog::Logger;
 
 mod apply_host_config;
 mod package;

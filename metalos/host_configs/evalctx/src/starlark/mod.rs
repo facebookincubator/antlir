@@ -1,4 +1,5 @@
-use starlark::environment::{Globals, GlobalsBuilder};
+use starlark::environment::Globals;
+use starlark::environment::GlobalsBuilder;
 
 pub mod generator;
 pub mod loader;

@@ -5,11 +5,20 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{anyhow, Context, Result};
-use metalos_disk::{DiskDevPath, DiskFileRW, ReadDisk, MEGABYTE};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
+use metalos_disk::DiskDevPath;
+use metalos_disk::DiskFileRW;
+use metalos_disk::ReadDisk;
+use metalos_disk::MEGABYTE;
 use rand::rngs::SmallRng;
-use rand::{RngCore, SeedableRng};
-use std::io::{Read, Seek, SeekFrom, Write};
+use rand::RngCore;
+use rand::SeedableRng;
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::Write;
 
 /**
  * This function wipes the partition table & backup of a block device

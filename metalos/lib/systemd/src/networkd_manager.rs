@@ -10,7 +10,8 @@ use zbus::dbus_proxy;
 use zvariant::derive::Type;
 
 use crate::dbus_types::*;
-use systemd_macros::{SystemdEnum, TransparentZvariant};
+use systemd_macros::SystemdEnum;
+use systemd_macros::TransparentZvariant;
 
 #[derive(Debug, PartialEq, Eq, Clone, TransparentZvariant)]
 pub struct LinkIndex(i32);

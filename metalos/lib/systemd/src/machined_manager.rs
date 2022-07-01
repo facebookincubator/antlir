@@ -6,13 +6,21 @@
  */
 
 use async_trait::async_trait;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use slog::Logger;
 use zbus::dbus_proxy;
-use zvariant::{derive::Type, Signature, Type};
+use zvariant::derive::Type;
+use zvariant::Signature;
+use zvariant::Type;
 
-use crate::{dbus_types::*, systemd_manager::UnitName, ConnectOpts, Result, Systemd};
-use systemd_macros::{SystemdEnum, TransparentZvariant};
+use crate::dbus_types::*;
+use crate::systemd_manager::UnitName;
+use crate::ConnectOpts;
+use crate::Result;
+use crate::Systemd;
+use systemd_macros::SystemdEnum;
+use systemd_macros::TransparentZvariant;
 
 #[async_trait]
 pub trait MachineExt {
@@ -412,14 +420,19 @@ trait Machine {
 
 #[cfg(test)]
 mod tests {
-    use super::{MachineExt, Size};
-    use crate::{Machined, Systemd, WaitableSystemState};
+    use super::MachineExt;
+    use super::Size;
+    use crate::Machined;
+    use crate::Systemd;
+    use crate::WaitableSystemState;
     use anyhow::Result;
     use byteorder::LE;
     use std::time::Duration;
-    use tokio::time::{sleep, timeout};
+    use tokio::time::sleep;
+    use tokio::time::timeout;
+    use zvariant::from_slice;
+    use zvariant::to_bytes;
     use zvariant::EncodingContext as Context;
-    use zvariant::{from_slice, to_bytes};
 
     #[containertest]
     async fn test_machine_api() -> Result<()> {

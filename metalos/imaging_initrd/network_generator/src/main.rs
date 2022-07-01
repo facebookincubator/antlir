@@ -1,9 +1,12 @@
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 use strum_macros::EnumIter;
 
-use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
+use kernel_cmdline::GenericCmdlineOpt;
+use kernel_cmdline::KernelCmdArgs;
+use kernel_cmdline::KnownArgs;
 use network_generator_lib::generator_main;
 
 #[derive(EnumIter)]

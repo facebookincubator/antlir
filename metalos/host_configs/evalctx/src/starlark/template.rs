@@ -7,19 +7,28 @@
 
 use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeMap;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::sync::RwLock;
 
 use anyhow::bail;
 use derive_more::Display;
-use handlebars::{Handlebars, RenderError};
+use handlebars::Handlebars;
+use handlebars::RenderError;
 use once_cell::sync::Lazy;
 use starlark::environment::GlobalsBuilder;
-use starlark::eval::{Arguments, Evaluator};
-use starlark::values::{NoSerialize, ProvidesStaticType, StarlarkValue, Value};
-use starlark::{starlark_module, starlark_simple_value, starlark_type};
+use starlark::eval::Arguments;
+use starlark::eval::Evaluator;
+use starlark::starlark_module;
+use starlark::starlark_simple_value;
+use starlark::starlark_type;
+use starlark::values::NoSerialize;
+use starlark::values::ProvidesStaticType;
+use starlark::values::StarlarkValue;
+use starlark::values::Value;
 
-use crate::{Error, Result};
+use crate::Error;
+use crate::Result;
 
 static HANDLEBARS: Lazy<RwLock<Handlebars>> = Lazy::new(|| {
     let mut h = Handlebars::new();

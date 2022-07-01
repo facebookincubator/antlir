@@ -5,7 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
 pub trait PathExt {
     /// Joining absolute paths is annoying, so add an extension trait for

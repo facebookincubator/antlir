@@ -1,8 +1,14 @@
-use convert_case::{Case, Casing};
+use convert_case::Case;
+use convert_case::Casing;
 use proc_macro::TokenStream;
 use quote::quote;
+use syn::parse_macro_input;
 use syn::spanned::Spanned;
-use syn::{parse_macro_input, Data, DeriveInput, Error, Fields, Type};
+use syn::Data;
+use syn::DeriveInput;
+use syn::Error;
+use syn::Fields;
+use syn::Type;
 
 fn expand_systemd_enum(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let name = input.ident.clone();

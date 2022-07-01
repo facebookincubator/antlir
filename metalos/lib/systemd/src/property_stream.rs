@@ -9,14 +9,18 @@ use std::convert::TryFrom;
 use std::pin::Pin;
 
 use futures::stream::Stream;
-use futures::task::{Context, Poll};
+use futures::task::Context;
+use futures::task::Poll;
 use futures::FutureExt;
-use slog::{debug, error, Logger};
+use slog::debug;
+use slog::error;
+use slog::Logger;
 use tokio::sync::mpsc::Receiver;
 use zbus::Proxy;
 use zvariant::OwnedValue;
 
-use crate::{Error, Result};
+use crate::Error;
+use crate::Result;
 
 /// Implement our own version of PropertyStream to catch DBus property changes,
 /// that [zbus] has some unfortunate bugs that cause it to frequently lose

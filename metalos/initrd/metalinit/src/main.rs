@@ -1,25 +1,43 @@
-use std::path::{Path, PathBuf};
-use std::{thread, time};
+use std::path::Path;
+use std::path::PathBuf;
+use std::thread;
+use std::time;
 
-use anyhow::{bail, Context, Result};
+use anyhow::bail;
+use anyhow::Context;
+use anyhow::Result;
 use futures_util::FutureExt;
 use nix::mount::MsFlags;
-use slog::{info, o, Logger};
+use slog::info;
+use slog::o;
+use slog::Logger;
 use structopt::clap::AppSettings;
 use structopt::StructOpt;
 use strum_macros::EnumIter;
 use tokio::try_join;
 
 use btrfs::SnapshotFlags;
-use evalctx::{Generator, StarlarkGenerator};
-use kernel_cmdline::{GenericCmdlineOpt, KernelCmdArgs, KnownArgs};
+use evalctx::Generator;
+use evalctx::StarlarkGenerator;
+use kernel_cmdline::GenericCmdlineOpt;
+use kernel_cmdline::KernelCmdArgs;
+use kernel_cmdline::KnownArgs;
 use lifecycle::stage;
 use metalos_host_configs::host::HostConfig;
-use metalos_mount::{Mounter, RealMounter};
-use netlink::{NlRoutingSocket, RtnlCachedLink, RtnlCachedLinkTrait, RtnlLinkCache};
+use metalos_mount::Mounter;
+use metalos_mount::RealMounter;
+use netlink::NlRoutingSocket;
+use netlink::RtnlCachedLink;
+use netlink::RtnlCachedLinkTrait;
+use netlink::RtnlLinkCache;
 use package_download::PackageExt;
 use state::State;
-use systemd::{ActiveState, FilePath, LoadState, StartMode, Systemd, UnitName};
+use systemd::ActiveState;
+use systemd::FilePath;
+use systemd::LoadState;
+use systemd::StartMode;
+use systemd::Systemd;
+use systemd::UnitName;
 
 #[derive(StructOpt, Debug)]
 struct Args {

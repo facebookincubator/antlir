@@ -5,18 +5,24 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::ffi::{CString, OsStr};
+use std::ffi::CString;
+use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{Cursor, Seek, Write};
+use std::io::Cursor;
+use std::io::Seek;
+use std::io::Write;
 use std::os::unix::io::FromRawFd;
 use std::process::ExitStatus;
 
 use bufsize::SizeCounter;
-use bytes::{Bytes, BytesMut};
-use fbthrift::binary_protocol::{
-    deserialize, serialize, BinaryProtocolDeserializer, BinaryProtocolSerializer,
-};
-use fbthrift::{Deserialize, Serialize};
+use bytes::Bytes;
+use bytes::BytesMut;
+use fbthrift::binary_protocol::deserialize;
+use fbthrift::binary_protocol::serialize;
+use fbthrift::binary_protocol::BinaryProtocolDeserializer;
+use fbthrift::binary_protocol::BinaryProtocolSerializer;
+use fbthrift::Deserialize;
+use fbthrift::Serialize;
 use thiserror::Error;
 
 use sandbox::sandbox;

@@ -7,12 +7,16 @@
 
 use std::collections::BTreeMap;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use gpt::disk::LogicalBlockSize;
 use gpt::header::read_header_from_arbitrary_device;
-use gpt::partition::{file_read_partitions, Partition};
+use gpt::partition::file_read_partitions;
+use gpt::partition::Partition;
 
-use metalos_disk::{DiskDevPath, ReadDisk, MEGABYTE};
+use metalos_disk::DiskDevPath;
+use metalos_disk::ReadDisk;
+use metalos_disk::MEGABYTE;
 
 #[derive(Debug)]
 pub struct PartitionDelta {

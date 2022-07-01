@@ -7,11 +7,17 @@
 
 use std::ffi::OsStr;
 use std::ops::Deref;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
 use anyhow::anyhow;
 
-use crate::device::{Device, DeviceType, Disk, PropertyError, SpecializationError, SpecificDevice};
+use crate::device::Device;
+use crate::device::DeviceType;
+use crate::device::Disk;
+use crate::device::PropertyError;
+use crate::device::SpecializationError;
+use crate::device::SpecificDevice;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Partition {

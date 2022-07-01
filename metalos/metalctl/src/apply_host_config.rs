@@ -7,12 +7,15 @@
 
 use std::path::PathBuf;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use clap::Parser;
-use slog::{o, Logger};
+use slog::o;
+use slog::Logger;
 use url::Url;
 
-use evalctx::{Generator, StarlarkGenerator};
+use evalctx::Generator;
+use evalctx::StarlarkGenerator;
 use get_host_config::get_host_config;
 
 #[derive(Parser)]
@@ -54,9 +57,12 @@ pub async fn apply_host_config(log: Logger, opts: Opts) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::{apply_host_config, Opts};
-    use anyhow::{Context, Result};
-    use tempfile::{tempdir, NamedTempFile};
+    use super::apply_host_config;
+    use super::Opts;
+    use anyhow::Context;
+    use anyhow::Result;
+    use tempfile::tempdir;
+    use tempfile::NamedTempFile;
     use url::Url;
 
     #[test]

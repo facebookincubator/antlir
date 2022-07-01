@@ -10,14 +10,18 @@ use std::pin::Pin;
 
 use async_trait::async_trait;
 use bytes::Bytes;
-use futures::{Stream, StreamExt};
+use futures::Stream;
+use futures::StreamExt;
 use once_cell::sync::Lazy;
-use reqwest::{Client, StatusCode};
-use slog::{debug, Logger};
+use reqwest::Client;
+use reqwest::StatusCode;
+use slog::debug;
+use slog::Logger;
 use thiserror::Error;
 use url::Url;
 
-use crate::{PackageDownloader, Result};
+use crate::PackageDownloader;
+use crate::Result;
 use metalos_host_configs::packages::generic::Package;
 
 #[derive(Error, Debug)]
@@ -168,7 +172,8 @@ impl PackageDownloader for &HttpsDownloader {
 mod tests {
     use super::*;
     use anyhow::Result;
-    use metalos_host_configs::packages::generic::{Kind, PackageId};
+    use metalos_host_configs::packages::generic::Kind;
+    use metalos_host_configs::packages::generic::PackageId;
     use metalos_host_configs::packages::Format;
     use url::Url;
 

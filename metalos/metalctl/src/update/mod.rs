@@ -8,10 +8,14 @@
 #![deny(warnings)]
 
 use std::future::Future;
-use std::io::{Read, Write};
-use std::path::{Path, PathBuf};
+use std::io::Read;
+use std::io::Write;
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::anyhow;
+use anyhow::Context;
+use anyhow::Result;
 
 use clap::Parser;
 use slog::Logger;

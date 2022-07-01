@@ -5,13 +5,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{anyhow, Result};
+use anyhow::anyhow;
+use anyhow::Result;
 use gazebo::any::ProvidesStaticType;
 use serde::Serialize;
 use starlark::starlark_type;
-use starlark::values::{
-    AllocFrozenValue, AllocValue, FrozenHeap, FrozenValue, Heap, StarlarkValue, Value,
-};
+use starlark::values::AllocFrozenValue;
+use starlark::values::AllocValue;
+use starlark::values::FrozenHeap;
+use starlark::values::FrozenValue;
+use starlark::values::Heap;
+use starlark::values::StarlarkValue;
+use starlark::values::Value;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -195,8 +200,10 @@ unsafe impl ProvidesStaticType for ThriftValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use example::{Example, ListItem};
-    use maplit::{btreemap, btreeset};
+    use example::Example;
+    use example::ListItem;
+    use maplit::btreemap;
+    use maplit::btreeset;
     use starlark::assert::Assert;
     use starlark::syntax::Dialect;
 

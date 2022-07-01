@@ -5,7 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{anyhow, Result};
+use anyhow::anyhow;
+use anyhow::Result;
 use nix::ifaddrs::getifaddrs;
 use nix::net::if_::InterfaceFlags;
 use nix::sys::socket::SockAddr;

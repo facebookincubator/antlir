@@ -9,7 +9,8 @@ use std::cmp::Ordering;
 
 use systemd_macros::SystemdEnum;
 
-use crate::{Error, Result};
+use crate::Error;
+use crate::Result;
 
 /// The running state of the system as reported by
 /// [ManagerProxy::system_state](crate::systemd_manager::ManagerProxy::system_state).

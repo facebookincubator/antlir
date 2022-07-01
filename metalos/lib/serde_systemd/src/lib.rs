@@ -7,4 +7,6 @@
 
 pub mod ser;
 
-pub use ser::{to_bytes, to_string, to_writer};
+pub use ser::to_bytes;
+pub use ser::to_string;
+pub use ser::to_writer;

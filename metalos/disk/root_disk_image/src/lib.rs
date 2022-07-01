@@ -1,6 +1,9 @@
+use antlir_image::generate_layer;
+use antlir_image::generate_partitions;
+use antlir_image::generate_paths;
+use antlir_image::generate_subvolumes;
 use antlir_image::path::VerifiedPath;
 use antlir_image::subvolume::AntlirSubvolume;
-use antlir_image::{generate_layer, generate_partitions, generate_paths, generate_subvolumes};
 
 generate_layer! {
     ControlLayer {

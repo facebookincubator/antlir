@@ -6,19 +6,24 @@
  */
 use std::ffi::CString;
 use std::fs::File;
-use std::io::{Seek, Write};
+use std::io::Seek;
+use std::io::Write;
 use std::os::unix::io::FromRawFd;
 use std::os::unix::process::CommandExt;
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use clap::Parser;
-use slog::{debug, Logger};
+use slog::debug;
+use slog::Logger;
 
 use metalos_host_configs::api::OfflineUpdateRequest;
 use metalos_host_configs::host::HostConfig;
 use state::State;
 
-use crate::{FilePackage, PackageArg, SendstreamPackage};
+use crate::FilePackage;
+use crate::PackageArg;
+use crate::SendstreamPackage;
 
 #[derive(Parser)]
 pub(crate) struct Opts {

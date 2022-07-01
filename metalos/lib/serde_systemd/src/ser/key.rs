@@ -7,10 +7,12 @@
 
 use std::io::Write;
 
-use serde::ser::{Impossible, Serializer};
+use serde::ser::Impossible;
+use serde::ser::Serializer;
 use serde::Serialize;
 
-use crate::ser::{Error, Result};
+use crate::ser::Error;
+use crate::ser::Result;
 
 pub struct KeySerializer<'a, W>(pub(crate) &'a mut W);
 

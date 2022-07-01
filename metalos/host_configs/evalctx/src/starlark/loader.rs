@@ -1,14 +1,20 @@
 use std::collections::BTreeMap;
 use std::ffi::OsStr;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use anyhow::{anyhow, Context};
-use starlark::environment::{FrozenModule, Module};
-use starlark::eval::{Evaluator, FileLoader};
-use starlark::syntax::{AstModule, Dialect};
+use anyhow::anyhow;
+use anyhow::Context;
+use starlark::environment::FrozenModule;
+use starlark::environment::Module;
+use starlark::eval::Evaluator;
+use starlark::eval::FileLoader;
+use starlark::syntax::AstModule;
+use starlark::syntax::Dialect;
 use walkdir::WalkDir;
 
-use crate::{Error, Result};
+use crate::Error;
+use crate::Result;
 
 /// A fully qualified starlark module path. (Starts with '//', final separator
 /// is ':')

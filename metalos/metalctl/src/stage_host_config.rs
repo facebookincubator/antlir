@@ -5,9 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::{Context, Result};
+use anyhow::Context;
+use anyhow::Result;
 use clap::Parser;
-use futures::{try_join, FutureExt};
+use futures::try_join;
+use futures::FutureExt;
 use slog::Logger;
 use url::Url;
 

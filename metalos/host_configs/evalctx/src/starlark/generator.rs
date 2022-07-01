@@ -11,16 +11,25 @@ use std::ops::Deref;
 use std::path::Path;
 
 use anyhow::Context;
-use starlark::environment::{GlobalsBuilder, Module};
+use starlark::environment::GlobalsBuilder;
+use starlark::environment::Module;
 use starlark::eval::Evaluator;
 use starlark::starlark_module;
 use starlark::values::dict::DictOf;
 use starlark::values::list::ListOf;
-use starlark::values::{OwnedFrozenValue, StarlarkValue, Value, ValueLike};
+use starlark::values::OwnedFrozenValue;
+use starlark::values::StarlarkValue;
+use starlark::values::Value;
+use starlark::values::ValueLike;
 
-use crate::generator::{Dir, File, Generator, Output};
-use crate::starlark::loader::{Loader, ModuleId};
-use crate::{Error, Result};
+use crate::generator::Dir;
+use crate::generator::File;
+use crate::generator::Generator;
+use crate::generator::Output;
+use crate::starlark::loader::Loader;
+use crate::starlark::loader::ModuleId;
+use crate::Error;
+use crate::Result;
 use metalos_host_configs::provisioning_config::ProvisioningConfig;
 use starlark_util::Struct;
 
@@ -199,8 +208,10 @@ impl Generator for StarlarkGenerator {
 mod tests {
     use super::*;
     use starlark::environment::Module;
-    use starlark::eval::{Evaluator, ProfileMode};
-    use starlark::syntax::{AstModule, Dialect};
+    use starlark::eval::Evaluator;
+    use starlark::eval::ProfileMode;
+    use starlark::syntax::AstModule;
+    use starlark::syntax::Dialect;
     use std::collections::BTreeSet;
     use std::env;
     use std::ffi::OsStr;
