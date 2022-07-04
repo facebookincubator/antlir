@@ -36,32 +36,87 @@ pub fn quick_wipe_disk(disk: &mut DiskDevPath) -> Result<()> {
         buf
     };
 
-    // Write 1MB of random data to disk
+    // Write random data to the first 64M of the disk
     {
         let mut disk_file = disk.open_rw_file()?;
-        write_mb_buf(&mut disk_file, SeekFrom::Start(0), 1, &rand_buf)?;
+        write_mb_buf(&mut disk_file, SeekFrom::Start(0), 64, &rand_buf)?;
     }
 
-    // Re-open disk, and read the data back to verify that the system is healthy
-    // enough to make it past partitioning
     {
+        // Re-open disk, and read the data back to verify that the system is healthy
+        // enough to make it past partitioning
         let mut disk_file = disk.open_rw_file()?;
         let mut read_buf = [0; 1024 * 1024];
-        disk_file.read_exact(&mut read_buf)?;
-        if read_buf != rand_buf {
-            return Err(anyhow!(
-                "When reading the disk, it returns different data than has been written to it. This is likely an indication of hardware failure."
-            ));
+        for _ in 0..64 {
+            disk_file.read_exact(&mut read_buf)?;
+            if read_buf != rand_buf {
+                return Err(anyhow!(
+                    "When reading the disk, it returns different data than has been written to it. This is likely an indication of hardware failure."
+                ));
+            }
         }
 
-        // Overwrite the beginning & end of the disk
-        overwrite_beginning_end_disk(&mut disk_file);
+        // Wipe disk with nvme format if possible. If that didn't work, just overwrite first and last 64M
+        let mut nvme_format_success = false;
+        if disk_is_nvme(disk) {
+            println!("Performing nvme format on disk {:?}", disk.0);
+            match nvme_format_disk(disk) {
+                Ok(_) => match check_empty(&mut disk_file, SeekFrom::Start(0), 64) {
+                    Ok(_) => {
+                        nvme_format_success = true;
+                    }
+                    Err(_) => {
+                        eprintln!(
+                            "Warning: Disk not empty after NVME wipe. (Is allowed in nvme spec)"
+                        );
+                    }
+                },
+                Err(error) => {
+                    eprintln!("Warning: nvme format failed with error: {}", error);
+                }
+            }
+        }
+        if !nvme_format_success {
+            println!(
+                "Nvme format on disk {:?} not performed or didn't leave an empty disk. Overwriting partition tables instead",
+                disk.0
+            );
+            overwrite_beginning_end_disk(&mut disk_file)?;
+        }
     }
 
-    // Re-open disk, and verify that the first 64M are empty
+    // Final check: Re-open disk, and verify that the first 64M is empty
     {
         let mut disk_file = disk.open_rw_file()?;
-        check_empty(&mut disk_file, SeekFrom::Start(0), 64);
+        check_empty(&mut disk_file, SeekFrom::Start(0), 64)?;
+    }
+
+    Ok(())
+}
+
+pub fn disk_is_nvme(disk: &DiskDevPath) -> bool {
+    // TODO: imperfect method for detecting a NVME drive, but currently works our use-cases.
+    disk.0.as_path().display().to_string().contains("nvme")
+}
+
+fn nvme_format_disk(disk: &DiskDevPath) -> Result<()> {
+    let dev_str = disk.0.as_path().display().to_string();
+
+    let status = std::process::Command::new("nvme")
+        // 0x2 performs a cryptowipe.
+        // See: https://nvmexpress.org/open-source-nvme-management-utility-nvme-command-line-interface-nvme-cli/
+        .args(&["format", &dev_str, "-s", "0x2"])
+        .status()
+        .context(format!(
+            "Couldn't execute nvme format on {}. Is the nvme utility installed?",
+            &dev_str
+        ))?;
+
+    if !status.success() {
+        return Err(anyhow!(format!(
+            "Executing nvme format on {} failed",
+            &dev_str
+        )));
     }
 
     Ok(())
@@ -120,7 +175,7 @@ fn check_empty(disk_file: &mut DiskFileRW, start: SeekFrom, megabytes: u64) -> R
         disk_file
             .read_exact(&mut out_buf)
             .context("Failed to read buffer from disk")?;
-        if (empty_buf != out_buf) {
+        if empty_buf != out_buf {
             return Err(anyhow!("Disk block should be empty but isn't"));
         }
     }
