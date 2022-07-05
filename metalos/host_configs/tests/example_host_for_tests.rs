@@ -40,6 +40,12 @@ pub fn example_host_for_tests() -> HostConfig {
                         addrs: vec!["2a03:2880:f103:181:face:b00c:0:25de".parse().unwrap()],
                         name: Some("eth0".to_owned()),
                         essential: true,
+                    },
+                    NetworkInterface {
+                        mac: "00:00:00:00:00:03".to_owned(),
+                        addrs: vec![],
+                        name: Some("eth8".to_owned()),
+                        essential: false,
                     }],
                     primary_interface: NetworkInterface {
                         mac: "00:00:00:00:00:01".to_owned(),
