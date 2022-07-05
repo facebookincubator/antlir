@@ -298,11 +298,18 @@ impl Bootloader {
         })
         .await;
         info!(self.log, "Trying to kexec");
-        KexecInfo::try_from(&self.config)
-            .context("Failed to build kexec info")?
-            .kexec(self.log.clone())
-            .await
-            .context("failed to perform kexec")?;
+        KexecInfo::new_from_packages(
+            &self.config.boot_config.kernel,
+            &self.config.boot_config.initrd,
+            format!(
+                "{} metalos.send_provisioning_events",
+                &self.config.boot_config.kernel.cmdline
+            ),
+        )
+        .context("Failed to build kexec info")?
+        .kexec(self.log.clone())
+        .await
+        .context("failed to perform kexec")?;
 
         Ok(())
     }

@@ -150,16 +150,10 @@ impl TryFrom<&HostConfig> for KexecInfo {
     type Error = anyhow::Error;
 
     fn try_from(config: &HostConfig) -> Result<Self, Self::Error> {
-        // TODO(T114676322) cmdline should come from the host config too
-        let cmdline = std::fs::read_to_string("/proc/cmdline")
-            .context("while reading kernel cmdline")?
-            .trim_end()
-            .to_string();
-
         Self::new_from_packages(
             &config.boot_config.kernel,
             &config.boot_config.initrd,
-            cmdline,
+            config.boot_config.kernel.cmdline.clone(),
         )
     }
 }

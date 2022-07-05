@@ -3,6 +3,7 @@ load("//metalos:defs.bzl", "rust_binary")
 rust_binary(
     name = "metalinit",
     srcs = [
+        "src/events.rs",
         "src/main.rs",
     ],
     link_style = "static",
@@ -14,6 +15,7 @@ rust_binary(
         "anyhow",
         "futures-util",
         "nix",
+        "serde_json",
         "slog",
         "slog_glog_fmt",
         "structopt",
@@ -28,8 +30,10 @@ rust_binary(
         "//metalos/lib/kernel_cmdline:kernel_cmdline",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/mount:metalos_mount",
+        "//metalos/lib/net_utils:net_utils",
         "//metalos/lib/netlink:netlink",
         "//metalos/lib/package_download:package_download",
+        "//metalos/lib/send_events:send_events",
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
     ],
