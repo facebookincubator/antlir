@@ -10,16 +10,23 @@ use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
+use anyhow::anyhow;
 use anyhow::Context;
 use async_trait::async_trait;
 use bytes::Bytes;
+use fbthrift::simplejson_protocol::deserialize;
 use futures::future::try_join_all;
 use futures::Stream;
 use futures::StreamExt;
+use futures::TryStream;
+use futures::TryStreamExt;
 use slog::debug;
 use slog::Logger;
 use tempfile::NamedTempFile;
 use thiserror::Error;
+use tokio::fs::read_dir;
+use tokio::task::spawn_blocking;
+use tokio_stream::wrappers::ReadDirStream;
 
 use metalos_host_configs::packages::Format;
 use metalos_host_configs::packages::{self};
@@ -52,6 +59,8 @@ pub enum Error {
         package: packages::generic::Package,
         error: anyhow::Error,
     },
+    #[error("failed while reading packages from disk: {error}")]
+    Read { error: anyhow::Error },
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -279,4 +288,50 @@ where
     }
 
     Ok(())
+}
+
+/// Inventory the packages storaged on disk. Returns discovered packages as a TryStream, as we may
+/// discover errors along the way.
+pub async fn staged_packages()
+-> Result<impl TryStream<Ok = packages::generic::Package, Error = Error>> {
+    let root = metalos_paths::images();
+    let subdirs = read_dir(metalos_paths::images())
+        .await
+        .context(format!("while getting children paths on {root:?}"))
+        .map_err(|error| Error::Read { error })?;
+    Ok(ReadDirStream::new(subdirs)
+        .map(|maybe_dentry| {
+            maybe_dentry.context(format!("while reading child of {:?}", root.to_owned()))
+        })
+        .try_filter_map(|dentry| async move {
+            let path = dentry.path();
+            if dentry.path().is_dir() {
+                let subdir = read_dir(&path)
+                    .await
+                    .context(format!("while reading children paths on {path:?}"))?;
+                Ok(Some(
+                    ReadDirStream::new(subdir)
+                        .map(move |image| image.context(format!("while reading child of {path:?}")))
+                        .try_filter_map(|image| async move {
+                            let img_path = image.path();
+                            let _res: packages::generic::Package = spawn_blocking(move || {
+                                // xattr is not async, so we offload it to an executor
+                                match xattr::get(&img_path, "user.metalos.package")? {
+                                    Some(x) => deserialize(x),
+                                    None => Err(anyhow!(format!("Non-image at {img_path:?}"))),
+                                }
+                            })
+                            .await
+                            .context(format!("while executing xattr on {:?}", image.path()))?
+                            .context(format!("while reading xattr on {:?}", image.path()))?;
+                            Ok(Some(_res))
+                        }),
+                ))
+            } else {
+                // Skip non-directories under image root
+                Ok(None)
+            }
+        })
+        .try_flatten()
+        .map_err(|error: anyhow::Error| Error::Read { error }))
 }
