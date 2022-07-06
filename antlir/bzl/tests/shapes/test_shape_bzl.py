@@ -441,3 +441,14 @@ class TestShapeBzl(unittest.TestCase):
             ),
             struct(items=["item"], deps=["extra_deps"]),
         )
+
+    def test_default_value_sentinel(self) -> None:
+        t = shape.shape(value_with_default=shape.field(int, default=42))
+        self.assertEqual(
+            t(value_with_default=3),
+            expected_shape(value_with_default=3, __shape__=t),
+        )
+        self.assertEqual(
+            t(value_with_default=shape.DEFAULT_VALUE),
+            expected_shape(value_with_default=42, __shape__=t),
+        )
