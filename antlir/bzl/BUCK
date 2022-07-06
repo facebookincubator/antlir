@@ -108,9 +108,7 @@ fake_macro_library(
     ],
 )
 
-export_file(
-    name = "target_tagger_helper.bzl",
-)
+export_file(name = "target_tagger_helper.bzl")
 
 fake_macro_library(
     name = "target_tagger",
@@ -308,9 +306,7 @@ fake_macro_library(
     ],
 )
 
-export_file(
-    name = "shape.bzl",
-)
+export_file(name = "shape.bzl")
 
 fake_macro_library(
     name = "structs",
