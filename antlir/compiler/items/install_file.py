@@ -168,7 +168,6 @@ class InstallFileItem(install_files_t, ImageItem):
         build_stat_options(
             self,
             subvol,
-            # pyre-fixme[6]: Expected `str` for 3rd param but got `Path`.
             dest,
             do_not_set_mode=True,
             build_appliance=layer_opts.build_appliance,

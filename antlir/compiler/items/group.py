@@ -6,7 +6,7 @@
 
 import threading
 from collections import OrderedDict
-from typing import AnyStr, Dict, Generator, List, NamedTuple
+from typing import AnyStr, Dict, Generator, List, NamedTuple, Optional
 
 from antlir.bzl.image.feature.usergroup import group_t
 from antlir.compiler.requires_provides import (
@@ -99,6 +99,13 @@ class GroupFile:
     def provides(self) -> Generator[Provider, None, None]:
         for name in self.nameToGID:
             yield ProvidesGroup(name)
+
+    def gid(self, name: str) -> Optional[int]:
+        for line in self.lines.values():
+            if line.name == name:
+                return line.id
+
+        return None
 
     def __str__(self) -> str:
         return "\n".join((str(gfl) for gfl in self.lines.values())) + "\n"

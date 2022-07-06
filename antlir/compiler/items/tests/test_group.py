@@ -218,3 +218,12 @@ class GroupFileTest(unittest.TestCase):
             },
             set(gf.provides()),
         )
+
+    def test_get_gid(self) -> None:
+        gf = GroupFile()
+        gf.add("root", 0)
+        gf.add("a", 1)
+        gf.add("b", 2)
+        self.assertEqual(gf.gid("root"), 0)
+        self.assertEqual(gf.gid("a"), 1)
+        self.assertIsNone(gf.gid("nope"))

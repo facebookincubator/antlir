@@ -278,15 +278,23 @@ image_python_unittest(
     ],
 )
 
-python_unittest(
+image_python_unittest(
     name = "test-install-file",
     srcs = ["test_install_file.py"],
+    container_opts = {
+        # needed for layer_resource to work
+        "internal_only_bind_repo_ro": True,
+    },
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
+    layer = ":test_compiler_item_layer",
     needed_coverage = [(100, "//antlir/compiler/items:install_file")],
     resources = {
-        TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm": "test-with-one-local-rpm",
+        layer_resource(TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm"): "test-with-one-local-rpm",
     },
+    run_as_user = "root",
     deps = [
         ":common_testlib",
+        "//antlir:testlib_layer_resource",
         "//antlir/compiler/items:install_file",
     ],
 )
