@@ -13,7 +13,12 @@ load(
     "feature_ensure_file_symlink",
 )
 load(":tarball.bzl", "feature_tarball")
-load(":usergroup.bzl", "feature_group_add", "feature_user_add")
+load(
+    ":usergroup.bzl",
+    "feature_group_add",
+    "feature_setup_standard_user",
+    "feature_user_add",
+)
 
 feature = struct(
     install = feature_install,
@@ -25,5 +30,6 @@ feature = struct(
     ensure_file_symlink = feature_ensure_file_symlink,
     group_add = feature_group_add,
     user_add = feature_user_add,
+    setup_standard_user = feature_setup_standard_user,
     tarball = feature_tarball,
 )
