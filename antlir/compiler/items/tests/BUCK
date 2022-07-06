@@ -212,12 +212,6 @@ image_python_unittest(
     ],
 )
 
-python_unittest(
-    name = "test-stat-options",
-    srcs = ["test_stat_options.py"],
-    deps = ["//antlir/compiler/items:stat_options"],
-)
-
 image_python_unittest(
     name = "test-symlink",
     srcs = [

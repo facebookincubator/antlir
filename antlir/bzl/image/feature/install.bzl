@@ -55,8 +55,9 @@ directory output by a Buck-runnable target, then you should use
 `install`, even though the underlying rule is executable.
 """
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
 load(
     "//antlir/bzl:target_tagger.bzl",
@@ -86,8 +87,8 @@ def feature_install_buck_runnable(
         source,
         dest,
         mode = None,
-        user = None,
-        group = None,
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE,
         runs_in_build_steps_causes_slow_rebuilds = False):
     """
 `feature.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
@@ -140,13 +141,14 @@ defaults to `False` to speed up incremental rebuilds.
             # compiler does not have to.
             tagged_source["path"] = None
 
-    install_spec = {
-        "dest": dest,
-        "source": target_tagged_image_source_t(**tagged_source),
-    }
-    add_stat_options(install_spec, mode, user, group)
+    install_files = install_files_t(
+        dest = dest,
+        source = target_tagged_image_source_t(**tagged_source),
+        mode = stat.mode(mode) if mode else None,
+        user = user,
+        group = group,
+    )
 
-    install_files = install_files_t(**install_spec)
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [install_files]),
@@ -154,7 +156,12 @@ defaults to `False` to speed up incremental rebuilds.
         extra_deps = [antlir_dep("bzl/image/feature:install")],
     )
 
-def feature_install(source, dest, mode = None, user = None, group = None):
+def feature_install(
+        source,
+        dest,
+        mode = None,
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE):
     """
 `feature.install("//path/fs:data", "dir/bar")` installs file or directory
 `data` to `dir/bar` in the image. `dir/bar` must not exist, otherwise
@@ -190,11 +197,13 @@ image) is used. The default for `user` and `group` is `root`.
     )
     _forbid_layer_source(source_dict)
 
-    install_spec = {
-        "dest": dest,
-        "source": target_tagged_image_source_t(**source_dict),
-    }
-    add_stat_options(install_spec, mode, user, group)
+    install_files = install_files_t(
+        dest = dest,
+        source = target_tagged_image_source_t(**source_dict),
+        mode = stat.mode(mode) if mode else None,
+        user = user,
+        group = group,
+    )
 
     # Future: We might use a Buck macro that enforces that the target is
     # non-executable, as I suggested on Q15839. This should probably go in
@@ -202,7 +211,6 @@ image) is used. The default for `user` and `group` is `root`.
     # bugs everywhere.  A possible reason NOT to do this is that it would
     # require fixes to `install` invocations that extract non-executable
     # contents out of a directory target that is executable.
-    install_files = install_files_t(**install_spec)
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [install_files]),

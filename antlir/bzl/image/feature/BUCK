@@ -5,7 +5,6 @@ fake_macro_library(
     name = "install",
     srcs = ["install.bzl"],
     deps = [
-        "//antlir/bzl:add_stat_options",
         "//antlir/bzl:maybe_export_file",
         "//antlir/bzl:target_tagger",
     ],
@@ -14,7 +13,6 @@ fake_macro_library(
 shape.impl(
     name = "install.shape",
     deps = [
-        "//antlir/bzl:mode.shape",
         "//antlir/bzl:target_tagger.shape",
     ],
 )

@@ -321,7 +321,8 @@ fn main() -> Result<()> {
                     "into_dir": dst_dir.parent().unwrap(),
                     "mode": mode,
                     "subdirs_to_create": dst_dir.file_name().unwrap().to_str().unwrap(),
-                    "user_group": null
+                    "user": "root",
+                    "group": "root"
                 }
             ],
             "target": target

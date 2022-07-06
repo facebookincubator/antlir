@@ -90,8 +90,9 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                     from_target="t",
                     into_dir="/",
                     subdirs_to_create="/d/a/b",
-                    user_group="77:88",
-                    mode="u+rx",
+                    user="77",
+                    group="88",
+                    mode=0o500,
                 )
             )
             for item in reversed(ensure_items):
@@ -123,7 +124,7 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                 "from_target": "t",
                 "into_dir": "m",
                 "basename": "n",
-                "mode": "u+rw",
+                "mode": 0o600,
             }
             EnsureDirsExistItem(**good).build(subvol, DUMMY_LAYER_OPTS_BA)
             EnsureDirsExistItem(**{**good, "mode": 0o600}).build(
@@ -135,13 +136,13 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
             with self.assertRaises(MismatchError):
-                EnsureDirsExistItem(**{**good, "mode": "u+rwx"}).build(
+                EnsureDirsExistItem(**{**good, "mode": 0o700}).build(
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
             with self.assertRaises(MismatchError):
-                EnsureDirsExistItem(**{**good, "user_group": "77:88"}).build(
-                    subvol, DUMMY_LAYER_OPTS_BA
-                )
+                EnsureDirsExistItem(
+                    **{**good, "user": "77", "group": "88"}
+                ).build(subvol, DUMMY_LAYER_OPTS_BA)
 
     @with_mocked_temp_volume_dir
     def test_ensure_dirs_exist_item_xattrs_check(self):

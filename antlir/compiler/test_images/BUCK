@@ -313,7 +313,7 @@ feature.new(
         image.ensure_subdirs_exist(
             "/foo",
             "borf/beep",
-            mode = "mmm",
+            mode = "a+rwx",
             user = "uuu",
             group = "ggg",
         ),

@@ -22,33 +22,28 @@ from antlir.subvol_utils import Subvol
 from pydantic import PrivateAttr
 
 from .common import ImageItem, LayerOpts, make_path_normal_relative
-from .stat_options import (
-    build_stat_options,
-    customize_stat_options,
-    Mode,
-    mode_to_str,
-)
+from .stat_options import build_stat_options
 
 
 # Default permissions, must match the docs in `install.bzl`.
-_DIR_MODE = "u+rwx,og+rx"
-_EXE_MODE = "a+rx"
-_DATA_MODE = "a+r"
+_DIR_MODE = 0o755  # u+rwx,og+rx
+_EXE_MODE = 0o555  # a+rx
+_DATA_MODE = 0o444  # a+r
 
 
 class _InstallablePath(NamedTuple):
     source: Path
     provides: Union[ProvidesDirectory, ProvidesFile]
-    mode: Mode
+    mode: int
 
 
 def _recurse_into_source(
     source_dir: Path,
     dest_dir: Path,
     *,
-    dir_mode: Mode,
-    exe_mode: Mode,
-    data_mode: Mode,
+    dir_mode: int,
+    exe_mode: int,
+    data_mode: int,
 ) -> Iterable[_InstallablePath]:
     "Yields paths in top-down order, making recursive copying easy."
     yield _InstallablePath(
@@ -92,8 +87,6 @@ class InstallFileItem(install_files_t, ImageItem):
     _paths: Optional[Iterable[_InstallablePath]] = PrivateAttr()
 
     def __init__(self, **kwargs) -> None:
-        customize_stat_options(kwargs, default_mode=None)  # Defaulted later
-
         source = kwargs["source"]
         dest = Path(make_path_normal_relative(kwargs.pop("dest")))
 
@@ -145,9 +138,8 @@ class InstallFileItem(install_files_t, ImageItem):
 
     def requires(self):
         yield RequireDirectory(path=self.dest.dirname())
-        user, group = self.user_group.split(":")
-        yield RequireUser(user)
-        yield RequireGroup(group)
+        yield RequireUser(self.user)
+        yield RequireGroup(self.group)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         dest = subvol.path(self.dest)
@@ -182,9 +174,9 @@ class InstallFileItem(install_files_t, ImageItem):
             build_appliance=layer_opts.build_appliance,
         )
         # Group by mode to make as few shell calls as possible.
-        for mode_str, modes_and_paths in itertools.groupby(
+        for mode, modes_and_paths in itertools.groupby(
             sorted(
-                (mode_to_str(i.mode), i.provides.path())
+                (i.mode, i.provides.path())
                 # pyre-fixme[16]: `Optional` has no attribute `__iter__`.
                 for i in self._paths
             ),
@@ -202,6 +194,6 @@ class InstallFileItem(install_files_t, ImageItem):
                 sv_root / p.lstrip(b"/") for _, p in modes_and_paths
             )
             subvol.run_as_root(
-                ["xargs", "-0", "chmod", mode_str],
+                ["xargs", "-0", "chmod", f"{mode:o}"],
                 input=paths,
             )

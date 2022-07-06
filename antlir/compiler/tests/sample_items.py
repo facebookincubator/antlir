@@ -119,32 +119,37 @@ ID_TO_ITEM = {
         from_target=T_DIRS, into_dir="/foo/bar", basename="baz"
     ),
     "alpha": EnsureDirsExistItem(
-        from_target=T_DIRS, into_dir="/", basename="alpha", mode="a+rx"
+        from_target=T_DIRS,
+        into_dir="/",
+        basename="alpha",
+        mode=0o555,
     ),
     "alpha/beta": EnsureDirsExistItem(
-        from_target=T_DIRS, into_dir="/alpha", basename="beta", mode="a+rwx"
+        from_target=T_DIRS, into_dir="/alpha", basename="beta", mode=0o777
     ),
     # From `feature_bad_dir_mode_mismatch`:
     "bad_mode:alpha": EnsureDirsExistItem(
         from_target=T_BAD_DIR_MODE_MISMATCH,
         into_dir="/",
         basename="alpha",
-        mode="a+rwx",
+        mode=0o777,
     ),
     # From `feature_bad_dir`:
     "foo/borf": EnsureDirsExistItem(
         from_target=T_BAD_DIR,
         into_dir="/foo",
         basename="borf",
-        user_group="uuu:ggg",
-        mode="mmm",
+        user="uuu",
+        group="ggg",
+        mode=0o777,
     ),
     "foo/borf/beep": EnsureDirsExistItem(
         from_target=T_BAD_DIR,
         into_dir="/foo/borf",
         basename="beep",
-        user_group="uuu:ggg",
-        mode="mmm",
+        user="uuu",
+        group="ggg",
+        mode=0o777,
     ),
     # From `feature_symlinks`:
     "foo/fighter": SymlinkToDirItem(
@@ -258,7 +263,8 @@ ID_TO_ITEM = {
         from_target=T_INSTALL_FILES,
         source=Path(TARGET_TO_PATH[T_HELLO_WORLD_TAR]),
         dest="/foo/bar/hello_world_again.tar",
-        user_group="root:root",
+        user="root",
+        group="root",
     ),
     "foo/bar/installed": EnsureDirsExistItem(
         from_target=T_INSTALL_FILES,

@@ -82,7 +82,8 @@ class ItemsCommonTestCase(BaseItemTestCase):
                 into_dir="x/y",
                 basename="z",
                 mode=0o733,
-                user_group="cat:dog",
+                user="cat",
+                group="dog",
             ),
             {ProvidesDirectory(path=Path("x/y/z"))},
             {
