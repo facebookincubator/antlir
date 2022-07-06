@@ -67,6 +67,7 @@ async fn run_command(options: MetalCtl, log: Logger) -> Result<()> {
         }
         Subcommand::Package(opts) => match opts {
             package::Opts::Stage(stage) => package::stage_packages(log, stage).await,
+            package::Opts::List => package::list(log).await,
         },
     }
 }
