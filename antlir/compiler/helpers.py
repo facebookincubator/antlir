@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
-import concurrent.futures
 import pickle
 import pwd
 from typing import AnyStr, Iterable, Iterator, Tuple
@@ -49,7 +48,6 @@ def compile_items_to_subvol(
     subvol: Subvol,
     layer_opts: LayerOpts,
     iter_items: Iterator[ImageItem],
-    use_threads: bool = True,
 ) -> None:
     """
     IMPORTANT: This function will build many compiler items that assume they
@@ -78,22 +76,10 @@ def compile_items_to_subvol(
         par_items = [item for item in par_items if hasattr(item, "build")]
         if not par_items:  # pragma: no cover
             continue
-        if use_threads:  # pragma: no cover (TEMPORARY, see D37424109)
-            with concurrent.futures.ThreadPoolExecutor(
-                max_workers=len(par_items)
-            ) as executor:
-                # this has to be wrapped in list() in order to drain the
-                # iterable, which is when any Exceptions will be raised
-                list(
-                    executor.map(
-                        lambda item: item.build(subvol, layer_opts), par_items
-                    )
-                )
-        else:  # pragma: no cover (only used for profiling)
-            for item in par_items:
-                # pyre-fixme[16]: `antlir.compiler.items.common.ImageItem` has
-                # no attribute `build`.
-                item.build(subvol, layer_opts)
+        for item in par_items:
+            # pyre-fixme[16]: `antlir.compiler.items.common.ImageItem` has
+            # no attribute `build`.
+            item.build(subvol, layer_opts)
 
 
 # This is covered by test-rpm-replay
