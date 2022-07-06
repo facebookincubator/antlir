@@ -1,0 +1,21 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+
+rust_binary(
+    name = "starlark-unittest",
+    srcs = glob(["src/*.rs"]),
+    unittests = False,
+    deps = [
+        "//antlir:find_root",
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ] + third_party.libraries(
+        [
+            "anyhow",
+            "clap",
+            "gazebo",
+            "regex",
+            "serde_json",
+            "starlark",
+        ],
+        platform = "rust",
+    ),
+)
