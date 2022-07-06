@@ -285,9 +285,12 @@ def _fetched_package_with_nondeterministic_fs_metadata(
         #      hundred megs.
         cacheable = False,
         bash = '''
-        mkdir "$OUT" && {print_how_to_fetch_json} |
-            $(exe {fetch_with_nondeterministic_fs_metadata}) \
-                {quoted_package} "$OUT"
+        set -uex -o pipefail
+        mkdir -p "$OUT/.antlir_private"
+        pkg_info_file="$OUT/.antlir_private/pkg_info"
+        echo {quoted_package} > "$OUT/.antlir_private/pkg_name"
+        {print_how_to_fetch_json} > "$pkg_info_file"
+        $(exe {fetch_with_nondeterministic_fs_metadata}) {quoted_package} "$OUT" < "$pkg_info_file"
         '''.format(
             fetch_with_nondeterministic_fs_metadata = fetcher.fetch_with_nondeterministic_fs_metadata,
             quoted_package = shell.quote(package),
