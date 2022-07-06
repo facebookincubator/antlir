@@ -6,6 +6,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest")
 load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/starlark_unittest:defs.bzl", "starlark_unittest")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 # Powers `image.test_rpm_names`
@@ -250,4 +251,13 @@ python_unittest(
     srcs = ["test_basic_rpm_manifest.py"],
     resources = {"//antlir/bzl/tests:test-rpm-manifest-json": "rpm-manifest.json"},
     deps = ["//antlir:fs_utils"],
+)
+
+starlark_unittest(
+    name = "test-stat",
+    srcs = ["test_stat.bzl"],
+    deps = [
+        "//antlir/bzl:stat.bzl",
+        "@bazel_skylib//lib:types.bzl",
+    ],
 )

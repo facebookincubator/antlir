@@ -340,6 +340,13 @@ fake_macro_library(
     srcs = ["rpm_manifest.bzl"],
 )
 
+fake_macro_library(
+    name = "stat",
+    srcs = ["stat.bzl"],
+)
+
+export_file(name = "stat.bzl")
+
 python_binary(
     name = "fail-with-message",
     srcs = ["fail_with_message.py"],
