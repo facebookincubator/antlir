@@ -51,7 +51,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 from_target="t", source={"source": tf.name}, dest="d/c"
             )
         ep = _InstallablePath(
-            Path(tf.name), ProvidesFile(path=Path("d/c")), "a+rx"
+            Path(tf.name), ProvidesFile(path=Path("d/c")), 0o555
         )
         self.assertEqual((ep,), exe_item._paths)
         self.assertEqual(tf.name.encode(), exe_item.source)
@@ -72,7 +72,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             data_item = _install_file_item(
                 from_target="t", source={"source": td, "path": "/b/q"}, dest="d"
             )
-        dp = _InstallablePath(td / "b/q", ProvidesFile(path=Path("d")), "a+r")
+        dp = _InstallablePath(td / "b/q", ProvidesFile(path=Path("d")), 0o444)
         self.assertEqual((dp,), data_item._paths)
         self.assertEqual(td / "b/q", data_item.source)
         self._check_item(
@@ -106,7 +106,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         )
         source_path = layer.path(path_in_layer)
         p = _InstallablePath(
-            source_path, ProvidesFile(path=Path("cheese2")), "a+r"
+            source_path, ProvidesFile(path=Path("cheese2")), 0o444
         )
         self.assertEqual((p,), item._paths)
         self.assertEqual(source_path, item.source)
@@ -154,8 +154,9 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 dest="/d/empty",
                 # A non-default mode & owner shows that the file was
                 # overwritten, and also exercises HasStatOptions.
-                mode="u+rw",
-                user_group="12:34",
+                mode=0o600,
+                user="12",
+                group="34",
             ).build(subvol, DUMMY_LAYER_OPTS)
             self.assertEqual(
                 ["(Dir)", {"d": ["(Dir)", {"empty": ["(File m600 o12:34)"]}]}],
@@ -193,22 +194,22 @@ class InstallFileItemTestCase(BaseItemTestCase):
 
                 ps = [
                     _InstallablePath(
-                        td, ProvidesDirectory(path=Path("d/a")), "u+rwx,og+rx"
+                        td, ProvidesDirectory(path=Path("d/a")), 0o755
                     ),
                     _InstallablePath(
                         td / "data.txt",
                         ProvidesFile(path=Path("d/a/data.txt")),
-                        "a+r",
+                        0o444,
                     ),
                     _InstallablePath(
                         td / "subdir",
                         ProvidesDirectory(path=Path("d/a/subdir")),
-                        "u+rwx,og+rx",
+                        0o755,
                     ),
                     _InstallablePath(
                         td / "subdir/exe.sh",
                         ProvidesFile(path=Path("d/a/subdir/exe.sh")),
-                        "a+rx",
+                        0o555,
                     ),
                 ]
                 self.assertEqual(sorted(ps), sorted(dir_item._paths))

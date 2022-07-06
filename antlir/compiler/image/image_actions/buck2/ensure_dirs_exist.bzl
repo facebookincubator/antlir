@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
+load("//antlir/bzl:stat.bzl", "stat")
 load(
     "//antlir/bzl/image_actions:ensure_subdirs_exist.shape.bzl",
     "ensure_subdirs_exist_t",
@@ -14,9 +14,13 @@ load(
 )
 
 def _generate_shape(into_dir, subdirs_to_create, mode, user, group):
-    dir_spec = {"into_dir": into_dir, "subdirs_to_create": subdirs_to_create}
-    add_stat_options(dir_spec, mode, user, group)
-    return ensure_subdirs_exist_t(**dir_spec)
+    return ensure_subdirs_exist_t(
+        into_dir = into_dir,
+        subdirs_to_create = subdirs_to_create,
+        mode = stat.mode(mode),
+        user = user,
+        group = group,
+    )
 
 def _image_ensure_subdirs_exist(
         into_dir,
@@ -44,9 +48,9 @@ def _image_ensure_subdirs_exist(
 def image_ensure_subdirs_exist(
         into_dir,
         subdirs_to_create,
-        mode = None,
-        user = None,
-        group = None):
+        mode = 0o755,
+        user = "root",
+        group = "root"):
     """
     `image.ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y`
     and `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already
@@ -76,7 +80,7 @@ def image_ensure_subdirs_exist(
         name = "ensure_subdirs_exist",
     )
 
-def image_ensure_dirs_exist(path, mode = None, user = None, group = None):
+def image_ensure_dirs_exist(path, mode = 0o755, user = "root", group = "root"):
     """Equivalent to `image.ensure_subdirs_exist("/", path, ...)`."""
     return _image_ensure_subdirs_exist(
         into_dir = "/",

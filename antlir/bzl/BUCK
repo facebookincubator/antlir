@@ -91,11 +91,6 @@ fake_macro_library(
 )
 
 fake_macro_library(
-    name = "add_stat_options",
-    srcs = ["add_stat_options.bzl"],
-)
-
-fake_macro_library(
     name = "maybe_export_file",
     srcs = ["maybe_export_file.bzl"],
 )
@@ -424,10 +419,6 @@ shape.impl(
 shape.impl(
     name = "gpt.shape",
     deps = ["//antlir/bzl:target.shape"],
-)
-
-shape.impl(
-    name = "mode.shape",
 )
 
 shape.impl(

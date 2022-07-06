@@ -22,16 +22,12 @@ fake_macro_library(
     name = "ensure_dirs_exist",
     srcs = ["ensure_dirs_exist.bzl"],
     deps = [
-        "//antlir/bzl:add_stat_options",
         "//antlir/bzl:target_tagger",
     ],
 )
 
 shape.impl(
     name = "ensure_subdirs_exist.shape",
-    deps = [
-        "//antlir/bzl:mode.shape",
-    ],
 )
 
 fake_macro_library(

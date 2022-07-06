@@ -55,10 +55,10 @@ directory output by a Buck-runnable target, then you should use
 `install`, even though the underlying rule is executable.
 """
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
 load(":helpers.bzl", "normalize_target_and_mark_path_in_source_dict")
 load(":image_source.shape.bzl", "image_source_t")
@@ -72,20 +72,20 @@ def _forbid_layer_source(source_dict):
         )
 
 def _generate_shape(source_dict, dest, mode, user, group):
-    install_spec = {
-        "dest": dest,
-        "source": image_source_t(**source_dict),
-    }
-    add_stat_options(install_spec, mode, user, group)
-
-    return install_files_t(**install_spec)
+    return install_files_t(
+        dest = dest,
+        source = image_source_t(**source_dict),
+        mode = stat.mode(mode) if mode else None,
+        user = user,
+        group = group,
+    )
 
 def feature_install_buck_runnable(
         source,
         dest,
         mode = None,
-        user = None,
-        group = None,
+        user = "root",
+        group = "root",
         runs_in_build_steps_causes_slow_rebuilds = False):
     """
     `feature.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
@@ -139,7 +139,7 @@ def feature_install_buck_runnable(
         deps = [normalized_target],
     )
 
-def feature_install(source, dest, mode = None, user = None, group = None):
+def feature_install(source, dest, mode = None, user = "root", group = "root"):
     """
     `feature.install("//path/fs:data", "dir/bar")` installs file or directory
     `data` to `dir/bar` in the image. `dir/bar` must not exist, otherwise

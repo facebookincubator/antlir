@@ -3,12 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:add_stat_options.bzl", "add_stat_options")
+load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":ensure_subdirs_exist.shape.bzl", "ensure_subdirs_exist_t")
 
-def image_ensure_dirs_exist(path, mode = None, user = None, group = None):
+def image_ensure_dirs_exist(
+        path,
+        mode = shape.DEFAULT_VALUE,
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE):
     """Equivalent to `image.ensure_subdirs_exist("/", path, ...)`."""
     return image_ensure_subdirs_exist(
         into_dir = "/",
@@ -18,7 +23,12 @@ def image_ensure_dirs_exist(path, mode = None, user = None, group = None):
         group = group,
     )
 
-def image_ensure_subdirs_exist(into_dir, subdirs_to_create, mode = None, user = None, group = None):
+def image_ensure_subdirs_exist(
+        into_dir,
+        subdirs_to_create,
+        mode = shape.DEFAULT_VALUE,
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE):
     """
   `image.ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y`
   and `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already
@@ -40,9 +50,13 @@ def image_ensure_subdirs_exist(into_dir, subdirs_to_create, mode = None, user = 
   (not from the image) is used.
     """
 
-    dir_spec = {"into_dir": into_dir, "subdirs_to_create": subdirs_to_create}
-    add_stat_options(dir_spec, mode, user, group)
-    ensure_subdirs_exist = ensure_subdirs_exist_t(**dir_spec)
+    ensure_subdirs_exist = ensure_subdirs_exist_t(
+        into_dir = into_dir,
+        subdirs_to_create = subdirs_to_create,
+        mode = stat.mode(mode) if mode != shape.DEFAULT_VALUE else shape.DEFAULT_VALUE,
+        user = user,
+        group = group,
+    )
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(ensure_subdirs_exist = [ensure_subdirs_exist]),

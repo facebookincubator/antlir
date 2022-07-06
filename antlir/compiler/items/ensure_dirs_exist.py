@@ -19,15 +19,10 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
-from pydantic import root_validator, validator
+from pydantic import validator
 
 from .common import ImageItem, LayerOpts, make_path_normal_relative
-from .stat_options import (
-    build_stat_options,
-    customize_stat_options,
-    Mode,
-    mode_to_int,
-)
+from .stat_options import build_stat_options
 
 
 class MismatchError(Exception):
@@ -46,7 +41,6 @@ def _validate_into_dir(into_dir: Optional[str]) -> str:
 # pyre-fixme[13]: Attribute `subdirs_to_create` is never initialized.
 class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
     basename: str
-    mode: Optional[Mode]
 
     # `subdirs_to_create` is an `ensure_subdirs_exist_t` shape field that is
     # processed by `ensure_subdirs_exist_factory` below to create an
@@ -82,19 +76,13 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         assert "/" not in basename
         return basename
 
-    @root_validator
-    def set_default_stat_options(cls, values):  # noqa B902
-        customize_stat_options(values, default_mode=0o755)
-        return values
-
     def provides(self):
         yield ProvidesDirectory(path=Path(self.into_dir) / self.basename)
 
     def requires(self):
         yield RequireDirectory(path=Path(self.into_dir))
-        user, group = self.user_group.split(":")
-        yield RequireUser(user)
-        yield RequireGroup(group)
+        yield RequireUser(self.user)
+        yield RequireGroup(self.group)
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         # If path already exists ensure it has expected attrs, else make it.
@@ -107,20 +95,16 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
         else:
             file_stat = os.stat(path_to_make)
             mode = stat.S_IMODE(file_stat.st_mode)
-            assert self.mode is not None
-            desired_mode = mode_to_int(self.mode)
-            if mode != desired_mode:
+            if mode != self.mode:
                 raise MismatchError(
-                    f"{path_to_make} mode = {mode:o}, not {desired_mode:o}"
+                    f"{path_to_make} mode = {mode:o}, not {self.mode:o}"
                 )
-            assert self.user_group is not None
-            desired_user, desired_group = self.user_group.split(":")
             user = pwd.getpwuid(file_stat.st_uid).pw_name
             group = grp.getgrgid(file_stat.st_gid).gr_name
-            if (user != desired_user) or (group != desired_group):
+            if (user != self.user) or (group != self.group):
                 raise MismatchError(
                     f"{path_to_make} owner {user}:{group}, "
-                    f"not {desired_user}:{desired_group}"
+                    f"not {self.user}:{self.group}"
                 )
 
         xattrs = os.listxattr(path_to_make)
