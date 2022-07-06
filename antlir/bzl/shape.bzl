@@ -120,6 +120,7 @@ load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 load(":target_tagger_helper.bzl", "target_tagger_helper")
 
 _NO_DEFAULT = struct(no_default = True)
+_DEFAULT_VALUE = struct(__default_value_sentinel__ = True)
 
 # Poor man's debug pretty-printing. Better version coming on a stack.
 def _pretty(x):
@@ -431,6 +432,12 @@ def _new_shape(shape, **fields):
         return shape(**fields)
 
     with_defaults = _shape_defaults_dict(shape)
+
+    # shape.bzl uses often pass shape fields around as kwargs, which makes
+    # us likely to pass in `None` for a shape field with a default, provide
+    # `shape.DEFAULT_VALUE` as a sentinel to make functions wrapping shape
+    # construction easier to manage
+    fields = {k: v for k, v in fields.items() if v != _DEFAULT_VALUE}
     with_defaults.update(fields)
 
     for field, value in fields.items():
@@ -868,4 +875,5 @@ shape = struct(
     json_file = _json_file,
     python_data = _python_data,
     render_template = _render_template,
+    DEFAULT_VALUE = _DEFAULT_VALUE,
 )
