@@ -44,8 +44,8 @@ def _path_is_btrfs_subvol(path: Path) -> bool:
 T = TypeVar
 
 
-# Subvol is marked as `DoNotFreeze` as it's hash is just of
-# byte string that contains the path to the subvol. It's member
+# Subvol is marked as `DoNotFreeze` as its hash is just of
+# byte string that contains the path to the subvol. Its member
 # variables are just a cache of the external state of the subvol
 # and do not affect its hash.
 class Subvol(DoNotFreeze):

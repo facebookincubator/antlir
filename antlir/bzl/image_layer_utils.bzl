@@ -23,7 +23,7 @@ def _image_layer_impl(
         # others.
         #
         # This argument may be a dict, or a target path whose outputs is a
-        # JSON dict of the same form.  The latter as added to allow
+        # JSON dict of the same form.  The latter was added to allow
         # generating mount configs for fetched packages.
         #
         # The default mount config for a layer only provides a

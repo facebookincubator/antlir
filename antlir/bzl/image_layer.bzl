@@ -6,7 +6,7 @@
 """
 An `image.layer` is a set of `feature` with some additional parameters.  Its
 purpose to materialize those `feature`s as a btrfs subvolume in the
-per-repo `buck-image/out/volume/targets`.
+per-repo `buck-image-out/volume/targets`.
 
 We call the subvolume a "layer" because it can be built on top of a snapshot
 of its `parent_layer`, and thus can be represented as a btrfs send-stream for
@@ -14,7 +14,7 @@ more efficient storage & distribution.
 
 The Buck output of an `image.layer` target is a JSON file with information
 on how to find the resulting layer in the per-repo
-`buck-image/out/volume/targets`.  See `SubvolumeOnDisk.to_json_file`.
+`buck-image-out/volume/targets`.  See `SubvolumeOnDisk.to_json_file`.
 
 ## Implementation notes
 
