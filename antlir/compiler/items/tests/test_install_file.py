@@ -7,7 +7,6 @@
 import os
 import stat
 import subprocess
-import sys
 import tempfile
 
 from antlir.compiler.requires_provides import (
@@ -17,13 +16,18 @@ from antlir.compiler.requires_provides import (
     RequireGroup,
     RequireUser,
 )
-from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import TempSubvolumes
+from antlir.tests.layer_resource import layer_resource_subvol
 
 from ..common import image_source_item
 from ..install_file import _InstallablePath, InstallFileItem
-from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, render_subvol
+from .common import (
+    BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
 
 
 def _install_file_item(**kwargs):
@@ -95,9 +99,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             )
 
     def test_install_file_from_layer(self):
-        layer = find_built_subvol(
-            Path(__file__).dirname() / "test-with-one-local-rpm"
-        )
+        layer = layer_resource_subvol(__package__, "test-with-one-local-rpm")
         path_in_layer = b"rpm_test/cheese2.txt"
         item = _install_file_item(
             from_target="t",
@@ -120,10 +122,9 @@ class InstallFileItemTestCase(BaseItemTestCase):
             },
         )
 
+    @with_mocked_temp_volume_dir
     def test_install_file_command(self):
-        with TempSubvolumes(
-            Path(sys.argv[0])
-        ) as temp_subvolumes, tempfile.NamedTemporaryFile() as empty_tf:
+        with TempSubvolumes() as temp_subvolumes, tempfile.NamedTemporaryFile() as empty_tf:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("d")])
 
@@ -175,8 +176,9 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 from_target="t", source={"source": "/dev"}, dest="d/c"
             )
 
+    @with_mocked_temp_volume_dir
     def test_install_file_command_recursive(self):
-        with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+        with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")
             subvol.run_as_root(["mkdir", subvol.path("d")])
 
@@ -251,6 +253,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 render_subvol(subvol),
             )
 
+    @with_mocked_temp_volume_dir
     def test_install_file_large_batched_chmod(self):
         # Create a large number of files with long names to intentionally
         # overflow the normal size limit of the chmod call
@@ -272,7 +275,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 dest="/d",
             )
 
-            with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
+            with TempSubvolumes() as temp_subvolumes:
                 subvol = temp_subvolumes.create("large-chmod")
                 dir_item.build(subvol, DUMMY_LAYER_OPTS)
 

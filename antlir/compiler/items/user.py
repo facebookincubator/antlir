@@ -7,7 +7,7 @@
 import collections
 import re
 from dataclasses import dataclass
-from typing import AnyStr, Dict, Generator, NamedTuple, OrderedDict
+from typing import AnyStr, Dict, Generator, NamedTuple, Optional, OrderedDict
 
 from antlir.bzl.image.feature.usergroup import user_t
 from antlir.compiler.requires_provides import (
@@ -145,6 +145,13 @@ class PasswdFile:
 
     def __str__(self):
         return "\n".join((str(pfl) for pfl in self.lines.values())) + "\n"
+
+    def uid(self, name: str) -> Optional[int]:
+        for line in self.lines.values():
+            if line.name == name:
+                return line.uid
+
+        return None
 
 
 @dataclass

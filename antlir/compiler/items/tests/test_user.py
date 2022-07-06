@@ -353,6 +353,14 @@ root:x:1:1:bin:/bin:/sbin/nologin
             },
         )
 
+    def test_get_uid(self) -> None:
+        pf = PasswdFile()
+        pf.add(new_passwd_file_line("root:x:0:0:root:/root:/bin/bash"))
+        pf.add(new_passwd_file_line("antlir:x:10:10:antlir:/antlir:/bin/bash"))
+        self.assertEqual(pf.uid("root"), 0)
+        self.assertEqual(pf.uid("antlir"), 10)
+        self.assertIsNone(pf.uid("nope"))
+
 
 class UserItemTest(BaseItemTestCase):
     def test_user(self):

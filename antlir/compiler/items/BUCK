@@ -138,6 +138,8 @@ python_library(
     name = "stat_options",
     srcs = ["stat_options.py"],
     deps = [
+        ":group",
+        ":user",
         "//antlir:subvol_utils",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",

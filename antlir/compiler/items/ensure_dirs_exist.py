@@ -117,7 +117,6 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
             build_stat_options(
                 self,
                 subvol,
-                # pyre-fixme[6]: Expected `str` for 3rd param but got `Path`.
                 path_to_make,
                 build_appliance=layer_opts.build_appliance,
             )
