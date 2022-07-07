@@ -280,7 +280,7 @@ def _write_passwd_file(subvol: Subvol, contents: AnyStr):
 
 
 def _read_shadow_file(subvol: Subvol) -> str:
-    return subvol.read_path_text_as_root(SHADOW_FILE_PATH)
+    return subvol.read_path_text(SHADOW_FILE_PATH)
 
 
 def _write_shadow_file(subvol: Subvol, contents: AnyStr):

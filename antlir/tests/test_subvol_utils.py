@@ -264,22 +264,6 @@ class SubvolTestCase(AntlirTestCase):
             self.assertEqual(sv.read_path_text(Path("test_file")), "foo")
 
     @with_temp_subvols
-    def test_read_file_as_root(self, ts: TempSubvolumes):
-        rootfile = "testroot"
-        contents = "0123456789"
-        sv = ts.create("subvol")
-        sv.overwrite_path_as_root(Path(rootfile), contents=contents)
-        # Should be able to read now
-        sv.run_as_root(["chmod", "0444", sv.path(rootfile)])
-        self.assertEqual(sv.read_path_text(Path(rootfile)), contents)
-        sv.run_as_root(["chmod", "0000", sv.path(rootfile)])
-        # Should still be able to read it even though 0000
-        self.assertEqual(sv.read_path_text_as_root(Path(rootfile)), contents)
-        # Confirm that we fail if the file isn't there
-        with self.assertRaises(FileNotFoundError):
-            sv.read_path_text_as_root(Path("/nonsense"))
-
-    @with_temp_subvols
     def test_write_file(self, ts: TempSubvolumes):
         sv = ts.create("test_write_file")
         sv.overwrite_path_as_root(Path("test_file"), contents=b"foobytes")
