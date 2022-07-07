@@ -129,6 +129,11 @@ EOF
         ] if parent_layer else []),
     )
 
+    maybe_profile = ""
+    profile_dir = native.read_config("antlir", "profile", None)
+    if profile_dir:
+        maybe_profile = "--profile={}".format(profile_dir)
+
     return '''
         # Take note of `targets_and_outputs` below -- this enables the
         # compiler to map the `target_tagger` target sigils in the outputs
@@ -152,6 +157,7 @@ EOF
           {targets_and_outputs} \
           --compiler-binary $(location {compiler}) \
           {internal_only_is_genrule_layer} \
+          {maybe_profile} \
               > "$layer_json"
 
         # Insert the outputs of the queried dependencies to short-circuit
@@ -218,4 +224,5 @@ EOF
             "--parent-layer $(location {})".format(parent_layer) if parent_layer and not flavor else ""
         ),
         internal_only_is_genrule_layer = "--internal-only-is-genrule-layer" if internal_only_is_genrule_layer else "",
+        maybe_profile = maybe_profile,
     )

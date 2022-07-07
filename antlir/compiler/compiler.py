@@ -20,6 +20,7 @@ import cProfile
 import os
 import stat
 import sys
+import time
 import uuid
 from contextlib import ExitStack, nullcontext
 from subprocess import CalledProcessError
@@ -121,7 +122,6 @@ def parse_args(args) -> argparse.Namespace:
     )
     parser.add_argument(
         "--profile",
-        default=os.environ.get("ANTLIR_PROFILE"),
         dest="profile_dir",
         type=normalize_buck_path,
         help="Profile this image build and write pstats files into the given directory.",
@@ -191,7 +191,7 @@ def invoke_compiler_inside_build_appliance(
                 nested_profile_dir / prof_filename,
             )
         )
-        argv = ["--profile", nested_profile_dir] + argv
+        argv = argv + ["--profile", nested_profile_dir]
 
     opts = get_compiler_nspawn_opts(
         cmd=[
@@ -334,6 +334,7 @@ if __name__ == "__main__":  # pragma: no cover
     args = parse_args(argv)
     init_logging(debug=args.debug)
 
+    start = time.perf_counter()
     with (cProfile.Profile() if args.profile_dir else nullcontext()) as pr:
         try:
             subvol = build_image(args, argv)
@@ -345,6 +346,7 @@ if __name__ == "__main__":  # pragma: no cover
             sys.stderr.write("\n")
             sys.stderr.write(str(e))
             sys.exit(1)
+    end = time.perf_counter()
     if args.profile_dir:
         assert pr is not None
         filename = construct_profile_filename(
@@ -352,3 +354,8 @@ if __name__ == "__main__":  # pragma: no cover
         )
         os.makedirs(args.profile_dir, exist_ok=True)
         pr.dump_stats(args.profile_dir / filename)
+        os.setxattr(
+            args.profile_dir / filename,
+            "user.antlir.duration",
+            f"{end - start}s".encode(),
+        )
