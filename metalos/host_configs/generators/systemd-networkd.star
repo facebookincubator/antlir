@@ -14,6 +14,7 @@ Address={{this.addr}}/{{this.prefix}}
 Address={{this}}
 {{/each~}}
 Domains={{#each search}}{{this}} {{/each}}
+IPv6AcceptRA={{accept_ras}}
 
 [IPv6AcceptRA]
 UseAutonomousPrefix=false
@@ -48,10 +49,15 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     search = auto_search_domains(prov.identity.hostname) + prov.identity.network.dns.search_domains
     network_units = []
     link_units = []
+
+    # We only want to accept RA (thus default route) on our primary interface
+    primary_mac = prov.identity.network.primary_interface.mac
+
     for i, iface in enumerate(prov.identity.network.interfaces):
+        accept_ras = "yes" if iface.mac == primary_mac else "no"
         ipv4_addrs = [a for a in iface.addrs if "." in a]
         ipv6_addrs = [struct(addr=a, prefix="64") for a in iface.addrs if ":" in a]
-        unit = NETWORK_TEMPLATE(mac=iface.mac, ipv6_addrs=ipv6_addrs, ipv4_addrs=ipv4_addrs, search=search)
+        unit = NETWORK_TEMPLATE(accept_ras=accept_ras, mac=iface.mac, ipv6_addrs=ipv6_addrs, ipv4_addrs=ipv4_addrs, search=search)
         network_units += [metalos.file(path="/etc/systemd/network/00-metalos-{}.network".format(iface.name or i), contents=unit)]
         if iface.name:
             unit = LINK_TEMPLATE(mac=iface.mac, name=iface.name)
