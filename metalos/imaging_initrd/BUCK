@@ -6,10 +6,15 @@ load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 
+imaging_initrd_wanted_rpms = [
+    "nvme-cli",  # For wiping disks / restoring ssd performance
+]
+
 image.layer(
     name = "with-imagining-initrd-bins",
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
+        image.rpms_install(imaging_initrd_wanted_rpms),
         feature.install(
             "//metalos/imaging_initrd/metalimage:metalimage",
             "/usr/bin/metalimage",
@@ -45,6 +50,7 @@ image.layer(
             binaries = [
                 "/usr/lib/systemd/system-generators/metalos-network-generator",
                 "/usr/bin/metalimage",
+                "/usr/sbin/nvme",
             ],
             dest = "/",
             source = ":with-imagining-initrd-bins",
