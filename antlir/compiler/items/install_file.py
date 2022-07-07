@@ -4,10 +4,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-import itertools
 import os
+import shutil
 import stat
-from typing import Iterable, NamedTuple, Optional, Union
+from typing import Iterable, NamedTuple, Union
 
 from antlir.bzl.image.feature.install import install_files_t
 from antlir.compiler.requires_provides import (
@@ -74,6 +74,22 @@ def _recurse_into_source(
                 raise RuntimeError(f"{source}: neither a file nor a directory")
 
 
+def _copy_file_reflink(
+    src: str, dst: str, follow_symlinks: bool = False
+) -> None:
+    # Use copy_file_range to get that sweet BTRFS CoW
+    # We don't have to check for symlinks or collisions, since the compiler
+    # will already have verified that neither of those conditions are
+    # possible
+    with open(src, "rb") as src_f, open(dst, "wb") as dst_f:
+        remaining_len = os.fstat(src_f.fileno()).st_size
+        while remaining_len > 0:
+            copied = os.copy_file_range(
+                src_f.fileno(), dst_f.fileno(), remaining_len
+            )
+            remaining_len -= copied
+
+
 # Future enhancement notes:
 #
 #  (1) If we ever need to support layer sources, generalize
@@ -84,7 +100,7 @@ class InstallFileItem(install_files_t, ImageItem):
 
     source: Path
 
-    _paths: Optional[Iterable[_InstallablePath]] = PrivateAttr()
+    _paths: Iterable[_InstallablePath] = PrivateAttr()
 
     def __init__(self, **kwargs) -> None:
         source = kwargs["source"]
@@ -143,28 +159,16 @@ class InstallFileItem(install_files_t, ImageItem):
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         dest = subvol.path(self.dest)
-        # The compiler should have detected any collisons, so `--no-clobber`
-        # is just a failsafe.  `--no-dereference` is also a failsafe since
-        # we ban symlinks above.
-        #
-        # Opportunistic reflinking & mandatory sparsification are easy
-        # efficiency wins.
-        #
-        # Don't bother preserving metadata since we explicitly set mode &
-        # ownership ...  and our build setup lets timestamp float (for now).
-        subvol.run_as_root(
-            [
-                "cp",
-                "--recursive",
-                "--no-clobber",
-                "--no-dereference",
-                "--reflink=auto",
-                "--sparse=always",
-                "--no-preserve=all",
-                self.source,
-                dest,
-            ]
-        )
+
+        if stat.S_ISDIR(os.stat(self.source).st_mode):
+            shutil.copytree(
+                str(self.source),
+                str(dest),
+                copy_function=_copy_file_reflink,
+            )
+        else:
+            _copy_file_reflink(str(self.source), str(dest))
+
         build_stat_options(
             self,
             subvol,
@@ -172,27 +176,6 @@ class InstallFileItem(install_files_t, ImageItem):
             do_not_set_mode=True,
             build_appliance=layer_opts.build_appliance,
         )
-        # Group by mode to make as few shell calls as possible.
-        for mode, modes_and_paths in itertools.groupby(
-            sorted(
-                (i.mode, i.provides.path())
-                # pyre-fixme[16]: `Optional` has no attribute `__iter__`.
-                for i in self._paths
-            ),
-            lambda x: x[0],
-        ):
-            # Batching chmod calls has the unfortunate side effect of failing
-            # on installing large amounts of files with one `image.install`.
-            # xargs will break up the command for us if we overrun the maximum
-            # args size limit.
-            #
-            # `chmod` follows symlinks, and there's no option to stop it.
-            # However, `customize_fields` should have failed on symlinks.
-            sv_root = subvol.path()  # This is slow, don't do it in the loop.
-            paths = b"\0".join(
-                sv_root / p.lstrip(b"/") for _, p in modes_and_paths
-            )
-            subvol.run_as_root(
-                ["xargs", "-0", "chmod", f"{mode:o}"],
-                input=paths,
-            )
+
+        for i in self._paths:
+            os.chmod(subvol.path(i.provides.path()), i.mode)
