@@ -139,7 +139,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             )
 
             # Fail to write to a nonexistent dir
-            with self.assertRaises(subprocess.CalledProcessError):
+            with self.assertRaises(FileNotFoundError):
                 _install_file_item(
                     from_target="t",
                     source={"source": empty_tf.name},
