@@ -16,8 +16,7 @@ const exec = util.promisify(require('child_process').exec);
 const {isInternal} = require('internaldocs-fb-helpers');
 
 const cp_cmd = ' && cp -r $(pwd)/docs/api/starlark/fbcode/antlir/* $(pwd)/docs/api';
-const internal_cmd = 'buck run fbcode//buck2/buck2_docs:buck2_docs --  --destination-dir=$(pwd)/docs/api ';
-const oss_cmd = 'buck run //generated/buck2/buck2_docs:buck2_docs --  --destination-dir=$(pwd)/docs/api ';
+const cmd = 'buck2 docs starlark --format markdown_files --markdown-files-destination-dir=$(pwd)/docs/api ';
 const files_to_generate = '//antlir/bzl:image.bzl //antlir/bzl:shape.bzl //antlir/bzl/image/feature:defs.bzl //antlir/bzl/image/package:defs.bzl //antlir/vm/bzl:defs.bzl //antlir/bzl:flavor_helpers.bzl //antlir/bzl:test_rpms.bzl';
 
 // eslint-disable-next-line no-unused-vars
@@ -27,21 +26,12 @@ module.exports = (context, options) => {
     name: 'bzldoc',
     async loadContent() {
       const out = `${context.siteDir}/docs/api/`;
-      if (isInternal()) {
         await exec(
-        internal_cmd + files_to_generate + cp_cmd,
+        cmd + files_to_generate + cp_cmd,
           {
             shell: '/bin/bash',
           },
         );
-      } else {
-          await exec(
-          oss_cmd + files_to_generate + cp_cmd,
-        {
-          shell: '/bin/bash',
-        },
-      );
-      }
       return null;
     },
     getPathsToWatch() {
