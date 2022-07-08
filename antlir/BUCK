@@ -833,7 +833,6 @@ rust_library(
     mapped_srcs = {
         "//antlir:empty": "src/lib.rs",
     },
-    deps = ["//buck2/buck2_docs:buck2_docs"],
 )
 
 export_file(
