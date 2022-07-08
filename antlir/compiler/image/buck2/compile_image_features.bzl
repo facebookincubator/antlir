@@ -20,7 +20,11 @@ load(
     "antlir_dep",
     "targets_and_outputs_arg_list",
 )
-load("//antlir/compiler/image/feature/buck2:helpers.bzl", "mark_path")
+load(
+    "//antlir/compiler/image/feature/buck2:helpers.bzl",
+    "is_build_appliance",
+    "mark_path",
+)
 load(
     "//antlir/compiler/image/feature/buck2:new.bzl",
     feature_new_buck2 = "feature_new",
@@ -83,7 +87,7 @@ def compile_image_features(
     # A value of `None` specifies that no flavor field was provided for the layer.
     flavors = [flavor] if flavor else None
 
-    if not flavors and "build-appliance" in parent_layer:
+    if not flavors and is_build_appliance(parent_layer):
         flavors = [flavor_helpers.get_flavor_from_build_appliance(parent_layer)]
 
     # Outputs the feature JSON for the given layer to disk so that it can be

@@ -13,6 +13,7 @@ load(
     "ItemInfo",
     "RpmInfo",
 )
+load(":helpers.bzl", "is_build_appliance")
 
 def _filter_rpm_versions(
         feature_dict,
@@ -167,6 +168,7 @@ def feature_new(
         # that is not available for all flavors in REPO_CFG.flavor_to_config.
         # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None,
+        # only used as argument in `compile_image_features.bzl`
         parent_layer = None):
     """
     Turns a group of image actions into a Buck target, so it can be
@@ -182,7 +184,7 @@ def feature_new(
     """
     if (BZL_CONST.layer_feature_suffix in name and
         parent_layer and
-        not "build-appliance" in parent_layer):
+        not is_build_appliance(parent_layer)):
         parent_layer_feature = parent_layer + BZL_CONST.layer_feature_suffix
     else:
         parent_layer_feature = None

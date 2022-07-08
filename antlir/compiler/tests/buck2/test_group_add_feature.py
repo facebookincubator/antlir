@@ -7,7 +7,7 @@
 import subprocess
 import unittest
 
-from .generate_usergroup_str import generate_group_str
+from .helpers import generate_group_str
 
 
 class GroupFeatureTest(unittest.TestCase):

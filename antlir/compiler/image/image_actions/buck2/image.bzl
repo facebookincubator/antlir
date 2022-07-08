@@ -14,7 +14,7 @@ load(
     "image_ensure_dirs_exist",
     "image_ensure_subdirs_exist",
 )
-load(":rpms.bzl", "image_rpms_install")
+load(":rpms.bzl", "image_rpms_install", "image_rpms_remove_if_exists")
 
 image = struct(
     ensure_dirs_exist = image_ensure_dirs_exist,
@@ -23,4 +23,5 @@ image = struct(
     layer = image_layer,
     rpms_install = image_rpms_install,
     genrule_layer = image_genrule_layer,
+    rpms_remove_if_exists = image_rpms_remove_if_exists,
 )
