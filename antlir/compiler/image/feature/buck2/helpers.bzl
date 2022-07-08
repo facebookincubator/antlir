@@ -7,6 +7,7 @@
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
@@ -79,10 +80,10 @@ def generate_feature_target_name(
     # if list of feature shapes is provided, hash all shapes, join their hashes
     # and then hash that final string to obtain `shape_hash`.
     if types.is_list(feature_shape):
-        shape_hash = sha256_b64("_".join([
+        shape_hash = sha256_b64("_".join(sorted([
             sha256_b64(shape.do_not_cache_me_json(s))
             for s in feature_shape
-        ]))
+        ])))
     else:
         shape_hash = sha256_b64(shape.do_not_cache_me_json(feature_shape))
 
@@ -163,6 +164,12 @@ def normalize_target_and_mark_path_in_source_dict(source_dict, **kwargs):
 
     return source_dict, normalized_target
 
+def is_build_appliance(target):
+    return target in {
+        config.build_appliance: 1
+        for _, config in REPO_CFG.flavor_to_config.items()
+    }
+
 def _self_test_generate_feature_target_name():
     test_shape = shape.shape(
         str_f = shape.field(str, optional = True),
@@ -206,7 +213,7 @@ def _self_test_generate_feature_target_name():
     )
     test_2_answer = (
         "antlir_feature__bar__KEY_key2____" +
-        "Qd12OSdYKhcgpfd4lMJzo-PR7cs2RHxoUoAflSHBa1A" +
+        "Msq-FeroZIXLzlGnQB3B16882r8szecaypH7YMcB9Q0" +
         "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
     )
 

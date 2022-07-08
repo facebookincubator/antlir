@@ -5,6 +5,13 @@
 # LICENSE file in the root directory of this source tree.
 
 
+def get_layer(resources, target_resource_prefix):
+    for target in resources:
+        if target.startswith(target_resource_prefix):
+            return target[len(target_resource_prefix) :]
+    raise RuntimeError("layer resource undefined")
+
+
 def generate_group_str(
     group_name="",
     password="",

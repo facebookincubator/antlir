@@ -165,3 +165,29 @@ def image_rpms_install(rpmlist, flavors = None):
         flavors = flavors,
         deps = deps,
     )
+
+def image_rpms_remove_if_exists(rpmlist, flavors = None):
+    """
+    `image.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
+
+    Note that removals may only be applied against the parent layer -- if your
+    current layer includes features both removing and installing the same
+    package, this will cause a build failure.
+    """
+    rpm_items, deps, flavors = _generate_rpm_items(
+        rpmlist,
+        "remove_if_exists",
+        needs_version_set = False,
+        flavors = flavors,
+    )
+
+    return maybe_add_rpm_rule(
+        name = "rpms_remove_if_exists",
+        include_in_target_name = {
+            "flavors": flavors,
+            "rpmlist": rpmlist,
+        },
+        rpm_items = rpm_items,
+        flavors = flavors,
+        deps = deps,
+    )
