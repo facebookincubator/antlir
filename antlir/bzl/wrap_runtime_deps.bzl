@@ -13,6 +13,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         target,
         visibility,
         runs_in_build_steps_causes_slow_rebuilds,
+        wrap_rule_fn = buck_genrule,
         path_in_output = None):
     """
     If necessary (see "When..."), wraps `target` with a new target named
@@ -187,21 +188,32 @@ fi
         )
         unquoted_heredoc_preamble = ""
 
-    buck_genrule(
-        name = name,
-        bash = build_exec_wrapper(
-            runnable = target,
+    if wrap_rule_fn == buck_genrule:
+        wrap_rule_fn(
+            name = name,
+            bash = build_exec_wrapper(
+                runnable = target,
+                path_in_output = path_in_output,
+                literal_preamble = literal_preamble,
+                unquoted_heredoc_preamble = unquoted_heredoc_preamble,
+            ),
+            # We deliberately generate a unique output on each rebuild.
+            cacheable = False,
+            # Whatever we wrap was executable, so the wrapper might as well be, too
+            executable = True,
+            visibility = get_visibility(visibility),
+            antlir_rule = "user-internal",
+        )
+    else:
+        wrap_rule_fn(
+            name = name,
+            target = target,
             path_in_output = path_in_output,
             literal_preamble = literal_preamble,
             unquoted_heredoc_preamble = unquoted_heredoc_preamble,
-        ),
-        # We deliberately generate a unique output on each rebuild.
-        cacheable = False,
-        # Whatever we wrap was executable, so the wrapper might as well be, too
-        executable = True,
-        visibility = get_visibility(visibility),
-        antlir_rule = "user-internal",
-    )
+            visibility = get_visibility(visibility),
+        )
+
     return True, ":" + name
 
 def maybe_wrap_executable_target(target, wrap_suffix, **kwargs):
