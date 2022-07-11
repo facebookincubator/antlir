@@ -16,7 +16,6 @@ load(":image_gpt.bzl", "image_gpt", "image_gpt_partition")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_layer_from_package.bzl", "image_layer_from_package")
-load(":image_packaged_layer.bzl", "image_packaged_layer")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":image_rust_unittest.bzl", "image_rust_unittest")
 load(":image_source.bzl", "image_source")
@@ -36,7 +35,6 @@ image = struct(
     layer_from_package = image_layer_from_package,
     layer_mount = image_layer_mount,
     opts = struct,
-    packaged_layer = image_packaged_layer,
     python_unittest = image_python_unittest,
     rpm = struct(nevra = new_nevra),
     rpms_install = image_rpms_install,
