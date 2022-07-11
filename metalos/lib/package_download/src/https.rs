@@ -175,6 +175,7 @@ mod tests {
     use metalos_host_configs::packages::generic::Kind;
     use metalos_host_configs::packages::generic::PackageId;
     use metalos_host_configs::packages::Format;
+    use metalos_macros::test;
     use url::Url;
 
     #[test]

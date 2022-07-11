@@ -1,8 +1,25 @@
+# @noautodeps
+
+load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "rust_library")
+load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
 
 rust_library(
     name = "package_download",
     srcs = glob(["src/*.rs"]),
+    test_deps = [
+        "slog_glog_fmt",
+    ],
+    unittest_opts = unittest_opts_t(
+        container = shape.new(
+            container_unittest_opts_t,
+            boot = True,
+        ),
+    ),
+    unittests = [
+        "plain",
+        "container",
+    ],
     visibility = [
         "PUBLIC",
     ],
