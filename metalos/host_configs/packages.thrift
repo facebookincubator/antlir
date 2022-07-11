@@ -27,6 +27,10 @@ union PackageId {
   2: string tag;
 }
 
+struct Packages {
+  1: list<Package> packages;
+} (rust.exhaustive)
+
 // How to download an individual package. Each package is uniquely identified by
 // a (name, id) pair, and can optionally be redirected to a specific URI for
 // development purposes.

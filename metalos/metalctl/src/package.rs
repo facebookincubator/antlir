@@ -7,6 +7,7 @@ use futures::TryStreamExt;
 use slog::Logger;
 
 use metalos_host_configs::packages::generic::Package;
+use metalos_host_configs::packages::generic::Packages;
 use package_download::ensure_packages_on_disk_ignoring_artifacts;
 use package_download::staged_packages;
 use package_download::HttpsDownloader;
@@ -38,12 +39,9 @@ pub async fn stage_packages(log: Logger, stage: Stage) -> Result<()> {
         .context("while downloading packages")
 }
 
-/// List all packages that have been staged locally
+/// List all packages that have been staged locally with JSON
 pub async fn list(_log: Logger) -> Result<()> {
     let staged: Vec<Package> = staged_packages().await?.try_collect().await?;
-    // TODO: pretty-output a JSON-ified list, rather than JSON-ified items
-    for pkg in staged {
-        println!("{pkg:?}");
-    }
+    println!("{}", Packages { packages: staged });
     Ok(())
 }
