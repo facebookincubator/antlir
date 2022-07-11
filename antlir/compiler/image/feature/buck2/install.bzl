@@ -60,9 +60,9 @@ load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
-load(":helpers.bzl", "normalize_target_and_mark_path_in_source_dict")
 load(":image_source.shape.bzl", "image_source_t")
 load(":rules.bzl", "maybe_add_feature_rule")
+load(":source_dict_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
 
 def _forbid_layer_source(source_dict):
     if source_dict["layer"] != None:

@@ -21,17 +21,17 @@ load(
     "targets_and_outputs_arg_list",
 )
 load(
-    "//antlir/compiler/image/feature/buck2:helpers.bzl",
-    "is_build_appliance",
-    "mark_path",
-)
-load(
     "//antlir/compiler/image/feature/buck2:new.bzl",
     feature_new_buck2 = "feature_new",
 )
 load(
     "//antlir/compiler/image/feature/buck2:rules.bzl",
     "maybe_add_feature_rule",
+)
+load(
+    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
+    "is_build_appliance",
+    "mark_path",
 )
 
 def compile_image_features(

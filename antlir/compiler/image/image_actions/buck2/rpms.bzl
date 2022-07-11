@@ -8,15 +8,15 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
 load(
-    "//antlir/compiler/image/feature/buck2:helpers.bzl",
-    "mark_path",
-    "normalize_target_and_mark_path_in_source_dict",
-)
-load(
     "//antlir/compiler/image/feature/buck2:image_source.shape.bzl",
     "image_source_t",
 )
 load("//antlir/compiler/image/feature/buck2:rules.bzl", "maybe_add_rpm_rule")
+load(
+    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
+    "mark_path",
+    "normalize_target_and_mark_path_in_source_dict",
+)
 load(":rpms.shape.bzl", "rpm_action_item_t")
 
 def _rpm_name_or_source(name_source):

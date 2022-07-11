@@ -6,16 +6,16 @@
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
 load(
-    "//antlir/compiler/image/feature/buck2:helpers.bzl",
-    "normalize_target_and_mark_path_in_source_dict",
-)
-load(
     "//antlir/compiler/image/feature/buck2:image_source.shape.bzl",
     "image_source_t",
 )
 load(
     "//antlir/compiler/image/feature/buck2:rules.bzl",
     "maybe_add_feature_rule",
+)
+load(
+    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
+    "normalize_target_and_mark_path_in_source_dict",
 )
 load(":clone.shape.bzl", "clone_t")
 
