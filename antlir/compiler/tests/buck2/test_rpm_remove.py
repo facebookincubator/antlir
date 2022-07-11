@@ -7,11 +7,11 @@
 import importlib.resources
 import subprocess
 
-from .helpers import get_layer
+from .helpers import get_layer_by_prefix
 
 from .rpm_feature_test import RpmFeatureTest
 
-RPM_TEST_LAYER = get_layer(
+RPM_TEST_LAYER = get_layer_by_prefix(
     importlib.resources.contents(__package__), "test_layer_"
 )
 

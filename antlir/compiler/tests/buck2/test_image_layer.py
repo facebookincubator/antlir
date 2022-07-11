@@ -12,21 +12,13 @@ from contextlib import contextmanager
 
 from antlir.config import antlir_dep
 from antlir.find_built_subvol import find_built_subvol
-from antlir.tests.layer_resource import layer_resource, LAYER_SLASH_ENCODE
 from antlir.tests.subvol_helpers import pop_path, render_subvol
 
-TARGET_RESOURCE_PREFIX = "test_layer_"
-TARGET_TO_PATH = {
-    target[len(TARGET_RESOURCE_PREFIX) :]: path
-    for target, path in [
-        (
-            target.replace(LAYER_SLASH_ENCODE, "/"),
-            str(layer_resource(__package__, target)),
-        )
-        for target in importlib.resources.contents(__package__)
-        if target.startswith(TARGET_RESOURCE_PREFIX)
-    ]
-}
+from .helpers import get_layer_target_to_path_by_prefix
+
+TARGET_TO_PATH = get_layer_target_to_path_by_prefix(
+    importlib.resources.contents(__package__), __package__, "test_layer_"
+)
 
 
 class ImageFeatureTestCase(unittest.TestCase):
