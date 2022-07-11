@@ -53,7 +53,7 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "extract_tagged_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load("//antlir/bzl/image_actions:rpms.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 
@@ -318,10 +318,7 @@ def feature_new(
                 for t in normalized_features.targets
             ] + normalized_features.inline_features,
         ),
-        extra_deps = normalized_features.direct_deps + [
-            # The `fake_macro_library` docblock explains this self-dependency
-            antlir_dep("bzl/image/feature:new"),
-        ],
+        extra_deps = normalized_features.direct_deps,
     )
 
     # Serialize the arguments and defer our computation until build-time.

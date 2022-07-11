@@ -5,7 +5,6 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":ensure_subdirs_exist.shape.bzl", "ensure_subdirs_exist_t")
 
@@ -60,6 +59,4 @@ def image_ensure_subdirs_exist(
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(ensure_subdirs_exist = [ensure_subdirs_exist]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = [antlir_dep("bzl/image_actions:ensure_dirs_exist")],
     )

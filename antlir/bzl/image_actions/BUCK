@@ -1,14 +1,4 @@
-load("//antlir/bzl:defs.bzl", "fake_macro_library")
 load("//antlir/bzl:shape.bzl", "shape")
-
-fake_macro_library(
-    name = "clone",
-    srcs = ["clone.bzl"],
-    deps = [
-        "//antlir/bzl:image_source",
-        "//antlir/bzl:target_tagger",
-    ],
-)
 
 shape.impl(
     name = "clone.shape",
@@ -18,32 +8,8 @@ shape.impl(
     ],
 )
 
-fake_macro_library(
-    name = "ensure_dirs_exist",
-    srcs = ["ensure_dirs_exist.bzl"],
-    deps = [
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
 shape.impl(
     name = "ensure_subdirs_exist.shape",
-)
-
-fake_macro_library(
-    name = "mount",
-    srcs = ["mount.bzl"],
-    deps = [
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
-fake_macro_library(
-    name = "rpms",
-    srcs = ["rpms.bzl"],
-    deps = [
-        "//antlir/bzl:target_tagger",
-    ],
 )
 
 shape.impl(

@@ -176,10 +176,6 @@ mkdir -p "$OUT"/{prog}/var/cache/{prog}
         bash = '''\
 set -ue -o pipefail -o noclobber
 
-# Make sure FB CI considers RPM snapshots changed if this bzl (or its
-# dependencies) change.
-echo $(location //antlir/bzl:rpm_repo_snapshot) > /dev/null
-
 mkdir "$OUT"
 
 # Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum|dnf.conf`

@@ -72,8 +72,6 @@ provide the parent `/path`, but this item will create the mount-point.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(mounts = [mount_spec]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:mount"],
     )
 
 def image_host_file_mount(source, mountpoint = None):
@@ -89,8 +87,6 @@ into the container at `/baz`.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(mounts = [mount_spec]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:mount"],
     )
 
 def image_layer_mount(source, mountpoint = None):
@@ -107,6 +103,4 @@ then you can pass an explicit `mountpoint` argument.
     return target_tagger_to_feature(
         target_tagger = target_tagger,
         items = struct(mounts = [mount_spec]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image_actions:mount"],
     )

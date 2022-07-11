@@ -31,6 +31,4 @@ groups or files do indeed exist.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(requires = [req]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image/feature:requires"],
     )

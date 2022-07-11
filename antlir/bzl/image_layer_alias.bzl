@@ -40,8 +40,6 @@ def image_layer_alias(name, layer, runtime = None, visibility = None):
         # between sources & build nodes.
         antlir_rule = "user-internal",
         # Caveats:
-        #   - This lacks a "self-dependency" on the `fake_macro_library`
-        #     because hardlinks have the property of always being in sync.
         #   - This will break if some clever person adds dotfiles.
         #     In that case, check out bash's `GLOBIGNORE` and `dotglob`.
         bash = '''

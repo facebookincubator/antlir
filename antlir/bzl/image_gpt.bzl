@@ -31,7 +31,6 @@ def image_gpt(
     buck_genrule(
         name = name,
         bash = wrap_bash_build_in_common_boilerplate(
-            self_dependency = "//antlir/bzl:image_gpt",
             bash = '''
             $(exe //antlir:gpt) \
               --output-path "$OUT" \

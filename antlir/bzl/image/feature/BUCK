@@ -1,14 +1,4 @@
-load("//antlir/bzl:defs.bzl", "fake_macro_library")
 load("//antlir/bzl:shape.bzl", "shape")
-
-fake_macro_library(
-    name = "install",
-    srcs = ["install.bzl"],
-    deps = [
-        "//antlir/bzl:maybe_export_file",
-        "//antlir/bzl:target_tagger",
-    ],
-)
 
 shape.impl(
     name = "install.shape",
@@ -17,73 +7,22 @@ shape.impl(
     ],
 )
 
-fake_macro_library(
-    name = "new",
-    srcs = ["new.bzl"],
-    deps = [
-        "//antlir/bzl:target_helpers",
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
-fake_macro_library(
-    name = "remove",
-    srcs = ["remove.bzl"],
-    deps = [
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
 shape.impl(
     name = "remove.shape",
-)
-
-fake_macro_library(
-    name = "requires",
-    srcs = ["requires.bzl"],
-    deps = [
-        "//antlir/bzl:target_tagger",
-    ],
 )
 
 shape.impl(
     name = "requires.shape",
 )
 
-fake_macro_library(
-    name = "usergroup",
-    srcs = ["usergroup.bzl"],
-    deps = [
-        "//antlir/bzl:shape",
-        "//antlir/bzl:target_tagger",
-    ],
-)
-
 shape.impl(
     name = "usergroup.shape",
-)
-
-fake_macro_library(
-    name = "tarball",
-    srcs = ["tarball.bzl"],
-    deps = [
-        "//antlir/bzl:maybe_export_file",
-        "//antlir/bzl:target_tagger",
-    ],
 )
 
 shape.impl(
     name = "tarball.shape",
     deps = [
         "//antlir/bzl:target_tagger.shape",
-    ],
-)
-
-fake_macro_library(
-    name = "symlink",
-    srcs = ["symlink.bzl"],
-    deps = [
-        "//antlir/bzl:target_tagger",
     ],
 )
 

@@ -193,18 +193,12 @@ def _fetched_package_layer(
         # Uncacheable for the same reasons as _fetched_package_with_nondeterministic_fs_metadata
         cacheable = False,
         bash = """
-        # {deps}
         set -ue -o pipefail
         mkdir -p "$OUT"/pkg
         printf "pkg/" > "$OUT"/fetched_pkg_name.txt
         {print_how_to_fetch_json} |
             $(exe {fetch_package}) {quoted_package} "$OUT"/pkg >> "$OUT"/fetched_pkg_name.txt
         """.format(
-            deps = [
-                # We want to re-fetch packages if the fetching mechanics change.
-                # `def fake_macro_library` has more details.
-                "//antlir/bzl:fetched_package_layer",
-            ],
             fetch_package = fetcher.fetch_package,
             print_how_to_fetch_json = print_how_to_fetch_json,
             quoted_package = shell.quote(package),
@@ -217,9 +211,6 @@ def _fetched_package_layer(
     private_do_not_use_feature_json_genrule(
         name = package_feature,
         deps = [
-            # We want to re-fetch packages if the fetching mechanics change.
-            # `def fake_macro_library` has more details.
-            "//antlir/bzl:fetched_package_layer",
             ":" + fetched_pkg_target_name,
         ],
         output_feature_cmd = """

@@ -36,6 +36,4 @@ def feature_tarball(source, dest, force_root_ownership = False):
     return target_tagger_to_feature(
         target_tagger,
         items = struct(tarballs = [tarball]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image/feature:tarball"],
     )
