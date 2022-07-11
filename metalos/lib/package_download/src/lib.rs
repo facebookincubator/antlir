@@ -24,7 +24,8 @@ use slog::debug;
 use slog::Logger;
 use tempfile::NamedTempFile;
 use thiserror::Error;
-use tokio::fs::read_dir;
+use tokio::fs;
+use tokio::io::AsyncWriteExt;
 use tokio::task::spawn_blocking;
 use tokio_stream::wrappers::ReadDirStream;
 
@@ -185,7 +186,8 @@ where
         package: pkg.clone(),
     };
 
-    std::fs::create_dir_all(dest.parent().unwrap())
+    fs::create_dir_all(dest.parent().unwrap())
+        .await
         .with_context(|| format!("while creating parent directory for {}", dest.display()))
         .map_err(|error| Error::Install {
             error,
@@ -212,45 +214,43 @@ where
                 .map_err(map_install_err)?;
         }
         Format::File => {
-            let mut tmp_dest = NamedTempFile::new_in(dest.parent().unwrap())
+            // We use a tempfile to ensure we generate an unused file path, and for its destructor
+            // cleanup. However, to allow for async-friendly IO, we don't write through the
+            // NamedTempFile handle. Instead, we open a second file File, which shares the same
+            // filesystem handle, and use it to construct an async-friendly tokio::fs::File. We use
+            // that struct for async writing.
+            let (tmpfile, tmpfile_path) = NamedTempFile::new_in(dest.parent().unwrap())
                 .with_context(|| {
                     format!(
                         "while creating temporary file in {}",
                         dest.parent().unwrap().display()
                     )
                 })
-                .map_err(map_install_err)?;
-            debug!(
-                log,
-                "downloading {:?} to {}",
-                pkg,
-                tmp_dest.path().display()
-            );
+                .map_err(map_install_err)?
+                .into_parts();
+            debug!(log, "downloading {:?} to {}", pkg, tmpfile_path.display());
+            let mut sink = fs::File::from_std(tmpfile);
 
             while let Some(item) = stream.next().await {
-                tmp_dest
-                    .write_all(
-                        &item
-                            .context("while reading chunk from downloader")
-                            .map_err(|error| Error::Download {
-                                error,
-                                package: pkg.clone(),
-                            })?,
-                    )
-                    .with_context(|| {
-                        format!("while writing chunk to {}", tmp_dest.path().display())
-                    })
-                    .map_err(map_install_err)?;
+                sink.write_all(
+                    &item
+                        .context("while reading chunk from downloader")
+                        .map_err(|error| Error::Download {
+                            error,
+                            package: pkg.clone(),
+                        })?,
+                )
+                .await
+                .with_context(|| format!("while writing chunk to {}", tmpfile_path.display()))
+                .map_err(map_install_err)?;
             }
 
-            let tmp_dest_path = tmp_dest.path().to_path_buf();
-
-            tmp_dest
-                .persist(&dest)
+            fs::rename(&tmpfile_path, &dest)
+                .await
                 .with_context(|| {
                     format!(
                         "while moving {} -> {}",
-                        tmp_dest_path.display(),
+                        tmpfile_path.display(),
                         dest.display()
                     )
                 })
@@ -277,7 +277,7 @@ where
         }
         Format::File => {
             let perm = Permissions::from_mode(0o444);
-            tokio::fs::set_permissions(&dest, perm)
+            fs::set_permissions(&dest, perm)
                 .await
                 .with_context(|| format!("while setting {} readonly", dest.display()))
                 .map_err(map_install_err)?;
@@ -292,7 +292,7 @@ where
 pub async fn staged_packages()
 -> Result<impl TryStream<Ok = packages::generic::Package, Error = Error>> {
     let root = metalos_paths::images();
-    let subdirs = read_dir(metalos_paths::images())
+    let subdirs = fs::read_dir(metalos_paths::images())
         .await
         .context(format!("while getting children paths on {root:?}"))
         .map_err(|error| Error::Read { error })?;
@@ -303,7 +303,7 @@ pub async fn staged_packages()
         .try_filter_map(|dentry| async move {
             let path = dentry.path();
             if dentry.path().is_dir() {
-                let subdir = read_dir(&path)
+                let subdir = fs::read_dir(&path)
                     .await
                     .context(format!("while reading children paths on {path:?}"))?;
                 Ok(Some(
