@@ -62,8 +62,6 @@ user's initial login group or home directory.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(users = [user]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image/feature:usergroup"],
     )
 
 def feature_group_add(groupname, gid = None):
@@ -82,8 +80,6 @@ are auto-assigned, they may change if underlying layers add/remove groups.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(groups = [group_t(name = groupname, id = gid)]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = ["//antlir/bzl/image/feature:usergroup"],
     )
 
 def feature_setup_standard_user(user, group, homedir = None, shell = SHELL_BASH):

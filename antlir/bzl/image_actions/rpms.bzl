@@ -5,7 +5,6 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load(":rpms.shape.bzl", "rpm_action_item_t")
 
@@ -93,8 +92,6 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
     return target_tagger_to_feature(
         target_tagger = target_tagger,
         items = struct(rpms = res_rpms),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = [antlir_dep("bzl/image_actions:rpms")],
     )
 
 def image_rpms_install(rpmlist, flavors = None):

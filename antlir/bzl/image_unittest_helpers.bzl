@@ -60,7 +60,6 @@ def _nspawn_wrapper_properties(
         run_as_user,
         inner_test_kwargs,
         extra_outer_kwarg_names,
-        caller_fake_library,
         visibility,
         hostname,
         # An `image.opts` containing keys from `container_opts_t`.
@@ -309,14 +308,6 @@ mv $TMP/out "$OUT"
             # direct as possible.
             inner_test_target,
             layer,
-
-            # Tell CI determinators to trigger all container tests if the
-            # underlying wrapper implementation changes.
-            #
-            # Not adding `test_layer`, or `wrapper_impl_library`, or
-            # `test_spec_py`, since their internals would only change if
-            # `:image_unittest_helpers` changes.
-            caller_fake_library,  # Should depend on `:image_unittest_helpers`
 
             # Future: This currently lacks a direct dependency on
             # `nspawn_in_subvol/run_test.py` & friends, but adding that

@@ -10,7 +10,7 @@ load(":container_opts.bzl", "normalize_container_opts")
 load(":genrule_layer.shape.bzl", "genrule_layer_t")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":shape.bzl", "shape")
-load(":target_helpers.bzl", "antlir_dep", "normalize_target")
+load(":target_helpers.bzl", "normalize_target")
 load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
 def image_genrule_layer_helper(
@@ -105,7 +105,6 @@ Optional arguments:
                 ),
             ),
         ]),
-        extra_deps = [antlir_dep("bzl:image_genrule_layer")],
     )]
 
     make_subvol_cmd = compile_image_features(

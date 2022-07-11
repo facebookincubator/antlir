@@ -84,7 +84,6 @@ def _new_btrfs(
         out = "image.btrfs",
         type = _rule_type,
         bash = wrap_bash_build_in_common_boilerplate(
-            self_dependency = antlir_dep("bzl/image/package:btrfs"),
             bash = '''
             # Create the file as the build user first
             touch "$OUT"

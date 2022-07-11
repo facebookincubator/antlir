@@ -69,7 +69,6 @@ def _image_layer_impl(
     buck_genrule(
         name = _layer_name,
         bash = wrap_bash_build_in_common_boilerplate(
-            self_dependency = antlir_dep("bzl:image_layer"),
             bash = '''
             # We want subvolume names to be user-controllable. To permit
             # this, we wrap each subvolume in a temporary subdirectory.

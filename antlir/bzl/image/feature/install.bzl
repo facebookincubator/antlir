@@ -58,7 +58,7 @@ directory output by a Buck-runnable target, then you should use
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
+load("//antlir/bzl:target_helpers.bzl", "wrap_target")
 load(
     "//antlir/bzl:target_tagger.bzl",
     "extract_tagged_target",
@@ -152,8 +152,6 @@ defaults to `False` to speed up incremental rebuilds.
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [install_files]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = [antlir_dep("bzl/image/feature:install")],
     )
 
 def feature_install(
@@ -214,6 +212,4 @@ image) is used. The default for `user` and `group` is `root`.
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [install_files]),
-        # The `fake_macro_library` docblock explains this self-dependency
-        extra_deps = [antlir_dep("bzl/image/feature:install")],
     )

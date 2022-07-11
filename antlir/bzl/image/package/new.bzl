@@ -51,7 +51,6 @@ def package_new(
         # This is very temporary to work around an FB-internal issue.
         cacheable = False,
         bash = wrap_bash_build_in_common_boilerplate(
-            self_dependency = antlir_dep("bzl/image/package:new"),
             # We don't need to hold any subvolume lock because we trust
             # that (a) Buck will keep our input JSON alive, and (b) the
             # existence of the JSON will keep the refcount above 1,

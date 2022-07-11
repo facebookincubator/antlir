@@ -7,7 +7,6 @@ load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":oss_shim.bzl", "antlir_buck_env")
 
 def wrap_bash_build_in_common_boilerplate(
-        self_dependency,
         bash,
         rule_type,
         target_name,
@@ -16,10 +15,6 @@ def wrap_bash_build_in_common_boilerplate(
 # CAREFUL: To avoid inadvertently masking errors, we should only perform
 # command substitutions with variable assignments.
 set -ue -o pipefail
-
-# Ensures that changes to the sources of the rule macros cause automatic
-# builds & tests on the artifacts they produce.
-echo $(location {self_dependency}) > /dev/null
 
 start_time=\\$(date +%s)
 # Common sense would tell us to find helper programs via:
@@ -101,6 +96,5 @@ trap log_on_error EXIT
             rule_type,
             target_name,
         ),
-        self_dependency = self_dependency,
         volume_for_repo = antlir_dep(":volume-for-repo"),
     )

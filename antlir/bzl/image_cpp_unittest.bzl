@@ -25,7 +25,6 @@ def image_cpp_unittest(
         run_as_user = run_as_user,
         inner_test_kwargs = cpp_unittest_kwargs,
         extra_outer_kwarg_names = [],
-        caller_fake_library = "//antlir/bzl:image_cpp_unittest",
         visibility = visibility,
         hostname = hostname,
         container_opts = container_opts,

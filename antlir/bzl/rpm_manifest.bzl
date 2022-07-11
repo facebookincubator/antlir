@@ -15,7 +15,6 @@ def extract_rpm_manifest(name, layer, visibility = None, build_appliance = None)
         name = name,
         out = "rpm-manifest.json",
         bash = wrap_bash_build_in_common_boilerplate(
-            self_dependency = antlir_dep("bzl:rpm_manifest"),
             bash = '''
             $(exe {exe_target}) \
               --output-path "$OUT" \

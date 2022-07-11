@@ -1,65 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:defs.bzl", "fake_macro_library")
 load("//antlir/bzl:shape.bzl", "shape")
-
-fake_macro_library(
-    name = "build_vm_run_target",
-    srcs = [
-        "build_vm_run_target.bzl",
-    ],
-    deps = [
-        ":types",
-        "//antlir/bzl:shape",
-    ],
-)
-
-fake_macro_library(
-    name = "initrd",
-    srcs = [
-        "initrd.bzl",
-    ],
-    deps = [
-        "//antlir/bzl:image_bzl",
-        "//antlir/bzl:shape",
-        "//antlir/bzl:systemd",
-    ],
-)
-
-fake_macro_library(
-    name = "kernel",
-    srcs = [
-        "kernel.bzl",
-    ],
-    deps = [
-        "//antlir/bzl:shape",
-    ],
-)
-
-fake_macro_library(
-    name = "types",
-    srcs = [
-        "types.bzl",
-    ],
-    deps = [
-        ":kernel",
-        "//antlir/bzl:shape",
-        "//antlir/bzl/image/package:new",
-    ],
-)
-
-fake_macro_library(
-    name = "vm",
-    srcs = ["defs.bzl"],
-    deps = [
-        ":build_vm_run_target",
-        ":types",
-        "//antlir/bzl:constants",
-        "//antlir/bzl:image_bzl",
-        "//antlir/bzl:image_unittest_helpers",
-        "//antlir/bzl:shape",
-    ],
-)
 
 shape.impl(
     name = "vm.shape",

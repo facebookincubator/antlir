@@ -23,7 +23,6 @@ def image_rust_unittest(
         run_as_user = run_as_user,
         inner_test_kwargs = rust_unittest_kwargs,
         extra_outer_kwarg_names = [],
-        caller_fake_library = "//antlir/bzl:image_rust_unittest",
         visibility = [],
         hostname = hostname,
         container_opts = container_opts,

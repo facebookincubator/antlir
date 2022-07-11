@@ -9,20 +9,6 @@ Enough said. Critically, this ensures that we don't stray outside of the
 restricted feature-set of the Starlark language (the Buck runtime is
 currently much more permissive).
 
-## Please maintain `fake_macro_library` dependencies
-
-Take a look at the doc in [antlir/bzl/TARGETS](
-https://github.com/facebookincubator/antlir/blob/master/antlir/bzl/BUCK#L4
-).
-This is kind of a chore, but it helps kick off the right CI jobs when we edit
-`.bzl` files, so it's worth doing.
-
-Ideally, we would just write a linter to do this on our behalf. However,
-we haven't yet found time.
-
-*Note:* The vmtest macros have not yet been updated to follow this pattern, help
-is welcome!
-
 ## Target naming: dash-separated binaries & layers, underscore-separated libraries & features
 
 This convention follows `fbcode/folly/`. One concrete benefit is that it's
