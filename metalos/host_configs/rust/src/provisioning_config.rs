@@ -18,8 +18,6 @@ pub struct ProvisioningConfig {
     pub root_pw_hash: String,
     pub gpt_root_disk: packages::GptRootDisk,
     pub imaging_initrd: packages::ImagingInitrd,
-    #[deprecated = "use event_backend struct instead"]
-    pub event_backend_base_uri: String,
     pub event_backend: EventBackend,
     pub root_disk_config: RootDiskConfiguration,
 }

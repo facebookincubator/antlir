@@ -45,7 +45,6 @@ struct ProvisioningConfig {
   // This is just a historical record of what the box was originally imaged using.
   // The initrd listed here won't be used again so this field has no effect on automation
   5: packages.Package imaging_initrd;
-  6: string event_backend_base_uri;
   7: EventBackend event_backend;
 
   // How should we select and configure the root disk
