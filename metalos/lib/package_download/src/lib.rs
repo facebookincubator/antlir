@@ -39,6 +39,8 @@ use btrfs::Sendstream;
 use btrfs::SendstreamExt;
 use btrfs::Subvolume;
 
+const XATTR_KEY: &str = "user.metalos.package";
+
 #[derive(Error, Debug)]
 pub enum Error {
     #[error("package '{package}' was not found", package = .0.identifier())]
@@ -258,15 +260,10 @@ where
 
     xattr::set(
         &dest,
-        "user.metalos.package",
+        XATTR_KEY,
         &fbthrift::simplejson_protocol::serialize(&pkg),
     )
-    .with_context(|| {
-        format!(
-            "while writing user.metalos.package xattr on {}",
-            dest.display()
-        )
-    })
+    .with_context(|| format!("while writing {XATTR_KEY} xattr on {}", dest.display()))
     .map_err(map_install_err)?;
 
     match pkg.format {
@@ -316,7 +313,7 @@ pub async fn staged_packages()
                             let img_path = image.path();
                             let _res: packages::generic::Package = spawn_blocking(move || {
                                 // xattr is not async, so we offload it to an executor
-                                match xattr::get(&img_path, "user.metalos.package")? {
+                                match xattr::get(&img_path, XATTR_KEY)? {
                                     Some(x) => deserialize(x),
                                     None => Err(anyhow!(format!("Non-image at {img_path:?}"))),
                                 }
@@ -334,4 +331,85 @@ pub async fn staged_packages()
         })
         .try_flatten()
         .map_err(|error: anyhow::Error| Error::Read { error }))
+}
+
+#[cfg(test)]
+mod tests {
+    use std::pin::Pin;
+
+    use super::*;
+    use anyhow::Result;
+    use futures::stream::empty;
+    use metalos_macros::containertest;
+    use slog::o;
+    use slog::Logger;
+
+    /// Use a BlankDownloader as a stub that installs packages (of size zero bytes) without
+    /// accessing the network. Note that this only properly simulates packages of Format::File,
+    /// because an empty byte string does not make a valid btrfs sendstream.
+    struct BlankDownloader {}
+
+    impl BlankDownloader {
+        fn new() -> Self {
+            Self {}
+        }
+    }
+
+    #[async_trait]
+    impl PackageDownloader for &BlankDownloader {
+        type BytesStream = Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>;
+
+        async fn open_bytes_stream(
+            &self,
+            _log: Logger,
+            _package: &packages::generic::Package,
+        ) -> super::Result<Self::BytesStream> {
+            Ok(Box::pin(empty()))
+        }
+    }
+
+    /// Ensure collection of staged packages handles no results gracefully. Here, we assume the
+    /// container's layer has no images already staged on the filesystem.
+    #[containertest]
+    async fn inventory_empty() -> Result<()> {
+        let staged: Vec<_> = staged_packages().await?.try_collect().await?;
+        assert!(staged.is_empty(), "expected to find no staged packages");
+        Ok(())
+    }
+
+    /// Stage two packages (using a network-less downloader stub) on disk inside the container and
+    /// then prove we can inventory them.
+    #[containertest]
+    async fn inventory_with_packages() -> Result<()> {
+        let log = Logger::root(slog_glog_fmt::default_drain(), o!());
+        let downloader = BlankDownloader::new();
+
+        // Put some images down on disk
+        ensure_packages_on_disk_ignoring_artifacts(
+            log,
+            &downloader,
+            &Vec::from([
+                packages::generic::Package {
+                    name: String::from("Foo"),
+                    id: packages::generic::PackageId::Tag(String::from("LATEST")),
+                    format: Format::File,
+                    override_uri: None,
+                    kind: packages::generic::Kind::Rootfs,
+                },
+                packages::generic::Package {
+                    name: String::from("Bar"),
+                    id: packages::generic::PackageId::Tag(String::from("contbuild")),
+                    format: Format::File,
+                    override_uri: None,
+                    kind: packages::generic::Kind::Initrd,
+                },
+            ]),
+        )
+        .await?;
+
+        // Read them
+        let staged: Vec<_> = staged_packages().await?.try_collect().await?;
+        assert_eq!(2, staged.len(), "expected to find two staged packages");
+        Ok(())
+    }
 }
