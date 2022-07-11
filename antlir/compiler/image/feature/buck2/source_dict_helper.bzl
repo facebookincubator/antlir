@@ -5,7 +5,10 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
-load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
+load(
+    "//antlir/compiler/image/buck2:wrap_runtime_deps.bzl",
+    "maybe_wrap_executable_target",
+)
 
 def mark_path(target, is_layer = False):
     return {("__BUCK_LAYER_TARGET" if is_layer else "__BUCK_TARGET"): normalize_target(target)}

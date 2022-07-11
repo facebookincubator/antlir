@@ -37,22 +37,6 @@ Prefer to omit the above kwargs instead of repeating the defaults.
 `dest` must be an image-absolute path, including a filename for the file being
 copied. The parent directory of `dest` must get created by another image
 feature.
-
-## Rationale for having `install_buck_runnable`
-
-This API forces you to distinguish between source targets that are
-buck-runnable and those that are not, because (until Buck supports
-providers), it is not possible to deduce this automatically at parse-time.
-
-The implementation of `install_buck_runnable` differs significantly in
-`@mode/dev` in order to support the execution of in-place binaries
-(dynamically linked C++, linktree Python) from within an image.  Internal
-implementation differences aside, the resulting image should "quack" like
-your real, production `@mode/opt`.
-
-[1] Corner case: if you want to copy a non-executable file from inside a
-directory output by a Buck-runnable target, then you should use
-`install`, even though the underlying rule is executable.
 """
 
 load("//antlir/bzl:image_source.bzl", "image_source")
@@ -61,7 +45,7 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
 load(":image_source.shape.bzl", "image_source_t")
-load(":rules.bzl", "maybe_add_feature_rule")
+load(":rules.bzl", "maybe_add_install_rule")
 load(":source_dict_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
 
 def _forbid_layer_source(source_dict):
@@ -84,62 +68,29 @@ def feature_install_buck_runnable(
         source,
         dest,
         mode = None,
-        user = "root",
-        group = "root",
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE,
         runs_in_build_steps_causes_slow_rebuilds = False):
     """
-    `feature.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
-    buck-runnable artifact `exe` to `dir/foo` in the image. Unlike `install`,
-    this supports only single files -- though you can extract a file from a
-    buck-runnable directory via `image.source`, see below.
-
-    See **`install`** for documentation on arguments `mode`, `user`, and
-    `group`.
-
-    ### When to use `install_buck_runnable` vs `install`?
-
-    If the file being copied is a buck-runnable (e.g. `cpp_binary`,
-    `python_binary`), use `install_buck_runnable`. Ditto for copying executable
-    files from inside directories output by buck-runnable rules. For everything
-    else, use `install` [1].
-
-    Important: failing to use `install_buck_runnable` will cause the installed
-    binary to be unusable in image tests or `=container` targets in @mode/dev.
-
-    Only set `runs_in_build_steps_causes_slow_rebuilds = True` if you get a
-    build-time error requesting it.  This flag allows the target being wrapped
-    to be executed in an Antlir container as part of a Buck build step.  It
-    defaults to `False` to speed up incremental rebuilds.
+    Deprecated. Now merged with feature_install.
     """
-    source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
-    _forbid_layer_source(source_dict)
-
-    source_dict, normalized_target = \
-        normalize_target_and_mark_path_in_source_dict(
-            source_dict,
-            is_buck_runnable = True,
-            runs_in_build_steps_causes_slow_rebuilds =
-                runs_in_build_steps_causes_slow_rebuilds,
-        )
-
-    return maybe_add_feature_rule(
-        name = "install",
-        key = "install_files",
-        include_in_target_name = {
-            "dest": dest,
-            "source": source_dict,
-        },
-        feature_shape = _generate_shape(
-            source_dict,
-            dest,
-            mode,
-            user,
-            group,
-        ),
-        deps = [normalized_target],
+    return feature_install(
+        source,
+        dest,
+        mode,
+        user,
+        group,
+        runs_in_build_steps_causes_slow_rebuilds,
     )
 
-def feature_install(source, dest, mode = None, user = "root", group = "root"):
+def feature_install(
+        source,
+        dest,
+        mode = None,
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE,
+        is_executable = True,
+        runs_in_build_steps_causes_slow_rebuilds = False):
     """
     `feature.install("//path/fs:data", "dir/bar")` installs file or directory
     `data` to `dir/bar` in the image. `dir/bar` must not exist, otherwise
@@ -167,26 +118,51 @@ def feature_install(source, dest, mode = None, user = "root", group = "root"):
     directories in `dest`. `user` and `group` can be integers or symbolic
     strings. In the latter case, the passwd/group database from the host (not
     from the image) is used. The default for `user` and `group` is `root`.
+
+    `is_executable` - Ignore unless you are installing a non-executable file
+    created by a genrule, in which case it needs to be set to `False`. This is
+    necessary because there is no way for us to determine if a target with a
+    `RunInfo` provider refers to a file that is non-executable, so we just
+    assume it is executable.
+
+    Only set `runs_in_build_steps_causes_slow_rebuilds = True` if you get a
+    build-time error requesting it.  This flag allows the target being wrapped
+    to be executed in an Antlir container as part of a Buck build step.  It
+    defaults to `False` to speed up incremental rebuilds.
     """
     source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
     _forbid_layer_source(source_dict)
 
-    source_dict, normalized_target = \
-        normalize_target_and_mark_path_in_source_dict(source_dict)
+    unwrapped_source_dict, unwrapped_target = \
+        normalize_target_and_mark_path_in_source_dict(dict(source_dict))
+    wrapped_source_dict, wrapped_target = \
+        normalize_target_and_mark_path_in_source_dict(
+            dict(source_dict),
+            is_buck_runnable = True,
+            runs_in_build_steps_causes_slow_rebuilds =
+                runs_in_build_steps_causes_slow_rebuilds,
+        )
 
-    return maybe_add_feature_rule(
-        name = "install",
-        key = "install_files",
+    return maybe_add_install_rule(
         include_in_target_name = {
             "dest": dest,
-            "source": source_dict,
+            "source": unwrapped_source_dict["source"],
         },
-        feature_shape = _generate_shape(
-            source_dict,
+        unwrapped_shape = _generate_shape(
+            unwrapped_source_dict,
             dest,
             mode,
             user,
             group,
         ),
-        deps = [normalized_target],
+        wrapped_shape = _generate_shape(
+            wrapped_source_dict,
+            dest,
+            mode,
+            user,
+            group,
+        ),
+        unwrapped_target = unwrapped_target,
+        wrapped_target = wrapped_target,
+        is_executable = is_executable,
     )
