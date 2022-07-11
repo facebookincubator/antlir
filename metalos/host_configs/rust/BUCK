@@ -6,6 +6,7 @@ rust_library(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "fbthrift",
         "strum_macros",
         "url",
         "uuid",

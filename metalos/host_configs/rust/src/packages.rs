@@ -286,6 +286,7 @@ pub struct PackageStatus {
 /// (less safely) operate on a collection of heterogenous package kinds.
 pub mod generic {
     use super::Format;
+    use fbthrift::simplejson_protocol::serialize;
     use std::path::PathBuf;
     use strum_macros::Display;
     use thrift_wrapper::ThriftWrapper;
@@ -310,6 +311,23 @@ pub mod generic {
     pub enum PackageId {
         Tag(String),
         Uuid(Uuid),
+    }
+
+    // A collection of Packages, equipped with human-friendly display formatting.
+    #[derive(Clone, PartialEq, Eq, ThriftWrapper)]
+    #[thrift(metalos_thrift_host_configs::packages::Packages)]
+    pub struct Packages {
+        pub packages: Vec<Package>,
+    }
+
+    impl std::fmt::Display for Packages {
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            let json = serialize(self);
+            match std::str::from_utf8(&json) {
+                Ok(utf) => write!(f, "{utf}"),
+                Err(_) => Err(std::fmt::Error {}),
+            }
+        }
     }
 
     /// Generic version of a Package, without any static type information about
