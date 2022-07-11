@@ -464,7 +464,7 @@ mod tests {
         })
         .await?;
         let machine_sd = machine.systemd(log).await?;
-        machine_sd.wait(WaitableSystemState::Operational).await?;
+        machine_sd.wait(WaitableSystemState::Starting).await?;
         let _ = container.kill();
         Ok(())
     }

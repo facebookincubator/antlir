@@ -113,7 +113,7 @@ class SymlinkToDirItem(SymlinkBase):
 # We should allow symlinks to certain files that will be in the image
 # at runtime but may not be at build time.
 def _allowlisted_symlink_source(source: Path) -> bool:
-    return source in [b"dev/null"]
+    return (source in [b"dev/null"]) or source.startswith(b"run/")
 
 
 class SymlinkToFileItem(SymlinkBase):

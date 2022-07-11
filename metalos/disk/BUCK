@@ -28,6 +28,14 @@ image.layer(
         image.ensure_subdirs_exist("/run", "service-roots"),
         image.ensure_subdirs_exist("/run", "state"),
         image.ensure_subdirs_exist("/run/state", "metalos"),
+        image.ensure_subdirs_exist("/run/state", "persistent"),
+        image.ensure_subdirs_exist(
+            "/run/state/persistent",
+            "certs",
+            user = "root",
+            group = "root",
+            mode = 0o400,
+        ),
     ],
     visibility = ["//metalos/..."],
 )
