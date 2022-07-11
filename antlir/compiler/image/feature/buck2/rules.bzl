@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:shape.bzl", "shape")
-load(":helpers.bzl", "generate_feature_target_name")
+load(":generate_feature_target_name.bzl", "generate_feature_target_name")
 load(":providers.bzl", "feature_provider", "rpm_provider")
 
 def _feature_rule_impl(ctx: "context") -> ["provider"]:

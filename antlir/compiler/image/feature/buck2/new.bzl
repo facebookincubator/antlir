@@ -13,7 +13,7 @@ load(
     "ItemInfo",
     "RpmInfo",
 )
-load(":helpers.bzl", "is_build_appliance")
+load(":source_dict_helper.bzl", "is_build_appliance")
 
 def _filter_rpm_versions(
         feature_dict,
