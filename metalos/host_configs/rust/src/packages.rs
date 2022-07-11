@@ -314,7 +314,7 @@ pub mod generic {
     }
 
     // A collection of Packages, equipped with human-friendly display formatting.
-    #[derive(Clone, PartialEq, Eq, ThriftWrapper)]
+    #[derive(Clone, Debug, PartialEq, Eq, ThriftWrapper)]
     #[thrift(metalos_thrift_host_configs::packages::Packages)]
     pub struct Packages {
         pub packages: Vec<Package>,
