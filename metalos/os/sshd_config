@@ -8,7 +8,7 @@ PermitRootLogin yes
 TrustedUserCAKeys /etc/ssh/trusted_ca
 AuthorizedPrincipalsFile /etc/ssh/auth_principals/auth_principals_%u
 AuthorizedKeysFile .ssh/authorized_keys
-HostKey /etc/ssh/ssh_host_rsa_key
+HostKey /run/fs/control/run/state/persistent/certs/ssh_host_rsa_key
 
 LogFormatPrefix sshd_auth_msg:
 LogFormatKeys server_ip server_port remote_ip remote_port pid session_id method

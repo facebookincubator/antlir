@@ -1,0 +1,8 @@
+[Unit]
+ConditionPathExists=!/run/fs/control/run/state/persistent/certs/ssh_host_rsa_key
+
+[Service]
+Type=oneshot
+# TODO: following line can be removed when the gpt image is rolled out
+ExecStartPre=-mkdir -p /run/fs/control/run/state/persistent/certs
+ExecStart=ssh-keygen -t rsa -b 4096 -f /run/fs/control/run/state/persistent/certs/ssh_host_rsa_key

@@ -1,10 +1,11 @@
 # @noautodeps
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
-load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl:systemd.bzl", "PROVIDER_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
@@ -40,10 +41,11 @@ native_service_support = [
 ]
 
 sshd = [
-    systemd.install_dropin(
-        "require-sshd-keygen.service",
-        "sshd.service",
-    ),
+    # Replace sshd-keygen.service with a version that uses the right paths to be
+    # located on persistent storage
+    feature.remove(paths.join(PROVIDER_ROOT, "sshd-keygen.service")),
+    systemd.install_unit("sshd-keygen.service"),
+    systemd.enable_unit("sshd-keygen.service", "sshd.service", "requires"),
     feature.remove("/etc/ssh/sshd_config"),
     feature.install("sshd_config", "/etc/ssh/sshd_config"),
 ]
