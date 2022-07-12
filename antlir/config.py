@@ -24,7 +24,8 @@ from antlir.repo_config_t import (
 
 
 class ConfigNotFound(UserError):
-    pass
+    def __init__(self):
+        super().__init__("repo config not found")
 
 
 _read_text = importlib.resources.read_text

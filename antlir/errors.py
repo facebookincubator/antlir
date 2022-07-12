@@ -4,7 +4,24 @@
 # LICENSE file in the root directory of this source tree.
 
 
-class UserError(Exception):
+class AntlirError(Exception):
+    backtrace_is_interesting: bool = False
+
+    def __init__(self, msg, backtrace_is_interesting=None):
+        super().__init__(msg)
+        if backtrace_is_interesting is not None:
+            self.backtrace_is_interesting = backtrace_is_interesting
+
+    def __str__(self):
+        # This prefix allows automation to pick high-signal errors out of the
+        # logs (see D35687997).
+        clsname = type(self).__name__
+        if not clsname.endswith("Error"):
+            clsname += "Error"
+        return f"Antlir{clsname}: " + super().__str__()
+
+
+class UserError(AntlirError):
     """A user-understandable Antlir error.
     This is probably something that the user caused, but should definitely be
     something that the end user is able to fix.
@@ -14,14 +31,26 @@ class UserError(Exception):
     user can do about that)
     """
 
-    def __str__(self):
-        # This prefix allows automation to pick high-signal errors out of the
-        # logs (see D35687997).
-        return "AntlirUserError: " + super().__str__()
+    backtrace_is_interesting: bool = False
 
 
-class ToolMissing(Exception):
+class InfraError(AntlirError):
+    """An internal infra-related Antlir failure. The user probably cannot do
+    anything about this, but Antlir has hit some unrecoverable error.
+
+    Most errors of this class have nothing to do with Antlir python code, but
+    instead occur in some external tool. When `backtrace_is_interesting` is
+    False, the backtrace will be omitted from the error display unless
+    ANTLIR_DEBUG is turned on.
+    """
+
+    backtrace_is_interesting: bool = False
+
+
+class ToolMissingError(InfraError):
     """Raised when an expected CLI tool is missing from the host system"""
+
+    backtrace_is_interesting: bool = False
 
     def __init__(self, tool) -> None:
         self.tool = tool

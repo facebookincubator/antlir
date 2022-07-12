@@ -36,7 +36,7 @@ from antlir.compiler.helpers import (
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items_for_features import gen_items_for_features
 from antlir.config import repo_config
-from antlir.errors import UserError
+from antlir.errors import AntlirError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import META_FLAVOR_FILE, Path
 from antlir.nspawn_in_subvol.args import NspawnPluginArgs, PopenArgs
@@ -340,11 +340,17 @@ if __name__ == "__main__":  # pragma: no cover
             subvol = build_image(args, argv)
             if not args.is_nested:
                 subvol.to_json_file(sys.stdout)
-        except UserError as e:
-            if args.debug:
+        except AntlirError as e:
+            if args.debug or e.backtrace_is_interesting:
                 raise e
-            sys.stderr.write("\n")
-            sys.stderr.write(str(e))
+            print(file=sys.stderr)
+            print(e, file=sys.stderr)
+            assert e.__traceback__ is not None
+            print(
+                f"  raised at {e.__traceback__.tb_frame.f_code.co_filename}"
+                f":{e.__traceback__.tb_lineno}",
+                file=sys.stderr,
+            )
             sys.exit(1)
     end = time.perf_counter()
     if args.profile_dir:

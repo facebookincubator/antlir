@@ -75,7 +75,7 @@ from typing import ContextManager, Iterable, List, Tuple
 
 from antlir.cli import normalize_buck_path
 from antlir.common import byteme, get_logger, pipe
-from antlir.errors import ToolMissing
+from antlir.errors import InfraError, ToolMissingError
 from antlir.fs_utils import MehStr, Path, temp_dir
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 
@@ -99,7 +99,7 @@ _TMP_MOUNT = "/nspawn_tmp_mount"
 _TMP_MOUNT_NIS_DOMAINNAME = Path(f"{_TMP_MOUNT}/nis_domainname")
 
 
-class NspawnError(Exception):
+class NspawnError(InfraError):
     pass
 
 
@@ -520,7 +520,7 @@ def _popen_nsenter_into_container(
     # Resolve `nsenter` here, since `env` may change `PATH`
     nsenter = shutil.which("nsenter")
     if nsenter is None:  # pragma: no cover
-        raise ToolMissing("nsenter")
+        raise ToolMissingError("nsenter")
 
     # Set the user properly for the nsenter'd command to run.
     # Future: consider properly logging in as the user with su
