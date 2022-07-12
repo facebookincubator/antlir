@@ -41,7 +41,7 @@ Both arguments are mandatory:
 
     As with `image.clone`, a traling / means that `link_name` must be a
     pre-existing directory in the image (e.g. created via
-    `image.ensure_dirs_exist`), and the actual link will be placed at
+    `feature.ensure_dirs_exist`), and the actual link will be placed at
     `link_name/(basename of link_target)`.
 
 This item is indempotent: it is a no-op if a symlink already exists that
@@ -74,7 +74,7 @@ Both arguments are mandatory:
 
     As with `image.clone`, a traling / means that `link_name` must be a
     pre-existing directory in the image (e.g. created via
-    `image.ensure_dirs_exist`), and the actual link will be placed at
+    `feature.ensure_dirs_exist`), and the actual link will be placed at
     `link_name/(basename of link_target)`.
 
 This item is indempotent: it is a no-op if a symlink already exists that

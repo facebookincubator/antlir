@@ -164,7 +164,7 @@ indefinitely.
     added benefit that *both* the build image, and the build dependencies
     are completely reproducible.
   - **Non-OS filesystems:** One can, of course, build non-OS filesystem
-    images — and it is even possible to test them by `image.layer_mount`ing
+    images — and it is even possible to test them by `feature.layer_mount`ing
     them into a test layer that does have the OS tools that you need.
   - **Easy btrfs comparison:** Antlir comes with an elegant toolbox for
     validating the entire[^btrfs_diff] contents of btrfs filesystems.  We

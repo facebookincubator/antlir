@@ -129,7 +129,7 @@ image.layer(
         # because it's overriding the existing debug-shell.conf override
         # in PROVIDER_ROOT (/usr/lib/systemd/system).
         #
-        image.ensure_subdirs_exist("/", ADMIN_ROOT),
+        feature.ensure_subdirs_exist("/", ADMIN_ROOT),
         systemd.install_dropin(
             source = "debug-shell-exec-override.conf",
             dest = "override.conf",

@@ -7,7 +7,7 @@ image.layer(
     name = "setup",
     parent_layer = flavor_helpers.get_build_appliance(),
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "hostname",
         ]),
     ],
@@ -34,7 +34,7 @@ image.layer(
     name = "test-layer",
     parent_layer = ":setup",
     features = [
-        image.ensure_dirs_exist("/build"),
+        feature.ensure_dirs_exist("/build"),
         feature.install(
             ":nis_domainname",
             "/build/nis_domainname",

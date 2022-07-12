@@ -8,7 +8,7 @@ python_library(
     deps = [
         ":common",
         ":phases_provide",
-        "//antlir/bzl/image_actions:clone.shape-python",
+        "//antlir/bzl/image/feature:clone.shape-python",
     ],
 )
 
@@ -64,7 +64,7 @@ python_library(
     deps = [
         ":common",
         "//antlir:bzl_const",
-        "//antlir/bzl/image_actions:rpms.shape-python",
+        "//antlir/bzl/image/feature:rpms.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:repo_plugins",
         "//antlir/rpm:find_snapshot",
@@ -90,7 +90,7 @@ python_library(
     deps = [
         ":common",
         ":stat_options",
-        "//antlir/bzl/image_actions:ensure_subdirs_exist.shape-python",
+        "//antlir/bzl/image/feature:ensure_subdirs_exist.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:nspawn",

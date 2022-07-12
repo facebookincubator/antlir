@@ -38,7 +38,7 @@ image.layer(
 extract.source_layer(
     name = "source",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "systemd",
             "strace",
         ]),

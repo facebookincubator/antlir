@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", SYSTEMD_PROVIDER_ROOT = "PROVIDER_ROOT")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
@@ -113,12 +112,12 @@ CONFIG_FILES = [
 
 def clone_systemd_configs(src):
     units = [
-        image.ensure_subdirs_exist("/usr/lib", paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib")),
-        image.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
-        image.ensure_subdirs_exist(SYSTEMD_PROVIDER_ROOT, "sockets.target.wants"),
-        image.ensure_subdirs_exist(SYSTEMD_PROVIDER_ROOT, "sysinit.target.wants"),
+        feature.ensure_subdirs_exist("/usr/lib", paths.relativize(SYSTEMD_PROVIDER_ROOT, "/usr/lib")),
+        feature.ensure_subdirs_exist("/usr/lib/systemd", "system-generators"),
+        feature.ensure_subdirs_exist(SYSTEMD_PROVIDER_ROOT, "sockets.target.wants"),
+        feature.ensure_subdirs_exist(SYSTEMD_PROVIDER_ROOT, "sysinit.target.wants"),
     ] + [
-        image.clone(
+        feature.clone(
             src,
             paths.join(SYSTEMD_PROVIDER_ROOT, unit),
             paths.join(SYSTEMD_PROVIDER_ROOT, unit),
@@ -134,8 +133,8 @@ def clone_systemd_configs(src):
 
     configs = [
         [
-            image.ensure_subdirs_exist(parent, dirs),
-            image.clone(src, paths.join(parent, dirs, cfg), paths.join(parent, dirs, cfg)),
+            feature.ensure_subdirs_exist(parent, dirs),
+            feature.clone(src, paths.join(parent, dirs, cfg), paths.join(parent, dirs, cfg)),
         ]
         for parent, dirs, cfg in CONFIG_FILES
     ]

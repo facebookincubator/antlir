@@ -52,18 +52,18 @@ python_unittest(
 
 image.layer(
     name = "potato",
-    features = [image.ensure_dirs_exist("/i_am_potato")],
+    features = [feature.ensure_dirs_exist("/i_am_potato")],
     flavor = "antlir_test",
 )
 
 image.layer(
     name = "base-original",
     features = [
-        image.ensure_dirs_exist("/from/test_base/"),
+        feature.ensure_dirs_exist("/from/test_base/"),
         # Without an rpms_install, /var/lib/rpm/ won't exist.
         # This prevents subvol-rpm-compare from querying or installing rpms.
-        image.rpms_install(["rpm-test-milk"]),
-        image.rpms_install(["rpm-test-mice"]),
+        feature.rpms_install(["rpm-test-milk"]),
+        feature.rpms_install(["rpm-test-mice"]),
     ],
     flavor = "antlir_test",
 )
@@ -88,8 +88,8 @@ image.layer(
     features = test_rpms.add(["rpm-test-milk"]) + [
         # All of these are "non-custom" as far as `extract_nested_features`
         # is concerned.
-        image.ensure_dirs_exist("/new/dir/"),
-        image.layer_mount(":potato", "/vegetable"),
+        feature.ensure_dirs_exist("/new/dir/"),
+        feature.layer_mount(":potato", "/vegetable"),
     ],
 )
 
@@ -110,7 +110,7 @@ image.layer(
 image.layer(
     name = "custom-local-rpm",
     parent_layer = ":base-plus-one",
-    features = [image.rpms_install([
+    features = [feature.rpms_install([
         "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
     ])],
 )
@@ -120,7 +120,7 @@ image.layer(
     parent_layer = ":base-plus-one",
     # Another non-custom feature.  This is a sibling of `custom` to show
     # that the depth does not trigger custom vs non-custom behavior.
-    features = [image.ensure_dirs_exist("/another/dir/")],
+    features = [feature.ensure_dirs_exist("/another/dir/")],
 )
 
 python_unittest(
@@ -153,7 +153,7 @@ image.layer(
         "rpm-test-second",
         "rpm-test-fifth",
     ]) + [
-        image.ensure_subdirs_exist("/", "hello/there"),
+        feature.ensure_subdirs_exist("/", "hello/there"),
     ],
     flavor = "antlir_test",
     flavor_config_override = image.opts(

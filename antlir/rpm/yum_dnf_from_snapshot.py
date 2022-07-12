@@ -499,7 +499,7 @@ def _set_up_yum_dnf_cache(
     # us do the reflink on the root FS.
     #
     # IMPORTANT: This means that `/__antlir__` must always be on the root
-    # filesystem, it cannot e.g. by an `image.layer_mount`.  This is a
+    # filesystem, it cannot e.g. by an `feature.layer_mount`.  This is a
     # reasonable restriction, because the cache contents is coupled to the
     # content of the root FS in any case -- the `yum` / `dnf` version must
     # match for the cache to make sense.

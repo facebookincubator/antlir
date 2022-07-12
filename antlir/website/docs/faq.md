@@ -22,7 +22,7 @@ image.layer(name = "my-image", ...)
 image.layer(
   name = "inspect-my-image",
   parent_layer = flavor_helpers.get_build_appliance(),
-  features = [image.layer_mount(":my-image", "/my")]
+  features = [feature.layer_mount(":my-image", "/my")]
 )
 ```
 
@@ -61,7 +61,7 @@ buck run //antlir:find-built-subvol -- "$(
 ## RPMs
 
 
-### My RPM exists in the repos, but `image.rpms_install` fails to install it
+### My RPM exists in the repos, but `feature.rpms_install` fails to install it
 
 Troubleshooting steps:
 

@@ -5,10 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
-load(
-    "//antlir/compiler/image/image_actions/buck2:image.bzl",
-    image_buck2 = "image",
-)
+load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
 load(":rules.bzl", "maybe_add_feature_rule")
 
 SHELL_BASH = "/bin/bash"
@@ -34,7 +31,7 @@ def feature_user_add(
         primary_group = "myuser",
         home_dir = "/home/myuser",
     )
-    image.ensure_dirs_exist(
+    feature.ensure_dirs_exist(
         "/home/myuser",
         mode = 0o755,
         user = "myuser",
@@ -114,7 +111,7 @@ def feature_setup_standard_user(
             homedir,
             shell,
         ),
-        image_buck2.ensure_subdirs_exist(
+        feature_ensure_subdirs_exist(
             homedir_parent,
             homedir_basename,
             user = user,

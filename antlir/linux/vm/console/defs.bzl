@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _autologin():
@@ -18,7 +17,7 @@ def _autologin():
             "//antlir/linux/vm/console:autologin-root.conf",
             "/usr/lib/systemd/system/serial-getty@ttyS0.service.d/autologin-root.conf",
         ),
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             "/usr/lib/systemd/system",
             "serial-getty@ttyS0.service.d",
             mode = "a+rx,u+w",

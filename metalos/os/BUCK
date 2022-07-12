@@ -79,7 +79,7 @@ systemd_target_graph = [
 ]
 
 systemd_drop_state_shim = [
-    image.ensure_subdirs_exist("/usr/lib", "metalos"),
+    feature.ensure_subdirs_exist("/usr/lib", "metalos"),
     feature.install(
         "init-systemd-workaround",
         "/usr/lib/metalos/init-drop-systemd-state",
@@ -126,7 +126,7 @@ image.layer(
     name = "metalos",
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
-        image.ensure_subdirs_exist("/usr/lib", "metalos"),
+        feature.ensure_subdirs_exist("/usr/lib", "metalos"),
         mask_unneeded_units,
         metalctl,
         metalos_branding,

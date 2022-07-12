@@ -51,7 +51,7 @@ image.layer(
     name = "base",
     parent_layer = "//images/appliance:stable-build-appliance",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             # build dependencies
             "git",
             "bzip2",
@@ -75,8 +75,8 @@ image.layer(
     name = "setup",
     parent_layer = ":base",
     features = [
-        image.ensure_dirs_exist("/_temp_qemu"),
-        image.ensure_dirs_exist("/output"),
+        feature.ensure_dirs_exist("/_temp_qemu"),
+        feature.ensure_dirs_exist("/output"),
         # put sources and build script in the base layer
         feature.install("build.sh", "/_temp_qemu/build.sh"),
         feature.install("meson.build.patch", "/_temp_qemu/meson.build.patch"),

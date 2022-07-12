@@ -6,7 +6,7 @@
 
 import subprocess
 
-from antlir.bzl.image_actions.clone import clone_t
+from antlir.bzl.image.feature.clone import clone_t
 from antlir.compiler.requires_provides import RequireDirectory
 from antlir.fs_utils import CP_CLONE_CMD, Path
 from antlir.subvol_utils import Subvol

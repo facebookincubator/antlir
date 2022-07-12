@@ -44,7 +44,7 @@ users = [
 ]
 
 udev = [
-    image.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
+    feature.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
 ] + [
     feature.install(
         "udev/{}".format(f),
@@ -72,7 +72,7 @@ image.layer(
     name = "busybox",
     flavor = flavor_helpers.get_antlir_linux_flavor(),
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "busybox",
         ]),
     ],
@@ -148,7 +148,7 @@ image.layer(
         # the image so that the boot clearly fails if the generator fails during
         # early boot for any reason
         systemd.set_default_target("emergency.target"),
-        image.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
+        feature.ensure_subdirs_exist("/usr/lib", "tmpfiles.d"),
         feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
         # @oss-disable: "//metalos/initrd/facebook:features", 
     ],

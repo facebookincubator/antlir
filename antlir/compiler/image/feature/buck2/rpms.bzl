@@ -7,6 +7,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/feature:rpms.shape.bzl", "rpm_action_item_t")
 load(
     "//antlir/compiler/image/feature/buck2:image_source.shape.bzl",
     "image_source_t",
@@ -17,7 +18,6 @@ load(
     "mark_path",
     "normalize_target_and_mark_path_in_source_dict",
 )
-load(":rpms.shape.bzl", "rpm_action_item_t")
 
 def _rpm_name_or_source(name_source):
     # Normal RPM names cannot have a colon, whereas target paths
@@ -82,10 +82,10 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
 
     return rpm_items, deps, flavors
 
-def image_rpms_install(rpmlist, flavors = None):
+def feature_rpms_install(rpmlist, flavors = None):
     """
-    `image.rpms_install(["foo"])` installs `foo.rpm`,
-    `image.rpms_install(["//target:bar"])` builds `bar` target and installs
+    `feature.rpms_install(["foo"])` installs `foo.rpm`,
+    `feature.rpms_install(["//target:bar"])` builds `bar` target and installs
     resulting RPM.
 
     The argument to both functions is a list of RPM package names to install,
@@ -106,7 +106,7 @@ def image_rpms_install(rpmlist, flavors = None):
     image.layer(
         name = "my_layer",
         features = [
-            image.rpms_install([
+            feature.rpms_install([
                 "foo",
             ]),
         ],
@@ -139,7 +139,7 @@ def image_rpms_install(rpmlist, flavors = None):
     and then `foobar-v1` is specified by a buck rule, the result of RPM
     installation will be `foobar-v2` downgraded to `foobar-v1`.
 
-    `image.rpms_install()` provides only limited support for RPM post-install
+    `feature.rpms_install()` provides only limited support for RPM post-install
     scripts. Those scripts are executed in a virtual environment without runtime
     mounts like `/proc`. As an example, the script may invoke a binary requiring
     `/proc/self/exe` or a shared library from a directory not available in the
@@ -166,9 +166,9 @@ def image_rpms_install(rpmlist, flavors = None):
         deps = deps,
     )
 
-def image_rpms_remove_if_exists(rpmlist, flavors = None):
+def feature_rpms_remove_if_exists(rpmlist, flavors = None):
     """
-    `image.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
+    `feature.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
 
     Note that removals may only be applied against the parent layer -- if your
     current layer includes features both removing and installing the same

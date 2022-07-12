@@ -58,9 +58,9 @@ def _image_host_mount(source, mountpoint, is_directory):
         "target": None,
     }
 
-def image_host_dir_mount(source, mountpoint = None):
+def feature_host_dir_mount(source, mountpoint = None):
     """
-`image.host_dir_mount("/path/foo")` bind-mounts the host directory
+`feature.host_dir_mount("/path/foo")` bind-mounts the host directory
 `/path/foo` into the container at `/path/foo`. Another image item must
 provide the parent `/path`, but this item will create the mount-point.
     """
@@ -74,9 +74,9 @@ provide the parent `/path`, but this item will create the mount-point.
         items = struct(mounts = [mount_spec]),
     )
 
-def image_host_file_mount(source, mountpoint = None):
+def feature_host_file_mount(source, mountpoint = None):
     """
-`image.host_file_mount("/path/bar", "/baz")` bind-mounts the file `/path/bar`
+`feature.host_file_mount("/path/bar", "/baz")` bind-mounts the file `/path/bar`
 into the container at `/baz`.
     """
     mount_spec = _image_host_mount(
@@ -89,9 +89,9 @@ into the container at `/baz`.
         items = struct(mounts = [mount_spec]),
     )
 
-def image_layer_mount(source, mountpoint = None):
+def feature_layer_mount(source, mountpoint = None):
     """
-`image.layer_mount(":other-image-layer")` makes the specified layer available
+`feature.layer_mount(":other-image-layer")` makes the specified layer available
 inside the container available at the "default_mountpoint" provided by the
 layer in its config. That fails if the layer lacks a default mountpoint, but
 then you can pass an explicit `mountpoint` argument.

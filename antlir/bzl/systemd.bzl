@@ -6,7 +6,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load(":image.bzl", "image")
 load(":oss_shim.bzl", "target_utils")
 load(":shape.bzl", "shape")
 load(":systemd.shape.bzl", "mount_t", "unit_t")
@@ -129,7 +128,7 @@ def _enable_impl(
         fail("unit contains too many @ characters: " + unit)
 
     return [
-        image.ensure_subdirs_exist(installed_root, target + "." + dep_type, mode = 0o755),
+        feature.ensure_subdirs_exist(installed_root, target + "." + dep_type, mode = 0o755),
         feature.ensure_file_symlink(
             paths.join(installed_root, link_target),
             paths.join(installed_root, target + "." + dep_type, unit),
@@ -263,7 +262,7 @@ def _install_dropin(
     _fail_if_path(dest, "Install Dropin Dest")
 
     return [
-        image.ensure_subdirs_exist(install_root, unit + ".d"),
+        feature.ensure_subdirs_exist(install_root, unit + ".d"),
         feature.install(
             source,
             paths.join(install_root, unit + ".d", dest),

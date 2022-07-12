@@ -6,9 +6,8 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 load(":rpms.shape.bzl", "rpm_action_item_t")
-
-RPM_INSTALL_INFO_DUMMY_ACTION_ITEM = "__RPM_INSTALL_INFO_DUMMY_ACTION_ITEM__"
 
 def _rpm_name_or_source(name_source):
     # Normal RPM names cannot have a colon, whereas target paths
@@ -37,8 +36,8 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
         # feature.new(
         #     name = "test",
         #     features=[
-        #         image.rpms_install([], flavors=["only-relevant-on-centos7"]),
-        #         image.rpms_install([], flavors=["only-relevant-on-centos8"]),
+        #         feature.rpms_install([], flavors=["only-relevant-on-centos7"]),
+        #         feature.rpms_install([], flavors=["only-relevant-on-centos8"]),
         #     ],
         #     flavors = ["centos7", "centos8"],
         # )
@@ -94,10 +93,10 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
         items = struct(rpms = res_rpms),
     )
 
-def image_rpms_install(rpmlist, flavors = None):
+def feature_rpms_install(rpmlist, flavors = None):
     """
-`image.rpms_install(["foo"])` installs `foo.rpm`,
-`image.rpms_install(["//target:bar"])` builds `bar` target and installs
+`feature.rpms_install(["foo"])` installs `foo.rpm`,
+`feature.rpms_install(["//target:bar"])` builds `bar` target and installs
 resulting RPM.
 
 The argument to both functions is a list of RPM package names to install,
@@ -118,7 +117,7 @@ structures defined by `image.rpm.nevra()`:
 image.layer(
     name = "my_layer",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "foo",
         ]),
     ],
@@ -151,7 +150,7 @@ downgrade is allowable: if the parent layer has RPM `foobar-v2` installed, and
 then `foobar-v1` is specified by a buck rule, the result of RPM installation
 will be `foobar-v2` downgraded to `foobar-v1`.
 
-`image.rpms_install()` provides only limited support for RPM post-install
+`feature.rpms_install()` provides only limited support for RPM post-install
 scripts. Those scripts are executed in a virtual environment without runtime
 mounts like `/proc`. As an example, the script may invoke a binary requiring
 `/proc/self/exe` or a shared library from a directory not available in the
@@ -163,9 +162,9 @@ operation successful even if the binary fails.
 
     return _build_rpm_feature(rpmlist, "install", needs_version_set = True, flavors = flavors)
 
-def image_rpms_remove_if_exists(rpmlist, flavors = None):
+def feature_rpms_remove_if_exists(rpmlist, flavors = None):
     """
-`image.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
+`feature.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
 
 Note that removals may only be applied against the parent layer -- if your
 current layer includes features both removing and installing the same

@@ -18,9 +18,9 @@ def pe_hash(name, binary, algorithm = "sha1"):
         name = name + "__pesign_setup",
         parent_layer = flavor_helpers.get_build_appliance(),
         features = [
-            image.rpms_install(["pesign"]),
+            feature.rpms_install(["pesign"]),
             feature.install(binary, "/input"),
-            image.ensure_dirs_exist("/out", mode = 0o777),
+            feature.ensure_dirs_exist("/out", mode = 0o777),
         ],
         flavor = flavor_helpers.get_antlir_linux_flavor(),
     )

@@ -25,7 +25,7 @@ Usage:
             "--",
             "/rpms-with-reason",
             # Pro-tip: put these in a list variable and share it with the
-            # `image.rpms_install` feature making your layer.
+            # `feature.rpms_install` feature making your layer.
             "WANTED-RPM1",
             "WANTED-RPM2",
         ],

@@ -7,10 +7,10 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/genrule/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
+load("//antlir/bzl/image/feature:ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
 load("//antlir/bzl/image/feature:install.bzl", "feature_install")
 load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
 load("//antlir/bzl/image/feature:symlink.bzl", "feature_ensure_dir_symlink")
-load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 load(":image_layer.bzl", "image_layer")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
@@ -229,8 +229,8 @@ def _set_up_rpm_repo_snapshots():
         paths.dirname(RPM_SNAPSHOT_BASE_DIR),
     )
     return [
-        image_ensure_subdirs_exist("/", RPM_SNAPSHOT_BASE_DIR),
-        image_ensure_subdirs_exist("/__antlir__/rpm", defaults_dir),
+        feature_ensure_subdirs_exist("/", RPM_SNAPSHOT_BASE_DIR),
+        feature_ensure_subdirs_exist("/__antlir__/rpm", defaults_dir),
     ]
 
 def install_rpm_repo_snapshot(snapshot):

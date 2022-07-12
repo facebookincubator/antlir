@@ -8,13 +8,13 @@ load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":ensure_subdirs_exist.shape.bzl", "ensure_subdirs_exist_t")
 
-def image_ensure_dirs_exist(
+def feature_ensure_dirs_exist(
         path,
         mode = shape.DEFAULT_VALUE,
         user = shape.DEFAULT_VALUE,
         group = shape.DEFAULT_VALUE):
-    """Equivalent to `image.ensure_subdirs_exist("/", path, ...)`."""
-    return image_ensure_subdirs_exist(
+    """Equivalent to `feature.ensure_subdirs_exist("/", path, ...)`."""
+    return feature_ensure_subdirs_exist(
         into_dir = "/",
         subdirs_to_create = path,
         mode = mode,
@@ -22,14 +22,14 @@ def image_ensure_dirs_exist(
         group = group,
     )
 
-def image_ensure_subdirs_exist(
+def feature_ensure_subdirs_exist(
         into_dir,
         subdirs_to_create,
         mode = shape.DEFAULT_VALUE,
         user = shape.DEFAULT_VALUE,
         group = shape.DEFAULT_VALUE):
     """
-  `image.ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y`
+  `feature.ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y`
   and `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already
   been created by another image feature. If any dirs to be created already exist
   in the image, their attributes will be checked to ensure they match the

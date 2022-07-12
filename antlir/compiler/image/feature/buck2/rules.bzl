@@ -70,7 +70,7 @@ _rpm_rule = rule(
         "action": attr.string(),
         "deps": attr.list(attr.dep(), default = []),
 
-        # flavors specified in call to `image.rpms_{install,remove_if_exists}`
+        # flavors specified in call to `feature.rpms_{install,remove_if_exists}`
         "flavors": attr.list(attr.string(), default = []),
 
         # gets serialized to json when `feature.new` is called and used as

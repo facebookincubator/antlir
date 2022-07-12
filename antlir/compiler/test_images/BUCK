@@ -90,7 +90,7 @@ image.layer(
     parent_layer = flavor_helpers.get_build_appliance("antlir_test"),
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             "/home",
             "nobody",
             mode = "u+rwx,og+rx",
@@ -110,7 +110,7 @@ image.layer(
     name = "test-layer-iproute",
     parent_layer = flavor_helpers.get_build_appliance(),
     features = [
-        image.rpms_install(
+        feature.rpms_install(
             [
                 # Needed to check CAP_NET_ADMIN
                 "iproute",
@@ -148,7 +148,7 @@ feature.new(
     features = [
         # This generator makes a unit for `:fake-service`, and
         # `nspawn_in_subvol:test-run` ensures that the unit starts.
-        image.ensure_subdirs_exist("/etc/systemd", "system-generators"),
+        feature.ensure_subdirs_exist("/etc/systemd", "system-generators"),
         feature.install_buck_runnable(":fake-systemd-generator", "/etc/systemd/system-generators/fake-systemd-generator"),
         feature.install_buck_runnable(":fake-service", "/fake-service"),
         systemd.install_unit("fake-static.service"),
@@ -183,7 +183,7 @@ defs.export_file(name = "shadow_me")
         name = "validates-{}-build-appliance".format(rpm_installer),
         features = [
             feature.install(":shadow_me", "/shadow_me"),
-            image.rpms_install(["rpm-test-milk"]),
+            feature.rpms_install(["rpm-test-milk"]),
         ],
         flavor = "antlir_test",
         flavor_config_override = image.opts(
@@ -280,13 +280,13 @@ image.genrule_layer(
 feature.new(
     name = "feature_dirs",
     features = [
-        image.ensure_subdirs_exist("/", "foo/bar"),
-        image.ensure_subdirs_exist("/foo/bar", "baz"),
-        image.ensure_dirs_exist(
+        feature.ensure_subdirs_exist("/", "foo/bar"),
+        feature.ensure_subdirs_exist("/foo/bar", "baz"),
+        feature.ensure_dirs_exist(
             "/alpha",
             mode = "a+rx",
         ),
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             "/alpha",
             "beta",
             mode = "a+rwx",
@@ -298,7 +298,7 @@ feature.new(
 feature.new(
     name = "feature_bad_dir_mode_mismatch",
     features = [
-        image.ensure_dirs_exist(
+        feature.ensure_dirs_exist(
             "/alpha",
             mode = "a+rwx",
         ),
@@ -310,7 +310,7 @@ feature.new(
 feature.new(
     name = "feature_bad_dir",
     features = [
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             "/foo",
             "borf/beep",
             mode = "a+rwx",
@@ -320,7 +320,7 @@ feature.new(
         # /etc/passwd and /etc/group are needed
         # because the {User,Group}Items require them
         # explicitly.
-        image.ensure_subdirs_exist("/", "etc"),
+        feature.ensure_subdirs_exist("/", "etc"),
         feature.install(
             ":shadow_me",
             "/etc/passwd",
@@ -428,7 +428,7 @@ image.layer(
     name = "layer-with-non-default-snapshot-rpm",
     # Installing rpm-test-cheese here so the gpg keys get imported for the
     # local RPM install in ":layer-with-only-one-locally-installed-rpm".
-    features = [image.rpms_install([
+    features = [feature.rpms_install([
         "rpm-test-cake",
         "rpm-test-cheese",
     ])],
@@ -447,7 +447,7 @@ image.layer(
 feature.new(
     name = "feature_tar_and_rpms",
     features = [
-        image.rpms_install(
+        feature.rpms_install(
             [
                 # Local RPM file that is not (yet) installed or published
                 ":rpm-test-cheese-2-1.rpm",
@@ -455,7 +455,7 @@ feature.new(
             ],
             flavors = ["antlir_test"],
         ),
-        image.rpms_remove_if_exists(
+        feature.rpms_remove_if_exists(
             [
                 "rpm-test-carrot",  # Installed by `parent_layer`
                 # No-op in `child/layer` -- it was never installed
@@ -485,9 +485,9 @@ feature.new(
 feature.new(
     name = "feature_mount",
     features = [
-        image.host_dir_mount("/etc", "/host_etc"),
-        image.host_file_mount("/dev/null", "/dev_null"),
-        image.layer_mount(":hello_world_base", "/meownt"),
+        feature.host_dir_mount("/etc", "/host_etc"),
+        feature.host_file_mount("/dev/null", "/dev_null"),
+        feature.layer_mount(":hello_world_base", "/meownt"),
     ],
     visibility = ["//antlir/compiler/..."],
 )
@@ -497,7 +497,7 @@ image.layer(
     parent_layer = ":test-layer",
     features = [
         ":feature_mount",
-        image.layer_mount(
+        feature.layer_mount(
             ":create_ops-from-layer",
             "/sendstream_meownt",
         ),
@@ -575,7 +575,7 @@ feature.new(
     name = "feature_install_files",
     features = [
         ":feature_dirs",  # We use /foo/bar for a couple of installs.
-        image.ensure_subdirs_exist("/foo/bar", "installed"),  # Most things will go here.
+        feature.ensure_subdirs_exist("/foo/bar", "installed"),  # Most things will go here.
         feature.install(":hello_world.tar", "/foo/bar/hello_world.tar"),
         feature.install(
             ":hello_world.tar",
@@ -629,10 +629,10 @@ image.layer(
 feature.new(
     name = "feature_clone",
     features = [
-        image.clone(":installed-files", "/foo/bar", "/"),
-        image.clone(":installed-files", "/foo/bar", "/bar3"),
-        image.ensure_subdirs_exist("/", "bar2"),
-        image.clone(":installed-files", "/foo/bar/", "/bar2/"),
+        feature.clone(":installed-files", "/foo/bar", "/"),
+        feature.clone(":installed-files", "/foo/bar", "/bar3"),
+        feature.ensure_subdirs_exist("/", "bar2"),
+        feature.clone(":installed-files", "/foo/bar/", "/bar2/"),
     ],
 )
 
@@ -683,7 +683,7 @@ feature.new(
 image.layer(
     name = "kitchen_sink_layer_parent",
     features = [
-        image.ensure_dirs_exist(
+        feature.ensure_dirs_exist(
             "/path/to/remove",
         ),
     ],
@@ -698,7 +698,7 @@ image.layer(
         ":feature_install_files",
         ":feature_mount",
         ":feature_tar_and_rpms",
-        image.ensure_subdirs_exist("/foo", "borf"),  # for :feature_tar
+        feature.ensure_subdirs_exist("/foo", "borf"),  # for :feature_tar
         ":feature_symlinks",
         ":feature_usergroup",
         ":feature_clone",
@@ -722,7 +722,7 @@ image.layer(
 feature.new(
     name = "feature_addremove_conflict_add",
     features = [
-        image.ensure_subdirs_exist("/", "a/b"),
+        feature.ensure_subdirs_exist("/", "a/b"),
     ],
     visibility = ["//antlir/..."],
 )
@@ -842,7 +842,7 @@ image.layer(
             "/rpm_test/hello_world.tar",
         ),
         # NB: `host_{dir,file}_mount` is exercised in test-layer-with-mounts
-        image.layer_mount(":hello_world_base", "/mounted_hello"),
+        feature.layer_mount(":hello_world_base", "/mounted_hello"),
     ] + test_rpms.add(["rpm-test-carrot"]),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
@@ -867,9 +867,9 @@ image.layer(
     parent_layer = ":parent_layer_with_cheese",
     features = [
         ":feature_tar_and_rpms",
-        image.ensure_subdirs_exist("/foo", "borf"),  # for :feature_tar
-        image.ensure_subdirs_exist("/foo", "extracted_hello"),
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist("/foo", "borf"),  # for :feature_tar
+        feature.ensure_subdirs_exist("/foo", "extracted_hello"),
+        feature.ensure_subdirs_exist(
             "/foo",
             "more_extracted_hello",
             mode = 0o711,
@@ -1134,7 +1134,7 @@ image.layer(
     name = "vfat-test.layer",
     flavor = "antlir_test",
     features = [
-        image.ensure_dirs_exist("/EFI/BOOT"),
+        feature.ensure_dirs_exist("/EFI/BOOT"),
         feature.install(
             ":shadow_me",
             "/EFI/BOOT/shadow_me",
@@ -1187,7 +1187,7 @@ image.layer(
     name = "empty.layer",
     flavor = "centos8",
     features = [
-        image.ensure_dirs_exist("/PLACEHOLDER"),
+        feature.ensure_dirs_exist("/PLACEHOLDER"),
     ],
     visibility = ["//antlir/..."],
 )
@@ -1225,14 +1225,14 @@ image.gpt(
 feature.new(
     name = "feature_usergroup",
     features = [
-        image.ensure_dirs_exist("/etc"),
+        feature.ensure_dirs_exist("/etc"),
         # Importantly for this test, /etc/passwd must be installed first. Prior
         # to the fix for this, /etc/passwd would then also attempt to bind mount
         # /etc/group into the build appliance chroot, which made it impossible
         # to install an actual /etc/group
         feature.install("passwd", "/etc/passwd"),
         feature.install("group", "/etc/group"),
-        image.ensure_dirs_exist("/sbin"),
+        feature.ensure_dirs_exist("/sbin"),
         feature.install("//antlir:empty", SHELL_NOLOGIN),
         feature.group_add("example"),
         feature.user_add("example", "example", "/", SHELL_NOLOGIN),

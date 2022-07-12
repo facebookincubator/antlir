@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
@@ -12,7 +13,7 @@ def test_hoist(name):
     image.layer(
         name = "{}-base-layer".format(name),
         flavor = flavor_helpers.get_antlir_linux_flavor(),
-        features = [image.rpms_install([
+        features = [feature.rpms_install([
             "coreutils",
             "findutils",
         ])],

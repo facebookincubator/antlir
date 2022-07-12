@@ -1,6 +1,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 # The base image.layer for a systemd boot partition
 # There is no kernel, initrd, or loader entries
@@ -8,18 +9,18 @@ load("//antlir/bzl:image.bzl", "image")
 image.layer(
     name = "base",
     features = [
-        image.ensure_subdirs_exist("/", "EFI"),
-        image.ensure_subdirs_exist("/EFI", "BOOT"),
-        image.ensure_subdirs_exist("/EFI", "Linux"),
-        image.ensure_subdirs_exist("/EFI", "systemd"),
-        image.ensure_subdirs_exist("/", "loader"),
-        image.ensure_subdirs_exist("/loader", "entries"),
-        image.clone(
+        feature.ensure_subdirs_exist("/", "EFI"),
+        feature.ensure_subdirs_exist("/EFI", "BOOT"),
+        feature.ensure_subdirs_exist("/EFI", "Linux"),
+        feature.ensure_subdirs_exist("/EFI", "systemd"),
+        feature.ensure_subdirs_exist("/", "loader"),
+        feature.ensure_subdirs_exist("/loader", "entries"),
+        feature.clone(
             REPO_CFG.artifact["metalos.layer.base"],
             "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
             "/EFI/systemd/systemd-bootx64.efi",
         ),
-        image.clone(
+        feature.clone(
             REPO_CFG.artifact["metalos.layer.base"],
             "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
             "/EFI/BOOT/BOOTX64.efi",

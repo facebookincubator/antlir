@@ -1,5 +1,4 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "thrift_library")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
@@ -94,7 +93,7 @@ buck_filegroup(
 feature.new(
     name = "generators",
     features = [
-        image.ensure_subdirs_exist("/usr/lib/metalos", "generators"),
+        feature.ensure_subdirs_exist("/usr/lib/metalos", "generators"),
     ] + [
         feature.install(
             src,

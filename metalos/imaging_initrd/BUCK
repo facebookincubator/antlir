@@ -14,7 +14,7 @@ image.layer(
     name = "with-imagining-initrd-bins",
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
-        image.rpms_install(imaging_initrd_wanted_rpms),
+        feature.rpms_install(imaging_initrd_wanted_rpms),
         feature.install(
             "//metalos/imaging_initrd/metalimage:metalimage",
             "/usr/bin/metalimage",
@@ -37,7 +37,7 @@ image.layer(
         # these will never work on their own and will produce very confusing
         # output on the console - we are special snowflakes and have to have
         # metalimage setup and actually execute kexec
-        image.ensure_subdirs_exist("/etc", "systemd/system"),
+        feature.ensure_subdirs_exist("/etc", "systemd/system"),
         systemd.mask_units(
             [
                 "initrd-cleanup.service",

@@ -54,7 +54,7 @@ def image_build_librename_shadowed(
         name = setup_layer,
         parent_layer = parent_layer,
         features = [
-            image.ensure_subdirs_exist("/", "build", user = user),
+            feature.ensure_subdirs_exist("/", "build", user = user),
             feature.install(
                 "//antlir/bzl/genrule/librename_shadowed:rename_shadowed.c",
                 "/build/rename_shadowed.c",

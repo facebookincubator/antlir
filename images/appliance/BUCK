@@ -31,8 +31,8 @@ image.layer_from_package(
 ba_features = [
     # Note: need this because the yum_dnf_from_snapshot code can't deal
     # with this directory not existing.
-    image.ensure_subdirs_exist("/etc", "yum"),
-    image.rpms_install([
+    feature.ensure_subdirs_exist("/etc", "yum"),
+    feature.rpms_install([
         "attr",
         "bsdtar",
         "btrfs-progs",
@@ -124,16 +124,16 @@ package.new(
 image.layer(
     name = "host-build-appliance",
     features = [
-        image.ensure_subdirs_exist("/", "var"),
-        image.ensure_subdirs_exist("/var", "tmp"),
-        image.ensure_subdirs_exist("/var", "log"),
-        image.ensure_subdirs_exist("/var", "cache"),
-        image.ensure_subdirs_exist("/var/cache", "dnf"),
-        image.ensure_subdirs_exist("/var", "lib"),
-        image.ensure_subdirs_exist("/var/lib", "dnf"),
-        image.ensure_subdirs_exist("/var/lib", "rpm"),
+        feature.ensure_subdirs_exist("/", "var"),
+        feature.ensure_subdirs_exist("/var", "tmp"),
+        feature.ensure_subdirs_exist("/var", "log"),
+        feature.ensure_subdirs_exist("/var", "cache"),
+        feature.ensure_subdirs_exist("/var/cache", "dnf"),
+        feature.ensure_subdirs_exist("/var", "lib"),
+        feature.ensure_subdirs_exist("/var/lib", "dnf"),
+        feature.ensure_subdirs_exist("/var/lib", "rpm"),
     ] + [
-        image.host_dir_mount(source)
+        feature.host_dir_mount(source)
         for source in [
             "/bin",
             "/etc",
