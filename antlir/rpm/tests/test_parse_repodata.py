@@ -14,9 +14,9 @@ from typing import Iterator, Set, Tuple
 
 from antlir.fs_utils import Path
 
-from ..parse_repodata import get_rpm_parser, pick_primary_repodata
-from ..repo_objects import Repodata, RepoMetadata
-from ..tests.temp_repos import (
+from antlir.rpm.parse_repodata import get_rpm_parser, pick_primary_repodata
+from antlir.rpm.repo_objects import Repodata, RepoMetadata
+from antlir.rpm.tests.temp_repos import (
     get_test_signing_key,
     SAMPLE_STEPS,
     temp_repos_steps,

@@ -24,12 +24,15 @@ from antlir.compiler.items.mount import mounts_from_meta
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path, temp_dir
+
+from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
+from antlir.nspawn_in_subvol.common import (
+    find_cgroup2_mountpoint,
+    parse_cgroup2_path,
+)
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 from antlir.subvol_utils import TempSubvolumes
 from antlir.unshare import Namespace, Unshare
-
-from .args import _NspawnOpts, PopenArgs
-from .common import find_cgroup2_mountpoint, parse_cgroup2_path
 
 
 # For test mocking

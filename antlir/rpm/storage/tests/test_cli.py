@@ -9,7 +9,7 @@ from io import BytesIO
 
 from antlir.fs_utils import Path, temp_dir
 
-from .. import cli
+from antlir.rpm.storage import cli
 
 
 class StorageCliTestCase(unittest.TestCase):

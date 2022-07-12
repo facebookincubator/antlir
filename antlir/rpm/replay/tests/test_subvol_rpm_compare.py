@@ -7,16 +7,16 @@ import unittest
 
 from antlir.config import antlir_dep
 from antlir.rpm.find_snapshot import snapshot_install_dir
-from antlir.rpm.yum_dnf_conf import YumDnf
-from antlir.subvol_utils import Subvol
-from antlir.tests.layer_resource import layer_resource_subvol
 
-from ..subvol_rpm_compare import (
+from antlir.rpm.replay.subvol_rpm_compare import (
     NEVRA,
     subvol_rpm_compare,
     subvol_rpm_compare_and_download,
     SubvolsToCompare,
 )
+from antlir.rpm.yum_dnf_conf import YumDnf
+from antlir.subvol_utils import Subvol
+from antlir.tests.layer_resource import layer_resource_subvol
 
 
 class SubvolRpmCompareTestImpl:

@@ -41,9 +41,9 @@ from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import Path
 from antlir.proxy.http_socket_server import HTTPSocketServer
 
-from .common import Checksum, readonly_snapshot_db, snapshot_subdir
-from .repo_snapshot import FileIntegrityError, ReportableError
-from .storage import Storage
+from antlir.rpm.common import Checksum, readonly_snapshot_db, snapshot_subdir
+from antlir.rpm.repo_snapshot import FileIntegrityError, ReportableError
+from antlir.rpm.storage import Storage
 
 
 log = get_logger()

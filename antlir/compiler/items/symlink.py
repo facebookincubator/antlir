@@ -7,6 +7,14 @@
 import os
 
 from antlir.bzl.image.feature.symlink import symlink_t
+
+from antlir.compiler.items.common import (
+    assert_running_inside_ba,
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+    validate_path_field_normal_relative,
+)
 from antlir.compiler.requires_provides import (
     ProvidesSymlink,
     RequireDirectory,
@@ -15,14 +23,6 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
-
-from .common import (
-    assert_running_inside_ba,
-    ImageItem,
-    LayerOpts,
-    make_path_normal_relative,
-    validate_path_field_normal_relative,
-)
 
 
 def _make_rsync_style_dest_path(dest: str, source: str) -> str:

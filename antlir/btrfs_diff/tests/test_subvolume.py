@@ -6,20 +6,23 @@
 
 import copy
 
-from ..coroutine_utils import while_not_exited
-from ..extent import Extent
-from ..freeze import freeze
-from ..inode_id import InodeIDMap
-from ..parse_dump import SendStreamItems
-from ..rendered_tree import (
+from antlir.btrfs_diff.coroutine_utils import while_not_exited
+from antlir.btrfs_diff.extent import Extent
+from antlir.btrfs_diff.freeze import freeze
+from antlir.btrfs_diff.inode_id import InodeIDMap
+from antlir.btrfs_diff.parse_dump import SendStreamItems
+from antlir.btrfs_diff.rendered_tree import (
     emit_all_traversal_ids,
     emit_non_unique_traversal_ids,
     map_bottom_up,
     TraversalID,
 )
-from ..subvolume import Subvolume
-from .deepcopy_test import DeepCopyTestCase
-from .subvolume_utils import expected_subvol_add_traversal_ids, InodeRepr
+from antlir.btrfs_diff.subvolume import Subvolume
+from antlir.btrfs_diff.tests.deepcopy_test import DeepCopyTestCase
+from antlir.btrfs_diff.tests.subvolume_utils import (
+    expected_subvol_add_traversal_ids,
+    InodeRepr,
+)
 
 
 class SubvolumeTestCase(DeepCopyTestCase):

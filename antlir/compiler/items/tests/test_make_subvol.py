@@ -10,22 +10,26 @@ import sys
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
-from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes
-from antlir.tests.layer_resource import layer_resource_subvol
-from antlir.tests.subvol_helpers import get_meta_dir_contents, pop_path
 
-from ..common import PhaseOrder
-from ..ensure_dirs_exist import (
+from antlir.compiler.items.common import PhaseOrder
+from antlir.compiler.items.ensure_dirs_exist import (
     ensure_subdirs_exist_factory,
     EnsureDirsExistItem,
 )
-from ..make_subvol import (
+from antlir.compiler.items.make_subvol import (
     FilesystemRootItem,
     LayerFromPackageItem,
     ParentLayerItem,
 )
-from .common import BaseItemTestCase, get_dummy_layer_opts_ba, render_subvol
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    get_dummy_layer_opts_ba,
+    render_subvol,
+)
+from antlir.fs_utils import Path
+from antlir.subvol_utils import TempSubvolumes
+from antlir.tests.layer_resource import layer_resource_subvol
+from antlir.tests.subvol_helpers import get_meta_dir_contents, pop_path
 
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()

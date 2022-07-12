@@ -101,8 +101,8 @@ from antlir.common import get_logger
 from antlir.fs_utils import META_DIR, Path, temp_dir
 from antlir.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
 
-from .common import has_yum, yum_is_dnf
-from .yum_dnf_conf import YumDnf
+from antlir.rpm.common import has_yum, yum_is_dnf
+from antlir.rpm.yum_dnf_conf import YumDnf
 
 
 log = get_logger()

@@ -7,7 +7,10 @@
 import subprocess
 import unittest
 
-from .helpers import generate_group_str, generate_user_str
+from antlir.compiler.tests.buck2.helpers import (
+    generate_group_str,
+    generate_user_str,
+)
 
 
 class UserFeatureTest(unittest.TestCase):

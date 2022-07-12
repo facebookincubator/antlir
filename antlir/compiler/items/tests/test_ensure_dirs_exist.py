@@ -6,6 +6,18 @@
 
 from itertools import zip_longest
 
+from antlir.compiler.items.ensure_dirs_exist import (
+    ensure_subdirs_exist_factory,
+    EnsureDirsExistItem,
+    MismatchError,
+)
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    get_dummy_layer_opts_ba,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
+
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
@@ -15,18 +27,6 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol, TempSubvolumes
 from pydantic import ValidationError
-
-from ..ensure_dirs_exist import (
-    ensure_subdirs_exist_factory,
-    EnsureDirsExistItem,
-    MismatchError,
-)
-from .common import (
-    BaseItemTestCase,
-    get_dummy_layer_opts_ba,
-    render_subvol,
-    with_mocked_temp_volume_dir,
-)
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
     Subvol("test-build-appliance", already_exists=True)

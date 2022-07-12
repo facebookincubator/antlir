@@ -10,10 +10,15 @@ import unittest
 from contextlib import contextmanager
 from unittest import mock
 
-from ..common import Checksum
-from ..db_connection import DBConnectionContext
-from ..repo_db import RepodataTable, RepoDBContext, RpmTable, SQLDialect
-from ..repo_objects import Repodata, RepoMetadata, Rpm
+from antlir.rpm.common import Checksum
+from antlir.rpm.db_connection import DBConnectionContext
+from antlir.rpm.repo_db import (
+    RepodataTable,
+    RepoDBContext,
+    RpmTable,
+    SQLDialect,
+)
+from antlir.rpm.repo_objects import Repodata, RepoMetadata, Rpm
 
 
 _FAKE_RPM = Rpm(

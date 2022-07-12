@@ -14,10 +14,10 @@ implements the `RepoObjectVisitor` interface, described below.
 from collections import defaultdict
 from typing import Any, Dict, NamedTuple, Union
 
-from antlir.unionfind import UnionFind
+from antlir.rpm.common import Checksum
+from antlir.rpm.repo_objects import Repodata, RepoMetadata, Rpm
 
-from .common import Checksum
-from .repo_objects import Repodata, RepoMetadata, Rpm
+from antlir.unionfind import UnionFind
 
 
 # Type of object provided to the repo downloader as a visitor, which must

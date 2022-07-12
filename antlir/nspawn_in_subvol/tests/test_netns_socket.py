@@ -7,12 +7,12 @@ import socket
 import subprocess
 from unittest.mock import patch
 
-from antlir.tests.common import AntlirTestCase
-
-from ..netns_socket import (
+from antlir.nspawn_in_subvol.netns_socket import (
     _make_sockets_and_send_via,
     create_sockets_inside_netns,
 )
+
+from antlir.tests.common import AntlirTestCase
 
 
 class NetnsSocketTestCase(AntlirTestCase):

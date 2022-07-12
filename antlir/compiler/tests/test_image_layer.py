@@ -15,6 +15,8 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
 from antlir.compiler.items.mount import mounts_from_meta
+
+from antlir.compiler.procfs_serde import deserialize_int
 from antlir.config import antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
@@ -30,8 +32,6 @@ from antlir.tests.subvol_helpers import (
     render_meta_build_contents,
     render_subvol,
 )
-
-from ..procfs_serde import deserialize_int
 
 
 TARGET_RESOURCE_PREFIX = "test_image_layer_path_to_"

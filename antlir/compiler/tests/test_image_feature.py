@@ -8,18 +8,18 @@ import itertools
 import sys
 import unittest
 
+from antlir.compiler.dep_graph import DependencyGraph
+
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.rpm_action import RpmActionItem
+from antlir.compiler.items_for_features import gen_items_for_features
+from antlir.compiler.tests import sample_items as si
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
-
-from ..dep_graph import DependencyGraph
-from ..items_for_features import gen_items_for_features
-from . import sample_items as si
 
 
 class ImageFeatureTestCase(unittest.TestCase):

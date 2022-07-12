@@ -20,10 +20,8 @@ from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
-from antlir.errors import UserError
-from antlir.fs_utils import Path
 
-from .requires_provides import (
+from antlir.compiler.requires_provides import (
     Provider,
     ProvidesDirectory,
     ProvidesPath,
@@ -32,6 +30,8 @@ from .requires_provides import (
     RequirePath,
     RequireSymlink,
 )
+from antlir.errors import UserError
+from antlir.fs_utils import Path
 
 
 # To build the item-to-item dependency graph, we need to first build up a

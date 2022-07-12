@@ -9,6 +9,15 @@ import stat
 import subprocess
 import tempfile
 
+from antlir.compiler.items.common import image_source_item
+from antlir.compiler.items.install_file import _InstallablePath, InstallFileItem
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
+
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -19,15 +28,6 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
-
-from ..common import image_source_item
-from ..install_file import _InstallablePath, InstallFileItem
-from .common import (
-    BaseItemTestCase,
-    DUMMY_LAYER_OPTS,
-    render_subvol,
-    with_mocked_temp_volume_dir,
-)
 
 
 def _install_file_item(**kwargs):

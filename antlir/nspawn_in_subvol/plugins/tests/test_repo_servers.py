@@ -13,10 +13,13 @@ import unittest
 from contextlib import contextmanager
 
 from antlir.common import check_popen_returncode
-from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
-from .. import launch_repo_servers, server_launcher
-from .rpm_base import NspawnTestBase, RpmNspawnTestBase
+from antlir.nspawn_in_subvol.plugins import launch_repo_servers, server_launcher
+from antlir.nspawn_in_subvol.plugins.tests.rpm_base import (
+    NspawnTestBase,
+    RpmNspawnTestBase,
+)
+from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
 
 class TestImpl:

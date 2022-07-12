@@ -34,14 +34,16 @@ from antlir.nspawn_in_subvol.plugin_hooks import (
     _PopenResult,
     _PostSetupPopenCtxMgr,
 )
-from antlir.subvol_utils import Subvol
 
-from . import NspawnPlugin
-from .launch_proxy_server import (
+from antlir.nspawn_in_subvol.plugins import NspawnPlugin
+from antlir.nspawn_in_subvol.plugins.launch_proxy_server import (
     launch_proxy_server_for_netns,
     PROXY_SERVER_PORT,
 )
-from .launch_repo_servers import launch_repo_servers_for_netns
+from antlir.nspawn_in_subvol.plugins.launch_repo_servers import (
+    launch_repo_servers_for_netns,
+)
+from antlir.subvol_utils import Subvol
 
 log: logging.Logger = get_logger()
 

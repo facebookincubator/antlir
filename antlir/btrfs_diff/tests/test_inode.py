@@ -6,11 +6,9 @@
 
 import stat
 
-from antlir.tests.common import AntlirTestCase
-
-from ..extent import Extent
-from ..extents_to_chunks import extents_to_chunks_with_clones
-from ..inode import (
+from antlir.btrfs_diff.extent import Extent
+from antlir.btrfs_diff.extents_to_chunks import extents_to_chunks_with_clones
+from antlir.btrfs_diff.inode import (
     _repr_time,
     _repr_time_delta,
     _time_delta,
@@ -21,7 +19,9 @@ from ..inode import (
     InodeOwner,
     InodeUtimes,
 )
-from ..inode_id import InodeIDMap
+from antlir.btrfs_diff.inode_id import InodeIDMap
+
+from antlir.tests.common import AntlirTestCase
 
 
 class InodeTestCase(AntlirTestCase):

@@ -11,6 +11,13 @@ import stat
 from typing import Iterator, Optional
 
 from antlir.bzl.image.feature.ensure_subdirs_exist import ensure_subdirs_exist_t
+
+from antlir.compiler.items.common import (
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+)
+from antlir.compiler.items.stat_options import build_stat_options
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
@@ -20,9 +27,6 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 from pydantic import validator
-
-from .common import ImageItem, LayerOpts, make_path_normal_relative
-from .stat_options import build_stat_options
 
 
 class MismatchError(Exception):

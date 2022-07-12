@@ -9,9 +9,7 @@ Tests `requires_provides.py`.
 """
 import unittest
 
-from antlir.fs_utils import Path
-
-from ..requires_provides import (
+from antlir.compiler.requires_provides import (
     _normalize_path,
     ProvidesDirectory,
     ProvidesDoNotAccess,
@@ -26,6 +24,8 @@ from ..requires_provides import (
     RequireSymlink,
     RequireUser,
 )
+
+from antlir.fs_utils import Path
 
 
 class RequiresProvidesTestCase(unittest.TestCase):

@@ -10,8 +10,8 @@ import unittest
 
 from antlir import btrfsutil
 
-from ..fs_utils import temp_dir
-from ..subvol_utils import Subvol, volume_dir
+from antlir.fs_utils import temp_dir
+from antlir.subvol_utils import Subvol, volume_dir
 
 
 class InnerSubvolTestCase(unittest.TestCase):

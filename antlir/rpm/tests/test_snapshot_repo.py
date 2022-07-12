@@ -11,10 +11,10 @@ import unittest
 
 from antlir.fs_utils import Path, temp_dir
 
-from ..repo_snapshot import RepoSnapshot
-from ..snapshot_repo import snapshot_repo
-from ..storage import Storage
-from . import temp_repos
+from antlir.rpm.repo_snapshot import RepoSnapshot
+from antlir.rpm.snapshot_repo import snapshot_repo
+from antlir.rpm.storage import Storage
+from antlir.rpm.tests import temp_repos
 
 
 class SnapshotRepoTestCase(unittest.TestCase):

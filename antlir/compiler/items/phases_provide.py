@@ -16,6 +16,14 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Generator
 
+from antlir.compiler.items.common import (
+    ImageItem,
+    is_path_protected,
+    protected_path_set,
+)
+from antlir.compiler.items.group import GROUP_FILE_PATH, GroupFile
+from antlir.compiler.items.user import PASSWD_FILE_PATH, PasswdFile
+
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
@@ -27,10 +35,6 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
-
-from .common import ImageItem, is_path_protected, protected_path_set
-from .group import GROUP_FILE_PATH, GroupFile
-from .user import PASSWD_FILE_PATH, PasswdFile
 
 
 def gen_subvolume_subtree_provides(

@@ -12,15 +12,20 @@ import unittest
 
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import temp_dir
-from antlir.tests.layer_resource import layer_resource_subvol
 
-from ..rpm_metadata import (
+from antlir.rpm.rpm_metadata import (
     _compare_values,
     _repo_query,
     compare_rpm_versions,
     RpmMetadata,
 )
-from .temp_repos import get_test_signing_key, Repo, Rpm, temp_repos_steps
+from antlir.rpm.tests.temp_repos import (
+    get_test_signing_key,
+    Repo,
+    Rpm,
+    temp_repos_steps,
+)
+from antlir.tests.layer_resource import layer_resource_subvol
 
 
 class RpmMetadataTestCase(unittest.TestCase):

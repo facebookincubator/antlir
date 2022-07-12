@@ -27,8 +27,8 @@ import os
 import resource
 import sys
 
-from .common import get_logger, init_logging, recv_fds_from_unix_sock
-from .fs_utils import Path
+from antlir.common import get_logger, init_logging, recv_fds_from_unix_sock
+from antlir.fs_utils import Path
 
 
 log = get_logger()

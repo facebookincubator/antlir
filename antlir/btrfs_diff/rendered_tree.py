@@ -83,7 +83,7 @@ from typing import (
     Union,
 )
 
-from .coroutine_utils import while_not_exited
+from antlir.btrfs_diff.coroutine_utils import while_not_exited
 
 
 # This is intended to be:

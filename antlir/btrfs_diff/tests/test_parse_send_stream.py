@@ -12,9 +12,7 @@ import io
 import struct
 from typing import Iterable
 
-from antlir.tests.common import AntlirTestCase
-
-from ..parse_send_stream import (
+from antlir.btrfs_diff.parse_send_stream import (
     AttributeKind,
     check_magic,
     check_version,
@@ -24,9 +22,13 @@ from ..parse_send_stream import (
     read_attribute,
     read_command,
 )
-from ..send_stream import SendStreamItem
-from .demo_sendstreams import gold_demo_sendstreams
-from .demo_sendstreams_expected import get_filtered_and_expected_items
+from antlir.btrfs_diff.send_stream import SendStreamItem
+from antlir.btrfs_diff.tests.demo_sendstreams import gold_demo_sendstreams
+from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
+    get_filtered_and_expected_items,
+)
+
+from antlir.tests.common import AntlirTestCase
 
 
 def _parse_stream_bytes(s: bytes) -> Iterable[SendStreamItem]:

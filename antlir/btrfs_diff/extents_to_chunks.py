@@ -120,9 +120,9 @@ import functools
 from collections import defaultdict
 from typing import Dict, Iterable, NamedTuple, Sequence, Tuple
 
-from .extent import Extent
-from .inode import Chunk, ChunkClone, Clone
-from .inode_id import InodeID
+from antlir.btrfs_diff.extent import Extent
+from antlir.btrfs_diff.inode import Chunk, ChunkClone, Clone
+from antlir.btrfs_diff.inode_id import InodeID
 
 
 class _CloneExtentRef(NamedTuple):

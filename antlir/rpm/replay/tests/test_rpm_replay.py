@@ -9,20 +9,23 @@ import unittest
 from antlir.compiler.items_for_features import ItemFactory
 from antlir.config import antlir_dep, repo_config
 from antlir.rpm.find_snapshot import snapshot_install_dir
-from antlir.rpm.yum_dnf_conf import YumDnf
-from antlir.tests.layer_resource import layer_resource_subvol
 
-from ..rpm_replay import (
+from antlir.rpm.replay.rpm_replay import (
     filter_features_to_replay,
     LayerOpts,
     replay_rpms_and_compiler_items,
 )
-from ..subvol_diff import subvol_diff
-from ..subvol_rpm_compare import (
+from antlir.rpm.replay.subvol_diff import subvol_diff
+from antlir.rpm.replay.subvol_rpm_compare import (
     subvol_rpm_compare_and_download,
     SubvolsToCompare,
 )
-from .test_utils import build_env_map, extract_features_from_env_map
+from antlir.rpm.replay.tests.test_utils import (
+    build_env_map,
+    extract_features_from_env_map,
+)
+from antlir.rpm.yum_dnf_conf import YumDnf
+from antlir.tests.layer_resource import layer_resource_subvol
 
 
 class RpmReplayTestCase(unittest.TestCase):

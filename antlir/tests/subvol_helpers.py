@@ -15,9 +15,9 @@ from antlir.btrfs_diff.tests.render_subvols import (
 )
 from antlir.config import repo_config
 from antlir.fs_utils import Path
-from antlir.tests.flavor_helpers import render_flavor
 
-from ..subvol_utils import Subvol
+from antlir.subvol_utils import Subvol
+from antlir.tests.flavor_helpers import render_flavor
 
 
 # The easiest way to render a subvolume in a test.

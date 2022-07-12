@@ -6,17 +6,9 @@
 
 import unittest
 
-from antlir.compiler.requires_provides import (
-    ProvidesUser,
-    RequireFile,
-    RequireGroup,
-)
-from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
-from antlir.tests.layer_resource import layer_resource_subvol
-
-from ..group import GROUP_FILE_PATH
-from ..user import (
+from antlir.compiler.items.group import GROUP_FILE_PATH
+from antlir.compiler.items.tests.common import BaseItemTestCase
+from antlir.compiler.items.user import (
     _read_passwd_file,
     _read_shadow_file,
     _write_passwd_file,
@@ -33,7 +25,15 @@ from ..user import (
     ShadowFileLine,
     UserItem,
 )
-from .common import BaseItemTestCase
+
+from antlir.compiler.requires_provides import (
+    ProvidesUser,
+    RequireFile,
+    RequireGroup,
+)
+from antlir.fs_utils import Path
+from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
+from antlir.tests.layer_resource import layer_resource_subvol
 
 
 class PasswdFileLineTest(unittest.TestCase):

@@ -8,12 +8,12 @@ import os
 import unittest
 
 from antlir.config import antlir_dep
+
+from antlir.rpm.replay.extract_nested_features import log as enf_log
 from antlir.rpm.replay.tests.test_utils import (
     build_env_map,
     extract_features_from_env_map,
 )
-
-from ..extract_nested_features import log as enf_log
 
 
 def _extract_features(infix: str):

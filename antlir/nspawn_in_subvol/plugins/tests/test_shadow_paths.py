@@ -7,11 +7,11 @@
 import os
 import subprocess
 
+from antlir.nspawn_in_subvol.plugins.shadow_paths import SHADOWED_PATHS_ROOT
+
 from antlir.nspawn_in_subvol.tests.base import NspawnTestBase
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
-
-from ..shadow_paths import SHADOWED_PATHS_ROOT
 
 
 _SRC_SUBVOL_PAIR = (__package__, "shadows")

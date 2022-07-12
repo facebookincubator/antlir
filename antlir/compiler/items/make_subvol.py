@@ -11,12 +11,17 @@ Exactly one item must exist in this phase.  If none is specified by the
 from dataclasses import dataclass
 from typing import Iterable
 
+from antlir.compiler.items.common import (
+    ImageItem,
+    LayerOpts,
+    PhaseOrder,
+    setup_meta_dir,
+)
+from antlir.compiler.items.cpio import load_from_cpio
+from antlir.compiler.items.tarball import load_from_tarball
+
 from antlir.fs_utils import META_FLAVOR_FILE, open_for_read_decompress
 from antlir.subvol_utils import Subvol
-
-from .common import ImageItem, LayerOpts, PhaseOrder, setup_meta_dir
-from .cpio import load_from_cpio
-from .tarball import load_from_tarball
 
 
 # This checks to make sure that the parent layer of an layer has the same flavor

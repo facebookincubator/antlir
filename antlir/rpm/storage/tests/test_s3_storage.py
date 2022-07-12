@@ -8,8 +8,11 @@ import io
 from contextlib import contextmanager
 from unittest.mock import ANY, MagicMock, patch
 
-from .. import s3_storage
-from .storage_base_test import Storage, StorageBaseTestCase
+from antlir.rpm.storage import s3_storage
+from antlir.rpm.storage.tests.storage_base_test import (
+    Storage,
+    StorageBaseTestCase,
+)
 
 
 class S3StorageTestCase(StorageBaseTestCase):

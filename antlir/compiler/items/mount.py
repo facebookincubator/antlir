@@ -16,6 +16,14 @@ from dataclasses import dataclass
 from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
 from antlir.compiler import procfs_serde
+
+from antlir.compiler.items.common import (
+    assert_running_inside_ba,
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+)
+from antlir.compiler.items.mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
 from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
     RequireDirectory,
@@ -24,14 +32,6 @@ from antlir.config import antlir_dep
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
-
-from .common import (
-    assert_running_inside_ba,
-    ImageItem,
-    LayerOpts,
-    make_path_normal_relative,
-)
-from .mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
 
 
 class BuildSource(NamedTuple):

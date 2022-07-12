@@ -7,9 +7,8 @@
 import importlib.resources
 import subprocess
 
-from .helpers import get_layer_by_prefix
-
-from .rpm_feature_test import RpmFeatureTest
+from antlir.compiler.tests.buck2.helpers import get_layer_by_prefix
+from antlir.compiler.tests.buck2.rpm_feature_test import RpmFeatureTest
 
 RPM_TEST_LAYER = get_layer_by_prefix(
     importlib.resources.contents(__package__), "test_layer_"

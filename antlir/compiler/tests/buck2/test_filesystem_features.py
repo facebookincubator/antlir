@@ -10,11 +10,12 @@ import subprocess
 import unittest
 from contextlib import contextmanager
 
+from antlir.compiler.tests.buck2.helpers import (
+    get_layer_target_to_path_by_prefix,
+)
 from antlir.config import antlir_dep
 from antlir.find_built_subvol import find_built_subvol
 from antlir.tests.subvol_helpers import pop_path, render_subvol
-
-from .helpers import get_layer_target_to_path_by_prefix
 
 TARGET_TO_PATH = get_layer_target_to_path_by_prefix(
     importlib.resources.contents(__package__), __package__, "test_feature_"

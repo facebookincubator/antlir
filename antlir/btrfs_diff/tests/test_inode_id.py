@@ -7,15 +7,15 @@
 import random
 from types import SimpleNamespace
 
-from ..freeze import freeze, frozendict
-from ..inode_id import (
+from antlir.btrfs_diff.freeze import freeze, frozendict
+from antlir.btrfs_diff.inode_id import (
     _PathEntry,
     _ReversePathEntry,
     _ROOT_REVERSE_ENTRY,
     InodeID,
     InodeIDMap,
 )
-from .deepcopy_test import DeepCopyTestCase
+from antlir.btrfs_diff.tests.deepcopy_test import DeepCopyTestCase
 
 
 class InodeIDTestCase(DeepCopyTestCase):

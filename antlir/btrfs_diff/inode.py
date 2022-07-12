@@ -18,8 +18,8 @@ import stat
 from datetime import datetime
 from typing import MutableMapping, NamedTuple, Optional, Sequence, Set, Tuple
 
-from .extent import Extent
-from .inode_id import InodeID
+from antlir.btrfs_diff.extent import Extent
+from antlir.btrfs_diff.inode_id import InodeID
 
 
 class InodeOwner(NamedTuple):

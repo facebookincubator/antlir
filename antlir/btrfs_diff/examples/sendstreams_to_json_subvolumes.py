@@ -40,17 +40,17 @@ import argparse
 import json
 import sys
 
-from ..freeze import freeze
-from ..inode import InodeOwner
-from ..inode_utils import (
+from antlir.btrfs_diff.freeze import freeze
+from antlir.btrfs_diff.inode import InodeOwner
+from antlir.btrfs_diff.inode_utils import (
     erase_mode_and_owner,
     erase_selinux_xattr,
     erase_utimes_in_range,
     SELinuxXAttrStats,
 )
-from ..parse_send_stream import parse_send_stream
-from ..rendered_tree import emit_non_unique_traversal_ids
-from ..subvolume_set import SubvolumeSet, SubvolumeSetMutator
+from antlir.btrfs_diff.parse_send_stream import parse_send_stream
+from antlir.btrfs_diff.rendered_tree import emit_non_unique_traversal_ids
+from antlir.btrfs_diff.subvolume_set import SubvolumeSet, SubvolumeSetMutator
 
 
 def main(argv):

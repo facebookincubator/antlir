@@ -11,9 +11,9 @@ from contextlib import contextmanager
 from typing import Any, Callable, FrozenSet, Iterable, Mapping, Union
 
 from antlir.fs_utils import Path
-from antlir.rpm.pluggable import Pluggable
 
-from .envra import SortableEVRA
+from antlir.rpm.allowed_versions.envra import SortableEVRA
+from antlir.rpm.pluggable import Pluggable
 
 
 class VersionPolicy(Pluggable):
@@ -23,7 +23,9 @@ class VersionPolicy(Pluggable):
 # Import FB-specific implementations if available.  This must come after
 # VersionPolicy to resolve the circular dependency.
 try:
-    from .facebook import version_policy as _fb_version_policy  # noqa: F401
+    from antlir.rpm.allowed_versions.facebook import (  # noqa: F401
+        version_policy as _fb_version_policy,
+    )
 except ImportError:  # pragma: no cover
     pass
 

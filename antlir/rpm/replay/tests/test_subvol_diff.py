@@ -8,9 +8,9 @@ from typing import Optional
 from unittest import mock
 
 from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes
 
-from ..subvol_diff import subvol_diff
+from antlir.rpm.replay.subvol_diff import subvol_diff
+from antlir.subvol_utils import TempSubvolumes
 
 
 class SubvolDiffTestCase(unittest.TestCase):

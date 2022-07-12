@@ -12,7 +12,7 @@ from unittest import mock
 
 from antlir.fs_utils import Path, temp_dir
 
-from ..common import (
+from antlir.rpm.common import (
     Checksum,
     DecorateContextEntry,
     has_yum,

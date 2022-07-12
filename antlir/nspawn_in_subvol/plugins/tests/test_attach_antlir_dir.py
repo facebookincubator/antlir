@@ -4,11 +4,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from antlir.nspawn_in_subvol.plugins.attach_antlir_dir import ANTLIR_DIR
 from antlir.nspawn_in_subvol.tests.base import NspawnTestBase
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
-
-from ..attach_antlir_dir import ANTLIR_DIR
 
 _SRC_SUBVOL_PAIR = (__package__, "no-antlir-layer")
 _SRC_SUBVOL = layer_resource_subvol(*_SRC_SUBVOL_PAIR)

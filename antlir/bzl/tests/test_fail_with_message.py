@@ -6,9 +6,9 @@
 import subprocess
 import unittest
 
-from antlir.fs_utils import Path
+from antlir.bzl.fail_with_message import log, log_failure_message
 
-from ..fail_with_message import log, log_failure_message
+from antlir.fs_utils import Path
 
 
 class FailWithMessageTestCase(unittest.TestCase):

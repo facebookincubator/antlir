@@ -6,7 +6,7 @@
 
 import unittest
 
-from ..find_snapshot import mangle_target, snapshot_install_dir
+from antlir.rpm.find_snapshot import mangle_target, snapshot_install_dir
 
 
 class TestCommon(unittest.TestCase):

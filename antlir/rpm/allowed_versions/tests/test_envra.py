@@ -6,9 +6,9 @@
 from functools import total_ordering
 from unittest import TestCase
 
-from antlir.rpm.rpm_metadata import RpmMetadata
+from antlir.rpm.allowed_versions.envra import SortableENVRA, SortableEVRA
 
-from ..envra import SortableENVRA, SortableEVRA
+from antlir.rpm.rpm_metadata import RpmMetadata
 
 
 class EnvraTestCase(TestCase):

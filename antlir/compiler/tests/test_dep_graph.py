@@ -12,6 +12,16 @@ from dataclasses import dataclass
 from typing import Dict, Iterator, Optional, Set, Tuple
 
 from antlir.bzl.genrule_layer import genrule_layer_t
+
+from antlir.compiler.dep_graph import (
+    _symlink_target_normpath,
+    DependencyGraph,
+    ItemProv,
+    ItemReq,
+    ItemReqsProvs,
+    PathItemReqsProvs,
+    ValidatedReqsProvs,
+)
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import (
     ensure_subdirs_exist_factory,
@@ -25,20 +35,7 @@ from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.user import UserItem
-from antlir.errors import UserError
-from antlir.fs_utils import Path, temp_dir
-from antlir.subvol_utils import TempSubvolumes
-
-from ..dep_graph import (
-    _symlink_target_normpath,
-    DependencyGraph,
-    ItemProv,
-    ItemReq,
-    ItemReqsProvs,
-    PathItemReqsProvs,
-    ValidatedReqsProvs,
-)
-from ..requires_provides import (
+from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
     ProvidesFile,
@@ -49,6 +46,9 @@ from ..requires_provides import (
     RequireGroup,
     RequireSymlink,
 )
+from antlir.errors import UserError
+from antlir.fs_utils import Path, temp_dir
+from antlir.subvol_utils import TempSubvolumes
 
 
 # Since the constructor of `InstallFileItem` tries to `os.stat` its input,

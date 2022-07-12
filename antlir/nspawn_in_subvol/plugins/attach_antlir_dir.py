@@ -13,7 +13,7 @@ from antlir.nspawn_in_subvol.plugin_hooks import (
     _SetupSubvolCtxMgr,
 )
 
-from . import NspawnPlugin
+from antlir.nspawn_in_subvol.plugins import NspawnPlugin
 
 
 class AttachAntlirDir(NspawnPlugin):

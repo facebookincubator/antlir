@@ -33,11 +33,11 @@ from typing import (  # This is a 3.8+ feature
 
 from antlir.common import get_logger, init_logging, set_new_key
 from antlir.fs_utils import create_ro, Path, populate_temp_dir_and_rename
-from antlir.rpm.common import readonly_snapshot_db
 
-from .envra import SortableENVRA, SortableEVRA
-from .package_group import PackageGroup
-from .version_policy import VersionPolicy
+from antlir.rpm.allowed_versions.envra import SortableENVRA, SortableEVRA
+from antlir.rpm.allowed_versions.package_group import PackageGroup
+from antlir.rpm.allowed_versions.version_policy import VersionPolicy
+from antlir.rpm.common import readonly_snapshot_db
 
 
 # XXX just accept Pluggable in place of a Union?

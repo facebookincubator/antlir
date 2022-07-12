@@ -8,10 +8,14 @@ import os
 import subprocess
 import unittest
 
+from antlir.compiler.procfs_serde import (
+    deserialize_int,
+    deserialize_untyped,
+    serialize,
+)
+
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.subvol_helpers import render_subvol
-
-from ..procfs_serde import deserialize_int, deserialize_untyped, serialize
 
 
 class TestProcfsSerDe(unittest.TestCase):

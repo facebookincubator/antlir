@@ -83,15 +83,13 @@ This class also enables `async def test_foo()` for testing asyncio code.
 
 ## `TARGETS`, resources & imports
 
-### Avoid `base_module`, prefer absolute imports (with exceptions)
+### Avoid `base_module`, prefer absolute imports
 
 -   Please work to eliminate `base_module` from `TARGETS` files. This is
     deprecated throughout Facebook, and generally complicates code
     comprehension. In other words, your module in `fbcode/antlir/foo.py`
     should be importable as `antlir.foo`.
--   Use absolute imports. Two exceptions are OK:
-    -   Access sibling libraries: `from . import sibling_module`
-    -   Access parent from tests: `from .. import module_being_tested`.
+-   Always use absolute imports
 
 ### Use `Path.resource` and `layer_resource_subvol`; avoid `__file__`, `importlib.resources.path`
 
@@ -134,9 +132,9 @@ affects `@mode/opt` runs not on Sandcastle, and our usage is low.
 ### Import ordering
 
 We recommend sectioned imports, separated by a single blank line. First come
-standard modules, then "other" fs\_image modules, last come sibling submodules
-or modules under test. Only the last section may use relative imports. Each
-section splits into 2 subsections: first all `import x`, then `from y import z`.
+standard modules, then antlir modules.
+Each section splits into 2 subsections: first all `import x`, then
+`from y import z`.
 Example:
 
 ```
@@ -145,12 +143,6 @@ import standard_module
 from other_standard import std_name
 
 from antlir.foo import bar
-
-# In a submodule
-from .sibling_submodule import _impl_detail
-
-# In a test
-from ..module_being_tested import func_to_test
 ```
 
 ## General

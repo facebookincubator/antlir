@@ -14,15 +14,15 @@ import sys
 
 from antlir.common import get_logger, init_logging
 from antlir.fs_utils import Path, populate_temp_dir_and_rename
+
+from antlir.rpm.common_args import add_standard_args
 from antlir.rpm.downloader.common import DownloadConfig
 from antlir.rpm.downloader.repo_downloader import download_repos
-
-from .common_args import add_standard_args
-from .gpg_keys import snapshot_gpg_keys
-from .repo_sizer import RepoSizer
-from .repo_snapshot import RepoSnapshot
-from .storage import Storage
-from .yum_dnf_conf import YumDnfConfRepo
+from antlir.rpm.gpg_keys import snapshot_gpg_keys
+from antlir.rpm.repo_sizer import RepoSizer
+from antlir.rpm.repo_snapshot import RepoSnapshot
+from antlir.rpm.storage import Storage
+from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
 
 log = get_logger()

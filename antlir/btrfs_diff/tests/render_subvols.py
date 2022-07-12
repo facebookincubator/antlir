@@ -11,18 +11,23 @@ easy to make assertions against its content. Grep around for usage examples.
 from io import BytesIO
 from typing import Tuple
 
-from ..freeze import freeze as btrfs_diff_freeze
-from ..inode import InodeOwner
-from ..inode_utils import (
+from antlir.btrfs_diff.freeze import freeze as btrfs_diff_freeze
+from antlir.btrfs_diff.inode import InodeOwner
+from antlir.btrfs_diff.inode_utils import (
     erase_mode_and_owner,
     erase_selinux_xattr,
     erase_utimes_in_range,
 )
-from ..parse_send_stream import parse_send_stream
-from ..rendered_tree import emit_non_unique_traversal_ids, RenderedTree
-from ..subvolume import Subvolume
-from ..subvolume_set import SubvolumeSet, SubvolumeSetMutator
-from .subvolume_utils import expected_subvol_add_traversal_ids
+from antlir.btrfs_diff.parse_send_stream import parse_send_stream
+from antlir.btrfs_diff.rendered_tree import (
+    emit_non_unique_traversal_ids,
+    RenderedTree,
+)
+from antlir.btrfs_diff.subvolume import Subvolume
+from antlir.btrfs_diff.subvolume_set import SubvolumeSet, SubvolumeSetMutator
+from antlir.btrfs_diff.tests.subvolume_utils import (
+    expected_subvol_add_traversal_ids,
+)
 
 
 def expected_rendering(expected_subvol):

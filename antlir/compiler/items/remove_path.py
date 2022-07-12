@@ -9,10 +9,8 @@ import shutil
 from typing import Iterable
 
 from antlir.bzl.image.feature.remove import remove_paths_t
-from antlir.errors import UserError
-from antlir.subvol_utils import Subvol
 
-from .common import (
+from antlir.compiler.items.common import (
     assert_running_inside_ba,
     ImageItem,
     is_path_protected,
@@ -21,6 +19,8 @@ from .common import (
     protected_path_set,
     validate_path_field_normal_relative,
 )
+from antlir.errors import UserError
+from antlir.subvol_utils import Subvol
 
 
 class RemovePathItem(remove_paths_t, ImageItem):

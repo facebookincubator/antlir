@@ -40,11 +40,13 @@ from antlir.nspawn_in_subvol.args import (
 )
 from antlir.nspawn_in_subvol.common import AttachAntlirDirError
 
-from . import NspawnPlugin
-from .attach_antlir_dir import AttachAntlirDir
-from .repo_servers import RepoServers
-from .shadow_paths import ShadowPaths
-from .yum_dnf_versionlock import YumDnfVersionlock
+from antlir.nspawn_in_subvol.plugins import NspawnPlugin
+from antlir.nspawn_in_subvol.plugins.attach_antlir_dir import AttachAntlirDir
+from antlir.nspawn_in_subvol.plugins.repo_servers import RepoServers
+from antlir.nspawn_in_subvol.plugins.shadow_paths import ShadowPaths
+from antlir.nspawn_in_subvol.plugins.yum_dnf_versionlock import (
+    YumDnfVersionlock,
+)
 
 
 def _get_snapshot_dir(opts: _NspawnOpts, plugin_args: NspawnPluginArgs):

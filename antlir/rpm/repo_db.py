@@ -106,7 +106,7 @@ from typing import ContextManager, FrozenSet, Iterator, Optional, Tuple, Union
 
 from antlir.common import byteme
 
-from .repo_objects import Checksum, Repodata, RepoMetadata, Rpm
+from antlir.rpm.repo_objects import Checksum, Repodata, RepoMetadata, Rpm
 
 
 # Deliberately excludes `-` since that is used by RPM filename parsing.

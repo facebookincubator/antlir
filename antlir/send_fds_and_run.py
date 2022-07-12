@@ -46,13 +46,13 @@ import subprocess
 import sys
 from contextlib import contextmanager
 
-from .common import (
+from antlir.common import (
     FD_UNIX_SOCK_TIMEOUT,
     get_logger,
     init_logging,
     listen_temporary_unix_socket,
 )
-from .fs_utils import Path
+from antlir.fs_utils import Path
 
 
 log = get_logger()

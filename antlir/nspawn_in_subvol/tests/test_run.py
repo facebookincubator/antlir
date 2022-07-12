@@ -15,18 +15,20 @@ from antlir.common import pipe
 from antlir.config import _unmemoized_repo_config, antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
+from antlir.nspawn_in_subvol.args import _NOBODY_USER, _parse_cli_args
+from antlir.nspawn_in_subvol.cmd import (
+    _colon_quote_path,
+    _extra_nspawn_args_and_env,
+)
+from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 from antlir.nspawn_in_subvol.nspawn import NspawnError
-from antlir.subvol_utils import with_temp_subvols
-from antlir.tests.layer_resource import layer_resource
-
-from ..args import _NOBODY_USER, _parse_cli_args
-from ..cmd import _colon_quote_path, _extra_nspawn_args_and_env
-from ..common import DEFAULT_PATH_ENV
-from .base import (
+from antlir.nspawn_in_subvol.tests.base import (
     _mocks_for_extra_nspawn_args,
     _mocks_for_parse_cli_args,
     NspawnTestBase,
 )
+from antlir.subvol_utils import with_temp_subvols
+from antlir.tests.layer_resource import layer_resource
 
 
 TEST_IMAGE_PREFIX = antlir_dep("compiler/test_images:")

@@ -21,7 +21,9 @@ class PackageGroup(Pluggable):
 # Import FB-specific implementations if available.  This must come after
 # PackageGroup to resolve the circular dependency.
 try:
-    from .facebook import package_group as _fb_package_group  # noqa: F401
+    from antlir.rpm.allowed_versions.facebook import (  # noqa: F401
+        package_group as _fb_package_group,
+    )
 except ImportError:  # pragma: no cover
     pass
 

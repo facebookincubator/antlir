@@ -8,7 +8,7 @@ import unittest
 from unittest import mock
 from unittest.mock import mock_open, patch
 
-from ..common import (
+from antlir.nspawn_in_subvol.common import (
     find_cgroup2_mountpoint,
     nspawn_version,
     NSpawnVersion,

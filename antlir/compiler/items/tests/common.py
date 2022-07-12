@@ -12,6 +12,8 @@ import unittest
 from contextlib import contextmanager
 from unittest import mock
 
+from antlir.compiler.items.common import assert_running_inside_ba, LayerOpts
+
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -23,8 +25,6 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import pop_path, render_subvol
-
-from ..common import assert_running_inside_ba, LayerOpts
 
 
 # Re-export for legacy reasons

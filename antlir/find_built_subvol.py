@@ -7,9 +7,9 @@
 import sys
 from typing import Optional
 
-from .compiler.subvolume_on_disk import SubvolumeOnDisk
-from .fs_utils import Path
-from .subvol_utils import get_subvolumes_dir, Subvol
+from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
+from antlir.fs_utils import Path
+from antlir.subvol_utils import get_subvolumes_dir, Subvol
 
 
 def find_built_subvol(

@@ -12,20 +12,25 @@ from typing import Iterator, List, Optional, Tuple
 from unittest import TestCase
 
 from antlir.fs_utils import Path, temp_dir
+from antlir.rpm.allowed_versions.update_allowed_versions import log
 
-from ...repo_snapshot import RepoSnapshot
-from ..update_allowed_versions import log
+from antlir.rpm.repo_snapshot import RepoSnapshot
 
 # Import FB-specific implementations if available.
 try:
-    from ..facebook.tests.mock_snapshots import patch_snapshots
+    from antlir.rpm.allowed_versions.facebook.tests.mock_snapshots import (
+        patch_snapshots,
+    )
 except ImportError:
 
     def patch_snapshots(fn):
         return fn
 
 
-from ..update_allowed_versions import parse_args, update_allowed_versions
+from antlir.rpm.allowed_versions.update_allowed_versions import (
+    parse_args,
+    update_allowed_versions,
+)
 
 
 _FOO_RPM = "foo"

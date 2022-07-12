@@ -11,8 +11,8 @@ from typing import Optional
 
 from antlir.common import get_logger
 
-from .pluggable import Pluggable
-from .repo_db import SQLDialect
+from antlir.rpm.pluggable import Pluggable
+from antlir.rpm.repo_db import SQLDialect
 
 
 log = get_logger()
@@ -96,6 +96,8 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
 try:
     # Import FB-specific implementations if available. Do this last in the
     # file so that DBConnectionContext is already available to them.
-    from .facebook import db_connection as _fb_db_connection  # noqa: F401
+    from antlir.rpm.facebook import (  # noqa: F401
+        db_connection as _fb_db_connection,
+    )
 except ImportError:  # pragma: no cover
     pass

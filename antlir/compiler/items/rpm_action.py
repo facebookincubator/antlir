@@ -24,6 +24,13 @@ from typing import (
 from antlir.bzl.image.feature.rpms import rpm_action_item_t
 from antlir.bzl_const import BZL_CONST
 from antlir.common import get_logger, not_none
+
+from antlir.compiler.items.common import (
+    ImageItem,
+    LayerOpts,
+    PhaseOrder,
+    protected_path_set,
+)
 from antlir.config import repo_config
 from antlir.fs_utils import generate_work_dir, Path
 from antlir.nspawn_in_subvol.args import (
@@ -38,8 +45,6 @@ from antlir.nspawn_in_subvol.plugins.yum_dnf_versionlock import (
 from antlir.rpm.rpm_metadata import compare_rpm_versions, RpmMetadata
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
-
-from .common import ImageItem, LayerOpts, PhaseOrder, protected_path_set
 
 
 log = get_logger()

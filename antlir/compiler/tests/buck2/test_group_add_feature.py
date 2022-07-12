@@ -7,7 +7,7 @@
 import subprocess
 import unittest
 
-from .helpers import generate_group_str
+from antlir.compiler.tests.buck2.helpers import generate_group_str
 
 
 class GroupFeatureTest(unittest.TestCase):

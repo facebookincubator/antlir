@@ -25,16 +25,18 @@ In effect, we jointly test the Linux kernel, btrfs-progs, and this library.
 import sys
 
 from antlir.artifacts_dir import ensure_per_repo_artifacts_dir_exists
+
+from antlir.btrfs_diff.freeze import freeze
+from antlir.btrfs_diff.rendered_tree import emit_non_unique_traversal_ids
+from antlir.btrfs_diff.subvolume_set import SubvolumeSet
+from antlir.btrfs_diff.tests import render_subvols as render_sv
+from antlir.btrfs_diff.tests.demo_sendstreams import make_demo_sendstreams
+from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
+    render_demo_subvols,
+)
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase
 from antlir.volume_for_repo import get_volume_for_current_repo
-
-from ..freeze import freeze
-from ..rendered_tree import emit_non_unique_traversal_ids
-from ..subvolume_set import SubvolumeSet
-from . import render_subvols as render_sv
-from .demo_sendstreams import make_demo_sendstreams
-from .demo_sendstreams_expected import render_demo_subvols
 
 
 class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):

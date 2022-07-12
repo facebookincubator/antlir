@@ -12,12 +12,11 @@ import unittest
 import unittest.mock
 from typing import List, Union
 
-from antlir.common import async_run_shell
-
-from ..common import (
+from antlir.common import (
     async_retry_fn,
     async_retryable,
     async_run,
+    async_run_shell,
     kernel_version,
     log as common_log,
     retry_fn,

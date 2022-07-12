@@ -8,9 +8,9 @@
 import hashlib
 import unittest
 
-from ..common import Checksum
-from ..repo_objects import RepoMetadata, Rpm
-from ..tests import temp_repos as tr
+from antlir.rpm.common import Checksum
+from antlir.rpm.repo_objects import RepoMetadata, Rpm
+from antlir.rpm.tests import temp_repos as tr
 
 
 class RepoObjectsTestCase(unittest.TestCase):
