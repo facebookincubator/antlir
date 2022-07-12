@@ -11,11 +11,11 @@ import threading
 from contextlib import contextmanager
 from unittest import mock
 
-from antlir.artifacts_dir import find_buck_cell_root
 from antlir.common import pipe
 from antlir.config import _unmemoized_repo_config, antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
+from antlir.nspawn_in_subvol.nspawn import NspawnError
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource
 
@@ -846,7 +846,7 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
 
     def test_boot_no_console_pipe(self):
         with self.assertRaisesRegex(
-            RuntimeError, " does not support `subprocess.PIPE` "
+            NspawnError, " does not support `subprocess.PIPE` "
         ):
             # This is identical to `test_boot_proc_results` except for the pipe
             self._nspawn_in(
