@@ -16,8 +16,18 @@ load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 def image_genrule_layer_helper(
         name,
         rule_type,
-        make_subvol_cmd,
+        parent_layer,
+        flavor,
+        flavor_config_override,
+        container_opts,
+        features,
+        compile_image_features_fn,
         image_layer_kwargs):
+    if container_opts.internal_only_logs_tmpfs:
+        # The mountpoint directory would leak into the built images, and it
+        # doesn't even make sense for genrule layer construction.
+        fail("Genrule layers do not allow setting up a `/logs` tmpfs")
+
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
     if "features" in image_layer_kwargs:
         fail("\"features\" are not supported in image.genrule_layer")
@@ -26,7 +36,15 @@ def image_genrule_layer_helper(
         _rule_type = "image_layer_genrule_" + rule_type,
         _layer_name = name,
         # Build a new layer. It may be empty.
-        _make_subvol_cmd = make_subvol_cmd,
+        _make_subvol_cmd = compile_image_features_fn(
+            name = name,
+            current_target = normalize_target(":" + name),
+            parent_layer = parent_layer,
+            features = features,
+            flavor = flavor,
+            flavor_config_override = flavor_config_override,
+            internal_only_is_genrule_layer = True,
+        ),
         **image_layer_kwargs
     )
 
@@ -81,16 +99,10 @@ Optional arguments:
   - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
     for supported, but less commonly used, kwargs.
     """
+    container_opts = normalize_container_opts(container_opts)
 
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.
-    container_opts = normalize_container_opts(container_opts)
-    if container_opts.internal_only_logs_tmpfs:
-        # The mountpoint directory would leak into the built images, and it
-        # doesn't even make sense for genrule layer construction.
-        fail("Genrule layers do not allow setting up a `/logs` tmpfs")
-
     target_tagger = new_target_tagger()
-
     features = [target_tagger_to_feature(
         target_tagger,
         struct(genrule_layer = [
@@ -107,19 +119,14 @@ Optional arguments:
         ]),
     )]
 
-    make_subvol_cmd = compile_image_features(
-        name = name,
-        current_target = normalize_target(":" + name),
-        parent_layer = parent_layer,
-        features = features,
-        flavor = flavor,
-        flavor_config_override = flavor_config_override,
-        internal_only_is_genrule_layer = True,
-    )
-
-    return image_genrule_layer_helper(
+    image_genrule_layer_helper(
         name,
         rule_type,
-        make_subvol_cmd,
+        parent_layer,
+        flavor,
+        flavor_config_override,
+        container_opts,
+        features,
+        compile_image_features,
         image_layer_kwargs,
     )

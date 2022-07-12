@@ -5,8 +5,10 @@
 
 load("//antlir/compiler/image/buck2:image_genrule_layer.bzl", "image_genrule_layer")
 load("//antlir/compiler/image/buck2:image_layer.bzl", "image_layer")
+load("//antlir/compiler/image/buck2:image_layer_from_package.bzl", "image_layer_from_package")
 
 image = struct(
     layer = image_layer,
     genrule_layer = image_genrule_layer,
+    layer_from_package = image_layer_from_package,
 )
