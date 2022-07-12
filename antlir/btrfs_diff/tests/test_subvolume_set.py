@@ -6,13 +6,15 @@
 
 import dataclasses
 
-from antlir.tests.common import AntlirTestCase
+from antlir.btrfs_diff.freeze import freeze
+from antlir.btrfs_diff.parse_dump import SendStreamItems
+from antlir.btrfs_diff.rendered_tree import emit_all_traversal_ids
+from antlir.btrfs_diff.subvolume_set import SubvolumeSet, SubvolumeSetMutator
+from antlir.btrfs_diff.tests.subvolume_utils import (
+    expected_subvol_add_traversal_ids,
+)
 
-from ..freeze import freeze
-from ..parse_dump import SendStreamItems
-from ..rendered_tree import emit_all_traversal_ids
-from ..subvolume_set import SubvolumeSet, SubvolumeSetMutator
-from .subvolume_utils import expected_subvol_add_traversal_ids
+from antlir.tests.common import AntlirTestCase
 
 
 class SubvolumeSetTestCase(AntlirTestCase):

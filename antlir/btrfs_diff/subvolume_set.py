@@ -23,14 +23,14 @@ from types import MappingProxyType
 # and avoid `deepcopy`.
 from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
-from .extents_to_chunks import extents_to_chunks_with_clones
-from .freeze import freeze
-from .incomplete_inode import IncompleteInode
-from .inode import Inode
-from .inode_id import InodeIDMap
-from .rendered_tree import RenderedTree
-from .send_stream import SendStreamItem, SendStreamItems
-from .subvolume import Subvolume
+from antlir.btrfs_diff.extents_to_chunks import extents_to_chunks_with_clones
+from antlir.btrfs_diff.freeze import freeze
+from antlir.btrfs_diff.incomplete_inode import IncompleteInode
+from antlir.btrfs_diff.inode import Inode
+from antlir.btrfs_diff.inode_id import InodeIDMap
+from antlir.btrfs_diff.rendered_tree import RenderedTree
+from antlir.btrfs_diff.send_stream import SendStreamItem, SendStreamItems
+from antlir.btrfs_diff.subvolume import Subvolume
 
 
 class SubvolumeID(NamedTuple):

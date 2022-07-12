@@ -12,7 +12,11 @@ instance (i.e. hardlinks).  Refer to `test_subvolume.py` for usage examples.
 """
 from typing import NamedTuple
 
-from ..rendered_tree import map_bottom_up, RenderedTree, TraversalIDMaker
+from antlir.btrfs_diff.rendered_tree import (
+    map_bottom_up,
+    RenderedTree,
+    TraversalIDMaker,
+)
 
 
 class InodeRepr(NamedTuple):

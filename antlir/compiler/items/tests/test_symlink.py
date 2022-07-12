@@ -6,6 +6,16 @@
 
 import tempfile
 
+from antlir.compiler.items.install_file import InstallFileItem
+from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
+    get_dummy_layer_opts_ba,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
+
 from antlir.compiler.requires_provides import (
     ProvidesSymlink,
     RequireDirectory,
@@ -13,16 +23,6 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol, TempSubvolumes
-
-from ..install_file import InstallFileItem
-from ..symlink import SymlinkToDirItem, SymlinkToFileItem
-from .common import (
-    BaseItemTestCase,
-    DUMMY_LAYER_OPTS,
-    get_dummy_layer_opts_ba,
-    render_subvol,
-    with_mocked_temp_volume_dir,
-)
 
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(

@@ -8,7 +8,7 @@ import json
 import unittest
 from io import StringIO
 
-from ..layer_mount_config import main
+from antlir.layer_mount_config import main
 
 
 class TestLayerMountConfig(unittest.TestCase):

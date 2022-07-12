@@ -8,12 +8,12 @@ from contextlib import contextmanager
 from pwd import struct_passwd
 from unittest import mock, TestCase
 
-from antlir.tests.layer_resource import layer_resource
+from antlir.nspawn_in_subvol.args import _parse_cli_args, PopenArgs
+from antlir.nspawn_in_subvol.cmd import _extra_nspawn_args_and_env
+from antlir.nspawn_in_subvol.common import nspawn_version
+from antlir.nspawn_in_subvol.run import _set_up_run_cli
 
-from ..args import _parse_cli_args, PopenArgs
-from ..cmd import _extra_nspawn_args_and_env
-from ..common import nspawn_version
-from ..run import _set_up_run_cli
+from antlir.tests.layer_resource import layer_resource
 
 
 @contextmanager

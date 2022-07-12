@@ -10,6 +10,15 @@ from dataclasses import dataclass
 from typing import AnyStr, Dict, Generator, NamedTuple, Optional, OrderedDict
 
 from antlir.bzl.image.feature.usergroup import user_t
+
+from antlir.compiler.items.common import ImageItem, LayerOpts
+from antlir.compiler.items.group import (
+    _read_group_file,
+    _write_group_file,
+    GROUP_FILE_PATH,
+    GroupFile,
+    USERGROUP_LOCK,
+)
 from antlir.compiler.requires_provides import (
     Provider,
     ProvidesUser,
@@ -20,15 +29,6 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
 from pydantic import validator
-
-from .common import ImageItem, LayerOpts
-from .group import (
-    _read_group_file,
-    _write_group_file,
-    GROUP_FILE_PATH,
-    GroupFile,
-    USERGROUP_LOCK,
-)
 
 
 # Default values from /etc/login.defs

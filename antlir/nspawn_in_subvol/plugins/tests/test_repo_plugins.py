@@ -21,10 +21,10 @@ from antlir.nspawn_in_subvol.args import (
     NspawnPluginArgs,
 )
 from antlir.nspawn_in_subvol.common import AttachAntlirDirError
+
+from antlir.nspawn_in_subvol.plugins import repo_plugins
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
 from antlir.tests.layer_resource import layer_resource_subvol
-
-from .. import repo_plugins
 
 
 def with_mock_plugins(method):

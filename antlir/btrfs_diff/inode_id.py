@@ -25,7 +25,7 @@ from typing import (
     Tuple,
 )
 
-from .freeze import freeze
+from antlir.btrfs_diff.freeze import freeze
 
 
 def tail(n: int, iterable):

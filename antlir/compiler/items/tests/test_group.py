@@ -7,6 +7,14 @@
 import sys
 import unittest
 
+from antlir.compiler.items.group import (
+    GROUP_FILE_PATH,
+    GroupFile,
+    GroupFileLine,
+    GroupItem,
+)
+from antlir.compiler.items.tests.common import BaseItemTestCase
+
 from antlir.compiler.requires_provides import (
     Provider,
     ProvidesGroup,
@@ -15,9 +23,6 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
-
-from ..group import GROUP_FILE_PATH, GroupFile, GroupFileLine, GroupItem
-from .common import BaseItemTestCase
 
 
 _SAMPLE_ETC_GROUP = """root:x:0:

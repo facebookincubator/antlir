@@ -12,15 +12,15 @@ import unittest.mock
 
 from antlir.fs_utils import temp_dir
 
-from ..common import Checksum
-from ..repo_objects import Repodata, RepoMetadata, Rpm
-from ..repo_snapshot import (
+from antlir.rpm.common import Checksum
+from antlir.rpm.repo_objects import Repodata, RepoMetadata, Rpm
+from antlir.rpm.repo_snapshot import (
     FileIntegrityError,
     HTTPError,
     MutableRpmError,
     RepoSnapshot,
 )
-from ..storage.filesystem_storage import FilesystemStorage
+from antlir.rpm.storage.filesystem_storage import FilesystemStorage
 
 
 def _get_db_rows(db: sqlite3.Connection, table: str):

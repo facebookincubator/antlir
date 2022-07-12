@@ -17,6 +17,9 @@ from uuid import UUID
 
 from antlir.btrfsutil import subvolume_info
 from antlir.bzl.constants import flavor_config_t
+
+from antlir.compiler import subvolume_on_disk as svod
+from antlir.compiler.compiler import build_image, parse_args
 from antlir.fs_utils import (
     Path,
     RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
@@ -29,9 +32,6 @@ from antlir.tests.subvol_helpers import (
     render_meta_build_contents,
     render_subvol,
 )
-
-from .. import subvolume_on_disk as svod
-from ..compiler import build_image, parse_args
 
 _TEST_BA_TARGET_PATH = (
     "fbcode//antlir/compiler/test_images:build_appliance_testing"

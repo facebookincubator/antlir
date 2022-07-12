@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 
 from antlir.fs_utils import create_ro, Path
 
-from .open_url import open_url
+from antlir.rpm.open_url import open_url
 
 
 def snapshot_gpg_keys(

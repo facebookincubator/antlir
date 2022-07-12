@@ -7,17 +7,7 @@
 from dataclasses import dataclass, field
 from typing import List
 
-from antlir.compiler.requires_provides import (
-    ProvidesDirectory,
-    RequireDirectory,
-    RequireGroup,
-    RequireUser,
-)
-from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
-from antlir.tests.layer_resource import layer_resource_subvol
-
-from ..common import (
+from antlir.compiler.items.common import (
     image_source_item,
     ImageItem,
     is_path_protected,
@@ -27,9 +17,22 @@ from ..common import (
     protected_path_set,
     setup_meta_dir,
 )
-from ..ensure_dirs_exist import EnsureDirsExistItem
-from ..install_file import InstallFileItem
-from .common import BaseItemTestCase, DUMMY_LAYER_OPTS
+from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
+from antlir.compiler.items.install_file import InstallFileItem
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
+)
+
+from antlir.compiler.requires_provides import (
+    ProvidesDirectory,
+    RequireDirectory,
+    RequireGroup,
+    RequireUser,
+)
+from antlir.fs_utils import Path
+from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
+from antlir.tests.layer_resource import layer_resource_subvol
 
 
 @dataclass(init=False, frozen=True)

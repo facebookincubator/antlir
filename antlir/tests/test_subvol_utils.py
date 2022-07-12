@@ -11,15 +11,15 @@ import sys
 import tempfile
 import unittest.mock
 
+from antlir.artifacts_dir import ensure_per_repo_artifacts_dir_exists
+
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
     render_demo_subvols,
 )
 from antlir.btrfsutil import BtrfsUtilError
-
-from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
-from ..fs_utils import Path, temp_dir
-from ..subvol_utils import (
+from antlir.fs_utils import Path, temp_dir
+from antlir.subvol_utils import (
     find_subvolume_on_disk,
     KiB,
     Subvol,
@@ -27,9 +27,9 @@ from ..subvol_utils import (
     volume_dir,
     with_temp_subvols,
 )
-from ..volume_for_repo import get_volume_for_current_repo
-from .common import AntlirTestCase
-from .subvol_helpers import render_subvol
+from antlir.tests.common import AntlirTestCase
+from antlir.tests.subvol_helpers import render_subvol
+from antlir.volume_for_repo import get_volume_for_current_repo
 
 
 class SubvolTestCase(AntlirTestCase):

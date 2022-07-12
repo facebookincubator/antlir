@@ -8,7 +8,7 @@ import io
 import textwrap
 import unittest
 
-from ..yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
+from antlir.rpm.yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
 
 
 # This is the base class for two test classes at the bottom of the file.

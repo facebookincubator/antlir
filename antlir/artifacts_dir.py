@@ -14,15 +14,15 @@ from typing import Optional
 
 from antlir.bzl.buck_isolation.buck_isolation import is_buck_using_isolation
 
+from antlir.errors import UserError
+from antlir.fs_utils import Path, populate_temp_file_and_rename
+
 # for re-export
 from antlir.rust.artifacts_dir import (  # noqa: F401
     find_buck_cell_root,
     find_repo_root,
     SigilNotFound,
 )
-
-from .errors import UserError
-from .fs_utils import Path, populate_temp_file_and_rename
 
 
 def _is_edenfs(repo_root: Path) -> bool:

@@ -15,7 +15,7 @@ from contextlib import AbstractContextManager
 from typing import Iterable, Iterator, Union
 from xml.etree import ElementTree
 
-from .repo_objects import Checksum, Repodata, Rpm
+from antlir.rpm.repo_objects import Checksum, Repodata, Rpm
 
 
 class SQLiteRpmParser(AbstractContextManager):

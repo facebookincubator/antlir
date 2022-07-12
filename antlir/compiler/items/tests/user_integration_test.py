@@ -4,12 +4,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from antlir.compiler.items.group import GroupItem
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    getent,
+    run_in_ba,
+)
+from antlir.compiler.items.user import UserItem
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
-
-from ..group import GroupItem
-from ..user import UserItem
-from .common import BaseItemTestCase, getent, run_in_ba
 
 
 class UserItemIntegrationTestCase(BaseItemTestCase):

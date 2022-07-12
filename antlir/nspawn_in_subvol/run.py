@@ -111,12 +111,11 @@ from typing import Iterable, NamedTuple, Tuple, Union
 
 from antlir.common import init_logging
 from antlir.fs_utils import Path
-
-from .args import _NspawnOpts, _parse_cli_args, PopenArgs
-from .common import UserFacingError
-from .nspawn import run_nspawn
-from .plugins import NspawnPlugin
-from .plugins.repo_plugins import repo_nspawn_plugins
+from antlir.nspawn_in_subvol.args import _NspawnOpts, _parse_cli_args, PopenArgs
+from antlir.nspawn_in_subvol.common import UserFacingError
+from antlir.nspawn_in_subvol.nspawn import run_nspawn
+from antlir.nspawn_in_subvol.plugins import NspawnPlugin
+from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 
 
 class _CliSetup(NamedTuple):

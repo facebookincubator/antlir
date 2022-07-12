@@ -10,12 +10,16 @@ from typing import Mapping, Optional, Sequence, Tuple
 
 from antlir.btrfs_diff.freeze import frozendict
 from antlir.bzl.target import target_t
-from antlir.fs_utils import Path
-from antlir.shape import Shape
 
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
-from .test import character_collection_t, character_t, hashable_t
+from antlir.bzl.tests.shapes.test import (
+    character_collection_t,
+    character_t,
+    hashable_t,
+)
+from antlir.fs_utils import Path
+from antlir.shape import Shape
 
 
 # pyre-fixme[16]: `character_t` has no attribute `types`.
@@ -75,7 +79,7 @@ class TestShape(unittest.TestCase):
         self.assertEqual(f, res)
         # lastly, the directly imported python_data version should also be
         # equivalent
-        from .data import data as imp
+        from antlir.bzl.tests.shapes.data import data as imp
 
         self.assertEqual(imp, res)
         self.assertTrue(isinstance(imp, hashable_t))

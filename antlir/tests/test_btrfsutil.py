@@ -11,13 +11,13 @@ from unittest.mock import MagicMock, patch
 
 import btrfsutil as _raw_btrfsutil  # pyre-ignore[21]
 from antlir import btrfsutil
-from antlir.fs_utils import Path
-from antlir.unshare import Namespace, Unshare
 
-from ..artifacts_dir import ensure_per_repo_artifacts_dir_exists
-from ..subvol_utils import with_temp_subvols
-from ..volume_for_repo import get_volume_for_current_repo
-from .common import AntlirTestCase
+from antlir.artifacts_dir import ensure_per_repo_artifacts_dir_exists
+from antlir.fs_utils import Path
+from antlir.subvol_utils import with_temp_subvols
+from antlir.tests.common import AntlirTestCase
+from antlir.unshare import Namespace, Unshare
+from antlir.volume_for_repo import get_volume_for_current_repo
 
 
 class BtrfsUtilTestCase(AntlirTestCase):

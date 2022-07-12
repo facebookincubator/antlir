@@ -8,9 +8,9 @@ import copy
 from collections import Counter
 from typing import Any, Callable, Generator, List, Optional, Tuple
 
-from antlir.tests.common import AntlirTestCase
+from antlir.btrfs_diff.coroutine_utils import while_not_exited
 
-from ..coroutine_utils import while_not_exited
+from antlir.tests.common import AntlirTestCase
 
 
 class DeepCopyTestCase(AntlirTestCase):

@@ -7,7 +7,7 @@
 import subprocess
 import unittest
 
-from ..fs_utils import Path
+from antlir.fs_utils import Path
 
 
 # This is separate from `test_fs_utils.py` so we can run it for all

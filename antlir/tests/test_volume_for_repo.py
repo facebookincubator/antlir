@@ -10,9 +10,9 @@ import subprocess
 import tempfile
 import unittest
 
-from antlir.fs_utils import Path
+from antlir import volume_for_repo as vfr
 
-from .. import volume_for_repo as vfr
+from antlir.fs_utils import Path
 
 
 class VolumeForRepoTestCase(unittest.TestCase):

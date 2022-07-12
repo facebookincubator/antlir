@@ -18,15 +18,15 @@ import logging
 import os
 from typing import BinaryIO, Dict, Iterable, List, Sequence, Tuple
 
-from ..parse_dump import parse_btrfs_dump
-from ..send_stream import (
+from antlir.btrfs_diff.parse_dump import parse_btrfs_dump
+from antlir.btrfs_diff.send_stream import (
     get_frequency_of_selinux_xattrs,
     ItemFilters,
     SendStreamItem,
     SendStreamItems,
 )
-from . import render_subvols
-from .subvolume_utils import InodeRepr
+from antlir.btrfs_diff.tests import render_subvols
+from antlir.btrfs_diff.tests.subvolume_utils import InodeRepr
 
 
 # Update these constants to make the tests pass again after running

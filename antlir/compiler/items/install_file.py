@@ -10,6 +10,13 @@ import stat
 from typing import Iterable, NamedTuple, Union
 
 from antlir.bzl.image.feature.install import install_files_t
+
+from antlir.compiler.items.common import (
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+)
+from antlir.compiler.items.stat_options import build_stat_options
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -21,9 +28,6 @@ from antlir.fs_utils import Path
 from antlir.rust.fs_utils import copy_file
 from antlir.subvol_utils import Subvol
 from pydantic import PrivateAttr
-
-from .common import ImageItem, LayerOpts, make_path_normal_relative
-from .stat_options import build_stat_options
 
 
 # Default permissions, must match the docs in `install.bzl`.

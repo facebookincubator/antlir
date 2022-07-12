@@ -8,7 +8,7 @@ import unittest
 from types import MappingProxyType
 from typing import NamedTuple, Sequence
 
-from ..freeze import DoNotFreeze, freeze, frozendict
+from antlir.btrfs_diff.freeze import DoNotFreeze, freeze, frozendict
 
 
 class FreezeTestCase(unittest.TestCase):

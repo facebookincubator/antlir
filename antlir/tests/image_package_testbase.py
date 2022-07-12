@@ -11,6 +11,7 @@ import tempfile
 
 from antlir.fs_utils import Path
 from antlir.subvol_utils import with_temp_subvols
+from antlir.tests.common import AntlirTestCase
 from antlir.tests.subvol_helpers import (
     get_meta_dir_contents,
     pop_path,
@@ -19,8 +20,7 @@ from antlir.tests.subvol_helpers import (
     RenderedTree,
 )
 
-from ..unshare import nsenter_as_root, Unshare
-from .common import AntlirTestCase
+from antlir.unshare import nsenter_as_root, Unshare
 
 
 class ImagePackageTestCaseBase(AntlirTestCase):

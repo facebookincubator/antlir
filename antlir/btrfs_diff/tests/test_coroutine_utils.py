@@ -7,7 +7,10 @@
 import unittest
 from typing import Any, List
 
-from ..coroutine_utils import GeneratorExitWithResult, while_not_exited
+from antlir.btrfs_diff.coroutine_utils import (
+    GeneratorExitWithResult,
+    while_not_exited,
+)
 
 
 class CoroutineTestError(Exception):

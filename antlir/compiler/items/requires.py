@@ -7,14 +7,14 @@
 from typing import Generator
 
 from antlir.bzl.image.feature.requires import requires_t
+
+from antlir.compiler.items.common import ImageItem
 from antlir.compiler.requires_provides import (
     RequireFile,
     RequireGroup,
     Requirement,
     RequireUser,
 )
-
-from .common import ImageItem
 
 
 class RequiresItem(requires_t, ImageItem):

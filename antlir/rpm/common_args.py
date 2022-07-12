@@ -7,9 +7,9 @@
 "Arguments shared between `snapshot-repo` and `snapshot-repos`."
 from antlir.fs_utils import Path
 
-from .common import RpmShard
-from .db_connection import DBConnectionContext
-from .storage import Storage
+from antlir.rpm.common import RpmShard
+from antlir.rpm.db_connection import DBConnectionContext
+from antlir.rpm.storage import Storage
 
 
 # BEWARE: If your script calls this helper, it is responsible for supporting

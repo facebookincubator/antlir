@@ -6,6 +6,15 @@
 
 import subprocess
 
+from antlir.compiler.items.clone import CloneItem
+from antlir.compiler.items.common import image_source_item
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
+    pop_path,
+    render_subvol,
+)
+
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
@@ -16,10 +25,6 @@ from antlir.compiler.requires_provides import (
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
-
-from ..clone import CloneItem
-from ..common import image_source_item
-from .common import BaseItemTestCase, DUMMY_LAYER_OPTS, pop_path, render_subvol
 
 
 class InstallFileItemTestCase(BaseItemTestCase):

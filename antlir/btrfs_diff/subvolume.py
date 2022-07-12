@@ -41,10 +41,10 @@ from typing import (
     ValuesView,
 )
 
-from .coroutine_utils import while_not_exited
-from .extents_to_chunks import extents_to_chunks_with_clones
-from .freeze import freeze
-from .incomplete_inode import (
+from antlir.btrfs_diff.coroutine_utils import while_not_exited
+from antlir.btrfs_diff.extents_to_chunks import extents_to_chunks_with_clones
+from antlir.btrfs_diff.freeze import freeze
+from antlir.btrfs_diff.incomplete_inode import (
     IncompleteDevice,
     IncompleteDir,
     IncompleteFifo,
@@ -53,10 +53,10 @@ from .incomplete_inode import (
     IncompleteSocket,
     IncompleteSymlink,
 )
-from .inode import Chunk, Inode
-from .inode_id import InodeID, InodeIDMap
-from .rendered_tree import RenderedTree, TraversalIDMaker
-from .send_stream import SendStreamItem, SendStreamItems
+from antlir.btrfs_diff.inode import Chunk, Inode
+from antlir.btrfs_diff.inode_id import InodeID, InodeIDMap
+from antlir.btrfs_diff.rendered_tree import RenderedTree, TraversalIDMaker
+from antlir.btrfs_diff.send_stream import SendStreamItem, SendStreamItems
 
 
 _DUMP_ITEM_TO_INCOMPLETE_INODE = {

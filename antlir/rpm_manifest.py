@@ -13,13 +13,12 @@ import subprocess
 import xml.etree.ElementTree as ET
 
 from antlir.cli import normalize_buck_path
-from antlir.fs_utils import generate_work_dir
+
+from antlir.common import init_logging
+from antlir.find_built_subvol import find_built_subvol
+from antlir.fs_utils import generate_work_dir, Path
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-
-from .common import init_logging
-from .find_built_subvol import find_built_subvol
-from .fs_utils import Path
 
 
 CVE_REGEX = re.compile(r"""\bCVE-[0-9]{4}-[0-9]+\b""")

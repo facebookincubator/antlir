@@ -11,11 +11,15 @@ import subprocess
 from contextlib import contextmanager
 from typing import Callable, ContextManager, Iterable, Tuple
 
-from antlir.subvol_utils import Subvol
+from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
+from antlir.nspawn_in_subvol.cmd import (
+    _nspawn_setup,
+    _nspawn_subvol_setup,
+    _NspawnSetup,
+)
+from antlir.nspawn_in_subvol.plugins import NspawnPlugin
 
-from .args import _NspawnOpts, PopenArgs
-from .cmd import _nspawn_setup, _nspawn_subvol_setup, _NspawnSetup
-from .plugins import NspawnPlugin
+from antlir.subvol_utils import Subvol
 
 
 _PopenResult = Tuple[subprocess.Popen, subprocess.Popen]

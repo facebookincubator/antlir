@@ -8,7 +8,7 @@ import stat
 import unittest
 from dataclasses import dataclass
 
-from ..incomplete_inode import (
+from antlir.btrfs_diff.incomplete_inode import (
     IncompleteDevice,
     IncompleteDir,
     IncompleteFifo,
@@ -16,8 +16,8 @@ from ..incomplete_inode import (
     IncompleteSocket,
     IncompleteSymlink,
 )
-from ..inode import InodeOwner, InodeUtimes
-from ..parse_dump import SendStreamItem, SendStreamItems as SSI
+from antlir.btrfs_diff.inode import InodeOwner, InodeUtimes
+from antlir.btrfs_diff.parse_dump import SendStreamItem, SendStreamItems as SSI
 
 
 class IncompleteInodeTestCase(unittest.TestCase):

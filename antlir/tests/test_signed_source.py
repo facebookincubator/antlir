@@ -3,13 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-from ..errors import UserError
-from ..signed_source import (
+from antlir.errors import UserError
+from antlir.signed_source import (
     assert_signed_source,
     sign_source,
     signed_source_sigil,
 )
-from .common import AntlirTestCase
+from antlir.tests.common import AntlirTestCase
 
 
 _HELLO_WORLD = "hello SignedSource<<9f94b0b1eddcee39813128cd51ef0e47>> world!"

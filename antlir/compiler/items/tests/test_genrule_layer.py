@@ -16,17 +16,17 @@ from unittest.mock import patch
 from antlir.bzl.genrule_layer import genrule_layer_t
 from antlir.bzl.proxy_server_config import proxy_server_config_t
 from antlir.bzl.target import target_t
+
+from antlir.compiler.items.common import PhaseOrder
+from antlir.compiler.items.genrule_layer import GenruleLayerItem
+from antlir.compiler.items.make_subvol import ParentLayerItem
+from antlir.compiler.items.tests.common import DUMMY_LAYER_OPTS
 from antlir.config import antlir_dep
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import AttachAntlirDirMode
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
-
-from ..common import PhaseOrder
-from ..genrule_layer import GenruleLayerItem
-from ..make_subvol import ParentLayerItem
-from .common import DUMMY_LAYER_OPTS
 
 
 def _touch_cmd(path: str):

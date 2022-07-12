@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from antlir.common import get_logger
 
-from .. import Storage  # Module import to ensure we get plugins
+from antlir.rpm.storage import Storage  # Module import to ensure we get plugins
 
 log = get_logger()
 

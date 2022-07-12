@@ -7,8 +7,11 @@
 import subprocess
 import unittest.mock
 
-from .. import storage
-from .storage_base_test import Storage, StorageBaseTestCase
+from antlir.rpm.storage import storage
+from antlir.rpm.storage.tests.storage_base_test import (
+    Storage,
+    StorageBaseTestCase,
+)
 
 
 class CLIObjectStorageBaseTestCase(StorageBaseTestCase):

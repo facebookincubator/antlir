@@ -26,13 +26,13 @@ from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
+
+from antlir.compiler.items.mount_utils import mountpoints_from_subvol_meta
 from antlir.config import repo_config
 from antlir.fs_utils import META_BUILD_DIR, META_DIR, META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 from pydantic import validator
-
-from .mount_utils import mountpoints_from_subvol_meta
 
 
 @enum.unique

@@ -10,7 +10,7 @@ import unittest
 
 from antlir.fs_utils import temp_dir
 
-from ..gpg_keys import snapshot_gpg_keys
+from antlir.rpm.gpg_keys import snapshot_gpg_keys
 
 
 class OpenUrlTestCase(unittest.TestCase):

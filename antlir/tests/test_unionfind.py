@@ -6,7 +6,7 @@
 
 import unittest
 
-from ..unionfind import UnionFind
+from antlir.unionfind import UnionFind
 
 
 class TestUnionFind(unittest.TestCase):

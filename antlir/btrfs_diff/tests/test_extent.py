@@ -11,9 +11,9 @@ import math
 import sys
 from types import SimpleNamespace
 
-from antlir.tests.common import AntlirTestCase
+from antlir.btrfs_diff.extent import Extent
 
-from ..extent import Extent
+from antlir.tests.common import AntlirTestCase
 
 
 class ExtentTestCase(AntlirTestCase):

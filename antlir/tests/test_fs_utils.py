@@ -18,8 +18,8 @@ from dataclasses import dataclass
 from io import StringIO
 from typing import AnyStr, Dict, Iterator, Optional
 
-from ..common import byteme, check_popen_returncode
-from ..fs_utils import (
+from antlir.common import byteme, check_popen_returncode
+from antlir.fs_utils import (
     create_ro,
     generate_work_dir,
     open_for_read_decompress,

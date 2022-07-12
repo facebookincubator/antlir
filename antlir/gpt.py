@@ -16,13 +16,13 @@ from enum import Enum
 
 from antlir.bzl.gpt import gpt_t
 from antlir.cli import normalize_buck_path
+
+from antlir.common import init_logging
+from antlir.find_built_subvol import find_built_subvol
+from antlir.fs_utils import generate_work_dir, Path
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-
-from .common import init_logging
-from .find_built_subvol import find_built_subvol
-from .fs_utils import generate_work_dir, Path
-from .subvol_utils import MiB
+from antlir.subvol_utils import MiB
 
 
 class SgdiskTypeCodes(Enum):

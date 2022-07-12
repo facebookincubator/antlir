@@ -8,9 +8,9 @@ import unittest
 from random import randint
 from typing import Iterable, List, Mapping, Set, Tuple
 
-from ..common import Checksum
-from ..repo_objects import Repodata, Rpm
-from ..repo_sizer import RepoSizer
+from antlir.rpm.common import Checksum
+from antlir.rpm.repo_objects import Repodata, Rpm
+from antlir.rpm.repo_sizer import RepoSizer
 
 
 # pyre-fixme[6]: Expected `str` for 1st param but got `None`.

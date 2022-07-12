@@ -7,7 +7,9 @@
 import os
 from typing import Any, Dict
 
-from .enriched_namedtuple import metaclass_new_enriched_namedtuple
+from antlir.compiler.enriched_namedtuple import (
+    metaclass_new_enriched_namedtuple,
+)
 
 
 class PathObject(type):

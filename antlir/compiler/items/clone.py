@@ -7,18 +7,17 @@
 import subprocess
 
 from antlir.bzl.image.feature.clone import clone_t
-from antlir.compiler.requires_provides import RequireDirectory
-from antlir.fs_utils import CP_CLONE_CMD, Path
-from antlir.subvol_utils import Subvol
-from pydantic import root_validator
-
-from .common import (
+from antlir.compiler.items.common import (
     assert_running_inside_ba,
     ImageItem,
     LayerOpts,
     validate_path_field_normal_relative,
 )
-from .phases_provide import gen_subvolume_subtree_provides
+from antlir.compiler.items.phases_provide import gen_subvolume_subtree_provides
+from antlir.compiler.requires_provides import RequireDirectory
+from antlir.fs_utils import CP_CLONE_CMD, Path
+from antlir.subvol_utils import Subvol
+from pydantic import root_validator
 
 
 # pyre-fixme[13]: Attribute `source` is never initialized.

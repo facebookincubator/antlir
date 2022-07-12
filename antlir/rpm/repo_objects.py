@@ -23,7 +23,7 @@ import time
 from typing import Iterator, List, NamedTuple
 from xml.dom import minidom
 
-from .common import Checksum
+from antlir.rpm.common import Checksum
 
 
 # Used as the common hash for all RPMs (and also repomd.xml). THIS CANNOT BE

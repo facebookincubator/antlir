@@ -21,7 +21,7 @@ bugs, and is backed by through test coverage.  Read the heading of
 """
 import sys
 
-from ..parse_send_stream import parse_send_stream
+from antlir.btrfs_diff.parse_send_stream import parse_send_stream
 
 
 def main(argv):

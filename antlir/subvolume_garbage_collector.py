@@ -49,8 +49,8 @@ import stat
 import sys
 from typing import Iterator, List, Tuple
 
-from .fs_utils import Path
-from .subvol_utils import Subvol
+from antlir.fs_utils import Path
+from antlir.subvol_utils import Subvol
 
 
 log = logging.Logger(os.path.basename(__file__))  # __name__ is __main__

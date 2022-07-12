@@ -26,8 +26,8 @@ from typing import Dict, Iterable, List, Tuple
 
 from antlir.fs_utils import Path
 
-from .cmd import PopenArgs
-from .run import _set_up_run_cli
+from antlir.nspawn_in_subvol.cmd import PopenArgs
+from antlir.nspawn_in_subvol.run import _set_up_run_cli
 
 
 def forward_env_vars(environ: Dict[str, str]) -> Iterable[str]:

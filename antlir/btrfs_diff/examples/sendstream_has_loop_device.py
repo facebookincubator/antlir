@@ -18,8 +18,8 @@ Returns 2 if no loops exist, 1 on usage or data errors.
 import os
 import sys
 
-from ..parse_send_stream import parse_send_stream
-from ..send_stream import SendStreamItems
+from antlir.btrfs_diff.parse_send_stream import parse_send_stream
+from antlir.btrfs_diff.send_stream import SendStreamItems
 
 
 def main(argv):

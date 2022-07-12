@@ -9,8 +9,8 @@ import unittest
 
 from antlir.fs_utils import create_ro, temp_dir
 
-from .. import write_yum_dnf_conf as wydc
-from ..yum_dnf_conf import YumDnf
+from antlir.rpm import write_yum_dnf_conf as wydc
+from antlir.rpm.yum_dnf_conf import YumDnf
 
 
 _CONF_IN = """\

@@ -18,12 +18,12 @@ from typing import Mapping, Tuple
 import requests
 from antlir.fs_utils import temp_dir
 
-from ..common import Checksum
-from ..repo_objects import Repodata, RepoMetadata, Rpm
-from ..repo_server import _CHUNK_SIZE, read_snapshot_dir, repo_server
-from ..repo_snapshot import MutableRpmError, RepoSnapshot
-from ..storage import Storage
-from . import temp_repos
+from antlir.rpm.common import Checksum
+from antlir.rpm.repo_objects import Repodata, RepoMetadata, Rpm
+from antlir.rpm.repo_server import _CHUNK_SIZE, read_snapshot_dir, repo_server
+from antlir.rpm.repo_snapshot import MutableRpmError, RepoSnapshot
+from antlir.rpm.storage import Storage
+from antlir.rpm.tests import temp_repos
 
 
 # We need these fields to be real enough to satisfy `to_sqlite`.

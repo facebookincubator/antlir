@@ -10,7 +10,7 @@ import unittest
 
 from antlir.fs_utils import temp_dir
 
-from ..open_url import open_url
+from antlir.rpm.open_url import open_url
 
 
 class OpenUrlTestCase(unittest.TestCase):

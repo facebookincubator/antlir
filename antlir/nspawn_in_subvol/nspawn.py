@@ -77,17 +77,17 @@ from antlir.cli import normalize_buck_path
 from antlir.common import byteme, get_logger, pipe
 from antlir.errors import InfraError, ToolMissingError
 from antlir.fs_utils import MehStr, Path, temp_dir
-from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 
-from .args import _NspawnOpts, PopenArgs
-from .cmd import _NspawnSetup, maybe_popen_and_inject_fds
-from .common import (
+from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
+from antlir.nspawn_in_subvol.cmd import _NspawnSetup, maybe_popen_and_inject_fds
+from antlir.nspawn_in_subvol.common import (
     DEFAULT_PATH_ENV,
     find_cgroup2_mountpoint,
     parse_cgroup2_path,
 )
-from .plugin_hooks import _popen_plugin_driver
-from .plugins import NspawnPlugin
+from antlir.nspawn_in_subvol.plugin_hooks import _popen_plugin_driver
+from antlir.nspawn_in_subvol.plugins import NspawnPlugin
+from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 
 
 log = get_logger()

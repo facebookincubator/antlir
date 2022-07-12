@@ -9,13 +9,13 @@ import pwd
 from typing import AnyStr, Iterable, Iterator, Tuple
 
 from antlir.bzl_const import hostname_for_compiler_in_ba
+
+from antlir.compiler.dep_graph import DependencyGraph, ImageItem
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.config import repo_config
 from antlir.nspawn_in_subvol.args import new_nspawn_opts
 from antlir.subvol_utils import Subvol
-
-from .dep_graph import DependencyGraph, ImageItem
 
 
 def get_compiler_nspawn_opts(

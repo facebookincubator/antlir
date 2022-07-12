@@ -13,10 +13,10 @@ from contextlib import contextmanager
 from typing import ContextManager
 
 from antlir.common import get_logger
-from antlir.rpm.storage.storage import _CommitCallback
 
-from ..open_url import open_url
-from ..storage import Storage, StorageInput, StorageOutput
+from antlir.rpm.open_url import open_url
+from antlir.rpm.storage import Storage, StorageInput, StorageOutput
+from antlir.rpm.storage.storage import _CommitCallback
 
 
 log = get_logger()

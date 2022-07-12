@@ -12,13 +12,9 @@ import tarfile
 import tempfile
 from contextlib import ExitStack
 
-from antlir.compiler.requires_provides import RequireDirectory
-from antlir.fs_utils import Path
-from antlir.subvol_utils import TempSubvolumes
-
-from ..common import _hash_path, image_source_item
-from ..tarball import TarballItem
-from .common import (
+from antlir.compiler.items.common import _hash_path, image_source_item
+from antlir.compiler.items.tarball import TarballItem
+from antlir.compiler.items.tests.common import (
     BaseItemTestCase,
     DUMMY_LAYER_OPTS,
     get_dummy_layer_opts_ba,
@@ -26,6 +22,10 @@ from .common import (
     temp_filesystem,
     temp_filesystem_provides,
 )
+
+from antlir.compiler.requires_provides import RequireDirectory
+from antlir.fs_utils import Path
+from antlir.subvol_utils import TempSubvolumes
 
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba()

@@ -12,7 +12,7 @@ import uuid
 from io import BytesIO
 from typing import Iterator, NamedTuple, Tuple
 
-from .send_stream import SendStreamItem, SendStreamItems
+from antlir.btrfs_diff.send_stream import SendStreamItem, SendStreamItems
 
 
 BTRFS_SEND_STREAM_MAGIC = b"btrfs-stream\0"

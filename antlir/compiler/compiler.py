@@ -35,6 +35,8 @@ from antlir.compiler.helpers import (
 )
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items_for_features import gen_items_for_features
+
+from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import repo_config
 from antlir.errors import AntlirError
 from antlir.find_built_subvol import find_built_subvol
@@ -44,8 +46,6 @@ from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
-
-from .subvolume_on_disk import SubvolumeOnDisk
 
 
 def parse_args(args) -> argparse.Namespace:

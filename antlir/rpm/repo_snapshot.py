@@ -25,9 +25,9 @@ from typing import Any, Callable, Iterable, Mapping, NamedTuple, Union
 from antlir.common import get_logger
 from antlir.fs_utils import create_ro, Path
 
-from .common import read_chunks
-from .repo_objects import Repodata, RepoMetadata, Rpm
-from .storage import Storage
+from antlir.rpm.common import read_chunks
+from antlir.rpm.repo_objects import Repodata, RepoMetadata, Rpm
+from antlir.rpm.storage import Storage
 
 
 log = get_logger()

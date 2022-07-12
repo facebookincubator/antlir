@@ -9,7 +9,7 @@ import os
 import subprocess
 import unittest
 
-from .coverage_test_helper import coverage_test_helper
+from antlir.bzl.tests.coverage_test_helper import coverage_test_helper
 
 
 class ImagePythonUnittestTest(unittest.TestCase):

@@ -9,6 +9,8 @@ from collections import OrderedDict
 from typing import AnyStr, Dict, Generator, List, NamedTuple, Optional
 
 from antlir.bzl.image.feature.usergroup import group_t
+
+from antlir.compiler.items.common import ImageItem, LayerOpts
 from antlir.compiler.requires_provides import (
     Provider,
     ProvidesGroup,
@@ -17,8 +19,6 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
-
-from .common import ImageItem, LayerOpts
 
 
 # Default GID_MIN from /etc/login.defs.

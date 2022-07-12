@@ -11,9 +11,9 @@ from contextlib import contextmanager
 from typing import Iterable
 from unittest import skipIf
 
-from antlir.tests.flavor_helpers import get_rpm_installers_supported
+from antlir.nspawn_in_subvol.plugins.tests.rpm_base import RpmNspawnTestBase
 
-from .rpm_base import RpmNspawnTestBase
+from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
 
 class TestImpl:

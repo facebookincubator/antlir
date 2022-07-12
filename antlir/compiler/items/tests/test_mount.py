@@ -9,6 +9,25 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional, Union
 
+from antlir.compiler.items.make_subvol import (
+    FilesystemRootItem,
+    ParentLayerItem,
+)
+from antlir.compiler.items.mount import (
+    BuildSource,
+    Mount,
+    MountItem,
+    mounts_from_meta,
+    RuntimeSource,
+)
+from antlir.compiler.items.phases_provide import PhasesProvideItem
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    DUMMY_LAYER_OPTS,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
+
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
@@ -21,22 +40,6 @@ from antlir.config import antlir_dep
 from antlir.fs_utils import Path, temp_dir
 from antlir.subvol_utils import Subvol, TempSubvolumes
 from antlir.tests.subvol_helpers import get_meta_dir_contents
-
-from ..make_subvol import FilesystemRootItem, ParentLayerItem
-from ..mount import (
-    BuildSource,
-    Mount,
-    MountItem,
-    mounts_from_meta,
-    RuntimeSource,
-)
-from ..phases_provide import PhasesProvideItem
-from .common import (
-    BaseItemTestCase,
-    DUMMY_LAYER_OPTS,
-    render_subvol,
-    with_mocked_temp_volume_dir,
-)
 
 
 def _mount_item_new(

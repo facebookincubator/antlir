@@ -14,8 +14,8 @@ Similar to `get_frequency_of_selinux_xattrs` and `ItemFilters` from
 
 from typing import Tuple, Union
 
-from .incomplete_inode import IncompleteDir, IncompleteInode
-from .inode import Inode, InodeOwner
+from antlir.btrfs_diff.incomplete_inode import IncompleteDir, IncompleteInode
+from antlir.btrfs_diff.inode import Inode, InodeOwner
 
 
 _SELINUX_XATTR = b"security.selinux"

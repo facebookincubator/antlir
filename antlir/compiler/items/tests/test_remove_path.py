@@ -7,21 +7,21 @@
 import tempfile
 import unittest.mock
 
-from antlir.errors import UserError
-from antlir.fs_utils import Path
-from antlir.subvol_utils import Subvol, TempSubvolumes
-
-from ..common import PhaseOrder, protected_path_set
-from ..ensure_dirs_exist import ensure_subdirs_exist_factory
-from ..install_file import InstallFileItem
-from ..remove_path import RemovePathItem
-from ..symlink import SymlinkToDirItem
-from .common import (
+from antlir.compiler.items.common import PhaseOrder, protected_path_set
+from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
+from antlir.compiler.items.install_file import InstallFileItem
+from antlir.compiler.items.remove_path import RemovePathItem
+from antlir.compiler.items.symlink import SymlinkToDirItem
+from antlir.compiler.items.tests.common import (
     BaseItemTestCase,
     get_dummy_layer_opts_ba,
     render_subvol,
     with_mocked_temp_volume_dir,
 )
+
+from antlir.errors import UserError
+from antlir.fs_utils import Path
+from antlir.subvol_utils import Subvol, TempSubvolumes
 
 DUMMY_LAYER_OPTS_BA = get_dummy_layer_opts_ba(
     Subvol("test-build-appliance", already_exists=True)

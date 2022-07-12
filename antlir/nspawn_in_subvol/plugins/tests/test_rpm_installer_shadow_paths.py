@@ -7,11 +7,11 @@
 import functools
 
 from antlir.config import antlir_dep
+
+from antlir.nspawn_in_subvol.plugins.tests.rpm_base import RpmNspawnTestBase
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
-
-from .rpm_base import RpmNspawnTestBase
 
 
 class TestImpl:

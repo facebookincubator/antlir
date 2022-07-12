@@ -48,9 +48,9 @@ from typing import (
     Tuple,
 )
 
-from .common import get_logger, init_logging
-from .fs_utils import Path, populate_temp_dir_and_rename
-from .signed_source import sign_source, signed_source_sigil
+from antlir.common import get_logger, init_logging
+from antlir.fs_utils import Path, populate_temp_dir_and_rename
+from antlir.signed_source import sign_source, signed_source_sigil
 
 
 _GENERATED: str = "@" + "generated"

@@ -13,11 +13,11 @@ from typing import FrozenSet
 
 from antlir.fs_utils import Path, temp_dir
 
-from .. import repo_db
-from ..repo_snapshot import RepoSnapshot
-from ..snapshot_repos import snapshot_repos_from_args
-from ..storage import Storage
-from . import temp_repos
+from antlir.rpm import repo_db
+from antlir.rpm.repo_snapshot import RepoSnapshot
+from antlir.rpm.snapshot_repos import snapshot_repos_from_args
+from antlir.rpm.storage import Storage
+from antlir.rpm.tests import temp_repos
 
 
 def _read_conf_headers(conf_path: Path) -> FrozenSet[str]:

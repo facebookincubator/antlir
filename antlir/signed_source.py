@@ -6,7 +6,7 @@
 import hashlib
 import re
 
-from .errors import UserError
+from antlir.errors import UserError
 
 _N_HEADER = 2048  # NB: The current linter does whole-file replacements
 

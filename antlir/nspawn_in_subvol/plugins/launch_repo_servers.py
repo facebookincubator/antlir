@@ -13,7 +13,7 @@ from typing import Generator, List
 from antlir.common import get_logger
 from antlir.fs_utils import Path
 
-from .server_launcher import ServerLauncher
+from antlir.nspawn_in_subvol.plugins.server_launcher import ServerLauncher
 
 
 log = get_logger()

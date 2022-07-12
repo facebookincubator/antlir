@@ -9,6 +9,8 @@ from typing import Iterable
 
 from antlir.bzl.genrule_layer import genrule_layer_t
 from antlir.common import not_none
+
+from antlir.compiler.items.common import LayerOpts, PhaseOrder
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import repo_config
 from antlir.fs_utils import Path
@@ -21,8 +23,6 @@ from antlir.nspawn_in_subvol.args import (
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 from antlir.subvol_utils import Subvol
-
-from .common import LayerOpts, PhaseOrder
 
 
 class GenruleLayerItem(genrule_layer_t):

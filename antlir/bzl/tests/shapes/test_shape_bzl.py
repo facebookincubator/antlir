@@ -7,7 +7,7 @@
 import json
 import unittest
 
-from .shape_bzl import (
+from antlir.bzl.tests.shapes.shape_bzl import (
     _check_type,
     _recursive_copy_transform,
     Fail,
@@ -15,7 +15,9 @@ from .shape_bzl import (
     struct,
     structs,
 )
-from .target_tagger_helper_bzl import target_tagger_helper
+from antlir.bzl.tests.shapes.target_tagger_helper_bzl import (
+    target_tagger_helper,
+)
 
 
 TestUnionType = shape.union_t(bool, int)

@@ -30,9 +30,9 @@ from antlir.nspawn_in_subvol.plugin_hooks import (
     _NspawnSetupCtxMgr,
     _SetupSubvolCtxMgr,
 )
-from antlir.subvol_utils import Subvol
 
-from . import NspawnPlugin
+from antlir.nspawn_in_subvol.plugins import NspawnPlugin
+from antlir.subvol_utils import Subvol
 
 
 log = get_logger()

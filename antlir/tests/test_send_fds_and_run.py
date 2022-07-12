@@ -11,8 +11,8 @@ import subprocess
 import tempfile
 import unittest
 
-from ..common import pipe
-from ..send_fds_and_run import parse_opts, send_fds_and_popen
+from antlir.common import pipe
+from antlir.send_fds_and_run import parse_opts, send_fds_and_popen
 
 
 def _run(argv):

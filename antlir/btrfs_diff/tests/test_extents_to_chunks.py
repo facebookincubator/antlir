@@ -10,12 +10,12 @@ import re
 import textwrap
 from typing import Iterable, Tuple
 
-from antlir.tests.common import AntlirTestCase
+from antlir.btrfs_diff.extent import Extent
+from antlir.btrfs_diff.extents_to_chunks import extents_to_chunks_with_clones
+from antlir.btrfs_diff.inode import Chunk
+from antlir.btrfs_diff.inode_id import InodeID, InodeIDMap
 
-from ..extent import Extent
-from ..extents_to_chunks import extents_to_chunks_with_clones
-from ..inode import Chunk
-from ..inode_id import InodeID, InodeIDMap
+from antlir.tests.common import AntlirTestCase
 
 
 def _gen_ranges_from_figure(figure: str):

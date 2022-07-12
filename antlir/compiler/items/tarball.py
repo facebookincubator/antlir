@@ -7,6 +7,13 @@
 import pwd
 
 from antlir.bzl.image.feature.tarball import tarball_t
+
+from antlir.compiler.items.common import (
+    ImageItem,
+    LayerOpts,
+    make_path_normal_relative,
+    validate_path_field_normal_relative,
+)
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -17,13 +24,6 @@ from antlir.fs_utils import generate_work_dir, open_for_read_decompress, Path
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.subvol_utils import Subvol
-
-from .common import (
-    ImageItem,
-    LayerOpts,
-    make_path_normal_relative,
-    validate_path_field_normal_relative,
-)
 
 
 def load_from_tarball(

@@ -12,7 +12,7 @@ from antlir.common import init_logging
 from antlir.fs_utils import Path
 from antlir.rpm.common import read_chunks
 
-from .storage import Storage
+from antlir.rpm.storage.storage import Storage
 
 
 _CHUNK_SIZE = 2**20  # Not too important, anything large enough is fine.

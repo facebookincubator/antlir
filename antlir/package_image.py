@@ -9,21 +9,19 @@ import pwd
 import subprocess
 from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
 
+from antlir.bzl.loopback_opts import loopback_opts_t
 from antlir.cli import (
     add_targets_and_outputs_arg,
     init_cli,
     normalize_buck_path,
 )
+from antlir.common import check_popen_returncode, get_logger
 from antlir.config import repo_config
+from antlir.find_built_subvol import find_built_subvol
+from antlir.fs_utils import create_ro, generate_work_dir, META_FLAVOR_FILE, Path
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
-
-from .bzl.loopback_opts import loopback_opts_t
-from .common import check_popen_returncode, get_logger, pipe
-from .find_built_subvol import find_built_subvol
-from .fs_utils import create_ro, generate_work_dir, META_FLAVOR_FILE, Path
-from .subvol_utils import Subvol
-from .unshare import Namespace, Unshare
+from antlir.subvol_utils import Subvol
 
 log = get_logger()
 KiB = 2**10

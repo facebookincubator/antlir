@@ -63,7 +63,7 @@ import re
 from collections import OrderedDict
 from typing import Any, BinaryIO, Dict, Iterable, Optional, Pattern, Tuple
 
-from .send_stream import SendStreamItem, SendStreamItems
+from antlir.btrfs_diff.send_stream import SendStreamItem, SendStreamItems
 
 
 _ESCAPED_TO_UNESCAPED = OrderedDict(

@@ -7,13 +7,17 @@
 import subprocess
 
 from antlir.bzl_const import BZL_CONST
+
+from antlir.compiler.items.rpm_action import RpmAction, RpmActionItem
+from antlir.compiler.items.tests.common import (
+    DUMMY_LAYER_OPTS,
+    render_subvol,
+    with_mocked_temp_volume_dir,
+)
 from antlir.fs_utils import Path, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol, TempSubvolumes
 from pydantic import ValidationError
-
-from ..rpm_action import RpmAction, RpmActionItem
-from .common import DUMMY_LAYER_OPTS, render_subvol, with_mocked_temp_volume_dir
 
 
 def create_rpm_action_item(

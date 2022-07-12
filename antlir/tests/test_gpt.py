@@ -9,11 +9,11 @@ import subprocess
 from contextlib import contextmanager
 
 from antlir.fs_utils import temp_dir
+
+from antlir.gpt import make_gpt
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource
-
-from ..gpt import make_gpt
-from ..unshare import Namespace, nsenter_as_root, Unshare
+from antlir.unshare import Namespace, nsenter_as_root, Unshare
 
 
 class GptTestCase(ImagePackageTestCaseBase):

@@ -35,10 +35,10 @@ import stat
 from abc import ABC
 from typing import Dict, Optional, Sequence, Type
 
-from .extent import Extent
-from .freeze import freeze
-from .inode import Chunk, Inode, InodeOwner, InodeUtimes
-from .parse_dump import SendStreamItem, SendStreamItems
+from antlir.btrfs_diff.extent import Extent
+from antlir.btrfs_diff.freeze import freeze
+from antlir.btrfs_diff.inode import Chunk, Inode, InodeOwner, InodeUtimes
+from antlir.btrfs_diff.parse_dump import SendStreamItem, SendStreamItems
 
 
 class IncompleteInode(ABC):

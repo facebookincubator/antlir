@@ -9,8 +9,8 @@ import os
 import unittest
 from contextlib import nullcontext
 
-from .. import update_package_db as updb
-from ..fs_utils import temp_dir
+from antlir import update_package_db as updb
+from antlir.fs_utils import temp_dir
 
 
 def _get_js_content(ss_hash: str, content: str) -> str:

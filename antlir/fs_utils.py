@@ -24,7 +24,7 @@ import uuid
 from contextlib import contextmanager
 from typing import AnyStr, Generator, IO, Iterable, Iterator, List, Union
 
-from .common import byteme, check_popen_returncode, get_logger
+from antlir.common import byteme, check_popen_returncode, get_logger
 
 
 log = get_logger()

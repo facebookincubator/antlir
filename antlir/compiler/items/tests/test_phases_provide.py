@@ -8,6 +8,18 @@ import os
 import subprocess
 import sys
 
+from antlir.compiler.items.group import GROUP_FILE_PATH
+from antlir.compiler.items.phases_provide import (
+    gen_subvolume_subtree_provides,
+    PhasesProvideItem,
+)
+from antlir.compiler.items.tests.common import (
+    BaseItemTestCase,
+    populate_temp_filesystem,
+    temp_filesystem_provides,
+)
+from antlir.compiler.items.user import PASSWD_FILE_PATH
+
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesDoNotAccess,
@@ -17,15 +29,6 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
-
-from ..group import GROUP_FILE_PATH
-from ..phases_provide import gen_subvolume_subtree_provides, PhasesProvideItem
-from ..user import PASSWD_FILE_PATH
-from .common import (
-    BaseItemTestCase,
-    populate_temp_filesystem,
-    temp_filesystem_provides,
-)
 
 
 class PhaseProvidesItemTestCase(BaseItemTestCase):

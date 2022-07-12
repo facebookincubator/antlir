@@ -22,10 +22,10 @@ from antlir.nspawn_in_subvol.args import (
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
+
+from antlir.rpm.replay.fake_pty_wrapper import fake_pty_cmd, fake_pty_resource
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol, TempSubvolumes
-
-from .fake_pty_wrapper import fake_pty_cmd, fake_pty_resource
 
 log = get_logger()
 

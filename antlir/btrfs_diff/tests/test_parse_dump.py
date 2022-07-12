@@ -8,20 +8,23 @@ import io
 import sys
 from typing import List, Sequence
 
-from antlir.fs_utils import Path
-from antlir.tests.common import AntlirTestCase
-
-from ..parse_dump import (
+from antlir.btrfs_diff.parse_dump import (
     NAME_TO_PARSER_TYPE,
     parse_btrfs_dump,
     unquote_btrfs_progs_path,
 )
-from ..send_stream import SendStreamItem, SendStreamItems
-from .demo_sendstreams import gold_demo_sendstreams, make_demo_sendstreams
-from .demo_sendstreams_expected import (
+from antlir.btrfs_diff.send_stream import SendStreamItem, SendStreamItems
+from antlir.btrfs_diff.tests.demo_sendstreams import (
+    gold_demo_sendstreams,
+    make_demo_sendstreams,
+)
+from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     get_filtered_and_expected_items,
     parse_demo_sendstreams_btrfs_dump,
 )
+
+from antlir.fs_utils import Path
+from antlir.tests.common import AntlirTestCase
 
 
 def _parse_demo_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
