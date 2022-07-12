@@ -11,7 +11,7 @@ use nix::ifaddrs::getifaddrs;
 use nix::net::if_::InterfaceFlags;
 use nix::sys::socket::SockAddr;
 
-/// This function returns the mac address of the first eth* interface which is currently in UP state.
+/// This function returns the mac address of the first interface which is currently in UP state.
 /// This is used by the send-event logic (the event endpoint accept mac address, ip address or an asset ID).
 pub fn get_mac() -> Result<String> {
     let addrs = getifaddrs().unwrap();
@@ -25,7 +25,6 @@ pub fn get_mac() -> Result<String> {
             // if the cable is not plugged in.
             && ifaddr.flags.contains(InterfaceFlags::IFF_RUNNING)
             && !ifaddr.flags.contains(InterfaceFlags::IFF_LOOPBACK)
-            && ifaddr.interface_name.starts_with("eth")
         {
             return match ifaddr.address {
                 // check that address is a Datalink address (MAC) (nix::sys::socket::SockAddr::Link)

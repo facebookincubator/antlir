@@ -448,7 +448,6 @@ async def vm(
                     " cgroup_no_v1=all"
                     " systemd.unified_cgroup_hierarchy=1"
                     " rd.emergency=poweroff"
-                    " net.ifnames=0"
                     " systemd.hostname=vmtest "
                     f" root=LABEL={opts.root_label} "
                     + " ".join(root_disk.kernel_args)

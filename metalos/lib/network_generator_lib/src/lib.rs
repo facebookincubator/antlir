@@ -20,7 +20,7 @@ use systemd_generator_lib::Dropin;
 use systemd_generator_lib::GeneratorArgs;
 
 // WARNING: keep in sync with the bzl/TARGETS file unit
-const ETH_NETWORK_UNIT_FILENAME: &str = "50-eth.network";
+const ETH_NETWORK_UNIT_FILENAME: &str = "50-primary.network";
 
 #[derive(Debug, StructOpt)]
 #[cfg_attr(test, derive(Clone))]
@@ -61,7 +61,9 @@ where
         target: ETH_NETWORK_UNIT_FILENAME.into(),
         unit: NetworkUnit {
             match_section: NetworkUnitMatchSection {
-                name: "eth*".to_string(),
+                // Todo: we really just want to match only on the Mac address where
+                // this generator is used, so we can get rid of Name entirely.
+                name: "*".to_string(),
                 mac_address: get_mac_address().context("failed to get mac address")?,
             },
         },
@@ -262,9 +264,9 @@ mod tests {
         compare_dir(
             &tmpdir,
             btreemap! {
-                args.network_unit_dir.join("50-eth.network.d/match.conf") => "\
+                args.network_unit_dir.join("50-primary.network.d/match.conf") => "\
                     [Match]\n\
-                    Name=eth*\n\
+                    Name=*\n\
                     MACAddress=11:22:33:44:55:66\n\
                     ".into(),
                 args.generator_args.early_dir.join("default.target") => args.success_default_target.clone().into(),

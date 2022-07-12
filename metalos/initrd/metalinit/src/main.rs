@@ -470,12 +470,12 @@ impl Bootloader {
         for link in &mut rlc.iter() {
             info!(self.log, "Inspecting link: {}", link);
 
-            // Look at up links named "eth*".
+            // Look at all up links not named "lo".
             if !link.is_up()
-                || !link
+                && link
                     .name()
                     .unwrap_or_else(|| "".to_string())
-                    .starts_with("eth")
+                    .starts_with("lo")
             {
                 continue;
             }
