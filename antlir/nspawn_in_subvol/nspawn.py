@@ -99,6 +99,10 @@ _TMP_MOUNT = "/nspawn_tmp_mount"
 _TMP_MOUNT_NIS_DOMAINNAME = Path(f"{_TMP_MOUNT}/nis_domainname")
 
 
+class NspawnError(Exception):
+    pass
+
+
 def run_nspawn(
     opts: _NspawnOpts,
     popen_args: PopenArgs,
@@ -389,7 +393,7 @@ def _popen_nspawn(
     setup: _NspawnSetup,
 ) -> Iterable[Tuple[subprocess.Popen, int]]:
     if setup.popen_args.console == subprocess.PIPE:
-        raise RuntimeError(
+        raise NspawnError(
             "`popen_booted_nspawn` does not support `subprocess.PIPE` for "
             "the boot console. Please see the `booted.py` docblock for how to "
             "mitigate this."
@@ -459,7 +463,12 @@ def _popen_nspawn(
         # `_wrap_systemd_exec` nor `_non_booted_container_dummy` write to
         # stdout.  Writes to stderr should be minimal, too, not enough to
         # fill up a 64KiB default pipe buffer.
-        container_proc_pid = int(exfil_r.read().split(b":")[1].strip())
+        exfil_res = exfil_r.read().split(b":")
+        if len(exfil_res) < 2:  # pragma: no cover
+            raise NspawnError(
+                f"Failed to exflitrate pid (read '{exfil_res}' from pipe)"
+            )
+        container_proc_pid = int(exfil_res[1].strip())
 
         # From here onward, if either `stderr` or `console` is a pipe, then
         # failing to drain the read end can deadlock.  See file docblock.
