@@ -7,6 +7,10 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:structs.bzl", "structs")
 load(
+    "//antlir/bzl:target_helpers.bzl",
+    "normalize_target",
+)
+load(
     "//antlir/compiler/image/feature/buck2:providers.bzl",
     "FeatureInfo",
     "FlavorInfo",
@@ -90,7 +94,7 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
 
         elif feature[ItemInfo]:
             feature_dict = structs.to_dict(feature[ItemInfo].items)
-            feature_dict["target"] = ctx.attr.name
+            feature_dict["target"] = ctx.attr.normalized_name
 
             if feature[RpmInfo]:
                 if feature[RpmInfo].action == "rpms_install":
@@ -150,6 +154,7 @@ _feature_new_rule = rule(
     attrs = {
         "features": attr.list(attr.dep(), default = []),
         "flavors": attr.list(attr.string(), default = []),
+        "normalized_name": attr.string(),
 
         # parent layer flavor can be fetched from parent layer feature
         "parent_layer_feature": attr.option(attr.dep()),
@@ -192,6 +197,7 @@ def feature_new(
     if not native.rule_exists(name):
         _feature_new_rule(
             name = name,
+            normalized_name = normalize_target(":" + name),
             features = features,
             flavors = flavors,
             parent_layer_feature = parent_layer_feature,
