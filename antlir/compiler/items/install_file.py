@@ -4,12 +4,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import errno
 import os
 import shutil
 import stat
 from typing import Iterable, NamedTuple, Union
 
 from antlir.bzl.image.feature.install import install_files_t
+
+from antlir.common import get_logger
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -23,6 +26,8 @@ from pydantic import PrivateAttr
 
 from .common import ImageItem, LayerOpts, make_path_normal_relative
 from .stat_options import build_stat_options
+
+logger = get_logger()
 
 
 # Default permissions, must match the docs in `install.bzl`.
@@ -84,9 +89,28 @@ def _copy_file_reflink(
     with open(src, "rb") as src_f, open(dst, "wb") as dst_f:
         remaining_len = os.fstat(src_f.fileno()).st_size
         while remaining_len > 0:
-            copied = os.copy_file_range(
-                src_f.fileno(), dst_f.fileno(), remaining_len
-            )
+            try:
+                copied = os.copy_file_range(
+                    src_f.fileno(), dst_f.fileno(), remaining_len
+                )
+            # On older kernels (before 5.3), copy_file_range does not
+            # automatically fall back to copying bytes if CoW is unavailable
+            # (such as cross-filesystem copies), so we can explicitly fallback
+            # to sendfile instead
+            except OSError as ose:  # pragma: no cover
+                if ose.errno == errno.EXDEV:
+                    logger.warning(
+                        "copy_file_range does not appear to support "
+                        "cross-fs copies, falling back on sendfile"
+                    )
+                    copied = os.sendfile(
+                        dst_f.fileno(),
+                        src_f.fileno(),
+                        offset=None,
+                        count=remaining_len,
+                    )
+                else:
+                    raise
             remaining_len -= copied
 
 
