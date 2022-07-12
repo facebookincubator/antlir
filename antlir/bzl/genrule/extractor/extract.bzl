@@ -8,7 +8,7 @@ WARNING: you probably don't actually want this
 extract.bzl exists for very stripped down environments (for example, building
 an initrd) that need a binary (most likely from an RPM) and its library
 dependencies. In almost every case _other_ than building an initrd, you
-either want `image.rpms_install` or `feature.install_buck_runnable`
+either want `feature.rpms_install` or `feature.install_buck_runnable`
 
 If you're still here, `extract.extract` works by parsing the ELF information
 in the given binaries.
@@ -88,7 +88,7 @@ def _extract(
         name = base_extract_layer,
         parent_layer = source,
         features = [
-            image.ensure_dirs_exist("/output"),
+            feature.ensure_dirs_exist("/output"),
             feature.install_buck_runnable(
                 "//antlir/bzl/genrule/extractor:extract",
                 "/extract",

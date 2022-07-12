@@ -18,7 +18,7 @@ snapshot_fedora_override = image.opts(
 image.layer(
     name = "fedora",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "basesystem",
             "coreutils",
             "jq",
@@ -33,7 +33,7 @@ image.layer(
     name = "fedora.vm",
     parent_layer = ":fedora",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "btrfs-progs",
             "iproute",
             "openssh-server",

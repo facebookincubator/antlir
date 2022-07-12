@@ -46,9 +46,9 @@ def initrd(kernel, visibility = None, mount_modules = True):
         systemd.install_unit(antlir_dep("vm/initrd:initrd-switch-root.service")),
         systemd.enable_unit("initrd-switch-root.service", target = "initrd-switch-root.target"),
         systemd.install_unit(antlir_dep("vm/initrd:sysroot.mount")),
-        image.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
+        feature.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
         feature.install("//antlir/vm/initrd:modules.conf", "/usr/lib/modules-load.d/vm.conf"),
-        image.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
+        feature.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
         feature.install(kernel.derived_targets.disk_boot_modules, paths.join("/usr/lib/modules", kernel.uname)),
     ]
 

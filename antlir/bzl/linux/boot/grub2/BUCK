@@ -6,7 +6,7 @@ image.layer(
     name = "_grub2",
     parent_layer = "//metalos/os:metalos",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "grub2-efi-x64",
             "grub2-efi-x64-modules",
         ]),
@@ -24,26 +24,26 @@ grub2_modules = [
 image.layer(
     name = "base",
     features = [
-        image.ensure_subdirs_exist("/", "EFI"),
-        image.ensure_subdirs_exist("/EFI", "BOOT"),
-        image.ensure_subdirs_exist("/EFI", "centos"),
-        image.ensure_subdirs_exist("/", "grub2"),
-        image.ensure_subdirs_exist("/grub2", "x86_64-efi"),
-        image.ensure_subdirs_exist("/", "loader"),
-        image.ensure_subdirs_exist("/loader", "entries"),
-        image.clone(
+        feature.ensure_subdirs_exist("/", "EFI"),
+        feature.ensure_subdirs_exist("/EFI", "BOOT"),
+        feature.ensure_subdirs_exist("/EFI", "centos"),
+        feature.ensure_subdirs_exist("/", "grub2"),
+        feature.ensure_subdirs_exist("/grub2", "x86_64-efi"),
+        feature.ensure_subdirs_exist("/", "loader"),
+        feature.ensure_subdirs_exist("/loader", "entries"),
+        feature.clone(
             ":_grub2",
             "/boot/efi/EFI/centos/grubx64.efi",
             "/EFI/centos/grubx64.efi",
         ),
-        image.clone(
+        feature.clone(
             ":_grub2",
             "/boot/efi/EFI/centos/grubx64.efi",
             "/EFI/BOOT/BOOTX64.efi",
         ),
         feature.install("grub.cfg", "/EFI/BOOT/grub.cfg"),
     ] + [
-        image.clone(
+        feature.clone(
             ":_grub2",
             "/usr/lib/grub/x86_64-efi/{}.mod".format(i),
             "/grub2/x86_64-efi/{}.mod".format(i),

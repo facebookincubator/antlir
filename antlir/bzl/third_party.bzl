@@ -88,10 +88,10 @@ chmod +x $OUT
         name = name + "__setup_layer",
         parent_layer = flavor_helpers.get_build_appliance(),
         features = [
-            image.ensure_dirs_exist(SRC_DIR),
-            image.ensure_dirs_exist(DEPS_DIR),
-            image.ensure_dirs_exist(STAGE_DIR),
-            image.ensure_dirs_exist(OUT_DIR),
+            feature.ensure_dirs_exist(SRC_DIR),
+            feature.ensure_dirs_exist(DEPS_DIR),
+            feature.ensure_dirs_exist(STAGE_DIR),
+            feature.ensure_dirs_exist(OUT_DIR),
             feature.install(
                 third_party_shim.source(name),
                 SRC_TGZ,
@@ -101,7 +101,7 @@ chmod +x $OUT
                 "/build",
                 mode = "a+x",
             ),
-            image.rpms_install(["tar", "fuse", "fuse-overlayfs"]),
+            feature.rpms_install(["tar", "fuse", "fuse-overlayfs"]),
         ] + base_features + [
             feature.install(
                 dep.source,

@@ -55,7 +55,7 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "extract_tagged_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
-load("//antlir/bzl/image_actions:rpms.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
+load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 
 # ## Why are `feature`s forbidden as dependencies?
 #

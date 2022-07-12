@@ -141,7 +141,7 @@ def _derived_targets(uname, upstream_targets):
     image.layer(
         name = _name(uname, "disk-boot-modules-layer"),
         features = [
-            image.ensure_dirs_exist("/usr/lib/modules"),
+            feature.ensure_dirs_exist("/usr/lib/modules"),
             feature.install(_target(uname, "disk-boot-modules"), paths.join("/usr/lib/modules", uname)),
         ],
         flavor = flavor_helpers.get_antlir_linux_flavor(),
@@ -172,7 +172,7 @@ def _derived_targets(uname, upstream_targets):
         # by and the build appliance should have it.
         parent_layer = flavor_helpers.get_build_appliance(flavor_helpers.get_antlir_linux_flavor()),
         features = [
-            image.rpms_install([upstream_targets.devel_rpm]),
+            feature.rpms_install([upstream_targets.devel_rpm]),
         ],
         visibility = [],
     )
@@ -185,15 +185,15 @@ def _derived_targets(uname, upstream_targets):
             feature.install(_target(uname, "disk-boot-modules.cpio.gz"), "/disk-boot-modules.cpio.gz"),
             # Lots of production features require files from kernel-devel to
             # run, so just always install it in this image
-            image.clone(
+            feature.clone(
                 _target(uname, "devel-installed"),
                 "usr/src/kernels/{}".format(uname),
                 "/devel",
             ),
             # empty mountpoints for bind-mounting devel sources under
             # /usr/lib/modules/$(uname -r)
-            image.ensure_subdirs_exist("/modules", "build"),
-            image.ensure_subdirs_exist("/modules", "source"),
+            feature.ensure_subdirs_exist("/modules", "build"),
+            feature.ensure_subdirs_exist("/modules", "source"),
         ],
         flavor = flavor_helpers.get_antlir_linux_flavor(),
         visibility = __METALOS_AND_VMTEST_VISIBILITY,

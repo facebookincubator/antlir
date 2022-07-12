@@ -9,7 +9,7 @@ information check out [the flavor docs](/docs/concepts/flavors/inheritance-in-pa
 """
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _add(rpmlist):
     """
@@ -20,9 +20,9 @@ def _add(rpmlist):
     - `rpmslist`: The list of test rpms to wrap in `rpms_install` with flavor `antlir_test`.
     """
     return [
-        image.rpms_install(rpmlist, flavors = ["antlir_test"]),
+        feature.rpms_install(rpmlist, flavors = ["antlir_test"]),
     ] + [
-        image.rpms_install([], flavors = REPO_CFG.flavor_available),
+        feature.rpms_install([], flavors = REPO_CFG.flavor_available),
     ]
 
 def _remove(rpmlist):
@@ -33,9 +33,9 @@ def _remove(rpmlist):
     - `rpmslist`: The list of test rpms to wrap in `rpms_install` with flavor `antlir_test`.
     """
     return [
-        image.rpms_remove_if_exists(rpmlist, flavors = ["antlir_test"]),
+        feature.rpms_remove_if_exists(rpmlist, flavors = ["antlir_test"]),
     ] + [
-        image.rpms_remove_if_exists([], flavors = REPO_CFG.flavor_available),
+        feature.rpms_remove_if_exists([], flavors = REPO_CFG.flavor_available),
     ]
 
 test_rpms = struct(

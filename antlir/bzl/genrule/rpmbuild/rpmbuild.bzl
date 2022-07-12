@@ -15,10 +15,10 @@ load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
+load("//antlir/bzl/image/feature:ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
 load("//antlir/bzl/image/feature:install.bzl", "feature_install")
 load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
 load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
-load("//antlir/bzl/image_actions:ensure_dirs_exist.bzl", "image_ensure_subdirs_exist")
 
 RPMBUILD_LAYER_SUFFIX = "rpmbuild-build"
 
@@ -119,12 +119,12 @@ def private_image_rpmbuild_impl(
         parent_layer = parent_layer,
         features = [
             feature_install(specfile, specfile_path),
-            image_ensure_subdirs_exist("/", "rpmbuild"),
-            image_ensure_subdirs_exist("/rpmbuild", "BUILD"),
-            image_ensure_subdirs_exist("/rpmbuild", "BUILDROOT"),
-            image_ensure_subdirs_exist("/rpmbuild", "RPMS"),
-            image_ensure_subdirs_exist("/rpmbuild", "SOURCES"),
-            image_ensure_subdirs_exist("/rpmbuild", "SPECS"),
+            feature_ensure_subdirs_exist("/", "rpmbuild"),
+            feature_ensure_subdirs_exist("/rpmbuild", "BUILD"),
+            feature_ensure_subdirs_exist("/rpmbuild", "BUILDROOT"),
+            feature_ensure_subdirs_exist("/rpmbuild", "RPMS"),
+            feature_ensure_subdirs_exist("/rpmbuild", "SOURCES"),
+            feature_ensure_subdirs_exist("/rpmbuild", "SPECS"),
             feature_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ] + (setup_features or []),
         visibility = [],
@@ -261,7 +261,7 @@ def image_import_rpm_public_key_layer(
     image_layer(
         name = copy_layer,
         parent_layer = parent_layer,
-        features = [image_ensure_subdirs_exist("/", gpg_key_dir[1:])] + install_keys,
+        features = [feature_ensure_subdirs_exist("/", gpg_key_dir[1:])] + install_keys,
         **image_layer_kwargs
     )
 

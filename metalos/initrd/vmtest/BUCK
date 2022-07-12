@@ -102,7 +102,7 @@ host_config(
 )
 
 test_kernel_modules = [
-    image.ensure_subdirs_exist("/usr/lib", "modules"),
+    feature.ensure_subdirs_exist("/usr/lib", "modules"),
     feature.install(
         TEST_KERNEL.derived_targets.disk_boot_modules,
         paths.join(

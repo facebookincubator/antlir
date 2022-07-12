@@ -80,7 +80,7 @@ image.layer(
                 path = "toy.rpm",
             ),
         ]),
-        image.ensure_dirs_exist("/antlir"),
+        feature.ensure_dirs_exist("/antlir"),
         feature.install(
             image.source(
                 ":toy-rpm",

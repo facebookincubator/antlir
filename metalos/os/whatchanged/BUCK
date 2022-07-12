@@ -2,6 +2,7 @@
 
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest_opts_t")
@@ -11,7 +12,7 @@ image.layer(
     # Use the test build appliance so that we have a good set of test rpms
     parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             # this will be removed
             "rpm-test-veggie",
             # this will be upgraded
@@ -29,12 +30,12 @@ image.layer(
     name = "test-layer",
     parent_layer = ":test-layer-parent",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
             "rpm-test-mice",
         ]),
-        image.rpms_remove_if_exists(["rpm-test-veggie"]),
-        image.layer_mount(
+        feature.rpms_remove_if_exists(["rpm-test-veggie"]),
+        feature.layer_mount(
             ":test-layer-parent",
             "/mnt/parent",
         ),

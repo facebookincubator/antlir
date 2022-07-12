@@ -50,7 +50,7 @@ image.layer(
     parent_layer = '...',
     features = [
         # `genrule_layer` runs as `nobody` by default
-        image.ensure_subdirs_exist('/', 'output', user='nobody'),
+        feature.ensure_subdirs_exist('/', 'output', user='nobody'),
         feature.install(':untranslated-foo', '/output/_temp_foo'),
     ],
 )
@@ -130,7 +130,7 @@ but only in a few artifacts that were built inside of it.  The example of
     for how to implement it correctly (repo-committed checksums, etc).
 
   - We will not add `--bindmount-{ro,rw}` to the container invocation.
-    Normal `image.layer_mount`s in the parent will, of course, work as
+    Normal `feature.layer_mount`s in the parent will, of course, work as
     intended, but these are not meant to let you bind-mount arbitrary host
     paths, and so ought not to lead to non-determinism. As in the example
     above, `image.install` is another good way to get data into your image.

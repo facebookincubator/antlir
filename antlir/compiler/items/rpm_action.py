@@ -21,7 +21,7 @@ from typing import (
     Union,
 )
 
-from antlir.bzl.image_actions.rpms import rpm_action_item_t
+from antlir.bzl.image.feature.rpms import rpm_action_item_t
 from antlir.bzl_const import BZL_CONST
 from antlir.common import get_logger, not_none
 from antlir.config import repo_config

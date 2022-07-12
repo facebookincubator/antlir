@@ -1,6 +1,18 @@
 load("//antlir/bzl:shape.bzl", "shape")
 
 shape.impl(
+    name = "clone.shape",
+    deps = [
+        "//antlir/bzl:image_source.shape",
+        "//antlir/bzl:target_tagger.shape",
+    ],
+)
+
+shape.impl(
+    name = "ensure_subdirs_exist.shape",
+)
+
+shape.impl(
     name = "install.shape",
     deps = [
         "//antlir/bzl:target_tagger.shape",
@@ -16,11 +28,7 @@ shape.impl(
 )
 
 shape.impl(
-    name = "usergroup.shape",
-)
-
-shape.impl(
-    name = "tarball.shape",
+    name = "rpms.shape",
     deps = [
         "//antlir/bzl:target_tagger.shape",
     ],
@@ -31,4 +39,15 @@ shape.impl(
     deps = [
         "//antlir/bzl:target_tagger.shape",
     ],
+)
+
+shape.impl(
+    name = "tarball.shape",
+    deps = [
+        "//antlir/bzl:target_tagger.shape",
+    ],
+)
+
+shape.impl(
+    name = "usergroup.shape",
 )

@@ -25,7 +25,7 @@ image.layer(
             "/usr/lib/systemd/system-generators/metalos-network-generator",
             mode = "a+rx",
         ),
-        image.ensure_subdirs_exist("/etc", "systemd/system"),
+        feature.ensure_subdirs_exist("/etc", "systemd/system"),
         systemd.install_unit(
             "emergency-sentinel.service",
         ),

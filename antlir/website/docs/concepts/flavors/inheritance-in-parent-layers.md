@@ -52,11 +52,11 @@ image.layer(
     parent = ":base_layer",
     features = [
         # RPM that is available on all flavors
-        image.rpms_install([
+        feature.rpms_install([
             "gcc",
         ]),
         # RPM that is specific to `centos8`
-        image.rpms_install([
+        feature.rpms_install([
             "dnf",
         ], flavors = ["centos8"]),
     ]
@@ -76,7 +76,7 @@ image.layer(
     parent = ":base_layer",
     features = [
         # RPM that is specific to `centos8`
-        image.rpms_install([
+        feature.rpms_install([
             "dnf",
         ], flavors = ["centos8"]),
     ]
@@ -88,9 +88,9 @@ image.layer(
     parent = ":base_layer",
     features = [
         # This makes it explicit that no RPMs are installed on `centos7`.
-        image.rpms_install([], flavors = ["centos7"]),
+        feature.rpms_install([], flavors = ["centos7"]),
         # RPM that is specific to `centos8`
-        image.rpms_install([
+        feature.rpms_install([
             "dnf",
         ], flavors = ["centos8"]),
     ]

@@ -182,7 +182,7 @@ image.layer(
     parent_layer = TEST_IMAGE_PREFIX + "test-layer",
     features = [
         # We'll set up shadowing both via links and directly, and both work.
-        image.ensure_subdirs_exist("/", "real"),
+        feature.ensure_subdirs_exist("/", "real"),
         feature.install(
             "tests/shadow_me",
             "real/shadow_me",
@@ -192,15 +192,15 @@ image.layer(
         ),
         feature.install("tests/i_will_shadow", "real_i_will_shadow"),
         feature.install("tests/i_will_shadow", "other_file"),
-        image.ensure_subdirs_exist("/", "link"),
+        feature.ensure_subdirs_exist("/", "link"),
         feature.ensure_file_symlink("real/shadow_me", "link/shadow_me"),
         feature.ensure_file_symlink("real_i_will_shadow", "link/i_will_shadow"),
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             "/",
             "out",
             user = "nobody",
         ),  # Tests write here
-        image.ensure_subdirs_exist("/", "other_dir"),
+        feature.ensure_subdirs_exist("/", "other_dir"),
     ],
 )
 
@@ -236,7 +236,7 @@ image.layer(
     parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [
         # We'll set up shadowing both via links and directly, and both work.
-        image.ensure_subdirs_exist("/", "rpm_test/"),
+        feature.ensure_subdirs_exist("/", "rpm_test/"),
         feature.install("tests/shadow_me", "rpm_test/carrot.txt"),
         feature.install("tests/i_will_shadow", "i_will_shadow"),
     ],

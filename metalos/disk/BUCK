@@ -2,6 +2,7 @@
 
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":disk.bzl", "disk")
@@ -13,23 +14,23 @@ image.layer(
     name = "control",
     flavor = flavor_helpers.get_antlir_linux_flavor(),
     features = [
-        image.ensure_dirs_exist("/image"),
-        image.ensure_subdirs_exist("/image", "initrd"),
-        image.ensure_subdirs_exist("/image", "kernel"),
-        image.ensure_subdirs_exist("/image", "rootfs"),
-        image.ensure_subdirs_exist("/image", "service"),
-        image.ensure_subdirs_exist("/image", "service-config-generator"),
-        image.ensure_dirs_exist("/run"),
-        image.ensure_subdirs_exist("/run", "boot"),
-        image.ensure_subdirs_exist("/run", "cache"),
-        image.ensure_subdirs_exist("/run", "logs"),
-        image.ensure_subdirs_exist("/run", "runtime"),
-        image.ensure_subdirs_exist("/run", "scratch"),
-        image.ensure_subdirs_exist("/run", "service-roots"),
-        image.ensure_subdirs_exist("/run", "state"),
-        image.ensure_subdirs_exist("/run/state", "metalos"),
-        image.ensure_subdirs_exist("/run/state", "persistent"),
-        image.ensure_subdirs_exist(
+        feature.ensure_dirs_exist("/image"),
+        feature.ensure_subdirs_exist("/image", "initrd"),
+        feature.ensure_subdirs_exist("/image", "kernel"),
+        feature.ensure_subdirs_exist("/image", "rootfs"),
+        feature.ensure_subdirs_exist("/image", "service"),
+        feature.ensure_subdirs_exist("/image", "service-config-generator"),
+        feature.ensure_dirs_exist("/run"),
+        feature.ensure_subdirs_exist("/run", "boot"),
+        feature.ensure_subdirs_exist("/run", "cache"),
+        feature.ensure_subdirs_exist("/run", "logs"),
+        feature.ensure_subdirs_exist("/run", "runtime"),
+        feature.ensure_subdirs_exist("/run", "scratch"),
+        feature.ensure_subdirs_exist("/run", "service-roots"),
+        feature.ensure_subdirs_exist("/run", "state"),
+        feature.ensure_subdirs_exist("/run/state", "metalos"),
+        feature.ensure_subdirs_exist("/run/state", "persistent"),
+        feature.ensure_subdirs_exist(
             "/run/state/persistent",
             "certs",
             user = "root",
@@ -61,7 +62,7 @@ image.layer(
     name = "empty-efi",
     flavor = flavor_helpers.get_antlir_linux_flavor(),
     features = [
-        image.ensure_dirs_exist("/EFI"),
+        feature.ensure_dirs_exist("/EFI"),
     ],
 )
 

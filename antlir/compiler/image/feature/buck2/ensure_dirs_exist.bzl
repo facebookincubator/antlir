@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:stat.bzl", "stat")
 load(
-    "//antlir/bzl/image_actions:ensure_subdirs_exist.shape.bzl",
+    "//antlir/bzl/image/feature:ensure_subdirs_exist.shape.bzl",
     "ensure_subdirs_exist_t",
 )
 load(
@@ -22,7 +22,7 @@ def _generate_shape(into_dir, subdirs_to_create, mode, user, group):
         group = group,
     )
 
-def _image_ensure_subdirs_exist(
+def _feature_ensure_subdirs_exist(
         into_dir,
         subdirs_to_create,
         mode,
@@ -45,14 +45,14 @@ def _image_ensure_subdirs_exist(
         ),
     )
 
-def image_ensure_subdirs_exist(
+def feature_ensure_subdirs_exist(
         into_dir,
         subdirs_to_create,
         mode = 0o755,
         user = "root",
         group = "root"):
     """
-    `image.ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y`
+    `feature.ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y`
     and `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already
     been created by another image feature. If any dirs to be created already
     exist in the image, their attributes will be checked to ensure they match
@@ -71,7 +71,7 @@ def image_ensure_subdirs_exist(
     symbolic strings. In the latter case, the passwd/group database from the
     host (not from the image) is used.
     """
-    return _image_ensure_subdirs_exist(
+    return _feature_ensure_subdirs_exist(
         into_dir = into_dir,
         subdirs_to_create = subdirs_to_create,
         mode = mode,
@@ -80,9 +80,9 @@ def image_ensure_subdirs_exist(
         name = "ensure_subdirs_exist",
     )
 
-def image_ensure_dirs_exist(path, mode = 0o755, user = "root", group = "root"):
-    """Equivalent to `image.ensure_subdirs_exist("/", path, ...)`."""
-    return _image_ensure_subdirs_exist(
+def feature_ensure_dirs_exist(path, mode = 0o755, user = "root", group = "root"):
+    """Equivalent to `feature.ensure_subdirs_exist("/", path, ...)`."""
+    return _feature_ensure_subdirs_exist(
         into_dir = "/",
         subdirs_to_create = path,
         mode = mode,

@@ -13,7 +13,7 @@ image.layer(
     name = "test_compiler_item_layer",
     parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [
-        image.layer_mount(
+        feature.layer_mount(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
             "/test-build-appliance",
         ),
@@ -126,11 +126,11 @@ image.layer(
     name = "test_rpm_action_layer",
     parent_layer = ":test_compiler_item_layer",
     features = [
-        image.layer_mount(
+        feature.layer_mount(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
             "/test-with-one-local-rpm",
         ),
-        image.layer_mount(
+        feature.layer_mount(
             TEST_IMAGE_PREFIX + "layer-with-non-default-snapshot-no-rpms",
             "/test-with-no-rpm",
         ),
@@ -303,11 +303,11 @@ image.layer(
     name = "test_mount_layer",
     parent_layer = ":test_compiler_item_layer",
     features = [
-        image.layer_mount(
+        feature.layer_mount(
             TEST_IMAGE_PREFIX + "small-layer-with-mounts",
             "/small-layer-with-mounts",
         ),
-        image.layer_mount(
+        feature.layer_mount(
             TEST_IMAGE_PREFIX + "hello_world_base",
             "/test-layer-without-mounts",
         ),

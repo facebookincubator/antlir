@@ -13,9 +13,9 @@ load(
 )
 load(":clone.shape.bzl", "clone_t")
 
-def image_clone(src_layer, src_path, dest_path):
+def feature_clone(src_layer, src_path, dest_path):
     """
-`image.clone("//path/to:src_layer", "src/path", "dest/path")` copies a
+`feature.clone("//path/to:src_layer", "src/path", "dest/path")` copies a
 subtree of an existing layer into the one under construction. To the extent
 possible, filesystem metadata are preserved.
 
@@ -31,7 +31,7 @@ More explicitly:
     * Do not clone the source directory, but only its contents.
     * `dest_path` must be a pre-existing dir, and it must end in `/`
 - Similar to `image.symlink*`, a trailing slash in `dest_path` means that it's a
-    pre-existing directory (e.g.  made by `image.ensure_dirs_exist`), and
+    pre-existing directory (e.g.  made by `feature.ensure_dirs_exist`), and
     `clone` will only write to:
     * `dest/(basename of src_path)` if `src_path` lacks a trailing /
     * `dest/(children of src_path)` if `src_path` has a trailing /
@@ -46,7 +46,7 @@ We assume that `:src_layer` has the same user/group DB as the new layer.
 
 ### When to use this?
 
-Often, instead of using , you should prefer `image.layer_mount`, which allows
+Often, instead of using , you should prefer `feature.layer_mount`, which allows
 you to compose independent pieces of the filesystem at *runtime*, without
 incurring the cost of publishing images with a lot of duplicated content.
 

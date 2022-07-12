@@ -10,7 +10,7 @@ import pwd
 import stat
 from typing import Iterator, Optional
 
-from antlir.bzl.image_actions.ensure_subdirs_exist import ensure_subdirs_exist_t
+from antlir.bzl.image.feature.ensure_subdirs_exist import ensure_subdirs_exist_t
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     RequireDirectory,
@@ -137,7 +137,7 @@ def ensure_subdirs_exist_factory(
     This denormalization of a path to separate items is a critical to avoid
     circular dependencies. For example, for the given image feature:
 
-        image.ensure_dirs_exist("/a/b/c")
+        feature.ensure_dirs_exist("/a/b/c")
 
     This factory would yield:
 
@@ -159,7 +159,7 @@ def ensure_subdirs_exist_factory(
     To visualize this problem, consider the following setup:
 
     ```
-        image.ensure_dirs_exist("/a/b/c/d"),
+        feature.ensure_dirs_exist("/a/b/c/d"),
         feature.ensure_dir_symlink("/x/y", "/a/b/c/d"),
     ```
 

@@ -16,8 +16,8 @@ def native_service(
         extra_features = None,
         visibility = None):
     features = [
-        image.ensure_dirs_exist(METALOS_DIR),
-        image.ensure_subdirs_exist(METALOS_DIR, "bin"),
+        feature.ensure_dirs_exist(METALOS_DIR),
+        feature.ensure_subdirs_exist(METALOS_DIR, "bin"),
     ]
     if service.exec_info.runas.user != "root":
         user_home_dir = "/home/{}".format(service.exec_info.runas.user)

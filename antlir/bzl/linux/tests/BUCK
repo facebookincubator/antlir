@@ -13,7 +13,7 @@ image.layer(
     name = "busybox-src-from-ba",
     flavor = "antlir_test",
     features = [
-        image.clone(
+        feature.clone(
             flavor_helpers.get_build_appliance(),
             "/usr/sbin/busybox",
             "/busybox",

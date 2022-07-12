@@ -82,7 +82,7 @@ image.layer(
             os_name = "MetalOS",
             variant = "Bootloader",
         ),
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             "/usr/lib",
             paths.join(
                 "modules",
@@ -168,7 +168,7 @@ image.layer(
     name = "rootfs",
     parent_layer = "//metalos/os/vm:base",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             "efibootmgr",
             # required for TCTI shared libs
             "tpm2-tools",

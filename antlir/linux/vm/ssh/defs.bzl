@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
@@ -13,7 +12,7 @@ def _test_only_login():
     only for testing and should never be installed into a production image.
     """
     return [
-        image.ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             "/root",
             ".ssh",
             user = "root",

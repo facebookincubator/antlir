@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
+load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
 load(":usergroup.shape.bzl", "group_t", "user_t")
 
 SHELL_BASH = "/bin/bash"
@@ -31,7 +31,7 @@ feature.user_add(
     primary_group = "myuser",
     home_dir = "/home/myuser",
 )
-image.ensure_dirs_exist(
+feature.ensure_dirs_exist(
     "/home/myuser",
     mode = 0o755,
     user = "myuser",
@@ -100,7 +100,7 @@ The parent directory of `homedir` must already exist.
             homedir,
             shell,
         ),
-        image.ensure_subdirs_exist(
+        feature_ensure_subdirs_exist(
             homedir_parent,
             homedir_basename,
             user = user,

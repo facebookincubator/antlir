@@ -23,9 +23,9 @@ export_file(
 # since the real root disk is not available in container tests
 mock_run_fs_control = [
     systemd.install_dropin("run-fs-control.conf", "run-fs-control.mount"),
-    image.layer_mount("//metalos/disk:control", "/test-control-subvol-src"),
+    feature.layer_mount("//metalos/disk:control", "/test-control-subvol-src"),
     systemd.install_unit("snapshot-test-control.service"),
-    image.ensure_dirs_exist("/test-control-subvol-addons"),
+    feature.ensure_dirs_exist("/test-control-subvol-addons"),
 ]
 
 # TODO(T123302276) it might be better to just pass the whole antlir config into

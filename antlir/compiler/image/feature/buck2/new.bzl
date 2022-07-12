@@ -35,7 +35,7 @@ def _filter_rpm_versions(
                 flavor_to_version_set[flavor] = version_set
 
         # Rpm item is required to share at least one flavor with new feature,
-        # if it's from an `image.rpms_install` target. If it's from a
+        # if it's from an `feature.rpms_install` target. If it's from a
         # `feature.new` target, it is allowed to be filtered out if it shares
         # no flavors
         if not from_feature_new and not flavor_to_version_set:

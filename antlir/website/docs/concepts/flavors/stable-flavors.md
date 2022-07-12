@@ -19,7 +19,7 @@ image.layer(
     name = "test-layer",
     parent = "parent-layer",
     features = [
-        image.rpms_install([
+        feature.rpms_install([
             # Includes `centos7/gtk`, `centos8/gtk`
             # but not `centos7-untested/gtk` or `centos8-untested/gtk`
             "gtk",
@@ -42,7 +42,7 @@ image.layer(
     name = "test-layer",
     features = [
         # Correct installation of flavors with error annotation.
-        image.rpms_install([
+        feature.rpms_install([
             "gtk",
         ], flavors = [
             "centos8-untested",
@@ -69,7 +69,7 @@ image.layer(
     features = [
         # Throws an error because it does not contain
         # the rpm for the untested flavor `centos8-untested`
-        image.rpms_install([
+        feature.rpms_install([
             "gtk",
         ]),
     ]
