@@ -24,7 +24,7 @@ networking = [
     systemd.enable_unit("systemd-networkd-wait-online.service"),
     # There is some opportunity to consolidate with the MetalOS root network
     # unit, but for right now we only want to use SLAAC in the initrd.
-    feature.install("units/eth.network", "/usr/lib/systemd/network/50-eth.network"),
+    feature.install("units/primary.network", "/usr/lib/systemd/network/50-primary.network"),
 ]
 
 nss = linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default)
@@ -55,7 +55,9 @@ udev = [
         "50-udev-default.rules",
         "60-block.rules",
         "60-persistent-storage.rules",
+        "75-net-description.rules",
         "80-drivers.rules",
+        "80-net-setup-link.rules",
         "95-dm-notify.rules",
         "99-systemd.rules",
     ]

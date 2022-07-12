@@ -510,7 +510,7 @@ mod tests {
                 target: "eth.network".into(),
                 unit: NetworkUnit {
                     match_section: NetworkUnitMatchSection {
-                        name: "eth*".to_string(),
+                        name: "*".to_string(),
                         mac_address: "11:22:33:44:55:66".to_string(),
                     },
                 },
@@ -569,7 +569,7 @@ mod tests {
                 .context("Can't read eth.network.d/match.conf file")?,
             "\
             [Match]\n\
-            Name=eth*\n\
+            Name=*\n\
             MACAddress=11:22:33:44:55:66\n\
             "
         );

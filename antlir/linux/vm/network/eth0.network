@@ -1,5 +1,5 @@
 [Match]
-Name=eth0
+MACAddress=00:00:00:00:00:01
 
 [Network]
 Address=fd00::2/64
