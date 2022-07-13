@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(exit_status_error)]
+
 use anyhow::Context;
 use anyhow::Result;
 use structopt::StructOpt;
@@ -15,6 +17,8 @@ use state::Token;
 
 mod volumes;
 use volumes::ServiceVolumes;
+#[cfg(facebook)]
+mod facebook;
 
 #[derive(StructOpt)]
 enum Operation {
@@ -25,6 +29,9 @@ enum Operation {
     /// Cleanup subvolumes after a service execution. Must be invoked some time
     /// after the native service stops, via metalos-native-service@.service
     Deinit(SvcOpts),
+    #[cfg(facebook)]
+    #[structopt(flatten)]
+    Facebook(facebook::Opts),
 }
 
 impl Operation {
@@ -32,6 +39,8 @@ impl Operation {
         match self {
             Self::Init(o) => o.token,
             Self::Deinit(o) => o.token,
+            #[cfg(facebook)]
+            Self::Facebook(o) => o.token(),
         }
     }
 }
@@ -57,6 +66,7 @@ fn deinit(svc: ServiceInstance) -> Result<()> {
 }
 
 fn main() -> Result<()> {
+    let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
     let op = Operation::from_args();
     let svc = ServiceInstance::load(op.token())
         .with_context(|| format!("while loading {}", op.token()))?
@@ -64,6 +74,8 @@ fn main() -> Result<()> {
     match op {
         Operation::Init(_) => init(svc),
         Operation::Deinit(_) => deinit(svc),
+        #[cfg(facebook)]
+        Operation::Facebook(o) => facebook::main(log, o, svc),
     }
 }
 

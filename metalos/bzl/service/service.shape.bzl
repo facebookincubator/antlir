@@ -41,12 +41,14 @@ dependency_t = shape.shape(
     mode = shape.field(dependency_mode_t, default = "requires-and-after"),
 )
 
+service_cert_t = shape.shape(
+    service_name = str,
+)
+
 certificates_t = shape.shape(
     # if True, MetalOS will bind the certificate files into the rootfs of the
-    # container, and eventually fully automate request + renewal
-    # TODO(T123927865) move cert support into metalos native-service-helper and
-    # remove bzl construction in service_cert.bzl
-    needs_service_cert = shape.field(bool, default = False),
+    # container, and fully automate request + renewal
+    service_cert = shape.field(service_cert_t, optional = True),
     # if True, the host certificate will be bind-mounted in
     needs_host_cert = shape.field(bool, default = False),
 )

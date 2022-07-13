@@ -34,6 +34,7 @@ def _rust_common(
         unittests = True,
         unittest_opts = None,
         deps = (),
+        named_deps = None,
         rustc_flags = None,
         test_deps = (),
         test_env = None,
@@ -55,6 +56,8 @@ def _rust_common(
     if ("container" in unittests) or ("vm" in unittests):
         test_deps += ["//metalos/metalos_macros:metalos_macros", "tokio"]
     test_deps = [_normalize_rust_dep(d) for d in test_deps]
+    named_deps = named_deps or {}
+    named_deps = {name: _normalize_rust_dep(dep) for name, dep in named_deps.items()}
 
     rustc_flags = rustc_flags or []
     # @oss-disable: rustc_flags.append("--cfg=facebook") 
@@ -78,6 +81,7 @@ def _rust_common(
         crate = crate,
         unittests = False,
         deps = deps,
+        named_deps = named_deps,
         tests = tests,
         features = features,
         **kwargs
@@ -104,6 +108,7 @@ def _rust_common(
             srcs = srcs + test_srcs,
             crate = crate,
             deps = deps + test_deps,
+            named_deps = named_deps,
             features = features + ["metalos_plain_test"],
             **test_kwargs
         )
@@ -113,6 +118,7 @@ def _rust_common(
             srcs = srcs + test_srcs,
             crate = crate,
             deps = deps + test_deps,
+            named_deps = named_deps,
             features = features + ["metalos_container_test"],
             layer = unittest_opts.container.layer,
             run_as_user = "root",
@@ -125,6 +131,7 @@ def _rust_common(
             srcs = srcs + test_srcs,
             crate = crate,
             deps = deps + test_deps,
+            named_deps = named_deps,
             features = features + ["metalos_vm_test"],
             vm_opts = vm_opts,
             **test_kwargs

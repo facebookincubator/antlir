@@ -44,7 +44,7 @@ use set::ServiceDiff;
 pub use set::ServiceSet;
 
 #[cfg(facebook)]
-pub(crate) mod facebook;
+pub mod facebook;
 
 pub type Version = Uuid;
 
@@ -123,7 +123,7 @@ impl ServiceInstance {
     }
 
     /// Load the structured service definition that is installed in the image
-    fn load_shape(&self) -> Result<service_shape::service_t> {
+    pub fn load_shape(&self) -> Result<service_shape::service_t> {
         let path = self.metalos_dir().join("service.shape");
         let buf =
             std::fs::read(&path).with_context(|| format!("while reading {}", path.display()))?;
