@@ -27,6 +27,13 @@ def native_service(
             user_home_dir,
         ))
 
+    # do some checks on service properties
+    if service.exec_info.resource_limits:
+        if service.exec_info.resource_limits.open_fds and service.exec_info.resource_limits.open_fds < 0:
+            fail("service.exec_info.resource_limits.open_fds must be a positive integer")
+        if service.exec_info.resource_limits.memory_max_bytes and service.exec_info.resource_limits.memory_max_bytes < 0:
+            fail("service.exec_info.resource_limits.memory_max_bytes must be a positive integer")
+
     # install buck binaries at a path based on their target so that the user
     # doesn't have to provide a unique name that would then have to be
     # propagated to the native service lib that writes out the unit file

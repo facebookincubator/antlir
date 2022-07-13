@@ -22,6 +22,7 @@ use state::State;
 use state::Token;
 use systemd::UnitName;
 
+use crate::unit_file::Environment;
 use crate::ServiceInstance;
 
 const MOUNT_CACHE: &str = "/metalos/cache";
@@ -46,26 +47,6 @@ struct UnitSection {
 pub(crate) struct UnitMetadata {
     pub(crate) native_service: String,
     pub(crate) version: Uuid,
-}
-
-// At some point it would be nice to bootcamp moving this into `serde_systemd`
-// or a companion crate, but I(vmagro) want to wait a little bit on that until I
-// can collect a more useful set of primitives and specialized types (based
-// primarily on usage that will spring up in this crate)
-#[derive(Debug, PartialEq, Eq)]
-pub(crate) struct Environment(pub(crate) BTreeMap<String, String>);
-
-impl Serialize for Environment {
-    fn serialize<S>(&self, ser: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let mut seq = ser.serialize_seq(Some(self.0.len()))?;
-        for (k, v) in &self.0 {
-            seq.serialize_element(&format!("{}={}", k, v))?;
-        }
-        seq.end()
-    }
 }
 
 fn serialize_bind_rw_paths<S>(paths: &BTreeMap<PathBuf, PathBuf>, ser: S) -> Result<S::Ok, S::Error>

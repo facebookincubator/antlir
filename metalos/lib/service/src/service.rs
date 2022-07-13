@@ -42,9 +42,13 @@ use systemd_parser::items::*;
 mod dropin;
 mod generator;
 mod set;
+mod unit_file;
 use dropin::Dropin;
 use set::ServiceDiff;
 pub use set::ServiceSet;
+
+#[cfg(facebook)]
+pub(crate) mod facebook;
 
 pub type Version = Uuid;
 

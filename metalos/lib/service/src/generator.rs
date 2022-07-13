@@ -11,7 +11,7 @@ use anyhow::Result;
 use nix::sys::utsname::uname;
 use serde::Serialize;
 
-use crate::dropin::Environment;
+use crate::unit_file::Environment;
 use service_config_generator_if::Input;
 use service_config_generator_if::Output;
 
