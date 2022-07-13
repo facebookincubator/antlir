@@ -145,9 +145,17 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                                 ):
                                     pass
                             continue
-                        elif compression_level != ZSTD_LEVEL_DEFAULT:
-                            # No support for additional compression levels yet,
-                            # so let's only test the default one
+                        elif compression_level == ZSTD_LEVEL_NONE:
+                            with self.assertRaisesRegex(
+                                UserError, "will disable compression"
+                            ):
+                                with self._package_image(
+                                    self._sibling_path("create_ops.layer"),
+                                    format,
+                                    btrfs_sendstream_version=sendstream_version,
+                                    zstd_compression_level=compression_level,
+                                ):
+                                    pass
                             continue
 
                     with self._package_image(
