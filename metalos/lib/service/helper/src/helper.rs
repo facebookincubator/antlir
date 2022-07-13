@@ -12,6 +12,7 @@ use anyhow::Result;
 use structopt::StructOpt;
 
 use service::ServiceInstance;
+use state::Alias;
 use state::State;
 use state::Token;
 
@@ -35,12 +36,12 @@ enum Operation {
 }
 
 impl Operation {
-    fn token(&self) -> Token<ServiceInstance> {
+    fn alias(&self) -> Alias<ServiceInstance> {
         match self {
-            Self::Init(o) => o.token,
-            Self::Deinit(o) => o.token,
+            Self::Init(o) => o.service.clone(),
+            Self::Deinit(o) => o.service.clone(),
             #[cfg(facebook)]
-            Self::Facebook(o) => o.token(),
+            Self::Facebook(o) => o.alias(),
         }
     }
 }
@@ -50,7 +51,7 @@ struct SvcOpts {
     /// Token pointing to a serialized ServiceInstance. Generated automatically
     /// as part of the native service lifecycle transitions.
     #[structopt(long)]
-    token: Token<ServiceInstance>,
+    service: Alias<ServiceInstance>,
 }
 
 fn init(svc: ServiceInstance) -> Result<()> {
@@ -68,9 +69,9 @@ fn deinit(svc: ServiceInstance) -> Result<()> {
 fn main() -> Result<()> {
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
     let op = Operation::from_args();
-    let svc = ServiceInstance::load(op.token())
-        .with_context(|| format!("while loading {}", op.token()))?
-        .with_context(|| format!("no such token {}", op.token()))?;
+    let svc = ServiceInstance::aliased(op.alias())
+        .with_context(|| format!("while loading {}", op.alias()))?
+        .with_context(|| format!("no such token {}", op.alias()))?;
     match op {
         Operation::Init(_) => init(svc),
         Operation::Deinit(_) => deinit(svc),

@@ -2,17 +2,16 @@
 # directories, root subvol snapshots, materializing service config generator
 # output, etc.
 #
-# A drop-in will add a [Unit] section similar to this:
-# [Unit]
-# Description=MetalOS Native Service metalos.demo
-# PartOf=metalos.demo.service
-#
 # The Native Service unit will have a Requires= and PropagatesStopTo= on this
 # unit. This plus the PartOf in this unit will bind the lifecycle of the two
 # units together.
 
+[Unit]
+Description=MetalOS Native Service %i
+PartOf=%i.service
+
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStart=/usr/lib/metalos/native-service-helper init --token %I
-ExecStopPost=/usr/lib/metalos/native-service-helper deinit --token %I
+ExecStart=/usr/lib/metalos/native-service-helper init --service %I
+ExecStopPost=/usr/lib/metalos/native-service-helper deinit --service %I
