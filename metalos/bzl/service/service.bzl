@@ -1,6 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -80,7 +79,7 @@ def native_service(
     image.layer(
         name = service.name + "--layer",
         features = features,
-        parent_layer = REPO_CFG.artifact["metalos.layer.base"],
+        parent_layer = "//metalos/services/base:base",
         visibility = visibility if visibility != None else ["//metalos/...", "//netos/..."],
     )
     # @oss-disable: native_service_fbpkg(name = service.name, layer = ":{}--layer".format(service.name)) 
