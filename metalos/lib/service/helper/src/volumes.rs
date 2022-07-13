@@ -180,7 +180,7 @@ mod tests {
     async fn create() -> Result<()> {
         crate::tests::wait_for_systemd().await?;
         let (svc_vols, svc) = do_create()?;
-        assert_paths(svc_vols, svc);
+        assert_paths(svc_vols, svc).unwrap();
         Ok(())
     }
 
@@ -189,7 +189,7 @@ mod tests {
         crate::tests::wait_for_systemd().await?;
         let (_, svc) = do_create()?;
         let svc_vols = ServiceVolumes::get(&svc)?;
-        assert_paths(svc_vols, svc);
+        assert_paths(svc_vols, svc).unwrap();
         Ok(())
     }
 }

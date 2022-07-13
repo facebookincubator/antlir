@@ -6,9 +6,7 @@
  */
 
 use nix::unistd::chown;
-use nix::unistd::Gid;
 use nix::unistd::Group;
-use nix::unistd::Uid;
 use nix::unistd::User;
 use std::collections::HashSet;
 use std::fs::read_dir;
@@ -31,13 +29,11 @@ use slog::trace;
 use slog::Logger;
 use uuid::Uuid;
 
-use systemd::EnableDisableUnitFlags;
 use systemd::Marker;
 use systemd::StartMode;
 use systemd::Systemd;
 use systemd::TypedObjectPath;
 use systemd::UnitName;
-use systemd_parser::items::*;
 
 mod dropin;
 mod generator;
@@ -51,6 +47,10 @@ pub use set::ServiceSet;
 pub(crate) mod facebook;
 
 pub type Version = Uuid;
+
+fn systemd_run_unit_path() -> &'static Path {
+    Path::new("/run/systemd/system")
+}
 
 /// Run details for a single execution of a Native Service.
 #[derive(Debug, Deserialize, Serialize)]
@@ -113,8 +113,8 @@ impl ServiceInstance {
         self.paths.root_source.join("metalos")
     }
 
-    fn unit_file_path(&self) -> PathBuf {
-        self.metalos_dir().join(&self.unit_name)
+    fn linked_unit_path(&self) -> PathBuf {
+        systemd_run_unit_path().join(self.unit_name())
     }
 
     // TODO(T111087410): this should come from a separate package
@@ -122,37 +122,29 @@ impl ServiceInstance {
         self.metalos_dir().join("generator")
     }
 
+    /// Load the structured service definition that is installed in the image
+    fn load_shape(&self) -> Result<service_shape::service_t> {
+        let path = self.metalos_dir().join("service.shape");
+        let buf =
+            std::fs::read(&path).with_context(|| format!("while reading {}", path.display()))?;
+        fbthrift::binary_protocol::deserialize(&buf)
+            .with_context(|| format!("while parsing {}", path.display()))
+    }
+
     /// Makes sure to assign proper ownership to the cache/logs/state directories.
     /// This is needed if the .service file has User/Group directives.
     pub fn set_paths_onwership(&self) -> Result<()> {
-        let mut uid = Uid::from_raw(0);
-        let mut gid = Gid::from_raw(0);
-        let file_content = std::fs::read_to_string(self.unit_file_path()).with_context(|| {
-            format!(
-                "while reading unit file {}",
-                self.unit_file_path().display()
-            )
-        })?;
-        // NOTE: ideally I would use dbus to get the User/Group for a unit, however
-        // when this function runs the service might not be loaded....
-        // Thefore we have to parse the unit file with the systemd_parser crate.
-        let systemd_unit = systemd_parser::parse_string(&file_content)?;
-        if let Some(&DirectiveEntry::Solo(ref u)) = systemd_unit.lookup_by_key("User") {
-            if let Some(user) = u.value() {
-                uid = User::from_name(user)
-                    .with_context(|| format!("user {} not found", user))?
-                    .with_context(|| format!("can't find uid for user {}", user))?
-                    .uid;
-            }
-        }
-        if let Some(&DirectiveEntry::Solo(ref g)) = systemd_unit.lookup_by_key("Group") {
-            if let Some(group) = g.value() {
-                gid = Group::from_name(group)
-                    .with_context(|| format!("group {} not found", group))?
-                    .with_context(|| format!("can't find gid for group {}", group))?
-                    .gid;
-            }
-        }
+        let svc = self
+            .load_shape()
+            .context("while loading shape to determine owner user")?;
+        let uid = User::from_name(&svc.exec_info.runas.user)
+            .with_context(|| format!("while looking up user '{}'", svc.exec_info.runas.user))?
+            .with_context(|| format!("user '{}' not found", svc.exec_info.runas.user))?
+            .uid;
+        let gid = Group::from_name(&svc.exec_info.runas.user)
+            .with_context(|| format!("while looking up group '{}'", svc.exec_info.runas.group))?
+            .with_context(|| format!("group '{}' not found", svc.exec_info.runas.group))?
+            .gid;
         chown(self.paths().cache(), Some(uid), Some(gid))?;
         chown(self.paths().logs(), Some(uid), Some(gid))?;
         chown(self.paths().state(), Some(uid), Some(gid))?;
@@ -161,9 +153,9 @@ impl ServiceInstance {
     }
 
     /// Prepare this service version to be run the next time this service is
-    /// restarted. This method will not start the service, but it will link it.
-    /// A separate daemon-reload must be triggered for systemd to load the new
-    /// unit settings.
+    /// restarted. This method will not start the service, but it will ensure
+    /// that the MetalOS drop-ins are applied and any service config generator
+    /// is executed.
     pub(crate) async fn prepare(self, sd: &Systemd) -> Result<PreparedService> {
         let dropin = Dropin::new(&self)
             .with_context(|| format!("while building dropin for {}", self.unit_name))?;
@@ -238,12 +230,19 @@ impl ServiceInstance {
             }
         }
 
-        let unit_file = self.unit_file_path();
-        // overwrite any existing link, since a different version of the service
-        // could already be running
-        sd.link_unit_files(&[systemd::FilePath::new(&unit_file)], true, true)
-            .await
-            .with_context(|| format!("while linking {}", unit_file.display()))?;
+        let svc = self.load_shape().context("while loading service shape")?;
+        let unit_file: unit_file::UnitFile = svc
+            .try_into()
+            .context("while converting shape to unit file")?;
+        let unit_contents = serde_systemd::to_string(&unit_file)
+            .context("while serializing shape to systemd unit")?;
+        std::fs::write(self.linked_unit_path(), unit_contents).with_context(|| {
+            format!(
+                "while writing unit file '{}'",
+                self.linked_unit_path().display()
+            )
+        })?;
+
         Ok(PreparedService(self))
     }
 }
@@ -455,17 +454,23 @@ impl Transaction {
             // also unlink all the unit files for stopped services
             let units: Vec<_> = to_stop.iter().collect();
             trace!(log, "unlinking [{}]", units.iter().join(","));
-            sd.disable_unit_files(units.as_slice(), EnableDisableUnitFlags::RUNTIME)
-                .await
-                .context("while unlinking stopped service unit files")?;
 
-            // this is not strictly necessary, but delete any drop-ins for this
-            // service to avoid cluttering /run/systemd/system
+            // this is not strictly necessary, delete the service units and any
+            // drop-ins for this service to avoid cluttering /run/systemd/system
             for unit in &to_stop {
-                let dropin_dir = Path::new("/run/systemd/system").join(format!("{}.d", &unit));
+                let dropin_dir = systemd_run_unit_path().join(format!("{}.d", &unit));
                 std::fs::remove_dir_all(&dropin_dir)
                     .with_context(|| format!("while deleting {}", dropin_dir.display()))?;
+                std::fs::remove_file(systemd_run_unit_path().join(&unit)).with_context(|| {
+                    format!(
+                        "while removing linked unit file {}",
+                        systemd_run_unit_path().join(unit).display()
+                    )
+                })?;
             }
+
+            // daemon-reload again to pick up any deleted unit files
+            sd.reload().await.context("while doing daemon-reload")?;
         }
 
         let mut jobs: HashSet<_> = jobs.into_iter().collect();
