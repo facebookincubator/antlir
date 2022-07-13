@@ -133,6 +133,20 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
                 'Expected sendstream version to be "1" for zst package'
             )
 
+        if opts.zstd_compression_level < ZSTD_LEVEL_NONE:
+            # Invert zstd_compression_level so that lower (negative) values
+            # result in a higher value given to --fast
+            args.append("--fast=" + str(0 - opts.zstd_compression_level))
+        elif opts.zstd_compression_level == ZSTD_LEVEL_NONE:
+            raise UserError(
+                "compression level 0 will disable compression for the "
+                "sendstream.zst format; this is disallowed"
+            )
+        else:
+            if opts.zstd_compression_level >= ZSTD_LEVEL_ULTRA_MIN:
+                args.append("--ultra")
+            args.append(f"-{opts.zstd_compression_level}")
+
         with create_ro(output_path, "wb") as zst_file, subprocess.Popen(
             args,
             stdin=subprocess.PIPE,
