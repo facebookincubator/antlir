@@ -432,3 +432,34 @@ def package_image(args) -> None:
 # This is covered by integration tests using `package.bzl`
 if __name__ == "__main__":  # pragma: no cover
     package_image(None)
+
+BTRFS_SENDSTREAM_VERSION_PATH = "/sys/fs/btrfs/features/send_stream_version"
+
+
+# This returns the underlying supported sendstream version from the kernel
+def btrfs_get_supported_sendstream_version(
+    sysfs_path=BTRFS_SENDSTREAM_VERSION_PATH,  # For testing
+) -> int:
+    """
+    Queries the underlying kernel to determine the maximum supported sendstream
+    version.
+    * sysfs_path can be set to override the path that is queried; this can
+      be set to something akin to "/dev/null" to mimic a kernel that doesn't
+      support sendstream2 (in which case proto 2 can't be used to generate
+      the sendstream)
+    """
+    try:
+        # Try to open the sysfs file that dictates the sendstream version
+        # Read contents
+        # Try to cast as int (Note: There is an extra linefeed character in
+        # the file, but the cast seems to ignore it)
+        with open(sysfs_path, mode="r", encoding="ascii") as f:
+            c = f.read()
+            n = int(c)
+            return n
+    except (ValueError, FileNotFoundError):
+        # Nothing to do here
+        pass
+    # If we could not get the underlying sendstream version for any reason,
+    # just return 1
+    return 1

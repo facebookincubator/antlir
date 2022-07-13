@@ -24,7 +24,11 @@ from antlir.fs_utils import (
 )
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.package_image import Format, package_image
+from antlir.package_image import (
+    btrfs_get_supported_sendstream_version,
+    Format,
+    package_image,
+)
 from antlir.serialize_targets_and_outputs import make_target_path_map
 from antlir.subvol_utils import get_subvolumes_dir, with_temp_subvols
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
@@ -383,3 +387,19 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 self._sibling_path("create_ops.layer"), "ext3"
             ) as pkg_path:
                 pass
+
+    def test_btrfs_get_supported_sendstream_version(self) -> None:
+        kernel_sendstream_version = btrfs_get_supported_sendstream_version()
+        dev_null_file_version = btrfs_get_supported_sendstream_version(
+            sysfs_path="/dev/null"
+        )
+        no_file_version = btrfs_get_supported_sendstream_version(
+            sysfs_path="/dev/some_file_that_were_pretty_sure_doesnt_exist"
+        )
+        no_dir_version = btrfs_get_supported_sendstream_version(
+            sysfs_path="/dev/some_dir_that_were_pretty_sure_doesnt_exist/stuff"
+        )
+        self.assertTrue(1 <= kernel_sendstream_version <= 2)
+        self.assertEqual(dev_null_file_version, 1)
+        self.assertEqual(no_file_version, 1)
+        self.assertEqual(no_dir_version, 1)
