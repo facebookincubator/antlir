@@ -87,12 +87,17 @@ where
 
     /// Load the staged version of this staged object, if any.
     fn staged() -> Result<Option<Self>> {
-        crate::staged()
+        Self::aliased(Alias::Staged)
     }
 
     /// Load the current version of this staged object, if any.
     fn current() -> Result<Option<Self>> {
-        crate::current()
+        Self::aliased(Alias::Current)
+    }
+
+    /// Load an aliased version of this staged object, if any.
+    fn aliased(alias: Alias<Self>) -> Result<Option<Self>> {
+        crate::load_alias(alias)
     }
 
     /// Save this state object to disk.
@@ -238,28 +243,72 @@ where
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Copy, Clone)]
+#[derive(Debug)]
 /// There are a few special cased tokens that hold meaning in MetalOS.
-pub enum Alias {
+pub enum Alias<S> {
     /// The most recently staged version of a state variable.
     Staged,
     /// The most recently committed version of a state variable.
     Current,
+    /// A custom string instead of the preset values.
+    Custom(String, PhantomData<S>),
 }
 
-impl Alias {
-    fn path<S>(&self) -> PathBuf {
-        let filename = format!(
-            "{}-{}.json",
-            std::any::type_name::<S>(),
-            match self {
-                Self::Staged => "staged",
-                Self::Current => "current",
-            }
-        );
+impl<S> Alias<S> {
+    fn path(&self) -> PathBuf {
+        let filename = format!("{}-{}.json", std::any::type_name::<S>(), self);
         STATE_BASE.join(filename)
     }
+
+    pub fn custom(alias: String) -> Self {
+        Self::Custom(alias, PhantomData)
+    }
 }
+
+impl<S> Clone for Alias<S> {
+    fn clone(&self) -> Self {
+        match self {
+            Self::Staged => Self::Staged,
+            Self::Current => Self::Current,
+            Self::Custom(s, _) => Self::Custom(s.clone(), PhantomData),
+        }
+    }
+}
+
+impl<S> std::fmt::Display for Alias<S> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Staged => "staged",
+            Self::Current => "current",
+            Self::Custom(s, _) => s,
+        })
+    }
+}
+
+impl<S> std::str::FromStr for Alias<S> {
+    type Err = std::convert::Infallible;
+
+    fn from_str(s: &str) -> std::result::Result<Self, std::convert::Infallible> {
+        Ok(match s {
+            "staged" => Self::Staged,
+            "current" => Self::Current,
+            _ => Self::custom(s.to_string()),
+        })
+    }
+}
+
+impl<S> PartialEq for Alias<S> {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Staged, Self::Staged) => true,
+            (Self::Current, Self::Current) => true,
+            (Self::Custom(s, _), Self::Custom(o, _)) => s == o,
+            _ => false,
+        }
+    }
+}
+
+impl<S> Eq for Alias<S> {}
 
 impl<S, Ser> Token<S, Ser>
 where
@@ -284,8 +333,8 @@ where
     /// Mark this token as the staged version of a state item.
     ///
     /// See also [commit](Token::commit).
-    pub fn stage(&self) -> Result<()> {
-        alias(*self, Alias::Staged)
+    pub fn stage(&self) -> Result<Alias<S>> {
+        self.alias(Alias::Staged)
     }
 
     /// Mark this token as the current version of a state item.
@@ -293,8 +342,13 @@ where
     /// Typically precededed by [stage](Token::stage), but this is not required.
     /// [stage](Token::stage) and [commit](Token::commit) hold special meaning
     /// and can be used to retrieve states without knowing the unique [Token].
-    pub fn commit(&self) -> Result<()> {
-        alias(*self, Alias::Current)
+    pub fn commit(&self) -> Result<Alias<S>> {
+        self.alias(Alias::Current)
+    }
+
+    /// Assign an Alias to this state item.
+    pub fn alias(&self, alias: Alias<S>) -> Result<Alias<S>> {
+        crate::alias(*self, alias)
     }
 
     /// Get a file:// uri that points to this config
@@ -322,12 +376,12 @@ where
 }
 
 /// it will be replaced.
-fn alias<S, Ser>(token: Token<S, Ser>, alias: Alias) -> Result<()>
+fn alias<S, Ser>(token: Token<S, Ser>, alias: Alias<S>) -> Result<Alias<S>>
 where
     S: State<Ser>,
     Ser: Serialization,
 {
-    let alias_path = alias.path::<S>();
+    let alias_path = alias.path();
     std::fs::remove_file(&alias_path)
         .or_else(|e| match e.kind() {
             std::io::ErrorKind::NotFound => Ok(()),
@@ -340,7 +394,8 @@ where
             alias_path.display(),
             token.path().display()
         )
-    })
+    })?;
+    Ok(alias)
 }
 
 /// Load a specific version of a state type, using the key returned by [save]
@@ -364,42 +419,21 @@ where
 }
 
 /// Load an aliased version of a state type.
-fn load_alias<S, Ser>(alias: Alias) -> Result<Option<S>>
+fn load_alias<S, Ser>(alias: Alias<S>) -> Result<Option<S>>
 where
     S: State<Ser>,
     Ser: Serialization,
 {
-    let alias_path = alias.path::<S>();
+    let alias_path = alias.path();
     match std::fs::read(&alias_path) {
-        Err(e) => {
-            match e.kind() {
-                std::io::ErrorKind::NotFound => Ok(None),
-                _ => Err(anyhow::Error::from(e)
-                    .context(format!("while opening {}", alias_path.display()))),
-            }
-        }
+        Err(e) => match e.kind() {
+            std::io::ErrorKind::NotFound => Ok(None),
+            _ => Err(e).context(format!("while opening {}", alias_path.display())),
+        },
         Ok(bytes) => S::from_json(bytes)
             .map(Some)
             .with_context(|| format!("while deserializing {}", alias_path.display())),
     }
-}
-
-/// Load the current version of S, if it exists.
-fn current<S, Ser>() -> Result<Option<S>>
-where
-    S: State<Ser>,
-    Ser: Serialization,
-{
-    load_alias(Alias::Current)
-}
-
-/// Load the staged version of S, if it exists.
-fn staged<S, Ser>() -> Result<Option<S>>
-where
-    S: State<Ser>,
-    Ser: Serialization,
-{
-    load_alias(Alias::Staged)
 }
 
 #[cfg(test)]
@@ -470,6 +504,30 @@ mod tests {
         .context("while saving")?;
         token.commit().context("while writing current alias")?;
         let current = ExampleState::current().context("while loading current")?;
+        assert_eq!(
+            Some(ExampleState {
+                hello: "world".into()
+            }),
+            current
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn custom_alias() -> Result<()> {
+        let current = ExampleState::aliased(Alias::custom("myalias".to_string()))
+            .context("while loading non-existent alias")?;
+        assert_eq!(None, current);
+        let token = ExampleState {
+            hello: "world".into(),
+        }
+        .save()
+        .context("while saving")?;
+        token
+            .alias(Alias::custom("myalias".to_string()))
+            .context("while writing current alias")?;
+        let current = ExampleState::aliased(Alias::custom("myalias".to_string()))
+            .context("while loading custom alias")?;
         assert_eq!(
             Some(ExampleState {
                 hello: "world".into()
