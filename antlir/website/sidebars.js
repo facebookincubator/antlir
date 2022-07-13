@@ -197,6 +197,10 @@ module.exports = {
                 type: 'doc',
                 id: 'metalos/fb/hacking_guide/pwm_flow',
               },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/thrift',
+              },
             ],
           },
         ]),
