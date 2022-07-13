@@ -29,6 +29,7 @@ rust_library(
     ],
     deps = [
         "anyhow",
+        "fbthrift",
         "futures",
         "itertools",
         "maplit",
@@ -38,7 +39,6 @@ rust_library(
         "serde_with",
         "shell-words",
         "slog",
-        "systemd-parser",
         "thiserror",
         "uuid",
         "zbus",
