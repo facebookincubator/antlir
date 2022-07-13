@@ -38,6 +38,11 @@ native_service_support = [
     systemd.install_unit(
         "//metalos/lib/service/helper:metalos-native-service@.service",
     ),
+    feature.ensure_subdirs_exist("/usr/lib/metalos", "native-service/dropins"),
+    feature.install(
+        "//metalos/lib/service/default_dropins:all_dropins",
+        "/usr/lib/metalos/native-service/dropins",
+    ),
 ]
 
 sshd = [
