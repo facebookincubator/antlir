@@ -48,3 +48,10 @@ pub fn scratch() -> &'static Path {
 pub fn boots() -> &'static Path {
     Path::new("/run/fs/control/run/boot")
 }
+
+/// MetalOS-managed directory for persistent storage of things like
+/// certificates. User code should not assume any of these paths are stable, and
+/// MetalOS will manage bindmounts/symlinks as required.
+pub fn persistent() -> &'static Path {
+    Path::new("/run/fs/control/run/state/persistent")
+}

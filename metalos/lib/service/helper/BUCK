@@ -5,11 +5,13 @@ load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest
 
 rust_binary(
     name = "helper",
-    srcs = glob(["src/*.rs"]),
+    srcs = glob(["src/**/*.rs"]),
+    named_deps = {
+        "plain_systemd": "systemd",
+        "service_shape": "//metalos/bzl/service:service.shape-rust",
+    },
     test_deps = [
         "nix",
-        "slog",
-        "slog_glog_fmt",
         "//metalos/lib/systemd:systemd",
     ],
     unittest_opts = unittest_opts_t(
@@ -25,6 +27,9 @@ rust_binary(
     ],
     deps = [
         "anyhow",
+        "rand",
+        "slog",
+        "slog_glog_fmt",
         "structopt",
         "thiserror",
         "//metalos/lib/btrfs:btrfs",
