@@ -529,10 +529,14 @@ python_binary(
     name = "package-image",
     srcs = ["package_image.py"],
     main_module = "antlir.package_image",
+    resources = {
+        "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade": "btrfs-send-stream-upgrade",
+    },
     visibility = ["PUBLIC"],
     deps = [
         ":find_built_subvol",
         ":subvol_utils",
+        "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade",
         "//antlir/bzl:loopback_opts.shape-python",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",

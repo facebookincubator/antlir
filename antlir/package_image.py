@@ -7,7 +7,7 @@
 import os
 import pwd
 import subprocess
-from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
+from typing import AnyStr, Callable, Mapping, NamedTuple, Optional, Tuple
 
 from antlir.bzl.loopback_opts import loopback_opts_t
 from antlir.cli import (
@@ -17,6 +17,7 @@ from antlir.cli import (
 )
 from antlir.common import check_popen_returncode, get_logger
 from antlir.config import repo_config
+from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import create_ro, generate_work_dir, META_FLAVOR_FILE, Path
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
@@ -27,10 +28,23 @@ log = get_logger()
 KiB = 2**10
 MiB = 2**20
 
+BTRFS_SENDSTREAM_VERSIONS = ["1", "2_synthetic", "2"]
+
+BTRFS_SENDSTREAM_VERSION_DEFAULT = "1"
+
+ZSTD_LEVEL_MIN = -131072
+ZSTD_LEVEL_NONE = 0
+ZSTD_LEVEL_DEFAULT = 3
+ZSTD_LEVEL_ULTRA_MIN = 20
+ZSTD_LEVEL_MAX = 22
+
 
 class _Opts(NamedTuple):
     build_appliance: Optional[Subvol]
     loopback_opts: loopback_opts_t
+    btrfs_sendstream_proto: int
+    btrfs_sendstream_fake_v2_upgrade: bool
+    zstd_compression_level: int
 
 
 class Format:
@@ -61,12 +75,39 @@ class Sendstream(Format, format_name="sendstream"):
     def package_full(
         self, subvol: Subvol, output_path: Path, opts: _Opts
     ) -> None:
-        with create_ro(
-            output_path, "wb"
-        ) as outfile, subvol.mark_readonly_and_write_sendstream_to_file(
-            outfile
-        ):
-            pass
+        # Generate a synthetic sendstream if required
+        if opts.btrfs_sendstream_fake_v2_upgrade:
+            with Path.resource(
+                __package__,
+                "btrfs-send-stream-upgrade",
+                exe=True,
+            ) as upgrader_path:
+                send_stream_upgrade_args = [
+                    upgrader_path,
+                    "-v",
+                    "-c",
+                    str(opts.zstd_compression_level),
+                ]
+                log.debug(
+                    f"arguments to `btrfs_send_stream_upgrade` are "
+                    f"{send_stream_upgrade_args}"
+                )
+                with create_ro(output_path, "wb") as ss2_file, subprocess.Popen(
+                    send_stream_upgrade_args,
+                    stdin=subprocess.PIPE,
+                    stdout=ss2_file,
+                ) as up_proc, subvol.mark_readonly_and_write_sendstream_to_file(
+                    outfile=up_proc.stdin, proto=opts.btrfs_sendstream_proto
+                ):
+                    pass
+                check_popen_returncode(up_proc)
+        else:
+            with create_ro(
+                output_path, "wb"
+            ) as ss1_file, subvol.mark_readonly_and_write_sendstream_to_file(
+                outfile=ss1_file, proto=opts.btrfs_sendstream_proto
+            ):
+                pass
 
 
 class SendstreamZst(Format, format_name="sendstream.zst"):
@@ -81,15 +122,26 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
     def package_full(
         self, subvol: Subvol, output_path: Path, opts: _Opts
     ) -> None:
-        with create_ro(output_path, "wb") as outfile, subprocess.Popen(
-            ["zstd", "--stdout"],
+        args = ["zstd", "--stdout"]
+
+        # No plumbing for v2 sendstreams here -- maybe that will be added later
+        if (
+            opts.btrfs_sendstream_proto != 1
+            or opts.btrfs_sendstream_fake_v2_upgrade
+        ):
+            raise UserError(
+                'Expected sendstream version to be "1" for zst package'
+            )
+
+        with create_ro(output_path, "wb") as zst_file, subprocess.Popen(
+            args,
             stdin=subprocess.PIPE,
-            stdout=outfile
-            # pyre-fixme[6]: Expected `BinaryIO` for 1st param but got
-            #  `Optional[typing.IO[typing.Any]]`.
-        ) as zst, subvol.mark_readonly_and_write_sendstream_to_file(zst.stdin):
+            stdout=zst_file,
+        ) as zstd_proc, subvol.mark_readonly_and_write_sendstream_to_file(
+            outfile=zstd_proc.stdin, proto=opts.btrfs_sendstream_proto
+        ):
             pass
-        check_popen_returncode(zst)
+        check_popen_returncode(zstd_proc)
 
 
 class SquashfsImage(Format, format_name="squashfs"):
@@ -348,7 +400,31 @@ def _get_build_appliance_from_layer_flavor_config(
     ]
 
 
-def package_image(args) -> None:
+def _get_btrfs_arguments(
+    sendstream_version: str,
+    sendstream_kernel_version_path: str,
+) -> Tuple[int, bool]:
+    proto = 2 if sendstream_version == "2" else 1
+    fake_v2_upgrade = True if sendstream_version == "2_synthetic" else False
+    # If the underlying kernel doesn't support v2, fall back to v1
+    # Use the upgrade tool to upgrade the sendstream to v2
+    if (
+        proto == 2
+        and btrfs_get_supported_sendstream_version(
+            sendstream_kernel_version_path
+        )
+        == 1
+    ):
+        log.warning(
+            "Underlying kernel doesn't support sendstream2; "
+            "please upgrade to 5.12.0-fbk5 or later"
+        )
+        proto = 1
+        fake_v2_upgrade = True
+    return proto, fake_v2_upgrade
+
+
+def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
     with init_cli(description=__doc__, argv=args) as cli:
         cli.parser.add_argument(
             "--subvolumes-dir",
@@ -390,6 +466,21 @@ def package_image(args) -> None:
             help="Inline serialized loopback_opts_t instance containing "
             "configuration options for loopback formats",
         )
+        cli.parser.add_argument(
+            "--btrfs-sendstream-version",
+            choices=BTRFS_SENDSTREAM_VERSIONS,
+            default=BTRFS_SENDSTREAM_VERSION_DEFAULT,
+            help="The version of the btrfs sendstream to generate",
+        )
+        cli.parser.add_argument(
+            "--zstd-compression-level",
+            type=int,
+            default=ZSTD_LEVEL_DEFAULT,
+            choices=range(ZSTD_LEVEL_MIN, ZSTD_LEVEL_MAX + 1),
+            help="Compression level for zstd; note that level 0 will disable "
+            "zstd compression for synthetic sendstreams and will fail for "
+            "sendstream.zst format",
+        )
 
         add_targets_and_outputs_arg(cli.parser)
 
@@ -418,12 +509,23 @@ def package_image(args) -> None:
         )
     )
 
+    (
+        btrfs_sendstream_proto,
+        btrfs_sendstream_fake_v2_upgrade,
+    ) = _get_btrfs_arguments(
+        sendstream_version=cli.args.btrfs_sendstream_version,
+        # Note that this is not passed in through the CLI
+        sendstream_kernel_version_path=btrfs_sendstream_kernel_version_path,
+    )
     # pyre-fixme[16]: `Format` has no attribute `package_full`.
     Format.make(cli.args.format).package_full(
         output_path=cli.args.output_path,
         opts=_Opts(
             build_appliance=build_appliance,
             loopback_opts=cli.args.loopback_opts,
+            btrfs_sendstream_proto=btrfs_sendstream_proto,
+            btrfs_sendstream_fake_v2_upgrade=btrfs_sendstream_fake_v2_upgrade,
+            zstd_compression_level=cli.args.zstd_compression_level,
         ),
         subvol=layer,
     )
@@ -438,7 +540,7 @@ BTRFS_SENDSTREAM_VERSION_PATH = "/sys/fs/btrfs/features/send_stream_version"
 
 # This returns the underlying supported sendstream version from the kernel
 def btrfs_get_supported_sendstream_version(
-    sysfs_path=BTRFS_SENDSTREAM_VERSION_PATH,  # For testing
+    sysfs_path: str = BTRFS_SENDSTREAM_VERSION_PATH,  # For testing
 ) -> int:
     """
     Queries the underlying kernel to determine the maximum supported sendstream
@@ -448,6 +550,9 @@ def btrfs_get_supported_sendstream_version(
       support sendstream2 (in which case proto 2 can't be used to generate
       the sendstream)
     """
+    # Check for None inputs
+    if not sysfs_path:
+        sysfs_path = BTRFS_SENDSTREAM_VERSION_PATH
     try:
         # Try to open the sysfs file that dictates the sendstream version
         # Read contents

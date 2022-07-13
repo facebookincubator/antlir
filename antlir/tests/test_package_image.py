@@ -16,6 +16,7 @@ from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_gnu_tar,
 )
 from antlir.bzl.loopback_opts import loopback_opts_t
+from antlir.errors import UserError
 from antlir.fs_utils import (
     generate_work_dir,
     open_for_read_decompress,
@@ -26,8 +27,13 @@ from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.package_image import (
     btrfs_get_supported_sendstream_version,
+    BTRFS_SENDSTREAM_VERSIONS,
     Format,
     package_image,
+    ZSTD_LEVEL_DEFAULT,
+    ZSTD_LEVEL_MAX,
+    ZSTD_LEVEL_MIN,
+    ZSTD_LEVEL_NONE,
 )
 from antlir.serialize_targets_and_outputs import make_target_path_map
 from antlir.subvol_utils import get_subvolumes_dir, with_temp_subvols
@@ -43,6 +49,9 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         layer_path: str,
         format: str,
         loopback_opts: loopback_opts_t = None,
+        btrfs_sendstream_version: str = None,
+        btrfs_sendstream_kernel_version_path: str = None,
+        zstd_compression_level: int = None,
     ) -> Iterator[str]:
         target_map = make_target_path_map(os.environ["target_map"].split())
         with temp_dir() as td:
@@ -68,7 +77,21 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     ),
                     "--targets-and-outputs",
                     targets_and_outputs,
-                ]
+                    *(
+                        ["--btrfs-sendstream-version", btrfs_sendstream_version]
+                        if btrfs_sendstream_version is not None
+                        else []
+                    ),
+                    *(
+                        [
+                            "--zstd-compression-level",
+                            str(zstd_compression_level),
+                        ]
+                        if zstd_compression_level is not None
+                        else []
+                    ),
+                ],
+                btrfs_sendstream_kernel_version_path,
             )
             yield out_path
 
@@ -86,14 +109,80 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         )
 
     def test_package_image_as_sendstream(self):
+        kernel_sendstream_version = btrfs_get_supported_sendstream_version()
         for format in ["sendstream", "sendstream.zst"]:
-            with self._package_image(
-                self._sibling_path("create_ops.layer"), format
-            ) as out_path:
-                self._assert_sendstream_files_equal(
-                    self._sibling_path("create_ops-original.sendstream"),
-                    out_path,
-                )
+            for sendstream_version in BTRFS_SENDSTREAM_VERSIONS:
+                for compression_level in [
+                    ZSTD_LEVEL_MIN,
+                    -10,
+                    ZSTD_LEVEL_NONE,
+                    ZSTD_LEVEL_DEFAULT,
+                    ZSTD_LEVEL_MAX,
+                ]:
+                    # TODO: Negative levels are currently broken for
+                    # v2_synthetic!
+                    # The associated fix is currently in the v0.7 branch
+                    # Remove this once the change is merged in
+                    if (
+                        sendstream_version == "2_synthetic"
+                        or (
+                            sendstream_version == "2"
+                            and kernel_sendstream_version == 1
+                        )
+                    ) and compression_level < ZSTD_LEVEL_NONE:
+                        continue
+
+                    if format == "sendstream.zst":
+                        if sendstream_version != "1":
+                            with self.assertRaisesRegex(
+                                UserError, "Expected sendstream version to be"
+                            ):
+                                with self._package_image(
+                                    self._sibling_path("create_ops.layer"),
+                                    format,
+                                    btrfs_sendstream_version=sendstream_version,
+                                    zstd_compression_level=compression_level,
+                                ):
+                                    pass
+                            continue
+                        elif compression_level != ZSTD_LEVEL_DEFAULT:
+                            # No support for additional compression levels yet,
+                            # so let's only test the default one
+                            continue
+
+                    with self._package_image(
+                        self._sibling_path("create_ops.layer"),
+                        format,
+                        btrfs_sendstream_version=sendstream_version,
+                        zstd_compression_level=compression_level,
+                    ) as out_path:
+                        if sendstream_version == "1":
+                            self._assert_sendstream_files_equal(
+                                self._sibling_path(
+                                    "create_ops-original.sendstream"
+                                ),
+                                out_path,
+                            )
+                        else:
+                            # v2 sendstreams don't work with btrfs diff
+                            # yet
+                            pass
+
+    def test_package_image_as_sendstream_without_v2_kernel_support(self):
+        format = "sendstream"
+        sendstream_version = "2"
+        compression_level = ZSTD_LEVEL_DEFAULT
+        with self._package_image(
+            self._sibling_path("create_ops.layer"),
+            format,
+            # NOTE: Picking an invalid path should drop us back to sendstream 1
+            btrfs_sendstream_kernel_version_path="/dev/null",
+            btrfs_sendstream_version=sendstream_version,
+            zstd_compression_level=compression_level,
+        ):
+            # This should generate a v2_synthetic sendstream
+            # v2 sendstreams don't work with btrfs diff yet
+            pass
 
     def test_package_image_as_tarball(self):
         with self._package_image(

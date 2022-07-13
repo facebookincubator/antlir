@@ -336,6 +336,10 @@ class Subvol(DoNotFreeze):
         self,
         *,
         stdout,
+        # The protocol version for btrfs send:
+        # Setting this to 0 will not explicitly set the proto
+        # Setting this to 2 will generate a sendstream with encoded writes
+        proto: int = 0,
         no_data: bool = False,
         # pyre-fixme[9]: parent has type `Subvol`; used as `None`.
         parent: "Subvol" = None,
@@ -367,14 +371,20 @@ class Subvol(DoNotFreeze):
                 ]
             )
 
+        send_args = [
+            "btrfs",
+            "send",
+            *(["--no-data"] if no_data else []),
+            *(["-p", parent.path()] if parent else []),
+            *(["--proto", str(proto)] if proto != 0 else []),
+            *(["--compressed-data"] if proto == 2 else []),
+            self.path(),
+        ]
+
+        log.debug(f"arguments to `btrfs send` are {send_args}")
+
         with self.popen_as_root(
-            [
-                "btrfs",
-                "send",
-                *(["--no-data"] if no_data else []),
-                *(["-p", parent.path()] if parent else []),
-                self.path(),
-            ],
+            send_args,
             stdout=stdout,
         ) as proc:
             yield proc
@@ -388,7 +398,9 @@ class Subvol(DoNotFreeze):
 
     @contextmanager
     def mark_readonly_and_write_sendstream_to_file(
-        self, outfile: BinaryIO, **kwargs
+        self,
+        outfile,
+        **kwargs,
     ) -> Iterator[None]:
         with self._mark_readonly_and_send(stdout=outfile, **kwargs):
             yield
