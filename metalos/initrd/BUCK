@@ -119,6 +119,11 @@ image.layer(
                 # blkid.8 for debugging purposes.
                 "/usr/sbin/blkid",
                 "/usr/sbin/btrfs",
+                # This is pretty useful for debugging hardware discovery
+                # issues in the initrd.  It adds ~970k of weight, which
+                # isn't light, but considered worth the tradeoff for the
+                # benefits.
+                "/usr/sbin/lshw",
             ],
             dest = "/",
             source = REPO_CFG.artifact["metalos.layer.base"],
