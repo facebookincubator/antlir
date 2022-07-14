@@ -92,6 +92,29 @@ struct DNS {
   2: list<string> search_domains;
 } (rust.exhaustive)
 
+// Network Address Modes.
+enum NetworkAddressMode {
+  PRIMARY = 0,
+  SECONDARY = 1,
+  DEPRECATED = 2,
+}
+
+// Type of network interface to determine the nature of the configuration
+// to render.
+enum NetworkInterfaceType {
+  FRONTEND = 0,
+  BACKEND = 1,
+  OOB = 2,
+  MGMT = 3,
+}
+
+// Configuration for a single network interface, keyed by MAC Address.
+struct NetworkAddress {
+  1: string addr;
+  2: i32 prefix_length;
+  3: NetworkAddressMode mode;
+} (rust.exhaustive)
+
 // Configuration for a single network interface, keyed by MAC Address.
 struct NetworkInterface {
   1: string mac;
@@ -100,4 +123,8 @@ struct NetworkInterface {
   // this interface is considered necessary and the network will not be
   // considered up until this interface is configured and up
   4: bool essential;
+  // Introducing structured addrs - DO NOT USE (yet)
+  5: optional list<NetworkAddress> structured_addrs;
+  // Introducing structured type - DO NOT USE (yet)
+  6: optional NetworkInterfaceType interface_type;
 } (rust.exhaustive)
