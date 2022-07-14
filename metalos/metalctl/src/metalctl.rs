@@ -22,18 +22,12 @@ use slog::o;
 use slog::trace;
 use slog::Logger;
 
-mod apply_host_config;
 mod package;
 mod send_event;
-mod stage_host_config;
 mod update;
 
 #[derive(Parser)]
 enum Subcommand {
-    /// Download all images specified in the MetalOS host config
-    StageHostConfig(stage_host_config::Opts),
-    /// Generate and apply a structured host config
-    ApplyHostConfig(apply_host_config::Opts),
     /// Send an event to the event endpoint
     SendEvent(send_event::Opts),
     /// Apply a provided disk image to a specified disk and then
@@ -56,8 +50,6 @@ struct MetalCtl {
 
 async fn run_command(options: MetalCtl, log: Logger) -> Result<()> {
     match options.command {
-        Subcommand::StageHostConfig(opts) => stage_host_config::stage_host_config(log, opts).await,
-        Subcommand::ApplyHostConfig(opts) => apply_host_config::apply_host_config(log, opts).await,
         Subcommand::SendEvent(opts) => send_event::cmd_send_event(log, opts).await,
         Subcommand::Update(update) => update.subcommand(log).await,
         Subcommand::External(mut args) => {
