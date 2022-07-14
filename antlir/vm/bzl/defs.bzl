@@ -125,12 +125,6 @@ def _vm_unittest(
         run_as_bundle = False,
         timeout_secs = None,
         **kwargs):
-    if kwargs.pop("layer", None):
-        fail("Please provide the `layer` attribute as part of `vm_opts`.")
-
-    if kwargs.pop("kernel", None):
-        fail("Please provide the `kernel` attribute as part of `vm_opts`.")
-
     # Set some defaults
     env = env or {}
     vm_opts = vm_opts or api.opts.new()
