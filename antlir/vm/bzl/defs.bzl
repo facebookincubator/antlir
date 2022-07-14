@@ -57,7 +57,6 @@ with the options allowed there.  The key differences with
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
@@ -115,14 +114,6 @@ def _vm_unittest(
         vm_opts = None,
         visibility = None,
         env = None,
-        # vmtest target graphs tend to be very deep, since they invoke multiple
-        # layers of images, kernel targets as well as the inner test target
-        # user-specified deps end up attached only to the inner test target,
-        # which frequently cause Sandcastle to skip running vmtest since the
-        # resulting outer test target (that actually runs a VM and the tests
-        # inside) is too far away from the user-given deps see D19499568 and
-        # linked discussions for more details
-        user_specified_deps = None,
         # Provide a mechanism for users to control running all the test cases
         # defined in a single unittest as a bundle.  Running as a bundle means
         # that only *one* VM instance will be spun up for the whole unittest
@@ -217,12 +208,6 @@ def _vm_unittest(
         test = ":" + run_target,
         type = _RULE_TO_TEST_TYPE[unittest_rule],
         visibility = visibility,
-        # Although the wrapper test doesn't actually need these dependencies,
-        # we add this to reduce the dependency distance from outer test target
-        # to the libraries that the inner test target depends on. Reducing the
-        # dependency distance maximizes the chances that CI will kick off the
-        # outer test target when deps change.
-        deps = user_specified_deps,
         # TPX is unaware of the inner test binary, so it must be informed of
         # its location for things that need to inspect the actual inner test
         # binary, like llvm-cov
@@ -233,14 +218,11 @@ def _vm_unittest(
 def _vm_cpp_unittest(
         name,
         vm_opts = None,
-        deps = (),
         **kwargs):
     _vm_unittest(
         name,
         cpp_unittest,
         vm_opts = vm_opts,
-        deps = deps,
-        user_specified_deps = deps,
         **kwargs
     )
 
@@ -248,24 +230,10 @@ def _vm_python_unittest(
         name,
         vm_opts = None,
         **kwargs):
-    # Short circuit the target graph by attaching user_specified_deps to the outer
-    # test layer.
-    user_specified_deps = []
-    user_specified_deps += kwargs.get("deps", [])
-    user_specified_deps += kwargs.get("runtime_deps", [])
-    resources = kwargs.get("resources", [])
-    if types.is_dict(resources):
-        resources = list(resources.keys())
-    user_specified_deps += resources
-
     _vm_unittest(
         name,
         python_unittest,
         vm_opts = vm_opts,
-        user_specified_deps = user_specified_deps,
-        # unittest pars must be xars so that native libs work inside the vm without
-        # linking / mounting trickery
-        par_style = "xar",
         **kwargs
     )
 

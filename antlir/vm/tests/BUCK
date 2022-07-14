@@ -74,6 +74,7 @@ python_unittest(
         "//antlir:fs_utils",
         "//antlir:testlib_common",
         "//antlir:unshare",
+        "//antlir/vm:mount-generator",
         "//antlir/vm:share",
         "//antlir/vm:vm",
     ],
@@ -215,6 +216,7 @@ vm.python_unittest(
         ),
     ),
     deps = [
+        ":resource.txt",
         "//antlir:fs_utils",
         "//antlir:testlib_common",
     ],
