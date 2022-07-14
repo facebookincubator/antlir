@@ -6,6 +6,7 @@
  */
 
 use crate::packages;
+use strum_macros::Display;
 use thrift_wrapper::ThriftWrapper;
 use url::Url;
 
@@ -101,6 +102,31 @@ pub struct DNS {
     pub search_domains: Vec<String>,
 }
 
+#[derive(Debug, Display, Copy, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::NetworkAddressMode)]
+pub enum NetworkAddressMode {
+    Primary,
+    Secondary,
+    Deprecated,
+}
+
+#[derive(Debug, Display, Copy, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::NetworkInterfaceType)]
+pub enum NetworkInterfaceType {
+    Frontend,
+    Backend,
+    Oob,
+    Mgmt,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::provisioning_config::NetworkAddress)]
+pub struct NetworkAddress {
+    pub addr: String,
+    pub prefix_length: i32,
+    pub mode: NetworkAddressMode,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::NetworkInterface)]
 pub struct NetworkInterface {
@@ -110,4 +136,6 @@ pub struct NetworkInterface {
     /// This interface is considered necessary and the network will not be
     /// considered up until this interface is configured and up
     pub essential: bool,
+    pub structured_addrs: Option<Vec<NetworkAddress>>,
+    pub interface_type: Option<NetworkInterfaceType>,
 }
