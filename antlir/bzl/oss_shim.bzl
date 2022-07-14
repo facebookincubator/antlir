@@ -178,6 +178,7 @@ def _rust_common(rule, kwargs):
     rustc_flags = kwargs.pop("rustc_flags", [])
     if not kwargs.pop("allow_unused_crate_dependencies", False):
         rustc_flags.append("--forbid=unused_crate_dependencies")
+    rustc_flags.append("--warn=clippy::unwrap_used")
     kwargs["rustc_flags"] = rustc_flags
     rule(**kwargs)
 
