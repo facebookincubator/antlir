@@ -85,7 +85,7 @@ python_unittest(
 vm.python_unittest(
     name = "create-kernel-panic",
     srcs = ["create_kernel_panic.py"],
-    tags = helpers.tags_to_hide_test(),
+    labels = helpers.tags_to_hide_test(),
     visibility = [],
     vm_opts = vm.types.opts.new(
         runtime = vm.types.runtime.new(
