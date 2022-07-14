@@ -26,7 +26,18 @@ def _make_rule_kwargs_dict(lst):
     return {k: 1 for k in lst + ["antlir_rule"]}
 
 _CPP_BINARY_KWARGS = _make_rule_kwargs_dict(
-    ["name", "srcs", "deps", "compiler_flags", "linker_flags", "link_style", "visibility", "external_deps"],
+    [
+        "compiler_flags",
+        "deps",
+        "external_deps",
+        "labels",
+        "link_style",
+        "linker_flags",
+        "name",
+        "srcs",
+        "tags",
+        "visibility",
+    ],
 )
 
 def cpp_binary(*args, **kwargs):
@@ -35,18 +46,20 @@ def cpp_binary(*args, **kwargs):
 
 _CPP_LIBRARY_KWARGS = _make_rule_kwargs_dict(
     [
-        "name",
-        "srcs",
-        "deps",
         "compiler_flags",
-        "headers",
-        "header_namespace",
+        "deps",
         "exported_headers",
-        "include_directories",
-        "linker_flags",
-        "preferred_linkage",
-        "visibility",
         "external_deps",
+        "header_namespace",
+        "headers",
+        "include_directories",
+        "labels",
+        "linker_flags",
+        "name",
+        "preferred_linkage",
+        "srcs",
+        "tags",
+        "visibility",
     ],
 )
 
@@ -55,7 +68,18 @@ def cpp_library(*args, **kwargs):
     shim.cpp_library(**kwargs)
 
 _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
-    ["name", "deps", "env", "headers", "srcs", "tags", "visibility", "external_deps", "owner"],
+    [
+        "deps",
+        "env",
+        "external_deps",
+        "headers",
+        "labels",
+        "name",
+        "owner",
+        "srcs",
+        "tags",
+        "visibility",
+    ],
 )
 
 def cpp_unittest(*args, **kwargs):
@@ -63,7 +87,16 @@ def cpp_unittest(*args, **kwargs):
     shim.cpp_unittest(**kwargs)
 
 _CXX_GENRULE_KWARGS = _make_rule_kwargs_dict(
-    ["name", "srcs", "cmd", "type", "out", "visibility", "tags"],
+    [
+        "cmd",
+        "labels",
+        "name",
+        "out",
+        "srcs",
+        "tags",
+        "type",
+        "visibility",
+    ],
 )
 
 def cxx_genrule(*args, **kwargs):
@@ -72,17 +105,18 @@ def cxx_genrule(*args, **kwargs):
 
 _PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
     [
-        "name",
         "base_module",
         "deps",
+        "labels",
         "main_module",
+        "name",
+        "package_style",
         "par_style",
         "resources",
         "runtime_deps",
         "srcs",
         "tags",
         "visibility",
-        "package_style",
     ],
 )
 
@@ -92,15 +126,16 @@ def python_binary(*args, **kwargs):
 
 _PYTHON_LIBRARY_KWARGS = _make_rule_kwargs_dict(
     [
-        "name",
         "base_module",
         "deps",
+        "labels",
+        "name",
         "resources",
         "runtime_deps",
         "srcs",
         "tags",
-        "visibility",
         "type_stubs",
+        "visibility",
     ],
 )
 
@@ -114,17 +149,18 @@ _PYTHON_UNITTEST_KWARGS = _make_rule_kwargs_dict(
         "cpp_deps",
         "deps",
         "env",
+        "flavor",
+        "labels",
         "main_module",
         "name",
         "needed_coverage",
+        "package_style",
         "par_style",
         "resources",
         "runtime_deps",
         "srcs",
         "tags",
         "visibility",
-        "flavor",
-        "package_style",
     ],
 )
 

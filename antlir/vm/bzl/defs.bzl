@@ -71,42 +71,42 @@ _RULE_TO_TEST_TYPE = {
     python_unittest: "pyunit",
     rust_unittest: "rust",
 }
-_RULE_TO_TEST_TAG = {
+_RULE_TO_TEST_LABEL = {
     cpp_unittest: "cpp",
     python_unittest: "python",
     rust_unittest: "rust",
 }
 
-def _build_test_tags(unittest_rule, tags):
+def _build_test_labels(unittest_rule, labels):
     """
-    Convert top-level 'tags' kwargs into separate tag sets for the outer and
+    Convert top-level 'labels' into separate label sets for the outer and
     inner test rules.
 
-    'tags' provided by a user are always applied to the outer test, so they
+    'labels' provided by a user are always applied to the outer test, so they
     control the behavior of TestPilot or to add information for 'buck query'.
     """
-    wrapper_tags = tags + ["vmtest", "heavyweight"]
+    wrapper_labels = labels + ["vmtest", "heavyweight"]
 
     # Make sure that the test runner ignores the underlying test, and only
     # looks at the version that runs in a VM.
-    inner_tags = helpers.tags_to_hide_test()
+    inner_labels = helpers.tags_to_hide_test()
 
-    # Due to a complex internal migration, these tags are required to both
+    # Due to a complex internal migration, these labels are required to both
     # change the runtime behavior of the outer test, as well as build-time
     # behavior of the inner target.
     if unittest_rule == python_unittest:
-        wrapper_tags.append("use-testpilot-adapter")
+        wrapper_labels.append("use-testpilot-adapter")
 
         # this tag gets added to the inner test automatically, but we must
         # inform tpx that the wrapper observes the same behavior
-        wrapper_tags.append("tpx:list-format-migration:json")
-        inner_tags.append("use-testpilot-adapter")
+        wrapper_labels.append("tpx:list-format-migration:json")
+        inner_labels.append("use-testpilot-adapter")
 
         # annotate both inner and wrapper target with a framework
-        wrapper_tags = add_test_framework_label(wrapper_tags, "test-framework=8:vmtest")
-        inner_tags = add_test_framework_label(inner_tags, "test-framework=8:vmtest")
+        wrapper_labels = add_test_framework_label(wrapper_labels, "test-framework=8:vmtest")
+        inner_labels = add_test_framework_label(inner_labels, "test-framework=8:vmtest")
 
-    return inner_tags, wrapper_tags
+    return inner_labels, wrapper_labels
 
 def _vm_unittest(
         name,
@@ -129,26 +129,28 @@ def _vm_unittest(
     env = env or {}
     vm_opts = vm_opts or api.opts.new()
 
-    # Construct tags for controlling/influencing the unittest runner.
-    # Future: These tags are heavily FB specific and really have no place
+    # Construct labels for controlling/influencing the unittest runner.
+    # Future: These labels are heavily FB specific and really have no place
     # in the OSS side.  It would be nice if these weren't blindly applied.
-    actual_test_tags, wrapper_tags = _build_test_tags(unittest_rule, kwargs.pop("tags", []))
-    wrapper_tags.append("vmtest_" + _RULE_TO_TEST_TAG[unittest_rule])
+    actual_test_labels, wrapper_labels = _build_test_labels(
+        unittest_rule,
+        kwargs.pop("labels", []),
+    )
+    wrapper_labels.append("vmtest_" + _RULE_TO_TEST_LABEL[unittest_rule])
     if run_as_bundle:
-        wrapper_tags.append("run_as_bundle")
+        wrapper_labels.append("run_as_bundle")
 
     # Build the actual unit test binary/target here
     actual_test_binary = helpers.hidden_test_name(name)
     if unittest_rule == rust_unittest:
         # otherwise the linter complains that the crate is not snake_case
         actual_test_binary = actual_test_binary.lower().replace("--", "-").replace("__", "_")
-        kwargs["labels"] = actual_test_tags  # no tags in `rust_unittest`
-    else:
-        kwargs["tags"] = actual_test_tags
+
     unittest_rule(
         name = actual_test_binary,
         visibility = [],
         antlir_rule = "user-internal",
+        labels = actual_test_labels,
         **kwargs
     )
 
@@ -198,7 +200,7 @@ def _vm_unittest(
     # is given to TestPilot
     buck_sh_test(
         name = name,
-        labels = wrapper_tags,
+        labels = wrapper_labels,
         test = ":" + run_target,
         type = _RULE_TO_TEST_TYPE[unittest_rule],
         visibility = visibility,
