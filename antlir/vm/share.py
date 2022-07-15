@@ -250,6 +250,8 @@ def _tmp_qcow2_disk(
             "-f",  # format
             "qcow2",
             disk.name,
+            "-F",  # backing format
+            "raw",
             "-b",
             backing_file,
         ],
