@@ -33,6 +33,7 @@ nix::ioctl_none!(ioctl_blkrrpart, 0x12, 95);
 
 pub struct DiskImageSummary {
     pub disk: DiskDevPath,
+    pub efi_partition: PathBuf,
     pub partition_device: PathBuf,
     pub partition_delta: PartitionDelta,
 }
@@ -101,6 +102,27 @@ async fn download_disk_image(log: Logger, package: GptRootDisk, dest: &mut File)
     Ok(size)
 }
 
+async fn find_partition(disk_device: &Disk, num: u32) -> Result<PathBuf> {
+    match udev_utils::stream(Default::default())
+        .await
+        .context("while creating udev stream for")?
+        .filter_map(|event| future::ready(event.into_attached_device()))
+        .filter_map(|dev| future::ready(udev_utils::device::Partition::try_from(dev).ok()))
+        .filter(|part| future::ready(part.parent().map_or(false, |p| p == disk_device)))
+        .filter(|part| future::ready(part.number() == num))
+        .map(|part| part.path().to_path_buf())
+        .next()
+        .await
+    {
+        Some(p) => Ok(p),
+        None => Err(anyhow!(
+            "partition number {} on {} never apppeared",
+            num,
+            disk_device.path().display()
+        )),
+    }
+}
+
 pub async fn apply_disk_image<M: Mounter>(
     log: Logger,
     disk: DiskDevPath,
@@ -151,17 +173,9 @@ pub async fn apply_disk_image<M: Mounter>(
 
     rescan_partitions(&dst).context("Failed to rescan partitions after writing image")?;
 
-    let partition_dev: PathBuf = timeout(
+    let root_partition_dev = timeout(
         Duration::from_secs(1),
-        udev_utils::stream(Default::default())
-            .await
-            .context("while creating udev stream for")?
-            .filter_map(|event| future::ready(event.into_attached_device()))
-            .filter_map(|dev| future::ready(udev_utils::device::Partition::try_from(dev).ok()))
-            .filter(|part| future::ready(part.parent().map_or(false, |p| *p == disk_device)))
-            .filter(|part| future::ready(part.number() == delta.partition_num))
-            .map(|part| part.path().to_path_buf())
-            .next(),
+        find_partition(&disk_device, delta.partition_num),
     )
     .await
     .with_context(|| {
@@ -170,27 +184,25 @@ pub async fn apply_disk_image<M: Mounter>(
             delta.partition_num,
             disk.0.display()
         )
-    })?
-    .with_context(|| {
-        format!(
-            "Partition {} on {} never appeared",
-            delta.partition_num,
-            disk.0.display()
-        )
-    })?;
+    })??;
 
-    info!(log, "Expanding filesystem in {:?}", partition_dev);
-    expand_filesystem(&partition_dev, tmp_mounts_dir, mounter)
+    info!(log, "Expanding filesystem in {:?}", root_partition_dev);
+    expand_filesystem(&root_partition_dev, tmp_mounts_dir, mounter)
         .context("Failed to expand filesystem after expanding partition")?;
+
+    let efi_partition_dev = timeout(Duration::from_secs(1), find_partition(&disk_device, 1))
+        .await
+        .with_context(|| format!("ESP on {} did not show up within 1s", disk.0.display()))??;
 
     // this is awful, but for some reason the partition device frequently
     // disappears after expanding the fs, then it comes back again
     // sleep a little bit to make sure that it has time to disappear
     tokio::time::sleep(Duration::from_secs(5)).await;
     for _ in 0..10 {
-        if partition_dev.exists() {
+        if root_partition_dev.exists() {
             return Ok(DiskImageSummary {
-                partition_device: partition_dev.clone(),
+                efi_partition: efi_partition_dev,
+                partition_device: root_partition_dev.clone(),
                 partition_delta: delta,
                 disk,
             });
@@ -198,7 +210,7 @@ pub async fn apply_disk_image<M: Mounter>(
             tokio::time::sleep(Duration::from_millis(100)).await;
         }
     }
-    Err(anyhow!("{:?} has vanished", partition_dev))
+    Err(anyhow!("{:?} has vanished", root_partition_dev))
 }
 
 // TODO(T108026401): We want to test this on it's own however we need multiple disks

@@ -84,6 +84,22 @@ impl<'a> From<DownloadedNextStage<'a>> for Event {
     }
 }
 
+pub struct SetupBootloader<'a> {
+    pub bootloader: &'a metalos_host_configs::boot_config::Bootloader,
+}
+
+impl<'a> From<SetupBootloader<'a>> for Event {
+    fn from(ev: SetupBootloader<'a>) -> Self {
+        Self {
+            name: "METALOS_IMAGE.SETUP_BOOTLOADER".to_string(),
+            payload: Some(json!({
+                "package": ev.bootloader.pkg.identifier(),
+                "cmdline": ev.bootloader.cmdline,
+            })),
+        }
+    }
+}
+
 pub struct StartingKexec<'a> {
     pub cmdline: &'a str,
 }

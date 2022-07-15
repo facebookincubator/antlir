@@ -8,6 +8,7 @@ load("//antlir/bzl/image/package:defs.bzl", "package")
 
 imaging_initrd_wanted_rpms = [
     "nvme-cli",  # For wiping disks / restoring ssd performance
+    "efibootmgr",  # Instaling the bootloader
 ]
 
 image.layer(
@@ -51,6 +52,7 @@ image.layer(
                 "/usr/lib/systemd/system-generators/metalos-network-generator",
                 "/usr/bin/metalimage",
                 "/usr/sbin/nvme",
+                "/usr/sbin/efibootmgr",
             ],
             dest = "/",
             source = ":with-imagining-initrd-bins",

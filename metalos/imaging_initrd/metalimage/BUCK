@@ -3,6 +3,7 @@ load("//metalos:defs.bzl", "rust_binary")
 rust_binary(
     name = "metalimage",
     srcs = [
+        "src/efi.rs",
         "src/events.rs",
         "src/main.rs",
     ],
@@ -11,10 +12,15 @@ rust_binary(
         "-Wl,--strip-all",
     ],
     nodefaultlibs = True,
+    test_deps = [
+        "maplit",
+    ],
     deps = [
         "anyhow",
         "futures",
         "nix",
+        "once_cell",
+        "regex",
         "reqwest",
         "serde_json",
         "slog",

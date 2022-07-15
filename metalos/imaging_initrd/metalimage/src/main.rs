@@ -1,3 +1,4 @@
+use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
@@ -41,7 +42,9 @@ use state::State;
 
 use crate::events::*;
 
+mod efi;
 mod events;
+use efi::BOOTLOADER_FILENAME;
 
 #[derive(StructOpt, Debug)]
 struct Args {
@@ -197,7 +200,7 @@ impl Bootloader {
         // Download and apply disk image
         let summary = apply_disk_image(
             self.log.clone(),
-            disk,
+            disk.clone(),
             self.config.provisioning_config.gpt_root_disk.clone(),
             &self.args.tmp_mounts_dir,
             RealMounter {
@@ -291,6 +294,40 @@ impl Bootloader {
             "Downloaded kernel to: {:?}",
             kernel.path().display()
         );
+
+        // TODO: make this non-optional when proxy rolls out
+        if let Some(bootloader) = &self.config.boot_config.bootloader {
+            efi::setup_efi_boot(self.log.clone(), &disk, bootloader)
+                .context("while setting up EFI boot entries")?;
+            let bootloader_on_disk =
+                ensure_package_on_disk(self.log.clone(), &downloader, bootloader.pkg.clone())
+                    .await
+                    .context("while downloading bootloader")?;
+
+            std::fs::create_dir_all("/boot/efi").context("failed to create efi mount directory")?;
+            RealMounter {
+                log: self.log.clone(),
+            }
+            .mount(
+                &summary.efi_partition,
+                Path::new("/boot/efi"),
+                Some("vfat"),
+                MsFlags::empty(),
+                None,
+            )
+            .context(format!(
+                "failed to mount efi partition {:?} /boot/efi",
+                summary.efi_partition,
+            ))?;
+
+            std::fs::copy(
+                &bootloader_on_disk,
+                Path::new("/boot/efi/EFI").join(BOOTLOADER_FILENAME),
+            )
+            .with_context(|| format!("while copying {:?} into ESP", bootloader_on_disk))?;
+
+            self.send_event(SetupBootloader { bootloader }).await;
+        }
 
         // Try to kexec
         self.send_event(StartingKexec {
