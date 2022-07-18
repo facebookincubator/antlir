@@ -22,6 +22,7 @@ load(
 )
 load("//antlir/bzl2/feature:new.bzl", "feature_new")
 load(":feature_rule.bzl", "maybe_add_feature_rule")
+load(":flatten_features_list.bzl", "flatten_features_list")
 load(
     ":image_source_helper.bzl",
     "is_build_appliance",
@@ -83,6 +84,8 @@ def compile_image_features(
 
     if not flavors and is_build_appliance(parent_layer):
         flavors = [flavor_helpers.get_flavor_from_build_appliance(parent_layer)]
+
+    features = flatten_features_list(features)
 
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.

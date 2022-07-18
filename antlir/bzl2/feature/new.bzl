@@ -7,8 +7,15 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load("//antlir/bzl2:flatten_features_list.bzl", "flatten_features_list")
 load("//antlir/bzl2:image_source_helper.bzl", "is_build_appliance")
-load("//antlir/bzl2:providers.bzl", "FeatureInfo", "FlavorInfo", "ItemInfo", "RpmInfo")
+load(
+    "//antlir/bzl2:providers.bzl",
+    "FeatureInfo",
+    "FlavorInfo",
+    "ItemInfo",
+    "RpmInfo",
+)
 
 def _filter_rpm_versions(
         feature_dict,
@@ -189,7 +196,7 @@ def feature_new(
         _feature_new_rule(
             name = name,
             normalized_name = normalize_target(":" + name),
-            features = features,
+            features = flatten_features_list(features),
             flavors = flavors,
             parent_layer_feature = parent_layer_feature,
             visibility = visibility,
