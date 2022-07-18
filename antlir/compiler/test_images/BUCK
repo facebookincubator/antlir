@@ -183,7 +183,7 @@ defs.export_file(name = "shadow_me")
         name = "validates-{}-build-appliance".format(rpm_installer),
         features = [
             feature.install(":shadow_me", "/shadow_me"),
-            feature.rpms_install(["rpm-test-milk"]),
+            test_rpms.add(["rpm-test-milk"]),
         ],
         flavor = "antlir_test",
         flavor_config_override = image.opts(
@@ -428,7 +428,7 @@ image.layer(
     name = "layer-with-non-default-snapshot-rpm",
     # Installing rpm-test-cheese here so the gpg keys get imported for the
     # local RPM install in ":layer-with-only-one-locally-installed-rpm".
-    features = [feature.rpms_install([
+    features = [test_rpms.add([
         "rpm-test-cake",
         "rpm-test-cheese",
     ])],
@@ -447,13 +447,12 @@ image.layer(
 feature.new(
     name = "feature_tar_and_rpms",
     features = [
-        feature.rpms_install(
+        test_rpms.add(
             [
                 # Local RPM file that is not (yet) installed or published
                 ":rpm-test-cheese-2-1.rpm",
                 "rpm-test-mice",
             ],
-            flavors = ["antlir_test"],
         ),
         feature.rpms_remove_if_exists(
             [
