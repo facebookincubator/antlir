@@ -29,7 +29,7 @@ pub enum MountError {
     MissingUnknown,
     #[error("Path {0:?} provided as subvolume path is not valid unicode")]
     InvalidSubvolume(PathBuf),
-    #[error("Unknown error occured: {0:?}")]
+    #[error("Unknown error occurred: {0:?}")]
     Unknown(#[from] nix::errno::Errno),
 }
 
