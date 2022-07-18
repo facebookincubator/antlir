@@ -91,9 +91,9 @@ The consequences of this information hiding are:
 
 load("//antlir/bzl:image_layer_utils.bzl", "image_layer_utils")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
-load(":compile_image_features.bzl", "compile_image_features")
+load("//antlir/bzl2:compile_image_features.bzl", "compile_image_features")
 
-def image_layer(
+def layer_new(
         name,
         parent_layer = None,
         features = None,

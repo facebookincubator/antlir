@@ -5,8 +5,8 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl/image/feature:usergroup.shape.bzl", "group_t", "user_t")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
-load(":rules.bzl", "maybe_add_feature_rule")
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"

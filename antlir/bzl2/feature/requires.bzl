@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl/image/feature:requires.shape.bzl", "requires_t")
-load(":rules.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
 def feature_requires(users = None, groups = None, files = None):
     """

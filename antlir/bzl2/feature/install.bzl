@@ -43,10 +43,11 @@ load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
+load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
 load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
-load(":image_source.shape.bzl", "image_source_t")
-load(":rules.bzl", "maybe_add_install_rule")
-load(":source_dict_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
+load("//antlir/bzl2:generate_feature_target_name.bzl", "generate_feature_target_name")
+load("//antlir/bzl2:image_source_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
+load("//antlir/bzl2:providers.bzl", "ItemInfo")
 
 def _forbid_layer_source(source_dict):
     if source_dict["layer"] != None:
@@ -63,6 +64,62 @@ def _generate_shape(source_dict, dest, mode, user, group):
         user = user,
         group = group,
     )
+
+def _install_rule_impl(ctx: "context") -> ["provider"]:
+    if ctx.attr.is_executable and ctx.attr.unwrapped_target[RunInfo]:
+        install_shape = ctx.attr.wrapped_shape
+    else:
+        install_shape = ctx.attr.unwrapped_shape
+
+    return [
+        DefaultInfo(),
+        ItemInfo(items = struct(**{ctx.attr.key: [install_shape]})),
+    ]
+
+_install_rule = rule(
+    implementation = _install_rule_impl,
+    attrs = {
+        "is_executable": attr.bool(),
+        "key": attr.string(),
+
+        # for query
+        "type": attr.string(default = "image_feature"),
+        "unwrapped_shape": attr.dict(attr.string(), attr.any()),
+        "unwrapped_target": attr.dep(),
+        "wrapped_shape": attr.dict(attr.string(), attr.any()),
+        "wrapped_target": attr.dep(),
+    },
+)
+
+def maybe_add_install_rule(
+        unwrapped_shape,
+        wrapped_shape,
+        unwrapped_target,
+        wrapped_target,
+        is_executable,
+        include_in_target_name = None):
+    name = "install"
+    key = "install_files"
+
+    target_name = generate_feature_target_name(
+        name = name,
+        key = key,
+        feature_shape = unwrapped_shape,
+        include_in_name = include_in_target_name,
+    )
+
+    if not native.rule_exists(target_name):
+        _install_rule(
+            name = target_name,
+            key = key,
+            unwrapped_shape = shape.as_serializable_dict(unwrapped_shape),
+            wrapped_shape = shape.as_serializable_dict(wrapped_shape),
+            unwrapped_target = unwrapped_target,
+            wrapped_target = wrapped_target,
+            is_executable = is_executable,
+        )
+
+    return ":" + target_name
 
 def feature_install_buck_runnable(
         source,

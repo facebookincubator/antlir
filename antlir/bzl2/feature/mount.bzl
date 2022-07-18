@@ -44,17 +44,11 @@ Future: we may need another feature for removing mounts provided by parent
 layers.
 """
 
-load(
-    "//antlir/compiler/image/feature/buck2:rules.bzl",
-    "maybe_add_feature_rule",
-)
-load(
-    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
-    "mark_path",
-)
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2:image_source_helper.bzl", "mark_path")
 load(":mount.shape.bzl", "mount_t")
 
-def _image_host_mount(source, mountpoint, is_directory):
+def _feature_host_mount(source, mountpoint, is_directory):
     return mount_t(
         mount_config = {
             "build_source": {"source": source, "type": "host"},
@@ -64,7 +58,7 @@ def _image_host_mount(source, mountpoint, is_directory):
         },
     )
 
-def image_host_dir_mount(source, mountpoint = None):
+def feature_host_dir_mount(source, mountpoint = None):
     """
     `image.host_dir_mount("/path/foo")` bind-mounts the host directory
     `/path/foo` into the container at `/path/foo`. Another image item must
@@ -77,14 +71,14 @@ def image_host_dir_mount(source, mountpoint = None):
             "mountpoint": mountpoint,
             "source": source,
         },
-        feature_shape = _image_host_mount(
+        feature_shape = _feature_host_mount(
             source,
             mountpoint,
             is_directory = True,
         ),
     )
 
-def image_host_file_mount(source, mountpoint = None):
+def feature_host_file_mount(source, mountpoint = None):
     """
     `image.host_file_mount("/path/bar", "/baz")` bind-mounts the file
     `/path/bar` into the container at `/baz`.
@@ -96,14 +90,14 @@ def image_host_file_mount(source, mountpoint = None):
             "mountpoint": mountpoint,
             "source": source,
         },
-        feature_shape = _image_host_mount(
+        feature_shape = _feature_host_mount(
             source,
             mountpoint,
             is_directory = False,
         ),
     )
 
-def image_layer_mount(source, mountpoint = None):
+def feature_layer_mount(source, mountpoint = None):
     """
     `image.layer_mount(":other-image-layer")` makes the specified layer
     available inside the container available at the "default_mountpoint"

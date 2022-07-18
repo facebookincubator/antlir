@@ -20,16 +20,10 @@ load(
     "antlir_dep",
     "targets_and_outputs_arg_list",
 )
+load("//antlir/bzl2/feature:new.bzl", "feature_new")
+load(":feature_rule.bzl", "maybe_add_feature_rule")
 load(
-    "//antlir/compiler/image/feature/buck2:new.bzl",
-    feature_new_buck2 = "feature_new",
-)
-load(
-    "//antlir/compiler/image/feature/buck2:rules.bzl",
-    "maybe_add_feature_rule",
-)
-load(
-    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
+    ":image_source_helper.bzl",
     "is_build_appliance",
     "mark_path",
 )
@@ -95,7 +89,7 @@ def compile_image_features(
     #
     # Keep in sync with `bzl_const.py`.
     features_for_layer = name + BZL_CONST.layer_feature_suffix
-    feature_new_buck2(
+    feature_new(
         name = features_for_layer,
         features = features,
         flavors = flavors,

@@ -37,7 +37,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                 "build_source": {
                     "type": "layer",
                     "source": antlir_dep(
-                        "compiler/test_images/buck2/image_layer:" + target
+                        "compiler/test_images/buck2/layer:" + target
                     ),
                 },
             }

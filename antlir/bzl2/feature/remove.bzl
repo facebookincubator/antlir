@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl/image/feature:remove.shape.bzl", "remove_paths_t")
-load(":rules.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
 def feature_remove(dest, must_exist = True):
     """
