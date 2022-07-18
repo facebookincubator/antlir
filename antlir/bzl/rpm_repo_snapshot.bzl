@@ -7,10 +7,7 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl/genrule/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
-load("//antlir/bzl/image/feature:ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
-load("//antlir/bzl/image/feature:install.bzl", "feature_install")
-load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
-load("//antlir/bzl/image/feature:symlink.bzl", "feature_ensure_dir_symlink")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":image_layer.bzl", "image_layer")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
@@ -229,8 +226,8 @@ def _set_up_rpm_repo_snapshots():
         paths.dirname(RPM_SNAPSHOT_BASE_DIR),
     )
     return [
-        feature_ensure_subdirs_exist("/", RPM_SNAPSHOT_BASE_DIR),
-        feature_ensure_subdirs_exist("/__antlir__/rpm", defaults_dir),
+        feature.ensure_subdirs_exist("/", RPM_SNAPSHOT_BASE_DIR),
+        feature.ensure_subdirs_exist("/__antlir__/rpm", defaults_dir),
     ]
 
 def install_rpm_repo_snapshot(snapshot):
@@ -243,7 +240,7 @@ def install_rpm_repo_snapshot(snapshot):
     caches are properly populated.  Otherwise, RPM installs will be slow.
     """
 
-    return _set_up_rpm_repo_snapshots() + [feature_install(snapshot, snapshot_install_dir(snapshot))]
+    return _set_up_rpm_repo_snapshots() + [feature.install(snapshot, snapshot_install_dir(snapshot))]
 
 def default_rpm_repo_snapshot_for(prog, snapshot):
     """
@@ -256,8 +253,8 @@ def default_rpm_repo_snapshot_for(prog, snapshot):
         # Silently replace the parent's default because there's not an
         # obvious scenario in which this is an error, and so forcing the
         # user to pass an explicit `replace_existing` flag seems unhelpful.
-        feature_remove(link_name, must_exist = False),
-        feature_ensure_dir_symlink(snapshot_install_dir(snapshot), link_name),
+        feature.remove(link_name, must_exist = False),
+        feature.ensure_dir_symlink(snapshot_install_dir(snapshot), link_name),
     ]
 
 def add_rpm_repo_snapshots_layer(

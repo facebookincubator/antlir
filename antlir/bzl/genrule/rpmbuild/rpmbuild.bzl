@@ -15,10 +15,7 @@ load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl/image/feature:ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
-load("//antlir/bzl/image/feature:install.bzl", "feature_install")
-load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
-load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 RPMBUILD_LAYER_SUFFIX = "rpmbuild-build"
 
@@ -118,14 +115,14 @@ def private_image_rpmbuild_impl(
         name = setup_layer,
         parent_layer = parent_layer,
         features = [
-            feature_install(specfile, specfile_path),
-            feature_ensure_subdirs_exist("/", "rpmbuild"),
-            feature_ensure_subdirs_exist("/rpmbuild", "BUILD"),
-            feature_ensure_subdirs_exist("/rpmbuild", "BUILDROOT"),
-            feature_ensure_subdirs_exist("/rpmbuild", "RPMS"),
-            feature_ensure_subdirs_exist("/rpmbuild", "SOURCES"),
-            feature_ensure_subdirs_exist("/rpmbuild", "SPECS"),
-            feature_tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
+            feature.install(specfile, specfile_path),
+            feature.ensure_subdirs_exist("/", "rpmbuild"),
+            feature.ensure_subdirs_exist("/rpmbuild", "BUILD"),
+            feature.ensure_subdirs_exist("/rpmbuild", "BUILDROOT"),
+            feature.ensure_subdirs_exist("/rpmbuild", "RPMS"),
+            feature.ensure_subdirs_exist("/rpmbuild", "SOURCES"),
+            feature.ensure_subdirs_exist("/rpmbuild", "SPECS"),
+            feature.tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ] + (setup_features or []),
         visibility = [],
         antlir_rule = "user-internal",
@@ -252,7 +249,7 @@ def image_import_rpm_public_key_layer(
     install_keys = []
     for src in pubkeys:
         dest = gpg_key_dir + "/RPM-GPG-KEY-" + sha256_b64(str(src))
-        install_keys.append(feature_install(src, dest))
+        install_keys.append(feature.install(src, dest))
 
     if not install_keys:
         fail("cannot import an empty set of keys")
@@ -261,7 +258,7 @@ def image_import_rpm_public_key_layer(
     image_layer(
         name = copy_layer,
         parent_layer = parent_layer,
-        features = [feature_ensure_subdirs_exist("/", gpg_key_dir[1:])] + install_keys,
+        features = [feature.ensure_subdirs_exist("/", gpg_key_dir[1:])] + install_keys,
         **image_layer_kwargs
     )
 
@@ -282,6 +279,6 @@ def image_import_rpm_public_key_layer(
     image_layer(
         name = name,
         parent_layer = ":" + import_layer,
-        features = [feature_remove(gpg_key_dir)],
+        features = [feature.remove(gpg_key_dir)],
         **image_layer_kwargs
     )
