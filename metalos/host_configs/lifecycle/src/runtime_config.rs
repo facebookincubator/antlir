@@ -29,15 +29,4 @@ impl StagableConfig for RuntimeConfig {
         }
         packages
     }
-
-    fn check_downloaded_artifacts(&self) -> anyhow::Result<()> {
-        for svc in &self.services {
-            ensure!(
-                svc.unit_file().is_some(),
-                "unit file '{}' not found",
-                svc.unit_name()
-            )
-        }
-        Ok(())
-    }
 }
