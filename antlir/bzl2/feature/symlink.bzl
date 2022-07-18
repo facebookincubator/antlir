@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl/image/feature:symlink.shape.bzl", "symlink_t")
-load(":rules.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
 def _feature_ensure_symlink(link_target, link_name, key):
     return maybe_add_feature_rule(

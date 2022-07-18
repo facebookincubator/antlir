@@ -10,23 +10,20 @@ load(
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
+load("//antlir/bzl2:compile_image_features.bzl", "compile_image_features")
 load(
-    "//antlir/compiler/image/feature/buck2:image_source.shape.bzl",
-    "image_source_t",
-)
-load(
-    "//antlir/compiler/image/feature/buck2:rules.bzl",
+    "//antlir/bzl2:feature_rule.bzl",
     "maybe_add_feature_rule",
 )
 load(
-    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
+    "//antlir/bzl2:image_source_helper.bzl",
     "normalize_target_and_mark_path_in_source_dict",
 )
-load(":compile_image_features.bzl", "compile_image_features")
 
 # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`) for all
 # other supported kwargs.
-def image_layer_from_package(
+def layer_from_package(
         name,
         format,
         source = None,

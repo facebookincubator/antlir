@@ -8,13 +8,10 @@
 load("//antlir/bzl:container_opts.bzl", "normalize_container_opts")
 load("//antlir/bzl:genrule_layer.shape.bzl", "genrule_layer_t")
 load("//antlir/bzl:image_genrule_layer.bzl", "image_genrule_layer_helper")
-load(
-    "//antlir/compiler/image/feature/buck2:rules.bzl",
-    "maybe_add_feature_rule",
-)
-load(":compile_image_features.bzl", "compile_image_features")
+load("//antlir/bzl2:compile_image_features.bzl", "compile_image_features")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
-def image_genrule_layer(
+def layer_genrule(
         name,
         rule_type,
         cmd,

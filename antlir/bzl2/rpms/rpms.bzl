@@ -7,17 +7,18 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
 load("//antlir/bzl/image/feature:rpms.shape.bzl", "rpm_action_item_t")
 load(
-    "//antlir/compiler/image/feature/buck2:image_source.shape.bzl",
-    "image_source_t",
+    "//antlir/bzl2:generate_feature_target_name.bzl",
+    "generate_feature_target_name",
 )
-load("//antlir/compiler/image/feature/buck2:rules.bzl", "maybe_add_rpm_rule")
 load(
-    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
+    "//antlir/bzl2:image_source_helper.bzl",
     "mark_path",
     "normalize_target_and_mark_path_in_source_dict",
 )
+load("//antlir/bzl2:providers.bzl", "ItemInfo", "RpmInfo")
 
 def _rpm_name_or_source(name_source):
     # Normal RPM names cannot have a colon, whereas target paths
@@ -82,7 +83,61 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
 
     return rpm_items, deps, flavors
 
-def feature_rpms_install(rpmlist, flavors = None):
+def _rpm_rule_impl(ctx: "context") -> ["provider"]:
+    return [
+        DefaultInfo(),
+        ItemInfo(items = struct(**{"rpms": ctx.attr.rpm_items})),
+        RpmInfo(
+            action = ctx.attr.action,
+            flavors = ctx.attr.flavors,
+        ),
+    ]
+
+_rpm_rule = rule(
+    implementation = _rpm_rule_impl,
+    attrs = {
+        "action": attr.string(),
+        "deps": attr.list(attr.dep(), default = []),
+
+        # flavors specified in call to `feature.rpms_{install,remove_if_exists}`
+        "flavors": attr.list(attr.string(), default = []),
+
+        # gets serialized to json when `feature.new` is called and used as
+        # kwargs in compiler `ItemFactory`
+        "rpm_items": attr.list(attr.dict(attr.string(), attr.any())),
+
+        # for query
+        "type": attr.string(default = "image_feature"),
+    },
+)
+
+def maybe_add_rpm_rule(
+        name,
+        rpm_items,
+        flavors,
+        include_in_target_name = None,
+        deps = []):
+    key = "rpms"
+
+    target_name = generate_feature_target_name(
+        name = name,
+        key = key,
+        feature_shape = rpm_items,
+        include_in_name = include_in_target_name,
+    )
+
+    if not native.rule_exists(target_name):
+        _rpm_rule(
+            name = target_name,
+            action = name,
+            rpm_items = shape.as_serializable_dict(rpm_items),
+            flavors = flavors,
+            deps = deps,
+        )
+
+    return ":" + target_name
+
+def rpms_install(rpmlist, flavors = None):
     """
     `feature.rpms_install(["foo"])` installs `foo.rpm`,
     `feature.rpms_install(["//target:bar"])` builds `bar` target and installs
@@ -166,7 +221,7 @@ def feature_rpms_install(rpmlist, flavors = None):
         deps = deps,
     )
 
-def feature_rpms_remove_if_exists(rpmlist, flavors = None):
+def rpms_remove_if_exists(rpmlist, flavors = None):
     """
     `feature.rpms_remove_if_exists(["baz"])` removes `baz.rpm` if exists.
 
@@ -191,3 +246,8 @@ def feature_rpms_remove_if_exists(rpmlist, flavors = None):
         flavors = flavors,
         deps = deps,
     )
+
+rpms = struct(
+    install = rpms_install,
+    remove_if_exists = rpms_remove_if_exists,
+)

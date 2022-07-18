@@ -6,10 +6,10 @@
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
 load("//antlir/bzl/image/feature:tarball.shape.bzl", "tarball_t")
-load(":image_source.shape.bzl", "image_source_t")
-load(":rules.bzl", "maybe_add_feature_rule")
-load(":source_dict_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2:image_source_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
 
 def feature_tarball(source, dest, force_root_ownership = False):
     """

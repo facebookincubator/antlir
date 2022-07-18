@@ -8,10 +8,7 @@ load(
     "//antlir/bzl/image/feature:ensure_subdirs_exist.shape.bzl",
     "ensure_subdirs_exist_t",
 )
-load(
-    "//antlir/compiler/image/feature/buck2:rules.bzl",
-    "maybe_add_feature_rule",
-)
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
 def _generate_shape(into_dir, subdirs_to_create, mode, user, group):
     return ensure_subdirs_exist_t(

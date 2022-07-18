@@ -5,19 +5,10 @@
 
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
 load("//antlir/bzl/image/feature:clone.shape.bzl", "clone_t")
-load(
-    "//antlir/compiler/image/feature/buck2:image_source.shape.bzl",
-    "image_source_t",
-)
-load(
-    "//antlir/compiler/image/feature/buck2:rules.bzl",
-    "maybe_add_feature_rule",
-)
-load(
-    "//antlir/compiler/image/feature/buck2:source_dict_helper.bzl",
-    "normalize_target_and_mark_path_in_source_dict",
-)
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2:image_source_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
 
 def _generate_shape(source_dict, src_layer, src_path, dest_path):
     omit_outer_dir = src_path.endswith("/")
