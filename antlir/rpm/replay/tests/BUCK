@@ -62,8 +62,8 @@ image.layer(
         feature.ensure_dirs_exist("/from/test_base/"),
         # Without an rpms_install, /var/lib/rpm/ won't exist.
         # This prevents subvol-rpm-compare from querying or installing rpms.
-        feature.rpms_install(["rpm-test-milk"]),
-        feature.rpms_install(["rpm-test-mice"]),
+        test_rpms.add(["rpm-test-milk"]),
+        test_rpms.add(["rpm-test-mice"]),
     ],
     flavor = "antlir_test",
 )
@@ -110,7 +110,7 @@ image.layer(
 image.layer(
     name = "custom-local-rpm",
     parent_layer = ":base-plus-one",
-    features = [feature.rpms_install([
+    features = [test_rpms.add([
         "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
     ])],
 )
