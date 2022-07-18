@@ -23,11 +23,8 @@ load(
 load("//antlir/bzl2/feature:new.bzl", "feature_new")
 load(":feature_rule.bzl", "maybe_add_feature_rule")
 load(":flatten_features_list.bzl", "flatten_features_list")
-load(
-    ":image_source_helper.bzl",
-    "is_build_appliance",
-    "mark_path",
-)
+load(":image_source_helper.bzl", "mark_path")
+load(":is_build_appliance.bzl", "is_build_appliance")
 
 def compile_image_features(
         name,

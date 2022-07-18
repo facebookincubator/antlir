@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl2:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
@@ -74,9 +73,3 @@ def normalize_target_and_mark_path_in_source_dict(source_dict, **kwargs):
         )
 
     return source_dict, normalized_target
-
-def is_build_appliance(target):
-    return target in {
-        config.build_appliance: 1
-        for _, config in REPO_CFG.flavor_to_config.items()
-    }

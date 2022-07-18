@@ -8,7 +8,7 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl2:flatten_features_list.bzl", "flatten_features_list")
-load("//antlir/bzl2:image_source_helper.bzl", "is_build_appliance")
+load("//antlir/bzl2:is_build_appliance.bzl", "is_build_appliance")
 load(
     "//antlir/bzl2:providers.bzl",
     "FeatureInfo",
