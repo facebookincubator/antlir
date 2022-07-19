@@ -26,6 +26,7 @@ use signal_hook::consts::signal::SIGTERM;
 use signal_hook_tokio::Signals;
 use slog::info;
 use slog::Drain;
+use slog::Logger;
 use tokio::runtime::Runtime;
 
 use metalos_thrift_host_configs::api::server::make_Metalctl_server;
@@ -55,7 +56,9 @@ fn main(fb: FacebookInit) -> Result<()> {
     // Process commandline flags
     let args = Arguments::parse();
 
-    init_logging();
+    let glog_drain = slog_glog_fmt::default_drain();
+    let level_drain = slog::LevelFilter::new(glog_drain, slog::Level::Info).fuse();
+    let log = slog::Logger::root(level_drain, slog::o!());
 
     let runtime = Runtime::new()?;
 
@@ -87,34 +90,23 @@ fn main(fb: FacebookInit) -> Result<()> {
     svc_framework.add_module(ThriftStatsModule)?;
     svc_framework.add_module(Fb303Module)?;
 
-    info!(
-        logging::get(),
-        "Starting Metald Thrift service on port: {}", args.port
-    );
+    info!(log, "Starting Metald Thrift service on port: {}", args.port);
     // Start a task to spin up a thrift service
-    let thrift_service_handle = runtime.spawn(run_thrift_service(svc_framework));
+    let thrift_service_handle = runtime.spawn(run_thrift_service(log, svc_framework));
     // Have the runtime wait for thrift service to finish
     runtime.block_on(thrift_service_handle)?
 }
 
-async fn run_thrift_service(mut service: ServiceFramework) -> Result<()> {
+async fn run_thrift_service(log: Logger, mut service: ServiceFramework) -> Result<()> {
     let mut signals = Signals::new(&[SIGTERM, SIGINT])?;
 
     service.serve_background()?;
 
     signals.next().await;
-    info!(logging::get(), "Shutting down...");
+    info!(log, "Shutting down...");
     service.stop();
     signals.handle().close();
     Ok(())
-}
-
-fn init_logging() {
-    // Setup logging
-    let glog_drain = slog_glog_fmt::default_drain();
-    let level_drain = slog::LevelFilter::new(glog_drain, slog::Level::Info).fuse();
-    let logger = slog::Logger::root(level_drain, slog::o!());
-    logging::set_from_main(&logger).expect("Failed to setup common logging");
 }
 
 fn sd_listen_fds() -> Vec<RawFd> {
