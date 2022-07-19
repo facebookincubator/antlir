@@ -5,8 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use metalos_thrift_host_configs::api::server::make_Metalctl_server;
-use Metalctl_metadata_sys::create_metadata;
+use std::env;
+use std::os::unix::io::RawFd;
 
 use fb303::server::make_FacebookService_server;
 use fb303_core::server::make_BaseService_server;
@@ -26,13 +26,16 @@ use signal_hook::consts::signal::SIGTERM;
 use signal_hook_tokio::Signals;
 use slog::info;
 use slog::Drain;
-use std::env;
-use std::os::unix::io::RawFd;
 use tokio::runtime::Runtime;
 
+use metalos_thrift_host_configs::api::server::make_Metalctl_server;
+use Metalctl_metadata_sys::create_metadata;
+
 mod thrift_server;
-use thrift_server::FacebookServiceImpl;
-use thrift_server::MetalctlImpl;
+use thrift_server::Metald;
+
+#[cfg(facebook)]
+mod facebook;
 
 #[derive(Debug, Parser)]
 #[clap(name = "Metald Thrift Service")]
@@ -56,10 +59,11 @@ fn main(fb: FacebookInit) -> Result<()> {
 
     let runtime = Runtime::new()?;
 
-    // Initialize the FB303 Thrift stack for your specific server
-    let fb303_base = |proto| make_BaseService_server(proto, FacebookServiceImpl);
-    let fb303 = move |proto| make_FacebookService_server(proto, FacebookServiceImpl, fb303_base);
-    let service = move |proto| make_Metalctl_server(proto, MetalctlImpl { fb }, fb303);
+    // TODO duplicating Metald construction will almost definitely make counters
+    // harder to implement, but it's temporarily necessary
+    let fb303_base = move |proto| make_BaseService_server(proto, Metald { fb });
+    let fb303 = move |proto| make_FacebookService_server(proto, Metald { fb }, fb303_base);
+    let service = move |proto| make_Metalctl_server(proto, Metald { fb }, fb303);
 
     let thrift = if args.port == 0 {
         let fd: RawFd = sd_listen_fds().pop().expect("No LISTEN_FD");
