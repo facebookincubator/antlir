@@ -1,4 +1,3 @@
-load("//antlir/fbpkg:fbpkg.bzl", "fbpkg")
 load("//metalos:defs.bzl", "rust_binary")
 
 rust_binary(
@@ -22,12 +21,4 @@ rust_binary(
         "//metalos/host_configs:Metalctl-metadata-sys",
         "//metalos/host_configs:api-rust",
     ],
-)
-
-fbpkg.builder(
-    name = "metalos.metald.proxy",
-    path_actions = {
-        "service": ":metald",
-    },
-    buck_opts = fbpkg.buck_opts(version = "v2"),
 )
