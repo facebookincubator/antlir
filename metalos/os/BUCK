@@ -127,11 +127,25 @@ mask_unneeded_units = systemd.mask_units([
     "systemd-hwdb-update.service",
 ])
 
+# Features required in any centos OS we boot with metalinit, regardless of
+# whether it's the metalos runtime image or some other centos image
+feature.new(
+    name = "core",
+    features = [
+        feature.ensure_subdirs_exist("/usr/lib", "metalos"),
+        systemd_target_graph,
+        "//metalos/host_configs:generators",
+    ],
+    visibility = [
+        "//metalos/os/...",
+    ],
+)
+
 image.layer(
     name = "metalos",
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
-        feature.ensure_subdirs_exist("/usr/lib", "metalos"),
+        ":core",
         mask_unneeded_units,
         metalctl,
         metalos_branding,
@@ -140,12 +154,10 @@ image.layer(
         sshd,
         systemd_hostnamed,
         systemd_resolved,
-        systemd_target_graph,
         systemd_drop_state_shim,
         # TODO: clean up other features here so that all are in named lists
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "basic.target", "requires"),
-        "//metalos/host_configs:generators",
         # @oss-disable: "//metalos/os/facebook:features", 
     ],
     # @oss-disable: flavor_config_override = flavor_config_override, 
