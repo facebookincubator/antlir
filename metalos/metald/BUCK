@@ -1,4 +1,5 @@
 load("//metalos:defs.bzl", "rust_binary")
+# @oss-disable: load("//metalos/metald/src/facebook:deps.bzl", "deps") 
 
 rust_binary(
     name = "metald",
@@ -13,12 +14,12 @@ rust_binary(
         "slog",
         "slog_glog_fmt",
         "tokio",
-        "//common/fb303/if:fb303-rust",
         "//common/rust/logging:logging",
         "//common/rust/shed/fbinit:fbinit",
-        "//common/rust/srserver:srserver",
-        "//fb303/thrift:fb303_core-rust",
         "//metalos/host_configs:Metalctl-metadata-sys",
         "//metalos/host_configs:api-rust",
-    ],
+    ] + (
+        # @oss-disable: deps 
+        # @oss-enable []
+    ),
 )
