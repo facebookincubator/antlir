@@ -74,10 +74,8 @@ thrift_library(
         "//metalos/host_configs/facebook/iaas_config_provider/...",
         # metald requires raw thrift access to instantiate the thrift server
         "//metalos/host_configs/facebook/metald/...",
-        "//metalos/metald/server:metald",
-        "//metalos/metald/server:metald-unittest",
-        "//metalos/metald/proxy_lib:metald_lib",
-        "//metalos/metald/proxy_lib:metald_lib-unittest",
+        "//metalos/metald:metald",
+        "//metalos/metald:metald-unittest",
         # this is a config provider for corp
         # @oss-disable: "//ee_provisioning/corp_config_provider/...", 
         # @oss-disable: "//netos/...", 

@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use metald_lib::*;
 use metalos_thrift_host_configs::api::server::make_Metalctl_server;
 use Metalctl_metadata_sys::create_metadata;
 
@@ -30,6 +29,10 @@ use slog::Drain;
 use std::env;
 use std::os::unix::io::RawFd;
 use tokio::runtime::Runtime;
+
+mod thrift_server;
+use thrift_server::FacebookServiceImpl;
+use thrift_server::MetalctlImpl;
 
 #[derive(Debug, Parser)]
 #[clap(name = "Metald Thrift Service")]
