@@ -3,9 +3,10 @@ load("//metalos:defs.bzl", "rust_binary")
 
 rust_binary(
     name = "metald",
-    srcs = ["src/main.rs"],
+    srcs = glob(["src/**/*.rs"]),
     deps = [
         "anyhow",
+        "async-trait",
         "clap",
         "futures",
         "signal-hook",
@@ -20,7 +21,6 @@ rust_binary(
         "//fb303/thrift:fb303_core-rust",
         "//metalos/host_configs:Metalctl-metadata-sys",
         "//metalos/host_configs:api-rust",
-        "//metalos/metald/proxy_lib:metald_lib",
     ],
 )
 
