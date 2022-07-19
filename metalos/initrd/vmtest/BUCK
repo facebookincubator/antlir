@@ -131,7 +131,9 @@ package.new(
     name = "switch-root-initrd.cpio.gz",
     layer = ":switch-root-initrd",
     format = "cpio.gz",
-    visibility = [],
+    visibility = [
+        "//metalos/...",
+    ],
 )
 
 package.new(
@@ -186,6 +188,9 @@ image.layer(
     parent_layer = ":control-with-config",
     features = [
         feature.install("//metalos/initrd:initrd.cpio.gz", "/image/initrd/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef"),
+    ],
+    visibility = [
+        "//metalos/...",
     ],
 )
 

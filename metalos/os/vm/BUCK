@@ -2,6 +2,7 @@
 
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/linux/vm/console:defs.bzl", "console")
 load("//antlir/linux/vm/generator:defs.bzl", "generator")
@@ -9,9 +10,8 @@ load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 
-image.layer(
-    name = "base",
-    parent_layer = "//metalos/os:metalos",
+feature.new(
+    name = "virtualization-features",
     features = [
         console.autologin(),
         generator.mounts(),
@@ -21,6 +21,17 @@ image.layer(
         ssh.test_only_login(),
         ssh.hostkey_setup(),
         "//antlir/linux/vm/vmtest:maybe_mark_non_build_step",
+    ],
+    visibility = [
+        "//metalos/os/...",
+    ],
+)
+
+image.layer(
+    name = "base",
+    parent_layer = "//metalos/os:metalos",
+    features = [
+        ":virtualization-features",
     ],
     # Any vm unittest or run target can have a custom layer
     # built on top of this.
