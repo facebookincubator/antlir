@@ -9,6 +9,7 @@ rust_binary(
         "async-trait",
         "clap",
         "slog",
+        "systemd",
         "slog_glog_fmt",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
