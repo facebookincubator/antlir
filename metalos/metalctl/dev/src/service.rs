@@ -5,9 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsString;
+use std::os::unix::process::CommandExt;
+
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use slog::debug;
 use slog::Logger;
 
 use metalos_host_configs::packages::Format;
@@ -29,6 +33,8 @@ pub(crate) enum Opts {
     Start(Start),
     /// Stop a set of native services
     Stop(Stop),
+    /// Enter a native service's namespaces
+    Enter(Enter),
 }
 
 impl<F: crate::FormatArg> From<&PackageArg<F>> for Service {
@@ -48,6 +54,13 @@ pub(crate) struct Start {
 #[derive(Parser)]
 pub(crate) struct Stop {
     services: Vec<String>,
+}
+
+#[derive(Parser)]
+pub(crate) struct Enter {
+    service: String,
+    #[clap(help = "program to exec inside nsenter")]
+    prog: Vec<OsString>,
 }
 
 pub(crate) async fn service(log: Logger, opts: Opts) -> Result<()> {
@@ -74,6 +87,32 @@ pub(crate) async fn service(log: Logger, opts: Opts) -> Result<()> {
             }
             let tx = Transaction::with_next(&sd, set).await?;
             tx.commit(log, &sd).await?;
+        }
+        Opts::Enter(enter) => {
+            let service = match enter.service.ends_with(".service") {
+                true => enter.service,
+                false => format!("{}.service", enter.service),
+            };
+            let unit = sd
+                .get_service_unit(&service.clone().into())
+                .await
+                .with_context(|| format!("could not get service {}", service))?;
+
+            let pid = unit
+                .main_pid()
+                .await
+                .with_context(|| format!("could not get MainPID of {}", service))?;
+
+            debug!(log, "{} MainPID={}", service, pid);
+
+            Err(std::process::Command::new("nsenter")
+                .arg("--all")
+                .arg("--target")
+                .arg(pid.to_string())
+                .arg("--")
+                .args(enter.prog)
+                .exec())
+            .with_context(|| format!("while execing 'nsenter --all target {}'", pid))?;
         }
     }
     Ok(())

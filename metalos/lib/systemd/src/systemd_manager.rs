@@ -1010,6 +1010,9 @@ trait Service {
 
     #[dbus_proxy(property)]
     fn group(&self) -> zbus::Result<String>;
+
+    #[dbus_proxy(property, name = "MainPID")]
+    fn main_pid(&self) -> zbus::Result<u32>;
 }
 
 #[cfg(test)]
