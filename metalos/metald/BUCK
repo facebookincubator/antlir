@@ -14,7 +14,6 @@ rust_binary(
         "slog",
         "slog_glog_fmt",
         "tokio",
-        "//common/rust/logging:logging",
         "//common/rust/shed/fbinit:fbinit",
         "//metalos/host_configs:Metalctl-metadata-sys",
         "//metalos/host_configs:api-rust",
