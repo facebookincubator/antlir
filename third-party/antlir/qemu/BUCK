@@ -1,0 +1,64 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+load("//antlir/bzl:third_party.bzl", "third_party")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
+
+third_party.native_build(
+    name = "qemu",
+    base_features = [
+        feature.rpms_install([
+            # build deps
+            "gcc",
+            "autoconf",
+            "autoconf-archive",
+            "libtool",
+            "libattr-devel",
+            "libcap-ng-devel",
+            "libzstd-devel",
+            "make",
+            "ninja-build",
+            "numactl-devel",
+            "pixman-devel",
+            "python36",
+            "sed",
+            "net-tools",
+            "tpm-tools",
+            "expect",
+            "libseccomp-devel",
+            "socat",
+            "openssl-devel",
+            # static
+            "glib2-static",
+        ]),
+    ],
+    script = third_party.script(
+        prepare = """
+export MAKEFLAGS=-j
+
+./configure \\
+    --target-list=x86_64-softmmu,aarch64-softmmu \\
+    --prefix="${STAGE}" \\
+    --without-default-features \\
+    --enable-attr \\
+    --enable-cap-ng \\
+    --enable-kvm \\
+    --enable-numa \\
+    --enable-vhost-kernel \\
+    --enable-vhost-net \\
+    --enable-vhost-vsock \\
+    --enable-vhost-user \\
+    --enable-vhost-user-fs \\
+    --enable-virtfs \\
+    --enable-virtiofsd \\
+    --enable-seccomp \\
+    --enable-tools \\
+    --enable-tpm \\
+    --enable-zstd
+        """,
+        build = "make",
+        install = "make install",
+    ),
+)
