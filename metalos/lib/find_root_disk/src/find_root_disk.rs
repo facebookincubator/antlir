@@ -226,6 +226,6 @@ mod tests {
     fn test_get_serial_root_device() -> Result<()> {
         // We still only have a single disk but this at least tests that we can find
         // the root disk and the VM is setup right.
-        test_finder(SerialDiskFinder::new("ROOT_DISK_SERIAL".to_string()))
+        test_finder(SerialDiskFinder::new("vdb".to_string()))
     }
 }
