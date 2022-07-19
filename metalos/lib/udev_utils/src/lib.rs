@@ -382,7 +382,7 @@ mod tests {
                 .filter(|dev| future::ready(dev.subsystem() == &Subsystem::Block))
                 .filter(|dev| future::ready(dev.device_type() == &DeviceType::Disk))
                 .filter_map(|dev| future::ready(device::Disk::try_from(dev).ok()))
-                .filter(|disk| future::ready(disk.serial() == Some(OsStr::new("ROOT_DISK_SERIAL"))))
+                .filter(|disk| future::ready(disk.serial() == Some(OsStr::new("vdb"))))
                 .next(),
         )
         .await?

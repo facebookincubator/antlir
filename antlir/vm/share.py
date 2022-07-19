@@ -308,7 +308,7 @@ class QCow2Disk(Share):
                 f"file.driver=file,file.filename={self.cow_disk!s},"
             ),
             "--device",
-            f"{self.interface.value},drive={self.dev},serial=ROOT_DISK_SERIAL",
+            f"{self.interface.value},drive={self.dev},serial={self.dev}",
         )
 
     @property
