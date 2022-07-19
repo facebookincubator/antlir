@@ -1,0 +1,33 @@
+load("//antlir/fbpkg:fbpkg.bzl", "fbpkg")
+load("//metalos:defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "metald",
+    srcs = ["src/main.rs"],
+    deps = [
+        "anyhow",
+        "clap",
+        "futures",
+        "signal-hook",
+        "signal-hook-tokio",
+        "slog",
+        "slog_glog_fmt",
+        "tokio",
+        "//common/fb303/if:fb303-rust",
+        "//common/rust/logging:logging",
+        "//common/rust/shed/fbinit:fbinit",
+        "//common/rust/srserver:srserver",
+        "//fb303/thrift:fb303_core-rust",
+        "//metalos/host_configs:Metalctl-metadata-sys",
+        "//metalos/host_configs:api-rust",
+        "//metalos/metald/proxy_lib:metald_lib",
+    ],
+)
+
+fbpkg.builder(
+    name = "metalos.metald.proxy",
+    path_actions = {
+        "service": ":metald",
+    },
+    buck_opts = fbpkg.buck_opts(version = "v2"),
+)

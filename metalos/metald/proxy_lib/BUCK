@@ -1,0 +1,13 @@
+load("@fbcode_macros//build_defs:rust_library.bzl", "rust_library")
+
+rust_library(
+    name = "metald_lib",
+    srcs = ["src/lib.rs"],
+    deps = [
+        "fbsource//third-party/rust:async-trait",
+        "//common/fb303/if:fb303-rust",
+        "//common/rust/shed/fbinit:fbinit",
+        "//fb303/thrift:fb303_core-rust",
+        "//metalos/host_configs:api-rust",
+    ],
+)
