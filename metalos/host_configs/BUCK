@@ -71,6 +71,7 @@ thrift_library(
         # fact that certain internal parts of the proxy don't respect some of
         # the type guarantees we normally do (eg uuid is an actual uuid)
         "//metalos/host_configs/facebook/proxy/...",
+        "//metalos/host_configs/facebook/iaas_config_provider/...",
         "//metalos/host_configs/facebook/metald/...",
         # this is a config provider for corp
         # @oss-disable: "//ee_provisioning/corp_config_provider/...", 
