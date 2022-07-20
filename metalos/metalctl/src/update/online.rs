@@ -37,9 +37,12 @@ where
 
 pub(super) async fn stage(
     log: Logger,
+    fb: fbinit::FacebookInit,
     runtime_config: RuntimeConfig,
 ) -> Result<UpdateStageResponse, UpdateStageError> {
-    lifecycle::stage(log.clone(), runtime_config)
+    let dl = package_download::default_downloader(fb)
+        .map_err(map_stage_err("failed to create PackageDownloader"))?;
+    lifecycle::stage(log.clone(), dl, runtime_config)
         .await
         .map_err(map_stage_err("while staging runtimeconfig"))?;
 
@@ -49,6 +52,7 @@ pub(super) async fn stage(
 
 pub(super) async fn commit(
     log: Logger,
+    _fb: fbinit::FacebookInit,
     runtime_config: RuntimeConfig,
 ) -> Result<CommitResponse, CommitError> {
     let log = log.new(o!("runtime-config" => format!("{:?}", runtime_config)));

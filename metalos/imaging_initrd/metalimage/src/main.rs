@@ -271,13 +271,13 @@ impl Bootloader {
         let (initrd, kernel) = try_join!(
             ensure_package_on_disk(
                 self.log.clone(),
-                &downloader,
+                downloader.clone(),
                 self.config.boot_config.initrd.clone()
             )
             .map(|r| r.context("failed to download next stage initrd")),
             ensure_package_on_disk(
                 self.log.clone(),
-                &downloader,
+                downloader.clone(),
                 self.config.boot_config.kernel.pkg.clone()
             )
             .map(|r| r.context("failed to download kernel")),
@@ -300,7 +300,7 @@ impl Bootloader {
             efi::setup_efi_boot(self.log.clone(), &disk, bootloader)
                 .context("while setting up EFI boot entries")?;
             let bootloader_on_disk =
-                ensure_package_on_disk(self.log.clone(), &downloader, bootloader.pkg.clone())
+                ensure_package_on_disk(self.log.clone(), downloader, bootloader.pkg.clone())
                     .await
                     .context("while downloading bootloader")?;
 

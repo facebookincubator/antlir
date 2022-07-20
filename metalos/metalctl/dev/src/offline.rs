@@ -37,7 +37,7 @@ pub(crate) struct Opts {
     kernel_cmdline: Option<String>,
 }
 
-pub(crate) async fn offline(log: Logger, opts: Opts) -> Result<()> {
+pub(crate) async fn offline(log: Logger, fb: fbinit::FacebookInit, opts: Opts) -> Result<()> {
     let mut boot_config = HostConfig::current()
         .context("while loading current HostConfig")?
         .context("no committed HostConfig")?
@@ -61,7 +61,9 @@ pub(crate) async fn offline(log: Logger, opts: Opts) -> Result<()> {
         boot_config.initrd = initrd.into();
     }
 
-    lifecycle::stage(log, boot_config.clone())
+    let dl = package_download::default_downloader(fb)
+        .context("while creating default PackageDownloader")?;
+    lifecycle::stage(log, dl, boot_config.clone())
         .await
         .context("while staging BootConfig packages")?;
 

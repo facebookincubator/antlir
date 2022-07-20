@@ -9,9 +9,9 @@ use std::io::Read;
 
 use metalos_host_configs::packages::generic::Package;
 use metalos_host_configs::packages::generic::Packages;
+use package_download::default_downloader;
 use package_download::ensure_packages_on_disk_ignoring_artifacts;
 use package_download::staged_packages;
-use package_download::HttpsDownloader;
 
 #[derive(Parser)]
 pub enum Opts {
@@ -28,7 +28,7 @@ pub struct Stage {
 }
 
 /// Stage packages in an ad-hoc fashion without any supporting host_config
-pub async fn stage_packages(log: Logger, stage: Stage) -> Result<()> {
+pub async fn stage_packages(log: Logger, fb: fbinit::FacebookInit, stage: Stage) -> Result<()> {
     let pkgs: Packages = match stage.pkg_configs {
         Some(cfg) => deserialize(cfg.as_bytes())?,
         //None => panic!("foo"),
@@ -39,8 +39,8 @@ pub async fn stage_packages(log: Logger, stage: Stage) -> Result<()> {
             deserialize(&buf)?
         }
     };
-    let downloader = HttpsDownloader::new().context("while constructing HTTPS downloader")?;
-    ensure_packages_on_disk_ignoring_artifacts(log, &downloader, &pkgs.packages)
+    let downloader = default_downloader(fb).context("while constructing package downloader")?;
+    ensure_packages_on_disk_ignoring_artifacts(log, downloader, &pkgs.packages)
         .await
         .context("while downloading packages")
 }
