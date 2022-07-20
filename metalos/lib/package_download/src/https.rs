@@ -16,6 +16,7 @@ use once_cell::sync::Lazy;
 use reqwest::Client;
 use reqwest::StatusCode;
 use slog::debug;
+use slog::error;
 use slog::Logger;
 use thiserror::Error;
 use url::Url;
@@ -132,7 +133,8 @@ impl PackageDownloader for HttpsDownloader {
 
     async fn open_bytes_stream(&self, log: Logger, pkg: &Package) -> Result<Self::BytesStream> {
         let url = self.package_url(pkg);
-        debug!(log, "{:?} -> {}", pkg, url);
+        let log = log.new(slog::o!("url" => url.to_string()));
+        debug!(log, "making http request");
         let response = self
             .client
             .get(url.clone())
@@ -144,10 +146,12 @@ impl PackageDownloader for HttpsDownloader {
             })?;
 
         if response.status().is_success() {
+            debug!(log, "http response started successfully");
             Ok(Box::pin(response.bytes_stream().map(|r| {
                 r.map_err(|e| std::io::Error::new(ErrorKind::Other, e))
             })))
         } else {
+            error!(log, "http request returned {}", response.status());
             match response.status() {
                 StatusCode::NOT_FOUND => Err(crate::Error::NotFound(pkg.clone())),
                 status => Err(Error::StatusCode {
