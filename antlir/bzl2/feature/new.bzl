@@ -148,18 +148,18 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
     ] if BZL_CONST.layer_feature_suffix in ctx.attr.name else [])
 
 _feature_new_rule = rule(
-    implementation = _feature_new_rule_impl,
+    impl = _feature_new_rule_impl,
     attrs = {
-        "features": attr.list(attr.dep(), default = []),
-        "flavors": attr.list(attr.string(), default = []),
-        "normalized_name": attr.string(),
+        "features": attrs.list(attr.dep(), default = []),
+        "flavors": attrs.list(attr.string(), default = []),
+        "normalized_name": attrs.string(),
 
         # parent layer flavor can be fetched from parent layer feature
-        "parent_layer_feature": attr.option(attr.dep()),
+        "parent_layer_feature": attrs.option(attr.dep()),
 
         # for query (needed because `feature.new` can depend on targets that
         # need their on-disk location to be known)
-        "type": attr.string(default = "image_feature"),
+        "type": attrs.string(default = "image_feature"),
     },
 )
 
