@@ -6,7 +6,6 @@
  */
 
 use std::fs::Permissions;
-use std::io::Write;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
 
@@ -29,16 +28,18 @@ use tokio::io::AsyncWriteExt;
 use tokio::task::spawn_blocking;
 use tokio_stream::wrappers::ReadDirStream;
 
-use metalos_host_configs::packages::Format;
-use metalos_host_configs::packages::{self};
-
-mod https;
-pub use https::HttpsDownloader;
-
 use btrfs::sendstream::Zstd;
 use btrfs::Sendstream;
 use btrfs::SendstreamExt;
 use btrfs::Subvolume;
+use metalos_host_configs::packages::Format;
+use metalos_host_configs::packages::{self};
+
+mod https;
+#[deprecated = "Unless you _really_ need https, use default_downloader"]
+pub use https::HttpsDownloader;
+#[cfg(facebook)]
+mod facebook;
 
 const XATTR_KEY: &str = "user.metalos.package";
 
@@ -67,6 +68,16 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+pub fn default_downloader(
+    fb: fbinit::FacebookInit,
+) -> anyhow::Result<impl PackageDownloader + Clone> {
+    let https = HttpsDownloader::new()?;
+    #[cfg(facebook)]
+    return Ok(crate::facebook::FbpkgProxyOrHttpsFallback::new(fb, https));
+    #[cfg(not(facebook))]
+    return Ok(https);
+}
 
 #[async_trait]
 pub trait PackageDownloader {
@@ -156,8 +167,8 @@ where
 {
     try_join_all(pkgs.iter().map(|package| {
         let log = log.clone();
-        let downloader = dl.clone();
-        async move { ensure_package_on_disk_ignoring_artifacts(log, downloader, package).await }
+        let dl = dl.clone();
+        async move { ensure_package_on_disk_ignoring_artifacts(log, dl, package).await }
     }))
     .await
     .map(|_| ())

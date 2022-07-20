@@ -6,12 +6,11 @@
  */
 
 use anyhow::Context;
-use futures::future::try_join_all;
 use slog::Logger;
 
 use metalos_host_configs::packages::generic::Package;
 use package_download::ensure_packages_on_disk_ignoring_artifacts;
-use package_download::HttpsDownloader;
+use package_download::PackageDownloader;
 use state::State;
 use state::Token;
 
@@ -34,12 +33,16 @@ pub trait StagableConfig: State<state::Thrift> {
 
 /// Stage a config, downloading any packages and performing any stage-blocking
 /// checks.
-pub async fn stage<C>(log: Logger, conf: C) -> anyhow::Result<Token<C, state::Thrift>>
+pub async fn stage<C, D>(
+    log: Logger,
+    downloader: D,
+    conf: C,
+) -> anyhow::Result<Token<C, state::Thrift>>
 where
     C: StagableConfig,
+    D: PackageDownloader + Clone,
 {
-    let downloader = HttpsDownloader::new().context("while constructing HTTPS downloader")?;
-    ensure_packages_on_disk_ignoring_artifacts(log, &downloader, &conf.packages())
+    ensure_packages_on_disk_ignoring_artifacts(log, downloader, &conf.packages())
         .await
         .context("while downloading packages")?;
     conf.check_downloaded_artifacts()

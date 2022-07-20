@@ -227,11 +227,17 @@ impl Bootloader {
     }
 
     async fn boot(&mut self) -> Result<()> {
+        let dl =
+            package_download::HttpsDownloader::new().context("while creating HttpsDownloader")?;
         // Download packages / stage
         try_join!(
-            stage(self.log.clone(), self.config.boot_config.clone())
-                .map(|r| r.context("while staging BootConfig")),
-            stage(self.log.clone(), self.config.runtime_config.clone())
+            stage(
+                self.log.clone(),
+                dl.clone(),
+                self.config.boot_config.clone()
+            )
+            .map(|r| r.context("while staging BootConfig")),
+            stage(self.log.clone(), dl, self.config.runtime_config.clone())
                 .map(|r| r.context("while staging RuntimeConfig")),
         )?;
 

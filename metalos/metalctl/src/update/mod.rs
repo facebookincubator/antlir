@@ -88,15 +88,16 @@ impl CommonOpts {
 async fn run_subcommand<F, Fut, Input, Return, Error>(
     func: F,
     log: Logger,
+    fb: fbinit::FacebookInit,
     input: Input,
 ) -> anyhow::Result<()>
 where
     Return: Serializable,
     Error: std::fmt::Debug + Serializable,
-    F: Fn(Logger, Input) -> Fut,
+    F: Fn(Logger, fbinit::FacebookInit, Input) -> Fut,
     Fut: Future<Output = std::result::Result<Return, Error>>,
 {
-    match func(log, input).await {
+    match func(log, fb, input).await {
         Ok(resp) => {
             let output = fbthrift::simplejson_protocol::serialize(&resp);
             std::io::stdout()
@@ -117,16 +118,16 @@ where
 }
 
 impl Update {
-    pub(crate) async fn subcommand(self, log: Logger) -> Result<()> {
+    pub(crate) async fn subcommand(self, log: Logger, fb: fbinit::FacebookInit) -> Result<()> {
         match self {
             Self::Offline(sub) => {
                 let req: OfflineUpdateRequest = sub.load_input()?;
                 match sub {
                     Subcommand::Stage(_) => {
-                        run_subcommand(offline::stage, log, req.boot_config).await
+                        run_subcommand(offline::stage, log, fb, req.boot_config).await
                     }
                     Subcommand::Commit(_) => {
-                        run_subcommand(offline::commit, log, req.boot_config).await
+                        run_subcommand(offline::commit, log, fb, req.boot_config).await
                     }
                 }
             }
@@ -134,10 +135,10 @@ impl Update {
                 let runtime_config = sub.load_input()?;
                 match sub {
                     Subcommand::Stage(_) => {
-                        run_subcommand(online::stage, log, runtime_config).await
+                        run_subcommand(online::stage, log, fb, runtime_config).await
                     }
                     Subcommand::Commit(_) => {
-                        run_subcommand(online::commit, log, runtime_config).await
+                        run_subcommand(online::commit, log, fb, runtime_config).await
                     }
                 }
             }

@@ -48,26 +48,26 @@ struct MetalCtl {
     command: Subcommand,
 }
 
-async fn run_command(options: MetalCtl, log: Logger) -> Result<()> {
+async fn run_command(options: MetalCtl, log: Logger, fb: fbinit::FacebookInit) -> Result<()> {
     match options.command {
         Subcommand::SendEvent(opts) => send_event::cmd_send_event(log, opts).await,
-        Subcommand::Update(update) => update.subcommand(log).await,
+        Subcommand::Update(update) => update.subcommand(log, fb).await,
         Subcommand::External(mut args) => {
             let bin = format!("metalctl-{}", args.remove(0));
             trace!(log, "exec-ing external command {}", bin);
             Err(Error::msg(Command::new(bin).args(args).exec()))
         }
         Subcommand::Package(opts) => match opts {
-            package::Opts::Stage(stage) => package::stage_packages(log, stage).await,
+            package::Opts::Stage(stage) => package::stage_packages(log, fb, stage).await,
             package::Opts::List => package::list(log).await,
         },
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
+#[fbinit::main]
+async fn main(fb: fbinit::FacebookInit) -> Result<()> {
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());
-    match run_command(MetalCtl::parse(), log.clone()).await {
+    match run_command(MetalCtl::parse(), log.clone(), fb).await {
         Ok(r) => Ok(r),
         Err(e) => {
             error!(log, "{}", e);

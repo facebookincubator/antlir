@@ -127,7 +127,7 @@ impl From<HttpsDownloader> for Client {
 }
 
 #[async_trait]
-impl PackageDownloader for &HttpsDownloader {
+impl PackageDownloader for HttpsDownloader {
     type BytesStream = Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>;
 
     async fn open_bytes_stream(&self, log: Logger, pkg: &Package) -> Result<Self::BytesStream> {

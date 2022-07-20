@@ -17,8 +17,8 @@ use slog::Logger;
 use metalos_host_configs::packages::Format;
 use metalos_host_configs::packages::Service as ServicePackage;
 use metalos_host_configs::runtime_config::Service;
-use package_download::ensure_package_on_disk;
-use package_download::HttpsDownloader;
+use package_download::default_downloader;
+use package_download::ensure_packages_on_disk_ignoring_artifacts;
 use service::ServiceSet;
 use service::Transaction;
 use systemd::Systemd;
@@ -63,15 +63,21 @@ pub(crate) struct Enter {
     prog: Vec<OsString>,
 }
 
-pub(crate) async fn service(log: Logger, opts: Opts) -> Result<()> {
+pub(crate) async fn service(log: Logger, fb: fbinit::FacebookInit, opts: Opts) -> Result<()> {
     let sd = Systemd::connect(log.clone()).await?;
     match opts {
         Opts::Start(start) => {
-            let dl = HttpsDownloader::new().context("while creating downloader")?;
-            for svc in &start.services {
-                let svc: Service = svc.into();
-                ensure_package_on_disk(log.clone(), &dl, svc.svc).await?;
-            }
+            let dl = default_downloader(fb).context("while creating downloader")?;
+            ensure_packages_on_disk_ignoring_artifacts(
+                log.clone(),
+                dl,
+                &start
+                    .services
+                    .iter()
+                    .map(|sa| Service::from(sa).svc.into())
+                    .collect::<Vec<_>>(),
+            )
+            .await?;
 
             let mut set = ServiceSet::current(&sd).await?;
             for svc in start.services {

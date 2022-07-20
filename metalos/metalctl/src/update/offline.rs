@@ -34,9 +34,12 @@ where
 
 pub(super) async fn stage(
     log: Logger,
+    fb: fbinit::FacebookInit,
     boot_config: BootConfig,
 ) -> Result<StageResponse, StageError> {
-    lifecycle::stage(log.clone(), boot_config)
+    let dl = package_download::default_downloader(fb)
+        .map_err(map_stage_err("failed to create PackageDownloader"))?;
+    lifecycle::stage(log.clone(), dl, boot_config)
         .await
         .map_err(map_stage_err("while staging BootConfig"))?;
     // TODO(T111087410): return the list of packages
@@ -53,7 +56,11 @@ where
     }
 }
 
-pub(super) async fn commit(log: Logger, boot_config: BootConfig) -> Result<(), CommitError> {
+pub(super) async fn commit(
+    log: Logger,
+    _fb: fbinit::FacebookInit,
+    boot_config: BootConfig,
+) -> Result<(), CommitError> {
     let log = log.new(o!("boot-config" => format!("{:?}", boot_config)));
     trace!(log, "beginning offline-update commit");
 
