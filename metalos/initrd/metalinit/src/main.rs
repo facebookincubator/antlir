@@ -245,7 +245,8 @@ impl Bootloader {
             .context("rootfs not on disk")?;
 
         // prepare new root
-        let current_boot_dir = metalos_paths::boots().join(format!("{}:{}", 0, self.boot_id));
+        let current_boot_dir =
+            metalos_paths::runtime::boot().join(format!("{}:{}", 0, self.boot_id));
         let mut current_boot_subvol = root_subvol
             .snapshot(&current_boot_dir, SnapshotFlags::empty())
             .context(format!(

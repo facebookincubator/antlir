@@ -291,8 +291,8 @@ where
 /// discover errors along the way.
 pub async fn staged_packages()
 -> Result<impl TryStream<Ok = packages::generic::Package, Error = Error>> {
-    let root = metalos_paths::images();
-    let subdirs = fs::read_dir(metalos_paths::images())
+    let root = metalos_paths::images::base();
+    let subdirs = fs::read_dir(metalos_paths::images::base())
         .await
         .context(format!("while getting children paths on {root:?}"))
         .map_err(|error| Error::Read { error })?;

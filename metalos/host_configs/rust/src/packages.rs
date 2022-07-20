@@ -357,7 +357,7 @@ pub mod generic {
         /// Return the path where the artifact(s) for this package should be
         /// installed on the local disk.
         pub fn path(&self) -> PathBuf {
-            metalos_paths::images()
+            metalos_paths::images::base()
                 .join(self.kind.to_string().to_lowercase().replace('_', "-"))
                 .join(self.identifier())
         }

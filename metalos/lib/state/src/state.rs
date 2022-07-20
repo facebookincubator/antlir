@@ -37,12 +37,12 @@ type Sha256Value = [u8; 32];
 static STATE_BASE: Lazy<PathBuf> = Lazy::new(|| {
     #[cfg(not(test))]
     {
-        metalos_paths::metalos_state().into()
+        metalos_paths::core_state::metalos().into()
     }
     #[cfg(test)]
     {
         // prevent unused_crate_dependencies in test mode
-        let _ = metalos_paths::metalos_state();
+        let _ = metalos_paths::core_state::metalos();
         tempfile::tempdir().unwrap().into_path()
     }
 });
