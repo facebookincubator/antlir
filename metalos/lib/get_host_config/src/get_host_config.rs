@@ -20,7 +20,6 @@ static THRIFT_CONTENT_TYPE: HeaderValue = HeaderValue::from_static("application/
 
 pub fn client() -> Result<Client> {
     Client::builder()
-        .trust_dns(true)
         .use_rustls_tls()
         .build()
         .context("building client")

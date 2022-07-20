@@ -219,7 +219,6 @@ impl EventSink for HttpSink {
         };
 
         let client = Client::builder()
-            .trust_dns(true)
             .use_rustls_tls()
             .build()
             .context("building http client")?;
