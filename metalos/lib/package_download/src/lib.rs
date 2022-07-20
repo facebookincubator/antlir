@@ -8,6 +8,7 @@
 use std::fs::Permissions;
 use std::os::unix::fs::PermissionsExt;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use anyhow::Context;
@@ -26,6 +27,8 @@ use thiserror::Error;
 use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::task::spawn_blocking;
+use tokio_retry::strategy::ExponentialBackoff;
+use tokio_retry::Retry;
 use tokio_stream::wrappers::ReadDirStream;
 
 use btrfs::sendstream::Zstd;
@@ -145,7 +148,7 @@ where
 
     let pkg: packages::generic::Package = pkgext.clone().into();
 
-    ensure_package_on_disk_ignoring_artifacts(log, dl, &pkg).await?;
+    ensure_package_on_disk_ignoring_artifacts_with_retry(log, Arc::new(dl), &pkg).await?;
 
     pkgext
         .on_disk()
@@ -163,15 +166,32 @@ pub async fn ensure_packages_on_disk_ignoring_artifacts<D>(
     pkgs: &[packages::generic::Package],
 ) -> Result<()>
 where
-    D: PackageDownloader + Clone,
+    D: PackageDownloader,
 {
+    let dl = Arc::new(dl);
     try_join_all(pkgs.iter().map(|package| {
         let log = log.clone();
         let dl = dl.clone();
-        async move { ensure_package_on_disk_ignoring_artifacts(log, dl, package).await }
+        async move { ensure_package_on_disk_ignoring_artifacts_with_retry(log, dl, package).await }
     }))
     .await
     .map(|_| ())
+}
+
+async fn ensure_package_on_disk_ignoring_artifacts_with_retry<D>(
+    log: Logger,
+    dl: Arc<D>,
+    pkg: &packages::generic::Package,
+) -> Result<()>
+where
+    D: PackageDownloader,
+{
+    let retry_strategy = ExponentialBackoff::from_millis(10).take(3);
+
+    Retry::spawn(retry_strategy, move || {
+        ensure_package_on_disk_ignoring_artifacts(log.clone(), dl.clone(), pkg)
+    })
+    .await
 }
 
 /// Make sure that a single package is on disk, downloading it if it is not
@@ -180,12 +200,13 @@ where
 /// does not return the downloaded artifact.
 async fn ensure_package_on_disk_ignoring_artifacts<D>(
     log: Logger,
-    dl: D,
+    dl: Arc<D>,
     pkg: &packages::generic::Package,
 ) -> Result<()>
 where
     D: PackageDownloader,
 {
+    let log = log.new(slog::o!("package" => format!("{:?}", pkg)));
     let dest = pkg.path();
 
     if dest.exists() {
@@ -209,7 +230,7 @@ where
 
     match pkg.format {
         Format::Sendstream => {
-            debug!(log, "receiving {:?} into {}", pkg, dest.display());
+            debug!(log, "receiving into {}", dest.display());
             let sendstream = Sendstream::<Zstd, _>::new(stream);
 
             let mut subvol = sendstream
@@ -239,7 +260,7 @@ where
                 })
                 .map_err(map_install_err)?
                 .into_parts();
-            debug!(log, "downloading {:?} to {}", pkg, tmpfile_path.display());
+            debug!(log, "downloading to {}", tmpfile_path.display());
             let mut sink = fs::File::from_std(tmpfile);
 
             while let Some(item) = stream.next().await {
@@ -347,6 +368,8 @@ pub async fn staged_packages()
 #[cfg(test)]
 mod tests {
     use std::pin::Pin;
+    use std::sync::atomic::AtomicI8;
+    use std::sync::atomic::Ordering;
 
     use super::*;
     use anyhow::Result;
@@ -399,7 +422,7 @@ mod tests {
         ensure_packages_on_disk_ignoring_artifacts(
             log,
             &downloader,
-            &Vec::from([
+            &[
                 packages::generic::Package {
                     name: String::from("Foo"),
                     id: packages::generic::PackageId::Tag(String::from("LATEST")),
@@ -414,13 +437,92 @@ mod tests {
                     override_uri: None,
                     kind: packages::generic::Kind::Initrd,
                 },
-            ]),
+            ],
         )
         .await?;
 
         // Read them
         let staged: Vec<_> = staged_packages().await?.try_collect().await?;
         assert_eq!(2, staged.len(), "expected to find two staged packages");
+        Ok(())
+    }
+
+    struct FailingDl {
+        failures_remaining: AtomicI8,
+    }
+
+    impl FailingDl {
+        fn new(failures_remaining: i8) -> Self {
+            Self {
+                failures_remaining: AtomicI8::new(failures_remaining),
+            }
+        }
+    }
+
+    #[async_trait]
+    impl PackageDownloader for FailingDl {
+        type BytesStream = Pin<Box<dyn Stream<Item = std::io::Result<Bytes>> + Send>>;
+
+        async fn open_bytes_stream(
+            &self,
+            log: Logger,
+            package: &packages::generic::Package,
+        ) -> super::Result<Self::BytesStream> {
+            debug!(
+                log,
+                "failures remaining = {}",
+                self.failures_remaining.load(Ordering::Relaxed)
+            );
+            if self.failures_remaining.load(Ordering::Relaxed) > 0 {
+                self.failures_remaining.fetch_sub(1, Ordering::Relaxed);
+                return Err(Error::Download {
+                    package: package.clone(),
+                    error: anyhow!(
+                        "failed, {} more failures remaining",
+                        self.failures_remaining.load(Ordering::Relaxed)
+                    ),
+                });
+            }
+            Ok(Box::pin(empty()))
+        }
+    }
+
+    #[containertest]
+    async fn retry() -> Result<()> {
+        let log = Logger::root(slog_glog_fmt::default_drain(), o!());
+
+        if let Err(e) = ensure_packages_on_disk_ignoring_artifacts(
+            log.clone(),
+            FailingDl::new(2),
+            &[packages::generic::Package {
+                name: String::from("retry-eventually-succeed"),
+                id: packages::generic::PackageId::Tag(String::from("LATEST")),
+                format: Format::File,
+                override_uri: None,
+                kind: packages::generic::Kind::Rootfs,
+            }],
+        )
+        .await
+        {
+            panic!("dl should have succeeded: {:?}", e);
+        }
+
+        if ensure_packages_on_disk_ignoring_artifacts(
+            log.clone(),
+            FailingDl::new(4),
+            &[packages::generic::Package {
+                name: String::from("retry-eventually-fail"),
+                id: packages::generic::PackageId::Tag(String::from("LATEST")),
+                format: Format::File,
+                override_uri: None,
+                kind: packages::generic::Kind::Rootfs,
+            }],
+        )
+        .await
+        .is_ok()
+        {
+            panic!("dl should have failed");
+        }
         Ok(())
     }
 }

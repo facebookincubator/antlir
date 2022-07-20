@@ -37,6 +37,7 @@ rust_library(
         "tempfile",
         "thiserror",
         "tokio",
+        "tokio-retry",
         "tokio-stream",
         "url",
         "xattr",
