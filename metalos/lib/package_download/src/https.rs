@@ -96,10 +96,7 @@ impl HttpsDownloader {
         // TODO: it would be nice to restrict to https only, but we use plain
         // http for tests, and https doesn't do much for security compared to
         // something like checking image signatures
-        let client = reqwest::Client::builder()
-            .trust_dns(true)
-            .user_agent("metalos/1")
-            .build()?;
+        let client = reqwest::Client::builder().user_agent("metalos/1").build()?;
         Ok(Self { client })
     }
 
