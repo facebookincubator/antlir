@@ -66,9 +66,9 @@ impl ServiceInstance {
     pub fn new(name: String, version: Uuid) -> Self {
         let run_uuid = Uuid::new_v4();
         let unique = format!("{}-{}-{}", name, version.to_simple(), run_uuid.to_simple());
-        let base = metalos_paths::runtime();
+        let base = metalos_paths::runtime::base();
         let paths = Paths {
-            root_source: metalos_paths::images().join("service").join(format!(
+            root_source: metalos_paths::images::base().join("service").join(format!(
                 "{}:{}",
                 name,
                 version.to_simple()

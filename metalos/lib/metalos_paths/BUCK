@@ -1,7 +1,16 @@
+load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//metalos:defs.bzl", "rust_library")
+load(":metalos_paths.bzl", "gen_rust_module")
 
 rust_library(
     name = "metalos_paths",
-    srcs = glob(["src/*.rs"]),
+    mapped_srcs = {":metalos_paths.rs": "src/lib.rs"},
+    visibility = ["//metalos/..."],
+)
+
+buck_genrule(
+    name = "metalos_paths.rs",
+    cmd = "echo {} > $OUT".format(shell.quote(gen_rust_module())),
     visibility = ["//metalos/..."],
 )

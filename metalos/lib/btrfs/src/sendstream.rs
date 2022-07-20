@@ -97,7 +97,8 @@ where
         mut uncompressed: impl Stream<Item = std::io::Result<Bytes>> + Unpin,
         dst: impl AsRef<Path>,
     ) -> Result<Subvolume> {
-        let tmpdir = tempfile::tempdir_in(metalos_paths::scratch()).map_err(Error::Prepare)?;
+        let tmpdir =
+            tempfile::tempdir_in(metalos_paths::runtime::scratch()).map_err(Error::Prepare)?;
         let mut child = Command::new("/sbin/btrfs")
             .arg("receive")
             .arg(tmpdir.path())
