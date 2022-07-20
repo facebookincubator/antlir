@@ -15,28 +15,12 @@ load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 
-def compile_image_features(
-        name,
-        current_target,
-        parent_layer,
-        features,
+def check_flavor(
         flavor,
+        parent_layer,
         flavor_config_override,
-        subvol_name = None,
-        internal_only_is_genrule_layer = False):
-    '''
-    Arguments
-
-    - `subvol_name`: Future: eliminate this argument so that the build-time
-    hardcodes this to "volume". Move this setting into btrfs-specific
-    `package.new` options. See this post for more details
-    https://fburl.com/diff/3050aw26
-    '''
-    if features == None:
-        features = []
-
-    target_tagger = new_target_tagger()
-
+        name,
+        current_target):
     if not flavor:
         if parent_layer and flavor_config_override:
             # We throw this error because the default flavor can differ
@@ -49,44 +33,7 @@ def compile_image_features(
         elif not parent_layer:
             fail("Build for {}, target {} failed: either `flavor` or `parent_layer` must be provided.".format(name, current_target))
 
-    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override) if flavor else None
-
-    if flavor_config and flavor_config.build_appliance:
-        features.append(target_tagger_to_feature(
-            target_tagger,
-            struct(),
-            extra_deps = [flavor_config.build_appliance],
-        ))
-
-    # This is the list of supported flavors for the features of the layer.
-    # A value of `None` specifies that no flavor field was provided for the layer.
-    flavors = [flavor] if flavor else None
-
-    # Outputs the feature JSON for the given layer to disk so that it can be
-    # parsed by other tooling.
-    #
-    # Keep in sync with `bzl_const.py`.
-    features_for_layer = name + BZL_CONST.layer_feature_suffix
-    feature_new(
-        name = features_for_layer,
-        features = features + (
-            [target_tagger_to_feature(
-                target_tagger,
-                items = struct(parent_layer = [{"subvol": tag_target(
-                    target_tagger,
-                    parent_layer,
-                    is_layer = True,
-                )}]),
-            )] if parent_layer else []
-        ),
-        flavors = flavors,
-    )
-    normalized_features = normalize_features(
-        [":" + features_for_layer],
-        current_target,
-        flavors = flavors,
-    )
-
+def vset_override_genrule(flavor_config, current_target):
     vset_override_name = None
     if flavor_config and flavor_config.rpm_version_set_overrides:
         vset_override_name = version_set_override_name(current_target)
@@ -107,28 +54,19 @@ EOF
             ),
             antlir_rule = "user-internal",
         )
+    return vset_override_name
 
-    deps_query = query.union(
-        [
-            # For inline `feature`s, we already know the direct deps.
-            query.set(normalized_features.direct_deps),
-            # We will query the deps of the features that are targets.
-            query.deps(
-                expr = query.attrfilter(
-                    label = "type",
-                    value = "image_feature",
-                    expr = query.deps(
-                        expr = query.set(normalized_features.targets),
-                        depth = query.UNBOUNDED,
-                    ),
-                ),
-                depth = 1,
-            ),
-        ] + ([
-            layer_deps_query(parent_layer),
-        ] if parent_layer else []),
-    )
-
+def compile_image_features_output(
+        name,
+        current_target,
+        parent_layer,
+        flavor,
+        flavor_config,
+        subvol_name,
+        internal_only_is_genrule_layer,
+        vset_override_name,
+        deps_query,
+        quoted_child_feature_json_args):
     maybe_profile = ""
     profile_dir = native.read_config("antlir", "profile", None)
     if profile_dir:
@@ -170,17 +108,7 @@ EOF
         compiler = antlir_dep(":compiler"),
         subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
-        quoted_child_feature_json_args = " ".join([
-            "--child-feature-json $(location {})".format(t)
-            for t in normalized_features.targets
-        ] + (
-            ["--child-feature-json <(echo {})".format(shell.quote(
-                structs.as_json(struct(
-                    features = normalized_features.inline_features,
-                    target = current_target,
-                )),
-            ))] if normalized_features.inline_features else []
-        )),
+        quoted_child_feature_json_args = quoted_child_feature_json_args,
         maybe_flavor_config = (
             "--flavor-config {}".format(
                 shell.quote(shape.do_not_cache_me_json(flavor_config)),
@@ -225,4 +153,120 @@ EOF
         ),
         internal_only_is_genrule_layer = "--internal-only-is-genrule-layer" if internal_only_is_genrule_layer else "",
         maybe_profile = maybe_profile,
+    )
+
+def compile_image_features(
+        name,
+        current_target,
+        parent_layer,
+        features,
+        flavor,
+        flavor_config_override,
+        subvol_name = None,
+        internal_only_is_genrule_layer = False):
+    '''
+    Arguments
+
+    - `subvol_name`: Future: eliminate this argument so that the build-time
+    hardcodes this to "volume". Move this setting into btrfs-specific
+    `package.new` options. See this post for more details
+    https://fburl.com/diff/3050aw26
+    '''
+    if features == None:
+        features = []
+
+    target_tagger = new_target_tagger()
+
+    check_flavor(
+        flavor,
+        parent_layer,
+        flavor_config_override,
+        name,
+        current_target,
+    )
+
+    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override) if flavor else None
+
+    if flavor_config and flavor_config.build_appliance:
+        features.append(target_tagger_to_feature(
+            target_tagger,
+            struct(),
+            extra_deps = [flavor_config.build_appliance],
+        ))
+
+    # This is the list of supported flavors for the features of the layer.
+    # A value of `None` specifies that no flavor field was provided for the layer.
+    flavors = [flavor] if flavor else None
+
+    # Outputs the feature JSON for the given layer to disk so that it can be
+    # parsed by other tooling.
+    #
+    # Keep in sync with `bzl_const.py`.
+    features_for_layer = name + BZL_CONST.layer_feature_suffix
+    feature_new(
+        name = features_for_layer,
+        features = features + (
+            [target_tagger_to_feature(
+                target_tagger,
+                items = struct(parent_layer = [{"subvol": tag_target(
+                    target_tagger,
+                    parent_layer,
+                    is_layer = True,
+                )}]),
+            )] if parent_layer else []
+        ),
+        flavors = flavors,
+    )
+    normalized_features = normalize_features(
+        [":" + features_for_layer],
+        current_target,
+        flavors = flavors,
+    )
+
+    vset_override_name = vset_override_genrule(flavor_config, current_target)
+
+    deps_query = query.union(
+        [
+            # For inline `feature`s, we already know the direct deps.
+            query.set(normalized_features.direct_deps),
+            # We will query the deps of the features that are targets.
+            query.deps(
+                expr = query.attrfilter(
+                    label = "type",
+                    value = "image_feature",
+                    expr = query.deps(
+                        expr = query.set(normalized_features.targets),
+                        depth = query.UNBOUNDED,
+                    ),
+                ),
+                depth = 1,
+            ),
+        ] + ([
+            layer_deps_query(parent_layer),
+        ] if parent_layer else []),
+    )
+
+    quoted_child_feature_json_args = " ".join([
+        "--child-feature-json $(location {})".format(t)
+        for t in normalized_features.targets
+    ] + (
+        ["--child-feature-json <(echo {})".format(shell.quote(
+            structs.as_json(struct(
+                features = normalized_features.inline_features,
+                target = current_target,
+            )),
+        ))] if normalized_features.inline_features else []
+    ))
+
+    return compile_image_features_output(
+        name,
+        current_target,
+        parent_layer,
+        flavor,
+        flavor_config,
+        subvol_name,
+        internal_only_is_genrule_layer,
+        vset_override_name,
+        deps_query,
+        quoted_child_feature_json_args,
     )
