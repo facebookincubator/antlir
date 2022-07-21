@@ -1,0 +1,4 @@
+[Service]
+Type=simple
+ExecStart=/usr/lib/metalos/metald --systemd-socket
+Restart=always

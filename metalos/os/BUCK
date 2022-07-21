@@ -159,6 +159,7 @@ image.layer(
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "basic.target", "requires"),
         # @oss-disable: "//metalos/os/facebook:features", 
+        "//metalos/metald:features",
     ],
     # @oss-disable: flavor_config_override = flavor_config_override, 
     # @oss-disable: flavor = "centos8", 

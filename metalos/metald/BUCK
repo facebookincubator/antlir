@@ -1,22 +1,48 @@
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//metalos:defs.bzl", "rust_binary")
 # @oss-disable: load("//metalos/metald/src/facebook:deps.bzl", "deps") 
 
 rust_binary(
     name = "metald",
     srcs = glob(["src/**/*.rs"]),
+    named_deps = {
+        "plain_systemd": "systemd",
+    },
     deps = [
         "anyhow",
         "async-trait",
         "clap",
         "slog",
-        "systemd",
         "slog_glog_fmt",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
         "//metalos/host_configs:Metalctl-metadata-sys",
         "//metalos/host_configs:api-rust",
+        "//metalos/host_configs/lifecycle:lifecycle",
+        "//metalos/host_configs/rust:metalos_host_configs",
+        "//metalos/lib/systemd:systemd",
+        "//metalos/lib/thrift_wrapper:thrift_wrapper",
+        "//metalos/lib/state:state",
+        "//metalos/lib/service:service",
     ] + (
         # @oss-disable: deps 
         # @oss-enable []
     ),
+)
+
+# TODO(vmagro) this will also be packaged as a native service, but for now we
+# need it in the rootfs ASAP
+feature.new(
+    name = "features",
+    features = [
+        systemd.install_unit("metald.service"),
+        systemd.install_unit("metald.socket"),
+        systemd.enable_unit("metald.socket"),
+        feature.install_buck_runnable(
+            ":metald",
+            "/usr/lib/metalos/metald",
+        ),
+    ],
+    visibility = ["//metalos/os/..."],
 )

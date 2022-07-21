@@ -5,39 +5,63 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use fbinit::FacebookInit;
+use async_trait::async_trait;
+use slog::Logger;
 
+use thrift_wrapper::ThriftWrapper;
+
+use metalos_thrift_host_configs::api as thrift_api;
 use metalos_thrift_host_configs::api::server::Metalctl;
 use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateCommitExn;
 use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateStageExn;
-use metalos_thrift_host_configs::api::OnlineUpdateCommitResponse;
-use metalos_thrift_host_configs::api::OnlineUpdateRequest;
-use metalos_thrift_host_configs::api::UpdateStageResponse;
-
-use async_trait::async_trait;
 
 #[derive(Clone)]
 pub struct Metald {
-    pub fb: FacebookInit,
+    log: Logger,
+}
+
+impl Metald {
+    pub fn new(log: Logger) -> Self {
+        Self { log }
+    }
 }
 
 #[async_trait]
 impl Metalctl for Metald {
     async fn online_update_stage(
         &self,
-        _input: OnlineUpdateRequest,
-    ) -> Result<UpdateStageResponse, OnlineUpdateStageExn> {
-        Ok(UpdateStageResponse {
-            ..Default::default()
-        })
+        req: thrift_api::OnlineUpdateRequest,
+    ) -> Result<thrift_api::UpdateStageResponse, OnlineUpdateStageExn> {
+        let runtime_config =
+            req.runtime_config
+                .try_into()
+                .map_err(|e: thrift_wrapper::Error| thrift_api::UpdateStageError {
+                    packages: vec![],
+                    message: e.to_string(),
+                })?;
+        crate::update::online::stage(self.log.clone(), runtime_config)
+            .await
+            .map(|r| r.into())
+            .map_err(|e| e.into_thrift().into())
     }
 
     async fn online_update_commit(
         &self,
-        _input: OnlineUpdateRequest,
-    ) -> Result<OnlineUpdateCommitResponse, OnlineUpdateCommitExn> {
-        Ok(OnlineUpdateCommitResponse {
-            ..Default::default()
-        })
+        req: thrift_api::OnlineUpdateRequest,
+    ) -> Result<thrift_api::OnlineUpdateCommitResponse, OnlineUpdateCommitExn> {
+        let runtime_config =
+            req.runtime_config
+                .try_into()
+                .map_err(
+                    |e: thrift_wrapper::Error| thrift_api::OnlineUpdateCommitError {
+                        code: thrift_api::OnlineUpdateCommitErrorCode::OTHER,
+                        message: e.to_string(),
+                        services: vec![],
+                    },
+                )?;
+        crate::update::online::commit(self.log.clone(), runtime_config)
+            .await
+            .map(|r| r.into())
+            .map_err(|e| e.into_thrift().into())
     }
 }
