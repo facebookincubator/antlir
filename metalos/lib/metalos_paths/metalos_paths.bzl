@@ -40,6 +40,7 @@ metalos_paths = struct(
                 # packages mounted into it and the generators run inside of it.
                 "boot",
                 "cache",
+                "kernel",
                 "logs",
                 "runtime",
                 # Temporary storage space, but for things that need to be on BTRFS. For
