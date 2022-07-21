@@ -46,7 +46,7 @@ async fn main(fb: FacebookInit) -> Result<()> {
 
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
 
-    let metald = Metald::new(log.clone());
+    let metald = Metald::new(fb, log.clone())?;
 
     let listen_on = match (args.systemd_socket, args.port) {
         (true, None) => {

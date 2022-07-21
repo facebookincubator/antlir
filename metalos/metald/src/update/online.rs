@@ -18,6 +18,7 @@ use metalos_host_configs::api::ServiceStatus;
 use metalos_host_configs::api::UpdateStageError;
 use metalos_host_configs::api::UpdateStageResponse;
 use metalos_host_configs::runtime_config::RuntimeConfig;
+use package_download::PackageDownloader;
 use service::ServiceSet;
 use service::Transaction;
 use state::State;
@@ -35,11 +36,15 @@ where
     }
 }
 
-pub(crate) async fn stage(
+pub(crate) async fn stage<D>(
     log: Logger,
+    dl: D,
     runtime_config: RuntimeConfig,
-) -> Result<UpdateStageResponse, UpdateStageError> {
-    lifecycle::stage(log.clone(), runtime_config)
+) -> Result<UpdateStageResponse, UpdateStageError>
+where
+    D: PackageDownloader + Clone,
+{
+    lifecycle::stage(log.clone(), dl, runtime_config)
         .await
         .map_err(map_stage_err("while staging runtimeconfig"))?;
 
