@@ -85,4 +85,4 @@ def native_service(
     # @oss-disable: native_service_fbpkg(name = service.name, layer = ":{}--layer".format(service.name)) 
 
 def binary_target_to_path(target):
-    return paths.join(METALOS_DIR, "bin/{}".format(target.replace("/", "."))).lstrip(".")
+    return paths.join(METALOS_DIR, "bin/{}".format(target.replace("/", ".").lstrip(".")))

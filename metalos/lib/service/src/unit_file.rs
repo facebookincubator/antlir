@@ -105,7 +105,10 @@ impl TryFrom<resource_limits_t> for ResourceLimits {
 fn cmd_to_setting(cmd: cmd_t) -> String {
     let binary = match cmd.binary {
         binary_t::target_t(target) => {
-            format!("/metalos/bin/{}", target.name.replace('/', "."))
+            format!(
+                "/metalos/bin/{}",
+                target.name.replace('/', ".").trim_start_matches('.')
+            )
         }
         binary_t::String(s) => s,
     };
