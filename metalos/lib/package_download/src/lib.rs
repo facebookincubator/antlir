@@ -41,8 +41,14 @@ use metalos_host_configs::packages::{self};
 mod https;
 #[deprecated = "Unless you _really_ need https, use default_downloader"]
 pub use https::HttpsDownloader;
+// NOTE: it's important to keep this module and all the types within it private
+// so that code meant to be open-source can not explicitly depend on it
 #[cfg(facebook)]
 mod facebook;
+// However, we have to "avoid leaking types" so make a module that discourages use
+pub mod __do_not_use_directly {
+    pub use crate::facebook::FbpkgProxyOrHttpsFallback as _;
+}
 
 const XATTR_KEY: &str = "user.metalos.package";
 
@@ -72,14 +78,38 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
-pub fn default_downloader(
-    fb: fbinit::FacebookInit,
-) -> anyhow::Result<impl PackageDownloader + Clone> {
+#[derive(Clone)]
+pub struct DefaultDownloader(
+    #[cfg(facebook)] crate::facebook::FbpkgProxyOrHttpsFallback,
+    #[cfg(not(facebook))] HttpsDownloader,
+);
+
+#[async_trait]
+impl PackageDownloader for DefaultDownloader {
+    #[cfg(facebook)]
+    type BytesStream =
+        <crate::facebook::FbpkgProxyOrHttpsFallback as PackageDownloader>::BytesStream;
+    #[cfg(not(facebook))]
+    type BytesStream = <HttpsDownloader as PackageDownloader>::BytesStream;
+
+    /// Open a bytes stream from the underlying image source.
+    async fn open_bytes_stream(
+        &self,
+        log: Logger,
+        package: &packages::generic::Package,
+    ) -> Result<Self::BytesStream> {
+        self.0.open_bytes_stream(log, package).await
+    }
+}
+
+pub fn default_downloader(fb: fbinit::FacebookInit) -> anyhow::Result<DefaultDownloader> {
     let https = HttpsDownloader::new()?;
     #[cfg(facebook)]
-    return Ok(crate::facebook::FbpkgProxyOrHttpsFallback::new(fb, https));
+    return Ok(DefaultDownloader(
+        crate::facebook::FbpkgProxyOrHttpsFallback::new(fb, https),
+    ));
     #[cfg(not(facebook))]
-    return Ok(https);
+    return Ok(DefaultDownloader(https));
 }
 
 #[async_trait]

@@ -5,9 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use anyhow::Context;
+use anyhow::Result;
 use async_trait::async_trait;
 use slog::Logger;
 
+use fbinit::FacebookInit;
+
+use package_download::DefaultDownloader;
 use thrift_wrapper::ThriftWrapper;
 
 use metalos_thrift_host_configs::api as thrift_api;
@@ -18,11 +23,14 @@ use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateStageExn;
 #[derive(Clone)]
 pub struct Metald {
     log: Logger,
+    dl: DefaultDownloader,
 }
 
 impl Metald {
-    pub fn new(log: Logger) -> Self {
-        Self { log }
+    pub fn new(fb: FacebookInit, log: Logger) -> Result<Self> {
+        let dl = package_download::default_downloader(fb)
+            .context("while building default downloader")?;
+        Ok(Self { log, dl })
     }
 }
 
@@ -39,7 +47,7 @@ impl Metalctl for Metald {
                     packages: vec![],
                     message: e.to_string(),
                 })?;
-        crate::update::online::stage(self.log.clone(), runtime_config)
+        crate::update::online::stage(self.log.clone(), self.dl.clone(), runtime_config)
             .await
             .map(|r| r.into())
             .map_err(|e| e.into_thrift().into())
