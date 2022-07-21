@@ -1,0 +1,3 @@
+[Socket]
+ListenStream=/run/metalos/metald_socket
+Accept=no

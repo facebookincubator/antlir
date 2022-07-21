@@ -11,13 +11,14 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use systemd::daemon::is_socket;
-use systemd::daemon::listen_fds;
-use systemd::daemon::Listening;
+use plain_systemd::daemon::is_socket;
+use plain_systemd::daemon::listen_fds;
+use plain_systemd::daemon::Listening;
 
 use fbinit::FacebookInit;
 
 mod thrift_server;
+mod update;
 use thrift_server::Metald;
 
 #[cfg(facebook)]
@@ -45,7 +46,7 @@ async fn main(fb: FacebookInit) -> Result<()> {
 
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
 
-    let metald = Metald { fb };
+    let metald = Metald::new(log.clone());
 
     let listen_on = match (args.systemd_socket, args.port) {
         (true, None) => {
