@@ -248,6 +248,12 @@ impl Bootloader {
             target: metalos_paths::control(),
         })
         .await;
+
+        // Run systemd-tmpfiles now that we have a formatted and mounted control
+        // volume
+        metalos_paths_tmpfiles_integration::setup_tmpfiles()
+            .context("while setting up subvol hierarchy")?;
+
         info!(
             self.log,
             "Mounted rootfs {:?} to {:?}",

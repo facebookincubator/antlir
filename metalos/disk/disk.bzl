@@ -1,6 +1,4 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:image.bzl", "image")
-load("//metalos/lib/metalos_paths:metalos_paths.bzl", "metalos_paths")
 
 def disk(
         name,
@@ -21,12 +19,3 @@ def disk(
         disk_guid = "726f6f74-6673-696d-6700-000000000001",
         visibility = visibility,
     )
-
-def relativize_to_control(path):
-    rel = paths.relativize(
-        path,
-        metalos_paths.control,
-    )
-    if rel == metalos_paths.control:
-        return "/"
-    return rel

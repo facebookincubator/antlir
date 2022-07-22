@@ -1,7 +1,0 @@
-[Unit]
-DefaultDependencies=no
-ConditionPathExists=!/test-control-subvol
-
-[Service]
-Type=oneshot
-ExecStart=btrfs subvolume snapshot /test-control-subvol-src /test-control-subvol

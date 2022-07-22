@@ -121,3 +121,22 @@ def gen_rust_module():
 //! what each of these paths are used for
 """
     return "{}\nmod gen {}\npub use gen::*;".format(docblock, gen_src)
+
+def _oct(x):
+    if x > 0o777:
+        fail("octal mode must be less than 0o777")
+    d1 = x // 64
+    x = x % 64
+    d2 = x // 8
+    d3 = x % 8
+    return d3 + d2 * 10 + d1 * 100
+
+def gen_tmpfiles():
+    conf = []
+    for path, stat in dirs_to_create().items():
+        # v     /subvolume-or-directory/to/create        mode user group cleanup-age -
+        conf.append("v {} 0{} {} {} - -".format(path, _oct(stat.mode), stat.user, stat.group))
+
+    # note: the sorted here is very important so that the subvolume tree gets
+    # created in the right order
+    return "\n".join(sorted(conf))
