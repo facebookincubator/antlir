@@ -69,15 +69,31 @@ host_config(
                         {
                             "addrs": ["fd00::2"],
                             "essential": True,
+                            "interface_type": 0,
                             "mac": "00:00:00:00:00:01",
                             "name": "eth0",
+                            "structured_addrs": [
+                                {
+                                    "addr": "fd00::2",
+                                    "mode": 0,
+                                    "prefix_length": 64,
+                                },
+                            ],
                         },
                     ],
                     "primary_interface": {
                         "addrs": ["fd00::2"],
                         "essential": True,
+                        "interface_type": 0,
                         "mac": "00:00:00:00:00:01",
                         "name": "eth0",
+                        "structured_addrs": [
+                            {
+                                "addr": "fd00::2",
+                                "mode": 0,
+                                "prefix_length": 64,
+                            },
+                        ],
                     },
                 },
             },

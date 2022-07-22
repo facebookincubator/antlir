@@ -136,6 +136,6 @@ pub struct NetworkInterface {
     /// This interface is considered necessary and the network will not be
     /// considered up until this interface is configured and up
     pub essential: bool,
-    pub structured_addrs: Option<Vec<NetworkAddress>>,
-    pub interface_type: Option<NetworkInterfaceType>,
+    pub structured_addrs: Vec<NetworkAddress>,
+    pub interface_type: NetworkInterfaceType,
 }

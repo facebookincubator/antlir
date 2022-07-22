@@ -17,7 +17,10 @@ use metalos_thrift_host_configs::provisioning_config::EventBackend;
 use metalos_thrift_host_configs::provisioning_config::EventSource;
 use metalos_thrift_host_configs::provisioning_config::HostIdentity;
 use metalos_thrift_host_configs::provisioning_config::Network;
+use metalos_thrift_host_configs::provisioning_config::NetworkAddress;
+use metalos_thrift_host_configs::provisioning_config::NetworkAddressMode;
 use metalos_thrift_host_configs::provisioning_config::NetworkInterface;
+use metalos_thrift_host_configs::provisioning_config::NetworkInterfaceType;
 use metalos_thrift_host_configs::provisioning_config::ProvisioningConfig;
 use metalos_thrift_host_configs::provisioning_config::RootDiskConfiguration;
 use metalos_thrift_host_configs::provisioning_config::SingleDiskSerial;
@@ -32,16 +35,19 @@ pub fn example_host_for_tests() -> HostConfig {
                 hostname: "host001.01.abc0.facebook.com".to_owned(),
                 network: Network {
                     dns: DNS {
-                        servers: vec!["2606:4700:4700::1111".parse().unwrap()],
+                        servers: vec!["2606:4700:4700::1111".to_owned()],
                         search_domains: vec![],
                     },
                     interfaces: vec![NetworkInterface {
                         mac: "00:00:00:00:00:01".to_owned(),
-                        addrs: vec!["2a03:2880:f103:181:face:b00c:0:25de".parse().unwrap()],
+                        addrs: vec!["2a03:2880:f103:181:face:b00c:0:25de".to_owned()],
                         name: Some("eth0".to_owned()),
                         essential: true,
-                        structured_addrs: None,
-                        interface_type: None,
+                        structured_addrs: vec![NetworkAddress{
+                            addr: "2a03:2880:f103:181:face:b00c:0:25de".to_owned(),
+                            prefix_length: 64,
+                            mode: NetworkAddressMode::PRIMARY}],
+                        interface_type: NetworkInterfaceType::FRONTEND,
 
                     },
                     NetworkInterface {
@@ -49,17 +55,20 @@ pub fn example_host_for_tests() -> HostConfig {
                         addrs: vec![],
                         name: Some("eth8".to_owned()),
                         essential: false,
-                        structured_addrs: None,
-                        interface_type: None,
+                        structured_addrs: vec![],
+                        interface_type: NetworkInterfaceType::FRONTEND,
 
                     }],
                     primary_interface: NetworkInterface {
                         mac: "00:00:00:00:00:01".to_owned(),
-                        addrs: vec!["2a03:2880:f103:181:face:b00c:0:25de".parse().unwrap()],
+                        addrs: vec!["2a03:2880:f103:181:face:b00c:0:25de".to_owned()],
                         name: Some("eth0".to_owned()),
                         essential: true,
-                        structured_addrs: None,
-                        interface_type: None,
+                        structured_addrs: vec![NetworkAddress{
+                            addr: "2a03:2880:f103:181:face:b00c:0:25de".to_owned(),
+                            prefix_length: 64,
+                            mode: NetworkAddressMode::PRIMARY}],
+                        interface_type: NetworkInterfaceType::FRONTEND,
                     },
                 },
                 ..Default::default()

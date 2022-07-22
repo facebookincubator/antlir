@@ -123,8 +123,8 @@ struct NetworkInterface {
   // this interface is considered necessary and the network will not be
   // considered up until this interface is configured and up
   4: bool essential;
-  // Introducing structured addrs - DO NOT USE (yet)
-  5: optional list<NetworkAddress> structured_addrs;
-  // Introducing structured type - DO NOT USE (yet)
-  6: optional NetworkInterfaceType interface_type;
+  // Introducing structured addrs
+  5: list<NetworkAddress> structured_addrs;
+  // Introducing structured type
+  6: NetworkInterfaceType interface_type;
 } (rust.exhaustive)
