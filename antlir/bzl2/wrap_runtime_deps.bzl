@@ -10,11 +10,11 @@ load(
 )
 
 def _wrap_executable_target_rule_impl(ctx: "context") -> ["provider"]:
-    if not ctx.attr.target[RunInfo]:
+    if not ctx.attrs.target[RunInfo]:
         return [DefaultInfo()]
 
     path_in_output = \
-        "/" + ctx.attr.path_in_output if ctx.attr.path_in_output else ""
+        "/" + ctx.attrs.path_in_output if ctx.attrs.path_in_output else ""
 
     create_wrapper_script = ctx.actions.declare_output("create_wrapper.sh")
     output = ctx.actions.declare_output("out")
@@ -30,7 +30,7 @@ chmod +x $OUT
     """.format(
         # Necessary because script generated here differs from that generated in
         # `exec_wrapper.bzl`, which uses the same thing
-        unquoted_heredoc_preamble = ctx.attr.unquoted_heredoc_preamble.replace(
+        unquoted_heredoc_preamble = ctx.attrs.unquoted_heredoc_preamble.replace(
             "\\$(date)",
             "$(date)",
         ),
@@ -45,10 +45,10 @@ chmod +x $OUT
         cmd_args(["/bin/bash", create_wrapper_script]),
         env = {
             "OUT": output.as_output(),
-            "literal_preamble": ctx.attr.literal_preamble,
+            "literal_preamble": ctx.attrs.literal_preamble,
             "path_in_output": path_in_output,
-            "repo_root": ctx.attr.repo_root[RunInfo],
-            "runnable": ctx.attr.target[RunInfo],
+            "repo_root": ctx.attrs.repo_root[RunInfo],
+            "runnable": ctx.attrs.target[RunInfo],
         },
         # See comment at https://fburl.com/code/3pj7exvp
         local_only = True,
@@ -59,13 +59,13 @@ chmod +x $OUT
     return [DefaultInfo(default_outputs = [output])]
 
 _wrap_executable_target_rule = rule(
-    implementation = _wrap_executable_target_rule_impl,
+    impl = _wrap_executable_target_rule_impl,
     attrs = {
-        "literal_preamble": attr.arg(),
-        "path_in_output": attr.string(default = ""),
-        "repo_root": attr.dep(),
-        "target": attr.dep(),
-        "unquoted_heredoc_preamble": attr.string(),
+        "literal_preamble": attrs.arg(),
+        "path_in_output": attrs.string(default = ""),
+        "repo_root": attrs.dep(),
+        "target": attrs.dep(),
+        "unquoted_heredoc_preamble": attrs.string(),
     },
 )
 

@@ -86,28 +86,28 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
 def _rpm_rule_impl(ctx: "context") -> ["provider"]:
     return [
         DefaultInfo(),
-        ItemInfo(items = struct(**{"rpms": ctx.attr.rpm_items})),
+        ItemInfo(items = struct(**{"rpms": ctx.attrs.rpm_items})),
         RpmInfo(
-            action = ctx.attr.action,
-            flavors = ctx.attr.flavors,
+            action = ctx.attrs.action,
+            flavors = ctx.attrs.flavors,
         ),
     ]
 
 _rpm_rule = rule(
-    implementation = _rpm_rule_impl,
+    impl = _rpm_rule_impl,
     attrs = {
-        "action": attr.string(),
-        "deps": attr.list(attr.dep(), default = []),
+        "action": attrs.string(),
+        "deps": attrs.list(attrs.dep(), default = []),
 
         # flavors specified in call to `feature.rpms_{install,remove_if_exists}`
-        "flavors": attr.list(attr.string(), default = []),
+        "flavors": attrs.list(attrs.string(), default = []),
 
         # gets serialized to json when `feature.new` is called and used as
         # kwargs in compiler `ItemFactory`
-        "rpm_items": attr.list(attr.dict(attr.string(), attr.any())),
+        "rpm_items": attrs.list(attrs.dict(attrs.string(), attrs.any())),
 
         # for query
-        "type": attr.string(default = "image_feature"),
+        "type": attrs.string(default = "image_feature"),
     },
 )
 

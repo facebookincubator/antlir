@@ -10,23 +10,23 @@ load("//antlir/bzl2:providers.bzl", "ItemInfo")
 def _feature_rule_impl(ctx: "context") -> ["provider"]:
     return [
         DefaultInfo(),
-        ItemInfo(items = struct(**{ctx.attr.key: [ctx.attr.shape]})),
+        ItemInfo(items = struct(**{ctx.attrs.key: [ctx.attrs.shape]})),
     ]
 
 _feature_rule = rule(
-    implementation = _feature_rule_impl,
+    impl = _feature_rule_impl,
     attrs = {
-        "deps": attr.list(attr.dep(), default = []),
+        "deps": attrs.list(attrs.dep(), default = []),
 
         # corresponds to keys in `ItemFactory` in items_for_features.py
-        "key": attr.string(),
+        "key": attrs.string(),
 
         # gets serialized to json when `feature.new` is called and used as
         # kwargs in compiler `ItemFactory`
-        "shape": attr.dict(attr.string(), attr.any()),
+        "shape": attrs.dict(attrs.string(), attrs.any()),
 
         # for query
-        "type": attr.string(default = "image_feature"),
+        "type": attrs.string(default = "image_feature"),
     },
 )
 
