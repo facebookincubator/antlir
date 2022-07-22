@@ -143,7 +143,7 @@ feature.new(
     features = [
         feature.ensure_subdirs_exist("/usr/lib", "metalos"),
         systemd_target_graph,
-        "//metalos/host_configs:generators",
+        "//metalos/host_configs:host_config_generators",
     ],
     visibility = [
         "//metalos/os/...",
