@@ -1,11 +1,10 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "thrift_library")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//metalos/host_configs/generators:defs.bzl", "generators")
 
 # @oss-disable: facebook = True 
 # @oss-enable facebook = False
 
-generators = [
+star_paths = [
     "generators/hostname.star",
     "generators/machine-id.star",
     "generators/root-password.star",
@@ -91,19 +90,10 @@ thrift_library(
 
 buck_filegroup(
     name = "all_starklark_files",
-    srcs = generators,
+    srcs = star_paths,
 )
 
-feature.new(
-    name = "generators",
-    features = [
-        feature.ensure_subdirs_exist("/usr/lib/metalos", "generators"),
-    ] + [
-        feature.install(
-            src,
-            "/usr/lib/metalos/generators/{}".format(paths.basename(src)),
-        )
-        for src in generators
-    ],
-    visibility = ["//metalos/..."],
+generators(
+    name = "host_config_generators",
+    rel_star_paths = star_paths,
 )
