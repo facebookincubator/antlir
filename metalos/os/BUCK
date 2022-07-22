@@ -29,6 +29,15 @@ metalctl = [
     ),
 ]
 
+subvol_layout = [
+    feature.install(
+        "//metalos/lib/metalos_paths:metalos_paths.tmpfiles.conf",
+        "/usr/lib/tmpfiles.d/metalos_paths.tmpfiles.conf",
+    ),
+    systemd.enable_unit("run-fs-control.mount", "systemd-tmpfiles-setup.service", "requires"),
+    systemd.install_dropin("systemd-tmpfiles-force-subvol.conf", "systemd-tmpfiles-setup.service"),
+]
+
 native_service_support = [
     feature.install_buck_runnable(
         "//metalos/lib/service/helper:helper",
@@ -152,9 +161,10 @@ image.layer(
         native_service_support,
         root_cgroup,
         sshd,
+        subvol_layout,
+        systemd_drop_state_shim,
         systemd_hostnamed,
         systemd_resolved,
-        systemd_drop_state_shim,
         # TODO: clean up other features here so that all are in named lists
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "basic.target", "requires"),

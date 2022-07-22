@@ -158,6 +158,10 @@ async fn main() -> Result<()> {
     )
     .context("Failed to mount root")?;
 
+    // ensure the subvol hierarchy is correct
+    metalos_paths_tmpfiles_integration::setup_tmpfiles()
+        .context("while setting up subvol hierarchy")?;
+
     let config = HostConfig::current()
         .context("failed to load latest config from disk")?
         .context("No host config available")?;

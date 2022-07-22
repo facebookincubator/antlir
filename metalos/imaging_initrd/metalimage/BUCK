@@ -38,6 +38,7 @@ rust_binary(
         "//metalos/lib/kernel_cmdline:kernel_cmdline",
         "//metalos/lib/kexec:metalos_kexec",
         "//metalos/lib/metalos_paths:metalos_paths",
+        "//metalos/lib/metalos_paths:metalos_paths_tmpfiles_integration",
         "//metalos/lib/mount:metalos_mount",
         "//metalos/lib/net_utils:net_utils",
         "//metalos/lib/package_download:package_download",

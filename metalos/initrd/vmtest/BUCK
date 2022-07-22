@@ -151,6 +151,7 @@ image.layer(
     name = "control-with-config",
     parent_layer = "//metalos/disk:control",
     features = [
+        feature.ensure_dirs_exist("/run/state/metalos"),
         feature.install(
             "//metalos/initrd/vmtest:host-config",
             "/run/state/metalos/metalos_host_configs::host::HostConfig-current.json",
@@ -187,6 +188,7 @@ image.layer(
     name = "control-with-config-and-initrd",
     parent_layer = ":control-with-config",
     features = [
+        feature.ensure_dirs_exist("/image/initrd"),
         feature.install("//metalos/initrd:initrd.cpio.gz", "/image/initrd/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef"),
     ],
     visibility = [

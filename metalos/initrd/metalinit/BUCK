@@ -29,6 +29,7 @@ rust_binary(
         "//metalos/lib/btrfs:btrfs",
         "//metalos/lib/kernel_cmdline:kernel_cmdline",
         "//metalos/lib/metalos_paths:metalos_paths",
+        "//metalos/lib/metalos_paths:metalos_paths_tmpfiles_integration",
         "//metalos/lib/mount:metalos_mount",
         "//metalos/lib/net_utils:net_utils",
         "//metalos/lib/netlink:netlink",

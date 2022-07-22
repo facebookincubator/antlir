@@ -1,13 +1,11 @@
 # @noautodeps
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//metalos/lib/metalos_paths:metalos_paths.bzl", "dirs_to_create")
-load(":disk.bzl", "disk", "relativize_to_control")
+load(":disk.bzl", "disk")
 
 # This layer is mounted at /run/fs/control on MetalOS systems, and is the root
 # subvolume hierarchy. It contains the below directories to serve as places to
@@ -15,16 +13,7 @@ load(":disk.bzl", "disk", "relativize_to_control")
 image.layer(
     name = "control",
     flavor = flavor_helpers.get_antlir_linux_flavor(),
-    features = [
-        feature.ensure_subdirs_exist(
-            relativize_to_control(paths.dirname(p)),
-            paths.basename(p),
-            user = st.user,
-            group = st.group,
-            mode = st.mode,
-        )
-        for p, st in dirs_to_create().items()
-    ],
+    features = [],
     visibility = ["//metalos/..."],
 )
 
