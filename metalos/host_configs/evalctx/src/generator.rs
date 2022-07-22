@@ -32,6 +32,7 @@ pub struct Output {
     pub files: Vec<File>,
     pub dirs: Vec<Dir>,
     pub pw_hashes: Option<BTreeMap<Username, PWHash>>,
+    pub zero_files: Vec<ZeroFile>,
 }
 
 #[derive(Debug, PartialEq, Eq, Clone)]
@@ -43,6 +44,14 @@ pub struct Dir {
 pub struct File {
     pub path: PathBuf,
     pub contents: Vec<u8>,
+    pub mode: u32,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone)]
+pub struct ZeroFile {
+    pub path: PathBuf,
+    pub block_size_bytes: usize,
+    pub block_count: u32,
     pub mode: u32,
 }
 
@@ -69,31 +78,54 @@ impl Output {
 
         for file in self.files {
             let dst = root.force_join(file.path);
-            info!(log, "Writing file: {:?}", dst);
-            if let Some(parent) = dst.parent() {
-                fs::create_dir_all(parent).map_err(Error::Apply)?;
-            }
-            let mut f = fs::File::create(&dst).map_err(Error::Apply)?;
-            f.write_all(&file.contents).map_err(Error::Apply)?;
-            let mut perms = f.metadata().map_err(Error::Apply)?.permissions();
-            perms.set_mode(file.mode);
-            f.set_permissions(perms).map_err(Error::Apply)?;
-            // Try to mark the file as metalos-generated, but swallow the error
-            // if we can't. It's ok to fail silently here, because the only use
-            // case for this xattr is debugging tools, and it's better to have
-            // debug tools miss some files that come from generators, rather
-            // than fail to apply configs entirely
-            let _ = f.set_xattr("user.metalos.generator", &[1]);
+            Self::create_file(&log, dst, file.mode, |file_handle| {
+                file_handle.write_all(&file.contents)
+            })
+            .map_err(Error::Apply)?;
+        }
+
+        for zero_file in self.zero_files {
+            let dst = root.force_join(zero_file.path);
+            Self::create_file(&log, dst, zero_file.mode, |file_handle| {
+                let block: Vec<u8> = vec![0; zero_file.block_size_bytes];
+                for _ in 0..zero_file.block_count {
+                    file_handle.write_all(&block)?;
+                }
+                Ok(())
+            })
+            .map_err(Error::Apply)?;
         }
 
         if let Some(pw_hashes) = self.pw_hashes {
-            Self::apply_pw_hashes(log, pw_hashes, root).map_err(Error::PWHashError)?;
+            Self::apply_pw_hashes(&log, pw_hashes, root).map_err(Error::PWHashError)?;
         }
         Ok(())
     }
 
+    fn create_file<F>(log: &Logger, dst: PathBuf, mode: u32, writer: F) -> std::io::Result<()>
+    where
+        F: Fn(&mut fs::File) -> std::io::Result<()>,
+    {
+        info!(log, "Writing file: {:?}", dst);
+        if let Some(parent) = dst.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let mut f = fs::File::create(&dst)?;
+        writer(&mut f)?;
+        let mut perms = f.metadata()?.permissions();
+        perms.set_mode(mode);
+        f.set_permissions(perms)?;
+        // Try to mark the file as metalos-generated, but swallow the error
+        // if we can't. It's ok to fail silently here, because the only use
+        // case for this xattr is debugging tools, and it's better to have
+        // debug tools miss some files that come from generators, rather
+        // than fail to apply configs entirely
+        let _ = f.set_xattr("user.metalos.generator", &[1]);
+        Ok(())
+    }
+
     fn apply_pw_hashes(
-        log: Logger,
+        log: &Logger,
         pw_hashes: BTreeMap<Username, PWHash>,
         root: &Path,
     ) -> anyhow::Result<()> {
@@ -169,6 +201,7 @@ mod tests {
                 path: "/a/b/c/d".into(),
             }],
             pw_hashes: None,
+            zero_files: vec![],
         })?;
         let dir = std::fs::metadata(tmp_dir.path().join("a/b/c/d"))?;
         assert!(dir.is_dir());
@@ -185,6 +218,7 @@ mod tests {
             }],
             dirs: vec![],
             pw_hashes: None,
+            zero_files: vec![],
         })?;
         let dir = std::fs::metadata(tmp_dir.path().join("a/b/c"))?;
         assert!(dir.is_dir());
