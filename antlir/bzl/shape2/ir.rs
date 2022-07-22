@@ -67,7 +67,7 @@ macro_rules! newtype {
             Deref
         )]
         #[from(forward)]
-        #[display(forward)]
+        #[display(fmt = "{}", self.0)]
         #[deref(forward)]
         #[serde(transparent)]
         $x
@@ -105,7 +105,7 @@ newtype!(
     Display
 )]
 #[deref(forward)]
-#[display(forward)]
+#[display(fmt = "{}", self.0)]
 #[serde(try_from = "String", into = "String")]
 #[repr(transparent)]
 pub struct Target(String);
