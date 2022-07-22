@@ -10,6 +10,7 @@ use std::fmt::Display;
 use std::ops::Deref;
 use std::path::Path;
 
+use anyhow::bail;
 use anyhow::Context;
 use starlark::environment::GlobalsBuilder;
 use starlark::environment::Module;
@@ -26,6 +27,7 @@ use crate::generator::Dir;
 use crate::generator::File;
 use crate::generator::Generator;
 use crate::generator::Output;
+use crate::generator::ZeroFile;
 use crate::starlark::loader::Loader;
 use crate::starlark::loader::ModuleId;
 use crate::Error;
@@ -75,6 +77,7 @@ type PWHash = String;
 output_only_struct!(Output);
 output_only_struct!(Dir);
 output_only_struct!(File);
+output_only_struct!(ZeroFile);
 
 fn collect_list_of<'v, T>(lst: ListOf<'v, Value<'v>>) -> anyhow::Result<Vec<T>>
 where
@@ -109,11 +112,34 @@ pub fn module(registry: &mut GlobalsBuilder) {
         Ok(Dir { path: path.into() })
     }
 
+    #[starlark(type = "ZeroFile")]
+    fn zero_file(
+        path: &str,
+        block_size_bytes: i32,
+        block_count: i32,
+        mode: Option<i32>,
+    ) -> anyhow::Result<ZeroFile> {
+        if block_size_bytes <= 0 {
+            bail!("Block size {block_size_bytes} must be positive");
+        }
+        if block_count <= 0 {
+            bail!("Block count {block_count} must be positive");
+        }
+        Ok(ZeroFile {
+            path: path.into(),
+            // note: we assume usize can hold an i32 without truncation
+            block_size_bytes: block_size_bytes as usize,
+            block_count: block_count as u32,
+            mode: mode.map_or(0o444, |i| i as u32),
+        })
+    }
+
     #[starlark(type = "Output")]
     fn Output<'v>(
         files: Option<ListOf<'v, Value<'v>>>,
         dirs: Option<ListOf<'v, Value<'v>>>,
         pw_hashes: Option<DictOf<'v, Value<'v>, Value<'v>>>,
+        zero_files: Option<ListOf<'v, Value<'v>>>,
     ) -> anyhow::Result<Output> {
         let files = files.map_or_else(|| Ok(vec![]), collect_list_of)?;
         let dirs = dirs.map_or_else(|| Ok(vec![]), collect_list_of)?;
@@ -137,10 +163,12 @@ pub fn module(registry: &mut GlobalsBuilder) {
             ),
             None => None,
         };
+        let zero_files = zero_files.map_or_else(|| Ok(vec![]), collect_list_of)?;
         Ok(Output {
             files,
             dirs,
             pw_hashes,
+            zero_files,
         })
     }
 
@@ -253,7 +281,75 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
                 }],
                 dirs: vec![],
                 pw_hashes: None,
+                zero_files: vec![],
             }
+        );
+        Ok(())
+    }
+
+    // Exercise the ZeroFile path
+    #[test]
+    fn zerofile_generator() -> anyhow::Result<()> {
+        assert_eq!(
+            eval_one_generator(
+                r#"
+def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
+    return metalos.Output(
+        zero_files=[
+            metalos.zero_file(path="/swapvol/swapfile", block_size_bytes=4096, block_count=10),
+        ]
+    )
+            "#
+            )?,
+            Output {
+                files: vec![],
+                dirs: vec![],
+                pw_hashes: None,
+                zero_files: vec![ZeroFile {
+                    path: "/swapvol/swapfile".into(),
+                    block_size_bytes: 4096,
+                    block_count: 10,
+                    mode: 0o444,
+                }],
+            }
+        );
+        Ok(())
+    }
+
+    // Blocksize must be positive
+    #[test]
+    fn zerofile_bad_blocksize() -> anyhow::Result<()> {
+        assert!(
+            eval_one_generator(
+                r#"
+    def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
+        return metalos.Output(
+            files=[
+                metalos.zero_file(path="/swapvol/swapfile", block_size_bytes=0, block_count=10),
+            ]
+        )
+                "#
+            )
+            .is_err()
+        );
+        Ok(())
+    }
+
+    // Blocksize must be positive
+    #[test]
+    fn zerofile_bad_blockcount() -> anyhow::Result<()> {
+        assert!(
+            eval_one_generator(
+                r#"
+    def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
+        return metalos.Output(
+            files=[
+                metalos.zero_file(path="/swapvol/swapfile", block_size_bytes=4096, block_count=0),
+            ]
+        )
+                "#
+            )
+            .is_err()
         );
         Ok(())
     }
@@ -283,6 +379,7 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
                 }],
                 dirs: vec![],
                 pw_hashes: None,
+                zero_files: vec![],
             }
         );
         Ok(())
@@ -307,6 +404,7 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
                     path: "/dir".into(),
                 }],
                 pw_hashes: None,
+                zero_files: vec![],
             }
         );
         Ok(())
