@@ -109,7 +109,8 @@ def _temp_cgroup(subvol: Subvol) -> Path:
             [
                 "bash",
                 "-uec",
-                f"find {new_cg.shell_quote()} -type d | tac | xargs rmdir",
+                f"find {new_cg.shell_quote()} -type d | "
+                "tac | xargs rmdir --ignore-fail-on-non-empty",
             ],
             # Leak without failing: checking this would likely result in
             # painful and fruitless investigations of flaky tests in CI
