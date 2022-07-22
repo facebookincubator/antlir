@@ -66,28 +66,28 @@ def _generate_shape(source_dict, dest, mode, user, group):
     )
 
 def _install_rule_impl(ctx: "context") -> ["provider"]:
-    if ctx.attr.is_executable and ctx.attr.unwrapped_target[RunInfo]:
-        install_shape = ctx.attr.wrapped_shape
+    if ctx.attrs.is_executable and ctx.attrs.unwrapped_target[RunInfo]:
+        install_shape = ctx.attrs.wrapped_shape
     else:
-        install_shape = ctx.attr.unwrapped_shape
+        install_shape = ctx.attrs.unwrapped_shape
 
     return [
         DefaultInfo(),
-        ItemInfo(items = struct(**{ctx.attr.key: [install_shape]})),
+        ItemInfo(items = struct(**{ctx.attrs.key: [install_shape]})),
     ]
 
 _install_rule = rule(
-    implementation = _install_rule_impl,
+    impl = _install_rule_impl,
     attrs = {
-        "is_executable": attr.bool(),
-        "key": attr.string(),
+        "is_executable": attrs.bool(),
+        "key": attrs.string(),
 
         # for query
-        "type": attr.string(default = "image_feature"),
-        "unwrapped_shape": attr.dict(attr.string(), attr.any()),
-        "unwrapped_target": attr.dep(),
-        "wrapped_shape": attr.dict(attr.string(), attr.any()),
-        "wrapped_target": attr.dep(),
+        "type": attrs.string(default = "image_feature"),
+        "unwrapped_shape": attrs.dict(attrs.string(), attrs.any()),
+        "unwrapped_target": attrs.dep(),
+        "wrapped_shape": attrs.dict(attrs.string(), attrs.any()),
+        "wrapped_target": attrs.dep(),
     },
 )
 

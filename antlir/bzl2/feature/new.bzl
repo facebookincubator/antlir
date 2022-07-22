@@ -60,9 +60,9 @@ def _filter_rpm_versions(
     return filtered_feature_dict
 
 def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
-    parent_layer_feature = ctx.attr.parent_layer_feature
-    is_layer_feature = BZL_CONST.layer_feature_suffix in ctx.attr.name
-    feature_flavors = ctx.attr.flavors
+    parent_layer_feature = ctx.attrs.parent_layer_feature
+    is_layer_feature = BZL_CONST.layer_feature_suffix in ctx.attrs.name
+    feature_flavors = ctx.attrs.flavors
 
     if parent_layer_feature and feature_flavors:
         fail("`feature.new` can't be passed flavors from both `flavors` and " +
@@ -75,7 +75,7 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
 
     inline_features = []
     rpm_install_flavors = sets.make()
-    for feature in ctx.attr.features:
+    for feature in ctx.attrs.features:
         # If `feature[FeatureInfo]` exists, then `feature` was generated using
         # the `feature_new` macro and the `inline_features` of that feature are
         # appended onto this feature's `inline_features`.
@@ -92,7 +92,7 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
 
         elif feature[ItemInfo]:
             feature_dict = structs.to_dict(feature[ItemInfo].items)
-            feature_dict["target"] = ctx.attr.normalized_name
+            feature_dict["target"] = ctx.attrs.normalized_name
 
             if feature[RpmInfo]:
                 if feature[RpmInfo].action == "rpms_install":
@@ -131,7 +131,7 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
         ))
 
     items = struct(
-        target = ctx.attr.name,
+        target = ctx.attrs.name,
         features = inline_features,
     )
 
@@ -145,17 +145,17 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
         ),
     ] + ([
         FlavorInfo(flavors = feature_flavors),
-    ] if BZL_CONST.layer_feature_suffix in ctx.attr.name else [])
+    ] if BZL_CONST.layer_feature_suffix in ctx.attrs.name else [])
 
 _feature_new_rule = rule(
     impl = _feature_new_rule_impl,
     attrs = {
-        "features": attrs.list(attr.dep(), default = []),
-        "flavors": attrs.list(attr.string(), default = []),
+        "features": attrs.list(attrs.dep(), default = []),
+        "flavors": attrs.list(attrs.string(), default = []),
         "normalized_name": attrs.string(),
 
         # parent layer flavor can be fetched from parent layer feature
-        "parent_layer_feature": attrs.option(attr.dep()),
+        "parent_layer_feature": attrs.option(attrs.dep()),
 
         # for query (needed because `feature.new` can depend on targets that
         # need their on-disk location to be known)
