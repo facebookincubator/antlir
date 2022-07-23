@@ -1,0 +1,10 @@
+# Automatically start the MetalOS Native Services staged by the initrd early in
+# the boot graph
+[Unit]
+RefuseManualStart=yes
+RefuseManualStop=yes
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=metalctl online-update commit --last-staged

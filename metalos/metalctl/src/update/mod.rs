@@ -35,7 +35,7 @@ pub(crate) enum Subcommand {
     /// Download images and do some preflight checks
     Stage(CommonOpts),
     /// Apply the new config
-    Commit(CommonOpts),
+    Commit(CommitOpts),
 }
 
 impl Subcommand {
@@ -45,7 +45,8 @@ impl Subcommand {
         Ser: state::Serialization,
     {
         match self {
-            Self::Stage(c) | Self::Commit(c) => c.load(),
+            Self::Stage(c) => c.load::<S, Ser>(),
+            Self::Commit(c) => c.load::<S, Ser>(),
         }
     }
 }
@@ -65,23 +66,63 @@ pub(crate) struct CommonOpts {
     json_path: PathBuf,
 }
 
+#[derive(Parser)]
+#[clap(group = clap::ArgGroup::new("runtime-config").multiple(false).required(true))]
+pub(crate) struct CommitOpts {
+    #[clap(
+        long,
+        help = "use last staged config instead of providing the whole struct",
+        group = "runtime-config"
+    )]
+    last_staged: bool,
+    #[clap(group = "runtime-config")]
+    json_path: Option<PathBuf>,
+}
+
+fn load_from_file_arg<S, Ser>(arg: &Path) -> Result<S>
+where
+    S: State<Ser>,
+    Ser: state::Serialization,
+{
+    let input = if arg == Path::new("-") {
+        let mut input = Vec::new();
+        std::io::stdin()
+            .read_to_end(&mut input)
+            .context("while reading stdin")?;
+        input
+    } else {
+        std::fs::read(arg).with_context(|| format!("while reading {}", arg.display()))?
+    };
+    S::from_json(input).context("while deserializing")
+}
+
 impl CommonOpts {
     pub(self) fn load<S, Ser>(&self) -> Result<S>
     where
         S: State<Ser>,
         Ser: state::Serialization,
     {
-        let input = if self.json_path == Path::new("-") {
-            let mut input = Vec::new();
-            std::io::stdin()
-                .read_to_end(&mut input)
-                .context("while reading stdin")?;
-            input
+        load_from_file_arg(&self.json_path)
+    }
+}
+
+impl CommitOpts {
+    pub(self) fn load<S, Ser>(&self) -> Result<S>
+    where
+        S: State<Ser>,
+        Ser: state::Serialization,
+    {
+        if self.last_staged {
+            Ok(S::staged()
+                .context("while loading staged config")?
+                .context("no staged config")?)
         } else {
-            std::fs::read(&self.json_path)
-                .with_context(|| format!("while reading {}", self.json_path.display()))?
-        };
-        S::from_json(input).context("while deserializing")
+            load_from_file_arg(
+                self.json_path
+                    .as_ref()
+                    .context("json_path missing and --last-staged was not specified")?,
+            )
+        }
     }
 }
 
