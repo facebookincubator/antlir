@@ -5,12 +5,12 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "setup",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         feature.rpms_install([
             "hostname",
         ]),
     ],
+    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
 rust_binary(
@@ -32,7 +32,6 @@ rust_binary(
 
 image.layer(
     name = "test-layer",
-    parent_layer = ":setup",
     features = [
         feature.ensure_dirs_exist("/build"),
         feature.install(
@@ -41,6 +40,7 @@ image.layer(
             mode = "a+rx",
         ),
     ],
+    parent_layer = ":setup",
 )
 
 # Exercise both the "booted" and "unbooted" code paths, they differ slightly
@@ -48,9 +48,9 @@ image.layer(
     image.python_unittest(
         name = "test-nis-domainname-" + ("booted" if boot else "unbooted"),
         srcs = ["test_nis_domainname.py"],
+        boot = boot,
         layer = ":test-layer",
         run_as_user = "root",
-        boot = boot,
     )
     for boot in [
         False,

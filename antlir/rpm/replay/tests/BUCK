@@ -76,51 +76,51 @@ package.new(
 
 image.layer_from_package(
     name = "base",
+    flavor = "antlir_test",
     format = "sendstream",
     source = ":base.sendstream",
-    flavor = "antlir_test",
     visibility = ["//tupperware/cm/antlir/tests/..."],
 )
 
 image.layer(
     name = "base-plus-one",
-    parent_layer = ":base",
     features = test_rpms.add(["rpm-test-milk"]) + [
         # All of these are "non-custom" as far as `extract_nested_features`
         # is concerned.
         feature.ensure_dirs_exist("/new/dir/"),
         feature.layer_mount(":potato", "/vegetable"),
     ],
+    parent_layer = ":base",
 )
 
 image.layer(
     name = "custom",
-    parent_layer = ":base-plus-one",
     # Removal triggers the "custom image" code path.
     features = [feature.remove("/new/dir/")],
+    parent_layer = ":base-plus-one",
 )
 
 image.layer(
     name = "custom-remove-rpm",
-    parent_layer = ":base-plus-one",
     features = test_rpms.remove(["rpm-test-milk"]),
+    parent_layer = ":base-plus-one",
 )
 
 # TODO(lesha): Fold this into `non-custom` soon
 image.layer(
     name = "custom-local-rpm",
-    parent_layer = ":base-plus-one",
     features = [test_rpms.add([
         "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
     ])],
+    parent_layer = ":base-plus-one",
 )
 
 image.layer(
     name = "non-custom",
-    parent_layer = ":base-plus-one",
     # Another non-custom feature.  This is a sibling of `custom` to show
     # that the depth does not trigger custom vs non-custom behavior.
     features = [feature.ensure_dirs_exist("/another/dir/")],
+    parent_layer = ":base-plus-one",
 )
 
 python_unittest(
@@ -147,7 +147,6 @@ python_unittest(
 
 image.layer(
     name = "leaf",
-    parent_layer = ":base",
     features = test_rpms.add([
         "rpm-test-has-epoch",
         "rpm-test-second",
@@ -159,18 +158,19 @@ image.layer(
     flavor_config_override = image.opts(
         rpm_repo_snapshot = "//antlir/rpm:rpm-replay-repo-snapshot-for-tests",
     ),
+    parent_layer = ":base",
     visibility = ["//tupperware/cm/antlir/tests/..."],
 )
 
 # Only test-subvol-rpm-compare supports rpm removal
 image.layer(
     name = "test-subvol-rpm-compare-leaf",
-    parent_layer = ":leaf",
     features = test_rpms.remove(["rpm-test-milk"]) + test_rpms.add(["rpm-test-mice"]),
     flavor = "antlir_test",
     flavor_config_override = image.opts(
         rpm_repo_snapshot = "//antlir/rpm:rpm-replay-repo-snapshot-for-tests",
     ),
+    parent_layer = ":leaf",
 )
 
 python_unittest(

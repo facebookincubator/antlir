@@ -16,10 +16,6 @@ BASE_FEATURES = [
 third_party.native_build(
     base_features = BASE_FEATURES,
     script = third_party.script(
-        prepare = """
-            export MAKEFLAGS=-j
-            ./Configure no-shared --prefix="${STAGE}" -fno-omit-frame-pointer linux-x86_64-clang
-        """,
         build = "make",
         install = """
             make install
@@ -29,6 +25,10 @@ third_party.native_build(
             for n in bin share ssl; do
                     rm -rf "${STAGE}/$n"
             done
+        """,
+        prepare = """
+            export MAKEFLAGS=-j
+            ./Configure no-shared --prefix="${STAGE}" -fno-omit-frame-pointer linux-x86_64-clang
         """,
     ),
 )

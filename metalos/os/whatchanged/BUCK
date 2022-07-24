@@ -9,8 +9,6 @@ load("//metalos:metalos_tests.shape.bzl", "container_unittest_opts_t", "unittest
 
 image.layer(
     name = "test-layer-parent",
-    # Use the test build appliance so that we have a good set of test rpms
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [
         feature.rpms_install([
             # this will be removed
@@ -20,6 +18,8 @@ image.layer(
         ]),
     ],
     flavor = "antlir_test",
+    # Use the test build appliance so that we have a good set of test rpms
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
 )
 
 # Run the tests here so that we can mount the parent layer at /mnt/parent for
@@ -28,7 +28,6 @@ image.layer(
 # rpm installation/removal/upgrades
 image.layer(
     name = "test-layer",
-    parent_layer = ":test-layer-parent",
     features = [
         feature.rpms_install([
             "//antlir/compiler/test_images:rpm-test-cheese-2-1.rpm",
@@ -41,6 +40,7 @@ image.layer(
         ),
     ],
     flavor = "antlir_test",
+    parent_layer = ":test-layer-parent",
 )
 
 rust_binary(

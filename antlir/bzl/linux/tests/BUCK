@@ -11,7 +11,6 @@ load("//antlir/bzl/linux:defs.bzl", "linux")
 # `third_party.library` target.
 image.layer(
     name = "busybox-src-from-ba",
-    flavor = "antlir_test",
     features = [
         feature.clone(
             flavor_helpers.get_build_appliance(),
@@ -19,24 +18,24 @@ image.layer(
             "/busybox",
         ),
     ],
+    flavor = "antlir_test",
 )
 
 image.layer(
     name = "busybox-src-from-third-party",
-    flavor = "antlir_test",
     features = [
         feature.install(
             third_party.library("busybox", "bin/busybox"),
             "/busybox",
         ),
     ],
+    flavor = "antlir_test",
 )
 
 # Now use the respective busybox source layers to construct
 # test linux layers.
 image.layer(
     name = "test-linux-busybox-from-ba",
-    flavor = "antlir_test",
     features = [
         linux.filesystem.install(),
         linux.busybox.install(
@@ -44,11 +43,11 @@ image.layer(
             src_path = "/busybox",
         ),
     ],
+    flavor = "antlir_test",
 )
 
 image.layer(
     name = "test-linux-busybox-from-third-party",
-    flavor = "antlir_test",
     features = [
         linux.filesystem.install(),
         linux.busybox.install(
@@ -56,50 +55,51 @@ image.layer(
             src_path = "/busybox",
         ),
     ],
+    flavor = "antlir_test",
 )
 
 # Time tests
 image.layer(
     name = "test-layer-timezone-utc",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [linux.time.timezone(zone = "UTC")],
+    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
 image.python_unittest(
     name = "test-timezone-utc",
+    srcs = ["test_time.py"],
     env = {
         "ANTLIR_TEST_EXPECTED_TIMEZONES": "UTC",
     },
-    srcs = ["test_time.py"],
     layer = ":test-layer-timezone-utc",
 )
 
 image.layer(
     name = "test-layer-timezone-us-pacific",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [linux.time.timezone(zone = "US/Pacific")],
+    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
 image.python_unittest(
     name = "test-timezone-us-pacific",
+    srcs = ["test_time.py"],
     env = {
         "ANTLIR_TEST_EXPECTED_TIMEZONES": "PDT PST",
     },
-    srcs = ["test_time.py"],
     layer = ":test-layer-timezone-us-pacific",
 )
 
 image.layer(
     name = "test-layer-os-release",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         linux.release.install(
-            path = "/usr/lib/os-release",
             layer = ":test-layer-os-release",
             os_name = "AntlirTest",
+            path = "/usr/lib/os-release",
             variant = "Test",
         ),
     ],
+    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
 image.python_unittest(

@@ -15,11 +15,11 @@ http_file(
 
 image.layer_from_package(
     name = "stable-build-appliance",
-    format = "sendstream",
-    source = ":stable-build-appliance.sendstream.zst",
     flavor_config_override = image.opts(
         build_appliance = DO_NOT_USE_BUILD_APPLIANCE,
     ),
+    format = "sendstream",
+    source = ":stable-build-appliance.sendstream.zst",
     visibility = ["PUBLIC"],
 )
 
@@ -92,8 +92,8 @@ add_rpm_repo_snapshots_layer(
 
 image.layer(
     name = "rc-build-appliance.no-snapshot",
-    flavor_config_override = rc_opts,
     features = ba_features,
+    flavor_config_override = rc_opts,
     visibility = [],
 )
 

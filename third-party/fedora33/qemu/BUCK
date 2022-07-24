@@ -49,7 +49,6 @@ http_file(
 
 image.layer(
     name = "base",
-    parent_layer = "//images/appliance:stable-build-appliance",
     features = [
         feature.rpms_install([
             # build dependencies
@@ -69,11 +68,11 @@ image.layer(
             "libattr-devel",
         ]),
     ],
+    parent_layer = "//images/appliance:stable-build-appliance",
 )
 
 image.layer(
     name = "setup",
-    parent_layer = ":base",
     features = [
         feature.ensure_dirs_exist("/_temp_qemu"),
         feature.ensure_dirs_exist("/output"),
@@ -84,20 +83,21 @@ image.layer(
         feature.install(":pixman", "/_temp_qemu/pixman.tar.gz"),
         feature.install(":libcap-ng", "/_temp_qemu/libcap-ng.tar.gz"),
     ],
+    parent_layer = ":base",
 )
 
 image.genrule_layer(
     name = "build",
-    parent_layer = ":setup",
-    rule_type = "build",
     antlir_rule = "user-internal",
-    user = "root",
     cmd = [
         "/_temp_qemu/build.sh",
         qemu["version"],
         pixman["version"],
         libcap_ng["version"],
     ],
+    parent_layer = ":setup",
+    rule_type = "build",
+    user = "root",
 )
 
 vm_visibility = [

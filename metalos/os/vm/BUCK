@@ -29,10 +29,10 @@ feature.new(
 
 image.layer(
     name = "base",
-    parent_layer = "//metalos/os:metalos",
     features = [
         ":virtualization-features",
     ],
+    parent_layer = "//metalos/os:metalos",
     # Any vm unittest or run target can have a custom layer
     # built on top of this.
     visibility = ["PUBLIC"],
@@ -41,15 +41,15 @@ image.layer(
 btrfs.new(
     name = "base.btrfs",
     opts = btrfs.opts.new(
+        loopback_opts = image.opts(
+            label = "/",
+        ),
         subvols = {
             "/volume": btrfs.opts.subvol.new(
                 layer = ":base",
                 writable = True,
             ),
         },
-        loopback_opts = image.opts(
-            label = "/",
-        ),
     ),
     # Any vm run target can use this
     visibility = ["PUBLIC"],

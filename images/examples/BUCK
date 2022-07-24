@@ -3,10 +3,10 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "example",
-    parent_layer = "//images/base:fedora",
     features = [
         # this is provided in the base image, so must be removed first
         feature.remove("/etc/motd"),
         feature.install("motd", "/etc/motd"),
     ],
+    parent_layer = "//images/base:fedora",
 )

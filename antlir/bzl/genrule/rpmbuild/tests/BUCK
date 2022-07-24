@@ -72,7 +72,6 @@ image_import_rpm_public_key_layer(
 # Install a signed RPM via `image.source`.  Installing an unsigned RPM fails.
 image.layer(
     name = "install-signed-toy-rpm",
-    parent_layer = ":install-rpm-pubkey",
     features = [
         test_rpms.add([
             image.source(
@@ -89,6 +88,7 @@ image.layer(
             "/antlir/toy.rpm",
         ),
     ],
+    parent_layer = ":install-rpm-pubkey",
 )
 
 # Check the result of installing the RPM we built.

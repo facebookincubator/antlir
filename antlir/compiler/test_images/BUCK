@@ -52,8 +52,6 @@ hello_tar_hash = (
 defs.buck_genrule(
     name = "hello_world_tar_generator.sh",
     out = "run",
-    cacheable = False,
-    executable = True,
     bash = """
 cat > "$TMP/out" << 'EOF'
 #!/bin/bash -uex
@@ -67,6 +65,8 @@ EOF
 chmod a+x "$TMP/out"
 mv "$TMP/out" "$OUT"
     """,
+    cacheable = False,
+    executable = True,
 )
 
 defs.buck_genrule(
@@ -87,18 +87,18 @@ defs.buck_genrule(
 # that does not impose a circular dependency.  But for now, this works.
 image.layer(
     name = "test-layer",
-    parent_layer = flavor_helpers.get_build_appliance("antlir_test"),
     features = [
         # `test_non_ephemeral_snapshot` needs a place to write as `nobody`.
         feature.ensure_subdirs_exist(
             "/home",
             "nobody",
+            group = "nobody",
             mode = "u+rwx,og+rx",
             user = "nobody",
-            group = "nobody",
         ),
         "//antlir/features:build_artifact_cleanup",
     ],
+    parent_layer = flavor_helpers.get_build_appliance("antlir_test"),
     runtime = ["systemd"],
     visibility = [
         "//antlir/...",
@@ -108,7 +108,6 @@ image.layer(
 
 image.layer(
     name = "test-layer-iproute",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         feature.rpms_install(
             [
@@ -118,6 +117,7 @@ image.layer(
         ),
         "//antlir/features:build_artifact_cleanup",
     ],
+    parent_layer = flavor_helpers.get_build_appliance(),
     visibility = ["//antlir/..."],
 )
 
@@ -127,8 +127,8 @@ image.layer(
 image.layer_alias(
     name = "bootable-systemd-os",
     layer = ":test-layer",
-    visibility = ["//antlir/nspawn_in_subvol/..."],
     runtime = ["systemd"],
+    visibility = ["//antlir/nspawn_in_subvol/..."],
 )
 
 defs.python_binary(
@@ -162,8 +162,8 @@ feature.new(
 # `ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1` is passed to `systemd`.
 image.layer(
     name = "bootable-systemd-os-with-buck-runnables",
-    parent_layer = ":bootable-systemd-os",
     features = [":systemd_buck_runnables"],
+    parent_layer = ":bootable-systemd-os",
     runtime = ["systemd"],
     visibility = ["//antlir/nspawn_in_subvol/..."],
 )
@@ -238,6 +238,7 @@ image.genrule_layer(
 image.genrule_layer(
     name = "genrule-layer-validate-bind-repo-ro",
     antlir_rule = "user-internal",
+    bind_repo_ro = True,
     cmd = [
         "/bin/sh",
         "-c",
@@ -245,13 +246,12 @@ image.genrule_layer(
     ],
     parent_layer = ":test-layer",
     rule_type = "test_genrule_layer",
-    bind_repo_ro = True,
 )
 
 image.layer(
     name = "test-layer-no-antlir-dir",
-    parent_layer = ":test-layer",
     features = [feature.remove("/__antlir__")],
+    parent_layer = ":test-layer",
 )
 
 # Test that `dnf` just works in a non-BA parent with `attach_antlir_dir`
@@ -264,13 +264,13 @@ image.genrule_layer(
         "-y",
         "rpm-test-carrot",
     ],
-    rule_type = "test_genrule_layer",
-    parent_layer = ":test-layer-no-antlir-dir",
-    user = "root",
     container_opts = image.opts(
         attach_antlir_dir = True,
         shadow_proxied_binaries = True,
     ),
+    parent_layer = ":test-layer-no-antlir-dir",
+    rule_type = "test_genrule_layer",
+    user = "root",
 )
 
 # The next two targets exercise:
@@ -313,9 +313,9 @@ feature.new(
         feature.ensure_subdirs_exist(
             "/foo",
             "borf/beep",
+            group = "ggg",
             mode = "a+rwx",
             user = "uuu",
-            group = "ggg",
         ),
         # /etc/passwd and /etc/group are needed
         # because the {User,Group}Items require them
@@ -330,10 +330,10 @@ feature.new(
             "/etc/group",
         ),
         feature.user_add(
-            username = "uuu",
-            primary_group = "ggg",
             home_dir = "/foo/bar",
+            primary_group = "ggg",
             shell = "/foo/bar/installed/print-ok",
+            username = "uuu",
         ),
         feature.group_add(
             groupname = "ggg",
@@ -390,11 +390,11 @@ defs.sign_rpm_test_file(
 # we need this.
 image.layer(
     name = "layer-with-non-default-snapshot-no-rpms",
-    parent_layer = ":layer-with-non-default-snapshot-rpm",
     features = test_rpms.remove([
         "rpm-test-cake",
         "rpm-test-cheese",
     ]),
+    parent_layer = ":layer-with-non-default-snapshot-rpm",
     visibility = ["//antlir/compiler/items/..."],
 )
 
@@ -413,13 +413,13 @@ image.layer(
 #
 image.layer(
     name = "layer-with-only-one-locally-installed-rpm",
-    parent_layer = ":layer-with-non-default-snapshot-no-rpms",
     features = test_rpms.add([
         # A drive-by test that `image.source` syntax works in "rpms".  This
         # could have been just a target path, as in `feature_tar_and_rpms`.
         image.source(":rpm-test-cheese-2-1.rpm"),
     ]),
     flavor = "antlir_test",
+    parent_layer = ":layer-with-non-default-snapshot-no-rpms",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -475,10 +475,10 @@ feature.new(
             "foo",
         ),
     ],
+    flavors = ["antlir_test"],
     # `rpm-test-*` RPMs may not be mentioned by all of the allowed version
     # sets, so just emit this feature for one.
     visibility = ["//antlir/compiler/..."],
-    flavors = ["antlir_test"],
 )
 
 feature.new(
@@ -493,7 +493,6 @@ feature.new(
 
 image.layer(
     name = "test-layer-with-mounts",
-    parent_layer = ":test-layer",
     features = [
         ":feature_mount",
         feature.layer_mount(
@@ -501,6 +500,7 @@ image.layer(
             "/sendstream_meownt",
         ),
     ],
+    parent_layer = ":test-layer",
     visibility = ["//antlir/..."],
 )
 
@@ -612,8 +612,8 @@ feature.new(
 
 image.layer(
     name = "installed-executables",
-    parent_layer = ":test-layer",
     features = [":feature_install_files"],
+    parent_layer = ":test-layer",
     visibility = ["//antlir/..."],
 )
 
@@ -691,7 +691,6 @@ image.layer(
 
 image.layer(
     name = "kitchen_sink_layer",
-    parent_layer = ":kitchen_sink_layer_parent",
     features = [
         ":feature_dirs",
         ":feature_install_files",
@@ -708,6 +707,7 @@ image.layer(
         ),
     ],
     flavor = "antlir_test",
+    parent_layer = ":kitchen_sink_layer_parent",
 )
 
 ##
@@ -775,11 +775,11 @@ image.layer(
 
 image.layer(
     name = "addremove_conflict_child",
-    parent_layer = ":addremove_conflict_parent",
     features = [
         ":feature_addremove_conflict_remove",
         ":feature_repeated_removal",
     ],
+    parent_layer = ":addremove_conflict_parent",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -795,6 +795,7 @@ image.layer(
     features = [
         feature.tarball(
             image.source(
+                content_hash = hello_tar_hash,
                 generator = ":hello_world_tar_generator.sh",
                 # Most generators would not have this API wart of externally
                 # specifying the output filename. This mis-feature only exists
@@ -802,7 +803,6 @@ image.layer(
                 generator_args = [
                     "hello_world.tar",
                 ],
-                content_hash = hello_tar_hash,
             ),
             "//",  # Double-slash tests path normalization
         ),
@@ -823,7 +823,6 @@ defs.buck_genrule(
 
 image.layer(
     name = "parent_layer",
-    parent_layer = ":hello_world_base",
     features = [
         ":feature_dirs",
         ":feature_symlinks",
@@ -845,25 +844,22 @@ image.layer(
     ] + test_rpms.add(["rpm-test-carrot"]),
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
+    parent_layer = ":hello_world_base",
     visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
     name = "parent_layer_with_cheese",
-    parent_layer = ":parent_layer",
     features = test_rpms.add(["rpm-test-cheese"]),
     flavor = "antlir_test",
     flavor_config_override = image.opts(
         rpm_repo_snapshot = "//antlir/rpm:non-default-repo-snapshot-for-tests",
     ),
+    parent_layer = ":parent_layer",
 )
 
 image.layer(
     name = "child/layer",  # Checks that `/` is allowed in layer names
-    # Using `parent_layer_with_cheese` because it installs an older
-    # `rpm-test-cheese` which sets up the GPG keys for the local RPM install
-    # done with `feature_tar_and_rpms`.
-    parent_layer = ":parent_layer_with_cheese",
     features = [
         ":feature_tar_and_rpms",
         feature.ensure_subdirs_exist("/foo", "borf"),  # for :feature_tar
@@ -876,6 +872,10 @@ image.layer(
         feature.tarball(":hello_world.tar", "/foo/extracted_hello"),
         feature.tarball(":hello_world.tar", "/foo/more_extracted_hello"),
     ],
+    # Using `parent_layer_with_cheese` because it installs an older
+    # `rpm-test-cheese` which sets up the GPG keys for the local RPM install
+    # done with `feature_tar_and_rpms`.
+    parent_layer = ":parent_layer_with_cheese",
     visibility = ["//antlir/..."],
 )
 
@@ -888,32 +888,32 @@ package.new(
 # This will install /rpm_test/cheese2.txt.
 image.layer(
     name = "base_cheese_layer",
-    parent_layer = ":layer-with-non-default-snapshot-no-rpms",
     features = test_rpms.add([":rpm-test-cheese-2-1.rpm"]),
+    parent_layer = ":layer-with-non-default-snapshot-no-rpms",
     visibility = ["//antlir/compiler/..."],
 )
 
 # This downgrades and installs /rpm_test/cheese1.txt.
 image.layer(
     name = "older_cheese_layer",
-    parent_layer = ":base_cheese_layer",
     features = test_rpms.add([":rpm-test-cheese-1-1.rpm"]),
+    parent_layer = ":base_cheese_layer",
     visibility = ["//antlir/compiler/..."],
 )
 
 # This upgrades and installs /rpm_test/cheese3.txt.
 image.layer(
     name = "newer_cheese_layer",
-    parent_layer = ":base_cheese_layer",
     features = test_rpms.add([":rpm-test-cheese-3-1.rpm"]),
+    parent_layer = ":base_cheese_layer",
     visibility = ["//antlir/compiler/..."],
 )
 
 # This re-installs the same version of /rpm_test/cheese2.txt.
 image.layer(
     name = "reinstall_cheese_layer",
-    parent_layer = ":base_cheese_layer",
     features = test_rpms.add([":rpm-test-cheese-2-1.rpm"]),
+    parent_layer = ":base_cheese_layer",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -940,17 +940,17 @@ defs.buck_genrule(
 
 image.layer_from_package(
     name = op,
+    flavor = "antlir_test",
     format = "sendstream",
     source = ":" + op + "-original.sendstream",
     subvol_name = op,
     visibility = ["//antlir/..."],
-    flavor = "antlir_test",
 )
 
 package.new(
     name = op + ".sendstream",
-    layer = ":" + op,
     format = "sendstream",
+    layer = ":" + op,
     visibility = ["//antlir/..."],
 )
 
@@ -969,6 +969,7 @@ defs.buck_genrule(
 
 image.layer_from_package(
     name = "create_ops-from-dir",
+    flavor = "antlir_test",
     format = "sendstream",
     source = image.source(
         ":create_ops-dir",
@@ -976,19 +977,19 @@ image.layer_from_package(
     ),
     subvol_name = "create_ops",
     visibility = ["//antlir/compiler/..."],
-    flavor = "antlir_test",
 )
 
 image.layer(
     name = "create_ops-layer",
-    flavor = "antlir_test",
     features = [
         feature.install(":create_ops-original.sendstream", "/sendstream"),
     ],
+    flavor = "antlir_test",
 )
 
 image.layer_from_package(
     name = "create_ops-from-layer",
+    flavor = "antlir_test",
     format = "sendstream",
     source = image.source(
         layer = ":create_ops-layer",
@@ -996,7 +997,6 @@ image.layer_from_package(
     ),
     subvol_name = "create_ops",
     visibility = ["//antlir/..."],
-    flavor = "antlir_test",
 )
 
 image.layer_alias(
@@ -1019,31 +1019,31 @@ package.new(
 
 image.layer_from_package(
     name = "create_ops-layer-via-tarball-package",
+    flavor = "antlir_test",
     format = "tar",
     source = ":create_ops.tar.gz",
     visibility = ["//antlir/..."],
-    flavor = "antlir_test",
 )
 
 image.layer_from_package(
     name = "create_ops-layer-via-cpio-package",
+    flavor = "antlir_test",
     format = "cpio",
     source = ":create_ops.cpio.gz",
     visibility = ["//antlir/..."],
-    flavor = "antlir_test",
 )
 
 package.new(
     name = "create_ops.cpio.gz",
-    layer = ":create_ops",
     format = "cpio.gz",
+    layer = ":create_ops",
     visibility = ["//antlir/..."],
 )
 
 package.new(
     name = "create_ops_squashfs",
-    layer = ":create_ops",
     format = "squashfs",
+    layer = ":create_ops",
     visibility = ["//antlir/..."],
 )
 
@@ -1083,11 +1083,11 @@ add_rpm_repo_snapshots_layer(
 
 image.layer(
     name = "groups-added",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         feature.group_add("foo"),
         feature.group_add("leet", 1337),
     ],
+    parent_layer = flavor_helpers.get_build_appliance(),
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -1097,21 +1097,21 @@ image.layer(
 # on a host.
 image.layer(
     name = "users-added",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         feature.group_add("newuser"),
         feature.user_add(
             "newuser",
-            primary_group = "newuser",
             home_dir = "/home/newuser",
+            primary_group = "newuser",
         ),
         feature.install(
             ":shadow_me",
             "/shadow_me_chown",
-            user = "newuser",
             group = "newuser",
+            user = "newuser",
         ),
     ],
+    parent_layer = flavor_helpers.get_build_appliance(),
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -1119,19 +1119,18 @@ image.layer(
 # users/groups added in the ":users-added" layer exist in /etc/{passwd,group}
 image.layer(
     name = "users-required",
-    parent_layer = ":users-added",
     features = [
         feature.requires(
             groups = ["newuser"],
             users = ["newuser"],
         ),
     ],
+    parent_layer = ":users-added",
     visibility = ["//antlir/compiler/..."],
 )
 
 image.layer(
     name = "vfat-test.layer",
-    flavor = "antlir_test",
     features = [
         feature.ensure_dirs_exist("/EFI/BOOT"),
         feature.install(
@@ -1140,27 +1139,28 @@ image.layer(
             mode = "a+rx",
         ),
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
 
 package.new(
     name = "vfat-test.vfat",
-    layer = ":vfat-test.layer",
     format = "vfat",
+    layer = ":vfat-test.layer",
     loopback_opts = image.opts(
-        size_mb = 32,
         label = "cats",
+        size_mb = 32,
     ),
     visibility = ["//antlir/..."],
 )
 
 package.new(
     name = "create_ops_ext3",
-    layer = ":create_ops",
     format = "ext3",
+    layer = ":create_ops",
     loopback_opts = image.opts(
-        size_mb = 256,
         label = "cats",
+        size_mb = 256,
     ),
     visibility = ["//antlir/..."],
 )
@@ -1176,28 +1176,28 @@ btrfs.new(
 btrfs.new(
     name = "create_ops_free_mb_btrfs",
     opts = btrfs.opts.new(
-        subvols = {"/volume": btrfs.opts.subvol.new(layer = ":create_ops")},
         free_mb = 1024,
+        subvols = {"/volume": btrfs.opts.subvol.new(layer = ":create_ops")},
     ),
     visibility = ["//antlir/..."],
 )
 
 image.layer(
     name = "empty.layer",
-    flavor = "centos8",
     features = [
         feature.ensure_dirs_exist("/PLACEHOLDER"),
     ],
+    flavor = "centos8",
     visibility = ["//antlir/..."],
 )
 
 package.new(
     name = "empty_bios_boot",
-    layer = ":empty.layer",
     format = "ext3",
+    layer = ":empty.layer",
     loopback_opts = image.opts(
-        size_mb = 1,
         label = "cats",
+        size_mb = 1,
     ),
     visibility = ["//antlir/..."],
 )
@@ -1206,16 +1206,16 @@ image.gpt(
     name = "gpt_test",
     table = [
         image.gpt_partition(
-            package = ":vfat-test.vfat",
             is_esp = True,
+            package = ":vfat-test.vfat",
         ),
         image.gpt_partition(
-            package = ":create_ops_ext3",
             name = "create_ops_ext3",
+            package = ":create_ops_ext3",
         ),
         image.gpt_partition(
-            package = ":empty_bios_boot",
             is_bios_boot = True,
+            package = ":empty_bios_boot",
         ),
     ],
     visibility = ["//antlir/..."],
@@ -1240,9 +1240,9 @@ feature.new(
 
 image.layer(
     name = "users-groups-from-scratch",
-    flavor = "antlir_test",
     features = [
         ":feature_usergroup",
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )

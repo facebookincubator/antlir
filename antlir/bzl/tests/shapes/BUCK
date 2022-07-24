@@ -8,8 +8,8 @@ load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t
 
 shape.impl(
     name = "test.shape",
-    deps = ["//antlir/bzl:target.shape"],
     rust_crate = "test_shape",
+    deps = ["//antlir/bzl:target.shape"],
 )
 
 buck_genrule(
@@ -139,8 +139,8 @@ python_unittest(
                 name = "Stormtrooper",
                 appears_in = [1],
             ),
-            shape_impl = ":test.shape",
             module = "data",
+            shape_impl = ":test.shape",
             type_name = "hashable_t",
         ),
         "//antlir/bzl:target.shape",

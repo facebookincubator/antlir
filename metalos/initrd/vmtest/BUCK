@@ -134,19 +134,19 @@ test_kernel_modules = [
 # close to the base as possible.
 image.layer(
     name = "switch-root-initrd",
-    parent_layer = "//metalos/initrd:initrd",
     features = [
         feature.remove("/etc/resolv.conf"),
         network.host(),
         # don't use the full test-kernel initrd, but we do need the modules
         test_kernel_modules,
     ],
+    parent_layer = "//metalos/initrd:initrd",
 )
 
 package.new(
     name = "switch-root-initrd.cpio.gz",
-    layer = ":switch-root-initrd",
     format = "cpio.gz",
+    layer = ":switch-root-initrd",
     visibility = [
         "//metalos/...",
     ],
@@ -154,8 +154,8 @@ package.new(
 
 package.new(
     name = "metalos-vmtest.sendstream.zst",
-    layer = "//metalos/os/vm:base",
     format = "sendstream.zst",
+    layer = "//metalos/os/vm:base",
 )
 
 image.layer(
@@ -165,7 +165,6 @@ image.layer(
 
 image.layer(
     name = "control-with-config",
-    parent_layer = "//metalos/disk:control",
     features = [
         feature.ensure_dirs_exist("/run/state/metalos"),
         feature.install(
@@ -177,6 +176,7 @@ image.layer(
             "/run/state/metalos/metalos_host_configs::boot_config::BootConfig-staged.json",
         ),
     ],
+    parent_layer = "//metalos/disk:control",
 )
 
 # We need to build a new gpt image for the switch-root
@@ -186,27 +186,27 @@ image.layer(
 btrfs.new(
     name = "rootdisk.btrfs",
     opts = btrfs.opts.new(
+        default_subvol = "/volume",
+        free_mb = 4864,  # 4.75GB (HUGE!)
+        loopback_opts = image.opts(
+            label = "/",
+        ),
         subvols = {
             "/volume": btrfs.opts.subvol.new(
                 layer = ":control-with-config",
                 writable = True,
             ),
         },
-        default_subvol = "/volume",
-        free_mb = 4864,  # 4.75GB (HUGE!)
-        loopback_opts = image.opts(
-            label = "/",
-        ),
     ),
 )
 
 image.layer(
     name = "control-with-config-and-initrd",
-    parent_layer = ":control-with-config",
     features = [
         feature.ensure_dirs_exist("/image/initrd"),
         feature.install("//metalos/initrd:initrd.cpio.gz", "/image/initrd/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef"),
     ],
+    parent_layer = ":control-with-config",
     visibility = [
         "//metalos/...",
     ],
@@ -214,8 +214,13 @@ image.layer(
 
 btrfs.new(
     name = "full-rootdisk.btrfs",
+    antlir_rule = "user-internal",
     opts = btrfs.opts.new(
         default_subvol = "/volume",
+        free_mb = 3072,  # 3G (HUGE!)
+        loopback_opts = image.opts(
+            label = "/",
+        ),
         subvols = {
             "/volume": btrfs.opts.subvol.new(
                 layer = ":control-with-config-and-initrd",
@@ -228,13 +233,8 @@ btrfs.new(
                 layer = "//metalos/os/vm:base",
             ),
         },
-        free_mb = 3072,  # 3G (HUGE!)
-        loopback_opts = image.opts(
-            label = "/",
-        ),
     ),
     visibility = [],
-    antlir_rule = "user-internal",
 )
 
 disk(
@@ -286,8 +286,8 @@ rust_binary(
 
 package.new(
     name = "kernel.{}.sendstream.zst".format(TEST_KERNEL.uname),
-    layer = TEST_KERNEL.derived_targets.image,
     format = "sendstream.zst",
+    layer = TEST_KERNEL.derived_targets.image,
 )
 
 buck_genrule(

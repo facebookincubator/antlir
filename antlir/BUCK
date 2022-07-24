@@ -566,8 +566,8 @@ python_unittest(
         "target_map": "$(query_targets_and_outputs '{}')".format(
             query.attrregexfilter(
                 expr = query.deps(
-                    expr = query.set(TEST_PACKAGE_RESOURCES.keys()),
                     depth = query.UNBOUNDED,
+                    expr = query.set(TEST_PACKAGE_RESOURCES.keys()),
                 ),
                 label = "type",
                 pattern = "image_layer*",
@@ -604,22 +604,22 @@ python_unittest(
                 table = [
                     shape.new(
                         gpt_partition_t,
-                        package = TEST_IMAGE_PREFIX + "vfat-test.vfat",
+                        is_bios_boot = False,
                         is_esp = True,
-                        is_bios_boot = False,
+                        package = TEST_IMAGE_PREFIX + "vfat-test.vfat",
                     ),
                     shape.new(
                         gpt_partition_t,
-                        package = TEST_IMAGE_PREFIX + "create_ops_ext3",
-                        is_esp = False,
-                        is_bios_boot = False,
                         name = "create_ops_ext3",
+                        is_bios_boot = False,
+                        is_esp = False,
+                        package = TEST_IMAGE_PREFIX + "create_ops_ext3",
                     ),
                     shape.new(
                         gpt_partition_t,
-                        package = TEST_IMAGE_PREFIX + "empty_bios_boot",
-                        is_esp = False,
                         is_bios_boot = True,
+                        is_esp = False,
+                        package = TEST_IMAGE_PREFIX + "empty_bios_boot",
                     ),
                 ],
             ),

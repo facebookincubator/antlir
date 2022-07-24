@@ -43,16 +43,6 @@ third_party.native_build(
         third_party.library("libtpms"),
     ],
     script = third_party.script(
-        prepare = """
-            export MAKEFLAGS=-j
-
-            export CFLAGS="-I${STAGE}/include"
-            export LDFLAGS="-L${STAGE}/lib -L${STAGE}/lib64"
-            export PKG_CONFIG_PATH="${STAGE}/lib/pkgconfig:${STAGE}/lib64/pkgconfig"
-
-            LIBS="-lcrypto -ldl -lpthread" \
-            ./autogen.sh --prefix="${STAGE}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
-        """,
         build = """
             # swtpm doesnt support static linkage by itself, so convince it
             make CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS} -all-static" LIBS="-ldl -lpthread -lpcre -lffi"
@@ -63,6 +53,16 @@ third_party.native_build(
             # swtpm creates a root only folder to keep CA files, and it's not copyable
             # from outside the container, since we don't need it, delete
             rm -rf "${STAGE}/var"
+        """,
+        prepare = """
+            export MAKEFLAGS=-j
+
+            export CFLAGS="-I${STAGE}/include"
+            export LDFLAGS="-L${STAGE}/lib -L${STAGE}/lib64"
+            export PKG_CONFIG_PATH="${STAGE}/lib/pkgconfig:${STAGE}/lib64/pkgconfig"
+
+            LIBS="-lcrypto -ldl -lpthread" \
+            ./autogen.sh --prefix="${STAGE}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
         """,
     ),
 )

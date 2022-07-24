@@ -179,16 +179,15 @@ python_library(
 
 image.layer(
     name = "shadow-paths-test-layer",
-    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
     features = [
         # We'll set up shadowing both via links and directly, and both work.
         feature.ensure_subdirs_exist("/", "real"),
         feature.install(
             "tests/shadow_me",
             "real/shadow_me",
+            mode = "u+rw,og+r",
             # The user "nobody" will update this via the shadow root.
             user = "nobody",
-            mode = "u+rw,og+r",
         ),
         feature.install("tests/i_will_shadow", "real_i_will_shadow"),
         feature.install("tests/i_will_shadow", "other_file"),
@@ -202,17 +201,18 @@ image.layer(
         ),  # Tests write here
         feature.ensure_subdirs_exist("/", "other_dir"),
     ],
+    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
 )
 
 image.layer(
     name = "shadow-paths-no-rpm",
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [
         feature.remove(
             "/usr/bin/" + REPO_CFG.flavor_to_config["antlir_test"].rpm_installer,
             must_exist = True,
         ),
     ],
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
 )
 
 python_unittest(
@@ -233,13 +233,13 @@ python_unittest(
 
 image.layer(
     name = "shadow-build-appliance",
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [
         # We'll set up shadowing both via links and directly, and both work.
         feature.ensure_subdirs_exist("/", "rpm_test/"),
         feature.install("tests/shadow_me", "rpm_test/carrot.txt"),
         feature.install("tests/i_will_shadow", "i_will_shadow"),
     ],
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
 )
 
 # This test isn't here for line coverage, but to cover the integration
@@ -287,6 +287,6 @@ python_unittest(
 
 image.layer(
     name = "no-antlir-build-appliance-testing",
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [feature.remove(ANTLIR_DIR)],
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
 )
