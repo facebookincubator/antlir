@@ -11,13 +11,13 @@ load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 image.layer(
     name = "test_compiler_item_layer",
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     features = [
         feature.layer_mount(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
             "/test-build-appliance",
         ),
     ],
+    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
 )
 
 image_python_unittest(
@@ -124,7 +124,6 @@ python_library(
 
 image.layer(
     name = "test_rpm_action_layer",
-    parent_layer = ":test_compiler_item_layer",
     features = [
         feature.layer_mount(
             TEST_IMAGE_PREFIX + "layer-with-only-one-locally-installed-rpm",
@@ -143,6 +142,7 @@ image.layer(
             "/rpm-test-cheese-1-1.rpm",
         ),
     ],
+    parent_layer = ":test_compiler_item_layer",
 )
 
 image_python_unittest(
@@ -301,7 +301,6 @@ image_python_unittest(
 
 image.layer(
     name = "test_mount_layer",
-    parent_layer = ":test_compiler_item_layer",
     features = [
         feature.layer_mount(
             TEST_IMAGE_PREFIX + "small-layer-with-mounts",
@@ -312,6 +311,7 @@ image.layer(
             "/test-layer-without-mounts",
         ),
     ],
+    parent_layer = ":test_compiler_item_layer",
 )
 
 image_python_unittest(

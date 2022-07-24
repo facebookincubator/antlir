@@ -54,24 +54,23 @@ networking = [
 
 image.layer(
     name = "busybox",
-    flavor = flavor_helpers.get_antlir_linux_flavor(),
     features = [
         feature.rpms_install([
             "busybox",
         ]),
     ],
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = ["//metalos/initrd/..."],
 )
 
 # things we expect to exist in all the metalos related initrds
 image.layer(
     name = "initrd-common",
-    parent_layer = ":base-systemd",
     features = [
         linux.busybox.install(
             src = ":busybox",
-            src_path = "/usr/sbin/busybox",
             applets = DEFAULT_APPLETS,
+            src_path = "/usr/sbin/busybox",
         ),
         networking,
         # The metalos generator will rewrite the default target to
@@ -83,6 +82,7 @@ image.layer(
         feature.install("units/metalos.tmpfiles.conf", "/usr/lib/tmpfiles.d/metalos.conf"),
         # @oss-disable: "//metalos/initrd/facebook:features", 
     ],
+    parent_layer = ":base-systemd",
     visibility = [
         "//antlir/vm/...",
         "//metalos/...",
@@ -91,7 +91,6 @@ image.layer(
 
 image.layer(
     name = "with-initrd-bins",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
         feature.install(
             "//metalos/initrd/metalinit:metalinit",
@@ -104,12 +103,12 @@ image.layer(
             mode = "a+rx",
         ),
     ],
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
 )
 
 # Kernel-agnostic base initrd
 image.layer(
     name = "initrd",
-    parent_layer = ":initrd-common",
     features = [
         systemd.install_unit("units/metalos-init.service"),
         systemd.enable_unit("metalos-init.service", "initrd-switch-root.target", "requires"),
@@ -122,6 +121,7 @@ image.layer(
             source = ":with-initrd-bins",
         ),
     ],
+    parent_layer = ":initrd-common",
     visibility = [
         "//metalos/...",
         "//scripts/dschatzberg/vm:",

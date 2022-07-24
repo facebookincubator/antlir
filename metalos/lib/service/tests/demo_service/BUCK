@@ -19,6 +19,7 @@ native_service(
     service = shape.new(
         service_t,
         name = "metalos.service.demo",
+        config_generator = "//metalos/lib/service/tests/demo_service/generator:generator",
         exec_info = exec_t(
             pre = [cmd_t(
                 args = [
@@ -43,6 +44,5 @@ native_service(
                 user = "demoservice",
             ),
         ),
-        config_generator = "//metalos/lib/service/tests/demo_service/generator:generator",
     ),
 )

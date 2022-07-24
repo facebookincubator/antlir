@@ -44,7 +44,6 @@ rust_binary(
 
 image.layer(
     name = "with-metalos-bootloader",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
         feature.install(
             ":metalos-bootloader",
@@ -52,6 +51,7 @@ image.layer(
             mode = "a+rx",
         ),
     ],
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
 )
 
 # Use the default kernel as the base for the EFI bootloader for two reasons:
@@ -62,11 +62,10 @@ KERNEL = kernels.default
 
 image.layer(
     name = "initrd",
-    parent_layer = "//metalos/initrd:initrd-common",
     features = [
         extract.extract(
-            source = ":with-metalos-bootloader",
             binaries = ["/usr/bin/metalos-bootloader"],
+            source = ":with-metalos-bootloader",
         ),
         systemd.install_unit("metalos-bootloader.service"),
         feature.remove("/usr/lib/systemd/system/initrd.target"),
@@ -77,9 +76,9 @@ image.layer(
         ),
         feature.remove("/usr/lib/initrd-release"),
         linux.release.install(
-            path = "/usr/lib/os-release",
             layer = ":initrd",
             os_name = "MetalOS",
+            path = "/usr/lib/os-release",
             variant = "Bootloader",
         ),
         feature.ensure_subdirs_exist(
@@ -97,6 +96,7 @@ image.layer(
             ),
         ),
     ],
+    parent_layer = "//metalos/initrd:initrd-common",
 )
 
 package.new(
@@ -128,11 +128,11 @@ buck_genrule(
 
 image.layer(
     name = "efi",
-    parent_layer = "//antlir/bzl/linux/boot/systemd:base",
     features = [
         feature.install(":bootloader.efi", "/EFI/Linux/metalos.efi"),
     ],
     flavor = flavor_helpers.get_antlir_linux_flavor(),
+    parent_layer = "//antlir/bzl/linux/boot/systemd:base",
     visibility = ["//metalos/disk/..."],
 )
 
@@ -141,8 +141,8 @@ package.new(
     format = "vfat",
     layer = ":efi",
     loopback_opts = image.opts(
-        size_mb = 256,
         label = "efi",
+        size_mb = 256,
     ),
 )
 
@@ -150,7 +150,6 @@ TEST_KERNEL = kernels.default
 
 image.layer(
     name = "control",
-    parent_layer = "//metalos/disk:control",
     features = [
         feature.ensure_dirs_exist("/run/state/metalos"),
         feature.ensure_dirs_exist("/image/initrd"),
@@ -164,11 +163,11 @@ image.layer(
         ),
         feature.install("//metalos/initrd:initrd.cpio.gz", "/image/initrd/metalos.initrd:deadbeefdeadbeefdeadbeefdeadbeef"),
     ],
+    parent_layer = "//metalos/disk:control",
 )
 
 image.layer(
     name = "rootfs",
-    parent_layer = "//metalos/os/vm:base",
     features = [
         feature.rpms_install([
             "efibootmgr",
@@ -176,12 +175,18 @@ image.layer(
             "tpm2-tools",
         ]),
     ],
+    parent_layer = "//metalos/os/vm:base",
 )
 
 btrfs.new(
     name = "test-root-disk",
+    antlir_rule = "user-internal",
     opts = btrfs.opts.new(
         default_subvol = "/volume",
+        free_mb = 2560,  # 2.5G
+        loopback_opts = image.opts(
+            label = "/",
+        ),
         subvols = {
             "/volume": btrfs.opts.subvol.new(
                 layer = ":control",
@@ -194,21 +199,16 @@ btrfs.new(
                 layer = ":rootfs",
             ),
         },
-        free_mb = 2560,  # 2.5G
-        loopback_opts = image.opts(
-            label = "/",
-        ),
     ),
     visibility = [],
-    antlir_rule = "user-internal",
 )
 
 image.gpt(
     name = "gpt-boot-disk",
     table = [
         image.gpt_partition(
-            package = ":efi.vfat",
             is_esp = True,
+            package = ":efi.vfat",
         ),
         image.gpt_partition(
             package = ":test-root-disk",
@@ -221,23 +221,23 @@ vm.run(
     vm_opts = vm.types.opts.new(
         boot_from_disk = True,
         disk = vm.types.disk.new(
-            package = ":gpt-boot-disk",
             interface = "nvme",
+            package = ":gpt-boot-disk",
         ),
     ),
 )
 
 vm.rust_unittest(
     name = "test-boots-nvme",
+    srcs = ["test_boot.rs"],
+    crate_root = "test_boot.rs",
     vm_opts = vm.types.opts.new(
         boot_from_disk = True,
         disk = vm.types.disk.new(
-            package = ":gpt-boot-disk",
             interface = "nvme",
+            package = ":gpt-boot-disk",
         ),
     ),
-    srcs = ["test_boot.rs"],
-    crate_root = "test_boot.rs",
     deps = third_party.libraries(
         [
             "anyhow",
@@ -255,22 +255,22 @@ pe_hash(
 
 vm.rust_unittest(
     name = "test-measure-bootloader",
-    vm_opts = vm.types.opts.new(
-        boot_from_disk = True,
-        disk = vm.types.disk.new(
-            package = ":gpt-boot-disk",
-            interface = "nvme",
-        ),
-        runtime = vm.types.runtime.new(
-            tpm = True,
-        ),
-    ),
     srcs = ["test_measure_bootloader.rs"],
     crate_root = "test_measure_bootloader.rs",
     env = {
         "BOOTLOADER_HASH_FILE": "$(location :bootloader_hash)",
         "TCTI": "device:/dev/tpm0",
     },
+    vm_opts = vm.types.opts.new(
+        boot_from_disk = True,
+        disk = vm.types.disk.new(
+            interface = "nvme",
+            package = ":gpt-boot-disk",
+        ),
+        runtime = vm.types.runtime.new(
+            tpm = True,
+        ),
+    ),
     deps = third_party.libraries(
         [
             "anyhow",

@@ -4,13 +4,13 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "_grub2",
-    parent_layer = "//metalos/os:metalos",
     features = [
         feature.rpms_install([
             "grub2-efi-x64",
             "grub2-efi-x64-modules",
         ]),
     ],
+    parent_layer = "//metalos/os:metalos",
 )
 
 grub2_modules = [

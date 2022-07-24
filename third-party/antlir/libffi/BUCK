@@ -19,12 +19,12 @@ BASE_FEATURES = [
 third_party.native_build(
     base_features = BASE_FEATURES,
     script = third_party.script(
+        build = "make",
+        install = "make install",
         prepare = """
             export MAKEFLAGS=-j
             ./autogen.sh
             ./configure --disable-shared --prefix="${STAGE}"
         """,
-        build = "make",
-        install = "make install",
     ),
 )

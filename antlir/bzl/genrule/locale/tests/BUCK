@@ -21,23 +21,23 @@ image_build_locale_archive(
 
 image.layer(
     name = "custom-locales-layer",
-    parent_layer = "//antlir/compiler/test_images:test-layer",
     features = [
         feature.clone(
+            dest_path = "/multiple-locale-archive",
             src_layer = ":build-multiple-locales",
             src_path = "/locale-archive",
-            dest_path = "/multiple-locale-archive",
         ),
         feature.clone(
+            dest_path = "/single-locale-archive",
             src_layer = ":build-single-locale",
             src_path = "/locale-archive",
-            dest_path = "/single-locale-archive",
         ),
     ],
+    parent_layer = "//antlir/compiler/test_images:test-layer",
 )
 
 image.python_unittest(
     name = "test-locales",
-    layer = ":custom-locales-layer",
     srcs = ["test_locales.py"],
+    layer = ":custom-locales-layer",
 )

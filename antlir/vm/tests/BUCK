@@ -37,6 +37,11 @@ python_unittest(
     env = {
         "test-vm-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
+                disk = vm.types.disk.new(
+                    # to cover the additional_scratch_mb branch in antlir/vm/share.py
+                    additional_scratch_mb = 2048,
+                    layer = ":vmtest-custom-layer",
+                ),
                 runtime = vm.types.runtime.new(
                     connection = vm.types.connection.new(
                         # Test using ssh options
@@ -46,11 +51,6 @@ python_unittest(
                         },
                     ),
                     tpm = True,
-                ),
-                disk = vm.types.disk.new(
-                    layer = ":vmtest-custom-layer",
-                    # to cover the additional_scratch_mb branch in antlir/vm/share.py
-                    additional_scratch_mb = 2048,
                 ),
             ),
         ),
@@ -121,9 +121,6 @@ python_unittest(
 # debug information and then halt the VM.
 image.layer(
     name = "vmtest-initrd-break-custom-initrd-layer",
-    parent_layer = "//antlir/vm/initrd:{}-initrd-layer".format(
-        kernels.default.uname,
-    ),
     features = [
         #
         # This override is installed into ADMIN_ROOT (/etc/systemd/system)
@@ -132,24 +129,29 @@ image.layer(
         #
         feature.ensure_subdirs_exist("/", ADMIN_ROOT),
         systemd.install_dropin(
-            source = "debug-shell-exec-override.conf",
             dest = "override.conf",
-            unit = "debug-shell.service",
             install_root = ADMIN_ROOT,
+            source = "debug-shell-exec-override.conf",
+            unit = "debug-shell.service",
         ),
     ],
+    parent_layer = "//antlir/vm/initrd:{}-initrd-layer".format(
+        kernels.default.uname,
+    ),
 )
 
 package.new(
     name = "vmtest-initrd-break-custom-initrd",
-    layer = ":vmtest-initrd-break-custom-initrd-layer",
     format = "cpio.gz",
+    layer = ":vmtest-initrd-break-custom-initrd-layer",
 )
 
 # Create a VM to test booting with "initrd.break" set
 vm.run(
     name = "vmtest-initrd-break-default",
     vm_opts = vm.types.opts.new(
+        append = ["initrd.break"],
+        initrd = ":vmtest-initrd-break-custom-initrd",
         runtime = vm.types.runtime.new(
             connection = vm.types.connection.new(
                 # Set the options such that it fails fast when
@@ -161,8 +163,6 @@ vm.run(
                 },
             ),
         ),
-        append = ["initrd.break"],
-        initrd = ":vmtest-initrd-break-custom-initrd",
     ),
 )
 
@@ -190,13 +190,13 @@ test_env_vars = {
 
 image.layer(
     name = "vmtest-custom-layer",
-    parent_layer = vm.artifacts.rootfs.layer,
     features = [
         feature.install(
             ":resource.txt",
             "/etc/i_am_a_custom_rootfs",
         ),
     ],
+    parent_layer = vm.artifacts.rootfs.layer,
 )
 
 vm.python_unittest(
@@ -231,14 +231,14 @@ vm.cpp_unittest(
 vm.rust_unittest(
     name = "rust",
     srcs = ["rust_test.rs"],
-    env = test_env_vars,
     crate_root = "rust_test.rs",
+    env = test_env_vars,
 )
 
 image.layer(
     name = "rootfs-with-buck-runnables",
-    parent_layer = vm.artifacts.rootfs.layer,
     features = ["//antlir/compiler/test_images:systemd_buck_runnables"],
+    parent_layer = vm.artifacts.rootfs.layer,
 )
 
 vm.python_unittest(
@@ -278,12 +278,12 @@ rust_binary(
 vm.rust_unittest(
     name = "with-sidecar",
     srcs = ["test_with_sidecar.rs"],
+    crate_root = "test_with_sidecar.rs",
     vm_opts = vm.types.opts.new(
         runtime = vm.types.runtime.new(
             sidecar_services = ["$(exe :sidecar)"],
         ),
     ),
-    crate_root = "test_with_sidecar.rs",
     deps = third_party.libraries(
         [
             "anyhow",
@@ -296,28 +296,28 @@ vm.rust_unittest(
 boot.systemd.build(
     # The target name of the boot partition
     name = "systemd-boot",
-    kernels = [
-        kernels.default,
-    ],
     args = [
         "audit=0",
         "rootflags=subvol=volume,rw",
         "systemd.hostname=vmtest",
+    ],
+    kernels = [
+        kernels.default,
     ],
 )
 
 btrfs.new(
     name = "root-disk",
     opts = btrfs.opts.new(
+        loopback_opts = image.opts(
+            label = "/",
+        ),
         subvols = {
             "/volume": btrfs.opts.subvol.new(
                 layer = ":vmtest-custom-layer",
                 writable = True,
             ),
         },
-        loopback_opts = image.opts(
-            label = "/",
-        ),
     ),
 )
 
@@ -325,8 +325,8 @@ image.gpt(
     name = "gpt-systemd-boot-disk",
     table = [
         image.gpt_partition(
-            package = ":systemd-boot",
             is_esp = True,
+            package = ":systemd-boot",
         ),
         image.gpt_partition(
             package = ":root-disk",
@@ -352,13 +352,13 @@ vm.python_unittest(
 boot.grub2.build(
     # The target name of the boot partition
     name = "grub2-boot",
-    kernels = [
-        kernels.default,
-    ],
     args = [
         "audit=0",
         "rootflags=subvol=volume,rw",
         "systemd.hostname=vmtest",
+    ],
+    kernels = [
+        kernels.default,
     ],
 )
 
@@ -366,8 +366,8 @@ image.gpt(
     name = "gpt-grub2-boot-disk",
     table = [
         image.gpt_partition(
-            package = ":grub2-boot",
             is_esp = True,
+            package = ":grub2-boot",
         ),
         image.gpt_partition(
             package = ":root-disk",

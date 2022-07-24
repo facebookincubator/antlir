@@ -19,7 +19,7 @@ buck_genrule(
         curl https://gitlab.gnome.org/GNOME/json-glib/-/archive/{v}/json-glib-{v}.tar.gz -o $OUT &>/dev/null
         echo "{h} $OUT" | sha256sum --check
     """.format(
-        v = src["version"],
         h = src["sha256"],
+        v = src["version"],
     ),
 )

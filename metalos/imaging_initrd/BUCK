@@ -13,7 +13,6 @@ imaging_initrd_wanted_rpms = [
 
 image.layer(
     name = "with-imagining-initrd-bins",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
         feature.rpms_install(imaging_initrd_wanted_rpms),
         feature.install(
@@ -27,11 +26,11 @@ image.layer(
             mode = "a+rx",
         ),
     ],
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
 )
 
 image.layer(
     name = "imaging-initrd",
-    parent_layer = "//metalos/initrd:initrd-common",
     features = [
         systemd.install_unit("units/metalos-reimage.service"),
         systemd.enable_unit("metalos-reimage.service", "initrd.target", "requires"),
@@ -59,6 +58,7 @@ image.layer(
         ),
     ],
     flavor = flavor_helpers.get_antlir_linux_flavor(),
+    parent_layer = "//metalos/initrd:initrd-common",
     visibility = [
         "//antlir/vm/...",
         "//metalos/...",

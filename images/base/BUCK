@@ -31,7 +31,6 @@ image.layer(
 
 image.layer(
     name = "fedora.vm",
-    parent_layer = ":fedora",
     features = [
         feature.rpms_install([
             "btrfs-progs",
@@ -56,21 +55,22 @@ image.layer(
     ],
     flavor = "fedora33",
     flavor_config_override = snapshot_fedora_override,
+    parent_layer = ":fedora",
     runtime = ["systemd"],
 )
 
 btrfs.new(
     name = "fedora.vm.btrfs",
     opts = btrfs.opts.new(
+        loopback_opts = image.opts(
+            seed_device = True,
+        ),
         subvols = {
             "/volume": btrfs.opts.subvol.new(
                 layer = ":fedora.vm",
                 writable = True,
             ),
         },
-        loopback_opts = image.opts(
-            seed_device = True,
-        ),
     ),
     visibility = [
         "//antlir/vm/...",

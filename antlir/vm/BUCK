@@ -163,27 +163,27 @@ python_binary(
 vm.run(
     name = "default",
     vm_opts = vm.types.opts.new(
-        kernel = kernels.default,
         disk = vm.artifacts.rootfs.disk,
         disks = [vm.types.disk.new(
-            package = "//antlir:empty",
             additional_scratch_mb = 1024,
             interface = "nvme",
+            package = "//antlir:empty",
         )],
+        kernel = kernels.default,
     ),
 )
 
 vm.run(
     name = "default-initrd-debug",
-    vm_opts = vm.types.opts.new(
-        kernel = kernels.default,
-        disk = vm.artifacts.rootfs.disk,
-        append = [
-            "initrd.break",
-        ],
-    ),
     args = [
         "--append-console",
         "--shell=console",
     ],
+    vm_opts = vm.types.opts.new(
+        append = [
+            "initrd.break",
+        ],
+        disk = vm.artifacts.rootfs.disk,
+        kernel = kernels.default,
+    ),
 )

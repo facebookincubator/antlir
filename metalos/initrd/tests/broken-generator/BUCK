@@ -17,7 +17,6 @@ rust_binary(
 
 image.layer(
     name = "layer",
-    parent_layer = "//metalos/initrd:initrd",
     features = [
         feature.remove("/usr/lib/systemd/system-generators/metalos-network-generator"),
         feature.install(
@@ -31,19 +30,21 @@ image.layer(
         ),
         systemd.enable_unit(
             "emergency-sentinel.service",
-            target = "emergency.target",
             dep_type = "requires",
+            target = "emergency.target",
         ),
         # @oss-disable: "//tupperware/image/features:fb_infra_support", 
     ],
+    parent_layer = "//metalos/initrd:initrd",
 )
 
 image.rust_unittest(
     name = "broken-generator",
     srcs = ["test_broken_generator.rs"],
+    boot = True,
+    container_opts = image.opts(boot_await_dbus = False),
     crate_root = "test_broken_generator.rs",
     layer = ":layer",
-    boot = True,
     deps = ["//metalos/lib/systemd:systemd"] + third_party.libraries(
         [
             "anyhow",
@@ -53,5 +54,4 @@ image.rust_unittest(
         ],
         platform = "rust",
     ),
-    container_opts = image.opts(boot_await_dbus = False),
 )

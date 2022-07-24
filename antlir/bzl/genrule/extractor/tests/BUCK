@@ -7,7 +7,6 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
     name = "deps",
-    flavor = "antlir_test",
     features = [
         extract.extract(
             binaries = [
@@ -17,12 +16,12 @@ image.layer(
             source = ":source",
         ),
     ],
+    flavor = "antlir_test",
     visibility = ["//antlir/bzl/genrule/extractor/tests/..."],
 )
 
 image.layer(
     name = "extracted",
-    parent_layer = ":deps",
     features = [
         extract.extract(
             binaries = [
@@ -32,6 +31,7 @@ image.layer(
         ),
         feature.ensure_dir_symlink("/usr/lib64", "/lib64"),
     ],
+    parent_layer = ":deps",
     visibility = ["//antlir/bzl/genrule/extractor/tests/..."],
 )
 

@@ -60,8 +60,8 @@ test_features = [
 # requirements
 image.layer(
     name = "test-layer",
-    parent_layer = "//metalos/os:metalos",
     features = test_features,
+    parent_layer = "//metalos/os:metalos",
     runtime = ["systemd"],
     visibility = [
         "//metalos/...",

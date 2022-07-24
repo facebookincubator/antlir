@@ -28,24 +28,24 @@ btrfs.new(
 btrfs.new(
     name = "single-subvol-additional-size",
     opts = btrfs.opts.new(
+        free_mb = 1024,
         subvols = {
             "/volume": btrfs.opts.subvol.new(
                 layer = "//antlir/compiler/test_images:create_ops",
             ),
         },
-        free_mb = 1024,
     ),
 )
 
 btrfs.new(
     name = "single-subvol-seed-device",
     opts = btrfs.opts.new(
+        seed_device = True,
         subvols = {
             "/create-ops": btrfs.opts.subvol.new(
                 layer = "//antlir/compiler/test_images:create_ops",
             ),
         },
-        seed_device = True,
     ),
 )
 

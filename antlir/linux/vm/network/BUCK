@@ -25,11 +25,11 @@ export_file(
 # empty resolv.conf since the only mechanism to refer to the host (by name) is via /etc/hosts
 feature.new(
     name = "resolvconf",
-    visibility = ["PUBLIC"],
     features = [
         linux.config.network.resolv.install(
             nameservers = [],
             search_domains = [],
         ),
     ],
+    visibility = ["PUBLIC"],
 )

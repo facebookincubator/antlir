@@ -75,11 +75,11 @@ metalos_branding = [
     # Install a MetalOS specific os-release
     linux.release.install(
         "/usr/lib/os-release",
-        os_name = "MetalOS",
         # The layer we are inserting into, this is a bit of a wart but there
         # is currently no way to know this from within the macro so we
         # have to provide it explicitly.
         layer = ":metalos",
+        os_name = "MetalOS",
         variant = "MetalOS",
     ),
     feature.ensure_file_symlink("/usr/lib/os-release", "/etc/metalos-release"),
@@ -157,7 +157,6 @@ feature.new(
 
 image.layer(
     name = "metalos",
-    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     features = [
         ":core",
         feature.ensure_subdirs_exist("/usr/lib", "metalos"),
@@ -178,8 +177,9 @@ image.layer(
         # @oss-disable: "//metalos/os/facebook:features", 
         "//metalos/metald:features",
     ],
-    # @oss-disable: flavor_config_override = flavor_config_override, 
     # @oss-disable: flavor = "centos8", 
+    # @oss-disable: flavor_config_override = flavor_config_override, 
+    parent_layer = REPO_CFG.artifact["metalos.layer.base"],
     runtime = ["systemd"],
     visibility = [
         "//antlir/...",
@@ -203,8 +203,8 @@ systemd_expectations_test(
 
 package.new(
     name = "metalos.sendstream.zst",
-    layer = ":metalos",
     format = "sendstream.zst",
+    layer = ":metalos",
     visibility = [
         "//metalos/...",
     ],

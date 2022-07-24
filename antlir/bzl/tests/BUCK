@@ -33,22 +33,22 @@ python_library(
 image.python_unittest(
     name = "test-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
-    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
     container_opts = image.opts(internal_only_logs_tmpfs = True),
+    env = {"kitteh": "meow"},
+    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
-    env = {"kitteh": "meow"},
 )
 
 image.python_unittest(
     name = "test-boot-image-python-unittest",
     srcs = ["test_image_python_unittest.py"],
-    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
+    boot = True,
     container_opts = image.opts(internal_only_logs_tmpfs = True),
+    env = {"kitteh": "meow"},
+    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
     needed_coverage = [(100, ":coverage_test_helper")],
     deps = [":coverage_test_helper"],
-    env = {"kitteh": "meow"},
-    boot = True,
 )
 
 # This doesn't have a C++ counterpart since the impl should be shared, and
@@ -56,8 +56,8 @@ image.python_unittest(
 image.python_unittest(
     name = "test-image-unittest-repo-server",
     srcs = ["test_image_unittest_repo_server.py"],
-    layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     container_opts = image.opts(shadow_proxied_binaries = True),
+    layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
     run_as_user = "root",
     deps = [
         "//antlir:fs_utils",
@@ -69,31 +69,31 @@ image.python_unittest(
 image.python_unittest(
     name = "test-image-hostname-python",
     srcs = ["test_image_hostname.py"],
-    layer = TEST_IMAGE_PREFIX + "test-layer",
     hostname = "test-hostname.com",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
 )
 
 image.cpp_unittest(
     name = "test-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
-    layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {"kitteh": "meow"},
+    layer = TEST_IMAGE_PREFIX + "test-layer",
 )
 
 image.cpp_unittest(
     name = "test-boot-image-cpp-unittest",
     srcs = ["ImageCppUnittestTest.cpp"],
-    layer = TEST_IMAGE_PREFIX + "test-layer",
-    env = {"kitteh": "meow"},
     boot = True,
+    env = {"kitteh": "meow"},
+    layer = TEST_IMAGE_PREFIX + "test-layer",
 )
 
 image.cpp_unittest(
     name = "test-image-hostname-cpp",
     srcs = ["ImageHostnameTest.cpp"],
-    layer = TEST_IMAGE_PREFIX + "test-layer",
     env = {},
     hostname = "test-hostname.com",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
 )
 
 # Ensures that BUCK_BUILD_ID isn't just missing from the container tests by
@@ -112,12 +112,12 @@ python_unittest(
 image.rust_unittest(
     name = "test-image-rust-unittest",
     srcs = ["image_rust_unittest.rs"],
-    layer = TEST_IMAGE_PREFIX + "test-layer",
+    crate_root = "image_rust_unittest.rs",
     env = {
         "dogsgo": "woof",
         "kitteh": "meow",
     },
-    crate_root = "image_rust_unittest.rs",
+    layer = TEST_IMAGE_PREFIX + "test-layer",
 )
 
 # systemd unit features
@@ -151,7 +151,6 @@ buck_genrule(
 
 image.layer(
     name = "systemd_feature-layer",
-    parent_layer = flavor_helpers.get_build_appliance(),
     features = [
         # A target with a dest
         systemd.install_unit(
@@ -182,8 +181,8 @@ image.layer(
         systemd.install_unit("cheese-requires.service"),
         systemd.enable_unit(
             "cheese-requires.service",
-            target = "example.target",
             dep_type = "requires",
+            target = "example.target",
         ),
 
         # Image source from a genrule, with a path
@@ -220,12 +219,13 @@ image.layer(
         systemd.install_unit("cheese-template@.service"),
         systemd.enable_unit("cheese-template@foo.service"),
     ],
+    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
 image.python_unittest(
     name = "test-systemd-features",
-    layer = ":systemd_feature-layer",
     srcs = ["test_systemd_features.py"],
+    layer = ":systemd_feature-layer",
     deps = ["//antlir:fs_utils"],
 )
 
