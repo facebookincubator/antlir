@@ -187,7 +187,7 @@ btrfs.new(
     name = "rootdisk.btrfs",
     opts = btrfs.opts.new(
         default_subvol = "/volume",
-        free_mb = 4864,  # 4.75GB (HUGE!)
+        free_mb = 6144,  # 6GB (HUGE!)
         loopback_opts = image.opts(
             label = "/",
         ),
