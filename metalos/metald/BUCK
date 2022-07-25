@@ -26,6 +26,13 @@ rust_binary(
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
         "//metalos/lib/thrift_wrapper:thrift_wrapper",
+        "thiserror",
+        "//common/rust/aclchecker:aclchecker",
+        "//common/rust/fbwhoami:fbwhoami",
+        "//common/rust/identity:identity",
+        "//common/rust/srserver:srserver",
+        "//metalos/metald/src/lib/acl_checker:acl_checker",
+        "//metalos/metald/src/lib/permission_checker:permission_checker",
     ] + (
         # @oss-disable: deps 
         # @oss-enable []

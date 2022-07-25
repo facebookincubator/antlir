@@ -124,4 +124,4 @@ service Metalctl extends fb303.FacebookService {
   void offline_update_commit(1: OfflineUpdateRequest req) throws (
     1: OfflineUpdateCommitError e,
   );
-}
+} (rust.request_context)
