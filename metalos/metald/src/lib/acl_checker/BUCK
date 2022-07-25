@@ -1,0 +1,18 @@
+load("@fbcode_macros//build_defs:rust_library.bzl", "rust_library")
+
+rust_library(
+    name = "acl_checker",
+    srcs = ["src/lib.rs"],
+    test_deps = [
+        "//common/rust/shed/fbinit:fbinit",
+        "//common/rust/srserver:srserver",
+    ],
+    deps = [
+        "fbsource//third-party/rust:mockall",
+        "fbsource//third-party/rust:slog",
+        "//common/rust/aclchecker:aclchecker",
+        "//common/rust/identity:identity",
+        "//common/rust/logging:logging",
+        "//metalos/metald/src/lib/permission_checker:permission_checker",
+    ],
+)
