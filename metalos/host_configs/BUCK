@@ -80,6 +80,7 @@ thrift_library(
         # @oss-disable: "//netos/...", 
         # facebootd is a config provider
         # @oss-disable: "//syseng/provisioning_v2/faceboot/server/...", 
+        # @oss-disable: "//metalos/metald/facebook/...", 
     ],
     deps = [
         "//common/fb303/if:fb303",
