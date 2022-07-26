@@ -8,7 +8,6 @@
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use serde_json;
 use slog::info;
 use slog::Logger;
 

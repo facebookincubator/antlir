@@ -64,6 +64,8 @@ thrift_library(
         "//metalos/host_configs/facebook/metald/...",
         "//metalos/metald:metald",
         "//metalos/metald:metald-unittest",
+        # metalctl needs to make thrift clients
+        "//metalos/metalctl/...",
         # this is a config provider for corp
         # @oss-disable: "//ee_provisioning/corp_config_provider/...", 
         # @oss-disable: "//netos/...", 
