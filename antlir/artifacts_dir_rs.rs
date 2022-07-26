@@ -15,7 +15,7 @@ use absolute_path::AbsolutePathBuf;
 
 create_exception!(artifacts_dir, SigilNotFound, pyo3::exceptions::PyException);
 
-use crate::fs_utils::AntlirPath;
+use fs_utils_rs::AntlirPath;
 
 fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResult<AbsolutePathBuf> {
     let maybe_relpath = match path_in_repo {
@@ -41,7 +41,7 @@ fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResul
 }
 
 #[pymodule]
-pub(crate) fn artifacts_dir(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+pub fn artifacts_dir_rs(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("SigilNotFound", py.get_type::<SigilNotFound>())?;
 
     /// find_repo_root($self, path_in_repo = None)

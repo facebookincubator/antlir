@@ -183,8 +183,6 @@ def _rust_common(rule, kwargs):
     rule(**kwargs)
 
 def rust_python_extension(**kwargs):
-    if not kwargs.get("types", []):
-        fail("rust_python_extension is taking a step backwards without pyre")
     _rust_common(shim.rust_python_extension, kwargs)
 
 def rust_library(**kwargs):

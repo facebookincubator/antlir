@@ -204,6 +204,7 @@ def _third_party_library(project, rule = None, platform = None):
         # some projects have different paths if they are vendored out of fbsource
         return {
             "gazebo": "//generated/buck2/gazebo/gazebo:gazebo",
+            "serde_starlark": "//generated/common/rust/shed/serde_starlark:serde_starlark",
             "slog_glog_fmt": "//generated/common/rust/shed/slog_glog_fmt:slog_glog_fmt",
             "starlark": "//generated/buck2/starlark-rust/starlark:starlark",
             "starlark_derive": "//generated/buck2/starlark-rust/starlark_derive:starlark_derive",

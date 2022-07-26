@@ -8,8 +8,7 @@
 import unittest
 
 from antlir.fs_utils import Path
-
-from antlir.rust.fs_utils import Path as RustPath
+from antlir.fs_utils_rs import Path as RustPath
 
 
 class TestFsUtils(unittest.TestCase):

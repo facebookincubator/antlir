@@ -25,7 +25,7 @@ from antlir.compiler.requires_provides import (
     RequireUser,
 )
 from antlir.fs_utils import Path
-from antlir.rust.fs_utils import copy_file
+from antlir.fs_utils_rs import copy_file
 from antlir.subvol_utils import Subvol
 from pydantic import PrivateAttr
 

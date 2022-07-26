@@ -8,6 +8,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary"
 load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
 python_library(
     name = "common",
@@ -59,6 +60,13 @@ python_library(
     ],
 )
 
+antlir_rust_extension(
+    name = "fs_utils_rs",
+    srcs = ["fs_utils_rs.rs"],
+    crate_root = "fs_utils_rs.rs",
+    typestub = "fs_utils_rs.pyi",
+)
+
 python_library(
     name = "fs_utils",
     srcs = ["fs_utils.py"],
@@ -74,7 +82,10 @@ python_library(
         "//tupperware/image/scripts/...",
         "//tupperware/scripts/...",
     ],
-    deps = [":common"],
+    deps = [
+        ":common",
+        ":fs_utils_rs",
+    ],
 )
 
 # This helper for the `Path.resource` test exercises our most fragile
@@ -98,6 +109,15 @@ python_unittest(
     )],
     resources = {":test-helper-binary": "tests/helper-binary"},
     deps = [":fs_utils"],
+)
+
+python_unittest(
+    name = "test-fs_utils_rs",
+    srcs = ["tests/test_fs_utils_rs.py"],
+    deps = [
+        ":fs_utils",
+        "//antlir:fs_utils_rs",
+    ],
 )
 
 export_file(
@@ -315,16 +335,28 @@ python_unittest(
     deps = [":volume_for_repo"],
 )
 
+antlir_rust_extension(
+    name = "artifacts_dir_rs",
+    srcs = ["artifacts_dir_rs.rs"],
+    crate_root = "artifacts_dir_rs.rs",
+    typestub = "artifacts_dir_rs.pyi",
+    deps = [
+        ":fs_utils_rs-rust",
+        "//antlir:find_root",
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ],
+)
+
 python_library(
     name = "artifacts_dir",
     srcs = ["artifacts_dir.py"],
     visibility = ["PUBLIC"],
     deps = [
+        ":artifacts_dir_rs",
         ":common",
         ":errors",
         ":fs_utils",
         "//antlir/bzl/buck_isolation:buck_isolation",
-        "//antlir/rust:rust",
     ],
 )
 
