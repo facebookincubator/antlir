@@ -30,25 +30,38 @@ users = [
     ),
 ]
 
-udev = [
-    feature.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
-] + [
-    feature.install(
-        "//metalos/initrd/udev:{}".format(f),
-        "/usr/lib/udev/rules.d/{}".format(f),
-    )
-    for f in [
-        "10-dm.rules",
-        "50-udev-default.rules",
-        "60-block.rules",
-        "60-persistent-storage.rules",
-        "75-net-description.rules",
-        "80-drivers.rules",
-        "80-net-setup-link.rules",
-        "95-dm-notify.rules",
-        "99-systemd.rules",
+def udev(source):
+    return [
+        feature.ensure_subdirs_exist("/usr/lib/", "udev/rules.d"),
+    ] + [
+        feature.install(
+            "//metalos/initrd/udev:{}".format(f),
+            "/usr/lib/udev/rules.d/{}".format(f),
+        )
+        for f in [
+            "10-dm.rules",
+            "50-udev-default.rules",
+            "60-block.rules",
+            "60-persistent-storage.rules",
+            "75-net-description.rules",
+            "80-drivers.rules",
+            "80-net-setup-link.rules",
+            "95-dm-notify.rules",
+            "99-systemd.rules",
+        ]
+    ] + [
+        # Some of helper executables that udev calls for parsing e.g. serial numbers.
+        feature.clone(
+            source,
+            "/usr/lib/udev/{}".format(f),
+            "/usr/lib/udev/{}".format(f),
+        )
+        for f in [
+            "ata_id",
+            "dmi_memory_id",
+            "scsi_id",
+        ]
     ]
-]
 
 def build_initrd_base(
         name,
@@ -88,7 +101,7 @@ def build_initrd_base(
             dbus,
             linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default),
             users,
-            udev,
+            udev(source),
             extract.extract(
                 binaries = SYSTEMD_BINARIES + [
                     # Metalctl uses libblkid for device discover, so include
