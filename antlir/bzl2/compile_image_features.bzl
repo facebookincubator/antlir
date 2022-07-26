@@ -13,7 +13,7 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:query.bzl", "layer_deps_query", "query")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl2/feature:new.bzl", "feature_new")
+load("//antlir/bzl2/feature:new.bzl", "feature_new_internal")
 load(":feature_rule.bzl", "maybe_add_feature_rule")
 load(":flatten_features_list.bzl", "flatten_features_list")
 load(":image_source_helper.bzl", "mark_path")
@@ -26,6 +26,7 @@ def compile_image_features(
         features,
         flavor,
         flavor_config_override,
+        extra_deps = None,
         subvol_name = None,
         internal_only_is_genrule_layer = False):
     '''
@@ -38,6 +39,8 @@ def compile_image_features(
     '''
     if features == None:
         features = []
+    if extra_deps == None:
+        extra_deps = []
 
     check_flavor(
         flavor,
@@ -50,7 +53,7 @@ def compile_image_features(
     flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override) if flavor else None
 
     if flavor_config and flavor_config.build_appliance:
-        features.append(flavor_config.build_appliance)
+        extra_deps.append(flavor_config.build_appliance)
 
     # This is the list of supported flavors for the features of the layer.
     # A value of `None` specifies that no flavor field was provided for the layer.
@@ -79,11 +82,12 @@ def compile_image_features(
     #
     # Keep in sync with `bzl_const.py`.
     features_for_layer = name + BZL_CONST.layer_feature_suffix
-    feature_new(
+    feature_new_internal(
         name = features_for_layer,
         features = features,
         flavors = flavors,
         parent_layer = parent_layer,
+        deps = extra_deps,
         visibility = ["//antlir/..."],
     )
 
@@ -97,7 +101,7 @@ def compile_image_features(
                     label = "type",
                     value = "image_feature",
                     expr = query.deps(
-                        expr = query.set(features + [":" + features_for_layer]),
+                        expr = query.set(features + extra_deps + [":" + features_for_layer]),
                         depth = query.UNBOUNDED,
                     ),
                 ),
