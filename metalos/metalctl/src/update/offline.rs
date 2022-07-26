@@ -34,6 +34,7 @@ where
 
 pub(super) async fn stage(
     log: Logger,
+    _metald: super::MetaldClient,
     fb: fbinit::FacebookInit,
     boot_config: BootConfig,
 ) -> Result<StageResponse, StageError> {
@@ -58,6 +59,7 @@ where
 
 pub(super) async fn commit(
     log: Logger,
+    _metald: super::MetaldClient,
     _fb: fbinit::FacebookInit,
     boot_config: BootConfig,
 ) -> Result<(), CommitError> {

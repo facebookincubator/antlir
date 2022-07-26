@@ -12,16 +12,20 @@ use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-
 use clap::Parser;
 use slog::Logger;
 
+use fbinit::FacebookInit;
 use fbthrift::simplejson_protocol::Serializable;
+
 use metalos_host_configs::api::OfflineUpdateRequest;
+use metalos_thrift_host_configs::api::client::make_Metalctl;
+use metalos_thrift_host_configs::api::client::Metalctl;
 use state::State;
 
 mod offline;
@@ -126,8 +130,18 @@ impl CommitOpts {
     }
 }
 
+type MetaldClient = Arc<dyn Metalctl + Send + Sync + 'static>;
+
+fn metald_client(fb: FacebookInit) -> anyhow::Result<MetaldClient> {
+    thriftclient::ThriftChannelBuilder::from_path(fb, "/run/metalos/metald_socket")
+        .context("while creating ThriftChannelBuilder")?
+        .build_client(make_Metalctl)
+        .context("while making Metalctl client")
+}
+
 async fn run_subcommand<F, Fut, Input, Return, Error>(
     func: F,
+    metald: MetaldClient,
     log: Logger,
     fb: fbinit::FacebookInit,
     input: Input,
@@ -135,10 +149,10 @@ async fn run_subcommand<F, Fut, Input, Return, Error>(
 where
     Return: Serializable,
     Error: std::fmt::Debug + Serializable,
-    F: Fn(Logger, fbinit::FacebookInit, Input) -> Fut,
+    F: Fn(Logger, MetaldClient, fbinit::FacebookInit, Input) -> Fut,
     Fut: Future<Output = std::result::Result<Return, Error>>,
 {
-    match func(log, fb, input).await {
+    match func(log, metald, fb, input).await {
         Ok(resp) => {
             let output = fbthrift::simplejson_protocol::serialize(&resp);
             std::io::stdout()
@@ -160,15 +174,16 @@ where
 
 impl Update {
     pub(crate) async fn subcommand(self, log: Logger, fb: fbinit::FacebookInit) -> Result<()> {
+        let metald = metald_client(fb)?;
         match self {
             Self::Offline(sub) => {
                 let req: OfflineUpdateRequest = sub.load_input()?;
                 match sub {
                     Subcommand::Stage(_) => {
-                        run_subcommand(offline::stage, log, fb, req.boot_config).await
+                        run_subcommand(offline::stage, metald, log, fb, req.boot_config).await
                     }
                     Subcommand::Commit(_) => {
-                        run_subcommand(offline::commit, log, fb, req.boot_config).await
+                        run_subcommand(offline::commit, metald, log, fb, req.boot_config).await
                     }
                 }
             }
@@ -176,10 +191,10 @@ impl Update {
                 let runtime_config = sub.load_input()?;
                 match sub {
                     Subcommand::Stage(_) => {
-                        run_subcommand(online::stage, log, fb, runtime_config).await
+                        run_subcommand(online::stage, metald, log, fb, runtime_config).await
                     }
                     Subcommand::Commit(_) => {
-                        run_subcommand(online::commit, log, fb, runtime_config).await
+                        run_subcommand(online::commit, metald, log, fb, runtime_config).await
                     }
                 }
             }
