@@ -13,6 +13,10 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:query.bzl", "layer_deps_query", "query")
 load("//antlir/bzl:shape.bzl", "shape")
+load(
+    "//antlir/bzl/image/feature:new.bzl",
+    "PRIVATE_DO_NOT_USE_feature_target_name",
+)
 load("//antlir/bzl2/feature:new.bzl", "feature_new_internal")
 load(":feature_rule.bzl", "maybe_add_feature_rule")
 load(":flatten_features_list.bzl", "flatten_features_list")
@@ -75,7 +79,10 @@ def compile_image_features(
             deps = [parent_layer],
         ))
 
-    features = flatten_features_list(features)
+    features = [
+        PRIVATE_DO_NOT_USE_feature_target_name(feature) if not feature.endswith(BZL_CONST.PRIVATE_feature_suffix) else feature
+        for feature in flatten_features_list(features)
+    ]
 
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.
@@ -90,6 +97,7 @@ def compile_image_features(
         deps = extra_deps,
         visibility = ["//antlir/..."],
     )
+    features_for_layer = PRIVATE_DO_NOT_USE_feature_target_name(name + BZL_CONST.layer_feature_suffix)
 
     vset_override_name = vset_override_genrule(flavor_config, current_target)
 

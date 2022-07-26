@@ -7,6 +7,10 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load(
+    "//antlir/bzl/image/feature:new.bzl",
+    "PRIVATE_DO_NOT_USE_feature_target_name",
+)
 load("//antlir/bzl2:flatten_features_list.bzl", "flatten_features_list")
 load("//antlir/bzl2:is_build_appliance.bzl", "is_build_appliance")
 load(
@@ -180,15 +184,25 @@ def feature_new_internal(
     if (BZL_CONST.layer_feature_suffix in name and
         parent_layer and
         not is_build_appliance(parent_layer)):
-        parent_layer_feature = parent_layer + BZL_CONST.layer_feature_suffix
+        parent_layer_feature = PRIVATE_DO_NOT_USE_feature_target_name(parent_layer + BZL_CONST.layer_feature_suffix)
     else:
         parent_layer_feature = None
 
+    target_name = PRIVATE_DO_NOT_USE_feature_target_name(name)
+
+    # Need to add private suffix to the end of feature target names, if not
+    # already present. This is so that a user can specify a target created by
+    # a previous call to `feature.new` and not have to include the suffix.
+    features = [
+        PRIVATE_DO_NOT_USE_feature_target_name(feature) if not feature.endswith(BZL_CONST.PRIVATE_feature_suffix) else feature
+        for feature in flatten_features_list(features)
+    ]
+
     if not native.rule_exists(name):
         _feature_new_rule(
-            name = name,
-            normalized_name = normalize_target(":" + name),
-            features = flatten_features_list(features),
+            name = target_name,
+            normalized_name = normalize_target(":" + target_name),
+            features = features,
             flavors = flavors,
             parent_layer_feature = parent_layer_feature,
             deps = deps,
