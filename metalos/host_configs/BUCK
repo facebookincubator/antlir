@@ -1,18 +1,7 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "thrift_library")
-load("//metalos/host_configs/generators:defs.bzl", "generators")
+load("//antlir/bzl:oss_shim.bzl", "thrift_library")
 
 # @oss-disable: facebook = True 
 # @oss-enable facebook = False
-
-star_paths = [
-    "generators/hostname.star",
-    "generators/machine-id.star",
-    "generators/root-password.star",
-    "generators/systemd-networkd.star",
-] + ([
-    "generators/facebook/fbwhoami.star",
-    "generators/facebook/smc_tiers.star",
-] if facebook else [])
 
 thrift_library(
     # @autodeps-skip
@@ -87,14 +76,4 @@ thrift_library(
         "//metalos/host_configs/facebook:host-facebook",
         "//metalos/host_configs/facebook/proxy/if:deployment_specific",
     ] if facebook else [],
-)
-
-buck_filegroup(
-    name = "all_starklark_files",
-    srcs = star_paths,
-)
-
-generators(
-    name = "host_config_generators",
-    rel_star_paths = star_paths,
 )

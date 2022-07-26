@@ -1,0 +1,25 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup")
+load("//metalos/host_configs/generators:defs.bzl", "generators")
+
+# @oss-disable: facebook = True 
+# @oss-enable facebook = False
+
+star_paths = [
+    "hostname.star",
+    "machine-id.star",
+    "root-password.star",
+    "systemd-networkd.star",
+] + ([
+    "facebook/fbwhoami.star",
+    "facebook/smc_tiers.star",
+] if facebook else [])
+
+buck_filegroup(
+    name = "all_starlark_files",
+    srcs = star_paths,
+)
+
+generators(
+    name = "host_config_generators",
+    rel_star_paths = star_paths,
+)

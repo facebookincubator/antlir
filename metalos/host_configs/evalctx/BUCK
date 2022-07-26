@@ -7,7 +7,7 @@ rust_library(
     name = "evalctx",
     srcs = glob(["src/**/*.rs"]),
     env = {
-        "TEST_FILES_DIR": "$(location //metalos/host_configs:all_starklark_files)",
+        "TEST_FILES_DIR": "$(location //metalos/host_configs/generators:all_starlark_files)",
     },
     features =
         ["facebook"] if facebook else [],
@@ -15,7 +15,7 @@ rust_library(
         "maplit",
         "slog_glog_fmt",
         "tempfile",
-        "//metalos/host_configs:all_starklark_files",
+        "//metalos/host_configs/generators:all_starlark_files",
         "//metalos/host_configs/tests:example_host_for_tests",
     ],
     deps = [
