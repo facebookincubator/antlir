@@ -8,7 +8,6 @@ use std::time::Duration;
 use aclchecker::AclChecker;
 use identity::IdentitySet;
 use permission_checker::PermissionsChecker;
-use permission_checker::{self};
 
 // For testing purpose we need an AclChecker Wrapper trait that can be mocked.
 // Wrapping aclchecker::AclChecker

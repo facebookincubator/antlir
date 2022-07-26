@@ -35,8 +35,8 @@ use btrfs::sendstream::Zstd;
 use btrfs::Sendstream;
 use btrfs::SendstreamExt;
 use btrfs::Subvolume;
+use metalos_host_configs::packages;
 use metalos_host_configs::packages::Format;
-use metalos_host_configs::packages::{self};
 
 mod https;
 #[deprecated = "Unless you _really_ need https, use default_downloader"]
