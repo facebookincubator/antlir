@@ -254,6 +254,14 @@ impl Bootloader {
             .on_disk()
             .context("rootfs not on disk")?;
 
+        let kernel_subvol = self
+            .config
+            .boot_config
+            .kernel
+            .pkg
+            .on_disk()
+            .context("kernel subvol not on disk")?;
+
         // prepare new root
         let current_boot_dir =
             metalos_paths::runtime::boot().join(format!("{}:{}", 0, self.boot_id));
@@ -267,6 +275,21 @@ impl Bootloader {
         current_boot_subvol
             .set_readonly(false)
             .context("Failed to set new boot subvol RW")?;
+
+        // We mount a r/w snapshot of the kernel package so that we can upgrade kernel modules
+        // during runtime. This is suboptimal, and we move towards making this mount immutable.
+        // However, before we can do that, we likely need to change the way kernel modules are
+        // packaged and deployed so we can ensure they never need to be upgraded outside the scope
+        // of an offline-update. T126799147
+        let current_kernel_dir =
+            metalos_paths::runtime::kernel().join(format!("{}:{}", 0, self.boot_id));
+        let current_kernel_subvol = kernel_subvol
+            .snapshot(&current_kernel_dir, SnapshotFlags::empty())
+            .context(format!(
+                "Failed to snapshot kernel from {:?} to {:?}",
+                kernel_subvol.path(),
+                current_kernel_dir,
+            ))?;
 
         // run generator
 
@@ -292,6 +315,7 @@ impl Bootloader {
                 log: self.log.clone(),
             },
             current_boot_subvol.path(),
+            current_kernel_subvol.path(),
         )
         .await
         .context("failed to switchroot into new boot snapshot")?;
@@ -299,7 +323,12 @@ impl Bootloader {
         bail!("unexpectedly returned from switch_root");
     }
 
-    async fn switch_root<M: Mounter>(&mut self, mounter: M, snapshot: &Path) -> Result<()> {
+    async fn switch_root<M: Mounter>(
+        &mut self,
+        mounter: M,
+        boot_snapshot: &Path,
+        kernel_snapshot: &Path,
+    ) -> Result<()> {
         let target_path = Path::new("/sysroot");
         std::fs::create_dir(&target_path).context(format!("failed to mkdir {:?}", target_path))?;
 
@@ -312,15 +341,15 @@ impl Bootloader {
             .filter(|a| !a.starts_with("subvolid=") && !a.starts_with("subvol="))
             .collect();
 
-        let new_subvol = snapshot
+        let new_subvol = boot_snapshot
             .strip_prefix(metalos_paths::control())
             .context(format!(
                 "Provided snapshot {:?} didn't start with {:?}",
-                snapshot,
+                boot_snapshot,
                 metalos_paths::control(),
             ))?
             .to_str()
-            .context(format!("snapshot {:?} was not valid utf-8", snapshot))?
+            .context(format!("snapshot {:?} was not valid utf-8", boot_snapshot))?
             .to_string();
 
         new_flags.push(format!("subvol=/volume/{}", new_subvol));
@@ -329,13 +358,6 @@ impl Bootloader {
         Bootloader::mount_root(&mounter, &self.mount_options, target_path)
             .context(format!("Failed to remount onto {:?}", target_path))?;
 
-        let kernel_subvol = self
-            .config
-            .boot_config
-            .kernel
-            .pkg
-            .on_disk()
-            .context("kernel subvol not on disk")?;
         let utsname = nix::sys::utsname::uname();
         let mountpoint = target_path.join("usr/lib/modules").join(utsname.release());
         std::fs::create_dir_all(&mountpoint).context(format!(
@@ -343,8 +365,7 @@ impl Bootloader {
             mountpoint.display()
         ))?;
 
-        let modules_dir = kernel_subvol
-            .path()
+        let modules_dir = kernel_snapshot
             .join("modules")
             .to_str()
             .context("modules dir is not a string")?

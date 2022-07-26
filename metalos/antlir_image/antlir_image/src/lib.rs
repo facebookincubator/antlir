@@ -38,6 +38,7 @@ mod test {
             image_service_config_generator(VerifiedPath, "image/service-config-generator"),
             run_boot(VerifiedPath, "run/boot"),
             run_cache(VerifiedPath, "run/cache"),
+            run_kernel(VerifiedPath, "run/kernel"),
             run_logs(VerifiedPath, "run/logs"),
             run_runtime(VerifiedPath, "run/runtime"),
             run_scratch(VerifiedPath, "run/scratch"),

@@ -80,7 +80,12 @@ async fn kernel_modules_work() {
         .expect(&format!("'{}' not found in /proc/mounts", mountpoint));
     assert!(
         mount_opts.contains("subvolid="),
-        "kernel mounts should have a subvolid, but it was not present in '{}'",
+        "kernel mount should have a subvolid, but it was not present in '{}'",
+        mount_opts
+    );
+    assert!(
+        mount_opts.contains("subvol=/volume/run/kernel/"),
+        "kernel mount should point to a snapshot in kernels directory, but mount options disagree '{}'",
         mount_opts
     );
     // check to make sure that fuse.ko exists, since it's a very critical
