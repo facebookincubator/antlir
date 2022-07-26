@@ -25,11 +25,16 @@ use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateStageExn;
 use acl_checker::AclCheckerService;
 use aclchecker::AclChecker;
 use aclchecker::AclCheckerError;
+use fallback_identity_checker::FallbackIdentityChecker;
 use identity::Identity;
 use identity::IdentitySet;
 use permission_checker::PermissionsChecker;
 
 const ACL_ACTION: &str = "canDoCyborgJob"; //TODO:T117800273 temporarely, need to decide the correct acl
+const ALLOWED_IDENTITIES_PATH: [&str; 2] = [
+    "/usr/lib/metald/metald_allowed_identities",
+    "/etc/metald/metald_allowed_identities",
+];
 
 #[derive(thiserror::Error, Debug)]
 pub enum MetalctlImplError {
@@ -43,7 +48,7 @@ pub enum MetalctlImplError {
 pub struct Metald {
     log: Logger,
     dl: DefaultDownloader,
-    pub acl_checker: AclCheckerService<AclChecker>,
+    pub fallback_identity_checker: FallbackIdentityChecker<AclCheckerService<AclChecker>>,
 }
 
 impl Metald {
@@ -55,10 +60,14 @@ impl Metald {
         if let Some(hostname_prefix) = whoami.hostname_scheme.as_ref() {
             let id = Identity::with_machine_tier(hostname_prefix);
             let fb_acl_checker = AclChecker::new(fb, &id)?;
+            let acl_checker = AclCheckerService::new(fb_acl_checker, hostname_prefix);
             Ok(Self {
                 log,
                 dl,
-                acl_checker: AclCheckerService::new(fb_acl_checker, hostname_prefix),
+                fallback_identity_checker: FallbackIdentityChecker::new(
+                    acl_checker,
+                    ALLOWED_IDENTITIES_PATH.iter().map(|&s| s.into()).collect(),
+                ),
             })
         } else {
             Err(MetalctlImplError::HostnameSchemeNotFound).map_err(|err| err.into())
@@ -67,7 +76,7 @@ impl Metald {
 
     fn check_identity(&self, req_ctxt: &RequestContext) -> anyhow::Result<bool> {
         let ids = req_ctxt.identities()?;
-        verify_identity_against_checker(self.acl_checker.clone(), &ids)
+        verify_identity_against_checker(self.fallback_identity_checker.clone(), &ids)
     }
 }
 

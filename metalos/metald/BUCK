@@ -33,6 +33,7 @@ rust_binary(
         "//common/rust/srserver:srserver",
         "//metalos/metald/src/lib/acl_checker:acl_checker",
         "//metalos/metald/src/lib/permission_checker:permission_checker",
+        "//metalos/metald/src/lib/fallback_identity_checker:fallback_identity_checker",
     ] + (
         # @oss-disable: deps 
         # @oss-enable []
@@ -50,6 +51,15 @@ feature.new(
         feature.install_buck_runnable(
             ":metald",
             "/usr/lib/metalos/metald",
+        ),
+        feature.ensure_subdirs_exist(
+            "/usr/lib/",
+            "metald/metald_allowed_identities",
+        ),
+        feature.install(
+            "src/facebook/metald_allowed_identities",
+            "/usr/lib/metald/metald_allowed_identities/default",
+            mode = 0o644,
         ),
     ],
     visibility = ["//metalos/os/..."],
