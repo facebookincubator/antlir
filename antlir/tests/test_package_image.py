@@ -496,7 +496,18 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         no_dir_version = btrfs_get_supported_sendstream_version(
             sysfs_path="/dev/some_dir_that_were_pretty_sure_doesnt_exist/stuff"
         )
+        # Test case for kernels that don't have an actual sysfs file because of
+        # an old kernel
+        fake_sysfs_version = 0
+        with tempfile.NamedTemporaryFile() as temp_sysfs_path:
+            temp_sysfs_path.write(b"3000")
+            temp_sysfs_path.flush()
+            fake_sysfs_version = btrfs_get_supported_sendstream_version(
+                sysfs_path=temp_sysfs_path.name
+            )
+
         self.assertTrue(1 <= kernel_sendstream_version <= 2)
         self.assertEqual(dev_null_file_version, 1)
         self.assertEqual(no_file_version, 1)
         self.assertEqual(no_dir_version, 1)
+        self.assertEqual(fake_sysfs_version, 3000)
