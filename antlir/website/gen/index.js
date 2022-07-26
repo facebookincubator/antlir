@@ -13,7 +13,7 @@
 const path = require('path');
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
-const {isInternal} = require('internaldocs-fb-helpers');
+const {isInternal} = require('docusaurus-plugin-internaldocs-fb/internal');
 
 const cp_cmd = ' && cp -r $(pwd)/docs/api/starlark/fbcode/antlir/* $(pwd)/docs/api';
 const cmd = 'buck2 docs starlark --format markdown_files --markdown-files-destination-dir=$(pwd)/docs/api ';

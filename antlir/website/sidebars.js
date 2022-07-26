@@ -7,7 +7,7 @@
  * @format
  */
 
-const {fbContent, fbInternalOnly} = require('internaldocs-fb-helpers');
+const {fbContent, fbInternalOnly} = require('docusaurus-plugin-internaldocs-fb/internal');
 
 module.exports = {
   docs: [
@@ -55,14 +55,14 @@ module.exports = {
             'concepts/rpms/version-selection',
           ],
           'Pre-built Artifacts': [
-            {
-              Fbpkgs: [
-                ...fbInternalOnly([
+            ...fbInternalOnly([
+              {
+                Fbpkgs: [
                   'concepts/pre-built-artifacts/fb/fbpkgs/updating-fetched-fbpkgs',
                   'concepts/pre-built-artifacts/fb/fbpkgs/using-fbpkgs-in-images',
-                ]),
-              ],
-            },
+                ],
+              },
+            ]),
             'concepts/pre-built-artifacts/fetched-artifacts',
           ],
           Flavors: [
