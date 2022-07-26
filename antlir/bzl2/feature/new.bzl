@@ -150,6 +150,7 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
 _feature_new_rule = rule(
     impl = _feature_new_rule_impl,
     attrs = {
+        "deps": attrs.list(attrs.dep(), default = []),
         "features": attrs.list(attrs.dep(), default = []),
         "flavors": attrs.list(attrs.string(), default = []),
         "normalized_name": attrs.string(),
@@ -163,27 +164,18 @@ _feature_new_rule = rule(
     },
 )
 
-def feature_new(
+def feature_new_internal(
         name,
         features,
         visibility = None,
-        # This is used when a user wants to declare a feature
-        # that is not available for all flavors in REPO_CFG.flavor_to_config.
-        # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None,
-        # only used as argument in `compile_image_features.bzl`
-        parent_layer = None):
+        parent_layer = None,
+        deps = None):
     """
-    Turns a group of image actions into a Buck target, so it can be
-    referenced from outside the current project via `//path/to:name`.
-
-    Do NOT use this for composition within one project, just use a list.
-
-    See the file docblock for more details on image action composition.
-
-    See other `.bzl` files in this directory for actions that actually build
-    the container (install RPMs, remove files/directories, create symlinks
-    or directories, copy executable or data files, declare mounts).
+    `parent_layer` and `deps` are only used in `compile_image_features`.
+    `parent_layer` is used to depend on the parent layer's layer feature and
+    `deps` is for any other dependencies that this feature has that aren't
+    features.
     """
     if (BZL_CONST.layer_feature_suffix in name and
         parent_layer and
@@ -199,5 +191,33 @@ def feature_new(
             features = flatten_features_list(features),
             flavors = flavors,
             parent_layer_feature = parent_layer_feature,
+            deps = deps,
             visibility = visibility,
         )
+
+def feature_new(
+        name,
+        features,
+        visibility = None,
+        # This is used when a user wants to declare a feature
+        # that is not available for all flavors in REPO_CFG.flavor_to_config.
+        # An example of this is the internal feature in `image_layer.bzl`.
+        flavors = None):
+    """
+    Turns a group of image actions into a Buck target, so it can be
+    referenced from outside the current project via `//path/to:name`.
+
+    Do NOT use this for composition within one project, just use a list.
+
+    See the file docblock for more details on image action composition.
+
+    See other `.bzl` files in this directory for actions that actually build
+    the container (install RPMs, remove files/directories, create symlinks
+    or directories, copy executable or data files, declare mounts).
+    """
+    return feature_new_internal(
+        name,
+        features,
+        visibility,
+        flavors,
+    )

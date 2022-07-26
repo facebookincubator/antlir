@@ -162,6 +162,7 @@ def compile_image_features(
         features,
         flavor,
         flavor_config_override,
+        extra_deps = None,
         subvol_name = None,
         internal_only_is_genrule_layer = False):
     '''
@@ -174,6 +175,8 @@ def compile_image_features(
     '''
     if features == None:
         features = []
+    if extra_deps == None:
+        extra_deps = []
 
     target_tagger = new_target_tagger()
 
@@ -188,11 +191,13 @@ def compile_image_features(
     flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override) if flavor else None
 
     if flavor_config and flavor_config.build_appliance:
-        features.append(target_tagger_to_feature(
-            target_tagger,
-            struct(),
-            extra_deps = [flavor_config.build_appliance],
-        ))
+        extra_deps.append(flavor_config.build_appliance)
+
+    features.append(target_tagger_to_feature(
+        target_tagger,
+        struct(),
+        extra_deps = extra_deps,
+    ))
 
     # This is the list of supported flavors for the features of the layer.
     # A value of `None` specifies that no flavor field was provided for the layer.
