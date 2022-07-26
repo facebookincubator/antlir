@@ -9,7 +9,7 @@
 
 const util = require('util');
 const exec = util.promisify(require('child_process').exec);
-const {isInternal} = require('internaldocs-fb-helpers');
+const {isInternal} = require('docusaurus-plugin-internaldocs-fb/internal');
 const args = require('minimist')(process.argv.slice(2))
 
 const cp_cmd = ' && cp -r $(pwd)/docs/api/starlark/fbcode/antlir/* $(pwd)/docs/api';
