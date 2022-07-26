@@ -133,10 +133,13 @@ impl CommitOpts {
 type MetaldClient = Arc<dyn Metalctl + Send + Sync + 'static>;
 
 fn metald_client(fb: FacebookInit) -> anyhow::Result<MetaldClient> {
-    thriftclient::ThriftChannelBuilder::from_path(fb, "/run/metalos/metald_socket")
-        .context("while creating ThriftChannelBuilder")?
-        .build_client(make_Metalctl)
-        .context("while making Metalctl client")
+    thriftclient::ThriftChannelBuilder::from_path(
+        fb,
+        metalos_thrift_host_configs::api::consts::SOCKET_PATH,
+    )
+    .context("while creating ThriftChannelBuilder")?
+    .build_client(make_Metalctl)
+    .context("while making Metalctl client")
 }
 
 async fn run_subcommand<F, Fut, Input, Return, Error>(

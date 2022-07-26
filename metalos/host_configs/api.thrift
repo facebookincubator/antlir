@@ -14,6 +14,8 @@ include "metalos/host_configs/boot_config.thrift"
 include "metalos/host_configs/packages.thrift"
 include "metalos/host_configs/runtime_config.thrift"
 
+const string SOCKET_PATH = "/run/metalos/metald_socket";
+
 struct UpdateStageResponse {
   // Full set of packages that were downloaded (or already present) as a result
   // of this operation
