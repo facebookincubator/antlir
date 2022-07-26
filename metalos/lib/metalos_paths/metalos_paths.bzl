@@ -48,6 +48,7 @@ metalos_paths = struct(
                 # their actual destination.
                 "scratch",
                 "service-roots",
+                "swap",
             )
         }
     ),
@@ -77,6 +78,18 @@ def dirs_to_create():
     # care of now
     paths.pop(metalos_paths.control)
     return paths
+
+def dir_attrs():
+    paths = _flat_struct_values(metalos_paths)
+    return {p: _attrs_for_dir(p) for p in paths if len(_attrs_for_dir(p)) > 0}
+
+def _attrs_for_dir(path):
+    attr = ""
+    if path == metalos_paths.runtime.swap:
+        # Disable Copy-on-Write for the swap subvol to avoid swapfiles fragmentation
+        # https://man7.org/linux/man-pages/man1/chattr.1.html
+        attr = "+C"
+    return attr
 
 def _stat_for_dir(path):
     mode = 0o555
@@ -134,8 +147,14 @@ def _oct(x):
 def gen_tmpfiles():
     conf = []
     for path, stat in dirs_to_create().items():
+        # For all paths, create them as subvolumes
+        # https://www.freedesktop.org/software/systemd/man/tmpfiles.d.html#v
         # v     /subvolume-or-directory/to/create        mode user group cleanup-age -
         conf.append("v {} 0{} {} {} - -".format(path, _oct(stat.mode), stat.user, stat.group))
+    for path, attrs in dir_attrs().items():
+        # Specify (non-recursive) attributes to apply. Assumes path was created above.
+        # https://www.freedesktop.org/software/systemd/man/tmpfiles.d.html#h
+        conf.append("h {} - - - - {}".format(path, attrs))
 
     # note: the sorted here is very important so that the subvolume tree gets
     # created in the right order
