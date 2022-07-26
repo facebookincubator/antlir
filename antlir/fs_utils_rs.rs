@@ -82,7 +82,7 @@ impl<'source> FromPyObject<'source> for AntlirPath {
 }
 
 #[pymodule]
-pub(crate) fn fs_utils(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+pub fn fs_utils_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     /// Largely just useful for tests from Python, this will take the given
     /// input and attempt to round-trip it through [Path] and back into an
     /// `antlir.fs_utils.Path`

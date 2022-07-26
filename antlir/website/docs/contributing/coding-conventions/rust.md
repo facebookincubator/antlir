@@ -69,8 +69,11 @@ Due to some CPython limitations, we build all our Rust code into one monolithic
 about it, you just have to know that all our Python interfaces must be exposed
 as submodules of `antlir.rust`
 
-Adding a new module is easy, just follow the examples in
-`antlir/rust/src/lib.rs`.
+Adding a new module is easy:
+1. `load(//antlir/rust:defs.bzl", "antlir_rust_extension")
+2. Define a target using `antlir_rust_extension`
+3. Regenerate antlir/rust/modules.bzl by running `//antlir/rust:gen-modules-bzl`
+4. Import your code from the expected module path (dir of TARGETS file plus `name`)
 
 ### .pyi Hints
 
