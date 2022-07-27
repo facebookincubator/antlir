@@ -149,6 +149,7 @@ feature.new(
         feature.ensure_subdirs_exist("/usr/lib", "metalos"),
         systemd_target_graph,
         "//metalos/host_configs/generators:host_config_generators",
+        metalctl,
     ],
     visibility = [
         "//metalos/os/...",
@@ -162,7 +163,6 @@ image.layer(
         feature.ensure_subdirs_exist("/usr/lib", "metalos"),
         initial_online_update,
         mask_unneeded_units,
-        metalctl,
         metalos_branding,
         native_service_support,
         root_cgroup,
