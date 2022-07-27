@@ -3,8 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKLINT
+
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
+load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load(
@@ -63,7 +66,7 @@ def _filter_rpm_versions(
 
     return filtered_feature_dict
 
-def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
+def _feature_new_rule_impl(ctx):
     parent_layer_feature = ctx.attrs.parent_layer_feature
     is_layer_feature = BZL_CONST.layer_feature_suffix in ctx.attrs.name
     feature_flavors = ctx.attrs.flavors
@@ -143,7 +146,7 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
     ctx.actions.write_json(output, items)
 
     return [
-        DefaultInfo(default_outputs = [output]),
+        native.DefaultInfo(default_outputs = [output]),
         FeatureInfo(
             inline_features = inline_features,
         ),
@@ -151,22 +154,22 @@ def _feature_new_rule_impl(ctx: "context") -> ["provider"]:
         FlavorInfo(flavors = feature_flavors),
     ] if BZL_CONST.layer_feature_suffix in ctx.attrs.name else [])
 
-_feature_new_rule = rule(
+_feature_new_rule = native.rule(
     impl = _feature_new_rule_impl,
     attrs = {
-        "deps": attrs.list(attrs.dep(), default = []),
-        "features": attrs.list(attrs.dep(), default = []),
-        "flavors": attrs.list(attrs.string(), default = []),
-        "normalized_name": attrs.string(),
+        "deps": native.attrs.list(native.attrs.dep(), default = []),
+        "features": native.attrs.list(native.attrs.dep(), default = []),
+        "flavors": native.attrs.list(native.attrs.string(), default = []),
+        "normalized_name": native.attrs.string(),
 
         # parent layer flavor can be fetched from parent layer feature
-        "parent_layer_feature": attrs.option(attrs.dep()),
+        "parent_layer_feature": native.attrs.option(native.attrs.dep()),
 
         # for query (needed because `feature.new` can depend on targets that
         # need their on-disk location to be known)
-        "type": attrs.string(default = "image_feature"),
+        "type": native.attrs.string(default = "image_feature"),
     },
-)
+) if is_buck2() else None
 
 def feature_new_internal(
         name,

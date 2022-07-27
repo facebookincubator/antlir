@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKLINT
+
 """
 ## Usage of `install_*` actions
 
@@ -41,6 +43,7 @@ feature.
 
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
+load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
@@ -65,31 +68,31 @@ def _generate_shape(source_dict, dest, mode, user, group):
         group = group,
     )
 
-def _install_rule_impl(ctx: "context") -> ["provider"]:
-    if ctx.attrs.is_executable and ctx.attrs.unwrapped_target[RunInfo]:
+def _install_rule_impl(ctx):
+    if ctx.attrs.is_executable and ctx.attrs.unwrapped_target[native.RunInfo]:
         install_shape = ctx.attrs.wrapped_shape
     else:
         install_shape = ctx.attrs.unwrapped_shape
 
     return [
-        DefaultInfo(),
+        native.DefaultInfo(),
         ItemInfo(items = struct(**{ctx.attrs.key: [install_shape]})),
     ]
 
-_install_rule = rule(
+_install_rule = native.rule(
     impl = _install_rule_impl,
     attrs = {
-        "is_executable": attrs.bool(),
-        "key": attrs.string(),
+        "is_executable": native.attrs.bool(),
+        "key": native.attrs.string(),
 
         # for query
-        "type": attrs.string(default = "image_feature"),
-        "unwrapped_shape": attrs.dict(attrs.string(), attrs.any()),
-        "unwrapped_target": attrs.dep(),
-        "wrapped_shape": attrs.dict(attrs.string(), attrs.any()),
-        "wrapped_target": attrs.dep(),
+        "type": native.attrs.string(default = "image_feature"),
+        "unwrapped_shape": native.attrs.dict(native.attrs.string(), native.attrs.any()),
+        "unwrapped_target": native.attrs.dep(),
+        "wrapped_shape": native.attrs.dict(native.attrs.string(), native.attrs.any()),
+        "wrapped_target": native.attrs.dep(),
     },
-)
+) if is_buck2() else None
 
 def maybe_add_install_rule(
         unwrapped_shape,

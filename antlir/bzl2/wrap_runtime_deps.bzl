@@ -3,15 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKLINT
+
+load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(
     "//antlir/bzl:wrap_runtime_deps.bzl",
     helper = "maybe_wrap_executable_target",
 )
 
-def _wrap_executable_target_rule_impl(ctx: "context") -> ["provider"]:
-    if not ctx.attrs.target[RunInfo]:
-        return [DefaultInfo()]
+def _wrap_executable_target_rule_impl(ctx):
+    if not ctx.attrs.target[native.RunInfo]:
+        return [native.DefaultInfo()]
 
     path_in_output = \
         "/" + ctx.attrs.path_in_output if ctx.attrs.path_in_output else ""
@@ -42,13 +45,13 @@ chmod +x $OUT
     )
 
     ctx.actions.run(
-        cmd_args(["/bin/bash", create_wrapper_script]),
+        native.cmd_args(["/bin/bash", create_wrapper_script]),
         env = {
             "OUT": output.as_output(),
             "literal_preamble": ctx.attrs.literal_preamble,
             "path_in_output": path_in_output,
-            "repo_root": ctx.attrs.repo_root[RunInfo],
-            "runnable": ctx.attrs.target[RunInfo],
+            "repo_root": ctx.attrs.repo_root[native.RunInfo],
+            "runnable": ctx.attrs.target[native.RunInfo],
         },
         # See comment at https://fburl.com/code/3pj7exvp
         local_only = True,
@@ -56,18 +59,18 @@ chmod +x $OUT
         identifier = "create_wrapper",
     )
 
-    return [DefaultInfo(default_outputs = [output])]
+    return [native.DefaultInfo(default_outputs = [output])]
 
-_wrap_executable_target_rule = rule(
+_wrap_executable_target_rule = native.rule(
     impl = _wrap_executable_target_rule_impl,
     attrs = {
-        "literal_preamble": attrs.arg(),
-        "path_in_output": attrs.string(default = ""),
-        "repo_root": attrs.dep(),
-        "target": attrs.dep(),
-        "unquoted_heredoc_preamble": attrs.string(),
+        "literal_preamble": native.attrs.arg(),
+        "path_in_output": native.attrs.string(default = ""),
+        "repo_root": native.attrs.dep(),
+        "target": native.attrs.dep(),
+        "unquoted_heredoc_preamble": native.attrs.string(),
     },
-)
+) if is_buck2() else None
 
 def maybe_wrap_executable_target_rule(**kwargs):
     if not native.rule_exists(kwargs.get("name")):
