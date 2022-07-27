@@ -14,7 +14,6 @@ use nix::sys::memfd::MemFdCreateFlag;
 use std::ffi::CString;
 use std::fs::File;
 use std::marker::PhantomData;
-use std::marker::Unpin;
 use std::os::unix::io::AsRawFd;
 use std::os::unix::io::FromRawFd;
 use std::os::unix::io::RawFd;
