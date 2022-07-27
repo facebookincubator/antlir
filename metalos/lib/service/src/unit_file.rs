@@ -8,8 +8,10 @@ use service_shape::dependency_mode_t;
 use service_shape::exec_t;
 use service_shape::resource_limits_t;
 use service_shape::restart_mode_t;
+use service_shape::restart_settings_t;
 use service_shape::service_t;
 use service_shape::service_type_t;
+use service_shape::timeout_settings_t;
 use std::collections::BTreeMap;
 use systemd::UnitName;
 
@@ -53,6 +55,8 @@ pub(crate) struct ServiceSection {
     pub(crate) group: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) restart: Option<restart_mode_t>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) restart_sec: Option<usize>,
     #[serde(rename = "Type")]
     pub(crate) service_type: service_type_t,
     pub(crate) user: String,
@@ -63,12 +67,25 @@ pub(crate) struct ServiceSection {
     pub(crate) open_fds: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) memory_max: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) memory_high: Option<usize>,
+    #[serde(rename = "CPUQuota", skip_serializing_if = "Option::is_none")]
+    pub(crate) cpu_quota: Option<String>,
+    // timeout_settings_t is flattened to these fields
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) timeout_sec: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) timeout_start_sec: Option<usize>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) timeout_stop_sec: Option<usize>,
 }
 
 #[derive(Debug, Default)]
 struct ResourceLimits {
     open_fds: Option<usize>,
     memory_max: Option<usize>,
+    memory_high: Option<usize>,
+    cpu_quota: Option<String>,
 }
 
 impl TryFrom<resource_limits_t> for ResourceLimits {
@@ -79,27 +96,71 @@ impl TryFrom<resource_limits_t> for ResourceLimits {
         let resource_limits_t {
             open_fds,
             memory_max_bytes,
+            memory_high_bytes,
+            cpu_quota_percent,
         } = x;
         Ok(Self {
-            open_fds: open_fds.map(|x| x.try_into()).transpose().map_err(|_| {
-                Error::InvalidSetting {
-                    setting: "open_fds",
-                    value: open_fds.expect("this is definitely Some").to_string(),
-                    message: "open_fds must be positive".to_string(),
-                }
-            })?,
-            memory_max: memory_max_bytes
-                .map(|x| x.try_into())
-                .transpose()
-                .map_err(|_| Error::InvalidSetting {
-                    setting: "memory_max_bytes",
-                    value: memory_max_bytes
-                        .expect("this is definitely Some")
-                        .to_string(),
-                    message: "memory_max_bytes must be positive".to_string(),
-                })?,
+            open_fds: cast_params("open_fds", open_fds)?,
+            memory_max: cast_params("memory_max_bytes", memory_max_bytes)?,
+            memory_high: cast_params("memory_high_bytes", memory_high_bytes)?,
+            cpu_quota: cpu_quota_percent,
         })
     }
+}
+
+#[derive(Debug, Default)]
+struct TimeoutSettings {
+    timeout_sec: Option<usize>,
+    timeout_start_sec: Option<usize>,
+    timeout_stop_sec: Option<usize>,
+}
+
+impl TryFrom<timeout_settings_t> for TimeoutSettings {
+    type Error = Error;
+
+    #[deny(unused_variables)]
+    fn try_from(x: timeout_settings_t) -> Result<Self> {
+        let timeout_settings_t {
+            timeout_sec,
+            timeout_start_sec,
+            timeout_stop_sec,
+        } = x;
+        Ok(Self {
+            timeout_sec: cast_params("timeout_sec", timeout_sec)?,
+            timeout_start_sec: cast_params("timeout_start_sec", timeout_start_sec)?,
+            timeout_stop_sec: cast_params("timeout_stop_sec", timeout_stop_sec)?,
+        })
+    }
+}
+
+#[derive(Debug, Default)]
+struct RestartSettings {
+    mode: Option<restart_mode_t>,
+    sec: Option<usize>,
+}
+
+impl TryFrom<restart_settings_t> for RestartSettings {
+    type Error = Error;
+
+    #[deny(unused_variables)]
+    fn try_from(x: restart_settings_t) -> Result<Self> {
+        let restart_settings_t { mode, sec } = x;
+        Ok(Self {
+            mode,
+            sec: cast_params("restart", sec)?,
+        })
+    }
+}
+
+fn cast_params(setting: &'static str, value: Option<i64>) -> Result<Option<usize>> {
+    value
+        .map(|x| x.try_into())
+        .transpose()
+        .map_err(|_| Error::InvalidSetting {
+            setting,
+            value: value.expect("this is definitely Some").to_string(),
+            message: format!("{:?} must be positive", setting),
+        })
 }
 
 fn cmd_to_setting(cmd: cmd_t) -> String {
@@ -132,9 +193,18 @@ impl TryFrom<exec_t> for ServiceSection {
             run,
             runas,
             service_type,
+            timeout,
         } = x;
         let resource_limits = resource_limits
             .map(ResourceLimits::try_from)
+            .transpose()?
+            .unwrap_or_default();
+        let timeout = timeout
+            .map(TimeoutSettings::try_from)
+            .transpose()?
+            .unwrap_or_default();
+        let restart = restart
+            .map(RestartSettings::try_from)
             .transpose()?
             .unwrap_or_default();
         Ok(Self {
@@ -142,12 +212,18 @@ impl TryFrom<exec_t> for ServiceSection {
             exec_start: run.into_iter().map(cmd_to_setting).collect(),
             exec_start_pre: pre.into_iter().map(cmd_to_setting).collect(),
             group: runas.group,
-            restart,
+            restart: restart.mode,
+            restart_sec: restart.sec,
             service_type,
             user: runas.user,
             bind_read_only_paths: vec![],
             open_fds: resource_limits.open_fds,
             memory_max: resource_limits.memory_max,
+            memory_high: resource_limits.memory_high,
+            cpu_quota: resource_limits.cpu_quota,
+            timeout_sec: timeout.timeout_sec,
+            timeout_start_sec: timeout.timeout_start_sec,
+            timeout_stop_sec: timeout.timeout_stop_sec,
         })
     }
 }
