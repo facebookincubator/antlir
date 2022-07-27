@@ -50,7 +50,9 @@ def maybe_add_feature_rule(
         _feature_rule(
             name = target_name,
             key = key,
-            shape = shape.as_serializable_dict(feature_shape),
+            shape = shape.as_serializable_dict(
+                feature_shape,
+            ) if shape.is_any_instance(feature_shape) else feature_shape,
             deps = deps,
         )
 

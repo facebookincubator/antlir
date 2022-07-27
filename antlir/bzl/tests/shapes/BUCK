@@ -167,6 +167,7 @@ bzl_to_py(
     imports = [
         "from .shape_bzl_shims import *",
         "from .target_tagger_helper_bzl import target_tagger_helper",
+        "from .sha256 import sha256_b64",
     ],
 )
 
@@ -175,6 +176,7 @@ python_library(
     srcs = {
         ":shape_bzl.py": "shape_bzl.py",
         ":target_tagger_helper_bzl.py": "target_tagger_helper_bzl.py",
+        "sha256.py": "sha256.py",
         "shape_bzl_shims.py": "shape_bzl_shims.py",
     },
 )

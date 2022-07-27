@@ -115,6 +115,7 @@ See tests/shape_test.bzl for full example usage and selftests.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "rust_library", "target_utils", "third_party")
+load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 load(":target_tagger_helper.bzl", "target_tagger_helper")
@@ -571,6 +572,11 @@ def _recursive_copy_transform(val, t, opts):
             return {
                 "path": target_tagger_helper.tag_target(opts.target_tagger, val),
             }
+        elif opts.on_target_fields == "collect_deps":
+            opts.deps[val] = 1
+            return {
+                "path": {"__BUCK_TARGET": normalize_target(val)},
+            }
         elif opts.on_target_fields == "preserve":
             return val
         fail(
@@ -766,17 +772,8 @@ def _python_data(
 # Converts a shape to a dict, as you would expected (field names are keys,
 # values are scalars & collections as in the shape -- and nested shapes are
 # also dicts).
-def _as_serializable_dict(val):
-    if structs.is_struct(val):
-        val = structs.to_dict(
-            _safe_to_serialize_instance(val) if _is_any_instance(val) else val,
-        )
-    if types.is_dict(val):
-        val = {k: _as_serializable_dict(v) for k, v in val.items()}
-    if types.is_list(val):
-        val = [_as_serializable_dict(item) for item in val]
-
-    return val
+def _as_serializable_dict(instance):
+    return _as_dict_deep(_safe_to_serialize_instance(instance))
 
 # Do not use this outside of `target_tagger.bzl`.  Eventually, target tagger
 # should be replaced by shape, so this is meant as a temporary shim.
@@ -814,6 +811,24 @@ def _as_target_tagged_dict(target_tagger, instance):
         ),
     ))
 
+# Collects targets from shape and converts them to tagged targets. Returns
+# list of dependencies in shape and shape converted to dict. Used in buck2
+# implementation of `genrule_layer`.
+def _as_dict_collect_deps(instance):
+    deps = {}
+    shape_as_dict = _as_dict_deep(_recursive_copy_transform(
+        instance,
+        instance.__shape__,
+        struct(
+            include_dunder_shape = False,
+            on_target_fields = "collect_deps",
+            target_tagger = None,
+            deps = deps,
+        ),
+    ))
+
+    return shape_as_dict, list(deps.keys())
+
 # Converts `shape.new(foo_t, x='a', y=shape.new(bar_t, z=3))` to
 # `{'x': 'a', 'y': shape.new(bar_t, z=3)}`.
 #
@@ -846,9 +861,42 @@ def _as_dict_shallow(instance):
         for field in instance.__shape__.fields
     }
 
+# Recursively converts nested shapes and structs to dicts. Used in shape.hash.
+def _as_dict_deep(val):
+    if _is_any_instance(val):
+        val = _recursive_copy_transform(
+            val,
+            val.__shape__,
+            struct(
+                include_dunder_shape = False,
+                on_target_fields = "preserve",
+                target_tagger = None,
+            ),
+        )
+    if structs.is_struct(val):
+        val = structs.to_dict(val)
+    if types.is_dict(val):
+        val = {k: _as_dict_deep(v) for k, v in val.items()}
+    if types.is_list(val):
+        val = [_as_dict_deep(item) for item in val]
+
+    return val
+
 # Returns True iff `instance` is a shape instance of any type.
 def _is_any_instance(instance):
     return structs.is_struct(instance) and hasattr(instance, "__shape__")
+
+def _hash_helper(val):  # pragma: no cover
+    if types.is_dict(val):
+        return sorted([(k, _hash_helper(v)) for k, v in val.items()])
+    if types.is_list(val):
+        return sorted([_hash_helper(v) for v in val])
+    return val
+
+# Generates a deterministic hash of a shape by recursively sorting every nested
+# dict/list and hashing the resulting string.
+def _hash(instance):  # pragma: no cover
+    return sha256_b64(str(_hash_helper(_as_dict_deep(instance))))
 
 shape = struct(
     dict = _dict,
@@ -868,6 +916,7 @@ shape = struct(
     as_target_tagged_dict = _as_target_tagged_dict,
     as_dict_shallow = _as_dict_shallow,
     as_serializable_dict = _as_serializable_dict,
+    as_dict_collect_deps = _as_dict_collect_deps,
     do_not_cache_me_json = _do_not_cache_me_json,
     is_any_instance = _is_any_instance,
     is_instance = _is_instance,
@@ -876,4 +925,27 @@ shape = struct(
     python_data = _python_data,
     render_template = _render_template,
     DEFAULT_VALUE = _DEFAULT_VALUE,
+    hash = _hash,
 )
+
+def _self_test_hash():
+    # putting the test here to avoid having to deal with `sha256_b64` in the
+    # python test file
+
+    a = shape.shape(x = int)
+    b = shape.shape(
+        y = shape.dict(str, shape.list(int)),
+        z = a,
+    )
+
+    test_1 = shape.hash(b(y = {"c": [6, 5, 4], "d": [1, 3, 2]}, z = a(x = 5)))
+    test_2 = shape.hash(b(y = {"c": [5, 6, 4], "d": [3, 1, 2]}, z = a(x = 5)))
+
+    if test_1 != test_2:  # pragma: no cover
+        fail(
+            "{function} failed test".format(
+                function = "shape.hash",
+            ),
+        )
+
+_self_test_hash()

@@ -130,7 +130,10 @@ def maybe_add_rpm_rule(
         _rpm_rule(
             name = target_name,
             action = name,
-            rpm_items = shape.as_serializable_dict(rpm_items),
+            rpm_items = [
+                shape.as_serializable_dict(r)
+                for r in rpm_items
+            ],
             flavors = flavors,
             deps = deps,
         )
