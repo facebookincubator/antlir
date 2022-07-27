@@ -7,6 +7,7 @@
 
 namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
+// @oss-disable: namespace py metalos.host_configs.api
 // @oss-disable: namespace go metalos.host_configs.api
 
 include "common/fb303/if/fb303.thrift"
