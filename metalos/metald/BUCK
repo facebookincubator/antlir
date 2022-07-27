@@ -2,7 +2,7 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/bzl/service:service.bzl", "native_service")
-load("//metalos/bzl/service:service.shape.bzl", "cmd_t", "dependency_t", "exec_t", "service_t")
+load("//metalos/bzl/service:service.shape.bzl", "cmd_t", "dependency_t", "exec_t", "restart_settings_t", "service_t")
 # @oss-disable: load("//metalos/metald/src/facebook:deps.bzl", "deps") 
 
 rust_binary(
@@ -79,7 +79,9 @@ native_service(
             ),
         ],
         exec_info = exec_t(
-            restart = "always",
+            restart = restart_settings_t(
+                mode = "always",
+            ),
             run = [
                 cmd_t(
                     args = [

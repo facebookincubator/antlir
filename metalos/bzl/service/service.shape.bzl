@@ -10,11 +10,29 @@ cmd_t = shape.shape(
 
 restart_mode_t = shape.enum("always")
 
+restart_settings_t = shape.shape(
+    mode = shape.field(restart_mode_t, optional = True),
+    sec = shape.field(int, optional = True),
+)
+
 resource_limits_t = shape.shape(
     # LimitNOFILE, open file descriptors allowed (ulimit -n)
     open_fds = shape.field(int, optional = True),
     # MemoryMax
     memory_max_bytes = shape.field(int, optional = True),
+    # MemoryHigh
+    memory_high_bytes = shape.field(int, optional = True),
+    # CPUQuota
+    cpu_quota_percent = shape.field(str, optional = True),
+)
+
+timeout_settings_t = shape.shape(
+    # TimeoutSec
+    timeout_sec = shape.field(int, optional = True),
+    # TimeoutStartSec
+    timeout_start_sec = shape.field(int, optional = True),
+    # TimeoutStopSec
+    timeout_stop_sec = shape.field(int, optional = True),
 )
 
 runas_t = shape.shape(
@@ -29,9 +47,10 @@ exec_t = shape.shape(
     pre = shape.field(shape.list(cmd_t), default = []),
     run = shape.field(shape.list(cmd_t), default = []),
     environment = shape.field(shape.dict(str, str), default = {}),
-    restart = shape.field(restart_mode_t, optional = True),
+    restart = shape.field(restart_settings_t, optional = True),
     resource_limits = shape.field(resource_limits_t, optional = True),
     service_type = shape.field(service_type_t, default = "simple"),
+    timeout = shape.field(timeout_settings_t, optional = True),
 )
 
 dependency_mode_t = shape.enum("requires-and-after", "requires-only", "after-only")
