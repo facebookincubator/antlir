@@ -15,7 +15,6 @@ use fbthrift::Serialize as ThriftSerialize;
 use fbthrift::TType;
 use itertools::Itertools;
 use serde::Serialize;
-use std::cmp::Ord;
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
