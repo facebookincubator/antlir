@@ -78,11 +78,11 @@ def generate_feature_target_name(
     # and then hash that final string to obtain `shape_hash`.
     if types.is_list(feature_shape):
         shape_hash = sha256_b64("_".join(sorted([
-            sha256_b64(shape.do_not_cache_me_json(s))
+            shape.hash(s)
             for s in feature_shape
         ])))
     else:
-        shape_hash = sha256_b64(shape.do_not_cache_me_json(feature_shape))
+        shape_hash = shape.hash(feature_shape)
 
     return PRIVATE_DO_NOT_USE_feature_target_name(
         "antlir_feature__{name}__KEY_{key}__{include_in_name}__{shape_hash}".format(
@@ -131,12 +131,12 @@ def _self_test_generate_feature_target_name():
 
     test_1_answer = (
         "antlir_feature__foo__KEY_key1__BAR_baz__" +
-        "bINw2KkLqCDPdHGk1Zq3xcFnfHpglxM_H4v2UxBoj80" +
+        "6ygUSY8247Ckf4dVALue5R3cAu90u6uXsBf4lSB-8Rc" +
         "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
     )
     test_2_answer = (
         "antlir_feature__bar__KEY_key2____" +
-        "Msq-FeroZIXLzlGnQB3B16882r8szecaypH7YMcB9Q0" +
+        "QW5m92VBPiWeDkvqaMarAQTNOtYRGEcoEf6SrtBDB1U" +
         "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN"
     )
 

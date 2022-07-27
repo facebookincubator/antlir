@@ -8,6 +8,7 @@ import json
 import unittest
 
 from antlir.bzl.tests.shapes.shape_bzl import (
+    _as_dict_deep,
     _check_type,
     _recursive_copy_transform,
     Fail,
@@ -281,11 +282,34 @@ class TestShapeBzl(unittest.TestCase):
             },
         )
 
+    def test_as_dict_collect_deps(self) -> None:
+        shape_with_target = shape.shape(target=target_t)
+        target = shape_with_target(
+            target="//example:target",
+        )
+
+        shape_as_dict, deps = shape.as_dict_collect_deps(target)
+        self.assertEqual(
+            shape_as_dict,
+            {
+                "target": {
+                    "path": {"__BUCK_TARGET": "//example:target"},
+                }
+            },
+        )
+        self.assertEqual(deps, ["//example:target"])
+
     def test_as_dict_shallow(self) -> None:
         y = shape.shape(z=int)
         t = shape.shape(x=str, y=y)
         i = t(x="a", y=shape.new(y, z=3))
         self.assertEqual({"x": "a", "y": i.y}, shape.as_dict_shallow(i))
+
+    def test_as_dict_deep(self) -> None:
+        y = shape.shape(z=int)
+        t = shape.shape(x=str, y=y)
+        i = t(x="a", y=shape.new(y, z=3))
+        self.assertEqual({"x": "a", "y": {"z": 3}}, _as_dict_deep(i))
 
     def test_as_serializable_dict(self) -> None:
         s = shape.shape(z=shape.field(int, optional=True))
