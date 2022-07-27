@@ -873,6 +873,7 @@ rust_library(
 
 export_file(
     name = "empty",
+    visibility = ["PUBLIC"],
 )
 
 python_binary(

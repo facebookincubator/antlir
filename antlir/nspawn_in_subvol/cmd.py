@@ -20,7 +20,7 @@ from typing import AnyStr, Iterable, List, Mapping, NamedTuple, Optional, Tuple
 from antlir.artifacts_dir import find_artifacts_dir
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import META_ARTIFACTS_REQUIRE_REPO
-from antlir.compiler.items.mount import mounts_from_meta
+from antlir.compiler.items.mount import Mount, mounts_from_meta
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path, temp_dir
@@ -201,6 +201,26 @@ def _artifacts_require_repo(src_subvol: Subvol) -> int:
     )
 
 
+def _recursive_layer_mount_args(
+    mount: Mount, targets_and_outputs: Mapping[str, Path], prefix: str = ""
+) -> Iterable[str]:
+    if mount.build_source.type != "layer":
+        return
+    target = mount.build_source.source
+    mount_source_path = find_built_subvol(
+        targets_and_outputs[str(target)]
+    ).path()
+    yield from bind_args(
+        mount_source_path,
+        prefix + "/" + mount.mountpoint,
+        readonly=True,
+    )
+    for nested in mounts_from_meta(mount_source_path):
+        yield from _recursive_layer_mount_args(
+            nested, targets_and_outputs, prefix + "/" + mount.mountpoint
+        )
+
+
 def _extra_nspawn_args_and_env(
     opts: _NspawnOpts,
     # pyre-fixme[34]: `Variable[AnyStr <: [str, bytes]]` isn't present in the
@@ -224,15 +244,8 @@ def _extra_nspawn_args_and_env(
                 )
             )
         elif mount.build_source.type == "layer":
-            target = mount.build_source.source
             extra_nspawn_args.extend(
-                bind_args(
-                    find_built_subvol(
-                        opts.targets_and_outputs[str(target)]
-                    ).path(),
-                    "/" + mount.mountpoint,
-                    readonly=True,
-                )
+                _recursive_layer_mount_args(mount, opts.targets_and_outputs)
             )
 
     if opts.quiet:

@@ -913,6 +913,13 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
                                 __package__, "test-create-ops-from-layer"
                             )
                         ),
+                        TEST_IMAGE_PREFIX
+                        + "first-layer-for-nested-layer-mount": str(
+                            layer_resource(
+                                __package__,
+                                "first-layer-for-nested-layer-mount",
+                            )
+                        ),
                     }
                 ).encode()
             )
@@ -942,11 +949,12 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
                         subvol=_colon_quote_path(
                             find_built_subvol(
                                 layer_resource(
-                                    __package__, "test-hello-world-base"
+                                    __package__,
+                                    "first-layer-for-nested-layer-mount",
                                 )
                             ).path()
                         ),
-                        mount="/meownt",
+                        mount="/layer_mount",
                     ),
                 ],
                 args,
@@ -963,7 +971,7 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
                                 )
                             ).path()
                         ),
-                        mount="/sendstream_meownt",
+                        mount="/layer_mount/sendstream_meownt",
                     ),
                 ],
                 args,
@@ -986,6 +994,13 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
                         + "create_ops-from-layer": str(
                             layer_resource(
                                 __package__, "test-create-ops-from-layer"
+                            )
+                        ),
+                        TEST_IMAGE_PREFIX
+                        + "first-layer-for-nested-layer-mount": str(
+                            layer_resource(
+                                __package__,
+                                "first-layer-for-nested-layer-mount",
                             )
                         ),
                     },
