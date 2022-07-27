@@ -3,8 +3,8 @@
 use slog::error;
 use slog::info;
 use slog::warn;
+use std::fs;
 use std::fs::File;
-use std::fs::{self};
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
@@ -14,7 +14,6 @@ use std::path::PathBuf;
 use identity::Identity;
 use identity::IdentitySet;
 use permission_checker::PermissionsChecker;
-use permission_checker::{self};
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
