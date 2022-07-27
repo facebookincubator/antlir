@@ -119,14 +119,15 @@ def maybe_add_rpm_rule(
         rpm_items,
         flavors,
         include_in_target_name = None,
-        deps = []):
+        deps = [],
+        debug = False):
     key = "rpms"
 
     target_name = generate_feature_target_name(
         name = name,
         key = key,
         feature_shape = rpm_items,
-        include_in_name = include_in_target_name,
+        include_in_name = include_in_target_name if debug else None,
     )
 
     if not native.rule_exists(target_name):
