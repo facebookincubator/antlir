@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
 load(
     "//antlir/bzl/image/feature:ensure_subdirs_exist.shape.bzl",
@@ -10,44 +11,12 @@ load(
 )
 load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
-def _generate_shape(into_dir, subdirs_to_create, mode, user, group):
-    return ensure_subdirs_exist_t(
-        into_dir = into_dir,
-        subdirs_to_create = subdirs_to_create,
-        mode = stat.mode(mode),
-        user = user,
-        group = group,
-    )
-
-def _feature_ensure_subdirs_exist(
-        into_dir,
-        subdirs_to_create,
-        mode,
-        user,
-        group,
-        name):
-    return maybe_add_feature_rule(
-        name = name,
-        key = "ensure_subdirs_exist",
-        include_in_target_name = {
-            "into_dir": into_dir,
-            "subdirs_to_create": subdirs_to_create,
-        },
-        feature_shape = _generate_shape(
-            into_dir,
-            subdirs_to_create,
-            mode,
-            user,
-            group,
-        ),
-    )
-
 def feature_ensure_subdirs_exist(
         into_dir,
         subdirs_to_create,
-        mode = 0o755,
-        user = "root",
-        group = "root"):
+        mode = shape.DEFAULT_VALUE,
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE):
     """
     `feature.ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y`
     and `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already
@@ -68,22 +37,31 @@ def feature_ensure_subdirs_exist(
     symbolic strings. In the latter case, the passwd/group database from the
     host (not from the image) is used.
     """
-    return _feature_ensure_subdirs_exist(
-        into_dir = into_dir,
-        subdirs_to_create = subdirs_to_create,
-        mode = mode,
-        user = user,
-        group = group,
+    return maybe_add_feature_rule(
         name = "ensure_subdirs_exist",
+        include_in_target_name = {
+            "into_dir": into_dir,
+            "subdirs_to_create": subdirs_to_create,
+        },
+        feature_shape = ensure_subdirs_exist_t(
+            into_dir = into_dir,
+            subdirs_to_create = subdirs_to_create,
+            mode = stat.mode(mode) if mode != shape.DEFAULT_VALUE else shape.DEFAULT_VALUE,
+            user = user,
+            group = group,
+        ),
     )
 
-def feature_ensure_dirs_exist(path, mode = 0o755, user = "root", group = "root"):
+def feature_ensure_dirs_exist(
+        path,
+        mode = shape.DEFAULT_VALUE,
+        user = shape.DEFAULT_VALUE,
+        group = shape.DEFAULT_VALUE):
     """Equivalent to `feature.ensure_subdirs_exist("/", path, ...)`."""
-    return _feature_ensure_subdirs_exist(
+    return feature_ensure_subdirs_exist(
         into_dir = "/",
         subdirs_to_create = path,
         mode = mode,
         user = user,
         group = group,
-        name = "ensure_dirs_exist",
     )
