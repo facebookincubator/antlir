@@ -14,6 +14,7 @@
 
 namespace cpp2 metalos.host_configs
 namespace py3 metalos.host_configs
+// @oss-disable: namespace py metalos.host_configs.packages
 // @oss-disable: namespace go metalos.host_configs.packages
 
 union PackageId {
