@@ -16,7 +16,6 @@ from dataclasses import dataclass
 from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
 from antlir.compiler import procfs_serde
-
 from antlir.compiler.items.common import (
     assert_running_inside_ba,
     ImageItem,

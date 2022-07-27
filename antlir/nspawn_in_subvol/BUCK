@@ -148,6 +148,9 @@ python_unittest(
             TEST_IMAGE_PREFIX + "test-layer-with-mounts",
         ): "tests/test-layer-with-mounts",
         layer_resource(
+            TEST_IMAGE_PREFIX + "first-layer-for-nested-layer-mount",
+        ): "tests/first-layer-for-nested-layer-mount",
+        layer_resource(
             TEST_IMAGE_PREFIX + "hello_world_base",
         ): "tests/test-hello-world-base",
         layer_resource(

@@ -492,12 +492,24 @@ feature.new(
 )
 
 image.layer(
+    name = "first-layer-for-nested-layer-mount",
+    features = [
+        feature.layer_mount(
+            ":create_ops-from-layer",
+            "/sendstream_meownt",
+        ),
+    ],
+    parent_layer = ":test-layer",
+    visibility = ["//antlir/..."],
+)
+
+image.layer(
     name = "test-layer-with-mounts",
     features = [
         ":feature_mount",
         feature.layer_mount(
-            ":create_ops-from-layer",
-            "/sendstream_meownt",
+            ":first-layer-for-nested-layer-mount",
+            "/layer_mount",
         ),
     ],
     parent_layer = ":test-layer",

@@ -80,8 +80,6 @@ class ImagePythonUnittestTest(unittest.TestCase):
         self.assertTrue(os.path.exists("/meownt"))
         subprocess.check_output(["/usr/bin/mountpoint", "-q", "/meownt"])
 
-        # Verify that `/sendstream_meownt` exists and is a mount point
-        self.assertTrue(os.path.exists("/sendstream_meownt"))
-        subprocess.check_output(
-            ["/usr/bin/mountpoint", "-q", "/sendstream_meownt"]
-        )
+        # Verify that `/layer_mount` exists and is a mount point
+        self.assertTrue(os.path.exists("/layer_mount"))
+        subprocess.check_output(["/usr/bin/mountpoint", "-q", "/layer_mount"])
