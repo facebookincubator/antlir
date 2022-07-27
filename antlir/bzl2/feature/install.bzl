@@ -100,7 +100,8 @@ def maybe_add_install_rule(
         unwrapped_target,
         wrapped_target,
         is_executable,
-        include_in_target_name = None):
+        include_in_target_name = None,
+        debug = False):
     name = "install"
     key = "install_files"
 
@@ -108,7 +109,7 @@ def maybe_add_install_rule(
         name = name,
         key = key,
         feature_shape = unwrapped_shape,
-        include_in_name = include_in_target_name,
+        include_in_name = include_in_target_name if debug else None,
     )
 
     if not native.rule_exists(target_name):

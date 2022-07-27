@@ -38,7 +38,8 @@ def maybe_add_feature_rule(
         feature_shape,
         include_in_target_name = None,
         key = None,
-        deps = []):
+        deps = [],
+        debug = False):
     # if `key` is not provided, then it is assumed that `key` is same as `name`
     key = key or name
 
@@ -46,7 +47,7 @@ def maybe_add_feature_rule(
         name = name,
         key = key,
         feature_shape = feature_shape,
-        include_in_name = include_in_target_name,
+        include_in_name = include_in_target_name if debug else None,
     )
 
     if not native.rule_exists(target_name):
