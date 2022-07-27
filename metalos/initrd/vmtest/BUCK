@@ -62,6 +62,16 @@ host_config(
                 "override_uri": "http://vmtest-host:8000/package/metalos.gpt-root-disk:deadbeefdeadbeefdeadbeefdeadbeef",
             },
             "identity": {
+                "dns": {
+                    "search_domains": [
+                        "example.com",
+                        "subdomain.example.com",
+                    ],
+                    "servers": [
+                        "beef::cafe:1",
+                        "beef::cafe:2",
+                    ],
+                },
                 "hostname": "vm00.abc00.facebook.com",
                 "id": "1",
                 "network": {
