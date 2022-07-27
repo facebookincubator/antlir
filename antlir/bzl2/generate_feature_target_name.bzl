@@ -16,26 +16,29 @@ load(
 
 def _clean_arg_to_str(arg):
     # chars that can be included in target name.
+    valid_target_chars_str = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                              "abcdefghijklmnopqrstuvwxyz" +
+                              "0123456789" +
+                              "_,.=-\\~@!+$")
     valid_target_chars = sets.make(
-        (
-            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "abcdefghijklmnopqrstuvwxyz" +
-            "0123456789" +
-            "_,.=-\\~@!+$"
-        ).split(""),
+        [valid_target_chars_str[i] for i in range(len(valid_target_chars_str))],
     )
 
     # chars that can't be included in target name and should also be entirely
     # removed from `str(arg)` (replaced with ""). All characters not in
     # `remove_chars` and not in `valid_target_chars` are replaced with
     # underscores to improve readability.
-    remove_chars = sets.make("][}{)(\"' ".split(""))
+    remove_chars_str = "][}{)(\"' "
+    remove_chars = sets.make(
+        [remove_chars_str[i] for i in range(len(remove_chars_str))],
+    )
 
+    arg_str = str(arg)
     return "".join(
         [
-            char if sets.contains(valid_target_chars, char) else "_"
-            for char in str(arg).split("")
-            if not sets.contains(remove_chars, char)
+            arg_str[i] if sets.contains(valid_target_chars, arg_str[i]) else "_"
+            for i in range(len(arg_str))
+            if not sets.contains(remove_chars, arg_str[i])
         ],
     )
 
@@ -56,10 +59,11 @@ def generate_feature_target_name(
     if include_in_name:
         # only include collections if they are not empty in name
         include_in_name = sorted(
-            filter(
-                lambda x: x[1] or x[1] == 0,
-                include_in_name.items(),
-            ),
+            [
+                item
+                for item in include_in_name.items()
+                if item[1] or item[1] == 0
+            ],
         )
 
     include_in_name_str = (

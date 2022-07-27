@@ -3,9 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKLINT
+
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:image_source.bzl", "image_source")
+load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
 load("//antlir/bzl/image/feature:rpms.shape.bzl", "rpm_action_item_t")
@@ -83,9 +86,9 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
 
     return rpm_items, deps, flavors
 
-def _rpm_rule_impl(ctx: "context") -> ["provider"]:
+def _rpm_rule_impl(ctx):
     return [
-        DefaultInfo(),
+        native.DefaultInfo(),
         ItemInfo(items = struct(**{"rpms": ctx.attrs.rpm_items})),
         RpmInfo(
             action = ctx.attrs.action,
@@ -93,23 +96,23 @@ def _rpm_rule_impl(ctx: "context") -> ["provider"]:
         ),
     ]
 
-_rpm_rule = rule(
+_rpm_rule = native.rule(
     impl = _rpm_rule_impl,
     attrs = {
-        "action": attrs.string(),
-        "deps": attrs.list(attrs.dep(), default = []),
+        "action": native.attrs.string(),
+        "deps": native.attrs.list(native.attrs.dep(), default = []),
 
         # flavors specified in call to `feature.rpms_{install,remove_if_exists}`
-        "flavors": attrs.list(attrs.string(), default = []),
+        "flavors": native.attrs.list(native.attrs.string(), default = []),
 
         # gets serialized to json when `feature.new` is called and used as
         # kwargs in compiler `ItemFactory`
-        "rpm_items": attrs.list(attrs.dict(attrs.string(), attrs.any())),
+        "rpm_items": native.attrs.list(native.attrs.dict(native.attrs.string(), native.attrs.any())),
 
         # for query
-        "type": attrs.string(default = "image_feature"),
+        "type": native.attrs.string(default = "image_feature"),
     },
-)
+) if is_buck2() else None
 
 def maybe_add_rpm_rule(
         name,

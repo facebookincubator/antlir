@@ -3,27 +3,31 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-FeatureInfo = provider(
+# @lint-ignore-every BUCKLINT
+
+load("//antlir/bzl:oss_shim.bzl", "is_buck2")
+
+FeatureInfo = native.provider(
     fields = [
         "inline_features",
     ],
-)
+) if is_buck2() else None
 
-ItemInfo = provider(
+ItemInfo = native.provider(
     fields = [
         "items",
     ],
-)
+) if is_buck2() else None
 
-RpmInfo = provider(
+RpmInfo = native.provider(
     fields = [
         "action",
         "flavors",
     ],
-)
+) if is_buck2() else None
 
-FlavorInfo = provider(
+FlavorInfo = native.provider(
     fields = [
         "flavors",
     ],
-)
+) if is_buck2() else None
