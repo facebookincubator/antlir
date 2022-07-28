@@ -58,8 +58,9 @@ rust_binary(
     unittests = ["container"],
     deps = [
         "anyhow",
-        "structopt",
+        "clap",
         "xattr",
         "//metalos/lib/btrfs:btrfs",
+        "//metalos/lib/metalos_paths:metalos_paths",
     ],
 )

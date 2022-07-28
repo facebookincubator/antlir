@@ -11,18 +11,15 @@ use std::process::Command;
 use anyhow::Context;
 use anyhow::Result;
 use btrfs::Subvolume;
-use structopt::StructOpt;
+use clap::Parser;
 
-#[cfg(test)]
-#[macro_use]
-extern crate metalos_macros;
-
-#[derive(StructOpt)]
+/// Show what happened to a subvolume since it was snapshotted.
+#[derive(Parser)]
 struct Opts {
-    #[structopt(default_value = "/")]
+    #[clap(default_value = "/")]
     subvol: PathBuf,
-    #[structopt(long, default_value = "/run/metalos/rootimage")]
-    src_image: PathBuf,
+    #[clap(long, help = "path to pre-mounted parent subvolume")]
+    parent: Option<PathBuf>,
 }
 
 /// Find all the files that have been modified in this subvolume since it was
@@ -223,15 +220,31 @@ fn find_rpm_differences(current: &Path, image: &Path) -> Result<BTreeSet<RpmDiff
 }
 
 fn main() -> Result<()> {
-    let opts = Opts::from_args();
+    let opts = Opts::parse();
     let subvol = Subvolume::get(opts.subvol)?;
+
+    let parent = match opts.parent {
+        Some(p) => p,
+        None => {
+            let parent_uuid = subvol
+                .info()
+                .parent_uuid
+                .context("subvol has no parent id")?;
+            let source = Subvolume::get(metalos_paths::control())?
+                .children()?
+                .filter_map(Result::ok)
+                .find(|subvol| subvol.info().uuid == parent_uuid)
+                .context("could not find source subvol")?;
+            source.path().to_path_buf()
+        }
+    };
 
     println!("files changed:");
     get_changed_files(&subvol)?
         .iter()
         .for_each(|path| println!("  {}", path.display()));
     println!("rpms changed:");
-    find_rpm_differences(subvol.path(), &opts.src_image)
+    find_rpm_differences(subvol.path(), &parent)
         .context("failed to get rpm version differences")?
         .iter()
         .for_each(|diff| println!("  {}", diff));
@@ -248,6 +261,7 @@ mod tests {
     use anyhow::Result;
     use btrfs::Subvolume;
     use maplit::btreeset;
+    use metalos_macros::containertest;
     use std::path::Path;
 
     #[containertest]
