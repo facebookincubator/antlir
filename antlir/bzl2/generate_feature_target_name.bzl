@@ -5,42 +5,14 @@
 
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "clean_target_name")
 load(
     "//antlir/bzl/image/feature:new.bzl",
     "PRIVATE_DO_NOT_USE_feature_target_name",
 )
-
-def _clean_arg_to_str(arg):
-    # chars that can be included in target name.
-    valid_target_chars_str = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-                              "abcdefghijklmnopqrstuvwxyz" +
-                              "0123456789" +
-                              "_,.=-\\~@!+$")
-    valid_target_chars = sets.make(
-        [valid_target_chars_str[i] for i in range(len(valid_target_chars_str))],
-    )
-
-    # chars that can't be included in target name and should also be entirely
-    # removed from `str(arg)` (replaced with ""). All characters not in
-    # `remove_chars` and not in `valid_target_chars` are replaced with
-    # underscores to improve readability.
-    remove_chars_str = "][}{)(\"' "
-    remove_chars = sets.make(
-        [remove_chars_str[i] for i in range(len(remove_chars_str))],
-    )
-
-    arg_str = str(arg)
-    return "".join(
-        [
-            arg_str[i] if sets.contains(valid_target_chars, arg_str[i]) else "_"
-            for i in range(len(arg_str))
-            if not sets.contains(remove_chars, arg_str[i])
-        ],
-    )
 
 def generate_feature_target_name(
         name,
@@ -71,7 +43,7 @@ def generate_feature_target_name(
             [
                 "{arg_name}_{arg}_".format(
                     arg_name = arg_name.upper(),
-                    arg = _clean_arg_to_str(arg),
+                    arg = arg,
                 )
                 for arg_name, arg in include_in_name
             ],
@@ -89,11 +61,13 @@ def generate_feature_target_name(
         shape_hash = shape.hash(feature_shape)
 
     return PRIVATE_DO_NOT_USE_feature_target_name(
-        "antlir_feature__{name}__KEY_{key}__{include_in_name}__{shape_hash}".format(
-            name = name,
-            key = key,
-            include_in_name = include_in_name_str,
-            shape_hash = shape_hash,
+        clean_target_name(
+            "antlir_feature__{name}__KEY_{key}__{include_in_name}__{shape_hash}".format(
+                name = name,
+                key = key,
+                include_in_name = include_in_name_str,
+                shape_hash = shape_hash,
+            ),
         ),
     )
 

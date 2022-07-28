@@ -3,8 +3,38 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(":oss_shim.bzl", "buck_genrule", "config", "repository_name", "target_utils")
 load(":sha256.bzl", "sha256_b64")
+
+def clean_target_name(name):
+    # Used to remove invalid characters from target names.
+
+    # chars that can be included in target name.
+    valid_target_chars_str = ("ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                              "abcdefghijklmnopqrstuvwxyz" +
+                              "0123456789" +
+                              "_,.=-\\~@!+$")
+    valid_target_chars = sets.make(
+        [valid_target_chars_str[i] for i in range(len(valid_target_chars_str))],
+    )
+
+    # chars that can't be included in target name and should also be entirely
+    # removed from name (replaced with ""). All characters not in `remove_chars`
+    # and not in `valid_target_chars` are replaced with underscores to improve
+    # readability.
+    remove_chars_str = "][}{)(\"' "
+    remove_chars = sets.make(
+        [remove_chars_str[i] for i in range(len(remove_chars_str))],
+    )
+
+    return "".join(
+        [
+            name[i] if sets.contains(valid_target_chars, name[i]) else "_"
+            for i in range(len(name))
+            if not sets.contains(remove_chars, name[i])
+        ],
+    )
 
 def normalize_target(target):
     if target.startswith("//"):
@@ -68,6 +98,7 @@ def wrap_target(target, wrap_suffix):
     target = normalize_target(target)
     _, name = target.split(":")
     wrapped_target = name + "__" + wrap_suffix + "-" + mangle_target(target)
+    wrapped_target = clean_target_name(wrapped_target)
     return native.rule_exists(wrapped_target), wrapped_target
 
 def targets_and_outputs_arg_list(name, query):
