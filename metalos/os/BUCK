@@ -150,6 +150,7 @@ feature.new(
         systemd_target_graph,
         "//metalos/host_configs/generators:host_config_generators",
         metalctl,
+        feature.install_buck_runnable("//metalos/os/whatchanged:whatchanged", "/usr/bin/whatchanged"),
     ],
     visibility = [
         "//metalos/os/...",
