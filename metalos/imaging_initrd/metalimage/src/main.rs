@@ -173,16 +173,6 @@ impl Bootloader {
             RootDiskConfiguration::SingleSerial(cfg) => {
                 SerialDiskFinder::new(cfg.serial.clone()).get_root_device()
             }
-            RootDiskConfiguration::Raid0Serials(cfg) => {
-                // TODO(T123510461): implement software RAIDs.
-                SerialDiskFinder::new(
-                    cfg.serials
-                        .get(0)
-                        .context("Got Raid0Serials with 0 serial numbers")?
-                        .clone(),
-                )
-                .get_root_device()
-            }
             RootDiskConfiguration::InvalidMultiDisk(serials) => {
                 return Err(anyhow!("Got invalid multi disk config: {:?}", serials));
             }

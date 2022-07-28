@@ -22,14 +22,9 @@ struct SingleDiskSerial {
   2: DiskConfiguration config;
 } (rust.exhaustive)
 
-struct Raid0DisksSerials {
-  1: list<string> serials;
-} (rust.exhaustive)
-
 union RootDiskConfiguration {
   1: DiskConfiguration single_disk;
   2: SingleDiskSerial single_serial;
-  3: Raid0DisksSerials raid0_serials;
   99: list<string> invalid_multi_disk;
 } (rust.exhaustive)
 
