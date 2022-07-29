@@ -36,6 +36,10 @@ from antlir.nspawn_in_subvol.plugin_hooks import (
 )
 
 from antlir.nspawn_in_subvol.plugins import NspawnPlugin
+from antlir.nspawn_in_subvol.plugins.launch_apt_proxy_server import (
+    DEB_PROXY_SERVER_PORT,
+    launch_apt_proxy_server_for_netns,
+)
 from antlir.nspawn_in_subvol.plugins.launch_proxy_server import (
     launch_proxy_server_for_netns,
     PROXY_SERVER_PORT,
@@ -166,10 +170,12 @@ class RepoServers(NspawnPlugin):
         self,
         serve_rpm_snapshots: Iterable[Path],
         proxy_server_config: Optional[proxy_server_config_t] = None,
+        run_apt_proxy: bool = False,
     ) -> None:
         self._serve_rpm_snapshots = serve_rpm_snapshots
         self._run_proxy_server: bool = False
         self._fbpkg_db_path: Optional[Path] = None
+        self._run_apt_proxy: bool = run_apt_proxy
         if proxy_server_config:
             self._run_proxy_server = True
             if not proxy_server_config.fbpkg_db_path.path:  # pragma: no cover
@@ -266,6 +272,9 @@ class RepoServers(NspawnPlugin):
             if self._run_proxy_server:
                 ns_count += 1
 
+            if self._run_apt_proxy:
+                ns_count += 1  # pragma: no cover
+
             ns_sockets_pool = create_sockets_inside_netns(
                 container_pid, ns_count
             )
@@ -310,6 +319,15 @@ class RepoServers(NspawnPlugin):
                 )
 
                 log.info(f"Started `proxy-server` on port {PROXY_SERVER_PORT}")
+            if self._run_apt_proxy:  # pragma: no cover
+                stack.enter_context(
+                    launch_apt_proxy_server_for_netns(
+                        ns_socket=ns_sockets_pool.pop(),
+                    )
+                )
+                log.info(
+                    f"Started `deb-proxy-server` on port {DEB_PROXY_SERVER_PORT}"
+                )
 
             self._container_pid_exfiltrator.send_ready()
             yield popen_res

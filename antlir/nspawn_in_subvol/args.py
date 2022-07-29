@@ -486,6 +486,7 @@ class NspawnPluginArgs(NamedTuple):
     # Mandatory because it incurs a startup cost, so we should be explicit
     # about where we need this.
     shadow_proxied_binaries: bool
+    run_apt_proxy: bool = False
     serve_rpm_snapshots: Iterable[Path] = ()
     shadow_paths: Iterable[shadow_path_t] = ()
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
@@ -509,6 +510,13 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
         "want to manually pass `--serve-rpm-snapshot`, and either use the "
         "wrapper directly our of the snapshot, or use `--shadow-path` to "
         "shadow the container binary with the snapshot's proxy.",
+    )
+    parser.add_argument(
+        "--run-apt-proxy",
+        action="store_false",
+        dest="run_apt_proxy",
+        default=False,
+        help="Enabling this flag will start apt proxy server in the container.",
     )
     parser.add_argument(
         "--serve-rpm-snapshot",
@@ -590,6 +598,7 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
         dest="run_proxy_server",
         help="Enabling this flag will start proxy server in the container.",
     )
+
     parser.add_argument(
         "--fbpkg-db-path",
         dest="fbpkg_db_path",

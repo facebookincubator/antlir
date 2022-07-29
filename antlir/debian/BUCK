@@ -1,0 +1,111 @@
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "rust_binary", "rust_library", "third_party")
+
+rust_binary(
+    name = "deb-snapshotter",
+    srcs = [
+        "snapshotter.rs",
+    ],
+    crate_root = "snapshotter.rs",
+    test_srcs = [
+        "test_data/sample_Package",
+        "test_data/sample_Release",
+    ],
+    deps = [
+        ":blob-store",
+        "//common/rust/shed/fbinit:fbinit",
+        "//common/rust/shed/fbinit:fbinit-tokio",
+        "//manifold/clients/rust:manifold_client",
+    ] + third_party.libraries(
+        [
+            "anyhow",
+            "byte-unit",
+            "bytes",
+            "clap",
+            "futures",
+            "governor",
+            "hex",
+            "pest",
+            "pest_derive",
+            "reqwest",
+            "slog",
+            "slog-async",
+            "slog-term",
+            "strum",
+            "strum_macros",
+            "xz2",
+        ],
+        platform = "rust",
+    ),
+)
+
+rust_library(
+    name = "blob-store",
+    srcs = [
+        "storage.rs",
+    ],
+    crate_root = "storage.rs",
+    visibility = [
+        "PUBLIC",
+    ],
+    deps = [
+        "//manifold/clients/rust:manifold_client",
+    ] + third_party.libraries(
+        [
+            "anyhow",
+            "async-trait",
+            "bytes",
+            "governor",
+            "hex",
+            "http",
+            "reqwest",
+            "sha2",
+            "slog",
+            "tokio-retry",
+        ],
+        platform = "rust",
+    ),
+)
+
+rust_binary(
+    name = "apt-proxy",
+    srcs = [
+        "proxy.rs",
+    ],
+    crate_root = "proxy.rs",
+    deps = [
+        ":blob-store",
+        "//common/rust/shed/fbinit:fbinit",
+        "//common/rust/shed/fbinit:fbinit-tokio",
+        "//manifold/clients/rust:manifold_client",
+    ] + third_party.libraries(
+        [
+            "anyhow",
+            "clap",
+            "log",
+            "pretty_env_logger",
+            "tokio",
+            "tokio-stream",
+            "warp",
+        ],
+        platform = "rust",
+    ),
+)
+
+buck_command_alias(
+    name = "run-snapshotter",
+    args = [
+        "--repourl",
+        "https://mirror.facebook.net/ubuntu/",
+        "--distro",
+        "jammy",
+        "--arch",
+        "amd64",
+        "--readqps",
+        "300",
+        "--writeqps",
+        "300",
+        "--writethroughput",
+        "400MB",
+    ],
+    exe = ":deb-snapshotter",
+)
