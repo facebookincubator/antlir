@@ -21,6 +21,9 @@ native_service(
         name = "metalos.service.demo",
         config_generator = "//metalos/lib/service/tests/demo_service/generator:generator",
         exec_info = exec_t(
+            environment = {
+                "FB_SERVICE_ID": "wdb/demo-service",
+            },
             pre = [cmd_t(
                 args = [
                     "--run=${RUNTIME_DIRECTORY}",

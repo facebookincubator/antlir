@@ -46,8 +46,6 @@ struct UnitSection {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]
 pub(crate) struct ServiceSection {
-    #[serde(skip)]
-    pub(crate) environment: Environment,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub(crate) exec_start: Vec<String>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
@@ -78,6 +76,8 @@ pub(crate) struct ServiceSection {
     pub(crate) timeout_start_sec: Option<usize>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) timeout_stop_sec: Option<usize>,
+    #[serde(skip_serializing_if = "Environment::is_empty")]
+    pub(crate) environment: Environment,
 }
 
 #[derive(Debug, Default)]
@@ -208,7 +208,6 @@ impl TryFrom<exec_t> for ServiceSection {
             .transpose()?
             .unwrap_or_default();
         Ok(Self {
-            environment: Environment(environment),
             exec_start: run.into_iter().map(cmd_to_setting).collect(),
             exec_start_pre: pre.into_iter().map(cmd_to_setting).collect(),
             group: runas.group,
@@ -224,6 +223,7 @@ impl TryFrom<exec_t> for ServiceSection {
             timeout_sec: timeout.timeout_sec,
             timeout_start_sec: timeout.timeout_start_sec,
             timeout_stop_sec: timeout.timeout_stop_sec,
+            environment: Environment(environment),
         })
     }
 }
@@ -272,6 +272,12 @@ impl TryFrom<service_t> for UnitFile {
 // primarily on usage that will spring up in this crate)
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct Environment(pub(crate) BTreeMap<String, String>);
+
+impl Environment {
+    fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+}
 
 impl Serialize for Environment {
     fn serialize<S>(&self, ser: S) -> std::result::Result<S::Ok, S::Error>
