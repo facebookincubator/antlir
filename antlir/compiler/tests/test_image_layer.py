@@ -400,6 +400,8 @@ class ImageLayerTestCase(unittest.TestCase):
         self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
         (ino,) = pop_path(r, "installed/print-ok-too")
         self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
+        (ino,) = pop_path(r, "installed/print-ok-again")
+        self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
         (hello_ino,) = pop_path(r, "hello_world.tar")
         # Depending on the build host OS, our tarball may or may not get
         # automatically sparsified.

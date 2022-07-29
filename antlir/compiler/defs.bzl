@@ -36,10 +36,10 @@ def image_feature_python_unittest(
     })
 
     env.update({
-        "test_image_feature_path_to_" + TEST_ONLY_wrap_buck_runnable(TEST_IMAGE_PREFIX + t): "$(location {})".format(
-            TEST_IMAGE_PREFIX + TEST_ONLY_wrap_buck_runnable(TEST_IMAGE_PREFIX + t),
+        "test_image_feature_path_to_" + TEST_ONLY_wrap_buck_runnable(TEST_IMAGE_PREFIX + t, path): "$(location {})".format(
+            TEST_IMAGE_PREFIX + TEST_ONLY_wrap_buck_runnable(TEST_IMAGE_PREFIX + t, path),
         )
-        for t in test_image_feature_wrapped_transitive_deps
+        for t, path in test_image_feature_wrapped_transitive_deps
     })
 
     env["test_image_feature_built_artifacts_require_repo"] = \

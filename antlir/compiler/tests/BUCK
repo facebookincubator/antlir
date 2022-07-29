@@ -94,8 +94,9 @@ TEST_IMAGE_FEATURE_TRANSITIVE_DEPS = [
 ]
 
 TEST_IMAGE_WRAPPED_TRANSITIVE_DEPS = ([
-    "dir-print-ok",
-    "print-ok",
+    ("print-ok", ""),
+    ("dir-print-ok", "subdir/print-ok"),
+    ("dir-print-ok", "subdir/print-ok-again"),
 ] if REPO_CFG.artifacts_require_repo else [])
 
 image_feature_python_unittest(

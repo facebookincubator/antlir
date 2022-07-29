@@ -141,7 +141,8 @@ def feature_install_buck_runnable(
         mode,
         user,
         group,
-        runs_in_build_steps_causes_slow_rebuilds,
+        is_executable = True,
+        runs_in_build_steps_causes_slow_rebuilds = runs_in_build_steps_causes_slow_rebuilds,
     )
 
 def feature_install(

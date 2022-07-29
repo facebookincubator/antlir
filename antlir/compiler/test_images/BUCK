@@ -531,6 +531,12 @@ defs.python_binary(
     main_module = "antlir.compiler.test_images.print_ok",
 )
 
+defs.python_binary(
+    name = "print-ok-again",
+    srcs = ["print_ok_again.py"],
+    main_module = "antlir.compiler.test_images.print_ok_again",
+)
+
 defs.buck_genrule(
     name = "dir-print-ok",
     out = "dir",
@@ -538,6 +544,7 @@ defs.buck_genrule(
     set -ue -o pipefail -o noclobber
     mkdir -p "$OUT/subdir"
     cp $(location {maybe_wrapped_ok}) "$OUT"/subdir/print-ok
+    cp $(location {maybe_wrapped_ok_again}) "$OUT"/subdir/print-ok-again
     echo meow > "$OUT"/kitteh
     '''.format(
         # A @mode/dev PAR will break if we copy it into another directory,
@@ -546,6 +553,12 @@ defs.buck_genrule(
         maybe_wrapped_ok = maybe_wrap_executable_target(
             runs_in_build_steps_causes_slow_rebuilds = False,
             target = ":print-ok",
+            visibility = [],
+            wrap_suffix = "test-wrap",
+        )[1],
+        maybe_wrapped_ok_again = maybe_wrap_executable_target(
+            runs_in_build_steps_causes_slow_rebuilds = False,
+            target = ":print-ok-again",
             visibility = [],
             wrap_suffix = "test-wrap",
         )[1],
@@ -606,6 +619,13 @@ feature.new(
                 path = "subdir/print-ok",
             ),
             "/foo/bar/installed/print-ok-too",
+        ),
+        feature.install_buck_runnable(
+            image.source(
+                ":dir-print-ok",
+                path = "subdir/print-ok-again",
+            ),
+            "/foo/bar/installed/print-ok-again",
         ),
         # Test installing a directory.  Also test a non-`buck run`nable
         # executable both as part of a directory, and solo (these are

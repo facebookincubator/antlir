@@ -718,6 +718,7 @@ class NspawnTestCase(NspawnTestBase):
         for print_ok in [
             "/foo/bar/installed/print-ok",
             "/foo/bar/installed/print-ok-too",
+            "/foo/bar/installed/print-ok-again",
         ]:
             # Workaround: When the test is compiled with LLVM profiling
             # (@mode/dbgo-cov), then `print-ok` will try to write to
@@ -735,7 +736,13 @@ class NspawnTestCase(NspawnTestBase):
                     check=False,  # the next assertion shows the stderr/stdout
                 )
             self.assertEqual(0, ret.returncode, (ret.stdout, ret.stderr))
-            self.assertEqual((b"ok\n", b""), (ret.stdout, ret.stderr))
+            if print_ok in [
+                "/foo/bar/installed/print-ok",
+                "/foo/bar/installed/print-ok-too",
+            ]:
+                self.assertEqual((b"ok\n", b""), (ret.stdout, ret.stderr))
+            else:
+                self.assertEqual((b"ok again\n", b""), (ret.stdout, ret.stderr))
 
     # Ensures that the special "non-build step" marking used by
     # `wrap_runtime_deps.bzl` is correctly propagated to `systemd`,

@@ -7,6 +7,7 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(":oss_shim.bzl", "buck_genrule", "config", "repository_name", "target_utils")
 load(":sha256.bzl", "sha256_b64")
 
+# KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
 def clean_target_name(name):
     # Used to remove invalid characters from target names.
 

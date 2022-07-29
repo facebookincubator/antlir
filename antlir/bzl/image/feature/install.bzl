@@ -80,8 +80,8 @@ def _forbid_layer_source(source_dict):
         )
 
 # KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
-def TEST_ONLY_wrap_buck_runnable(target):
-    return wrap_target(target, _BUCK_RUNNABLE_WRAP_SUFFIX)[1]
+def TEST_ONLY_wrap_buck_runnable(target, path_in_output):
+    return wrap_target(target, _BUCK_RUNNABLE_WRAP_SUFFIX + path_in_output)[1]
 
 def feature_install_buck_runnable(
         source,
@@ -127,7 +127,7 @@ defaults to `False` to speed up incremental rebuilds.
             target_tagger = target_tagger,
             # Peel back target tagging since this helper expects untagged.
             target = extract_tagged_target(tagged_source.pop("source")),
-            wrap_suffix = _BUCK_RUNNABLE_WRAP_SUFFIX,
+            wrap_suffix = _BUCK_RUNNABLE_WRAP_SUFFIX + (tagged_source.get("path") or ""),
             visibility = None,
             # NB: Buck makes it hard to execute something out of an
             # output that is a directory, but it is possible so long as

@@ -24,13 +24,46 @@ from antlir.rpm.find_snapshot import mangle_target
 
 
 # KEEP IN SYNC with its partial copy `wrap_target` in `bzl/target_helpers.bzl`
+def clean_target_name(name: str) -> str:
+    # Used to remove invalid characters from target names.
+
+    # chars that can be included in target name.
+    valid_target_chars = set(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        + "abcdefghijklmnopqrstuvwxyz"
+        + "0123456789"
+        + "_,.=-\\~@!+$"
+    )
+
+    # chars that can't be included in target name and should also be entirely
+    # removed from name (replaced with ""). All characters not in `remove_chars`
+    # and not in `valid_target_chars` are replaced with underscores to improve
+    # readability.
+    remove_chars = set("][}{)(\"' ")
+
+    return "".join(
+        [
+            name[i] if name[i] in valid_target_chars else "_"
+            for i in range(len(name))
+            if not name[i] in remove_chars
+        ],
+    )
+
+
+# KEEP IN SYNC with its partial copy `wrap_target` in `bzl/target_helpers.bzl`
 # This hard codes the wrap_suffix used since we only need this for the
 # buck runnable case.
 ###
-def wrap_buck_runnable_target(normalized_target: str) -> str:
-    wrap_suffix = "install_buck_runnable_wrap_source"
+def wrap_buck_runnable_target(
+    normalized_target: str, path_in_output: str
+) -> str:
+    wrap_suffix = "install_buck_runnable_wrap_source" + path_in_output
     _, name = normalized_target.split(":")
-    return name + "__" + wrap_suffix + "-" + mangle_target(normalized_target)
+    wrapped_target = (
+        name + "__" + wrap_suffix + "-" + mangle_target(normalized_target)
+    )
+    wrapped_target = clean_target_name(wrapped_target)
+    return wrapped_target
 
 
 _NONPORTABLE_ARTIFACTS = int(
@@ -51,12 +84,16 @@ T_SYMLINKS = f"{T_BASE}:feature_symlinks"
 T_TAR = f"{T_BASE}:feature_tar_and_rpms"
 T_PRINT_OK = f"{T_BASE}:print-ok"
 T_EXE_WRAP_PRINT_OK = f"{T_BASE}:" + wrap_buck_runnable_target(
-    f"{T_BASE}:print-ok"
+    f"{T_BASE}:print-ok",
+    "",
 )
 T_DIR_PRINT_OK = f"{T_BASE}:dir-print-ok"
 T_DIR_WITH_SCRIPT = f"{T_BASE}:dir-with-script"
 T_EXE_WRAP_DIR_PRINT_OK = f"{T_BASE}:" + wrap_buck_runnable_target(
-    f"{T_BASE}:dir-print-ok"
+    f"{T_BASE}:dir-print-ok", "subdir/print-ok"
+)
+T_EXE_WRAP_DIR_PRINT_OK_AGAIN = f"{T_BASE}:" + wrap_buck_runnable_target(
+    f"{T_BASE}:dir-print-ok", "subdir/print-ok-again"
 )
 T_INSTALL_FILES = f"{T_BASE}:feature_install_files"
 T_KITCHEN_SINK = f"{T_BASE}:feature_kitchen_sink"
@@ -291,6 +328,13 @@ ID_TO_ITEM = {
         if _NONPORTABLE_ARTIFACTS
         else (Path(TARGET_TO_PATH[T_DIR_PRINT_OK]) / "subdir/print-ok"),
         dest="/foo/bar/installed/print-ok-too",
+    ),
+    "foo/bar/installed/print-ok-again": InstallFileItem(
+        from_target=T_INSTALL_FILES,
+        source=Path(TARGET_TO_PATH[T_EXE_WRAP_DIR_PRINT_OK_AGAIN])
+        if _NONPORTABLE_ARTIFACTS
+        else (Path(TARGET_TO_PATH[T_DIR_PRINT_OK]) / "subdir/print-ok-again"),
+        dest="/foo/bar/installed/print-ok-again",
     ),
     "foo/bar/installed/script-dir": InstallFileItem(
         from_target=T_INSTALL_FILES,
