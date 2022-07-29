@@ -9,12 +9,14 @@ given image layer, and outputs a new layer with the resulting RPM(s)
 available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
+load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 RPMBUILD_LAYER_SUFFIX = "rpmbuild-build"
@@ -248,7 +250,9 @@ def image_import_rpm_public_key_layer(
     gpg_key_dir = "/antlir-rpm-gpg-keys"
     install_keys = []
     for src in pubkeys:
-        dest = gpg_key_dir + "/RPM-GPG-KEY-" + sha256_b64(str(src))
+        dest = gpg_key_dir + "/RPM-GPG-KEY-" + (sha256_b64(
+            src,
+        ) if types.is_string(src) else shape.hash(src))
         install_keys.append(feature.install(src, dest))
 
     if not install_keys:
