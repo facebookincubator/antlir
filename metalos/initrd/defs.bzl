@@ -6,29 +6,32 @@ load("//antlir/bzl/image/feature:usergroup.bzl", "SHELL_NOLOGIN")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 load(":systemd.bzl", "clone_systemd_configs", SYSTEMD_BINARIES = "BINARIES")
 
-dbus = [
-    feature.group_add("dbus"),
-    feature.user_add("dbus", "dbus", "/", SHELL_NOLOGIN),
-]
+def dbus():
+    return [
+        feature.group_add("dbus"),
+        feature.user_add("dbus", "dbus", "/", SHELL_NOLOGIN),
+    ]
 
-debug = [
-    systemd.install_dropin("//metalos/initrd:debug-shell.conf", "debug-shell.service"),
-    systemd.install_dropin("//metalos/initrd:emergency.conf", "emergency.service"),
-]
+def debug():
+    return [
+        systemd.install_dropin("//metalos/initrd:debug-shell.conf", "debug-shell.service"),
+        systemd.install_dropin("//metalos/initrd:emergency.conf", "emergency.service"),
+    ]
 
-users = [
-    feature.install("//metalos/initrd:group", "/etc/group"),
-    feature.install("//metalos/initrd:passwd", "/etc/passwd"),
-    feature.install("//antlir:empty", "/etc/shadow"),
-    feature.install("//antlir:empty", "/usr/sbin/nologin"),
-    feature.group_add("systemd-network"),
-    feature.user_add(
-        "systemd-network",
-        "systemd-network",
-        "/",
-        SHELL_NOLOGIN,
-    ),
-]
+def users():
+    return [
+        feature.install("//metalos/initrd:group", "/etc/group"),
+        feature.install("//metalos/initrd:passwd", "/etc/passwd"),
+        feature.install("//antlir:empty", "/etc/shadow"),
+        feature.install("//antlir:empty", "/usr/sbin/nologin"),
+        feature.group_add("systemd-network"),
+        feature.user_add(
+            "systemd-network",
+            "systemd-network",
+            "/",
+            SHELL_NOLOGIN,
+        ),
+    ]
 
 def udev(source):
     return [
@@ -97,10 +100,10 @@ def build_initrd_base(
                 "dropins/reload-before-cleanup.conf",
                 unit = "initrd-cleanup.service",
             ),
-            debug,
-            dbus,
+            debug(),
+            dbus(),
             linux.config.glibc.nsswitch.install(linux.config.glibc.nsswitch.default),
-            users,
+            users(),
             udev(source),
             extract.extract(
                 binaries = SYSTEMD_BINARIES + [
