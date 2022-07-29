@@ -657,4 +657,42 @@ mod tests {
 
         Ok(())
     }
+
+    #[containertest]
+    async fn unit_file() -> Result<()> {
+        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
+        let sd = Systemd::connect(log.clone()).await?;
+
+        Transaction {
+            current: set::tests::service_set! {},
+            next: set::tests::service_set! {
+                "metalos.service.demo" => 1,
+            },
+        }
+        .commit(log.clone(), &sd)
+        .await?;
+
+        let path = "/run/systemd/system/metalos.service.demo.service";
+        let service_content = std::fs::read_to_string(&path)
+            .with_context(|| format!("while reading service file in {}", path))?;
+
+        // NOTE: the extra blank lines found here are not important but is an
+        // artifact of serde_systemd's output. If extra linebreaks are removed
+        // from serde_systemd they should also be removed from here
+        pretty_assertions::assert_eq!(
+            "[Unit]\n\
+             [Service]\n\
+             ExecStart=/bin/bash -c 'sleep 12h'\n\
+             \n\
+             ExecStartPre=/metalos/bin/metalos.lib.service.tests.demo_service:demo-service '--run=${RUNTIME_DIRECTORY}' '--state=${STATE_DIRECTORY}' '--cache=${CACHE_DIRECTORY}' '--logs=${LOGS_DIRECTORY}'\n\
+             \n\
+             Group=demoservice\n\
+             Type=simple\n\
+             User=demoservice\n\
+             Environment=FB_SERVICE_ID=wdb/demo-service\n\
+             \n",
+            service_content
+        );
+        Ok(())
+    }
 }
