@@ -39,7 +39,7 @@ def normalize_target_and_mark_path_in_source_dict(source_dict, **kwargs):
         if kwargs.get("is_buck_runnable"):
             was_wrapped, source_dict["source"] = maybe_wrap_executable_target(
                 target = unwrap_path(source_dict["source"]),
-                wrap_suffix = "install_buck_runnable_wrap_source",
+                wrap_suffix = "install_buck_runnable_wrap_source" + (source_dict.get("path") or ""),
                 visibility = None,
                 # NB: Buck makes it hard to execute something out of an
                 # output that is a directory, but it is possible so long as
