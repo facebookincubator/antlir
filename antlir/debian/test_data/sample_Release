@@ -1,0 +1,80 @@
+Origin: Ubuntu
+Label: Ubuntu
+Suite: xenial
+Version: 16.04
+Codename: xenial
+Date: Thu, 21 Apr 2016 23:23:46 UTC
+Architectures: amd64 arm64 armhf i386 powerpc ppc64el s390x
+Components: main restricted universe multiverse
+Description: Ubuntu Xenial 16.04
+MD5Sum:
+ 7ffd59203928ebd7247df31fded226e2          7228243 main/binary-amd64/Packages
+ 7b7877be9dd6ac0e6b8baffbc36ce09c          1557985 main/binary-amd64/Packages.gz
+ 3da37ac4e874215ba57d3024828e50b4               96 main/binary-amd64/Release
+ 197e479f6c60f53064648d08aed09cc1          1200680 main/binary-amd64/Packages.xz
+ 792f5db4c9281e4cb3bfa38b923fc37c               96 main/binary-arm64/Release
+ 65e63202253844e98bba2ccdb76af7d9          6786427 main/binary-arm64/Packages
+ 064cfbea2e33bf43c68064bb58c9e5ff          1130364 main/binary-arm64/Packages.xz
+ acc25a2f5872aa87ce16495ca18dcea0          1466211 main/binary-arm64/Packages.gz
+ 334bb60297de83ac453b06f313784280          6878105 main/binary-armhf/Packages
+ fa231587573b8e12d6c374434b5b0859               96 main/binary-armhf/Release
+ 1a73ec25ac8eaabcd9b9d7c77e7c7e2f          1144536 main/binary-armhf/Packages.xz
+ cb51bd508ea463f205af3666fe3fd4a0          1486250 main/binary-armhf/Packages.gz
+ 749a8a45aebe7d4bd2731ebb0bbde1d2          1552160 main/binary-i386/Packages.gz
+ 4b055b3443971f13d049b8f474ad3af2               95 main/binary-i386/Release
+ 6ee30a76a53b6364cd86707022510e62          7187961 main/binary-i386/Packages
+ b7a1fc62b1d7cc8a95e57b9a3b9c7f8e          1196004 main/binary-i386/Packages.xz
+ 72ae7b37bb1c60f82651fd28b9ba422f          1141972 main/binary-powerpc/Packages.xz
+ f126fe5a6a63d3a3bc02a04dfb3d54b5          6779873 main/binary-powerpc/Packages
+ e6f8fe8289157c8ede366530376c29a0          1481292 main/binary-powerpc/Packages.gz
+SHA1:
+ 0d0dabe28cd93faed47175fadba6b0a1ad160b91          7228243 main/binary-amd64/Packages
+ 144ef62311b4f9cae4ca766d7876c68668f0cedb          1557985 main/binary-amd64/Packages.gz
+ 87b7958096f8e5ef3f228f04c607fe3ffe085d31               96 main/binary-amd64/Release
+ 5d685b68b46c31c8f257734e199aa2df9870143d          1200680 main/binary-amd64/Packages.xz
+ 632f1d21e0c1631efaf938b5e916b7e508d48a3d               96 main/binary-arm64/Release
+ 7d2cde4df26e086d0542e665902533e8dad30f05          6786427 main/binary-arm64/Packages
+ 054928d50f70fe1c116c4f6686bc8ab7d6962859          1130364 main/binary-arm64/Packages.xz
+ 753f7fb4da84b2220e88956f79c66fb6dddefaa5          1466211 main/binary-arm64/Packages.gz
+ 0e3fb70e91350cb5ad763b18ab471dc0030dc445          6878105 main/binary-armhf/Packages
+ 14a1e951bf8788d02fd3df9bd859349d1a5247d1               96 main/binary-armhf/Release
+ 1bd2a34384b6fb7557cc2a00090405229cfa9cfc          1144536 main/binary-armhf/Packages.xz
+ f7af246f0af5a0fcd771a02cd0931a8ae5ed4884          1486250 main/binary-armhf/Packages.gz
+ 83b479d573ce353f96238cb1bc49c2c3c1f4bb00          1552160 main/binary-i386/Packages.gz
+ 72839fbb199ce544157450b5bb05d49f8e54843a               95 main/binary-i386/Release
+ 7d93225b023fcf1e02e41c7b0dabd9a08ad13f98          7187961 main/binary-i386/Packages
+ 6dc7171e2622796426ca3410d9808131a0462e61          1196004 main/binary-i386/Packages.xz
+ 690b0eaa6cac6338393512a855f6b5dad9004bd2          1141972 main/binary-powerpc/Packages.xz
+ 38ae80a3bd01daefa912d530fd836bc7ec15cb54          6779873 main/binary-powerpc/Packages
+ 1501d64a51037ff35e370ba92c9228e8ce5f48f8          1481292 main/binary-powerpc/Packages.gz
+ 6c8a998ce8fb818afd4a3e4b76658c690d0b4303               98 main/binary-powerpc/Release
+ b25ad20ae06fecc68a0bc97aba8a247b3bbc8113          6812104 main/binary-ppc64el/Packages
+ 89c648bc9e71892c89a6568bce856d8374168509          1133624 main/binary-ppc64el/Packages.xz
+ 5a673d7a8bc12dda1a7e3d342c4816ca34fa7ac4          1470107 main/binary-ppc64el/Packages.gz
+ ffc8e4a63757e30333106e03ce8f40c6a88d59e2               98 main/binary-ppc64el/Release
+ df7da1928c1640049853b039a29323876010f5ac          6757280 main/binary-s390x/Packages
+ c9909cbb7e8c8426f383496c51532535d21d8032          1466663 main/binary-s390x/Packages.gz
+ e4ba5954042d74b2d794c66c28a25bcc753ae0e7          1131768 main/binary-s390x/Packages.xz
+ 74f03fb5741892c2247e8fd483d7a6c1d5ea9a71               96 main/binary-s390x/Release
+SHA256:
+ f6bd998e33ce5cc6fa43df47f191a78587e658b1b7fd29c7d065742acd4e5dd9          7228243 main/binary-amd64/Packages
+ 8d6ab57abf517d7712e4e4d23d762485af49f8140a83b221ea7282f82a51c795          1557985 main/binary-amd64/Packages.gz
+ e3059e32929c5d7ebe7bae3f8027d4eb459e5bd69a58c723198b1d461de5c313               96 main/binary-amd64/Release
+ 76858a337b1665561a256cea6f7ef32515517754e3c5e54c1895cf29e1b41884          1200680 main/binary-amd64/Packages.xz
+ 22d88a60a3329c8d6a06721f7d294af2f8c3e1e742c90b19e15f0dec330707d3               96 main/binary-arm64/Release
+ 3148af0f0133dbef92669209f1d85fdd47498ba5005080571bc515027f1a335c          6786427 main/binary-arm64/Packages
+ 400a7084ebab29422e1bc9e5ee06b4558a8ccc42d59cc93e278358e00cee5ef8          1130364 main/binary-arm64/Packages.xz
+ 077d6e9da0eecdd83ffd580b6a91c7432d37837617467d89fdbb6aca7f435cc1          1466211 main/binary-arm64/Packages.gz
+ a8c7f209d9c9e08f56bb034aca3dcc52bbc8dcd50a972e19e72a9287dc0d3028          1095680 main/dep11/icons-128x128.tar
+ 45c340a16ff9b7e68fee1a4fdb8d97d6d0c43d2c06737e80cdb19676c760d38c          1023905 main/dep11/icons-128x128.tar.gz
+ 1657ee7520030693cf8e0aa44ca9e1b1fdbc66dde480cb37eef91111b02c964e           732506 main/dep11/Components-amd64.yml.gz
+ ce9a76e95acb67472154e70a564fbff8ecb3df3e6e6c7662c3ae4090e3692caf          2188952 main/dep11/Components-i386.yml
+ eee13d618f319defb5165b4bd898ff51888377afb87653f3fd85ce819051a678          2157631 main/dep11/Components-ppc64el.yml
+ 0896326ccac45b7612f0f308e749daa484328c72158a334b6fb578545accbaac           481280 main/dep11/icons-64x64.tar
+ ea113eff158f84256f17a7bf40b3669ddb37d54f03f328c933996b95b1922864          2188952 main/dep11/Components-amd64.yml
+ ba8672b44d4b1ade86d377a7a904e8d14d9ea118dcb7ad754386e321e070605a          2157631 main/dep11/Components-powerpc.yml
+ a8885e2849d438a93018aa74ab5cb0e20918a68bd756ed1e8529d10492ea9d0e           732541 main/dep11/Components-i386.yml.gz
+ 52a417571dcbdc9e38220a9901b7a823280676b0d2fc131a02c5f20591921a96          2173643 main/dep11/Components-armhf.yml
+ e46a918eb7e0bd1a3d9a4c9a45978073c98f3713408dcc3bcef2f4c5d397939f           409405 main/dep11/icons-64x64.tar.gz
+ ea168f0af8987afe65a187fab80c59a62a391d0cdbec1b2d0667b65d4fa441c9          2126665 main/dep11/Components-s390x.yml
+Acquire-By-Hash: yes

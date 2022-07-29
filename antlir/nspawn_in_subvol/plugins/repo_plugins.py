@@ -153,6 +153,7 @@ def repo_nspawn_plugins(
                 RepoServers(
                     serve_rpm_snapshots,
                     plugin_args.proxy_server_config,
+                    plugin_args.run_apt_proxy,
                 ),
             ]
             if serve_rpm_snapshots or plugin_args.proxy_server_config

@@ -48,6 +48,19 @@ python_library(
 )
 
 python_library(
+    name = "launch_apt_proxy_server",
+    srcs = ["launch_apt_proxy_server.py"],
+    resources = {
+        "//antlir/debian:apt-proxy": "apt-proxy",
+    },
+    deps = [
+        ":server_launcher",
+        "//antlir:common",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_library(
     name = "launch_proxy_server",
     srcs = ["launch_proxy_server.py"],
     resources = {
@@ -66,6 +79,7 @@ python_library(
     # Future: bring this back, a comment in the `.py` file explains how.
     # resources = {"//antlir/rpm:repo-server": "repo-server"},
     deps = [
+        ":launch_apt_proxy_server",
         ":launch_proxy_server",
         ":launch_repo_servers",
         ":plugins",
