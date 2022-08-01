@@ -15,10 +15,10 @@ load(
     "PRIVATE_DO_NOT_USE_feature_target_name",
 )
 load("//antlir/bzl2:flatten_features_list.bzl", "flatten_features_list")
+load("//antlir/bzl2:image_source_helper.bzl", "mark_path")
 load("//antlir/bzl2:is_build_appliance.bzl", "is_build_appliance")
 load(
     "//antlir/bzl2:providers.bzl",
-    "FeatureInfo",
     "FlavorInfo",
     "ItemInfo",
     "RpmInfo",
@@ -82,22 +82,8 @@ def _feature_new_rule_impl(ctx):
 
     inline_features = []
     rpm_install_flavors = sets.make()
-    for feature in ctx.attrs.features:
-        # If `feature[FeatureInfo]` exists, then `feature` was generated using
-        # the `feature_new` macro and the `inline_features` of that feature are
-        # appended onto this feature's `inline_features`.
-        if feature[FeatureInfo]:
-            for feature_dict in feature[FeatureInfo].inline_features:
-                if "rpms" in feature_dict:
-                    feature_dict = _filter_rpm_versions(
-                        feature_dict,
-                        feature_flavors,
-                        is_layer_feature,
-                        from_feature_new = True,
-                    )
-                inline_features.append(feature_dict)
-
-        elif feature[ItemInfo]:
+    for i, feature in enumerate(ctx.attrs.features):
+        if feature[ItemInfo]:
             feature_dict = structs.to_dict(feature[ItemInfo].items)
             feature_dict["target"] = ctx.attrs.normalized_name
 
@@ -112,8 +98,10 @@ def _feature_new_rule_impl(ctx):
                     feature_flavors,
                     is_layer_feature,
                 )
+        else:
+            feature_dict = mark_path(ctx.attrs.normalized_features[i])
 
-            inline_features.append(feature_dict)
+        inline_features.append(feature_dict)
 
     # Skip coverage check for `antlir_test` since it's just for testing purposes
     # and doesn't always need to be covered.
@@ -147,9 +135,6 @@ def _feature_new_rule_impl(ctx):
 
     return [
         native.DefaultInfo(default_outputs = [output]),
-        FeatureInfo(
-            inline_features = inline_features,
-        ),
     ] + ([
         FlavorInfo(flavors = feature_flavors),
     ] if BZL_CONST.layer_feature_suffix in ctx.attrs.name else [])
@@ -160,6 +145,7 @@ _feature_new_rule = native.rule(
         "deps": native.attrs.list(native.attrs.dep(), default = []),
         "features": native.attrs.list(native.attrs.dep(), default = []),
         "flavors": native.attrs.list(native.attrs.string(), default = []),
+        "normalized_features": native.attrs.list(native.attrs.string(), default = []),
         "normalized_name": native.attrs.string(),
 
         # parent layer flavor can be fetched from parent layer feature
@@ -206,6 +192,7 @@ def feature_new_internal(
             name = target_name,
             normalized_name = normalize_target(":" + target_name),
             features = features,
+            normalized_features = [normalize_target(f) for f in features],
             flavors = flavors,
             parent_layer_feature = parent_layer_feature,
             deps = deps,

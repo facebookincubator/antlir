@@ -7,12 +7,6 @@
 
 load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 
-FeatureInfo = native.provider(
-    fields = [
-        "inline_features",
-    ],
-) if is_buck2() else None
-
 ItemInfo = native.provider(
     fields = [
         "items",
