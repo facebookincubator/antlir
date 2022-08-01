@@ -6,107 +6,55 @@
 # @lint-ignore-every BUCKLINT
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:oss_shim.bzl", "is_buck2")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load(
     "//antlir/bzl/image/feature:new.bzl",
     "PRIVATE_DO_NOT_USE_feature_target_name",
 )
+load(
+    "//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl",
+    "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM",
+)
 load("//antlir/bzl2:flatten_features_list.bzl", "flatten_features_list")
-load("//antlir/bzl2:image_source_helper.bzl", "mark_path")
+load("//antlir/bzl2:image_source_helper.bzl", "mark_path", "unwrap_path")
 load("//antlir/bzl2:is_build_appliance.bzl", "is_build_appliance")
 load(
     "//antlir/bzl2:providers.bzl",
     "FlavorInfo",
     "ItemInfo",
-    "RpmInfo",
 )
 
-def _filter_rpm_versions(
-        feature_dict,
-        feature_flavors,
-        is_layer_feature,
-        from_feature_new = False):
-    # The rpm item dicts are immutable, so copies need to be made to
-    # allow them to be modified
-    filtered_feature_dict = {}
-    filtered_feature_dict["target"] = feature_dict["target"]
-    filtered_feature_dict["rpms"] = [dict(r) for r in feature_dict["rpms"]]
-
-    # Only include flavors which are in `feature_flavors` in
-    # `flavor_to_version_set`
-    for rpm_item in filtered_feature_dict["rpms"]:
-        flavor_to_version_set = {}
-        for flavor, version_set in rpm_item["flavor_to_version_set"].items():
-            if not feature_flavors or flavor in feature_flavors:
-                flavor_to_version_set[flavor] = version_set
-
-        # Rpm item is required to share at least one flavor with new feature,
-        # if it's from an `feature.rpms_install` target. If it's from a
-        # `feature.new` target, it is allowed to be filtered out if it shares
-        # no flavors
-        if not from_feature_new and not flavor_to_version_set:
-            fail(
-                "Rpm `{rpm}` must have one of the flavors `{feature_flavors}`"
-                    .format(
-                    rpm = rpm_item["name"],
-                    feature_flavors = feature_flavors,
-                ),
-            )
-
-        # If this call to `feature.new` is for a new image layer, there should
-        # only be rpms for a single flavor since the flavor is known from a
-        # provider. This is to test that the flavor provider is working.
-        if is_layer_feature and len(flavor_to_version_set) > 1:
-            fail("Layer features must have rpms for no more than 1 flavor")
-
-        rpm_item["flavor_to_version_set"] = flavor_to_version_set
-
-    return filtered_feature_dict
-
-def _feature_new_rule_impl(ctx):
-    parent_layer_feature = ctx.attrs.parent_layer_feature
-    is_layer_feature = BZL_CONST.layer_feature_suffix in ctx.attrs.name
-    feature_flavors = ctx.attrs.flavors
-
-    if parent_layer_feature and feature_flavors:
-        fail("`feature.new` can't be passed flavors from both `flavors` and " +
-             "`parent_layer`")
-
-    if (not feature_flavors and
-        parent_layer_feature and
-        parent_layer_feature[FlavorInfo]):
-        feature_flavors = parent_layer_feature[FlavorInfo].flavors
-
-    inline_features = []
+def _clean_items_and_validate_flavors(rpm_items, flavors):
+    feature_dicts = []
     rpm_install_flavors = sets.make()
-    for i, feature in enumerate(ctx.attrs.features):
-        if feature[ItemInfo]:
-            feature_dict = structs.to_dict(feature[ItemInfo].items)
-            feature_dict["target"] = ctx.attrs.normalized_name
+    for feature_dict in rpm_items:
+        feature_dict = dict(feature_dict)
+        valid_rpms = []
+        for rpm_item in feature_dict.get("rpms", []):
+            if rpm_item["action"] == "install":
+                for flavor, _ in rpm_item["flavor_to_version_set"].items():
+                    sets.insert(rpm_install_flavors, flavor)
 
-            if feature[RpmInfo]:
-                if feature[RpmInfo].action == "rpms_install":
-                    rpm_install_flavors = sets.union(
-                        rpm_install_flavors,
-                        sets.make(feature[RpmInfo].flavors),
-                    )
-                feature_dict = _filter_rpm_versions(
-                    feature_dict,
-                    feature_flavors,
-                    is_layer_feature,
-                )
-        else:
-            feature_dict = mark_path(ctx.attrs.normalized_features[i])
+            # We add a dummy in `_build_rpm_feature` in `rpms.bzl`
+            # to hold information about the action and flavor for
+            # empty rpm lists for validity checks.
+            # See the comment in `_build_rpm_feature` for more
+            # information.
+            if rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
+                valid_rpms.append(rpm_item)
 
-        inline_features.append(feature_dict)
+        feature_dict["rpms"] = valid_rpms
+        feature_dicts.append(feature_dict)
 
     # Skip coverage check for `antlir_test` since it's just for testing purposes
     # and doesn't always need to be covered.
-    if feature_flavors:
-        required_flavors = feature_flavors
+    if flavors:
+        required_flavors = flavors
     else:
         required_flavors = [
             flavor
@@ -125,6 +73,31 @@ def _feature_new_rule_impl(ctx):
             required_flavors = sets.to_list(required_flavors),
         ))
 
+    return feature_dicts
+
+def _feature_new_rule_impl(ctx):
+    parent_layer_feature = ctx.attrs.parent_layer_feature
+
+    if ctx.attrs.flavors:
+        flavors = ctx.attrs.flavors
+    elif parent_layer_feature and parent_layer_feature[FlavorInfo]:
+        flavors = parent_layer_feature[FlavorInfo].flavors
+    else:
+        flavors = []
+
+    inline_features = []
+
+    for i, feature in enumerate(ctx.attrs.features):
+        if feature[ItemInfo]:
+            feature_dict = structs.to_dict(feature[ItemInfo].items)
+            feature_dict["target"] = ctx.attrs.normalized_name
+        else:
+            feature_dict = mark_path(ctx.attrs.normalized_features[i])
+
+        inline_features.append(feature_dict)
+
+    inline_features.extend(_clean_items_and_validate_flavors(ctx.attrs.rpm_items, flavors))
+
     items = struct(
         target = ctx.attrs.name,
         features = inline_features,
@@ -136,7 +109,7 @@ def _feature_new_rule_impl(ctx):
     return [
         native.DefaultInfo(default_outputs = [output]),
     ] + ([
-        FlavorInfo(flavors = feature_flavors),
+        FlavorInfo(flavors = flavors),
     ] if BZL_CONST.layer_feature_suffix in ctx.attrs.name else [])
 
 _feature_new_rule = native.rule(
@@ -150,12 +123,70 @@ _feature_new_rule = native.rule(
 
         # parent layer flavor can be fetched from parent layer feature
         "parent_layer_feature": native.attrs.option(native.attrs.dep()),
+        "rpm_items": native.attrs.list(native.attrs.dict(native.attrs.string(), native.attrs.any())),
 
         # for query (needed because `feature.new` can depend on targets that
         # need their on-disk location to be known)
         "type": native.attrs.string(default = "image_feature"),
     },
 ) if is_buck2() else None
+
+def normalize_features(
+        target_name,
+        targets_or_rpm_structs,
+        flavors):
+    targets = []
+    rpm_items = []
+    rpm_deps = []
+    for item in flatten_features_list(targets_or_rpm_structs):
+        if types.is_string(item):
+            targets.append(PRIVATE_DO_NOT_USE_feature_target_name(
+                normalize_target(item),
+            ) if not item.endswith(BZL_CONST.PRIVATE_feature_suffix) else normalize_target(item))
+        else:
+            feature_dict = {
+                "rpms": [
+                    shape.as_serializable_dict(rpm_item)
+                    for rpm_item in item.rpm_items
+                ],
+                "target": normalize_target(":" + target_name),
+            }
+
+            rpm_item_deps = {dep: 1 for dep in item.rpm_deps}
+            for rpm_item in feature_dict.get("rpms", []):
+                flavor_to_version_set = {}
+                for flavor, version_set in rpm_item.get("flavor_to_version_set", {}).items():
+                    # If flavors are not provided, we are reading the flavor
+                    # from the parent layer, so we should include all possible flavors
+                    # for the rpm as the final flavor is not known until we are in python.
+                    if (
+                        not flavors and (
+                            rpm_item.get("flavors_specified") or
+                            flavor in REPO_CFG.stable_flavors
+                        )
+                    ) or (
+                        flavors and flavor in flavors
+                    ):
+                        flavor_to_version_set[flavor] = version_set
+                    elif version_set != BZL_CONST.version_set_allow_all_versions:
+                        target = unwrap_path(version_set)
+                        rpm_item_deps.pop(target)
+
+                if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
+                    fail("Rpm `{}` must have one of the flavors `{}`".format(
+                        rpm_item["name"] or rpm_item["source"],
+                        flavors,
+                    ))
+                rpm_item["flavor_to_version_set"] = flavor_to_version_set
+
+            rpm_deps.extend(rpm_item_deps.keys())
+            rpm_items.append(feature_dict)
+
+    return struct(
+        targets = targets,
+        rpm_items = rpm_items,
+        rpm_deps = rpm_deps,
+    )
 
 def feature_new_internal(
         name,
@@ -170,32 +201,31 @@ def feature_new_internal(
     `deps` is for any other dependencies that this feature has that aren't
     features.
     """
-    if (BZL_CONST.layer_feature_suffix in name and
-        parent_layer and
-        not is_build_appliance(parent_layer)):
+    deps = deps or []
+    flavors = flavors or []
+
+    if (BZL_CONST.layer_feature_suffix in name and parent_layer and not is_build_appliance(parent_layer)):
         parent_layer_feature = PRIVATE_DO_NOT_USE_feature_target_name(parent_layer + BZL_CONST.layer_feature_suffix)
     else:
         parent_layer_feature = None
 
     target_name = PRIVATE_DO_NOT_USE_feature_target_name(name)
 
-    # Need to add private suffix to the end of feature target names, if not
-    # already present. This is so that a user can specify a target created by
-    # a previous call to `feature.new` and not have to include the suffix.
-    features = [
-        PRIVATE_DO_NOT_USE_feature_target_name(feature) if not feature.endswith(BZL_CONST.PRIVATE_feature_suffix) else feature
-        for feature in flatten_features_list(features)
-    ]
+    if structs.is_struct(features):
+        normalized_features = features
+    else:
+        normalized_features = normalize_features(name, features, flavors)
 
     if not native.rule_exists(name):
         _feature_new_rule(
             name = target_name,
-            normalized_name = normalize_target(":" + target_name),
-            features = features,
-            normalized_features = [normalize_target(f) for f in features],
+            normalized_name = normalize_target(":" + name),
+            features = normalized_features.targets,
+            rpm_items = normalized_features.rpm_items,
+            normalized_features = normalized_features.targets,
             flavors = flavors,
             parent_layer_feature = parent_layer_feature,
-            deps = deps,
+            deps = deps + normalized_features.rpm_deps,
             visibility = visibility,
         )
 

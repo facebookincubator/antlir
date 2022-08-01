@@ -6,6 +6,7 @@
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:structs.bzl", "structs")
 
 def flatten_features_list(lst):
     """
@@ -15,7 +16,7 @@ def flatten_features_list(lst):
     for item in lst:
         if not item:
             continue
-        if types.is_string(item):
+        if types.is_string(item) or structs.is_struct(item):
             flattened_list.append(item)
         else:
             flattened_list.extend(flatten_features_list(item))

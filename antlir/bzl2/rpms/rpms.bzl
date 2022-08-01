@@ -11,6 +11,7 @@ load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
+load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 load("//antlir/bzl/image/feature:rpms.shape.bzl", "rpm_action_item_t")
 load(
     "//antlir/bzl2:generate_feature_target_name.bzl",
@@ -36,15 +37,35 @@ def _rpm_name_or_source(name_source):
 # whether the names are valid, and whether they contain a
 # version or release number.  That'll happen later in the build.
 def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
+    flavors = flavors or []
     flavors_specified = bool(flavors)
 
-    # Flavors default to stable flavors if none are provided. In the buck1
-    # implementation, it was fine if an rpm item "depended" on nonexistent
-    # targets because no rule was actually ever declared for rpms_install, so
-    # the dependencies could be invalid and be discarded in feature.new.
-    flavors = flavors or REPO_CFG.stable_flavors
-
     rpm_items = []
+    if action == "install":
+        # We have a dummy rpm so that we consider empty lists when
+        # we check coverage of all flavors in a feature.
+        #
+        # ```
+        # feature.new(
+        #     name = "test",
+        #     features=[
+        #         feature.rpms_install([], flavors=["only-relevant-on-centos7"]),
+        #         feature.rpms_install([], flavors=["only-relevant-on-centos8"]),
+        #     ],
+        #     flavors = ["centos7", "centos8"],
+        # )
+        # ```
+        #
+        # should not throw an error.
+        rpm_items.append(
+            rpm_action_item_t(
+                name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
+                action = action,
+                flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
+                flavors_specified = flavors_specified,
+            ),
+        )
+
     deps = []
     for path in rpmlist:
         source = None
@@ -63,7 +84,7 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
                 vs_name = name
 
         flavor_to_version_set = {}
-        for flavor in flavors:
+        for flavor in flavors or REPO_CFG.flavor_to_config.keys():
             vs_path_prefix = REPO_CFG.flavor_to_config[flavor].version_set_path
 
             if (vs_path_prefix != BZL_CONST.version_set_allow_all_versions and
@@ -84,7 +105,10 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
             name = name,
         ))
 
-    return rpm_items, deps, flavors
+    return struct(
+        rpm_items = rpm_items,
+        rpm_deps = deps,
+    )
 
 def _rpm_rule_impl(ctx):
     return [
@@ -210,22 +234,11 @@ def rpms_install(rpmlist, flavors = None):
     issue may be aggravated by the lack of error handling in the script making
     the RPM install operation successful even if the binary fails.
     """
-    rpm_items, deps, flavors = _generate_rpm_items(
+    return _generate_rpm_items(
         rpmlist,
         "install",
         needs_version_set = True,
         flavors = flavors,
-    )
-
-    return maybe_add_rpm_rule(
-        name = "rpms_install",
-        include_in_target_name = {
-            "flavors": flavors,
-            "rpmlist": rpmlist,
-        },
-        rpm_items = rpm_items,
-        flavors = flavors,
-        deps = deps,
     )
 
 def rpms_remove_if_exists(rpmlist, flavors = None):
@@ -236,22 +249,11 @@ def rpms_remove_if_exists(rpmlist, flavors = None):
     current layer includes features both removing and installing the same
     package, this will cause a build failure.
     """
-    rpm_items, deps, flavors = _generate_rpm_items(
+    return _generate_rpm_items(
         rpmlist,
         "remove_if_exists",
         needs_version_set = False,
         flavors = flavors,
-    )
-
-    return maybe_add_rpm_rule(
-        name = "rpms_remove_if_exists",
-        include_in_target_name = {
-            "flavors": flavors,
-            "rpmlist": rpmlist,
-        },
-        rpm_items = rpm_items,
-        flavors = flavors,
-        deps = deps,
     )
 
 rpms = struct(
