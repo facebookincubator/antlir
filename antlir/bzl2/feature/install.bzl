@@ -69,7 +69,7 @@ def _generate_shape(source_dict, dest, mode, user, group):
     )
 
 def _install_rule_impl(ctx):
-    if ctx.attrs.is_executable and ctx.attrs.unwrapped_target[native.RunInfo]:
+    if ctx.attrs.wrap_as_buck_runnable and ctx.attrs.unwrapped_target[native.RunInfo]:
         install_shape = ctx.attrs.wrapped_shape
     else:
         install_shape = ctx.attrs.unwrapped_shape
@@ -82,13 +82,13 @@ def _install_rule_impl(ctx):
 _install_rule = native.rule(
     impl = _install_rule_impl,
     attrs = {
-        "is_executable": native.attrs.bool(),
         "key": native.attrs.string(),
 
         # for query
         "type": native.attrs.string(default = "image_feature"),
         "unwrapped_shape": native.attrs.dict(native.attrs.string(), native.attrs.any()),
         "unwrapped_target": native.attrs.dep(),
+        "wrap_as_buck_runnable": native.attrs.bool(),
         "wrapped_shape": native.attrs.dict(native.attrs.string(), native.attrs.any()),
         "wrapped_target": native.attrs.dep(),
     },
@@ -99,7 +99,7 @@ def maybe_add_install_rule(
         wrapped_shape,
         unwrapped_target,
         wrapped_target,
-        is_executable,
+        wrap_as_buck_runnable,
         include_in_target_name = None,
         debug = False):
     name = "install"
@@ -120,7 +120,7 @@ def maybe_add_install_rule(
             wrapped_shape = shape.as_serializable_dict(wrapped_shape),
             unwrapped_target = unwrapped_target,
             wrapped_target = wrapped_target,
-            is_executable = is_executable,
+            wrap_as_buck_runnable = wrap_as_buck_runnable,
         )
 
     return ":" + target_name
@@ -141,7 +141,7 @@ def feature_install_buck_runnable(
         mode,
         user,
         group,
-        is_executable = True,
+        wrap_as_buck_runnable = True,
         runs_in_build_steps_causes_slow_rebuilds = runs_in_build_steps_causes_slow_rebuilds,
     )
 
@@ -151,7 +151,7 @@ def feature_install(
         mode = None,
         user = shape.DEFAULT_VALUE,
         group = shape.DEFAULT_VALUE,
-        is_executable = True,
+        wrap_as_buck_runnable = True,
         runs_in_build_steps_causes_slow_rebuilds = False):
     """
     `feature.install("//path/fs:data", "dir/bar")` installs file or directory
@@ -181,7 +181,7 @@ def feature_install(
     strings. In the latter case, the passwd/group database from the host (not
     from the image) is used. The default for `user` and `group` is `root`.
 
-    `is_executable` - Ignore unless you are installing a non-executable file
+    `wrap_as_buck_runnable` - Ignore unless you are installing a non-executable file
     created by a genrule, in which case it needs to be set to `False`. This is
     necessary because there is no way for us to determine if a target with a
     `RunInfo` provider refers to a file that is non-executable, so we just
@@ -226,5 +226,5 @@ def feature_install(
         ),
         unwrapped_target = unwrapped_target,
         wrapped_target = wrapped_target,
-        is_executable = is_executable,
+        wrap_as_buck_runnable = wrap_as_buck_runnable,
     )
