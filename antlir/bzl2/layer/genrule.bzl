@@ -8,6 +8,7 @@
 load("//antlir/bzl:container_opts.bzl", "normalize_container_opts")
 load("//antlir/bzl:genrule_layer.shape.bzl", "genrule_layer_t")
 load("//antlir/bzl:image_genrule_layer.bzl", "image_genrule_layer_helper")
+load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl2:compile_image_features.bzl", "compile_image_features")
 load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
@@ -24,16 +25,21 @@ def layer_genrule(
         boot = False,
         **image_layer_kwargs):
     container_opts = normalize_container_opts(container_opts)
-    features = [maybe_add_feature_rule(
-        name = "genrule_layer",
-        include_in_target_name = {"name": name},
-        feature_shape = genrule_layer_t(
+
+    genrule_feature_dict, extra_deps = shape.as_dict_collect_deps(
+        genrule_layer_t(
             cmd = cmd,
             user = user,
             container_opts = container_opts,
             bind_repo_ro = bind_repo_ro,
             boot = boot,
         ),
+    )
+
+    features = [maybe_add_feature_rule(
+        name = "genrule_layer",
+        include_in_target_name = {"name": name},
+        feature_shape = genrule_feature_dict,
     )]
 
     image_genrule_layer_helper(
@@ -46,4 +52,5 @@ def layer_genrule(
         features,
         compile_image_features,
         image_layer_kwargs,
+        extra_deps,
     )

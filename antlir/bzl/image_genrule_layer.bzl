@@ -22,7 +22,8 @@ def image_genrule_layer_helper(
         container_opts,
         features,
         compile_image_features_fn,
-        image_layer_kwargs):
+        image_layer_kwargs,
+        extra_deps = None):
     if container_opts.internal_only_logs_tmpfs:
         # The mountpoint directory would leak into the built images, and it
         # doesn't even make sense for genrule layer construction.
@@ -44,6 +45,7 @@ def image_genrule_layer_helper(
             flavor = flavor,
             flavor_config_override = flavor_config_override,
             internal_only_is_genrule_layer = True,
+            extra_deps = extra_deps,
         ),
         **image_layer_kwargs
     )
