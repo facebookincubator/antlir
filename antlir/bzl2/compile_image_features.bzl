@@ -17,9 +17,8 @@ load(
     "//antlir/bzl/image/feature:new.bzl",
     "PRIVATE_DO_NOT_USE_feature_target_name",
 )
-load("//antlir/bzl2/feature:new.bzl", "feature_new_internal")
+load("//antlir/bzl2/feature:new.bzl", "feature_new_internal", "normalize_features")
 load(":feature_rule.bzl", "maybe_add_feature_rule")
-load(":flatten_features_list.bzl", "flatten_features_list")
 load(":image_source_helper.bzl", "mark_path")
 load(":is_build_appliance.bzl", "is_build_appliance")
 
@@ -79,25 +78,26 @@ def compile_image_features(
             deps = [parent_layer],
         ))
 
-    features = [
-        PRIVATE_DO_NOT_USE_feature_target_name(feature) if not feature.endswith(BZL_CONST.PRIVATE_feature_suffix) else feature
-        for feature in flatten_features_list(features)
-    ]
+    features_for_layer_readable = name + BZL_CONST.layer_feature_suffix
+    normalized_features = normalize_features(
+        features_for_layer_readable,
+        features,
+        flavors,
+    )
 
     # Outputs the feature JSON for the given layer to disk so that it can be
     # parsed by other tooling.
     #
     # Keep in sync with `bzl_const.py`.
-    features_for_layer = name + BZL_CONST.layer_feature_suffix
+    features_for_layer = PRIVATE_DO_NOT_USE_feature_target_name(features_for_layer_readable)
     feature_new_internal(
-        name = features_for_layer,
-        features = features,
+        name = features_for_layer_readable,
+        features = normalized_features,
         flavors = flavors,
         parent_layer = parent_layer,
         deps = extra_deps,
         visibility = ["//antlir/..."],
     )
-    features_for_layer = PRIVATE_DO_NOT_USE_feature_target_name(name + BZL_CONST.layer_feature_suffix)
 
     vset_override_name = vset_override_genrule(flavor_config, current_target)
 
@@ -109,7 +109,9 @@ def compile_image_features(
                     label = "type",
                     value = "image_feature",
                     expr = query.deps(
-                        expr = query.set(features + extra_deps + [":" + features_for_layer]),
+                        expr = query.set(normalized_features.targets +
+                                         extra_deps +
+                                         [":" + features_for_layer]),
                         depth = query.UNBOUNDED,
                     ),
                 ),
