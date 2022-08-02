@@ -1,2 +1,6 @@
+# rootfs version of metald.
+# This is replaced by metald native service version after boot.
 [Service]
-ExecStart=/bin/echo "placeholder"
+Type=simple
+ExecStart=/usr/lib/metalos/metald --systemd-socket
+Restart=always
