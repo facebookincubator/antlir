@@ -81,8 +81,7 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
     `image.layer` to execute:
 
      - For concreteness' sake, let's say that `target` needs to be
-       executed by the `image.layer` build script (as is the case for
-       `generator` from `tarballs`).
+       executed by the `image.layer` build script.
 
      - `image.layer` will use $(query_targets_and_outputs) to find the
        output path for `target`.

@@ -41,41 +41,15 @@ load(":defs.bzl", "defs")
 # attribute. This will cause the last 6 bytes of the `mtime` (offset 142) of
 # each file header to be different between systems.  This then causes the
 # full 8-byte `chksum` (offset 148) to be different as well.
-defs.export_file(name = "prebuilt_hello_world.tar")
+defs.export_file(
+    name = "hello_world.tar",
+    src = "prebuilt_hello_world.tar",
+)
 
 # The rule `hello_world.tar` must be deterministic to be used in images.
 hello_tar_hash = (
     "sha256:" +
     "dd83365abc69fe39990096a9396d9d2d6fbf75f849ab1640a10fdf9614d8d03d"
-)
-
-defs.buck_genrule(
-    name = "hello_world_tar_generator.sh",
-    out = "run",
-    bash = """
-cat > "$TMP/out" << 'EOF'
-#!/bin/bash -uex
-set -o pipefail
-test $# -eq 2
-tarball_name=$1  # Exercises `generator_args`
-out_dir=$2  # Provided per the tarball generator contract
-cp -a "$(location :prebuilt_hello_world.tar)" "$out_dir/$tarball_name"
-echo "$tarball_name"  # Required by the tarball generator contract
-EOF
-chmod a+x "$TMP/out"
-mv "$TMP/out" "$OUT"
-    """,
-    cacheable = False,
-    executable = True,
-)
-
-defs.buck_genrule(
-    name = "hello_world.tar",
-    out = "hello_world.tar",
-    bash = """
-    $(exe :hello_world_tar_generator.sh) "\\$(basename $OUT)" \
-    "\\$(dirname $OUT)"
-    """,
 )
 
 # This layer is currently just a rename of the default build appliance for the
@@ -828,13 +802,7 @@ image.layer(
         feature.tarball(
             image.source(
                 content_hash = hello_tar_hash,
-                generator = ":hello_world_tar_generator.sh",
-                # Most generators would not have this API wart of externally
-                # specifying the output filename. This mis-feature only exists
-                # to exercise `generator_args`.
-                generator_args = [
-                    "hello_world.tar",
-                ],
+                source = ":hello_world.tar",
             ),
             "//",  # Double-slash tests path normalization
         ),

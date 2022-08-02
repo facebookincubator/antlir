@@ -24,14 +24,13 @@ def _mark_path_and_get_target(source_dict, key, is_layer = False):
 
 def normalize_target_and_mark_path_in_source_dict(source_dict, **kwargs):
     """
-    Adds tag to target at `source_dict[{source,layer,generator}}]` and
+    Adds tag to target at `source_dict[{source,layer}}]` and
     normalizes target so target can be converted to path in
     items_for_features.py.
     """
     if not (source_dict.get("source") or
-            source_dict.get("generator") or
             source_dict.get("layer")):
-        fail("One of source, generator, layer must contain a target")
+        fail("One of {source, layer} must contain a target")
 
     if source_dict.get("source"):
         normalized_target = _mark_path_and_get_target(source_dict, "source")
@@ -54,16 +53,6 @@ def normalize_target_and_mark_path_in_source_dict(source_dict, **kwargs):
                 # compiler does not have to.
                 source_dict["path"] = None
             normalized_target = _mark_path_and_get_target(source_dict, "source")
-
-    elif source_dict.get("generator"):
-        _was_wrapped, source_dict["generator"] = maybe_wrap_executable_target(
-            target = source_dict["generator"],
-            wrap_suffix = "image_source_wrap_generator",
-            visibility = [],  # Not visible outside of project
-            # Generators run at build-time, that's the whole point.
-            runs_in_build_steps_causes_slow_rebuilds = True,
-        )
-        normalized_target = _mark_path_and_get_target(source_dict, "generator")
 
     else:
         normalized_target = _mark_path_and_get_target(
