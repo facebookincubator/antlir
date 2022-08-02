@@ -276,8 +276,6 @@ fn main() -> Result<()> {
                         "pre_existing_dest": false,
                         "source": {
                             "content_hash": null,
-                            "generator": null,
-                            "generator_args": [],
                             "layer": {
                                     "__BUCK_LAYER_TARGET": target
                             },

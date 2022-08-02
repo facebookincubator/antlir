@@ -45,23 +45,13 @@ def tag_and_maybe_wrap_executable_target(target_tagger, target, wrap_suffix, **k
 
 def image_source_as_target_tagged_dict(target_tagger, user_source):
     src = shape.DEPRECATED_as_dict_for_target_tagger(image_source(user_source))
-    if src.get("generator"):
-        _was_wrapped, src["generator"] = tag_and_maybe_wrap_executable_target(
-            target_tagger = target_tagger,
-            target = src.pop("generator"),
-            wrap_suffix = "image_source_wrap_generator",
-            visibility = [],  # Not visible outside of project
-            # Generators run at build-time, that's the whole point.
-            runs_in_build_steps_causes_slow_rebuilds = True,
-        )
-    else:
-        is_layer = src["layer"] != None
-        tag_required_target_key(
-            target_tagger,
-            src,
-            "layer" if is_layer else "source",
-            is_layer = is_layer,
-        )
+    is_layer = src["layer"] != None
+    tag_required_target_key(
+        target_tagger,
+        src,
+        "layer" if is_layer else "source",
+        is_layer = is_layer,
+    )
     return src
 
 def image_source_as_target_tagged_t(target_tagger, user_source):

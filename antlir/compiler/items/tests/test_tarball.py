@@ -97,38 +97,6 @@ class TarballItemTestCase(BaseItemTestCase):
                     force_root_ownership=False,
                 )
 
-    # NB: We don't need to test `build` because TarballItem has no logic
-    # specific to generated vs pre-built tarballs.  It would really be
-    # enough just to construct the item, but it was easy to test `provides`.
-    def test_tarball_generator(self):
-        with temp_filesystem() as fs_path, tempfile.NamedTemporaryFile() as t, ExitStack() as exit_stack:  # noqa: E501
-            with tarfile.TarFile(t.name, "w") as tar_obj:
-                tar_obj.add(fs_path, filter=_tarinfo_strip_dir_prefix(fs_path))
-            self._check_item(
-                image_source_item(
-                    TarballItem,
-                    exit_stack=exit_stack,
-                    layer_opts=DUMMY_LAYER_OPTS,
-                )(
-                    from_target="t",
-                    into_dir="y",
-                    source={
-                        "generator": "/bin/bash",
-                        "generator_args": [
-                            "-c",
-                            'cp "$1" "$2"; basename "$1"',
-                            "test_tarball_generator",  # $0
-                            t.name,  # $1, making $2 the output directory
-                        ],
-                        "content_hash": "sha256:"
-                        + _hash_path(t.name, "sha256"),
-                    },
-                    force_root_ownership=False,
-                ),
-                temp_filesystem_provides("y"),
-                {RequireDirectory(path=Path("y"))},
-            )
-
     def test_tarball_command(self):
         with TempSubvolumes(Path(sys.argv[0])) as temp_subvolumes:
             subvol = temp_subvolumes.create("tar-sv")

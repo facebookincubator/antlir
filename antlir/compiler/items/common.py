@@ -347,42 +347,6 @@ def _hash_path(path: str, algorithm: str) -> str:
     return algo.hexdigest()
 
 
-def _generate_file(
-    temp_dir: str, generator: bytes, generator_args: List[str]
-) -> str:
-    # API design notes:
-    #
-    #  1) The generator takes an output directory, not a file, because we
-    #     prefer not to have to hardcode the name of the output file in the
-    #     TARGETS file -- that would make it more laborious to change the
-    #     compression format for tarballs, e.g.  Instead, the generator
-    #     prints the name of the created file to stdout.  This does not
-    #     introduce nondeterminism for current consumers of `image.source`:
-    #       - A tarball name cannot affect the result of its extraction.
-    #       - `yum` ignores the RPM name, and reads metadata from its content.
-    #       - `install_file` specifies the destination filename in `TARGETS`.
-    #
-    #     Since TARGETS already hardcodes a content hash, requiring the name
-    #     would not be far-fetched, this approach just seemed cleaner.
-    #
-    #  2) `temp_dir` is last since this allows the use of inline scripts via
-    #     `generator_args` with e.g. `/bin/bash`.
-    #
-    # Future: it would be best to sandbox the generator to limit its
-    # filesystem writes.  At the moment, we trust rule authors not to abuse
-    # this feature and write stuff outside the given directory.
-    output_filename = subprocess.check_output(
-        [generator, *generator_args, temp_dir],
-        cwd=repo_config().repo_root,
-    ).decode()
-    assert output_filename.endswith("\n"), (generator, output_filename)
-    output_filename = os.path.normpath(output_filename[:-1])
-    assert not output_filename.startswith(
-        "/"
-    ) and not output_filename.startswith("../"), output_filename
-    return os.path.join(temp_dir, output_filename)
-
-
 def _image_source_path(
     layer_opts: LayerOpts,
     *,
@@ -420,34 +384,10 @@ def _make_image_source_item(
         return item_cls(**kwargs, source=None)
 
     assert 1 == (
-        bool(source.get("generator"))
-        + bool(source.get("source"))
-        + bool(source.get("layer"))
+        +bool(source.get("source")) + bool(source.get("layer"))
     ), source
 
-    # `generator` dynamically creates a temporary source file for the item
-    # being constructed.  The file is deleted when the `exit_stack` context
-    # exits.
-    #
-    # NB: With `generator`, identical constructor arguments to this factory
-    # will create different items, so if we needed item deduplication to
-    # work across inputs, this is broken.  However, I don't believe the
-    # compiler relies on that.  If we need it, it should not be too hard to
-    # share the same source file for all generates with the same command --
-    # you'd add a global map of (generator, args) -> output, perhaps using
-    # weakref hooks to refcount output files and GC them.
     # pyre-fixme[16]: `Mapping` has no attribute `pop`.
-    generator = source.pop("generator", None)
-    generator_args = source.pop("generator_args", None)
-    generator_args = list(generator_args) if generator_args is not None else []
-    if generator or generator_args:
-        # pyre-fixme[16]: `Mapping` has no attribute `__setitem__`.
-        source["source"] = _generate_file(
-            exit_stack.enter_context(tempfile.TemporaryDirectory()),
-            generator,
-            generator_args,
-        )
-
     algo_and_hash = source.pop("content_hash", None)
     # pyre-fixme[6]: Expected `Subvol` for 2nd param but got `str`.
     source_path = _image_source_path(layer_opts, **source)

@@ -10,10 +10,5 @@ image_source_t = shape.shape(
     source = shape.field(target_t, optional = True),
     layer = shape.field(target_t, optional = True),
     path = shape.field(shape.path, optional = True),
-    generator = shape.field(shape.path, optional = True),
-    generator_args = shape.field(
-        shape.list(str),
-        optional = True,
-    ),
     content_hash = shape.field(str, optional = True),
 )
