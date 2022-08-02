@@ -50,6 +50,10 @@ feature.new(
         systemd.install_unit("metalos.metald.service"),
         systemd.install_unit("metalos.metald.socket"),
         systemd.enable_unit("metalos.metald.socket"),
+        feature.install_buck_runnable(
+            ":metald",
+            "/usr/lib/metalos/metald",
+        ),
     ],
     visibility = ["//metalos/os/..."],
 )
