@@ -123,7 +123,7 @@ def new_flavor_config(
             "build_appliance",
         )
 
-    if rpm_installer != "yum" and rpm_installer != "dnf":
+    if rpm_installer != "yum" and rpm_installer != "dnf" and rpm_installer != None:
         fail("Unsupported rpm_installer supplied in build_opts")
 
     # When building the BA itself, we need this constant to avoid a circular
@@ -136,17 +136,19 @@ def new_flavor_config(
 
     if build_appliance:
         build_appliance = normalize_target(build_appliance)
+    if rpm_repo_snapshot:
+        rpm_repo_snapshot = snapshot_install_dir(rpm_repo_snapshot)
+    elif rpm_installer:
+        rpm_repo_snapshot = "{}/{}".format(
+            RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
+            rpm_installer,
+        )
 
     return flavor_config_t(
         name = name,
         build_appliance = build_appliance,
         rpm_installer = rpm_installer,
-        rpm_repo_snapshot = (
-            snapshot_install_dir(rpm_repo_snapshot) if rpm_repo_snapshot else "{}/{}".format(
-                RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
-                rpm_installer,
-            )
-        ),
+        rpm_repo_snapshot = rpm_repo_snapshot,
         rpm_version_set_overrides = rpm_version_set_overrides,
         version_set_path = version_set_path,
         unsafe_bypass_flavor_check = unsafe_bypass_flavor_check,

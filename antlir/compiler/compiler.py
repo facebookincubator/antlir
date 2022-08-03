@@ -24,7 +24,7 @@ import time
 import uuid
 from contextlib import ExitStack, nullcontext
 from subprocess import CalledProcessError
-from typing import List
+from typing import List, Optional
 
 from antlir.bzl.constants import flavor_config_t
 from antlir.cli import add_targets_and_outputs_arg, normalize_buck_path
@@ -170,7 +170,7 @@ def construct_profile_filename(
 def invoke_compiler_inside_build_appliance(
     *,
     build_appliance: Subvol,
-    snapshot_dir: Path,
+    snapshot_dir: Optional[Path],
     args: argparse.Namespace,
     argv: List[str],
 ):
@@ -209,7 +209,7 @@ def invoke_compiler_inside_build_appliance(
             plugins=repo_nspawn_plugins(
                 opts=opts,
                 plugin_args=NspawnPluginArgs(
-                    serve_rpm_snapshots=[snapshot_dir],
+                    serve_rpm_snapshots=[snapshot_dir] if snapshot_dir else [],
                     # We'll explicitly call the RPM installer wrapper we need.
                     shadow_proxied_binaries=False,
                 ),
@@ -269,7 +269,9 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
     ):
         invoke_compiler_inside_build_appliance(
             build_appliance=build_appliance,
-            snapshot_dir=not_none(Path(flavor_config.rpm_repo_snapshot)),
+            snapshot_dir=Path(flavor_config.rpm_repo_snapshot)
+            if flavor_config.rpm_repo_snapshot
+            else None,
             args=args,
             argv=argv,
         )
@@ -277,8 +279,12 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
         layer_opts = LayerOpts(
             layer_target=args.child_layer_target,
             build_appliance=build_appliance,
-            rpm_installer=YumDnf(flavor_config.rpm_installer),
-            rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot),
+            rpm_installer=YumDnf(flavor_config.rpm_installer)
+            if flavor_config.rpm_installer
+            else None,
+            rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot)
+            if flavor_config.rpm_repo_snapshot
+            else None,
             artifacts_may_require_repo=args.artifacts_may_require_repo,
             target_to_path=args.targets_and_outputs,
             subvolumes_dir=args.subvolumes_dir,
