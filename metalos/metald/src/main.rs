@@ -11,6 +11,7 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use futures::future::try_join_all;
 use plain_systemd::daemon::is_socket;
 use plain_systemd::daemon::listen_fds;
 use plain_systemd::daemon::Listening;
@@ -50,25 +51,28 @@ async fn main(fb: FacebookInit) -> Result<()> {
 
     let listen_on = match (args.systemd_socket, args.port) {
         (true, None) => {
-            let mut fds: Vec<_> = listen_fds(true)
+            let fds: Vec<_> = listen_fds(true)
                 .context("while getting LISTEN_FDS")?
                 .iter()
                 .collect();
-            if fds.len() != 1 {
-                Err(anyhow!("expected exactly one LISTEN_FD"))
+            if fds.is_empty() {
+                Err(anyhow!("expected at least one LISTEN_FD"))
             } else {
-                let fd = fds.pop().expect("already validated this has one element");
-                match is_socket(fd, None, None, Listening::IsListening)
-                    .context("while checking LISTEN_FD socket properties")?
-                {
-                    true => Ok(ListenOn::Raw(fd)),
-                    false => Err(anyhow!("LISTEN_FD is not a listening socket")),
+                for fd in fds.clone() {
+                    is_socket(fd, None, None, Listening::IsListening)
+                        .with_context(|| format!("fd{} is not a listening socket", fd))?;
                 }
+                Ok(fds.into_iter().map(ListenOn::Raw).collect())
             }
         }
-        (false, Some(port)) => Ok(ListenOn::Port(port)),
+        (false, Some(port)) => Ok(vec![ListenOn::Port(port)]),
         _ => Err(anyhow!("--systemd-socket and --port cannot both be set")),
     }?;
 
-    facebook::run(log, fb, metald, listen_on).await
+    let executions: Vec<_> = listen_on
+        .into_iter()
+        .map(|socket| facebook::run(log.clone(), fb.clone(), metald.clone(), socket))
+        .collect();
+    try_join_all(executions).await?;
+    Ok(())
 }
