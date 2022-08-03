@@ -1,4 +1,5 @@
 [Socket]
 # NOTE: this must remain in sync with SOCKET_PATH in metalos `api.thrift`
 ListenStream=/run/metalos/metald_socket
+ListenStream=32123
 Accept=no

@@ -32,8 +32,8 @@ use permission_checker::PermissionsChecker;
 
 const ACL_ACTION: &str = "canDoCyborgJob"; //TODO:T117800273 temporarely, need to decide the correct acl
 const ALLOWED_IDENTITIES_PATH: [&str; 2] = [
-    "/usr/lib/metald/metald_allowed_identities",
-    "/etc/metald/metald_allowed_identities",
+    "usr/lib/metald/metald_allowed_identities",
+    "etc/metald/metald_allowed_identities",
 ];
 
 #[derive(thiserror::Error, Debug)]
