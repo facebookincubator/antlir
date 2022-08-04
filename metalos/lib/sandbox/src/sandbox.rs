@@ -1,5 +1,5 @@
 /*
- * Copyright (c) Facebook, Inc. and its affiliates.
+ * Copyright (c) Meta Platforms, Inc. and its affiliates.
  *
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
@@ -9,6 +9,8 @@
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
+use std::fs::OpenOptions;
+use std::io::Write;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::os::unix::process::CommandExt;
@@ -24,6 +26,8 @@ use nix::mount::mount;
 use nix::mount::MsFlags;
 use nix::sched::unshare;
 use nix::sched::CloneFlags;
+use nix::unistd::Gid;
+use nix::unistd::Uid;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use seccompiler::BpfProgram;
@@ -61,6 +65,7 @@ fn so_dependencies<S: AsRef<OsStr>>(binary: S) -> Result<Vec<PathBuf>> {
             let path = Path::new(cap.name("path").unwrap().as_str());
             path.into()
         })
+        .chain(vec![interpreter.into()])
         .collect())
 }
 
@@ -180,6 +185,13 @@ fn apply_seccomp_sandbox() -> Result<()> {
     Ok(())
 }
 
+fn write_userns_file(name: &str, contents: &str) -> std::io::Result<()> {
+    let mut f = OpenOptions::new()
+        .write(true)
+        .open(Path::new("/proc/self").join(name))?;
+    f.write_all(contents.as_bytes())
+}
+
 /// Wrap a binary in a sandbox. This sandbox is not meant for security, so there
 /// are no guarantees that it's impossible (or even necessarily difficult) to
 /// break out of - but it is designed to be annoying and/or obvious to escape,
@@ -194,8 +206,14 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
             .into_iter()
             .map(|p| (p.clone(), p)),
     );
+    ro_files.insert(binary.as_ref().into(), binary.as_ref().into());
 
     let mut cmd = std::process::Command::new(binary);
+    // don't pass any env vars that the caller doesn't explicitly ask for
+    cmd.env_clear();
+
+    let uid = Uid::current();
+    let gid = Gid::current();
 
     unsafe {
         cmd.pre_exec(move || {
@@ -208,6 +226,11 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
                 // CLONE_NEWPID causes hang for some reason, but it shouldn't
                 // really matter
             )?;
+
+            write_userns_file("uid_map", &format!("0 {} 1", uid))?;
+            write_userns_file("setgroups", "deny")?;
+            write_userns_file("gid_map", &format!("0 {} 1", gid))?;
+
             for (src, dst) in &ro_files {
                 let dst = root_path.join(dst.strip_prefix("/").unwrap());
                 std::fs::create_dir_all(dst.parent().unwrap())?;
@@ -220,14 +243,17 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
                     None,
                 )?;
             }
-            // mount the tmpdir as the root of the sandboxed container
+            let proc = root_path.join("proc");
+            std::fs::create_dir(&proc)?;
             mount::<_, _, str, str>(
-                Some(&root_path),
-                "/",
+                Some("/proc"),
+                &proc,
                 None,
-                MsFlags::MS_BIND | MsFlags::MS_RDONLY,
+                MsFlags::MS_BIND | MsFlags::MS_RDONLY | MsFlags::MS_REC,
                 None,
             )?;
+            // chroot into the tmpdir as the root of the sandboxed container
+            nix::unistd::chroot(&root_path)?;
             if opts.seccomp {
                 apply_seccomp_sandbox().map_err(std::io::Error::other)?;
             }
@@ -245,25 +271,14 @@ mod tests {
     use super::*;
     use anyhow::anyhow;
     use maplit::hashmap;
-    use nix::net::if_::InterfaceFlags;
-    use serde::de::DeserializeOwned;
     use serde::Deserialize;
     use serde::Serialize;
-    use std::collections::HashMap;
     use std::io::Write;
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
 
-    fn sandbox_data<D: DeserializeOwned>() -> D {
-        serde_json::from_str(&std::env::var("SANDBOX_DATA").unwrap()).unwrap()
-    }
-
-    fn is_sandboxed() -> bool {
-        std::env::var_os("SANDBOX_DATA").is_some()
-    }
-
     fn run_test_in_sandbox<D: Serialize>(name: &str, opts: SandboxOpts, data: D) -> Result<()> {
-        let path = std::env::current_exe().unwrap();
+        let path = std::env::var_os("SANDBOXED_TEST").unwrap();
         let mut cmd = super::sandbox(path, opts).unwrap();
         cmd.arg(name);
         cmd.env("SANDBOX_DATA", serde_json::to_string(&data).unwrap());
@@ -283,29 +298,13 @@ mod tests {
 
     #[test]
     fn mount_sandboxed() {
-        if is_sandboxed() {
-            // current exe and its dependencies are visible in this root
-            assert!(std::env::current_exe().unwrap().exists());
-            // files from the host's root are not visible
-            assert!(!Path::new("/etc/os-release").exists());
-            // can't just unmount / to gain full access
-            assert_eq!(
-                nix::errno::Errno::EPERM,
-                nix::mount::umount("/").unwrap_err()
-            );
-        } else {
-            run_test_in_sandbox("mount_sandboxed", Default::default(), ()).unwrap();
-        }
+        run_test_in_sandbox("mount_sandboxed", Default::default(), ()).unwrap();
     }
 
     #[test]
     fn network_sandboxed_seccomp() -> Result<()> {
-        if is_sandboxed() {
-            nix::ifaddrs::getifaddrs().unwrap();
-        } else {
-            run_test_in_sandbox("network_sandboxed_seccomp", Default::default(), ())
-                .expect_err("getifaddrs should have been blocked");
-        }
+        run_test_in_sandbox("network_sandboxed_seccomp", Default::default(), ())
+            .expect_err("getifaddrs should have been blocked");
         Ok(())
     }
 
@@ -313,46 +312,16 @@ mod tests {
     /// interfaces normally on the host are missing from within the sandbox
     #[test]
     fn network_sandboxed_no_seccomp() -> Result<()> {
-        if is_sandboxed() {
-            let mut ifaddrs: HashMap<String, InterfaceFlags> = nix::ifaddrs::getifaddrs()?
-                .map(|i| (i.interface_name, i.flags))
-                .collect();
-
-            assert!(
-                ifaddrs.contains_key("lo"),
-                "missing loopback interface: {:?}",
-                ifaddrs
-            );
-            let lo = ifaddrs.remove("lo").unwrap();
-            assert!(
-                lo.contains(InterfaceFlags::IFF_LOOPBACK),
-                "lo was not a loopback, what? {:?}",
-                lo
-            );
-
-            // there might be two other interfaces for ipv6 tunneling that are
-            // created by kernel modules so are still present in the namespace
-            if !ifaddrs.is_empty() {
-                ifaddrs.remove("ip6tnl0");
-                ifaddrs.remove("tunl0");
-                assert!(
-                    ifaddrs.is_empty(),
-                    "unexpected interfaces available in sandbox: {:?}",
-                    ifaddrs,
-                )
-            }
-        } else {
-            assert!(nix::ifaddrs::getifaddrs()?.count() > 1);
-            run_test_in_sandbox(
-                "network_sandboxed_no_seccomp",
-                SandboxOpts {
-                    seccomp: false,
-                    ..Default::default()
-                },
-                (),
-            )
-            .unwrap();
-        }
+        assert!(nix::ifaddrs::getifaddrs()?.count() > 1);
+        run_test_in_sandbox(
+            "network_sandboxed_no_seccomp",
+            SandboxOpts {
+                seccomp: false,
+                ..Default::default()
+            },
+            (),
+        )
+        .unwrap();
         Ok(())
     }
 
@@ -366,48 +335,24 @@ mod tests {
 
     #[test]
     fn blocked_syscalls() -> Result<()> {
-        if is_sandboxed() {
-            let syscall: Syscall = sandbox_data();
-            match syscall {
-                Syscall::Uname => {
-                    nix::sys::utsname::uname();
-                }
-                Syscall::Getuid => {
-                    nix::unistd::getuid();
-                }
-                Syscall::Geteuid => {
-                    nix::unistd::getuid();
-                }
-                Syscall::Gethostname => {
-                    let mut buf = [0u8; 64];
-                    nix::unistd::gethostname(&mut buf).unwrap();
-                }
-            }
-        } else {
-            for syscall in Syscall::iter() {
-                run_test_in_sandbox("blocked_syscalls", Default::default(), syscall)
-                    .expect_err(&format!("{:?} should have been blocked", syscall));
-            }
+        for syscall in Syscall::iter() {
+            run_test_in_sandbox("blocked_syscalls", Default::default(), syscall)
+                .expect_err(&format!("{:?} should have been blocked", syscall));
         }
         Ok(())
     }
 
     #[test]
     fn additional_files() -> Result<()> {
-        if is_sandboxed() {
-            // now this was explicitly added to the file allowlist
-            assert!(!Path::new("/etc/os-release2").exists());
-        } else {
-            run_test_in_sandbox(
-                "additional_files",
-                SandboxOpts::builder()
-                    .ro_files(hashmap! {"/etc/os-release".into() => "/etc/os-release2".into()})
-                    .build()
-                    .unwrap(),
-                (),
-            )
-            .unwrap();
-        }
+        run_test_in_sandbox(
+            "additional_files",
+            SandboxOpts::builder()
+                .ro_files(hashmap! {"/etc/os-release".into() => "/etc/os-release2".into()})
+                .build()
+                .unwrap(),
+            (),
+        )
+        .unwrap();
         Ok(())
     }
 }

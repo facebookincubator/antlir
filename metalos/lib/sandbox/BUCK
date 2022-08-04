@@ -1,4 +1,4 @@
-load("//metalos:defs.bzl", "rust_library")
+load("//metalos:defs.bzl", "rust_binary", "rust_library")
 
 rust_library(
     name = "sandbox",
@@ -9,6 +9,7 @@ rust_library(
         "strum",
         "strum_macros",
     ],
+    test_env = {"SANDBOXED_TEST": "$(location :sandboxed-test)"},
     deps = [
         "anyhow",
         "derive_builder",
@@ -20,5 +21,29 @@ rust_library(
         "regex",
         "seccompiler",
         "tempfile",
+    ],
+)
+
+rust_binary(
+    name = "sandboxed-test",
+    srcs = ["tests/sandboxed_test.rs"],
+    unittests = False,
+    deps = [
+        "anyhow",
+        "clap",
+        "nix",
+        "serde",
+        "serde_json",
+    ],
+)
+
+rust_binary(
+    name = "run-sandbox",
+    srcs = ["bin/run_sandbox.rs"],
+    unittests = False,
+    deps = [
+        "anyhow",
+        "clap",
+        ":sandbox",
     ],
 )
