@@ -13,6 +13,10 @@ import textwrap
 from typing import Optional
 
 # for re-export
+# pyre-fixme[21]: Could not find name `SigilNotFound` in `antlir.artifacts_dir_rs`.
+# pyre-fixme[21]: Could not find name `find_buck_cell_root` in
+#  `antlir.artifacts_dir_rs`.
+# pyre-fixme[21]: Could not find name `find_repo_root` in `antlir.artifacts_dir_rs`.
 from antlir.artifacts_dir_rs import (  # noqa: F401
     find_buck_cell_root,
     find_repo_root,
@@ -96,6 +100,7 @@ def find_artifacts_dir(path_in_repo: Optional[Path] = None) -> Path:
             "--isolation-dir. In fbsource, the likely cause is "
             "https://fburl.com/pyre-no-antlir"
         )
+    # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `find_buck_cell_root`.
     return find_buck_cell_root(path_in_repo=path_in_repo) / "buck-image-out"
 
 
@@ -103,7 +108,9 @@ def ensure_per_repo_artifacts_dir_exists(
     path_in_repo: Optional[Path] = None,
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
+    # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `find_repo_root`.
     repo_root = find_repo_root(path_in_repo=path_in_repo)
+    # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `find_buck_cell_root`.
     buck_cell_root = find_buck_cell_root(path_in_repo=path_in_repo)
     artifacts_dir = find_artifacts_dir(path_in_repo=path_in_repo)
 

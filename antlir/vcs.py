@@ -74,6 +74,7 @@ class _Git:
 
 
 def _new_vcs(path_in_repo: Optional[Path] = None) -> Union[_Hg, _Git]:
+    # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `find_repo_root`.
     repo_root = find_repo_root(path_in_repo=path_in_repo)
     if Path(repo_root / ".hg").exists():
         return _Hg()

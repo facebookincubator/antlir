@@ -25,6 +25,7 @@ class BuckConfigParser(configparser.ConfigParser):
 
 
 def find_cell_root(targets_to_outputs: Mapping[str, str]) -> Path:
+    # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `find_buck_cell_root`.
     return find_buck_cell_root(Path(next(iter(targets_to_outputs.values()))))
 
 
