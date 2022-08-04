@@ -26,7 +26,6 @@ from antlir.compiler.requires_provides import (
 )
 from antlir.fs_utils import Path
 
-# pyre-fixme[21]: Could not find name `copy_file` in `antlir.fs_utils_rs`.
 from antlir.fs_utils_rs import copy_file
 from antlir.subvol_utils import Subvol
 from pydantic import PrivateAttr
@@ -155,11 +154,9 @@ class InstallFileItem(install_files_t, ImageItem):
             shutil.copytree(
                 str(self.source),
                 str(dest),
-                # pyre-fixme[16]: Module `fs_utils_rs` has no attribute `copy_file`.
                 copy_function=lambda src, dst: copy_file(Path(src), Path(dst)),
             )
         else:
-            # pyre-fixme[16]: Module `fs_utils_rs` has no attribute `copy_file`.
             copy_file(self.source, dest)
 
         build_stat_options(
