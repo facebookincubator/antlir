@@ -126,6 +126,8 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
 
     def test_cannot_find_cell_root(self) -> None:
         self.assertRaises(
+            # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+            #  `SigilNotFound`.
             SigilNotFound,
             self._run_test,
             targets_and_locs={

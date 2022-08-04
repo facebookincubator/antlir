@@ -31,10 +31,17 @@ class ArtifactsDirTests(unittest.TestCase):
             Path(repo_submodule_subdir.dirname() / ".git").touch()
 
             # Check all the possible variations
+            # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+            #  `find_repo_root`.
             self.assertEqual(find_repo_root(path_in_repo=td), td)
+            # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+            #  `find_repo_root`.
             self.assertEqual(find_repo_root(path_in_repo=repo_subdir), td)
             self.assertEqual(
-                find_repo_root(path_in_repo=repo_submodule_subdir), td
+                # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+                #  `find_repo_root`.
+                find_repo_root(path_in_repo=repo_submodule_subdir),
+                td,
             )
 
     def test_hg_repo_root(self) -> None:
@@ -46,7 +53,11 @@ class ArtifactsDirTests(unittest.TestCase):
             os.makedirs(repo_subdir)
 
             # Check all the possible variations
+            # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+            #  `find_repo_root`.
             self.assertEqual(find_repo_root(path_in_repo=td), td)
+            # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+            #  `find_repo_root`.
             self.assertEqual(find_repo_root(path_in_repo=repo_subdir), td)
 
     def test_path_in_repo_is_relative(self) -> None:
@@ -59,9 +70,14 @@ class ArtifactsDirTests(unittest.TestCase):
 
             # Check all the possible variations
             self.assertEqual(
-                find_repo_root(path_in_repo=td.relpath(os.getcwd())), td
+                # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+                #  `find_repo_root`.
+                find_repo_root(path_in_repo=td.relpath(os.getcwd())),
+                td,
             )
             self.assertEqual(
+                # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+                #  `find_repo_root`.
                 find_repo_root(path_in_repo=repo_subdir.relpath(os.getcwd())),
                 td,
             )
@@ -90,9 +106,14 @@ class ArtifactsDirTests(unittest.TestCase):
 
             repo_subdir = td / "i/am/a/subdir/of/the/repo"
             os.makedirs(repo_subdir)
+            # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+            #  `find_buck_cell_root`.
             have = find_buck_cell_root(repo_subdir)
             self.assertEqual(td, have)
 
     def test_find_buck_cell_root_missing(self) -> None:
+        # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `SigilNotFound`.
         with temp_dir() as td, self.assertRaises(SigilNotFound):
+            # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute
+            #  `find_buck_cell_root`.
             find_buck_cell_root(td)
