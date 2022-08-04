@@ -7,17 +7,23 @@ NETWORK_TEMPLATE = metalos.template("""
 MACAddress={{mac}}
 
 [Network]
-{{#each ipv6_addrs}}
-Address={{this.addr}}/{{this.prefix}}
-{{/each~}}
-{{~#each ipv4_addrs}}
-Address={{this}}
-{{/each~}}
+
 Domains={{#each search}}{{this}} {{/each}}
 IPv6AcceptRA={{accept_ras}}
 
 [IPv6AcceptRA]
 UseAutonomousPrefix=false
+
+{{#each ipv6_addrs}}
+[Address]
+Address={{this.addr}}/{{this.prefix}}
+PreferredLifetime={{this.prefered_lifetime}}
+{{/each~}}
+{{~#each ipv4_addrs}}
+[Address]
+Address={{this}}
+{{/each~}}
+
 """)
 
 LINK_TEMPLATE = metalos.template("""
@@ -29,6 +35,9 @@ NamePolicy=
 Name={{name}}
 """)
 
+ADDR_PRIMARY    = 0
+ADDR_SECONDARY  = 1
+ADDR_DEPRECATED = 2
 
 # Automatically add search domains for all the domains after the host
 # itself, if any (ex: host001.01.abc0.facebook.com -> 01.abc0.facebook.com, abc0.facebook.com, facebook.com)
@@ -55,8 +64,12 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
 
     for i, iface in enumerate(prov.identity.network.interfaces):
         accept_ras = "yes" if iface.mac == primary_mac else "no"
-        ipv4_addrs = [a for a in iface.addrs if "." in a]
-        ipv6_addrs = [struct(addr=a, prefix="64") for a in iface.addrs if ":" in a]
+        ipv4_addrs = [i.addr for i in [a for a in iface.structured_addrs] if "." in i.addr]
+        ipv6_addrs = [struct(
+                            addr=i.addr,
+                            prefix=i.prefix_length,
+                            prefered_lifetime="forever" if i.mode != ADDR_DEPRECATED else "0") for i in
+                        [a for a in iface.structured_addrs] if ":" in i.addr]
         unit = NETWORK_TEMPLATE(accept_ras=accept_ras, mac=iface.mac, ipv6_addrs=ipv6_addrs, ipv4_addrs=ipv4_addrs, search=search)
         network_units += [metalos.file(path="/etc/systemd/network/00-metalos-{}.network".format(iface.name or i), contents=unit)]
         if iface.name:
