@@ -57,6 +57,11 @@ fn so_dependencies<S: AsRef<OsStr>>(binary: S) -> Result<Vec<PathBuf>> {
         .arg(binary)
         .output()
         .with_context(|| format!("failed to list libraries for {:?}", binary))?;
+    anyhow::ensure!(
+        output.status.success(),
+        "ld.so failed with exit code {}",
+        output.status
+    );
     let ld_output_str = std::str::from_utf8(&output.stdout).context("ld.so output not utf-8")?;
 
     Ok(LDSO_RE
@@ -200,13 +205,16 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
     let root = tempfile::tempdir().context("while creating tmpdir for root")?;
     let root_path = root.path().to_path_buf();
 
+    let binary = std::fs::canonicalize(binary.as_ref())
+        .with_context(|| format!("could not canonicalize '{:?}'", binary.as_ref()))?;
+
     let mut ro_files = opts.ro_files;
     ro_files.extend(
-        so_dependencies(binary.as_ref())?
+        so_dependencies(&binary)?
             .into_iter()
             .map(|p| (p.clone(), p)),
     );
-    ro_files.insert(binary.as_ref().into(), binary.as_ref().into());
+    ro_files.insert(binary.clone(), binary.clone());
 
     let mut cmd = std::process::Command::new(binary);
     // don't pass any env vars that the caller doesn't explicitly ask for
