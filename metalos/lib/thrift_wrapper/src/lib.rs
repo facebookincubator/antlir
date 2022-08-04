@@ -8,6 +8,7 @@
 use anyhow::Context;
 use thiserror::Error;
 
+pub use thrift_wrapper_derive::thrift_server;
 #[doc(hidden)]
 pub use thrift_wrapper_derive::ThriftWrapper;
 
@@ -16,6 +17,7 @@ pub use thrift_wrapper_derive::ThriftWrapper;
 #[doc(hidden)]
 pub mod __deps {
     pub use anyhow;
+    pub use async_trait;
     pub use fbthrift;
 }
 

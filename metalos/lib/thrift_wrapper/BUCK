@@ -7,6 +7,7 @@ rust_library(
     unittests = False,
     deps = [
         "anyhow",
+        "async-trait",
         "fbthrift",
         "thiserror",
         "url",
@@ -21,6 +22,9 @@ rust_unittest(
     crate_root = "tests.rs",
     deps = [
         "anyhow",
+        "async-trait",
+        "static_assertions",
+        "tokio",
         "url",
         "uuid",
         ":test_if-rust",
@@ -36,6 +40,7 @@ rust_library(
     visibility = [],
     deps = [
         "convert_case",
+        "darling",
         "proc-macro2",
         "quote",
         "syn",
@@ -45,6 +50,6 @@ rust_library(
 thrift_library(
     name = "test_if",
     languages = ["rust"],
-    thrift_srcs = {"test.thrift": None},
+    thrift_srcs = {"test.thrift": ["Svc"]},
     visibility = [],
 )

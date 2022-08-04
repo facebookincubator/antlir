@@ -7,6 +7,7 @@
 
 use convert_case::Case;
 use convert_case::Casing;
+use darling::FromMeta;
 use proc_macro::TokenStream;
 use quote::format_ident;
 use quote::quote;
@@ -367,4 +368,166 @@ pub fn derive_thriftwrapper(input: TokenStream) -> TokenStream {
     expand_thriftwrapper(input)
         .unwrap_or_else(|err| err.to_compile_error())
         .into()
+}
+
+#[proc_macro_attribute]
+pub fn thrift_server(attr: TokenStream, item: TokenStream) -> TokenStream {
+    let attr_args = parse_macro_input!(attr as syn::AttributeArgs);
+    let code = expand_thrift_server(attr_args, item).unwrap_or_else(|err| err.to_compile_error());
+    eprintln!("{}", code);
+    code.into()
+}
+
+#[derive(FromMeta)]
+struct ThriftServer {
+    thrift: syn::TypePath,
+    request_context: Option<syn::TypePath>,
+}
+
+#[derive(FromMeta)]
+struct ThriftMethod {
+    args: syn::punctuated::Punctuated<Box<syn::Type>, syn::token::Comma>,
+    ret: syn::TypePath,
+}
+
+fn expand_thrift_server(
+    attr_args: syn::AttributeArgs,
+    item: TokenStream,
+) -> syn::Result<proc_macro2::TokenStream> {
+    let thrift_attrs = ThriftServer::from_list(&attr_args)?;
+    let thrift_trait = thrift_attrs.thrift.path.clone();
+    let mut exn_namespace = thrift_trait.segments.clone();
+    exn_namespace.pop();
+    exn_namespace.pop();
+    exn_namespace.push(syn::parse_str("services")?);
+    exn_namespace.push(syn::parse_str(
+        &thrift_trait
+            .segments
+            .last()
+            .expect("service path must have at least one segment")
+            .ident
+            .to_string()
+            .to_case(Case::Snake),
+    )?);
+    let wrapped_trait: syn::ItemTrait = syn::parse(item)?;
+    let wrapped_trait_ident = wrapped_trait.ident.clone();
+    let server_struct_ident = quote::format_ident!("{}Server", wrapped_trait.ident);
+
+    let wrap_funcs: Vec<_> = wrapped_trait.items
+        .iter()
+        .filter_map(|i| match i {
+            syn::TraitItem::Method(m) => Some(m),
+            _ => None,
+        })
+        .map(|method| {
+            let name = &method.sig.ident;
+            let attrs = &method.attrs;
+            let meta = method
+                .attrs
+                .iter()
+                .find(|a| {
+                    a.path
+                        .segments
+                        .last()
+                        .map_or(false, |s| s.ident == "thrift")
+                })
+                .ok_or_else(|| {
+                    syn::Error::new(
+                        method.span(),
+                        format!("missing thrift attr {:?}", attrs),
+                    )
+                })?.parse_meta()?;
+            let info = ThriftMethod::from_meta(&meta)?;
+            let ret = &info.ret;
+            let exn_name: syn::Ident = syn::parse_str(&format!(
+                "{}Exn",
+                name.to_string().to_case(Case::UpperCamel)
+            ))?;
+            let exn = quote! {#exn_namespace::#exn_name};
+            // the method signature is a set of arguments of the same names, but
+            // using the thrift types
+            let real_args: Vec<_> = method.sig.inputs.iter().skip(1).collect();
+            if real_args.len() != info.args.len() {
+                return Err(syn::Error::new(meta.span(), "thrift arg types must be the same len as the real args"));
+            }
+            let thrift_args: Vec<_> = std::iter::zip(real_args.iter(), info.args.iter()).map(|(real_arg, thrift_type)| match real_arg {
+                syn::FnArg::Receiver(_) => Err(syn::Error::new(real_arg.span(), "receiver should have already been stripped")),
+                syn::FnArg::Typed(a) => {
+                    let mut a = a.clone();
+                    a.ty = thrift_type.clone();
+                    Ok(a)
+                }
+            }).collect::<syn::Result<_>>()?;
+            // convert arguments into nice wrapper code that the real
+            // implementation expects using TryInto
+            let arg_converts = method.sig.inputs.iter().filter_map(|arg| match arg {
+                syn::FnArg::Receiver(_) => None,
+                syn::FnArg::Typed(a) => Some(a),
+            }).map(|a| {
+                let name = &a.pat;
+                let nicety = &a.ty;
+                quote!{
+                    let #name = <#nicety>::try_from(#name).map_err(|e| ::thrift_wrapper::__deps::fbthrift::application_exception::ApplicationException {
+                        message: format!("argument '{}' could not be converted to rust repr: {}", stringify!(#name), e),
+                        type_: ::thrift_wrapper::__deps::fbthrift::application_exception::ApplicationExceptionErrorCode::InternalError,
+                    })?;
+                }
+            });
+            let arg_idents: Vec<_> = method.sig.inputs.iter().filter_map(|arg| match arg {
+                syn::FnArg::Receiver(_) => None,
+                syn::FnArg::Typed(a) => Some(a)
+            }).map(|pt| match &*pt.pat {
+                syn::Pat::Ident(p) => Ok(p.ident.clone()),
+                _ => Err(syn::Error::new(pt.pat.span(), "only named args work")),
+            }).collect::<syn::Result<_>>()?;
+
+            Ok(quote! {
+                async fn #name(&self, #(#thrift_args,)*) -> ::std::result::Result<#ret, #exn> {
+                    // map all the arguments into the wrapped types
+                    #(#arg_converts)*
+
+                    // run the code that deals with nice thrift types
+                    #wrapped_trait_ident::#name(&self.0, #(#arg_idents,)*)
+                        .await
+                        // map the nice result type into raw thrift
+                        .map(::std::convert::Into::into)
+                        // map the nice error type into raw thrift
+                        .map_err(|e| #exn::e(::std::convert::Into::into(e)))
+                }
+            })
+        })
+        .collect::<syn::Result<_>>()?;
+
+    // remove any #[thrift] attributes
+    let mut wrapped_trait = wrapped_trait;
+    wrapped_trait.items = wrapped_trait
+        .items
+        .into_iter()
+        .map(|mut i| {
+            if let syn::TraitItem::Method(ref mut m) = i {
+                m.attrs
+                    .retain(|a| a.path.segments.last().map_or(true, |s| s.ident != "thrift"));
+            }
+            i
+        })
+        .collect();
+
+    let maybe_request_context = match thrift_attrs.request_context {
+        Some(ty) => quote! { type RequestContext = #ty; },
+        None => quote! {},
+    };
+
+    Ok(quote! {
+        #[::thrift_wrapper::__deps::async_trait::async_trait]
+        #wrapped_trait
+
+        pub struct #server_struct_ident<S: #wrapped_trait_ident>(pub S);
+
+        #[::thrift_wrapper::__deps::async_trait::async_trait]
+        impl<S: #wrapped_trait_ident> #thrift_trait for #server_struct_ident<S> {
+            #maybe_request_context
+
+            #(#wrap_funcs)*
+        }
+    })
 }
