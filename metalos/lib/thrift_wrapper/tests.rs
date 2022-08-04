@@ -6,6 +6,9 @@
  */
 
 use anyhow::Result;
+use async_trait::async_trait;
+use static_assertions as sa;
+use thrift_wrapper::thrift_server;
 use thrift_wrapper::Error;
 use thrift_wrapper::ThriftWrapper;
 use uuid::Uuid;
@@ -15,7 +18,7 @@ struct NewTypedHello(String);
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(test_if::MyStruct)]
-struct MyStruct {
+pub struct MyStruct {
     url: url::Url,
     hello: String,
     newtyped_hello: NewTypedHello,
@@ -163,5 +166,89 @@ fn thrift_union() -> Result<()> {
         test_if::MyUnion::nEw(test_if::UnionB { bar: 2 }),
         MyUnion::B(UnionB { bar: 2 }).into(),
     );
+    Ok(())
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[thrift(test_if::Exn)]
+pub struct Exn {
+    pub msg: String,
+}
+
+#[thrift_server(thrift = "test_if::server::Svc")]
+pub trait Svc: Send + Sync + 'static {
+    #[thrift(args = "test_if::MyStruct", ret = "test_if::MyStruct")]
+    async fn some_method(&self, arg: MyStruct) -> Result<MyStruct, Exn>;
+}
+
+#[derive(Clone)]
+struct MyImpl {}
+
+#[async_trait]
+impl Svc for MyImpl {
+    async fn some_method(&self, arg: MyStruct) -> Result<MyStruct, Exn> {
+        if arg.number == 42 {
+            Ok(arg)
+        } else {
+            Err(Exn {
+                msg: "only 42 is allowed".into(),
+            })
+        }
+    }
+}
+
+sa::assert_impl_all!(SvcServer<MyImpl>: test_if::server::Svc);
+
+#[tokio::test]
+async fn thrift_service() -> Result<()> {
+    let svc = MyImpl {};
+
+    let input = MyStruct {
+        url: "https://hello/world".parse().expect("this is a valid url"),
+        hello: "world".into(),
+        newtyped_hello: NewTypedHello("world".into()),
+        number: 42,
+        nested: Nested {
+            uuid: Uuid::new_v4(),
+        },
+    };
+
+    assert_eq!(
+        test_if::server::Svc::some_method(&SvcServer(svc.clone()), input.clone().into())
+            .await
+            .expect("server response should pass"),
+        input.clone().into_thrift(),
+    );
+
+    // func throws a nice error
+    let mut bad = input.clone();
+    bad.number = 43;
+    match test_if::server::Svc::some_method(&SvcServer(svc.clone()), bad.into())
+        .await
+        .unwrap_err()
+    {
+        test_if::services::svc::SomeMethodExn::e(e) => assert_eq!(
+            e,
+            test_if::Exn {
+                msg: "only 42 is allowed".into()
+            }
+        ),
+        other => panic!("expected Exn, got {:?}", other),
+    };
+
+    // input cannot be converted to safe struct
+    let mut input_cannot_convert = input.clone().into_thrift();
+    input_cannot_convert.url = "notaurl".into();
+    match test_if::server::Svc::some_method(&SvcServer(svc.clone()), input_cannot_convert)
+        .await
+        .unwrap_err()
+    {
+        test_if::services::svc::SomeMethodExn::ApplicationException(aex) => assert_eq!(
+            aex.message,
+            "argument 'arg' could not be converted to rust repr: error in field url: 'notaurl' is not a valid url"
+        ),
+        other => panic!("expected ApplicationException, got {:?}", other),
+    };
+
     Ok(())
 }

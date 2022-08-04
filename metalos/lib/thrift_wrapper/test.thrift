@@ -22,3 +22,11 @@ union MyUnion {
   1: UnionA a;
   2: UnionB nEw;
 }
+
+safe exception Exn {
+  1: string msg;
+} (rust.exhaustive)
+
+service Svc {
+  MyStruct some_method(1: MyStruct arg) throws (1: Exn e);
+}
