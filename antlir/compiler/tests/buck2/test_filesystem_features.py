@@ -200,10 +200,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                     {
                         "borf": [
                             "(Dir)",
-                            {
-                                "barf": ["(Dir)", {"hello_world": ["(File)"]}],
-                                "hello_world": ["(File)"],
-                            },
+                            {"barf": ["(Dir)", {}], "hello_world": ["(File)"]},
                         ],
                         "hello_world": ["(File)"],
                     },
