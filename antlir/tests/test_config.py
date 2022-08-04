@@ -56,7 +56,6 @@ class RepoConfigTestCase(unittest.TestCase):
         config = repo_config()
         self.assertIs(config, repo_config())  # memoized!
         self.assertIsInstance(config, repo_config_t)
-        # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `find_repo_root`.
         self.assertEqual(config.repo_root, find_repo_root())
         self.assertGreater(len(config.vcs_revision), 10)
         try:

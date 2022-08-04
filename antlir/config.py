@@ -51,7 +51,6 @@ def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
         data.pop("host_mounts_for_repo_artifacts", [])
     )
     try:
-        # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `find_repo_root`.
         repo_root = find_repo_root(path_in_repo=path_in_repo)
         artifact_dir = find_artifacts_dir(path_in_repo=path_in_repo)
 
@@ -60,7 +59,6 @@ def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
         # build volume is included.
         if artifact_dir.islink():
             host_mounts_for_repo_artifacts.append(artifact_dir.realpath())
-    # pyre-fixme[16]: Module `artifacts_dir_rs` has no attribute `SigilNotFound`.
     except SigilNotFound:
         if data.get("artifacts_require_repo") or is_buck_using_isolation():
             raise ConfigNotFound()

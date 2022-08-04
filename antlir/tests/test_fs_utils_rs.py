@@ -9,7 +9,6 @@ import unittest
 
 from antlir.fs_utils import Path
 
-# pyre-fixme[21]: Could not find name `Path` in `antlir.fs_utils_rs`.
 from antlir.fs_utils_rs import Path as RustPath
 
 
@@ -22,14 +21,13 @@ class TestFsUtils(unittest.TestCase):
             Path(b"/hello/world"),
         ]:
             py_path = Path(path)
-            # pyre-fixme[16]: Module `fs_utils_rs` has no attribute `Path`.
             rust_path = RustPath(path)
             self.assertEqual(type(rust_path), Path)
             self.assertEqual(rust_path, py_path)
 
     def test_bad_type(self) -> None:
         with self.assertRaisesRegex(TypeError, "42 is neither bytes nor str"):
-            # pyre-fixme[16]: Module `fs_utils_rs` has no attribute `Path`.
+            # pyre-fixme[6]: For 1st param expected `Union[bytes, str]` but got `int`.
             RustPath(42)
 
     def test_not_utf8(self) -> None:
@@ -38,5 +36,4 @@ class TestFsUtils(unittest.TestCase):
             seq.decode("utf-8")
         # this is an invalid utf-8 sequence, but rust is using a PathBuf so it's
         # all ok
-        # pyre-fixme[16]: Module `fs_utils_rs` has no attribute `Path`.
         RustPath(seq)
