@@ -12,7 +12,10 @@ Domains={{#each search}}{{this}} {{/each}}
 IPv6AcceptRA={{accept_ras}}
 
 [IPv6AcceptRA]
+UseMTU=false
 UseAutonomousPrefix=false
+UseOnLinkPrefix=false
+DHCPv6Client=false
 
 {{#each ipv6_addrs}}
 [Address]
