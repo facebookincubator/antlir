@@ -93,8 +93,6 @@ async def wrap_testpilot_python_cmd(
     else:
         async with wrap_and_forward(
             output=test_opts.output,
-            # pyre-fixme[58]: `+` is not supported for operand types
-            #   `List[Union[Path, str]]` and `List[str]`.
             cmd=[cmd[0]] + unparsed_args,
             test_type="pyunit",
             wrapper=wrapper,
