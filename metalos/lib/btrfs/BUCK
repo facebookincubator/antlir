@@ -16,11 +16,6 @@ rust_bindgen_library(
 rust_library(
     name = "btrfs",
     srcs = glob(["src/*.rs"]),
-    test_deps = [
-        "slog",
-        "slog_glog_fmt",
-        "//metalos/lib/systemd:systemd",
-    ],
     unittest_opts = unittest_opts_t(
         container = shape.new(
             container_unittest_opts_t,

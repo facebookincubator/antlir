@@ -16,20 +16,6 @@ use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::path::Path;
 use std::process::Command;
-use systemd::Systemd;
-use systemd::WaitableSystemState;
-
-async fn wait_for_systemd() -> Result<()> {
-    let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-    let sd = Systemd::connect(log).await?;
-    sd.wait(WaitableSystemState::Starting).await?;
-    Ok(())
-}
-
-#[tokio::test]
-async fn systemd_running() {
-    wait_for_systemd().await.unwrap();
-}
 
 // parse (mountpoint, opts) from /proc/mounts
 fn parse_mounts() -> BTreeMap<String, String> {
@@ -43,9 +29,8 @@ fn parse_mounts() -> BTreeMap<String, String> {
         .collect()
 }
 
-#[tokio::test]
-async fn in_boot_snapshot() {
-    wait_for_systemd().await.unwrap();
+#[test]
+fn in_boot_snapshot() {
     let boot_id = std::fs::read_to_string("/proc/sys/kernel/random/boot_id")
         .unwrap()
         .trim()
@@ -69,9 +54,8 @@ fn loaded_kmods() -> Result<HashSet<String>> {
         .collect())
 }
 
-#[tokio::test]
-async fn kernel_modules_work() {
-    wait_for_systemd().await.unwrap();
+#[test]
+fn kernel_modules_work() {
     let uname = nix::sys::utsname::uname();
     let mountpoint = format!("/usr/lib/modules/{}", uname.release());
     let mounts = parse_mounts();
@@ -97,7 +81,6 @@ async fn kernel_modules_work() {
         "'{}' does not exist",
         fuse_path.display()
     );
-    let mods = loaded_kmods().unwrap();
     Command::new("modprobe")
         .arg("fuse")
         .spawn()

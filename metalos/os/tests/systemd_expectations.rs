@@ -16,7 +16,6 @@ use systemd::analyze::verify::Problem;
 use systemd::Systemd;
 use systemd::UnitFileState;
 use systemd::UnitName;
-use systemd::WaitableSystemState;
 
 static EXPECTATIONS: &'static str = include_str!("expectations.toml");
 

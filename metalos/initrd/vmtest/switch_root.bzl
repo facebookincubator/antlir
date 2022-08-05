@@ -25,13 +25,10 @@ def switch_root_test(name, kernel, disk = ":metalos-gpt-image", disk_interface =
         ),
         timeout_secs = 600,
         srcs = ["test_switch_root.rs"],
-        deps = ["//metalos/lib/systemd:systemd"] + third_party.libraries(
+        deps = third_party.libraries(
             [
                 "anyhow",
                 "nix",
-                "slog",
-                "slog_glog_fmt",
-                "tokio",
             ],
             platform = "rust",
         ),

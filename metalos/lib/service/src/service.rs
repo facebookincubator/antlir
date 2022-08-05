@@ -518,14 +518,6 @@ mod tests {
     use set::tests::service_set;
     use std::fs;
     use std::os::linux::fs::MetadataExt;
-    use systemd::WaitableSystemState;
-
-    pub(crate) async fn wait_for_systemd() -> anyhow::Result<()> {
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-        let sd = Systemd::connect(log.clone()).await?;
-        sd.wait(WaitableSystemState::Operational).await?;
-        Ok(())
-    }
 
     // In the near future we probably want to assert that the running state of
     // the system matches what we expect before/during/after transactions, but
