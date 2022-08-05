@@ -153,6 +153,10 @@ module.exports = {
             id: 'metalos/fb/hacking_guide',
           },
           {
+            type: 'doc',
+            id: 'metalos/fb/mclassica',
+          },
+          {
             type: 'category',
             label: 'Hacking items @ FB',
             collapsed: false,
