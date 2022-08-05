@@ -231,8 +231,6 @@ class XMLRpmParser(AbstractContextManager):
                     assert elt.attrib["pkgid"] == "YES"
                     self._package[self._CHECKSUM] = Checksum(
                         algorithm=elt.attrib["type"],
-                        # pyre-fixme[6]: Expected `str` for 2nd param but got
-                        #  `Optional[str]`.
                         hexdigest=elt.text,
                     )
                 elif m.group(2) == self._LOCATION:
