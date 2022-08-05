@@ -587,8 +587,14 @@ exec {sleep_fd}<> <(:)
 while [ ! -e /run/dbus/system_bus_socket ] ; do
     read -t 0.01 -u "$sleep_fd"
 done
-exec {sleep_fd}>&-
 """
+            + (
+                "systemctl is-system-running --wait --quiet || "
+                '(echo -e "\\e[31mSYSTEMD FAILED\\e[0m" && exit 42)\n'
+                if setup.opts.boot_await_system_running
+                else ""
+            )
+            + "exec {sleep_fd}>&-\n"
             + f"exec {' '.join(shlex.quote(c) for c in opts.cmd)}",
         ]
     else:

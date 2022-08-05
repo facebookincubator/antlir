@@ -232,6 +232,7 @@ class _NspawnOpts(NamedTuple):
     subvolume_on_disk: Optional[SubvolumeOnDisk] = None
     boot: bool = False
     boot_await_dbus: bool = True
+    boot_await_system_running: bool = False
     bind_repo_ro: bool = False  # to support @mode/dev
     bind_artifacts_dir_rw: bool = False
     chdir: Optional[Path] = None
@@ -293,6 +294,14 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         "run until the dbus socket for `systemd` exists in the container "
         "(a prerequisite for `systemctl` to work). If you are debugging "
         "early bootup, you may need to disable this wait.",
+    )
+    parser.add_argument(
+        "--boot-await-system-running",
+        dest="boot_await_system_running",
+        action="store_true",
+        help="If specified, your command will not run until `systemd` reports "
+        "that the system is running (and no units have failed). If you are "
+        "debugging early bootup, you may need to disable this wait.",
     )
     parser.add_argument(
         "--chdir",

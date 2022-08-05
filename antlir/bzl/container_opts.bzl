@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:shape.bzl", "shape")
 load(":container_opts.shape.bzl", "container_opts_t")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
@@ -27,4 +28,6 @@ def normalize_container_opts(container_opts):
         container_opts = {}
     if types.is_dict(container_opts):
         return _new_container_opts_t(**container_opts)
+    if shape.is_instance(container_opts, container_opts_t):
+        return _new_container_opts_t(**shape.as_serializable_dict(container_opts))
     return _new_container_opts_t(**structs.to_dict(container_opts))
