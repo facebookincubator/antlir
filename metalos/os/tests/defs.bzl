@@ -1,3 +1,4 @@
+load("//antlir/bzl:container_opts.shape.bzl", "container_opts_t")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -28,6 +29,7 @@ def systemd_expectations_test(name, layer, expectations):
             "slog_glog_fmt",
             "tokio",
         ], platform = "rust"),
+        container_opts = container_opts_t(boot_await_system_running = False),
     )
 
 def skip_unit(unit):

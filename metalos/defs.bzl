@@ -1,4 +1,5 @@
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:container_opts.shape.bzl", "container_opts_t")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "third_party", antlir_rust_binary = "rust_binary", antlir_rust_library = "rust_library", antlir_rust_unittest = "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -123,6 +124,7 @@ def _rust_common(
             layer = unittest_opts.container.layer,
             run_as_user = "root",
             boot = unittest_opts.container.boot,
+            container_opts = container_opts_t(boot_await_system_running = False),
             **test_kwargs
         )
     if "vm" in unittests:
