@@ -142,7 +142,6 @@ mod tests {
 
     #[containertest]
     async fn dropin() -> Result<()> {
-        crate::tests::wait_for_systemd().await.unwrap();
         let svc = ServiceInstance::new(
             "metalos.service.demo".into(),
             "00000000000040008000000000000001".parse().unwrap(),

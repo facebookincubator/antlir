@@ -77,15 +77,9 @@ mod tests {
     use maplit::hashmap;
     use serde_json::Value;
     use slog::o;
-    use systemd::Systemd;
-    use systemd::WaitableSystemState;
 
     #[containertest]
     async fn test_send_event() -> Result<()> {
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-        let sd = Systemd::connect(log).await?;
-        sd.wait(WaitableSystemState::Operational).await?;
-
         let f = std::fs::File::create("/etc/resolv.conf")
             .context("failed to create empty /etc/resolv.conf")?;
         f.sync_all().context("failed to sync file")?;

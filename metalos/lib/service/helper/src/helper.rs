@@ -85,19 +85,9 @@ pub(crate) mod tests {
     use super::*;
     use metalos_macros::containertest;
     use std::path::Path;
-    use systemd::Systemd;
-    use systemd::WaitableSystemState;
-
-    pub(crate) async fn wait_for_systemd() -> Result<()> {
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-        let sd = Systemd::connect(log).await?;
-        sd.wait(WaitableSystemState::Operational).await?;
-        Ok(())
-    }
 
     #[containertest]
     async fn test_init() -> Result<()> {
-        wait_for_systemd().await?;
         let svc = ServiceInstance::new(
             "metalos.service.demo".into(),
             "00000000000040008000000000000001".parse().unwrap(),

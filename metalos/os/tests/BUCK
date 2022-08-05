@@ -4,6 +4,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load(":defs.bzl", "skip_unit")
 
 export_file(
     name = "systemd_expectations.rs",
@@ -44,7 +45,7 @@ buck_genrule(
 test_features = [
     mock_run_fs_control,
     # Otherwise systemd-networkd will wait for a non-lo link that will never come
-    systemd.install_dropin("99-skip-unit.conf", "systemd-networkd-wait-online.service"),
+    skip_unit("systemd-networkd-wait-online.service"),
     systemd.mask_units([
         "attestd2.service",  # no tpm
         "metalos-report-boot.service",  # no network
@@ -54,6 +55,8 @@ test_features = [
         "/usr/lib/metalos/native-service/dropins/bind-antlir-dirs.conf",
     ),
     # @oss-disable: "//metalos/os/tests/facebook:test-features", 
+    # there is not (yet) a host config
+    skip_unit("metalos-commit-initial-runtime-config.service"),
 ]
 
 # common test layer that is just the base rootfs plus some common test

@@ -14,7 +14,6 @@ rust_binary(
         "http",
         "maplit",
         "//metalos/lib/http_test:http_test",
-        "//metalos/lib/systemd:systemd",
     ],
     test_srcs = glob(["tests/**/*.rs"]),
     unittest_opts = unittest_opts_t(

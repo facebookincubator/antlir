@@ -124,7 +124,7 @@ def _rust_common(
             layer = unittest_opts.container.layer,
             run_as_user = "root",
             boot = unittest_opts.container.boot,
-            container_opts = container_opts_t(boot_await_system_running = False),
+            container_opts = container_opts_t(boot_await_system_running = True),
             **test_kwargs
         )
     if "vm" in unittests:

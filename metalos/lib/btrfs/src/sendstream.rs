@@ -267,19 +267,9 @@ mod tests {
     use anyhow::Result;
     use metalos_macros::containertest;
     use std::path::Path;
-    use systemd::Systemd;
-    use systemd::WaitableSystemState;
-
-    async fn wait_for_systemd() -> Result<()> {
-        let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-        let sd = Systemd::connect(log).await?;
-        sd.wait(WaitableSystemState::Starting).await?;
-        Ok(())
-    }
 
     #[containertest]
     async fn send_rw_fails() -> Result<()> {
-        wait_for_systemd().await?;
         let subvol = Subvolume::root()?;
         match subvol.send_uncompressed() {
             Err(crate::Error::Sendstream(Error::SendRw)) => {}
@@ -307,7 +297,6 @@ mod tests {
 
     #[containertest]
     async fn simple_recv() -> Result<()> {
-        wait_for_systemd().await?;
         let (src, dst) = setup_for_send_recv()?;
         let sendstream = src.send_uncompressed()?;
         let recv = sendstream.receive_into(&dst).await?;
@@ -316,7 +305,6 @@ mod tests {
 
     #[containertest]
     async fn zstd_recv() -> Result<()> {
-        wait_for_systemd().await?;
         let (src, dst) = setup_for_send_recv()?;
         let sendstream = src.send(Level::Best)?;
         let recv = sendstream.receive_into(&dst).await?;
@@ -325,7 +313,6 @@ mod tests {
 
     #[containertest]
     async fn large_send_recv_uncompressed() -> Result<()> {
-        wait_for_systemd().await?;
         let root = Subvolume::root()?;
         let mut snap = root.snapshot("/var/tmp/rootfs", SnapshotFlags::READONLY)?;
         snap.set_readonly(true)?;
@@ -339,7 +326,6 @@ mod tests {
 
     #[containertest]
     async fn large_send_recv_zstd() -> Result<()> {
-        wait_for_systemd().await?;
         let root = Subvolume::root()?;
         let mut snap = root.snapshot("/var/tmp/rootfs", SnapshotFlags::READONLY)?;
         snap.set_readonly(true)?;

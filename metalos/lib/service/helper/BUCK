@@ -12,7 +12,6 @@ rust_binary(
     },
     test_deps = [
         "nix",
-        "//metalos/lib/systemd:systemd",
     ],
     unittest_opts = unittest_opts_t(
         container = shape.new(
