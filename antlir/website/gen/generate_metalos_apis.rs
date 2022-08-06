@@ -5,11 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::Result;
-use serde::Deserialize;
 use std::collections::BTreeMap;
 
+use anyhow::Result;
 use buck_query::buck_query;
+use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Library {

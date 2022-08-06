@@ -7,11 +7,10 @@
 
 use std::path::PathBuf;
 
+use absolute_path::AbsolutePathBuf;
 use pyo3::create_exception;
 use pyo3::exceptions::PyFileNotFoundError;
 use pyo3::prelude::*;
-
-use absolute_path::AbsolutePathBuf;
 
 create_exception!(artifacts_dir, SigilNotFound, pyo3::exceptions::PyException);
 

@@ -6,6 +6,11 @@
  */
 
 #![feature(get_mut_unchecked)]
+use std::cell::RefCell;
+use std::collections::BTreeMap;
+use std::path::PathBuf;
+use std::rc::Rc;
+
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
@@ -37,10 +42,6 @@ use starlark::values::StringValue;
 use starlark::values::UnpackValue;
 use starlark::values::Value;
 use starlark::values::ValueLike;
-use std::cell::RefCell;
-use std::collections::BTreeMap;
-use std::path::PathBuf;
-use std::rc::Rc;
 use structopt::StructOpt;
 
 /// We have a bit of an easier job than loading arbitrary bzl files. We know
@@ -439,8 +440,9 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use maplit::btreemap;
+
+    use super::*;
 
     #[test]
     fn simple_module() -> Result<()> {

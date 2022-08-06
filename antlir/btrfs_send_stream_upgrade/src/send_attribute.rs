@@ -5,13 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use slog::debug;
-use slog::info;
-use slog::trace;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::mem::size_of_val;
 use std::time::SystemTime;
+
+use slog::debug;
+use slog::info;
+use slog::trace;
 use thiserror::Error;
 use zstd::stream::write::Encoder;
 

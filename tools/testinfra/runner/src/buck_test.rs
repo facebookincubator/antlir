@@ -128,11 +128,12 @@ impl Test {
 
 // a.k.a. the defaults
 pub mod shell {
+    use std::process::Child;
+
     use super::make_command;
     use super::Test;
     use super::TestKind;
     use super::TestSpec;
-    use std::process::Child;
 
     /// Builds a singleton test from a given spec.
     pub fn list_tests(spec: TestSpec) -> Vec<Test> {

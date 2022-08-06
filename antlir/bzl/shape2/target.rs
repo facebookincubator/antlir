@@ -17,7 +17,6 @@ use fbthrift::ttype::GetTType;
 use fbthrift::ttype::TType;
 use serde::Deserialize;
 use serde::Serialize;
-
 use shape::ShapePath;
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]

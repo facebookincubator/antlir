@@ -20,12 +20,6 @@ use derive_more::From;
 use handlebars::handlebars_helper;
 use handlebars::no_escape;
 use handlebars::Handlebars;
-use itertools::Itertools;
-use serde::Serialize;
-use serde_json::Value;
-use structopt::clap::arg_enum;
-use structopt::StructOpt;
-
 use ir::ComplexType;
 use ir::Enum;
 use ir::Field;
@@ -36,6 +30,11 @@ use ir::Target;
 use ir::Type;
 use ir::TypeName;
 use ir::Union;
+use itertools::Itertools;
+use serde::Serialize;
+use serde_json::Value;
+use structopt::clap::arg_enum;
+use structopt::StructOpt;
 
 arg_enum! {
     #[derive(Debug)]

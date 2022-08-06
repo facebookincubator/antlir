@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use lazy_static::lazy_static;
-use slog::debug;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -14,6 +12,9 @@ use std::fmt::Display;
 use std::mem::size_of_val;
 use std::ops::Bound::Excluded;
 use std::ops::Bound::Included;
+
+use lazy_static::lazy_static;
+use slog::debug;
 
 pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use crate::send_version::SendVersion;
