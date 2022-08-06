@@ -126,9 +126,11 @@ impl PartialOrd for WaitableSystemState {
 
 #[cfg(test)]
 mod tests {
-    use super::WaitableSystemState;
-    use itertools::Itertools;
     use std::cmp::Ordering;
+
+    use itertools::Itertools;
+
+    use super::WaitableSystemState;
 
     #[test]
     fn system_state_ord() {

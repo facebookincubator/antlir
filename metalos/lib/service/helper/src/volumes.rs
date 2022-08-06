@@ -5,13 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::path::Path;
+
 use btrfs::DeleteFlags;
 use btrfs::SnapshotFlags;
 use btrfs::Subvolume;
-use std::path::Path;
-use thiserror::Error;
-
 use service::ServiceInstance;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -102,14 +102,16 @@ impl ServiceVolumes {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::fs;
+    use std::os::linux::fs::MetadataExt;
+    use std::path::Path;
+
     use anyhow::Result;
     use metalos_macros::containertest;
     use nix::unistd::Group;
     use nix::unistd::User;
-    use std::fs;
-    use std::os::linux::fs::MetadataExt;
-    use std::path::Path;
+
+    use super::*;
 
     fn do_create() -> Result<(ServiceVolumes, ServiceInstance)> {
         let svc = ServiceInstance::new(

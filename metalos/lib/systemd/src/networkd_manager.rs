@@ -6,12 +6,12 @@
  */
 
 use serde::Deserialize;
+use systemd_macros::SystemdEnum;
+use systemd_macros::TransparentZvariant;
 use zbus::dbus_proxy;
 use zvariant::derive::Type;
 
 use crate::dbus_types::*;
-use systemd_macros::SystemdEnum;
-use systemd_macros::TransparentZvariant;
 
 #[derive(Debug, PartialEq, Eq, Clone, TransparentZvariant)]
 pub struct LinkIndex(i32);
@@ -70,9 +70,10 @@ trait Link {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
+
     use super::AdministrativeState;
     use crate::Networkd;
-    use anyhow::Result;
 
     #[containertest]
     async fn test_network_api() -> Result<()> {

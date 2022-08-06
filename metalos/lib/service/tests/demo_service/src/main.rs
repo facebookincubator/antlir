@@ -14,16 +14,16 @@
 //! in these state directories, that is up to the service itself and is
 //! consequently not tested here.
 
-use anyhow::Context;
-use anyhow::Result;
-use nix::sys::utsname::uname;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use std::path::PathBuf;
-use structopt::StructOpt;
 
+use anyhow::Context;
+use anyhow::Result;
 #[cfg(facebook)]
 use facebook_checks::do_facebook_checks;
+use nix::sys::utsname::uname;
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 struct Opts {

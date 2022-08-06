@@ -12,13 +12,12 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use clap::Parser;
-use slog::o;
-use slog::Logger;
-use uuid::Uuid;
-
 use metalos_host_configs::packages::Format;
 use metalos_host_configs::packages::Kind;
 use metalos_host_configs::packages::Package;
+use slog::o;
+use slog::Logger;
+use uuid::Uuid;
 
 mod offline;
 mod service;

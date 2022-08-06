@@ -254,15 +254,17 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::find_rpm_differences;
-    use super::get_changed_files;
-    use super::Rpm;
-    use super::RpmDiff;
+    use std::path::Path;
+
     use anyhow::Result;
     use btrfs::Subvolume;
     use maplit::btreeset;
     use metalos_macros::containertest;
-    use std::path::Path;
+
+    use super::find_rpm_differences;
+    use super::get_changed_files;
+    use super::Rpm;
+    use super::RpmDiff;
 
     #[containertest]
     fn test_file_change() -> Result<()> {

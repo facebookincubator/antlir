@@ -11,15 +11,14 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
-use strum_macros::Display;
-use url::Url;
-use uuid::Uuid;
-
 use metalos_thrift_host_configs::packages::Kind as ThriftKind;
+use strum_macros::Display;
 use thrift_wrapper::Error;
 use thrift_wrapper::FieldContext;
 use thrift_wrapper::Result;
 use thrift_wrapper::ThriftWrapper;
+use url::Url;
+use uuid::Uuid;
 
 #[derive(Debug, Display, Copy, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::packages::Format)]
@@ -285,13 +284,15 @@ pub struct PackageStatus {
 /// Generic versions of the types above, useful for cases where code wants to
 /// (less safely) operate on a collection of heterogenous package kinds.
 pub mod generic {
-    use super::Format;
-    use fbthrift::simplejson_protocol::serialize;
     use std::path::PathBuf;
+
+    use fbthrift::simplejson_protocol::serialize;
     use strum_macros::Display;
     use thrift_wrapper::ThriftWrapper;
     use url::Url;
     use uuid::Uuid;
+
+    use super::Format;
 
     #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper, Display)]
     #[thrift(metalos_thrift_host_configs::packages::Kind)]
@@ -405,8 +406,9 @@ pub mod generic {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use anyhow::Result;
+
+    use super::*;
 
     #[test]
     fn format_enum() -> Result<()> {

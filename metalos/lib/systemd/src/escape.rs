@@ -42,12 +42,14 @@ pub fn template_unit_name(
 
 #[cfg(test)]
 mod tests {
-    use super::escape;
-    use super::template_unit_name;
+    use std::process::Command;
+
     use anyhow::bail;
     use anyhow::Context;
     use anyhow::Result;
-    use std::process::Command;
+
+    use super::escape;
+    use super::template_unit_name;
 
     #[test]
     fn escape_smoketest() -> Result<()> {

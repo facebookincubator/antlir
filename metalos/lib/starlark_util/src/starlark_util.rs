@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
+use std::marker::PhantomData;
+
 use anyhow::anyhow;
 use anyhow::Result;
 use gazebo::any::ProvidesStaticType;
@@ -17,8 +20,6 @@ use starlark::values::FrozenValue;
 use starlark::values::Heap;
 use starlark::values::StarlarkValue;
 use starlark::values::Value;
-use std::fmt::Debug;
-use std::marker::PhantomData;
 
 mod value;
 use value::Value as ThriftValue;
@@ -199,13 +200,14 @@ unsafe impl ProvidesStaticType for ThriftValue {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use example::Example;
     use example::ListItem;
     use maplit::btreemap;
     use maplit::btreeset;
     use starlark::assert::Assert;
     use starlark::syntax::Dialect;
+
+    use super::*;
 
     #[test]
     fn test_exposed_to_starlark() -> Result<()> {

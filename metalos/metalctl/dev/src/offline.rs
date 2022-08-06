@@ -14,11 +14,10 @@ use std::os::unix::process::CommandExt;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use slog::debug;
-use slog::Logger;
-
 use metalos_host_configs::api::OfflineUpdateRequest;
 use metalos_host_configs::host::HostConfig;
+use slog::debug;
+use slog::Logger;
 use state::State;
 
 use crate::FilePackage;

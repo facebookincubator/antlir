@@ -12,7 +12,6 @@ use std::ops::DerefMut;
 
 use anyhow::Context;
 use anyhow::Result;
-
 use systemd::ActiveState;
 use systemd::Systemd;
 
@@ -117,10 +116,11 @@ impl Deref for Diff {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use super::*;
     use maplit::btreemap;
     use metalos_macros::test;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     impl From<(Option<Version>, Option<Version>)> for ServiceDiff {
         fn from(pair: (Option<Version>, Option<Version>)) -> ServiceDiff {

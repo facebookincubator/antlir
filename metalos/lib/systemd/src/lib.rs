@@ -204,9 +204,10 @@ pub type Networkd = DbusService<NetworkdManagerProxy<'static>>;
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
+
     use super::Systemd;
     use super::WaitableSystemState;
-    use anyhow::Result;
 
     #[containertest]
     async fn test_dbus_api() -> Result<()> {

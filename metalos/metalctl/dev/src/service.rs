@@ -11,9 +11,6 @@ use std::os::unix::process::CommandExt;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use slog::debug;
-use slog::Logger;
-
 use metalos_host_configs::packages::Format;
 use metalos_host_configs::packages::Service as ServicePackage;
 use metalos_host_configs::runtime_config::Service;
@@ -21,6 +18,8 @@ use package_download::default_downloader;
 use package_download::ensure_packages_on_disk_ignoring_artifacts;
 use service::ServiceSet;
 use service::Transaction;
+use slog::debug;
+use slog::Logger;
 use systemd::Systemd;
 
 use crate::PackageArg;

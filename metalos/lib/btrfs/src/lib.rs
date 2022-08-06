@@ -22,9 +22,6 @@ use thiserror::Error;
 use uuid::Uuid;
 
 pub mod sendstream;
-pub use sendstream::Sendstream;
-pub use sendstream::SendstreamExt;
-
 use btrfsutil_sys::btrfs_util_create_snapshot;
 use btrfsutil_sys::btrfs_util_create_subvolume;
 use btrfsutil_sys::btrfs_util_create_subvolume_iterator;
@@ -42,6 +39,8 @@ use btrfsutil_sys::BTRFS_SUBVOL_RDONLY;
 use btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY;
 use btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE;
 use btrfsutil_sys::BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE;
+pub use sendstream::Sendstream;
+pub use sendstream::SendstreamExt;
 
 pub static BTRFS_FS_TREE_OBJECTID: u64 = 5;
 
@@ -338,8 +337,9 @@ pub(crate) mod __private {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use metalos_macros::containertest;
+
+    use super::*;
 
     #[containertest]
     fn get_root() -> Result<()> {

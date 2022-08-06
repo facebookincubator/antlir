@@ -18,8 +18,9 @@ pub fn globals() -> Globals {
 
 #[cfg(test)]
 mod tests {
-    use super::metalos;
     use starlark::assert::Assert;
+
+    use super::metalos;
     #[test]
     fn starlark_module_exposed() {
         let mut a = Assert::new();

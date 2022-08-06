@@ -8,13 +8,13 @@
 // This file works for now but when we want to support multiple devices we should probably switch
 // to something like: third-party/rust/fixups/libparted-sys/fixups.toml
 
+use std::path::Path;
+
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
-use std::path::Path;
-use udev::Enumerator;
-
 use metalos_disk::DiskDevPath;
+use udev::Enumerator;
 
 const IGNORED_PREFIXES: &[&str] = &["/sys/devices/virtual/"];
 
@@ -200,9 +200,11 @@ impl FindRootDisk for SerialDiskFinder {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use metalos_macros::vmtest;
     use std::path::Path;
+
+    use metalos_macros::vmtest;
+
+    use super::*;
 
     fn test_finder<T: FindRootDisk>(finder: T) -> Result<()> {
         let dev = finder

@@ -93,13 +93,14 @@ pub struct UnpackedRequest {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use anyhow::anyhow;
     use anyhow::Context;
     use anyhow::Result;
     use maplit::hashmap;
     use reqwest::Client;
     use reqwest::Url;
+
+    use super::*;
 
     #[containertest]
     async fn test_http_test() -> Result<()> {

@@ -6,11 +6,10 @@
  */
 
 use anyhow::Context;
-use slog::Logger;
-
 use metalos_host_configs::packages::generic::Package;
 use package_download::ensure_packages_on_disk_ignoring_artifacts;
 use package_download::PackageDownloader;
+use slog::Logger;
 use state::State;
 use state::Token;
 

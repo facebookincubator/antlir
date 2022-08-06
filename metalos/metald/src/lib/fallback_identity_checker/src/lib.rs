@@ -1,8 +1,5 @@
 // (c) Facebook, Inc. and its affiliates. Confidential and proprietary.
 
-use slog::error;
-use slog::info;
-use slog::warn;
 use std::fs;
 use std::fs::File;
 use std::io::BufRead;
@@ -14,6 +11,9 @@ use std::path::PathBuf;
 use identity::Identity;
 use identity::IdentitySet;
 use permission_checker::PermissionsChecker;
+use slog::error;
+use slog::info;
+use slog::warn;
 
 #[derive(thiserror::Error, Debug)]
 pub enum Error {
@@ -139,13 +139,15 @@ impl<R: Read> IdentityFileReader<R> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use mockall::mock;
     use std::any::Any;
     use std::any::TypeId;
     use std::io::Write;
+
+    use mockall::mock;
     use tempfile::tempdir;
     use tempfile::tempfile;
+
+    use super::*;
 
     mock! {
         MyPermissionsChecker {}

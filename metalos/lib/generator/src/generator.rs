@@ -23,9 +23,8 @@ use fbthrift::binary_protocol::BinaryProtocolDeserializer;
 use fbthrift::binary_protocol::BinaryProtocolSerializer;
 use fbthrift::Deserialize;
 use fbthrift::Serialize;
-use thiserror::Error;
-
 use sandbox::sandbox;
+use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -91,8 +90,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use pretty_assertions::assert_eq;
+
+    use super::*;
 
     #[test]
     fn echo() -> Result<()> {

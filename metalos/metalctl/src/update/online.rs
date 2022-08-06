@@ -5,14 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use slog::Logger;
-
 use metalos_host_configs::runtime_config::RuntimeConfig;
 use metalos_thrift_host_configs::api::OnlineUpdateCommitError;
 use metalos_thrift_host_configs::api::OnlineUpdateCommitResponse;
 use metalos_thrift_host_configs::api::OnlineUpdateRequest;
 use metalos_thrift_host_configs::api::UpdateStageError;
 use metalos_thrift_host_configs::api::UpdateStageResponse;
+use slog::Logger;
 
 pub(super) async fn stage(
     _log: Logger,

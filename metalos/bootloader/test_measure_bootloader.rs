@@ -38,12 +38,13 @@ mod tpm {
 }
 
 mod eventlog {
+    use std::collections::BTreeMap;
+
     use anyhow::Context as ErrContext;
     use anyhow::Result;
     use ring::digest;
     use ring::digest::Context;
     use serde::Deserialize;
-    use std::collections::BTreeMap;
     use uefi_eventlog::Event;
     use uefi_eventlog::Parser;
 

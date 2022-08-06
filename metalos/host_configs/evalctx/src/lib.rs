@@ -11,8 +11,9 @@ use thiserror::Error;
 pub mod generator;
 mod path;
 mod starlark;
-pub use crate::starlark::generator::StarlarkGenerator;
 pub use generator::Generator;
+
+pub use crate::starlark::generator::StarlarkGenerator;
 
 #[derive(Error, Debug)]
 pub enum Error {

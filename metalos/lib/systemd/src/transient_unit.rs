@@ -176,19 +176,21 @@ impl Systemd {
 
 #[cfg(test)]
 mod tests {
+    use std::io::Read;
+    use std::os::unix::io::AsRawFd;
+    use std::time::Duration;
+
+    use anyhow::Result;
+    use os_pipe::pipe;
+    use tokio::time::sleep;
+    use tokio::time::timeout;
+
     use super::Opts;
     use crate::MachineExt;
     use crate::Machined;
     use crate::ServiceResult;
     use crate::Systemd;
     use crate::WaitableSystemState;
-    use anyhow::Result;
-    use os_pipe::pipe;
-    use std::io::Read;
-    use std::os::unix::io::AsRawFd;
-    use std::time::Duration;
-    use tokio::time::sleep;
-    use tokio::time::timeout;
 
     #[containertest]
     async fn test_transient_run() -> Result<()> {

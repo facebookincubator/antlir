@@ -12,7 +12,6 @@ use slog::Drain;
 use slog::Logger;
 use slog_glog_fmt::kv_categorizer::ErrorCategorizer;
 use structopt::StructOpt;
-
 use systemd::render::NetworkUnit;
 use systemd::render::NetworkUnitMatchSection;
 use systemd_generator_lib::write_dropin_to_disk;
@@ -123,13 +122,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::collections::BTreeMap;
 
     use anyhow::anyhow;
     use anyhow::bail;
     use maplit::btreemap;
+
+    use super::*;
 
     fn setup_generator_test(name: &'static str) -> Result<(Logger, PathBuf, Args)> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), o!());

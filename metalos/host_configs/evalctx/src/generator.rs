@@ -13,6 +13,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::Context;
+use metalos_host_configs::provisioning_config::ProvisioningConfig;
 use shadow::ShadowFile;
 use shadow::ShadowRecord;
 use slog::info;
@@ -22,7 +23,6 @@ use xattr::FileExt;
 use crate::path::PathExt;
 use crate::Error;
 use crate::Result;
-use metalos_host_configs::provisioning_config::ProvisioningConfig;
 
 pub type Username = String;
 pub type PWHash = String;
@@ -181,10 +181,11 @@ where
 
 #[cfg(test)]
 mod tests {
+    use tempfile::TempDir;
+
     use super::Dir;
     use super::File;
     use super::Output;
-    use tempfile::TempDir;
 
     fn apply_one_output(output: Output) -> anyhow::Result<TempDir> {
         let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());

@@ -7,16 +7,15 @@
 
 use anyhow::Context;
 use anyhow::Result;
+use metalos_host_configs::boot_config::BootConfig;
+use metalos_host_configs::host::HostConfig;
+use metalos_kexec::KexecInfo;
 use nix::mount::mount;
 use nix::mount::MsFlags;
 use slog::crit;
 use slog::info;
 use slog::o;
 use slog::Logger;
-
-use metalos_host_configs::boot_config::BootConfig;
-use metalos_host_configs::host::HostConfig;
-use metalos_kexec::KexecInfo;
 use state::State;
 
 fn mount_control(log: Logger) -> Result<()> {

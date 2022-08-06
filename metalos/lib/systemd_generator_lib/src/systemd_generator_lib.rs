@@ -273,13 +273,15 @@ pub fn setup_generator_test(name: &'static str) -> Result<(PathBuf, GeneratorArg
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::time::SystemTime;
+
     use anyhow::Result;
     use maplit::btreemap;
     use slog::o;
-    use std::time::SystemTime;
     use systemd::render::NetworkUnit;
     use systemd::render::NetworkUnitMatchSection;
+
+    use super::*;
 
     #[derive(Clone, Debug, Serialize)]
     struct TestInner {

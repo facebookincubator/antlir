@@ -10,12 +10,13 @@
 // process, and this unit test is run inside a snapshot of the metalos base
 // image.
 
-use anyhow::Context;
-use anyhow::Result;
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::path::Path;
 use std::process::Command;
+
+use anyhow::Context;
+use anyhow::Result;
 
 // parse (mountpoint, opts) from /proc/mounts
 fn parse_mounts() -> BTreeMap<String, String> {

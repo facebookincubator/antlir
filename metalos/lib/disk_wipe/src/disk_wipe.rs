@@ -5,6 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::Write;
+
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
@@ -15,10 +20,6 @@ use metalos_disk::MEGABYTE;
 use rand::rngs::SmallRng;
 use rand::RngCore;
 use rand::SeedableRng;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
 
 /**
  * This function wipes the partition table & backup of a block device
@@ -185,8 +186,9 @@ fn check_empty(disk_file: &mut DiskFileRW, start: SeekFrom, megabytes: u64) -> R
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
     use metalos_macros::vmtest;
+
+    use super::*;
 
     fn write_random(disk_file: &mut DiskFileRW, start: SeekFrom, megabytes: u64) -> Result<()> {
         let rand_buf = {

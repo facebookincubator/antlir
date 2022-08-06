@@ -438,12 +438,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::ops::Deref;
+
     use anyhow::Context;
     use anyhow::Result;
     use serde::Deserialize;
     use serde::Serialize;
-    use std::ops::Deref;
+
+    use super::*;
 
     #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
     struct ExampleState {

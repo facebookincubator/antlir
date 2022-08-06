@@ -11,20 +11,19 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use bytes::Bytes;
-use futures::future;
-use futures::StreamExt;
-use slog::info;
-use slog::o;
-use slog::Logger;
-use tokio::time::timeout;
-
 use expand_partition::expand_last_partition;
 use expand_partition::PartitionDelta;
+use futures::future;
+use futures::StreamExt;
 use metalos_disk::DiskDevPath;
 use metalos_host_configs::packages::GptRootDisk;
 use metalos_mount::Mounter;
 use package_download::HttpsDownloader;
 use package_download::PackageDownloader;
+use slog::info;
+use slog::o;
+use slog::Logger;
+use tokio::time::timeout;
 use udev_utils::device::Disk;
 use udev_utils::device::SpecificDevice;
 
