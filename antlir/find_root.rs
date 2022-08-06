@@ -5,10 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use thiserror::Error;
-
 use absolute_path::AbsolutePath;
 use absolute_path::AbsolutePathBuf;
+use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum FindRootError {
@@ -69,14 +68,16 @@ fn first_parent_containing_sigil(
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use anyhow::anyhow;
-    use anyhow::Result;
     use std::fs::create_dir;
     use std::fs::create_dir_all;
     use std::fs::File;
     use std::path::Path;
+
+    use anyhow::anyhow;
+    use anyhow::Result;
     use tempdir::TempDir;
+
+    use super::*;
 
     fn abspath(path: &Path) -> &AbsolutePath {
         AbsolutePath::new(path).unwrap_or_else(|_| panic!("{:?} is not absolute", path))

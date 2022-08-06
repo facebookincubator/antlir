@@ -5,10 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use serde::Deserialize;
-use serde::Serialize;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+
+use serde::Deserialize;
+use serde::Serialize;
 
 // Simple macro to avoid repeating code that is exactly the same for every
 // variant of the Target enum

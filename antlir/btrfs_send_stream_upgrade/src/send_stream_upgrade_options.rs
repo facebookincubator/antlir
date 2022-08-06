@@ -6,6 +6,7 @@
  */
 
 use std::path::PathBuf;
+
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt)]

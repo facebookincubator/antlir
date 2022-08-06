@@ -7,14 +7,6 @@
 
 #![deny(warnings)]
 
-use anyhow::Context;
-use anyhow::Result;
-use goblin::elf::Elf;
-use once_cell::sync::Lazy;
-use serde_json::json;
-use slog::debug;
-use slog::o;
-use slog::warn;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::fs;
@@ -23,6 +15,15 @@ use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
+
+use anyhow::Context;
+use anyhow::Result;
+use goblin::elf::Elf;
+use once_cell::sync::Lazy;
+use serde_json::json;
+use slog::debug;
+use slog::o;
+use slog::warn;
 use structopt::StructOpt;
 
 static LOGGER: Lazy<slog::Logger> = Lazy::new(|| slog_glog_fmt::facebook_logger().unwrap());

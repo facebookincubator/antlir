@@ -41,14 +41,15 @@
 //!     ...
 //! }
 //! ```
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::rc::Rc;
+
 use derive_more::Deref;
 use derive_more::Display;
 use derive_more::From;
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-use std::rc::Rc;
 
 macro_rules! newtype {
     ($x:item) => {
@@ -262,8 +263,9 @@ pub enum Primitive {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use anyhow::Result;
+
+    use super::*;
 
     #[test]
     fn target() -> Result<()> {

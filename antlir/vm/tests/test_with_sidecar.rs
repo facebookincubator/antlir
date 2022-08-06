@@ -5,9 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::net::SocketAddrV6;
+
 use anyhow::Error;
 use anyhow::Result;
-use std::net::SocketAddrV6;
 use tokio::io::AsyncReadExt;
 use tokio::io::AsyncWriteExt;
 use tokio::net::TcpStream;

@@ -5,13 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use core::num::NonZeroU32;
+
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
 use bytes::Bytes;
-use core::num::NonZeroU32;
 use governor::clock::DefaultClock;
 use governor::state::direct::NotKeyed;
 use governor::state::InMemoryState;

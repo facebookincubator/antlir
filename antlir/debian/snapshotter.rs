@@ -5,6 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
+use std::io::Read;
+use std::num::NonZeroU32;
+use std::path::Path;
+use std::path::PathBuf;
+use std::str::FromStr;
+use std::time::Duration;
+
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
@@ -35,13 +43,6 @@ use reqwest::Url;
 use slog::info;
 use slog::o;
 use slog::Drain;
-use std::collections::BTreeMap;
-use std::io::Read;
-use std::num::NonZeroU32;
-use std::path::Path;
-use std::path::PathBuf;
-use std::str::FromStr;
-use std::time::Duration;
 use strum_macros::EnumString;
 use xz2::read::XzDecoder;
 use xz2::read::XzEncoder;

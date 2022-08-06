@@ -5,9 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use slog::info;
 use std::fmt::Display;
 use std::str;
+
+use slog::info;
 
 pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use crate::send_version::SendVersion;

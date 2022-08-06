@@ -5,13 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Display;
+use std::time::SystemTime;
+
 use crc::crc32;
 use crc::Hasher32;
 use slog::debug;
 use slog::info;
 use slog::trace;
-use std::fmt::Display;
-use std::time::SystemTime;
 
 pub use crate::send_attribute::SendAttribute;
 pub use crate::send_attribute_header::BtrfsSendAttributeType;

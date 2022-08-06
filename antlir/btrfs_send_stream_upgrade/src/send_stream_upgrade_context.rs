@@ -5,12 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use slog::crit;
-use slog::o;
-use slog::trace;
-use slog::Drain;
-use slog::Level;
-use slog::Logger;
 use std::backtrace::Backtrace;
 use std::fs::OpenOptions;
 use std::io::BufReader;
@@ -20,6 +14,13 @@ use std::io::Write;
 use std::mem;
 use std::time::Duration;
 use std::time::SystemTime;
+
+use slog::crit;
+use slog::o;
+use slog::trace;
+use slog::Drain;
+use slog::Level;
+use slog::Logger;
 
 pub use crate::send_stream_upgrade_options::SendStreamUpgradeOptions;
 pub use crate::send_stream_upgrade_stats::SendStreamUpgradeStats;

@@ -12,12 +12,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
-use test::test::ShouldPanic;
-use test::test::TestDesc;
-use test::test::TestDescAndFn;
-use test::test::TestName;
-use test::test::TestType;
-use test::TestFn;
 
 use absolute_path::AbsolutePath;
 use anyhow::anyhow;
@@ -38,6 +32,12 @@ use starlark::syntax::Dialect;
 use starlark::values::none::NoneType;
 use starlark::values::OwnedFrozenValue;
 use starlark::values::Value;
+use test::test::ShouldPanic;
+use test::test::TestDesc;
+use test::test::TestDescAndFn;
+use test::test::TestName;
+use test::test::TestType;
+use test::TestFn;
 
 #[derive(Debug, ProvidesStaticType, Default)]
 struct FailStore(RefCell<Option<String>>);
