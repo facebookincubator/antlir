@@ -13,6 +13,10 @@ use std::sync::Arc;
 use anyhow::anyhow;
 use anyhow::Context;
 use async_trait::async_trait;
+use btrfs::sendstream::Zstd;
+use btrfs::Sendstream;
+use btrfs::SendstreamExt;
+use btrfs::Subvolume;
 use bytes::Bytes;
 use fbthrift::simplejson_protocol::deserialize;
 use futures::future::try_join_all;
@@ -20,6 +24,8 @@ use futures::Stream;
 use futures::StreamExt;
 use futures::TryStream;
 use futures::TryStreamExt;
+use metalos_host_configs::packages;
+use metalos_host_configs::packages::Format;
 use slog::debug;
 use slog::Logger;
 use tempfile::NamedTempFile;
@@ -30,13 +36,6 @@ use tokio::task::spawn_blocking;
 use tokio_retry::strategy::ExponentialBackoff;
 use tokio_retry::Retry;
 use tokio_stream::wrappers::ReadDirStream;
-
-use btrfs::sendstream::Zstd;
-use btrfs::Sendstream;
-use btrfs::SendstreamExt;
-use btrfs::Subvolume;
-use metalos_host_configs::packages;
-use metalos_host_configs::packages::Format;
 
 mod https;
 #[deprecated = "Unless you _really_ need https, use default_downloader"]
@@ -401,12 +400,13 @@ mod tests {
     use std::sync::atomic::AtomicI8;
     use std::sync::atomic::Ordering;
 
-    use super::*;
     use anyhow::Result;
     use futures::stream::empty;
     use metalos_macros::containertest;
     use slog::o;
     use slog::Logger;
+
+    use super::*;
 
     /// Use a BlankDownloader as a stub that installs packages (of size zero bytes) without
     /// accessing the network. Note that this only properly simulates packages of Format::File,

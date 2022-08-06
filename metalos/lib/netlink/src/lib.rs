@@ -4,20 +4,17 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
+use std::ffi::CStr;
+use std::ffi::CString;
+use std::fmt;
+use std::marker::PhantomData;
+
 use anyhow::bail;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use bitflags::bitflags;
 use derive_more::Display;
-use nix::errno::errno;
-use num_derive::FromPrimitive;
-use num_derive::ToPrimitive;
-use std::ffi::CStr;
-use std::ffi::CString;
-use std::fmt;
-use std::marker::PhantomData;
-
 use netlink_sys::nl_addr2str;
 use netlink_sys::nl_cache;
 use netlink_sys::nl_cache_get_first;
@@ -52,6 +49,9 @@ use netlink_sys::NLM_F_ACK;
 use netlink_sys::NLM_F_CREATE;
 use netlink_sys::NLM_F_EXCL;
 use netlink_sys::NLM_F_REQUEST;
+use nix::errno::errno;
+use num_derive::FromPrimitive;
+use num_derive::ToPrimitive;
 
 /// Format an error message from a failed libnl* call.
 fn nlerrmsg(err: i32, msg: &str) -> String {
@@ -482,10 +482,11 @@ impl<'a> Drop for RtnlLinkCache<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use metalos_macros::test;
     use metalos_macros::vmtest;
     use rand::Rng;
+
+    use super::*;
 
     #[test]
     /// Test allocating a NlSocket without a connection.

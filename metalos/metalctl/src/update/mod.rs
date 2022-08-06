@@ -18,14 +18,12 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use slog::Logger;
-
 use fbinit::FacebookInit;
 use fbthrift::simplejson_protocol::Serializable;
-
 use metalos_host_configs::api::OfflineUpdateRequest;
 use metalos_thrift_host_configs::api::client::make_Metalctl;
 use metalos_thrift_host_configs::api::client::Metalctl;
+use slog::Logger;
 use state::State;
 
 mod offline;

@@ -7,8 +7,9 @@
 
 use std::path::PathBuf;
 
-use crate::packages;
 use thrift_wrapper::ThriftWrapper;
+
+use crate::packages;
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::boot_config::BootConfig)]

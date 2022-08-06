@@ -74,10 +74,11 @@ pub fn probe_fstype(device: impl AsRef<Path>) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::evaluate_spec;
-    use super::probe_fstype;
     use metalos_macros::test;
     use metalos_macros::vmtest;
+
+    use super::evaluate_spec;
+    use super::probe_fstype;
 
     #[test]
     fn test_evaluate_full_path() {

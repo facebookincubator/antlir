@@ -1,7 +1,8 @@
+use std::path::Path;
+
 use metalos_host_configs::packages::generic::Package;
 use send_events::Event;
 use serde_json::json;
-use std::path::Path;
 
 pub struct RamdiskReady {}
 

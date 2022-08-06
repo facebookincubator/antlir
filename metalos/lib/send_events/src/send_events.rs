@@ -317,10 +317,11 @@ impl SerializedEventSink for MockSink {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use http_test::make_test_server;
     use maplit::hashmap;
     use serde_json::Value;
+
+    use super::*;
 
     #[test]
     fn test_source_args() -> Result<()> {

@@ -1,6 +1,7 @@
-use anyhow::Result;
 use std::path::Path;
 use std::process::Command;
+
+use anyhow::Result;
 use systemd::Systemd;
 
 /// The metalos generator is responsible for setting the default target back to

@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use itertools::Itertools;
 use serde::ser::SerializeSeq;
 use serde::ser::Serializer;
@@ -12,7 +14,6 @@ use service_shape::restart_settings_t;
 use service_shape::service_t;
 use service_shape::service_type_t;
 use service_shape::timeout_settings_t;
-use std::collections::BTreeMap;
 use systemd::UnitName;
 
 #[derive(Debug, thiserror::Error)]

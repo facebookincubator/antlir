@@ -5,14 +5,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::HashMap;
+use std::path::Path;
+
 use anyhow::Result;
 use clap::Parser;
 use nix::net::if_::InterfaceFlags;
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::HashMap;
-use std::path::Path;
 
 #[derive(Parser)]
 struct Args {

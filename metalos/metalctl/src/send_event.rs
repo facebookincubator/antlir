@@ -8,9 +8,6 @@
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use slog::info;
-use slog::Logger;
-
 use metalos_host_configs::host::HostConfig;
 use net_utils::get_mac;
 use send_events::Event;
@@ -19,6 +16,8 @@ use send_events::EventSink;
 use send_events::HttpSink;
 use send_events::Source;
 use send_events::SourceArgs;
+use slog::info;
+use slog::Logger;
 use state::State;
 
 #[derive(Parser, Debug, Clone)]
@@ -71,12 +70,13 @@ pub(super) async fn cmd_send_event(log: Logger, opts: Opts) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use anyhow::Result;
     use http_test::make_test_server;
     use maplit::hashmap;
     use serde_json::Value;
     use slog::o;
+
+    use super::*;
 
     #[containertest]
     async fn test_send_event() -> Result<()> {

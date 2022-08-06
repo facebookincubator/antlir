@@ -10,10 +10,10 @@ use std::ffi::OsStr;
 use anyhow::Result;
 use nix::sys::utsname::uname;
 use serde::Serialize;
-
-use crate::unit_file::Environment;
 use service_config_generator_if::Input;
 use service_config_generator_if::Output;
+
+use crate::unit_file::Environment;
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "PascalCase")]

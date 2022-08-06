@@ -5,9 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use nix::unistd::chown;
-use nix::unistd::Group;
-use nix::unistd::User;
 use std::collections::HashSet;
 use std::fs::read_dir;
 use std::fs::OpenOptions;
@@ -22,18 +19,20 @@ use anyhow::Error;
 use anyhow::Result;
 use futures::StreamExt;
 use itertools::Itertools;
+use nix::unistd::chown;
+use nix::unistd::Group;
+use nix::unistd::User;
 use serde::Deserialize;
 use serde::Serialize;
 use slog::o;
 use slog::trace;
 use slog::Logger;
-use uuid::Uuid;
-
 use systemd::Marker;
 use systemd::StartMode;
 use systemd::Systemd;
 use systemd::TypedObjectPath;
 use systemd::UnitName;
+use uuid::Uuid;
 
 mod dropin;
 mod generator;
@@ -513,11 +512,13 @@ impl Transaction {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use metalos_macros::containertest;
-    use set::tests::service_set;
     use std::fs;
     use std::os::linux::fs::MetadataExt;
+
+    use metalos_macros::containertest;
+    use set::tests::service_set;
+
+    use super::*;
 
     // In the near future we probably want to assert that the running state of
     // the system matches what we expect before/during/after transactions, but

@@ -13,7 +13,6 @@ use anyhow::Result;
 use fbthrift::binary_protocol::deserialize;
 use fbthrift::binary_protocol::serialize;
 use maplit::btreemap;
-
 use service_config_generator_if::Dropin;
 use service_config_generator_if::Input;
 use service_config_generator_if::Output;

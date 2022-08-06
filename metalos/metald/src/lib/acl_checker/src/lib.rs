@@ -1,13 +1,13 @@
 // (c) Facebook, Inc. and its affiliates. Confidential and proprietary.
 
-use mockall::*;
-use slog::error;
-use slog::info;
 use std::time::Duration;
 
 use aclchecker::AclChecker;
 use identity::IdentitySet;
+use mockall::*;
 use permission_checker::PermissionsChecker;
+use slog::error;
+use slog::info;
 
 // For testing purpose we need an AclChecker Wrapper trait that can be mocked.
 // Wrapping aclchecker::AclChecker
@@ -80,10 +80,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use srserver::RequestContext;
     use std::any::Any;
     use std::any::TypeId;
+
+    use srserver::RequestContext;
+
+    use super::*;
 
     #[fbinit::test]
     fn test_init_aclchecker_pass() {

@@ -7,7 +7,6 @@
 
 use anyhow::Context;
 use thiserror::Error;
-
 pub use thrift_wrapper_derive::thrift_server;
 #[doc(hidden)]
 pub use thrift_wrapper_derive::ThriftWrapper;

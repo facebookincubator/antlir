@@ -368,20 +368,22 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::Environment;
-    use super::MonotonicTimestamp;
-    use super::Timestamp;
-    use crate::Systemd;
+    use std::collections::HashSet;
+    use std::time::Duration;
+    use std::time::UNIX_EPOCH;
+
     use anyhow::Result;
     use byteorder::LE;
     use maplit::hashmap;
     use maplit::hashset;
-    use std::collections::HashSet;
-    use std::time::Duration;
-    use std::time::UNIX_EPOCH;
     use zvariant::from_slice;
     use zvariant::to_bytes;
     use zvariant::EncodingContext as Context;
+
+    use super::Environment;
+    use super::MonotonicTimestamp;
+    use super::Timestamp;
+    use crate::Systemd;
 
     #[containertest]
     async fn test_typed_path() -> Result<()> {

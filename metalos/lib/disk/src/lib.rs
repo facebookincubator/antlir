@@ -21,7 +21,6 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use delegate::delegate;
-
 use udev_utils::device::Disk;
 use udev_utils::device::SpecificDevice;
 
@@ -193,9 +192,10 @@ pub fn scan_disk_partitions(disk_device_path: &DiskDevPath) -> Result<HashMap<u3
 }
 
 pub mod test_utils {
-    use crate::DiskDevPath;
     use anyhow::Context;
     use anyhow::Result;
+
+    use crate::DiskDevPath;
 
     pub fn setup_test_loopback(img_file: &str) -> Result<String> {
         std::process::Command::new("dd")
@@ -281,12 +281,13 @@ pub mod test_utils {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
-    use crate::test_utils::*;
-    use crate::DiskDevPath;
     use anyhow::Result;
     use maplit::hashmap;
     use metalos_macros::vmtest;
+
+    use super::*;
+    use crate::test_utils::*;
+    use crate::DiskDevPath;
 
     #[vmtest]
     fn test_get_block_device_size() -> Result<()> {

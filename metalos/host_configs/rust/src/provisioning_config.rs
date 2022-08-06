@@ -5,10 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use crate::packages;
 use strum_macros::Display;
 use thrift_wrapper::ThriftWrapper;
 use url::Url;
+
+use crate::packages;
 
 #[derive(Debug, Clone, PartialEq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::ProvisioningConfig)]

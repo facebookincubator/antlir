@@ -1,14 +1,13 @@
 use anyhow::Context;
 use anyhow::Result;
-use structopt::clap::AppSettings;
-use structopt::StructOpt;
-use strum_macros::EnumIter;
-
 use kernel_cmdline::GenericCmdlineOpt;
 use kernel_cmdline::KernelCmdArgs;
 use kernel_cmdline::KnownArgs;
 use net_utils::get_mac;
 use network_generator_lib::generator_main;
+use structopt::clap::AppSettings;
+use structopt::StructOpt;
+use strum_macros::EnumIter;
 
 #[derive(EnumIter)]
 pub enum NetworkGeneratorKnownArgs {

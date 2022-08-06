@@ -5,11 +5,10 @@ use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use slog::info;
-use slog::Logger;
-
 use metalos_disk::DiskDevPath;
 use metalos_host_configs::boot_config::Bootloader;
+use slog::info;
+use slog::Logger;
 
 pub(crate) static BOOTLOADER_FILENAME: &str = "metalos.efi";
 

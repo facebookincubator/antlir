@@ -12,6 +12,7 @@ use std::path::Path;
 
 use anyhow::bail;
 use anyhow::Context;
+use metalos_host_configs::provisioning_config::ProvisioningConfig;
 use starlark::environment::GlobalsBuilder;
 use starlark::environment::Module;
 use starlark::eval::Evaluator;
@@ -22,6 +23,7 @@ use starlark::values::OwnedFrozenValue;
 use starlark::values::StarlarkValue;
 use starlark::values::Value;
 use starlark::values::ValueLike;
+use starlark_util::Struct;
 
 use crate::generator::Dir;
 use crate::generator::File;
@@ -32,8 +34,6 @@ use crate::starlark::loader::Loader;
 use crate::starlark::loader::ModuleId;
 use crate::Error;
 use crate::Result;
-use metalos_host_configs::provisioning_config::ProvisioningConfig;
-use starlark_util::Struct;
 
 // Macro-away all the Starlark boilerplate for structs that are _only_ returned
 // from Starlark, and are not expected to be able to be read/used from the
@@ -234,18 +234,20 @@ impl Generator for StarlarkGenerator {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::collections::BTreeSet;
+    use std::env;
+    use std::ffi::OsStr;
+    use std::path::Path;
+
     use starlark::environment::Module;
     use starlark::eval::Evaluator;
     use starlark::eval::ProfileMode;
     use starlark::syntax::AstModule;
     use starlark::syntax::Dialect;
-    use std::collections::BTreeSet;
-    use std::env;
-    use std::ffi::OsStr;
-    use std::path::Path;
     use tempfile::TempDir;
     use walkdir::WalkDir;
+
+    use super::*;
 
     fn eval_one_generator(source: &'static str) -> anyhow::Result<Output> {
         let tmp_dir = TempDir::new()?;

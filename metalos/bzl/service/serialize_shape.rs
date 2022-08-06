@@ -1,8 +1,9 @@
+use std::io::Write;
+
 use anyhow::Context;
 use anyhow::Result;
 use fbthrift::binary_protocol::serialize;
 use service::service_t;
-use std::io::Write;
 
 fn main() -> Result<()> {
     let svc: service_t =

@@ -223,8 +223,9 @@ impl<'a> FileLoader for ModuleLoader<'a> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use maplit::btreemap;
+
+    use super::*;
 
     impl std::cmp::PartialEq<&str> for ModuleId {
         fn eq(&self, other: &&str) -> bool {

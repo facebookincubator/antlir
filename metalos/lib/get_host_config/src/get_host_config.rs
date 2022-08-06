@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::path::Path;
+
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
@@ -13,7 +15,6 @@ use fbthrift::simplejson_protocol::deserialize as json_deserialize;
 use metalos_host_configs::host::HostConfig;
 use reqwest::header::HeaderValue;
 use reqwest::Client;
-use std::path::Path;
 use url::Url;
 
 static THRIFT_CONTENT_TYPE: HeaderValue = HeaderValue::from_static("application/x-thrift");

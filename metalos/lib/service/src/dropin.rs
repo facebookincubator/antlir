@@ -16,12 +16,11 @@ use serde::ser::SerializeSeq;
 use serde::ser::Serializer;
 use serde::Deserialize;
 use serde::Serialize;
-use uuid::Uuid;
-
 use state::Alias;
 use state::State;
 use state::Token;
 use systemd::UnitName;
+use uuid::Uuid;
 
 use crate::unit_file::Environment;
 use crate::ServiceInstance;
@@ -136,9 +135,10 @@ impl Dropin {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use anyhow::Result;
     use metalos_macros::containertest;
+
+    use super::*;
 
     #[containertest]
     async fn dropin() -> Result<()> {

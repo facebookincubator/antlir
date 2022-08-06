@@ -5,15 +5,14 @@ use std::path::PathBuf;
 
 use anyhow::Context;
 use anyhow::Result;
-use nix::libc::syscall;
-use nix::libc::SYS_kexec_file_load;
-use slog::info;
-use slog::Logger;
-
 use metalos_host_configs::boot_config::Kernel;
 use metalos_host_configs::host::HostConfig;
 use metalos_host_configs::packages::Initrd;
+use nix::libc::syscall;
+use nix::libc::SYS_kexec_file_load;
 use package_download::PackageExt;
+use slog::info;
+use slog::Logger;
 use systemd::Systemd;
 
 /// A small wrapper struct around the on-disk path to the kernel

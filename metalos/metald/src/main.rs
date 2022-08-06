@@ -11,12 +11,11 @@ use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use fbinit::FacebookInit;
 use futures::future::try_join_all;
 use plain_systemd::daemon::is_socket;
 use plain_systemd::daemon::listen_fds;
 use plain_systemd::daemon::Listening;
-
-use fbinit::FacebookInit;
 
 mod thrift_server;
 mod update;

@@ -7,6 +7,11 @@
 
 //! [Value] abstraction to treat thrift structs generically.
 
+use std::cmp::Ordering;
+use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::panic::RefUnwindSafe;
+
 use anyhow::Error;
 use anyhow::Result;
 use fbthrift::MessageType;
@@ -15,10 +20,6 @@ use fbthrift::Serialize as ThriftSerialize;
 use fbthrift::TType;
 use itertools::Itertools;
 use serde::Serialize;
-use std::cmp::Ordering;
-use std::collections::BTreeMap;
-use std::collections::BTreeSet;
-use std::panic::RefUnwindSafe;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 pub enum Value {
@@ -352,11 +353,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use example::Example;
     use example::ListItem;
     use maplit::btreemap;
     use maplit::btreeset;
+
+    use super::*;
 
     #[test]
     fn test_to_value() -> Result<()> {

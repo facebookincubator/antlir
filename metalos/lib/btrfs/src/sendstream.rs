@@ -1,16 +1,3 @@
-use crate::Result;
-use crate::Subvolume;
-use crate::__private::Sealed;
-use anyhow::Context;
-use async_compression::Level;
-use async_trait::async_trait;
-use bytes::Bytes;
-use bytes::BytesMut;
-use futures::Stream;
-use futures::StreamExt;
-use nix::ioctl_write_ptr;
-use nix::sys::memfd::memfd_create;
-use nix::sys::memfd::MemFdCreateFlag;
 use std::ffi::CString;
 use std::fs::File;
 use std::marker::PhantomData;
@@ -20,6 +7,18 @@ use std::os::unix::io::RawFd;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
+
+use anyhow::Context;
+use async_compression::Level;
+use async_trait::async_trait;
+use btrfsutil_sys::btrfs_ioctl_send_args;
+use bytes::Bytes;
+use bytes::BytesMut;
+use futures::Stream;
+use futures::StreamExt;
+use nix::ioctl_write_ptr;
+use nix::sys::memfd::memfd_create;
+use nix::sys::memfd::MemFdCreateFlag;
 use thiserror::Error;
 use tokio::io::AsyncWriteExt;
 use tokio::io::BufWriter;
@@ -27,7 +26,9 @@ use tokio::process::Command;
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::FramedRead;
 
-use btrfsutil_sys::btrfs_ioctl_send_args;
+use crate::Result;
+use crate::Subvolume;
+use crate::__private::Sealed;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -262,11 +263,13 @@ impl Subvolume {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::SnapshotFlags;
+    use std::path::Path;
+
     use anyhow::Result;
     use metalos_macros::containertest;
-    use std::path::Path;
+
+    use super::*;
+    use crate::SnapshotFlags;
 
     #[containertest]
     async fn send_rw_fails() -> Result<()> {

@@ -42,8 +42,9 @@ pub fn get_mac() -> Result<String> {
 
 #[cfg(test)]
 mod tests {
-    use super::get_mac;
     use anyhow::Result;
+
+    use super::get_mac;
 
     #[test]
     fn test_get_mac() -> Result<()> {

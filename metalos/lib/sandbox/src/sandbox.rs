@@ -276,14 +276,16 @@ pub fn sandbox<S: AsRef<OsStr>>(binary: S, opts: SandboxOpts) -> Result<Command>
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use std::io::Write;
+
     use anyhow::anyhow;
     use maplit::hashmap;
     use serde::Deserialize;
     use serde::Serialize;
-    use std::io::Write;
     use strum::IntoEnumIterator;
     use strum_macros::EnumIter;
+
+    use super::*;
 
     fn run_test_in_sandbox<D: Serialize>(name: &str, opts: SandboxOpts, data: D) -> Result<()> {
         let path = std::env::var_os("SANDBOXED_TEST").unwrap();

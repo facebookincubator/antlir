@@ -12,6 +12,7 @@ use async_trait::async_trait;
 use bytes::Bytes;
 use futures::Stream;
 use futures::StreamExt;
+use metalos_host_configs::packages::generic::Package;
 use once_cell::sync::Lazy;
 use reqwest::Client;
 use reqwest::StatusCode;
@@ -23,7 +24,6 @@ use url::Url;
 
 use crate::PackageDownloader;
 use crate::Result;
-use metalos_host_configs::packages::generic::Package;
 
 #[derive(Error, Debug)]
 pub enum Error {
@@ -171,13 +171,14 @@ impl PackageDownloader for HttpsDownloader {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use anyhow::Result;
     use metalos_host_configs::packages::generic::Kind;
     use metalos_host_configs::packages::generic::PackageId;
     use metalos_host_configs::packages::Format;
     use metalos_macros::test;
     use url::Url;
+
+    use super::*;
 
     #[test]
     fn package_url() -> Result<()> {

@@ -5,10 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use thrift_wrapper::ThriftWrapper;
+
 use crate::boot_config;
 use crate::provisioning_config;
 use crate::runtime_config;
-use thrift_wrapper::ThriftWrapper;
 
 /// Main entrypoint for a MetalOS host.
 #[derive(Debug, Clone, PartialEq, ThriftWrapper)]

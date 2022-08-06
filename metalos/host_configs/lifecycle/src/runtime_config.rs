@@ -6,7 +6,6 @@
  */
 
 use anyhow::ensure;
-
 use metalos_host_configs::packages::generic::Package;
 use metalos_host_configs::runtime_config::RuntimeConfig;
 

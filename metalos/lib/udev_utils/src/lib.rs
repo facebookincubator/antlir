@@ -253,20 +253,22 @@ pub fn blocking_stream(opts: StreamOpts) -> Result<impl Iterator<Item = Event>> 
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use anyhow::Context;
-    use anyhow::Result;
-    use futures::future;
-    use futures::StreamExt;
-    use maplit::hashset;
-    use metalos_macros::vmtest;
     use std::collections::HashSet;
     use std::ffi::OsString;
     use std::os::unix::ffi::OsStringExt;
     use std::path::Path;
     use std::path::PathBuf;
     use std::time::Duration;
+
+    use anyhow::Context;
+    use anyhow::Result;
+    use futures::future;
+    use futures::StreamExt;
+    use maplit::hashset;
+    use metalos_macros::vmtest;
     use tokio::time::timeout;
+
+    use super::*;
 
     #[vmtest]
     async fn enumerate_only_stream_ends() -> Result<()> {

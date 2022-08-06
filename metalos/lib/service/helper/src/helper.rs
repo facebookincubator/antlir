@@ -9,12 +9,11 @@
 
 use anyhow::Context;
 use anyhow::Result;
-use structopt::StructOpt;
-
 use service::ServiceInstance;
 use state::Alias;
 use state::State;
 use state::Token;
+use structopt::StructOpt;
 
 mod volumes;
 use volumes::ServiceVolumes;
@@ -82,9 +81,11 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use super::*;
-    use metalos_macros::containertest;
     use std::path::Path;
+
+    use metalos_macros::containertest;
+
+    use super::*;
 
     #[containertest]
     async fn test_init() -> Result<()> {

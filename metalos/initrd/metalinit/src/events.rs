@@ -1,6 +1,7 @@
+use std::path::Path;
+
 use send_events::Event;
 use serde_json::json;
-use std::path::Path;
 
 pub struct RamdiskReady {}
 

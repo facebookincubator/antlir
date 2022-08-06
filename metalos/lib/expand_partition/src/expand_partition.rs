@@ -13,7 +13,6 @@ use gpt::disk::LogicalBlockSize;
 use gpt::header::read_header_from_arbitrary_device;
 use gpt::partition::file_read_partitions;
 use gpt::partition::Partition;
-
 use metalos_disk::DiskDevPath;
 use metalos_disk::ReadDisk;
 use metalos_disk::MEGABYTE;
@@ -127,9 +126,10 @@ fn get_last_usable_lb<D: ReadDisk>(disk_file: &D, lb_size: LogicalBlockSize) -> 
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
     use metalos_disk::test_utils::*;
     use metalos_macros::vmtest;
+
+    use super::*;
 
     fn get_guid(disk_path: &DiskDevPath) -> Result<String> {
         let cfg = gpt::GptConfig::new().writable(false);

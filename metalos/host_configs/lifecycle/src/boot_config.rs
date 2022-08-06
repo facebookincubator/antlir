@@ -7,7 +7,6 @@
 
 use anyhow::ensure;
 use anyhow::Context;
-
 use metalos_host_configs::boot_config::BootConfig;
 use metalos_host_configs::packages::generic::Package;
 use package_download::PackageExt;

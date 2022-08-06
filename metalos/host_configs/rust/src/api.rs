@@ -5,11 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use thrift_wrapper::ThriftWrapper;
+
 use crate::boot_config;
 use crate::packages;
 use crate::runtime_config;
-
-use thrift_wrapper::ThriftWrapper;
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::api::ServiceResponse)]

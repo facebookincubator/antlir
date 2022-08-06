@@ -119,8 +119,9 @@ pub fn module(registry: &mut GlobalsBuilder) {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use starlark::assert::Assert;
+
+    use super::*;
 
     #[test]
     fn render_from_starlark() {

@@ -1,17 +1,17 @@
+use std::io::Read;
+
 use anyhow::Context;
 use anyhow::Result;
 use clap::Args;
 use clap::Parser;
 use fbthrift::simplejson_protocol::deserialize;
 use futures::TryStreamExt;
-use slog::Logger;
-use std::io::Read;
-
 use metalos_host_configs::packages::generic::Package;
 use metalos_host_configs::packages::generic::Packages;
 use package_download::default_downloader;
 use package_download::ensure_packages_on_disk_ignoring_artifacts;
 use package_download::staged_packages;
+use slog::Logger;
 
 #[derive(Parser)]
 pub enum Opts {
