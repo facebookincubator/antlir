@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load(":compile_image_features.bzl", "compile_image_features")
+load(":constants.bzl", "REPO_CFG")
+load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
 load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
@@ -52,6 +54,10 @@ def image_layer_from_package(
         # A sendstream layer does not add any build logic on top of the
         # input, so we treat it as internal to improve CI coverage.
         antlir_rule = "user-internal",
+        # The target path of the rc-layer implementation that built this
+        # packaged layer.  Used in conjunction with the `-c antlir.rc.layers`
+        # config to test changes to packaged layers.
+        rc_layer = None,
         subvol_name = None,
         # Mechanistically, applying a send-stream on top of an existing layer
         # is just a regular `btrfs receive`.  However, the rules in the
@@ -68,28 +74,40 @@ def image_layer_from_package(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
-    target_tagger = new_target_tagger()
-    features = [target_tagger_to_feature(
-        target_tagger,
-        struct(
-            layer_from_package = [{
-                "format": format,
-                "source": image_source_as_target_tagged_dict(
-                    target_tagger,
-                    source,
-                ),
-            }],
-        ),
-    )]
 
-    image_layer_from_package_helper(
-        name,
-        format,
-        flavor,
-        flavor_config_override,
-        antlir_rule,
-        subvol_name,
-        features,
-        compile_image_features,
-        image_layer_kwargs,
-    )
+    # Look to see if we should build the RC version of this layer instead of
+    # the packaged one.
+    if normalize_target(":" + name) in REPO_CFG.rc_layers:
+        if rc_layer == None:
+            fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
+
+        image_layer_alias(
+            name = name,
+            layer = rc_layer,
+        )
+    else:
+        target_tagger = new_target_tagger()
+        features = [target_tagger_to_feature(
+            target_tagger,
+            struct(
+                layer_from_package = [{
+                    "format": format,
+                    "source": image_source_as_target_tagged_dict(
+                        target_tagger,
+                        source,
+                    ),
+                }],
+            ),
+        )]
+
+        image_layer_from_package_helper(
+            name,
+            format,
+            flavor,
+            flavor_config_override,
+            antlir_rule,
+            subvol_name,
+            features,
+            compile_image_features,
+            image_layer_kwargs,
+        )

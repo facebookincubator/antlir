@@ -211,4 +211,5 @@ REPO_CFG = repo_config_t(
     # supported providers like Bazel does.
     antlir_linux_flavor = _get_str_cfg("antlir_linux_flavor", allow_none = True),
     antlir_cell_name = config.get_antlir_cell_name(),
+    rc_layers = _get_str_list_cfg("rc_layers", separator = ","),
 )
