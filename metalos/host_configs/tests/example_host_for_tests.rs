@@ -40,7 +40,7 @@ pub fn example_host_for_tests() -> HostConfig {
                     },
                     interfaces: vec![NetworkInterface {
                         mac: "00:00:00:00:00:01".to_owned(),
-                        addrs: vec!["2a03:2880:f103:181:face:b00c:0:25de".to_owned()],
+                        addrs: None,
                         name: Some("eth0".to_owned()),
                         essential: true,
                         structured_addrs: vec![NetworkAddress{
@@ -52,7 +52,7 @@ pub fn example_host_for_tests() -> HostConfig {
                     },
                     NetworkInterface {
                         mac: "00:00:00:00:00:03".to_owned(),
-                        addrs: vec![],
+                        addrs: None,
                         name: Some("eth8".to_owned()),
                         essential: false,
                         structured_addrs: vec![],
@@ -61,7 +61,7 @@ pub fn example_host_for_tests() -> HostConfig {
                     }],
                     primary_interface: NetworkInterface {
                         mac: "00:00:00:00:00:01".to_owned(),
-                        addrs: vec!["2a03:2880:f103:181:face:b00c:0:25de".to_owned()],
+                        addrs: None,
                         name: Some("eth0".to_owned()),
                         essential: true,
                         structured_addrs: vec![NetworkAddress{

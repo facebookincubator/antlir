@@ -124,7 +124,8 @@ pub struct NetworkAddress {
 #[thrift(metalos_thrift_host_configs::provisioning_config::NetworkInterface)]
 pub struct NetworkInterface {
     pub mac: String,
-    pub addrs: Vec<String>,
+    #[deprecated = "use structured_addrs instead"]
+    pub addrs: Option<Vec<String>>,
     pub name: Option<String>,
     /// This interface is considered necessary and the network will not be
     /// considered up until this interface is configured and up
