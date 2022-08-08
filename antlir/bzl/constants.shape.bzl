@@ -86,4 +86,5 @@ repo_config_t = shape.shape(
     flavor_to_config = shape.dict(str, flavor_config_t),
     antlir_linux_flavor = str,
     antlir_cell_name = str,
+    rc_layers = shape.list(str),
 )
