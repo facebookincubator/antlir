@@ -129,7 +129,7 @@ struct PackageFile {
 
 struct VersionedReleaseFile {
     content: Bytes,
-    signature: String,
+    //TODO: Add a signature field
 }
 
 #[derive(ClapParser, Debug)]
@@ -452,7 +452,6 @@ impl VersionedReleaseFile {
         Ok(VersionedReleaseFile {
             content: Bytes::from(content),
             //TODO: sign the content
-            signature: String::new(),
         })
     }
 }
