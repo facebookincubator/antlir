@@ -114,7 +114,7 @@ struct NetworkAddress {
 // Configuration for a single network interface, keyed by MAC Address.
 struct NetworkInterface {
   1: string mac;
-  2: list<string> addrs;
+  2: optional list<string> addrs;
   3: optional string name;
   // this interface is considered necessary and the network will not be
   // considered up until this interface is configured and up
