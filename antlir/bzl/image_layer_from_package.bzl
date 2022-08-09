@@ -3,12 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2/layer:from_package.shape.bzl", "layer_from_package_t")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "REPO_CFG")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
-load(":target_tagger.bzl", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
+load(":target_tagger.bzl", "extract_tagged_target", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
+load(":target_tagger.shape.bzl", "target_tagged_image_source_t")
 
 def image_layer_from_package_helper(
         name,
@@ -16,32 +19,42 @@ def image_layer_from_package_helper(
         flavor,
         flavor_config_override,
         antlir_rule,
+        rc_layer,
         subvol_name,
         features,
         compile_image_features_fn,
         image_layer_kwargs):
-    for bad_kwarg in ["parent_layer", "features"]:
-        if bad_kwarg in image_layer_kwargs:
-            fail("Unsupported with layer_from_package", bad_kwarg)
+    if normalize_target(":" + name) in REPO_CFG.rc_layers:
+        if rc_layer == None:
+            fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
 
-    if format not in ["cpio", "sendstream", "tar"]:
-        fail("Unsupported format for layer_from_package", format)
-
-    image_layer_utils.image_layer_impl(
-        _rule_type = "image_layer_from_package",
-        _layer_name = name,
-        _make_subvol_cmd = compile_image_features_fn(
+        image_layer_alias(
             name = name,
-            current_target = normalize_target(":" + name),
-            parent_layer = None,
-            features = features,
-            flavor = flavor,
-            flavor_config_override = flavor_config_override,
-            subvol_name = subvol_name,
-        ),
-        antlir_rule = antlir_rule,
-        **image_layer_kwargs
-    )
+            layer = rc_layer,
+        )
+    else:
+        for bad_kwarg in ["parent_layer", "features"]:
+            if bad_kwarg in image_layer_kwargs:
+                fail("Unsupported with layer_from_package", bad_kwarg)
+
+        if format not in ["cpio", "sendstream", "tar"]:
+            fail("Unsupported format for layer_from_package", format)
+
+        image_layer_utils.image_layer_impl(
+            _rule_type = "image_layer_from_package",
+            _layer_name = name,
+            _make_subvol_cmd = compile_image_features_fn(
+                name = name,
+                current_target = normalize_target(":" + name),
+                parent_layer = None,
+                features = features,
+                flavor = flavor,
+                flavor_config_override = flavor_config_override,
+                subvol_name = subvol_name,
+            ),
+            antlir_rule = antlir_rule,
+            **image_layer_kwargs
+        )
 
 # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`) for all
 # other supported kwargs.
@@ -74,40 +87,46 @@ def image_layer_from_package(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
+    target_tagger = new_target_tagger()
+    source_dict = image_source_as_target_tagged_dict(
+        target_tagger,
+        source,
+    )
 
-    # Look to see if we should build the RC version of this layer instead of
-    # the packaged one.
-    if normalize_target(":" + name) in REPO_CFG.rc_layers:
-        if rc_layer == None:
-            fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
+    feature_shape = layer_from_package_t(
+        format = format,
+        source = target_tagged_image_source_t(**source_dict),
+    )
+    source_target = extract_tagged_target(
+        source_dict["source" if source_dict["source"] else "layer"],
+    )
 
-        image_layer_alias(
-            name = name,
-            layer = rc_layer,
-        )
-    else:
-        target_tagger = new_target_tagger()
-        features = [target_tagger_to_feature(
-            target_tagger,
-            struct(
-                layer_from_package = [{
-                    "format": format,
-                    "source": image_source_as_target_tagged_dict(
-                        target_tagger,
-                        source,
-                    ),
-                }],
+    features = [target_tagger_to_feature(
+        target_tagger,
+        struct(
+            layer_from_package = [feature_shape],
+        ),
+        # copy in buck2 version
+        extra_deps = [
+            maybe_add_feature_rule(
+                name = "layer_from_package",
+                include_in_target_name = {"name": name},
+                feature_shape = feature_shape,
+                deps = [source_target],
+                is_buck2 = False,
             ),
-        )]
+        ],
+    )]
 
-        image_layer_from_package_helper(
-            name,
-            format,
-            flavor,
-            flavor_config_override,
-            antlir_rule,
-            subvol_name,
-            features,
-            compile_image_features,
-            image_layer_kwargs,
-        )
+    image_layer_from_package_helper(
+        name,
+        format,
+        flavor,
+        flavor_config_override,
+        antlir_rule,
+        rc_layer,
+        subvol_name,
+        features,
+        compile_image_features,
+        image_layer_kwargs,
+    )

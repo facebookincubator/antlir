@@ -4,6 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
+load(":constants.bzl", "BZL_CONST")
+load(":dummy_rule.bzl", "dummy_rule")
 load(":image_layer_runtime.bzl", "add_runtime_targets")
 
 """
@@ -52,6 +55,17 @@ def image_layer_alias(name, layer, runtime = None, visibility = None):
         cacheable = False,
         type = "image_layer_alias",
         visibility = visibility,
+    )
+
+    # Necessary because with the buck2 logic for passing flavors, child layers
+    # depend on their parent layer's feature.
+    #
+    # TODO: have layer alias feature collect flavor from `layer`
+    dummy_rule(
+        name = PRIVATE_DO_NOT_USE_feature_target_name(
+            name + BZL_CONST.layer_feature_suffix,
+        ),
+        visibility = ["PUBLIC"],
     )
 
     add_runtime_targets(name, runtime)
