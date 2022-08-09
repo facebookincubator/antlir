@@ -20,6 +20,7 @@ load(
     "//antlir/bzl2:image_source_helper.bzl",
     "normalize_target_and_mark_path_in_source_dict",
 )
+load(":from_package.shape.bzl", "layer_from_package_t")
 
 # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`) for all
 # other supported kwargs.
@@ -32,6 +33,7 @@ def layer_from_package(
         # A sendstream layer does not add any build logic on top of the
         # input, so we treat it as internal to improve CI coverage.
         antlir_rule = "user-internal",
+        rc_layer = None,
         subvol_name = None,
         # Mechanistically, applying a send-stream on top of an existing layer
         # is just a regular `btrfs receive`.  However, the rules in the
@@ -53,14 +55,11 @@ def layer_from_package(
     source_dict, normalized_target = \
         normalize_target_and_mark_path_in_source_dict(source_dict)
 
+    # copy in buck1 version
     features = [maybe_add_feature_rule(
         name = "layer_from_package",
         include_in_target_name = {"name": name},
-        feature_shape = shape.new(
-            shape.shape(
-                format = str,
-                source = image_source_t,
-            ),
+        feature_shape = layer_from_package_t(
             format = format,
             source = image_source_t(**source_dict),
         ),
@@ -73,6 +72,7 @@ def layer_from_package(
         flavor,
         flavor_config_override,
         antlir_rule,
+        rc_layer,
         subvol_name,
         features,
         compile_image_features,
