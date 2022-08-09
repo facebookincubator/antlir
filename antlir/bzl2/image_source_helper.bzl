@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
-load("//antlir/bzl2:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
+load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 
 def mark_path(target, is_layer = False):
     return {("__BUCK_LAYER_TARGET" if is_layer else "__BUCK_TARGET"): normalize_target(target)}
@@ -24,7 +24,7 @@ def _mark_path_and_get_target(source_dict, key, is_layer = False):
 
 def normalize_target_and_mark_path_in_source_dict(source_dict, **kwargs):
     """
-    Adds tag to target at `source_dict[{source,layer}}]` and
+    Adds tag to target at `source_dict[{source,layer}]` and
     normalizes target so target can be converted to path in
     items_for_features.py.
     """

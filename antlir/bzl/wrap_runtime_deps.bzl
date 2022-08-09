@@ -3,9 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl2:wrap_executable_target_rule.bzl", "maybe_wrap_executable_target_rule")
 load(":constants.bzl", "REPO_CFG")
 load(":exec_wrapper.bzl", "build_exec_wrapper")
-load(":oss_shim.bzl", "buck_genrule", "get_visibility")
+load(":oss_shim.bzl", "buck_genrule", "get_visibility", "is_buck2")
 load(":target_helpers.bzl", "wrap_target")
 
 def _maybe_wrap_runtime_deps_as_build_time_deps(
@@ -13,7 +14,6 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         target,
         visibility,
         runs_in_build_steps_causes_slow_rebuilds,
-        wrap_rule_fn = buck_genrule,
         path_in_output = None):
     """
     If necessary (see "When..."), wraps `target` with a new target named
@@ -187,8 +187,17 @@ fi
         )
         unquoted_heredoc_preamble = ""
 
-    if wrap_rule_fn == buck_genrule:
-        wrap_rule_fn(
+    if is_buck2():
+        maybe_wrap_executable_target_rule(
+            name = name,
+            target = target,
+            path_in_output = path_in_output,
+            literal_preamble = literal_preamble,
+            unquoted_heredoc_preamble = unquoted_heredoc_preamble,
+            visibility = get_visibility(visibility),
+        )
+    else:
+        buck_genrule(
             name = name,
             bash = build_exec_wrapper(
                 runnable = target,
@@ -202,15 +211,6 @@ fi
             executable = True,
             visibility = get_visibility(visibility),
             antlir_rule = "user-internal",
-        )
-    else:
-        wrap_rule_fn(
-            name = name,
-            target = target,
-            path_in_output = path_in_output,
-            literal_preamble = literal_preamble,
-            unquoted_heredoc_preamble = unquoted_heredoc_preamble,
-            visibility = get_visibility(visibility),
         )
 
     return True, ":" + name
