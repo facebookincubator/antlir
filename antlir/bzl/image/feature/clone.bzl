@@ -11,6 +11,8 @@ load(
     "tag_target",
     "target_tagger_to_feature",
 )
+load("//antlir/bzl:target_tagger_helper.bzl", "target_tagger_helper")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":clone.shape.bzl", "clone_t")
 
 def feature_clone(src_layer, src_path, dest_path):
@@ -80,7 +82,23 @@ metadata to a deterministic state, while the state of the on-disk metadata in
         source_layer = tag_target(target_tagger, src_layer, is_layer = True),
     )
 
+    target = target_tagger_helper.extract_tagged_target(clone.source.layer)
+
     return target_tagger_to_feature(
         target_tagger,
         items = struct(clone = [clone]),
+        extra_deps = [
+            # copy in buck2 version
+            maybe_add_feature_rule(
+                name = "clone",
+                include_in_target_name = {
+                    "dest_path": dest_path,
+                    "src_layer": src_layer,
+                    "src_path": src_path,
+                },
+                feature_shape = clone,
+                deps = [target],
+                is_buck2 = False,
+            ),
+        ],
     )

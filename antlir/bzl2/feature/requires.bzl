@@ -20,6 +20,8 @@ def feature_requires(users = None, groups = None, files = None):
     macro that generates systemd units that run as a specific user, where
     `feature.requires` can be used for additional compile-time safety that the
     user, groups or files do indeed exist."""
+
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "requires",
         include_in_target_name = {

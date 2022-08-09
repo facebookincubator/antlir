@@ -7,6 +7,7 @@ load("//antlir/bzl/image/feature:symlink.shape.bzl", "symlink_t")
 load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
 def _feature_ensure_symlink(link_target, link_name, key):
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "symlink",
         key = key,

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load(
     "//antlir/bzl:target_tagger.bzl",
@@ -10,6 +11,7 @@ load(
     "new_target_tagger",
     "target_tagger_to_feature",
 )
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":tarball.shape.bzl", "tarball_t")
 
 def feature_tarball(source, dest, force_root_ownership = False):
@@ -33,7 +35,23 @@ def feature_tarball(source, dest, force_root_ownership = False):
         ),
     )
 
+    target = source if types.is_string(source) else source.source if source.source else source.generator
+
     return target_tagger_to_feature(
         target_tagger,
         items = struct(tarballs = [tarball]),
+        extra_deps = [
+            # copy in buck2 version
+            maybe_add_feature_rule(
+                name = "tarball",
+                key = "tarballs",
+                include_in_target_name = {
+                    "dest": dest,
+                    "source": target,
+                },
+                feature_shape = tarball,
+                deps = [target],
+                is_buck2 = False,
+            ),
+        ],
     )

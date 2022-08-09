@@ -19,6 +19,8 @@ def feature_remove(dest, must_exist = True):
     By default, it is an error if the specified path is missing from the image,
     though this can be avoided by setting `must_exist` to `False`.
     """
+
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "remove",
         key = "remove_paths",

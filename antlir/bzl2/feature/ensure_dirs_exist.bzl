@@ -37,6 +37,8 @@ def feature_ensure_subdirs_exist(
     symbolic strings. In the latter case, the passwd/group database from the
     host (not from the image) is used.
     """
+
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "ensure_subdirs_exist",
         include_in_target_name = {
