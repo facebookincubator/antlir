@@ -27,6 +27,7 @@ def feature_tarball(source, dest, force_root_ownership = False):
     source_dict, normalized_target = \
         normalize_target_and_mark_path_in_source_dict(source_dict)
 
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "tarball",
         key = "tarballs",

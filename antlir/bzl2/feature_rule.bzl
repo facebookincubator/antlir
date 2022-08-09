@@ -5,6 +5,7 @@
 
 # @lint-ignore-every BUCKLINT
 
+load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
 load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl2:generate_feature_target_name.bzl", "generate_feature_target_name")
@@ -39,7 +40,8 @@ def maybe_add_feature_rule(
         include_in_target_name = None,
         key = None,
         deps = [],
-        debug = False):
+        debug = False,
+        is_buck2 = True):
     # if `key` is not provided, then it is assumed that `key` is same as `name`
     key = key or name
 
@@ -51,13 +53,16 @@ def maybe_add_feature_rule(
     )
 
     if not native.rule_exists(target_name):
-        _feature_rule(
-            name = target_name,
-            key = key,
-            shape = shape.as_serializable_dict(
-                feature_shape,
-            ) if shape.is_any_instance(feature_shape) else feature_shape,
-            deps = deps,
-        )
+        if is_buck2:
+            _feature_rule(
+                name = target_name,
+                key = key,
+                shape = shape.as_serializable_dict(
+                    feature_shape,
+                ) if shape.is_any_instance(feature_shape) else feature_shape,
+                deps = deps,
+            )
+        else:
+            dummy_rule(target_name, deps = deps)
 
     return ":" + target_name

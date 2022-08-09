@@ -64,6 +64,8 @@ def feature_host_dir_mount(source, mountpoint = None):
     `/path/foo` into the container at `/path/foo`. Another image item must
     provide the parent `/path`, but this item will create the mount-point.
     """
+
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "host_dir_mount",
         key = "mounts",
@@ -83,6 +85,8 @@ def feature_host_file_mount(source, mountpoint = None):
     `image.host_file_mount("/path/bar", "/baz")` bind-mounts the file
     `/path/bar` into the container at `/baz`.
     """
+
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "host_file_mount",
         key = "mounts",
@@ -110,6 +114,7 @@ def feature_layer_mount(source, mountpoint = None):
         "target": mark_path(source),
     }
 
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "layer_mount",
         key = "mounts",

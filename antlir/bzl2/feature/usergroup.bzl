@@ -49,6 +49,8 @@ def feature_user_add(
     - `home_dir` should exist, but this item does not ensure/depend on it to
         avoid a circular dependency on directory's owner user.
     """
+
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "user_add",
         key = "users",
@@ -77,6 +79,8 @@ def feature_group_add(groupname, gid = None):
     GIDs are auto-assigned, they may change if underlying layers add/remove
     groups.
     """
+
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "group_add",
         key = "groups",

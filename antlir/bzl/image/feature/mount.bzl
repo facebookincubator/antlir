@@ -45,8 +45,10 @@ layers.
 """
 
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_required_target_key", "target_tagger_to_feature")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2/feature:mount.shape.bzl", "mount_t")
 
-def _image_host_mount(source, mountpoint, is_directory):
+def _feature_host_mount(source, mountpoint, is_directory):
     return {
         "mount_config": {
             "build_source": {"source": source, "type": "host"},
@@ -64,7 +66,7 @@ def feature_host_dir_mount(source, mountpoint = None):
 `/path/foo` into the container at `/path/foo`. Another image item must
 provide the parent `/path`, but this item will create the mount-point.
     """
-    mount_spec = _image_host_mount(
+    mount_spec = _feature_host_mount(
         source,
         mountpoint,
         is_directory = True,
@@ -72,6 +74,19 @@ provide the parent `/path`, but this item will create the mount-point.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(mounts = [mount_spec]),
+        extra_deps = [
+            # copy in buck2 version
+            maybe_add_feature_rule(
+                name = "host_dir_mount",
+                key = "mounts",
+                include_in_target_name = {
+                    "mountpoint": mountpoint,
+                    "source": source,
+                },
+                feature_shape = mount_t(**mount_spec),
+                is_buck2 = False,
+            ),
+        ],
     )
 
 def feature_host_file_mount(source, mountpoint = None):
@@ -79,7 +94,7 @@ def feature_host_file_mount(source, mountpoint = None):
 `feature.host_file_mount("/path/bar", "/baz")` bind-mounts the file `/path/bar`
 into the container at `/baz`.
     """
-    mount_spec = _image_host_mount(
+    mount_spec = _feature_host_mount(
         source,
         mountpoint,
         is_directory = False,
@@ -87,6 +102,19 @@ into the container at `/baz`.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(mounts = [mount_spec]),
+        extra_deps = [
+            # copy in buck2 version
+            maybe_add_feature_rule(
+                name = "host_file_mount",
+                key = "mounts",
+                include_in_target_name = {
+                    "mountpoint": mountpoint,
+                    "source": source,
+                },
+                feature_shape = mount_t(**mount_spec),
+                is_buck2 = False,
+            ),
+        ],
     )
 
 def feature_layer_mount(source, mountpoint = None):
@@ -103,4 +131,18 @@ then you can pass an explicit `mountpoint` argument.
     return target_tagger_to_feature(
         target_tagger = target_tagger,
         items = struct(mounts = [mount_spec]),
+        extra_deps = [
+            # copy in buck2 version
+            maybe_add_feature_rule(
+                name = "layer_mount",
+                key = "mounts",
+                include_in_target_name = {
+                    "mountpoint": mountpoint,
+                    "source": source,
+                },
+                feature_shape = mount_t(**mount_spec),
+                deps = [source],
+                is_buck2 = False,
+            ),
+        ],
     )

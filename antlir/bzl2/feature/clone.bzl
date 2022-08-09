@@ -80,6 +80,7 @@ def feature_clone(src_layer, src_path, dest_path):
     source_dict, normalized_target = \
         normalize_target_and_mark_path_in_source_dict(source_dict)
 
+    # copy in buck1 version
     return maybe_add_feature_rule(
         name = "clone",
         include_in_target_name = {
