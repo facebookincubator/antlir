@@ -55,10 +55,11 @@ directory output by a Buck-runnable target, then you should use
 `install`, even though the underlying rule is executable.
 """
 
+load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
-load("//antlir/bzl:target_helpers.bzl", "wrap_target")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
 load(
     "//antlir/bzl:target_tagger.bzl",
     "extract_tagged_target",
@@ -68,6 +69,7 @@ load(
     "target_tagger_to_feature",
 )
 load("//antlir/bzl:target_tagger.shape.bzl", "target_tagged_image_source_t")
+load("//antlir/bzl2/feature:install.bzl", "maybe_add_install_rule")
 load(":install.shape.bzl", "install_files_t")
 
 _BUCK_RUNNABLE_WRAP_SUFFIX = "install_buck_runnable_wrap_source"
@@ -78,6 +80,42 @@ def _forbid_layer_source(source_dict):
             "Cannot use image.source(layer=...) with `feature.install*` " +
             "actions: {}".format(source_dict),
         )
+
+def _generate_shape(source_dict, dest, mode, user, group):
+    return install_files_t(
+        dest = dest,
+        source = target_tagged_image_source_t(**source_dict),
+        mode = stat.mode(mode) if mode else None,
+        user = user,
+        group = group,
+    )
+
+def _install_target_tagger(
+        dest,
+        target_tagger,
+        unwrapped_target,
+        unwrapped_shape,
+        wrapped_target,
+        wrapped_shape):
+    return target_tagger_to_feature(
+        target_tagger,
+        items = struct(install_files = [wrapped_shape if wrapped_shape else unwrapped_shape]),
+        extra_deps = [
+            # copy in buck2 version
+            maybe_add_install_rule(
+                include_in_target_name = {
+                    "dest": dest,
+                    "source": unwrapped_target,
+                },
+                unwrapped_shape = unwrapped_shape,
+                wrapped_shape = None,
+                unwrapped_target = unwrapped_target,
+                wrapped_target = wrapped_target,
+                wrap_as_buck_runnable = False,
+                is_buck2 = False,
+            ),
+        ],
+    )
 
 # KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
 def TEST_ONLY_wrap_buck_runnable(target, path_in_output):
@@ -120,6 +158,9 @@ defaults to `False` to speed up incremental rebuilds.
     tagged_source = image_source_as_target_tagged_dict(target_tagger, maybe_export_file(source))
     _forbid_layer_source(tagged_source)
 
+    unwrapped_target = extract_tagged_target(tagged_source["source"])
+    unwrapped_shape = _generate_shape(tagged_source, dest, mode, user, group)
+
     # NB: We don't have to wrap executables because they already come from a
     # layer, which would have wrapped them if needed.
     if tagged_source["source"]:
@@ -141,17 +182,16 @@ defaults to `False` to speed up incremental rebuilds.
             # compiler does not have to.
             tagged_source["path"] = None
 
-    install_files = install_files_t(
-        dest = dest,
-        source = target_tagged_image_source_t(**tagged_source),
-        mode = stat.mode(mode) if mode else None,
-        user = user,
-        group = group,
-    )
+    wrapped_target = extract_tagged_target(tagged_source["source"])
+    wrapped_shape = _generate_shape(tagged_source, dest, mode, user, group)
 
-    return target_tagger_to_feature(
+    return _install_target_tagger(
+        dest,
         target_tagger,
-        items = struct(install_files = [install_files]),
+        unwrapped_target,
+        unwrapped_shape,
+        wrapped_target,
+        wrapped_shape,
     )
 
 def feature_install(
@@ -159,7 +199,9 @@ def feature_install(
         dest,
         mode = None,
         user = shape.DEFAULT_VALUE,
-        group = shape.DEFAULT_VALUE):
+        group = shape.DEFAULT_VALUE,
+        # @lint-ignore BUILDIFIERLINT
+        wrap_as_buck_runnable = False):
     """
 `feature.install("//path/fs:data", "dir/bar")` installs file or directory
 `data` to `dir/bar` in the image. `dir/bar` must not exist, otherwise
@@ -186,6 +228,10 @@ The arguments `user` and `group` change file owner and group of all
 directories in `dest`. `user` and `group` can be integers or symbolic strings.
 In the latter case, the passwd/group database from the host (not from the
 image) is used. The default for `user` and `group` is `root`.
+
+The argument `wrap_as_buck_runnable` is only present because the Buck2
+implementation uses that argument, and adding it here makes it easier to
+integrate with that logic. It can be ignored.
     """
 
     target_tagger = new_target_tagger()
@@ -195,12 +241,15 @@ image) is used. The default for `user` and `group` is `root`.
     )
     _forbid_layer_source(source_dict)
 
-    install_files = install_files_t(
-        dest = dest,
-        source = target_tagged_image_source_t(**source_dict),
-        mode = stat.mode(mode) if mode else None,
-        user = user,
-        group = group,
+    unwrapped_target = extract_tagged_target(source_dict["source"])
+    unwrapped_shape = _generate_shape(source_dict, dest, mode, user, group)
+
+    wrapped_target = dummy_rule(
+        wrap_target(unwrapped_target, _BUCK_RUNNABLE_WRAP_SUFFIX + (source_dict.get("path") or ""))[1],
+        deps = [
+            antlir_dep(":repo-root"),
+            unwrapped_target,
+        ],
     )
 
     # Future: We might use a Buck macro that enforces that the target is
@@ -209,7 +258,11 @@ image) is used. The default for `user` and `group` is `root`.
     # bugs everywhere.  A possible reason NOT to do this is that it would
     # require fixes to `install` invocations that extract non-executable
     # contents out of a directory target that is executable.
-    return target_tagger_to_feature(
+    return _install_target_tagger(
+        dest,
         target_tagger,
-        items = struct(install_files = [install_files]),
+        unwrapped_target,
+        unwrapped_shape,
+        wrapped_target,
+        None,
     )

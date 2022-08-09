@@ -41,6 +41,7 @@ copied. The parent directory of `dest` must get created by another image
 feature.
 """
 
+load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:oss_shim.bzl", "is_buck2")
@@ -49,7 +50,7 @@ load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
 load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
 load("//antlir/bzl2:generate_feature_target_name.bzl", "generate_feature_target_name")
-load("//antlir/bzl2:image_source_helper.bzl", "normalize_target_and_mark_path_in_source_dict")
+load("//antlir/bzl2:image_source_helper.bzl", "normalize_target_and_mark_path_in_source_dict", "unwrap_path")
 load("//antlir/bzl2:providers.bzl", "ItemInfo")
 
 def _forbid_layer_source(source_dict):
@@ -101,7 +102,8 @@ def maybe_add_install_rule(
         wrapped_target,
         wrap_as_buck_runnable,
         include_in_target_name = None,
-        debug = False):
+        debug = False,
+        is_buck2 = True):
     name = "install"
     key = "install_files"
 
@@ -113,15 +115,24 @@ def maybe_add_install_rule(
     )
 
     if not native.rule_exists(target_name):
-        _install_rule(
-            name = target_name,
-            key = key,
-            unwrapped_shape = shape.as_serializable_dict(unwrapped_shape),
-            wrapped_shape = shape.as_serializable_dict(wrapped_shape),
-            unwrapped_target = unwrapped_target,
-            wrapped_target = wrapped_target,
-            wrap_as_buck_runnable = wrap_as_buck_runnable,
-        )
+        if is_buck2:
+            _install_rule(
+                name = target_name,
+                key = key,
+                unwrapped_shape = shape.as_serializable_dict(unwrapped_shape),
+                wrapped_shape = shape.as_serializable_dict(wrapped_shape),
+                unwrapped_target = unwrapped_target,
+                wrapped_target = wrapped_target,
+                wrap_as_buck_runnable = wrap_as_buck_runnable,
+            )
+        else:
+            dummy_rule(
+                target_name,
+                deps = [
+                    unwrapped_target,
+                    wrapped_target,
+                ],
+            )
 
     return ":" + target_name
 
@@ -205,10 +216,11 @@ def feature_install(
                 runs_in_build_steps_causes_slow_rebuilds,
         )
 
+    # copy in buck1 version
     return maybe_add_install_rule(
         include_in_target_name = {
             "dest": dest,
-            "source": unwrapped_source_dict["source"],
+            "source": unwrap_path(unwrapped_source_dict["source"]),
         },
         unwrapped_shape = _generate_shape(
             unwrapped_source_dict,
