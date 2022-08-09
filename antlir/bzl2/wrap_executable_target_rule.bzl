@@ -5,12 +5,9 @@
 
 # @lint-ignore-every BUCKLINT
 
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
+load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
+load("//antlir/bzl:oss_shim.bzl", "get_cxx_platform_for_current_buildfile", "is_buck2")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load(
-    "//antlir/bzl:wrap_runtime_deps.bzl",
-    helper = "maybe_wrap_executable_target",
-)
 
 def _wrap_executable_target_rule_impl(ctx):
     if not ctx.attrs.target[native.RunInfo]:
@@ -24,7 +21,7 @@ def _wrap_executable_target_rule_impl(ctx):
 
     script = """
 set -exo pipefail
-echo "#!/bin/bash
+echo "#!/bin/sh
 REPO_ROOT=`$repo_root`
 {unquoted_heredoc_preamble}
 $literal_preamble
@@ -72,15 +69,23 @@ _wrap_executable_target_rule = native.rule(
     },
 ) if is_buck2() else None
 
-def maybe_wrap_executable_target_rule(**kwargs):
-    if not native.rule_exists(kwargs.get("name")):
-        _wrap_executable_target_rule(
-            repo_root = antlir_dep(":repo-root"),
-            **kwargs
-        )
+def maybe_wrap_executable_target_rule(name, target, **kwargs):
+    if not native.rule_exists(name):
+        if is_buck2():
+            _wrap_executable_target_rule(
+                name = name,
+                target = target,
+                repo_root = antlir_dep(":repo-root"),
+                default_target_platform = get_cxx_platform_for_current_buildfile().target_platform,
+                **kwargs
+            )
+        else:
+            dummy_rule(
+                name,
+                deps = [
+                    antlir_dep(":repo-root"),
+                    target,
+                ],
+            )
 
-    return ":" + kwargs.get("name")
-
-def maybe_wrap_executable_target(target, wrap_suffix, **kwargs):
-    kwargs.update({"wrap_rule_fn": maybe_wrap_executable_target_rule})
-    return helper(target, wrap_suffix, **kwargs)
+    return ":" + name
