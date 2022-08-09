@@ -188,7 +188,7 @@ def normalize_features(
         rpm_deps = rpm_deps,
     )
 
-def feature_new_internal(
+def private_feature_new(
         name,
         features,
         visibility = None,
@@ -249,7 +249,7 @@ def feature_new(
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
-    return feature_new_internal(
+    return private_feature_new(
         name,
         features,
         visibility,

@@ -272,14 +272,12 @@ def private_do_not_use_feature_json_genrule(
         antlir_rule = "user-internal",
     )
 
-def feature_new(
+def private_feature_new(
         name,
         features,
         visibility = None,
-        # This is used when a user wants to declare a feature
-        # that is not available for all flavors in REPO_CFG.flavor_to_config.
-        # An example of this is the internal feature in `image_layer.bzl`.
-        flavors = None):
+        flavors = None,
+        parent_layer = None):
     """
     Turns a group of image actions into a Buck target, so it can be
     referenced from outside the current project via `//path/to:name`.
@@ -321,6 +319,12 @@ def feature_new(
         extra_deps = normalized_features.direct_deps,
     )
 
+    # to mirror dependency on parent layer feature in buck2 logic
+    if (BZL_CONST.layer_feature_suffix in name and parent_layer):
+        feature.deps.append(
+            PRIVATE_DO_NOT_USE_feature_target_name(parent_layer + BZL_CONST.layer_feature_suffix),
+        )
+
     # Serialize the arguments and defer our computation until build-time.
     #
     # This allows us to automatically infer what is provided by RPMs & TARs,
@@ -338,4 +342,19 @@ def feature_new(
             out = shell.quote(structs.as_json(feature.items)),
         ),
         visibility = visibility,
+    )
+
+def feature_new(
+        name,
+        features,
+        visibility = None,
+        # This is used when a user wants to declare a feature
+        # that is not available for all flavors in REPO_CFG.flavor_to_config.
+        # An example of this is the internal feature in `image_layer.bzl`.
+        flavors = None):
+    private_feature_new(
+        name,
+        features,
+        visibility,
+        flavors,
     )

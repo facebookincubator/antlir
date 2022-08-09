@@ -130,7 +130,7 @@ def targets_and_outputs_arg_list(name, query):
     if not query:
         fail("`targets_and_outputs_arg_list` requires a query built with `//antlir/bzl:query.bzl`")
 
-    target = "{}__deps-targets-to-outputs-{}".format(name, sha256_b64(name + query))
+    target = "{}__deps-targets-to-outputs-{}".format(name, sha256_b64(name))
     if not native.rule_exists(target):
         buck_genrule(
             name = target,
