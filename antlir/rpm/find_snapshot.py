@@ -23,14 +23,22 @@ def _sha256_b64(b: bytes) -> str:
 
 
 # KEEP IN SYNC with its copy in `bzl/wrap_target.bzl`.
-def mangle_target(normalized_target: str, min_abbrev: int = 15) -> str:
-    "The docs are on the other copy of this function in `target_tagger.bzl`."
-    _, name = normalized_target.split(":")
+def abbrev_name(name: str, min_abbrev: int) -> str:
     return (
         name
         if len(name) < (2 * min_abbrev + 3)
         else (name[:min_abbrev] + "..." + name[-min_abbrev:])
-    ) + f"__{_sha256_b64(normalized_target.encode())[:20]}"
+    )
+
+
+# KEEP IN SYNC with its copy in `bzl/wrap_target.bzl`.
+def mangle_target(normalized_target: str, min_abbrev: int = 15) -> str:
+    "The docs are on the other copy of this function in `target_tagger.bzl`."
+    _, name = normalized_target.split(":")
+    return (
+        abbrev_name(name, min_abbrev)
+        + f"__{_sha256_b64(normalized_target.encode())[:20]}"
+    )
 
 
 # KEEP IN SYNC with its copy in `bzl/snapshot_install_dir.bzl`

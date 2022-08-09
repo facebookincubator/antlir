@@ -7,7 +7,7 @@ load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load(":oss_shim.bzl", "buck_genrule", "config", "repository_name", "target_utils")
 load(":sha256.bzl", "sha256_b64")
 
-# KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
+# KEEP IN SYNC with its copy in `compiler/tests/sample_items.py`
 def clean_target_name(name):
     # Used to remove invalid characters from target names.
 
@@ -64,6 +64,12 @@ def normalize_target(target):
     )
 
 # KEEP IN SYNC with its copy in `rpm/find_snapshot.py`.
+def _abbrev_name(name, min_abbrev):
+    return name if len(name) < (2 * min_abbrev + 3) else (
+        name[:min_abbrev] + "..." + name[-min_abbrev:]
+    )
+
+# KEEP IN SYNC with its copy in `rpm/find_snapshot.py`.
 #
 # Makes a deterministic and unique "nonce" from a target path, which can
 # itself be used as part of a target name.  Its form is:
@@ -86,19 +92,13 @@ def mangle_target(target, min_abbrev = 15):
     target = normalize_target(target)
 
     _, name = target.split(":")
-    return (
-        name if len(name) < (2 * min_abbrev + 3) else (
-            name[:min_abbrev] + "..." + name[-min_abbrev:]
-        )
-        # A 120-bit secure hash requires close to 2^60 targets to exist in one
-        # project to trigger a birthday collision.  We don't need all 43 bytes.
-    ) + "__" + sha256_b64(target)[:20]
+    return _abbrev_name(name, min_abbrev) + "__" + sha256_b64(target)[:20]
 
 # KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
 def wrap_target(target, wrap_suffix):
     target = normalize_target(target)
     _, name = target.split(":")
-    wrapped_target = name + "__" + wrap_suffix + "-" + mangle_target(target)
+    wrapped_target = _abbrev_name(name, 50) + "__" + wrap_suffix + "-" + mangle_target(target)
     wrapped_target = clean_target_name(wrapped_target)
     return native.rule_exists(wrapped_target), wrapped_target
 
