@@ -20,10 +20,10 @@ from antlir.compiler.items.tarball import TarballItem
 from antlir.compiler.items.user import UserItem
 from antlir.config import antlir_dep
 from antlir.fs_utils import Path
-from antlir.rpm.find_snapshot import mangle_target
+from antlir.rpm.find_snapshot import abbrev_name, mangle_target
 
 
-# KEEP IN SYNC with its partial copy `wrap_target` in `bzl/target_helpers.bzl`
+# KEEP IN SYNC with its copy in `bzl/target_helpers.bzl`
 def clean_target_name(name: str) -> str:
     # Used to remove invalid characters from target names.
 
@@ -60,7 +60,11 @@ def wrap_buck_runnable_target(
     wrap_suffix = "install_buck_runnable_wrap_source" + path_in_output
     _, name = normalized_target.split(":")
     wrapped_target = (
-        name + "__" + wrap_suffix + "-" + mangle_target(normalized_target)
+        abbrev_name(name, 50)
+        + "__"
+        + wrap_suffix
+        + "-"
+        + mangle_target(normalized_target)
     )
     wrapped_target = clean_target_name(wrapped_target)
     return wrapped_target
