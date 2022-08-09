@@ -3,6 +3,8 @@
 [Unit]
 RefuseManualStart=yes
 RefuseManualStop=yes
+After=metalos.metald.service
+Requires=metalos.metald.service
 
 [Service]
 Type=oneshot
