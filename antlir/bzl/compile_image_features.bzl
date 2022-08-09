@@ -8,7 +8,9 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl/image/feature:new.bzl", "feature_new", "normalize_features")
+load("//antlir/bzl/image/feature:new.bzl", "normalize_features", "private_feature_new")
+load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
+load("//antlir/bzl2:parent_layer.shape.bzl", "parent_layer_t")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":query.bzl", "layer_deps_query", "query")
@@ -196,7 +198,15 @@ def compile_image_features(
     features.append(target_tagger_to_feature(
         target_tagger,
         struct(),
-        extra_deps = extra_deps,
+        extra_deps = extra_deps + ([maybe_add_feature_rule(
+            name = "parent_layer",
+            include_in_target_name = {"parent_layer": parent_layer},
+            feature_shape = parent_layer_t(
+                subvol = tag_target(target_tagger, parent_layer, is_layer = True),
+            ),
+            deps = [parent_layer],
+            is_buck2 = False,
+        )] if parent_layer else []),
     ))
 
     # This is the list of supported flavors for the features of the layer.
@@ -208,7 +218,7 @@ def compile_image_features(
     #
     # Keep in sync with `bzl_const.py`.
     features_for_layer = name + BZL_CONST.layer_feature_suffix
-    feature_new(
+    private_feature_new(
         name = features_for_layer,
         features = features + (
             [target_tagger_to_feature(
@@ -220,7 +230,9 @@ def compile_image_features(
                 )}]),
             )] if parent_layer else []
         ),
+        parent_layer = parent_layer,
         flavors = flavors,
+        visibility = ["PUBLIC"],
     )
     normalized_features = normalize_features(
         [":" + features_for_layer],

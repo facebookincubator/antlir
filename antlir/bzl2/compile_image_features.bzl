@@ -12,15 +12,15 @@ load(
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:query.bzl", "layer_deps_query", "query")
-load("//antlir/bzl:shape.bzl", "shape")
 load(
     "//antlir/bzl/image/feature:new.bzl",
     "PRIVATE_DO_NOT_USE_feature_target_name",
 )
-load("//antlir/bzl2/feature:new.bzl", "feature_new_internal", "normalize_features")
+load("//antlir/bzl2/feature:new.bzl", "normalize_features", "private_feature_new")
 load(":feature_rule.bzl", "maybe_add_feature_rule")
 load(":image_source_helper.bzl", "mark_path")
 load(":is_build_appliance.bzl", "is_build_appliance")
+load(":parent_layer.shape.bzl", "parent_layer_t")
 
 def compile_image_features(
         name,
@@ -69,10 +69,7 @@ def compile_image_features(
         features.append(maybe_add_feature_rule(
             name = "parent_layer",
             include_in_target_name = {"parent_layer": parent_layer},
-            feature_shape = shape.new(
-                shape.shape(
-                    subvol = shape.field(shape.dict(str, str)),
-                ),
+            feature_shape = parent_layer_t(
                 subvol = mark_path(parent_layer, is_layer = True),
             ),
             deps = [parent_layer],
@@ -90,13 +87,13 @@ def compile_image_features(
     #
     # Keep in sync with `bzl_const.py`.
     features_for_layer = PRIVATE_DO_NOT_USE_feature_target_name(features_for_layer_readable)
-    feature_new_internal(
+    private_feature_new(
         name = features_for_layer_readable,
         features = normalized_features,
         flavors = flavors,
         parent_layer = parent_layer,
         deps = extra_deps,
-        visibility = ["//antlir/..."],
+        visibility = ["PUBLIC"],
     )
 
     vset_override_name = vset_override_genrule(flavor_config, current_target)
