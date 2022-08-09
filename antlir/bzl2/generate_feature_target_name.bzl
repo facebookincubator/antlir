@@ -120,9 +120,13 @@ def _self_test_generate_feature_target_name():
 
     if test_1 != test_1_answer or test_2 != test_2_answer:
         fail(
-            "{function} failed test".format(
+            "{function} failed test {test_1} != {test_1_answer} or {test_2} != {test_2_answer}".format(
                 function = "generate_feature_target_name",
+                test_1 = test_1,
+                test_1_answer = test_1_answer,
+                test_2 = test_2,
+                test_2_answer = test_2_answer,
             ),
         )
 
-_self_test_generate_feature_target_name()
+# _self_test_generate_feature_target_name()
