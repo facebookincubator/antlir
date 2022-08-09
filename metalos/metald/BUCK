@@ -42,6 +42,18 @@ rust_binary(
     ),
 )
 
+install_allowed_identities = [
+    feature.ensure_subdirs_exist(
+        "/usr/lib/",
+        "metald/metald_allowed_identities",
+    ),
+    feature.install(
+        "src/facebook/metald_allowed_identities",
+        "/usr/lib/metald/metald_allowed_identities/default",
+        mode = 0o644,
+    ),
+]
+
 feature.new(
     name = "features",
     features = [
@@ -54,22 +66,12 @@ feature.new(
             ":metald",
             "/usr/lib/metalos/metald",
         ),
-    ],
+    ] + install_allowed_identities,
     visibility = ["//metalos/os/..."],
 )
 
 native_service(
-    extra_features = [
-        feature.ensure_subdirs_exist(
-            "/usr/lib/",
-            "metald/metald_allowed_identities",
-        ),
-        feature.install(
-            "src/facebook/metald_allowed_identities",
-            "/usr/lib/metald/metald_allowed_identities/default",
-            mode = 0o644,
-        ),
-    ],
+    extra_features = install_allowed_identities,
     service = service_t(
         name = "metalos.metald",
         dependencies = [
