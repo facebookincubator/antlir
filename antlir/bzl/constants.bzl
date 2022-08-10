@@ -203,6 +203,7 @@ REPO_CFG = repo_config_t(
     stable_flavors = _get_str_list_cfg("stable_flavors"),
     flavor_default = _get_str_cfg("flavor_default"),
     flavor_to_config = _get_flavor_to_config(),
+    ba_to_flavor = _get_str_cfg("ba_to_flavor"),
     # KEEP THIS DICTIONARY SMALL.
     #
     # For each `feature`, we have to emit as many targets as there are

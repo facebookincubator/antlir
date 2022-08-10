@@ -47,6 +47,7 @@ class RepoConfigTestCase(unittest.TestCase):
                     "rpm_installer": "dnf",
                 },
             },
+            "ba_to_flavor": {"ba": "flavor"},
             "host_mounts_allowed_in_targets": [],
             "host_mounts_for_repo_artifacts": [],
         }
