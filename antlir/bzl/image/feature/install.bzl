@@ -112,7 +112,6 @@ def _install_target_tagger(
                 unwrapped_target = unwrapped_target,
                 wrapped_target = wrapped_target,
                 wrap_as_buck_runnable = False,
-                is_buck2 = False,
             ),
         ],
     )

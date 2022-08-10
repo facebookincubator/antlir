@@ -9,10 +9,10 @@
 
 load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
 load("//antlir/bzl:genrule_layer.shape.bzl", "genrule_layer_t")
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl2:generate_feature_target_name.bzl", "generate_feature_target_name")
 load("//antlir/bzl2:providers.bzl", "ItemInfo")
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 
 def _genrule_layer_rule_impl(ctx):
     genrule_feature_dict = dict(ctx.attrs.feature_dict)
@@ -34,7 +34,7 @@ _genrule_layer_rule = native.rule(
         # for query
         "type": native.attrs.string(default = "image_feature"),
     },
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 def maybe_add_genrule_layer_rule(
         cmd,
@@ -43,8 +43,7 @@ def maybe_add_genrule_layer_rule(
         bind_repo_ro,
         boot,
         include_in_target_name = None,
-        debug = False,
-        is_buck2 = True):
+        debug = False):
     """
     Seperate rule from generic feature rule is needed because we need to pass
     the `cmd` field in separately from the rest of the shape to expand the
@@ -72,7 +71,7 @@ def maybe_add_genrule_layer_rule(
     cmd = genrule_feature_dict.pop("cmd")
 
     if not native.rule_exists(target_name):
-        if is_buck2:
+        if use_buck2_macros():
             _genrule_layer_rule(
                 name = target_name,
                 feature_dict = genrule_feature_dict,

@@ -8,7 +8,6 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
@@ -28,6 +27,7 @@ load(
     "FlavorInfo",
     "ItemInfo",
 )
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 
 def _clean_items_and_validate_flavors(rpm_items, flavors):
     feature_dicts = []
@@ -129,7 +129,7 @@ _feature_new_rule = native.rule(
         # need their on-disk location to be known)
         "type": native.attrs.string(default = "image_feature"),
     },
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 def normalize_features(
         target_name,

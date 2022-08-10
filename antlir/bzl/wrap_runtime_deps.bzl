@@ -3,10 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 load("//antlir/bzl2:wrap_executable_target_rule.bzl", "maybe_wrap_executable_target_rule")
 load(":constants.bzl", "REPO_CFG")
 load(":exec_wrapper.bzl", "build_exec_wrapper")
-load(":oss_shim.bzl", "buck_genrule", "get_visibility", "is_buck2")
+load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":target_helpers.bzl", "wrap_target")
 
 def _maybe_wrap_runtime_deps_as_build_time_deps(
@@ -183,11 +184,11 @@ fi
             # No attempt at shell-quoting since the Buck target charset
             # doesn't need quoting in heredocs.
             target = target,
-            nis_domain = "//antlir/nspawn_in_subvol/nisdomain:nis_domainname",
+            nis_domain = "fbcode//antlir/nspawn_in_subvol/nisdomain:nis_domainname",
         )
         unquoted_heredoc_preamble = ""
 
-    if is_buck2():
+    if use_buck2_macros():
         maybe_wrap_executable_target_rule(
             name = name,
             target = target,

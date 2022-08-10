@@ -5,23 +5,23 @@
 
 # @lint-ignore-every BUCKLINT
 
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 
 ItemInfo = native.provider(
     fields = [
         "items",
     ],
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 RpmInfo = native.provider(
     fields = [
         "action",
         "flavors",
     ],
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 FlavorInfo = native.provider(
     fields = [
         "flavors",
     ],
-) if is_buck2() else None
+) if use_buck2_macros() else None

@@ -8,7 +8,6 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:image_source.bzl", "image_source")
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
 load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
@@ -23,6 +22,7 @@ load(
     "normalize_target_and_mark_path_in_source_dict",
 )
 load("//antlir/bzl2:providers.bzl", "ItemInfo", "RpmInfo")
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 
 def _rpm_name_or_source(name_source):
     # Normal RPM names cannot have a colon, whereas target paths
@@ -136,7 +136,7 @@ _rpm_rule = native.rule(
         # for query
         "type": native.attrs.string(default = "image_feature"),
     },
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 def maybe_add_rpm_rule(
         name,

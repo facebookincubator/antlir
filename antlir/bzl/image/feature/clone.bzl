@@ -98,7 +98,6 @@ metadata to a deterministic state, while the state of the on-disk metadata in
                 },
                 feature_shape = clone,
                 deps = [target],
-                is_buck2 = False,
             ),
         ],
     )

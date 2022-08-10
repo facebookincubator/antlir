@@ -25,7 +25,6 @@ def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
                     "link_target": link_target,
                 },
                 feature_shape = symlink_spec,
-                is_buck2 = False,
             ),
         ],
     )

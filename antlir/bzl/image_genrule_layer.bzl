@@ -129,7 +129,6 @@ Optional arguments:
                 bind_repo_ro = bind_repo_ro,
                 boot = boot,
                 include_in_target_name = {"name": name},
-                is_buck2 = False,
             ),
         ],
     )]

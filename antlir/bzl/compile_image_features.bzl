@@ -205,7 +205,6 @@ def compile_image_features(
                 subvol = tag_target(target_tagger, parent_layer, is_layer = True),
             ),
             deps = [parent_layer],
-            is_buck2 = False,
         )] if parent_layer else []),
     ))
 

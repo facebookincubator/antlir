@@ -70,7 +70,6 @@ user's initial login group or home directory.
                 key = "users",
                 include_in_target_name = {"username": username},
                 feature_shape = user,
-                is_buck2 = False,
             ),
         ],
     )
@@ -102,7 +101,6 @@ are auto-assigned, they may change if underlying layers add/remove groups.
                     "groupname": groupname,
                 },
                 feature_shape = group,
-                is_buck2 = False,
             ),
         ],
     )

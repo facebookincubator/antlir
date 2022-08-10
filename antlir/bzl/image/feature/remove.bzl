@@ -35,7 +35,6 @@ though this can be avoided by setting `must_exist` to `False`.
                 key = "remove_paths",
                 include_in_target_name = {"dest": dest},
                 feature_shape = remove_spec,
-                is_buck2 = False,
             ),
         ],
     )

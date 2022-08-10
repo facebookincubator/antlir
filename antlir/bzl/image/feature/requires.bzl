@@ -42,7 +42,6 @@ groups or files do indeed exist.
                     "users": users,
                 },
                 feature_shape = req,
-                is_buck2 = False,
             ),
         ],
     )

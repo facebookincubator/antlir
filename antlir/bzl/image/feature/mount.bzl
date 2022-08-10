@@ -84,7 +84,6 @@ provide the parent `/path`, but this item will create the mount-point.
                     "source": source,
                 },
                 feature_shape = mount_t(**mount_spec),
-                is_buck2 = False,
             ),
         ],
     )
@@ -112,7 +111,6 @@ into the container at `/baz`.
                     "source": source,
                 },
                 feature_shape = mount_t(**mount_spec),
-                is_buck2 = False,
             ),
         ],
     )
@@ -142,7 +140,6 @@ then you can pass an explicit `mountpoint` argument.
                 },
                 feature_shape = mount_t(**mount_spec),
                 deps = [source],
-                is_buck2 = False,
             ),
         ],
     )

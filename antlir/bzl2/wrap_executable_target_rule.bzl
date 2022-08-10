@@ -6,8 +6,9 @@
 # @lint-ignore-every BUCKLINT
 
 load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
-load("//antlir/bzl:oss_shim.bzl", "get_cxx_platform_for_current_buildfile", "is_buck2")
+load("//antlir/bzl:oss_shim.bzl", "get_cxx_platform_for_current_buildfile")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 
 def _wrap_executable_target_rule_impl(ctx):
     if not ctx.attrs.target[native.RunInfo]:
@@ -67,11 +68,11 @@ _wrap_executable_target_rule = native.rule(
         "target": native.attrs.dep(),
         "unquoted_heredoc_preamble": native.attrs.string(),
     },
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 def maybe_wrap_executable_target_rule(name, target, **kwargs):
     if not native.rule_exists(name):
-        if is_buck2():
+        if use_buck2_macros():
             _wrap_executable_target_rule(
                 name = name,
                 target = target,
