@@ -44,7 +44,6 @@ feature.
 load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
@@ -52,6 +51,7 @@ load("//antlir/bzl/image/feature:install.shape.bzl", "install_files_t")
 load("//antlir/bzl2:generate_feature_target_name.bzl", "generate_feature_target_name")
 load("//antlir/bzl2:image_source_helper.bzl", "normalize_target_and_mark_path_in_source_dict", "unwrap_path")
 load("//antlir/bzl2:providers.bzl", "ItemInfo")
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 
 def _forbid_layer_source(source_dict):
     if source_dict["layer"] != None:
@@ -93,7 +93,7 @@ _install_rule = native.rule(
         "wrapped_shape": native.attrs.dict(native.attrs.string(), native.attrs.any()),
         "wrapped_target": native.attrs.dep(),
     },
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 def maybe_add_install_rule(
         unwrapped_shape,
@@ -102,8 +102,7 @@ def maybe_add_install_rule(
         wrapped_target,
         wrap_as_buck_runnable,
         include_in_target_name = None,
-        debug = False,
-        is_buck2 = True):
+        debug = False):
     name = "install"
     key = "install_files"
 
@@ -115,12 +114,12 @@ def maybe_add_install_rule(
     )
 
     if not native.rule_exists(target_name):
-        if is_buck2:
+        if use_buck2_macros():
             _install_rule(
                 name = target_name,
                 key = key,
                 unwrapped_shape = shape.as_serializable_dict(unwrapped_shape),
-                wrapped_shape = shape.as_serializable_dict(wrapped_shape),
+                wrapped_shape = shape.as_serializable_dict(wrapped_shape) if wrapped_shape else {},
                 unwrapped_target = unwrapped_target,
                 wrapped_target = wrapped_target,
                 wrap_as_buck_runnable = wrap_as_buck_runnable,

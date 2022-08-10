@@ -51,7 +51,6 @@ def feature_tarball(source, dest, force_root_ownership = False):
                 },
                 feature_shape = tarball,
                 deps = [target],
-                is_buck2 = False,
             ),
         ],
     )

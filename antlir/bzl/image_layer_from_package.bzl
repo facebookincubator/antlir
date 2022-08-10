@@ -113,7 +113,6 @@ def image_layer_from_package(
                 include_in_target_name = {"name": name},
                 feature_shape = feature_shape,
                 deps = [source_target],
-                is_buck2 = False,
             ),
         ],
     )]

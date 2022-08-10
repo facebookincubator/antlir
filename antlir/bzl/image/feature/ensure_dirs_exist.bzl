@@ -69,7 +69,6 @@ def feature_ensure_subdirs_exist(
                     "subdirs_to_create": subdirs_to_create,
                 },
                 feature_shape = ensure_subdirs_exist,
-                is_buck2 = False,
             ),
         ],
     )

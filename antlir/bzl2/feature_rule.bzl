@@ -6,10 +6,10 @@
 # @lint-ignore-every BUCKLINT
 
 load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl2:generate_feature_target_name.bzl", "generate_feature_target_name")
 load("//antlir/bzl2:providers.bzl", "ItemInfo")
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 
 def _feature_rule_impl(ctx):
     return [
@@ -32,7 +32,7 @@ _feature_rule = native.rule(
         # for query
         "type": native.attrs.string(default = "image_feature"),
     },
-) if is_buck2() else None
+) if use_buck2_macros() else None
 
 def maybe_add_feature_rule(
         name,
@@ -40,8 +40,7 @@ def maybe_add_feature_rule(
         include_in_target_name = None,
         key = None,
         deps = [],
-        debug = False,
-        is_buck2 = True):
+        debug = False):
     # if `key` is not provided, then it is assumed that `key` is same as `name`
     key = key or name
 
@@ -53,7 +52,7 @@ def maybe_add_feature_rule(
     )
 
     if not native.rule_exists(target_name):
-        if is_buck2:
+        if use_buck2_macros():
             _feature_rule(
                 name = target_name,
                 key = key,
