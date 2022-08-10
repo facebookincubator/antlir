@@ -45,6 +45,7 @@ extract.source_layer(
         feature.install(
             ":repo-built-binary",
             "/usr/bin/repo-built-binary",
+            wrap_as_buck_runnable = False,
         ),
     ],
     flavor = flavor_helpers.get_antlir_linux_flavor(),

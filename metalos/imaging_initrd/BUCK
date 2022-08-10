@@ -19,11 +19,13 @@ image.layer(
             "//metalos/imaging_initrd/metalimage:metalimage",
             "/usr/bin/metalimage",
             mode = "a+rx",
+            wrap_as_buck_runnable = False,
         ),
         feature.install(
             "//metalos/imaging_initrd/network_generator:network_generator",
             "/usr/lib/systemd/system-generators/metalos-network-generator",
             mode = "a+rx",
+            wrap_as_buck_runnable = False,
         ),
     ],
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],

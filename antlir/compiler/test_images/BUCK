@@ -585,6 +585,7 @@ feature.new(
                 path = "kitteh",
             ),
             "/foo/bar/installed/yittal-kitteh",
+            wrap_as_buck_runnable = False,
         ),
         feature.install_buck_runnable(":print-ok", "/foo/bar/installed/print-ok"),
         feature.install_buck_runnable(
@@ -604,7 +605,11 @@ feature.new(
         # Test installing a directory.  Also test a non-`buck run`nable
         # executable both as part of a directory, and solo (these are
         # different code paths)
-        feature.install(":dir-with-script", "/foo/bar/installed/script-dir"),
+        feature.install(
+            ":dir-with-script",
+            "/foo/bar/installed/script-dir",
+            wrap_as_buck_runnable = False,
+        ),
         feature.install(
             image.source(
                 ":dir-with-script",
