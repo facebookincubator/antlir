@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use anyhow::ensure;
 use metalos_host_configs::packages::generic::Package;
 use metalos_host_configs::runtime_config::RuntimeConfig;
 
