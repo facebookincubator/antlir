@@ -48,6 +48,7 @@ image.layer(
             ":metalos-bootloader",
             "/usr/bin/metalos-bootloader",
             mode = "a+rx",
+            wrap_as_buck_runnable = False,
         ),
     ],
     parent_layer = REPO_CFG.artifact["metalos.layer.base"],
