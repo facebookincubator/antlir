@@ -85,10 +85,7 @@ def _get_rpm_installers_supported():
     return rpm_installers.keys()
 
 def _get_flavor_from_build_appliance(build_appliance):
-    return {
-        config.build_appliance: flavor
-        for flavor, config in REPO_CFG.flavor_to_config.items()
-    }[build_appliance]
+    return REPO_CFG.ba_to_flavor[build_appliance]
 
 flavor_helpers = struct(
     get_build_appliance = _get_build_appliance,
