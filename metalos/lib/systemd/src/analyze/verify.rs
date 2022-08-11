@@ -7,7 +7,6 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -77,11 +76,7 @@ impl From<&str> for Problem {
 /// problem encountered (depending on the class of problem). Some work may be
 /// attempted in the future to discover all problems instead of sometimes
 /// bailing early.
-pub fn verify<I, S>(units: I) -> anyhow::Result<BTreeMap<UnitName, BTreeSet<Problem>>>
-where
-    I: IntoIterator<Item = S>,
-    S: AsRef<OsStr>,
-{
+pub fn verify(units: BTreeSet<UnitName>) -> anyhow::Result<BTreeMap<UnitName, BTreeSet<Problem>>> {
     let output = Command::new("systemd-analyze")
         .arg("verify")
         // explicitly turn off man page checking for now, we explicitly can
@@ -89,7 +84,7 @@ where
         // finds, and we much prefer to find actual problems other than a man
         // page being unavailable
         .arg("--man=off")
-        .args(units)
+        .args(&units)
         .output()
         .context("failed to run 'systemd-analyze verify'")?;
 
@@ -115,6 +110,10 @@ where
                 .insert(problem);
         }
     }
+    // 'systemd-analyze verify' returns errors about every unit discovered,
+    // instead of just the ones we asked about, so keep only the units that the
+    // caller actually wanted
+    problems.retain(|name, _| units.contains(name));
     Ok(problems)
 }
 

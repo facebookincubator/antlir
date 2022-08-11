@@ -1,4 +1,10 @@
+[Unit]
+DefaultDependencies=no
+After=run-fs-control.mount
+Requires=run-fs-control.mount
+
 [Service]
+Type=oneshot
 ExecStart=btrfs subvolume snapshot /demo-service /run/fs/control/image/service/metalos.service.demo:00000000000040008000000000000001
 ExecStart=btrfs subvolume snapshot /demo-service /run/fs/control/image/service/metalos.service.demo:00000000000040008000000000000002
 ExecStart=btrfs subvolume snapshot /demo-service /run/fs/control/image/service/metalos.service.demo:00000000000040008000000000000003

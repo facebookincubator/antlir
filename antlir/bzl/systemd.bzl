@@ -225,7 +225,9 @@ def _install_dropin(
         dest = None,
         # The dir to install the dropin into. In most cases this doesn't need
         # to be changed.
-        install_root = PROVIDER_ROOT):
+        install_root = PROVIDER_ROOT,
+        # Remove an existing file that conflicts, if one exists
+        force = False):
     _assert_unit_suffix(unit)
 
     # We haven't been provided an explicit dest so let's try and derive one from the
@@ -261,13 +263,14 @@ def _install_dropin(
 
     _fail_if_path(dest, "Install Dropin Dest")
 
-    return [
+    dst_path = paths.join(install_root, unit + ".d", dest)
+    features = [
         feature.ensure_subdirs_exist(install_root, unit + ".d"),
-        feature.install(
-            source,
-            paths.join(install_root, unit + ".d", dest),
-        ),
+        feature.install(source, dst_path),
     ]
+    if force:
+        features.append(feature.remove(dst_path, must_exist = False))
+    return features
 
 def _set_default_target(
         # An existing systemd target to be set as the default

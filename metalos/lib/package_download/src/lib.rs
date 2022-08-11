@@ -433,11 +433,12 @@ mod tests {
     }
 
     /// Ensure collection of staged packages handles no results gracefully. Here, we assume the
-    /// container's layer has no images already staged on the filesystem.
+    /// container's layer has only the rootfs image staged.
     #[containertest]
     async fn inventory_empty() -> Result<()> {
         let staged: Vec<_> = staged_packages().await?.try_collect().await?;
-        assert!(staged.is_empty(), "expected to find no staged packages");
+        assert_eq!(staged.len(), 1, "rootfs should be staged");
+        assert_eq!(staged[0].name, "metalos.rootfs");
         Ok(())
     }
 
@@ -447,6 +448,10 @@ mod tests {
     async fn inventory_with_packages() -> Result<()> {
         let log = Logger::root(slog_glog_fmt::default_drain(), o!());
         let downloader = BlankDownloader::new();
+
+        let staged: Vec<_> = staged_packages().await?.try_collect().await?;
+        assert_eq!(staged.len(), 1, "rootfs should be staged");
+        assert_eq!(staged[0].name, "metalos.rootfs");
 
         // Put some images down on disk
         ensure_packages_on_disk_ignoring_artifacts(
@@ -473,7 +478,7 @@ mod tests {
 
         // Read them
         let staged: Vec<_> = staged_packages().await?.try_collect().await?;
-        assert_eq!(2, staged.len(), "expected to find two staged packages");
+        assert_eq!(3, staged.len(), "expected to find two staged packages");
         Ok(())
     }
 

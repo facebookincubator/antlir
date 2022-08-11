@@ -7,13 +7,14 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::path::PathBuf;
+use std::process::Command;
 
+use anyhow::ensure;
+use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
 use systemd::analyze::verify::verify;
 use systemd::analyze::verify::Problem;
-use systemd::Systemd;
 use systemd::UnitFileState;
 use systemd::UnitName;
 
@@ -31,18 +32,30 @@ struct UnitExpectation {
     state: UnitFileState,
 }
 
-#[tokio::test]
-async fn unit_expectations() -> Result<()> {
+#[derive(Debug, Deserialize)]
+struct ListedUnit {
+    unit_file: UnitName,
+    state: UnitFileState,
+}
+
+fn list_unit_files() -> Result<Vec<ListedUnit>> {
+    let out = Command::new("systemctl")
+        .arg("list-unit-files")
+        .arg("--output=json")
+        .arg("--all")
+        .output()
+        .context("failed to list unit files")?;
+    ensure!(out.status.success(), "systemctl list-unit-files failed");
+    serde_json::from_slice(&out.stdout).context("failed to deserialize list-unit-files")
+}
+
+#[test]
+fn unit_expectations() -> Result<()> {
     let expectations: Expectations = toml::from_str(EXPECTATIONS)?;
 
-    let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-    let sd = Systemd::connect(log.clone()).await?;
-
-    let unit_file_states: BTreeMap<UnitName, UnitFileState> = sd
-        .list_unit_files()
-        .await?
+    let unit_file_states: BTreeMap<UnitName, UnitFileState> = list_unit_files()?
         .into_iter()
-        .map(|(file, state)| (file.file_name().unwrap().to_str().unwrap().into(), state))
+        .map(|u| (u.unit_file, u.state))
         .collect();
     // also confirm that we checked all the units we had expectations for
     for (unit, expect) in expectations.units {
@@ -62,23 +75,19 @@ async fn unit_expectations() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test]
-async fn verify_all_units() -> Result<()> {
+#[test]
+fn verify_all_units() -> Result<()> {
     let expectations: Expectations = toml::from_str(EXPECTATIONS)?;
 
-    let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
-    let sd = Systemd::connect(log.clone()).await?;
-    let paths: Vec<PathBuf> = sd
-        .list_unit_files()
-        .await?
+    let units: BTreeSet<_> = list_unit_files()?
         .into_iter()
-        .filter_map(|(path, state)| match state {
+        .filter_map(|u| match u.state {
             UnitFileState::Masked | UnitFileState::MaskedRuntime | UnitFileState::Disabled => None,
-            _ => Some(path.into()),
+            _ => Some(u.unit_file),
         })
         .collect();
 
-    let problems = verify(&paths)?;
+    let problems = verify(units)?;
 
     assert_eq!(problems, expectations.problem);
     Ok(())

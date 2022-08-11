@@ -18,7 +18,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use state::Alias;
 use state::State;
-use state::Token;
 use systemd::UnitName;
 use uuid::Uuid;
 
