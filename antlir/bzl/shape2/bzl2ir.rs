@@ -369,7 +369,7 @@ fn starlark_to_ir(
     let named_types: BTreeMap<ir::TypeName, _> = f
         .names()
         // grab the Value that is assigned to this name from the starlark module (this is the TypeId)
-        .filter_map(|n| f.get(&n).map(|v| (ir::TypeName::from(n.as_str()), v)))
+        .filter_map(|n| f.get(&n).ok().map(|v| (ir::TypeName::from(n.as_str()), v)))
         // only TypeIds matter, any other top-level variables can be safely
         // ignored for now, since they are not (directly) relevant to generated
         // code

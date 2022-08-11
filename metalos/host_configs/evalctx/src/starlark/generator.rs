@@ -190,7 +190,7 @@ impl StarlarkGenerator {
         Loader::load(path)?
             .into_iter()
             .map(|(id, module)| {
-                let starlark_func = module.get("generator").ok_or(Error::NotGenerator)?;
+                let starlark_func = module.get("generator").map_err(|_| Error::NotGenerator)?;
                 Ok(Self { id, starlark_func })
             })
             .filter(|r| match r {
