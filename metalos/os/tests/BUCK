@@ -80,6 +80,11 @@ image.layer(
             # ignore the mode so that we don't have to get the ordering right
         )
         for path, stat in dirs_to_create().items()
+    ] + [
+        feature.install(
+            "//metalos/initrd/vmtest:host-config",
+            "/run/state/metalos/metalos_host_configs::host::HostConfig-current.json",
+        ),
     ],
     flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = [

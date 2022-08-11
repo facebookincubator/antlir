@@ -50,11 +50,11 @@ fn main() -> Result<()> {
         "runtime directory is not initially empty"
     );
 
-    let uts = uname();
-    // the generator generates this dropin to add this to the environment
-    assert_eq!(
-        uts.release(),
-        std::env::var("GENERATOR_KERNEL_VERSION").unwrap()
+    // make sure that the generator binary put in place dropin environment
+    assert!(
+        !std::env::var("HOST_CONFIG_HOSTNAME")
+            .expect("Can't find HOST_CONFIG_HOSTNAME")
+            .is_empty()
     );
 
     #[cfg(facebook)]
