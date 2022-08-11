@@ -58,6 +58,18 @@ pub fn example_host_for_tests() -> HostConfig {
                         structured_addrs: vec![],
                         interface_type: NetworkInterfaceType::FRONTEND,
 
+                    },
+                    NetworkInterface {
+                        mac: "00:00:00:00:00:04".to_owned(),
+                        addrs: None,
+                        name: Some("beth3".to_owned()),
+                        essential: false,
+                        structured_addrs: vec![NetworkAddress{
+                            addr: "2a03:2880:f103:181:face:b00c:a1:0".to_owned(),
+                            prefix_length: 64,
+                            mode: NetworkAddressMode::PRIMARY}],
+                        interface_type: NetworkInterfaceType::BACKEND,
+
                     }],
                     primary_interface: NetworkInterface {
                         mac: "00:00:00:00:00:01".to_owned(),
