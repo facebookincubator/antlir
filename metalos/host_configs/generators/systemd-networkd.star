@@ -45,6 +45,7 @@ MACAddress={{mac}}
 NamePolicy=
 Name={{name}}
 MTUBytes={{mtu}}
+RequiredForOnline={{required_for_online}}
 """)
 
 ADDR_PRIMARY    = 0
@@ -108,7 +109,8 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
         network_units += [metalos.file(path="/etc/systemd/network/00-metalos-{}.network".format(iface.name or i), contents=unit)]
         if iface.name:
             mtu = BE_MTU if iface.interface_type == INTFS_BACKEND else DEFAULT_MTU
-            unit = LINK_TEMPLATE(mac=iface.mac, name=iface.name, mtu=mtu)
+            required_for_online = "yes" if iface.essential == True else "no"
+            unit = LINK_TEMPLATE(mac=iface.mac, name=iface.name, mtu=mtu, required_for_online=required_for_online)
             link_units += [metalos.file(path="/etc/systemd/network/00-metalos-{}.link".format(iface.name), contents=unit)]
 
     return metalos.Output(
