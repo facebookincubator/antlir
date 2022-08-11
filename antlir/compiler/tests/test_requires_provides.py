@@ -15,11 +15,13 @@ from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesGroup,
+    ProvidesKey,
     ProvidesSymlink,
     ProvidesUser,
     RequireDirectory,
     RequireFile,
     RequireGroup,
+    RequireKey,
     RequirementKind,
     RequireSymlink,
     RequireUser,
@@ -146,3 +148,15 @@ class RequiresProvidesTestCase(unittest.TestCase):
         self.assertEqual(ps2.req, rs2)
         self.assertFalse(ps2.provides(rs))
         self.assertTrue(ps2.provides(rs2))
+
+    def test_require_key(self) -> None:
+        rk = RequireKey(key="key")
+
+        self.assertEqual(rk.kind, RequirementKind.META_KEY_VALUE_STORE)
+        self.assertEqual(rk.key, "key")
+
+    def test_provides_key(self) -> None:
+        pk = ProvidesKey(key="key")
+        rk = RequireKey(key="key")
+
+        self.assertTrue(pk.provides(rk))
