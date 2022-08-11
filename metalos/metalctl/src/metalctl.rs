@@ -22,6 +22,7 @@ use slog::o;
 use slog::trace;
 use slog::Logger;
 
+mod metald;
 mod package;
 mod send_event;
 mod update;
@@ -39,6 +40,8 @@ enum Subcommand {
     #[clap(subcommand)]
     /// Stage or inspect packages
     Package(package::Opts),
+    #[clap(subcommand)]
+    Metald(metald::Opts),
 }
 
 #[derive(Parser)]
@@ -61,6 +64,7 @@ async fn run_command(options: MetalCtl, log: Logger, fb: fbinit::FacebookInit) -
             package::Opts::Stage(stage) => package::stage_packages(log, fb, stage).await,
             package::Opts::List => package::list(log).await,
         },
+        Subcommand::Metald(opts) => metald::run(opts, log, fb).await,
     }
 }
 
