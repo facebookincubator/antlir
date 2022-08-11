@@ -6,6 +6,7 @@
  */
 
 use std::os::unix::io::RawFd;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use anyhow::Context;
@@ -17,9 +18,11 @@ use plain_systemd::daemon::is_socket;
 use plain_systemd::daemon::listen_fds;
 use plain_systemd::daemon::Listening;
 
+mod acl;
 mod thrift_server;
 mod update;
-use thrift_server::Metald;
+use crate::acl::PermissionsChecker;
+use crate::thrift_server::Metald;
 
 #[cfg(facebook)]
 mod facebook;
@@ -32,6 +35,8 @@ struct Arguments {
     /// Port to serve traffic on
     #[clap(short, long, group = "listen", help = "Listen on TCP port")]
     port: Option<u16>,
+    #[clap(long, env = "METALD_NO_ACL_CHECK", help = "disable acl checking")]
+    no_acl_check: bool,
 }
 
 pub(crate) enum ListenOn {
@@ -46,7 +51,23 @@ async fn main(fb: FacebookInit) -> Result<()> {
 
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
 
-    let metald = Metald::new(fb, log.clone())?;
+    let acl_checker: Arc<Box<dyn PermissionsChecker<Identity = identity::Identity>>> =
+        match args.no_acl_check {
+            true => Arc::new(Box::new(crate::acl::AllowAll::new())),
+            false => {
+                #[cfg(not(facebook))]
+                unimplemented!("OSS acl checking not yet implemented");
+                #[cfg(facebook)]
+                Arc::new(Box::new(
+                    crate::facebook::fallback_acl_checker::new_fallback_acl_checker(
+                        crate::facebook::acl::new_acl_checker(fb)
+                            .context("while creating fb acl checker")?,
+                    ),
+                ))
+            }
+        };
+
+    let metald = Metald::new(fb, log.clone(), acl_checker)?;
 
     let listen_on = match (args.systemd_socket, args.port) {
         (true, None) => {

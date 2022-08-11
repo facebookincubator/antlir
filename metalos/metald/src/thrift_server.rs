@@ -5,86 +5,86 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use acl_checker::AclCheckerService;
-use aclchecker::AclChecker;
-use aclchecker::AclCheckerError;
+use std::sync::Arc;
+
 use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
-use fallback_identity_checker::FallbackIdentityChecker;
 use fbinit::FacebookInit;
-use fbwhoami::FbWhoAmI;
 use identity::Identity;
-use identity::IdentitySet;
 use metalos_thrift_host_configs::api as thrift_api;
 use metalos_thrift_host_configs::api::server::Metalctl;
 use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateCommitExn;
 use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateStageExn;
 use package_download::DefaultDownloader;
-use permission_checker::PermissionsChecker;
 use slog::Logger;
 use srserver::RequestContext;
 use thrift_wrapper::ThriftWrapper;
 
-const ACL_ACTION: &str = "canDoCyborgJob"; //TODO:T117800273 temporarely, need to decide the correct acl
-const ALLOWED_IDENTITIES_PATH: [&str; 2] = [
-    "usr/lib/metald/metald_allowed_identities",
-    "etc/metald/metald_allowed_identities",
-];
+use crate::acl::PermissionsChecker;
 
-#[derive(thiserror::Error, Debug)]
-pub enum MetalctlImplError {
-    #[error("Internal ACL checker error: {0:?}")]
-    AclCheckerError(#[from] AclCheckerError),
-    #[error("Hostname scheme not found for this device from fbwhoami data")]
-    HostnameSchemeNotFound,
-}
+const ACL_ACTION: &str = "canDoCyborgJob"; //TODO:T117800273 temporarily, need to decide the correct acl
 
-#[derive(Clone)]
-pub struct Metald {
+pub struct Metald<C>
+where
+    C: PermissionsChecker<Identity = Identity>,
+{
     log: Logger,
     dl: DefaultDownloader,
-    pub fallback_identity_checker: FallbackIdentityChecker<AclCheckerService<AclChecker>>,
+    acl_checker: Arc<C>,
 }
 
-impl Metald {
-    pub fn new(fb: FacebookInit, log: Logger) -> Result<Self> {
+impl<C> Clone for Metald<C>
+where
+    C: PermissionsChecker<Identity = Identity>,
+{
+    fn clone(&self) -> Self {
+        Self {
+            log: self.log.clone(),
+            dl: self.dl.clone(),
+            acl_checker: self.acl_checker.clone(),
+        }
+    }
+}
+
+impl<C> Metald<C>
+where
+    C: PermissionsChecker<Identity = Identity>,
+{
+    pub fn new(fb: FacebookInit, log: Logger, acl_checker: Arc<C>) -> Result<Self> {
         let dl = package_download::default_downloader(fb)
             .context("while building default downloader")?;
 
-        let whoami = FbWhoAmI::get()?;
-        if let Some(hostname_prefix) = whoami.hostname_scheme.as_ref() {
-            let id = Identity::with_machine_tier(hostname_prefix);
-            let fb_acl_checker = AclChecker::new(fb, &id)?;
-            let acl_checker = AclCheckerService::new(fb_acl_checker, hostname_prefix);
-            Ok(Self {
-                log,
-                dl,
-                fallback_identity_checker: FallbackIdentityChecker::new(
-                    acl_checker,
-                    ALLOWED_IDENTITIES_PATH.iter().map(|&s| s.into()).collect(),
-                ),
-            })
-        } else {
-            Err(MetalctlImplError::HostnameSchemeNotFound).map_err(|err| err.into())
+        Ok(Self {
+            log,
+            dl,
+            acl_checker,
+        })
+    }
+
+    fn check_identity(&self, req_ctxt: &RequestContext) -> anyhow::Result<()> {
+        let id_set = req_ctxt.identities()?;
+        let ids: Vec<_> = id_set
+            .entries()
+            .into_iter()
+            .map(identity::ffi::copyIdentity)
+            .collect();
+        match self
+            .acl_checker
+            .action_allowed_for_identity(&ids, ACL_ACTION)
+        {
+            crate::acl::Result::Allowed => Ok(()),
+            crate::acl::Result::Denied(d) => Err(Error::msg(format!("{:?}", d))),
         }
     }
-
-    fn check_identity(&self, req_ctxt: &RequestContext) -> anyhow::Result<bool> {
-        let ids = req_ctxt.identities()?;
-        verify_identity_against_checker(self.fallback_identity_checker.clone(), &ids)
-    }
-}
-
-fn verify_identity_against_checker<C>(checker: C, ids: &IdentitySet) -> anyhow::Result<bool>
-where
-    C: PermissionsChecker,
-{
-    Ok(checker.action_allowed_for_identity(ids, ACL_ACTION)?)
 }
 
 #[async_trait]
-impl Metalctl for Metald {
+impl<C> Metalctl for Metald<C>
+where
+    C: PermissionsChecker<Identity = Identity> + 'static,
+{
     type RequestContext = RequestContext;
 
     async fn online_update_stage(
@@ -93,7 +93,7 @@ impl Metalctl for Metald {
         req: thrift_api::OnlineUpdateRequest,
     ) -> Result<thrift_api::UpdateStageResponse, OnlineUpdateStageExn> {
         match self.check_identity(req_ctxt) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(error) => {
                 return Err(OnlineUpdateStageExn::e(thrift_api::UpdateStageError {
                     message: error.to_string(),
@@ -120,7 +120,7 @@ impl Metalctl for Metald {
         req: thrift_api::OnlineUpdateRequest,
     ) -> Result<thrift_api::OnlineUpdateCommitResponse, OnlineUpdateCommitExn> {
         match self.check_identity(req_ctxt) {
-            Ok(_) => (),
+            Ok(()) => (),
             Err(error) => {
                 return Err(OnlineUpdateCommitExn::e(
                     thrift_api::OnlineUpdateCommitError {

@@ -45,7 +45,7 @@ image.layer(
     name = "partial-test-rootfs",
     features = [
         # Otherwise systemd-networkd will wait for a non-lo link that will never come
-        systemd.install_dropin("99-skip-unit.conf", "systemd-networkd-wait-online.service"),
+        skip_unit("systemd-networkd-wait-online.service"),
         systemd.mask_units([
             "attestd2.service",  # no tpm
             "metalos-report-boot.service",  # no network
@@ -56,6 +56,8 @@ image.layer(
         ),
         # there is not (yet) a host config
         skip_unit("metalos-commit-initial-runtime-config.service"),
+        # reconfigure metald to operate in the restricted environment
+        systemd.install_dropin("metald-in-test.conf", "metalos.metald.service"),
         # @oss-disable: "//metalos/os/tests/facebook:test-features", 
     ],
     parent_layer = "//metalos/os:metalos",
