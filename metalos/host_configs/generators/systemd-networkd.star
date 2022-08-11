@@ -9,7 +9,7 @@ MACAddress={{mac}}
 [Network]
 
 Domains={{#each search}}{{this}} {{/each}}
-IPv6AcceptRA={{accept_ras}}
+IPv6AcceptRA=no
 
 [IPv6AcceptRA]
 UseMTU=false
@@ -27,6 +27,14 @@ PreferredLifetime={{this.prefered_lifetime}}
 Address={{this}}
 {{/each~}}
 
+{{#each routes}}
+[Route]
+Gateway={{this.gw}}
+Source={{this.src}}
+Destination={{this.dest}}
+Metric={{this.metric}}
+{{/each~}}
+
 """)
 
 LINK_TEMPLATE = metalos.template("""
@@ -36,11 +44,21 @@ MACAddress={{mac}}
 [Link]
 NamePolicy=
 Name={{name}}
+MTUBytes={{mtu}}
 """)
 
 ADDR_PRIMARY    = 0
 ADDR_SECONDARY  = 1
 ADDR_DEPRECATED = 2
+
+INTFS_FRONTEND  = 0
+INTFS_BACKEND   = 1
+
+FE_GW = "fe80::face:b00c"
+BE_GW = "fe80::face:b00b"
+
+DEFAULT_MTU = "1500"
+BE_MTU = "4200"
 
 # Automatically add search domains for all the domains after the host
 # itself, if any (ex: host001.01.abc0.facebook.com -> 01.abc0.facebook.com, abc0.facebook.com, facebook.com)
@@ -62,21 +80,35 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
     network_units = []
     link_units = []
 
-    # We only want to accept RA (thus default route) on our primary interface
-    primary_mac = prov.identity.network.primary_interface.mac
-
     for i, iface in enumerate(prov.identity.network.interfaces):
-        accept_ras = "yes" if iface.mac == primary_mac else "no"
-        ipv4_addrs = [i.addr for i in [a for a in iface.structured_addrs] if "." in i.addr]
+        ipv4_addrs = [a.addr for a in iface.structured_addrs if "." in a.addr]
         ipv6_addrs = [struct(
-                            addr=i.addr,
-                            prefix=i.prefix_length,
-                            prefered_lifetime="forever" if i.mode != ADDR_DEPRECATED else "0") for i in
-                        [a for a in iface.structured_addrs] if ":" in i.addr]
-        unit = NETWORK_TEMPLATE(accept_ras=accept_ras, mac=iface.mac, ipv6_addrs=ipv6_addrs, ipv4_addrs=ipv4_addrs, search=search)
+                            addr=a.addr,
+                            prefix=a.prefix_length,
+                            prefered_lifetime="forever" if a.mode != ADDR_DEPRECATED else "0")
+                        for a in iface.structured_addrs if ":" in a.addr]
+        routes = []
+        # Create interface source routes for all FE and BE interface on host.
+        if iface.interface_type == INTFS_FRONTEND or iface.interface_type == INTFS_BACKEND and iface.essential != True:
+            routes = [struct(
+                        gw=FE_GW if iface.interface_type == INTFS_FRONTEND else BE_GW,
+                        dest="::/0",
+                        metric="1024",
+                        src=a.addr)
+                    for a in iface.structured_addrs if ":" in a.addr and a.mode == ADDR_PRIMARY]
+        # High priority route for essential / primary interface.
+        if iface.essential == True:
+            routes = [struct(
+                        gw=FE_GW,
+                        dest="::/0",
+                        metric="10",
+                        src="::/0")]
+
+        unit = NETWORK_TEMPLATE(mac=iface.mac, ipv6_addrs=ipv6_addrs, ipv4_addrs=ipv4_addrs, routes=routes, search=search)
         network_units += [metalos.file(path="/etc/systemd/network/00-metalos-{}.network".format(iface.name or i), contents=unit)]
         if iface.name:
-            unit = LINK_TEMPLATE(mac=iface.mac, name=iface.name)
+            mtu = BE_MTU if iface.interface_type == INTFS_BACKEND else DEFAULT_MTU
+            unit = LINK_TEMPLATE(mac=iface.mac, name=iface.name, mtu=mtu)
             link_units += [metalos.file(path="/etc/systemd/network/00-metalos-{}.link".format(iface.name), contents=unit)]
 
     return metalos.Output(
