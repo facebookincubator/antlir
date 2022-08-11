@@ -4,6 +4,10 @@ load("//antlir/fbpkg:fbpkg.bzl", "fbpkg")
 rust_binary(
     name = "btrfs_send_stream_upgrade",
     srcs = glob(["src/*.rs"]),
+    visibility = [
+        "//antlir/...",
+        "//tupperware/image/imgtool/...",
+    ],
     deps = [
         "fbsource//third-party/rust:anyhow",
         "fbsource//third-party/rust:crc",
