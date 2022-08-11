@@ -79,6 +79,7 @@ python_library(
         "//ti/platform/edgeos/...",
         "//tupperware/cm/antlir/...",
         "//tupperware/image/composable_services/tests:systemd_test_framework",
+        "//tupperware/image/imgtool/...",
         "//tupperware/image/scripts/...",
         "//tupperware/scripts/...",
     ],
