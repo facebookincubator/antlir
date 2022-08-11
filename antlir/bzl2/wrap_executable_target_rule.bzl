@@ -22,11 +22,16 @@ def _wrap_executable_target_rule_impl(ctx):
 
     script = """
 set -exo pipefail
-echo "#!/bin/sh
-REPO_ROOT=`$repo_root`
+cat > "$OUT" << EOF
+#!/bin/sh
+REPO_ROOT="`$repo_root_binary`"
+RUNNABLE="$runnable"
 {unquoted_heredoc_preamble}
 $literal_preamble
-exec \\$REPO_ROOT/$runnable$path_in_output {args}" > $OUT
+EOF
+cat >> "$OUT" << 'EOF'
+exec "$REPO_ROOT/$RUNNABLE{path_in_output}" {args}
+EOF
 chmod +x $OUT
     """.format(
         # Necessary because script generated here differs from that generated in
@@ -35,7 +40,8 @@ chmod +x $OUT
             "\\$(date)",
             "$(date)",
         ),
-        args = '"\\$@"',
+        args = '"$@"',
+        path_in_output = path_in_output,
     )
     ctx.actions.write(
         create_wrapper_script,
@@ -47,8 +53,7 @@ chmod +x $OUT
         env = {
             "OUT": output.as_output(),
             "literal_preamble": ctx.attrs.literal_preamble,
-            "path_in_output": path_in_output,
-            "repo_root": ctx.attrs.repo_root[native.RunInfo],
+            "repo_root_binary": ctx.attrs.repo_root_binary[native.RunInfo],
             "runnable": ctx.attrs.target[native.RunInfo],
         },
         # See comment at https://fburl.com/code/3pj7exvp
@@ -64,7 +69,7 @@ _wrap_executable_target_rule = native.rule(
     attrs = {
         "literal_preamble": native.attrs.arg(),
         "path_in_output": native.attrs.string(default = ""),
-        "repo_root": native.attrs.dep(),
+        "repo_root_binary": native.attrs.dep(),
         "target": native.attrs.dep(),
         "unquoted_heredoc_preamble": native.attrs.string(),
     },
@@ -76,7 +81,7 @@ def maybe_wrap_executable_target_rule(name, target, **kwargs):
             _wrap_executable_target_rule(
                 name = name,
                 target = target,
-                repo_root = antlir_dep(":repo-root"),
+                repo_root_binary = antlir_dep(":repo-root"),
                 default_target_platform = get_cxx_platform_for_current_buildfile().target_platform,
                 **kwargs
             )

@@ -485,6 +485,7 @@ image.layer(
             ":first-layer-for-nested-layer-mount",
             "/layer_mount",
         ),
+        ":feature_install_files",
     ],
     parent_layer = ":test-layer",
     visibility = ["//antlir/..."],
@@ -497,6 +498,12 @@ image.layer(
     ],
     flavor = "antlir_test",
     visibility = ["//antlir/compiler/items/..."],
+)
+
+defs.python_binary(
+    name = "print-arg",
+    srcs = ["print_arg.py"],
+    main_module = "antlir.compiler.test_images.print_arg",
 )
 
 defs.python_binary(
@@ -616,6 +623,10 @@ feature.new(
                 path = "subdir/exe.sh",
             ),
             "/foo/bar/installed/solo-exe.sh",
+        ),
+        feature.install_buck_runnable(
+            ":print-arg",
+            "/foo/bar/installed/print-arg",
         ),
     ],
     visibility = ["//antlir/compiler/..."],
