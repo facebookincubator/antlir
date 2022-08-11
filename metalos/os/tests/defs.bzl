@@ -1,4 +1,3 @@
-load("//antlir/bzl:container_opts.shape.bzl", "container_opts_t")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -19,18 +18,22 @@ def systemd_expectations_test(name, layer, expectations):
             expectations: "expectations.toml",
         },
         crate_root = "systemd_expectations.rs",
-        boot = True,
         run_as_user = "root",
         deps = ["//metalos/lib/systemd:systemd"] + third_party.libraries([
             "anyhow",
             "serde",
+            "serde_json",
             "toml",
-            "slog",
-            "slog_glog_fmt",
-            "tokio",
         ], platform = "rust"),
-        container_opts = container_opts_t(boot_await_system_running = False),
     )
 
 def skip_unit(unit):
-    return systemd.install_dropin("//metalos/os/tests:99-skip-unit.conf", unit)
+    return [
+        systemd.install_dropin("//metalos/os/tests:99-skip-unit.conf", unit, force = True),
+    ]
+
+def metalos_container_test_layer(
+        name):
+    image.layer(
+        name = name,
+    )

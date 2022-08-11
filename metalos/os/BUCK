@@ -10,7 +10,6 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 # @oss-disable: load("//metalos/os/facebook:pinning.bzl", "flavor_config_override") 
-load("//metalos/os/tests:defs.bzl", "systemd_expectations_test")
 
 initial_online_update = [
     systemd.install_unit("metalos-commit-initial-runtime-config.service"),
@@ -174,7 +173,7 @@ image.layer(
         systemd_resolved,
         # TODO: clean up other features here so that all are in named lists
         systemd.install_unit("run-fs-control.mount"),
-        systemd.enable_unit("run-fs-control.mount", "basic.target", "requires"),
+        systemd.enable_unit("run-fs-control.mount", "local-fs.target", "requires"),
         # @oss-disable: "//metalos/os/facebook:features", 
         "//metalos/metald:features",
     ],
@@ -193,12 +192,6 @@ image.layer(
 
 extract_rpm_manifest(
     name = "metalos-rpm-manifest",
-    layer = ":metalos",
-)
-
-systemd_expectations_test(
-    name = "systemd-expectations",
-    expectations = "//metalos/os/tests:systemd-expectations.toml",
     layer = ":metalos",
 )
 

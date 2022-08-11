@@ -1,0 +1,12 @@
+[Unit]
+DefaultDependencies=no
+ConditionPathExists=!/test-control-subvol
+
+[Service]
+Type=oneshot
+ExecStart=btrfs subvolume snapshot /test-control-subvol-src /test-control-subvol
+# the layer_mount here does not offer any way to set the xattr required by
+# package_download, so fix it here
+ExecStart=setfattr -n user.metalos.package \
+    -v '{"name": "metalos.rootfs", "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"}, "format": 1, "kind": 1}' \
+    /test-control-subvol/image/rootfs/metalos.rootfs:deadbeefdeadbeefdeadbeefdeadbeef
