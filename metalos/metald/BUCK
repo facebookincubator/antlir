@@ -3,7 +3,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/bzl/service:service.bzl", "native_service")
 load("//metalos/bzl/service:service.shape.bzl", "cmd_t", "dependency_t", "exec_t", "restart_settings_t", "service_t")
-# @oss-disable: load("//metalos/metald/src/facebook:deps.bzl", "deps") 
+# @oss-disable: load("//metalos/metald/src/facebook:deps.bzl", "deps", "test_deps") 
 
 rust_binary(
     name = "metald",
@@ -11,12 +11,14 @@ rust_binary(
     named_deps = {
         "plain_systemd": "systemd",
     },
+    # @oss-disable: test_deps = test_deps, 
     deps = [
         "anyhow",
         "async-trait",
         "clap",
         "slog",
         "slog_glog_fmt",
+        "thiserror",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
         "//metalos/host_configs/lifecycle:lifecycle",
@@ -28,14 +30,6 @@ rust_binary(
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
         "//metalos/lib/thrift_wrapper:thrift_wrapper",
-        "thiserror",
-        "//common/rust/aclchecker:aclchecker",
-        "//common/rust/fbwhoami:fbwhoami",
-        "//common/rust/identity:identity",
-        "//common/rust/srserver:srserver",
-        "//metalos/metald/src/lib/acl_checker:acl_checker",
-        "//metalos/metald/src/lib/permission_checker:permission_checker",
-        "//metalos/metald/src/lib/fallback_identity_checker:fallback_identity_checker",
     ] + (
         # @oss-disable: deps 
         # @oss-enable []

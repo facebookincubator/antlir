@@ -8,3 +8,4 @@ Requires=metalos.metald.socket
 Type=simple
 ExecStart=/usr/lib/metalos/metald --systemd-socket
 Restart=always
+LimitNOFILE=65535
