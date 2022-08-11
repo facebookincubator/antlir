@@ -88,6 +88,7 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
                 ("ensure_subdirs_exist", feature_target("base-plus-one")),
                 ("parent_layer", feature_target("non-custom")),
                 ("ensure_subdirs_exist", feature_target("non-custom")),
+                ("meta_key_value_store", feature_target("non-custom")),
             },
             {(key, target) for key, target, _cfg in ef.features_to_replay},
         )

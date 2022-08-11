@@ -398,3 +398,22 @@ image_python_unittest(
     layer = ":test_compiler_item_layer",
     deps = ["//antlir:config"],
 )
+
+image_python_unittest(
+    name = "test-meta-key-value-store",
+    srcs = ["test_meta_key_value_store.py"],
+    container_opts = {
+        # needed for layer_resource to work
+        "internal_only_bind_repo_ro": True,
+    },
+    hostname = BZL_CONST.hostname_for_compiler_in_ba,
+    layer = ":test_compiler_item_layer",
+    needed_coverage = [(100, "//antlir/compiler/items:meta_key_value_store")],
+    run_as_user = "root",
+    deps = [
+        ":common_testlib",
+        "//antlir/compiler/items:make_subvol",
+        "//antlir/compiler/items:meta_key_value_store",
+        "//antlir/compiler/items:phases_provide",
+    ],
+)

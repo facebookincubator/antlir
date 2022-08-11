@@ -51,3 +51,7 @@ shape.impl(
 shape.impl(
     name = "usergroup.shape",
 )
+
+shape.impl(
+    name = "meta_key_value_store.shape",
+)

@@ -53,6 +53,7 @@ class RequirementKind(Enum):
     PATH = auto()
     GROUP = auto()
     USER = auto()
+    META_KEY_VALUE_STORE = auto()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -122,6 +123,16 @@ class RequireUser(Requirement):
 
 
 @dataclasses.dataclass(frozen=True)
+# pyre-fixme[13]: Attribute `tag` is never initialized.
+class RequireKey(Requirement):
+    key: str
+
+    def __init__(self, key: str) -> None:
+        super().__init__(kind=RequirementKind.META_KEY_VALUE_STORE)
+        object.__setattr__(self, "key", key)
+
+
+@dataclasses.dataclass(frozen=True)
 class Provider:
     req: Requirement
 
@@ -175,3 +186,8 @@ class ProvidesGroup(Provider):
 class ProvidesUser(Provider):
     def __init__(self, username: str) -> None:
         super().__init__(req=RequireUser(username))
+
+
+class ProvidesKey(Provider):
+    def __init__(self, key) -> None:
+        super().__init__(req=RequireKey(key))

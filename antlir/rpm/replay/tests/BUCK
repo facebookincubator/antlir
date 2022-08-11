@@ -119,7 +119,13 @@ image.layer(
     name = "non-custom",
     # Another non-custom feature.  This is a sibling of `custom` to show
     # that the depth does not trigger custom vs non-custom behavior.
-    features = [feature.ensure_dirs_exist("/another/dir/")],
+    features = [
+        feature.ensure_dirs_exist("/another/dir/"),
+        feature.meta_store(
+            key = "key",
+            value = "value",
+        ),
+    ],
     parent_layer = ":base-plus-one",
 )
 

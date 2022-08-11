@@ -216,6 +216,7 @@ python_library(
         ":group",
         ":install_file",
         ":make_subvol",
+        ":meta_key_value_store",
         ":mount",
         ":phases_provide",
         ":remove_path",
@@ -234,5 +235,15 @@ python_library(
         ":common",
         ":group",
         "//antlir/bzl/image/feature:usergroup.shape-python",
+    ],
+)
+
+python_library(
+    name = "meta_key_value_store",
+    srcs = ["meta_key_value_store.py"],
+    deps = [
+        ":common",
+        "//antlir/bzl/image/feature:meta_key_value_store.shape-python",
+        "//antlir/compiler:requires_provides",
     ],
 )
