@@ -12,7 +12,6 @@ use std::io::Read;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use anyhow::anyhow;
 use anyhow::Context;
@@ -21,13 +20,14 @@ use clap::Parser;
 use fbinit::FacebookInit;
 use fbthrift::simplejson_protocol::Serializable;
 use metalos_host_configs::api::OfflineUpdateRequest;
-use metalos_thrift_host_configs::api::client::make_Metalctl;
-use metalos_thrift_host_configs::api::client::Metalctl;
 use slog::Logger;
 use state::State;
 
 mod offline;
 mod online;
+
+use crate::metald::MetaldClient;
+use crate::metald::MetaldClientOpts;
 
 // For now anyway, the interface for online and offline updates are exactly the
 // same, even though the implementation is obviously different.
@@ -51,6 +51,13 @@ impl Subcommand {
             Self::Commit(c) => c.load::<S, Ser>(),
         }
     }
+
+    fn client(&self, fb: FacebookInit) -> Result<MetaldClient> {
+        match self {
+            Self::Stage(c) => c.client_opts.client(fb),
+            Self::Commit(c) => c.client_opts.client(fb),
+        }
+    }
 }
 
 #[derive(Parser)]
@@ -66,6 +73,8 @@ pub(crate) enum Update {
 #[derive(Parser)]
 pub(crate) struct CommonOpts {
     json_path: PathBuf,
+    #[clap(flatten)]
+    client_opts: MetaldClientOpts,
 }
 
 #[derive(Parser)]
@@ -79,6 +88,8 @@ pub(crate) struct CommitOpts {
     last_staged: bool,
     #[clap(group = "runtime-config")]
     json_path: Option<PathBuf>,
+    #[clap(flatten)]
+    client_opts: MetaldClientOpts,
 }
 
 fn load_from_file_arg<S, Ser>(arg: &Path) -> Result<S>
@@ -128,18 +139,6 @@ impl CommitOpts {
     }
 }
 
-type MetaldClient = Arc<dyn Metalctl + Send + Sync + 'static>;
-
-fn metald_client(fb: FacebookInit) -> anyhow::Result<MetaldClient> {
-    thriftclient::ThriftChannelBuilder::from_path(
-        fb,
-        metalos_thrift_host_configs::api::consts::SOCKET_PATH,
-    )
-    .context("while creating ThriftChannelBuilder")?
-    .build_client(make_Metalctl)
-    .context("while making Metalctl client")
-}
-
 async fn run_subcommand<F, Fut, Input, Return, Error>(
     func: F,
     metald: MetaldClient,
@@ -175,10 +174,10 @@ where
 
 impl Update {
     pub(crate) async fn subcommand(self, log: Logger, fb: fbinit::FacebookInit) -> Result<()> {
-        let metald = metald_client(fb)?;
         match self {
             Self::Offline(sub) => {
                 let req: OfflineUpdateRequest = sub.load_input()?;
+                let metald = sub.client(fb)?;
                 match sub {
                     Subcommand::Stage(_) => {
                         run_subcommand(offline::stage, metald, log, fb, req.boot_config).await
@@ -190,6 +189,7 @@ impl Update {
             }
             Self::Online(sub) => {
                 let runtime_config = sub.load_input()?;
+                let metald = sub.client(fb)?;
                 match sub {
                     Subcommand::Stage(_) => {
                         run_subcommand(online::stage, metald, log, fb, runtime_config).await
