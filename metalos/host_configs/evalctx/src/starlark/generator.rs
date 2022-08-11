@@ -436,7 +436,9 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
 
         let module = Module::new();
         let mut evaluator = Evaluator::new(&module);
-        evaluator.enable_profile(&ProfileMode::Statement);
+        evaluator
+            .enable_profile(&ProfileMode::Statement)
+            .expect("Unable to enable profile");
         let globals = crate::starlark::globals();
         evaluator.eval_module(ast, &globals)?;
 
