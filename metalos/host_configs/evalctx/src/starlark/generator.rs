@@ -249,7 +249,7 @@ mod tests {
 
     use super::*;
 
-    fn eval_one_generator(source: &'static str) -> anyhow::Result<Output> {
+    fn eval_one_generator(source: &str) -> anyhow::Result<Output> {
         let tmp_dir = TempDir::new()?;
         std::fs::write(tmp_dir.path().join("test_generator.star"), source)?;
         let mut generators = StarlarkGenerator::load(tmp_dir.path())?;
@@ -485,6 +485,141 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
         {
             eval_one_generator_coverage(entry.path())?;
         }
+        Ok(())
+    }
+
+    #[test]
+    fn test_systemd_networkd_correctness() -> anyhow::Result<()> {
+        let test_file_dir = env::var("TEST_FILES_DIR")?;
+        let file_path = test_file_dir + "/" + "systemd-networkd.star";
+        let src_code = std::fs::read_to_string(file_path)?;
+
+        assert_eq!(
+            eval_one_generator(&src_code)?,
+            Output {
+                files: vec![
+                    File {
+                        path: "/etc/systemd/network/00-metalos-eth0.network".into(),
+                        mode: 0o444,
+                        contents: r#"
+[Match]
+MACAddress=00:00:00:00:00:01
+
+[Network]
+
+Domains=01.abc0.facebook.com abc0.facebook.com facebook.com 
+# Use static addresses and gw
+IPv6AcceptRA=no
+
+
+
+[Address]
+Address=2a03:2880:f103:181:face:b00c:0:25de/64
+PreferredLifetime=forever
+[Route]
+Gateway=fe80::face:b00c
+Source=::/0
+Destination=::/0
+Metric=10
+"#
+                        .into()
+                    },
+                    File {
+                        path: "/etc/systemd/network/00-metalos-eth8.network".into(),
+                        mode: 0o444,
+                        contents: r#"
+[Match]
+MACAddress=00:00:00:00:00:03
+
+[Network]
+
+Domains=01.abc0.facebook.com abc0.facebook.com facebook.com 
+# Use static addresses and gw
+IPv6AcceptRA=no
+
+
+
+"#
+                        .into()
+                    },
+                    File {
+                        path: "/etc/systemd/network/00-metalos-beth3.network".into(),
+                        mode: 0o444,
+                        contents: r#"
+[Match]
+MACAddress=00:00:00:00:00:04
+
+[Network]
+
+Domains=01.abc0.facebook.com abc0.facebook.com facebook.com 
+# Use static addresses and gw
+IPv6AcceptRA=no
+
+
+
+[Address]
+Address=2a03:2880:f103:181:face:b00c:a1:0/64
+PreferredLifetime=forever
+[Route]
+Gateway=fe80::face:b00b
+Source=2a03:2880:f103:181:face:b00c:a1:0
+Destination=::/0
+Metric=1024
+"#
+                        .into()
+                    },
+                    File {
+                        path: "/etc/systemd/network/00-metalos-eth0.link".into(),
+                        mode: 0o444,
+                        contents: r#"
+[Match]
+MACAddress=00:00:00:00:00:01
+
+[Link]
+NamePolicy=
+Name=eth0
+MTUBytes=1500
+RequiredForOnline=yes
+"#
+                        .into()
+                    },
+                    File {
+                        path: "/etc/systemd/network/00-metalos-eth8.link".into(),
+                        mode: 0o444,
+                        contents: r#"
+[Match]
+MACAddress=00:00:00:00:00:03
+
+[Link]
+NamePolicy=
+Name=eth8
+MTUBytes=1500
+RequiredForOnline=no
+"#
+                        .into()
+                    },
+                    File {
+                        path: "/etc/systemd/network/00-metalos-beth3.link".into(),
+                        mode: 0o444,
+                        contents: r#"
+[Match]
+MACAddress=00:00:00:00:00:04
+
+[Link]
+NamePolicy=
+Name=beth3
+MTUBytes=4200
+RequiredForOnline=no
+"#
+                        .into()
+                    }
+                ],
+
+                dirs: vec![],
+                pw_hashes: None,
+                zero_files: vec![]
+            }
+        );
         Ok(())
     }
 }
