@@ -86,6 +86,11 @@ T_BAD_DIR_MODE_MISMATCH = f"{T_BASE}:feature_bad_dir_mode_mismatch"
 T_MOUNT = f"{T_BASE}:feature_mount"
 T_SYMLINKS = f"{T_BASE}:feature_symlinks"
 T_TAR = f"{T_BASE}:feature_tar_and_rpms"
+T_PRINT_ARG = f"{T_BASE}:print-arg"
+T_EXE_WRAP_PRINT_ARG = f"{T_BASE}:" + wrap_buck_runnable_target(
+    f"{T_BASE}:print-arg",
+    "",
+)
 T_PRINT_OK = f"{T_BASE}:print-ok"
 T_EXE_WRAP_PRINT_OK = f"{T_BASE}:" + wrap_buck_runnable_target(
     f"{T_BASE}:print-ok",
@@ -316,6 +321,15 @@ ID_TO_ITEM = {
         from_target=T_INSTALL_FILES,
         source=Path(TARGET_TO_PATH[T_DIR_PRINT_OK]) / "kitteh",
         dest="/foo/bar/installed/yittal-kitteh",
+    ),
+    "foo/bar/installed/print-arg": InstallFileItem(
+        from_target=T_INSTALL_FILES,
+        source=Path(
+            TARGET_TO_PATH[
+                T_EXE_WRAP_PRINT_ARG if _NONPORTABLE_ARTIFACTS else T_PRINT_ARG
+            ]
+        ),
+        dest="/foo/bar/installed/print-arg",
     ),
     "foo/bar/installed/print-ok": InstallFileItem(
         from_target=T_INSTALL_FILES,

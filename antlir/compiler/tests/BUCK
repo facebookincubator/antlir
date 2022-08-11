@@ -83,6 +83,7 @@ TEST_IMAGE_FEATURE_TRANSITIVE_DEPS = [
     READ_MY_DOC_image_feature_target("feature_tar_and_rpms"),
     "rpm-test-cheese-2-1.rpm",
     READ_MY_DOC_image_feature_target("feature_mount"),
+    "print-arg",
     "print-ok",
     "dir-print-ok",
     "dir-with-script",
@@ -94,6 +95,7 @@ TEST_IMAGE_FEATURE_TRANSITIVE_DEPS = [
 ]
 
 TEST_IMAGE_WRAPPED_TRANSITIVE_DEPS = ([
+    ("print-arg", ""),
     ("print-ok", ""),
     ("dir-print-ok", "subdir/print-ok"),
     ("dir-print-ok", "subdir/print-ok-again"),

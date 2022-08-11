@@ -83,3 +83,15 @@ class ImagePythonUnittestTest(unittest.TestCase):
         # Verify that `/layer_mount` exists and is a mount point
         self.assertTrue(os.path.exists("/layer_mount"))
         subprocess.check_output(["/usr/bin/mountpoint", "-q", "/layer_mount"])
+
+    def test_wrapped_runnable_args(self) -> None:
+        self.assertTrue(os.path.exists("/foo/bar/installed/print-arg"))
+
+        # Check arg with spaces to make sure the executable wrapping
+        # works as expected
+        self.assertEqual(
+            subprocess.check_output(
+                ["/foo/bar/installed/print-arg", "space cadet"], text=True
+            ),
+            "space cadet\n",
+        )

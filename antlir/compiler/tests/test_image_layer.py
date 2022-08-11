@@ -394,9 +394,10 @@ class ImageLayerTestCase(unittest.TestCase):
             )
 
     def _check_installed_files_bar(self, r, clones_re=""):
-        (  # We don't know the exact sizes because these 2 may be wrapped
-            ino,
-        ) = pop_path(r, "installed/print-ok")
+        # We don't know the exact sizes because these may be wrapped
+        (ino,) = pop_path(r, "installed/print-arg")
+        self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
+        (ino,) = pop_path(r, "installed/print-ok")
         self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
         (ino,) = pop_path(r, "installed/print-ok-too")
         self.assertRegex(ino, r"^\(File m555 d[0-9]+" + clones_re + r"\)$")
