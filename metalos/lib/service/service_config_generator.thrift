@@ -1,5 +1,9 @@
+include "metalos/host_configs/provisioning_config.thrift"
+// @oss-disable: include "metalos/host_configs/facebook/proxy/if/deployment_specific.thrift"
+
 struct Input {
-  1: string kernel_version;
+  1: provisioning_config.HostIdentity host_identity;
+  // @oss-disable: 2: deployment_specific.DeploymentRuntimeConfig deployment_runtime_config;
 } (rust.exhaustive)
 
 struct Output {

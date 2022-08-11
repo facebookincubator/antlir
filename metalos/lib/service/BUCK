@@ -44,11 +44,13 @@ rust_library(
         "zbus",
         "zvariant",
         ":service_config_generator_if-rust",
+        "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/generator:generator",
         "//metalos/lib/metalos_paths:metalos_paths",
         "//metalos/lib/serde_systemd:serde_systemd",
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
+        "//metalos/lib/thrift_wrapper:thrift_wrapper",
     ],
 )
 
@@ -56,6 +58,10 @@ thrift_library(
     name = "service_config_generator_if",
     languages = ["rust"],
     thrift_srcs = {"service_config_generator.thrift": None},
+    deps = [
+        "//metalos/host_configs:api",
+        "//metalos/host_configs/facebook/proxy/if:deployment_specific",
+    ],
 )
 
 image.layer(

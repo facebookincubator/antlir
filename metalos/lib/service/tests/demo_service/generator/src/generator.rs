@@ -27,7 +27,7 @@ fn main() -> Result<()> {
     let output = serialize(Output {
         dropin: Some(Dropin {
             environment: btreemap! {
-                "GENERATOR_KERNEL_VERSION".into() => input.kernel_version,
+                "HOST_CONFIG_HOSTNAME".into() => input.host_identity.hostname,
             },
         }),
     });

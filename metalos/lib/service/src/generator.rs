@@ -7,11 +7,14 @@
 
 use std::ffi::OsStr;
 
+use anyhow::Context;
 use anyhow::Result;
-use nix::sys::utsname::uname;
+use metalos_host_configs::host::HostConfig;
 use serde::Serialize;
 use service_config_generator_if::Input;
 use service_config_generator_if::Output;
+use state::State;
+use thrift_wrapper::ThriftWrapper;
 
 use crate::unit_file::Environment;
 
@@ -41,9 +44,15 @@ pub(crate) fn evaluate_generator<P>(path: P) -> Result<Output>
 where
     P: AsRef<OsStr>,
 {
-    let uts = uname();
-    let input = Input {
-        kernel_version: uts.release().to_string(),
-    };
-    generator::evaluate(path, &input).map_err(|e| e.into())
+    let host_config = HostConfig::current().context("while loading HostConfig")?;
+    match host_config {
+        None => anyhow::bail!("no HostConfig found"),
+        Some(h) => {
+            let input = Input {
+                host_identity: h.provisioning_config.identity.into_thrift(),
+                deployment_runtime_config: h.runtime_config.deployment_specific.into_thrift(),
+            };
+            generator::evaluate(path, &input).map_err(|e| e.into())
+        }
+    }
 }
