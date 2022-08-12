@@ -140,7 +140,7 @@ def fetched_package_layers_from_json_dir_db(
         if not p.startswith(package_db_prefix) or not p.endswith(suffix):
             fail("Bug: {} was not {}*/*{}".format(p, package_db_prefix, suffix))
         package, tag = p[len(package_db_prefix):-len(suffix)].split("/")
-        export_file(name = p, antlir_rule = "user-internal")
+        export_file(name = p, antlir_rule = "user-internal", visibility = ["PUBLIC"])
         print_how_to_fetch_json = _print_how_to_fetch_json(":" + p)
         _fetched_package_layer(
             package = package,

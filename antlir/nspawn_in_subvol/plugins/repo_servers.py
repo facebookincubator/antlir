@@ -178,12 +178,17 @@ class RepoServers(NspawnPlugin):
         self._run_apt_proxy: bool = run_apt_proxy
         if proxy_server_config:
             self._run_proxy_server = True
+
             if not proxy_server_config.fbpkg_db_path.path:  # pragma: no cover
                 raise RuntimeError(
                     "fbpkg_db_path is requiered to run proxy_server"
                 )
 
-            self._fbpkg_db_path = proxy_server_config.fbpkg_db_path.path
+            self._fbpkg_db_path = (
+                proxy_server_config.fbpkg_db_path.path
+                if not proxy_server_config.fbpkg_db_path.path.endswith(b".json")
+                else proxy_server_config.fbpkg_db_path.path.dirname().dirname()
+            )
 
     @staticmethod
     def _ns_sockets_needed(
