@@ -51,7 +51,21 @@ async def run(
     returncode = 0
     async with vm(
         bind_repo_ro=bind_repo_ro,
-        opts=opts,
+        opts=opts.copy(
+            update={
+                "append": (
+                    *opts.append,
+                    # See the note in `nspawn.py` about why we have to set
+                    # this on the kernel command line -- otherwise it would
+                    # not be passed to all the units.  We also have to set
+                    # it below via `env`.
+                    (
+                        "systemd.setenv="
+                        "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+                    ),
+                ),
+            }
+        ),
         console=console,
         timeout_ms=timeout_ms,
         shell=shell,
