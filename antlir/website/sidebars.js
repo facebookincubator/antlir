@@ -203,6 +203,10 @@ module.exports = {
               },
               {
                 type: 'doc',
+                id: 'metalos/fb/hacking_guide/kernel',
+              },
+              {
+                type: 'doc',
                 id: 'metalos/fb/hacking_guide/thrift',
               },
             ],
