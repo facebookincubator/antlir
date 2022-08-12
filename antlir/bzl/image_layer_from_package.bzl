@@ -24,7 +24,7 @@ def image_layer_from_package_helper(
         features,
         compile_image_features_fn,
         image_layer_kwargs):
-    if normalize_target(":" + name) in REPO_CFG.rc_layers:
+    if normalize_target(":" + name) in REPO_CFG.rc_targets:
         if rc_layer == None:
             fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
 

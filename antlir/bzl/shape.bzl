@@ -460,16 +460,13 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
         name = name + ".bzl",
         antlir_rule = "user-internal",
     )
-    bzl2ir = antlir_dep("bzl/shape2:bzl2ir.rc")
 
-    # internally use a prebuilt version of bzl2ir for perf/depgraph reasons
-    # @oss-disable: bzl2ir = antlir_dep("bzl/shape2/facebook:bzl2ir") 
     buck_genrule(
         name = name,
         cmd = """
             $(exe {}) {} $(location :{}.bzl) {} > $OUT
         """.format(
-            bzl2ir,
+            antlir_dep("bzl/shape2:bzl2ir"),
             normalize_target(":" + name),
             name,
             shell.quote(repr({d: "$(location {})".format(d) for d in deps})),

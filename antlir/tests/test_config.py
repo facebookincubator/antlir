@@ -35,7 +35,7 @@ class RepoConfigTestCase(unittest.TestCase):
             "flavor_default": "no_vset",
             "antlir_linux_flavor": "no_vset",
             "antlir_cell_name": "test",
-            "rc_layers": [],
+            "rc_targets": [],
             "flavor_to_config": {
                 "no_vset": {
                     "name": "no_vset",
