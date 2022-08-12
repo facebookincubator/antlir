@@ -76,6 +76,7 @@ EOF
             variant = variant,
             vcs = antlir_dep(":vcs"),
         ),
+        antlir_rule = "user-internal",
     )
 
     return [
