@@ -60,6 +60,7 @@ feature.new(
             ":metald",
             "/usr/lib/metalos/metald",
         ),
+        systemd.install_dropin("bindmount.conf", "metalos.metald.service"),
     ] + install_allowed_identities,
     visibility = ["//metalos/os/..."],
 )
