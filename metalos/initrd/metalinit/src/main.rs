@@ -384,6 +384,59 @@ impl Bootloader {
                 mountpoint.display()
             ))?;
 
+        // Bind mount kernel-devel
+        let mountpoint_build = target_path
+            .join("lib/modules")
+            .join(utsname.release())
+            .join("build");
+        std::fs::create_dir_all(&mountpoint_build).context(format!(
+            "while creating kernel devel lib/modules/<>/build mountpoint {}",
+            mountpoint_build.display()
+        ))?;
+
+        let mountpoint_source = target_path
+            .join("lib/modules")
+            .join(utsname.release())
+            .join("source");
+        std::fs::create_dir_all(&mountpoint_source).context(format!(
+            "while creating kernel devel lib/modules/<>/source mountpoint {}",
+            mountpoint_source.display()
+        ))?;
+
+        let modules_devel_dir = kernel_snapshot
+            .join("devel")
+            .to_str()
+            .context("modules dir is not a string")?
+            .to_string();
+
+        mounter
+            .mount(
+                Path::new(&modules_devel_dir),
+                &mountpoint_build,
+                Some("btrfs"),
+                MsFlags::MS_BIND,
+                None,
+            )
+            .context(format!(
+                "while mounting kernel {} modules at {}",
+                modules_dir,
+                mountpoint_build.display()
+            ))?;
+
+        mounter
+            .mount(
+                Path::new(&modules_devel_dir),
+                &mountpoint_source,
+                Some("btrfs"),
+                MsFlags::MS_BIND,
+                None,
+            )
+            .context(format!(
+                "while mounting kernel {} modules at {}",
+                modules_dir,
+                mountpoint_source.display()
+            ))?;
+
         let sd = Systemd::connect(self.log.clone()).await?;
 
         self.send_event(StartingSwitchroot { path: target_path })
