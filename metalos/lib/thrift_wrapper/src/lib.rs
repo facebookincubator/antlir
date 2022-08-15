@@ -10,6 +10,14 @@ use std::os::unix::ffi::OsStringExt;
 use std::path::PathBuf;
 
 use anyhow::Context;
+use serde::de::Error as _;
+use serde::ser::Error as _;
+use serde::Deserialize;
+use serde::Deserializer;
+use serde::Serialize;
+use serde::Serializer;
+use serde_with::DeserializeAs;
+use serde_with::SerializeAs;
 use thiserror::Error;
 pub use thrift_wrapper_derive::thrift_server;
 #[doc(hidden)]
@@ -22,6 +30,8 @@ pub mod __deps {
     pub use anyhow;
     pub use async_trait;
     pub use fbthrift;
+    pub use serde;
+    pub use serde_with;
 }
 
 #[derive(Debug, Error)]
@@ -172,5 +182,42 @@ where
 
     fn into_thrift(self) -> Option<T::Thrift> {
         self.map(T::into_thrift)
+    }
+}
+
+/// Provides a simple mechanism to include Thrift structures inside Serde
+/// structures by serializing to JSON.
+pub struct SerdeJsonThrift;
+
+impl<T> SerializeAs<T> for SerdeJsonThrift
+where
+    T: fbthrift::simplejson_protocol::Serializable,
+{
+    fn serialize_as<S>(source: &T, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let json_buf = fbthrift::simplejson_protocol::serialize(source);
+        let json_value: serde_json::Value =
+            serde_json::from_slice(&json_buf).map_err(S::Error::custom)?;
+        json_value.serialize(serializer)
+    }
+}
+
+impl<'de, T> DeserializeAs<'de, T> for SerdeJsonThrift
+where
+    T: fbthrift::Deserialize<
+        fbthrift::simplejson_protocol::SimpleJsonProtocolDeserializer<
+            std::io::Cursor<bytes::Bytes>,
+        >,
+    >,
+{
+    fn deserialize_as<D>(deserializer: D) -> std::result::Result<T, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let json_value = serde_json::Value::deserialize(deserializer).map_err(D::Error::custom)?;
+        let json_buf = serde_json::to_vec(&json_value).map_err(D::Error::custom)?;
+        fbthrift::simplejson_protocol::deserialize(json_buf).map_err(D::Error::custom)
     }
 }

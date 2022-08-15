@@ -8,7 +8,11 @@ rust_library(
     deps = [
         "anyhow",
         "async-trait",
+        "bytes",
         "fbthrift",
+        "serde",
+        "serde_json",
+        "serde_with",
         "thiserror",
         "url",
         "uuid",
@@ -23,6 +27,8 @@ rust_unittest(
     deps = [
         "anyhow",
         "async-trait",
+        "serde",
+        "serde_json",
         "static_assertions",
         "tokio",
         "url",

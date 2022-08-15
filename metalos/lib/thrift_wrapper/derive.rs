@@ -313,6 +313,26 @@ fn common_impls(thrift_type: syn::Type, name: syn::Ident) -> proc_macro2::TokenS
                 <#thrift_type>::default().try_into().expect("Default::default must be convertible")
             }
         }
+
+        impl ::thrift_wrapper::__deps::serde::Serialize for #name {
+            fn serialize<S>(&self, serializer: S) -> ::std::result::Result<S::Ok, S::Error>
+            where
+                S: ::thrift_wrapper::__deps::serde::Serializer
+            {
+                ::thrift_wrapper::__deps::serde_with::ser::SerializeAsWrap::<_, ::thrift_wrapper::SerdeJsonThrift>::new(self)
+                    .serialize(serializer)
+            }
+        }
+
+        impl<'de> ::thrift_wrapper::__deps::serde::Deserialize<'de> for #name {
+            fn deserialize<D>(deserializer: D) -> ::std::result::Result<Self, D::Error>
+            where
+                D: ::thrift_wrapper::__deps::serde::Deserializer<'de>
+            {
+                ::thrift_wrapper::__deps::serde_with::de::DeserializeAsWrap::<_, ::thrift_wrapper::SerdeJsonThrift>::deserialize(deserializer)
+                    .map(::thrift_wrapper::__deps::serde_with::de::DeserializeAsWrap::into_inner)
+            }
+        }
     }
 }
 
@@ -374,7 +394,6 @@ pub fn derive_thriftwrapper(input: TokenStream) -> TokenStream {
 pub fn thrift_server(attr: TokenStream, item: TokenStream) -> TokenStream {
     let attr_args = parse_macro_input!(attr as syn::AttributeArgs);
     let code = expand_thrift_server(attr_args, item).unwrap_or_else(|err| err.to_compile_error());
-    eprintln!("{}", code);
     code.into()
 }
 
