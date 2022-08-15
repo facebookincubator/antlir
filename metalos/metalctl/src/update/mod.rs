@@ -41,14 +41,13 @@ pub(crate) enum Subcommand {
 }
 
 impl Subcommand {
-    pub(self) fn load_input<S, Ser>(&self) -> Result<S>
+    pub(self) fn load_input<S>(&self) -> Result<S>
     where
-        S: State<Ser>,
-        Ser: state::Serialization,
+        S: State,
     {
         match self {
-            Self::Stage(c) => c.load::<S, Ser>(),
-            Self::Commit(c) => c.load::<S, Ser>(),
+            Self::Stage(c) => c.load::<S>(),
+            Self::Commit(c) => c.load::<S>(),
         }
     }
 
@@ -92,10 +91,9 @@ pub(crate) struct CommitOpts {
     client_opts: MetaldClientOpts,
 }
 
-fn load_from_file_arg<S, Ser>(arg: &Path) -> Result<S>
+fn load_from_file_arg<S>(arg: &Path) -> Result<S>
 where
-    S: State<Ser>,
-    Ser: state::Serialization,
+    S: State,
 {
     let input = if arg == Path::new("-") {
         let mut input = Vec::new();
@@ -110,20 +108,18 @@ where
 }
 
 impl CommonOpts {
-    pub(self) fn load<S, Ser>(&self) -> Result<S>
+    pub(self) fn load<S>(&self) -> Result<S>
     where
-        S: State<Ser>,
-        Ser: state::Serialization,
+        S: State,
     {
         load_from_file_arg(&self.json_path)
     }
 }
 
 impl CommitOpts {
-    pub(self) fn load<S, Ser>(&self) -> Result<S>
+    pub(self) fn load<S>(&self) -> Result<S>
     where
-        S: State<Ser>,
-        Ser: state::Serialization,
+        S: State,
     {
         if self.last_staged {
             Ok(S::staged()

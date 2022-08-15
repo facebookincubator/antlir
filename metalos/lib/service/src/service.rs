@@ -22,8 +22,6 @@ use itertools::Itertools;
 use nix::unistd::chown;
 use nix::unistd::Group;
 use nix::unistd::User;
-use serde::Deserialize;
-use serde::Serialize;
 use slog::o;
 use slog::trace;
 use slog::Logger;
@@ -32,6 +30,7 @@ use systemd::StartMode;
 use systemd::Systemd;
 use systemd::TypedObjectPath;
 use systemd::UnitName;
+use thrift_wrapper::ThriftWrapper;
 use uuid::Uuid;
 
 mod dropin;
@@ -52,13 +51,14 @@ fn systemd_run_unit_path() -> &'static Path {
 }
 
 /// Run details for a single execution of a Native Service.
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, ThriftWrapper)]
+#[thrift(service_state::types::ServiceInstance)]
 pub struct ServiceInstance {
     name: String,
     version: Uuid,
     run_uuid: Uuid,
     paths: Paths,
-    unit_name: UnitName,
+    unit_name: String,
 }
 
 impl ServiceInstance {
@@ -78,7 +78,7 @@ impl ServiceInstance {
             logs: base.join("logs").join(&name),
             runtime: base.join("runtime").join(unique),
         };
-        let unit_name = format!("{}.service", name).into();
+        let unit_name = format!("{}.service", name);
         Self {
             name,
             version,
@@ -104,8 +104,8 @@ impl ServiceInstance {
         &self.paths
     }
 
-    pub fn unit_name(&self) -> &UnitName {
-        &self.unit_name
+    pub fn unit_name(&self) -> UnitName {
+        self.unit_name.clone().into()
     }
 
     fn metalos_dir(&self) -> PathBuf {
@@ -246,7 +246,8 @@ impl ServiceInstance {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, ThriftWrapper)]
+#[thrift(service_state::types::Paths)]
 pub struct Paths {
     root_source: PathBuf,
     root: PathBuf,
@@ -383,7 +384,7 @@ impl Transaction {
                 ServiceDiff::Stop(current) => {
                     trace!(log, "preparing to stop {}:{}", name, current.to_simple());
                     let svc = ServiceInstance::new(name.clone(), *current);
-                    to_stop.push(svc.unit_name);
+                    to_stop.push(svc.unit_name());
                 }
             }
         }
@@ -413,7 +414,7 @@ impl Transaction {
         // at once
         for svc in &to_restart {
             let unit = sd
-                .get_unit(&svc.unit_name)
+                .get_unit(&svc.unit_name())
                 .await
                 .with_context(|| format!("while getting unit proxy for {}", svc.unit_name))?;
             unit.set_properties(
@@ -433,7 +434,7 @@ impl Transaction {
         // now start all the new services
         for svc in to_start {
             let job = sd
-                .start_unit(&svc.unit_name, &StartMode::Replace)
+                .start_unit(&svc.unit_name(), &StartMode::Replace)
                 .await
                 .with_context(|| format!("while starting {}", svc.unit_name))?;
             trace!(log, "start {}: {}", svc.unit_name, job.path());

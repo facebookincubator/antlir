@@ -6,11 +6,3 @@ thrift_library(
     thrift_srcs = {"example.thrift": None},
     visibility = ["//metalos/lib/state:state-unittest"],
 )
-
-thrift_library(
-    name = "example_with_serde",
-    languages = ["rust"],
-    thrift_rust_options = "serde",
-    thrift_srcs = {"example.thrift": None},
-    visibility = ["//metalos/lib/state:state-unittest"],
-)

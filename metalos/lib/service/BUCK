@@ -44,6 +44,7 @@ rust_library(
         "zbus",
         "zvariant",
         ":service_config_generator_if-rust",
+        ":service_state-rust",
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/generator:generator",
         "//metalos/lib/metalos_paths:metalos_paths",
@@ -73,4 +74,10 @@ image.layer(
     ],
     parent_layer = default_test_layer(),
     visibility = ["//metalos/lib/service/..."],
+)
+
+thrift_library(
+    name = "service_state",
+    languages = ["rust"],
+    thrift_srcs = {"state.thrift": None},
 )

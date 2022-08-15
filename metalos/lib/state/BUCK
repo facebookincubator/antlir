@@ -6,7 +6,6 @@ rust_library(
     test_deps = [
         "tempfile",
         "//metalos/lib/state/tests:example-rust",
-        "//metalos/lib/state/tests:example_with_serde-rust",
     ],
     deps = [
         "anyhow",
@@ -15,8 +14,6 @@ rust_library(
         "fbthrift",
         "hex",
         "once_cell",
-        "serde",
-        "serde_json",
         "sha2",
         "url",
         "//metalos/lib/metalos_paths:metalos_paths",

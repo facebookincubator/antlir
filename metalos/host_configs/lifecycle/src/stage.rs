@@ -16,7 +16,7 @@ use state::Token;
 /// Any config that can be staged on-host consists of a list of packages.
 /// Staging is downloading those packages then optionally running some kind of
 /// preflight checks.
-pub trait StagableConfig: State<state::Thrift> {
+pub trait StagableConfig: State {
     /// Return a list of every package in this config, after which they will be
     /// scheduled for parallel downloading.
     fn packages(&self) -> Vec<Package>;
@@ -32,11 +32,7 @@ pub trait StagableConfig: State<state::Thrift> {
 
 /// Stage a config, downloading any packages and performing any stage-blocking
 /// checks.
-pub async fn stage<C, D>(
-    log: Logger,
-    downloader: D,
-    conf: C,
-) -> anyhow::Result<Token<C, state::Thrift>>
+pub async fn stage<C, D>(log: Logger, downloader: D, conf: C) -> anyhow::Result<Token<C>>
 where
     C: StagableConfig,
     D: PackageDownloader + Clone,
