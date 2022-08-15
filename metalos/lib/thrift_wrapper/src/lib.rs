@@ -5,6 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsString;
+use std::os::unix::ffi::OsStringExt;
+use std::path::PathBuf;
+
 use anyhow::Context;
 use thiserror::Error;
 pub use thrift_wrapper_derive::thrift_server;
@@ -100,6 +104,18 @@ impl ThriftWrapper for url::Url {
 
     fn into_thrift(self) -> Self::Thrift {
         self.to_string()
+    }
+}
+
+impl ThriftWrapper for PathBuf {
+    type Thrift = Vec<u8>;
+
+    fn from_thrift(thrift: Vec<u8>) -> Result<Self> {
+        Ok(PathBuf::from(OsString::from_vec(thrift)))
+    }
+
+    fn into_thrift(self) -> Vec<u8> {
+        self.into_os_string().into_vec()
     }
 }
 

@@ -24,7 +24,6 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
-use anyhow::Error;
 use anyhow::Result;
 use bytes::Bytes;
 use once_cell::sync::Lazy;
@@ -50,9 +49,6 @@ static STATE_BASE: Lazy<PathBuf> = Lazy::new(|| {
 mod __private {
     pub trait Sealed {}
 }
-
-trait SerdeState = serde::de::DeserializeOwned + serde::Serialize;
-
 trait ThriftState = fbthrift::Serialize<
         fbthrift::simplejson_protocol::SimpleJsonProtocolSerializer<bufsize::SizeCounter>,
     > + fbthrift::Serialize<
@@ -61,25 +57,8 @@ trait ThriftState = fbthrift::Serialize<
         fbthrift::simplejson_protocol::SimpleJsonProtocolDeserializer<std::io::Cursor<Bytes>>,
     >;
 
-/// Abstraction on different serializers (thrift and serde) so that this library
-/// can operate with types that are serializable with either Thrift or Serde.
-pub trait Serialization: __private::Sealed {}
-
-pub struct Serde;
-
-impl __private::Sealed for Serde {}
-impl Serialization for Serde {}
-
-pub struct Thrift;
-
-impl __private::Sealed for Thrift {}
-impl Serialization for Thrift {}
-
 /// Any type that can be serialized to disk and loaded later with then unique id.
-pub trait State<Ser>: Sized + Debug
-where
-    Ser: Serialization,
-{
+pub trait State: Sized + Debug {
     /// Convert this state object to a JSON representation
     fn to_json(&self) -> Result<Vec<u8>>;
     /// Convert a JSON representation into this state type
@@ -101,29 +80,17 @@ where
     }
 
     /// Save this state object to disk.
-    fn save(&self) -> Result<Token<Self, Ser>> {
+    fn save(&self) -> Result<Token<Self>> {
         crate::save(self)
     }
 
     /// Load a state object from disk, if it exists.
-    fn load(token: Token<Self, Ser>) -> Result<Option<Self>> {
+    fn load(token: Token<Self>) -> Result<Option<Self>> {
         crate::load(token)
     }
 }
 
-impl<T> State<Serde> for T
-where
-    T: Sized + Debug + SerdeState,
-{
-    fn to_json(&self) -> Result<Vec<u8>> {
-        serde_json::to_vec(self).map_err(Error::msg)
-    }
-    fn from_json(bytes: Vec<u8>) -> Result<Self> {
-        serde_json::from_slice(&bytes).map_err(Error::msg)
-    }
-}
-
-impl<T> State<Thrift> for T
+impl<T> State for T
 where
     T: Sized + Debug + ThriftState,
 {
@@ -137,49 +104,35 @@ where
 
 /// Unique reference to a piece of state of a specific type. Can be used to
 /// retrieve the state from disk via [load]
-pub struct Token<S, Ser = Serde>(Sha256Value, PhantomData<(S, Ser)>)
+pub struct Token<S>(Sha256Value, PhantomData<S>)
 where
-    S: State<Ser>,
-    Ser: Serialization;
+    S: State;
 
-impl<S, Ser> Clone for Token<S, Ser>
+impl<S> Clone for Token<S>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     fn clone(&self) -> Self {
         Token::new(self.0)
     }
 }
 
-impl<S, Ser> Copy for Token<S, Ser>
-where
-    S: State<Ser>,
-    Ser: Serialization,
-{
-}
+impl<S> Copy for Token<S> where S: State {}
 
-impl<S, Ser> PartialEq for Token<S, Ser>
+impl<S> PartialEq for Token<S>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     fn eq(&self, other: &Self) -> bool {
         self.0 == other.0
     }
 }
 
-impl<S, Ser> Eq for Token<S, Ser>
-where
-    S: State<Ser>,
-    Ser: Serialization,
-{
-}
+impl<S> Eq for Token<S> where S: State {}
 
-impl<S, Ser> std::fmt::Debug for Token<S, Ser>
+impl<S> std::fmt::Debug for Token<S>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Token")
@@ -189,10 +142,9 @@ where
     }
 }
 
-impl<S, Ser> std::fmt::Display for Token<S, Ser>
+impl<S> std::fmt::Display for Token<S>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -204,23 +156,12 @@ where
     }
 }
 
-unsafe impl<S, Ser> Send for Token<S, Ser>
-where
-    S: State<Ser>,
-    Ser: Serialization,
-{
-}
-unsafe impl<S, Ser> Sync for Token<S, Ser>
-where
-    S: State<Ser>,
-    Ser: Serialization,
-{
-}
+unsafe impl<S> Send for Token<S> where S: State {}
+unsafe impl<S> Sync for Token<S> where S: State {}
 
-impl<S, Ser> std::str::FromStr for Token<S, Ser>
+impl<S> std::str::FromStr for Token<S>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     type Err = anyhow::Error;
 
@@ -310,10 +251,9 @@ impl<S> PartialEq for Alias<S> {
 
 impl<S> Eq for Alias<S> {}
 
-impl<S, Ser> Token<S, Ser>
+impl<S> Token<S>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     fn new(hash: Sha256Value) -> Self {
         Self(hash, PhantomData)
@@ -360,10 +300,9 @@ where
 
 /// Persist a new version of a state type, getting back a unique key to later
 /// load it with.
-fn save<S, Ser>(state: &S) -> Result<Token<S, Ser>>
+fn save<S>(state: &S) -> Result<Token<S>>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     let state = state
         .to_json()
@@ -376,10 +315,9 @@ where
 }
 
 /// it will be replaced.
-fn alias<S, Ser>(token: Token<S, Ser>, alias: Alias<S>) -> Result<Alias<S>>
+fn alias<S>(token: Token<S>, alias: Alias<S>) -> Result<Alias<S>>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     let alias_path = alias.path();
     std::fs::remove_file(&alias_path)
@@ -399,10 +337,9 @@ where
 }
 
 /// Load a specific version of a state type, using the key returned by [save]
-fn load<S, Ser>(token: Token<S, Ser>) -> Result<Option<S>>
+fn load<S>(token: Token<S>) -> Result<Option<S>>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     match std::fs::read(token.path()) {
         Err(e) => {
@@ -419,10 +356,9 @@ where
 }
 
 /// Load an aliased version of a state type.
-fn load_alias<S, Ser>(alias: Alias<S>) -> Result<Option<S>>
+fn load_alias<S>(alias: Alias<S>) -> Result<Option<S>>
 where
-    S: State<Ser>,
-    Ser: Serialization,
+    S: State,
 {
     let alias_path = alias.path();
     match std::fs::read(&alias_path) {
@@ -442,20 +378,9 @@ mod tests {
 
     use anyhow::Context;
     use anyhow::Result;
-    use serde::Deserialize;
-    use serde::Serialize;
+    use example::Example;
 
     use super::*;
-
-    #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
-    struct ExampleState {
-        hello: String,
-    }
-
-    #[derive(Debug, PartialEq, Eq, Deserialize, Serialize)]
-    struct Other {
-        goodbye: String,
-    }
 
     #[test]
     fn parse() -> Result<()> {
@@ -466,28 +391,21 @@ mod tests {
                     .try_into()
                     .unwrap()
             ),
-            "state::tests::ExampleState::f40cd21f276e47d533371afce1778447e858eb5c9c0c0ed61c65f5c5d57caf63"
-                .parse::<Token<ExampleState>>()
+            "example::types::Example::f40cd21f276e47d533371afce1778447e858eb5c9c0c0ed61c65f5c5d57caf63"
+                .parse::<Token<Example>>()
                 .unwrap()
         );
         assert_eq!(
-            "expected type 'state::tests::Other', got 'state::tests::ExampleState'",
-            "state::tests::ExampleState::0e2d4f4a-b09b-4a55-b6fd-fd57a60b9de8"
-                .parse::<Token<Other>>()
-                .unwrap_err()
-                .to_string()
-        );
-        assert_eq!(
             "'not-hex' is not a hex sha256",
-            "state::tests::ExampleState::not-hex"
-                .parse::<Token<ExampleState>>()
+            "example::types::Example::not-hex"
+                .parse::<Token<Example>>()
                 .unwrap_err()
                 .to_string()
         );
         assert_eq!(
             "'deadbeef' is not the correct sha256 length",
-            "state::tests::ExampleState::deadbeef"
-                .parse::<Token<ExampleState>>()
+            "example::types::Example::deadbeef"
+                .parse::<Token<Example>>()
                 .unwrap_err()
                 .to_string()
         );
@@ -497,17 +415,17 @@ mod tests {
     #[test]
     fn current() -> Result<()> {
         std::fs::create_dir_all(STATE_BASE.deref())?;
-        let current = ExampleState::current().context("while loading non-existent current")?;
+        let current = Example::current().context("while loading non-existent current")?;
         assert_eq!(None, current);
-        let token = ExampleState {
+        let token = Example {
             hello: "world".into(),
         }
         .save()
         .context("while saving")?;
         token.commit().context("while writing current alias")?;
-        let current = ExampleState::current().context("while loading current")?;
+        let current = Example::current().context("while loading current")?;
         assert_eq!(
-            Some(ExampleState {
+            Some(Example {
                 hello: "world".into()
             }),
             current
@@ -517,10 +435,10 @@ mod tests {
 
     #[test]
     fn custom_alias() -> Result<()> {
-        let current = ExampleState::aliased(Alias::custom("myalias".to_string()))
+        let current = Example::aliased(Alias::custom("myalias".to_string()))
             .context("while loading non-existent alias")?;
         assert_eq!(None, current);
-        let token = ExampleState {
+        let token = Example {
             hello: "world".into(),
         }
         .save()
@@ -528,10 +446,10 @@ mod tests {
         token
             .alias(Alias::custom("myalias".to_string()))
             .context("while writing current alias")?;
-        let current = ExampleState::aliased(Alias::custom("myalias".to_string()))
+        let current = Example::aliased(Alias::custom("myalias".to_string()))
             .context("while loading custom alias")?;
         assert_eq!(
-            Some(ExampleState {
+            Some(Example {
                 hello: "world".into()
             }),
             current
@@ -539,37 +457,15 @@ mod tests {
         Ok(())
     }
 
-    fn kv_test<Ser: Serialization, T: State<Ser> + PartialEq>(t: T) -> Result<()> {
+    #[test]
+    fn save_load_thrift() -> Result<()> {
         std::fs::create_dir_all(STATE_BASE.deref())?;
+        let t = Example {
+            hello: "world".into(),
+        };
         let token = t.save().context("while saving")?;
-        let loaded = T::load(token).context("while loading")?;
+        let loaded = Example::load(token).context("while loading")?;
         assert_eq!(Some(t), loaded);
         Ok(())
-    }
-
-    #[test]
-    fn kv_serde() -> Result<()> {
-        kv_test(ExampleState {
-            hello: "world".into(),
-        })
-    }
-
-    #[test]
-    fn kv_thrift() -> Result<()> {
-        kv_test(example::Example {
-            hello: "world".into(),
-        })
-    }
-
-    #[test]
-    fn kv_thrift_and_serde() -> Result<()> {
-        // this thrift struct comes with multiple possible implementations, and
-        // the compiler cannot choose between them automatically
-        kv_test::<Thrift, _>(example_with_serde::Example {
-            hello: "world".into(),
-        })?;
-        kv_test::<Serde, _>(example_with_serde::Example {
-            hello: "world".into(),
-        })
     }
 }
