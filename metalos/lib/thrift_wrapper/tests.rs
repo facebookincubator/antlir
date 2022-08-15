@@ -252,3 +252,46 @@ async fn thrift_service() -> Result<()> {
 
     Ok(())
 }
+
+#[derive(serde::Serialize, serde::Deserialize, PartialEq, Debug)]
+struct SerdeWrapper {
+    nested: Nested,
+    non_thrift: String,
+}
+
+#[test]
+fn serde_ser() -> Result<()> {
+    let uuid = Uuid::new_v4();
+    let val = serde_json::to_value(SerdeWrapper {
+        nested: Nested { uuid },
+        non_thrift: "hello".to_string(),
+    })?;
+    assert_eq!(
+        serde_json::json!({
+            "nested": {
+                "uuid": uuid.to_simple().to_string(),
+            },
+            "non_thrift": "hello",
+        }),
+        val
+    );
+    Ok(())
+}
+
+#[test]
+fn serde_deser() -> Result<()> {
+    let uuid = Uuid::new_v4();
+    assert_eq!(
+        SerdeWrapper {
+            nested: Nested { uuid },
+            non_thrift: "hello".to_string(),
+        },
+        serde_json::from_value(serde_json::json!({
+            "nested": {
+                "uuid": uuid.to_simple().to_string(),
+            },
+            "non_thrift":"hello",
+        }))?
+    );
+    Ok(())
+}
