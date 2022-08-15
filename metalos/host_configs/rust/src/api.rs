@@ -5,6 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#[cfg(not(facebook))]
+use fbthrift::RequestContext;
+use metalos_thrift_host_configs::api as thrift_api;
+#[cfg(facebook)]
+use srserver::RequestContext;
+use thrift_wrapper::thrift_server;
 use thrift_wrapper::ThriftWrapper;
 
 use crate::boot_config;
@@ -110,4 +116,49 @@ pub enum OfflineUpdateCommitErrorCode {
 pub struct OfflineUpdateCommitError {
     pub code: OfflineUpdateCommitErrorCode,
     pub message: String,
+}
+
+#[thrift_server(
+    thrift = "metalos_thrift_host_configs::api::server::Metalctl",
+    request_context = "RequestContext"
+)]
+pub trait Metalctl: Send + Sync + 'static {
+    type RequestContext;
+
+    // Prepare an online update to change the running versions of native
+    // services.
+    // Corresponds to `metalctl online-update stage`
+    #[thrift(
+        args = "&RequestContext, thrift_api::OnlineUpdateRequest",
+        ret = "thrift_api::UpdateStageResponse"
+    )]
+    async fn online_update_stage(
+        &self,
+        ctx: &RequestContext,
+        req: OnlineUpdateRequest,
+    ) -> Result<UpdateStageResponse, UpdateStageError>;
+
+    // Commit a previously-prepared online update.
+    // Corresponds to `metalctl online-update commit`
+    #[thrift(
+        args = "&RequestContext, thrift_api::OnlineUpdateRequest",
+        ret = "thrift_api::OnlineUpdateCommitResponse"
+    )]
+    async fn online_update_commit(
+        &self,
+        ctx: &RequestContext,
+        req: OnlineUpdateRequest,
+    ) -> Result<OnlineUpdateCommitResponse, OnlineUpdateCommitError>;
+
+    // // Prepare an offline update to change the host's BootConfig.  Corresponds to
+    // // `metalctl offline-update stage`
+    // async fn offline_update_stage(
+    //     req: OfflineUpdateRequest,
+    // ) -> Result<UpdateStageResponse, UpdateStageError>;
+
+    // // Commit a previously-prepared offline update.
+    // // Corresponds to `metalctl offline-update commit`
+    // async fn offline_update_commit(
+    //     req: OfflineUpdateRequest,
+    // ) -> Result<(), OfflineUpdateCommitError>;
 }

@@ -13,14 +13,15 @@ use anyhow::Result;
 use async_trait::async_trait;
 use fbinit::FacebookInit;
 use identity::Identity;
-use metalos_thrift_host_configs::api as thrift_api;
-use metalos_thrift_host_configs::api::server::Metalctl;
-use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateCommitExn;
-use metalos_thrift_host_configs::api::services::metalctl::OnlineUpdateStageExn;
+use metalos_host_configs::api::Metalctl;
+use metalos_host_configs::api::OnlineUpdateCommitError;
+use metalos_host_configs::api::OnlineUpdateCommitResponse;
+use metalos_host_configs::api::OnlineUpdateRequest;
+use metalos_host_configs::api::UpdateStageError;
+use metalos_host_configs::api::UpdateStageResponse;
 use package_download::DefaultDownloader;
 use slog::Logger;
 use srserver::RequestContext;
-use thrift_wrapper::ThriftWrapper;
 
 use crate::acl::PermissionsChecker;
 
@@ -90,59 +91,34 @@ where
     async fn online_update_stage(
         &self,
         req_ctxt: &RequestContext,
-        req: thrift_api::OnlineUpdateRequest,
-    ) -> Result<thrift_api::UpdateStageResponse, OnlineUpdateStageExn> {
+        req: OnlineUpdateRequest,
+    ) -> Result<UpdateStageResponse, UpdateStageError> {
         match self.check_identity(req_ctxt) {
             Ok(()) => (),
             Err(error) => {
-                return Err(OnlineUpdateStageExn::e(thrift_api::UpdateStageError {
+                return Err(UpdateStageError {
                     message: error.to_string(),
                     ..Default::default()
-                }));
+                });
             }
         };
-        let runtime_config =
-            req.runtime_config
-                .try_into()
-                .map_err(|e: thrift_wrapper::Error| thrift_api::UpdateStageError {
-                    packages: vec![],
-                    message: e.to_string(),
-                })?;
-        crate::update::online::stage(self.log.clone(), self.dl.clone(), runtime_config)
-            .await
-            .map(|r| r.into())
-            .map_err(|e| e.into_thrift().into())
+        crate::update::online::stage(self.log.clone(), self.dl.clone(), req.runtime_config).await
     }
 
     async fn online_update_commit(
         &self,
         req_ctxt: &RequestContext,
-        req: thrift_api::OnlineUpdateRequest,
-    ) -> Result<thrift_api::OnlineUpdateCommitResponse, OnlineUpdateCommitExn> {
+        req: OnlineUpdateRequest,
+    ) -> Result<OnlineUpdateCommitResponse, OnlineUpdateCommitError> {
         match self.check_identity(req_ctxt) {
             Ok(()) => (),
             Err(error) => {
-                return Err(OnlineUpdateCommitExn::e(
-                    thrift_api::OnlineUpdateCommitError {
-                        message: error.to_string(),
-                        ..Default::default()
-                    },
-                ));
+                return Err(OnlineUpdateCommitError {
+                    message: error.to_string(),
+                    ..Default::default()
+                });
             }
         };
-        let runtime_config =
-            req.runtime_config
-                .try_into()
-                .map_err(
-                    |e: thrift_wrapper::Error| thrift_api::OnlineUpdateCommitError {
-                        code: thrift_api::OnlineUpdateCommitErrorCode::OTHER,
-                        message: e.to_string(),
-                        services: vec![],
-                    },
-                )?;
-        crate::update::online::commit(self.log.clone(), runtime_config)
-            .await
-            .map(|r| r.into())
-            .map_err(|e| e.into_thrift().into())
+        crate::update::online::commit(self.log.clone(), req.runtime_config).await
     }
 }
