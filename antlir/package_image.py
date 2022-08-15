@@ -491,6 +491,7 @@ def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
             type=int,
             default=ZSTD_LEVEL_DEFAULT,
             choices=range(ZSTD_LEVEL_MIN, ZSTD_LEVEL_MAX + 1),
+            metavar=f"[{ZSTD_LEVEL_MIN}...{ZSTD_LEVEL_MAX}]",
             help="Compression level for zstd; note that level 0 will disable "
             "zstd compression for synthetic sendstreams and will fail for "
             "sendstream.zst format",
