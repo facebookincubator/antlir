@@ -5,6 +5,7 @@
 
 "This provides a more friendly UI to the feature.* macros."
 
+load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:clone.bzl", "feature_clone")
 load("//antlir/bzl/image/feature:ensure_dirs_exist.bzl", "feature_ensure_dirs_exist", "feature_ensure_subdirs_exist")
 load("//antlir/bzl/image/feature:install.bzl", "feature_install", "feature_install_buck_runnable")
@@ -17,8 +18,11 @@ load("//antlir/bzl/image/feature:rpms.bzl", "feature_rpms_install", "feature_rpm
 load("//antlir/bzl/image/feature:symlink.bzl", "feature_ensure_dir_symlink", "feature_ensure_file_symlink")
 load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
 load("//antlir/bzl/image/feature:usergroup.bzl", "feature_group_add", "feature_setup_standard_user", "feature_user_add")
+load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
+load("//antlir/bzl2/feature:feature.bzl", feature_buck2 = "feature")
+load("//antlir/bzl2/rpms:rpms.bzl", rpms_buck2 = "rpms")
 
-feature = struct(
+feature_buck1 = struct(
     clone = feature_clone,
     ensure_dir_symlink = feature_ensure_dir_symlink,
     ensure_dirs_exist = feature_ensure_dirs_exist,
@@ -40,3 +44,17 @@ feature = struct(
     user_add = feature_user_add,
     meta_store = feature_meta_store,
 )
+feature_buck1_dict = structs.to_dict(feature_buck1)
+
+rpms_buck2_dict = structs.to_dict(struct(
+    rpms_install = rpms_buck2.install,
+    rpms_remove_if_exists = rpms_buck2.remove_if_exists,
+))
+
+feature_buck2_dict = structs.to_dict(feature_buck2)
+feature_buck2_dict.update(rpms_buck2_dict)
+
+feature = struct(**({
+    key: feature_buck2_dict[key] if key in feature_buck2_dict else feature_buck1_dict[key]
+    for key in feature_buck1_dict
+} if use_buck2_macros() else feature_buck1_dict))
