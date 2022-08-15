@@ -14,6 +14,10 @@ from antlir.artifacts_dir import find_repo_root
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
 )
+from antlir.compiler.items.meta_key_value_store import (
+    load_meta_key_value_store_items,
+    MetaKeyValueStoreItem,
+)
 from antlir.compiler.items.mount import mounts_from_meta
 
 from antlir.compiler.procfs_serde import deserialize_int
@@ -514,4 +518,48 @@ class ImageLayerTestCase(unittest.TestCase):
                     },
                 ],
                 r,
+            )
+
+    def test_meta_store(self):
+        with self.target_subvol("meta_store_layer") as sv:
+            r = render_subvol(sv)
+            self.assertEqual(
+                [
+                    "(Dir)",
+                    {
+                        ".meta": [
+                            "(Dir)",
+                            {
+                                "build": render_meta_build_contents(sv),
+                                "flavor": [render_flavor(flavor="antlir_test")],
+                                "key_value_store": ["(File d127)"],
+                                "private": [
+                                    "(Dir)",
+                                    {
+                                        "opts": [
+                                            "(Dir)",
+                                            {
+                                                "artifacts_may_require_repo": [
+                                                    "(File d2)"
+                                                ]
+                                            },
+                                        ]
+                                    },
+                                ],
+                            },
+                        ]
+                    },
+                ],
+                r,
+            )
+
+            items = load_meta_key_value_store_items(sv)
+            self.assertEqual(
+                items,
+                [
+                    MetaKeyValueStoreItem(key="key1", value="value1"),
+                    MetaKeyValueStoreItem(
+                        key="key2", value="value2", require_key="key1"
+                    ),
+                ],
             )

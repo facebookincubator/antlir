@@ -1262,3 +1262,17 @@ image.layer(
     flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
+
+image.layer(
+    name = "meta_store_layer",
+    features = [
+        feature.meta_store(
+            "key2",
+            "value2",
+            require_key = "key1",
+        ),
+        feature.meta_store("key1", "value1"),
+    ],
+    flavor = "antlir_test",
+    visibility = ["//antlir/..."],
+)
