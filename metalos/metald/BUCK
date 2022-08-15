@@ -21,6 +21,7 @@ rust_binary(
         "thiserror",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
+        "//common/rust/srserver:srserver",
         "//metalos/host_configs/lifecycle:lifecycle",
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/host_configs:Metalctl-metadata-sys",
@@ -29,7 +30,6 @@ rust_binary(
         "//metalos/lib/service:service",
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
-        "//metalos/lib/thrift_wrapper:thrift_wrapper",
     ] + (
         # @oss-disable: deps 
         # @oss-enable []
