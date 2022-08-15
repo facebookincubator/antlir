@@ -74,6 +74,9 @@ antlir_tool(
         "proxy.rs",
     ],
     crate_root = "proxy.rs",
+    linker_flags = [
+        "-Wl,--strip-all",
+    ],
     deps = [
         ":blob-store",
         "//common/rust/shed/fbinit:fbinit",
