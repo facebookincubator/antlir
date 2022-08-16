@@ -17,7 +17,7 @@ pub(super) async fn stage(
     runtime_config: RuntimeConfig,
 ) -> Result<UpdateStageResponse, UpdateStageError> {
     Ok(metald
-        .online_update_stage(&OnlineUpdateRequest {
+        .online_update_stage_sync(&OnlineUpdateRequest {
             runtime_config: runtime_config.into(),
         })
         .await
@@ -29,7 +29,7 @@ pub(super) async fn commit(
     runtime_config: RuntimeConfig,
 ) -> Result<OnlineUpdateCommitResponse, OnlineUpdateCommitError> {
     Ok(metald
-        .online_update_commit(&OnlineUpdateRequest {
+        .online_update_commit_sync(&OnlineUpdateRequest {
             runtime_config: runtime_config.into(),
         })
         .await

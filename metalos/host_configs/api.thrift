@@ -105,22 +105,27 @@ enum OfflineUpdateCommitErrorCode {
 service Metalctl extends fb303.FacebookService {
   // Prepare an online update to change the running versions of native
   // services.
-  // Corresponds to `metalctl online-update stage`
-  UpdateStageResponse online_update_stage(1: OnlineUpdateRequest req) throws (
-    1: UpdateStageError e,
-  );
+  // Does all package staging within the lifetime of this method, so your thrift
+  // timeout has to be very long.
+  UpdateStageResponse online_update_stage_sync(
+    1: OnlineUpdateRequest req,
+  ) throws (1: UpdateStageError e);
 
-  // Commit a previously-prepared online update.
-  // Corresponds to `metalctl online-update commit`
-  OnlineUpdateCommitResponse online_update_commit(
+  // Commit a previously-prepared online update. AKA start/stop/restart Native
+  // Services as necessary.
+  // Does all systemd interaction within the lifetime of this method, so your thrift
+  // timeout has to be very long.
+  OnlineUpdateCommitResponse online_update_commit_sync(
     1: OnlineUpdateRequest req,
   ) throws (1: OnlineUpdateCommitError e);
 
   // Prepare an offline update to change the host's BootConfig.  Corresponds to
   // `metalctl offline-update stage`
-  UpdateStageResponse offline_update_stage(1: OfflineUpdateRequest req) throws (
-    1: UpdateStageError e,
-  );
+  // Does all package staging within the lifetime of this method, so your thrift
+  // timeout has to be very long.
+  UpdateStageResponse offline_update_stage_sync(
+    1: OfflineUpdateRequest req,
+  ) throws (1: UpdateStageError e);
 
   // Commit a previously-prepared offline update.
   // Corresponds to `metalctl offline-update commit`
