@@ -1,4 +1,3 @@
-load("//antlir/bzl:shape.bzl", "shape")
 load("//metalos:defs.bzl", "rust_binary")
 load("//metalos/bzl/service:service.bzl", "native_service")
 load("//metalos/bzl/service:service.shape.bzl", "cmd_t", "exec_t", "runas_t", "service_t")
@@ -16,8 +15,7 @@ rust_binary(
 )
 
 native_service(
-    service = shape.new(
-        service_t,
+    service = service_t(
         name = "metalos.service.demo",
         config_generator = "//metalos/lib/service/tests/demo_service/generator:generator",
         exec_info = exec_t(

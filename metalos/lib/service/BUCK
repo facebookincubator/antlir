@@ -69,6 +69,7 @@ image.layer(
     name = "test-layer",
     features = [
         feature.layer_mount("//metalos/lib/service/tests/demo_service:metalos.service.demo--layer", "/demo-service"),
+        feature.layer_mount("//metalos/lib/service/tests/demo_service:metalos.service.demo--config-generator-layer", "/demo-service-config-generator"),
         systemd.install_unit("snapshot-demo-service.service"),
         systemd.enable_unit("snapshot-demo-service.service", "local-fs.target", "requires"),
     ],

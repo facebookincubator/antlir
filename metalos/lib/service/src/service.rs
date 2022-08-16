@@ -103,23 +103,27 @@ impl ServiceInstance {
         self.svc.unit_name()
     }
 
-    fn metalos_dir(&self) -> PathBuf {
-        self.svc
-            .metalos_dir()
-            .expect("never None, and expect removed in following diff")
+    fn metalos_dir(&self) -> Option<PathBuf> {
+        self.svc.metalos_dir()
     }
 
     fn linked_unit_path(&self) -> PathBuf {
         systemd_run_unit_path().join(self.unit_name())
     }
 
-    fn generator_path(&self) -> PathBuf {
-        self.metalos_dir().join("generator")
+    fn generator_path(&self) -> Option<PathBuf> {
+        self.svc
+            .config_generator
+            .as_ref()
+            .map(|pkg| pkg.path().join("generator"))
     }
 
     /// Load the structured service definition that is installed in the image
     pub fn load_shape(&self) -> Result<service_shape::service_t> {
-        let path = self.metalos_dir().join("service.shape");
+        let path = self
+            .metalos_dir()
+            .context("metalos/ dir missing")?
+            .join("service.shape");
         let buf =
             std::fs::read(&path).with_context(|| format!("while reading {}", path.display()))?;
         fbthrift::binary_protocol::deserialize(&buf)
@@ -191,13 +195,15 @@ impl ServiceInstance {
             }
         }
 
-        if self.generator_path().exists() {
+        if let Some(generator_path) = self.generator_path() {
+            ensure!(
+                generator_path.exists(),
+                "service config generator file '{}' does not exist",
+                generator_path.display()
+            );
             let output =
-                crate::generator::evaluate_generator(self.generator_path()).with_context(|| {
-                    format!(
-                        "while running generator at {}",
-                        self.generator_path().display()
-                    )
+                crate::generator::evaluate_generator(&generator_path).with_context(|| {
+                    format!("while running generator at {}", generator_path.display())
                 })?;
             if let Some(dropin) = output.dropin {
                 let dropin_path = dropin_dir.join("50-generator.conf");
@@ -501,6 +507,7 @@ mod tests {
 
     use metalos_host_configs::packages::Format;
     use metalos_host_configs::packages::Service as ServicePackage;
+    use metalos_host_configs::packages::ServiceConfigGenerator;
     use metalos_macros::containertest;
 
     use super::*;
@@ -530,6 +537,25 @@ mod tests {
         Ok(())
     }
 
+    fn make_demo_service(version: Uuid) -> Service {
+        Service {
+            svc: ServicePackage::new(
+                "metalos.service.demo".into(),
+                version,
+                None,
+                Format::Sendstream,
+            ),
+            config_generator: Some(ServiceConfigGenerator::new(
+                "metalos.service.demo.config".into(),
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("this is a valid uuid"),
+                None,
+                Format::File,
+            )),
+        }
+    }
+
     /// Start the demo service. If this doesn't work something is fundamentally
     /// broken and should be easier to debug than the `lifecycle_dance` test below
     #[containertest]
@@ -539,17 +565,11 @@ mod tests {
 
         Transaction {
             current: ServiceSet::new(vec![]),
-            next: ServiceSet::new(vec![Service {
-                svc: ServicePackage::new(
-                    "metalos.service.demo".into(),
-                    "00000000000040008000000000000001"
-                        .parse()
-                        .expect("this is a valid uuid"),
-                    None,
-                    Format::Sendstream,
-                ),
-                config_generator: None,
-            }]),
+            next: ServiceSet::new(vec![make_demo_service(
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("this is a valid uuid"),
+            )]),
         }
         .commit(log.clone(), &sd)
         .await?;
@@ -575,17 +595,11 @@ mod tests {
 
         Transaction::with_next(
             &sd,
-            ServiceSet::new(vec![Service {
-                svc: ServicePackage::new(
-                    "metalos.service.demo".into(),
-                    "00000000000040008000000000000001"
-                        .parse()
-                        .expect("this is a valid uuid"),
-                    None,
-                    Format::Sendstream,
-                ),
-                config_generator: None,
-            }]),
+            ServiceSet::new(vec![make_demo_service(
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("this is a valid uuid"),
+            )]),
         )
         .await?
         .commit(log.clone(), &sd)
@@ -598,17 +612,11 @@ mod tests {
 
         Transaction::with_next(
             &sd,
-            ServiceSet::new(vec![Service {
-                svc: ServicePackage::new(
-                    "metalos.service.demo".into(),
-                    "00000000000040008000000000000002"
-                        .parse()
-                        .expect("this is a valid uuid"),
-                    None,
-                    Format::Sendstream,
-                ),
-                config_generator: None,
-            }]),
+            ServiceSet::new(vec![make_demo_service(
+                "00000000000040008000000000000002"
+                    .parse()
+                    .expect("this is a valid uuid"),
+            )]),
         )
         .await?
         .commit(log.clone(), &sd)
@@ -621,17 +629,11 @@ mod tests {
 
         Transaction::with_next(
             &sd,
-            ServiceSet::new(vec![Service {
-                svc: ServicePackage::new(
-                    "metalos.service.demo".into(),
-                    "00000000000040008000000000000001"
-                        .parse()
-                        .expect("this is a valid uuid"),
-                    None,
-                    Format::Sendstream,
-                ),
-                config_generator: None,
-            }]),
+            ServiceSet::new(vec![make_demo_service(
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("this is a valid uuid"),
+            )]),
         )
         .await?
         .commit(log.clone(), &sd)
@@ -676,17 +678,11 @@ mod tests {
 
         Transaction {
             current: ServiceSet::new(vec![]),
-            next: ServiceSet::new(vec![Service {
-                svc: ServicePackage::new(
-                    "metalos.service.demo".into(),
-                    "00000000000040008000000000000001"
-                        .parse()
-                        .expect("this is a valid uuid"),
-                    None,
-                    Format::Sendstream,
-                ),
-                config_generator: None,
-            }]),
+            next: ServiceSet::new(vec![make_demo_service(
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("this is a valid uuid"),
+            )]),
         }
         .commit(log.clone(), &sd)
         .await?;

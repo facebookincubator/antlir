@@ -1,5 +1,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -63,9 +64,6 @@ def native_service(
         for dst, src in binaries.items()
     ])
 
-    if service.config_generator:
-        features.append(feature.install(service.config_generator, "/metalos/generator", mode = "a+rx"))
-
     buck_genrule(
         name = "{}--binary-thrift".format(service.name),
         cmd = "echo {} | $(exe //metalos/bzl/service:serialize-shape) > $OUT".format(shell.quote(shape.do_not_cache_me_json(service))),
@@ -76,13 +74,30 @@ def native_service(
     if extra_features:
         features.extend(extra_features)
 
+    if service.config_generator:
+        image.layer(
+            name = service.name + "--config-generator-layer",
+            flavor = flavor_helpers.get_antlir_linux_flavor(),
+            features = [
+                feature.install(
+                    service.config_generator,
+                    "/generator",
+                    mode = "a+rx",
+                    # to test the sandbox mechanism, this must install the
+                    # actual binary file, not wrap it in install_buck_runnable
+                    wrap_as_buck_runnable = False,
+                ),
+            ],
+            visibility = visibility if visibility != None else ["//metalos/...", "//netos/..."],
+        )
+
     image.layer(
         name = service.name + "--layer",
         features = features,
         parent_layer = "//metalos/services/base:base",
         visibility = visibility if visibility != None else ["//metalos/...", "//netos/..."],
     )
-    # @oss-disable: native_service_fbpkg(name = service.name, layer = ":{}--layer".format(service.name)) 
+    # @oss-disable: native_service_fbpkg(service = service) 
 
 def binary_target_to_path(target):
     return paths.join(METALOS_DIR, "bin/{}".format(target.replace("/", ".").lstrip(".")))
