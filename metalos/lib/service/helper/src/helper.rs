@@ -12,7 +12,6 @@ use anyhow::Result;
 use service::ServiceInstance;
 use state::Alias;
 use state::State;
-use state::Token;
 use structopt::StructOpt;
 
 mod volumes;
@@ -83,7 +82,6 @@ fn main() -> Result<()> {
 pub(crate) mod tests {
     use std::path::Path;
 
-    use metalos_host_configs::packages::Format;
     use metalos_host_configs::packages::Service as ServicePackage;
     use metalos_host_configs::runtime_config::Service;
     use metalos_macros::containertest;
@@ -99,7 +97,6 @@ pub(crate) mod tests {
                     .parse()
                     .expect("this is a valid uuid"),
                 None,
-                Format::Sendstream,
             ),
             config_generator: None,
         });

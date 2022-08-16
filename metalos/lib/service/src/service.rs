@@ -505,7 +505,6 @@ mod tests {
     use std::fs;
     use std::os::linux::fs::MetadataExt;
 
-    use metalos_host_configs::packages::Format;
     use metalos_host_configs::packages::Service as ServicePackage;
     use metalos_host_configs::packages::ServiceConfigGenerator;
     use metalos_macros::containertest;
@@ -539,19 +538,13 @@ mod tests {
 
     fn make_demo_service(version: Uuid) -> Service {
         Service {
-            svc: ServicePackage::new(
-                "metalos.service.demo".into(),
-                version,
-                None,
-                Format::Sendstream,
-            ),
+            svc: ServicePackage::new("metalos.service.demo".into(), version, None),
             config_generator: Some(ServiceConfigGenerator::new(
                 "metalos.service.demo.config".into(),
                 "00000000000040008000000000000001"
                     .parse()
                     .expect("this is a valid uuid"),
                 None,
-                Format::File,
             )),
         }
     }

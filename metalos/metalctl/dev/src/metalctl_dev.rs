@@ -41,33 +41,13 @@ async fn main(fb: fbinit::FacebookInit) -> Result<()> {
     }
 }
 
-pub(crate) trait FormatArg {
-    fn format() -> Format;
-}
-
-pub(crate) struct SendstreamPackage;
-
-impl FormatArg for SendstreamPackage {
-    fn format() -> Format {
-        Format::Sendstream
-    }
-}
-
-pub(crate) struct FilePackage;
-
-impl FormatArg for FilePackage {
-    fn format() -> Format {
-        Format::File
-    }
-}
-
-pub(crate) struct PackageArg<F: FormatArg> {
+pub(crate) struct PackageArg<F: Format> {
     name: String,
     uuid: Uuid,
     format: PhantomData<F>,
 }
 
-impl<F: FormatArg> FromStr for PackageArg<F> {
+impl<F: Format> FromStr for PackageArg<F> {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
@@ -80,12 +60,12 @@ impl<F: FormatArg> FromStr for PackageArg<F> {
     }
 }
 
-impl<F, K> From<PackageArg<F>> for Package<K, Uuid>
+impl<F, K> From<PackageArg<F>> for Package<F, K, Uuid>
 where
-    F: FormatArg,
+    F: Format,
     K: Kind,
 {
     fn from(pkg: PackageArg<F>) -> Self {
-        Self::new(pkg.name, pkg.uuid, None, F::format())
+        Self::new(pkg.name, pkg.uuid, None)
     }
 }

@@ -11,6 +11,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
+use metalos_thrift_host_configs::packages::Format as ThriftFormat;
 use metalos_thrift_host_configs::packages::Kind as ThriftKind;
 use strum_macros::Display;
 use thrift_wrapper::Error;
@@ -19,23 +20,6 @@ use thrift_wrapper::Result;
 use thrift_wrapper::ThriftWrapper;
 use url::Url;
 use uuid::Uuid;
-
-#[derive(
-    Debug,
-    Display,
-    Copy,
-    Clone,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    ThriftWrapper
-)]
-#[thrift(metalos_thrift_host_configs::packages::Format)]
-pub enum Format {
-    Sendstream,
-    File,
-}
 
 pub(crate) mod __private {
     pub trait Sealed {}
@@ -48,32 +32,56 @@ pub trait Kind:
     const THRIFT: ThriftKind;
 }
 
+pub trait Format:
+    Debug + Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Sync + Send + __private::Sealed
+{
+    const NAME: &'static str;
+    const THRIFT: ThriftFormat;
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct Sendstream;
+
+impl __private::Sealed for Sendstream {}
+impl Format for Sendstream {
+    const NAME: &'static str = "Sendstream";
+    const THRIFT: ThriftFormat = ThriftFormat::SENDSTREAM;
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct File;
+
+impl __private::Sealed for File {}
+impl Format for File {
+    const NAME: &'static str = "File";
+    const THRIFT: ThriftFormat = ThriftFormat::FILE;
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PackageTag(String);
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Package<K: Kind, Id> {
+pub struct Package<F: Format, K: Kind, Id> {
     pub name: String,
     pub id: Id,
     pub override_uri: Option<Url>,
-    pub format: Format,
-    kind: PhantomData<K>,
+    fk: PhantomData<(F, K)>,
 }
 
-impl<K: Kind, Id: Debug> std::fmt::Debug for Package<K, Id> {
+impl<F: Format, K: Kind, Id: Debug> std::fmt::Debug for Package<F, K, Id> {
     #[deny(unused_variables)]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         let Package {
             name,
             id,
             override_uri,
-            format,
-            kind: _,
+            fk: _,
         } = self;
         let mut s = f.debug_struct("Package");
         s.field("name", name)
             .field("id", id)
-            .field("format", format);
+            .field("format", &F::NAME)
+            .field("kind", &K::NAME);
         if let Some(u) = override_uri {
             s.field("override_uri", &u.to_string());
         }
@@ -81,17 +89,17 @@ impl<K: Kind, Id: Debug> std::fmt::Debug for Package<K, Id> {
     }
 }
 
-impl<K> Package<K, Uuid>
+impl<F, K> Package<F, K, Uuid>
 where
+    F: Format,
     K: Kind,
 {
-    pub fn new(name: String, uuid: Uuid, override_uri: Option<Url>, format: Format) -> Self {
+    pub fn new(name: String, uuid: Uuid, override_uri: Option<Url>) -> Self {
         Self {
             name,
             id: uuid,
             override_uri,
-            format,
-            kind: PhantomData,
+            fk: PhantomData,
         }
     }
 
@@ -108,8 +116,9 @@ where
 
 macro_rules! package_thrift_wrapper {
     ($idt:ty, $id_from_thrift:expr, $id_to_thrift:expr) => {
-        impl<K> ThriftWrapper for Package<K, $idt>
+        impl<F, K> ThriftWrapper for Package<F, K, $idt>
         where
+            F: Format,
             K: Kind,
         {
             type Thrift = metalos_thrift_host_configs::packages::Package;
@@ -121,6 +130,30 @@ macro_rules! package_thrift_wrapper {
                     kind,
                     format,
                 } = t;
+                if format != F::THRIFT {
+                    return Err(Error::Nested {
+                        field: "format".into(),
+                        error: Box::new(Error::Other(anyhow!(
+                            "expected format '{}'({}), got '{}'({})",
+                            F::NAME,
+                            F::THRIFT.0,
+                            format.to_string(),
+                            format.0,
+                        ))),
+                    });
+                }
+                if kind != K::THRIFT {
+                    return Err(Error::Nested {
+                        field: "kind".into(),
+                        error: Box::new(Error::Other(anyhow!(
+                            "expected kind '{}'({}), got '{}'({})",
+                            K::NAME,
+                            K::THRIFT.0,
+                            kind.to_string(),
+                            kind.0,
+                        ))),
+                    });
+                }
                 let override_uri = match override_uri {
                     Some(uri) => {
                         let uri = Url::from_thrift(uri).in_field("override_uri")?;
@@ -128,22 +161,12 @@ macro_rules! package_thrift_wrapper {
                     }
                     None => None,
                 };
-                if kind != K::THRIFT {
-                    return Err(Error::Nested {
-                        field: "kind".into(),
-                        error: Box::new(Error::PackageKind {
-                            expected: K::NAME,
-                            actual: kind.to_string(),
-                        }),
-                    });
-                }
                 let id = $id_from_thrift(id).in_field("id")?;
                 Ok(Self {
                     name,
                     id,
                     override_uri,
-                    format: format.try_into().in_field("format")?,
-                    kind: PhantomData,
+                    fk: PhantomData,
                 })
             }
 
@@ -152,14 +175,15 @@ macro_rules! package_thrift_wrapper {
                     name: self.name,
                     id: $id_to_thrift(self.id),
                     override_uri: self.override_uri.map(|u| u.to_string()),
-                    format: self.format.into(),
+                    format: F::THRIFT,
                     kind: K::THRIFT,
                 }
             }
         }
 
-        impl<K> TryFrom<metalos_thrift_host_configs::packages::Package> for Package<K, $idt>
+        impl<F, K> TryFrom<metalos_thrift_host_configs::packages::Package> for Package<F, K, $idt>
         where
+            F: Format,
             K: Kind,
         {
             type Error = Error;
@@ -195,44 +219,44 @@ package_thrift_wrapper!(
     |id: PackageTag| metalos_thrift_host_configs::packages::PackageId::tag(id.0)
 );
 
-impl<K> From<Package<K, Uuid>> for metalos_thrift_host_configs::packages::Package
+impl<F, K> From<Package<F, K, Uuid>> for metalos_thrift_host_configs::packages::Package
 where
+    F: Format,
     K: Kind,
 {
-    fn from(pkg: Package<K, Uuid>) -> Self {
+    fn from(pkg: Package<F, K, Uuid>) -> Self {
         pkg.into_thrift()
     }
 }
 
-impl<K> Package<K, PackageTag>
+impl<F, K> Package<F, K, PackageTag>
 where
+    F: Format,
     K: Kind,
 {
-    pub fn new(name: String, tag: PackageTag, override_uri: Option<Url>, format: Format) -> Self {
+    pub fn new(name: String, tag: PackageTag, override_uri: Option<Url>) -> Self {
         Self {
             name,
             id: tag,
             override_uri,
-            format,
-            kind: PhantomData,
+            fk: PhantomData,
         }
     }
 
     /// Convert this to the more friendly uuid-versioned Package type after
     /// externally resolving the tag to a uuid.
-    pub fn with_uuid(self, uuid: Uuid) -> Package<K, Uuid> {
+    pub fn with_uuid(self, uuid: Uuid) -> Package<F, K, Uuid> {
         Package {
             name: self.name,
             id: uuid,
             override_uri: self.override_uri,
-            format: self.format,
-            kind: PhantomData,
+            fk: PhantomData,
         }
     }
 }
 
 macro_rules! package_kind_param {
-    ($i:ident, $k:ident, $tk:ident) => {
+    ($i:ident, $f:ident, $k:ident, $tk:ident) => {
         #[derive(Debug, Copy, Clone, PartialEq, Eq)]
         pub struct $k;
 
@@ -257,27 +281,28 @@ macro_rules! package_kind_param {
             }
         }
 
-        pub type $i = Package<$k, Uuid>;
+        pub type $i = Package<$f, $k, Uuid>;
     };
 }
 
-package_kind_param!(Rootfs, RootfsKind, ROOTFS);
-package_kind_param!(Kernel, KernelKind, KERNEL);
-package_kind_param!(Initrd, InitrdKind, INITRD);
-package_kind_param!(ImagingInitrd, ImagingInitrdKind, IMAGING_INITRD);
-package_kind_param!(Service, ServiceKind, SERVICE);
+package_kind_param!(Rootfs, Sendstream, RootfsKind, ROOTFS);
+package_kind_param!(Kernel, Sendstream, KernelKind, KERNEL);
+package_kind_param!(Initrd, File, InitrdKind, INITRD);
+package_kind_param!(ImagingInitrd, File, ImagingInitrdKind, IMAGING_INITRD);
+package_kind_param!(Service, Sendstream, ServiceKind, SERVICE);
 package_kind_param!(
     ServiceConfigGenerator,
+    Sendstream,
     ServiceConfigGeneratorKind,
     SERVICE_CONFIG_GENERATOR
 );
-package_kind_param!(GptRootDisk, GptRootDiskKind, GPT_ROOT_DISK);
-package_kind_param!(Bootloader, BootloaderKind, BOOTLOADER);
+package_kind_param!(GptRootDisk, File, GptRootDiskKind, GPT_ROOT_DISK);
+package_kind_param!(Bootloader, File, BootloaderKind, BOOTLOADER);
 
 // Some package kinds have some extra data that we can use, so expose it nicely
-// via the `Package<K>` structs
+// via the `Package<Sendstream, K>` structs
 
-impl<K: Kind> Package<K, Uuid> {
+impl<K: Kind> Package<Sendstream, K, Uuid> {
     /// Get absolute path to a file given a relative path. Checks to ensure that
     /// the file exists, otherwise will return None
     pub(crate) fn file_in_image(&self, relpath: impl AsRef<Path>) -> Option<PathBuf> {
@@ -318,7 +343,22 @@ pub mod generic {
     use url::Url;
     use uuid::Uuid;
 
-    use super::Format;
+    #[derive(
+        Debug,
+        Display,
+        Copy,
+        Clone,
+        PartialEq,
+        Eq,
+        PartialOrd,
+        Ord,
+        ThriftWrapper
+    )]
+    #[thrift(metalos_thrift_host_configs::packages::Format)]
+    pub enum Format {
+        Sendstream,
+        File,
+    }
 
     #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper, Display)]
     #[thrift(metalos_thrift_host_configs::packages::Kind)]
@@ -360,7 +400,7 @@ pub mod generic {
 
     /// Generic version of a Package, without any static type information about
     /// the nature of the package.
-    #[derive(Clone, PartialEq, Eq, ThriftWrapper)]
+    #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
     #[thrift(metalos_thrift_host_configs::packages::Package)]
     pub struct Package {
         pub name: String,
@@ -391,38 +431,23 @@ pub mod generic {
         }
     }
 
-    impl std::fmt::Debug for Package {
-        #[deny(unused_variables)]
-        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-            let Package {
-                name,
-                id,
-                override_uri,
-                format,
-                kind: _,
-            } = self;
-            let mut s = f.debug_struct("Package");
-            s.field("name", name)
-                .field("id", id)
-                .field("format", format);
-            if let Some(u) = override_uri {
-                s.field("override_uri", &u.to_string());
-            }
-            s.finish()
-        }
-    }
-
     /// Only allow conversion from a UUID-identified Package to discourage
     /// on-host usage of tags (the HostConfig will already only be deserialized
     /// if it only contains uuids, but that doesn't stop people from
     /// constructing less-safe structs locally).
-    impl<K: super::Kind> From<super::Package<K, Uuid>> for Package {
-        fn from(p: super::Package<K, Uuid>) -> Self {
+    impl<F, K> From<super::Package<F, K, Uuid>> for Package
+    where
+        F: super::Format,
+        K: super::Kind,
+    {
+        fn from(p: super::Package<F, K, Uuid>) -> Self {
             Self {
                 name: p.name,
                 id: PackageId::Uuid(p.id),
                 override_uri: p.override_uri,
-                format: p.format,
+                format: F::THRIFT
+                    .try_into()
+                    .expect("compiler statically ensures all variants are covered"),
                 kind: K::THRIFT
                     .try_into()
                     .expect("compiler statically ensures all variants are covered"),
@@ -438,34 +463,10 @@ mod test {
     use super::*;
 
     #[test]
-    fn format_enum() -> Result<()> {
-        assert_eq!(
-            Format::Sendstream,
-            metalos_thrift_host_configs::packages::Format::SENDSTREAM.try_into()?,
-        );
-        assert_eq!(
-            Format::File,
-            metalos_thrift_host_configs::packages::Format::FILE.try_into()?,
-        );
-        match Format::try_from(metalos_thrift_host_configs::packages::Format(100000)) {
-            Err(Error::Enum(s)) => assert_eq!("Format::100000", s),
-            _ => panic!("expected Error::Enum"),
-        };
-
-        Ok(())
-    }
-
-    #[test]
     fn package_conversions() -> Result<()> {
         let id = Uuid::new_v4();
         assert_eq!(
-            Rootfs {
-                name: "metalos.rootfs".into(),
-                id,
-                override_uri: None,
-                format: Format::Sendstream,
-                kind: PhantomData,
-            },
+            Rootfs::new("metalos.rootfs".into(), id, None),
             metalos_thrift_host_configs::packages::Package {
                 name: "metalos.rootfs".into(),
                 id: metalos_thrift_host_configs::packages::PackageId::uuid(
@@ -487,14 +488,41 @@ mod test {
                 kind: ThriftKind::ROOTFS,
                 format: metalos_thrift_host_configs::packages::Format::SENDSTREAM,
             },
-            Rootfs {
+            Rootfs::new("metalos.rootfs".into(), id, None).into()
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn package_conversion_failures() -> Result<()> {
+        let id = Uuid::new_v4();
+        assert_eq!(
+            "error in field format: expected format 'Sendstream'(1), got 'FILE'(2)",
+            Rootfs::try_from(metalos_thrift_host_configs::packages::Package {
                 name: "metalos.rootfs".into(),
-                id,
+                id: metalos_thrift_host_configs::packages::PackageId::uuid(
+                    id.to_simple().to_string()
+                ),
                 override_uri: None,
-                format: Format::Sendstream,
-                kind: PhantomData,
-            }
-            .into()
+                kind: ThriftKind::ROOTFS,
+                format: metalos_thrift_host_configs::packages::Format::FILE,
+            })
+            .expect_err("invalid format should fail")
+            .to_string()
+        );
+        assert_eq!(
+            "error in field kind: expected kind 'Rootfs'(1), got 'SERVICE'(5)",
+            Rootfs::try_from(metalos_thrift_host_configs::packages::Package {
+                name: "metalos.rootfs".into(),
+                id: metalos_thrift_host_configs::packages::PackageId::uuid(
+                    id.to_simple().to_string()
+                ),
+                override_uri: None,
+                kind: ThriftKind::SERVICE,
+                format: metalos_thrift_host_configs::packages::Format::SENDSTREAM,
+            })
+            .expect_err("invalid format should fail")
+            .to_string()
         );
         Ok(())
     }
@@ -504,27 +532,13 @@ mod test {
         let id = Uuid::new_v4();
         assert_eq!(
             metalos_paths::images::rootfs().join(format!("metalos.rootfs:{}", id.to_simple())),
-            Rootfs {
-                name: "metalos.rootfs".into(),
-                id,
-                override_uri: None,
-                format: Format::Sendstream,
-                kind: PhantomData,
-            }
-            .path(),
+            Rootfs::new("metalos.rootfs".into(), id, None).path(),
         );
 
         assert_eq!(
             metalos_paths::images::service_config_generator()
                 .join(format!("metalos.demo.config:{}", id.to_simple())),
-            ServiceConfigGenerator {
-                name: "metalos.demo.config".into(),
-                id,
-                override_uri: None,
-                format: Format::File,
-                kind: PhantomData,
-            }
-            .path(),
+            ServiceConfigGenerator::new("metalos.demo.config".into(), id, None).path(),
         );
     }
 }

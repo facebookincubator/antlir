@@ -16,20 +16,20 @@ use anyhow::Result;
 use clap::Parser;
 use metalos_host_configs::api::OfflineUpdateRequest;
 use metalos_host_configs::host::HostConfig;
+use metalos_host_configs::packages::File as FilePackage;
+use metalos_host_configs::packages::Sendstream;
 use slog::debug;
 use slog::Logger;
 use state::State;
 
-use crate::FilePackage;
 use crate::PackageArg;
-use crate::SendstreamPackage;
 
 #[derive(Parser)]
 pub(crate) struct Opts {
     #[clap(long)]
-    rootfs: Option<PackageArg<SendstreamPackage>>,
+    rootfs: Option<PackageArg<Sendstream>>,
     #[clap(long)]
-    kernel: Option<PackageArg<SendstreamPackage>>,
+    kernel: Option<PackageArg<Sendstream>>,
     #[clap(long)]
     initrd: Option<PackageArg<FilePackage>>,
     #[clap(long, help = "defaults to current cmdline")]

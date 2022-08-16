@@ -38,11 +38,6 @@ pub mod __deps {
 pub enum Error {
     #[error("error in field {field}: {error}")]
     Nested { field: String, error: Box<Error> },
-    #[error("expected package of kind {expected}, actual was {actual}")]
-    PackageKind {
-        expected: &'static str,
-        actual: String,
-    },
     #[error("unrecognized enum variant {0}")]
     Enum(String),
     #[error("unrecognized union variant {0}")]

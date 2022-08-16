@@ -107,7 +107,6 @@ mod tests {
     use std::path::Path;
 
     use anyhow::Result;
-    use metalos_host_configs::packages::Format;
     use metalos_host_configs::packages::Service as ServicePackage;
     use metalos_host_configs::runtime_config::Service;
     use metalos_macros::containertest;
@@ -124,7 +123,6 @@ mod tests {
                     .parse()
                     .expect("this is a valid uuid"),
                 None,
-                Format::Sendstream,
             ),
             config_generator: None,
         });

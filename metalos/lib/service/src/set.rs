@@ -132,7 +132,6 @@ impl Deref for Diff {
 #[cfg(test)]
 pub(crate) mod tests {
     use maplit::btreeset;
-    use metalos_host_configs::packages::Format;
     use metalos_host_configs::packages::Service as ServicePackage;
     use metalos_macros::test;
     use pretty_assertions::assert_eq;
@@ -143,7 +142,7 @@ pub(crate) mod tests {
     #[test]
     fn diff() {
         let svc_a = Service {
-            svc: ServicePackage::new("a".into(), Uuid::new_v4(), None, Format::Sendstream),
+            svc: ServicePackage::new("a".into(), Uuid::new_v4(), None),
             config_generator: None,
         };
         assert_eq!(
@@ -166,11 +165,11 @@ pub(crate) mod tests {
         );
 
         let svc_b = Service {
-            svc: ServicePackage::new("b".into(), Uuid::new_v4(), None, Format::Sendstream),
+            svc: ServicePackage::new("b".into(), Uuid::new_v4(), None),
             config_generator: None,
         };
         let svc_c = Service {
-            svc: ServicePackage::new("c".into(), Uuid::new_v4(), None, Format::Sendstream),
+            svc: ServicePackage::new("c".into(), Uuid::new_v4(), None),
             config_generator: None,
         };
         assert_eq!(

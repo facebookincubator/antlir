@@ -11,7 +11,7 @@ use std::os::unix::process::CommandExt;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use metalos_host_configs::packages::Format;
+use metalos_host_configs::packages::Sendstream;
 use metalos_host_configs::packages::Service as ServicePackage;
 use metalos_host_configs::runtime_config::Service;
 use package_download::default_downloader;
@@ -23,7 +23,6 @@ use slog::Logger;
 use systemd::Systemd;
 
 use crate::PackageArg;
-use crate::SendstreamPackage;
 
 #[derive(Parser)]
 pub(crate) enum Opts {
@@ -36,10 +35,10 @@ pub(crate) enum Opts {
     Enter(Enter),
 }
 
-impl<F: crate::FormatArg> From<&PackageArg<F>> for Service {
-    fn from(sid: &PackageArg<F>) -> Service {
+impl From<&PackageArg<Sendstream>> for Service {
+    fn from(sid: &PackageArg<Sendstream>) -> Service {
         Service {
-            svc: ServicePackage::new(sid.name.clone(), sid.uuid, None, Format::Sendstream),
+            svc: ServicePackage::new(sid.name.clone(), sid.uuid, None),
             config_generator: None,
         }
     }
@@ -47,7 +46,7 @@ impl<F: crate::FormatArg> From<&PackageArg<F>> for Service {
 
 #[derive(Parser)]
 pub(crate) struct Start {
-    services: Vec<PackageArg<SendstreamPackage>>,
+    services: Vec<PackageArg<Sendstream>>,
 }
 
 #[derive(Parser)]
