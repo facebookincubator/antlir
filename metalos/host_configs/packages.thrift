@@ -26,7 +26,7 @@ union PackageId {
   // This will fail to deserialize using the safe Rust wrappers, unless
   // explicitly allowed by the calling code.
   2: string tag;
-}
+} (rust.ord)
 
 struct Packages {
   1: list<Package> packages;
@@ -41,7 +41,7 @@ struct Package {
   3: optional string override_uri;
   4: Kind kind;
   5: Format format;
-} (rust.exhaustive)
+} (rust.exhaustive, rust.ord)
 
 enum Kind {
   ROOTFS = 1,

@@ -1,20 +1,15 @@
-typedef binary Path
+/*
+ * Copyright (c) Meta Platforms, Inc. and its affiliates.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+include "metalos/host_configs/runtime_config.thrift"
+
 typedef string Uuid
-typedef string UnitName
 
 struct ServiceInstance {
-  1: string name;
-  2: Uuid version;
-  3: Uuid run_uuid;
-  4: Paths paths;
-  5: UnitName unit_name;
-} (rust.exhaustive)
-
-struct Paths {
-  1: Path root_source;
-  2: Path root;
-  3: Path state;
-  4: Path cache;
-  5: Path logs;
-  6: Path runtime;
+  1: runtime_config.Service svc;
+  2: Uuid run_uuid;
 } (rust.exhaustive)

@@ -12,6 +12,7 @@ rust_binary(
     },
     test_deps = [
         "nix",
+        "//metalos/host_configs/rust:metalos_host_configs",
     ],
     unittest_opts = unittest_opts_t(
         container = shape.new(

@@ -7,6 +7,7 @@
 
 use std::path::PathBuf;
 
+use systemd::UnitName;
 use thrift_wrapper::ThriftWrapper;
 
 use crate::packages;
@@ -19,7 +20,7 @@ pub struct RuntimeConfig {
     pub services: Vec<Service>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::runtime_config::Service)]
 pub struct Service {
     pub svc: packages::Service,
@@ -27,14 +28,18 @@ pub struct Service {
 }
 
 impl Service {
+    pub fn name(&self) -> &str {
+        &self.svc.name
+    }
+
     /// Path to metalos metadata dir
     pub fn metalos_dir(&self) -> Option<PathBuf> {
         self.svc.file_in_image("metalos")
     }
 
     /// Systemd unit name
-    pub fn unit_name(&self) -> String {
-        format!("{}.service", self.svc.name)
+    pub fn unit_name(&self) -> UnitName {
+        format!("{}.service", self.svc.name).into()
     }
 
     pub fn unit_file(&self) -> Option<PathBuf> {

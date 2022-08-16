@@ -88,13 +88,7 @@ pub(crate) async fn commit(
             services: vec![],
         })?;
 
-    let next = ServiceSet::new(
-        runtime_config
-            .services
-            .iter()
-            .map(|svc| Ok((svc.svc.name.clone(), svc.svc.id)))
-            .collect::<Result<_, _>>()?,
-    );
+    let next = ServiceSet::new(runtime_config.services.clone());
 
     let tx = Transaction::with_next(&sd, next)
         .await

@@ -19,6 +19,7 @@ use anyhow::Error;
 use anyhow::Result;
 use futures::StreamExt;
 use itertools::Itertools;
+use metalos_host_configs::runtime_config::Service;
 use nix::unistd::chown;
 use nix::unistd::Group;
 use nix::unistd::User;
@@ -44,8 +45,6 @@ pub use set::ServiceSet;
 #[cfg(facebook)]
 pub mod facebook;
 
-pub type Version = Uuid;
-
 fn systemd_run_unit_path() -> &'static Path {
     Path::new("/run/systemd/system")
 }
@@ -54,69 +53,66 @@ fn systemd_run_unit_path() -> &'static Path {
 #[derive(Debug, Clone, ThriftWrapper)]
 #[thrift(service_state::types::ServiceInstance)]
 pub struct ServiceInstance {
-    name: String,
-    version: Uuid,
+    svc: Service,
     run_uuid: Uuid,
-    paths: Paths,
-    unit_name: String,
 }
 
 impl ServiceInstance {
-    pub fn new(name: String, version: Uuid) -> Self {
+    pub fn new(service: Service) -> Self {
         let run_uuid = Uuid::new_v4();
-        let unique = format!("{}-{}-{}", name, version.to_simple(), run_uuid.to_simple());
-        let base = metalos_paths::runtime::base();
-        let paths = Paths {
-            root_source: metalos_paths::images::base().join("service").join(format!(
-                "{}:{}",
-                name,
-                version.to_simple()
-            )),
-            root: base.join("service-roots").join(&unique),
-            state: base.join("state").join(&name),
-            cache: base.join("cache").join(&name),
-            logs: base.join("logs").join(&name),
-            runtime: base.join("runtime").join(unique),
-        };
-        let unit_name = format!("{}.service", name);
         Self {
-            name,
-            version,
+            svc: service,
             run_uuid,
-            paths,
-            unit_name,
+        }
+    }
+
+    fn unique_key(&self) -> String {
+        format!(
+            "{}-{}-{}",
+            self.svc.name(),
+            self.svc.svc.id.to_simple(),
+            self.run_uuid.to_simple()
+        )
+    }
+
+    pub fn paths(&self) -> Paths {
+        let unique = self.unique_key();
+        Paths {
+            root_source: self.svc.svc.path(),
+            root: metalos_paths::runtime::service_roots().join(&unique),
+            state: metalos_paths::runtime::state().join(self.svc.name()),
+            cache: metalos_paths::runtime::cache().join(self.svc.name()),
+            logs: metalos_paths::runtime::logs().join(self.svc.name()),
+            runtime: metalos_paths::runtime::runtime().join(&unique),
         }
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        &self.svc.svc.name
     }
 
     pub fn version(&self) -> Uuid {
-        self.version
+        self.svc.svc.id
     }
 
     pub fn run_uuid(&self) -> Uuid {
         self.run_uuid
     }
 
-    pub fn paths(&self) -> &Paths {
-        &self.paths
-    }
-
     pub fn unit_name(&self) -> UnitName {
-        self.unit_name.clone().into()
+        self.svc.unit_name()
     }
 
     fn metalos_dir(&self) -> PathBuf {
-        self.paths.root_source.join("metalos")
+        self.svc
+            .metalos_dir()
+            .expect("never None, and expect removed in following diff")
     }
 
     fn linked_unit_path(&self) -> PathBuf {
         systemd_run_unit_path().join(self.unit_name())
     }
 
-    // TODO(T111087410): this should come from a separate package
     fn generator_path(&self) -> PathBuf {
         self.metalos_dir().join("generator")
     }
@@ -157,9 +153,9 @@ impl ServiceInstance {
     /// is executed.
     pub(crate) async fn prepare(self) -> Result<PreparedService> {
         let dropin = Dropin::new(&self)
-            .with_context(|| format!("while building dropin for {}", self.unit_name))?;
+            .with_context(|| format!("while building dropin for {}", self.svc.name()))?;
 
-        let dropin_dir = Path::new("/run/systemd/system").join(format!("{}.d", &self.unit_name));
+        let dropin_dir = Path::new("/run/systemd/system").join(format!("{}.d", &self.unit_name()));
         std::fs::create_dir_all(&dropin_dir)
             .with_context(|| format!("while creating dropin dir {}", dropin_dir.display()))?;
         let dropin_file = OpenOptions::new()
@@ -180,9 +176,7 @@ impl ServiceInstance {
                 continue;
             }
             if let Some(file_name) = entry.path().file_name() {
-                let dest = Path::new("/run/systemd/system")
-                    .join(format!("{}.d/", &self.unit_name))
-                    .join(file_name);
+                let dest = dropin_dir.join(file_name);
                 if dest.exists() {
                     std::fs::remove_file(dest.clone()).context(format!(
                         "while deleting existent symlink {:#?}",
@@ -246,8 +240,7 @@ impl ServiceInstance {
     }
 }
 
-#[derive(Debug, Clone, ThriftWrapper)]
-#[thrift(service_state::types::Paths)]
+#[derive(Debug, Clone)]
 pub struct Paths {
     root_source: PathBuf,
     root: PathBuf,
@@ -354,37 +347,27 @@ impl Transaction {
         let mut to_start = vec![];
         let mut to_restart = vec![];
         let mut to_stop = vec![];
-        for (name, diff) in diff.iter() {
+        for diff in diff.iter() {
             match diff {
                 ServiceDiff::Swap { current, next } => {
-                    trace!(
-                        log,
-                        "preparing to swap {} {}->{}",
-                        name,
-                        current.to_simple(),
-                        next.to_simple()
-                    );
-                    let svc = ServiceInstance::new(name.clone(), *next);
+                    trace!(log, "preparing to swap {:?}->{:?}", current, next);
+                    let svc = ServiceInstance::new(next.clone());
                     to_restart.push(svc.prepare().await.with_context(|| {
-                        format!(
-                            "while preparing to move {} from {} -> {}",
-                            name,
-                            current.to_simple(),
-                            next.to_simple()
-                        )
+                        format!("while preparing to move from {:?} -> {:?}", current, next)
                     })?);
                 }
                 ServiceDiff::Start(next) => {
-                    trace!(log, "preparing to start {}:{}", name, next.to_simple());
-                    let svc = ServiceInstance::new(name.clone(), *next);
-                    to_start.push(svc.prepare().await.with_context(|| {
-                        format!("while preparing to start {}:{}", name, next.to_simple())
-                    })?);
+                    trace!(log, "preparing to start {:?}", next);
+                    let svc = ServiceInstance::new(next.clone());
+                    to_start.push(
+                        svc.prepare()
+                            .await
+                            .with_context(|| format!("while preparing to start {:?}", next))?,
+                    );
                 }
                 ServiceDiff::Stop(current) => {
-                    trace!(log, "preparing to stop {}:{}", name, current.to_simple());
-                    let svc = ServiceInstance::new(name.clone(), *current);
-                    to_stop.push(svc.unit_name());
+                    trace!(log, "preparing to stop {:?}", current);
+                    to_stop.push(current.unit_name());
                 }
             }
         }
@@ -416,13 +399,13 @@ impl Transaction {
             let unit = sd
                 .get_unit(&svc.unit_name())
                 .await
-                .with_context(|| format!("while getting unit proxy for {}", svc.unit_name))?;
+                .with_context(|| format!("while getting unit proxy for {}", svc.name()))?;
             unit.set_properties(
                 true,
                 &[("Markers", vec![Marker::NeedsRestart.to_string()].into())],
             )
             .await
-            .with_context(|| format!("while setting Markers=needs-restart on {}", svc.unit_name))?;
+            .with_context(|| format!("while setting Markers=needs-restart on {}", svc.name()))?;
         }
         let mut jobs = sd
             .enqueue_marked_jobs()
@@ -436,8 +419,8 @@ impl Transaction {
             let job = sd
                 .start_unit(&svc.unit_name(), &StartMode::Replace)
                 .await
-                .with_context(|| format!("while starting {}", svc.unit_name))?;
-            trace!(log, "start {}: {}", svc.unit_name, job.path());
+                .with_context(|| format!("while starting {}", svc.name()))?;
+            trace!(log, "start {}: {}", svc.name(), job.path());
             jobs.push(unsafe { TypedObjectPath::from_untyped(job.path()) });
         }
 
@@ -516,8 +499,9 @@ mod tests {
     use std::fs;
     use std::os::linux::fs::MetadataExt;
 
+    use metalos_host_configs::packages::Format;
+    use metalos_host_configs::packages::Service as ServicePackage;
     use metalos_macros::containertest;
-    use set::tests::service_set;
 
     use super::*;
 
@@ -526,9 +510,10 @@ mod tests {
     // for now let's not do that and only check versions during test
     async fn running_service_version(sd: &Systemd, service: &str) -> Result<String> {
         let set = ServiceSet::current(sd).await?;
-        set.get(service)
+        set.iter()
+            .find(|s| s.name() == service)
             .with_context(|| format!("{} was not discovered", service))
-            .map(|uuid| uuid.to_simple().to_string())
+            .map(|svc| svc.svc.id.to_simple().to_string())
     }
 
     fn check_path_ownership<P>(path: P, owner_username: &str, owner_group: &str) -> Result<()>
@@ -553,10 +538,18 @@ mod tests {
         let sd = Systemd::connect(log.clone()).await?;
 
         Transaction {
-            current: set::tests::service_set! {},
-            next: set::tests::service_set! {
-                "metalos.service.demo" => 1,
-            },
+            current: ServiceSet::new(vec![]),
+            next: ServiceSet::new(vec![Service {
+                svc: ServicePackage::new(
+                    "metalos.service.demo".into(),
+                    "00000000000040008000000000000001"
+                        .parse()
+                        .expect("this is a valid uuid"),
+                    None,
+                    Format::Sendstream,
+                ),
+                config_generator: None,
+            }]),
         }
         .commit(log.clone(), &sd)
         .await?;
@@ -582,9 +575,17 @@ mod tests {
 
         Transaction::with_next(
             &sd,
-            service_set! {
-                "metalos.service.demo" => 1,
-            },
+            ServiceSet::new(vec![Service {
+                svc: ServicePackage::new(
+                    "metalos.service.demo".into(),
+                    "00000000000040008000000000000001"
+                        .parse()
+                        .expect("this is a valid uuid"),
+                    None,
+                    Format::Sendstream,
+                ),
+                config_generator: None,
+            }]),
         )
         .await?
         .commit(log.clone(), &sd)
@@ -597,9 +598,17 @@ mod tests {
 
         Transaction::with_next(
             &sd,
-            service_set! {
-                "metalos.service.demo" => 2,
-            },
+            ServiceSet::new(vec![Service {
+                svc: ServicePackage::new(
+                    "metalos.service.demo".into(),
+                    "00000000000040008000000000000002"
+                        .parse()
+                        .expect("this is a valid uuid"),
+                    None,
+                    Format::Sendstream,
+                ),
+                config_generator: None,
+            }]),
         )
         .await?
         .commit(log.clone(), &sd)
@@ -612,9 +621,17 @@ mod tests {
 
         Transaction::with_next(
             &sd,
-            service_set! {
-                "metalos.service.demo" => 1,
-            },
+            ServiceSet::new(vec![Service {
+                svc: ServicePackage::new(
+                    "metalos.service.demo".into(),
+                    "00000000000040008000000000000001"
+                        .parse()
+                        .expect("this is a valid uuid"),
+                    None,
+                    Format::Sendstream,
+                ),
+                config_generator: None,
+            }]),
         )
         .await?
         .commit(log.clone(), &sd)
@@ -625,7 +642,7 @@ mod tests {
             "00000000000040008000000000000001",
         );
 
-        Transaction::with_next(&sd, service_set! {})
+        Transaction::with_next(&sd, ServiceSet::new(vec![]))
             .await?
             .commit(log.clone(), &sd)
             .await?;
@@ -658,10 +675,18 @@ mod tests {
         let sd = Systemd::connect(log.clone()).await?;
 
         Transaction {
-            current: set::tests::service_set! {},
-            next: set::tests::service_set! {
-                "metalos.service.demo" => 1,
-            },
+            current: ServiceSet::new(vec![]),
+            next: ServiceSet::new(vec![Service {
+                svc: ServicePackage::new(
+                    "metalos.service.demo".into(),
+                    "00000000000040008000000000000001"
+                        .parse()
+                        .expect("this is a valid uuid"),
+                    None,
+                    Format::Sendstream,
+                ),
+                config_generator: None,
+            }]),
         }
         .commit(log.clone(), &sd)
         .await?;
