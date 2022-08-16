@@ -17,7 +17,7 @@ pub(super) async fn stage(
     boot_config: BootConfig,
 ) -> Result<UpdateStageResponse, UpdateStageError> {
     Ok(metald
-        .offline_update_stage(&OfflineUpdateRequest {
+        .offline_update_stage_sync(&OfflineUpdateRequest {
             boot_config: boot_config.into(),
         })
         .await

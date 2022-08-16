@@ -93,7 +93,7 @@ where
 {
     type RequestContext = RequestContext;
 
-    async fn online_update_stage(
+    async fn online_update_stage_sync(
         &self,
         req_ctxt: &RequestContext,
         req: OnlineUpdateRequest,
@@ -110,7 +110,7 @@ where
         crate::update::online::stage(self.log.clone(), self.dl.clone(), req.runtime_config).await
     }
 
-    async fn online_update_commit(
+    async fn online_update_commit_sync(
         &self,
         req_ctxt: &RequestContext,
         req: OnlineUpdateRequest,
@@ -127,7 +127,7 @@ where
         crate::update::online::commit(self.log.clone(), req.runtime_config).await
     }
 
-    async fn offline_update_stage(
+    async fn offline_update_stage_sync(
         &self,
         req_ctxt: &RequestContext,
         req: OfflineUpdateRequest,

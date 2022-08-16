@@ -132,7 +132,7 @@ pub trait Metalctl: Send + Sync + 'static {
         args = "&Self::RequestContext, thrift_api::OnlineUpdateRequest",
         ret = "thrift_api::UpdateStageResponse"
     )]
-    async fn online_update_stage(
+    async fn online_update_stage_sync(
         &self,
         ctx: &Self::RequestContext,
         req: OnlineUpdateRequest,
@@ -144,7 +144,7 @@ pub trait Metalctl: Send + Sync + 'static {
         args = "&Self::RequestContext, thrift_api::OnlineUpdateRequest",
         ret = "thrift_api::OnlineUpdateCommitResponse"
     )]
-    async fn online_update_commit(
+    async fn online_update_commit_sync(
         &self,
         ctx: &Self::RequestContext,
         req: OnlineUpdateRequest,
@@ -156,7 +156,7 @@ pub trait Metalctl: Send + Sync + 'static {
         args = "&Self::RequestContext, thrift_api::OfflineUpdateRequest",
         ret = "thrift_api::UpdateStageResponse"
     )]
-    async fn offline_update_stage(
+    async fn offline_update_stage_sync(
         &self,
         ctx: &Self::RequestContext,
         req: OfflineUpdateRequest,
