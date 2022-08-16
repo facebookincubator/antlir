@@ -20,7 +20,17 @@ use thrift_wrapper::ThriftWrapper;
 use url::Url;
 use uuid::Uuid;
 
-#[derive(Debug, Display, Copy, Clone, PartialEq, Eq, ThriftWrapper)]
+#[derive(
+    Debug,
+    Display,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    ThriftWrapper
+)]
 #[thrift(metalos_thrift_host_configs::packages::Format)]
 pub enum Format {
     Sendstream,
@@ -31,15 +41,17 @@ pub(crate) mod __private {
     pub trait Sealed {}
 }
 
-pub trait Kind: Debug + Copy + Clone + PartialEq + Eq + Sync + Send + __private::Sealed {
+pub trait Kind:
+    Debug + Copy + Clone + PartialEq + Eq + PartialOrd + Ord + Sync + Send + __private::Sealed
+{
     const NAME: &'static str;
     const THRIFT: ThriftKind;
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PackageTag(String);
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Package<K: Kind, Id> {
     pub name: String,
     pub id: Id,
@@ -229,6 +241,20 @@ macro_rules! package_kind_param {
         impl Kind for $k {
             const NAME: &'static str = stringify!($i);
             const THRIFT: ThriftKind = metalos_thrift_host_configs::packages::Kind::$tk;
+        }
+
+        /// The type for each Kind is always equal with any other instances,
+        /// since there is only one value
+        impl std::cmp::PartialOrd for $k {
+            fn partial_cmp(&self, _: &Self) -> Option<std::cmp::Ordering> {
+                Some(std::cmp::Ordering::Equal)
+            }
+        }
+
+        impl std::cmp::Ord for $k {
+            fn cmp(&self, _: &Self) -> std::cmp::Ordering {
+                std::cmp::Ordering::Equal
+            }
         }
 
         pub type $i = Package<$k, Uuid>;

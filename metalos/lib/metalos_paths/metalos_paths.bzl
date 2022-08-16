@@ -47,6 +47,8 @@ metalos_paths = struct(
                 # example, sendstreams are temporarily received here before being moved to
                 # their actual destination.
                 "scratch",
+                # Persistent directories for Native Services
+                "state",
                 "service-roots",
                 "swap",
             )

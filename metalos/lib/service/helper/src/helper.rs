@@ -83,16 +83,26 @@ fn main() -> Result<()> {
 pub(crate) mod tests {
     use std::path::Path;
 
+    use metalos_host_configs::packages::Format;
+    use metalos_host_configs::packages::Service as ServicePackage;
+    use metalos_host_configs::runtime_config::Service;
     use metalos_macros::containertest;
 
     use super::*;
 
     #[containertest]
     async fn test_init() -> Result<()> {
-        let svc = ServiceInstance::new(
-            "metalos.service.demo".into(),
-            "00000000000040008000000000000001".parse().unwrap(),
-        );
+        let svc = ServiceInstance::new(Service {
+            svc: ServicePackage::new(
+                "metalos.service.demo".into(),
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("this is a valid uuid"),
+                None,
+                Format::Sendstream,
+            ),
+            config_generator: None,
+        });
         let run_uuid = svc.run_uuid();
         init(svc)?;
         assert!(

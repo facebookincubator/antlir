@@ -80,4 +80,7 @@ thrift_library(
     name = "service_state",
     languages = ["rust"],
     thrift_srcs = {"state.thrift": None},
+    deps = [
+        "//metalos/host_configs:api",
+    ],
 )

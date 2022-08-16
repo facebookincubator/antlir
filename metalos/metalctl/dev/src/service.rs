@@ -79,17 +79,15 @@ pub(crate) async fn service(log: Logger, fb: fbinit::FacebookInit, opts: Opts) -
             .await?;
 
             let mut set = ServiceSet::current(&sd).await?;
-            for svc in start.services {
-                set.insert(svc.name, svc.uuid);
+            for svc in &start.services {
+                set.insert(svc.into());
             }
             let tx = Transaction::with_next(&sd, set).await?;
             tx.commit(log, &sd).await?;
         }
         Opts::Stop(stop) => {
             let mut set = ServiceSet::current(&sd).await?;
-            for name in stop.services {
-                set.remove(&name);
-            }
+            set.retain(|svc| !stop.services.contains(&svc.name().to_string()));
             let tx = Transaction::with_next(&sd, set).await?;
             tx.commit(log, &sd).await?;
         }

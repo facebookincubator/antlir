@@ -21,6 +21,7 @@ rust_library(
         # @oss-disable: "//metalos/host_configs/facebook/proxy/if/deployments:metalos_deployment-rust", 
         # @oss-disable: "//metalos/host_configs/facebook/proxy/if/deployments:netos_deployment-rust", 
         "//metalos/lib/metalos_paths:metalos_paths",
+        "//metalos/lib/systemd:systemd",
         "//metalos/lib/thrift_wrapper:thrift_wrapper",
     ],
 )

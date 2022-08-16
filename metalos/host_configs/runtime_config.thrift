@@ -27,4 +27,4 @@ struct RuntimeConfig {
 struct Service {
   1: packages.Package svc;
   2: optional packages.Package config_generator;
-} (rust.exhaustive)
+} (rust.exhaustive, rust.ord)

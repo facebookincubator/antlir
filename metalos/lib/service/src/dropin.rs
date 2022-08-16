@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use maplit::btreemap;
+use metalos_host_configs::runtime_config::Service;
 use serde::ser::Error as _;
 use serde::ser::SerializeSeq;
 use serde::ser::Serializer;
@@ -44,8 +45,8 @@ struct UnitSection {
 
 #[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
 pub(crate) struct UnitMetadata {
-    pub(crate) native_service: String,
-    pub(crate) version: Uuid,
+    pub(crate) svc: Service,
+    pub(crate) run_uuid: Uuid,
 }
 
 fn serialize_bind_rw_paths<S>(paths: &BTreeMap<PathBuf, PathBuf>, ser: S) -> Result<S::Ok, S::Error>
@@ -98,7 +99,7 @@ impl Dropin {
             .save()
             .context("while saving ServiceInstance to the state store")?;
         let alias = token
-            .alias(Alias::custom(svc.name.clone()))
+            .alias(Alias::custom(svc.name().to_owned()))
             .context("while writing alias for ServiceInstance")?;
         let manager_unit: UnitName = format!(
             "metalos-native-service@{}.service",
@@ -112,8 +113,8 @@ impl Dropin {
                 requires: manager_unit.clone(),
                 propagates_stop_to: manager_unit,
                 description: UnitMetadata {
-                    native_service: svc.name().to_string(),
-                    version: svc.version(),
+                    svc: svc.svc.clone(),
+                    run_uuid: svc.run_uuid(),
                 },
             },
             service: ServiceSection {
@@ -135,16 +136,24 @@ impl Dropin {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use metalos_host_configs::packages::Format;
     use metalos_macros::containertest;
 
     use super::*;
 
     #[containertest]
     async fn dropin() -> Result<()> {
-        let svc = ServiceInstance::new(
-            "metalos.service.demo".into(),
-            "00000000000040008000000000000001".parse().unwrap(),
-        );
+        let svc = ServiceInstance::new(Service {
+            svc: metalos_host_configs::packages::Service::new(
+                "metalos.service.demo".into(),
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("valid uuid"),
+                None,
+                Format::Sendstream,
+            ),
+            config_generator: None,
+        });
         let di = Dropin::new(&svc)?;
         // this is partially a sanity check on the serde_systemd crate, but is
         // also useful to see that the dropin is doing what we expect
@@ -157,23 +166,24 @@ mod tests {
                  After=metalos-native-service@{alias}.service\n\
                  Requires=metalos-native-service@{alias}.service\n\
                  PropagatesStopTo=metalos-native-service@{alias}.service\n\
-                 Description={{\"native_service\":\"metalos.service.demo\",\"version\":\"00000000-0000-4000-8000-000000000001\"}}\n\
+                 Description={{\"svc\":{{\"svc\":{{\"format\":1,\"id\":{{\"uuid\":\"00000000000040008000000000000001\"}},\"kind\":5,\"name\":\"metalos.service.demo\"}}}},\"run_uuid\":\"{uuid}\"}}\n\
                  [Service]\n\
-                 RootDirectory=/run/fs/control/run/service-roots/metalos.service.demo-00000000000040008000000000000001-{uuid}\n\
+                 RootDirectory=/run/fs/control/run/service-roots/metalos.service.demo-00000000000040008000000000000001-{uuid_simple}\n\
                  Environment=CACHE_DIRECTORY=/metalos/cache\n\
                  Environment=LOGS_DIRECTORY=/metalos/logs\n\
-                 Environment=METALOS_RUN_ID={uuid}\n\
+                 Environment=METALOS_RUN_ID={uuid_simple}\n\
                  Environment=METALOS_VERSION=00000000000040008000000000000001\n\
                  Environment=RUNTIME_DIRECTORY=/metalos/runtime\n\
                  Environment=STATE_DIRECTORY=/metalos/state\n\
                  \n\
                  BindPaths=/run/fs/control/run/cache/metalos.service.demo:/metalos/cache\n\
                  BindPaths=/run/fs/control/run/logs/metalos.service.demo:/metalos/logs\n\
-                 BindPaths=/run/fs/control/run/runtime/metalos.service.demo-00000000000040008000000000000001-{uuid}:/metalos/runtime\n\
+                 BindPaths=/run/fs/control/run/runtime/metalos.service.demo-00000000000040008000000000000001-{uuid_simple}:/metalos/runtime\n\
                  BindPaths=/run/fs/control/run/state/metalos.service.demo:/metalos/state\n\
                  \n",
                 alias = systemd::escape(di.alias.to_string()),
-                uuid = svc.run_uuid.to_simple(),
+                uuid = svc.run_uuid,
+                uuid_simple = svc.run_uuid.to_simple(),
             ),
             serde_systemd::to_string(&di)?
         );

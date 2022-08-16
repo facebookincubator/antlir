@@ -107,6 +107,9 @@ mod tests {
     use std::path::Path;
 
     use anyhow::Result;
+    use metalos_host_configs::packages::Format;
+    use metalos_host_configs::packages::Service as ServicePackage;
+    use metalos_host_configs::runtime_config::Service;
     use metalos_macros::containertest;
     use nix::unistd::Group;
     use nix::unistd::User;
@@ -114,10 +117,17 @@ mod tests {
     use super::*;
 
     fn do_create() -> Result<(ServiceVolumes, ServiceInstance)> {
-        let svc = ServiceInstance::new(
-            "metalos.service.demo".into(),
-            "00000000-0000-4000-8000-000000000001".parse().unwrap(),
-        );
+        let svc = ServiceInstance::new(Service {
+            svc: ServicePackage::new(
+                "metalos.service.demo".into(),
+                "00000000000040008000000000000001"
+                    .parse()
+                    .expect("this is a valid uuid"),
+                None,
+                Format::Sendstream,
+            ),
+            config_generator: None,
+        });
         let svc_vols = ServiceVolumes::create(&svc)?;
         Ok((svc_vols, svc))
     }
