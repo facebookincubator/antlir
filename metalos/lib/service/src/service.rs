@@ -155,7 +155,7 @@ impl ServiceInstance {
     /// restarted. This method will not start the service, but it will ensure
     /// that the MetalOS drop-ins are applied and any service config generator
     /// is executed.
-    pub(crate) async fn prepare(self, sd: &Systemd) -> Result<PreparedService> {
+    pub(crate) async fn prepare(self) -> Result<PreparedService> {
         let dropin = Dropin::new(&self)
             .with_context(|| format!("while building dropin for {}", self.unit_name))?;
 
@@ -365,7 +365,7 @@ impl Transaction {
                         next.to_simple()
                     );
                     let svc = ServiceInstance::new(name.clone(), *next);
-                    to_restart.push(svc.prepare(sd).await.with_context(|| {
+                    to_restart.push(svc.prepare().await.with_context(|| {
                         format!(
                             "while preparing to move {} from {} -> {}",
                             name,
@@ -377,7 +377,7 @@ impl Transaction {
                 ServiceDiff::Start(next) => {
                     trace!(log, "preparing to start {}:{}", name, next.to_simple());
                     let svc = ServiceInstance::new(name.clone(), *next);
-                    to_start.push(svc.prepare(sd).await.with_context(|| {
+                    to_start.push(svc.prepare().await.with_context(|| {
                         format!("while preparing to start {}:{}", name, next.to_simple())
                     })?);
                 }
