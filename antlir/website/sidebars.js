@@ -209,6 +209,10 @@ module.exports = {
                 type: 'doc',
                 id: 'metalos/fb/hacking_guide/thrift',
               },
+              {
+                type: 'doc',
+                id: 'metalos/fb/hacking_guide/conveyors',
+              },
             ],
           },
         ]),
