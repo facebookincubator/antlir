@@ -17,15 +17,26 @@
 //! necessary.
 
 use std::fmt::Debug;
+use std::io::Cursor;
 use std::marker::PhantomData;
 use std::os::unix::fs::symlink;
+use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
+use bufsize::SizeCounter;
 use bytes::Bytes;
+use bytes::BytesMut;
+use fbthrift::binary_protocol::BinaryProtocolDeserializer;
+use fbthrift::binary_protocol::BinaryProtocolSerializer;
+use fbthrift::simplejson_protocol::SimpleJsonProtocolDeserializer;
+use fbthrift::simplejson_protocol::SimpleJsonProtocolSerializer;
+use fbthrift::Deserialize;
+use fbthrift::Serialize;
 use once_cell::sync::Lazy;
 use sha2::Digest;
 use sha2::Sha256;
@@ -49,20 +60,26 @@ static STATE_BASE: Lazy<PathBuf> = Lazy::new(|| {
 mod __private {
     pub trait Sealed {}
 }
-trait ThriftState = fbthrift::Serialize<
-        fbthrift::simplejson_protocol::SimpleJsonProtocolSerializer<bufsize::SizeCounter>,
-    > + fbthrift::Serialize<
-        fbthrift::simplejson_protocol::SimpleJsonProtocolSerializer<bytes::BytesMut>,
-    > + fbthrift::Deserialize<
-        fbthrift::simplejson_protocol::SimpleJsonProtocolDeserializer<std::io::Cursor<Bytes>>,
-    >;
+trait ThriftState = Serialize<SimpleJsonProtocolSerializer<SizeCounter>>
+    + Serialize<SimpleJsonProtocolSerializer<BytesMut>>
+    + Deserialize<SimpleJsonProtocolDeserializer<Cursor<Bytes>>>
+    + Serialize<BinaryProtocolSerializer<SizeCounter>>
+    + Serialize<BinaryProtocolSerializer<BytesMut>>
+    + Deserialize<BinaryProtocolDeserializer<Cursor<Bytes>>>;
 
 /// Any type that can be serialized to disk and loaded later with then unique id.
 pub trait State: Sized + Debug {
     /// Convert this state object to a JSON representation
-    fn to_json(&self) -> Result<Vec<u8>>;
+    fn to_json(&self) -> Vec<u8>;
+
     /// Convert a JSON representation into this state type
     fn from_json(bytes: Vec<u8>) -> Result<Self>;
+
+    /// Convert this state object to a binary representation
+    fn to_bin(&self) -> Vec<u8>;
+
+    /// Convert a binary representation into this state type
+    fn from_bin(bytes: Vec<u8>) -> Result<Self>;
 
     /// Load the staged version of this staged object, if any.
     fn staged() -> Result<Option<Self>> {
@@ -94,11 +111,20 @@ impl<T> State for T
 where
     T: Sized + Debug + ThriftState,
 {
-    fn to_json(&self) -> Result<Vec<u8>> {
-        Ok(fbthrift::simplejson_protocol::serialize(self).to_vec())
+    fn to_json(&self) -> Vec<u8> {
+        fbthrift::simplejson_protocol::serialize(self).to_vec()
     }
+
     fn from_json(bytes: Vec<u8>) -> Result<Self> {
         fbthrift::simplejson_protocol::deserialize(bytes)
+    }
+
+    fn to_bin(&self) -> Vec<u8> {
+        fbthrift::binary_protocol::serialize(self).to_vec()
+    }
+
+    fn from_bin(bytes: Vec<u8>) -> Result<Self> {
+        fbthrift::binary_protocol::deserialize(bytes)
     }
 }
 
@@ -196,9 +222,16 @@ pub enum Alias<S> {
 }
 
 impl<S> Alias<S> {
-    fn path(&self) -> PathBuf {
-        let filename = format!("{}-{}.json", std::any::type_name::<S>(), self);
-        STATE_BASE.join(filename)
+    fn base_path(&self) -> PathBuf {
+        STATE_BASE.join(format!("{}-{}", std::any::type_name::<S>(), self))
+    }
+
+    fn json_path(&self) -> PathBuf {
+        self.base_path().with_extension("json")
+    }
+
+    fn binary_path(&self) -> PathBuf {
+        self.base_path().with_extension("bin")
     }
 
     pub fn custom(alias: String) -> Self {
@@ -259,15 +292,16 @@ where
         Self(hash, PhantomData)
     }
 
-    fn path(&self) -> PathBuf {
-        // the type name is used to provide somewhat human-readable information
-        // about the files on disk (eg if someone runs `ls`)
-        let filename = format!(
-            "{}-{}.json",
-            std::any::type_name::<S>(),
-            hex::encode(self.0)
-        );
-        STATE_BASE.join(filename)
+    fn base_path(&self) -> PathBuf {
+        STATE_BASE.join(self.to_string())
+    }
+
+    fn json_path(&self) -> PathBuf {
+        self.base_path().with_extension("json")
+    }
+
+    fn binary_path(&self) -> PathBuf {
+        self.base_path().with_extension("bin")
     }
 
     /// Mark this token as the staged version of a state item.
@@ -293,7 +327,7 @@ where
 
     /// Get a file:// uri that points to this config
     pub fn uri(&self) -> Url {
-        Url::from_file_path(self.path())
+        Url::from_file_path(self.json_path())
             .expect("Token::path is always absolute so this cannot fail")
     }
 }
@@ -304,13 +338,20 @@ fn save<S>(state: &S) -> Result<Token<S>>
 where
     S: State,
 {
-    let state = state
-        .to_json()
-        .with_context(|| format!("while serializing {:?}", state))?;
-    let sha: [u8; 32] = Sha256::digest(&state).into();
+    let binary = state.to_bin();
+    let json = state.to_json();
+    let sha: [u8; 32] = Sha256::digest(&binary).into();
     let token = Token::new(sha);
-    let p = token.path();
-    std::fs::write(&p, &state).with_context(|| format!("while serializing to {}", p.display()))?;
+
+    let p = token.binary_path();
+    std::fs::write(&p, &binary)
+        .with_context(|| format!("while serializing binary to {}", p.display()))?;
+
+    // also save to JSON for compatibility during binary rollout and
+    // human-readability
+    let p = token.json_path();
+    std::fs::write(&p, &json)
+        .with_context(|| format!("while serializing json to {}", p.display()))?;
     Ok(token)
 }
 
@@ -319,20 +360,24 @@ fn alias<S>(token: Token<S>, alias: Alias<S>) -> Result<Alias<S>>
 where
     S: State,
 {
-    let alias_path = alias.path();
-    std::fs::remove_file(&alias_path)
-        .or_else(|e| match e.kind() {
-            std::io::ErrorKind::NotFound => Ok(()),
-            _ => Err(e),
-        })
-        .with_context(|| format!("while removing existing alias {}", alias_path.display()))?;
-    symlink(token.path(), &alias_path).with_context(|| {
-        format!(
-            "while symlinking alias {} -> {}",
-            alias_path.display(),
-            token.path().display()
-        )
-    })?;
+    let force_symlink = |alias: &Path, target: &Path| {
+        std::fs::remove_file(&alias)
+            .or_else(|e| match e.kind() {
+                std::io::ErrorKind::NotFound => Ok(()),
+                _ => Err(e),
+            })
+            .with_context(|| format!("while removing existing alias {}", alias.display()))?;
+        symlink(target, alias).with_context(|| {
+            format!(
+                "while symlinking alias {} -> {}",
+                alias.display(),
+                target.display()
+            )
+        })?;
+        Ok::<_, Error>(())
+    };
+    force_symlink(&alias.binary_path(), &token.binary_path())?;
+    force_symlink(&alias.json_path(), &token.json_path())?;
     Ok(alias)
 }
 
@@ -341,17 +386,29 @@ fn load<S>(token: Token<S>) -> Result<Option<S>>
 where
     S: State,
 {
-    match std::fs::read(token.path()) {
+    match std::fs::read(token.binary_path()) {
         Err(e) => {
             match e.kind() {
-                std::io::ErrorKind::NotFound => Ok(None),
+                std::io::ErrorKind::NotFound => {
+                    // for compatibility during rollout, fallback to JSON
+                    match std::fs::read(token.json_path()) {
+                        Err(e) => match e.kind() {
+                            std::io::ErrorKind::NotFound => Ok(None),
+                            _ => Err(anyhow::Error::from(e)
+                                .context(format!("while opening {}", token.json_path().display()))),
+                        },
+                        Ok(bytes) => S::from_json(bytes).map(Some).with_context(|| {
+                            format!("while deserializing {}", token.json_path().display())
+                        }),
+                    }
+                }
                 _ => Err(anyhow::Error::from(e)
-                    .context(format!("while opening {}", token.path().display()))),
+                    .context(format!("while opening {}", token.binary_path().display()))),
             }
         }
-        Ok(bytes) => S::from_json(bytes)
+        Ok(bytes) => S::from_bin(bytes)
             .map(Some)
-            .with_context(|| format!("while deserializing {}", token.path().display())),
+            .with_context(|| format!("while deserializing {}", token.binary_path().display())),
     }
 }
 
@@ -360,13 +417,25 @@ fn load_alias<S>(alias: Alias<S>) -> Result<Option<S>>
 where
     S: State,
 {
-    let alias_path = alias.path();
+    let alias_path = alias.binary_path();
     match std::fs::read(&alias_path) {
         Err(e) => match e.kind() {
-            std::io::ErrorKind::NotFound => Ok(None),
+            std::io::ErrorKind::NotFound => {
+                // fallback to json during migration
+                let alias_path = alias.json_path();
+                match std::fs::read(&alias_path) {
+                    Err(e) => match e.kind() {
+                        std::io::ErrorKind::NotFound => Ok(None),
+                        _ => Err(e).context(format!("while opening {}", alias_path.display())),
+                    },
+                    Ok(bytes) => S::from_json(bytes)
+                        .map(Some)
+                        .with_context(|| format!("while deserializing {}", alias_path.display())),
+                }
+            }
             _ => Err(e).context(format!("while opening {}", alias_path.display())),
         },
-        Ok(bytes) => S::from_json(bytes)
+        Ok(bytes) => S::from_bin(bytes)
             .map(Some)
             .with_context(|| format!("while deserializing {}", alias_path.display())),
     }
@@ -466,6 +535,30 @@ mod tests {
         let token = t.save().context("while saving")?;
         let loaded = Example::load(token).context("while loading")?;
         assert_eq!(Some(t), loaded);
+        Ok(())
+    }
+
+    #[test]
+    fn json_fallback() -> Result<()> {
+        std::fs::create_dir_all(STATE_BASE.deref())?;
+        let t = Example {
+            hello: "world".into(),
+        };
+        let token = t.save().context("while saving")?;
+        let alias = alias(token, Alias::Current)?;
+        // remove binary versions
+        std::fs::remove_file(token.binary_path()).context("while deleting binary token")?;
+        std::fs::remove_file(alias.binary_path()).context("while deleting binary alias")?;
+
+        // should still load
+        let loaded = Example::load(token)
+            .context("while loading")?
+            .context("failed to load by token")?;
+        assert_eq!(t, loaded);
+        let loaded = Example::current()
+            .context("while loading")?
+            .context("failed to load by alias")?;
+        assert_eq!(t, loaded);
         Ok(())
     }
 }
