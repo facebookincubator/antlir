@@ -36,7 +36,7 @@ async fn main(fb: fbinit::FacebookInit) -> Result<()> {
     let opts = Opts::parse();
     let log = Logger::root(slog_glog_fmt::default_drain(), o!());
     match opts {
-        Opts::Offline(opts) => offline::offline(log, fb, opts).await,
+        Opts::Offline(opts) => offline::offline(log, opts).await,
         Opts::Service(opts) => service::service(log, fb, opts).await,
     }
 }

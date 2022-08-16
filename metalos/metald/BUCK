@@ -26,6 +26,7 @@ rust_binary(
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/host_configs:Metalctl-metadata-sys",
         "//metalos/host_configs:api-rust",
+        "//metalos/lib/kexec:metalos_kexec",
         "//metalos/lib/package_download:package_download",
         "//metalos/lib/service:service",
         "//metalos/lib/state:state",

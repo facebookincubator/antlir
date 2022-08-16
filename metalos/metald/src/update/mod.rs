@@ -5,4 +5,5 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+pub(crate) mod offline;
 pub(crate) mod online;
