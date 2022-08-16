@@ -25,7 +25,7 @@ use futures::StreamExt;
 use futures::TryStream;
 use futures::TryStreamExt;
 use metalos_host_configs::packages;
-use metalos_host_configs::packages::Format;
+use metalos_host_configs::packages::generic::Format;
 use slog::debug;
 use slog::Logger;
 use tempfile::NamedTempFile;

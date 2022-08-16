@@ -136,7 +136,6 @@ impl Dropin {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
-    use metalos_host_configs::packages::Format;
     use metalos_macros::containertest;
 
     use super::*;
@@ -150,7 +149,6 @@ mod tests {
                     .parse()
                     .expect("valid uuid"),
                 None,
-                Format::Sendstream,
             ),
             config_generator: None,
         });
