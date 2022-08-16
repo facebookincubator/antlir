@@ -12,6 +12,8 @@ use anyhow::Error;
 use anyhow::Result;
 use async_trait::async_trait;
 use fbinit::FacebookInit;
+#[cfg(not(facebook))]
+use fbthrift::RequestContext;
 use identity::Identity;
 use metalos_host_configs::api::Metalctl;
 use metalos_host_configs::api::OnlineUpdateCommitError;
@@ -21,6 +23,7 @@ use metalos_host_configs::api::UpdateStageError;
 use metalos_host_configs::api::UpdateStageResponse;
 use package_download::DefaultDownloader;
 use slog::Logger;
+#[cfg(facebook)]
 use srserver::RequestContext;
 
 use crate::acl::PermissionsChecker;

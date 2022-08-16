@@ -10,7 +10,6 @@ rust_library(
         "strum_macros",
         "url",
         "uuid",
-        # @oss-disable: "//common/rust/srserver:srserver", 
         # @oss-disable: "//configerator/structs/hardware:modelmaps-rust", 
         # @oss-disable: "//ee_provisioning/if:corp_provisioning-rust", 
         "//metalos/host_configs:api-rust",

@@ -181,6 +181,18 @@ pub trait Svc: Send + Sync + 'static {
     async fn some_method(&self, arg: MyStruct) -> Result<MyStruct, Exn>;
 }
 
+#[thrift_server(thrift = "test_if::server::SvcWithContext", request_context)]
+pub trait SvcWithContext: Send + Sync + 'static {
+    type RequestContext: Send + Sync + 'static;
+
+    #[thrift(
+        args = "&Self::RequestContext, test_if::MyStruct",
+        ret = "test_if::MyStruct"
+    )]
+    async fn some_method(&self, ctx: &Self::RequestContext, arg: MyStruct)
+    -> Result<MyStruct, Exn>;
+}
+
 #[derive(Clone)]
 struct MyImpl {}
 
@@ -197,7 +209,21 @@ impl Svc for MyImpl {
     }
 }
 
+#[async_trait]
+impl SvcWithContext for MyImpl {
+    type RequestContext = ();
+
+    async fn some_method(
+        &self,
+        _ctx: &Self::RequestContext,
+        arg: MyStruct,
+    ) -> Result<MyStruct, Exn> {
+        <Self as Svc>::some_method(self, arg).await
+    }
+}
+
 sa::assert_impl_all!(SvcServer<MyImpl>: test_if::server::Svc);
+sa::assert_impl_all!(SvcWithContextServer<MyImpl>: test_if::server::SvcWithContext);
 
 #[tokio::test]
 async fn thrift_service() -> Result<()> {
@@ -214,20 +240,28 @@ async fn thrift_service() -> Result<()> {
     };
 
     assert_eq!(
-        test_if::server::Svc::some_method(&SvcServer(svc.clone()), input.clone().into())
-            .await
-            .expect("server response should pass"),
+        test_if::server::SvcWithContext::some_method(
+            &SvcWithContextServer::new(svc.clone()),
+            &(),
+            input.clone().into()
+        )
+        .await
+        .expect("server response should pass"),
         input.clone().into_thrift(),
     );
 
     // func throws a nice error
     let mut bad = input.clone();
     bad.number = 43;
-    match test_if::server::Svc::some_method(&SvcServer(svc.clone()), bad.into())
-        .await
-        .unwrap_err()
+    match test_if::server::SvcWithContext::some_method(
+        &SvcWithContextServer::new(svc.clone()),
+        &(),
+        bad.into(),
+    )
+    .await
+    .unwrap_err()
     {
-        test_if::services::svc::SomeMethodExn::e(e) => assert_eq!(
+        test_if::services::svc_with_context::SomeMethodExn::e(e) => assert_eq!(
             e,
             test_if::Exn {
                 msg: "only 42 is allowed".into()
@@ -239,14 +273,20 @@ async fn thrift_service() -> Result<()> {
     // input cannot be converted to safe struct
     let mut input_cannot_convert = input.clone().into_thrift();
     input_cannot_convert.url = "notaurl".into();
-    match test_if::server::Svc::some_method(&SvcServer(svc.clone()), input_cannot_convert)
-        .await
-        .unwrap_err()
+    match test_if::server::SvcWithContext::some_method(
+        &SvcWithContextServer::new(svc.clone()),
+        &(),
+        input_cannot_convert,
+    )
+    .await
+    .unwrap_err()
     {
-        test_if::services::svc::SomeMethodExn::ApplicationException(aex) => assert_eq!(
-            aex.message,
-            "argument 'arg' could not be converted to rust repr: error in field url: 'notaurl' is not a valid url"
-        ),
+        test_if::services::svc_with_context::SomeMethodExn::ApplicationException(aex) => {
+            assert_eq!(
+                aex.message,
+                "argument 'arg' could not be converted to rust repr: error in field url: 'notaurl' is not a valid url"
+            )
+        }
         other => panic!("expected ApplicationException, got {:?}", other),
     };
 

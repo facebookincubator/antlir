@@ -30,3 +30,7 @@ safe exception Exn {
 service Svc {
   MyStruct some_method(1: MyStruct arg) throws (1: Exn e);
 }
+
+service SvcWithContext {
+  MyStruct some_method(1: MyStruct arg) throws (1: Exn e);
+} (rust.request_context)
