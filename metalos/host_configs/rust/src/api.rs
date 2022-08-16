@@ -5,11 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#[cfg(not(facebook))]
-use fbthrift::RequestContext;
 use metalos_thrift_host_configs::api as thrift_api;
-#[cfg(facebook)]
-use srserver::RequestContext;
 use thrift_wrapper::thrift_server;
 use thrift_wrapper::ThriftWrapper;
 
@@ -120,33 +116,33 @@ pub struct OfflineUpdateCommitError {
 
 #[thrift_server(
     thrift = "metalos_thrift_host_configs::api::server::Metalctl",
-    request_context = "RequestContext"
+    request_context
 )]
 pub trait Metalctl: Send + Sync + 'static {
-    type RequestContext;
+    type RequestContext: Sync;
 
     // Prepare an online update to change the running versions of native
     // services.
     // Corresponds to `metalctl online-update stage`
     #[thrift(
-        args = "&RequestContext, thrift_api::OnlineUpdateRequest",
+        args = "&Self::RequestContext, thrift_api::OnlineUpdateRequest",
         ret = "thrift_api::UpdateStageResponse"
     )]
     async fn online_update_stage(
         &self,
-        ctx: &RequestContext,
+        ctx: &Self::RequestContext,
         req: OnlineUpdateRequest,
     ) -> Result<UpdateStageResponse, UpdateStageError>;
 
     // Commit a previously-prepared online update.
     // Corresponds to `metalctl online-update commit`
     #[thrift(
-        args = "&RequestContext, thrift_api::OnlineUpdateRequest",
+        args = "&Self::RequestContext, thrift_api::OnlineUpdateRequest",
         ret = "thrift_api::OnlineUpdateCommitResponse"
     )]
     async fn online_update_commit(
         &self,
-        ctx: &RequestContext,
+        ctx: &Self::RequestContext,
         req: OnlineUpdateRequest,
     ) -> Result<OnlineUpdateCommitResponse, OnlineUpdateCommitError>;
 

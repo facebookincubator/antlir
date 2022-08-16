@@ -400,7 +400,8 @@ pub fn thrift_server(attr: TokenStream, item: TokenStream) -> TokenStream {
 #[derive(FromMeta)]
 struct ThriftServer {
     thrift: syn::TypePath,
-    request_context: Option<syn::TypePath>,
+    #[darling(default)]
+    request_context: bool,
 }
 
 #[derive(FromMeta)]
@@ -532,18 +533,39 @@ fn expand_thrift_server(
         .collect();
 
     let maybe_request_context = match thrift_attrs.request_context {
-        Some(ty) => quote! { type RequestContext = #ty; },
-        None => quote! {},
+        true => quote! {
+            type RequestContext = C;
+        },
+        false => quote! {},
+    };
+
+    let wrapped_trait_bounds = match thrift_attrs.request_context {
+        true => quote! { #wrapped_trait_ident<RequestContext = C> },
+        false => quote! { #wrapped_trait_ident },
     };
 
     Ok(quote! {
         #[::thrift_wrapper::__deps::async_trait::async_trait]
         #wrapped_trait
 
-        pub struct #server_struct_ident<S: #wrapped_trait_ident>(pub S);
+        pub struct #server_struct_ident<S, C = ()>(S, ::std::marker::PhantomData<C>)
+            where S: #wrapped_trait_bounds,
+                  C: ::std::marker::Sync + ::std::marker::Send + 'static;
+
+        impl<S, C> #server_struct_ident<S, C>
+            where S: #wrapped_trait_bounds,
+                  C: ::std::marker::Sync + ::std::marker::Send + 'static,
+        {
+            pub fn new(s: S) -> Self {
+                Self(s, ::std::marker::PhantomData)
+            }
+        }
 
         #[::thrift_wrapper::__deps::async_trait::async_trait]
-        impl<S: #wrapped_trait_ident> #thrift_trait for #server_struct_ident<S> {
+        impl<S, C> #thrift_trait for #server_struct_ident<S, C>
+            where S: #wrapped_trait_bounds,
+                  C: ::std::marker::Sync + ::std::marker::Send + 'static,
+        {
             #maybe_request_context
 
             #(#wrap_funcs)*
