@@ -322,6 +322,7 @@ pub mod generic {
 
     #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper, Display)]
     #[thrift(metalos_thrift_host_configs::packages::Kind)]
+    #[strum(serialize_all = "snake_case")]
     pub enum Kind {
         Rootfs,
         Kernel,
@@ -385,7 +386,7 @@ pub mod generic {
         /// installed on the local disk.
         pub fn path(&self) -> PathBuf {
             metalos_paths::images::base()
-                .join(self.kind.to_string().to_lowercase().replace('_', "-"))
+                .join(self.kind.to_string())
                 .join(self.identifier())
         }
     }
@@ -496,5 +497,34 @@ mod test {
             .into()
         );
         Ok(())
+    }
+
+    #[test]
+    fn path() {
+        let id = Uuid::new_v4();
+        assert_eq!(
+            metalos_paths::images::rootfs().join(format!("metalos.rootfs:{}", id.to_simple())),
+            Rootfs {
+                name: "metalos.rootfs".into(),
+                id,
+                override_uri: None,
+                format: Format::Sendstream,
+                kind: PhantomData,
+            }
+            .path(),
+        );
+
+        assert_eq!(
+            metalos_paths::images::service_config_generator()
+                .join(format!("metalos.demo.config:{}", id.to_simple())),
+            ServiceConfigGenerator {
+                name: "metalos.demo.config".into(),
+                id,
+                override_uri: None,
+                format: Format::File,
+                kind: PhantomData,
+            }
+            .path(),
+        );
     }
 }

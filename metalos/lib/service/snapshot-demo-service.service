@@ -8,3 +8,4 @@ Type=oneshot
 ExecStart=btrfs subvolume snapshot /demo-service /run/fs/control/image/service/metalos.service.demo:00000000000040008000000000000001
 ExecStart=btrfs subvolume snapshot /demo-service /run/fs/control/image/service/metalos.service.demo:00000000000040008000000000000002
 ExecStart=btrfs subvolume snapshot /demo-service /run/fs/control/image/service/metalos.service.demo:00000000000040008000000000000003
+ExecStart=btrfs subvolume snapshot /demo-service-config-generator /run/fs/control/image/service_config_generator/metalos.service.demo.config:00000000000040008000000000000001

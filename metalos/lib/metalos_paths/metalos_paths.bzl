@@ -23,7 +23,7 @@ metalos_paths = struct(
                 "kernel",
                 "rootfs",
                 "service",
-                "service-config-generator",
+                "service_config_generator",
             )
         }
     ),
