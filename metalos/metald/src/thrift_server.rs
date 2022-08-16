@@ -16,6 +16,8 @@ use fbinit::FacebookInit;
 use fbthrift::RequestContext;
 use identity::Identity;
 use metalos_host_configs::api::Metalctl;
+use metalos_host_configs::api::OfflineUpdateCommitError;
+use metalos_host_configs::api::OfflineUpdateRequest;
 use metalos_host_configs::api::OnlineUpdateCommitError;
 use metalos_host_configs::api::OnlineUpdateCommitResponse;
 use metalos_host_configs::api::OnlineUpdateRequest;
@@ -123,5 +125,39 @@ where
             }
         };
         crate::update::online::commit(self.log.clone(), req.runtime_config).await
+    }
+
+    async fn offline_update_stage(
+        &self,
+        req_ctxt: &RequestContext,
+        req: OfflineUpdateRequest,
+    ) -> Result<UpdateStageResponse, UpdateStageError> {
+        match self.check_identity(req_ctxt) {
+            Ok(()) => (),
+            Err(error) => {
+                return Err(UpdateStageError {
+                    message: error.to_string(),
+                    ..Default::default()
+                });
+            }
+        };
+        crate::update::offline::stage(self.log.clone(), self.dl.clone(), req.boot_config).await
+    }
+
+    async fn offline_update_commit(
+        &self,
+        req_ctxt: &RequestContext,
+        req: OfflineUpdateRequest,
+    ) -> Result<(), OfflineUpdateCommitError> {
+        match self.check_identity(req_ctxt) {
+            Ok(()) => (),
+            Err(error) => {
+                return Err(OfflineUpdateCommitError {
+                    message: error.to_string(),
+                    ..Default::default()
+                });
+            }
+        };
+        crate::update::offline::commit(self.log.clone(), req.boot_config).await
     }
 }

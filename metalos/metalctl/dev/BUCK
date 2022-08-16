@@ -13,7 +13,6 @@ rust_binary(
         "uuid",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
-        "//metalos/host_configs/lifecycle:lifecycle",
         "//metalos/host_configs/rust:metalos_host_configs",
         "//metalos/lib/package_download:package_download",
         "//metalos/lib/service:service",

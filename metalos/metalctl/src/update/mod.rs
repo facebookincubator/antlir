@@ -20,7 +20,6 @@ use clap::Parser;
 use fbinit::FacebookInit;
 use fbthrift::simplejson_protocol::Serializable;
 use metalos_host_configs::api::OfflineUpdateRequest;
-use slog::Logger;
 use state::State;
 
 mod offline;
@@ -138,17 +137,15 @@ impl CommitOpts {
 async fn run_subcommand<F, Fut, Input, Return, Error>(
     func: F,
     metald: MetaldClient,
-    log: Logger,
-    fb: fbinit::FacebookInit,
     input: Input,
 ) -> anyhow::Result<()>
 where
     Return: Serializable,
     Error: std::fmt::Debug + Serializable,
-    F: Fn(Logger, MetaldClient, fbinit::FacebookInit, Input) -> Fut,
+    F: Fn(MetaldClient, Input) -> Fut,
     Fut: Future<Output = std::result::Result<Return, Error>>,
 {
-    match func(log, metald, fb, input).await {
+    match func(metald, input).await {
         Ok(resp) => {
             let output = fbthrift::simplejson_protocol::serialize(&resp);
             std::io::stdout()
@@ -169,17 +166,17 @@ where
 }
 
 impl Update {
-    pub(crate) async fn subcommand(self, log: Logger, fb: fbinit::FacebookInit) -> Result<()> {
+    pub(crate) async fn subcommand(self, fb: fbinit::FacebookInit) -> Result<()> {
         match self {
             Self::Offline(sub) => {
                 let req: OfflineUpdateRequest = sub.load_input()?;
                 let metald = sub.client(fb)?;
                 match sub {
                     Subcommand::Stage(_) => {
-                        run_subcommand(offline::stage, metald, log, fb, req.boot_config).await
+                        run_subcommand(offline::stage, metald, req.boot_config).await
                     }
                     Subcommand::Commit(_) => {
-                        run_subcommand(offline::commit, metald, log, fb, req.boot_config).await
+                        run_subcommand(offline::commit, metald, req.boot_config).await
                     }
                 }
             }
@@ -188,10 +185,10 @@ impl Update {
                 let metald = sub.client(fb)?;
                 match sub {
                     Subcommand::Stage(_) => {
-                        run_subcommand(online::stage, metald, log, fb, runtime_config).await
+                        run_subcommand(online::stage, metald, runtime_config).await
                     }
                     Subcommand::Commit(_) => {
-                        run_subcommand(online::commit, metald, log, fb, runtime_config).await
+                        run_subcommand(online::commit, metald, runtime_config).await
                     }
                 }
             }

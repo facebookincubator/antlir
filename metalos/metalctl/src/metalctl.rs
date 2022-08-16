@@ -54,7 +54,7 @@ struct MetalCtl {
 async fn run_command(options: MetalCtl, log: Logger, fb: fbinit::FacebookInit) -> Result<()> {
     match options.command {
         Subcommand::SendEvent(opts) => send_event::cmd_send_event(log, opts).await,
-        Subcommand::Update(update) => update.subcommand(log, fb).await,
+        Subcommand::Update(update) => update.subcommand(fb).await,
         Subcommand::External(mut args) => {
             let bin = format!("metalctl-{}", args.remove(0));
             trace!(log, "exec-ing external command {}", bin);

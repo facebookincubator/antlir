@@ -11,10 +11,12 @@ use std::io::Write;
 use std::os::unix::io::FromRawFd;
 use std::os::unix::process::CommandExt;
 
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use metalos_host_configs::api::OfflineUpdateRequest;
+use metalos_host_configs::boot_config::BootConfig;
 use metalos_host_configs::host::HostConfig;
 use metalos_host_configs::packages::File as FilePackage;
 use metalos_host_configs::packages::Sendstream;
@@ -36,7 +38,28 @@ pub(crate) struct Opts {
     kernel_cmdline: Option<String>,
 }
 
-pub(crate) async fn offline(log: Logger, fb: fbinit::FacebookInit, opts: Opts) -> Result<()> {
+fn build_stdin(boot_config: BootConfig) -> Result<File> {
+    let req = OfflineUpdateRequest { boot_config };
+    let input = fbthrift::simplejson_protocol::serialize(&req);
+
+    let mut stdin = unsafe {
+        File::from_raw_fd(
+            nix::sys::memfd::memfd_create(
+                &CString::new("input")
+                    .expect("creating cstr can never fail with this static input"),
+                nix::sys::memfd::MemFdCreateFlag::empty(),
+            )
+            .context("while creating BootConfig memfd")?,
+        )
+    };
+    stdin
+        .write_all(&input)
+        .context("while writing BootConfig to memfd")?;
+    stdin.rewind().context("while rewinding BootConfig memfd")?;
+    Ok(stdin)
+}
+
+pub(crate) async fn offline(log: Logger, opts: Opts) -> Result<()> {
     let mut boot_config = HostConfig::current()
         .context("while loading current HostConfig")?
         .context("no committed HostConfig")?
@@ -60,35 +83,21 @@ pub(crate) async fn offline(log: Logger, fb: fbinit::FacebookInit, opts: Opts) -
         boot_config.initrd = initrd.into();
     }
 
-    let dl = package_download::default_downloader(fb)
-        .context("while creating default PackageDownloader")?;
-    lifecycle::stage(log, dl, boot_config.clone())
-        .await
-        .context("while staging BootConfig packages")?;
-
-    let req = OfflineUpdateRequest { boot_config };
-    let input = fbthrift::simplejson_protocol::serialize(&req);
-
-    let mut stdin = unsafe {
-        File::from_raw_fd(
-            nix::sys::memfd::memfd_create(
-                &CString::new("input")
-                    .expect("creating cstr can never fail with this static input"),
-                nix::sys::memfd::MemFdCreateFlag::empty(),
-            )
-            .context("while creating BootConfig memfd")?,
-        )
-    };
-    stdin
-        .write_all(&input)
-        .context("while writing BootConfig to memfd")?;
-    stdin.rewind().context("while rewinding BootConfig memfd")?;
-
+    let status = std::process::Command::new("metalctl")
+        .arg("offline-update")
+        .arg("stage")
+        .arg("-")
+        .stdin(build_stdin(boot_config.clone())?)
+        .spawn()
+        .context("while spawning 'metalctl offline-update stage'")?
+        .wait()
+        .context("while waiting for 'metalctl offline-update stage'")?;
+    ensure!(status.success(), "metalctl offline-update failed");
     Err(std::process::Command::new("metalctl")
         .arg("offline-update")
         .arg("commit")
         .arg("-")
-        .stdin(stdin)
+        .stdin(build_stdin(boot_config)?)
         .exec())
     .context("while execing into 'metalctl offline-update commit'")
 }

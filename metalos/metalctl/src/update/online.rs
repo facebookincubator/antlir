@@ -11,12 +11,9 @@ use metalos_thrift_host_configs::api::OnlineUpdateCommitResponse;
 use metalos_thrift_host_configs::api::OnlineUpdateRequest;
 use metalos_thrift_host_configs::api::UpdateStageError;
 use metalos_thrift_host_configs::api::UpdateStageResponse;
-use slog::Logger;
 
 pub(super) async fn stage(
-    _log: Logger,
     metald: super::MetaldClient,
-    _fb: fbinit::FacebookInit,
     runtime_config: RuntimeConfig,
 ) -> Result<UpdateStageResponse, UpdateStageError> {
     Ok(metald
@@ -28,9 +25,7 @@ pub(super) async fn stage(
 }
 
 pub(super) async fn commit(
-    _log: Logger,
     metald: super::MetaldClient,
-    _fb: fbinit::FacebookInit,
     runtime_config: RuntimeConfig,
 ) -> Result<OnlineUpdateCommitResponse, OnlineUpdateCommitError> {
     Ok(metald

@@ -114,6 +114,10 @@ pub struct OfflineUpdateCommitError {
     pub message: String,
 }
 
+/// The [thrift] macro does not like a literal "()", so create this alias
+/// instead.
+pub type NoReturn = ();
+
 #[thrift_server(
     thrift = "metalos_thrift_host_configs::api::server::Metalctl",
     request_context
@@ -146,15 +150,27 @@ pub trait Metalctl: Send + Sync + 'static {
         req: OnlineUpdateRequest,
     ) -> Result<OnlineUpdateCommitResponse, OnlineUpdateCommitError>;
 
-    // // Prepare an offline update to change the host's BootConfig.  Corresponds to
-    // // `metalctl offline-update stage`
-    // async fn offline_update_stage(
-    //     req: OfflineUpdateRequest,
-    // ) -> Result<UpdateStageResponse, UpdateStageError>;
+    // Prepare an offline update to change the host's BootConfig.  Corresponds to
+    // `metalctl offline-update stage`
+    #[thrift(
+        args = "&Self::RequestContext, thrift_api::OfflineUpdateRequest",
+        ret = "thrift_api::UpdateStageResponse"
+    )]
+    async fn offline_update_stage(
+        &self,
+        ctx: &Self::RequestContext,
+        req: OfflineUpdateRequest,
+    ) -> Result<UpdateStageResponse, UpdateStageError>;
 
-    // // Commit a previously-prepared offline update.
-    // // Corresponds to `metalctl offline-update commit`
-    // async fn offline_update_commit(
-    //     req: OfflineUpdateRequest,
-    // ) -> Result<(), OfflineUpdateCommitError>;
+    // Commit a previously-prepared offline update.
+    // Corresponds to `metalctl offline-update commit`
+    #[thrift(
+        args = "&Self::RequestContext, thrift_api::OfflineUpdateRequest",
+        ret = "NoReturn"
+    )]
+    async fn offline_update_commit(
+        &self,
+        ctx: &Self::RequestContext,
+        req: OfflineUpdateRequest,
+    ) -> Result<(), OfflineUpdateCommitError>;
 }
