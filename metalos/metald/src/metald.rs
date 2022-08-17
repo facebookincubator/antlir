@@ -21,11 +21,12 @@ use plain_systemd::daemon::Listening;
 mod acl;
 mod thrift_server;
 mod update;
-use crate::acl::PermissionsChecker;
-use crate::thrift_server::Metald;
 
 #[cfg(facebook)]
 mod facebook;
+
+use acl::PermissionsChecker;
+use thrift_server::Metald;
 
 #[derive(Debug, Parser)]
 #[clap(name = "Metald Thrift Service")]
@@ -44,8 +45,7 @@ pub(crate) enum ListenOn {
     Port(u16),
 }
 
-#[fbinit::main]
-async fn main(fb: FacebookInit) -> Result<()> {
+pub async fn start_service(fb: FacebookInit, _netos: bool) -> Result<()> {
     // Process commandline flags
     let args = Arguments::parse();
 
