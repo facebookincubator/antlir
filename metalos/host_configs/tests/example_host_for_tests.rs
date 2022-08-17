@@ -105,7 +105,7 @@ pub fn example_host_for_tests() -> HostConfig {
             },
             root_disk_config: RootDiskConfiguration::single_serial(SingleDiskSerial {
                 serial: "deadbeef".into(),
-                config: DiskConfiguration {},
+                config: DiskConfiguration { sector_size: 512 },
             }),
             #[cfg(facebook)]
             deployment_specific:

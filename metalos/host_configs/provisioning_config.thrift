@@ -14,8 +14,9 @@ include "metalos/host_configs/packages.thrift"
 // @oss-disable: include "metalos/host_configs/facebook/host.thrift"
 // @oss-disable: include "metalos/host_configs/facebook/proxy/if/deployment_specific.thrift"
 
-// Empty placeholder for any disk info we might need
-struct DiskConfiguration {} (rust.exhaustive)
+struct DiskConfiguration {
+  1: i32 sector_size;
+} (rust.exhaustive)
 
 struct SingleDiskSerial {
   1: string serial;

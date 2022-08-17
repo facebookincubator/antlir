@@ -41,7 +41,9 @@ pub struct SingleDiskSerial {
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::DiskConfiguration)]
-pub struct DiskConfiguration {}
+pub struct DiskConfiguration {
+    pub sector_size: i32,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::provisioning_config::EventSource)]
