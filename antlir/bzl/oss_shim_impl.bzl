@@ -669,6 +669,9 @@ def _repository_name():
 def _get_antlir_cell_name():
     return ""
 
+def _get_config_cell_name():
+    return "config"
+
 def _is_buck2():
     return False
 
@@ -693,6 +696,7 @@ shim = struct(
     config = struct(
         get_buck_out_path = _get_buck_out_path,
         get_antlir_cell_name = _get_antlir_cell_name,
+        get_config_cell_name = _get_config_cell_name,
     ),
     cpp_binary = _cpp_binary,
     cpp_library = _cpp_library,
