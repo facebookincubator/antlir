@@ -32,6 +32,7 @@ rust_library(
         "//metalos/lib/service:service",
         "//metalos/lib/state:state",
         "//metalos/lib/systemd:systemd",
+        "//netos/metald/api:api-rust",
     ] + (
         # @oss-disable: deps 
         # @oss-enable []
