@@ -45,7 +45,7 @@ pub(crate) enum ListenOn {
     Port(u16),
 }
 
-pub async fn start_service(fb: FacebookInit, _netos: bool) -> Result<()> {
+pub async fn start_service(fb: FacebookInit, netos: bool) -> Result<()> {
     // Process commandline flags
     let args = Arguments::parse();
 
@@ -91,7 +91,7 @@ pub async fn start_service(fb: FacebookInit, _netos: bool) -> Result<()> {
 
     let executions: Vec<_> = listen_on
         .into_iter()
-        .map(|socket| facebook::run(log.clone(), fb.clone(), metald.clone(), socket))
+        .map(|socket| facebook::run(log.clone(), fb.clone(), metald.clone(), socket, netos))
         .collect();
     try_join_all(executions).await?;
     Ok(())

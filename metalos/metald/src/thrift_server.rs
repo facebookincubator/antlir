@@ -23,6 +23,9 @@ use metalos_host_configs::api::OnlineUpdateCommitResponse;
 use metalos_host_configs::api::OnlineUpdateRequest;
 use metalos_host_configs::api::UpdateStageError;
 use metalos_host_configs::api::UpdateStageResponse;
+use netos_metald as thrift_api_netos;
+use netos_metald::server::MetalctlNetos;
+use netos_metald::services::metalctl_netos::DummyMethodExn;
 use package_download::DefaultDownloader;
 use slog::Logger;
 #[cfg(facebook)]
@@ -159,5 +162,23 @@ where
             }
         };
         crate::update::offline::commit(self.log.clone(), req.boot_config).await
+    }
+}
+
+#[async_trait]
+impl<C> MetalctlNetos for Metald<C>
+where
+    C: PermissionsChecker<Identity = Identity> + 'static,
+{
+    type RequestContext = RequestContext;
+
+    async fn dummy_method(
+        &self,
+        _req_ctxt: &RequestContext,
+        req: thrift_api_netos::DummyMethodRequest,
+    ) -> Result<thrift_api_netos::DummyMethodResponse, DummyMethodExn> {
+        Ok(thrift_api_netos::DummyMethodResponse {
+            message: req.message,
+        })
     }
 }
