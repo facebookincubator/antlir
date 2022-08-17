@@ -408,6 +408,13 @@ impl Bootloader {
             .to_str()
             .context("modules dir is not a string")?
             .to_string();
+        // Ensure the kernel/devel directory exists.
+        // If devel doesn't exist, downstream operations that depend on its contents will still break,
+        // this is to unblock provisioning until we work out why some packages don't have this content.
+        std::fs::create_dir_all(&modules_devel_dir).context(format!(
+            "while creating devel dir in kernel snapshot at {}",
+            modules_devel_dir
+        ))?;
 
         mounter
             .mount(
