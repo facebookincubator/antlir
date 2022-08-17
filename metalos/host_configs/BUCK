@@ -64,6 +64,8 @@ thrift_library(
         # metald requires raw thrift access to instantiate the thrift server
         "//metalos/host_configs/facebook/metald/...",
         "//metalos/metald:metald",
+        "//metalos/metald:metald_lib",
+        "//metalos/metald:metald_lib-unittest",
         "//metalos/metald:metald-unittest",
         # metalctl needs to make thrift clients
         "//metalos/metalctl/...",
