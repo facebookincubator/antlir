@@ -565,6 +565,11 @@ Gateway=fe80::face:b00b
 Source=2a03:2880:f103:181:face:b00c:a1:0
 Destination=::/0
 Metric=1024
+[Route]
+Gateway=fe80::face:b00b
+Source=::/0
+Destination=::/0
+Metric=1026
 "#
                         .into()
                     },

@@ -100,18 +100,31 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
             and iface.essential != True
         ):
             routes = [
+                # Create source routes for each interfaces primary address.
                 struct(
                     gw=FE_GW if iface.interface_type == INTFS_FRONTEND else BE_GW,
                     dest="::/0",
-                    metric="1024",
+                    metric=1024,
                     src=a.addr,
+                )
+                for a in iface.structured_addrs
+                if ":" in a.addr and a.mode == ADDR_PRIMARY
+            ]
+
+            routes += [
+                # Create high metric default routes for each interface.
+                struct(
+                    gw=FE_GW if iface.interface_type == INTFS_FRONTEND else BE_GW,
+                    dest="::/0",
+                    metric=1024 + i,
+                    src="::/0",
                 )
                 for a in iface.structured_addrs
                 if ":" in a.addr and a.mode == ADDR_PRIMARY
             ]
         # High priority route for essential / primary interface.
         if iface.essential == True:
-            routes = [struct(gw=FE_GW, dest="::/0", metric="10", src="::/0")]
+            routes = [struct(gw=FE_GW, dest="::/0", metric=10, src="::/0")]
 
         unit = NETWORK_TEMPLATE(
             mac=iface.mac,
