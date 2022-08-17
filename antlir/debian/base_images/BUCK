@@ -1,0 +1,19 @@
+load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
+
+image.layer_from_package(
+    name = "ubuntu_jammy_base",
+    flavor = "ubuntu_jammy",
+    format = "tar",
+    source = image.source(
+        "ubuntu/jammy/ubuntu-jammy-amd64-root.tar.gz",
+        content_hash = "sha256:d7c04885d9603a918fea8aec32d5df70051dd3b06726ecbc70fc1ba934afc5de",
+    ),
+    visibility = ["PUBLIC"],
+)
+
+export_file(
+    name = "debian_ba_base",
+    src = "ubuntu/jammy/ubuntu-jammy-amd64-ba.tar.gz",
+    visibility = ["PUBLIC"],
+)
