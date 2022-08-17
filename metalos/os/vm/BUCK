@@ -21,6 +21,10 @@ feature.new(
         ssh.test_only_login(),
         ssh.hostkey_setup(),
         "//antlir/linux/vm/vmtest:maybe_mark_non_build_step",
+        systemd.install_dropin(
+            "//metalos/os/tests:metald-in-test.conf",
+            "metalos.metald.service",
+        ),
     ],
     visibility = [
         "//metalos/os/...",
