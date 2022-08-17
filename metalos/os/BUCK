@@ -150,6 +150,8 @@ feature.new(
         "//metalos/host_configs/generators:host_config_generators",
         metalctl,
         feature.install_buck_runnable("//metalos/os/whatchanged:whatchanged", "/usr/bin/whatchanged"),
+        native_service_support,
+        "//metalos/metald:features",
     ],
     visibility = [
         "//metalos/os/...",
@@ -160,11 +162,9 @@ image.layer(
     name = "metalos",
     features = [
         ":core",
-        feature.ensure_subdirs_exist("/usr/lib", "metalos"),
         initial_online_update,
         mask_unneeded_units,
         metalos_branding,
-        native_service_support,
         root_cgroup,
         sshd,
         subvol_layout,
@@ -175,7 +175,6 @@ image.layer(
         systemd.install_unit("run-fs-control.mount"),
         systemd.enable_unit("run-fs-control.mount", "local-fs.target", "requires"),
         # @oss-disable: "//metalos/os/facebook:features", 
-        "//metalos/metald:features",
     ],
     # @oss-disable: flavor = "centos8", 
     # @oss-disable: flavor_config_override = flavor_config_override, 
