@@ -50,9 +50,9 @@ def _parse_symbolic(symbolic):
         if len(split) != 2:
             fail("directive '{}' was not of the form [classes...]+[perms...]".format(split))
         classes, perms = split
-        classes = list(classes.elems())
+        classes = [classes[i] for i in range(len(classes))]
         classes = classes or ["a"]
-        perms = list(perms.elems())
+        perms = [perms[i] for i in range(len(perms))]
         for cl in classes:
             if cl not in _MAKE_CLASS_MASK:
                 fail("'{}' is not a recognized class".format(cl))
