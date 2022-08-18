@@ -215,6 +215,7 @@ do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 rpm_vset = shim.rpm_vset
 repository_name = shim.repository_name
 target_utils = shim.target_utils
+alias = shim.alias
 add_test_framework_label = shim.add_test_framework_label
 third_party = struct(
     library = shim.third_party.library,
