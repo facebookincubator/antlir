@@ -4,9 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:oss_shim.bzl", "export_file")
 # @oss-disable: load("//antlir/fbpkg:fbpkg.bzl", "fbpkg") 
-load(":oss_shim.bzl", "buck_genrule", "config", "get_visibility", "rust_binary", "rust_library", "rust_unittest")
+load(":oss_shim.bzl", "alias", "buck_genrule", "config", "get_visibility", "rust_binary", "rust_library", "rust_unittest")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
 # @oss-disable: is_facebook = True 
@@ -27,18 +26,6 @@ def antlir_tool(rule, name, **kwargs):
 
     target = normalize_target(":" + name)
 
-    # If the target being built is in `rc_targets` build it fresh instead of
-    # using the cached stable version.
-    if (not is_facebook) or (target in REPO_CFG.rc_targets):
-        rule(name = name, visibility = visibility, **kwargs)
-        export_file(
-            name = name + "-rc",
-            src = ":{}" + name,
-            mode = "reference",
-            visibility = rc_visibility,
-        )
-        return
-
     if rule == rust_library or rule == rust_binary or rule == rust_unittest:
         kwargs["crate"] = kwargs.get("crate", name).replace("-", "_")
 
@@ -47,12 +34,23 @@ def antlir_tool(rule, name, **kwargs):
         visibility = rc_visibility,
         **kwargs
     )
+
+    # If the target being built is in `rc_targets` build it fresh instead of
+    # using the cached stable version.
+    if (not is_facebook) or (target in REPO_CFG.rc_targets):
+        alias(
+            name = name,
+            actual = ":{}-rc".format(name),
+            visibility = visibility,
+        )
+        return
+
     full_label = config.get_antlir_cell_name() + "//" + native.package_name() + ":" + name
     if full_label not in TOOLS:
         fail("'{}' must be added to tool.bzl to be cacheable".format(full_label))
 
     buck_genrule(
-        name = name,
+        name = name + "-cached",
         out = "tool",
         cmd = "cp --reflink=auto $(location {})/{} $OUT".format(
             # @oss-disable: fbpkg.fetched_with_nondeterministic_fs_metadata("antlir.tools", repo_committed_tag = "latest"), 
@@ -61,5 +59,15 @@ def antlir_tool(rule, name, **kwargs):
         ),
         executable = True,
         type = "antlir_tool",
+        visibility = [],
+    )
+
+    alias(
+        name = name,
+        actual = select({
+            "DEFAULT": ":{}-rc".format(name),
+            # The cached version is currently x86-only.
+            "{}//cpu:x86_64".format(config.get_config_cell_name()): ":{}-cached".format(name),
+        }),
         visibility = visibility,
     )
