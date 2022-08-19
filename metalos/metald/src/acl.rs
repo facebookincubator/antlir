@@ -14,7 +14,6 @@ pub enum Result<I> {
     Denied(Vec<Denial<I>>),
 }
 
-#[allow(dead_code)] // We'll use this in the next diff
 #[derive(Debug, PartialEq)]
 pub enum Denial<I> {
     Action {
