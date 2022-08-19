@@ -6,71 +6,19 @@
  */
 
 use std::fmt::Debug;
-use std::fmt::Formatter;
 use std::marker::PhantomData;
 
+#[derive(Debug, PartialEq)]
 pub enum Result<I> {
     Allowed,
     Denied(Denied<I>),
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Denied<I> {
     pub identities: Vec<I>,
     pub acl_name: String,
     pub action: String,
-}
-
-impl<I> Debug for Result<I>
-where
-    I: Debug,
-{
-    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        match self {
-            Self::Allowed => fmt.debug_tuple("Allowed").finish(),
-            Self::Denied(d) => Debug::fmt(d, fmt),
-        }
-    }
-}
-
-impl<I> Debug for Denied<I>
-where
-    I: Debug,
-{
-    fn fmt(&self, fmt: &mut Formatter) -> std::fmt::Result {
-        fmt.debug_struct("Denied")
-            .field("identities", &self.identities)
-            .field("acl_name", &self.acl_name)
-            .field("action", &self.action)
-            .finish()
-    }
-}
-
-impl<I> PartialEq for Result<I>
-where
-    Denied<I>: PartialEq,
-{
-    fn eq(&self, rhs: &Self) -> bool {
-        match (self, rhs) {
-            (Self::Allowed, Self::Allowed) => true,
-            (Self::Denied(s), Self::Denied(r)) => s == r,
-            _ => false,
-        }
-    }
-}
-
-impl<I> PartialEq for Denied<I>
-where
-    I: PartialEq,
-{
-    #[deny(unused_variables)]
-    fn eq(&self, rhs: &Self) -> bool {
-        let Self {
-            identities,
-            acl_name,
-            action,
-        } = self;
-        (identities == &rhs.identities) && (acl_name == &rhs.acl_name) && (action == &rhs.action)
-    }
 }
 
 // Generic Permission Checker trait that needs to be implemented for
