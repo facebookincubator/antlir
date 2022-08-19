@@ -16,6 +16,8 @@ use fbinit::FacebookInit;
 use metalos_thrift_host_configs::api::client::make_Metalctl;
 use metalos_thrift_host_configs::api::client::Metalctl;
 use slog::Logger;
+use thriftclient::CertificatePaths;
+use thriftclient::ThriftChannelBuilder;
 
 pub type MetaldClient = Arc<dyn Metalctl + Send + Sync + 'static>;
 
@@ -33,6 +35,12 @@ pub(crate) struct MetaldClientOpts {
     metald_timeout: humantime::Duration,
     #[clap(long, help = "thrift connection timeout", default_value = "500ms")]
     metald_connect_timeout: humantime::Duration,
+    #[clap(
+        long,
+        help = "path to hi-priv host combined key-cert pem",
+        default_value = "/etc/host_server.pem"
+    )]
+    tls_cert_path: String,
 }
 
 impl MetaldClientOpts {
@@ -41,14 +49,14 @@ impl MetaldClientOpts {
             (Some(_), Some(_)) => Err(anyhow!(
                 "--metald-path and --metald-host are mutually exclusive"
             )),
-            (Some(path), None) => thriftclient::ThriftChannelBuilder::from_path(fb, path),
-            (None, Some(hostport)) => thriftclient::ThriftChannelBuilder::from_sock_addr(
+            (Some(path), None) => ThriftChannelBuilder::from_path(fb, path),
+            (None, Some(hostport)) => ThriftChannelBuilder::from_sock_addr(
                 fb,
                 hostport
                     .parse()
                     .with_context(|| format!("'{}' is not a valid address", hostport))?,
             ),
-            (None, None) => thriftclient::ThriftChannelBuilder::from_path(
+            (None, None) => ThriftChannelBuilder::from_path(
                 fb,
                 metalos_thrift_host_configs::api::consts::SOCKET_PATH,
             ),
@@ -67,6 +75,11 @@ impl MetaldClientOpts {
                     .try_into()
                     .context("--metald-timeout did not fit into a u32")?,
             )
+            .with_certificate_paths(CertificatePaths {
+                cert_path: self.tls_cert_path.clone(),
+                key_path: self.tls_cert_path.clone(),
+                ..Default::default()
+            })
             .build_client(make_Metalctl)
             .context("while making Metalctl client")
     }
