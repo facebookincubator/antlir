@@ -19,6 +19,10 @@ from antlir.subvol_utils import Subvol
 log = get_logger()
 
 
+class RpmNotInstalledError(RuntimeError):
+    pass
+
+
 class RpmMetadata(NamedTuple):
     name: str
     epoch: int
@@ -89,9 +93,9 @@ def _repo_query(
         result = check_output_fn(query_args).decode().strip("'\"")
         log.debug(f"RPM query {query_args} returned {result}")
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(
+        raise RpmNotInstalledError(
             f"Error querying RPM: {query_args}, {e.stdout}, {e.stderr}"
-        )
+        ) from e
 
     n, e, v, r = result.split(":")
     return RpmMetadata(name=n, epoch=int(e), version=v, release=r)
