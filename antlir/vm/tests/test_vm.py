@@ -9,7 +9,7 @@ import os
 import subprocess
 import tempfile
 
-from antlir.fs_utils import Path
+from antlir.fs_utils import Path, temp_dir
 from antlir.tests.common import AntlirTestCase
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.bzl.vm import vm_opts_t
@@ -25,79 +25,85 @@ from antlir.vm.vm import (
 
 class TestAntlirVM(AntlirTestCase):
     def test_parse_cli(self):
-        opts_instance = vm_opts_t.from_env("test-vm-json")
-        opts_cli_arg = "--opts={}".format(os.environ["test-vm-json"])
-        # Test defaults of everything that has a default
-        self.assertEqual(
-            VMExecOpts(
-                opts=opts_instance,
-            ),
-            VMExecOpts.parse_cli(
-                [
-                    opts_cli_arg,
-                ]
-            ),
-            opts_instance,
-        )
+        with temp_dir() as td:
+            opts_path = td / "opts.json"
+            with opts_path.open(mode="w") as f:
+                f.write(os.environ["test-vm-json"])
 
-        # Test extra, debug, shell mode as console
-        self.assertEqual(
-            VMExecOpts(
-                opts=opts_instance,
-                debug=True,
-                shell=ShellMode.console,
-                extra=["--extra-argument"],
-            ),
-            VMExecOpts.parse_cli(
-                [
-                    opts_cli_arg,
-                    "--debug",
-                    "--shell=console",
-                    "--extra-argument",
-                ]
-            ),
-        )
+            opts_cli_arg = "--opts={}".format(opts_path)
+            opts_instance = vm_opts_t.from_env("test-vm-json")
 
-        # Test --append-console
-        self.assertEqual(
-            VMExecOpts(
-                opts=opts_instance,
-                console=None,
-            ),
-            VMExecOpts.parse_cli(
-                [
-                    opts_cli_arg,
-                    "--append-console",
-                ]
-            ),
-        )
-
-        # Test --append-console=/path/to/something
-        with tempfile.NamedTemporaryFile() as t:
-            t = Path(t.name)
+            # Test defaults of everything that has a default
             self.assertEqual(
                 VMExecOpts(
                     opts=opts_instance,
-                    console=t,
                 ),
                 VMExecOpts.parse_cli(
-                    [opts_cli_arg, "--append-console={}".format(t)]
+                    [
+                        opts_cli_arg,
+                    ]
+                ),
+                opts_instance,
+            )
+
+            # Test extra, debug, shell mode as console
+            self.assertEqual(
+                VMExecOpts(
+                    opts=opts_instance,
+                    debug=True,
+                    shell=ShellMode.console,
+                    extra=["--extra-argument"],
+                ),
+                VMExecOpts.parse_cli(
+                    [
+                        opts_cli_arg,
+                        "--debug",
+                        "--shell=console",
+                        "--extra-argument",
+                    ]
                 ),
             )
 
-        # Test --shell=ssh
-        self.assertEqual(
-            VMExecOpts(
-                opts=opts_instance,
-                shell=ShellMode.ssh,
-            ),
-            VMExecOpts.parse_cli(
-                [
-                    opts_cli_arg,
-                    "--shell=ssh",
-                ]
-            ),
-        )
+            # Test --append-console
+            self.assertEqual(
+                VMExecOpts(
+                    opts=opts_instance,
+                    console=None,
+                ),
+                VMExecOpts.parse_cli(
+                    [
+                        opts_cli_arg,
+                        "--append-console",
+                    ]
+                ),
+            )
+
+            # Test --append-console=/path/to/something
+            with tempfile.NamedTemporaryFile() as t:
+                t = Path(t.name)
+                self.assertEqual(
+                    VMExecOpts(
+                        opts=opts_instance,
+                        console=t,
+                    ),
+                    VMExecOpts.parse_cli(
+                        [opts_cli_arg, "--append-console={}".format(t)]
+                    ),
+                )
+
+            # Test --shell=ssh
+            self.assertEqual(
+                VMExecOpts(
+                    opts=opts_instance,
+                    shell=ShellMode.ssh,
+                ),
+                VMExecOpts.parse_cli(
+                    [
+                        opts_cli_arg,
+                        "--shell=ssh",
+                    ]
+                ),
+            )
 
     async def test_api_ssh(self):
         opts_instance = vm_opts_t.from_env("test-vm-json")

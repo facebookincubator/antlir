@@ -18,6 +18,7 @@ from enum import Enum
 from itertools import chain
 from typing import AsyncGenerator, cast, List, Optional, Tuple, Union
 
+from antlir.cli import normalize_buck_path
 from antlir.common import get_logger, init_logging, not_none
 from antlir.config import repo_config
 from antlir.find_built_subvol import find_built_subvol
@@ -175,7 +176,8 @@ class VMExecOpts(Shape):
 
         parser.add_argument(
             "--opts",
-            type=vm_opts_t.parse_raw,
+            # This path could be relative to the repo-root with buck2
+            type=lambda x: vm_opts_t.load(normalize_buck_path(x)),
             help="Path to a serialized vm_opts_t instance containing "
             "configuration details for the vm.",
             required=True,

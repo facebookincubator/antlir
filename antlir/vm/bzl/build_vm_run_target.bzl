@@ -23,13 +23,23 @@ def build_vm_run_target(
         exe_target = antlir_dep("vm:run")):
     vm_opts = vm_opts or api.opts.new()
     buck_genrule(
+        name = name + "__vm_opts",
+        antlir_rule = "user-internal",
+        bash = "echo {} > $OUT".format(
+            shell.quote(shape.do_not_cache_me_json(vm_opts)),
+        ),
+        cacheable = False,
+        visibility = [],
+    )
+
+    buck_genrule(
         name = name,
         antlir_rule = "user-internal",
         bash = build_exec_wrapper(
             runnable = exe_target,
-            raw_shell_args = '--opts {opts_quoted} {extra_args} "$@"'.format(
+            raw_shell_args = '--opts "$(location :{opts_target})" {extra_args} "$@"'.format(
                 extra_args = " ".join(args) if args else "",
-                opts_quoted = shell.quote(shape.do_not_cache_me_json(vm_opts)),
+                opts_target = name + "__vm_opts",
             ),
             literal_preamble = "export ANTLIR_BUCK={} ; ".format(antlir_buck_env()),
         ),
