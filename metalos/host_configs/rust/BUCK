@@ -17,6 +17,7 @@ rust_library(
         # @oss-disable: "//metalos/host_configs/facebook/proxy/if:deployment_specific-rust", 
         # @oss-disable: "//metalos/host_configs/facebook/proxy/if/deployments:corp_deployment-rust", 
         # @oss-disable: "//metalos/host_configs/facebook/proxy/if/deployments:legacy_deployment-rust", 
+        # @oss-disable: "//metalos/host_configs/facebook/proxy/if/deployments:mclassica_deployment-rust", 
         # @oss-disable: "//metalos/host_configs/facebook/proxy/if/deployments:metalos_deployment-rust", 
         # @oss-disable: "//metalos/host_configs/facebook/proxy/if/deployments:netos_deployment-rust", 
         "//metalos/lib/metalos_paths:metalos_paths",
