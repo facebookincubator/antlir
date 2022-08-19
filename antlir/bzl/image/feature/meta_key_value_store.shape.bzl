@@ -10,3 +10,7 @@ meta_key_value_store_item_t = shape.shape(
     value = str,
     require_key = shape.field(str, optional = True),
 )
+
+remove_meta_key_value_store_item_t = shape.shape(
+    key = str,
+)

@@ -4,13 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-from typing import List, Optional
+from typing import Iterable, List, Optional
 
 from antlir.bzl.image.feature.meta_key_value_store import (
     meta_key_value_store_item_t,
+    remove_meta_key_value_store_item_t,
 )
 
-from antlir.compiler.items.common import ImageItem, LayerOpts
+from antlir.compiler.items.common import ImageItem, LayerOpts, PhaseOrder
 from antlir.compiler.requires_provides import (
     ProvidesKey,
     RequireKey,
@@ -51,6 +52,50 @@ class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
             )
         items.append(self)
         store_meta_key_value_store_items(subvol, items)
+
+
+# pyre-fixme[13]: Attribute `key` is never initialized.
+class RemoveMetaKeyValueStoreItem(
+    remove_meta_key_value_store_item_t, ImageItem
+):
+    key: str
+
+    def phase_order(self):
+        return PhaseOrder.REMOVE_META_KEY_VALUE_STORE
+
+    @classmethod
+    def get_phase_builder(
+        cls,
+        items: Iterable["RemoveMetaKeyValueStoreItem"],
+        layer_opts: LayerOpts,
+    ):
+        def builder(subvol: Subvol):
+            if not subvol.path(META_KEY_VALUE_STORE_FILE).exists():
+                raise RuntimeError(
+                    "No key value pairs were stored so none could be removed",
+                )
+
+            stored_items = load_meta_key_value_store_items(subvol)
+
+            keys_to_remove = {item.key for item in items}
+            stored_keys = {item.key for item in stored_items}
+
+            for key in keys_to_remove:
+                if key not in stored_keys:
+                    raise RuntimeError(
+                        f"Key `{key}` does not exist and cannot be removed"
+                    )
+
+            store_meta_key_value_store_items(
+                subvol,
+                [
+                    item
+                    for item in stored_items
+                    if item.key not in keys_to_remove
+                ],
+            )
+
+        return builder
 
 
 # pyre-fixme[13]: Attribute `items` is never initialized.

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl/image/feature:meta_key_value_store.shape.bzl", "meta_key_value_store_item_t")
+load("//antlir/bzl/image/feature:meta_key_value_store.shape.bzl", "meta_key_value_store_item_t", "remove_meta_key_value_store_item_t")
 load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 
 def feature_meta_store(key, value, require_key = None):
@@ -35,5 +35,23 @@ def feature_meta_store(key, value, require_key = None):
             key = key,
             value = value,
             require_key = require_key,
+        ),
+    )
+
+def feature_remove_meta_store(key):
+    """
+  `feature.remove_meta_store("key")` removes the key value pair that was written into
+  the META_KEY_VALUE_STORE_FILE in the image. This throws an error if the key is not present
+
+  The argument `key` is the value to remove.
+    """
+
+    return maybe_add_feature_rule(
+        name = "remove_meta_key_value_store",
+        include_in_target_name = {
+            "key": key,
+        },
+        feature_shape = remove_meta_key_value_store_item_t(
+            key = key,
         ),
     )

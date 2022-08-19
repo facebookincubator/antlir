@@ -105,6 +105,9 @@ class PhaseOrder(enum.Enum):
     # `feature` instead of being code.  We might also use this to
     # remove e.g.  unnecessary parts of excessively monolithic RPMs.
     REMOVE_PATHS = enum.auto()
+    # Phase order for key value store removal items. This ensures that
+    # we remove after all values are stored.
+    REMOVE_META_KEY_VALUE_STORE = enum.auto()
 
 
 class LayerOpts(NamedTuple):

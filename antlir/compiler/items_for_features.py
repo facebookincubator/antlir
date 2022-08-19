@@ -20,7 +20,10 @@ from antlir.compiler.items.make_subvol import (
     LayerFromPackageItem,
     ParentLayerItem,
 )
-from antlir.compiler.items.meta_key_value_store import MetaKeyValueStoreItem
+from antlir.compiler.items.meta_key_value_store import (
+    MetaKeyValueStoreItem,
+    RemoveMetaKeyValueStoreItem,
+)
 from antlir.compiler.items.mount import MountItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.requires import RequiresItem
@@ -139,6 +142,7 @@ class ItemFactory:
             "users": UserItem,
             "requires": RequiresItem,
             "meta_key_value_store": MetaKeyValueStoreItem,
+            "remove_meta_key_value_store": RemoveMetaKeyValueStoreItem,
         }
         self._key_to_items_factory = {
             "ensure_subdirs_exist": ensure_subdirs_exist_factory,
