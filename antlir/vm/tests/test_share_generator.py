@@ -14,7 +14,7 @@ from typing import Optional
 
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase
-from antlir.vm.share import BtrfsDisk, Plan9Export, Share
+from antlir.vm.share import Plan9Export, Share
 
 
 @dataclass(frozen=True)
@@ -105,20 +105,6 @@ What=fs3
 Where=/tmp/hello_rw
 Type=9p
 Options=version=9p2000.L,posixacl,cache=none,rw
-""",
-    ),
-    TestShare(
-        BtrfsDisk(path=Path("/tmp/image.btrfs"), mountpoint=Path("/mnt/guest")),
-        "mnt-guest.mount",
-        """[Unit]
-Description=Mount vdb (/tmp/image.btrfs from host) at /mnt/guest
-Before=local-fs.target
-
-[Mount]
-What=/dev/vdb
-Where=/mnt/guest
-Type=btrfs
-Options=subvol=volume,ro
 """,
     ),
 ]

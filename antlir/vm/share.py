@@ -148,52 +148,6 @@ Options=version=9p2000.L,posixacl,cache={cache},{ro_rw}
         )
 
 
-@dataclass(frozen=True)
-class BtrfsDisk(Share):
-    """A single btrfs disk for use in qemu"""
-
-    path: Path
-    mountpoint: Path
-    dev: str = field(default_factory=_next_drive)
-    generator: bool = True
-    subvol: str = "volume"
-    readonly: bool = True
-
-    @property
-    def mount_unit(self) -> Tuple[str, str]:
-        ro_rw = "ro" if self.readonly else "rw"
-        return (
-            self._systemd_escape_mount(self.mountpoint),
-            f"""[Unit]
-Description=Mount {self.dev} ({self.path!s} from host) at {self.mountpoint!s}
-Before=local-fs.target
-
-[Mount]
-What=/dev/{self.dev}
-Where={self.mountpoint!s}
-Type=btrfs
-Options=subvol={self.subvol},{ro_rw}
-""",
-        )
-
-    # Note: coverage on this is actually provided via the
-    # `//antlir/vm/tests:test-kernel-panic` test, but due to
-    # how python coverage works it can't be included in the
-    # report.
-    @property
-    def qemu_args(self) -> Iterable[str]:  # pragma: no cover
-        readonly = "on" if self.readonly else "off"
-        return (
-            "--blockdev",
-            (
-                f"driver=raw,node-name=dev-{self.dev},read-only={readonly},"
-                f"file.driver=file,file.filename={self.path!s}"
-            ),
-            "--device",
-            f"virtio-blk,drive=dev-{self.dev}",
-        )
-
-
 def _run_qemu_img(qemu_img: Path, args: List) -> None:
     cmd = [qemu_img, *args]
     log.debug(f"Running qemu-img: {cmd}")
