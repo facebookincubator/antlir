@@ -376,7 +376,7 @@ async def vm(
         "-serial",
         "mon:stdio",
         "-cpu",
-        "max",
+        "host",
         "-smp",
         str(opts.cpus),
         "-m",
@@ -444,12 +444,9 @@ async def vm(
                 "-append",
                 (
                     "console=ttyS0,115200"
-                    " noapic"
                     " panic=-1"
                     " audit=0"
-                    " cgroup_no_v1=all"
-                    " systemd.unified_cgroup_hierarchy=1"
-                    " rd.emergency=poweroff"
+                    " selinux=0"
                     " systemd.hostname=vmtest "
                     f" root=LABEL={opts.root_label} "
                     + " ".join(root_disk.kernel_args)
