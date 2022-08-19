@@ -11,14 +11,21 @@ use std::marker::PhantomData;
 #[derive(Debug, PartialEq)]
 pub enum Result<I> {
     Allowed,
-    Denied(Denied<I>),
+    Denied(Vec<Denial<I>>),
 }
 
+#[allow(dead_code)] // We'll use this in the next diff
 #[derive(Debug, PartialEq)]
-pub struct Denied<I> {
-    pub identities: Vec<I>,
-    pub acl_name: String,
-    pub action: String,
+pub enum Denial<I> {
+    Action {
+        accessors: Vec<I>,
+        acl_name: String,
+        actions: Vec<String>,
+    },
+    Identity {
+        accessors: Vec<I>,
+        identity: I,
+    },
 }
 
 // Generic Permission Checker trait that needs to be implemented for
@@ -26,11 +33,7 @@ pub struct Denied<I> {
 pub trait PermissionsChecker: Sync + Send {
     type Identity;
 
-    fn action_allowed_for_identity(
-        &self,
-        ids: &[Self::Identity],
-        acl_action: &str,
-    ) -> Result<Self::Identity>;
+    fn check(&self, ids: &[Self::Identity]) -> Result<Self::Identity>;
 }
 
 pub struct AllowAll<I>(PhantomData<I>);
@@ -46,11 +49,7 @@ where
     I: Send + Sync,
 {
     type Identity = I;
-    fn action_allowed_for_identity(
-        &self,
-        _ids: &[Self::Identity],
-        _action: &str,
-    ) -> Result<Self::Identity> {
+    fn check(&self, _ids: &[Self::Identity]) -> Result<Self::Identity> {
         Result::Allowed
     }
 }
@@ -60,11 +59,7 @@ where
     C: PermissionsChecker + ?Sized,
 {
     type Identity = C::Identity;
-    fn action_allowed_for_identity(
-        &self,
-        ids: &[Self::Identity],
-        acl_action: &str,
-    ) -> Result<Self::Identity> {
-        (**self).action_allowed_for_identity(ids, acl_action)
+    fn check(&self, ids: &[Self::Identity]) -> Result<Self::Identity> {
+        (**self).check(ids)
     }
 }
