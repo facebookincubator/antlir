@@ -18,6 +18,7 @@ from antlir.rpm.rpm_metadata import (
     _repo_query,
     compare_rpm_versions,
     RpmMetadata,
+    RpmNotInstalledError,
 )
 from antlir.rpm.tests.temp_repos import (
     get_test_signing_key,
@@ -53,7 +54,7 @@ class RpmMetadataTestCase(unittest.TestCase):
         self.assertEqual(a.release, "a")
 
         # not installed
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(RpmNotInstalledError):
             a = RpmMetadata.from_subvol(
                 child_subvol, ba_subvol, "rpm-test-carrot"
             )
