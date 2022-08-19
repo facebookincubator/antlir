@@ -62,6 +62,13 @@ pub async fn start_service(fb: FacebookInit, netos: bool) -> Result<()> {
             {
                 let mut checkers: Vec<Box<dyn PermissionsChecker<Identity = identity::Identity>>> =
                     Vec::new();
+                // We put the IdentityChecker before the ACLChecker, as the former check can be
+                // completed entirely locally. If it passes, we never have to issue an RPC via
+                // ACLChecker.
+                checkers.push(Box::new(
+                    crate::facebook::acl::new_identity_checker()
+                        .context("while creating identity checker")?,
+                ));
                 checkers.push(Box::new(
                     crate::facebook::acl::new_acl_checker(fb)
                         .context("while creating fb acl checker")?,
