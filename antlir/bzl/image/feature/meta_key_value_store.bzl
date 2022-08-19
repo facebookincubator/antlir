@@ -5,7 +5,8 @@
 
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
-load(":meta_key_value_store.shape.bzl", "meta_key_value_store_item_t")
+load("//antlir/bzl2/feature:meta_key_value_store.bzl", bzl2_feature_remove_meta_store = "feature_remove_meta_store")
+load(":meta_key_value_store.shape.bzl", "meta_key_value_store_item_t", "remove_meta_key_value_store_item_t")
 
 def feature_meta_store(key, value, require_key = None):
     """
@@ -44,4 +45,22 @@ def feature_meta_store(key, value, require_key = None):
                 feature_shape = item,
             ),
         ],
+    )
+
+def feature_remove_meta_store(key):
+    """
+  `feature.remove_meta_store("key")` removes the key value pair that was written into
+  the META_KEY_VALUE_STORE_FILE in the image. This throws an error if the key is not present
+
+  The argument `key` is the value to remove.
+    """
+
+    return target_tagger_to_feature(
+        new_target_tagger(),
+        items = struct(remove_meta_key_value_store = [
+            remove_meta_key_value_store_item_t(
+                key = key,
+            ),
+        ]),
+        extra_deps = [bzl2_feature_remove_meta_store(key)],
     )

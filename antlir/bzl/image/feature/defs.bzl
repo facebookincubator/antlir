@@ -9,7 +9,7 @@ load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:clone.bzl", "feature_clone")
 load("//antlir/bzl/image/feature:ensure_dirs_exist.bzl", "feature_ensure_dirs_exist", "feature_ensure_subdirs_exist")
 load("//antlir/bzl/image/feature:install.bzl", "feature_install", "feature_install_buck_runnable")
-load("//antlir/bzl/image/feature:meta_key_value_store.bzl", "feature_meta_store")
+load("//antlir/bzl/image/feature:meta_key_value_store.bzl", "feature_meta_store", "feature_remove_meta_store")
 load("//antlir/bzl/image/feature:mount.bzl", "feature_host_dir_mount", "feature_host_file_mount", "feature_layer_mount")
 load("//antlir/bzl/image/feature:new.bzl", "feature_new")
 load("//antlir/bzl/image/feature:remove.bzl", "feature_remove")
@@ -43,6 +43,7 @@ feature_buck1 = struct(
     tarball = feature_tarball,
     user_add = feature_user_add,
     meta_store = feature_meta_store,
+    remove_meta_store = feature_remove_meta_store,
 )
 feature_buck1_dict = structs.to_dict(feature_buck1)
 

@@ -180,6 +180,7 @@ IMAGE_LAYER_DEPS = [
     "create_ops-from-layer",
     "create_ops-alias",
     "meta_store_layer",
+    "remove_meta_store_layer",
 ] + [
     "validates-{}-build-appliance".format(i)
     for i in flavor_helpers.get_rpm_installers_supported()

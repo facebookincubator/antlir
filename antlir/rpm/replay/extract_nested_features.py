@@ -138,6 +138,11 @@ class _FeatureHandlers:
         # This is just metadata and doesn't need a custom image.
         return ExtractedFeatures()
 
+    def remove_meta_key_value_store(self) -> ExtractedFeatures:
+        # This is just metadata and doesn't need a custom image.
+        # This is the same reasoning as `meta_key_value_store`.
+        return ExtractedFeatures()
+
 
 def extract_nested_features(
     *,

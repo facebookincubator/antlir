@@ -89,6 +89,7 @@ image.layer(
         # is concerned.
         feature.ensure_dirs_exist("/new/dir/"),
         feature.layer_mount(":potato", "/vegetable"),
+        feature.meta_store("base_key", "base_val"),
     ],
     parent_layer = ":base",
 )
@@ -125,6 +126,7 @@ image.layer(
             key = "key",
             value = "value",
         ),
+        feature.remove_meta_store("base_key"),
     ],
     parent_layer = ":base-plus-one",
 )

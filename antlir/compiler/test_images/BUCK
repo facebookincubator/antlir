@@ -1276,3 +1276,14 @@ image.layer(
     flavor = "antlir_test",
     visibility = ["//antlir/..."],
 )
+
+image.layer(
+    name = "remove_meta_store_layer",
+    features = [
+        feature.remove_meta_store(
+            "key2",
+        ),
+    ],
+    parent_layer = ":meta_store_layer",
+    visibility = ["//antlir/..."],
+)

@@ -6,7 +6,7 @@
 load(":clone.bzl", "feature_clone")
 load(":ensure_dirs_exist.bzl", "feature_ensure_dirs_exist", "feature_ensure_subdirs_exist")
 load(":install.bzl", "feature_install", "feature_install_buck_runnable")
-load(":meta_key_value_store.bzl", "feature_meta_store")
+load(":meta_key_value_store.bzl", "feature_meta_store", "feature_remove_meta_store")
 load(":mount.bzl", "feature_host_dir_mount", "feature_host_file_mount", "feature_layer_mount")
 load(":new.bzl", "feature_new")
 load(":remove.bzl", "feature_remove")
@@ -34,4 +34,5 @@ feature = struct(
     host_file_mount = feature_host_file_mount,
     layer_mount = feature_layer_mount,
     meta_store = feature_meta_store,
+    remove_meta_store = feature_remove_meta_store,
 )

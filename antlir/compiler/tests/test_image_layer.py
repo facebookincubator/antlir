@@ -563,3 +563,13 @@ class ImageLayerTestCase(unittest.TestCase):
                     ),
                 ],
             )
+
+    def test_remove_meta_store(self):
+        with self.target_subvol("remove_meta_store_layer") as sv:
+            items = load_meta_key_value_store_items(sv)
+            self.assertEqual(
+                items,
+                [
+                    MetaKeyValueStoreItem(key="key1", value="value1"),
+                ],
+            )

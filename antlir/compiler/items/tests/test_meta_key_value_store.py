@@ -4,9 +4,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from antlir.compiler.items.common import PhaseOrder
 from antlir.compiler.items.meta_key_value_store import (
     load_meta_key_value_store_items,
     MetaKeyValueStoreItem,
+    RemoveMetaKeyValueStoreItem,
 )
 from antlir.compiler.items.tests.common import (
     BaseItemTestCase,
@@ -27,6 +29,12 @@ class MetaKeyValueStoreItemTestCase(BaseItemTestCase):
         subvol = ts.create("meta_key_value_store")
         subvol.run_as_root(["mkdir", subvol.path(".meta")])
         return subvol
+
+    def test_remove_runtime_config_phase_order(self) -> None:
+        self.assertEqual(
+            PhaseOrder.REMOVE_META_KEY_VALUE_STORE,
+            RemoveMetaKeyValueStoreItem(key="key").phase_order(),
+        )
 
     def test_meta_key_value_store_provides(self) -> None:
         self._check_item(
@@ -71,17 +79,16 @@ class MetaKeyValueStoreItemTestCase(BaseItemTestCase):
 
             for item in items:
                 item.build(subvol, DUMMY_LAYER_OPTS)
+            RemoveMetaKeyValueStoreItem.get_phase_builder(
+                [RemoveMetaKeyValueStoreItem(key="key2")],
+                DUMMY_LAYER_OPTS,
+            )(subvol)
 
             self.assertEqual(
                 [
                     MetaKeyValueStoreItem(
                         key="key1",
                         value="value1",
-                    ),
-                    MetaKeyValueStoreItem(
-                        key="key2",
-                        value="value2",
-                        require_key="key1",
                     ),
                     MetaKeyValueStoreItem(
                         key="key3",
@@ -107,3 +114,35 @@ class MetaKeyValueStoreItemTestCase(BaseItemTestCase):
                 )
                 item.build(subvol, DUMMY_LAYER_OPTS)
                 item.build(subvol, DUMMY_LAYER_OPTS)
+
+    @with_mocked_temp_volume_dir
+    def test_remove_nonexistent_key_value_error(self):
+        with TempSubvolumes() as ts:
+            subvol = self._setup_subvol(ts)
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "No key value pairs were stored so none could be removed",
+            ):
+                RemoveMetaKeyValueStoreItem.get_phase_builder(
+                    [RemoveMetaKeyValueStoreItem(key="key")],
+                    DUMMY_LAYER_OPTS,
+                )(subvol)
+
+    @with_mocked_temp_volume_dir
+    def test_remove_incorrect_key_value_error(self):
+        with TempSubvolumes() as ts:
+            subvol = self._setup_subvol(ts)
+            MetaKeyValueStoreItem(
+                key="key",
+                value="value",
+            ).build(subvol, DUMMY_LAYER_OPTS)
+
+            with self.assertRaisesRegex(
+                RuntimeError,
+                "Key `key2` does not exist and cannot be removed",
+            ):
+                RemoveMetaKeyValueStoreItem.get_phase_builder(
+                    [RemoveMetaKeyValueStoreItem(key="key2")],
+                    DUMMY_LAYER_OPTS,
+                )(subvol)
