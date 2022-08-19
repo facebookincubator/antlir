@@ -33,8 +33,6 @@ use srserver::RequestContext;
 
 use crate::acl::PermissionsChecker;
 
-const ACL_ACTION: &str = "canDoCyborgJob"; //TODO:T117800273 temporarily, need to decide the correct acl
-
 pub struct Metald<C>
 where
     C: PermissionsChecker<Identity = Identity>,
@@ -79,10 +77,7 @@ where
             .into_iter()
             .map(identity::ffi::copyIdentity)
             .collect();
-        match self
-            .acl_checker
-            .action_allowed_for_identity(&ids, ACL_ACTION)
-        {
+        match self.acl_checker.check(&ids) {
             crate::acl::Result::Allowed => Ok(()),
             crate::acl::Result::Denied(d) => Err(Error::msg(format!("{:?}", d))),
         }

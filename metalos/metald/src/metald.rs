@@ -51,21 +51,27 @@ pub async fn start_service(fb: FacebookInit, netos: bool) -> Result<()> {
 
     let log = slog::Logger::root(slog_glog_fmt::default_drain(), slog::o!());
 
-    let acl_checker: Arc<Box<dyn PermissionsChecker<Identity = identity::Identity>>> =
-        match args.no_acl_check {
-            true => Arc::new(Box::new(crate::acl::AllowAll::new())),
-            false => {
-                #[cfg(not(facebook))]
-                unimplemented!("OSS acl checking not yet implemented");
-                #[cfg(facebook)]
+    let acl_checker: Arc<Box<dyn PermissionsChecker<Identity = identity::Identity>>> = match args
+        .no_acl_check
+    {
+        true => Arc::new(Box::new(crate::acl::AllowAll::new())),
+        false => {
+            #[cfg(not(facebook))]
+            unimplemented!("OSS acl checking not yet implemented");
+            #[cfg(facebook)]
+            {
+                let mut checkers: Vec<Box<dyn PermissionsChecker<Identity = identity::Identity>>> =
+                    Vec::new();
+                checkers.push(Box::new(
+                    crate::facebook::acl::new_acl_checker(fb)
+                        .context("while creating fb acl checker")?,
+                ));
                 Arc::new(Box::new(
-                    crate::facebook::fallback_acl_checker::new_fallback_acl_checker(
-                        crate::facebook::acl::new_acl_checker(fb)
-                            .context("while creating fb acl checker")?,
-                    ),
+                    crate::facebook::fallback_acl_checker::new_fallback_acl_checker(checkers),
                 ))
             }
-        };
+        }
+    };
 
     let metald = Metald::new(fb, log.clone(), acl_checker)?;
 
