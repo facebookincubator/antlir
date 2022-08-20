@@ -1287,3 +1287,36 @@ image.layer(
     parent_layer = ":meta_store_layer",
     visibility = ["//antlir/..."],
 )
+
+image.layer(
+    name = "debian-test-layer",
+    flavor = "ubuntu_jammy",
+    # Temporary, will remove when build appliance is not built directly on top
+    # of the cached base image
+    flavor_config_override = image.opts(
+        build_appliance = "//antlir/debian/base_images/facebook:antlir.image.ubuntu.jammy.build_appliance",
+    ),
+    parent_layer = "//antlir/debian/base_images/facebook:antlir.image.ubuntu.jammy.base",
+    visibility = ["//antlir/..."],
+)
+
+image.layer(
+    name = "install_packages",
+    features = [
+        feature.apt_install([
+            "zsh",
+            "cowsay",
+        ]),
+    ],
+    parent_layer = ":debian-test-layer",
+    visibility = ["//antlir/..."],
+)
+
+image.layer(
+    name = "remove_package",
+    features = [
+        feature.apt_remove(["zsh"]),
+    ],
+    parent_layer = ":install_packages",
+    visibility = ["//antlir/..."],
+)
