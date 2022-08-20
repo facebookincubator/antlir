@@ -146,3 +146,32 @@ class MetaKeyValueStoreItemTestCase(BaseItemTestCase):
                     [RemoveMetaKeyValueStoreItem(key="key2")],
                     DUMMY_LAYER_OPTS,
                 )(subvol)
+
+    @with_mocked_temp_volume_dir
+    def test_store_if_not_exists(self) -> None:
+        with TempSubvolumes() as ts:
+            subvol = self._setup_subvol(ts)
+            items = [
+                MetaKeyValueStoreItem(
+                    key="key1",
+                    value="value1",
+                ),
+                MetaKeyValueStoreItem(
+                    key="key1",
+                    value="value2",
+                    store_if_not_exists=True,
+                ),
+            ]
+
+            for item in items:
+                item.build(subvol, DUMMY_LAYER_OPTS)
+
+            self.assertEqual(
+                [
+                    MetaKeyValueStoreItem(
+                        key="key1",
+                        value="value1",
+                    ),
+                ],
+                load_meta_key_value_store_items(subvol),
+            )

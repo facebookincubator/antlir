@@ -532,7 +532,7 @@ class ImageLayerTestCase(unittest.TestCase):
                             {
                                 "build": render_meta_build_contents(sv),
                                 "flavor": [render_flavor(flavor="antlir_test")],
-                                "key_value_store": ["(File d127)"],
+                                "key_value_store": ["(File d187)"],
                                 "private": [
                                     "(Dir)",
                                     {
