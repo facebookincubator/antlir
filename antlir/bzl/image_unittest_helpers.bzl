@@ -92,6 +92,7 @@ def _nspawn_wrapper_properties(
         for k in structs.to_dict(container_opts).keys()
         if not k.startswith("_") and not k in [
             "attach_antlir_dir",
+            "apt_repo_snapshot",
             "boot_await_dbus",
             "boot_await_system_running",
             "internal_only_logs_tmpfs",

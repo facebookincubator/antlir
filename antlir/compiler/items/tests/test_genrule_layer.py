@@ -165,6 +165,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
             plugin_args.assert_called_once_with(
                 serve_rpm_snapshots=(),
                 shadow_proxied_binaries=False,
+                run_apt_proxy=False,
                 shadow_paths=(),
                 proxy_server_config=proxy_server_config_t(
                     fbpkg_db_path=fbpkg_db_path

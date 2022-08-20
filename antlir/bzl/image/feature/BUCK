@@ -35,6 +35,13 @@ shape.impl(
 )
 
 shape.impl(
+    name = "apt.shape",
+    deps = [
+        "//antlir/bzl:target_tagger.shape",
+    ],
+)
+
+shape.impl(
     name = "symlink.shape",
     deps = [
         "//antlir/bzl:target_tagger.shape",

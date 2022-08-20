@@ -49,6 +49,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     #  `List[Variable[_T]]`.
     allowed_host_mount_targets=[],
     flavor="antlir_test",
+    apt_repo_snapshot=[],
 )
 
 

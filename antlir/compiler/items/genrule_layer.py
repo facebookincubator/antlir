@@ -90,6 +90,7 @@ class GenruleLayerItem(genrule_layer_t):
                         shadow_proxied_binaries=c_opts.shadow_proxied_binaries,
                         shadow_paths=c_opts.shadow_paths,
                         proxy_server_config=c_opts.proxy_server_config,
+                        run_apt_proxy=bool(len(c_opts.apt_repo_snapshot)),
                         attach_antlir_dir=(
                             AttachAntlirDirMode.EXPLICIT_ON
                             if c_opts.attach_antlir_dir
