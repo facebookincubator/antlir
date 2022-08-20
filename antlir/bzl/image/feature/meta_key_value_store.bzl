@@ -8,7 +8,7 @@ load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load("//antlir/bzl2/feature:meta_key_value_store.bzl", bzl2_feature_remove_meta_store = "feature_remove_meta_store")
 load(":meta_key_value_store.shape.bzl", "meta_key_value_store_item_t", "remove_meta_key_value_store_item_t")
 
-def feature_meta_store(key, value, require_key = None):
+def feature_meta_store(key, value, require_key = None, store_if_not_exists = False):
     """
   `feature.meta_store("key", "value")` writes the key value pair into
   the META_KEY_VALUE_STORE_FILE in the image. This can be read later. It is enforced that
@@ -24,12 +24,16 @@ def feature_meta_store(key, value, require_key = None):
   are unordered, we need provides/requires semantics to order the individual key/value metadata
   pairs that form this list. Note that we can't just pass the array all in as a single item
   because child layers might want to install their own pre-run-commands.
+
+  The argument `store_if_not_exists` only adds the value if the key doesn't exist. If the key
+  exists, this is a no-op.
     """
 
     item = meta_key_value_store_item_t(
         key = key,
         value = value,
         require_key = require_key,
+        store_if_not_exists = store_if_not_exists,
     )
     return target_tagger_to_feature(
         new_target_tagger(),

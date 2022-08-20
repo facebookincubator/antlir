@@ -32,6 +32,7 @@ class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
     key: str
     value: str
     require_key: Optional[str]
+    store_if_not_exists: bool = False
 
     def provides(self):
         yield ProvidesKey(self.key)
@@ -46,11 +47,12 @@ class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
         items = []
         if subvol.path(META_KEY_VALUE_STORE_FILE).exists():
             items = load_meta_key_value_store_items(subvol)
-        if _contains(items, self.key):
+        if not _contains(items, self.key):
+            items.append(self)
+        elif not self.store_if_not_exists:
             raise RuntimeError(
                 f"Key `{self.key}` is already installed " "and must be removed"
             )
-        items.append(self)
         store_meta_key_value_store_items(subvol, items)
 
 
