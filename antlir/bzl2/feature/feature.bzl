@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":apt.bzl", "feature_apt_install", "feature_apt_remove_if_exists")
 load(":clone.bzl", "feature_clone")
 load(":ensure_dirs_exist.bzl", "feature_ensure_dirs_exist", "feature_ensure_subdirs_exist")
 load(":install.bzl", "feature_install", "feature_install_buck_runnable")
@@ -35,4 +36,6 @@ feature = struct(
     layer_mount = feature_layer_mount,
     meta_store = feature_meta_store,
     remove_meta_store = feature_remove_meta_store,
+    apt_install = feature_apt_install,
+    apt_remove = feature_apt_remove_if_exists,
 )

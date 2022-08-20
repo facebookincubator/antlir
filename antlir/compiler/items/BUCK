@@ -73,6 +73,19 @@ python_library(
 )
 
 python_library(
+    name = "apt_action",
+    srcs = ["apt_action.py"],
+    deps = [
+        ":common",
+        "//antlir:bzl_const",
+        "//antlir/bzl/image/feature:apt.shape-python",
+        "//antlir/nspawn_in_subvol:nspawn",
+        "//antlir/nspawn_in_subvol/plugins:launch_apt_proxy_server",
+        "//antlir/nspawn_in_subvol/plugins:repo_plugins",
+    ],
+)
+
+python_library(
     name = "genrule_layer",
     srcs = ["genrule_layer.py"],
     deps = [
@@ -210,6 +223,7 @@ python_library(
 python_library(
     name = "all-items",
     deps = [
+        ":apt_action",
         ":clone",
         ":ensure_dirs_exist",
         ":genrule_layer",

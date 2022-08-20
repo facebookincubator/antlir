@@ -143,6 +143,7 @@ DUMMY_LAYER_OPTS = LayerOpts(
     version_set_override=None,
     rpm_installer=None,
     rpm_repo_snapshot=None,
+    apt_repo_snapshot=[],
     # pyre-fixme[6]: Expected `frozenset[str]` for 9th param but got
     #  `List[Variable[_T]]`.
     allowed_host_mount_targets=[],

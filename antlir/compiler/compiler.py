@@ -170,6 +170,7 @@ def construct_profile_filename(
 def invoke_compiler_inside_build_appliance(
     *,
     build_appliance: Subvol,
+    run_apt_proxy: bool,
     snapshot_dir: Optional[Path],
     args: argparse.Namespace,
     argv: List[str],
@@ -212,6 +213,7 @@ def invoke_compiler_inside_build_appliance(
                     serve_rpm_snapshots=[snapshot_dir] if snapshot_dir else [],
                     # We'll explicitly call the RPM installer wrapper we need.
                     shadow_proxied_binaries=False,
+                    run_apt_proxy=run_apt_proxy,
                 ),
             ),
         )
@@ -272,6 +274,10 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
             snapshot_dir=Path(flavor_config.rpm_repo_snapshot)
             if flavor_config.rpm_repo_snapshot
             else None,
+            run_apt_proxy=(
+                flavor_config.apt_repo_snapshot
+                and len(flavor_config.apt_repo_snapshot) > 0
+            ),
             args=args,
             argv=argv,
         )
@@ -285,6 +291,7 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
             rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot)
             if flavor_config.rpm_repo_snapshot
             else None,
+            apt_repo_snapshot=flavor_config.apt_repo_snapshot,
             artifacts_may_require_repo=args.artifacts_may_require_repo,
             target_to_path=args.targets_and_outputs,
             subvolumes_dir=args.subvolumes_dir,
