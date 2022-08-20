@@ -16,9 +16,6 @@ rust_binary(
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
         "//manifold/clients/rust:manifold_client",
-        "//antlir/facebook:commit-deb-snapshot",
-        "//antlir:find_root",
-        "//antlir/filesystem/absolute_path:absolute_path",
     ] + third_party.libraries(
         [
             "anyhow",
@@ -104,8 +101,6 @@ buck_command_alias(
     args = [
         "--repourl",
         "https://mirror.facebook.net/ubuntu/",
-        "--debflavor",
-        "ubuntu",
         "--distro",
         "jammy",
         "--arch",
