@@ -210,6 +210,27 @@ where
     }
 }
 
+/// If the given path has a filename, add the provided extension to it as a suffix. If it has
+/// no filename, produce a filename that matches the desired extension.
+///
+/// See unittests for examples.
+fn add_extension(path: impl AsRef<Path>, extension: &str) -> PathBuf {
+    let path = path.as_ref();
+    if path.is_dir() {
+        path.join(format!(".{extension}"))
+    } else {
+        match path.file_name() {
+            Some(name) => {
+                let mut filename = name.to_os_string();
+                filename.push(".");
+                filename.push(extension);
+                path.with_file_name(filename)
+            }
+            None => path.with_file_name(format!(".{extension}")),
+        }
+    }
+}
+
 #[derive(Debug)]
 /// There are a few special cased tokens that hold meaning in MetalOS.
 pub enum Alias<S> {
@@ -227,11 +248,11 @@ impl<S> Alias<S> {
     }
 
     fn json_path(&self) -> PathBuf {
-        self.base_path().with_extension("json")
+        add_extension(self.base_path(), "json")
     }
 
     fn binary_path(&self) -> PathBuf {
-        self.base_path().with_extension("bin")
+        add_extension(self.base_path(), "bin")
     }
 
     pub fn custom(alias: String) -> Self {
@@ -297,11 +318,11 @@ where
     }
 
     fn json_path(&self) -> PathBuf {
-        self.base_path().with_extension("json")
+        add_extension(self.base_path(), "json")
     }
 
     fn binary_path(&self) -> PathBuf {
-        self.base_path().with_extension("bin")
+        add_extension(self.base_path(), "bin")
     }
 
     /// Mark this token as the staged version of a state item.
@@ -450,6 +471,22 @@ mod tests {
     use example::Example;
 
     use super::*;
+
+    #[test]
+    fn extensions() -> Result<()> {
+        assert_eq!(
+            add_extension("/run/foo", "json"),
+            Path::new("/run/foo.json")
+        );
+        assert_eq!(add_extension("/run/", "json"), Path::new("/run/.json"));
+        assert_eq!(add_extension("/run/..", "json"), Path::new("/run/../.json"));
+        assert_eq!(add_extension("/", "json"), Path::new("/.json"));
+        assert_eq!(
+            add_extension("/some/path/metalos.service.demo", "bin"),
+            Path::new("/some/path/metalos.service.demo.bin"),
+        );
+        Ok(())
+    }
 
     #[test]
     fn parse() -> Result<()> {
