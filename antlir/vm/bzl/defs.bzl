@@ -56,6 +56,7 @@ with the options allowed there.  The key differences with
   no way to run VM tests in non-booted mode.
 """
 
+load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
@@ -247,6 +248,7 @@ def _vm_multi_kernel_unittest(
         **kwargs):
     if len(kernel_list) == 0:
         fail("{}: will not run on any kernels, check the selection query!".format(name))
+    kernel_list = sets.to_list(sets.make(kernel_list))
     for uname in kernel_list:
         kernel = kernels.get(uname)
         suffix = uname
