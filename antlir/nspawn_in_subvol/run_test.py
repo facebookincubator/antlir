@@ -18,16 +18,20 @@ to exist inside the image, and takes the liberty of rewriting some of its
 arguments, as documented in `rewrite_test_cmd`.
 """
 import argparse
+import json
 import os
 import shlex
 import sys
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from typing import Dict, Iterable, List, Tuple
 
 from antlir.fs_utils import Path
 
 from antlir.nspawn_in_subvol.cmd import PopenArgs
 from antlir.nspawn_in_subvol.run import _set_up_run_cli
+
+
+CONSOLE_LOG_ARTIFACT_NAME = "container-console.txt"
 
 
 def forward_env_vars(environ: Dict[str, str]) -> Iterable[str]:
@@ -262,27 +266,53 @@ if __name__ == "__main__":  # pragma: no cover
 
         # This should only used only for `image.*_unittest` targets.
         assert cli_setup.opts.cmd[0] == "/layer-test-binary.par"
-        # Always use the default `console` -- let it go to stderr so that
-        # tests are easier to debug.
-        assert cli_setup.console is None
-        ret, _boot_ret = cli_setup._replace(
-            opts=cli_setup.opts._replace(
-                cmd=new_cmd,
-                # pyre-fixme[60]: Concatenation not yet support for multiple
-                #  variadic tuples: `*cli_setup.opts.forward_fd,
-                #  *fds_to_forward`. pyre-fixme[60]: Expected to unpack an
-                #  iterable, but got `unknown`.
-                forward_fd=(*cli_setup.opts.forward_fd, *fds_to_forward),
+
+        # If these env vars are set, the container console logs will go to a
+        # file instead of directly to stderr
+        artifacts_dir = os.getenv("TEST_RESULT_ARTIFACTS_DIR")
+        annotations_dir = os.getenv("TEST_RESULT_ARTIFACT_ANNOTATIONS_DIR")
+        if artifacts_dir:
+            artifacts_dir = Path(artifacts_dir)
+            os.makedirs(artifacts_dir, exist_ok=True)
+            assert annotations_dir is not None
+            annotations_dir = Path(annotations_dir)
+            # We don't need to write anything to annotations_dir, but it does
+            # need to exist for any logs to uploaded
+            os.makedirs(annotations_dir, exist_ok=True)
+            console_out = open(artifacts_dir / CONSOLE_LOG_ARTIFACT_NAME, "w")
+            with open(
+                annotations_dir / (CONSOLE_LOG_ARTIFACT_NAME + ".annotation"),
+                "w",
+            ) as f:
+                json.dump(
+                    {
+                        "type": {"generic_text_log": {}},
+                        "description": "Container Console Logs",
+                    },
+                    f,
+                )
+        else:
+            console_out = nullcontext(sys.stderr)
+        with console_out as console:
+            cli_setup = cli_setup._replace(console=console)
+            ret, _boot_ret = cli_setup._replace(
+                opts=cli_setup.opts._replace(
+                    cmd=new_cmd,
+                    # pyre-fixme[60]: Concatenation not yet support for multiple
+                    #  variadic tuples: `*cli_setup.opts.forward_fd,
+                    #  *fds_to_forward`. pyre-fixme[60]: Expected to unpack an
+                    #  iterable, but got `unknown`.
+                    forward_fd=(*cli_setup.opts.forward_fd, *fds_to_forward),
+                )
+            )._run_nspawn(
+                PopenArgs(
+                    check=False,  # We forward the return code below
+                    # By default, our internal `Popen` analogs redirect `stdout`
+                    # to `stderr` to protect stdout from subprocess spam.  Undo
+                    # that, since we want this CLI to be usable in pipelines.
+                    stdout=1,
+                )
             )
-        )._run_nspawn(
-            PopenArgs(
-                check=False,  # We forward the return code below
-                # By default, our internal `Popen` analogs redirect `stdout`
-                # to `stderr` to protect stdout from subprocess spam.  Undo
-                # that, since we want this CLI to be usable in pipelines.
-                stdout=1,
-            )
-        )
 
     # Only trigger SystemExit after the context was cleaned up.
     sys.exit(ret.returncode)
