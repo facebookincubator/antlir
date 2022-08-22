@@ -76,6 +76,8 @@ thrift_library(
         # @oss-disable: "//syseng/provisioning_v2/faceboot/server/...", 
         # @oss-disable: "//metalos/metald/facebook/...", 
         "//metalos/lib/service/...",
+        "//configerator/structs/metalos/config_provider_utils:config_provider_utils-rust",
+        "//configerator/structs/metalos/config_provider_utils:config_provider_utils-rust-unittest",
     ],
     deps = [
         "//common/fb303/if:fb303",
