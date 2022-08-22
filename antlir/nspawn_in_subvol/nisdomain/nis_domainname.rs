@@ -43,8 +43,10 @@ fn main() -> std::io::Result<()> {
         }
         Op::Set => {
             let hostname = b"AntlirNotABuildStep";
-            let res =
-                unsafe { nix::libc::setdomainname(hostname.as_ptr() as *const i8, hostname.len()) };
+            let res = unsafe {
+                nix::libc::setdomainname(hostname.as_ptr() as *const c_char, hostname.len())
+            };
+
             match res {
                 0 => Ok(()),
                 _ => Err(Errno::last().into()),
