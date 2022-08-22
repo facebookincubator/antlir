@@ -150,11 +150,15 @@ module.exports = {
         ...fbInternalOnly([
           {
             type: 'doc',
-            id: 'metalos/fb/hacking_guide',
+            id: 'metalos/fb/host-config-proxy',
           },
           {
             type: 'doc',
             id: 'metalos/fb/mclassica',
+          },
+          {
+            type: 'doc',
+            id: 'metalos/fb/hacking_guide',
           },
           {
             type: 'category',
