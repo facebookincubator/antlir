@@ -54,4 +54,5 @@ def image_rust_unittest(
         test = ":" + wrapper_binary,
         type = "rust",
         visibility = get_visibility(visibility),
+        **wrapper_props.outer_test_kwargs
     )
