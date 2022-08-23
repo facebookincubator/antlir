@@ -13,8 +13,11 @@ METALOS_DIR = "/metalos"
 # service_t shape (from service.shape.bzl)
 def native_service(
         service,
+        parent_layer = "//metalos/services/base:base",
+        flavor = None,
         extra_features = None,
-        visibility = None):
+        visibility = None,
+        build_fbpkg = True):
     features = [
         feature.ensure_dirs_exist(METALOS_DIR),
         feature.ensure_subdirs_exist(METALOS_DIR, "bin"),
@@ -91,13 +94,17 @@ def native_service(
             visibility = visibility if visibility != None else ["//metalos/...", "//netos/..."],
         )
 
+    layer_name = service.name + "--layer"
     image.layer(
-        name = service.name + "--layer",
+        name = layer_name,
         features = features,
-        parent_layer = "//metalos/services/base:base",
+        parent_layer = parent_layer,
+        flavor = flavor,
         visibility = visibility if visibility != None else ["//metalos/...", "//netos/..."],
     )
-    # @oss-disable: native_service_fbpkg(service = service) 
+    if build_fbpkg:
+        # @oss-disable: native_service_fbpkg(service = service) 
+    return layer_name
 
 def binary_target_to_path(target):
     return paths.join(METALOS_DIR, "bin/{}".format(target.replace("/", ".").lstrip(".")))
