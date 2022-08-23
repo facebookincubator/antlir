@@ -14,6 +14,7 @@ use clap::Parser;
 use metalos_host_configs::packages::Sendstream;
 use metalos_host_configs::packages::Service as ServicePackage;
 use metalos_host_configs::runtime_config::Service;
+use metalos_host_configs::runtime_config::ServiceType;
 use package_download::default_downloader;
 use package_download::ensure_packages_on_disk_ignoring_artifacts;
 use service::ServiceSet;
@@ -26,7 +27,7 @@ use crate::PackageArg;
 
 #[derive(Parser)]
 pub(crate) enum Opts {
-    /// Start specific versions of a set of native services, replacing the
+    /// Start specific versions of a set of native and OS services, replacing the
     /// running version if necessary.
     Start(Start),
     /// Stop a set of native services
@@ -40,12 +41,16 @@ impl From<&PackageArg<Sendstream>> for Service {
         Service {
             svc: ServicePackage::new(sid.name.clone(), sid.uuid, None),
             config_generator: None,
+            svc_type: Some(ServiceType::NATIVE),
         }
     }
 }
 
 #[derive(Parser)]
 pub(crate) struct Start {
+    #[clap(short, long)]
+    os_services: Vec<PackageArg<Sendstream>>,
+    #[clap(short, long)]
     services: Vec<PackageArg<Sendstream>>,
 }
 
@@ -68,7 +73,7 @@ pub(crate) async fn service(log: Logger, fb: fbinit::FacebookInit, opts: Opts) -
             let dl = default_downloader(fb).context("while creating downloader")?;
             ensure_packages_on_disk_ignoring_artifacts(
                 log.clone(),
-                dl,
+                dl.clone(),
                 &start
                     .services
                     .iter()
@@ -76,9 +81,26 @@ pub(crate) async fn service(log: Logger, fb: fbinit::FacebookInit, opts: Opts) -
                     .collect::<Vec<_>>(),
             )
             .await?;
+            ensure_packages_on_disk_ignoring_artifacts(
+                log.clone(),
+                dl,
+                &start
+                    .os_services
+                    .iter()
+                    .map(|sa| {
+                        let mut svc = Service::from(sa);
+                        svc.svc_type = Some(ServiceType::OS);
+                        svc.svc.into()
+                    })
+                    .collect::<Vec<_>>(),
+            )
+            .await?;
 
             let mut set = ServiceSet::current(&sd).await?;
             for svc in &start.services {
+                set.insert(svc.into());
+            }
+            for svc in &start.os_services {
                 set.insert(svc.into());
             }
             let tx = Transaction::with_next(&sd, set).await?;

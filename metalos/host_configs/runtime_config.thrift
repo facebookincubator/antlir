@@ -24,7 +24,18 @@ struct RuntimeConfig {
   2: list<Service> services;
 } (rust.exhaustive)
 
+enum ServiceType {
+  // NATIVE services execute inside a heavily read-only sandboxed environment with
+  // specific writable paths for logs, state, etc.
+  NATIVE = 0,
+  // OS services execute inside the main OS layer and is meant to be used for
+  // services/binaries that MUST run at the lower level of the OS.
+  // ATTENTION: USE THIS KIND ONLY WHEN STRICTLY NECESSARY.
+  OS = 1,
+}
+
 struct Service {
   1: packages.Package svc;
   2: optional packages.Package config_generator;
+  3: optional ServiceType svc_type;
 } (rust.exhaustive, rust.ord)
