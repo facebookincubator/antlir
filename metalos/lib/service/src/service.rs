@@ -507,6 +507,7 @@ mod tests {
 
     use metalos_host_configs::packages::Service as ServicePackage;
     use metalos_host_configs::packages::ServiceConfigGenerator;
+    use metalos_host_configs::runtime_config::ServiceType;
     use metalos_macros::containertest;
 
     use super::*;
@@ -546,6 +547,7 @@ mod tests {
                     .expect("this is a valid uuid"),
                 None,
             )),
+            svc_type: Some(ServiceType::NATIVE),
         }
     }
 

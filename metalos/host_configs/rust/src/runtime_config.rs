@@ -20,11 +20,19 @@ pub struct RuntimeConfig {
     pub services: Vec<Service>,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq, PartialOrd, Ord, Eq, ThriftWrapper)]
+#[thrift(metalos_thrift_host_configs::runtime_config::ServiceType)]
+pub enum ServiceType {
+    NATIVE,
+    OS,
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, ThriftWrapper)]
 #[thrift(metalos_thrift_host_configs::runtime_config::Service)]
 pub struct Service {
     pub svc: packages::Service,
     pub config_generator: Option<packages::ServiceConfigGenerator>,
+    pub svc_type: Option<ServiceType>,
 }
 
 impl Service {

@@ -136,6 +136,7 @@ impl Dropin {
 #[cfg(test)]
 mod tests {
     use anyhow::Result;
+    use metalos_host_configs::runtime_config::ServiceType;
     use metalos_macros::containertest;
 
     use super::*;
@@ -151,6 +152,7 @@ mod tests {
                 None,
             ),
             config_generator: None,
+            svc_type: Some(ServiceType::NATIVE),
         });
         let di = Dropin::new(&svc)?;
         // this is partially a sanity check on the serde_systemd crate, but is
@@ -164,7 +166,7 @@ mod tests {
                  After=metalos-native-service@{alias}.service\n\
                  Requires=metalos-native-service@{alias}.service\n\
                  PropagatesStopTo=metalos-native-service@{alias}.service\n\
-                 Description={{\"svc\":{{\"svc\":{{\"format\":1,\"id\":{{\"uuid\":\"00000000000040008000000000000001\"}},\"kind\":5,\"name\":\"metalos.service.demo\"}}}},\"run_uuid\":\"{uuid}\"}}\n\
+                 Description={{\"svc\":{{\"svc\":{{\"format\":1,\"id\":{{\"uuid\":\"00000000000040008000000000000001\"}},\"kind\":5,\"name\":\"metalos.service.demo\"}},\"svc_type\":0}},\"run_uuid\":\"{uuid}\"}}\n\
                  [Service]\n\
                  RootDirectory=/run/fs/control/run/service-roots/metalos.service.demo-00000000000040008000000000000001-{uuid_simple}\n\
                  Environment=CACHE_DIRECTORY=/metalos/cache\n\

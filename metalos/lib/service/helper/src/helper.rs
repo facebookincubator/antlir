@@ -84,6 +84,7 @@ pub(crate) mod tests {
 
     use metalos_host_configs::packages::Service as ServicePackage;
     use metalos_host_configs::runtime_config::Service;
+    use metalos_host_configs::runtime_config::ServiceType;
     use metalos_macros::containertest;
 
     use super::*;
@@ -99,6 +100,7 @@ pub(crate) mod tests {
                 None,
             ),
             config_generator: None,
+            svc_type: Some(ServiceType::NATIVE),
         });
         let run_uuid = svc.run_uuid();
         init(svc)?;
