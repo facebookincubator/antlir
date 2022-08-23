@@ -499,7 +499,7 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
             Output {
                 files: vec![
                     File {
-                        path: "/etc/systemd/network/00-metalos-eth0.network".into(),
+                        path: "/usr/lib/systemd/network/00-metalos-eth0.network".into(),
                         mode: 0o444,
                         contents: r#"
 [Match]
@@ -507,7 +507,7 @@ MACAddress=00:00:00:00:00:01
 
 [Network]
 
-Domains=01.abc0.facebook.com abc0.facebook.com facebook.com 
+Domains=01.abc0.facebook.com abc0.facebook.com facebook.com
 # Use static addresses and gw
 IPv6AcceptRA=no
 
@@ -525,7 +525,7 @@ Metric=10
                         .into()
                     },
                     File {
-                        path: "/etc/systemd/network/00-metalos-eth8.network".into(),
+                        path: "/usr/lib/systemd/network/00-metalos-eth8.network".into(),
                         mode: 0o444,
                         contents: r#"
 [Match]
@@ -533,7 +533,7 @@ MACAddress=00:00:00:00:00:03
 
 [Network]
 
-Domains=01.abc0.facebook.com abc0.facebook.com facebook.com 
+Domains=01.abc0.facebook.com abc0.facebook.com facebook.com
 # Use static addresses and gw
 IPv6AcceptRA=no
 
@@ -543,7 +543,7 @@ IPv6AcceptRA=no
                         .into()
                     },
                     File {
-                        path: "/etc/systemd/network/00-metalos-beth3.network".into(),
+                        path: "/usr/lib/systemd/network/00-metalos-beth3.network".into(),
                         mode: 0o444,
                         contents: r#"
 [Match]
@@ -551,7 +551,7 @@ MACAddress=00:00:00:00:00:04
 
 [Network]
 
-Domains=01.abc0.facebook.com abc0.facebook.com facebook.com 
+Domains=01.abc0.facebook.com abc0.facebook.com facebook.com
 # Use static addresses and gw
 IPv6AcceptRA=no
 
@@ -574,7 +574,7 @@ Metric=1026
                         .into()
                     },
                     File {
-                        path: "/etc/systemd/network/00-metalos-eth0.link".into(),
+                        path: "/usr/lib/systemd/network/00-metalos-eth0.link".into(),
                         mode: 0o444,
                         contents: r#"
 [Match]
@@ -589,7 +589,7 @@ RequiredForOnline=yes
                         .into()
                     },
                     File {
-                        path: "/etc/systemd/network/00-metalos-eth8.link".into(),
+                        path: "/usr/lib/systemd/network/00-metalos-eth8.link".into(),
                         mode: 0o444,
                         contents: r#"
 [Match]
@@ -604,7 +604,7 @@ RequiredForOnline=no
                         .into()
                     },
                     File {
-                        path: "/etc/systemd/network/00-metalos-beth3.link".into(),
+                        path: "/usr/lib/systemd/network/00-metalos-beth3.link".into(),
                         mode: 0o444,
                         contents: r#"
 [Match]
