@@ -5,7 +5,7 @@ MACAddress={{mac}}
 
 [Network]
 
-Domains={{#each search}}{{this}} {{/each}}
+Domains={{search}}
 # Use static addresses and gw
 IPv6AcceptRA=no
 
@@ -74,10 +74,11 @@ def auto_search_domains(name: str.type) -> [str.type]:
 
 
 def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
-    search = (
+    unit_file_dir = "/usr/lib/systemd/network"
+    search = " ".join(
         auto_search_domains(prov.identity.hostname)
         + prov.identity.network.dns.search_domains
-    )
+    ).strip()
     network_units = []
     link_units = []
 
@@ -135,9 +136,7 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
         )
         network_units += [
             metalos.file(
-                path="/etc/systemd/network/00-metalos-{}.network".format(
-                    iface.name or i
-                ),
+                path="{}/00-metalos-{}.network".format(unit_file_dir, iface.name or i),
                 contents=unit,
             )
         ]
@@ -152,7 +151,7 @@ def generator(prov: metalos.ProvisioningConfig) -> metalos.Output.type:
             )
             link_units += [
                 metalos.file(
-                    path="/etc/systemd/network/00-metalos-{}.link".format(iface.name),
+                    path="{}/00-metalos-{}.link".format(unit_file_dir, iface.name),
                     contents=unit,
                 )
             ]
