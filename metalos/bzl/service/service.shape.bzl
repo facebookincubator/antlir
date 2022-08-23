@@ -40,7 +40,7 @@ runas_t = shape.shape(
     group = shape.field(str, default = "root"),
 )
 
-service_type_t = shape.enum("simple", "notify")
+service_type_t = shape.enum("simple", "notify", "oneshot")
 
 exec_t = shape.shape(
     runas = shape.field(runas_t, default = shape.new(runas_t)),
