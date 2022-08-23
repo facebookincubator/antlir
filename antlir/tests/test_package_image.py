@@ -11,6 +11,8 @@ import tempfile
 from contextlib import contextmanager
 from typing import Iterator
 
+from antlir.btrfs_diff.parse_send_stream import check_magic, check_version
+
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_as_corrupted_by_cpio,
     render_demo_as_corrupted_by_gnu_tar,
@@ -26,8 +28,6 @@ from antlir.fs_utils import (
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.package_image import (
-    btrfs_get_supported_sendstream_version,
-    BTRFS_SENDSTREAM_VERSIONS,
     Format,
     package_image,
     ZSTD_LEVEL_DEFAULT,
@@ -109,88 +109,55 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         )
 
     def test_package_image_as_sendstream(self):
-        kernel_sendstream_version = btrfs_get_supported_sendstream_version()
-        for format in ["sendstream", "sendstream.zst"]:
-            for sendstream_version in BTRFS_SENDSTREAM_VERSIONS:
-                for compression_level in [
-                    ZSTD_LEVEL_MIN,
-                    -10,
-                    ZSTD_LEVEL_NONE,
-                    ZSTD_LEVEL_DEFAULT,
-                    ZSTD_LEVEL_MAX,
-                ]:
-                    # TODO: Negative levels are currently broken for
-                    # v2_synthetic!
-                    # The associated fix is currently in the v0.7 branch
-                    # Remove this once the change is merged in
-                    if (
-                        sendstream_version == "2_synthetic"
-                        or (
-                            sendstream_version == "2"
-                            and kernel_sendstream_version == 1
-                        )
-                    ) and compression_level < ZSTD_LEVEL_NONE:
-                        continue
+        with self._package_image(
+            self._sibling_path("create_ops.layer"),
+            "sendstream",
+        ) as out_path:
+            self._assert_sendstream_files_equal(
+                self._sibling_path("create_ops-original.sendstream"),
+                out_path,
+            )
 
-                    if format == "sendstream.zst":
-                        if sendstream_version != "1":
-                            with self.assertRaisesRegex(
-                                UserError, "Expected sendstream version to be"
-                            ):
-                                with self._package_image(
-                                    self._sibling_path("create_ops.layer"),
-                                    format,
-                                    btrfs_sendstream_version=sendstream_version,
-                                    zstd_compression_level=compression_level,
-                                ):
-                                    pass
-                            continue
-                        elif compression_level == ZSTD_LEVEL_NONE:
-                            with self.assertRaisesRegex(
-                                UserError, "will disable compression"
-                            ):
-                                with self._package_image(
-                                    self._sibling_path("create_ops.layer"),
-                                    format,
-                                    btrfs_sendstream_version=sendstream_version,
-                                    zstd_compression_level=compression_level,
-                                ):
-                                    pass
-                            continue
+    def test_package_image_as_sendstream_zst(self):
+        for compression_level in [
+            ZSTD_LEVEL_MIN,
+            -10,
+            ZSTD_LEVEL_DEFAULT,
+            ZSTD_LEVEL_MAX,
+        ]:
+            with self._package_image(
+                self._sibling_path("create_ops.layer"),
+                "sendstream.zst",
+                zstd_compression_level=compression_level,
+            ) as out_path:
+                self._assert_sendstream_files_equal(
+                    self._sibling_path("create_ops-original.sendstream"),
+                    out_path,
+                )
 
-                    with self._package_image(
-                        self._sibling_path("create_ops.layer"),
-                        format,
-                        btrfs_sendstream_version=sendstream_version,
-                        zstd_compression_level=compression_level,
-                    ) as out_path:
-                        if sendstream_version == "1":
-                            self._assert_sendstream_files_equal(
-                                self._sibling_path(
-                                    "create_ops-original.sendstream"
-                                ),
-                                out_path,
-                            )
-                        else:
-                            # v2 sendstreams don't work with btrfs diff
-                            # yet
-                            pass
+        # Test no compression fails as expected
+        with self.assertRaisesRegex(
+            UserError,
+            "compression level 0 will disable compression for the",
+        ):
+            with self._package_image(
+                self._sibling_path("create_ops.layer"),
+                "sendstream.zst",
+                zstd_compression_level=ZSTD_LEVEL_NONE,
+            ):
+                pass
 
-    def test_package_image_as_sendstream_without_v2_kernel_support(self):
-        format = "sendstream"
-        sendstream_version = "2"
+    def test_package_image_as_sendstream_v2(self):
+        format = "sendstream.v2"
         compression_level = ZSTD_LEVEL_DEFAULT
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             format,
-            # NOTE: Picking an invalid path should drop us back to sendstream 1
-            btrfs_sendstream_kernel_version_path="/dev/null",
-            btrfs_sendstream_version=sendstream_version,
             zstd_compression_level=compression_level,
-        ):
-            # This should generate a v2_synthetic sendstream
-            # v2 sendstreams don't work with btrfs diff yet
-            pass
+        ) as out_path:
+            with out_path.open(mode="rb") as f:
+                check_magic(f)
+                check_version(f, expected=2)
 
     def test_package_image_as_tarball(self):
         with self._package_image(
@@ -484,30 +451,3 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 self._sibling_path("create_ops.layer"), "ext3"
             ) as pkg_path:
                 pass
-
-    def test_btrfs_get_supported_sendstream_version(self) -> None:
-        kernel_sendstream_version = btrfs_get_supported_sendstream_version()
-        dev_null_file_version = btrfs_get_supported_sendstream_version(
-            sysfs_path="/dev/null"
-        )
-        no_file_version = btrfs_get_supported_sendstream_version(
-            sysfs_path="/dev/some_file_that_were_pretty_sure_doesnt_exist"
-        )
-        no_dir_version = btrfs_get_supported_sendstream_version(
-            sysfs_path="/dev/some_dir_that_were_pretty_sure_doesnt_exist/stuff"
-        )
-        # Test case for kernels that don't have an actual sysfs file because of
-        # an old kernel
-        fake_sysfs_version = 0
-        with tempfile.NamedTemporaryFile() as temp_sysfs_path:
-            temp_sysfs_path.write(b"3000")
-            temp_sysfs_path.flush()
-            fake_sysfs_version = btrfs_get_supported_sendstream_version(
-                sysfs_path=temp_sysfs_path.name
-            )
-
-        self.assertTrue(1 <= kernel_sendstream_version <= 2)
-        self.assertEqual(dev_null_file_version, 1)
-        self.assertEqual(no_file_version, 1)
-        self.assertEqual(no_dir_version, 1)
-        self.assertEqual(fake_sysfs_version, 3000)
