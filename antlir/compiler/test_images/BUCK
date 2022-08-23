@@ -901,6 +901,12 @@ package.new(
     layer = ":child/layer",
 )
 
+package.new(
+    name = "child/layer.sendstream.v2",
+    format = "sendstream.v2",
+    layer = ":child/layer",
+)
+
 # This will install /rpm_test/cheese2.txt.
 image.layer(
     name = "base_cheese_layer",

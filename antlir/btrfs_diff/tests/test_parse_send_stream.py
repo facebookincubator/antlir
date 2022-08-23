@@ -52,8 +52,8 @@ class ParseSendStreamTestCase(AntlirTestCase):
     def test_errors(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "Magic b'xxx', not "):
             check_magic(io.BytesIO(b"xxx"))
-        with self.assertRaisesRegex(RuntimeError, "we require version 1"):
-            check_version(io.BytesIO(b"abcd"))
+        with self.assertRaisesRegex(RuntimeError, "but expected version 1"):
+            check_version(io.BytesIO(b"abcd"), expected=1)
         with self.assertRaisesRegex(RuntimeError, "Not enough bytes"):
             file_unpack("<Q", io.BytesIO(b""))
 

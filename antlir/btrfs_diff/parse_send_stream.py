@@ -32,10 +32,12 @@ def check_magic(infile) -> None:
         raise RuntimeError(f'Magic {magic}, not "{BTRFS_SEND_STREAM_MAGIC}"')
 
 
-def check_version(infile) -> None:
+def check_version(infile, expected) -> None:
     (version,) = file_unpack("<I", infile)
-    if version != 1:
-        raise RuntimeError(f"Got version {version}, but we require version 1")
+    if version != expected:
+        raise RuntimeError(
+            f"Got version {version}, but expected version {expected}"
+        )
 
 
 class CommandKind(enum.Enum):
@@ -329,7 +331,7 @@ def read_command(infile):
 
 def parse_send_stream(infile) -> Iterator[SendStreamItem]:
     check_magic(infile)
-    check_version(infile)
+    check_version(infile, expected=1)
     while True:
         cmd = read_command(infile)
         if cmd is None:
