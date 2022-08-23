@@ -11,7 +11,7 @@ from antlir.compiler.items.common import PhaseOrder
 
 from antlir.compiler.items.tests.common import BaseItemTestCase
 from antlir.fs_utils import Path
-
+from antlir.subvol_utils import Subvol
 from antlir.tests.layer_resource import layer_resource_subvol
 
 _DPKG_STATUS_FILE = "/var/lib/dpkg/status"
@@ -46,7 +46,7 @@ class AptActionItemsTestCase(BaseItemTestCase):
             self.assertNotIn(f"Package: {package}", status)
 
     def test_base_layer(self):
-        layer = layer_resource_subvol(__package__, "base_layer")
+        layer = Subvol("base_layer", already_exists=True)
         self._test_packages(
             status_file_path=layer.path(_DPKG_STATUS_FILE),
             assert_present_packages=[],
@@ -54,7 +54,7 @@ class AptActionItemsTestCase(BaseItemTestCase):
         )
 
     def test_installed_apt_from_layer(self):
-        layer = layer_resource_subvol(__package__, "packages_installed_layer")
+        layer = Subvol("packages_installed_layer", already_exists=True)
         self._test_packages(
             status_file_path=layer.path(_DPKG_STATUS_FILE),
             assert_present_packages=["zsh", "cowsay"],
@@ -62,7 +62,7 @@ class AptActionItemsTestCase(BaseItemTestCase):
         )
 
     def test_removed_apt_from_layer(self):
-        layer = layer_resource_subvol(__package__, "packages_removed_layer")
+        layer = Subvol("packages_removed_layer", already_exists=True)
         self._test_packages(
             status_file_path=layer.path(_DPKG_STATUS_FILE),
             assert_present_packages=["cowsay"],
