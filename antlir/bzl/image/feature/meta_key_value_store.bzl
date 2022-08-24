@@ -8,7 +8,7 @@ load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load("//antlir/bzl2/feature:meta_key_value_store.bzl", bzl2_feature_remove_meta_store = "feature_remove_meta_store")
 load(":meta_key_value_store.shape.bzl", "meta_key_value_store_item_t", "remove_meta_key_value_store_item_t")
 
-def feature_meta_store(key, value, require_key = None, store_if_not_exists = False):
+def feature_meta_store(key, value, require_keys = None, store_if_not_exists = False):
     """
   `feature.meta_store("key", "value")` writes the key value pair into
   the META_KEY_VALUE_STORE_FILE in the image. This can be read later. It is enforced that
@@ -18,7 +18,7 @@ def feature_meta_store(key, value, require_key = None, store_if_not_exists = Fal
 
   The argument `key` is the key to be written, and `value` is the value written.
 
-  The argument `require_key` defines a requirement to be satisfied before the current value
+  The argument `require_keys` defines a list of requirements to be satisfied before the current value
   and is used for ordering individual key value pairs. For example, we might want to store
   a list of pre_run_commands, which must be run in a specific order. Since Antlir features
   are unordered, we need provides/requires semantics to order the individual key/value metadata
@@ -28,11 +28,12 @@ def feature_meta_store(key, value, require_key = None, store_if_not_exists = Fal
   The argument `store_if_not_exists` only adds the value if the key doesn't exist. If the key
   exists, this is a no-op.
     """
+    require_keys = require_keys or []
 
     item = meta_key_value_store_item_t(
         key = key,
         value = value,
-        require_key = require_key,
+        require_keys = require_keys,
         store_if_not_exists = store_if_not_exists,
     )
     return target_tagger_to_feature(

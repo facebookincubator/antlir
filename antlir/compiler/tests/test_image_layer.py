@@ -532,7 +532,7 @@ class ImageLayerTestCase(unittest.TestCase):
                             {
                                 "build": render_meta_build_contents(sv),
                                 "flavor": [render_flavor(flavor="antlir_test")],
-                                "key_value_store": ["(File d187)"],
+                                "key_value_store": ["(File d189)"],
                                 "private": [
                                     "(Dir)",
                                     {
@@ -559,7 +559,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 [
                     MetaKeyValueStoreItem(key="key1", value="value1"),
                     MetaKeyValueStoreItem(
-                        key="key2", value="value2", require_key="key1"
+                        key="key2", value="value2", require_keys=["key1"]
                     ),
                 ],
             )

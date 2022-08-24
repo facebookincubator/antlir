@@ -41,11 +41,12 @@ class MetaKeyValueStoreItemTestCase(BaseItemTestCase):
             MetaKeyValueStoreItem(
                 key="key",
                 value="value",
-                require_key="requires",
+                require_keys=["require1", "require2"],
             ),
             {ProvidesKey(key="key")},
             {
-                RequireKey(key="requires"),
+                RequireKey(key="require1"),
+                RequireKey(key="require2"),
                 RequireUser("root"),
             },
         )
@@ -68,12 +69,12 @@ class MetaKeyValueStoreItemTestCase(BaseItemTestCase):
                 MetaKeyValueStoreItem(
                     key="key2",
                     value="value2",
-                    require_key="key1",
+                    require_keys=("key1",),
                 ),
                 MetaKeyValueStoreItem(
                     key="key3",
                     value="value3",
-                    require_key="key2",
+                    require_keys=("key2",),
                 ),
             ]
 
@@ -93,7 +94,7 @@ class MetaKeyValueStoreItemTestCase(BaseItemTestCase):
                     MetaKeyValueStoreItem(
                         key="key3",
                         value="value3",
-                        require_key="key2",
+                        require_keys=("key2",),
                     ),
                 ],
                 load_meta_key_value_store_items(subvol),
