@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::str::FromStr;
 use std::time::Duration;
 
+use absolute_path::AbsolutePathBuf;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
@@ -30,6 +31,7 @@ use bytes::Buf;
 use bytes::Bytes;
 use clap::Parser as ClapParser;
 use fbinit::FacebookInit;
+use find_root::find_repo_root;
 use futures::future::try_join_all;
 use governor::clock::DefaultClock;
 use governor::state::InMemoryState;
@@ -46,6 +48,8 @@ use slog::Drain;
 use strum_macros::EnumString;
 use xz2::read::XzDecoder;
 use xz2::read::XzEncoder;
+
+const REPO_SNAPSHOT_FILE: &str = "fbcode/bot_generated/antlir/debian/repo_snapshots.bzl";
 
 #[derive(Parser)]
 #[grammar_inline = "WHITESPACE = _{\" \" | SPACE_SEPARATOR}\
@@ -136,6 +140,8 @@ struct VersionedReleaseFile {
 struct Args {
     #[clap(long)]
     repourl: String,
+    #[clap(long)]
+    debflavor: String,
     #[clap(long)]
     distro: String,
     #[clap(long)]
@@ -515,7 +521,13 @@ async fn snapshot(
         .await?;
         package_files.push(updated_pkg_file);
     }
+    let components = package_index
+        .fields
+        .get("Components")
+        .context("cannot file components key in releasefile")?
+        .clone();
     let release_file = VersionedReleaseFile::new(&package_files, package_index.fields)?;
+
     upload(
         &release_file,
         &rl_packagebackend,
@@ -523,7 +535,12 @@ async fn snapshot(
         logger.new(o!("Release" => get_sha2_hash(&release_file.content))),
     )
     .await?;
-    Ok(get_sha2_hash(&release_file.content))
+
+    Ok(format!(
+        "SHA256:{} {}",
+        get_sha2_hash(&release_file.content),
+        components
+    ))
 }
 
 #[fbinit::main]
@@ -551,6 +568,16 @@ async fn main(fb: FacebookInit) -> Result<()> {
         log.new(o!("repo" => repo.distro.clone(), "architecture" => format!("{:?}", repo.arch))),
     )
     .await?;
+    let release_hash = "test";
+    let repo_root = find_repo_root(&AbsolutePathBuf::new(std::env::current_exe()?)?)?;
+    commit_deb_snapshot::write_to_bot_generated(
+        release_hash.to_string(),
+        repo.distro,
+        args.debflavor,
+        format!("{:?}", repo.arch).to_lowercase(),
+        repo_root.join(Path::new(REPO_SNAPSHOT_FILE)),
+    )?;
+    commit_deb_snapshot::commit()?;
     info!(log, ""; "release_hash" => release_hash);
     Ok(())
 }
