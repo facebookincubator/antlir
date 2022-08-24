@@ -4,27 +4,39 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:third_party.bzl", "third_party")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-BASE_FEATURES = [
-    feature.rpms_install([
-        # build deps
-        "clang",
-        "autoconf",
-        "automake",
-        "libtool",
-        "texinfo",
-    ]),
-]
-
-third_party.native_build(
-    base_features = BASE_FEATURES,
+third_party.build(
+    name = "libffi",
+    src = third_party.source("libffi"),
+    features = [
+        feature.rpms_install([
+            # build deps
+            "gcc",
+            "autoconf",
+            "autoconf-archive",
+            "libtool",
+            "make",
+            "sed",
+            "net-tools",
+            "tpm-tools",
+            "expect",
+            "socat",
+            "openssl-devel",
+            "texinfo",
+            # static deps
+            "glibc-static",
+            "glib2-static",
+            "pcre-static",
+        ]),
+    ],
     script = third_party.script(
         build = "make",
         install = "make install",
         prepare = """
-            export MAKEFLAGS=-j
-            ./autogen.sh
-            ./configure --disable-shared --prefix="${STAGE}"
+./autogen.sh
+./configure --prefix="${OUTPUT}"
         """,
     ),
+    visibility = ["//antlir/third-party/..."],
 )

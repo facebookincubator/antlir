@@ -1,40 +1,63 @@
-# Copyright (c) Meta Platforms, Inc. and affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
+# (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:third_party.bzl", "third_party")
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-BASE_FEATURES = [
-    feature.rpms_install([
-        # build deps
-        "gcc",
-        "autoconf",
-        "autoconf-archive",
-        "libtool",
-        "make",
-        "findutils",
-        "net-tools",
-        "tpm-tools",
-        "expect",
-        "socat",
-        "python38",
-        # static deps
-        "glibc-static",
-        "glib2-static",
-        "pcre-static",
-        "libtasn1-devel",  # required but seemingly unused (ok with shared here)
-    ]),
-]
+# NOTE: this build script is similar to the one in public_tld
+# but it uses the gcc-toolset-9-binutils linker which is 2.32.
+# The default linker for c8 is 2.30 which has incompatible format for archives.
+# This is required for libffi coming from TP2 which uses ld 2.32
 
-third_party.native_build(
-    base_features = BASE_FEATURES,
-    dependencies = [
-        third_party.library("openssl"),
+third_party.build(
+    name = "swtpm",
+    src = third_party.source("swtpm"),
+    features = [
+        feature.rpms_install([
+            # build deps
+            "gcc",
+            "gcc-toolset-9-binutils",
+            "autoconf",
+            "autoconf-archive",
+            "libtool",
+            "make",
+            "findutils",
+            "net-tools",
+            "tpm-tools",
+            "expect",
+            "socat",
+            "python38",
+            "openssl-devel",
+            # static deps
+            "glibc-static",
+            "glib2-static",
+            "pcre-static",
+            "libtasn1-devel",  # required but seemingly unused (ok with shared here)
+        ]),
+    ],
+    script = third_party.script(
+        build = """
+# swtpm doesnt support static linkage by itself, so convince it
+make LDFLAGS="${LDFLAGS} -all-static"
+        """,
+        install = """
+make install
+
+# swtpm creates a root only folder to keep CA files, and it's not copyable
+# from outside the container, since we don't need it, delete
+rm -rf "${OUTPUT}/var"
+        """,
+        # TODO: Dynamically build the LDFLAGS + CLFAGS env vars based on the provided deps
+        prepare = """
+export CFLAGS="-B/opt/rh/gcc-toolset-9/root/bin -I/third-party-build/deps/libffi/include -I/third-party-build/deps/json-glib/include/json-glib-1.0 -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -I/third-party-build/deps/libtpms/include"
+export LDFLAGS="-L/third-party-build/deps/libtpms/lib -L/third-party-build/deps/libffi/lib/../lib64 -L/third-party-build/deps/json-glib/lib64 -lcrypto -ldl -lpthread"
+
+./autogen.sh --prefix="${OUTPUT}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
+        """,
+    ),
+    deps = [
         third_party.library(
             "libffi",
-            lib_path = "lib64",
         ),
         third_party.library(
             "json-glib",
@@ -42,33 +65,12 @@ third_party.native_build(
         ),
         third_party.library("libtpms"),
     ],
-    script = third_party.script(
-        build = """
-            # swtpm doesnt support static linkage by itself, so convince it
-            make CFLAGS="${CFLAGS}" LDFLAGS="${LDFLAGS} -all-static" LIBS="-ldl -lpthread -lpcre -lffi"
-        """,
-        install = """
-            make install
-
-            # swtpm creates a root only folder to keep CA files, and it's not copyable
-            # from outside the container, since we don't need it, delete
-            rm -rf "${STAGE}/var"
-        """,
-        prepare = """
-            export MAKEFLAGS=-j
-
-            export CFLAGS="-I${STAGE}/include"
-            export LDFLAGS="-L${STAGE}/lib -L${STAGE}/lib64"
-            export PKG_CONFIG_PATH="${STAGE}/lib/pkgconfig:${STAGE}/lib64/pkgconfig"
-
-            LIBS="-lcrypto -ldl -lpthread" \
-            ./autogen.sh --prefix="${STAGE}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
-        """,
-    ),
 )
 
-buck_genrule(
-    name = "bin",
-    out = "swtpm",
-    bash = "cp $(location :swtpm)/bin/swtpm $OUT",
+# Temporary until the cached layer is in place
+hoist(
+    name = "swtpm-bin",
+    layer = ":swtpm",
+    path = "/bin/swtpm",
+    visibility = ["PUBLIC"],
 )

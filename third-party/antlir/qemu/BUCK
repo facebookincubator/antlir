@@ -6,9 +6,10 @@
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-third_party.native_build(
+third_party.build(
     name = "qemu",
-    base_features = [
+    src = third_party.source("qemu"),
+    features = [
         feature.rpms_install([
             # build deps
             "gcc",
@@ -42,7 +43,7 @@ export MAKEFLAGS=-j
 
 ./configure \\
     --target-list=x86_64-softmmu,aarch64-softmmu \\
-    --prefix="${STAGE}" \\
+    --prefix="${OUTPUT}" \\
     --without-default-features \\
     --enable-attr \\
     --enable-cap-ng \\
