@@ -1,6 +1,5 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
@@ -131,7 +130,6 @@ image.layer(
     features = [
         feature.install(":bootloader.efi", "/EFI/Linux/metalos.efi"),
     ],
-    flavor = flavor_helpers.get_antlir_linux_flavor(),
     parent_layer = "//antlir/bzl/linux/boot/systemd:base",
     visibility = ["//metalos/disk/..."],
 )

@@ -62,4 +62,5 @@ export MAKEFLAGS=-j
     --enable-zstd
         """,
     ),
+    visibility = ["//antlir/vm/..."],
 )

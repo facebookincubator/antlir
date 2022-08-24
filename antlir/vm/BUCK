@@ -1,42 +1,8 @@
 # @noautodeps
 
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library")
 load("//antlir/vm/bzl:defs.bzl", "vm")
-
-roms = [
-    "kvmvapic.bin",
-    "linuxboot_dma.bin",
-    "vgabios-stdvga.bin",
-    "efi-virtio.rom",
-]
-
-buck_genrule(
-    name = "roms",
-    out = ".",
-    cmd = " && ".join([
-        "cp $(location {}) $OUT/".format(
-            third_party.library(
-                "qemu",
-                "share/qemu/{}".format(rom),
-            ),
-        )
-        for rom in roms
-    ]),
-    visibility = ["PUBLIC"],
-)
-
-buck_genrule(
-    name = "efi-code",
-    out = "out",
-    cmd = "cp $(location {}) $OUT".format(
-        third_party.library(
-            "qemu",
-            "share/qemu/edk2-x86_64-code.fd",
-        ),
-    ),
-    visibility = ["PUBLIC"],
-)
 
 python_library(
     name = "common",
