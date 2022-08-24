@@ -1275,7 +1275,7 @@ image.layer(
         feature.meta_store(
             "key2",
             "value2",
-            require_key = "key1",
+            require_keys = ["key1"],
         ),
         feature.meta_store("key1", "value1"),
     ],

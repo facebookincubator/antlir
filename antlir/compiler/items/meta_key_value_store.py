@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
-from typing import Iterable, List, Optional
+from typing import Iterable, List, Tuple
 
 from antlir.bzl.image.feature.meta_key_value_store import (
     meta_key_value_store_item_t,
@@ -31,15 +31,15 @@ META_KEY_VALUE_STORE_FILE = META_DIR / "key_value_store"
 class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
     key: str
     value: str
-    require_key: Optional[str]
+    require_keys: Tuple[str, ...] = ()
     store_if_not_exists: bool = False
 
     def provides(self):
         yield ProvidesKey(self.key)
 
     def requires(self):
-        if self.require_key:
-            yield RequireKey(self.require_key)
+        for key in self.require_keys:
+            yield RequireKey(key)
         # Make sure this item is after PhasesProvide
         yield RequireUser("root")
 
