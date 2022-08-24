@@ -146,6 +146,7 @@ module.exports = {
         'metalos/native-services',
         'metalos/update-flows',
         'metalos/boot',
+        'metalos/network',
         'metalos/apis',
         ...fbInternalOnly([
           {
