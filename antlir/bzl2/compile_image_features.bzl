@@ -42,8 +42,13 @@ def compile_image_features(
     '''
     if features == None:
         features = []
+    else:
+        features = list(features)
+
     if extra_deps == None:
         extra_deps = []
+    else:
+        extra_deps = list(extra_deps)
 
     check_flavor(
         flavor,
