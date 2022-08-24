@@ -5,7 +5,6 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/bzl:oss_shim.bzl", "third_party")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load(":kernel.bzl", "normalize_kernel")
@@ -23,11 +22,11 @@ def _new_vm_emulator(
     # `third_party.library` function.  It must be invoked inside of
     # either a rule definition or another function, it cannot be used
     # at the top-level of an included .bzl file (where the type def is).
-    firmware = firmware or antlir_dep("vm:efi-code")
-    binary = binary or third_party.library("qemu")
-    img_util = img_util or third_party.library("qemu", "qemu-img")
-    roms_dir = roms_dir or antlir_dep("vm:roms")
-    tpm_binary = tpm_binary or antlir_dep("third-party/swtpm:swtpm-bin")
+    firmware = firmware or antlir_dep("vm/runtime:edk2-x86_64-code.fd")
+    binary = binary or antlir_dep("vm/runtime:qemu-system-x86_64")
+    img_util = img_util or antlir_dep("vm/runtime:qemu-img")
+    roms_dir = roms_dir or antlir_dep("vm/runtime:roms")
+    tpm_binary = tpm_binary or antlir_dep("vm/runtime:swtpm")
 
     return emulator_t(
         binary = binary,
@@ -156,9 +155,9 @@ def _new_vm_opts(
 
     if disk and not disks:
         disks = [disk]
-    if disk and disks:
+    elif disk and disks:
         disks = [disk] + list(disks)
-    if not disk and not disks:
+    elif not disk and not disks:
         disks = [_new_vm_disk()]
 
     runtime = runtime or _new_vm_runtime()

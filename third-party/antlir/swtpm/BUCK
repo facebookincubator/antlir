@@ -1,6 +1,5 @@
 # (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
-load("//antlir/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
@@ -55,6 +54,7 @@ export LDFLAGS="-L/third-party-build/deps/libtpms/lib -L/third-party-build/deps/
 ./autogen.sh --prefix="${OUTPUT}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
         """,
     ),
+    visibility = ["//antlir/vm/..."],
     deps = [
         third_party.library(
             "libffi",
@@ -65,12 +65,4 @@ export LDFLAGS="-L/third-party-build/deps/libtpms/lib -L/third-party-build/deps/
         ),
         third_party.library("libtpms"),
     ],
-)
-
-# Temporary until the cached layer is in place
-hoist(
-    name = "swtpm-bin",
-    layer = ":swtpm",
-    path = "/bin/swtpm",
-    visibility = ["PUBLIC"],
 )

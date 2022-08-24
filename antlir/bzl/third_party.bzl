@@ -117,6 +117,7 @@ chmod +x $OUT
         cmd = [
             "/build.sh",
         ],
+        visibility = ["//antlir/..."],
     )
 
     image.layer(
