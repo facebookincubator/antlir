@@ -6,45 +6,41 @@
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-BASE_FEATURES = [
-    feature.rpms_install([
-        # build deps
-        "gcc",
-        "autoconf",
-        "autoconf-archive",
-        "libtool",
-        "make",
-        "sed",
-        "net-tools",
-        "tpm-tools",
-        "expect",
-        "socat",
-        "openssl-devel",
-        # static deps
-        "glibc-static",
-        "glib2-static",
-        "pcre-static",
-    ]),
-]
-
-third_party.native_build(
+third_party.build(
     name = "libtpms",
-    base_features = BASE_FEATURES,
+    src = third_party.source("libtpms"),
+    features = [
+        feature.rpms_install([
+            # build deps
+            "gcc",
+            "autoconf",
+            "autoconf-archive",
+            "libtool",
+            "make",
+            "sed",
+            "net-tools",
+            "tpm-tools",
+            "expect",
+            "socat",
+            "openssl-devel",
+            # static deps
+            "glibc-static",
+            "glib2-static",
+            "pcre-static",
+        ]),
+    ],
     script = third_party.script(
         build = "make",
         install = "make install",
         prepare = """
-export MAKEFLAGS=-j
-
-export CFLAGS="-I${STAGE}/include"
-export LDFLAGS="-L${STAGE}/lib"
-export PKG_CONFIG_PATH="${STAGE}/lib/pkgconfig"
+export CFLAGS="-fPIC"
 
 # need to fix a global symbol otherwise it collides
 # later on due to static linkage
 sed -i 's/char state_directory/static char state_directory/' ./src/tpm12/tpm_nvfile.c
 
-./autogen.sh --prefix="${STAGE}" --with-openssl --with-tpm2 --disable-shared
+./autogen.sh --prefix="${OUTPUT}" --with-openssl --with-tpm2 --disable-shared
         """,
     ),
+    visibility = ["//antlir/third-party/..."],
 )

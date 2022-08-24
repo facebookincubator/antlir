@@ -27,7 +27,7 @@ def _new_vm_emulator(
     binary = binary or third_party.library("qemu")
     img_util = img_util or third_party.library("qemu", "qemu-img")
     roms_dir = roms_dir or antlir_dep("vm:roms")
-    tpm_binary = tpm_binary or third_party.library("swtpm", "bin", "antlir")
+    tpm_binary = tpm_binary or antlir_dep("third-party/swtpm:swtpm-bin")
 
     return emulator_t(
         binary = binary,

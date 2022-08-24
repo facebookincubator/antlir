@@ -6,23 +6,23 @@
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-BASE_FEATURES = [
-    feature.rpms_install([
-        # build deps
-        "clang",
-        "meson",
-        # static deps
-        "glibc-static",
-        "glib2-static",
-    ]),
-]
-
-third_party.native_build(
+third_party.build(
     name = "json-glib",
-    base_features = BASE_FEATURES,
+    src = third_party.source("json-glib"),
+    features = [
+        feature.rpms_install([
+            # build deps
+            "clang",
+            "meson",
+            # static deps
+            "glibc-static",
+            "glib2-static",
+        ]),
+    ],
     script = third_party.script(
         build = "meson compile -C _build",
         install = "meson install -C _build",
-        prepare = "meson _build . -Ddefault_library=static -Dprefix=\"${STAGE}\"",
+        prepare = "meson _build . -Ddefault_library=static -Dprefix=\"${OUTPUT}\"",
     ),
+    visibility = ["//antlir/third-party/..."],
 )
