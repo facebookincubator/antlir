@@ -208,6 +208,13 @@ def _validate_updates(
                 raise PackageDoesNotExistError(pkg, tag)
 
 
+async def _get_db_info_bounded(
+    sem: asyncio.Semaphore, get_fut: Awaitable[GetDbInfoRet]
+) -> GetDbInfoRet:
+    async with sem:
+        return await get_fut
+
+
 async def _get_updated_db(
     *,
     existing_db: PackageTagDb,
@@ -239,9 +246,11 @@ async def _get_updated_db(
         # start with a copy of the existing DB, and replace info as we go.
         db_to_update = defaultdict(dict, copy.deepcopy(existing_db))
         updates_to_apply = pkg_to_update_dcts
-
+    # Use a semaphore to limit concurrency and ensure we're not issuing 1000s of
+    # simultaneous requests for large DBs
+    sem = asyncio.Semaphore(32)
     futures = [
-        get_db_info_fn(pkg, tag, update_opts)
+        _get_db_info_bounded(sem, get_db_info_fn(pkg, tag, update_opts))
         for pkg, tag_to_update in updates_to_apply.items()
         for tag, update_opts in tag_to_update.items()
     ]
