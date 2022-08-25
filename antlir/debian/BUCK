@@ -63,6 +63,7 @@ rust_binary(
         "rpm_snapshots.rs",
     ],
     crate_root = "rpm_snapshots.rs",
+    visibility = ["PUBLIC"],
     deps = [
         ":blob-store",
         ":snapshotter-helpers",
