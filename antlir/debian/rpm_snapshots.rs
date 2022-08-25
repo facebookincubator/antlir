@@ -5,11 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::io::Cursor;
 use std::io::Read;
 use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::anyhow;
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -20,9 +22,13 @@ use blob_store::DownloadDetails;
 use blob_store::PackageBackend;
 use blob_store::RateLimitedPackageBackend;
 use blob_store::StoreFormat;
+use bytes::Buf;
+use bytes::Bytes;
 use clap::Parser;
 use fbinit::FacebookInit;
 use flate2::bufread::GzDecoder;
+use flate2::bufread::GzEncoder;
+use flate2::Compression;
 use futures::future::try_join_all;
 use governor::clock::DefaultClock;
 use governor::state::InMemoryState;
@@ -30,6 +36,11 @@ use governor::state::NotKeyed;
 use manifold_client::cpp_client::ClientOptionsBuilder;
 use manifold_client::cpp_client::ManifoldCppClient;
 use quick_xml::de::from_str;
+use quick_xml::events::BytesStart;
+use quick_xml::events::BytesText;
+use quick_xml::events::Event;
+use quick_xml::Reader;
+use quick_xml::Writer;
 use reqwest::Url;
 use serde::Deserialize;
 use slog::info;
@@ -119,6 +130,11 @@ struct RepoArtifact<'a> {
     repo: &'a Repo,
 }
 
+struct UpdatedPrimaryPackage {
+    content: Bytes,
+    gzipped: Bytes,
+}
+
 impl<'a> StoreFormat for &RpmPackage<'a> {
     fn store_format(&self) -> Result<DownloadDetails> {
         Ok(DownloadDetails {
@@ -136,6 +152,110 @@ impl<'a> StoreFormat for &RepoArtifact<'a> {
             key: self.checksum.key(),
             name: format!("{}:{}", self.file_type, self.repo.distro),
             version: format!("{:?}", self.checksum),
+        })
+    }
+}
+
+impl UpdatedPrimaryPackage {
+    async fn new(
+        primary_package_url: reqwest::Url,
+        client: &reqwest::Client,
+        logger: slog::Logger,
+    ) -> Result<Self> {
+        if !primary_package_url.as_str().ends_with(".gz") {
+            return Err(anyhow!(
+                "gzip is the only supported encoding in primary artifact"
+            ));
+        }
+        println!("here");
+        let blob = get_blob(
+            primary_package_url,
+            client,
+            4,
+            logger.new(o!("file" =>"Primary")),
+        )
+        .await?
+        .to_vec();
+        let mut gz = GzDecoder::new(&blob[..]);
+        let mut package_data = String::new();
+        gz.read_to_string(&mut package_data)?;
+        let mut reader = Reader::from_str(&package_data);
+        let mut writer = Writer::new(Cursor::new(Vec::new()));
+        let mut buf = Vec::new();
+        let mut checksum: Option<String> = None;
+        loop {
+            let event = reader.read_event(&mut buf)?;
+            match &event {
+                Event::Start(e) | Event::Empty(e) => {
+                    if e.name() == b"package" {
+                        checksum = None;
+                    }
+                    // if we come across a location tag, just dump it on the floor,
+                    // we'll emit a fresh <location> element at the close of the
+                    // location tag is an empty tag, we do not need to handle end event
+                    // </package>
+                    if e.name() == b"location" {
+                        continue;
+                    }
+                    if e.name() == b"checksum" {
+                        ensure!(checksum.is_none(), "found two <checksum> elements!");
+                        let checksum_type = reader
+                            .decode(
+                                &e.attributes()
+                                    .filter_map(Result::ok)
+                                    .find(|a| a.key == b"type")
+                                    .context("<checksum> missing \"type\"")?
+                                    .value,
+                            )
+                            .context("checksum type not string")?
+                            .to_owned();
+                        let checksum_value = reader
+                            .read_text(b"checksum", &mut Vec::new())
+                            .context("while reading checksum value")?;
+                        let mut elem = BytesStart::borrowed_name(b"checksum");
+                        elem.push_attribute(("type", checksum_type.as_str()));
+                        elem.push_attribute(("pkgid", "YES"));
+                        writer.write_event(Event::Start(elem.to_borrowed()))?;
+                        writer
+                            .write_event(Event::Text(BytesText::from_plain_str(&checksum_value)))
+                            .context("while writing out <checksum>")?;
+                        writer.write_event(Event::End(elem.to_end()))?;
+                        checksum = Some(format!(
+                            "{}:{}",
+                            checksum_type.to_uppercase(),
+                            checksum_value
+                        ));
+                        continue;
+                    }
+                }
+                Event::End(e) => {
+                    if e.name() == b"package" {
+                        let key = checksum
+                            .take()
+                            .context("reached </package> but never found <checksum>")?;
+
+                        writer.write_event(Event::Empty(
+                            BytesStart::borrowed_name(b"location")
+                                .extend_attributes(vec![("href", format!("rpm/{}", key).as_str())])
+                                .to_borrowed(),
+                        ))?;
+                    }
+                }
+                _ => (),
+            }
+            let eof = matches!(event, Event::Eof);
+            writer.write_event(event)?;
+            if eof {
+                break;
+            }
+        }
+        let plain_bytes = Bytes::from(writer.into_inner().into_inner());
+        let mut gz = GzEncoder::new(plain_bytes.clone().reader(), Compression::fast());
+        let mut buffer = Vec::new();
+        gz.read_to_end(&mut buffer)?;
+        Ok(UpdatedPrimaryPackage {
+            content: plain_bytes,
+            gzipped: Bytes::from(buffer),
         })
     }
 }
@@ -291,12 +411,19 @@ async fn snapshot(
         }
     }
     let rpm_packages = RpmPackage::get_rpm_packages(
-        primary_repo_url.context("primary file not found")?.clone(),
+        primary_repo_url.clone().context("primary file not found")?,
         &repo,
         &client,
         logger.new(o!("file" => "rpms")),
     )
     .await?;
+    let _update_primary_rpm_artifact = UpdatedPrimaryPackage::new(
+        primary_repo_url.context("primary file not found")?.clone(),
+        &client,
+        logger.new(o!("update" => "primary")),
+    )
+    .await?;
+
     try_join_all(rpm_packages.iter().map(|rpm| {
         upload(
             rpm,
