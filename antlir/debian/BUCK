@@ -66,6 +66,7 @@ rust_binary(
     deps = [
         ":blob-store",
         ":snapshotter-helpers",
+        "//manifold/clients/rust:manifold_client",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
     ] + third_party.libraries(
@@ -73,7 +74,10 @@ rust_binary(
             "quick-xml",
             "serde",
             "anyhow",
+            "flate2",
             "clap",
+            "futures",
+            "governor",
             "hex",
             "reqwest",
             "slog",
