@@ -93,6 +93,10 @@ image.layer(
     name = "test-layer-os-release",
     features = [
         linux.release.install(
+            api_versions = {
+                "BAR": 22,
+                "FOO_QUX": 7,
+            },
             layer = ":test-layer-os-release",
             os_name = "AntlirTest",
             path = "/usr/lib/os-release",

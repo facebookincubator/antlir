@@ -58,3 +58,7 @@ class OsReleaseTest(unittest.TestCase):
         self.assertTrue(
             re.match(rev_ts_regex, os_release["IMAGE_VCS_REV_TIME"]),
         )
+
+        # Validate the API Version rendering
+        self.assertEqual(os_release["API_VER_BAR"], "22")
+        self.assertEqual(os_release["API_VER_FOO_QUX"], "7")
