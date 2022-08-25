@@ -7,6 +7,7 @@
 
 use std::io::Cursor;
 use std::io::Read;
+use std::path::Path;
 use std::str::FromStr;
 use std::time::Duration;
 
@@ -16,6 +17,7 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use blob_store::get_blob;
+use blob_store::get_sha2_hash;
 use blob_store::upload;
 use blob_store::Blob;
 use blob_store::DownloadDetails;
@@ -39,10 +41,12 @@ use quick_xml::de::from_str;
 use quick_xml::events::BytesStart;
 use quick_xml::events::BytesText;
 use quick_xml::events::Event;
+use quick_xml::se::Serializer;
 use quick_xml::Reader;
 use quick_xml::Writer;
 use reqwest::Url;
 use serde::Deserialize;
+use serde::Serialize;
 use slog::info;
 use slog::o;
 use slog::Drain;
@@ -64,12 +68,16 @@ struct Repo {
     arch: Architecture,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
 struct Repomd {
+    xmlns: String,
+    #[serde(rename = "xmlns:rpm")]
+    xmlns_rpm: String,
+    revision: Text,
     data: Vec<FileData>,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
 struct CheckSum {
     #[serde(rename = "type")]
     checksum_type: String,
@@ -77,15 +85,26 @@ struct CheckSum {
     hash: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
 struct FileData {
     #[serde(rename = "type")]
     file_type: String,
     checksum: CheckSum,
     location: Location,
+    timestamp: Text,
+    size: Text,
+    #[serde(rename = "open-size")]
+    open_size: Text,
+    #[serde(rename = "open-checksum")]
+    open_checksum: CheckSum,
+}
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
+struct Text {
+    #[serde(rename = "$value")]
+    value: String,
 }
 
-#[derive(Debug, Deserialize, PartialEq, Default)]
+#[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
 struct Location {
     href: String,
 }
@@ -129,10 +148,11 @@ struct RepoArtifact<'a> {
     location: String,
     repo: &'a Repo,
 }
-
+#[derive(Clone)]
 struct UpdatedPrimaryPackage {
     content: Bytes,
     gzipped: Bytes,
+    timestamp: String,
 }
 
 impl<'a> StoreFormat for &RpmPackage<'a> {
@@ -156,29 +176,113 @@ impl<'a> StoreFormat for &RepoArtifact<'a> {
     }
 }
 
-impl UpdatedPrimaryPackage {
-    async fn new(
-        primary_package_url: reqwest::Url,
-        client: &reqwest::Client,
-        logger: slog::Logger,
-    ) -> Result<Self> {
-        if !primary_package_url.as_str().ends_with(".gz") {
-            return Err(anyhow!(
-                "gzip is the only supported encoding in primary artifact"
-            ));
+impl StoreFormat for UpdatedPrimaryPackage {
+    fn store_format(&self) -> Result<DownloadDetails> {
+        Ok(DownloadDetails {
+            content: Blob::Blob(self.gzipped.clone()),
+            key: format!("SHA256:{}", get_sha2_hash(&self.gzipped)),
+            name: format!("Primary File: {}", get_sha2_hash(&self.gzipped)),
+            version: get_sha2_hash(&self.gzipped),
+        })
+    }
+}
+impl StoreFormat for Repomd {
+    fn store_format(&self) -> Result<DownloadDetails> {
+        let serialized_data = self.serialized()?;
+        Ok(DownloadDetails {
+            content: Blob::Blob(serialized_data.clone()),
+            key: format!("SHA256:{}", get_sha2_hash(&serialized_data)),
+            name: format!("Primary File: {}", get_sha2_hash(&serialized_data)),
+            version: get_sha2_hash(&serialized_data),
+        })
+    }
+}
+
+impl From<&UpdatedPrimaryPackage> for FileData {
+    fn from(primary_art: &UpdatedPrimaryPackage) -> Self {
+        let gzip_checksum = get_sha2_hash(&primary_art.gzipped);
+        let open_checksum = get_sha2_hash(&primary_art.content);
+        FileData {
+            file_type: "primary".to_string(),
+            checksum: CheckSum {
+                checksum_type: "sha256".to_string(),
+                hash: gzip_checksum.clone(),
+            },
+            location: Location {
+                // Dnf does not allow any artificat url path
+                // other than /repodata/<file_name>
+                href: format!("/repodata/SHA256:{}-primary.xml.gz", gzip_checksum),
+            },
+            timestamp: Text {
+                value: primary_art.timestamp.clone(),
+            },
+            size: Text {
+                value: primary_art.gzipped.len().to_string(),
+            },
+            open_size: Text {
+                value: primary_art.content.len().to_string(),
+            },
+            open_checksum: CheckSum {
+                checksum_type: "sha256".to_string(),
+                hash: open_checksum,
+            },
         }
-        println!("here");
-        let blob = get_blob(
-            primary_package_url,
-            client,
-            4,
-            logger.new(o!("file" =>"Primary")),
-        )
-        .await?
-        .to_vec();
-        let mut gz = GzDecoder::new(&blob[..]);
-        let mut package_data = String::new();
-        gz.read_to_string(&mut package_data)?;
+    }
+}
+
+impl Repomd {
+    fn update(&self, primary_art: &UpdatedPrimaryPackage) -> Result<Self> {
+        let updated_repomd: Repomd = Repomd {
+            revision: self.revision.clone(),
+            xmlns: self.xmlns.clone(),
+            xmlns_rpm: self.xmlns_rpm.clone(),
+            data: self
+                .data
+                .clone()
+                .into_iter()
+                .map(|file| {
+                    if file.file_type == "primary" {
+                        FileData::from(primary_art)
+                    } else {
+                        FileData {
+                            file_type: file.file_type.clone(),
+                            checksum: file.checksum.clone(),
+                            location: Location {
+                                href: format!(
+                                    "/repodata/SHA256:{}-{}",
+                                    file.checksum.hash,
+                                    Path::new(&file.location.href)
+                                        .file_name()
+                                        .expect("expected to have file name in href")
+                                        .to_str()
+                                        .expect("href should contain a valid file name")
+                                ),
+                            },
+                            timestamp: file.timestamp.clone(),
+                            size: file.size.clone(),
+                            open_size: file.open_size.clone(),
+                            open_checksum: file.open_checksum,
+                        }
+                    }
+                })
+                .collect(),
+        };
+        Ok(updated_repomd)
+    }
+    fn serialized(&self) -> Result<Bytes> {
+        let mut buffer = Vec::new();
+        let writer = Writer::new_with_indent(&mut buffer, b' ', 2);
+        let mut ser = Serializer::with_root(writer, Some("repomd"));
+
+        self.serialize(&mut ser)?;
+        let mut prelude: Vec<u8> = br#"<?xml version="1.0" encoding="UTF-8"?>"#.to_vec();
+        prelude.extend(buffer);
+        Ok(Bytes::from(prelude))
+    }
+}
+
+impl UpdatedPrimaryPackage {
+    fn new(package_data: String, timestamp: String) -> Result<Self> {
         let mut reader = Reader::from_str(&package_data);
         let mut writer = Writer::new(Cursor::new(Vec::new()));
         let mut buf = Vec::new();
@@ -256,6 +360,7 @@ impl UpdatedPrimaryPackage {
         Ok(UpdatedPrimaryPackage {
             content: plain_bytes,
             gzipped: Bytes::from(buffer),
+            timestamp,
         })
     }
 }
@@ -296,12 +401,7 @@ impl<'a> RepoArtifact<'a> {
             repo,
         })
     }
-    async fn get_repo_artifacts<'b>(
-        repo: &'b Repo,
-        client: &'b reqwest::Client,
-        logger: slog::Logger,
-    ) -> Result<Vec<RepoArtifact<'b>>> {
-        let repomd = RepoArtifact::get_repmod(repo, client, logger).await?;
+    fn get_repo_artifacts<'b>(repo: &'b Repo, repomd: Repomd) -> Result<Vec<RepoArtifact<'b>>> {
         let rpm_artifacts: Result<Vec<RepoArtifact>> = repomd
             .data
             .iter()
@@ -345,12 +445,11 @@ impl<'a> RpmPackage<'a> {
             repo,
         })
     }
-    async fn get_rpm_packages<'b>(
+    async fn get_primary_artifact(
         artifact_url: reqwest::Url,
-        repo: &'b Repo,
-        client: &'b reqwest::Client,
+        client: &reqwest::Client,
         logger: slog::Logger,
-    ) -> Result<Vec<RpmPackage<'b>>> {
+    ) -> Result<String> {
         if !artifact_url.as_str().ends_with(".gz") {
             return Err(anyhow!(
                 "gzip is the only supported encoding in primary artifact"
@@ -362,7 +461,9 @@ impl<'a> RpmPackage<'a> {
         let mut gz = GzDecoder::new(&blob[..]);
         let mut package_data = String::new();
         gz.read_to_string(&mut package_data)?;
-
+        Ok(package_data)
+    }
+    fn get_rpm_packages<'b>(repo: &'b Repo, package_data: String) -> Result<Vec<RpmPackage<'b>>> {
         let package_file: PackageFile =
             from_str(&package_data).context("failed to deserialize package file")?;
         let rpm_packages: Result<Vec<RpmPackage<'b>>> = package_file
@@ -392,7 +493,7 @@ async fn snapshot(
     write_rl: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
     write_throughput: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
     logger: slog::Logger,
-) -> Result<()> {
+) -> Result<String> {
     let client = reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::limited(3))
         .pool_idle_timeout(None)
@@ -401,28 +502,32 @@ async fn snapshot(
         .build()?;
     let rl_packagebackend =
         RateLimitedPackageBackend::new(read_rl, write_rl, write_throughput, storage_backend);
-    let repo_artifacts =
-        RepoArtifact::get_repo_artifacts(&repo, &client, logger.new(o!("file" => "repomd")))
-            .await?;
+    let repomd =
+        RepoArtifact::get_repmod(&repo, &client, logger.new(o!("file" => "repomd"))).await?;
+    let repo_artifacts = RepoArtifact::get_repo_artifacts(&repo, repomd.clone())?;
+
     let mut primary_repo_url: Option<reqwest::Url> = None;
-    for repo_artifact in &repo_artifacts {
+    let mut timestamp: Option<String> = None;
+    for repo_artifact in &repomd.data {
         if repo_artifact.file_type.eq("primary") {
-            primary_repo_url = Some(repo.repo_root_url.join(repo_artifact.location.as_str())?)
+            primary_repo_url = Some(repo.repo_root_url.join(&repo_artifact.location.href)?);
+            timestamp = Some(repo_artifact.timestamp.value.clone());
         }
     }
-    let rpm_packages = RpmPackage::get_rpm_packages(
-        primary_repo_url.clone().context("primary file not found")?,
-        &repo,
+    let primary_artifact = RpmPackage::get_primary_artifact(
+        primary_repo_url.clone().context("primary not found")?,
         &client,
-        logger.new(o!("file" => "rpms")),
+        logger.new(o!("file" => "primary")),
     )
     .await?;
-    let _update_primary_rpm_artifact = UpdatedPrimaryPackage::new(
-        primary_repo_url.context("primary file not found")?.clone(),
-        &client,
-        logger.new(o!("update" => "primary")),
-    )
-    .await?;
+    let rpm_packages = RpmPackage::get_rpm_packages(&repo, primary_artifact.clone())?;
+
+    let updated_primary_repo_artifact =
+        UpdatedPrimaryPackage::new(primary_artifact, timestamp.context("primary not found")?)?;
+
+    let updated_repomd = repomd.update(&updated_primary_repo_artifact)?;
+
+    let release_hash = get_sha2_hash(updated_repomd.serialized()?);
 
     try_join_all(rpm_packages.iter().map(|rpm| {
         upload(
@@ -433,16 +538,35 @@ async fn snapshot(
         )
     }))
     .await?;
-    try_join_all(repo_artifacts.iter().map(|repo_artifact| {
-        upload(
-            repo_artifact,
-            &rl_packagebackend,
-            &client,
-            logger.new(o!("repo_artifact_file" => repo_artifact.file_type.clone())),
-        )
-    }))
+    try_join_all(
+        repo_artifacts
+            .iter()
+            .filter(|artifact| !artifact.file_type.eq("primary"))
+            .map(|repo_artifact| {
+                upload(
+                    repo_artifact,
+                    &rl_packagebackend,
+                    &client,
+                    logger.new(o!("repo_artifact_file" => repo_artifact.file_type.clone())),
+                )
+            }),
+    )
     .await?;
-    Ok(())
+    upload(
+        updated_primary_repo_artifact,
+        &rl_packagebackend,
+        &client,
+        logger.new(o!("repo_artifact_file" => "updated_primary_file")),
+    )
+    .await?;
+    upload(
+        updated_repomd,
+        &rl_packagebackend,
+        &client,
+        logger.new(o!("repo_artifact_file" => "updated_repomd")),
+    )
+    .await?;
+    Ok(release_hash)
 }
 
 #[fbinit::main]
