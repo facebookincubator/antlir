@@ -74,6 +74,7 @@ rust_binary(
             "quick-xml",
             "serde",
             "anyhow",
+            "bytes",
             "flate2",
             "clap",
             "futures",
