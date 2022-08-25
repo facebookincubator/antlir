@@ -597,3 +597,83 @@ async fn main(fb: FacebookInit) -> Result<()> {
     info!(log, ""; "release_hash" => release_hash);
     Ok(())
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_repomd_file_parse() {
+        let release_file = include_str!("test_data/repomd_small.xml");
+        let repo_md: Repomd = from_str(release_file).unwrap();
+        let expected_repomd = Repomd {
+            xmlns: "http://linux.duke.edu/metadata/repo".to_string(),
+            xmlns_rpm: "http://linux.duke.edu/metadata/rpm".to_string(),
+            revision: Text {
+                value: "1660187336".to_string(),
+            },
+            data: vec![FileData {
+                file_type: "primary".to_string(),
+                checksum: CheckSum {
+                    checksum_type: "sha256".to_string(),
+                    hash: "b0ba64e97f7ed7099845b2fafbd58f6a03f047f8dd009b4d779a242130ad42ec".to_string(),
+                },
+                location: Location {
+                    href: "repodata/b0ba64e97f7ed7099845b2fafbd58f6a03f047f8dd009b4d779a242130ad42ec-primary.xml.gz".to_string(),
+                },
+                timestamp: Text {
+                    value: "1660187336".to_string(),
+                },
+                open_checksum: CheckSum {
+                    checksum_type: "sha256".to_string(),
+                    hash: "99447c570c18f8219957bff74fb99a5f11006beb9a2e17b9dcb7bb48eef6b316".to_string(),
+                },
+                size: Text { value: "35546".to_string() },
+                open_size: Text { value: "278882".to_string() },
+            }],
+        };
+        assert_eq!(repo_md, expected_repomd);
+    }
+    #[test]
+    fn test_repomd_rewrite() {
+        let repomd_file = include_str!("test_data/repomd_full.xml");
+        let updated_repomd_str = include_str!("test_data/repomd_rewrite.xml");
+        let repomd: Repomd = from_str(repomd_file).unwrap();
+        let expected_repomd: Repomd = from_str(updated_repomd_str).unwrap();
+        let updated_repomd_file = repomd
+            .update(&UpdatedPrimaryPackage {
+                content: Bytes::new(),
+                gzipped: Bytes::new(),
+                timestamp: "1660187336".to_string(),
+            })
+            .unwrap();
+        let returned_repomd_str =
+            String::from_utf8(updated_repomd_file.serialized().unwrap().to_vec()).unwrap();
+        let returned_repomd: Repomd = from_str(&returned_repomd_str).unwrap();
+        assert_eq!(returned_repomd, expected_repomd);
+        assert_eq!(
+            returned_repomd_str, updated_repomd_str,
+            "byte to byte comparision might fail when updating rewrite logic"
+        );
+    }
+    #[test]
+    fn test_package_file_rewrite() {
+        let repo = Repo {
+            repo_root_url: Url::parse("http://test").unwrap(),
+            distro: "test".to_string(),
+            arch: Architecture::Unknown("test".to_string()),
+        };
+        let primary_str = include_str!("test_data/primary.xml");
+        let primary_rewrite_str = include_str!("test_data/primary_rewrite.xml");
+        let updated_primary =
+            UpdatedPrimaryPackage::new(primary_str.to_string(), "1660187336".to_string()).unwrap();
+        let updated_primary_str = String::from_utf8(updated_primary.content.to_vec()).unwrap();
+        let packages = RpmPackage::get_rpm_packages(&repo, updated_primary_str.clone()).unwrap();
+        let expected_packages =
+            RpmPackage::get_rpm_packages(&repo, primary_rewrite_str.to_string()).unwrap();
+        assert_eq!(packages, expected_packages);
+        assert_eq!(
+            primary_rewrite_str, updated_primary_str,
+            "byte to byte comparision might fail when updating rewrite logic"
+        )
+    }
+}

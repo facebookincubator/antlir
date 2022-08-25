@@ -63,6 +63,13 @@ rust_binary(
         "rpm_snapshots.rs",
     ],
     crate_root = "rpm_snapshots.rs",
+    test_srcs = [
+        "test_data/repomd_small.xml",
+        "test_data/repomd_full.xml",
+        "test_data/primary.xml",
+        "test_data/repomd_rewrite.xml",
+        "test_data/primary_rewrite.xml",
+    ],
     visibility = ["PUBLIC"],
     deps = [
         ":blob-store",
