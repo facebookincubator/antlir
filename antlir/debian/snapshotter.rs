@@ -7,7 +7,6 @@
 
 use std::collections::BTreeMap;
 use std::io::Read;
-use std::num::NonZeroU32;
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -26,7 +25,6 @@ use blob_store::DownloadDetails;
 use blob_store::PackageBackend;
 use blob_store::RateLimitedPackageBackend;
 use blob_store::StoreFormat;
-use byte_unit::Byte;
 use bytes::Buf;
 use bytes::Bytes;
 use clap::Parser as ClapParser;
@@ -36,7 +34,6 @@ use futures::future::try_join_all;
 use governor::clock::DefaultClock;
 use governor::state::InMemoryState;
 use governor::state::NotKeyed;
-use governor::Quota;
 use manifold_client::cpp_client::ClientOptionsBuilder;
 use manifold_client::cpp_client::ManifoldCppClient;
 use pest::Parser;
@@ -45,7 +42,8 @@ use reqwest::Url;
 use slog::info;
 use slog::o;
 use slog::Drain;
-use strum_macros::EnumString;
+use snapshotter_helpers::Architecture;
+use snapshotter_helpers::Args;
 use xz2::read::XzDecoder;
 use xz2::read::XzEncoder;
 
@@ -78,21 +76,6 @@ pub struct RepoParser;
 
 #[derive(Debug, Eq, Copy, PartialEq, Clone)]
 struct HashSha256([u8; 32]);
-
-#[derive(Debug, Eq, PartialEq, EnumString, Clone)]
-#[strum(serialize_all = "lowercase")]
-enum Architecture {
-    All,
-    Amd64,
-    Arm64,
-    Armel,
-    Armhf,
-    I386,
-    Mips64el,
-    Ppc64el,
-    S390x,
-    Unknown(String),
-}
 
 #[derive(Debug, PartialEq)]
 struct ReleaseIndex<'a> {
@@ -136,24 +119,6 @@ struct VersionedReleaseFile {
     //TODO: Add a signature field
 }
 
-#[derive(ClapParser, Debug)]
-struct Args {
-    #[clap(long)]
-    repourl: String,
-    #[clap(long)]
-    debflavor: String,
-    #[clap(long)]
-    distro: String,
-    #[clap(long)]
-    arch: String,
-    #[clap(long, parse(try_from_str=parse_qps))]
-    readqps: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
-    #[clap(long, parse(try_from_str=parse_qps))]
-    writeqps: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
-    ///max throughput of write to storage
-    #[clap(long, parse(try_from_str=parse_throughput))]
-    writethroughput: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
-}
 impl<'a> StoreFormat for &Package<'a> {
     fn store_format(&self) -> Result<DownloadDetails> {
         Ok(DownloadDetails {
@@ -465,22 +430,6 @@ impl VersionedReleaseFile {
 const API_KEY: &str = "antlir_snapshots-key";
 const ANTLIR_DEB_BUCKET: &str = "antlir_snapshots";
 
-fn parse_qps(qps: &str) -> Result<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
-    Ok(governor::RateLimiter::direct(Quota::per_second(
-        NonZeroU32::new(qps.parse()?)
-            .context("qps cannot be zero - omit option for no ratelimit")?,
-    )))
-}
-
-fn parse_throughput(
-    throughput: &str,
-) -> Result<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
-    Ok(governor::RateLimiter::direct(Quota::per_second(
-        NonZeroU32::new(Byte::from_str(throughput)?.get_bytes().try_into()?)
-            .context("throughput cannot be zero - omit option for no ratelimit")?,
-    )))
-}
-
 async fn snapshot(
     repo: &Repo,
     storage_backend: impl PackageBackend,
@@ -573,7 +522,7 @@ async fn main(fb: FacebookInit) -> Result<()> {
     commit_deb_snapshot::write_to_bot_generated(
         release_hash.to_string(),
         repo.distro,
-        args.debflavor,
+        args.flavor,
         format!("{:?}", repo.arch).to_lowercase(),
         repo_root.join(Path::new(REPO_SNAPSHOT_FILE)),
     )?;
