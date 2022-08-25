@@ -129,6 +129,7 @@ antlir_tool(
         "-Wl,--strip-all",
     ],
     deps = [
+        ":snapshotter-helpers",
         ":blob-store",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
@@ -142,6 +143,7 @@ antlir_tool(
             "tokio",
             "tokio-stream",
             "warp",
+            "urlencoding",
         ],
         platform = "rust",
     ),
