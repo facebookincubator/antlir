@@ -44,6 +44,8 @@ use slog::o;
 use slog::Drain;
 use snapshotter_helpers::Architecture;
 use snapshotter_helpers::Args;
+use snapshotter_helpers::ANTLIR_SNAPSHOTS_BUCKET;
+use snapshotter_helpers::API_KEY;
 use xz2::read::XzDecoder;
 use xz2::read::XzEncoder;
 
@@ -427,9 +429,6 @@ impl VersionedReleaseFile {
     }
 }
 
-const API_KEY: &str = "antlir_snapshots-key";
-const ANTLIR_DEB_BUCKET: &str = "antlir_snapshots";
-
 async fn snapshot(
     repo: &Repo,
     storage_backend: impl PackageBackend,
@@ -501,7 +500,7 @@ async fn main(fb: FacebookInit) -> Result<()> {
         .build()
         .map_err(Error::msg)?;
     let manifold_client =
-        ManifoldCppClient::from_options(fb, ANTLIR_DEB_BUCKET, &manifold_client_opts)
+        ManifoldCppClient::from_options(fb, ANTLIR_SNAPSHOTS_BUCKET, &manifold_client_opts)
             .map_err(Error::from)?;
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();

@@ -32,6 +32,9 @@ pub enum Architecture {
     Unknown(String),
 }
 
+pub const API_KEY: &str = "antlir_snapshots-key";
+pub const ANTLIR_SNAPSHOTS_BUCKET: &str = "antlir_snapshots";
+
 #[derive(ClapParser, Debug)]
 pub struct Args {
     #[clap(long)]

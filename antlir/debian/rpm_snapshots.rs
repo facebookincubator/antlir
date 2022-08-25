@@ -5,15 +5,30 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::io::Read;
 use std::str::FromStr;
 use std::time::Duration;
 
 use anyhow::anyhow;
 use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use blob_store::get_blob;
-use clap::Parser as ClapParser;
+use blob_store::upload;
+use blob_store::Blob;
+use blob_store::DownloadDetails;
+use blob_store::PackageBackend;
+use blob_store::RateLimitedPackageBackend;
+use blob_store::StoreFormat;
+use clap::Parser;
 use fbinit::FacebookInit;
+use flate2::bufread::GzDecoder;
+use futures::future::try_join_all;
+use governor::clock::DefaultClock;
+use governor::state::InMemoryState;
+use governor::state::NotKeyed;
+use manifold_client::cpp_client::ClientOptionsBuilder;
+use manifold_client::cpp_client::ManifoldCppClient;
 use quick_xml::de::from_str;
 use reqwest::Url;
 use serde::Deserialize;
@@ -22,6 +37,8 @@ use slog::o;
 use slog::Drain;
 use snapshotter_helpers::Architecture;
 use snapshotter_helpers::Args;
+use snapshotter_helpers::ANTLIR_SNAPSHOTS_BUCKET;
+use snapshotter_helpers::API_KEY;
 
 #[derive(Debug, PartialEq)]
 enum Hash {
@@ -102,6 +119,27 @@ struct RepoArtifact<'a> {
     repo: &'a Repo,
 }
 
+impl<'a> StoreFormat for &RpmPackage<'a> {
+    fn store_format(&self) -> Result<DownloadDetails> {
+        Ok(DownloadDetails {
+            content: Blob::Url(self.repo.repo_root_url.join(&self.location)?),
+            key: self.checksum.key(),
+            name: self.name.clone(),
+            version: self.version.clone(),
+        })
+    }
+}
+impl<'a> StoreFormat for &RepoArtifact<'a> {
+    fn store_format(&self) -> Result<DownloadDetails> {
+        Ok(DownloadDetails {
+            content: Blob::Url(self.repo.repo_root_url.join(&self.location)?),
+            key: self.checksum.key(),
+            name: format!("{}:{}", self.file_type, self.repo.distro),
+            version: format!("{:?}", self.checksum),
+        })
+    }
+}
+
 impl Hash {
     fn new(hash_type: String, hash: String) -> Result<Self> {
         match hash_type.to_lowercase().as_str() {
@@ -116,6 +154,12 @@ impl Hash {
                     .map_err(|_| anyhow!("{} is not a valid sha128", hash))?,
             )),
             _ => Err(anyhow!("unsupported hash")),
+        }
+    }
+    fn key(&self) -> String {
+        match *self {
+            Hash::Sha256(sum) => format!("{}:{}", "SHA256", hex::encode(sum)),
+            Hash::Sha128(sum) => format!("{}:{}", "SHA128", hex::encode(sum)),
         }
     }
 }
@@ -187,11 +231,18 @@ impl<'a> RpmPackage<'a> {
         client: &'b reqwest::Client,
         logger: slog::Logger,
     ) -> Result<Vec<RpmPackage<'b>>> {
-        let package_data = String::from_utf8(
-            get_blob(artifact_url, client, 4, logger.new(o!("file" =>"Primary")))
-                .await?
-                .to_vec(),
-        )?;
+        if !artifact_url.as_str().ends_with(".gz") {
+            return Err(anyhow!(
+                "gzip is the only supported encoding in primary artifact"
+            ));
+        }
+        let blob = get_blob(artifact_url, client, 4, logger.new(o!("file" =>"Primary")))
+            .await?
+            .to_vec();
+        let mut gz = GzDecoder::new(&blob[..]);
+        let mut package_data = String::new();
+        gz.read_to_string(&mut package_data)?;
+
         let package_file: PackageFile =
             from_str(&package_data).context("failed to deserialize package file")?;
         let rpm_packages: Result<Vec<RpmPackage<'b>>> = package_file
@@ -214,47 +265,84 @@ impl Repo {
     }
 }
 
-async fn snapshot(repo: Repo, logger: slog::Logger) -> Result<()> {
+async fn snapshot(
+    repo: Repo,
+    storage_backend: impl PackageBackend,
+    read_rl: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+    write_rl: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+    write_throughput: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+    logger: slog::Logger,
+) -> Result<()> {
     let client = reqwest::ClientBuilder::new()
         .redirect(reqwest::redirect::Policy::limited(3))
         .pool_idle_timeout(None)
         .tcp_keepalive(Some(Duration::from_secs(3600)))
+        .no_gzip()
         .build()?;
+    let rl_packagebackend =
+        RateLimitedPackageBackend::new(read_rl, write_rl, write_throughput, storage_backend);
     let repo_artifacts =
         RepoArtifact::get_repo_artifacts(&repo, &client, logger.new(o!("file" => "repomd")))
             .await?;
-    let mut primary_repo_artifact: Option<RepoArtifact> = None;
-    for repo_artifact in repo_artifacts {
+    let mut primary_repo_url: Option<reqwest::Url> = None;
+    for repo_artifact in &repo_artifacts {
         if repo_artifact.file_type.eq("primary") {
-            primary_repo_artifact = Some(repo_artifact)
+            primary_repo_url = Some(repo.repo_root_url.join(repo_artifact.location.as_str())?)
         }
     }
     let rpm_packages = RpmPackage::get_rpm_packages(
-        repo.repo_root_url.join(
-            primary_repo_artifact
-                .context("primary file not found")?
-                .location
-                .as_str(),
-        )?,
+        primary_repo_url.context("primary file not found")?.clone(),
         &repo,
         &client,
         logger.new(o!("file" => "rpms")),
     )
     .await?;
-    println!("{:?}", rpm_packages);
+    try_join_all(rpm_packages.iter().map(|rpm| {
+        upload(
+            rpm,
+            &rl_packagebackend,
+            &client,
+            logger.new(o!("package" => rpm.name.clone())),
+        )
+    }))
+    .await?;
+    try_join_all(repo_artifacts.iter().map(|repo_artifact| {
+        upload(
+            repo_artifact,
+            &rl_packagebackend,
+            &client,
+            logger.new(o!("repo_artifact_file" => repo_artifact.file_type.clone())),
+        )
+    }))
+    .await?;
     Ok(())
 }
 
 #[fbinit::main]
-async fn main(_fb: FacebookInit) -> Result<()> {
+async fn main(fb: FacebookInit) -> Result<()> {
     let args = Args::parse();
-    let repo = Repo::new(&args.repourl, args.distro, args.arch)?;
+    let repo = Repo::new(&args.repourl, args.distro.clone(), args.arch.clone())?;
+    let manifold_client_opts = ClientOptionsBuilder::default()
+        .api_key(API_KEY)
+        .build()
+        .map_err(Error::msg)?;
+    let manifold_client =
+        ManifoldCppClient::from_options(fb, ANTLIR_SNAPSHOTS_BUCKET, &manifold_client_opts)
+            .map_err(Error::from)?;
     let decorator = slog_term::TermDecorator::new().build();
     let drain = slog_term::FullFormat::new(decorator).build().fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
 
     let log = slog::Logger::root(drain, o!());
-    let release_hash = snapshot(repo, log.new(o!("repo" => "test"))).await?;
+    let release_hash = snapshot(
+        repo,
+        manifold_client,
+        args.readqps,
+        args.writeqps,
+        args.writethroughput,
+        log.new(o!("repo" => args.distro, "arch" => args.arch )),
+    )
+    .await?;
     info!(log, ""; "release_hash" => release_hash);
     Ok(())
 }
