@@ -36,7 +36,8 @@ def _hostkey_setup():
 
     return [
         feature.install("//antlir/linux/vm/ssh:sshd.tmpfiles.conf", "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf"),
-        feature.remove("/usr/lib/systemd/system/sshd-keygen.service"),
+        # sshd-keygen.service doesn't exist on centos9
+        feature.remove("/usr/lib/systemd/system/sshd-keygen.service", must_exist = False),
         systemd.install_unit("//antlir/linux/vm/ssh:sshd-keygen.service"),
         systemd.enable_unit("sshd-keygen.service", "core-services.target"),
         # Install a drop-in that updates the cmd line to include the
