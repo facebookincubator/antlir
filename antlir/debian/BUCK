@@ -13,6 +13,7 @@ rust_binary(
     ],
     deps = [
         ":blob-store",
+        ":snapshotter-helpers",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
         "//manifold/clients/rust:manifold_client",
@@ -22,7 +23,6 @@ rust_binary(
     ] + third_party.libraries(
         [
             "anyhow",
-            "byte-unit",
             "bytes",
             "clap",
             "futures",
@@ -34,9 +34,51 @@ rust_binary(
             "slog",
             "slog-async",
             "slog-term",
+            "xz2",
+        ],
+        platform = "rust",
+    ),
+)
+
+rust_library(
+    name = "snapshotter-helpers",
+    srcs = ["snapshotter_helpers.rs"],
+    crate_root = "snapshotter_helpers.rs",
+    deps = third_party.libraries(
+        [
+            "governor",
             "strum",
             "strum_macros",
-            "xz2",
+            "clap",
+            "anyhow",
+            "byte-unit",
+        ],
+        platform = "rust",
+    ),
+)
+
+rust_binary(
+    name = "rpm-snapshotter",
+    srcs = [
+        "rpm_snapshots.rs",
+    ],
+    crate_root = "rpm_snapshots.rs",
+    deps = [
+        ":blob-store",
+        ":snapshotter-helpers",
+        "//common/rust/shed/fbinit:fbinit",
+        "//common/rust/shed/fbinit:fbinit-tokio",
+    ] + third_party.libraries(
+        [
+            "quick-xml",
+            "serde",
+            "anyhow",
+            "clap",
+            "hex",
+            "reqwest",
+            "slog",
+            "slog-async",
+            "slog-term",
         ],
         platform = "rust",
     ),
@@ -104,7 +146,7 @@ buck_command_alias(
     args = [
         "--repourl",
         "https://mirror.facebook.net/ubuntu/",
-        "--debflavor",
+        "--flavor",
         "ubuntu",
         "--distro",
         "jammy",
