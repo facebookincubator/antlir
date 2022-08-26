@@ -62,6 +62,7 @@ class RuntimeSource:
     type: str
     # Note: these are specific to the FB runtime
     package: Optional[str] = None
+    tag: Optional[str] = None
     uuid: Optional[str] = None
 
 

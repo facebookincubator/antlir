@@ -234,10 +234,11 @@ def _fetched_package_layer(
         name = mount_config,
         bash = '''
         {print_how_to_fetch_json} |
-            $(exe {print_mount_config}) {quoted_package} > "$OUT"
+            $(exe {print_mount_config}) {quoted_package} {quoted_tag} > "$OUT"
         '''.format(
             print_mount_config = fetcher.print_mount_config,
             quoted_package = shell.quote(package),
+            quoted_tag = shell.quote(tag),
             print_how_to_fetch_json = print_how_to_fetch_json,
         ),
         antlir_rule = "user-internal",
