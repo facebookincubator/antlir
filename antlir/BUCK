@@ -540,6 +540,7 @@ python_library(
     srcs = ["update_package_db.py"],
     visibility = [
         "//antlir/...",
+        "//tupperware/cm/antlir/...",
         "//tupperware/image/scripts/...",
     ],
     deps = [
