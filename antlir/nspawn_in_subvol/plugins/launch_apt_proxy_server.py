@@ -23,7 +23,11 @@ _mockable_popen_for_repo_server = subprocess.Popen
 
 
 class AptProxyServer(ServerLauncher):
-    def __init__(self, sock: socket.socket) -> None:
+    def __init__(
+        self, sock: socket.socket, manifold_bucket: str, manifold_api_key: str
+    ) -> None:
+        self.manifold_bucket = manifold_bucket
+        self.manifold_api_key = manifold_api_key
         bin_path = ""
         with Path.resource(__package__, "apt-proxy", exe=True) as p:
             bin_path = p
@@ -42,19 +46,28 @@ class AptProxyServer(ServerLauncher):
         return [
             self.bin_path,
             f"--socket-fd={self.sock.fileno()}",
+            f"--manifold-bucket={self.manifold_bucket}",
+            f"--manifold-api-key={self.manifold_api_key}",
         ]
 
 
 @contextmanager
 def launch_apt_proxy_server_for_netns(
-    *, ns_socket: socket.socket
+    *,
+    ns_socket: socket.socket,
+    bucket_name: str,
+    api_key: str,
 ) -> Generator[AptProxyServer, None, None]:
     """
     Yields AptProxyServer object where the server will listen.
     """
 
     with ExitStack() as stack:
-        apt_proxy_server = AptProxyServer(sock=ns_socket)
+        apt_proxy_server = AptProxyServer(
+            sock=ns_socket,
+            manifold_bucket=bucket_name,
+            manifold_api_key=api_key,
+        )
         stack.enter_context(apt_proxy_server.launch())
         log.debug(f"Launched {apt_proxy_server}")
         yield apt_proxy_server
