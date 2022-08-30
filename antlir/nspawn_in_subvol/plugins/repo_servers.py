@@ -328,6 +328,8 @@ class RepoServers(NspawnPlugin):
                 stack.enter_context(
                     launch_apt_proxy_server_for_netns(
                         ns_socket=ns_sockets_pool.pop(),
+                        bucket_name="antlir_snapshots",
+                        api_key="antlir_snapshots-key",
                     )
                 )
                 log.info(

@@ -20,8 +20,6 @@ use fbinit::FacebookInit;
 use log::info;
 use manifold_client::cpp_client::ClientOptionsBuilder;
 use manifold_client::cpp_client::ManifoldCppClient;
-use snapshotter_helpers::ANTLIR_SNAPSHOTS_BUCKET;
-use snapshotter_helpers::API_KEY;
 use tokio::net::TcpListener as TokioTcpListener;
 use tokio_stream::wrappers::TcpListenerStream;
 use urlencoding::decode;
@@ -37,13 +35,18 @@ impl Reject for ProxyError {}
 struct Args {
     #[clap(long)]
     socket_fd: RawFd,
+    #[clap(long)]
+    manifold_api_key: String,
+    #[clap(long)]
+    manifold_bucket: String,
 }
 
-async fn serve_blob(
+async fn serve_deb_blob(
     hash: String,
     client: Arc<dyn PackageBackend>,
 ) -> std::result::Result<Vec<u8>, warp::reject::Rejection> {
-    let d_hash = decode(&hash);
+    let flat_key = format!("flat/{}", hash);
+    let d_hash = decode(&flat_key);
     match d_hash {
         Ok(value) => match client.get(&value).await {
             Ok(res) => Ok(res.to_vec()),
@@ -53,13 +56,25 @@ async fn serve_blob(
     }
 }
 
+async fn serve_repodata_artifacts(
+    repo_hash: String,
+    hash_file_name: String,
+    client: Arc<dyn PackageBackend>,
+) -> std::result::Result<Vec<u8>, warp::reject::Rejection> {
+    match hash_file_name.as_str() {
+        "repomd.xml" => serve_repo_blob(repo_hash.clone(), repo_hash.clone(), client).await,
+        _ => serve_repo_artifact(repo_hash, hash_file_name, client).await,
+    }
+}
+
 async fn serve_repo_artifact(
+    repo_hash: String,
     hash_file_name: String,
     client: Arc<dyn PackageBackend>,
 ) -> std::result::Result<Vec<u8>, warp::reject::Rejection> {
     let hash_name = hash_file_name.split_once('-');
     match hash_name {
-        Some((hash, _name)) => serve_blob(hash.to_string(), client.clone()).await,
+        Some((hash, _name)) => serve_repo_blob(repo_hash, hash.to_string(), client.clone()).await,
         None => Err(warp::reject::custom(ProxyError(anyhow!(
             "{} must match the format '$hash-$name'",
             hash_file_name
@@ -67,41 +82,56 @@ async fn serve_repo_artifact(
     }
 }
 
+async fn serve_repo_blob(
+    repo_hash: String,
+    blob_hash: String,
+    client: Arc<dyn PackageBackend>,
+) -> std::result::Result<Vec<u8>, warp::reject::Rejection> {
+    let key = get_key(repo_hash, blob_hash);
+    let d_key = decode(&key);
+    match d_key {
+        Ok(value) => match client.get(&value).await {
+            Ok(res) => Ok(res.to_vec()),
+            Err(e) => Err(warp::reject::custom(ProxyError(e))),
+        },
+        Err(e) => Err(warp::reject::custom(ProxyError(anyhow!(e)))),
+    }
+}
+
+fn get_key(repo_hash: String, artifact_hash: String) -> String {
+    format!("tree/antlir_snapshots/{}/{}", repo_hash, artifact_hash)
+}
+
 async fn serve(client: Arc<dyn PackageBackend>, socket_fd: RawFd) -> Result<()> {
     let cl2 = client.clone();
     let release_file = warp::path!("dists" / String / "Release")
-        .and_then(move |hash: String| serve_blob(hash, client.clone()));
+        .and_then(move |hash: String| serve_deb_blob(hash, client.clone()));
 
     let client = cl2.clone();
     let package_file = warp::path!(
         "dists" / String / String / String / "by-hash" / String / String
     )
     .and_then(move |_dist, _component, _binary, hash_key, hash| {
-        serve_blob(format!("{}:{}", hash_key, hash), cl2.clone())
+        serve_deb_blob(format!("{}:{}", hash_key, hash), cl2.clone())
     });
 
     let cl2 = client.clone();
-    let deb_file =
-        warp::path!("deb" / String).and_then(move |hash: String| serve_blob(hash, client.clone()));
+    let deb_file = warp::path!("deb" / String)
+        .and_then(move |hash: String| serve_deb_blob(hash, client.clone()));
     let log = warp::log("apt::proxy");
 
     let client = cl2.clone();
-    let repomd_xml = warp::path!("dists" / String / "repodata" / "repomd.xml")
-        .and_then(move |hash: String| serve_blob(hash, cl2.clone()));
-
-    let cl2 = client.clone();
     let repo_artifacts = warp::path!("dists" / String / "repodata" / String).and_then(
-        move |_repo_hash, artifact_hash_file: String| {
-            serve_repo_artifact(artifact_hash_file, client.clone())
+        move |repo_hash, artifact_hash_file: String| {
+            serve_repodata_artifacts(repo_hash, artifact_hash_file, cl2.clone())
         },
     );
 
     let rpms = warp::path!("dists" / String / "rpm" / String)
-        .and_then(move |_repo_hash, rpm_hash| serve_blob(rpm_hash, cl2.clone()));
+        .and_then(move |repo_hash, rpm_hash| serve_repo_blob(repo_hash, rpm_hash, client.clone()));
     let routes = release_file
         .or(package_file)
         .or(deb_file)
-        .or(repomd_xml)
         .or(repo_artifacts)
         .or(rpms)
         .with(log);
@@ -126,11 +156,11 @@ async fn main(fb: FacebookInit) -> Result<()> {
     let args = Args::parse();
     pretty_env_logger::init();
     let manifold_client_opts = ClientOptionsBuilder::default()
-        .api_key(API_KEY)
+        .api_key(args.manifold_api_key)
         .build()
         .map_err(Error::msg)?;
     let manifold_client =
-        ManifoldCppClient::from_options(fb, ANTLIR_SNAPSHOTS_BUCKET, &manifold_client_opts)
+        ManifoldCppClient::from_options(fb, &args.manifold_bucket, &manifold_client_opts)
             .map_err(Error::from)?;
     serve(Arc::new(manifold_client), args.socket_fd).await
 }
