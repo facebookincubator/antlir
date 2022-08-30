@@ -144,7 +144,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
         # @oss-disable: # Full integration tests are done in           
         # @oss-disable: # antlir/bzl/genrule/facebook/chef_solo/tests  
         # @oss-disable: # and antlir/proxy/facebook/tests              
-        fbpkg_db_path = target_t(name="fbpkg_db_path", path="path")
+        fbpkg_pkg = target_t(name="fbpkg_pkg", path="path")
 
         with self._temp_resource_subvol(
             "genrule-layer-busybox-base"
@@ -157,7 +157,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
                 ["/bin/sh", "-c", "echo ohai"],
                 container_opts=genrule_layer_t.types.container_opts(
                     proxy_server_config=proxy_server_config_t(
-                        fbpkg_db_path=fbpkg_db_path
+                        fbpkg_pkg_list=[fbpkg_pkg]
                     )
                 ),
             )(sv)
@@ -168,7 +168,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
                 run_apt_proxy=False,
                 shadow_paths=(),
                 proxy_server_config=proxy_server_config_t(
-                    fbpkg_db_path=fbpkg_db_path
+                    fbpkg_pkg_list=[fbpkg_pkg]
                 ),
                 attach_antlir_dir=(AttachAntlirDirMode.OFF),
             )
