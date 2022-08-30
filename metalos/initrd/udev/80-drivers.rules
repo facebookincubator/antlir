@@ -1,5 +1,0 @@
-ACTION!="add", GOTO="drivers_end"
-
-ENV{MODALIAS}=="?*", RUN{builtin}+="kmod load '$env{MODALIAS}'"
-
-LABEL="drivers_end"

@@ -1,5 +1,0 @@
-[Unit]
-Description=Core services
-After=core-services-pre.target
-Requires=core-services-pre.target
-AllowIsolate=yes

@@ -1,7 +1,0 @@
-[Unit]
-Description=Write emergency sentinel file
-DefaultDependencies=no
-
-[Service]
-Type=oneshot
-ExecStart=touch /run/I_AM_IN_EMERGENCY

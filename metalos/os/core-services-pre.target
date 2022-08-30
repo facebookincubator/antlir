@@ -1,4 +1,0 @@
-[Unit]
-Description=Core services (Pre)
-After=multi-user.target network-online.target time-sync.target
-Wants=multi-user.target network-online.target time-sync.target

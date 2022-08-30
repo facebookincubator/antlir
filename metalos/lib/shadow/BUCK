@@ -1,9 +1,0 @@
-load("//metalos:defs.bzl", "rust_library")
-
-rust_library(
-    name = "shadow",
-    srcs = ["src/shadow.rs"],
-    deps = [
-        "anyhow",
-    ],
-)
