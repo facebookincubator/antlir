@@ -74,6 +74,7 @@ rust_binary(
     deps = [
         ":blob-store",
         ":snapshotter-helpers",
+        ":rpm-artifact-parser",
         "//manifold/clients/rust:manifold_client",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
@@ -87,11 +88,42 @@ rust_binary(
             "clap",
             "futures",
             "governor",
-            "hex",
             "reqwest",
             "slog",
             "slog-async",
             "slog-term",
+        ],
+        platform = "rust",
+    ),
+)
+
+rust_library(
+    name = "rpm-artifact-parser",
+    srcs = [
+        "rpm_artifact_parser.rs",
+    ],
+    crate_root = "rpm_artifact_parser.rs",
+    test_srcs = [
+        "test_data/repomd_small.xml",
+        "test_data/repomd_full.xml",
+        "test_data/primary.xml",
+        "test_data/repomd_rewrite.xml",
+        "test_data/primary_rewrite.xml",
+    ],
+    visibility = ["PUBLIC"],
+    deps = [
+        ":blob-store",
+        ":snapshotter-helpers",
+    ] + third_party.libraries(
+        [
+            "quick-xml",
+            "serde",
+            "anyhow",
+            "bytes",
+            "flate2",
+            "hex",
+            "reqwest",
+            "slog",
         ],
         platform = "rust",
     ),

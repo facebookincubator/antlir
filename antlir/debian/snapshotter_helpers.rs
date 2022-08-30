@@ -52,6 +52,10 @@ pub struct Args {
     ///max throughput of write to storage
     #[clap(long, parse(try_from_str=parse_throughput))]
     pub writethroughput: Option<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>>,
+    #[clap(long)]
+    pub bucketkey: String,
+    #[clap(long)]
+    pub bucket: String,
 }
 
 fn parse_qps(qps: &str) -> Result<governor::RateLimiter<NotKeyed, InMemoryState, DefaultClock>> {
