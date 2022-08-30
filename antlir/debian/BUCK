@@ -1,4 +1,5 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:tool.bzl", "antlir_tool")
 
 rust_binary(
     name = "deb-snapshotter",
@@ -156,7 +157,7 @@ rust_library(
     ),
 )
 
-rust_binary(
+antlir_tool(
     name = "apt-proxy",
     srcs = [
         "proxy.rs",
@@ -165,6 +166,7 @@ rust_binary(
     linker_flags = [
         "-Wl,--strip-all",
     ],
+    rule = rust_binary,
     deps = [
         ":blob-store",
         "//common/rust/shed/fbinit:fbinit",
