@@ -1,7 +1,0 @@
-load("//antlir/bzl:oss_shim.bzl", "thrift_library")
-
-thrift_library(
-    name = "example",
-    languages = ["rust"],
-    thrift_srcs = {"example.thrift": None},
-)

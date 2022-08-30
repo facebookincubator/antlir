@@ -1,6 +1,0 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup")
-
-buck_filegroup(
-    name = "all_dropins",
-    srcs = {src.replace("/", "-"): src for src in glob(["**/*.conf"])},
-)
