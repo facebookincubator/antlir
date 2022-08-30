@@ -7,5 +7,5 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target.shape.bzl", "target_t")
 
 proxy_server_config_t = shape.shape(
-    # @oss-disable: fbpkg_db_path = target_t, 
+    # @oss-disable: fbpkg_pkg_list = shape.list(target_t), 
 )
