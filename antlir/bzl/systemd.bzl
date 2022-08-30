@@ -25,6 +25,7 @@ _ALLOWED_UNIT_SUFFIXES = (
     ".target",
     ".timer",
     ".conf",
+    ".swap",
 )
 
 def _fail_if_path(thing, monkeymsg):
