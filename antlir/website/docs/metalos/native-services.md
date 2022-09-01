@@ -9,7 +9,30 @@ A Native Service is a service that is built for MetalOS. MetalOS will manage its
 lifecycle as long as the service meets a few simple requirements.
 
 A simple demo of a native service image may be found at
-`metalos/lib/service/tests/demo_service`
+`//metalos/lib/service/tests/demo_service`
+
+There are three types of Native Services:
+- `NATIVE`: this is the preferred type, and you should prefer this as much as
+  possible, services of this type will run in a sandboxed environment, their rootfs
+  will be read only, only a few directories will be writeable, some common directories
+  from the OS layer will be bind mounted (read only)
+- `OS`: this type is for services that (for various reasons) must not run in a
+  sandboxed and immutable environment, try to avoid this if possible.
+  If you use this type you will lose all the benefits like:
+    - predictability/reproducibility
+    - easy rollbacks
+    - safer hotfixes
+    - better auditing
+    - easier comparisons
+- `CONTAINER` (coming soon): this type of service is used to run a command or OS in a
+  light-weight namespace container. It makes use of [systemd-nspawn](https://www.freedesktop.org/software/systemd/man/systemd-nspawn.html).
+  Use this for more complex cases that do not fit the two types above.
+  Some examples are:
+    - "toolbox" layers containing debugging tools, operational CLIs, and so on
+    - Complex native services that consist of multiple daemons that need to
+      run together
+
+Current supported service types are defined in the `//metalos/host_configs/runtime_config.thrift`.
 
 # Requirements
 
@@ -29,7 +52,8 @@ tree. In the future this may change to thinner images as a size optimization.
 
 ### MetalOS directory
 Each native service image must contain a top-level directory `/metalos` under
-which all MetalOS-specific information must be stored.
+which all MetalOS-specific information must be stored. Typically this includes the binary
+that makes up the service and other support files like static configuration files.
 
 ## Service definition
 Native services must provide a `service_t` instance (defined in
@@ -37,19 +61,28 @@ Native services must provide a `service_t` instance (defined in
 `/metalos/service.shape` in the service image.
 
 On-host, this will expand to a single systemd service unit.
-In some cases, this service unit will start a more full-featured container via
-`systemd-nspawn`, that is a perfectly valid use case and ensures that MetalOS
-must only concern itself with a single `.service` unit for each native service.
 
 ## Generators
 Native services may define a Service Config Generator that MetalOS will run
-before the unit starts. This generator is sandboxed and only receives the
-MetalOS runtime config (TODO: link to thrift when this exists) on stdin.
-Generators are allowed to produce output to write files in the
-`RUNTIME_DIRECTORY` (see below) or set systemd drop-in settings.
+before the unit starts.
 
-The generator binary must be contained in a separate image (TODO: link to thrift
-when refactor is finished).
+This generator is sandboxed and only receives an `Input` thrift structure in its
+stdin, as serialised thrift.
+
+The `Input` thrift structure contains:
+* the `HostIdentity` config for the host
+* and the `DeploymentRuntimeConfig` config for the host
+
+`//metalos/lib/service/service_config_generator.thrift` contains the input/output
+API for generators.
+
+Generators are allowed to produce a serialised `Output` thrift object.
+This object contains a `Dropin` structure, which contains a set of systemd
+drop-in settings for the service.
+
+The generator binary must be contained in a separate image.
+The `native_service` macro will take a buck target and automatically build an fbpkg
+with it.
 
 ### Generator Lifecycle
 The generator will be invoked every time the service (re)starts.
@@ -83,6 +116,9 @@ Service units may also add extra writable paths via `BindPaths`, but this should
 be used sparingly in favor of `metalctl` natively managing contents of the
 rootfs where possible.
 
+- `METALOS_SERVICE_IMAGE_ROOT` points to the root of the service image, and can
+  be used in the service definition to correctly locate the binary of the application.
+
 <InternalOnly>
 
 ## Service Certificates
@@ -98,16 +134,24 @@ This section will be more detailed with follow-up diffs as more is implemented,
 but the high level idea is as follows:
 
 1. image downloaded (this is done ahead-of-time via `metalctl runtime-config stage`)
-2. service config generator is evaluated
+2. service config generator is evaluated, if present
 3. service unit is generated from the `service_t` in the image
   - linked into `/run/systemd/system`
 4. MetalOS drop-ins written to `/run/systemd/system/`
-  - `RootDirectory` is set to a RW snapshot of the service image
+  - `RootDirectory` is set to a RW snapshot of the service image, if the service is of
+    ServiceType::NATIVE`, otherwise it won't be present
   - `{RUNTIME,STATE,CACHE,LOGS}_DIRECTORY` environment variables are set for
      the service unit
+  - `METALOS_SERVICE_IMAGE_ROOT` will be present for `OS` type services
 
 ## Generate service image
 
-A convenience buck function at `metalos/bzl/service/service.bzl` is provided to help
+A convenience buck function at `//metalos/bzl/service/service.bzl` is provided to help
 the user create a service image.
-Example usage can be found in `metalos/lib/service/tests/demo_service/`.
+Example usage can be found in `//metalos/lib/service/tests/demo_service/`.
+
+Example generator can be found in `//metalos/lib/service/tests/demo_service/generator/`.
+
+Example definition of a `NATIVE` type service definition can be found in `//metalos/lib/service/tests/demo_service/TARGETS` (look for `metalos.service.demo.native`)
+
+Example definition of a `OS` type service definition can be found in `//metalos/lib/service/tests/demo_service/TARGETS` (look for `metalos.service.demo.os`)
