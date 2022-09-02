@@ -7,6 +7,8 @@ rust_library(
     ]) + glob([
         "src/mp/sync/*.rs",
     ]) + glob([
+        "src/mp/threads/*.rs",
+    ]) + glob([
         "src/send_elements/*.rs",
     ]) + glob([
         "src/upgrade/*.rs",
