@@ -1,8 +1,12 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "rust_unittest", "third_party")
 
 rust_library(
     name = "btrfs_send_stream_upgrade_lib",
     srcs = ["src/lib.rs"] + glob([
+        "src/mp/*.rs",
+    ]) + glob([
+        "src/mp/sync/*.rs",
+    ]) + glob([
         "src/send_elements/*.rs",
     ]) + glob([
         "src/upgrade/*.rs",
@@ -41,4 +45,18 @@ rust_binary(
                ],
                platform = "rust",
            ),
+)
+
+rust_unittest(
+    name = "test-ordered-element-queue",
+    srcs = ["tests/test_ordered_element_queue.rs"],
+    deps = [":btrfs_send_stream_upgrade_lib"] +
+           third_party.libraries(
+               [
+                   "anyhow",
+                   "rand",
+               ],
+               platform = "rust",
+           ),
+    #crate_root = "src/test/mp/test_ordered_element_queue.rs",
 )
