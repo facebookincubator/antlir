@@ -7,10 +7,12 @@
 
 use std::path::PathBuf;
 
+use structopt::clap::AppSettings;
 use structopt::StructOpt;
 
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(about = "Command to upgrade a btrfs send stream")]
+#[structopt(global_setting = AppSettings::AllowNegativeNumbers)]
 pub struct SendStreamUpgradeOptions {
     /// Avoid crcing input
     /// This will implicitly trust the given commands and end up skipping the
