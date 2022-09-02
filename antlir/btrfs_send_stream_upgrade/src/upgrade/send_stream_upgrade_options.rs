@@ -12,6 +12,14 @@ use structopt::StructOpt;
 #[derive(Debug, Clone, StructOpt)]
 #[structopt(about = "Command to upgrade a btrfs send stream")]
 pub struct SendStreamUpgradeOptions {
+    /// Avoid crcing input
+    /// This will implicitly trust the given commands and end up skipping the
+    /// CRC32C checks on for commands that were populated from storage
+    /// false is the default value (default_value isn't set because of structopt
+    /// weirdness)
+    #[structopt(short, long, parse(from_flag))]
+    pub avoid_crcing_input: bool,
+
     /// Command Bytes to Dump to Event Log
     /// This represents the maximum number of command bytes dumped as a part of serde checks
     /// 0 is the default value
