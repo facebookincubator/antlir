@@ -5,14 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#[derive(PartialEq)]
-pub(crate) enum QueueState {
-    Running,
-    Aborted,
-    Done,
-}
+use crate::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
 
-pub trait BlockingQueue<T>: Sized {
+pub trait BlockingQueue<T>: BlockingSyncPrimitive + Sized {
     /// Creates a new queue
     fn new(name: &'static str) -> anyhow::Result<Self>;
     /// Retrives the name of the queue
@@ -21,6 +16,4 @@ pub trait BlockingQueue<T>: Sized {
     fn enqueue(&self, item: T) -> anyhow::Result<()>;
     /// Dequeues an element
     fn dequeue(&self) -> anyhow::Result<Option<T>>;
-    /// Stop the blocking queue from running to terminate the application
-    fn halt(&self, unplanned: bool) -> anyhow::Result<()>;
 }

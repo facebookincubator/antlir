@@ -81,7 +81,7 @@ impl SendCommand {
         let mut path: Option<String> = None;
         let mut start_offset: Option<usize> = None;
         // Copy over the entire command in the given buffer
-        context.read(&mut buffer[header_size..])?;
+        context.read_exact(&mut buffer[header_size..])?;
 
         {
             // Iterate through the current buffer to generate attributes
@@ -545,7 +545,7 @@ impl SendCommand {
                 destination_version,
             );
             // If the data attribute wasn't dirtied, then copy everything over
-            sub_context.read(&mut compressed_buffer[header_size..old_pre_data_size])?;
+            sub_context.read_exact(&mut compressed_buffer[header_size..old_pre_data_size])?;
             context.return_child(&mut sub_context);
         } else {
             // Otherwise, we need to flush everything except for the data attribute

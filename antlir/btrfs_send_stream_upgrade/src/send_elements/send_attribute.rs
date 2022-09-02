@@ -99,7 +99,7 @@ impl SendAttribute {
             context.get_read_offset(),
             bytes_remaining
         );
-        context.read(&mut buffer[header_size..])?;
+        context.read_exact(&mut buffer[header_size..])?;
         let start_time = SystemTime::now();
         let attribute = SendAttribute {
             sa_header: header,
@@ -279,7 +279,7 @@ impl SendAttribute {
                 self.sa_version,
                 version,
             );
-            sub_context.read(&mut upgraded_buffer[new_header_size..])?;
+            sub_context.read_exact(&mut upgraded_buffer[new_header_size..])?;
             context.return_child(&mut sub_context);
         }
 

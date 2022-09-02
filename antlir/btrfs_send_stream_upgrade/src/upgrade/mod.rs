@@ -6,6 +6,6 @@
  */
 
 pub mod send_stream;
-pub(super) mod send_stream_upgrade_context;
+pub mod send_stream_upgrade_context;
 pub mod send_stream_upgrade_options;
 pub(super) mod send_stream_upgrade_stats;
