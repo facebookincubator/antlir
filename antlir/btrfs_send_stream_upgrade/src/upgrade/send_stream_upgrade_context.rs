@@ -31,7 +31,7 @@ use crate::upgrade::send_stream_upgrade_stats::SendStreamUpgradeStats;
 
 pub struct SendStreamUpgradeContext<'a> {
     /// Stats related to the current upgrade context
-    ssuc_stats: SendStreamUpgradeStats,
+    pub ssuc_stats: SendStreamUpgradeStats,
     /// Logger associated with the current context
     pub ssuc_logger: Logger,
     /// Options that dicatate how the stream will be upgraded
