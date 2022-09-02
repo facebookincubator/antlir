@@ -82,6 +82,8 @@ lazy_static! {
     static ref UPGRADEABLE_COMMAND_TYPES: HashMap<BtrfsSendCommandType, BTreeSet<SendVersion>> = hashmap! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE => btreeset!{ SendVersion::SendVersion2 } };
     static ref APPENDABLE_COMMAND_TYPES: HashSet<BtrfsSendCommandType> =
         hashset! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE };
+    static ref PADDABLE_COMMAND_TYPES: HashSet<BtrfsSendCommandType> =
+        hashset! { BtrfsSendCommandType::BTRFS_SEND_C_WRITE };
 }
 
 #[derive(Eq, PartialEq)]
@@ -137,6 +139,21 @@ impl SendCommandHeader {
             sch_version: context.get_source_version()?,
         };
         debug!(context.ssuc_logger, "New CommandHeader={}", header);
+        Ok(header)
+    }
+
+    pub fn generate_pad_command_header(
+        context: &mut SendStreamUpgradeContext,
+        size: usize,
+    ) -> anyhow::Result<Self> {
+        context.trace_stats();
+        let header = SendCommandHeader {
+            sch_size: Some(size as u32),
+            sch_command_type: BtrfsSendCommandType::BTRFS_SEND_C_UPDATE_EXTENT,
+            sch_crc32c: None,
+            sch_version: context.get_destination_version()?,
+        };
+        debug!(context.ssuc_logger, "Pad CommandHeader={}", header);
         Ok(header)
     }
 
@@ -363,6 +380,10 @@ impl SendCommandHeader {
         self.sch_command_type == other.sch_command_type
             && self.sch_version == other.sch_version
             && self.is_appendable()
+    }
+
+    pub fn is_paddable(&self) -> bool {
+        PADDABLE_COMMAND_TYPES.contains(&self.sch_command_type)
     }
 
     pub fn get_header_size() -> usize {

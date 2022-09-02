@@ -54,6 +54,14 @@ pub struct SendStreamUpgradeOptions {
     #[structopt(short, long)]
     pub output: Option<PathBuf>,
 
+    /// Pad data payload offset with dummy commands
+    /// This will instruct the send stream upgrade tool to add a dummy command
+    /// to align the data payload to a 4KiB boundary for all writes
+    /// false is the default value (default_value isn't set because of structopt
+    /// weirdness)
+    #[structopt(short, long, parse(from_flag))]
+    pub pad_with_dummy_commands: bool,
+
     /// Quiet
     /// This supresses all output including logging and summary statistics
     /// false is the default value (default_value isn't set because of structopt weirdness)

@@ -212,6 +212,53 @@ impl SendAttribute {
         Ok(attribute)
     }
 
+    pub fn new_from_string(
+        context: &mut SendStreamUpgradeContext,
+        attribute_type: BtrfsSendAttributeType,
+        string: &str,
+    ) -> anyhow::Result<Self> {
+        context.trace_stats();
+        // Start off by creating the attribute header
+        let version = context.get_destination_version()?;
+        let string_buffer = string.as_bytes();
+        let payload_size = string_buffer.len();
+        let header = SendAttributeHeader::construct(attribute_type, payload_size as u16, version);
+        let header_size = header.get_header_size();
+        let total_size = header_size + payload_size;
+        let mut buffer = vec![0; total_size];
+
+        {
+            // Persist the header
+            // Set up a new sub context on the basis of the local buffer
+            let dummy_buffer = vec![];
+            let mut sub_context = context.clone_with_new_buffers(
+                &dummy_buffer[..],
+                &mut buffer[..],
+                version,
+                version,
+            );
+            header.persist(&mut sub_context)?;
+            sub_context.write(string_buffer, string_buffer.len())?;
+            context.return_child(&mut sub_context);
+        }
+
+        let attribute = SendAttribute {
+            sa_header: header,
+            sa_buffer: buffer,
+            sa_uncompressed_size: total_size,
+            sa_uncompressed_payload_size: payload_size,
+            sa_version: version,
+        };
+        debug!(context.ssuc_logger, "NewFromString Attribute={}", attribute);
+        let header_slice = &attribute.sa_buffer[..header_size];
+        trace!(
+            context.ssuc_logger,
+            "NewFromString AttributeHeader bytes {:02X?}",
+            header_slice
+        );
+        Ok(attribute)
+    }
+
     pub fn upgrade(&self, context: &mut SendStreamUpgradeContext) -> anyhow::Result<Self> {
         context.trace_stats();
         let version = context.get_destination_version()?;
