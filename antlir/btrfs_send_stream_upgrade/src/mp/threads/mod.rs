@@ -12,4 +12,5 @@ pub mod coordinator;
 pub mod prefetch_worker;
 pub mod read_worker;
 pub mod worker;
+pub mod worker_thread;
 pub mod write_worker;

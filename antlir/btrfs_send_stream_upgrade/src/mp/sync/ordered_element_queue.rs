@@ -187,9 +187,10 @@ impl<T: OrderedElement> BlockingSyncPrimitive for OrderedElementQueue<T> {
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to acquire lock on halt with error {}", error),
         };
-        // Abort
-        if (*queue).oeqi_state != PrimitiveState::Running {
-            anyhow::bail!("Double halt on queue");
+        // Disallow transitions from Aborted to Done
+        // We can go from Done to Aborted in the case of a later failure
+        if (*queue).oeqi_state == PrimitiveState::Aborted && !unplanned {
+            anyhow::bail!("Transitioning queue from Done to Aborted");
         }
         // Update the state
         (*queue).oeqi_state = if unplanned {

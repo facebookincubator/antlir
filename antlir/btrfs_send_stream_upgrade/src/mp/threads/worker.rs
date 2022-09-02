@@ -7,12 +7,11 @@
 
 use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 
-pub trait Worker: Sized {
-    // Dispatches and dispatches the async worker
-    fn new(name: String, context: &mut SendStreamUpgradeContext) -> anyhow::Result<Self>;
-    // Returns the status of the worker:
-    // * true means the worker is still running
-    // * false means the worker terminated gracefully
-    // * An error means the worker crashed
-    fn get_status(&mut self) -> anyhow::Result<bool>;
+pub trait Worker: Send {
+    // Preserve the source of the parent context
+    fn preserve_source() -> bool;
+    // Preserve the destination of the parent context
+    fn preserve_destination() -> bool;
+    // Runs a worker on a sendstream context
+    fn run_worker(context: SendStreamUpgradeContext) -> anyhow::Result<()>;
 }
