@@ -9,8 +9,6 @@ use std::fmt::Display;
 use std::time::SystemTime;
 
 use anyhow::Context;
-use crc::crc32;
-use crc::Hasher32;
 use slog::debug;
 use slog::info;
 use slog::trace;
@@ -1285,10 +1283,9 @@ impl SendCommand {
 
     fn compute_crc32c(context: &mut SendStreamUpgradeContext, buffer: &[u8]) -> u32 {
         let start_time = SystemTime::now();
-        let mut digest = crc32::Digest::new_with_initial(crc32::CASTAGNOLI, !0);
-        digest.write(buffer);
+        let checksum = crc32c_hw::update(!0, buffer);
         context.update_crc32c_stats(&start_time, buffer.len());
-        !digest.sum32()
+        !checksum
     }
 }
 

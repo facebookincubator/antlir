@@ -11,6 +11,7 @@ mod send_elements;
 
 pub mod upgrade;
 
+extern crate crc32c_hw;
 #[macro_use]
 extern crate maplit;
 extern crate num;
