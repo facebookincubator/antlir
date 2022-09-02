@@ -16,10 +16,10 @@ use slog::trace;
 use thiserror::Error;
 use zstd::stream::write::Encoder;
 
-pub use crate::send_attribute_header::BtrfsSendAttributeType;
-pub use crate::send_attribute_header::SendAttributeHeader;
-pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
-pub use crate::send_version::SendVersion;
+use crate::send_elements::send_attribute_header::BtrfsSendAttributeType;
+use crate::send_elements::send_attribute_header::SendAttributeHeader;
+use crate::send_elements::send_version::SendVersion;
+use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 
 // This must be set to 17 (i.e., 2 ^ 17 = 128Ki)
 const BTRFS_ZSTD_WINDOW_LOG: u32 = 17;

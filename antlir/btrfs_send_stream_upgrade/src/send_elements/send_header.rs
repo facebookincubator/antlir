@@ -10,8 +10,8 @@ use std::str;
 
 use slog::info;
 
-pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
-pub use crate::send_version::SendVersion;
+use crate::send_elements::send_version::SendVersion;
+use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 
 const BTRFS_MAGIC: &str = "btrfs-stream\0";
 
@@ -68,10 +68,6 @@ impl SendHeader {
         info!(context.ssuc_logger, "Writing version of {}", version_value);
         context.write32(version_value)?;
         Ok(())
-    }
-
-    pub fn get_magic(&self) -> &String {
-        &self.sh_magic
     }
 
     pub fn get_version(&self) -> SendVersion {
