@@ -120,7 +120,8 @@ impl<'a> SendStreamUpgradeContext<'a> {
         let read_len = read.len();
         let read_box = Box::new(read);
         let write_box = Box::new(write);
-        SendStreamUpgradeContext {
+        let start_time = SystemTime::now();
+        let mut new_context = SendStreamUpgradeContext {
             ssuc_stats: self.ssuc_stats,
             ssuc_logger: self.ssuc_logger.clone(),
             ssuc_options: self.ssuc_options.clone(),
@@ -133,7 +134,9 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_source_length: Some(read_len),
             ssuc_associated_with_parent: true,
             ssuc_backtrace: Backtrace::capture(),
-        }
+        };
+        new_context.ssuc_stats.ssus_context_create_time += Self::get_time_delta(&start_time);
+        new_context
     }
 
     pub fn read(&mut self, buffer: &mut [u8]) -> anyhow::Result<()> {
@@ -254,12 +257,15 @@ impl<'a> SendStreamUpgradeContext<'a> {
         self.ssuc_stats.ssus_crc32c_bytes_processed += crc32c_bytes;
     }
 
-    pub fn update_compress_stats(&mut self, start_time: &SystemTime, compress_succeeded: bool) {
-        let time_delta = match start_time.elapsed() {
+    fn get_time_delta(start_time: &SystemTime) -> Duration {
+        match start_time.elapsed() {
             Ok(duration) => duration,
             Err(_) => Duration::new(0, 0),
-        };
-        self.ssuc_stats.ssus_compress_time += time_delta;
+        }
+    }
+
+    pub fn update_compress_stats(&mut self, start_time: &SystemTime, compress_succeeded: bool) {
+        self.ssuc_stats.ssus_compress_time += Self::get_time_delta(start_time);
         if compress_succeeded {
             self.ssuc_stats.ssus_compression_passed += 1;
         } else {
@@ -268,21 +274,17 @@ impl<'a> SendStreamUpgradeContext<'a> {
     }
 
     pub fn update_append_stats(&mut self, start_time: &SystemTime, bytes_appended: usize) {
-        let time_delta = match start_time.elapsed() {
-            Ok(duration) => duration,
-            Err(_) => Duration::new(0, 0),
-        };
-        self.ssuc_stats.ssus_append_time += time_delta;
+        self.ssuc_stats.ssus_append_time += Self::get_time_delta(start_time);
         self.ssuc_stats.ssus_appended_bytes += bytes_appended;
     }
 
     pub fn update_truncate_stats(&mut self, start_time: &SystemTime, bytes_removed: usize) {
-        let time_delta = match start_time.elapsed() {
-            Ok(duration) => duration,
-            Err(_) => Duration::new(0, 0),
-        };
-        self.ssuc_stats.ssus_truncate_time += time_delta;
+        self.ssuc_stats.ssus_truncate_time += Self::get_time_delta(start_time);
         self.ssuc_stats.ssus_truncated_bytes += bytes_removed;
+    }
+
+    pub fn update_attribute_population_stats(&mut self, start_time: &SystemTime) {
+        self.ssuc_stats.ssus_attribute_population_time += Self::get_time_delta(start_time);
     }
 
     pub fn eprint_summary_stats(&self) {
@@ -328,6 +330,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
     // Note: For lifetime reasons, we cannot use Self here and we need to use
     // the underlying type instead
     pub fn return_child(&mut self, child: &mut SendStreamUpgradeContext) {
+        let start_time = SystemTime::now();
         self.ssuc_stats = child.ssuc_stats;
         // Returning this to its parent
         // Ensure that it hasn't been freed already
@@ -340,6 +343,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
             "Ctxt associated with parent is {}",
             child.ssuc_associated_with_parent
         );
+        self.ssuc_stats.ssus_context_return_time += Self::get_time_delta(&start_time);
     }
 }
 

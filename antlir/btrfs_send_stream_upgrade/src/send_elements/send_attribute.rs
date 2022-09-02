@@ -79,7 +79,9 @@ impl SendAttribute {
             header_size,
             bytes_remaining
         );
+        let start_time = SystemTime::now();
         let mut buffer = vec![0; total_size];
+        context.update_attribute_population_stats(&start_time);
 
         {
             // Persist the header
@@ -103,6 +105,7 @@ impl SendAttribute {
             bytes_remaining
         );
         context.read(&mut buffer[header_size..])?;
+        let start_time = SystemTime::now();
         let attribute = SendAttribute {
             sa_header: header,
             sa_buffer: buffer,
@@ -110,6 +113,7 @@ impl SendAttribute {
             sa_uncompressed_payload_size: total_size - header_size,
             sa_version: version,
         };
+        context.update_attribute_population_stats(&start_time);
         debug!(context.ssuc_logger, "New Attribute={}", attribute);
         let header_slice = &attribute.sa_buffer[..header_size];
         trace!(

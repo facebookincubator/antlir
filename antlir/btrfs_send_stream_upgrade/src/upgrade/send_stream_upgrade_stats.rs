@@ -60,6 +60,12 @@ pub struct SendStreamUpgradeStats {
     pub ssus_truncate_time: Duration,
     /// The total number of bytes truncated
     pub ssus_truncated_bytes: usize,
+    /// The total amount of time populating attributes
+    pub ssus_attribute_population_time: Duration,
+    /// The total amount of time creating contexts
+    pub ssus_context_create_time: Duration,
+    /// The total amount of time returning contexts
+    pub ssus_context_return_time: Duration,
 }
 
 impl SendStreamUpgradeStats {
@@ -89,12 +95,15 @@ impl SendStreamUpgradeStats {
             ssus_appended_bytes: 0,
             ssus_truncate_time: Duration::new(0, 0),
             ssus_truncated_bytes: 0,
+            ssus_attribute_population_time: Duration::new(0, 0),
+            ssus_context_create_time: Duration::new(0, 0),
+            ssus_context_return_time: Duration::new(0, 0),
         }
     }
 
     fn eprint_one_line(string: &str, numerator: Duration, denominator: Duration) {
         eprintln!(
-            "{}\t: ({:.4}%) {}usecs",
+            "{}\t: ({:.4}%)\t{} usecs",
             string,
             (100.0 * numerator.as_micros() as f64) / denominator.as_micros() as f64,
             numerator.as_micros()
@@ -115,17 +124,39 @@ impl SendStreamUpgradeStats {
             .saturating_sub(self.ssus_compress_time)
             .saturating_sub(self.ssus_crc32c_time)
             .saturating_sub(self.ssus_append_time)
-            .saturating_sub(self.ssus_truncate_time);
-        Self::eprint_one_line("Total Time\t", total_time, total_time);
-        Self::eprint_one_line("Buffer Read\t", self.ssus_buffer_read_time, total_time);
-        Self::eprint_one_line("Storage Read", self.ssus_storage_read_time, total_time);
-        Self::eprint_one_line("Buffer Write", self.ssus_buffer_write_time, total_time);
-        Self::eprint_one_line("Storage Write", self.ssus_storage_write_time, total_time);
-        Self::eprint_one_line("Compression\t", self.ssus_compress_time, total_time);
-        Self::eprint_one_line("CRC32C Sums\t", self.ssus_crc32c_time, total_time);
-        Self::eprint_one_line("Append Time\t", self.ssus_append_time, total_time);
-        Self::eprint_one_line("Truncate Time", self.ssus_truncate_time, total_time);
-        Self::eprint_one_line("Other Time\t", other_time, total_time);
+            .saturating_sub(self.ssus_truncate_time)
+            .saturating_sub(self.ssus_attribute_population_time)
+            .saturating_sub(self.ssus_context_create_time)
+            .saturating_sub(self.ssus_context_return_time);
+        Self::eprint_one_line("Total Time\t\t", total_time, total_time);
+        Self::eprint_one_line("Buffer Read\t\t", self.ssus_buffer_read_time, total_time);
+        Self::eprint_one_line("Storage Read\t\t", self.ssus_storage_read_time, total_time);
+        Self::eprint_one_line("Buffer Write\t\t", self.ssus_buffer_write_time, total_time);
+        Self::eprint_one_line(
+            "Storage Write\t\t",
+            self.ssus_storage_write_time,
+            total_time,
+        );
+        Self::eprint_one_line("Compression\t\t", self.ssus_compress_time, total_time);
+        Self::eprint_one_line("CRC32C Sums\t\t", self.ssus_crc32c_time, total_time);
+        Self::eprint_one_line("Append Time\t\t", self.ssus_append_time, total_time);
+        Self::eprint_one_line("Truncate Time\t\t", self.ssus_truncate_time, total_time);
+        Self::eprint_one_line(
+            "Attr Population Time\t",
+            self.ssus_attribute_population_time,
+            total_time,
+        );
+        Self::eprint_one_line(
+            "Context Create Time\t",
+            self.ssus_context_create_time,
+            total_time,
+        );
+        Self::eprint_one_line(
+            "Context Return Time\t",
+            self.ssus_context_return_time,
+            total_time,
+        );
+        Self::eprint_one_line("Other Time\t\t", other_time, total_time);
     }
 }
 
@@ -137,7 +168,7 @@ impl Display for SendStreamUpgradeStats {
         };
         write!(
             f,
-            "<Stats Time={:?} <Read BufferTime={:?} StorageTime={:?} Bytes={} IOs={} Commands={}/><Write BufferTime={:?} StorageTime={:?} <Compressed Time={:?} Bytes={} IOs={} Succeed={} Failed={}/><UnCompressed Bytes={} IOs={}/> LogicalBytes={} Commands={}/><Copied Bytes={}/><CRC32C Time={:?} Bytes={}/><Batching <Appended Time={:?} Bytes={}/><Truncated Time={:?} Bytes={}/>/>/>",
+            "<Stats Time={:?} <Read BufferTime={:?} StorageTime={:?} Bytes={} IOs={} Commands={}/><Write BufferTime={:?} StorageTime={:?} <Compressed Time={:?} Bytes={} IOs={} Succeed={} Failed={}/><UnCompressed Bytes={} IOs={}/> LogicalBytes={} Commands={}/><Copied Bytes={}/><CRC32C Time={:?} Bytes={}/><Batching <Appended Time={:?} Bytes={}/><Truncated Time={:?} Bytes={}/>/><AttributePopulation Time={:?}/><Context CreateTime={:?} ReturnTime={:?}/>/>",
             total_time,
             self.ssus_buffer_read_time,
             self.ssus_storage_read_time,
@@ -161,7 +192,10 @@ impl Display for SendStreamUpgradeStats {
             self.ssus_append_time,
             self.ssus_appended_bytes,
             self.ssus_truncate_time,
-            self.ssus_truncated_bytes
+            self.ssus_truncated_bytes,
+            self.ssus_attribute_population_time,
+            self.ssus_context_create_time,
+            self.ssus_context_return_time,
         )
     }
 }
