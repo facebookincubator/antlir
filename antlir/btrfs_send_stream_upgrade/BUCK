@@ -24,6 +24,7 @@ rust_library(
             "num",
             "num-derive",
             "num-traits",
+            "num_cpus",
             "slog",
             "slog-term",
             "structopt",
@@ -46,6 +47,18 @@ rust_binary(
                [
                    "anyhow",
                    "structopt",
+               ],
+               platform = "rust",
+           ),
+)
+
+rust_unittest(
+    name = "test-coordinator",
+    srcs = ["tests/test_coordinator.rs"],
+    deps = [":btrfs_send_stream_upgrade_lib"] +
+           third_party.libraries(
+               [
+                   "anyhow",
                ],
                platform = "rust",
            ),
