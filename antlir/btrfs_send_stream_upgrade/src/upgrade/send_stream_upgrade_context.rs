@@ -218,21 +218,39 @@ impl<'a> SendStreamUpgradeContext<'a> {
     }
 
     pub fn read(&mut self, buffer: &mut [u8]) -> anyhow::Result<usize> {
-        let source = match self.ssuc_source {
-            None => anyhow::bail!("Trying to read from a None source"),
-            Some(ref mut source) => source,
-        };
         let start_time = SystemTime::now();
         let mut total_bytes_read = 0;
-        while total_bytes_read < buffer.len() {
-            // Try to read some data
-            let bytes_read = source.read(&mut buffer[total_bytes_read..])?;
-            // If we read nothing, then assume that we hit the EOF
-            // Time to exit
-            if bytes_read == 0 {
-                break;
+        match self.ssuc_source {
+            Some(ref mut source) => {
+                while total_bytes_read < buffer.len() {
+                    // Try to read some data
+                    let bytes_read = source.read(&mut buffer[total_bytes_read..])?;
+                    // If we read nothing, then assume that we hit the EOF
+                    // Time to exit
+                    if bytes_read == 0 {
+                        break;
+                    }
+                    total_bytes_read += bytes_read;
+                }
             }
-            total_bytes_read += bytes_read;
+            None => {
+                // Try to look into the sync container to get at the buffer
+                // cache
+                match self.ssuc_sync_container {
+                    Some(ref mut sync_container) => {
+                        match sync_container.sc_buffer_cache {
+                            Some(ref buffer_cache) => {
+                                // Got a buffer cache; do an exact read
+                                (*buffer_cache).read_exact(buffer, self.ssuc_source_offset)?;
+                            }
+                            None => anyhow::bail!("Reading with None buffer cache"),
+                        }
+                    }
+                    None => anyhow::bail!("Reading with None container"),
+                }
+                // If we got here, then we must have read everything
+                total_bytes_read += buffer.len();
+            }
         }
         let time_delta = match start_time.elapsed() {
             Ok(duration) => duration,
@@ -279,6 +297,10 @@ impl<'a> SendStreamUpgradeContext<'a> {
 
     pub fn get_read_offset(&self) -> usize {
         self.ssuc_source_offset
+    }
+
+    pub fn adjust_read_offset(&mut self, increment: usize) {
+        self.ssuc_source_offset += increment;
     }
 
     pub fn get_read_len(&self) -> anyhow::Result<usize> {

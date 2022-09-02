@@ -17,8 +17,6 @@ pub struct CommandInfo {
     ci_send_command_header: SendCommandHeader,
     /// The start address of the payload buffer
     ci_buffer_start_address: usize,
-    /// The end address of the payload buffer
-    ci_buffer_end_address: usize,
 }
 
 impl CommandInfo {
@@ -26,13 +24,11 @@ impl CommandInfo {
         id: u64,
         send_command_header: SendCommandHeader,
         start_address: usize,
-        end_address: usize,
     ) -> anyhow::Result<Self> {
         Ok(Self {
             ci_send_command_header: send_command_header,
             ci_id: id,
             ci_buffer_start_address: start_address,
-            ci_buffer_end_address: end_address,
         })
     }
 }
@@ -45,11 +41,8 @@ impl Display for CommandInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "<CommandInfo Id={} Header={} Start={} End={}/>",
-            self.ci_id,
-            self.ci_send_command_header,
-            self.ci_buffer_start_address,
-            self.ci_buffer_end_address,
+            "<CommandInfo Id={} Header={} Start={}/>",
+            self.ci_id, self.ci_send_command_header, self.ci_buffer_start_address,
         )
     }
 }
