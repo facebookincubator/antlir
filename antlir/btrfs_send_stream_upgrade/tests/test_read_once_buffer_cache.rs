@@ -13,6 +13,7 @@ use std::time;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_queue::BlockingQueue;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::read_once_buffer_cache::ReadOnceBufferCache;
+pub use btrfs_send_stream_upgrade_lib::send_elements::send_version::SendVersion;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 pub use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use rand::thread_rng;
@@ -117,6 +118,7 @@ fn resequence_io_read_from_file() -> anyhow::Result<()> {
     let mut options = SendStreamUpgradeOptions::from_iter(dummy_vector);
     options.input = Some(tempfile.path().to_path_buf());
     let mut context = SendStreamUpgradeContext::new(options)?;
+    context.set_versions(SendVersion::SendVersion1, SendVersion::SendVersion2);
 
     let mut vec: Vec<Vec<u16>> = vec![vec![]; NUM_READERS];
     let start_address = 2 * populate_read_ranges(&mut vec)? as usize;
@@ -129,6 +131,19 @@ fn resequence_io_read_from_file() -> anyhow::Result<()> {
     // This is to simulate skipping bytes for the header before
     // commands are processed
     context.seek_source(start_address)?;
+
+    // Test out the clone for mp threads too
+    let context = SendStreamUpgradeContext::clone_for_mp_threads(
+        true,
+        true,
+        context.ssuc_logger.clone(),
+        context.ssuc_options.clone(),
+        context.get_source_version()?,
+        context.get_destination_version()?,
+        context.get_read_offset(),
+        context.get_write_offset(),
+        None,
+    )?;
 
     println!("Start address is {}", start_address);
 

@@ -10,4 +10,4 @@ pub(super) mod send_attribute_header;
 pub(super) mod send_command;
 pub(super) mod send_command_header;
 pub(super) mod send_header;
-pub(super) mod send_version;
+pub mod send_version;

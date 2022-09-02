@@ -10,6 +10,8 @@ use std::fs::OpenOptions;
 use std::io::BufReader;
 use std::io::BufWriter;
 use std::io::Read;
+use std::io::Seek;
+use std::io::SeekFrom;
 use std::io::Write;
 use std::mem;
 use std::time::Duration;
@@ -59,12 +61,12 @@ pub struct SendStreamUpgradeContext<'a> {
 impl<'a> SendStreamUpgradeContext<'a> {
     pub fn new(options: SendStreamUpgradeOptions) -> anyhow::Result<SendStreamUpgradeContext<'a>> {
         // Open up the input file
-        let input_file: Box<dyn Read + Send> = match &options.input {
+        let input_file: Box<dyn Read + Send + Sync> = match &options.input {
             None => Box::new(std::io::stdin()),
             Some(value) => Box::new(OpenOptions::new().read(true).open(value)?),
         };
         // Open up the output file
-        let output_file: Box<dyn Write + Send> = match &options.output {
+        let output_file: Box<dyn Write + Send + Sync> = match &options.output {
             None => Box::new(std::io::stdout()),
             Some(value) => Box::new(
                 OpenOptions::new()
@@ -142,6 +144,77 @@ impl<'a> SendStreamUpgradeContext<'a> {
         };
         new_context.ssuc_stats.ssus_context_create_time += Self::get_time_delta(&start_time);
         new_context
+    }
+
+    pub fn clone_for_mp_threads(
+        keep_source: bool,
+        keep_destination: bool,
+        logger: Logger,
+        options: SendStreamUpgradeOptions,
+        source_version: SendVersion,
+        destination_version: SendVersion,
+        source_offset: usize,
+        destination_offset: usize,
+        sync_container: Option<SyncContainer>,
+    ) -> anyhow::Result<SendStreamUpgradeContext<'a>> {
+        // Open up the input file
+        let source = match keep_source {
+            true => {
+                let input_file: Box<dyn Read + Send + Sync> = match &options.input {
+                    None => Box::new(std::io::stdin()),
+                    Some(value) => {
+                        let mut file = OpenOptions::new().read(true).open(value)?;
+                        // If we had a file input, then we need to seek forward
+                        // on the underlying file
+                        file.seek(SeekFrom::Start(source_offset as u64))?;
+                        Box::new(file)
+                    }
+                };
+                let read = input_file;
+                let read_box = Box::new(read);
+                let read_buffer_size = options.read_buffer_size;
+                Some(BufReader::with_capacity(read_buffer_size, read_box as _))
+            }
+            false => None,
+        };
+        // Open up the output file
+        let destination = match keep_destination {
+            true => {
+                let output_file: Box<dyn Write + Send + Sync> = match &options.output {
+                    None => Box::new(std::io::stdout()),
+                    Some(value) => {
+                        // If we had a file output, then we need to seek forward
+                        // on the underlying file
+                        // NOTE: Unlike in the new case, don't truncate the file
+                        // since we're reopening it
+                        let mut file = OpenOptions::new().write(true).open(value)?;
+                        file.seek(SeekFrom::Start(destination_offset as u64))?;
+                        Box::new(file)
+                    }
+                };
+                let write = output_file;
+                let write_box = Box::new(write);
+                let write_buffer_size = options.write_buffer_size;
+                Some(BufWriter::with_capacity(write_buffer_size, write_box as _))
+            }
+            false => None,
+        };
+
+        Ok(SendStreamUpgradeContext {
+            ssuc_stats: SendStreamUpgradeStats::new(),
+            ssuc_logger: logger,
+            ssuc_options: options,
+            ssuc_source: source,
+            ssuc_destination: destination,
+            ssuc_source_version: Some(source_version),
+            ssuc_destination_version: Some(destination_version),
+            ssuc_source_offset: source_offset,
+            ssuc_destination_offset: destination_offset,
+            ssuc_source_length: None,
+            ssuc_associated_with_parent: false,
+            ssuc_backtrace: Backtrace::capture(),
+            ssuc_sync_container: sync_container,
+        })
     }
 
     pub fn read(&mut self, buffer: &mut [u8]) -> anyhow::Result<usize> {
@@ -390,6 +463,16 @@ impl<'a> SendStreamUpgradeContext<'a> {
     pub fn setup_sync_container(&mut self) -> anyhow::Result<()> {
         self.ssuc_sync_container = Some(SyncContainer::new(&self.ssuc_options)?);
         Ok(())
+    }
+
+    pub fn flush(&mut self) -> anyhow::Result<()> {
+        match self.ssuc_destination {
+            Some(ref mut destination) => match destination.flush() {
+                Ok(()) => Ok(()),
+                Err(e) => anyhow::bail!(e),
+            },
+            None => anyhow::bail!("Attempting to flush without a destination"),
+        }
     }
 }
 
