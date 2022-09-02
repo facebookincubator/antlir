@@ -10,7 +10,7 @@ rust_library(
     deps = third_party.libraries(
         [
             "anyhow",
-            "crc",
+            "crc32c-hw",
             "lazy_static",
             "maplit",
             "num",
