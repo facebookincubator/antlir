@@ -73,4 +73,8 @@ impl SendHeader {
     pub fn get_version(&self) -> SendVersion {
         self.sh_version
     }
+
+    pub fn get_size() -> usize {
+        BTRFS_MAGIC.len() + std::mem::size_of::<u32>()
+    }
 }

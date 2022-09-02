@@ -11,5 +11,6 @@ pub mod ordered_element;
 pub mod ordered_element_queue;
 pub mod read_buffer;
 pub mod read_once_buffer_cache;
+pub mod sync_container;
 pub mod unordered_element;
 pub mod unordered_element_queue;

@@ -17,6 +17,10 @@ impl<'a> Coordinator<'a> {
         Ok(Self { c_context: context })
     }
     pub fn run(&mut self) -> anyhow::Result<()> {
+        match self.c_context {
+            Some(ref mut context) => context.setup_sync_container()?,
+            None => anyhow::bail!("None container for coordinator"),
+        }
         Ok(())
     }
     pub fn take_context(&mut self) -> Option<SendStreamUpgradeContext<'a>> {

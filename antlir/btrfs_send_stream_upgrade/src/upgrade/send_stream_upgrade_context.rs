@@ -22,6 +22,7 @@ use slog::Drain;
 use slog::Level;
 use slog::Logger;
 
+use crate::mp::sync::sync_container::SyncContainer;
 use crate::send_elements::send_version::SendVersion;
 use crate::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use crate::upgrade::send_stream_upgrade_stats::SendStreamUpgradeStats;
@@ -51,6 +52,8 @@ pub struct SendStreamUpgradeContext<'a> {
     ssuc_associated_with_parent: bool,
     /// Backtrace of where the context was allocated
     ssuc_backtrace: Backtrace,
+    /// An mp-safe container for synchronization primitives
+    pub ssuc_sync_container: Option<SyncContainer>,
 }
 
 impl<'a> SendStreamUpgradeContext<'a> {
@@ -107,6 +110,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_source_length: None,
             ssuc_associated_with_parent: false,
             ssuc_backtrace: Backtrace::capture(),
+            ssuc_sync_container: None,
         })
     }
 
@@ -134,6 +138,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_source_length: read_length,
             ssuc_associated_with_parent: true,
             ssuc_backtrace: Backtrace::capture(),
+            ssuc_sync_container: None,
         };
         new_context.ssuc_stats.ssus_context_create_time += Self::get_time_delta(&start_time);
         new_context
@@ -380,6 +385,11 @@ impl<'a> SendStreamUpgradeContext<'a> {
             child.ssuc_associated_with_parent
         );
         self.ssuc_stats.ssus_context_return_time += Self::get_time_delta(&start_time);
+    }
+
+    pub fn setup_sync_container(&mut self) -> anyhow::Result<()> {
+        self.ssuc_sync_container = Some(SyncContainer::new(&self.ssuc_options)?);
+        Ok(())
     }
 }
 
