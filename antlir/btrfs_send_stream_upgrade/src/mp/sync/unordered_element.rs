@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-pub mod blocking_queue;
-pub mod ordered_element;
-pub mod ordered_element_queue;
-pub mod unordered_element;
-pub mod unordered_element_queue;
+use std::fmt::Display;
+
+pub trait UnorderedElement: Send + Display {}

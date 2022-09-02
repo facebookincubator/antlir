@@ -58,5 +58,17 @@ rust_unittest(
                ],
                platform = "rust",
            ),
-    #crate_root = "src/test/mp/test_ordered_element_queue.rs",
+)
+
+rust_unittest(
+    name = "test-unordered-element-queue",
+    srcs = ["tests/test_unordered_element_queue.rs"],
+    deps = [":btrfs_send_stream_upgrade_lib"] +
+           third_party.libraries(
+               [
+                   "anyhow",
+                   "rand",
+               ],
+               platform = "rust",
+           ),
 )
