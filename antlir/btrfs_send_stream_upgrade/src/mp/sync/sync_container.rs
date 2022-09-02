@@ -11,6 +11,7 @@ use std::sync::Mutex;
 use crate::mp::send_elements::command_batch_info::CommandBatchInfo;
 use crate::mp::send_elements::command_info::CommandInfo;
 use crate::mp::sync::blocking_queue::BlockingQueue;
+use crate::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
 use crate::mp::sync::ordered_element_queue::OrderedElementQueue;
 use crate::mp::sync::read_once_buffer_cache::ReadOnceBufferCache;
 use crate::mp::sync::unordered_element_queue::UnorderedElementQueue;
@@ -65,6 +66,14 @@ impl SyncContainer {
             )?),
             sc_stats: Arc::new(Mutex::new(SendStreamUpgradeStats::new())),
         })
+    }
+    // Stops all threads currently running against the given primitive
+    pub fn halt_all(&self, unplanned: bool) -> anyhow::Result<()> {
+        (*self.sc_buffer_cache).halt(unplanned)?;
+        (*self.sc_command_construction_queue).halt(unplanned)?;
+        (*self.sc_batcher_queue).halt(unplanned)?;
+        (*self.sc_compression_queue).halt(unplanned)?;
+        (*self.sc_persistence_queue).halt(unplanned)
     }
     pub fn rollover_stats(&self, other_stats: &SendStreamUpgradeStats) -> anyhow::Result<()> {
         // First lock to get at the underlying stats

@@ -519,9 +519,10 @@ impl BlockingSyncPrimitive for ReadOnceBufferCache {
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to acquire lock on halt with error {}", error),
         };
-        // Abort
-        if (*metadata).robcm_state != PrimitiveState::Running {
-            anyhow::bail!("Double halt on cache");
+        // Disallow transitions from Aborted to Done
+        // We can go from Done to Aborted in the case of a later failure
+        if (*metadata).robcm_state == PrimitiveState::Aborted && !unplanned {
+            anyhow::bail!("Transitioning cache from Done to Aborted");
         }
         // Update the state
         (*metadata).robcm_state = if unplanned {
