@@ -320,7 +320,7 @@ impl SendAttributeHeader {
         let mut header_size = size_of_val(&attribute_type);
         // TODO: Remove this temporary check.
         if header_size != 2 {
-            panic!("Found bad attribute type size {}!", header_size);
+            panic!("Found bad attribute type size {}", header_size);
         }
         if let Some(size) = self.sah_size {
             header_size += size_of_val(&size);

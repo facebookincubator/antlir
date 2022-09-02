@@ -21,13 +21,15 @@ pub struct SendStreamUpgradeOptions {
     pub avoid_crcing_input: bool,
 
     /// Command Bytes to Dump to Event Log
-    /// This represents the maximum number of command bytes dumped as a part of serde checks
+    /// This represents the maximum number of command bytes dumped as a part of
+    /// serde checks
     /// 0 is the default value
     #[structopt(short, long, default_value = "0")]
     pub bytes_to_log: usize,
 
     /// Compression level
-    /// This represents the zstd compression level to apply as a part of the ugprade process
+    /// This represents the zstd compression level to apply as a part of the
+    /// ugprade process
     /// 0 will disable compression
     /// 3 is the default compression value
     /// 22 is the maximum value that can be used
@@ -40,9 +42,11 @@ pub struct SendStreamUpgradeOptions {
     pub input: Option<PathBuf>,
 
     /// Maximum Batched Extent Size
-    /// This represents the maximum number of contiguous blocks (measured in bytes)
+    /// This represents the maximum number of contiguous blocks (measured in
+    /// bytes)
     /// to stich together across multiple commands to form a single extent
-    /// Note that this value should be a multiple of 4096 (the underlying block size)
+    /// Note that this value should be a multiple of 4096 (the underlying block
+    /// size)
     /// 0 will disable batching
     /// 131072 is the default
     /// 131072 is the maximum value that can be used
@@ -64,7 +68,8 @@ pub struct SendStreamUpgradeOptions {
 
     /// Quiet
     /// This supresses all output including logging and summary statistics
-    /// false is the default value (default_value isn't set because of structopt weirdness)
+    /// false is the default value (default_value isn't set because of structopt
+    /// weirdness)
     #[structopt(short, long, parse(from_flag))]
     pub quiet: bool,
 
@@ -75,14 +80,16 @@ pub struct SendStreamUpgradeOptions {
     pub read_buffer_size: usize,
 
     /// Serialize-Deserialize Checks
-    /// This will serialize and deserialize a command at every step of its lifecycle to verify its
-    /// contents
-    /// false is the default value (default_value isn't set because of structopt weirdness)
+    /// This will serialize and deserialize a command at every step of its
+    /// lifecycle to verify its contents
+    /// false is the default value (default_value isn't set because of structopt
+    /// weirdness)
     #[structopt(short, long, parse(from_flag))]
     pub serde_checks: bool,
 
     /// Verbosity
-    /// This represents the log level for the event log that is directed to stderr
+    /// This represents the log level for the event log that is directed to
+    /// stderr
     #[structopt(short, long, parse(from_occurrences))]
     pub verbose: usize,
 

@@ -177,7 +177,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
     pub fn get_read_len(&self) -> anyhow::Result<usize> {
         match self.ssuc_source_length {
             Some(length) => Ok(length),
-            None => anyhow::bail!("Attempted to get a length of a non-buffer source!"),
+            None => anyhow::bail!("Attempted to get a length of a non-buffer source"),
         }
     }
 
@@ -332,7 +332,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
         // Returning this to its parent
         // Ensure that it hasn't been freed already
         if !child.ssuc_associated_with_parent {
-            panic!("Returning freed context!");
+            panic!("Returning freed context");
         }
         child.ssuc_associated_with_parent = false;
         trace!(
@@ -350,7 +350,7 @@ impl<'a> Drop for SendStreamUpgradeContext<'a> {
         if self.ssuc_associated_with_parent {
             crit!(
                 self.ssuc_logger,
-                "Dangling context found! bt for context is {:?}",
+                "Dangling context found; bt for context is {:?}",
                 self.ssuc_backtrace
             );
         }

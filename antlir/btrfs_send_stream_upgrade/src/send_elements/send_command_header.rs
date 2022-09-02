@@ -392,10 +392,7 @@ impl SendCommandHeader {
         let crc32c = DUMMY_COMMAND_HEADER.sch_size.unwrap_or(0);
         // TODO: Remove this temporary check.
         if size_of_val(&command_type) != 2 {
-            panic!(
-                "Found bad command type size {}!",
-                size_of_val(&command_type)
-            );
+            panic!("Found bad command type size {}", size_of_val(&command_type));
         }
         size_of_val(&size) + size_of_val(&command_type) + size_of_val(&crc32c)
     }
