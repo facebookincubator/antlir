@@ -6,8 +6,12 @@
  */
 
 #![feature(backtrace)]
+#![feature(mutex_unlock)]
 
-mod send_elements;
+// TODO: Figure out how to hide these modules from non-test libraries
+// These are only being exported as pub for now to support testing
+pub mod mp;
+pub mod send_elements;
 
 pub mod upgrade;
 
