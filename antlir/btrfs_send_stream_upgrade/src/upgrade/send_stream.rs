@@ -7,6 +7,7 @@
 
 use slog::debug;
 
+use crate::mp::threads::coordinator::Coordinator;
 use crate::send_elements::send_command::SendCommand;
 use crate::send_elements::send_header::SendHeader;
 use crate::send_elements::send_version::SendVersion;
@@ -15,45 +16,51 @@ use crate::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 
 pub struct SendStream<'a> {
     /// The global context for processing the stream
-    ss_context: SendStreamUpgradeContext<'a>,
+    ss_context: Option<SendStreamUpgradeContext<'a>>,
 }
 
 impl SendStream<'_> {
     pub fn new(options: SendStreamUpgradeOptions) -> anyhow::Result<Self> {
         let context = SendStreamUpgradeContext::new(options)?;
         Ok(SendStream {
-            ss_context: context,
+            ss_context: Some(context),
         })
     }
 
-    pub fn upgrade(&mut self) -> anyhow::Result<()> {
-        // First set the versions on the context
-        let header = SendHeader::new(&mut self.ss_context)?;
+    fn set_versions(&mut self) -> anyhow::Result<()> {
+        let context = match self.ss_context {
+            None => anyhow::bail!("Setting versions for a send stream with no context"),
+            Some(ref mut context) => context,
+        };
+        let header = SendHeader::new(context)?;
         let source_version = header.get_version();
         let destination_version = SendVersion::SendVersion2;
-        self.ss_context
-            .set_versions(source_version, destination_version);
+        context.set_versions(source_version, destination_version);
 
-        SendHeader::persist_header(&mut self.ss_context)?;
+        SendHeader::persist_header(context)?;
+        Ok(())
+    }
+
+    fn upgrade_commands_single_threaded(&mut self) -> anyhow::Result<()> {
+        let context = match self.ss_context {
+            None => anyhow::bail!("Upgrading commands of a send stream with no context"),
+            Some(ref mut context) => context,
+        };
         let mut previous_command_option: Option<SendCommand> = None;
         loop {
-            let mut command = SendCommand::new(&mut self.ss_context)?;
+            let mut command = SendCommand::new(context)?;
             // First upgrade the command to v2
-            if command.is_upgradeable(&self.ss_context)? {
-                command = command.upgrade(&mut self.ss_context)?;
+            if command.is_upgradeable(context)? {
+                command = command.upgrade(context)?;
             } else {
-                command.fake_an_upgrade(&self.ss_context)?;
+                command.fake_an_upgrade(context)?;
             }
             match previous_command_option {
                 Some(mut previous_command) => {
                     // Try to append the current command to the previous command
                     if previous_command.can_append(&command) {
-                        let logical_bytes_appended =
-                            previous_command.append(&mut self.ss_context, &command)?;
-                        command.truncate_data_payload_at_start(
-                            &mut self.ss_context,
-                            logical_bytes_appended,
-                        )?;
+                        let logical_bytes_appended = previous_command.append(context, &command)?;
+                        command.truncate_data_payload_at_start(context, logical_bytes_appended)?;
                     }
                     // If the previous command was filled up or if we didn't end up completely
                     // emptying the current command
@@ -61,26 +68,26 @@ impl SendStream<'_> {
                     // default, then this handling improves
                     // TODO: Remove this check -- it should be sufficient to just check to see if
                     // command is not empty
-                    if previous_command.is_full(&self.ss_context) || !command.is_empty() {
+                    if previous_command.is_full(context) || !command.is_empty() {
                         if previous_command.is_compressible()
-                            && self.ss_context.ssuc_options.compression_level != 0
+                            && context.ssuc_options.compression_level != 0
                         {
-                            match previous_command.compress(&mut self.ss_context) {
+                            match previous_command.compress(context) {
                                 Ok(compressed_command) => {
                                     // Successfully compressed command; persist it
-                                    compressed_command.persist(&mut self.ss_context)?;
+                                    compressed_command.persist(context)?;
                                 }
                                 Err(error) => {
                                     match error.downcast_ref::<crate::send_elements::send_attribute::SendAttributeFailedToShrinkPayloadError>() {
                                         Some(failed_to_shrink_payload_error) => {
                                             // If we failed to shrink the attribute payload, just persist the
                                             // old attribute
-                                            debug!(self.ss_context.ssuc_logger, "Compress Command Failed: {}; proceeding without compression {}", failed_to_shrink_payload_error, previous_command);
+                                            debug!(context.ssuc_logger, "Compress Command Failed: {}; proceeding without compression {}", failed_to_shrink_payload_error, previous_command);
                                             if previous_command.is_dirty() {
                                                 // Flush if dirty
-                                                previous_command.flush(&mut self.ss_context)?;
+                                                previous_command.flush(context)?;
                                             }
-                                            previous_command.persist(&mut self.ss_context)?;
+                                            previous_command.persist(context)?;
                                         }
                                         // All other errors should just return failures
                                         None => anyhow::bail!(error),
@@ -91,9 +98,9 @@ impl SendStream<'_> {
                             // Not compressing, but the command might be dirty
                             if previous_command.is_dirty() {
                                 // Flush if dirty
-                                previous_command.flush(&mut self.ss_context)?;
+                                previous_command.flush(context)?;
                             }
-                            previous_command.persist(&mut self.ss_context)?;
+                            previous_command.persist(context)?;
                         }
                         // Flushed the previous command
                         previous_command_option = None;
@@ -109,13 +116,13 @@ impl SendStream<'_> {
             }
             // If we're at the end, just persist the current command and break out
             if command.is_end() {
-                command.persist(&mut self.ss_context)?;
+                command.persist(context)?;
                 break;
             }
             // If the command is not appendable...
             if !command.is_appendable() {
                 // Then flush it
-                command.persist(&mut self.ss_context)?;
+                command.persist(context)?;
                 match previous_command_option {
                     Some(command) => anyhow::bail!("Unexpected previous Command={}", command),
                     None => (),
@@ -126,8 +133,42 @@ impl SendStream<'_> {
             }
         }
 
-        self.ss_context.eprint_summary_stats();
+        Ok(())
+    }
 
+    fn upgrade_commands_multi_threaded(&mut self) -> anyhow::Result<()> {
+        // Remove the context so that the coordinator can take ownership of it
+        let context = self.ss_context.take();
+        anyhow::ensure!(
+            context.is_some(),
+            "Upgrading commands of a send stream with no context"
+        );
+        let mut coordinator = Coordinator::new(context)?;
+        coordinator.run()?;
+        // Return the context for reporting and cleanup
+        let context = coordinator.take_context();
+        self.ss_context = context;
+        Ok(())
+    }
+
+    pub fn upgrade(&mut self) -> anyhow::Result<()> {
+        self.set_versions()?;
+        let thread_count = match self.ss_context {
+            None => anyhow::bail!("Upgrading a send stream with no context"),
+            Some(ref context) => context.ssuc_options.thread_count,
+        };
+        if thread_count == 1 {
+            self.upgrade_commands_single_threaded()?;
+        } else {
+            self.upgrade_commands_multi_threaded()?;
+        }
+        // Check the context again to print the summary stats
+        match self.ss_context {
+            None => anyhow::bail!("Upgrading a send stream with no context"),
+            Some(ref mut context) => {
+                context.eprint_summary_stats();
+            }
+        };
         Ok(())
     }
 }
