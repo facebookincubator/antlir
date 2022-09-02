@@ -76,7 +76,6 @@ impl SendCommand {
         let total_size = header_size + payload_size;
         // Set up the command buffer and a dummy read buffer
         let mut buffer = vec![0; total_size];
-        let mut dummy_buffer = vec![];
         let mut data_attribute: Option<SendAttribute> = None;
         let mut data_attribute_initial_size: Option<usize> = None;
         let mut path: Option<String> = None;
@@ -87,8 +86,8 @@ impl SendCommand {
         {
             // Iterate through the current buffer to generate attributes
             let mut sub_context = context.clone_with_new_buffers(
-                &buffer[header_size..],
-                &mut dummy_buffer,
+                Some(&buffer[header_size..]),
+                None,
                 version,
                 version,
             );
@@ -121,7 +120,7 @@ impl SendCommand {
             {
                 // Persist the header
                 let mut sub_context =
-                    context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+                    context.clone_with_new_buffers(None, Some(&mut buffer), version, version);
                 // Skip the CRC32C -- we don't want to compute it yet
                 header.persist(&mut sub_context, true)?;
                 context.return_child(&mut sub_context);
@@ -142,7 +141,7 @@ impl SendCommand {
         {
             // Persist the header
             let mut sub_context =
-                context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+                context.clone_with_new_buffers(None, Some(&mut buffer), version, version);
             // Flush the CRC32C this time
             header.persist(&mut sub_context, false)?;
             context.return_child(&mut sub_context);
@@ -185,7 +184,6 @@ impl SendCommand {
         let old_payload_size = self.sc_header.get_command_payload_size()?;
         let old_total_size = header_size + old_payload_size;
         let mut upgraded_buffer = vec![0; old_total_size];
-        let dummy_buffer = vec![];
         let mut data_attribute: Option<SendAttribute> = None;
         let mut data_attribute_initial_size: Option<usize> = None;
         // Iterate through the byte array of the source
@@ -195,8 +193,8 @@ impl SendCommand {
 
         {
             let mut sub_context = context.clone_with_new_buffers(
-                &self.sc_buffer[header_size..],
-                &mut upgraded_buffer[header_size..],
+                Some(&self.sc_buffer[header_size..]),
+                Some(&mut upgraded_buffer[header_size..]),
                 source_version,
                 destination_version,
             );
@@ -260,8 +258,8 @@ impl SendCommand {
         {
             // Persist the upgraded header
             let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer,
-                &mut upgraded_buffer,
+                None,
+                Some(&mut upgraded_buffer),
                 source_version,
                 destination_version,
             );
@@ -278,8 +276,8 @@ impl SendCommand {
         {
             // Persist the upgraded header
             let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer,
-                &mut upgraded_buffer,
+                None,
+                Some(&mut upgraded_buffer),
                 source_version,
                 destination_version,
             );
@@ -350,8 +348,8 @@ impl SendCommand {
             self
         );
         let mut sub_context = context.clone_with_new_buffers(
-            &self.sc_buffer[header_size..old_pre_data_size],
-            &mut buffer[header_size..old_pre_data_size],
+            Some(&self.sc_buffer[header_size..old_pre_data_size]),
+            Some(&mut buffer[header_size..old_pre_data_size]),
             source_version,
             destination_version,
         );
@@ -408,13 +406,12 @@ impl SendCommand {
     ) -> anyhow::Result<()> {
         context.trace_stats();
         let version = context.get_destination_version()?;
-        let dummy_buffer = vec![];
         info!(context.ssuc_logger, "Flushing Header={}", header);
 
         {
             // Persist the header
             let mut sub_context =
-                context.clone_with_new_buffers(&dummy_buffer, buffer, version, version);
+                context.clone_with_new_buffers(None, Some(buffer), version, version);
             // Skip the CRC32C for now (since we don't know what it should be)
             header.persist(&mut sub_context, true)?;
             context.return_child(&mut sub_context);
@@ -428,7 +425,7 @@ impl SendCommand {
         {
             // Persist the header
             let mut sub_context =
-                context.clone_with_new_buffers(&dummy_buffer, buffer, version, version);
+                context.clone_with_new_buffers(None, Some(buffer), version, version);
             // Flush the CRC32C this time
             header.persist(&mut sub_context, false)?;
             context.return_child(&mut sub_context);
@@ -478,8 +475,8 @@ impl SendCommand {
         // Next, flush the data attribute
         {
             let mut sub_context = context.clone_with_new_buffers(
-                &self.sc_buffer[old_pre_data_size..],
-                &mut buffer[old_pre_data_size..],
+                Some(&self.sc_buffer[old_pre_data_size..]),
+                Some(&mut buffer[old_pre_data_size..]),
                 source_version,
                 destination_version,
             );
@@ -539,12 +536,11 @@ impl SendCommand {
         let new_max_total_size = old_pre_data_size + data_attribute.get_size();
         let new_max_payload_size = new_max_total_size as u32 - header_size as u32;
         let mut compressed_buffer = vec![0; new_max_total_size];
-        let mut dummy_buffer = vec![];
 
         if !self.sc_data_attribute_dirty {
             let mut sub_context = context.clone_with_new_buffers(
-                &self.sc_buffer[header_size..old_pre_data_size],
-                &mut dummy_buffer,
+                Some(&self.sc_buffer[header_size..old_pre_data_size]),
+                None,
                 source_version,
                 destination_version,
             );
@@ -564,8 +560,8 @@ impl SendCommand {
 
         {
             let mut sub_context = context.clone_with_new_buffers(
-                &self.sc_buffer[old_pre_data_size..],
-                &mut compressed_buffer[old_pre_data_size..],
+                Some(&self.sc_buffer[old_pre_data_size..]),
+                Some(&mut compressed_buffer[old_pre_data_size..]),
                 source_version,
                 destination_version,
             );
@@ -674,7 +670,6 @@ impl SendCommand {
             "Checking Command={} destination verion={}", self, version
         );
         let header_size = SendCommandHeader::get_header_size();
-        let mut dummy_buffer = vec![];
         let source_buffer;
         let mut flushed_buffer;
 
@@ -708,8 +703,8 @@ impl SendCommand {
 
             {
                 let mut sub_context = context.clone_with_new_buffers(
-                    &self.sc_buffer[header_size..new_pre_data_attribute_size],
-                    &mut flushed_buffer[header_size..new_pre_data_attribute_size],
+                    Some(&self.sc_buffer[header_size..new_pre_data_attribute_size]),
+                    Some(&mut flushed_buffer[header_size..new_pre_data_attribute_size]),
                     version,
                     version,
                 );
@@ -754,8 +749,8 @@ impl SendCommand {
             // Create a sub context based to persist the attribute to the flushed buffer
             {
                 let mut sub_context = context.clone_with_new_buffers(
-                    &dummy_buffer,
-                    &mut flushed_buffer[new_pre_data_attribute_size..],
+                    None,
+                    Some(&mut flushed_buffer[new_pre_data_attribute_size..]),
                     version,
                     version,
                 );
@@ -769,7 +764,7 @@ impl SendCommand {
         {
             // Create a sub context based on the buffer of the current command
             let mut sub_context =
-                context.clone_with_new_buffers(source_buffer, &mut dummy_buffer, version, version);
+                context.clone_with_new_buffers(Some(source_buffer), None, version, version);
             // Read in the header
             header = SendCommandHeader::new(&mut sub_context)?;
             context.return_child(&mut sub_context);
@@ -811,8 +806,8 @@ impl SendCommand {
 
         {
             let mut sub_context = context.clone_with_new_buffers(
-                &source_buffer[header_size..],
-                &mut buffer[header_size..],
+                Some(&source_buffer[header_size..]),
+                Some(&mut buffer[header_size..]),
                 version,
                 version,
             );
@@ -866,7 +861,7 @@ impl SendCommand {
         {
             // Now persist the header
             let mut sub_context =
-                context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+                context.clone_with_new_buffers(None, Some(&mut buffer), version, version);
             // Skip the CRC32C if the data attribute was clean (since we don't know what it should be)
             // If the data attribute is dirty, we want to write the crc (since we won't be
             // computing it later)
@@ -903,7 +898,7 @@ impl SendCommand {
             {
                 // Persist the header
                 let mut sub_context =
-                    context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+                    context.clone_with_new_buffers(None, Some(&mut buffer), version, version);
                 // Flush the CRC32C this time
                 header.persist(&mut sub_context, false)?;
                 context.return_child(&mut sub_context);
@@ -1117,11 +1112,10 @@ impl SendCommand {
             BtrfsSendAttributeType::BTRFS_SEND_A_PATH,
             &pad_path,
         )?;
-        let dummy_buffer = vec![];
 
         {
             let mut sub_context =
-                context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+                context.clone_with_new_buffers(None, Some(&mut buffer), version, version);
             // Skip the CRC update for now
             header.persist(&mut sub_context, true)?;
             path_attribute.persist(&mut sub_context)?;
@@ -1136,7 +1130,7 @@ impl SendCommand {
         {
             // Persist the header
             let mut sub_context =
-                context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+                context.clone_with_new_buffers(None, Some(&mut buffer), version, version);
             // Flush the CRC32C this time
             header.persist(&mut sub_context, false)?;
             context.return_child(&mut sub_context);

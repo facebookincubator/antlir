@@ -86,13 +86,8 @@ impl SendAttribute {
         {
             // Persist the header
             // Set up a new sub context on the basis of the local buffer
-            let dummy_buffer = vec![];
-            let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer[..],
-                &mut buffer[..],
-                version,
-                version,
-            );
+            let mut sub_context =
+                context.clone_with_new_buffers(None, Some(&mut buffer[..]), version, version);
             header.persist(&mut sub_context)?;
             context.return_child(&mut sub_context);
         }
@@ -141,13 +136,8 @@ impl SendAttribute {
         {
             // Persist the header
             // Set up a new sub context on the basis of the local buffer
-            let dummy_buffer = vec![];
-            let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer[..],
-                &mut buffer[..],
-                version,
-                version,
-            );
+            let mut sub_context =
+                context.clone_with_new_buffers(None, Some(&mut buffer[..]), version, version);
             header.persist(&mut sub_context)?;
             sub_context.write32(value)?;
             context.return_child(&mut sub_context);
@@ -187,13 +177,8 @@ impl SendAttribute {
         {
             // Persist the header
             // Set up a new sub context on the basis of the local buffer
-            let dummy_buffer = vec![];
-            let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer[..],
-                &mut buffer[..],
-                version,
-                version,
-            );
+            let mut sub_context =
+                context.clone_with_new_buffers(None, Some(&mut buffer[..]), version, version);
             header.persist(&mut sub_context)?;
             sub_context.write64(value)?;
             context.return_child(&mut sub_context);
@@ -234,13 +219,8 @@ impl SendAttribute {
         {
             // Persist the header
             // Set up a new sub context on the basis of the local buffer
-            let dummy_buffer = vec![];
-            let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer[..],
-                &mut buffer[..],
-                version,
-                version,
-            );
+            let mut sub_context =
+                context.clone_with_new_buffers(None, Some(&mut buffer[..]), version, version);
             header.persist(&mut sub_context)?;
             sub_context.write(string_buffer, string_buffer.len())?;
             context.return_child(&mut sub_context);
@@ -277,14 +257,13 @@ impl SendAttribute {
         // Set up the header
         let payload_size = self.get_payload_size();
         let mut upgraded_buffer = vec![0; new_header_size + payload_size];
-        let mut dummy_buffer = vec![];
 
         // Create a new context for persisting the header
         {
             // Persist the header
             let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer[..],
-                &mut upgraded_buffer[..],
+                None,
+                Some(&mut upgraded_buffer[..]),
                 self.sa_version,
                 version,
             );
@@ -295,8 +274,8 @@ impl SendAttribute {
         {
             // Fill up the vector with enough space for the rest of the payload
             let mut sub_context = context.clone_with_new_buffers(
-                &self.sa_buffer[old_header_size..],
-                &mut dummy_buffer[..],
+                Some(&self.sa_buffer[old_header_size..]),
+                None,
                 self.sa_version,
                 version,
             );
@@ -354,10 +333,9 @@ impl SendAttribute {
 
         // Create a new context for persisting the header
         {
-            let dummy_buffer = vec![];
             let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer[..],
-                &mut compressed_buffer[..],
+                None,
+                Some(&mut compressed_buffer[..]),
                 self.sa_version,
                 version,
             );
@@ -548,18 +526,13 @@ impl SendAttribute {
             "Checking AttributeHeader bytes {:02X?}",
             header_slice
         );
-        let mut dummy_buffer = vec![];
         // Start off by creating the attribute header
         let header;
 
         // Create a new context for reading the header
         {
-            let mut sub_context = context.clone_with_new_buffers(
-                &self.sa_buffer[..],
-                &mut dummy_buffer[..],
-                version,
-                version,
-            );
+            let mut sub_context =
+                context.clone_with_new_buffers(Some(&self.sa_buffer[..]), None, version, version);
             header = SendAttributeHeader::new(&mut sub_context)?;
             context.return_child(&mut sub_context);
         }
@@ -595,12 +568,8 @@ impl SendAttribute {
 
         // Create a new context for persisting the header
         {
-            let mut sub_context = context.clone_with_new_buffers(
-                &dummy_buffer[..],
-                &mut buffer[..],
-                version,
-                version,
-            );
+            let mut sub_context =
+                context.clone_with_new_buffers(None, Some(&mut buffer[..]), version, version);
             // Persist the header
             header.persist(&mut sub_context)?;
             context.return_child(&mut sub_context);
