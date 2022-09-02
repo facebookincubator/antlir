@@ -63,6 +63,21 @@ rust_unittest(
 )
 
 rust_unittest(
+    name = "test-read-once-buffer-cache",
+    srcs = ["tests/test_read_once_buffer_cache.rs"],
+    deps = [":btrfs_send_stream_upgrade_lib"] +
+           third_party.libraries(
+               [
+                   "anyhow",
+                   "rand",
+                   "structopt",
+                   "tempfile",
+               ],
+               platform = "rust",
+           ),
+)
+
+rust_unittest(
     name = "test-unordered-element-queue",
     srcs = ["tests/test_unordered_element_queue.rs"],
     deps = [":btrfs_send_stream_upgrade_lib"] +

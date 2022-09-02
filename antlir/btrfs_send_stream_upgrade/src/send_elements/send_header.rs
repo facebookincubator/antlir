@@ -36,7 +36,7 @@ impl SendHeader {
     pub fn new(context: &mut SendStreamUpgradeContext) -> anyhow::Result<Self> {
         context.trace_stats();
         let mut magic_bytes = [0; BTRFS_MAGIC.len()];
-        context.read(&mut magic_bytes)?;
+        context.read_exact(&mut magic_bytes)?;
         let magic = str::from_utf8(&magic_bytes)?;
         anyhow::ensure!(
             magic.eq(BTRFS_MAGIC),

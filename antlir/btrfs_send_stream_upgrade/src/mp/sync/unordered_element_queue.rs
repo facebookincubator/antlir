@@ -10,14 +10,15 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 
 use crate::mp::sync::blocking_queue::BlockingQueue;
-use crate::mp::sync::blocking_queue::QueueState;
+use crate::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
+use crate::mp::sync::blocking_sync_primitive::PrimitiveState;
 use crate::mp::sync::unordered_element::UnorderedElement;
 
 struct UnorderedElementQueueInternal<T: UnorderedElement> {
     /// The queue is just implemented as a hashmap
     uoeqi_queue: VecDeque<T>,
     /// The state of the queue
-    uoeqi_state: QueueState,
+    uoeqi_state: PrimitiveState,
 }
 
 pub struct UnorderedElementQueue<T: UnorderedElement> {
@@ -34,7 +35,7 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
         Ok(Self {
             uoeq_mutex: Mutex::new(UnorderedElementQueueInternal {
                 uoeqi_queue: VecDeque::new(),
-                uoeqi_state: QueueState::Running,
+                uoeqi_state: PrimitiveState::Running,
             }),
             uoeq_cv: Condvar::new(),
             uoeq_name: name.to_string(),
@@ -52,11 +53,11 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
             Err(error) => anyhow::bail!("Failed to acquire lock on enqueue with error {}", error),
         };
         match (*queue).uoeqi_state {
-            QueueState::Running => (),
-            QueueState::Aborted => {
+            PrimitiveState::Running => (),
+            PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
             }
-            QueueState::Done => {
+            PrimitiveState::Done => {
                 // We should never be done while enqueueing...
                 anyhow::bail!("Enqueueing while done");
             }
@@ -76,7 +77,7 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
         };
         // Wait until we're certain that the top of the list has been inserted
         let mut queue = match self.uoeq_cv.wait_while(queue, |queue| {
-            (*queue).uoeqi_queue.is_empty() && (*queue).uoeqi_state == QueueState::Running
+            (*queue).uoeqi_queue.is_empty() && (*queue).uoeqi_state == PrimitiveState::Running
         }) {
             Ok(internal_queue) => internal_queue,
             // This should only happen if another thread panicked because of
@@ -84,11 +85,11 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
             Err(error) => anyhow::bail!("Failed to wait with error {}", error),
         };
         match (*queue).uoeqi_state {
-            QueueState::Running => (),
-            QueueState::Aborted => {
+            PrimitiveState::Running => (),
+            PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
             }
-            QueueState::Done => {
+            PrimitiveState::Done => {
                 return Ok(None);
             }
         }
@@ -100,6 +101,9 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
         };
         Ok(Some(item))
     }
+}
+
+impl<T: UnorderedElement> BlockingSyncPrimitive for UnorderedElementQueue<T> {
     fn halt(&self, unplanned: bool) -> anyhow::Result<()> {
         // First lock to get the queue
         let mut queue = match self.uoeq_mutex.lock() {
@@ -109,14 +113,14 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
             Err(error) => anyhow::bail!("Failed to acquire lock on halt with error {}", error),
         };
         // Abort
-        if (*queue).uoeqi_state != QueueState::Running {
+        if (*queue).uoeqi_state != PrimitiveState::Running {
             anyhow::bail!("Double halt on queue");
         }
         // Update the state
         (*queue).uoeqi_state = if unplanned {
-            QueueState::Aborted
+            PrimitiveState::Aborted
         } else {
-            QueueState::Done
+            PrimitiveState::Done
         };
         // Wake everyone
         self.uoeq_cv.notify_all();

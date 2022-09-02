@@ -10,7 +10,8 @@ use std::sync::Condvar;
 use std::sync::Mutex;
 
 use crate::mp::sync::blocking_queue::BlockingQueue;
-use crate::mp::sync::blocking_queue::QueueState;
+use crate::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
+use crate::mp::sync::blocking_sync_primitive::PrimitiveState;
 use crate::mp::sync::ordered_element::OrderedElement;
 
 struct OrderedElementQueueInternal<T: OrderedElement> {
@@ -19,7 +20,7 @@ struct OrderedElementQueueInternal<T: OrderedElement> {
     /// The index of the element at the front
     oeqi_first_id: u64,
     /// The state of the queue
-    oeqi_state: QueueState,
+    oeqi_state: PrimitiveState,
 }
 
 ///
@@ -79,7 +80,7 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
             oeq_mutex: Mutex::new(OrderedElementQueueInternal {
                 oeqi_map: HashMap::new(),
                 oeqi_first_id: 0,
-                oeqi_state: QueueState::Running,
+                oeqi_state: PrimitiveState::Running,
             }),
             oeq_cv: Condvar::new(),
             oeq_name: name.to_string(),
@@ -97,11 +98,11 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
             Err(error) => anyhow::bail!("Failed to acquire lock on enqueue with error {}", error),
         };
         match (*queue).oeqi_state {
-            QueueState::Running => (),
-            QueueState::Aborted => {
+            PrimitiveState::Running => (),
+            PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
             }
-            QueueState::Done => {
+            PrimitiveState::Done => {
                 // We should never be done while enqueueing...
                 anyhow::bail!("Enqueueing while done");
             }
@@ -134,7 +135,7 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
         // Wait until we're certain that the top of the list has been inserted
         let mut queue = match self.oeq_cv.wait_while(queue, |queue| {
             !(*queue).oeqi_map.contains_key(&(*queue).oeqi_first_id)
-                && (*queue).oeqi_state == QueueState::Running
+                && (*queue).oeqi_state == PrimitiveState::Running
         }) {
             Ok(internal_queue) => internal_queue,
             // This should only happen if another thread panicked because of
@@ -142,19 +143,18 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
             Err(error) => anyhow::bail!("Failed to wait with error {}", error),
         };
         match (*queue).oeqi_state {
-            QueueState::Running => (),
-            QueueState::Aborted => {
+            PrimitiveState::Running => (),
+            PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
             }
-            QueueState::Done => {
+            PrimitiveState::Done => {
                 return Ok(None);
             }
         }
         let current_key = (*queue).oeqi_first_id;
         let item = match (*queue).oeqi_map.remove(&current_key) {
             Some(item) => item,
-            // This should only happen if another thread panicked because of
-            // a recursive lock
+            // This should never happen
             None => anyhow::bail!("Failed to remove contained item"),
         };
         // Update the new top element
@@ -176,6 +176,9 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
         );
         Ok(Some(item))
     }
+}
+
+impl<T: OrderedElement> BlockingSyncPrimitive for OrderedElementQueue<T> {
     fn halt(&self, unplanned: bool) -> anyhow::Result<()> {
         // First lock to get the queue
         let mut queue = match self.oeq_mutex.lock() {
@@ -185,14 +188,14 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
             Err(error) => anyhow::bail!("Failed to acquire lock on halt with error {}", error),
         };
         // Abort
-        if (*queue).oeqi_state != QueueState::Running {
+        if (*queue).oeqi_state != PrimitiveState::Running {
             anyhow::bail!("Double halt on queue");
         }
         // Update the state
         (*queue).oeqi_state = if unplanned {
-            QueueState::Aborted
+            PrimitiveState::Aborted
         } else {
-            QueueState::Done
+            PrimitiveState::Done
         };
         // Wake everyone
         self.oeq_cv.notify_all();

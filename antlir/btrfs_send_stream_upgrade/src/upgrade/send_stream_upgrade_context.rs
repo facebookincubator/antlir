@@ -34,9 +34,9 @@ pub struct SendStreamUpgradeContext<'a> {
     /// Options that dicatate how the stream will be upgraded
     pub ssuc_options: SendStreamUpgradeOptions,
     /// Source for the IO context
-    ssuc_source: Option<BufReader<Box<dyn Read + 'a>>>,
+    ssuc_source: Option<BufReader<Box<dyn Read + Send + 'a>>>,
     /// Destination for the IO context
-    ssuc_destination: Option<BufWriter<Box<dyn Write + 'a>>>,
+    ssuc_destination: Option<BufWriter<Box<dyn Write + Send + 'a>>>,
     /// Version of the stream at the source
     ssuc_source_version: Option<SendVersion>,
     /// Version of the stream at the destination
@@ -56,12 +56,12 @@ pub struct SendStreamUpgradeContext<'a> {
 impl<'a> SendStreamUpgradeContext<'a> {
     pub fn new(options: SendStreamUpgradeOptions) -> anyhow::Result<SendStreamUpgradeContext<'a>> {
         // Open up the input file
-        let input_file: Box<dyn Read> = match &options.input {
+        let input_file: Box<dyn Read + Send> = match &options.input {
             None => Box::new(std::io::stdin()),
             Some(value) => Box::new(OpenOptions::new().read(true).open(value)?),
         };
         // Open up the output file
-        let output_file: Box<dyn Write> = match &options.output {
+        let output_file: Box<dyn Write + Send> = match &options.output {
             None => Box::new(std::io::stdout()),
             Some(value) => Box::new(
                 OpenOptions::new()
@@ -139,13 +139,23 @@ impl<'a> SendStreamUpgradeContext<'a> {
         new_context
     }
 
-    pub fn read(&mut self, buffer: &mut [u8]) -> anyhow::Result<()> {
+    pub fn read(&mut self, buffer: &mut [u8]) -> anyhow::Result<usize> {
         let source = match self.ssuc_source {
             None => anyhow::bail!("Trying to read from a None source"),
             Some(ref mut source) => source,
         };
         let start_time = SystemTime::now();
-        source.read_exact(buffer)?;
+        let mut total_bytes_read = 0;
+        while total_bytes_read < buffer.len() {
+            // Try to read some data
+            let bytes_read = source.read(&mut buffer[total_bytes_read..])?;
+            // If we read nothing, then assume that we hit the EOF
+            // Time to exit
+            if bytes_read == 0 {
+                break;
+            }
+            total_bytes_read += bytes_read;
+        }
         let time_delta = match start_time.elapsed() {
             Ok(duration) => duration,
             Err(_) => Duration::new(0, 0),
@@ -154,26 +164,38 @@ impl<'a> SendStreamUpgradeContext<'a> {
         // since children are not associated with actual file io
         if !self.ssuc_associated_with_parent {
             self.ssuc_stats.ssus_reads_issued += 1;
-            self.ssuc_stats.ssus_bytes_read += buffer.len();
+            self.ssuc_stats.ssus_bytes_read += total_bytes_read;
             self.ssuc_stats.ssus_storage_read_time += time_delta;
         } else {
             self.ssuc_stats.ssus_buffer_read_time += time_delta;
         }
-        self.ssuc_source_offset += buffer.len();
+        self.ssuc_source_offset += total_bytes_read;
+        Ok(total_bytes_read)
+    }
+
+    pub fn read_exact(&mut self, buffer: &mut [u8]) -> anyhow::Result<()> {
+        let bytes_read = self.read(buffer)?;
+        // Ensure that we read exactly what we asked for
+        anyhow::ensure!(
+            buffer.len() == bytes_read,
+            "Failed to read {} bytes instead read {} bytes",
+            buffer.len(),
+            bytes_read
+        );
         Ok(())
     }
 
     pub fn read16(&mut self) -> anyhow::Result<u16> {
         let value: u16 = 0;
         let mut buffer = value.to_le_bytes();
-        self.read(&mut buffer)?;
+        self.read_exact(&mut buffer)?;
         Ok(<u16>::from_le_bytes(buffer))
     }
 
     pub fn read32(&mut self) -> anyhow::Result<u32> {
         let value: u32 = 0;
         let mut buffer = value.to_le_bytes();
-        self.read(&mut buffer)?;
+        self.read_exact(&mut buffer)?;
         Ok(<u32>::from_le_bytes(buffer))
     }
 
@@ -186,6 +208,12 @@ impl<'a> SendStreamUpgradeContext<'a> {
             Some(length) => Ok(length),
             None => anyhow::bail!("Attempted to get a length of a non-buffer source"),
         }
+    }
+
+    pub fn seek_source(&mut self, bytes_to_seek: usize) -> anyhow::Result<()> {
+        // Just read the data into a temporary buffer
+        let mut temp_vec = vec![0u8; bytes_to_seek];
+        self.read_exact(&mut temp_vec[..])
     }
 
     pub fn write(&mut self, buffer: &[u8], uncompressed_bytes: usize) -> anyhow::Result<()> {

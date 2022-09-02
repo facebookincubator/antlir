@@ -11,6 +11,7 @@ use std::thread;
 use std::time;
 
 pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_queue::BlockingQueue;
+pub use btrfs_send_stream_upgrade_lib::mp::sync::blocking_sync_primitive::BlockingSyncPrimitive;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::ordered_element::OrderedElement;
 pub use btrfs_send_stream_upgrade_lib::mp::sync::ordered_element_queue::OrderedElementQueue;
 use rand::seq::SliceRandom;
