@@ -8,6 +8,7 @@
 use std::fmt::Display;
 use std::time::SystemTime;
 
+use anyhow::Context;
 use crc::crc32;
 use crc::Hasher32;
 use slog::debug;
@@ -20,6 +21,8 @@ use crate::send_elements::send_attribute_header::BTRFS_ENCODED_IO_COMPRESSION_ZS
 use crate::send_elements::send_command_header::SendCommandHeader;
 use crate::send_elements::send_version::SendVersion;
 use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
+
+const BLOCK_SIZE: usize = 4096;
 
 pub struct SendCommand {
     /// The header for the current command
@@ -1020,6 +1023,148 @@ impl SendCommand {
         Ok(())
     }
 
+    ///
+    /// Generates a pad command for use with clone-on-receive testing
+    ///
+    /// For the clone-on-receive prototype to work, the following must be true:
+    /// * The write command to be cloned must not be encoded
+    /// * The size of the data payload of the write command should be aligned to
+    /// the page size
+    /// * The data payload of the write command should start at a page offset
+    /// from the start of the send stream file
+    ///
+    /// The pad command helps achieve this last requirement.
+    ///
+    /// For example, say we had the following command:
+    ///
+    /// |Command Header|Attr0|Attr1|...|Data Attr Header|Data Payload ->|
+    ///                                                 ^
+    ///                                                 |
+    ///                                                 Starts at x % 4096B
+    ///                                                 in the
+    ///                                                 send stream file
+    ///
+    /// Adding a "pad command" would help us align the start of the data payload
+    /// to a page offset as follows:
+    ///
+    /// |PAD|Command Header|Attr0|Attr1|...|Data Attr Header|Data Payload ->|
+    ///   ^                                                 ^
+    ///   |                                                 |
+    ///   Sized                                             Now starts at 0 %
+    ///   to be 4096B - x                                   4096B in the
+    ///                                                     send stream file
+    ///
+    /// As a result, the data payload region can be directly cloned into a
+    /// different file on receive.
+    ///
+    /// This command is generated with the BTRFS_SEND_C_UPDATE_EXTENT type;
+    /// since this command type is currently unused, a padded send stream should
+    /// also apply cleanly when using a regular receive command.
+    ///
+    pub fn generate_pad_command(
+        &self,
+        context: &mut SendStreamUpgradeContext,
+    ) -> anyhow::Result<Self> {
+        context.trace_stats();
+        let version = context.get_destination_version()?;
+        info!(context.ssuc_logger, "Padding Command={}", self);
+        anyhow::ensure!(
+            !self.sc_data_attribute_dirty,
+            "Padding dirty Command={}",
+            self
+        );
+        let data_attribute = self
+            .sc_data_attribute
+            .as_ref()
+            .with_context(|| format!("Trying to pad Command={} without a data attribute", self))?;
+        let data_attribute_initial_size =
+            self.sc_data_attribute_initial_size.with_context(|| {
+                format!(
+                    "Trying to pad Command={} without a data attribute initial size",
+                    self
+                )
+            })?;
+        let pre_data_attribute_size = self.sc_buffer.len() - data_attribute_initial_size;
+        let header_size = SendCommandHeader::get_header_size();
+        let path_attribute =
+            SendAttribute::new_from_string(context, BtrfsSendAttributeType::BTRFS_SEND_A_PATH, "")?;
+        let file_offset_attribute = SendAttribute::new_from_u64(
+            context,
+            BtrfsSendAttributeType::BTRFS_SEND_A_FILE_OFFSET,
+            0,
+        )?;
+        let size_attribute =
+            SendAttribute::new_from_u64(context, BtrfsSendAttributeType::BTRFS_SEND_A_SIZE, 0)?;
+        let data_attribute_header_size =
+            data_attribute.get_size() - data_attribute.get_payload_size();
+        let mut pad_size = BLOCK_SIZE
+            - (context.get_write_offset() + pre_data_attribute_size + data_attribute_header_size)
+                % BLOCK_SIZE;
+        // Account for the minimum size of the command
+        let minimum_command_overhead = header_size
+            + path_attribute.get_size()
+            + file_offset_attribute.get_size()
+            + size_attribute.get_size();
+        if pad_size < minimum_command_overhead {
+            pad_size += BLOCK_SIZE;
+        }
+        let pad_payload_size = pad_size - header_size;
+        let mut header = SendCommandHeader::generate_pad_command_header(context, pad_payload_size)?;
+        let mut buffer = vec![0; pad_size];
+        // Generate a string -- this will constitute the bulk of the pad
+        let mut pad_path = String::new();
+        for _i in 0..pad_size {
+            pad_path.push('a');
+        }
+        // Regenerate the path attribute with the new path
+        let path_attribute = SendAttribute::new_from_string(
+            context,
+            BtrfsSendAttributeType::BTRFS_SEND_A_PATH,
+            &pad_path,
+        )?;
+        let dummy_buffer = vec![];
+
+        {
+            let mut sub_context =
+                context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+            // Skip the CRC update for now
+            header.persist(&mut sub_context, true)?;
+            path_attribute.persist(&mut sub_context)?;
+            file_offset_attribute.persist(&mut sub_context)?;
+            size_attribute.persist(&mut sub_context)?;
+            context.return_child(&mut sub_context);
+        }
+
+        let computed_crc32c = Self::compute_crc32c(context, &buffer);
+        header.set_crc32c(computed_crc32c)?;
+
+        {
+            // Persist the header
+            let mut sub_context =
+                context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+            // Flush the CRC32C this time
+            header.persist(&mut sub_context, false)?;
+            context.return_child(&mut sub_context);
+        }
+
+        let command = SendCommand {
+            sc_header: header,
+            sc_buffer: buffer,
+            sc_data_attribute: None,
+            sc_data_attribute_initial_size: None,
+            sc_data_attribute_dirty: false,
+            sc_path: None,
+            sc_start_offset: None,
+            sc_uncompressed_size: pad_size,
+            sc_version: version,
+        };
+        info!(
+            context.ssuc_logger,
+            "Padded Command={} with Command{}", self, command
+        );
+        Ok(command)
+    }
+
     pub fn persist(&self, context: &mut SendStreamUpgradeContext) -> anyhow::Result<()> {
         context.trace_stats();
         info!(context.ssuc_logger, "Writing Command={}", self);
@@ -1037,6 +1182,50 @@ impl SendCommand {
             "Writing dirty Command={}",
             self
         );
+        if context.ssuc_options.pad_with_dummy_commands && self.sc_header.is_paddable() {
+            let data_attribute = match &self.sc_data_attribute {
+                Some(attribute) => attribute,
+                None => anyhow::bail!("Trying to pad Command={} without a data attribute", self),
+            };
+            let start_offset = match self.sc_start_offset {
+                Some(offset) => offset,
+                None => anyhow::bail!("Trying to pad Command={} without a start offset", self),
+            };
+            // Only payloads that are block-size aligned can be cloned
+            // These are the only commands that should be padded
+            if start_offset % BLOCK_SIZE == 0 && data_attribute.get_payload_size() % BLOCK_SIZE == 0
+            {
+                let pad_command = self.generate_pad_command(context)?;
+                context.write(&pad_command.sc_buffer, pad_command.sc_uncompressed_size)?;
+                let data_attribute_initial_size = match self.sc_data_attribute_initial_size {
+                    Some(size) => size,
+                    None => anyhow::bail!(
+                        "Trying to pad Command={} without a data attribute initial size",
+                        self
+                    ),
+                };
+                let pre_data_attribute_size = self.sc_buffer.len() - data_attribute_initial_size;
+                let write_offset = context.get_write_offset();
+                let data_attribute_header_size =
+                    data_attribute.get_size() - data_attribute.get_payload_size();
+                let expected_data_payload_offset =
+                    write_offset + pre_data_attribute_size + data_attribute_header_size;
+                anyhow::ensure!(
+                    expected_data_payload_offset % BLOCK_SIZE == 0,
+                    "Generated pad Command={}, but write offset is {} and expected data payload offset is {}",
+                    pad_command,
+                    write_offset,
+                    expected_data_payload_offset
+                );
+                info!(
+                    context.ssuc_logger,
+                    "Generated pad Command={} for write_offset={} data_payload_offset={}",
+                    pad_command,
+                    write_offset,
+                    expected_data_payload_offset
+                );
+            }
+        }
         context.write(&self.sc_buffer, self.sc_uncompressed_size)
     }
 
