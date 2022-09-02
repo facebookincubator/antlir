@@ -22,7 +22,7 @@ import time
 import urllib.parse
 import uuid
 from contextlib import contextmanager
-from typing import AnyStr, Generator, IO, Iterable, Iterator, List, Union
+from typing import Any, AnyStr, Generator, IO, Iterable, Iterator, List, Union
 
 from antlir.common import byteme, check_popen_returncode, get_logger
 
@@ -503,19 +503,22 @@ def generate_work_dir() -> Path:
 
 
 @contextmanager
-def open_for_read_decompress(path: Path):
+def open_for_read_decompress(
+    path: Path, zstd_threads: int = 0
+) -> Generator[Any, Any, Any]:
     'Wraps `open(path, "rb")` to add transparent `.zst` or `.gz` decompression.'
     path = Path(path)
     if path.endswith(b".zst"):
-        decompress = "zstd"
+        decompress_cmd = ["zstd", f"--threads={zstd_threads}"]
     elif path.endswith(b".gz") or path.endswith(b".tgz"):
-        decompress = "gzip"
+        decompress_cmd = ["gzip"]
     else:
         with path.open(mode="rb") as f:
             yield f
         return
     with subprocess.Popen(
-        [decompress, "--decompress", "--stdout", path], stdout=subprocess.PIPE
+        decompress_cmd + ["--decompress", "--stdout", path],
+        stdout=subprocess.PIPE,
     ) as proc:
         yield proc.stdout
     # If the caller does not consume all of `proc.stdout`, the decompressor
@@ -529,7 +532,9 @@ def open_for_read_decompress(path: Path):
     #     if it's even desirable.
     #   - The extra API complexity is of dubious utility.
     if proc.returncode == -signal.SIGPIPE:
-        log.error(f"Ignoring SIGPIPE exit of child `{decompress}` for `{path}`")
+        log.error(
+            f"Ignoring SIGPIPE exit of child `{decompress_cmd[0]}` for `{path}`"
+        )
     else:
         check_popen_returncode(proc)
 

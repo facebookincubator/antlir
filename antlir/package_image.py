@@ -119,12 +119,18 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
     ones.
     Future: add general compression support instead of adding `TarballGz`,
     `TarballZst`, `SendstreamGz`, etc.
+    - For zstd - Threads == 0 uses all system CPU cores
     """
 
     def package_full(
-        self, subvol: Subvol, output_path: Path, opts: _Opts
+        self,
+        subvol: Subvol,
+        output_path: Path,
+        opts: _Opts,
+        *,
+        zstd_threads: int = 0,
     ) -> None:
-        args = ["zstd", "--stdout"]
+        args = ["zstd", f"--threads={zstd_threads}", "--stdout"]
 
         if opts.zstd_compression_level < ZSTD_LEVEL_NONE:
             # Invert zstd_compression_level so that lower (negative) values
