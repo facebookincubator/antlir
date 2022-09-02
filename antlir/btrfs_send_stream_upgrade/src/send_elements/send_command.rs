@@ -332,7 +332,7 @@ impl SendCommand {
         let data_attribute_initial_size = match self.sc_data_attribute_initial_size {
             Some(size) => size,
             None => anyhow::bail!(
-                "Trying to compress Command={} without a data attribute initial size!",
+                "Trying to compress Command={} without a data attribute initial size",
                 self
             ),
         };
@@ -344,7 +344,7 @@ impl SendCommand {
         let old_pre_data_size = old_total_size - data_attribute_initial_size;
         let command_start_offset = match self.sc_start_offset {
             Some(offset) => offset,
-            None => anyhow::bail!("Trying to flush Command={} without a start offset!", self),
+            None => anyhow::bail!("Trying to flush Command={} without a start offset", self),
         };
         anyhow::ensure!(
             self.sc_data_attribute_dirty,
@@ -453,14 +453,14 @@ impl SendCommand {
         let data_attribute = match &self.sc_data_attribute {
             Some(attribute) => attribute,
             None => anyhow::bail!(
-                "Trying to compress Command={} without a data attribute!",
+                "Trying to compress Command={} without a data attribute",
                 self
             ),
         };
         let data_attribute_initial_size = match self.sc_data_attribute_initial_size {
             Some(size) => size,
             None => anyhow::bail!(
-                "Trying to compress Command={} without a data attribute initial size!",
+                "Trying to compress Command={} without a data attribute initial size",
                 self
             ),
         };
@@ -514,14 +514,14 @@ impl SendCommand {
         let data_attribute = match &self.sc_data_attribute {
             Some(attribute) => attribute,
             None => anyhow::bail!(
-                "Trying to compress Command={} without a data attribute!",
+                "Trying to compress Command={} without a data attribute",
                 self
             ),
         };
         let data_attribute_initial_size = match self.sc_data_attribute_initial_size {
             Some(size) => size,
             None => anyhow::bail!(
-                "Trying to compress Command={} without a data attribute initial size!",
+                "Trying to compress Command={} without a data attribute initial size",
                 self
             ),
         };
@@ -699,10 +699,7 @@ impl SendCommand {
             };
             let command_start_offset = match self.sc_start_offset {
                 Some(offset) => offset,
-                None => anyhow::bail!(
-                    "Trying to compress Command={} without a start offset!",
-                    self
-                ),
+                None => anyhow::bail!("Trying to compress Command={} without a start offset", self),
             };
             let new_pre_data_attribute_size =
                 self.sc_buffer.len() - dirty_data_attribute_initial_size;
@@ -956,14 +953,14 @@ impl SendCommand {
         let data_attribute = match &mut self.sc_data_attribute {
             Some(attribute) => attribute,
             None => anyhow::bail!(
-                "Trying to append to Command={} without a data attribute!",
+                "Trying to append to Command={} without a data attribute",
                 self
             ),
         };
         let other_data_attribute = match &other.sc_data_attribute {
             Some(attribute) => attribute,
             None => anyhow::bail!(
-                "Trying to append with Command={} without a data attribute!",
+                "Trying to append with Command={} without a data attribute",
                 self
             ),
         };
@@ -995,21 +992,21 @@ impl SendCommand {
         let data_attribute = match &mut self.sc_data_attribute {
             Some(attribute) => attribute,
             None => anyhow::bail!(
-                "Trying to truncate Command={} without a data attribute!",
+                "Trying to truncate Command={} without a data attribute",
                 self
             ),
         };
         // Ensure that we have an initial size too
         match self.sc_data_attribute_initial_size {
             None => anyhow::bail!(
-                "Trying to truncate Command={} without a data attribute initial size!",
+                "Trying to truncate Command={} without a data attribute initial size",
                 self
             ),
             _ => {}
         }
         let offset = match self.sc_start_offset {
             Some(offset) => offset,
-            None => anyhow::bail!("Trying to truncate Command={} without an offset!", self),
+            None => anyhow::bail!("Trying to truncate Command={} without an offset", self),
         };
         data_attribute.truncate_payload_at_start(context, bytes_to_remove)?;
         self.sc_uncompressed_size -= bytes_to_remove;
