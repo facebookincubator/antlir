@@ -114,25 +114,28 @@ impl SendCommand {
             context.return_child(&mut sub_context);
         }
 
-        // Create a new context for persisting the header
-        {
-            // Persist the header
-            let mut sub_context =
-                context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
-            // Skip the CRC32C -- we don't want to compute it yet
-            header.persist(&mut sub_context, true)?;
-            context.return_child(&mut sub_context);
-        }
+        // Normally, we want to check crcs when we read new commands
+        if !context.ssuc_options.avoid_crcing_input {
+            // Create a new context for persisting the header
+            {
+                // Persist the header
+                let mut sub_context =
+                    context.clone_with_new_buffers(&dummy_buffer, &mut buffer, version, version);
+                // Skip the CRC32C -- we don't want to compute it yet
+                header.persist(&mut sub_context, true)?;
+                context.return_child(&mut sub_context);
+            }
 
-        // Let's compute the CRC32C to ensure that it matches
-        let stored_crc32c = header.get_crc32c()?;
-        let computed_crc32c = Self::compute_crc32c(context, &buffer);
-        anyhow::ensure!(
-            stored_crc32c == computed_crc32c,
-            "Mismatch between stored CRC32C {:#010X} and computed CRC32C {:#010X}",
-            stored_crc32c,
-            computed_crc32c
-        );
+            // Let's compute the CRC32C to ensure that it matches
+            let stored_crc32c = header.get_crc32c()?;
+            let computed_crc32c = Self::compute_crc32c(context, &buffer);
+            anyhow::ensure!(
+                stored_crc32c == computed_crc32c,
+                "Mismatch between stored CRC32C {:#010X} and computed CRC32C {:#010X}",
+                stored_crc32c,
+                computed_crc32c
+            );
+        }
 
         // Rewrite the entire command to the buffer to write in the crc this time
         {
