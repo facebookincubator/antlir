@@ -6,11 +6,14 @@
  */
 
 use std::fmt::Display;
+use std::ops::AddAssign;
 use std::time::Duration;
 use std::time::SystemTime;
 
 #[derive(Clone, Copy)]
 pub struct SendStreamUpgradeStats {
+    /// Skip printing other time
+    ssus_skip_other_time: bool,
     /// The start time
     ssus_start_time: SystemTime,
     /// The total amount of time reading data from buffers
@@ -71,6 +74,7 @@ pub struct SendStreamUpgradeStats {
 impl SendStreamUpgradeStats {
     pub fn new() -> SendStreamUpgradeStats {
         SendStreamUpgradeStats {
+            ssus_skip_other_time: false,
             ssus_start_time: SystemTime::now(),
             ssus_buffer_read_time: Duration::new(0, 0),
             ssus_storage_read_time: Duration::new(0, 0),
@@ -116,18 +120,6 @@ impl SendStreamUpgradeStats {
             Ok(duration) => duration,
             Err(_) => Duration::new(0, 0),
         };
-        let other_time = total_time
-            .saturating_sub(self.ssus_buffer_read_time)
-            .saturating_sub(self.ssus_storage_read_time)
-            .saturating_sub(self.ssus_buffer_write_time)
-            .saturating_sub(self.ssus_storage_write_time)
-            .saturating_sub(self.ssus_compress_time)
-            .saturating_sub(self.ssus_crc32c_time)
-            .saturating_sub(self.ssus_append_time)
-            .saturating_sub(self.ssus_truncate_time)
-            .saturating_sub(self.ssus_attribute_population_time)
-            .saturating_sub(self.ssus_context_create_time)
-            .saturating_sub(self.ssus_context_return_time);
         Self::eprint_one_line("Total Time\t\t", total_time, total_time);
         Self::eprint_one_line("Buffer Read\t\t", self.ssus_buffer_read_time, total_time);
         Self::eprint_one_line("Storage Read\t\t", self.ssus_storage_read_time, total_time);
@@ -156,7 +148,21 @@ impl SendStreamUpgradeStats {
             self.ssus_context_return_time,
             total_time,
         );
-        Self::eprint_one_line("Other Time\t\t", other_time, total_time);
+        if !self.ssus_skip_other_time {
+            let other_time = total_time
+                .saturating_sub(self.ssus_buffer_read_time)
+                .saturating_sub(self.ssus_storage_read_time)
+                .saturating_sub(self.ssus_buffer_write_time)
+                .saturating_sub(self.ssus_storage_write_time)
+                .saturating_sub(self.ssus_compress_time)
+                .saturating_sub(self.ssus_crc32c_time)
+                .saturating_sub(self.ssus_append_time)
+                .saturating_sub(self.ssus_truncate_time)
+                .saturating_sub(self.ssus_attribute_population_time)
+                .saturating_sub(self.ssus_context_create_time)
+                .saturating_sub(self.ssus_context_return_time);
+            Self::eprint_one_line("Other Time\t\t", other_time, total_time);
+        }
     }
 }
 
@@ -197,5 +203,39 @@ impl Display for SendStreamUpgradeStats {
             self.ssus_context_create_time,
             self.ssus_context_return_time,
         )
+    }
+}
+
+impl AddAssign for SendStreamUpgradeStats {
+    fn add_assign(&mut self, other: Self) {
+        // Leave the overall start time -- that should be correct
+        self.ssus_buffer_read_time += other.ssus_buffer_read_time;
+        self.ssus_storage_read_time += other.ssus_storage_read_time;
+        self.ssus_bytes_read += other.ssus_bytes_read;
+        self.ssus_reads_issued += other.ssus_reads_issued;
+        self.ssus_buffer_write_time += other.ssus_buffer_write_time;
+        self.ssus_storage_write_time += other.ssus_storage_write_time;
+        self.ssus_compress_time += other.ssus_compress_time;
+        self.ssus_compression_passed += other.ssus_compression_passed;
+        self.ssus_compression_failed += other.ssus_compression_failed;
+        self.ssus_compressed_bytes_written += other.ssus_compressed_bytes_written;
+        self.ssus_uncompressed_bytes_written += other.ssus_uncompressed_bytes_written;
+        self.ssus_logical_bytes_written += other.ssus_logical_bytes_written;
+        self.ssus_compressed_writes_issued += other.ssus_compressed_writes_issued;
+        self.ssus_uncompressed_writes_issued += other.ssus_uncompressed_writes_issued;
+        self.ssus_bytes_copied += other.ssus_bytes_copied;
+        self.ssus_crc32c_time += other.ssus_crc32c_time;
+        self.ssus_crc32c_bytes_processed += other.ssus_crc32c_bytes_processed;
+        self.ssus_commands_read += other.ssus_commands_read;
+        self.ssus_commands_written += other.ssus_commands_written;
+        self.ssus_append_time += other.ssus_append_time;
+        self.ssus_appended_bytes += other.ssus_appended_bytes;
+        self.ssus_truncate_time += other.ssus_truncate_time;
+        self.ssus_truncated_bytes += other.ssus_truncated_bytes;
+        self.ssus_attribute_population_time += other.ssus_attribute_population_time;
+        self.ssus_context_create_time += other.ssus_context_create_time;
+        self.ssus_context_return_time += other.ssus_context_return_time;
+        // Other time will now be busted -- don't print it
+        self.ssus_skip_other_time = true;
     }
 }

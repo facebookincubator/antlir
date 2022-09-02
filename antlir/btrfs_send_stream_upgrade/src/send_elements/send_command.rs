@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::fmt::Display;
 use std::time::SystemTime;
 
@@ -48,19 +49,13 @@ pub struct SendCommand {
 
 impl Display for SendCommand {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "<SendCommand Header={} DataAttribute={:?} DataAttributeInitialSize={:?} DataAttributeDirty={} Path={:?} StartOffset={:?} BufferLen={} UncompressedBytes={} Version={}/>",
-            self.sc_header,
-            self.sc_data_attribute,
-            self.sc_data_attribute_initial_size,
-            self.sc_data_attribute_dirty,
-            self.sc_path,
-            self.sc_start_offset,
-            self.sc_buffer.len(),
-            self.sc_uncompressed_size,
-            self.sc_version
-        )
+        self.fmt_internal(f)
+    }
+}
+
+impl Debug for SendCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
     }
 }
 
@@ -1280,6 +1275,22 @@ impl SendCommand {
         let checksum = crc32c_hw::update(!0, buffer);
         context.update_crc32c_stats(&start_time, buffer.len());
         !checksum
+    }
+
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<SendCommand Header={} DataAttribute={:?} DataAttributeInitialSize={:?} DataAttributeDirty={} Path={:?} StartOffset={:?} BufferLen={} UncompressedBytes={} Version={}/>",
+            self.sc_header,
+            self.sc_data_attribute,
+            self.sc_data_attribute_initial_size,
+            self.sc_data_attribute_dirty,
+            self.sc_path,
+            self.sc_start_offset,
+            self.sc_buffer.len(),
+            self.sc_uncompressed_size,
+            self.sc_version
+        )
     }
 }
 
