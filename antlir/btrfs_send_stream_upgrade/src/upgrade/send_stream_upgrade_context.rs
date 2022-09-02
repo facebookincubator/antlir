@@ -34,9 +34,9 @@ pub struct SendStreamUpgradeContext<'a> {
     /// Options that dicatate how the stream will be upgraded
     pub ssuc_options: SendStreamUpgradeOptions,
     /// Source for the IO context
-    ssuc_source: BufReader<Box<dyn Read + 'a>>,
+    ssuc_source: Option<BufReader<Box<dyn Read + 'a>>>,
     /// Destination for the IO context
-    ssuc_destination: BufWriter<Box<dyn Write + 'a>>,
+    ssuc_destination: Option<BufWriter<Box<dyn Write + 'a>>>,
     /// Version of the stream at the source
     ssuc_source_version: Option<SendVersion>,
     /// Version of the stream at the destination
@@ -98,8 +98,8 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_stats: SendStreamUpgradeStats::new(),
             ssuc_logger: logger,
             ssuc_options: options,
-            ssuc_source: BufReader::with_capacity(read_buffer_size, read_box as _),
-            ssuc_destination: BufWriter::with_capacity(write_buffer_size, write_box as _),
+            ssuc_source: Some(BufReader::with_capacity(read_buffer_size, read_box as _)),
+            ssuc_destination: Some(BufWriter::with_capacity(write_buffer_size, write_box as _)),
             ssuc_source_version: None,
             ssuc_destination_version: None,
             ssuc_source_offset: 0,
@@ -112,26 +112,26 @@ impl<'a> SendStreamUpgradeContext<'a> {
 
     pub fn clone_with_new_buffers(
         &self,
-        read: &'a [u8],
-        write: &'a mut [u8],
+        read: Option<&'a [u8]>,
+        write: Option<&'a mut [u8]>,
         source_version: SendVersion,
         destination_version: SendVersion,
     ) -> SendStreamUpgradeContext<'a> {
-        let read_len = read.len();
-        let read_box = Box::new(read);
-        let write_box = Box::new(write);
+        let read_length = read.map(|r| r.len());
+        let read_box = read.map(Box::new);
+        let write_box = write.map(Box::new);
         let start_time = SystemTime::now();
         let mut new_context = SendStreamUpgradeContext {
             ssuc_stats: self.ssuc_stats,
             ssuc_logger: self.ssuc_logger.clone(),
             ssuc_options: self.ssuc_options.clone(),
-            ssuc_source: BufReader::new(read_box as _),
-            ssuc_destination: BufWriter::new(write_box as _),
+            ssuc_source: read_box.map(|read_box_some| BufReader::new(read_box_some as _)),
+            ssuc_destination: write_box.map(|write_box_some| BufWriter::new(write_box_some as _)),
             ssuc_source_version: Some(source_version),
             ssuc_destination_version: Some(destination_version),
             ssuc_source_offset: 0,
             ssuc_destination_offset: 0,
-            ssuc_source_length: Some(read_len),
+            ssuc_source_length: read_length,
             ssuc_associated_with_parent: true,
             ssuc_backtrace: Backtrace::capture(),
         };
@@ -140,8 +140,12 @@ impl<'a> SendStreamUpgradeContext<'a> {
     }
 
     pub fn read(&mut self, buffer: &mut [u8]) -> anyhow::Result<()> {
+        let source = match self.ssuc_source {
+            None => anyhow::bail!("Trying to read from a None source"),
+            Some(ref mut source) => source,
+        };
         let start_time = SystemTime::now();
-        self.ssuc_source.read_exact(buffer)?;
+        source.read_exact(buffer)?;
         let time_delta = match start_time.elapsed() {
             Ok(duration) => duration,
             Err(_) => Duration::new(0, 0),
@@ -185,8 +189,12 @@ impl<'a> SendStreamUpgradeContext<'a> {
     }
 
     pub fn write(&mut self, buffer: &[u8], uncompressed_bytes: usize) -> anyhow::Result<()> {
+        let destination = match self.ssuc_destination {
+            None => anyhow::bail!("Trying to write to a None destination"),
+            Some(ref mut destination) => destination,
+        };
         let start_time = SystemTime::now();
-        self.ssuc_destination.write_all(buffer)?;
+        destination.write_all(buffer)?;
         let time_delta = match start_time.elapsed() {
             Ok(duration) => duration,
             Err(_) => Duration::new(0, 0),
