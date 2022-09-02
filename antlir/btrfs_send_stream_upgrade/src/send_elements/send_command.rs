@@ -14,12 +14,12 @@ use slog::debug;
 use slog::info;
 use slog::trace;
 
-pub use crate::send_attribute::SendAttribute;
-pub use crate::send_attribute_header::BtrfsSendAttributeType;
-pub use crate::send_attribute_header::BTRFS_ENCODED_IO_COMPRESSION_ZSTD;
-pub use crate::send_command_header::SendCommandHeader;
-pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
-pub use crate::send_version::SendVersion;
+use crate::send_elements::send_attribute::SendAttribute;
+use crate::send_elements::send_attribute_header::BtrfsSendAttributeType;
+use crate::send_elements::send_attribute_header::BTRFS_ENCODED_IO_COMPRESSION_ZSTD;
+use crate::send_elements::send_command_header::SendCommandHeader;
+use crate::send_elements::send_version::SendVersion;
+use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 
 pub struct SendCommand {
     /// The header for the current command

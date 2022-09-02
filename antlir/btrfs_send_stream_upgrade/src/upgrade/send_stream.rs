@@ -7,11 +7,11 @@
 
 use slog::debug;
 
-pub use crate::send_command::SendCommand;
-pub use crate::send_header::SendHeader;
-pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
-pub use crate::send_stream_upgrade_options::SendStreamUpgradeOptions;
-pub use crate::send_version::SendVersion;
+use crate::send_elements::send_command::SendCommand;
+use crate::send_elements::send_header::SendHeader;
+use crate::send_elements::send_version::SendVersion;
+use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
+use crate::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 
 pub struct SendStream<'a> {
     /// The global context for processing the stream
@@ -71,7 +71,7 @@ impl SendStream<'_> {
                                     compressed_command.persist(&mut self.ss_context)?;
                                 }
                                 Err(error) => {
-                                    match error.downcast_ref::<crate::send_attribute::SendAttributeFailedToShrinkPayloadError>() {
+                                    match error.downcast_ref::<crate::send_elements::send_attribute::SendAttributeFailedToShrinkPayloadError>() {
                                         Some(failed_to_shrink_payload_error) => {
                                             // If we failed to shrink the attribute payload, just persist the
                                             // old attribute
@@ -116,11 +116,10 @@ impl SendStream<'_> {
             if !command.is_appendable() {
                 // Then flush it
                 command.persist(&mut self.ss_context)?;
-                anyhow::ensure!(
-                    previous_command_option.is_none(),
-                    "Unexpected previous Command={}",
-                    previous_command_option.unwrap()
-                );
+                match previous_command_option {
+                    Some(command) => anyhow::bail!("Unexpected previous Command={}", command),
+                    None => (),
+                }
             } else if !command.is_empty() {
                 // Stash a reference to the previous non-empty appendable command
                 previous_command_option = Some(command);

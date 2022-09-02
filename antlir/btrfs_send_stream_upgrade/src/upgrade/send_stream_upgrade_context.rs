@@ -22,9 +22,9 @@ use slog::Drain;
 use slog::Level;
 use slog::Logger;
 
-pub use crate::send_stream_upgrade_options::SendStreamUpgradeOptions;
-pub use crate::send_stream_upgrade_stats::SendStreamUpgradeStats;
-pub use crate::send_version::SendVersion;
+use crate::send_elements::send_version::SendVersion;
+use crate::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
+use crate::upgrade::send_stream_upgrade_stats::SendStreamUpgradeStats;
 
 pub struct SendStreamUpgradeContext<'a> {
     /// Stats related to the current upgrade context
@@ -47,8 +47,6 @@ pub struct SendStreamUpgradeContext<'a> {
     ssuc_destination_offset: usize,
     /// Length of the source
     ssuc_source_length: Option<usize>,
-    /// Length of the destination
-    ssuc_destination_length: Option<usize>,
     /// Check to see if this has a parent associated with it
     ssuc_associated_with_parent: bool,
     /// Backtrace of where the context was allocated
@@ -107,7 +105,6 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_source_offset: 0,
             ssuc_destination_offset: 0,
             ssuc_source_length: None,
-            ssuc_destination_length: None,
             ssuc_associated_with_parent: false,
             ssuc_backtrace: Backtrace::capture(),
         })
@@ -121,7 +118,6 @@ impl<'a> SendStreamUpgradeContext<'a> {
         destination_version: SendVersion,
     ) -> SendStreamUpgradeContext<'a> {
         let read_len = read.len();
-        let write_len = write.len();
         let read_box = Box::new(read);
         let write_box = Box::new(write);
         SendStreamUpgradeContext {
@@ -135,7 +131,6 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_source_offset: 0,
             ssuc_destination_offset: 0,
             ssuc_source_length: Some(read_len),
-            ssuc_destination_length: Some(write_len),
             ssuc_associated_with_parent: true,
             ssuc_backtrace: Backtrace::capture(),
         }
@@ -239,13 +234,6 @@ impl<'a> SendStreamUpgradeContext<'a> {
 
     pub fn get_write_offset(&self) -> usize {
         self.ssuc_destination_offset
-    }
-
-    pub fn get_write_len(&self) -> anyhow::Result<usize> {
-        match self.ssuc_destination_length {
-            Some(length) => Ok(length),
-            None => anyhow::bail!("Attempted to get a length of a non-buffer destination!"),
-        }
     }
 
     pub fn update_copy_stats(&mut self, start_time: &SystemTime, bytes_copied: usize) {

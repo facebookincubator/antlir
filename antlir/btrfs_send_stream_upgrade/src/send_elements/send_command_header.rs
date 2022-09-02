@@ -16,8 +16,8 @@ use std::ops::Bound::Included;
 use lazy_static::lazy_static;
 use slog::debug;
 
-pub use crate::send_stream_upgrade_context::SendStreamUpgradeContext;
-pub use crate::send_version::SendVersion;
+use crate::send_elements::send_version::SendVersion;
+use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 
 /*
  * This is taken from the Linux kernel source code.

@@ -1,24 +1,44 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+
+rust_library(
+    name = "btrfs_send_stream_upgrade_lib",
+    srcs = ["src/lib.rs"] + glob([
+        "src/send_elements/*.rs",
+    ]) + glob([
+        "src/upgrade/*.rs",
+    ]),
+    deps = third_party.libraries(
+        [
+            "anyhow",
+            "crc",
+            "lazy_static",
+            "maplit",
+            "num",
+            "num-derive",
+            "num-traits",
+            "slog",
+            "slog-term",
+            "structopt",
+            "thiserror",
+            "zstd",
+        ],
+        platform = "rust",
+    ),
+)
 
 rust_binary(
     name = "btrfs_send_stream_upgrade",
-    srcs = glob(["src/*.rs"]),
+    srcs = ["src/main.rs"],
     visibility = [
         "//antlir/...",
         "//tupperware/image/imgtool/...",
     ],
-    deps = [
-        "fbsource//third-party/rust:anyhow",
-        "fbsource//third-party/rust:crc",
-        "fbsource//third-party/rust:lazy_static",
-        "fbsource//third-party/rust:maplit",
-        "fbsource//third-party/rust:num",
-        "fbsource//third-party/rust:num-derive",
-        "fbsource//third-party/rust:num-traits",
-        "fbsource//third-party/rust:slog",
-        "fbsource//third-party/rust:slog-term",
-        "fbsource//third-party/rust:structopt",
-        "fbsource//third-party/rust:thiserror",
-        "fbsource//third-party/rust:zstd",
-    ],
+    deps = [":btrfs_send_stream_upgrade_lib"] +
+           third_party.libraries(
+               [
+                   "anyhow",
+                   "structopt",
+               ],
+               platform = "rust",
+           ),
 )
