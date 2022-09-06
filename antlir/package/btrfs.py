@@ -570,7 +570,7 @@ class BtrfsImage:
             label=label,
             mount_dir=mount_dir,
             mount_options=[
-                f"compress=zstd:{compression_level}",
+                f"compress-force=zstd:{compression_level}",
             ],
         ).mount() as loop_vol, temp_dir(dir=mount_dir) as receive_dir:
 
