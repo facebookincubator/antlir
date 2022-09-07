@@ -5,56 +5,30 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::io::Cursor;
-use std::io::Read;
-use std::path::Path;
-use std::str::FromStr;
 use std::time::Duration;
 
-use anyhow::anyhow;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
-use blob_store::get_blob;
 use blob_store::get_sha2_hash;
 use blob_store::upload;
-use blob_store::Blob;
-use blob_store::DownloadDetails;
 use blob_store::PackageBackend;
 use blob_store::RateLimitedPackageBackend;
-use blob_store::StoreFormat;
-use bytes::Buf;
-use bytes::Bytes;
 use clap::Parser;
 use fbinit::FacebookInit;
-use flate2::bufread::GzDecoder;
-use flate2::bufread::GzEncoder;
-use flate2::Compression;
 use futures::future::try_join_all;
 use governor::clock::DefaultClock;
 use governor::state::InMemoryState;
 use governor::state::NotKeyed;
 use manifold_client::cpp_client::ClientOptionsBuilder;
 use manifold_client::cpp_client::ManifoldCppClient;
-use quick_xml::de::from_str;
-use quick_xml::events::BytesStart;
-use quick_xml::events::BytesText;
-use quick_xml::events::Event;
-use quick_xml::se::Serializer;
-use quick_xml::Reader;
-use quick_xml::Writer;
-use reqwest::Url;
 use rpm_artifact_parser::Repo;
 use rpm_artifact_parser::RepoArtifact;
 use rpm_artifact_parser::RpmPackage;
 use rpm_artifact_parser::UpdatedPrimaryPackage;
-use serde::Deserialize;
-use serde::Serialize;
 use slog::info;
 use slog::o;
 use slog::Drain;
-use snapshotter_helpers::Architecture;
 use snapshotter_helpers::Args;
 use snapshotter_helpers::ANTLIR_SNAPSHOTS_BUCKET;
 use snapshotter_helpers::API_KEY;
