@@ -131,7 +131,7 @@ Before=local-fs.target
 What={self.mount_tag}
 Where={self.mountpoint!s}
 Type=9p
-Options=version=9p2000.L,posixacl,cache={cache},{ro_rw}
+Options=version=9p2000.L,posixacl,cache={cache},{ro_rw},msize=209715200
 """,
         )
 

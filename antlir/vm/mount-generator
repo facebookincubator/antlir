@@ -33,7 +33,10 @@ if [ -z "$exportsdir" ]; then
     echo "mount-generator: creating $exportsdir"
     mkdir -p "$exportsdir"
     echo "mount-generator: mounting exports in $exportsdir"
-    mount -t 9p -oversion=9p2000.L,posixacl,cache=loose exports "$exportsdir"
+    # Qemu recommends setting msize between 10-100MiB on spinning drives, or
+    # several hundred MiB on flash. Use 200MiB to hopefully get better
+    # performance
+    mount -t 9p -oversion=9p2000.L,posixacl,cache=loose,msize=209715200 exports "$exportsdir"
     echo "mount-generator: mounted exports in $exportsdir"
     trap 'umount $exportsdir && rm -rf $exportsdir' EXIT
 fi

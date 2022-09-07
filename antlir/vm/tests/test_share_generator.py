@@ -38,7 +38,7 @@ Before=local-fs.target
 What=fs0
 Where=/tmp/hello
 Type=9p
-Options=version=9p2000.L,posixacl,cache=loose,ro
+Options=version=9p2000.L,posixacl,cache=loose,ro,msize=209715200
 """,
     ),
     TestShare(
@@ -58,7 +58,7 @@ Before=local-fs.target
 What=explicit_tag
 Where=/usr/tag
 Type=9p
-Options=version=9p2000.L,posixacl,cache=loose,ro
+Options=version=9p2000.L,posixacl,cache=loose,ro,msize=209715200
 """,
     ),
     TestShare(
@@ -84,7 +84,7 @@ Before=local-fs.target
 What=fs2
 Where=/guest/other
 Type=9p
-Options=version=9p2000.L,posixacl,cache=loose,ro
+Options=version=9p2000.L,posixacl,cache=loose,ro,msize=209715200
 """,
     ),
     TestShare(
@@ -104,7 +104,7 @@ Before=local-fs.target
 What=fs3
 Where=/tmp/hello_rw
 Type=9p
-Options=version=9p2000.L,posixacl,cache=none,rw
+Options=version=9p2000.L,posixacl,cache=none,rw,msize=209715200
 """,
     ),
 ]
