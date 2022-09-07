@@ -8,7 +8,6 @@ load("//antlir/vm/bzl:initrd.bzl", "initrd")
     name = f,
     visibility = [
         "//metalos/...",
-        "//scripts/dschatzberg/vm:",
     ],
 ) for f in glob([
     "*.service",
