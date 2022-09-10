@@ -53,11 +53,25 @@ impl CommandBatchInfo {
         self.cbi_last_id += 1;
         self.cbi_data_payload_size += other.cbi_data_payload_size;
     }
+    pub fn remove_first(&mut self) -> SendCommand {
+        self.cbi_command_queue.remove(0)
+    }
     pub fn is_end(&self) -> bool {
         self.cbi_command_queue[0].is_end()
     }
     pub fn is_appendable(&self) -> bool {
         self.cbi_command_queue[0].is_appendable()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.cbi_command_queue.is_empty()
+    }
+    pub fn repopulate(&mut self, command: SendCommand) -> anyhow::Result<()> {
+        anyhow::ensure!(
+            self.cbi_command_queue.is_empty(),
+            "Repopulating a non-empty queue"
+        );
+        self.cbi_command_queue.push(command);
+        Ok(())
     }
 }
 
