@@ -123,8 +123,10 @@ impl SyncContainer {
             None => anyhow::bail!("Halting all without a persistence queue"),
         }
     }
-    pub fn rollover_stats(&self, other_stats: &SendStreamUpgradeStats) -> anyhow::Result<()> {
-        // First lock to get at the underlying stats
+    pub fn rollover_stats(&self, other_stats: &mut SendStreamUpgradeStats) -> anyhow::Result<()> {
+        // First compute the other time for the other stats
+        other_stats.compute_other_time()?;
+        // Then lock to get at the underlying stats
         let mutex = &self.sc_stats;
         let mut stats = match mutex.lock() {
             Ok(stats) => stats,
@@ -135,11 +137,21 @@ impl SyncContainer {
         *stats += *other_stats;
         Ok(())
     }
-    /*
-    pub fn populate_global_stats(context: &mut SendStreamUpgradeOptions) -> anyhow::Result<()> {
-        let sync_container = match context.
+    pub fn append_stats_to_other(
+        &self,
+        other_stats: &mut SendStreamUpgradeStats,
+    ) -> anyhow::Result<()> {
+        // First lock to get at the underlying stats
+        let mutex = &self.sc_stats;
+        let stats = match mutex.lock() {
+            Ok(stats) => stats,
+            // This should only happen if another thread panicked because of
+            // a recursive lock
+            Err(error) => anyhow::bail!("Failed to acquire lock for stats rollover with {}", error),
+        };
+        *other_stats += *stats;
+        Ok(())
     }
-    */
     fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

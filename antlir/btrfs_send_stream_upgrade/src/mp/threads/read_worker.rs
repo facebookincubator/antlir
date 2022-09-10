@@ -62,7 +62,7 @@ impl Worker for ReadWorker {
             .ssuc_sync_container
             .as_ref()
             .context("Reading with None container")?
-            .rollover_stats(&context.ssuc_stats)?;
+            .rollover_stats(&mut context.ssuc_stats)?;
         Ok(())
     }
 }

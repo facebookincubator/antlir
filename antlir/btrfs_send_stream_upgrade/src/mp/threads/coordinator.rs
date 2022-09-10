@@ -59,6 +59,8 @@ impl<'a> Coordinator<'a> {
             Some(ref mut context) => {
                 // Be sure to flush the context before starting any IO on it
                 context.flush()?;
+                // Accumulate the other time for the stats we've gotten thus far
+                context.ssuc_stats.compute_other_time()?;
                 // Set up the sync container for mp accesses
                 context.setup_sync_container()?;
                 // Populate the thread count from the context
@@ -215,6 +217,14 @@ impl<'a> Coordinator<'a> {
                 active_workers.remove(i);
                 i += 1;
             }
+        }
+
+        // Copy over the stats
+        match context.ssuc_sync_container {
+            Some(ref sync_container) => {
+                sync_container.append_stats_to_other(&mut context.ssuc_stats)?
+            }
+            None => anyhow::bail!("Copying to None sync container in coordinator"),
         }
 
         if crashed {
