@@ -1279,6 +1279,19 @@ impl SendCommand {
         self.sc_data_attribute_dirty
     }
 
+    pub fn get_cached_data_payload_size(&self) -> anyhow::Result<usize> {
+        anyhow::ensure!(
+            !self.is_dirty(),
+            "Getting the attribute of a dirty command {}",
+            self
+        );
+        match self.sc_data_attribute {
+            Some(ref attribute) => Ok(attribute.get_payload_size()),
+            // Nothing cached, so nothing to return
+            None => Ok(0),
+        }
+    }
+
     fn compute_crc32c(context: &mut SendStreamUpgradeContext, buffer: &[u8]) -> u32 {
         let start_time = SystemTime::now();
         let checksum = crc32c_hw::update(!0, buffer);
