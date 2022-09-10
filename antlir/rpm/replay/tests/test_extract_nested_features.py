@@ -44,14 +44,6 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
             os.path.exists(ef.packaged_root.layer.path("/from/test_base/"))
         )
 
-    def test_custom(self) -> None:
-        ef = _extract_features("custom")
-        # Omits "/from/test_base/" since it's in the base image.
-        self.assertEqual({"/new/dir/"}, ef.make_dir_paths)
-        self._check_base_plus_one(ef)
-        self.assertEqual({"remove_paths"}, ef.features_needing_custom_image)
-        self.assertIsNone(ef.features_to_replay)  # Deliberately not set!
-
     def test_custom_remove_rpm(self) -> None:
         with self.assertLogs(enf_log, level="ERROR") as ctx:
             ef = _extract_features("custom-remove-rpm")
@@ -68,6 +60,13 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self.assertEqual({"/new/dir/"}, ef.make_dir_paths)
         self._check_base_plus_one(ef)
         self.assertEqual({"rpms"}, ef.features_needing_custom_image)
+        self.assertIsNone(ef.features_to_replay)
+
+    def test_custom_remove_paths(self) -> None:
+        ef = _extract_features("custom-remove-paths")
+        self.assertEqual({"/new/dir/"}, ef.make_dir_paths)
+        self._check_base_plus_one(ef)
+        self.assertEqual({"remove_paths"}, ef.features_needing_custom_image)
         self.assertIsNone(ef.features_to_replay)
 
     def test_non_custom(self) -> None:
@@ -91,6 +90,37 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
                 ("meta_key_value_store", feature_target("base-plus-one")),
                 ("meta_key_value_store", feature_target("non-custom")),
                 ("remove_meta_key_value_store", feature_target("non-custom")),
+            },
+            {(key, target) for key, target, _cfg in ef.features_to_replay},
+        )
+
+    def test_non_custom_remove_paths(self) -> None:
+        ef = _extract_features("non-custom-remove-paths")
+        self.assertEqual(set(), ef.make_dir_paths)
+        self._check_base_plus_one(ef)
+        self.assertEqual(set(), ef.features_needing_custom_image)
+
+        def feature_target(layer_name):
+            return antlir_dep(f"rpm/replay/tests:{layer_name}__layer-feature")
+
+        self.assertEqual(
+            {
+                ("layer_from_package", feature_target("base")),
+                ("parent_layer", feature_target("base-plus-one")),
+                ("mounts", feature_target("base-plus-one")),
+                ("rpms", feature_target("base-plus-one")),
+                ("ensure_subdirs_exist", feature_target("base-plus-one")),
+                ("meta_key_value_store", feature_target("base-plus-one")),
+                (
+                    "parent_layer",
+                    "fbcode//antlir/rpm/replay/tests:"
+                    "non-custom-remove-paths__layer-feature",
+                ),
+                (
+                    "remove_paths",
+                    "fbcode//antlir/rpm/replay/tests:"
+                    "non-custom-remove-paths__layer-feature",
+                ),
             },
             {(key, target) for key, target, _cfg in ef.features_to_replay},
         )
