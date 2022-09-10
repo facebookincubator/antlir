@@ -12,8 +12,6 @@ use std::time::SystemTime;
 
 #[derive(Clone, Copy)]
 pub struct SendStreamUpgradeStats {
-    /// Skip printing other time
-    ssus_skip_other_time: bool,
     /// The start time
     ssus_start_time: SystemTime,
     /// The total amount of time reading data from buffers
@@ -69,12 +67,13 @@ pub struct SendStreamUpgradeStats {
     pub ssus_context_create_time: Duration,
     /// The total amount of time returning contexts
     pub ssus_context_return_time: Duration,
+    /// Other time
+    pub ssus_other_time: Duration,
 }
 
 impl SendStreamUpgradeStats {
     pub fn new() -> SendStreamUpgradeStats {
         SendStreamUpgradeStats {
-            ssus_skip_other_time: false,
             ssus_start_time: SystemTime::now(),
             ssus_buffer_read_time: Duration::new(0, 0),
             ssus_storage_read_time: Duration::new(0, 0),
@@ -102,6 +101,7 @@ impl SendStreamUpgradeStats {
             ssus_attribute_population_time: Duration::new(0, 0),
             ssus_context_create_time: Duration::new(0, 0),
             ssus_context_return_time: Duration::new(0, 0),
+            ssus_other_time: Duration::new(0, 0),
         }
     }
 
@@ -114,7 +114,7 @@ impl SendStreamUpgradeStats {
         );
     }
 
-    pub fn eprint_summary_stats(&self) {
+    pub fn eprint_summary_stats(&mut self) -> anyhow::Result<()> {
         eprintln!("Overall summary: {}", self);
         let total_time = match self.ssus_start_time.elapsed() {
             Ok(duration) => duration,
@@ -148,21 +148,36 @@ impl SendStreamUpgradeStats {
             self.ssus_context_return_time,
             total_time,
         );
-        if !self.ssus_skip_other_time {
-            let other_time = total_time
-                .saturating_sub(self.ssus_buffer_read_time)
-                .saturating_sub(self.ssus_storage_read_time)
-                .saturating_sub(self.ssus_buffer_write_time)
-                .saturating_sub(self.ssus_storage_write_time)
-                .saturating_sub(self.ssus_compress_time)
-                .saturating_sub(self.ssus_crc32c_time)
-                .saturating_sub(self.ssus_append_time)
-                .saturating_sub(self.ssus_truncate_time)
-                .saturating_sub(self.ssus_attribute_population_time)
-                .saturating_sub(self.ssus_context_create_time)
-                .saturating_sub(self.ssus_context_return_time);
-            Self::eprint_one_line("Other Time\t\t", other_time, total_time);
+        if self.ssus_other_time.is_zero() {
+            self.compute_other_time()?;
         }
+        Self::eprint_one_line("Other Time\t\t", self.ssus_other_time, total_time);
+        Ok(())
+    }
+
+    pub fn compute_other_time(&mut self) -> anyhow::Result<()> {
+        let total_time = match self.ssus_start_time.elapsed() {
+            Ok(duration) => duration,
+            Err(_) => Duration::new(0, 0),
+        };
+        anyhow::ensure!(
+            self.ssus_other_time.is_zero(),
+            "Overwriting non-zero other time!"
+        );
+        // Subtract out the individual times from the total time
+        self.ssus_other_time = total_time
+            .saturating_sub(self.ssus_buffer_read_time)
+            .saturating_sub(self.ssus_storage_read_time)
+            .saturating_sub(self.ssus_buffer_write_time)
+            .saturating_sub(self.ssus_storage_write_time)
+            .saturating_sub(self.ssus_compress_time)
+            .saturating_sub(self.ssus_crc32c_time)
+            .saturating_sub(self.ssus_append_time)
+            .saturating_sub(self.ssus_truncate_time)
+            .saturating_sub(self.ssus_attribute_population_time)
+            .saturating_sub(self.ssus_context_create_time)
+            .saturating_sub(self.ssus_context_return_time);
+        Ok(())
     }
 }
 
@@ -235,7 +250,6 @@ impl AddAssign for SendStreamUpgradeStats {
         self.ssus_attribute_population_time += other.ssus_attribute_population_time;
         self.ssus_context_create_time += other.ssus_context_create_time;
         self.ssus_context_return_time += other.ssus_context_return_time;
-        // Other time will now be busted -- don't print it
-        self.ssus_skip_other_time = true;
+        self.ssus_other_time += other.ssus_other_time;
     }
 }

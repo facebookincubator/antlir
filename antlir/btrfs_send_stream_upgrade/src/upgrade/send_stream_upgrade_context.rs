@@ -427,10 +427,11 @@ impl<'a> SendStreamUpgradeContext<'a> {
         self.ssuc_stats.ssus_attribute_population_time += Self::get_time_delta(start_time);
     }
 
-    pub fn eprint_summary_stats(&self) {
+    pub fn eprint_summary_stats(&mut self) -> anyhow::Result<()> {
         if !self.ssuc_options.quiet {
-            self.ssuc_stats.eprint_summary_stats();
+            self.ssuc_stats.eprint_summary_stats()?;
         }
+        Ok(())
     }
 
     pub fn trace_stats(&self) {

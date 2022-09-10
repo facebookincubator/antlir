@@ -166,7 +166,7 @@ impl SendStream<'_> {
         match self.ss_context {
             None => anyhow::bail!("Upgrading a send stream with no context"),
             Some(ref mut context) => {
-                context.eprint_summary_stats();
+                context.eprint_summary_stats()?;
             }
         };
         Ok(())

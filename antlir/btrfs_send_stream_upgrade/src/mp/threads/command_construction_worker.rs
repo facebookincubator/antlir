@@ -65,7 +65,7 @@ impl Worker for CommandConstructionWorker {
             .ssuc_sync_container
             .as_ref()
             .context("Constructing commands with None container")?
-            .rollover_stats(&context.ssuc_stats)?;
+            .rollover_stats(&mut context.ssuc_stats)?;
         Ok(())
     }
 }

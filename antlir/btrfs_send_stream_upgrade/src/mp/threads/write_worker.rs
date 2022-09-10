@@ -57,7 +57,7 @@ impl Worker for WriteWorker {
             .ssuc_sync_container
             .as_ref()
             .context("Writing with None container")?
-            .rollover_stats(&context.ssuc_stats)?;
+            .rollover_stats(&mut context.ssuc_stats)?;
         Ok(())
     }
 }
