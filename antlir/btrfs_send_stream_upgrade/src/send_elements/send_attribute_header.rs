@@ -173,6 +173,14 @@ impl SendAttributeHeader {
         }
     }
 
+    pub fn copy(&self) -> Self {
+        Self {
+            sah_attribute_type: self.sah_attribute_type,
+            sah_size: self.sah_size,
+            sah_version: self.sah_version,
+        }
+    }
+
     pub fn upgrade(&self, context: &mut SendStreamUpgradeContext) -> anyhow::Result<Self> {
         context.trace_stats();
         debug!(context.ssuc_logger, "Upgrading AttributeHeader={}", self);

@@ -236,31 +236,35 @@ impl SendCommandHeader {
         Ok(new_header)
     }
 
-    pub fn copy_for_flush(&self, context: &mut SendStreamUpgradeContext) -> anyhow::Result<Self> {
+    pub fn copy(
+        &self,
+        context: &mut SendStreamUpgradeContext,
+        command_payload_size: Option<u32>,
+    ) -> anyhow::Result<Self> {
         context.trace_stats();
         debug!(
             context.ssuc_logger,
-            "Generating flush header from CommandHeader={}", self
+            "Copying header from CommandHeader={}", self
         );
         // Typically these commands should have stale sizes & CRC32C values
         anyhow::ensure!(
             self.sch_size.is_some(),
-            "Trying to copy for flush size-less CommandHeader={}",
+            "Trying to copy size-less CommandHeader={}",
             self
         );
         anyhow::ensure!(
             self.sch_crc32c.is_some(),
-            "Trying to copy for flush crc32c-less CommandHeader={}",
+            "Trying to copy crc32c-less CommandHeader={}",
             self
         );
         let new_header = SendCommandHeader {
-            sch_size: None,
-            sch_crc32c: None,
+            sch_size: command_payload_size,
+            sch_crc32c: Some(0),
             ..*self
         };
         debug!(
             context.ssuc_logger,
-            "Generated flush header CommandHeader={}", new_header
+            "Copied header CommandHeader={}", new_header
         );
         Ok(new_header)
     }
