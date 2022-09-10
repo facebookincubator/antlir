@@ -95,13 +95,6 @@ image.layer(
 )
 
 image.layer(
-    name = "custom",
-    # Removal triggers the "custom image" code path.
-    features = [feature.remove("/new/dir/")],
-    parent_layer = ":base-plus-one",
-)
-
-image.layer(
     name = "custom-remove-rpm",
     features = test_rpms.remove(["rpm-test-milk"]),
     parent_layer = ":base-plus-one",
@@ -131,14 +124,33 @@ image.layer(
     parent_layer = ":base-plus-one",
 )
 
+image.layer(
+    name = "non-custom-remove-paths",
+    features = [
+        feature.remove("/new/dir/"),
+    ],
+    parent_layer = ":base-plus-one",
+)
+
+image.layer(
+    name = "custom-remove-paths",
+    # If we try to remove a dir that exists on the base image that was not
+    # created by a feature, this should trigger the creation of a custom image.
+    features = [
+        feature.remove("/from/test_base/"),
+    ],
+    parent_layer = ":base-plus-one",
+)
+
 python_unittest(
     name = "test-extract-nested-features",
     srcs = ["test_extract_nested_features.py"],
     env = test_env_map([
-        ("custom", "//antlir/rpm/replay/tests:custom"),
         ("custom-remove-rpm", "//antlir/rpm/replay/tests:custom-remove-rpm"),
+        ("custom-remove-paths", "//antlir/rpm/replay/tests:custom-remove-paths"),
         ("custom-local-rpm", "//antlir/rpm/replay/tests:custom-local-rpm"),
         ("non-custom", "//antlir/rpm/replay/tests:non-custom"),
+        ("non-custom-remove-paths", "//antlir/rpm/replay/tests:non-custom-remove-paths"),
     ]),
     needed_coverage = [
         (100, "//antlir/rpm/replay:extract_nested_features"),

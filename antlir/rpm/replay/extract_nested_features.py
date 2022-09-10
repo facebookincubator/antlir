@@ -25,6 +25,12 @@ class PackagedRoot:
     layer_from_package: Dict[str, Any]
 
 
+@dataclasses.dataclass(frozen=True)
+class PathToRemove:
+    path: str
+    must_exist: bool
+
+
 @dataclasses.dataclass
 class ExtractedFeatures:
     packaged_root: Optional[PackagedRoot] = None
@@ -38,6 +44,7 @@ class ExtractedFeatures:
     features_to_replay: Optional[
         List[Tuple[str, str, Any]]
     ] = dataclasses.field(default_factory=list)
+    paths_to_remove: Set[PathToRemove] = dataclasses.field(default_factory=set)
 
     def __iadd__(self, other: "ExtractedFeatures") -> "ExtractedFeatures":
         assert not (
@@ -51,6 +58,7 @@ class ExtractedFeatures:
         self.features_needing_custom_image |= (
             other.features_needing_custom_image
         )
+        self.paths_to_remove |= other.paths_to_remove
         # `other` gets populated by recursive `extract_nested_features`
         # calls, e.g. for `parent_layer`.
         # pyre-fixme[16]: `Optional` has no attribute `extend`.
@@ -143,6 +151,16 @@ class _FeatureHandlers:
         # This is the same reasoning as `meta_key_value_store`.
         return ExtractedFeatures()
 
+    def remove_paths(self) -> ExtractedFeatures:
+        return ExtractedFeatures(
+            paths_to_remove={
+                PathToRemove(
+                    path=self.config["path"],
+                    must_exist=self.config["must_exist"],
+                )
+            }
+        )
+
 
 def extract_nested_features(
     *,
@@ -188,6 +206,19 @@ def extract_nested_features(
     assert (
         extracted_features.packaged_root
     ), f"Root not set on extracted features {layer_features_out}"
+    # Since extract_nested_features works on the pre-compiler, the items
+    # are not ordered correctly. So we manually remove the directories
+    for path_to_remove in extracted_features.paths_to_remove:
+        if (
+            path_to_remove.must_exist
+            and path_to_remove.path not in extracted_features.make_dir_paths
+        ):
+            # If the directory to remove was not added by the user, we need a
+            # custom image.
+            extracted_features.features_needing_custom_image.add("remove_paths")
+        extracted_features.make_dir_paths.discard(path_to_remove.path)
+    extracted_features.paths_to_remove = set()
+
     # For custom images, replaying features is not supported (and will be a
     # bit tricky to support well), so make sure that any consumers that
     # accidentally try to do this will fail.
