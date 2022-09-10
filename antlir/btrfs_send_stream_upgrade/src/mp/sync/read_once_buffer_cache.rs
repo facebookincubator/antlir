@@ -6,6 +6,8 @@
  */
 
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::fmt::Display;
 use std::sync::Condvar;
 use std::sync::Mutex;
 use std::sync::RwLock;
@@ -131,6 +133,18 @@ pub struct ReadOnceBufferCache {
     robc_cache_start_address: usize,
     /// The maximum number of buffers to cache
     robc_maximum_buffers_to_cache: usize,
+}
+
+impl Debug for ReadOnceBufferCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
+}
+
+impl Display for ReadOnceBufferCache {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
 }
 
 impl ReadOnceBufferCache {
@@ -508,6 +522,20 @@ impl ReadOnceBufferCache {
             self.put_buffer(buffer)?;
         }
     }
+
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<ReadOnceBufferCache BufferCache={:?} CacheMetadata={:?} ReaderWait={:?} PrefetcherWait={:?} BufferSize={} CacheStart={} MaximumBuffersToCache={}/>",
+            self.robc_cache,
+            self.robc_metadata,
+            self.robc_reader_wait_cv,
+            self.robc_prefetcher_wait_cv,
+            self.robc_buffer_size,
+            self.robc_cache_start_address,
+            self.robc_maximum_buffers_to_cache,
+        )
+    }
 }
 
 impl BlockingSyncPrimitive for ReadOnceBufferCache {
@@ -535,5 +563,25 @@ impl BlockingSyncPrimitive for ReadOnceBufferCache {
         self.robc_prefetcher_wait_cv.notify_all();
 
         Ok(())
+    }
+}
+
+impl Debug for ReadOnceBufferCacheInternal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<ReadOnceBufferCacheInternal Buffers={:?}/>",
+            self.robci_buffers,
+        )
+    }
+}
+
+impl Debug for ReadOnceBufferCacheMetadata {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<ReadOnceBufferCacheMetadata BytesRemaining={:?} NextKeyToFetch={} State={:?}/>",
+            self.robcm_bytes_remaining, self.robcm_next_key_to_fetch, self.robcm_state,
+        )
     }
 }

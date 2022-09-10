@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
+use std::fmt::Display;
 use std::thread;
 use std::thread::JoinHandle;
 
@@ -16,6 +18,18 @@ pub struct WorkerThread {
     wt_name: String,
     /// The join handle to check the status of the worker thread
     wt_status: Option<JoinHandle<anyhow::Result<()>>>,
+}
+
+impl Display for WorkerThread {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
+}
+
+impl Debug for WorkerThread {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
 }
 
 impl WorkerThread {
@@ -80,5 +94,13 @@ impl WorkerThread {
             // Just do our best here...
             Err(e) => anyhow::bail!("Thread {} paniced because {:?}", self.wt_name, e),
         }
+    }
+
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<WorkerThread Name={} Status={:?}/>",
+            self.wt_name, self.wt_status
+        )
     }
 }

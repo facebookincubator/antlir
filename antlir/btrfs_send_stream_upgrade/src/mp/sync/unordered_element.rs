@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::fmt::Display;
 
-pub trait UnorderedElement: Send + Display {}
+pub trait UnorderedElement: Send + Debug + Display {}

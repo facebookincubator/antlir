@@ -24,6 +24,7 @@ const NUM_PRODUCERS: u32 = 17;
 const MAXIMUM_NUMBER: u32 = 48611;
 
 // For testing, let's just use a simple wrapper around a number
+#[derive(Debug)]
 struct NumberWrapper {
     value: u32,
 }
