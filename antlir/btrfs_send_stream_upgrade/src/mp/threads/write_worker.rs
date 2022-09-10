@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use anyhow::Context;
+
+use crate::mp::sync::blocking_queue::BlockingQueue;
 use crate::mp::threads::worker::Worker;
 use crate::upgrade::send_stream_upgrade_context::SendStreamUpgradeContext;
 
@@ -21,7 +24,40 @@ impl Worker for WriteWorker {
         // The writer can get the destination
         true
     }
-    fn run_worker(_context: SendStreamUpgradeContext) -> anyhow::Result<()> {
+    fn run_worker(context: SendStreamUpgradeContext) -> anyhow::Result<()> {
+        let mut context = context;
+        // Detatch the container from the persistence queue
+        let sync_container = context
+            .ssuc_sync_container
+            .as_mut()
+            .context("Writing with None container")?;
+        let persistence_queue = sync_container
+            .take_persistence_queue()
+            .context("Writing with None persistence queue")?;
+
+        loop {
+            let mut batch_info = match (*persistence_queue).dequeue()? {
+                // Got a command batch info
+                Some(batch_info) => batch_info,
+                // We're walking all of the commands, so this shouldn't happen
+                None => anyhow::bail!("Writer received a None batch info"),
+            };
+            // Take the command out of the batch
+            let command = batch_info.remove_first();
+            // Flush it
+            command.persist(&mut context)?;
+            // Exit if we're done
+            if command.is_end() {
+                break;
+            }
+        }
+
+        // On our way out, tally up the stats
+        context
+            .ssuc_sync_container
+            .as_ref()
+            .context("Writing with None container")?
+            .rollover_stats(&context.ssuc_stats)?;
         Ok(())
     }
 }
