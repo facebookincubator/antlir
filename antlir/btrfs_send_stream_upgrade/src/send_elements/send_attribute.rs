@@ -222,7 +222,7 @@ impl SendAttribute {
             let mut sub_context =
                 context.clone_with_new_buffers(None, Some(&mut buffer[..]), version, version);
             header.persist(&mut sub_context)?;
-            sub_context.write(string_buffer, string_buffer.len())?;
+            sub_context.write_all(string_buffer, string_buffer.len())?;
             context.return_child(&mut sub_context);
         }
 
@@ -276,7 +276,7 @@ impl SendAttribute {
             // Be sure to skip the header at the start of the attribute
             let copy_start_offset = payload_start_offset + header_size;
             let copy_end_offset = payload_end_offset + header_size;
-            sub_context.write(
+            sub_context.write_all(
                 &self.sa_buffer[copy_start_offset..copy_end_offset],
                 payload_size,
             )?;
@@ -448,6 +448,23 @@ impl SendAttribute {
             }
         );
         Ok(new_attribute)
+    }
+
+    pub fn compress_space_check(&self, context: &SendStreamUpgradeContext) -> anyhow::Result<()> {
+        // Find out how much space is left
+        let write_offset = context.get_write_offset();
+        let write_length = context.get_write_len()?;
+        let bytes_remaining = write_length - write_offset;
+        // Ensure the given context can accommodate this attribute
+        anyhow::ensure!(
+            bytes_remaining >= self.sa_buffer.len(),
+            SendAttributeFailedToShrinkPayloadError {
+                saftspe_old_payload_size: write_length,
+                saftspe_new_payload_size: write_offset + self.sa_buffer.len(),
+                saftspe_min_bytes_to_save: 0
+            }
+        );
+        Ok(())
     }
 
     pub fn append(
@@ -672,7 +689,7 @@ impl SendAttribute {
             self.sa_version,
             destination_version
         );
-        context.write(&self.sa_buffer, self.sa_uncompressed_size)
+        context.write_all(&self.sa_buffer, self.sa_uncompressed_size)
     }
 
     pub fn get_size(&self) -> usize {

@@ -6,13 +6,6 @@
  */
 
 use std::backtrace::Backtrace;
-use std::fs::OpenOptions;
-use std::io::BufReader;
-use std::io::BufWriter;
-use std::io::Read;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
 use std::mem;
 use std::time::Duration;
 use std::time::SystemTime;
@@ -26,7 +19,9 @@ use slog::Logger;
 
 use crate::mp::sync::sync_container::SyncContainer;
 use crate::send_elements::send_version::SendVersion;
+use crate::upgrade::send_stream_upgrade_destination::SendStreamUpgradeDestination;
 use crate::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
+use crate::upgrade::send_stream_upgrade_source::SendStreamUpgradeSource;
 use crate::upgrade::send_stream_upgrade_stats::SendStreamUpgradeStats;
 
 pub struct SendStreamUpgradeContext<'a> {
@@ -37,19 +32,9 @@ pub struct SendStreamUpgradeContext<'a> {
     /// Options that dicatate how the stream will be upgraded
     pub ssuc_options: SendStreamUpgradeOptions,
     /// Source for the IO context
-    ssuc_source: Option<BufReader<Box<dyn Read + Send + 'a>>>,
+    ssuc_source: SendStreamUpgradeSource<'a>,
     /// Destination for the IO context
-    ssuc_destination: Option<BufWriter<Box<dyn Write + Send + 'a>>>,
-    /// Version of the stream at the source
-    ssuc_source_version: Option<SendVersion>,
-    /// Version of the stream at the destination
-    ssuc_destination_version: Option<SendVersion>,
-    /// Offset into the source
-    ssuc_source_offset: usize,
-    /// Offset into the destination
-    ssuc_destination_offset: usize,
-    /// Length of the source
-    ssuc_source_length: Option<usize>,
+    ssuc_destination: SendStreamUpgradeDestination<'a>,
     /// Check to see if this has a parent associated with it
     ssuc_associated_with_parent: bool,
     /// Backtrace of where the context was allocated
@@ -60,21 +45,6 @@ pub struct SendStreamUpgradeContext<'a> {
 
 impl<'a> SendStreamUpgradeContext<'a> {
     pub fn new(options: SendStreamUpgradeOptions) -> anyhow::Result<SendStreamUpgradeContext<'a>> {
-        // Open up the input file
-        let input_file: Box<dyn Read + Send + Sync> = match &options.input {
-            None => Box::new(std::io::stdin()),
-            Some(value) => Box::new(OpenOptions::new().read(true).open(value)?),
-        };
-        // Open up the output file
-        let output_file: Box<dyn Write + Send + Sync> = match &options.output {
-            None => Box::new(std::io::stdout()),
-            Some(value) => Box::new(
-                OpenOptions::new()
-                    .write(true)
-                    .create_new(true)
-                    .open(value)?,
-            ),
-        };
         // A verbosity of zero disbles logging
         let logger = if options.verbose == 0 || options.quiet {
             let drain = slog::Discard;
@@ -93,23 +63,26 @@ impl<'a> SendStreamUpgradeContext<'a> {
         };
         // Dump all of the options that we were provided
         trace!(logger, "Input parameters are: {:?}", options);
-        let read = input_file;
-        let write = output_file;
-        let read_box = Box::new(read);
-        let write_box = Box::new(write);
+        let input_file = options.input.clone();
         let read_buffer_size = options.read_buffer_size;
+        let output_file = options.output.clone();
         let write_buffer_size = options.write_buffer_size;
         Ok(SendStreamUpgradeContext {
             ssuc_stats: SendStreamUpgradeStats::new(),
             ssuc_logger: logger,
             ssuc_options: options,
-            ssuc_source: Some(BufReader::with_capacity(read_buffer_size, read_box as _)),
-            ssuc_destination: Some(BufWriter::with_capacity(write_buffer_size, write_box as _)),
-            ssuc_source_version: None,
-            ssuc_destination_version: None,
-            ssuc_source_offset: 0,
-            ssuc_destination_offset: 0,
-            ssuc_source_length: None,
+            ssuc_source: SendStreamUpgradeSource::new_from_file(
+                input_file,
+                read_buffer_size,
+                0,
+                None,
+            )?,
+            ssuc_destination: SendStreamUpgradeDestination::new_from_file(
+                output_file,
+                write_buffer_size,
+                0,
+                None,
+            )?,
             ssuc_associated_with_parent: false,
             ssuc_backtrace: Backtrace::capture(),
             ssuc_sync_container: None,
@@ -123,21 +96,17 @@ impl<'a> SendStreamUpgradeContext<'a> {
         source_version: SendVersion,
         destination_version: SendVersion,
     ) -> SendStreamUpgradeContext<'a> {
-        let read_length = read.map(|r| r.len());
-        let read_box = read.map(Box::new);
-        let write_box = write.map(Box::new);
         let start_time = SystemTime::now();
         let mut new_context = SendStreamUpgradeContext {
             ssuc_stats: self.ssuc_stats,
             ssuc_logger: self.ssuc_logger.clone(),
             ssuc_options: self.ssuc_options.clone(),
-            ssuc_source: read_box.map(|read_box_some| BufReader::new(read_box_some as _)),
-            ssuc_destination: write_box.map(|write_box_some| BufWriter::new(write_box_some as _)),
-            ssuc_source_version: Some(source_version),
-            ssuc_destination_version: Some(destination_version),
-            ssuc_source_offset: 0,
-            ssuc_destination_offset: 0,
-            ssuc_source_length: read_length,
+            ssuc_source: SendStreamUpgradeSource::new_from_slice(read, 0, Some(source_version)),
+            ssuc_destination: SendStreamUpgradeDestination::new_from_slice(
+                write,
+                0,
+                Some(destination_version),
+            ),
             ssuc_associated_with_parent: true,
             ssuc_backtrace: Backtrace::capture(),
             ssuc_sync_container: None,
@@ -155,49 +124,49 @@ impl<'a> SendStreamUpgradeContext<'a> {
         destination_version: SendVersion,
         source_offset: usize,
         destination_offset: usize,
-        sync_container: Option<SyncContainer>,
+        mut sync_container: Option<SyncContainer>,
     ) -> anyhow::Result<SendStreamUpgradeContext<'a>> {
         // Open up the input file
         let source = match keep_source {
             true => {
-                let input_file: Box<dyn Read + Send + Sync> = match &options.input {
-                    None => Box::new(std::io::stdin()),
-                    Some(value) => {
-                        let mut file = OpenOptions::new().read(true).open(value)?;
-                        // If we had a file input, then we need to seek forward
-                        // on the underlying file
-                        file.seek(SeekFrom::Start(source_offset as u64))?;
-                        Box::new(file)
-                    }
-                };
-                let read = input_file;
-                let read_box = Box::new(read);
+                let input_file = options.input.clone();
                 let read_buffer_size = options.read_buffer_size;
-                Some(BufReader::with_capacity(read_buffer_size, read_box as _))
+                SendStreamUpgradeSource::new_from_file(
+                    input_file,
+                    read_buffer_size,
+                    source_offset,
+                    Some(source_version),
+                )?
             }
-            false => None,
+            false => {
+                // Detatch the container from the buffer cache
+                let buffer_cache = match sync_container {
+                    Some(ref mut sync_container) => match sync_container.take_buffer_cache() {
+                        Some(buffer_cache) => buffer_cache,
+                        None => anyhow::bail!("Mp context with None buffer cache"),
+                    },
+                    None => anyhow::bail!("Mp context with None container"),
+                };
+                SendStreamUpgradeSource::new_from_buffer_cache(
+                    buffer_cache,
+                    source_offset,
+                    Some(source_version),
+                )?
+            }
         };
         // Open up the output file
         let destination = match keep_destination {
             true => {
-                let output_file: Box<dyn Write + Send + Sync> = match &options.output {
-                    None => Box::new(std::io::stdout()),
-                    Some(value) => {
-                        // If we had a file output, then we need to seek forward
-                        // on the underlying file
-                        // NOTE: Unlike in the new case, don't truncate the file
-                        // since we're reopening it
-                        let mut file = OpenOptions::new().write(true).open(value)?;
-                        file.seek(SeekFrom::Start(destination_offset as u64))?;
-                        Box::new(file)
-                    }
-                };
-                let write = output_file;
-                let write_box = Box::new(write);
+                let output_file = options.output.clone();
                 let write_buffer_size = options.write_buffer_size;
-                Some(BufWriter::with_capacity(write_buffer_size, write_box as _))
+                SendStreamUpgradeDestination::new_from_file(
+                    output_file,
+                    write_buffer_size,
+                    destination_offset,
+                    Some(destination_version),
+                )?
             }
-            false => None,
+            false => SendStreamUpgradeDestination::new_from_none(Some(destination_version))?,
         };
 
         Ok(SendStreamUpgradeContext {
@@ -206,11 +175,6 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_options: options,
             ssuc_source: source,
             ssuc_destination: destination,
-            ssuc_source_version: Some(source_version),
-            ssuc_destination_version: Some(destination_version),
-            ssuc_source_offset: source_offset,
-            ssuc_destination_offset: destination_offset,
-            ssuc_source_length: None,
             ssuc_associated_with_parent: false,
             ssuc_backtrace: Backtrace::capture(),
             ssuc_sync_container: sync_container,
@@ -219,53 +183,19 @@ impl<'a> SendStreamUpgradeContext<'a> {
 
     pub fn read(&mut self, buffer: &mut [u8]) -> anyhow::Result<usize> {
         let start_time = SystemTime::now();
-        let mut total_bytes_read = 0;
-        match self.ssuc_source {
-            Some(ref mut source) => {
-                while total_bytes_read < buffer.len() {
-                    // Try to read some data
-                    let bytes_read = source.read(&mut buffer[total_bytes_read..])?;
-                    // If we read nothing, then assume that we hit the EOF
-                    // Time to exit
-                    if bytes_read == 0 {
-                        break;
-                    }
-                    total_bytes_read += bytes_read;
-                }
-            }
-            None => {
-                // Try to look into the sync container to get at the buffer
-                // cache
-                match self.ssuc_sync_container {
-                    Some(ref mut sync_container) => {
-                        match sync_container.sc_buffer_cache {
-                            Some(ref buffer_cache) => {
-                                // Got a buffer cache; do an exact read
-                                (*buffer_cache).read_exact(buffer, self.ssuc_source_offset)?;
-                            }
-                            None => anyhow::bail!("Reading with None buffer cache"),
-                        }
-                    }
-                    None => anyhow::bail!("Reading with None container"),
-                }
-                // If we got here, then we must have read everything
-                total_bytes_read += buffer.len();
-            }
-        }
+        let total_bytes_read = self.ssuc_source.read(buffer)?;
         let time_delta = match start_time.elapsed() {
             Ok(duration) => duration,
             Err(_) => Duration::new(0, 0),
         };
-        // Increment the appropriate stats if this is not a child
-        // since children are not associated with actual file io
-        if !self.ssuc_associated_with_parent {
+        // Increment the appropriate stats if this was an external io
+        if self.ssuc_source.is_external() {
             self.ssuc_stats.ssus_reads_issued += 1;
             self.ssuc_stats.ssus_bytes_read += total_bytes_read;
             self.ssuc_stats.ssus_storage_read_time += time_delta;
         } else {
             self.ssuc_stats.ssus_buffer_read_time += time_delta;
         }
-        self.ssuc_source_offset += total_bytes_read;
         Ok(total_bytes_read)
     }
 
@@ -296,37 +226,24 @@ impl<'a> SendStreamUpgradeContext<'a> {
     }
 
     pub fn get_read_offset(&self) -> usize {
-        self.ssuc_source_offset
+        self.ssuc_source.get_offset()
     }
 
-    pub fn adjust_read_offset(&mut self, increment: usize) {
-        self.ssuc_source_offset += increment;
+    pub fn adjust_read_offset(&mut self, increment: usize) -> anyhow::Result<()> {
+        self.ssuc_source.adjust_offset(increment)
     }
 
-    pub fn set_read_offset(&mut self, new_offset: usize) {
-        self.ssuc_source_offset = new_offset;
+    pub fn set_read_offset(&mut self, new_offset: usize) -> anyhow::Result<()> {
+        self.ssuc_source.set_offset(new_offset)
     }
 
     pub fn get_read_len(&self) -> anyhow::Result<usize> {
-        match self.ssuc_source_length {
-            Some(length) => Ok(length),
-            None => anyhow::bail!("Attempted to get a length of a non-buffer source"),
-        }
+        self.ssuc_source.get_length()
     }
 
-    pub fn seek_source(&mut self, bytes_to_seek: usize) -> anyhow::Result<()> {
-        // Just read the data into a temporary buffer
-        let mut temp_vec = vec![0u8; bytes_to_seek];
-        self.read_exact(&mut temp_vec[..])
-    }
-
-    pub fn write(&mut self, buffer: &[u8], uncompressed_bytes: usize) -> anyhow::Result<()> {
-        let destination = match self.ssuc_destination {
-            None => anyhow::bail!("Trying to write to a None destination"),
-            Some(ref mut destination) => destination,
-        };
+    pub fn write_all(&mut self, buffer: &[u8], uncompressed_bytes: usize) -> anyhow::Result<()> {
         let start_time = SystemTime::now();
-        destination.write_all(buffer)?;
+        self.ssuc_destination.write_all(buffer)?;
         let time_delta = match start_time.elapsed() {
             Ok(duration) => duration,
             Err(_) => Duration::new(0, 0),
@@ -353,30 +270,33 @@ impl<'a> SendStreamUpgradeContext<'a> {
             self.ssuc_stats.ssus_buffer_write_time += time_delta;
             self.ssuc_stats.ssus_bytes_copied += buffer.len();
         }
-        self.ssuc_destination_offset += buffer.len();
         Ok(())
     }
 
     pub fn write16(&mut self, value: u16) -> anyhow::Result<()> {
         let buffer = value.to_le_bytes();
-        self.write(&buffer, mem::size_of_val(&value))?;
+        self.write_all(&buffer, mem::size_of_val(&value))?;
         Ok(())
     }
 
     pub fn write32(&mut self, value: u32) -> anyhow::Result<()> {
         let buffer = value.to_le_bytes();
-        self.write(&buffer, mem::size_of_val(&value))?;
+        self.write_all(&buffer, mem::size_of_val(&value))?;
         Ok(())
     }
 
     pub fn write64(&mut self, value: u64) -> anyhow::Result<()> {
         let buffer = value.to_le_bytes();
-        self.write(&buffer, mem::size_of_val(&value))?;
+        self.write_all(&buffer, mem::size_of_val(&value))?;
         Ok(())
     }
 
     pub fn get_write_offset(&self) -> usize {
-        self.ssuc_destination_offset
+        self.ssuc_destination.get_offset()
+    }
+
+    pub fn get_write_len(&self) -> anyhow::Result<usize> {
+        self.ssuc_destination.get_length()
     }
 
     pub fn update_copy_stats(&mut self, start_time: &SystemTime, bytes_copied: usize) {
@@ -450,22 +370,16 @@ impl<'a> SendStreamUpgradeContext<'a> {
     }
 
     pub fn set_versions(&mut self, source_version: SendVersion, destination_version: SendVersion) {
-        self.ssuc_source_version = Some(source_version);
-        self.ssuc_destination_version = Some(destination_version);
+        self.ssuc_source.set_version(source_version);
+        self.ssuc_destination.set_version(destination_version);
     }
 
     pub fn get_source_version(&self) -> anyhow::Result<SendVersion> {
-        match self.ssuc_source_version {
-            Some(version) => Ok(version),
-            None => anyhow::bail!("Source version not set"),
-        }
+        self.ssuc_source.get_version()
     }
 
     pub fn get_destination_version(&self) -> anyhow::Result<SendVersion> {
-        match self.ssuc_destination_version {
-            Some(version) => Ok(version),
-            None => anyhow::bail!("Destination version not set"),
-        }
+        self.ssuc_destination.get_version()
     }
 
     // Note: For lifetime reasons, we cannot use Self here and we need to use
@@ -493,13 +407,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
     }
 
     pub fn flush(&mut self) -> anyhow::Result<()> {
-        match self.ssuc_destination {
-            Some(ref mut destination) => match destination.flush() {
-                Ok(()) => Ok(()),
-                Err(e) => anyhow::bail!(e),
-            },
-            None => anyhow::bail!("Attempting to flush without a destination"),
-        }
+        self.ssuc_destination.flush()
     }
 }
 

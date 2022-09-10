@@ -61,7 +61,7 @@ impl SendHeader {
             context.ssuc_logger,
             "Writing magic of {} with {:02X?} bytes", BTRFS_MAGIC, magic_bytes
         );
-        context.write(magic_bytes, magic_bytes.len())?;
+        context.write_all(magic_bytes, magic_bytes.len())?;
         context.trace_stats();
         let version = context.get_destination_version()?;
         let version_value = SendStreamUpgradeContext::version_to_value(version);

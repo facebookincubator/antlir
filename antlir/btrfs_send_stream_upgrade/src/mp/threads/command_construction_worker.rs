@@ -44,7 +44,7 @@ impl Worker for CommandConstructionWorker {
         while let Some(command_info) = (*input_queue).dequeue()? {
             let (id, header, offset) = command_info.split();
             // Seek to the correct location
-            context.set_read_offset(offset);
+            context.set_read_offset(offset)?;
             let mut command = SendCommand::new_from_header(&mut context, header)?;
 
             // Run upgrade on the command

@@ -53,7 +53,7 @@ impl Worker for ReadWorker {
                 break;
             }
             // Skip ahead to the next command
-            context.adjust_read_offset(payload_size);
+            context.adjust_read_offset(payload_size)?;
             command_id += 1;
         }
 

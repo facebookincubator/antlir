@@ -701,24 +701,56 @@ impl SendCommand {
                 BtrfsSendAttributeType::BTRFS_SEND_A_UNENCODED_FILE_LEN,
                 uncompressed_size,
             )?;
+            metadata_attribute
+                .compress_space_check(&sub_context)
+                .map_err(|error| {
+                    // This could be a recoverable error, so return
+                    // the subcontext
+                    context.return_child(&mut sub_context);
+                    error
+                })?;
             metadata_attribute.persist(&mut sub_context)?;
             let metadata_attribute = SendAttribute::new_from_u64(
                 &mut sub_context,
                 BtrfsSendAttributeType::BTRFS_SEND_A_UNENCODED_LEN,
                 uncompressed_size,
             )?;
+            metadata_attribute
+                .compress_space_check(&sub_context)
+                .map_err(|error| {
+                    // This could be a recoverable error, so return
+                    // the subcontext
+                    context.return_child(&mut sub_context);
+                    error
+                })?;
             metadata_attribute.persist(&mut sub_context)?;
             let metadata_attribute = SendAttribute::new_from_u64(
                 &mut sub_context,
                 BtrfsSendAttributeType::BTRFS_SEND_A_UNENCODED_OFFSET,
                 0,
             )?;
+            metadata_attribute
+                .compress_space_check(&sub_context)
+                .map_err(|error| {
+                    // This could be a recoverable error, so return
+                    // the subcontext
+                    context.return_child(&mut sub_context);
+                    error
+                })?;
             metadata_attribute.persist(&mut sub_context)?;
             let metadata_attribute = SendAttribute::new_from_u32(
                 &mut sub_context,
                 BtrfsSendAttributeType::BTRFS_SEND_A_COMPRESSION,
                 BTRFS_ENCODED_IO_COMPRESSION_ZSTD,
             )?;
+            metadata_attribute
+                .compress_space_check(&sub_context)
+                .map_err(|error| {
+                    // This could be a recoverable error, so return
+                    // the subcontext
+                    context.return_child(&mut sub_context);
+                    error
+                })?;
             metadata_attribute.persist(&mut sub_context)?;
             extra_bytes_written = sub_context.get_write_offset() - start_offset;
 
@@ -1316,7 +1348,7 @@ impl SendCommand {
             if start_offset % BLOCK_SIZE == 0 && data_attribute.get_payload_size() % BLOCK_SIZE == 0
             {
                 let pad_command = self.generate_pad_command(context)?;
-                context.write(&pad_command.sc_buffer, pad_command.sc_uncompressed_size)?;
+                context.write_all(&pad_command.sc_buffer, pad_command.sc_uncompressed_size)?;
                 let data_attribute_initial_size = match self.sc_data_attribute_initial_size {
                     Some(size) => size,
                     None => anyhow::bail!(
@@ -1346,7 +1378,7 @@ impl SendCommand {
                 );
             }
         }
-        context.write(&self.sc_buffer, self.sc_uncompressed_size)
+        context.write_all(&self.sc_buffer, self.sc_uncompressed_size)
     }
 
     pub fn is_appendable(&self) -> bool {
