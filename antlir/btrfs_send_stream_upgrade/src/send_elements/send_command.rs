@@ -78,7 +78,7 @@ impl SendCommand {
         // Compute the total size of the command
         let payload_size = header.get_command_payload_size()?;
         let total_size = header_size + payload_size;
-        // Set up the command buffer and a dummy read buffer
+        // Set up the command buffer
         let mut buffer = vec![0; total_size];
         let mut data_attribute: Option<SendAttribute> = None;
         let mut data_attribute_initial_size: Option<usize> = None;
@@ -164,6 +164,125 @@ impl SendCommand {
         };
         command.verify(context)?;
         info!(context.ssuc_logger, "New Command={}", command);
+        Ok(command)
+    }
+
+    /// Copies a range of a given command into a new command
+    pub fn copy_range(
+        &self,
+        context: &mut SendStreamUpgradeContext,
+        data_payload_start_offset: usize,
+        data_payload_end_offset: usize,
+    ) -> anyhow::Result<Self> {
+        context.trace_stats();
+        info!(
+            context.ssuc_logger,
+            "Copying range Command={} Start={} End={}",
+            self,
+            data_payload_start_offset,
+            data_payload_end_offset
+        );
+        // Sanity check
+        anyhow::ensure!(
+            !self.sc_data_attribute_dirty,
+            "Copying range on dirty command {} not yet supported",
+            self,
+        );
+        anyhow::ensure!(
+            self.is_appendable(),
+            "Copying range on non-appendable command {}",
+            self,
+        );
+        let version = self.sc_version;
+        let old_data_attribute = match &self.sc_data_attribute {
+            Some(attribute) => attribute,
+            None => anyhow::bail!(
+                "Trying to copy range from Command={} with None data attribute",
+                self
+            ),
+        };
+        match self.sc_data_attribute_initial_size {
+            Some(size) => anyhow::ensure!(
+                size == old_data_attribute.get_size(),
+                "Found clean command {} with bad attribute size",
+                self,
+            ),
+            None => anyhow::bail!(
+                "Trying to copy range Command={} with None data attribute initial size",
+                self
+            ),
+        }
+        let header_size = SendCommandHeader::get_header_size();
+        let old_payload_size = self.sc_header.get_command_payload_size()?;
+        let old_total_size = header_size + old_payload_size;
+        let old_data_payload_size = old_data_attribute.get_payload_size();
+        let new_data_payload_size = data_payload_end_offset - data_payload_start_offset;
+        // The size difference should be equal to the difference in payload
+        // sizes -- only the size of the data attribute is changing
+        let new_total_size = old_total_size + new_data_payload_size - old_data_payload_size;
+        let new_payload_size = new_total_size - header_size;
+
+        // Set up the new header
+        let header = self
+            .sc_header
+            .copy(context, Some(new_payload_size as u32))?;
+
+        // Set up the command buffer
+        let mut buffer = vec![0; new_total_size];
+
+        // Persist the header to the buffer
+        {
+            let mut sub_context = context.clone_with_new_buffers(
+                None,
+                Some(&mut buffer[0..header_size]),
+                version,
+                version,
+            );
+            header.persist(&mut sub_context, true)?;
+            context.return_child(&mut sub_context);
+        }
+
+        // Flush the pre-data region too
+        // It's okay that the file offset is wrong, since we'll be marking the
+        // command as dirty
+        // Allow the flush to proceed despite the fact that the underlying
+        // command is clean
+        self.flush_pre_data_to_buffer(context, &mut buffer, true)?;
+
+        // Populate all of the new attributes
+        // The path is the same
+        let path = match self.sc_path {
+            Some(ref path) => Some(path.clone()),
+            None => anyhow::bail!("Copying range from command {} with None path", self),
+        };
+        // Adjust the offset by the payload offset
+        let start_offset = match self.sc_start_offset {
+            Some(offset) => Some(offset + data_payload_start_offset),
+            None => anyhow::bail!("Copying range from command {} with None offset", self),
+        };
+        // Copy over the right amount of the data attribute
+        let data_attribute = old_data_attribute.copy_range(
+            context,
+            data_payload_start_offset,
+            data_payload_end_offset,
+        )?;
+        let data_attribute_initial_size = data_attribute.get_size();
+
+        // Set the new command to dirty -- we haven't copied over the data
+        // payload to the command buffer
+        let command = SendCommand {
+            sc_header: header,
+            sc_buffer: buffer,
+            sc_data_attribute: Some(data_attribute),
+            sc_data_attribute_initial_size: Some(data_attribute_initial_size),
+            sc_data_attribute_dirty: true,
+            sc_path: path,
+            sc_start_offset: start_offset,
+            sc_uncompressed_size: new_total_size,
+            sc_version: version,
+        };
+        command.verify(context)?;
+        info!(context.ssuc_logger, "Copied range to Command={}", command);
         Ok(command)
     }
 
@@ -323,6 +442,7 @@ impl SendCommand {
         &self,
         context: &mut SendStreamUpgradeContext,
         buffer: &mut [u8],
+        allow_clean: bool,
     ) -> anyhow::Result<()> {
         context.trace_stats();
         info!(
@@ -347,7 +467,7 @@ impl SendCommand {
             None => anyhow::bail!("Trying to flush Command={} without a start offset", self),
         };
         anyhow::ensure!(
-            self.sc_data_attribute_dirty,
+            self.sc_data_attribute_dirty || allow_clean,
             "Unnecessary pre-data flush on non-dirty Command={}",
             self
         );
@@ -373,6 +493,8 @@ impl SendCommand {
             let mut attribute = SendAttribute::new(&mut sub_context)?;
             // Verify it
             attribute.verify(&mut sub_context)?;
+            // Copy everything over except for the file offset -- this could
+            // have changed; grab this from the command instead
             if attribute.is_send_a_file_offset() {
                 // Flush the new command offset
                 let command_start_offset_attribute = SendAttribute::new_from_u64(
@@ -463,7 +585,7 @@ impl SendCommand {
                 self
             ),
         };
-        let mut flush_header = self.sc_header.copy_for_flush(context)?;
+        let mut flush_header = self.sc_header.copy(context, None)?;
         let header_size = SendCommandHeader::get_header_size();
         let old_payload_size = self.sc_header.get_command_payload_size()?;
         let old_total_size = header_size + old_payload_size;
@@ -474,7 +596,7 @@ impl SendCommand {
         let mut buffer = vec![0; new_total_size];
 
         // First, flush everything before the data attribute
-        self.flush_pre_data_to_buffer(context, &mut buffer)?;
+        self.flush_pre_data_to_buffer(context, &mut buffer, false)?;
 
         // Next, flush the data attribute
         {
@@ -554,7 +676,7 @@ impl SendCommand {
         } else {
             // Otherwise, we need to flush everything except for the data attribute
             // That will potentially be compressed first
-            self.flush_pre_data_to_buffer(context, &mut compressed_buffer)?;
+            self.flush_pre_data_to_buffer(context, &mut compressed_buffer, false)?;
         }
 
         // Attempt to compress the attribute and persist it to the compressed_buffer
@@ -1160,7 +1282,12 @@ impl SendCommand {
 
     pub fn persist(&self, context: &mut SendStreamUpgradeContext) -> anyhow::Result<()> {
         context.trace_stats();
-        info!(context.ssuc_logger, "Writing Command={}", self);
+        info!(
+            context.ssuc_logger,
+            "Writing Command={} at offset={}",
+            self,
+            context.get_write_offset()
+        );
         self.verify(context)?;
         let destination_version = context.get_destination_version()?;
         anyhow::ensure!(
@@ -1280,11 +1407,6 @@ impl SendCommand {
     }
 
     pub fn get_cached_data_payload_size(&self) -> anyhow::Result<usize> {
-        anyhow::ensure!(
-            !self.is_dirty(),
-            "Getting the attribute of a dirty command {}",
-            self
-        );
         match self.sc_data_attribute {
             Some(ref attribute) => Ok(attribute.get_payload_size()),
             // Nothing cached, so nothing to return

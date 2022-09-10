@@ -43,7 +43,7 @@ impl Worker for WriteWorker {
                 None => anyhow::bail!("Writer received a None batch info"),
             };
             // Take the command out of the batch
-            let command = batch_info.remove_first();
+            let command = batch_info.remove_first(&mut context)?;
             // Flush it
             command.persist(&mut context)?;
             // Exit if we're done

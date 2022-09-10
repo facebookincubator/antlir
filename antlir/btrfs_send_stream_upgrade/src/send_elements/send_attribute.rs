@@ -243,6 +243,68 @@ impl SendAttribute {
         Ok(attribute)
     }
 
+    pub fn copy_range(
+        &self,
+        context: &mut SendStreamUpgradeContext,
+        payload_start_offset: usize,
+        payload_end_offset: usize,
+    ) -> anyhow::Result<Self> {
+        context.trace_stats();
+        debug!(
+            context.ssuc_logger,
+            "Copying range Attribute={} Start={} End={}",
+            self,
+            payload_start_offset,
+            payload_end_offset
+        );
+        let version = self.sa_version;
+        let header = self.sa_header.copy();
+        let header_size = header.get_header_size();
+        let payload_size = payload_end_offset - payload_start_offset;
+        let total_size = header_size + payload_size;
+        let start_time = SystemTime::now();
+        let mut buffer = vec![0; total_size];
+        context.update_attribute_population_stats(&start_time);
+
+        {
+            // Set up a new sub context on the basis of the local buffer
+            let mut sub_context =
+                context.clone_with_new_buffers(None, Some(&mut buffer[..]), version, version);
+            // Persist the header
+            header.persist(&mut sub_context)?;
+            // Now write the data in the given range
+            // Be sure to skip the header at the start of the attribute
+            let copy_start_offset = payload_start_offset + header_size;
+            let copy_end_offset = payload_end_offset + header_size;
+            sub_context.write(
+                &self.sa_buffer[copy_start_offset..copy_end_offset],
+                payload_size,
+            )?;
+            context.return_child(&mut sub_context);
+        }
+
+        let start_time = SystemTime::now();
+        let attribute = SendAttribute {
+            sa_header: header,
+            sa_buffer: buffer,
+            sa_uncompressed_size: total_size,
+            sa_uncompressed_payload_size: payload_size,
+            sa_version: version,
+        };
+        context.update_attribute_population_stats(&start_time);
+        debug!(
+            context.ssuc_logger,
+            "Copied range to Attribute={}", attribute
+        );
+        let header_slice = &attribute.sa_buffer[..header_size];
+        trace!(
+            context.ssuc_logger,
+            "Copied AttributeHeader bytes {:02X?}",
+            header_slice
+        );
+        Ok(attribute)
+    }
+
     pub fn upgrade(&self, context: &mut SendStreamUpgradeContext) -> anyhow::Result<Self> {
         context.trace_stats();
         let version = context.get_destination_version()?;

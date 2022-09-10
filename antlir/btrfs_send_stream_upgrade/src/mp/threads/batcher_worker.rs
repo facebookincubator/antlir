@@ -45,31 +45,39 @@ impl Worker for BatcherWorker {
         let mut previous_batch_info_option: Option<CommandBatchInfo> = None;
 
         loop {
-            let current_batch_info = match (*input_queue).dequeue()? {
+            let mut current_batch_info = match (*input_queue).dequeue()? {
                 // Got a command batch info
                 Some(batch_info) => batch_info,
                 // We're walking all of the commands, so this shouldn't happen
                 None => anyhow::bail!("Batcher received a None batch info"),
             };
+
             match previous_batch_info_option {
                 // See if we can append the new one to the old one
-                Some(mut previous_batch_info) => {
-                    if previous_batch_info.can_append(&current_batch_info, &context)? {
-                        previous_batch_info.append(current_batch_info);
-                        // Reset the previous batch info option
-                        // This is to make rustc happy -- declaring
-                        // previous batch info to be mut above resulted in
-                        // the batch info being moved out of the option
-                        // Now we must restore it
-                        previous_batch_info_option = Some(previous_batch_info);
-                        // Try to get the next command
-                        continue;
-                    } else {
-                        // Could not append the commands
-                        // Send the previous command off to the compression
-                        // queue
-                        (*compression_queue).enqueue(previous_batch_info)?;
-                        previous_batch_info_option = None;
+                Some(previous_batch_info) => {
+                    // Try to append
+                    // We'll be left with something to dispatch immediately and
+                    // a remainder
+                    let (to_dispatch, remainder) =
+                        previous_batch_info.try_append(&context, current_batch_info)?;
+                    match to_dispatch {
+                        None => {
+                            // Appended everything
+                            // Just stash the remainder and continue
+                            previous_batch_info_option = Some(remainder);
+                            // Try to get the next command
+                            continue;
+                        }
+                        Some(batch_info) => {
+                            // Could not append the commands or did a partial
+                            // append
+                            // Dispatch what we have accumulated
+                            (*compression_queue).enqueue(batch_info)?;
+                            // No previous for now
+                            previous_batch_info_option = None;
+                            // Update the current batch info the to remainder
+                            current_batch_info = remainder;
+                        }
                     }
                 }
                 None => (),
@@ -80,7 +88,7 @@ impl Worker for BatcherWorker {
             if !current_batch_info.is_appendable() {
                 (*persistence_queue).enqueue(current_batch_info)?;
             } else {
-                // Otherwise, let's try to add to this batch
+                // Otherwise, let's start a new batch
                 previous_batch_info_option = Some(current_batch_info);
             }
             // Bail if we're done

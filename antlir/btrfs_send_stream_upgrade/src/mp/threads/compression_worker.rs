@@ -40,9 +40,10 @@ impl Worker for CompressionWorker {
             .context("Compressing with None persistence queue")?;
 
         while let Some(mut batch_info) = (*input_queue).dequeue()? {
-            let mut command = batch_info.remove_first();
+            let mut command = batch_info.remove_first(&mut context)?;
+            let mut data_payload_size_seen = command.get_cached_data_payload_size()?;
             while !batch_info.is_empty() {
-                let next_command = batch_info.remove_first();
+                let next_command = batch_info.remove_first(&mut context)?;
                 let bytes_appended = command.append(&mut context, &next_command)?;
                 anyhow::ensure!(
                     bytes_appended == next_command.get_cached_data_payload_size()?,
@@ -50,7 +51,15 @@ impl Worker for CompressionWorker {
                     bytes_appended,
                     next_command.get_cached_data_payload_size()?,
                 );
+                data_payload_size_seen += bytes_appended;
             }
+            anyhow::ensure!(
+                data_payload_size_seen == batch_info.get_cached_data_payload_size(),
+                "Saw {} bytes but expected {} bytes",
+                data_payload_size_seen,
+                batch_info.get_cached_data_payload_size()
+            );
+
             // Attempt compression
             if command.is_compressible() && context.ssuc_options.compression_level != 0 {
                 command = match command.compress(&mut context) {
