@@ -31,6 +31,13 @@ impl CommandInfo {
             ci_buffer_start_address: start_address,
         })
     }
+    pub fn split(self) -> (u64, SendCommandHeader, usize) {
+        (
+            self.ci_id,
+            self.ci_send_command_header,
+            self.ci_buffer_start_address,
+        )
+    }
 }
 
 unsafe impl Send for CommandInfo {}

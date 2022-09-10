@@ -303,6 +303,10 @@ impl<'a> SendStreamUpgradeContext<'a> {
         self.ssuc_source_offset += increment;
     }
 
+    pub fn set_read_offset(&mut self, new_offset: usize) {
+        self.ssuc_source_offset = new_offset;
+    }
+
     pub fn get_read_len(&self) -> anyhow::Result<usize> {
         match self.ssuc_source_length {
             Some(length) => Ok(length),
