@@ -62,9 +62,18 @@ impl Debug for SendCommand {
 impl SendCommand {
     pub fn new(context: &mut SendStreamUpgradeContext) -> anyhow::Result<Self> {
         context.trace_stats();
-        let version = context.get_source_version()?;
         // Read in the header
         let header = SendCommandHeader::new(context)?;
+        // Generate the command from the header
+        Self::new_from_header(context, header)
+    }
+
+    pub fn new_from_header(
+        context: &mut SendStreamUpgradeContext,
+        header: SendCommandHeader,
+    ) -> anyhow::Result<Self> {
+        context.trace_stats();
+        let version = context.get_source_version()?;
         let header_size = SendCommandHeader::get_header_size();
         // Compute the total size of the command
         let payload_size = header.get_command_payload_size()?;
