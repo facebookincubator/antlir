@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::fmt::Display;
 
 use crate::mp::sync::unordered_element::UnorderedElement;
@@ -38,18 +39,27 @@ impl CommandInfo {
             self.ci_buffer_start_address,
         )
     }
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<CommandInfo Id={} Header={} Start={}/>",
+            self.ci_id, self.ci_send_command_header, self.ci_buffer_start_address,
+        )
+    }
 }
 
 unsafe impl Send for CommandInfo {}
 
 impl UnorderedElement for CommandInfo {}
 
+impl Debug for CommandInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
+}
+
 impl Display for CommandInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "<CommandInfo Id={} Header={} Start={}/>",
-            self.ci_id, self.ci_send_command_header, self.ci_buffer_start_address,
-        )
+        self.fmt_internal(f)
     }
 }

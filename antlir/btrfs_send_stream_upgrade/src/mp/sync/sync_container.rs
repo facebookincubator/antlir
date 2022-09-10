@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
+use std::fmt::Display;
 use std::sync::Arc;
 use std::sync::Mutex;
 
@@ -41,6 +43,18 @@ pub struct SyncContainer {
     pub sc_persistence_queue: Option<Arc<OrderedElementQueue<CommandBatchInfo>>>,
     /// Shared statistics
     pub sc_stats: Arc<Mutex<SendStreamUpgradeStats>>,
+}
+
+impl Display for SyncContainer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
+}
+
+impl Debug for SyncContainer {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
 }
 
 impl SyncContainer {
@@ -120,6 +134,22 @@ impl SyncContainer {
         };
         *stats += *other_stats;
         Ok(())
+    }
+    /*
+    pub fn populate_global_stats(context: &mut SendStreamUpgradeOptions) -> anyhow::Result<()> {
+        let sync_container = match context.
+    }
+    */
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<SyncContainer BufferCache={:?} CommandConstructionQueue={:?} BatcherQueue={:?} CompressionQueue={:?} PersistenceQueue={:?}/>",
+            self.sc_buffer_cache,
+            self.sc_command_construction_queue,
+            self.sc_batcher_queue,
+            self.sc_compression_queue,
+            self.sc_persistence_queue,
+        )
     }
 }
 

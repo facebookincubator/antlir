@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#[derive(PartialEq)]
+use std::fmt::Debug;
+
+#[derive(Debug, PartialEq)]
 pub(crate) enum PrimitiveState {
     Running,
     Aborted,

@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::fmt::Display;
 
 use crate::mp::sync::ordered_element::OrderedElement;
@@ -73,19 +74,28 @@ impl CommandBatchInfo {
         self.cbi_command_queue.push(command);
         Ok(())
     }
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<CommandBatchInfo FirstId={} LastId={} PayloadSize={} CommandQueue={:?}/>",
+            self.cbi_first_id, self.cbi_last_id, self.cbi_data_payload_size, self.cbi_command_queue,
+        )
+    }
 }
 
 impl UnorderedElement for CommandBatchInfo {}
 
 unsafe impl Send for CommandBatchInfo {}
 
+impl Debug for CommandBatchInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
+}
+
 impl Display for CommandBatchInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "<CommandBatchInfo FirstId={} LastId={} CommandQueue={:?}/>",
-            self.cbi_first_id, self.cbi_last_id, self.cbi_command_queue,
-        )
+        self.fmt_internal(f)
     }
 }
 

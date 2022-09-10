@@ -6,6 +6,8 @@
  */
 
 use std::collections::HashMap;
+use std::fmt::Debug;
+use std::fmt::Display;
 use std::sync::Condvar;
 use std::sync::Mutex;
 
@@ -72,6 +74,18 @@ pub struct OrderedElementQueue<T: OrderedElement> {
     oeq_cv: Condvar,
     /// The name of the queue
     oeq_name: String,
+}
+
+impl<T: OrderedElement> Debug for OrderedElementQueue<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
+}
+
+impl<T: OrderedElement> Display for OrderedElementQueue<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
 }
 
 impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
@@ -202,5 +216,25 @@ impl<T: OrderedElement> BlockingSyncPrimitive for OrderedElementQueue<T> {
         self.oeq_cv.notify_all();
 
         Ok(())
+    }
+}
+
+impl<T: OrderedElement> OrderedElementQueue<T> {
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<OrderedElementQueue Queue={:?} Wait={:?} Name={:?}/>",
+            self.oeq_mutex, self.oeq_cv, self.oeq_name,
+        )
+    }
+}
+
+impl<T: OrderedElement> Debug for OrderedElementQueueInternal<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<OrderedElementQueueInternal Map={:?} FirstId={} State={:?}/>",
+            self.oeqi_map, self.oeqi_first_id, self.oeqi_state,
+        )
     }
 }

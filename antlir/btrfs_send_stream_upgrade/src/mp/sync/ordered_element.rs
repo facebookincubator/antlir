@@ -5,9 +5,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::fmt::Display;
 
-pub trait OrderedElement: Send + Display {
+pub trait OrderedElement: Send + Debug + Display {
     /// The first id associated with the current item
     fn get_first_id(&self) -> u64;
     /// The last id associated with the current item

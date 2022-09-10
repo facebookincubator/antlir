@@ -6,6 +6,8 @@
  */
 
 use std::collections::VecDeque;
+use std::fmt::Debug;
+use std::fmt::Display;
 use std::sync::Condvar;
 use std::sync::Mutex;
 
@@ -19,6 +21,18 @@ struct UnorderedElementQueueInternal<T: UnorderedElement> {
     uoeqi_queue: VecDeque<T>,
     /// The state of the queue
     uoeqi_state: PrimitiveState,
+}
+
+impl<T: UnorderedElement> Debug for UnorderedElementQueue<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
+}
+
+impl<T: UnorderedElement> Display for UnorderedElementQueue<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.fmt_internal(f)
+    }
 }
 
 pub struct UnorderedElementQueue<T: UnorderedElement> {
@@ -127,5 +141,25 @@ impl<T: UnorderedElement> BlockingSyncPrimitive for UnorderedElementQueue<T> {
         self.uoeq_cv.notify_all();
 
         Ok(())
+    }
+}
+
+impl<T: UnorderedElement> UnorderedElementQueue<T> {
+    fn fmt_internal(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<UnorderedElementQueue Queue={:?} Wait={:?} Name={:?}/>",
+            self.uoeq_mutex, self.uoeq_cv, self.uoeq_name,
+        )
+    }
+}
+
+impl<T: UnorderedElement> Debug for UnorderedElementQueueInternal<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "<UnorderedElementQueueInternal Queue={:?} State={:?}/>",
+            self.uoeqi_queue, self.uoeqi_state,
+        )
     }
 }
