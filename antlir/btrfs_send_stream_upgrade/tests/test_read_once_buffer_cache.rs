@@ -130,7 +130,9 @@ fn resequence_io_read_from_file() -> anyhow::Result<()> {
     // Skip the correct number of bytes in the IO context
     // This is to simulate skipping bytes for the header before
     // commands are processed
-    context.seek_source(start_address)?;
+    // Just read the data into a temporary buffer
+    let mut temp_vec = vec![0u8; start_address];
+    context.read_exact(&mut temp_vec)?;
 
     // Test out the clone for mp threads too
     let context = SendStreamUpgradeContext::clone_for_mp_threads(

@@ -7,5 +7,7 @@
 
 pub mod send_stream;
 pub mod send_stream_upgrade_context;
+pub mod send_stream_upgrade_destination;
 pub mod send_stream_upgrade_options;
+pub mod send_stream_upgrade_source;
 pub(super) mod send_stream_upgrade_stats;
