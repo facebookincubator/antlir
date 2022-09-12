@@ -13,6 +13,7 @@ load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load("//antlir/bzl2:parent_layer.shape.bzl", "parent_layer_t")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
 load(":flavor_helpers.bzl", "flavor_helpers")
+load(":flavor_impl.bzl", "flavor_to_struct")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -175,6 +176,7 @@ def compile_image_features(
     `package.new` options. See this post for more details
     https://fburl.com/diff/3050aw26
     '''
+    flavor = flavor_to_struct(flavor)
     if features == None:
         features = []
     if extra_deps == None:

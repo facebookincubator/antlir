@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:flavor_impl.bzl", "flavor_to_struct")
 load(
     "//antlir/bzl:image_layer_from_package.bzl",
     "image_layer_from_package_helper",
@@ -50,6 +51,7 @@ def layer_from_package(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
+    flavor = flavor_to_struct(flavor)
 
     source_dict = shape.as_dict_shallow(image_source(maybe_export_file(source)))
     source_dict, normalized_target = \

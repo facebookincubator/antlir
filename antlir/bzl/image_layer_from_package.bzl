@@ -7,6 +7,7 @@ load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load("//antlir/bzl2/layer:from_package.shape.bzl", "layer_from_package_t")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "REPO_CFG")
+load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
@@ -24,6 +25,7 @@ def image_layer_from_package_helper(
         features,
         compile_image_features_fn,
         image_layer_kwargs):
+    flavor = flavor_to_struct(flavor)
     if normalize_target(":" + name) in REPO_CFG.rc_targets:
         if rc_layer == None:
             fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
@@ -87,6 +89,7 @@ def image_layer_from_package(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
+    flavor = flavor_to_struct(flavor)
     target_tagger = new_target_tagger()
     source_dict = image_source_as_target_tagged_dict(
         target_tagger,

@@ -6,6 +6,7 @@
 "See the docs in antlir/website/docs/genrule-layer.md"
 
 load("//antlir/bzl:container_opts.bzl", "normalize_container_opts")
+load("//antlir/bzl:flavor_impl.bzl", "flavor_to_struct")
 load("//antlir/bzl:image_genrule_layer.bzl", "image_genrule_layer_helper")
 load("//antlir/bzl2:compile_image_features.bzl", "compile_image_features")
 load(":genrule_layer_rule.bzl", "maybe_add_genrule_layer_rule")
@@ -22,6 +23,7 @@ def layer_genrule(
         bind_repo_ro = False,
         boot = False,
         **image_layer_kwargs):
+    flavor = flavor_to_struct(flavor)
     container_opts = normalize_container_opts(container_opts)
 
     features = [
