@@ -69,6 +69,17 @@ networkd's order preference is:
 
 All configuration built by networkd automation will live in `/usr/lib/systemd/network`.
 
+### LLDP
+
+LLDP is enabled to be received and emitted on all MetalOS interfaces by default.
+We do have different emit settings for Backend vs. Frontend:
+
+- Backend NICs: `customer-bridge`
+- Frontend NICs: `nearest-bridge`
+
+For more information, refer to the
+[systemd-networkd.network documentation](https://www.freedesktop.org/software/systemd/man/systemd.network.html).
+
 ### Changing base MetalOS network settings
 
 To make changes today we still have everything in `systemd-networkd.star`.
