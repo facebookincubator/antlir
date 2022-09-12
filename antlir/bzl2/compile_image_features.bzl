@@ -11,6 +11,7 @@ load(
 )
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
+load("//antlir/bzl:flavor_impl.bzl", "flavor_to_struct", "flavors_to_structs")
 load("//antlir/bzl:query.bzl", "layer_deps_query", "query")
 load(
     "//antlir/bzl/image/feature:new.bzl",
@@ -40,6 +41,7 @@ def compile_image_features(
     `package.new` options. See this post for more details
     https://fburl.com/diff/3050aw26
     '''
+    flavor = flavor_to_struct(flavor)
     if features == None:
         features = []
     else:
@@ -68,7 +70,9 @@ def compile_image_features(
     flavors = [flavor] if flavor else None
 
     if not flavors and is_build_appliance(parent_layer):
-        flavors = [flavor_helpers.get_flavor_from_build_appliance(parent_layer)]
+        flavors = flavors_to_structs([
+            flavor_helpers.get_flavor_from_build_appliance(parent_layer),
+        ])
 
     if parent_layer:
         features.append(maybe_add_feature_rule(

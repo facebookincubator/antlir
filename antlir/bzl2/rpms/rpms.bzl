@@ -7,6 +7,12 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
+load(
+    "//antlir/bzl:flavor_impl.bzl",
+    "flavors_to_dicts",
+    "flavors_to_names",
+    "flavors_to_structs",
+)
 load("//antlir/bzl:image_source.bzl", "image_source")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_tagger.shape.bzl", image_source_t = "target_tagged_image_source_t")
@@ -37,7 +43,6 @@ def _rpm_name_or_source(name_source):
 # whether the names are valid, and whether they contain a
 # version or release number.  That'll happen later in the build.
 def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
-    flavors = flavors or []
     flavors_specified = bool(flavors)
 
     rpm_items = []
@@ -61,7 +66,7 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
             rpm_action_item_t(
                 name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
                 action = action,
-                flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
+                flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors_to_names(flavors)},
                 flavors_specified = flavors_specified,
             ),
         )
@@ -84,7 +89,7 @@ def _generate_rpm_items(rpmlist, action, needs_version_set, flavors):
                 vs_name = name
 
         flavor_to_version_set = {}
-        for flavor in flavors or REPO_CFG.flavor_to_config.keys():
+        for flavor in flavors_to_names(flavors) or REPO_CFG.flavor_to_config.keys():
             vs_path_prefix = REPO_CFG.flavor_to_config[flavor].version_set_path
 
             if (vs_path_prefix != BZL_CONST.version_set_allow_all_versions and
@@ -116,7 +121,7 @@ def _rpm_rule_impl(ctx):
         ItemInfo(items = struct(**{"rpms": ctx.attrs.rpm_items})),
         RpmInfo(
             action = ctx.attrs.action,
-            flavors = ctx.attrs.flavors,
+            flavors = flavors_to_structs(ctx.attrs.flavors),
         ),
     ]
 
@@ -127,7 +132,10 @@ _rpm_rule = native.rule(
         "deps": native.attrs.list(native.attrs.dep(), default = []),
 
         # flavors specified in call to `feature.rpms_{install,remove_if_exists}`
-        "flavors": native.attrs.list(native.attrs.string(), default = []),
+        "flavors": native.attrs.list(
+            native.attrs.dict(native.attrs.string(), native.attrs.string()),
+            default = [],
+        ),
 
         # gets serialized to json when `feature.new` is called and used as
         # kwargs in compiler `ItemFactory`
@@ -162,7 +170,7 @@ def maybe_add_rpm_rule(
                 shape.as_serializable_dict(r)
                 for r in rpm_items
             ],
-            flavors = flavors,
+            flavors = flavors_to_dicts(flavors),
             deps = deps,
         )
 
@@ -234,6 +242,7 @@ def rpms_install(rpmlist, flavors = None):
     issue may be aggravated by the lack of error handling in the script making
     the RPM install operation successful even if the binary fails.
     """
+    flavors = flavors_to_structs(flavors or [])
     return _generate_rpm_items(
         rpmlist,
         "install",
@@ -249,6 +258,7 @@ def rpms_remove_if_exists(rpmlist, flavors = None):
     current layer includes features both removing and installing the same
     package, this will cause a build failure.
     """
+    flavors = flavors_to_structs(flavors or [])
     return _generate_rpm_items(
         rpmlist,
         "remove_if_exists",

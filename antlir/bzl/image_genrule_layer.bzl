@@ -8,6 +8,7 @@
 load("//antlir/bzl2/layer:genrule_layer_rule.bzl", "maybe_add_genrule_layer_rule")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "normalize_container_opts")
+load(":flavor_impl.bzl", "flavor_to_struct")
 load(":genrule_layer.shape.bzl", "genrule_layer_t")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":shape.bzl", "shape")
@@ -25,6 +26,7 @@ def image_genrule_layer_helper(
         compile_image_features_fn,
         image_layer_kwargs,
         extra_deps = None):
+    flavor = flavor_to_struct(flavor)
     if container_opts.internal_only_logs_tmpfs:
         # The mountpoint directory would leak into the built images, and it
         # doesn't even make sense for genrule layer construction.
@@ -102,6 +104,7 @@ Optional arguments:
   - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
     for supported, but less commonly used, kwargs.
     """
+    flavor = flavor_to_struct(flavor)
     container_opts = normalize_container_opts(container_opts)
 
     # This is not strictly needed since `image_layer_impl` lacks this kwarg.

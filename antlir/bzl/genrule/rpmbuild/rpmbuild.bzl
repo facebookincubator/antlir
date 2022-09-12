@@ -11,6 +11,7 @@ available in a pre-determined location: `/rpmbuild/RPMS`.
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
+load("//antlir/bzl:flavor_impl.bzl", "flavor_to_struct")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
@@ -60,8 +61,7 @@ def image_rpmbuild(
         # This is used to determine compatibility between images.
         flavor = None,
         **image_layer_kwargs):
-    if not flavor:
-        flavor = flavor_helpers.get_flavor_default()
+    flavor = flavor_to_struct(flavor or flavor_helpers.get_flavor_default())
     parent_layer = parent_layer or flavor_helpers.get_build_appliance()
     private_image_rpmbuild_impl(
         name,
@@ -89,8 +89,7 @@ def private_image_rpmbuild_impl(
     """
     Implementation of image_rpmbuild, see docs in `image_rpmbuild`.
     """
-    if not flavor:
-        flavor = flavor_helpers.get_flavor_default()
+    flavor = flavor_to_struct(flavor or flavor_helpers.get_flavor_default())
 
     visibility = get_visibility(visibility)
 

@@ -5,6 +5,7 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
+load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 load(":rpms.shape.bzl", "rpm_action_item_t")
@@ -22,7 +23,7 @@ def _rpm_name_or_source(name_source):
 # whether the names are valid, and whether they contain a
 # version or release number.  That'll happen later in the build.
 def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
-    flavors = flavors or []
+    flavors = flavors_to_structs(flavors)
 
     target_tagger = new_target_tagger()
     flavors_specified = len(flavors) > 0
@@ -48,7 +49,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
             rpm_action_item_t(
                 name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
                 action = action,
-                flavor_to_version_set = {flavor: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
+                flavor_to_version_set = {flavor.name: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
                 flavors_specified = flavors_specified,
             ),
         )
@@ -65,20 +66,20 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
                 vs_name = name
 
         flavor_to_version_set = {}
-        for flavor in flavors or REPO_CFG.flavor_to_config.keys():
-            vs_path_prefix = REPO_CFG.flavor_to_config[flavor].version_set_path
+        for flavor in flavors or flavors_to_structs(REPO_CFG.flavor_to_config.keys()):
+            vs_path_prefix = REPO_CFG.flavor_to_config[flavor.name].version_set_path
 
             # We just add the version set for user given flavors, even
             # if they are invalid. We will add them as dependencies in
             # `_normalize_feature_and_get_deps` where we have information
             # about the flavors that the layer needs.
             if vs_path_prefix != BZL_CONST.version_set_allow_all_versions and vs_name:
-                flavor_to_version_set[flavor] = tag_target(
+                flavor_to_version_set[flavor.name] = tag_target(
                     target_tagger,
                     vs_path_prefix + "/rpm:" + vs_name,
                 )
             else:
-                flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
+                flavor_to_version_set[flavor.name] = BZL_CONST.version_set_allow_all_versions
 
         rpm_action_item = rpm_action_item_t(
             action = action,

@@ -111,3 +111,8 @@ shape.impl(
     name = "proxy_server_config.shape",
     deps = ["//antlir/bzl:target.shape"],
 )
+
+shape.impl(
+    name = "flavor.shape",
+    deps = ["//antlir/bzl:target.shape"],
+)

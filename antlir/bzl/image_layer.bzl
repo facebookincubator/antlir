@@ -92,6 +92,7 @@ The consequences of this information hiding are:
 load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
 load("//antlir/bzl2/layer:new.bzl", image_layer_buck2 = "layer_new")
 load(":compile_image_features.bzl", "compile_image_features")
+load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
 
@@ -125,6 +126,7 @@ def image_layer_buck1(
     [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
     possible helpers, their respective behaviours, and how to invoke them.
     """
+    flavor = flavor_to_struct(flavor)
 
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer",

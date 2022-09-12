@@ -8,6 +8,12 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
+load(
+    "//antlir/bzl:flavor_impl.bzl",
+    "flavors_to_dicts",
+    "flavors_to_names",
+    "flavors_to_structs",
+)
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
@@ -54,13 +60,13 @@ def _clean_items_and_validate_flavors(rpm_items, flavors):
     # Skip coverage check for `antlir_test` since it's just for testing purposes
     # and doesn't always need to be covered.
     if flavors:
-        required_flavors = flavors
+        required_flavors = flavors_to_names(flavors)
     else:
-        required_flavors = [
+        required_flavors = flavors_to_names([
             flavor
             for flavor in REPO_CFG.stable_flavors
             if flavor != "antlir_test"
-        ]
+        ])
     required_flavors = sets.make(required_flavors)
     missing_flavors = sets.difference(required_flavors, rpm_install_flavors)
 
@@ -117,7 +123,10 @@ _feature_new_rule = native.rule(
     attrs = {
         "deps": native.attrs.list(native.attrs.dep(), default = []),
         "features": native.attrs.list(native.attrs.dep(), default = []),
-        "flavors": native.attrs.list(native.attrs.string(), default = []),
+        "flavors": native.attrs.list(
+            native.attrs.dict(native.attrs.string(), native.attrs.string()),
+            default = [],
+        ),
         "normalized_features": native.attrs.list(native.attrs.string(), default = []),
         "normalized_name": native.attrs.string(),
 
@@ -138,6 +147,7 @@ def normalize_features(
     targets = []
     rpm_items = []
     rpm_deps = []
+    flavor_names = flavors_to_names(flavors)
     for item in flatten_features_list(targets_or_rpm_structs):
         if types.is_string(item):
             targets.append(PRIVATE_DO_NOT_USE_feature_target_name(
@@ -165,7 +175,7 @@ def normalize_features(
                             flavor in REPO_CFG.stable_flavors
                         )
                     ) or (
-                        flavors and flavor in flavors
+                        flavors and flavor in flavor_names
                     ):
                         flavor_to_version_set[flavor] = version_set
                     elif version_set != BZL_CONST.version_set_allow_all_versions:
@@ -175,7 +185,7 @@ def normalize_features(
                 if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
                     fail("Rpm `{}` must have one of the flavors `{}`".format(
                         rpm_item["name"] or rpm_item["source"],
-                        flavors,
+                        flavor_names,
                     ))
                 rpm_item["flavor_to_version_set"] = flavor_to_version_set
 
@@ -223,7 +233,7 @@ def private_feature_new(
             features = normalized_features.targets,
             rpm_items = normalized_features.rpm_items,
             normalized_features = normalized_features.targets,
-            flavors = flavors,
+            flavors = flavors_to_dicts(flavors),
             parent_layer_feature = parent_layer_feature,
             deps = deps + normalized_features.rpm_deps,
             visibility = visibility,
@@ -249,6 +259,7 @@ def feature_new(
     the container (install RPMs, remove files/directories, create symlinks
     or directories, copy executable or data files, declare mounts).
     """
+    flavors = flavors_to_structs(flavors)
     return private_feature_new(
         name,
         features,

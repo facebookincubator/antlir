@@ -50,6 +50,7 @@ Read that target's docblock for more info, but in essence, that will:
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
+load("//antlir/bzl:flavor_impl.bzl", "flavors_to_names", "flavors_to_structs")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
@@ -157,6 +158,7 @@ def _normalize_feature_and_get_deps(feature, flavors):
     # we can only include dependencies from the feature that are
     # necessary for the given flavor. This is needed to prevent
     # build errors from depending on non-existent rpms.
+    flavor_names = flavors_to_names(flavors)
     deps = {d: 1 for d in feature.deps}
     for rpm_item in feature_dict.get("rpms", []):
         flavor_to_version_set = {}
@@ -171,7 +173,7 @@ def _normalize_feature_and_get_deps(feature, flavors):
                     flavor in REPO_CFG.stable_flavors
                 )
             ) or (
-                flavors and flavor in flavors
+                flavors and flavor in flavor_names
             ):
                 flavor_to_version_set[flavor] = version_set
             elif version_set != BZL_CONST.version_set_allow_all_versions:
@@ -181,7 +183,7 @@ def _normalize_feature_and_get_deps(feature, flavors):
         if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
             fail("Rpm `{}` must have one of the flavors `{}`".format(
                 rpm_item["name"] or rpm_item["source"],
-                flavors,
+                flavor_names,
             ))
         rpm_item["flavor_to_version_set"] = flavor_to_version_set
 
@@ -235,7 +237,8 @@ def normalize_features(
 
     # Skip coverage check for `antlir_test` since it's just for testing purposes and doesn't always
     # need to be covered.
-    required_flavors = flavors or [flavor for flavor in REPO_CFG.stable_flavors if flavor != "antlir_test"]
+    flavor_names = flavors_to_names(flavors)
+    required_flavors = flavor_names or [flavor for flavor in REPO_CFG.stable_flavors if flavor != "antlir_test"]
     missing_flavors = [flavor for flavor in required_flavors if flavor not in rpm_install_flavors]
     if rpm_install_flavors and missing_flavors:
         fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, required_flavors))
@@ -291,6 +294,7 @@ def private_feature_new(
     or directories, copy executable or data files, declare mounts).
     """
     visibility = visibility or []
+    flavors = flavors_to_structs(flavors)
 
     # (1) Normalizes & annotates Buck target names so that they can be
     #     automatically enumerated from our JSON output.

@@ -10,6 +10,7 @@ information check out [the flavor docs](/docs/concepts/rpms/overview).
 
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "REPO_CFG", "new_flavor_config")
+load(":flavor_impl.bzl", "flavor_to_struct")
 load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 
@@ -31,9 +32,10 @@ def _get_flavor_config(flavor, flavor_config_override):
     if not flavor and flavor_config_override:
         fail("Please specify the flavor when overriding the flavor config")
 
+    flavor = flavor_to_struct(flavor)
     check_flavor_exists(flavor)
 
-    flavor_config = shape.as_dict_shallow(REPO_CFG.flavor_to_config[flavor])
+    flavor_config = shape.as_dict_shallow(REPO_CFG.flavor_to_config[flavor.name])
     overrides = structs.to_dict(flavor_config_override) if flavor_config_override else {}
 
     # This override is forbidden because vset paths are currently consumed
@@ -63,7 +65,8 @@ def _get_build_appliance(flavor = None):
     """
     if flavor == None:
         flavor = _get_flavor_default()
-    return REPO_CFG.flavor_to_config[flavor].build_appliance
+    flavor = flavor_to_struct(flavor)
+    return REPO_CFG.flavor_to_config[flavor.name].build_appliance
 
 def _get_rpm_installer(flavor = None):
     """
@@ -72,7 +75,8 @@ def _get_rpm_installer(flavor = None):
     """
     if flavor == None:
         flavor = _get_flavor_default()
-    return REPO_CFG.flavor_to_config[flavor].rpm_installer
+    flavor = flavor_to_struct(flavor)
+    return REPO_CFG.flavor_to_config[flavor.name].rpm_installer
 
 def _get_rpm_installers_supported():
     """
