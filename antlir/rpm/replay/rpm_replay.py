@@ -6,7 +6,7 @@
 "See `replay_rpms_and_compiler_items()`"
 import pickle
 import pwd
-from contextlib import contextmanager, ExitStack
+from contextlib import contextmanager
 from typing import Any, Callable, Iterator, List, Sequence, Tuple
 
 from antlir.common import get_logger, not_none
@@ -22,7 +22,7 @@ from antlir.subvol_utils import Subvol, TempSubvolumes
 
 log = get_logger()
 
-ReplayItemsGenerator = Callable[[ExitStack, LayerOpts], Iterator[ImageItem]]
+ReplayItemsGenerator = Callable[[LayerOpts], Iterator[ImageItem]]
 
 # Should follow https://fburl.com/diffusion/somgsffm
 _RPM_INSTALL_CMD = [
@@ -114,7 +114,7 @@ def replay_rpms_and_compiler_items(
     `root`, with the intention of reproducing the `leaf` that was given to
     `subvol_rpm_compare_and_download()`.
     """
-    with TempSubvolumes() as tmp_subvols, ExitStack() as exit_stack:
+    with TempSubvolumes() as tmp_subvols:
         if rpm_diff.removed:  # pragma: no cover
             raise NotImplementedError(
                 f"Incremental RPM replay cannot remove RPMs: {rpm_diff.removed}"
@@ -130,7 +130,7 @@ def replay_rpms_and_compiler_items(
                     from_target="//FAKE:ordered_nevras_for_rpm_replay",
                     subvol=root,
                 ),
-                *list(gen_replay_items(exit_stack, layer_opts)),
+                *list(gen_replay_items(layer_opts)),
             ],
         }
         run_nspawn(

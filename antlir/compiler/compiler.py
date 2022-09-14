@@ -22,13 +22,12 @@ import stat
 import sys
 import time
 import uuid
-from contextlib import ExitStack, nullcontext
+from contextlib import nullcontext
 from subprocess import CalledProcessError
 from typing import List, Optional
 
 from antlir.bzl.constants import flavor_config_t
 from antlir.cli import add_targets_and_outputs_arg, normalize_buck_path
-from antlir.common import not_none
 from antlir.compiler.helpers import (
     compile_items_to_subvol,
     get_compiler_nspawn_opts,
@@ -308,23 +307,21 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
         )
 
         # This stack allows build items to hold temporary state on disk.
-        with ExitStack() as exit_stack:
-            compile_items_to_subvol(
-                subvol=subvol,
+        compile_items_to_subvol(
+            subvol=subvol,
+            layer_opts=layer_opts,
+            iter_items=gen_items_for_features(
+                features_or_paths=[
+                    normalize_buck_path(output)
+                    for output in args.child_feature_json
+                ],
                 layer_opts=layer_opts,
-                iter_items=gen_items_for_features(
-                    exit_stack=exit_stack,
-                    features_or_paths=[
-                        normalize_buck_path(output)
-                        for output in args.child_feature_json
-                    ],
-                    layer_opts=layer_opts,
-                ),
-            )
-            # Build artifacts should never change. Run this BEFORE the
-            # exit_stack cleanup to enforce that the cleanup does not
-            # touch the image.
-            subvol.set_readonly(True)
+            ),
+        )
+        # Build artifacts should never change. Run this BEFORE the
+        # exit_stack cleanup to enforce that the cleanup does not
+        # touch the image.
+        subvol.set_readonly(True)
 
     try:
         return SubvolumeOnDisk.from_subvolume_path(

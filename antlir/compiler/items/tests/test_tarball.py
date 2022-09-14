@@ -35,9 +35,7 @@ def _tarball_item(
     tarball: str, into_dir: str, force_root_ownership: bool = False
 ) -> TarballItem:
     "Constructs a common-case TarballItem"
-    return image_source_item(
-        TarballItem, exit_stack=None, layer_opts=DUMMY_LAYER_OPTS
-    )(
+    return image_source_item(TarballItem, layer_opts=DUMMY_LAYER_OPTS)(
         from_target="t",
         into_dir=into_dir,
         source={
@@ -85,9 +83,7 @@ class TarballItemTestCase(BaseItemTestCase):
 
             # Test a hash validation failure, follows the item above
             with self.assertRaisesRegex(AssertionError, "failed hash vali"):
-                image_source_item(
-                    TarballItem, exit_stack=None, layer_opts=DUMMY_LAYER_OPTS
-                )(
+                image_source_item(TarballItem, layer_opts=DUMMY_LAYER_OPTS)(
                     from_target="t",
                     into_dir="y",
                     source={
