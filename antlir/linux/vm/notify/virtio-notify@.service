@@ -1,0 +1,11 @@
+[Unit]
+Description=Send a notification via a virtio port.
+After=sshd.service
+Requires=sshd.service
+ConditionPathExists=/dev/virtio-ports/%i
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/bin/echo READY
+StandardOutput=file:/dev/virtio-ports/%i

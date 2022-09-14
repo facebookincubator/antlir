@@ -1,11 +1,6 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 
 export_file(
-    name = "notify-host.rules",
-    visibility = ["PUBLIC"],
-)
-
-export_file(
-    name = "notify-host.service",
+    name = "virtio-notify@.service",
     visibility = ["PUBLIC"],
 )
