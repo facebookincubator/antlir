@@ -6,7 +6,7 @@
 import argparse
 import pickle
 import pwd
-from typing import AnyStr, Iterable, Iterator, Tuple
+from typing import AnyStr, Iterable, Tuple
 
 from antlir.bzl_const import hostname_for_compiler_in_ba
 
@@ -47,7 +47,7 @@ def compile_items_to_subvol(
     *,
     subvol: Subvol,
     layer_opts: LayerOpts,
-    iter_items: Iterator[ImageItem],
+    iter_items: Iterable[ImageItem],
 ) -> None:
     """
     IMPORTANT: This function will build many compiler items that assume they

@@ -1190,8 +1190,6 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
 
     def test_skip_phases_provide(self) -> None:
         dg = DependencyGraph(
-            # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
-            #  `List[FilesystemRootItem]`.
             [FilesystemRootItem(from_target="t-55")],
             layer_target="t-34",
         )
@@ -1242,8 +1240,6 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         first = FilesystemRootItem(from_target="")
         second = requires_provides_directory_class("/", ["a"])
         third = requires_provides_directory_class("/a", ["/a/b", "/a/b/c"])
-        # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
-        #  `List[typing.Any]`.
         dg_ok = DependencyGraph([second, first, third], layer_target="t")
         self.assertEqual(
             _fs_root_phases(first, layer_target="t"),
@@ -1252,8 +1248,6 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
 
         # `dg_bad`: changes `second` to get a cycle
         dg_bad = DependencyGraph(
-            # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
-            #  `List[typing.Any]`.
             [
                 requires_provides_directory_class("a/b", ["a"]),
                 first,
@@ -1316,8 +1310,6 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
             requires_provides_directory_class("/a", [f"/a/{x}"])
             for x in ("b", "c", "d")
         }
-        # pyre-fixme[6]: For 1st param expected `Iterator[ImageItem]` but got
-        #  `List[typing.Any]`.
         dg = DependencyGraph([a, *a_children], layer_target="t")
         self.assertEqual(
             [{a}, a_children],
