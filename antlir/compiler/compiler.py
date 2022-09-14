@@ -33,6 +33,7 @@ from antlir.compiler.helpers import (
     get_compiler_nspawn_opts,
 )
 from antlir.compiler.items.common import LayerOpts
+from antlir.compiler.items.rpm_action import RpmActionItem
 from antlir.compiler.items_for_features import gen_items_for_features
 
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
@@ -257,6 +258,38 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
         ]
         build_appliance = find_built_subvol(build_appliance_layer_path)
 
+    layer_opts = LayerOpts(
+        layer_target=args.child_layer_target,
+        build_appliance=build_appliance,
+        rpm_installer=YumDnf(flavor_config.rpm_installer)
+        if flavor_config.rpm_installer
+        else None,
+        rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot)
+        if flavor_config.rpm_repo_snapshot
+        else None,
+        apt_repo_snapshot=flavor_config.apt_repo_snapshot,
+        artifacts_may_require_repo=args.artifacts_may_require_repo,
+        target_to_path=args.targets_and_outputs,
+        subvolumes_dir=args.subvolumes_dir,
+        version_set_override=args.version_set_override,
+        debug=args.debug,
+        allowed_host_mount_targets=frozenset(args.allowed_host_mount_target),
+        flavor=flavor_config.name,
+        # This value should never be inherited from the parent layer
+        # as it is generally used to create a new build appliance flavor
+        # by force overriding an existing flavor.
+        unsafe_bypass_flavor_check=flavor_config.unsafe_bypass_flavor_check,
+    )
+    layer_items = list(
+        gen_items_for_features(
+            features_or_paths=[
+                normalize_buck_path(output)
+                for output in args.child_feature_json
+            ],
+            layer_opts=layer_opts,
+        )
+    )
+
     # Avoid running the compiler inside of the BA if:
     # 1. The BA isn't set (ie. DO_NOT_USE_BUILD_APPLIANCE). Future: create a
     #    separate lightweight compiler binary for this case.
@@ -268,10 +301,12 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
         and not args.is_nested
         and not args.internal_only_is_genrule_layer
     ):
+        installs_rpms = any(isinstance(i, RpmActionItem) for i in layer_items)
+
         invoke_compiler_inside_build_appliance(
             build_appliance=build_appliance,
             snapshot_dir=Path(flavor_config.rpm_repo_snapshot)
-            if flavor_config.rpm_repo_snapshot
+            if flavor_config.rpm_repo_snapshot and installs_rpms
             else None,
             run_apt_proxy=(
                 flavor_config.apt_repo_snapshot
@@ -281,42 +316,12 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
             argv=argv,
         )
     else:
-        layer_opts = LayerOpts(
-            layer_target=args.child_layer_target,
-            build_appliance=build_appliance,
-            rpm_installer=YumDnf(flavor_config.rpm_installer)
-            if flavor_config.rpm_installer
-            else None,
-            rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot)
-            if flavor_config.rpm_repo_snapshot
-            else None,
-            apt_repo_snapshot=flavor_config.apt_repo_snapshot,
-            artifacts_may_require_repo=args.artifacts_may_require_repo,
-            target_to_path=args.targets_and_outputs,
-            subvolumes_dir=args.subvolumes_dir,
-            version_set_override=args.version_set_override,
-            debug=args.debug,
-            allowed_host_mount_targets=frozenset(
-                args.allowed_host_mount_target
-            ),
-            flavor=flavor_config.name,
-            # This value should never be inherited from the parent layer
-            # as it is generally used to create a new build appliance flavor
-            # by force overriding an existing flavor.
-            unsafe_bypass_flavor_check=flavor_config.unsafe_bypass_flavor_check,
-        )
 
         # This stack allows build items to hold temporary state on disk.
         compile_items_to_subvol(
             subvol=subvol,
             layer_opts=layer_opts,
-            iter_items=gen_items_for_features(
-                features_or_paths=[
-                    normalize_buck_path(output)
-                    for output in args.child_feature_json
-                ],
-                layer_opts=layer_opts,
-            ),
+            iter_items=layer_items,
         )
         # Build artifacts should never change. Run this BEFORE the
         # exit_stack cleanup to enforce that the cleanup does not

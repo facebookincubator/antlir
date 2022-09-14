@@ -13,7 +13,16 @@ already been installed.  This is known as dependency order or topological
 sort.
 """
 from collections import defaultdict
-from typing import Dict, Generator, Iterator, List, NamedTuple, Optional, Set
+from typing import (
+    Dict,
+    Generator,
+    Iterable,
+    Iterator,
+    List,
+    NamedTuple,
+    Optional,
+    Set,
+)
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
@@ -357,7 +366,7 @@ class DependencyGraph:
 
     # Consumes a mix of dependency-ordered and `PhaseOrder`ed `ImageItem`s.
     def __init__(
-        self, iter_items: Iterator[ImageItem], layer_target: str
+        self, iter_items: Iterable[ImageItem], layer_target: str
     ) -> None:
         # Without deduping, dependency diamonds would cause a lot of
         # redundant work below.  `_prep_item_predecessors` mutates this.
