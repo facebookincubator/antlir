@@ -47,7 +47,7 @@ impl<'a> SendStreamUpgradeDestination<'a> {
             None => Box::new(std::io::stdout()),
             Some(ref value) => {
                 let mut file: File;
-                if offset != 0 {
+                if offset == 0 {
                     file = OpenOptions::new()
                         .write(true)
                         .create_new(true)
