@@ -147,7 +147,8 @@ vm.run(
     ],
     vm_opts = vm.types.opts.new(
         append = [
-            "initrd.break",
+            "initrd.break=sysinit",
+            "initrd.break=initrd",
         ],
         disk = vm.artifacts.rootfs.disk,
         kernel = kernels.default,
