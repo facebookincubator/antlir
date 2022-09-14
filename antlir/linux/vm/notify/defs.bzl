@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:systemd.bzl", "systemd")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _install():
     """
@@ -12,21 +11,13 @@ def _install():
     the `antlir.vm` runtime when a host has booted.
     """
 
-    # The notify-host service is activated by a udev rule, ensuring that it only
-    # activates after the virtserialport has been activated and symlinked in
-    # /dev/virtio-ports.
     return [
         systemd.install_unit(
-            "//antlir/linux/vm/notify:notify-host.service",
+            "//antlir/linux/vm/notify:virtio-notify@.service",
         ),
-        feature.ensure_subdirs_exist(
-            "/usr/lib/udev",
-            "rules.d",
-            0o755,
-        ),
-        feature.install(
-            "//antlir/linux/vm/notify:notify-host.rules",
-            "/usr/lib/udev/rules.d/99-notify-host.rules",
+        # Enable using the virtio socket named "notify-host"
+        systemd.enable_unit(
+            "virtio-notify@notify-host.service",
         ),
     ]
 
