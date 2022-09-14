@@ -6,7 +6,6 @@
 
 import os
 import stat
-import subprocess
 import tempfile
 
 from antlir.compiler.items.common import image_source_item
@@ -34,9 +33,9 @@ def _install_file_item(**kwargs):
     # The dummy object works here because `subvolumes_dir` of `None` runs
     # `artifacts_dir` internally, while our "prod" path uses the
     # already-computed value.
-    return image_source_item(
-        InstallFileItem, exit_stack=None, layer_opts=DUMMY_LAYER_OPTS
-    )(**kwargs)
+    return image_source_item(InstallFileItem, layer_opts=DUMMY_LAYER_OPTS)(
+        **kwargs
+    )
 
 
 class InstallFileItemTestCase(BaseItemTestCase):

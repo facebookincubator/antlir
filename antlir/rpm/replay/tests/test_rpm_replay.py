@@ -37,8 +37,8 @@ class RpmReplayTestCase(unittest.TestCase):
         env_map = build_env_map(os.environ, "leaf")
         extracted_features = extract_features_from_env_map(env_map)
 
-        def gen_replay_items(exit_stack, layer_opts):
-            item_factory = ItemFactory(exit_stack, layer_opts)
+        def gen_replay_items(layer_opts):
+            item_factory = ItemFactory(layer_opts)
             for feature in filter_features_to_replay(
                 extracted_features.features_to_replay
             ):

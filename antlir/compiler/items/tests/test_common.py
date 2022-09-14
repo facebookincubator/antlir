@@ -47,7 +47,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
     def test_image_source_item(self):
         # Cover the `source=None` branch in `image_source_item`.
         it = image_source_item(
-            FakeImageSourceItem, exit_stack=None, layer_opts=DUMMY_LAYER_OPTS
+            FakeImageSourceItem, layer_opts=DUMMY_LAYER_OPTS
         )(from_target="m", source=None, kitteh="meow")
         self.assertEqual(
             FakeImageSourceItem(from_target="m", source=None, kitteh="meow"), it
@@ -63,7 +63,6 @@ class ItemsCommonTestCase(BaseItemTestCase):
         subvol.run_as_root(["mkdir", subvol.path(path_in_layer)])
         item = image_source_item(
             FakeImageSourceItem,
-            exit_stack=None,
             layer_opts=DUMMY_LAYER_OPTS,
         )(
             from_target="m",

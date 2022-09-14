@@ -6,7 +6,6 @@
 
 "Makes Items from the JSON that was produced by a Buck `feature` target"
 import json
-from contextlib import ExitStack
 from typing import Any, Iterable, Mapping, NamedTuple, Optional, Union
 
 from antlir.common import get_logger
@@ -120,8 +119,7 @@ def gen_included_features(
 
 
 class ItemFactory:
-    def __init__(self, exit_stack: ExitStack, layer_opts: LayerOpts) -> None:
-        self._exit_stack = exit_stack
+    def __init__(self, layer_opts: LayerOpts) -> None:
         self._layer_opts = layer_opts
         self._key_to_item_factory = {
             "clone": self._image_sourcify(CloneItem),
@@ -151,9 +149,7 @@ class ItemFactory:
         }
 
     def _image_sourcify(self, item_cls):
-        return image_source_item(
-            item_cls, exit_stack=self._exit_stack, layer_opts=self._layer_opts
-        )
+        return image_source_item(item_cls, layer_opts=self._layer_opts)
 
     def gen_items_for_feature(self, feature_key: str, target: str, config):
         if feature_key in self._key_to_item_factory:
@@ -170,11 +166,10 @@ class ItemFactory:
 
 def gen_items_for_features(
     *,
-    exit_stack,
     features_or_paths: Iterable[Union[str, dict, Path]],
     layer_opts: LayerOpts,
 ):
-    factory = ItemFactory(exit_stack, layer_opts)
+    factory = ItemFactory(layer_opts)
     for key_target_config in gen_included_features(
         features_or_paths=features_or_paths,
         features_ctx=GenFeaturesContext(

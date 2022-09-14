@@ -41,9 +41,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         # The dummy object works here because `subvolumes_dir` of `None`
         # runs `artifacts_dir` internally, while our "prod" path uses the
         # already-computed value.
-        return image_source_item(
-            CloneItem, exit_stack=None, layer_opts=DUMMY_LAYER_OPTS
-        )(
+        return image_source_item(CloneItem, layer_opts=DUMMY_LAYER_OPTS)(
             from_target="t",
             dest=dest,
             omit_outer_dir=omit_outer_dir,

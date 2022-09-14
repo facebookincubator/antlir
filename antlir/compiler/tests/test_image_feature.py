@@ -33,7 +33,6 @@ class ImageFeatureTestCase(unittest.TestCase):
         self.assertIn(root_feature_target, si.TARGET_TO_PATH)
         return set(
             gen_items_for_features(
-                exit_stack=None,  # unused, no `generator` TarballItems
                 features_or_paths=[
                     si.TARGET_TO_PATH[root_feature_target],
                     # Exercise inline features, including nesting

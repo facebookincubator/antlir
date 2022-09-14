@@ -381,7 +381,6 @@ def _image_source_path(
 
 def _make_image_source_item(
     item_cls,
-    exit_stack,
     layer_opts: LayerOpts,
     *,
     source: Optional[Mapping[str, Path]],
@@ -410,9 +409,9 @@ def _make_image_source_item(
     return item_cls(**kwargs, source=source_path)
 
 
-def image_source_item(item_cls, exit_stack, layer_opts: LayerOpts):
+def image_source_item(item_cls, layer_opts: LayerOpts):
     return lambda **kwargs: _make_image_source_item(
-        item_cls, exit_stack, layer_opts, **kwargs
+        item_cls, layer_opts, **kwargs
     )
 
 
