@@ -73,10 +73,12 @@ class Share(ABC):
     def export_spec(
         shares: Iterable["Share"],
     ) -> Generator["Share", None, None]:
-        """share a meta-directory that contains all the mount tags and paths to
+        """
+        Share a meta-directory that contains all the mount tags and paths to
         mount them, which is then read early in boot by a systemd generator
         this cannot be performed with just the export tags, because encoding the
-        full path would frequently make them too long to be valid 9p tags"""
+        full path would frequently make them too long to be valid 9p tags.
+        """
         with temp_dir() as exportdir:
             for share in shares:
                 if not share.generator:
