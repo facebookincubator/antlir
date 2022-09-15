@@ -37,6 +37,7 @@ python_library(
     srcs = ["tests/common.py"],
     visibility = [
         "//antlir/...",
+        "//blockchain/custody/vault/os/...",
         "//metalos/initrd/facebook/...",
         "//ti/platform/edgeos/...",
         "//tupperware/cm/antlir/...",
