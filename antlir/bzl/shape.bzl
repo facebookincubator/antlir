@@ -859,14 +859,14 @@ def _as_dict_shallow(instance):
     }
 
 # Recursively converts nested shapes and structs to dicts. Used in shape.hash.
-def _as_dict_deep(val):
+def _as_dict_deep(val, on_target_fields = "preserve"):
     if _is_any_instance(val):
         val = _recursive_copy_transform(
             val,
             val.__shape__,
             struct(
                 include_dunder_shape = False,
-                on_target_fields = "preserve",
+                on_target_fields = on_target_fields,
                 target_tagger = None,
             ),
         )
@@ -878,6 +878,29 @@ def _as_dict_deep(val):
         val = [_as_dict_deep(item) for item in val]
 
     return val
+
+# This function guarantees that the output json is a deterministic function of the input. It
+# will also fail if the user attempts to pass a shape in that contains a Buck target. This is
+# used in cases where we include the hash of a shape in a target name, which must always
+# be deterministic.
+def _stable_json(instance):
+    if _is_any_instance(instance):
+        instance = _as_dict_deep(instance, on_target_fields = "fail")
+
+    if types.is_dict(instance):
+        tokens = ["{}:{}".format(_stable_json(k), _stable_json(v)) for k, v in instance.items()]
+        return "{{{}}}".format(",".join(tokens))
+    elif types.is_list(instance):
+        tokens = [_stable_json(v) for v in instance]
+        return "[{}]".format(",".join(tokens))
+    elif instance == None:
+        return "null"
+    elif types.is_string(instance):
+        return '"{}"'.format(instance)
+    elif types.is_bool(instance):
+        return str(instance).lower()
+    else:
+        return str(instance)
 
 # Returns True iff `instance` is a shape instance of any type.
 def _is_any_instance(instance):
@@ -923,6 +946,7 @@ shape = struct(
     render_template = _render_template,
     DEFAULT_VALUE = _DEFAULT_VALUE,
     hash = _hash,
+    stable_json = _stable_json,
 )
 
 def _self_test_hash():
