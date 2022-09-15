@@ -478,3 +478,22 @@ class TestShapeBzl(unittest.TestCase):
             t(value_with_default=shape.DEFAULT_VALUE),
             expected_shape(value_with_default=42, __shape__=t),
         )
+
+    def test_stable_json(self) -> None:
+        json_shape = shape.shape(
+            items=shape.list(str),
+            v1=shape.field(int, optional=True),
+            v2=shape.field(int),
+            v3=shape.field(bool),
+        )
+        instance = json_shape(
+            v2=123,
+            v3=False,
+            v1=None,
+            items=["two", "one"],
+        )
+        instance_json = shape.stable_json(instance)
+        self.assertEqual(
+            instance_json,
+            '{"items":["two","one"],"v1":null,"v2":123,"v3":false}',
+        )
