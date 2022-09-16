@@ -41,11 +41,13 @@ from typing import (
     Callable,
     ContextManager,
     Dict,
+    Iterable,
     Iterator,
     List,
     NamedTuple,
     Optional,
     Tuple,
+    Type,
 )
 
 from antlir.common import get_logger, init_logging
@@ -209,10 +211,24 @@ def _validate_updates(
 
 
 async def _get_db_info_bounded(
-    sem: asyncio.Semaphore, get_fut: Awaitable[GetDbInfoRet]
+    sem: asyncio.Semaphore,
+    pkg: str,
+    tag: str,
+    new_opts: DbInfo,
+    # Accept existing opts in the DB so we can keep the value unchanged if info
+    # retrieval raised a skippable exception
+    exist_opts: DbInfo,
+    get_db_info_fn: GetDbInfoFn,
+    is_exception_skippable: Optional[Callable[[Exception], bool]] = None,
 ) -> GetDbInfoRet:
     async with sem:
-        return await get_fut
+        try:
+            return await get_db_info_fn(pkg, tag, new_opts)
+        except Exception as e:
+            if is_exception_skippable and is_exception_skippable(e):
+                log.warning(f"Caught skippable exception, continuing: {e}")
+                return pkg, tag, exist_opts
+            raise e
 
 
 async def _get_updated_db(
@@ -221,6 +237,7 @@ async def _get_updated_db(
     get_db_info_fn: GetDbInfoFn,
     update_all: bool,
     pkg_updates: ExplicitUpdates,
+    is_exception_skippable: Optional[Callable[[Exception], bool]] = None,
 ) -> PackageTagDb:
     _validate_updates(existing_db, pkg_updates)
     # Extract option dicts from the `PackageDbUpdate` objects that were
@@ -236,7 +253,8 @@ async def _get_updated_db(
             # These are existing DB entries for which we have to fetch and
             # resolve new values.
             **{
-                pkg: {tag: {} for tag in tag_to_info}
+                # Empty dict for 'options' as we want them to be re-populated
+                pkg: {tag: {} for tag in tag_to_info.keys()}
                 for pkg, tag_to_info in existing_db.items()
             },
             **pkg_to_update_dcts,
@@ -249,22 +267,32 @@ async def _get_updated_db(
     # Use a semaphore to limit concurrency and ensure we're not issuing 1000s of
     # simultaneous requests for large DBs
     sem = asyncio.Semaphore(32)
-    futures = [
-        _get_db_info_bounded(sem, get_db_info_fn(pkg, tag, update_opts))
-        for pkg, tag_to_update in updates_to_apply.items()
-        for tag, update_opts in tag_to_update.items()
-    ]
+    futures = []
+    for pkg, tag_to_update_opts in updates_to_apply.items():
+        for tag, new_opts in tag_to_update_opts.items():
+            exist_opts = {}
+            if pkg in existing_db and tag in existing_db[pkg]:
+                exist_opts = existing_db[pkg][tag]
+            fut = _get_db_info_bounded(
+                sem=sem,
+                pkg=pkg,
+                tag=tag,
+                new_opts=new_opts,
+                exist_opts=exist_opts,
+                get_db_info_fn=get_db_info_fn,
+                is_exception_skippable=is_exception_skippable,
+            )
+            futures.append(fut)
     for f in asyncio.as_completed(futures):
-        pkg, tag, maybe_info = await f
-        if maybe_info is None:
+        pkg, tag, new_maybe_info = await f
+        if new_maybe_info is None:
             log.warning(
                 f"Empty info returned for {pkg}:{tag} - not including in DB"
             )
-
             db_to_update[pkg].pop(tag, None)
         else:
-            log.info(f"New info for {pkg}:{tag} -> {maybe_info}")
-            db_to_update[pkg][tag] = maybe_info
+            log.info(f"New info for {pkg}:{tag} -> {new_maybe_info}")
+            db_to_update[pkg][tag] = new_maybe_info
     return db_to_update
 
 
@@ -276,6 +304,7 @@ async def update_package_db(
     out_db_path: Optional[Path] = None,
     update_all: bool = True,
     pkg_updates: Optional[ExplicitUpdates] = None,
+    is_exception_skippable: Optional[Callable[[Exception], bool]] = None,
 ) -> None:
     with get_db_info_factory as get_db_info:
         _write_json_dir_db(
@@ -284,6 +313,7 @@ async def update_package_db(
                 get_db_info_fn=get_db_info,
                 update_all=update_all,
                 pkg_updates=pkg_updates or {},
+                is_exception_skippable=is_exception_skippable,
             ),
             path=out_db_path or db_path,
             how_to_generate=how_to_generate,
