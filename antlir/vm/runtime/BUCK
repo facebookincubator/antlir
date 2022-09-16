@@ -7,6 +7,7 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "third_party")
     hoist(
         name = paths.basename(binary),
         out = paths.basename(binary),
+        executable = True,
         layer = REPO_CFG.artifact["antlir.vm.runtime"],
         path = "{}".format(binary),
         visibility = ["PUBLIC"],
