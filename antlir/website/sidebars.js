@@ -154,8 +154,21 @@ module.exports = {
             id: 'metalos/fb/host-config-proxy',
           },
           {
-            type: 'doc',
-            id: 'metalos/fb/mclassica',
+            type: 'category',
+            label: 'MclassicA',
+            collapsed: false,
+            items: [
+              {
+
+                type: 'doc',
+                id: 'metalos/fb/mclassica/overview',
+              },
+              {
+
+                type: 'doc',
+                id: 'metalos/fb/mclassica/differences',
+              },
+            ]
           },
           {
             type: 'doc',
