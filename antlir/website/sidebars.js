@@ -168,6 +168,11 @@ module.exports = {
                 type: 'doc',
                 id: 'metalos/fb/mclassica/differences',
               },
+              {
+
+                type: 'doc',
+                id: 'metalos/fb/mclassica/playground',
+              },
             ]
           },
           {
