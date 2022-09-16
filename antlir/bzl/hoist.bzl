@@ -5,7 +5,17 @@
 
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 
-def hoist(name, layer, path, *, selector = None, force_dir = False, out = "out", visibility = None, **kwargs):
+def hoist(
+        name,
+        layer,
+        path,
+        *,
+        selector = None,
+        force_dir = False,
+        out = "out",
+        executable = False,
+        visibility = None,
+        **kwargs):
     """
     Creates a rule to lift an artifact out of the image it was built in.
 
@@ -63,5 +73,6 @@ def hoist(name, layer, path, *, selector = None, force_dir = False, out = "out",
             cp = cp,
         ),
         visibility = visibility,
+        executable = executable,
         **kwargs
     )
