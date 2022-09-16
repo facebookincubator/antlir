@@ -8,12 +8,13 @@ import json
 import os
 import unittest
 from contextlib import nullcontext
+from typing import Any, Dict
 
 from antlir import update_package_db as updb
-from antlir.fs_utils import temp_dir
+from antlir.fs_utils import Path, temp_dir
 
 
-def _get_js_content(ss_hash: str, content: str) -> str:
+def _get_js_content(ss_hash: str, content: Dict[str, Any]) -> str:
     return f"""\
 # {updb._GENERATED} SignedSource<<{ss_hash}>>
 # Update via `how`
@@ -39,8 +40,14 @@ async def _base_get_db_info_fn(pkg, tag, opts):
 # define most shared test cases.
 class UpdatePackageDbTestBase:
     def _check_file(self, path, content) -> None:
+        if not (os.path.exists(path)):
+            db_dir = Path(path).dirname().dirname()
+            # pyre-ignore[16]
+            self.fail(
+                f"File {path} did not exist, dir: {list(os.walk(db_dir))}"
+            )
         with open(path) as infile:
-            # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute `assertEqual`.
+            # pyre-ignore[16]
             self.assertEqual(content, infile.read())
 
     async def _update(
@@ -50,6 +57,7 @@ class UpdatePackageDbTestBase:
         out_db=None,
         update_all: bool = True,
         get_db_info_fn=None,
+        is_exception_skippable=None,
     ):
         raise NotImplementedError
 
@@ -75,12 +83,10 @@ class UpdatePackageDbTestBase:
             # Note the x/z dict is returned for `opts` in `_main` above
             self._check_file(
                 p1_out_path,
-                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("e8b8ab0d998b5fe5429777af98579c12", {"x": "z"}),
             )
             self._check_file(
                 p2_out_path,
-                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("e8b8ab0d998b5fe5429777af98579c12", {"x": "z"}),
             )
 
@@ -119,22 +125,18 @@ class UpdatePackageDbTestBase:
                 db_path / "p1" / "tik.json",
                 _get_js_content(
                     "b5c458dc21f07f3d4437a01c634876db",
-                    # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str,
                     #  str]`.
                     {"choo": "choo"},
                 ),
             )
             self._check_file(
                 db_path / "p2" / "tok.json",
-                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("4897f4457e120a6852fc3873d70ad543", {"a": "b"}),
             )
             self._check_file(
                 db_path / "p2" / "tak.json",
                 _get_js_content(
                     "c6e75caa1da9ac63b0ef9151e783520f",
-                    # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str,
-                    #  bool]`.
                     {"boo": True},
                 ),
             )
@@ -142,8 +144,6 @@ class UpdatePackageDbTestBase:
                 db_path / "never" / "seen.json",
                 _get_js_content(
                     "6846ca9d4c83b71baa720d9791724ac0",
-                    # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str,
-                    #  str]`.
                     {"oompa": "loompa"},
                 ),
             )
@@ -211,12 +211,10 @@ class UpdatePackageDbTestBase:
             )
             self._check_file(
                 db_path / "p1" / "tik.json",
-                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("1003a3786a74bb5fc2b817e752d3499c", {"c": "d"}),
             )
             self._check_file(
                 db_path / "never" / "seen.json",
-                # pyre-fixme[6]: For 2nd param expected `str` but got `Dict[str, str]`.
                 _get_js_content("3b96485ebd8dad07ef3393861364407a", {"m": "n"}),
             )
             # Should have been deleted
@@ -234,6 +232,7 @@ class UpdatePackageDbCliTestCase(
         out_db=None,
         update_all: bool = True,
         get_db_info_fn=None,
+        is_exception_skippable=None,
     ) -> None:
         args = [
             f"--db={db}",
@@ -328,6 +327,7 @@ class UpdatePackageDbLibraryTestCase(
         out_db=None,
         update_all: bool = True,
         get_db_info_fn=None,
+        is_exception_skippable=None,
     ) -> None:
         if get_db_info_fn is None:
             get_db_info_fn = nullcontext(_base_get_db_info_fn)
@@ -338,4 +338,42 @@ class UpdatePackageDbLibraryTestCase(
             out_db_path=out_db,
             update_all=update_all,
             pkg_updates=pkg_updates,
+            is_exception_skippable=is_exception_skippable,
         )
+
+    async def test_skippable_exception(self) -> None:
+        async def _get_db_info_fn_exc(pkg, tag, opts):
+            if (pkg, tag) == ("p2", "tok"):
+                raise AssertionError("it works!")
+            return await _base_get_db_info_fn(pkg, tag, opts)
+
+        with temp_dir() as td:
+            db_path = td / "idb"
+            _write_json_db(db_path / "p1" / "tik.json", {"a1": "b1"})
+            _write_json_db(db_path / "p2" / "tok.json", {"a2": "b2"})
+            await self._update(
+                db=db_path,
+                get_db_info_fn=nullcontext(_get_db_info_fn_exc),
+                update_all=True,
+                is_exception_skippable=lambda e: isinstance(e, AssertionError),
+            )
+            self._check_file(
+                db_path / "p1" / "tik.json",
+                _get_js_content("e8b8ab0d998b5fe5429777af98579c12", {"x": "z"}),
+            )
+            # Unchanged due to skippable exception
+            self._check_file(
+                db_path / "p2" / "tok.json",
+                _get_js_content(
+                    "d677a771acf63e8058e979152dff8d06", {"a2": "b2"}
+                ),
+            )
+
+            # Now ensure an unskippable exception propagates
+            with self.assertRaisesRegex(AssertionError, "it works!"):
+                await self._update(
+                    db=db_path,
+                    get_db_info_fn=nullcontext(_get_db_info_fn_exc),
+                    update_all=True,
+                    is_exception_skippable=lambda e: isinstance(e, ValueError),
+                )
