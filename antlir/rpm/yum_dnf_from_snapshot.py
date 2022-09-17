@@ -729,8 +729,10 @@ def yum_dnf_from_snapshot(
             "--disableplugin=*",
             # `versionlock` is used by Antlir's version selection.
             # `download` is nice so that folks can easily get snapshot RPMs:
+            # `flunk_dependent_remove` will fail dnf remove operations that
+            # would otherwise silently remove dependent rpms.
             #    buck run :x=container -- --user=root -- dnf download ...
-            "--enableplugin=versionlock,download"
+            "--enableplugin=versionlock,download,flunk_dependent_remove"
             + (
                 # `dnf builddep` powers `rpmbuild`.
                 ",builddep"
