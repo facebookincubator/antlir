@@ -47,6 +47,16 @@ class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
         items = []
         if subvol.path(META_KEY_VALUE_STORE_FILE).exists():
             items = load_meta_key_value_store_items(subvol)
+        if not self.store_if_not_exists:
+            # Since we cannot guarantee ordering of items,
+            # items with store_if_not_exists=False will remove
+            # all previous items with store_if_not_exists=True
+            items = [
+                item
+                for item in items
+                if not (item.key == self.key and item.store_if_not_exists)
+            ]
+
         if not _contains(items, self.key):
             items.append(self)
         elif not self.store_if_not_exists:
