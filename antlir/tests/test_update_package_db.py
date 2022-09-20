@@ -7,7 +7,7 @@
 import json
 import os
 import unittest
-from contextlib import nullcontext
+from contextlib import asynccontextmanager
 from typing import Any, Dict
 
 from antlir import update_package_db as updb
@@ -31,8 +31,12 @@ def _write_json_db(json_path, dct) -> None:
         json.dump(dct, outfile)
 
 
-async def _base_get_db_info_fn(pkg, tag, opts):
-    return pkg, tag, opts if opts else {"x": "z"}
+@asynccontextmanager
+async def _base_get_db_info_fn(*args, **kwargs):
+    async def _get_db_info(pkg, tag, opts):
+        return pkg, tag, opts if opts else {"x": "z"}
+
+    yield _get_db_info
 
 
 # CLI has only minor parsing on top of the library function, so it's valuable to
@@ -108,8 +112,6 @@ class UpdatePackageDbTestBase:
                     "p2": {
                         "tak": updb.PackageDbUpdate(
                             updb.UpdateAction.CREATE,
-                            # pyre-fixme[6]: For 2nd param expected `Dict[str, str]`
-                            #  but got `Dict[str, bool]`.
                             {"boo": True},
                         )
                     },
@@ -125,7 +127,6 @@ class UpdatePackageDbTestBase:
                 db_path / "p1" / "tik.json",
                 _get_js_content(
                     "b5c458dc21f07f3d4437a01c634876db",
-                    #  str]`.
                     {"choo": "choo"},
                 ),
             )
@@ -183,8 +184,12 @@ class UpdatePackageDbTestBase:
                 )
 
     async def test_tag_deletion(self) -> None:
-        async def _get_db_info_fn_none(pkg, tag, opts):
-            return pkg, tag, opts if opts else None
+        @asynccontextmanager
+        async def _none_get_db_info_fn(*args, **kwargs):
+            async def _get_db_info_none(pkg, tag, opts):
+                return pkg, tag, opts if opts else None
+
+            yield _get_db_info_none
 
         with temp_dir() as td:
             db_path = td / "idb"
@@ -207,7 +212,7 @@ class UpdatePackageDbTestBase:
                     },
                 },
                 # None will cause a deletion
-                get_db_info_fn=nullcontext(_get_db_info_fn_none),
+                get_db_info_fn=_none_get_db_info_fn(),
             )
             self._check_file(
                 db_path / "p1" / "tik.json",
@@ -223,7 +228,7 @@ class UpdatePackageDbTestBase:
 
 
 class UpdatePackageDbCliTestCase(
-    UpdatePackageDbTestBase, unittest.IsolatedAsyncioTestCase
+    unittest.IsolatedAsyncioTestCase, UpdatePackageDbTestBase
 ):
     async def _update(
         self,
@@ -250,7 +255,7 @@ class UpdatePackageDbCliTestCase(
                     ]
                 )
         if get_db_info_fn is None:
-            get_db_info_fn = nullcontext(_base_get_db_info_fn)
+            get_db_info_fn = _base_get_db_info_fn()
         await updb.main_cli(
             args,
             get_db_info_fn,
@@ -264,7 +269,7 @@ class UpdatePackageDbCliTestCase(
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
             _write_json_db(db_path / "p2" / "b.json", {})
-            get_info_fn = nullcontext(_base_get_db_info_fn)
+            get_info_fn = _base_get_db_info_fn()
             with self.assertRaisesRegex(
                 RuntimeError, r'Multiple updates.*p2:b.*"replace" with {}'
             ):
@@ -301,7 +306,7 @@ class UpdatePackageDbCliTestCase(
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
-            get_info_fn = nullcontext(_base_get_db_info_fn)
+            get_info_fn = _base_get_db_info_fn()
             with self.assertRaisesRegex(
                 RuntimeError, "Invalid options specified"
             ):
@@ -318,7 +323,7 @@ class UpdatePackageDbCliTestCase(
 
 
 class UpdatePackageDbLibraryTestCase(
-    UpdatePackageDbTestBase, unittest.IsolatedAsyncioTestCase
+    unittest.IsolatedAsyncioTestCase, UpdatePackageDbTestBase
 ):
     async def _update(
         self,
@@ -330,7 +335,7 @@ class UpdatePackageDbLibraryTestCase(
         is_exception_skippable=None,
     ) -> None:
         if get_db_info_fn is None:
-            get_db_info_fn = nullcontext(_base_get_db_info_fn)
+            get_db_info_fn = _base_get_db_info_fn()
         await updb.update_package_db(
             db_path=db,
             how_to_generate="how",
@@ -342,10 +347,14 @@ class UpdatePackageDbLibraryTestCase(
         )
 
     async def test_skippable_exception(self) -> None:
-        async def _get_db_info_fn_exc(pkg, tag, opts):
-            if (pkg, tag) == ("p2", "tok"):
-                raise AssertionError("it works!")
-            return await _base_get_db_info_fn(pkg, tag, opts)
+        @asynccontextmanager
+        async def _exc_get_db_info_fn(*args, **kwargs):
+            async def _get_db_info_exc(pkg, tag, opts):
+                if (pkg, tag) == ("p2", "tok"):
+                    raise AssertionError("it works!")
+                return pkg, tag, opts if opts else {"xx": "zz"}
+
+            yield _get_db_info_exc
 
         with temp_dir() as td:
             db_path = td / "idb"
@@ -353,13 +362,15 @@ class UpdatePackageDbLibraryTestCase(
             _write_json_db(db_path / "p2" / "tok.json", {"a2": "b2"})
             await self._update(
                 db=db_path,
-                get_db_info_fn=nullcontext(_get_db_info_fn_exc),
+                get_db_info_fn=_exc_get_db_info_fn(),
                 update_all=True,
                 is_exception_skippable=lambda e: isinstance(e, AssertionError),
             )
             self._check_file(
                 db_path / "p1" / "tik.json",
-                _get_js_content("e8b8ab0d998b5fe5429777af98579c12", {"x": "z"}),
+                _get_js_content(
+                    "3e6962dd153ee611fd6b78163d3d9ccd", {"xx": "zz"}
+                ),
             )
             # Unchanged due to skippable exception
             self._check_file(
@@ -373,7 +384,7 @@ class UpdatePackageDbLibraryTestCase(
             with self.assertRaisesRegex(AssertionError, "it works!"):
                 await self._update(
                     db=db_path,
-                    get_db_info_fn=nullcontext(_get_db_info_fn_exc),
+                    get_db_info_fn=_exc_get_db_info_fn(),
                     update_all=True,
                     is_exception_skippable=lambda e: isinstance(e, ValueError),
                 )
