@@ -64,18 +64,21 @@ class YumDnfCommand(enum.Enum):
     # architectures via `feature`s.  That would be a sure-fire way to
     # get version conflicts.  For the cases where we need version pinning,
     # we'll add a per-layer "version picker" concept.
-    install_name = "install-n"
+    install_name = ("install-n", "--assumeyes")
     # Unfortunately, `localinstall` is deprecated, so we have to take the
     # (small) risk that `yum` / `dnf` will misinterpret our path.  We cannot
     # pun `install-n` because `dnf` **only** accepts names with it.
-    local_install = "install"
+    local_install = ("install", "--assumeyes")
     # `yum` will refuse to `install` a local package if it's a downgrade.
-    local_downgrade = "downgrade"
+    local_downgrade = ("downgrade", "--assumeyes")
     # The way `yum` works, this is a no-op if the package is missing.
-    remove_name_if_exists = "remove-n"
+    remove_name_if_exists = ("remove-n", "--assumeyes")
+    # Mark packages as having been explicitly requested / installed.
+    # (vs installed implicitly as a dependency of something else.)
+    mark_userinstalled = ("mark", "install")
     # Yum will refuse to re-install a package that is already installed, so
     # allow some actions that do nothing
-    noop = "noop"
+    noop = ("noop",)
 
 
 # When several of the commands land in the same phase, we need to order them
@@ -94,6 +97,7 @@ YUM_DNF_COMMAND_ORDER = {
             YumDnfCommand.local_downgrade,
             YumDnfCommand.local_install,
             YumDnfCommand.install_name,
+            YumDnfCommand.mark_userinstalled,
             YumDnfCommand.noop,
         ]
     )
@@ -200,6 +204,7 @@ def _convert_actions_to_commands(
     subvol: Subvol,
     build_appliance: Subvol,
     action_to_names_or_rpms: Mapping[RpmAction, Union[str, _LocalRpm]],
+    layer_opts: LayerOpts,
 ) -> Mapping[YumDnfCommand, Union[str, _LocalRpm]]:
     """
     Go through the list of RPMs to install and change the action to
@@ -210,6 +215,7 @@ def _convert_actions_to_commands(
 
     See the docs in `YumDnfCommand` for the rationale.
     """
+    prog_name = not_none(layer_opts.rpm_installer).value
     cmd_to_names_or_rpms = {}
     for action, names_or_rpms in action_to_names_or_rpms.items():
         for nor in names_or_rpms:
@@ -221,6 +227,21 @@ def _convert_actions_to_commands(
             if cmd is None:  # pragma: no cover
                 raise AssertionError(f"Unsupported {action}, {nor}")
             cmd_to_names_or_rpms.setdefault(cmd, set()).add(new_nor)
+            if (
+                prog_name == "dnf"
+                and action == RpmAction.install
+                and not isinstance(new_nor, _LocalRpm)
+            ):
+                # After we do an install action, we also mark the package as
+                # installed by user request. Normally a dnf install will mark
+                # a package as installed, unless that package is already
+                # installed, in which case the install becomes a noop.
+                # Marking packages as userinstalled is important since it
+                # prevents autoclean from removing them.
+                cmd_to_names_or_rpms.setdefault(
+                    YumDnfCommand.mark_userinstalled, set()
+                ).add(new_nor)
+
     return cmd_to_names_or_rpms
 
 
@@ -372,7 +393,10 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
                 # Sort by command for determinism and clearer behaivor.
                 for cmd, nors in sorted(
                     _convert_actions_to_commands(
-                        subvol, build_appliance, action_to_names_or_rpms
+                        subvol,
+                        build_appliance,
+                        action_to_names_or_rpms,
+                        layer_opts,
                     ).items(),
                     key=lambda cn: YUM_DNF_COMMAND_ORDER[cn[0]],
                 ):
@@ -387,13 +411,9 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
                         install_root=subvol.path(),
                         protected_paths=protected_path_set(subvol),
                         versionlock_list=versionlock_path,
-                        yum_dnf_args=[
-                            cmd.value,
-                            "--assumeyes",
-                            # Sort ensures determinism even if `yum` or
-                            # `dnf` is order-dependent
-                            *sorted(rpms),
-                        ],
+                        # Sort ensures determinism even if `yum` or
+                        # `dnf` is order-dependent
+                        yum_dnf_args=list(cmd.value) + sorted(rpms),
                         layer_opts=layer_opts,
                     )
 
