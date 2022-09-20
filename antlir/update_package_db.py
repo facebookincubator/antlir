@@ -45,7 +45,6 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
-    Type,
 )
 
 from antlir.common import get_logger, init_logging
@@ -134,6 +133,15 @@ class PackageDoesNotExistError(InvalidCommandError):
             "Attempting to replace a package:tag that does not exist in the "
             f"DB: {self.pkg}:{self.tag}"
         )
+
+
+class ValidationError(InvalidCommandError):  # pragma: no cover
+    def __init__(self, pkg: Package, tag: Tag, msg: str) -> None:
+        super().__init__(pkg, tag)
+        self.msg = msg
+
+    def __str__(self):
+        return f"Validation error updating '{self.pkg}:{self.tag}': {self.msg}"
 
 
 # `--replace` and `--create` opts are parsed into this form.
@@ -390,6 +398,12 @@ def _parse_args(
         "action was provided.",
         default=defaults.get("update_all"),
     )
+    parser.add_argument(
+        "--skip-validation-errors",
+        action="store_true",
+        help="Whether to ignore validation errors when updating and keep entry "
+        "as-is rather than raise the error.",
+    )
 
     for action, doc in [
         (
@@ -453,6 +467,10 @@ async def main_cli(
     validation, and to check that the "how to fetch" info does actually
     refer to a valid package in your package store.
     """
+
+    def _is_validation_err(e: Exception) -> bool:  # pragma: no cover
+        return isinstance(e, ValidationError)
+
     args = _parse_args(
         argv,
         overview_doc=overview_doc,
@@ -474,4 +492,7 @@ async def main_cli(
         out_db_path=args.out_db,
         update_all=args.update_all,
         pkg_updates=explicit_updates,
+        is_exception_skippable=_is_validation_err
+        if args.skip_validation_errors
+        else None,
     )
