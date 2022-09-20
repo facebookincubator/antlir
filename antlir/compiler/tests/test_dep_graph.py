@@ -31,6 +31,7 @@ from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
+from antlir.compiler.items.meta_key_value_store import MetaKeyValueStoreItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.remove_path import RemovePathItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
@@ -40,6 +41,7 @@ from antlir.compiler.requires_provides import (
     ProvidesDoNotAccess,
     ProvidesFile,
     ProvidesGroup,
+    ProvidesKey,
     ProvidesSymlink,
     RequireDirectory,
     RequireFile,
@@ -127,6 +129,27 @@ class ItemProvTest(unittest.TestCase):
             )
         )
 
+    def test_no_conflict_with_store_if_not_exists(self) -> None:
+        self.assertFalse(
+            ItemProv(
+                provides=ProvidesKey("key"),
+                item=MetaKeyValueStoreItem(
+                    key="key",
+                    value="v1",
+                    store_if_not_exists=False,
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesKey("key"),
+                    item=MetaKeyValueStoreItem(
+                        key="key",
+                        value="v2",
+                        store_if_not_exists=True,
+                    ),
+                )
+            )
+        )
+
     def test_no_conflict_with_symlink_and_ensure_dirs(self) -> None:
         self.assertFalse(
             ItemProv(
@@ -205,6 +228,47 @@ class ItemProvTest(unittest.TestCase):
                     provides=ProvidesDirectory(path=Path("/a/b")),
                     item=SymlinkToDirItem(
                         from_target="", source="/x/y", dest="/d/c"
+                    ),
+                )
+            )
+        )
+
+    def test_conflict_with_store_if_not_exists(self):
+        self.assertTrue(
+            ItemProv(
+                provides=ProvidesKey("key"),
+                item=MetaKeyValueStoreItem(
+                    key="key",
+                    value="v1",
+                    store_if_not_exists=True,
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesKey("key"),
+                    item=MetaKeyValueStoreItem(
+                        key="key",
+                        value="v2",
+                        store_if_not_exists=True,
+                    ),
+                )
+            )
+        )
+
+        self.assertTrue(
+            ItemProv(
+                provides=ProvidesKey("key"),
+                item=MetaKeyValueStoreItem(
+                    key="key",
+                    value="v1",
+                    store_if_not_exists=False,
+                ),
+            ).conflicts(
+                ItemProv(
+                    provides=ProvidesKey("key"),
+                    item=MetaKeyValueStoreItem(
+                        key="key",
+                        value="v2",
+                        store_if_not_exists=False,
                     ),
                 )
             )

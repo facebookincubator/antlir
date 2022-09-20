@@ -27,12 +27,14 @@ from typing import (
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.make_subvol import FilesystemRootItem
+from antlir.compiler.items.meta_key_value_store import MetaKeyValueStoreItem
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 
 from antlir.compiler.requires_provides import (
     Provider,
     ProvidesDirectory,
+    ProvidesKey,
     ProvidesPath,
     ProvidesSymlink,
     Requirement,
@@ -83,6 +85,12 @@ class ItemProv(NamedTuple):
 
         2. Symlink dir and file items may duplicate, as long as they are the
         same type (all dirs or all files) and have the same source.
+
+        3. It is possible to have multiple MetaKeyValueStoreItems with the same
+        key if we want to have a default value with `store_if_not_exists=True`
+        and a user provided value `store_if_not_exists=False`. We enforce that
+        we only have one of each, and in the implementation of
+        MetaKeyValueStoreItem, we make sure the correct value is written.
         """
         for a, b in ((self, other), (other, self)):
             if isinstance(a.item, EnsureDirsExistItem):
@@ -101,6 +109,13 @@ class ItemProv(NamedTuple):
                     # pyre-fixme[16]: `ImageItem` has no attribute `source`.
                     or self.item.source != other.item.source
                 )
+
+        if isinstance(self.item, MetaKeyValueStoreItem) and isinstance(
+            other.item, MetaKeyValueStoreItem
+        ):
+            return not (
+                self.item.store_if_not_exists ^ other.item.store_if_not_exists
+            )
 
         return True
 
@@ -428,11 +443,15 @@ class DependencyGraph:
         non_ede_item_provs = item_provs - ede_item_provs
 
         # Guaranteed by checks in ItemReqsProvs.add_item_prov
-        symlink_item_provs = {
-            x for x in item_provs if isinstance(x.provides, ProvidesSymlink)
+        checked_item_provs = {
+            x
+            for x in item_provs
+            if isinstance(x.provides, ProvidesSymlink)
+            or isinstance(x.provides, ProvidesKey)
         }
+
         assert (
-            len(non_ede_item_provs - symlink_item_provs) <= 1
+            len(non_ede_item_provs - checked_item_provs) <= 1
         ), f"{item_provs}"
 
         for item_prov in non_ede_item_provs:

@@ -59,6 +59,7 @@ python_unittest(
         "//antlir/compiler:dep_graph",
         "//antlir/compiler/items:ensure_dirs_exist",
         "//antlir/compiler/items:install_file",
+        "//antlir/compiler/items:meta_key_value_store",
         "//antlir/compiler/items:remove_path",
         "//antlir/compiler/items:symlink",
     ],
