@@ -37,12 +37,10 @@ from collections import defaultdict
 from enum import Enum
 from typing import (
     Any,
+    AsyncContextManager,
     Awaitable,
     Callable,
-    ContextManager,
     Dict,
-    Iterable,
-    Iterator,
     List,
     NamedTuple,
     Optional,
@@ -68,7 +66,7 @@ DbInfo = Dict[str, str]
 # This opaque map is passed from the command-line (via `--create` or
 # `--replace`) down to the implementation in `GetDbInfoFn`, and helps
 # it to decide how to obtain the `DbInfo` for the given (package, tag).
-DbUpdateOptions = Dict[str, str]
+DbUpdateOptions = Dict[str, Any]
 # The simplest implementation of `GetDbInfoFn` is the identity:
 #
 #     def get_db_info(package, tag, options):
@@ -300,13 +298,13 @@ async def update_package_db(
     *,
     db_path: Path,
     how_to_generate: str,
-    get_db_info_factory: ContextManager[GetDbInfoFn],
+    get_db_info_factory: AsyncContextManager[GetDbInfoFn],
     out_db_path: Optional[Path] = None,
     update_all: bool = True,
     pkg_updates: Optional[ExplicitUpdates] = None,
     is_exception_skippable: Optional[Callable[[Exception], bool]] = None,
 ) -> None:
-    with get_db_info_factory as get_db_info:
+    async with get_db_info_factory as get_db_info:
         _write_json_dir_db(
             db=await _get_updated_db(
                 existing_db=_read_json_dir_db(db_path),
@@ -424,7 +422,7 @@ def _parse_args(
 
 async def main_cli(
     argv: List[str],
-    get_db_info_factory: ContextManager[Iterator[GetDbInfoFn]],
+    get_db_info_factory: AsyncContextManager[GetDbInfoFn],
     *,
     how_to_generate: str,
     overview_doc: str,
@@ -472,10 +470,6 @@ async def main_cli(
     await update_package_db(
         db_path=args.db,
         how_to_generate=how_to_generate,
-        # pyre-fixme[6]: Expected `ContextManager[typing.Callable[[str, str,
-        #  Dict[str, str]], Awaitable[Tuple[str, str, Optional[Dict[str, str]]]]]]` for
-        #  3rd param but got `ContextManager[Iterator[typing.Callable[[str, str,
-        #  Dict[str, str]], Awaitable[Tuple[str, str, Optional[Dict[str, str]]]]]]]`.
         get_db_info_factory=get_db_info_factory,
         out_db_path=args.out_db,
         update_all=args.update_all,
