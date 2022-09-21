@@ -561,6 +561,7 @@ defs.buck_genrule(
     echo '#!/bin/sh\necho Hello' > "$OUT"/subdir/exe.sh
     chmod u+x "$OUT"/subdir/exe.sh
     echo Hello > "$OUT"/data.txt
+    chmod 444 "$OUT"/data.txt
     ''',
 )
 
