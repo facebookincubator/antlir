@@ -76,9 +76,9 @@ pub struct FileData {
     pub timestamp: Text,
     pub size: Text,
     #[serde(rename = "open-size")]
-    pub open_size: Text,
+    pub open_size: Option<Text>,
     #[serde(rename = "open-checksum")]
-    pub open_checksum: CheckSum,
+    pub open_checksum: Option<CheckSum>,
 }
 #[derive(Debug, Deserialize, Serialize, PartialEq, Default, Clone)]
 pub struct Text {
@@ -201,13 +201,13 @@ impl From<&UpdatedPrimaryPackage> for FileData {
             size: Text {
                 value: primary_art.gzipped.len().to_string(),
             },
-            open_size: Text {
+            open_size: Some(Text {
                 value: primary_art.content.len().to_string(),
-            },
-            open_checksum: CheckSum {
+            }),
+            open_checksum: Some(CheckSum {
                 checksum_type: "sha256".to_string(),
                 hash: open_checksum,
-            },
+            }),
         }
     }
 }
@@ -496,12 +496,12 @@ mod test {
                 timestamp: Text {
                     value: "1660187336".to_string(),
                 },
-                open_checksum: CheckSum {
+                open_checksum: Some(CheckSum {
                     checksum_type: "sha256".to_string(),
                     hash: "99447c570c18f8219957bff74fb99a5f11006beb9a2e17b9dcb7bb48eef6b316".to_string(),
-                },
+                }),
                 size: Text { value: "35546".to_string() },
-                open_size: Text { value: "278882".to_string() },
+                open_size: Some(Text { value: "278882".to_string() }),
             }],
         };
         assert_eq!(repo_md, expected_repomd);
