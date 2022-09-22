@@ -33,7 +33,7 @@ def _write_json_db(json_path, dct) -> None:
 
 @asynccontextmanager
 async def _base_get_db_info_fn(*args, **kwargs):
-    async def _get_db_info(pkg, tag, opts):
+    async def _get_db_info(pkg, tag, opts, _exist_opts):
         return pkg, tag, opts if opts else {"x": "z"}
 
     yield _get_db_info
@@ -186,7 +186,7 @@ class UpdatePackageDbTestBase:
     async def test_tag_deletion(self) -> None:
         @asynccontextmanager
         async def _none_get_db_info_fn(*args, **kwargs):
-            async def _get_db_info_none(pkg, tag, opts):
+            async def _get_db_info_none(pkg, tag, opts, _exist_opts):
                 return pkg, tag, opts if opts else None
 
             yield _get_db_info_none
@@ -349,7 +349,7 @@ class UpdatePackageDbLibraryTestCase(
     async def test_skippable_exception(self) -> None:
         @asynccontextmanager
         async def _exc_get_db_info_fn(*args, **kwargs):
-            async def _get_db_info_exc(pkg, tag, opts):
+            async def _get_db_info_exc(pkg, tag, opts, _exist_opts):
                 if (pkg, tag) == ("p2", "tok"):
                     raise AssertionError("it works!")
                 return pkg, tag, opts if opts else {"xx": "zz"}

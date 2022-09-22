@@ -68,7 +68,7 @@ DbInfo = Dict[str, str]
 DbUpdateOptions = Dict[str, Any]
 # The simplest implementation of `GetDbInfoFn` is the identity:
 #
-#     def get_db_info(package, tag, options):
+#     def get_db_info(package, tag, new_options, _existing_options):
 #         return options
 #
 # In this set-up, all DB maintenance will be done in this fashion:
@@ -81,10 +81,10 @@ DbUpdateOptions = Dict[str, Any]
 # If the source of truth is external, then this function can instead query
 # the external source of truth, e.g. for a RESTful API;
 #
-#     def get_external_db_info(package, tag, options):
+#     def get_external_db_info(package, tag, new_options, _existing_options):
 #         return requests.get(
 #             'http://packages.example.com/package',
-#             params={'tag': tag, **options},
+#             params={'tag': tag, **new_options},
 #         ).json()
 #
 # If the external source of truth requires no options, the entire DB can
@@ -94,7 +94,9 @@ DbUpdateOptions = Dict[str, Any]
 #
 # Note if None is returned, the given package:tag pair will be deleted
 GetDbInfoRet = Tuple[Package, Tag, Optional[DbInfo]]
-GetDbInfoFn = Callable[[Package, Tag, DbUpdateOptions], Awaitable[GetDbInfoRet]]
+GetDbInfoFn = Callable[
+    [Package, Tag, DbUpdateOptions, DbUpdateOptions], Awaitable[GetDbInfoRet]
+]
 # The in-memory representation of the package DB.
 PackageTagDb = Dict[Package, Dict[Tag, DbInfo]]
 
@@ -229,7 +231,7 @@ async def _get_db_info_bounded(
 ) -> GetDbInfoRet:
     async with sem:
         try:
-            return await get_db_info_fn(pkg, tag, new_opts)
+            return await get_db_info_fn(pkg, tag, new_opts, exist_opts)
         except Exception as e:
             if is_exception_skippable and is_exception_skippable(e):
                 log.warning(f"Caught skippable exception, continuing: {e}")
