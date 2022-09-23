@@ -20,9 +20,10 @@ class TestExtracted(unittest.TestCase):
         paths = Path.listdir(subvol.path("/usr/lib/systemd"))
         self.assertTrue(
             any(
-                re.match(rb"libsystemd-shared-\d+\.so", path.basename())
+                re.match(rb"libsystemd-shared-\d+.*\.so", path.basename())
                 for path in paths
-            )
+            ),
+            "libsystemd-shared does not appear to be in {}".format(paths),
         )
 
     # the interpreter is under /lib64, but we want to clone it to /usr/lib64
