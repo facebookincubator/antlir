@@ -40,7 +40,7 @@ python_library(
         "//blockchain/custody/vault/os/...",
         "//metalos/initrd/facebook/...",
         "//ti/platform/edgeos/...",
-        "//tupperware/cm/antlir/...",
+        "//tupperware/cm/...",
         "//tupperware/image/scripts/...",
         "//tupperware/scripts/...",
     ],
