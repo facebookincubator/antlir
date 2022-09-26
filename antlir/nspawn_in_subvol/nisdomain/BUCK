@@ -1,6 +1,6 @@
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 image.layer(
@@ -13,21 +13,16 @@ image.layer(
     parent_layer = flavor_helpers.get_build_appliance(),
 )
 
-rust_binary(
+# Rebuild this file with:
+# clang -static -o nis_domainname nis_domainname.c
+#
+# Yeah, checking in a binary is awful, but this absolutely needs to be a FULLY
+# static binary and building it in an antlir layer is really really slow and
+# takes on a circular dependency that is hard to break.
+export_file(
     name = "nis_domainname",
-    srcs = ["nis_domainname.rs"],
-    allocator = "malloc",
-    link_style = "static",
-    nodefaultlibs = True,
-    unittests = False,
+    # All =container targets take a direct dep on this.
     visibility = ["PUBLIC"],
-    deps = third_party.libraries(
-        [
-            "nix",
-            "clap",
-        ],
-        platform = "rust",
-    ),
 )
 
 image.layer(
