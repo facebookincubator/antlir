@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_library")
 
 rust_library(
     name = "buck_query",
@@ -7,12 +7,9 @@ rust_library(
         "query.rs",
         "targets.rs",
     ],
-    deps = third_party.libraries(
-        [
-            "anyhow",
-            "serde",
-            "serde_json",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "anyhow",
+        "serde",
+        "serde_json",
+    ],
 )

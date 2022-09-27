@@ -174,28 +174,60 @@ def _third_party_libraries(names, platform = None):
         for name in names
     ]
 
-def _rust_common(rule, kwargs):
+def _rust_common(rule, **kwargs):
     rustc_flags = kwargs.pop("rustc_flags", [])
     if not kwargs.pop("allow_unused_crate_dependencies", False):
         rustc_flags.append("--forbid=unused_crate_dependencies")
     rustc_flags.append("--warn=clippy::unwrap_used")
     kwargs["rustc_flags"] = rustc_flags
-    rule(**kwargs)
+
+    # always handled by the antlir macros themselves
+    if rule != shim.rust_unittest and rule != shim.rust_python_extension and rule != shim.rust_bindgen_library:
+        kwargs["unittests"] = False
+    deps = [_normalize_rust_dep(d) for d in kwargs.pop("deps", [])]
+    rule(deps = deps, **kwargs)
 
 def rust_python_extension(**kwargs):
-    _rust_common(shim.rust_python_extension, kwargs)
+    _rust_common(shim.rust_python_extension, **kwargs)
 
 def rust_library(**kwargs):
-    _rust_common(shim.rust_library, kwargs)
+    kwargs, test_kwargs = _split_rust_kwargs(kwargs)
+    _rust_common(shim.rust_library, **kwargs)
+    _rust_implicit_test(kwargs, test_kwargs)
 
 def rust_binary(**kwargs):
-    _rust_common(shim.rust_binary, kwargs)
+    kwargs, test_kwargs = _split_rust_kwargs(kwargs)
+    _rust_common(shim.rust_binary, **kwargs)
+    _rust_implicit_test(kwargs, test_kwargs)
 
 def rust_unittest(**kwargs):
-    _rust_common(shim.rust_unittest, kwargs)
+    _rust_common(shim.rust_unittest, **kwargs)
 
 def rust_bindgen_library(**kwargs):
-    _rust_common(shim.rust_bindgen_library, kwargs)
+    _rust_common(shim.rust_bindgen_library, **kwargs)
+
+def _rust_implicit_test(kwargs, test_kwargs):
+    if kwargs.pop("unittests", True):
+        test_kwargs["name"] = kwargs["name"] + "-unittest"
+        test_kwargs["crate"] = kwargs.get("crate") or kwargs["name"].replace("-", "_")
+        test_kwargs.pop("link_style", None)
+        test_kwargs.pop("linker_flags", None)
+        test_kwargs["srcs"] = test_kwargs.get("srcs", []) + kwargs.get("srcs", [])
+        test_kwargs["deps"] = test_kwargs.get("deps", []) + kwargs.get("deps", [])
+        _rust_common(shim.rust_unittest, **test_kwargs)
+
+def _split_rust_kwargs(kwargs):
+    test_kwargs = dict(kwargs)
+    test_kwargs = {k: v for k, v in test_kwargs.items() if not k.startswith("test_")}
+    test_kwargs.update({k[len("test_"):]: v for k, v in kwargs.items() if k.startswith("test_")})
+    kwargs = {k: v for k, v in kwargs.items() if not k.startswith("test_")}
+
+    return kwargs, test_kwargs
+
+def _normalize_rust_dep(dep):
+    if ":" in dep:
+        return dep
+    return shim.third_party.library(dep, platform = "rust")
 
 antlir_buck_env = shim.antlir_buck_env
 buck_command_alias = shim.buck_command_alias

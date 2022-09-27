@@ -21,10 +21,10 @@ rust_python_extension(
         ":register_modules.rs": "src/register_modules.rs",
     },
     visibility = [],
-    deps = third_party.libraries(
-        ["pyo3"],
+    deps = [third_party.library(
+        "pyo3",
         platform = "rust",
-    ) + extension_rust_targets,
+    )] + extension_rust_targets,
 )
 
 export_file(name = "trigger_rust_module_init.py")
@@ -52,19 +52,13 @@ rust_binary(
         "modules.bzl",
     ],
     crate_root = "gen_modules_bzl.rs",
-    test_deps = third_party.libraries(
-        [
-            "pretty_assertions",
-        ],
-        platform = "rust",
-    ),
-    deps = third_party.libraries(
-        [
-            "anyhow",
-            "serde",
-            "serde_json",
-            "serde_starlark",
-        ],
-        platform = "rust",
-    ),
+    test_deps = [
+        "pretty_assertions",
+    ],
+    deps = [
+        "anyhow",
+        "serde",
+        "serde_json",
+        "serde_starlark",
+    ],
 )

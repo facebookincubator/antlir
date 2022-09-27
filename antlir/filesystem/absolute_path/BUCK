@@ -1,10 +1,7 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_library")
 
 rust_library(
     name = "absolute_path",
     srcs = ["src/absolute_path.rs"],
-    deps = third_party.libraries(
-        ["thiserror"],
-        platform = "rust",
-    ),
+    deps = ["thiserror"],
 )
