@@ -209,7 +209,7 @@ mv $TMP/out "$OUT"
             maybe_allow_mknod = "'--allow-mknod'" if container_opts.internal_only_allow_mknod else "",
             maybe_boot = "'--boot'" if boot else "",
             maybe_boot_no_await_dbus = "'--boot-no-await-dbus'" if not container_opts.boot_await_dbus else "",
-            maybe_boot_await_system_running = "'--boot-await-system-running'" if not container_opts.boot_await_system_running else "",
+            maybe_boot_await_system_running = "'--boot-await-system-running'" if container_opts.boot_await_system_running else "",
             maybe_hostname = "'--hostname={hostname}'".format(hostname = hostname) if hostname else "",
             # The next 3 would be nice to pass as `container_opts_t`, but
             # this entire interface is pinned to the `nspawn_in_subvol` CLI,
