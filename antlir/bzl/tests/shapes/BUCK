@@ -1,7 +1,7 @@
 # @noautodeps
 
 load("//antlir/bzl:defs.bzl", "bzl_to_py")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t", "friend_t", "hashable_t", "lightsaber_t")
@@ -206,13 +206,9 @@ rust_unittest(
         ),
     },
     deps = [
+        "anyhow",
+        "fbthrift",
+        "serde_json",
         ":test.shape-rust",
-    ] + third_party.libraries(
-        [
-            "anyhow",
-            "serde_json",
-            "fbthrift",
-        ],
-        platform = "rust",
-    ),
+    ],
 )

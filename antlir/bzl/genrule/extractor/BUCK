@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary")
 
 rust_binary(
     name = "extract",
@@ -13,17 +13,14 @@ rust_binary(
         "//ti/platform/edgeos/...",
     ],
     deps =
-        third_party.libraries(
-            [
-                "serde_json",
-                "anyhow",
-                "goblin",
-                "once_cell",
-                "slog",
-                "slog_glog_fmt",
-                "structopt",
-                "regex",
-            ],
-            platform = "rust",
-        ),
+        [
+            "anyhow",
+            "goblin",
+            "once_cell",
+            "regex",
+            "serde_json",
+            "slog",
+            "slog_glog_fmt",
+            "structopt",
+        ],
 )

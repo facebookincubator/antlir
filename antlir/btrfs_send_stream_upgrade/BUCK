@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "rust_unittest", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "rust_unittest")
 
 rust_library(
     name = "btrfs_send_stream_upgrade_lib",
@@ -15,24 +15,21 @@ rust_library(
     ]) + glob([
         "src/upgrade/*.rs",
     ]),
-    deps = third_party.libraries(
-        [
-            "anyhow",
-            "crc32c-hw",
-            "lazy_static",
-            "maplit",
-            "num",
-            "num-derive",
-            "num-traits",
-            "num_cpus",
-            "slog",
-            "slog-term",
-            "structopt",
-            "thiserror",
-            "zstd",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "anyhow",
+        "crc32c-hw",
+        "lazy_static",
+        "maplit",
+        "num",
+        "num-derive",
+        "num-traits",
+        "num_cpus",
+        "slog",
+        "slog-term",
+        "structopt",
+        "thiserror",
+        "zstd",
+    ],
 )
 
 rust_binary(
@@ -42,65 +39,50 @@ rust_binary(
         "//antlir/...",
         "//tupperware/image/imgtool/...",
     ],
-    deps = [":btrfs_send_stream_upgrade_lib"] +
-           third_party.libraries(
-               [
-                   "anyhow",
-                   "structopt",
-               ],
-               platform = "rust",
-           ),
+    deps = [
+        "anyhow",
+        "structopt",
+        ":btrfs_send_stream_upgrade_lib",
+    ],
 )
 
 rust_unittest(
     name = "test-coordinator",
     srcs = ["tests/test_coordinator.rs"],
-    deps = [":btrfs_send_stream_upgrade_lib"] +
-           third_party.libraries(
-               [
-                   "anyhow",
-               ],
-               platform = "rust",
-           ),
+    deps = [
+        "anyhow",
+        ":btrfs_send_stream_upgrade_lib",
+    ],
 )
 
 rust_unittest(
     name = "test-ordered-element-queue",
     srcs = ["tests/test_ordered_element_queue.rs"],
-    deps = [":btrfs_send_stream_upgrade_lib"] +
-           third_party.libraries(
-               [
-                   "anyhow",
-                   "rand",
-               ],
-               platform = "rust",
-           ),
+    deps = [
+        "anyhow",
+        "rand",
+        ":btrfs_send_stream_upgrade_lib",
+    ],
 )
 
 rust_unittest(
     name = "test-read-once-buffer-cache",
     srcs = ["tests/test_read_once_buffer_cache.rs"],
-    deps = [":btrfs_send_stream_upgrade_lib"] +
-           third_party.libraries(
-               [
-                   "anyhow",
-                   "rand",
-                   "structopt",
-                   "tempfile",
-               ],
-               platform = "rust",
-           ),
+    deps = [
+        "anyhow",
+        "rand",
+        "structopt",
+        "tempfile",
+        ":btrfs_send_stream_upgrade_lib",
+    ],
 )
 
 rust_unittest(
     name = "test-unordered-element-queue",
     srcs = ["tests/test_unordered_element_queue.rs"],
-    deps = [":btrfs_send_stream_upgrade_lib"] +
-           third_party.libraries(
-               [
-                   "anyhow",
-                   "rand",
-               ],
-               platform = "rust",
-           ),
+    deps = [
+        "anyhow",
+        "rand",
+        ":btrfs_send_stream_upgrade_lib",
+    ],
 )

@@ -1,18 +1,15 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library")
 load("//antlir/bzl:tool.bzl", "antlir_tool")
 
 rust_library(
     name = "ir",
     srcs = ["ir.rs"],
-    deps = third_party.libraries(
-        [
-            "anyhow",
-            "derive_more",
-            "serde",
-            "serde_json",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "anyhow",
+        "derive_more",
+        "serde",
+        "serde_json",
+    ],
 )
 
 antlir_tool(
@@ -20,25 +17,19 @@ antlir_tool(
     name = "bzl2ir",
     srcs = ["bzl2ir.rs"],
     crate = "bzl2ir",
-    test_deps = third_party.libraries(
-        ["maplit"],
-        platform = "rust",
-    ),
+    test_deps = ["maplit"],
     visibility = ["PUBLIC"],
-    deps = [":ir"] +
-           third_party.libraries(
-               [
-                   "anyhow",
-                   "derive_more",
-                   "gazebo",
-                   "serde",
-                   "serde_json",
-                   "slotmap",
-                   "starlark",
-                   "structopt",
-               ],
-               platform = "rust",
-           ),
+    deps = [
+        "anyhow",
+        "derive_more",
+        "gazebo",
+        "serde",
+        "serde_json",
+        "slotmap",
+        "starlark",
+        "structopt",
+        ":ir",
+    ],
 )
 
 antlir_tool(
@@ -46,31 +37,25 @@ antlir_tool(
     name = "ir2code",
     srcs = ["ir2code.rs"] + glob(["templates/*.handlebars"]),
     visibility = ["PUBLIC"],
-    deps = [":ir"] +
-           third_party.libraries(
-               [
-                   "anyhow",
-                   "derive_more",
-                   "handlebars",
-                   "itertools",
-                   "serde",
-                   "serde_json",
-                   "structopt",
-               ],
-               platform = "rust",
-           ),
+    deps = [
+        "anyhow",
+        "derive_more",
+        "handlebars",
+        "itertools",
+        "serde",
+        "serde_json",
+        "structopt",
+        ":ir",
+    ],
 )
 
 rust_library(
     name = "shape",
     srcs = ["shape.rs"],
     visibility = ["PUBLIC"],
-    deps = third_party.libraries(
-        [
-            "anyhow",
-            "fbthrift",
-            "serde",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "anyhow",
+        "fbthrift",
+        "serde",
+    ],
 )

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:oss_shim.bzl", "python_library", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "python_library", "rust_library")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
@@ -15,7 +15,7 @@ def antlir_rust_extension(
         labels = (),
         **kwargs):
     deps = list(deps)
-    deps.append(third_party.library("pyo3", platform = "rust"))
+    deps.append("pyo3")
     labels = list(labels)
     module_name = native.package_name().replace("/", ".") + "." + name
     labels.append("antlir-rust-extension")
@@ -30,6 +30,7 @@ def antlir_rust_extension(
         deps = deps,
         visibility = [antlir_dep("rust:native-lib")],
         labels = labels,
+        unittests = False,
         **kwargs
     )
     python_library(

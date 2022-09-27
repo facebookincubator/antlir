@@ -1,16 +1,12 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary")
 
 rust_binary(
     name = "generate-metalos-apis",
     srcs = ["generate_metalos_apis.rs"],
     unittests = False,
     deps = [
+        "anyhow",
+        "serde",
         "//antlir/buck_query:buck_query",
-    ] + third_party.libraries(
-        [
-            "anyhow",
-            "serde",
-        ],
-        platform = "rust",
-    ),
+    ],
 )

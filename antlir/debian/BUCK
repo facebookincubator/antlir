@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "rust_binary", "rust_library")
 load("//antlir/bzl:tool.bzl", "antlir_tool")
 
 rust_binary(
@@ -12,49 +12,42 @@ rust_binary(
         "test_data/sample_Release",
     ],
     deps = [
+        "anyhow",
+        "bytes",
+        "clap",
+        "futures",
+        "governor",
+        "hex",
+        "pest",
+        "pest_derive",
+        "reqwest",
+        "slog",
+        "slog-async",
+        "slog-term",
+        "xz2",
         ":blob-store",
         ":snapshotter-helpers",
+        "//antlir:find_root",
+        "//antlir/facebook:commit-deb-snapshot",
+        "//antlir/filesystem/absolute_path:absolute_path",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
         "//manifold/clients/rust:manifold_client",
-        "//antlir/facebook:commit-deb-snapshot",
-        "//antlir:find_root",
-        "//antlir/filesystem/absolute_path:absolute_path",
-    ] + third_party.libraries(
-        [
-            "anyhow",
-            "bytes",
-            "clap",
-            "futures",
-            "governor",
-            "hex",
-            "pest",
-            "pest_derive",
-            "reqwest",
-            "slog",
-            "slog-async",
-            "slog-term",
-            "xz2",
-        ],
-        platform = "rust",
-    ),
+    ],
 )
 
 rust_library(
     name = "snapshotter-helpers",
     srcs = ["snapshotter_helpers.rs"],
     crate_root = "snapshotter_helpers.rs",
-    deps = third_party.libraries(
-        [
-            "governor",
-            "strum",
-            "strum_macros",
-            "clap",
-            "anyhow",
-            "byte-unit",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "anyhow",
+        "byte-unit",
+        "clap",
+        "governor",
+        "strum",
+        "strum_macros",
+    ],
 )
 
 rust_binary(
@@ -72,25 +65,21 @@ rust_binary(
     ],
     visibility = ["PUBLIC"],
     deps = [
+        "anyhow",
+        "clap",
+        "futures",
+        "governor",
+        "reqwest",
+        "slog",
+        "slog-async",
+        "slog-term",
         ":blob-store",
-        ":snapshotter-helpers",
         ":rpm-artifact-parser",
-        "//manifold/clients/rust:manifold_client",
+        ":snapshotter-helpers",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
-    ] + third_party.libraries(
-        [
-            "anyhow",
-            "clap",
-            "futures",
-            "governor",
-            "reqwest",
-            "slog",
-            "slog-async",
-            "slog-term",
-        ],
-        platform = "rust",
-    ),
+        "//manifold/clients/rust:manifold_client",
+    ],
 )
 
 rust_library(
@@ -108,21 +97,17 @@ rust_library(
     ],
     visibility = ["PUBLIC"],
     deps = [
+        "anyhow",
+        "bytes",
+        "flate2",
+        "hex",
+        "quick-xml",
+        "reqwest",
+        "serde",
+        "slog",
         ":blob-store",
         ":snapshotter-helpers",
-    ] + third_party.libraries(
-        [
-            "quick-xml",
-            "serde",
-            "anyhow",
-            "bytes",
-            "flate2",
-            "hex",
-            "reqwest",
-            "slog",
-        ],
-        platform = "rust",
-    ),
+    ],
 )
 
 rust_library(
@@ -135,22 +120,18 @@ rust_library(
         "PUBLIC",
     ],
     deps = [
+        "anyhow",
+        "async-trait",
+        "bytes",
+        "governor",
+        "hex",
+        "http",
+        "reqwest",
+        "sha2",
+        "slog",
+        "tokio-retry",
         "//manifold/clients/rust:manifold_client",
-    ] + third_party.libraries(
-        [
-            "anyhow",
-            "async-trait",
-            "bytes",
-            "governor",
-            "hex",
-            "http",
-            "reqwest",
-            "sha2",
-            "slog",
-            "tokio-retry",
-        ],
-        platform = "rust",
-    ),
+    ],
 )
 
 antlir_tool(
@@ -164,23 +145,19 @@ antlir_tool(
     ],
     rule = rust_binary,
     deps = [
+        "anyhow",
+        "clap",
+        "log",
+        "pretty_env_logger",
+        "tokio",
+        "tokio-stream",
+        "urlencoding",
+        "warp",
         ":blob-store",
         "//common/rust/shed/fbinit:fbinit",
         "//common/rust/shed/fbinit:fbinit-tokio",
         "//manifold/clients/rust:manifold_client",
-    ] + third_party.libraries(
-        [
-            "anyhow",
-            "clap",
-            "log",
-            "pretty_env_logger",
-            "tokio",
-            "tokio-stream",
-            "warp",
-            "urlencoding",
-        ],
-        platform = "rust",
-    ),
+    ],
 )
 
 buck_command_alias(

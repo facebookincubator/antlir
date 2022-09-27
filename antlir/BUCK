@@ -364,20 +364,15 @@ rust_library(
     name = "find_root",
     srcs = ["find_root.rs"],
     crate_root = "find_root.rs",
-    test_deps = third_party.libraries(
-        [
-            "tempdir",
-            "anyhow",
-        ],
-        platform = "rust",
-    ),
+    test_deps = [
+        "anyhow",
+        "tempdir",
+    ],
     visibility = ["PUBLIC"],
-    deps = ["//antlir/filesystem/absolute_path:absolute_path"] + third_party.libraries(
-        [
-            "thiserror",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "thiserror",
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ],
 )
 
 python_unittest(

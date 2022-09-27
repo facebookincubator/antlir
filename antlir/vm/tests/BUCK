@@ -3,7 +3,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "ADMIN_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -268,10 +268,7 @@ rust_binary(
     name = "sidecar",
     srcs = ["sidecar.rs"],
     deps = [
-        third_party.library(
-            "tokio",
-            platform = "rust",
-        ),
+        "tokio",
     ],
 )
 
@@ -284,13 +281,11 @@ vm.rust_unittest(
             sidecar_services = ["$(exe :sidecar)"],
         ),
     ),
-    deps = third_party.libraries(
+    deps =
         [
             "anyhow",
             "tokio",
         ],
-        platform = "rust",
-    ),
 )
 
 boot.systemd.build(

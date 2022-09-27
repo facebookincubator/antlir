@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "rust_library", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "rust_library")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":test_hoist.bzl", "test_hoist")
@@ -68,14 +68,12 @@ rust_library(
     crate = "target",
     crate_root = "shape2/target.rs",
     visibility = ["PUBLIC"],
-    deps = [antlir_dep("bzl/shape2:shape")] + third_party.libraries(
-        [
-            "anyhow",
-            "fbthrift",
-            "serde",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        antlir_dep("bzl/shape2:shape"),
+        "anyhow",
+        "fbthrift",
+        "serde",
+    ],
 )
 
 shape.impl(

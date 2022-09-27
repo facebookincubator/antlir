@@ -1,17 +1,14 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "third_party")
+load("//antlir/bzl:oss_shim.bzl", "rust_binary")
 
 rust_binary(
     name = "runner",
     srcs = glob(["src/**/*.rs"]),
-    deps = third_party.libraries(
-        [
-            "anyhow",
-            "itertools",
-            "rayon",
-            "serde",
-            "serde_json",
-            "structopt",
-        ],
-        platform = "rust",
-    ),
+    deps = [
+        "anyhow",
+        "itertools",
+        "rayon",
+        "serde",
+        "serde_json",
+        "structopt",
+    ],
 )
