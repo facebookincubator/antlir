@@ -121,6 +121,7 @@ load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 load(":target_tagger_helper.bzl", "target_tagger_helper")
 
 _NO_DEFAULT = struct(no_default = True)
+
 _DEFAULT_VALUE = struct(__default_value_sentinel__ = True)
 
 # Poor man's debug pretty-printing. Better version coming on a stack.
@@ -391,7 +392,7 @@ def _is_shape_constructor(x):
     # starlark doesn't have callable() so we have to do this
     if ((repr(x).endswith("antlir/bzl/shape.bzl.shape_constructor_function")) or  # buck2
         (repr(x) == "<function shape_constructor_function>") or  # buck1
-        (repr(x).startswith("<function _shape.<locals>.shape_constructor_function"))):  # python mock
+        repr(x).startswith("<function _shape.<locals>.shape_constructor_function")):  # python mock
         return True
     return False
 
@@ -463,6 +464,7 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
 
     buck_genrule(
         name = name,
+        antlir_rule = "user-internal",
         cmd = """
             $(exe {}) {} $(location :{}.bzl) {} > $OUT
         """.format(
@@ -471,14 +473,13 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
             name,
             shell.quote(repr({d: "$(location {})".format(d) for d in deps})),
         ),
-        antlir_rule = "user-internal",
     )
 
     if not expert_only_custom_impl:
         buck_genrule(
             name = "{}.py".format(name),
-            cmd = "$(exe {}) pydantic $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
             antlir_rule = "user-internal",
+            cmd = "$(exe {}) pydantic $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
         )
         python_library(
             name = "{}-python".format(name),
@@ -491,24 +492,22 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
         )
         buck_genrule(
             name = "{}.rs".format(name),
-            cmd = "$(exe {}) rust $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
             antlir_rule = "user-internal",
+            cmd = "$(exe {}) rust $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
         )
         rust_library(
             name = "{}-rust".format(name),
             crate = kwargs.pop("rust_crate", name[:-len(".shape")]),
             mapped_srcs = {":{}.rs".format(name): "src/lib.rs"},
-            deps = ["{}-rust".format(d) for d in deps] +
-                   [antlir_dep("bzl/shape2:shape")] +
-                   third_party.libraries(
-                       [
-                           "anyhow",
-                           "fbthrift",
-                           "serde",
-                           "serde_json",
-                       ],
-                       platform = "rust",
-                   ),
+            deps = ["{}-rust".format(d) for d in deps] + [antlir_dep("bzl/shape2:shape")] + third_party.libraries(
+                [
+                    "anyhow",
+                    "fbthrift",
+                    "serde",
+                    "serde_json",
+                ],
+                platform = "rust",
+            ),
             visibility = visibility,
             antlir_rule = "user-facing",
             unittests = False,
@@ -667,10 +666,10 @@ def _json_file(name, instance, visibility = None):  # pragma: no cover
     instance = structs.as_json(_safe_to_serialize_instance(instance))
     buck_genrule(
         name = name,
-        cmd = "echo {} > $OUT".format(shell.quote(instance)),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
+        cmd = "echo {} > $OUT".format(shell.quote(instance)),
         visibility = visibility,
     )
     return normalize_target(":" + name)
@@ -686,8 +685,8 @@ def _render_template(name, instance, template, visibility = None):  # pragma: no
 
     buck_genrule(
         name = name,
-        cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
         antlir_rule = "user-internal",
+        cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
         visibility = visibility,
     )
     return normalize_target(":" + name)
@@ -736,20 +735,20 @@ def _python_data(
 
     buck_genrule(
         name = "{}.py".format(name),
+        # Antlir users should not directly use `shape`, but we do use it
+        # as an implementation detail of "builder" / "publisher" targets.
+        antlir_rule = "user-internal",
         cmd = """
             echo "from {module} import {type_name}" > $OUT
             echo {data} >> $OUT
         """.format(
-            module = shape_module,
-            type_name = type_name,
             data = shell.quote("data = {classname}.parse_raw({shape_json})".format(
                 classname = type_name,
                 shape_json = repr(structs.as_json(instance)),
             )),
+            module = shape_module,
+            type_name = type_name,
         ),
-        # Antlir users should not directly use `shape`, but we do use it
-        # as an implementation detail of "builder" / "publisher" targets.
-        antlir_rule = "user-internal",
     )
 
     python_library(
@@ -919,34 +918,34 @@ def _hash(instance):  # pragma: no cover
     return sha256_b64(str(_hash_helper(_as_dict_deep(instance))))
 
 shape = struct(
-    dict = _dict,
-    enum = _enum,
-    field = _field,
-    list = _list,
-    new = _new_shape,
-    path = _path,
-    pretty = _pretty,
-    shape = _shape,
-    union = _union,
-    union_t = _union_type,
     # generate implementation of various client libraries
     impl = _impl,
+    DEFAULT_VALUE = _DEFAULT_VALUE,
     # output target macros and other conversion helpers
     DEPRECATED_as_dict_for_target_tagger = _as_dict_for_target_tagger,
-    as_target_tagged_dict = _as_target_tagged_dict,
+    as_dict_collect_deps = _as_dict_collect_deps,
     as_dict_shallow = _as_dict_shallow,
     as_serializable_dict = _as_serializable_dict,
-    as_dict_collect_deps = _as_dict_collect_deps,
+    as_target_tagged_dict = _as_target_tagged_dict,
+    dict = _dict,
     do_not_cache_me_json = _do_not_cache_me_json,
+    enum = _enum,
+    field = _field,
+    hash = _hash,
     is_any_instance = _is_any_instance,
     is_instance = _is_instance,
     is_shape = _is_shape,
     json_file = _json_file,
+    list = _list,
+    new = _new_shape,
+    path = _path,
+    pretty = _pretty,
     python_data = _python_data,
     render_template = _render_template,
-    DEFAULT_VALUE = _DEFAULT_VALUE,
-    hash = _hash,
+    shape = _shape,
     stable_json = _stable_json,
+    union = _union,
+    union_t = _union_type,
 )
 
 def _self_test_hash():
