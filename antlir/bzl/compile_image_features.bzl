@@ -42,6 +42,7 @@ def vset_override_genrule(flavor_config, current_target):
         vset_override_name = version_set_override_name(current_target)
         buck_genrule(
             name = vset_override_name,
+            antlir_rule = "user-internal",
             bash = """
 cat > "$OUT" << 'EOF'
 {envra_file_contents}
@@ -55,7 +56,6 @@ EOF
                     nevra.arch,
                 ]) for nevra in flavor_config.rpm_version_set_overrides]),
             ),
-            antlir_rule = "user-internal",
         )
     return vset_override_name
 
@@ -109,32 +109,15 @@ def compile_image_features_output(
         # $(query_outputs '{deps_query}')
     '''.format(
         compiler = antlir_dep(":compiler"),
-        subvol_name_quoted = shell.quote(subvol_name or "volume"),
         current_target_quoted = shell.quote(current_target),
-        quoted_child_feature_json_args = quoted_child_feature_json_args,
-        maybe_flavor_config = (
-            "--flavor-config {}".format(
-                shell.quote(shape.do_not_cache_me_json(flavor_config)),
-            ) if flavor_config else ""
-        ),
+        deps_query = deps_query,
+        internal_only_is_genrule_layer = "--internal-only-is-genrule-layer" if internal_only_is_genrule_layer else "",
         maybe_allowed_host_mount_target_args = (
             " ".join([
                 "--allowed-host-mount-target={}".format(t.strip())
                 for t in REPO_CFG.host_mounts_allowed_in_targets
             ])
         ),
-        # We will ask Buck to ensure that the outputs of the direct
-        # dependencies of our `feature`s are available on local disk.
-        #
-        # See `Implementation notes: Dependency resolution` in `__doc__`.
-        # Note that we need no special logic to exclude parent-layer
-        # features -- this query does not traverse them anyhow, since the
-        # the parent layer feature is added as an "inline feature" above.
-        targets_and_outputs = " ".join(targets_and_outputs_arg_list(
-            name = name,
-            query = deps_query,
-        )),
-        deps_query = deps_query,
         maybe_artifacts_require_repo = (
             "--artifacts-may-require-repo" if
             # Future: Consider **only** emitting this flag if the image is
@@ -148,14 +131,31 @@ def compile_image_features_output(
             # any executables were in fact installed.
             REPO_CFG.artifacts_require_repo else ""
         ),
-        maybe_version_set_override = (
-            "--version-set-override $(location :{})".format(vset_override_name) if vset_override_name else ""
+        maybe_flavor_config = (
+            "--flavor-config {}".format(
+                shell.quote(shape.do_not_cache_me_json(flavor_config)),
+            ) if flavor_config else ""
         ),
         maybe_parent_layer = (
             "--parent-layer $(location {})".format(parent_layer) if parent_layer and not flavor else ""
         ),
-        internal_only_is_genrule_layer = "--internal-only-is-genrule-layer" if internal_only_is_genrule_layer else "",
         maybe_profile = maybe_profile,
+        maybe_version_set_override = (
+            "--version-set-override $(location :{})".format(vset_override_name) if vset_override_name else ""
+        ),
+        quoted_child_feature_json_args = quoted_child_feature_json_args,
+        subvol_name_quoted = shell.quote(subvol_name or "volume"),
+        # We will ask Buck to ensure that the outputs of the direct
+        # dependencies of our `feature`s are available on local disk.
+        #
+        # See `Implementation notes: Dependency resolution` in `__doc__`.
+        # Note that we need no special logic to exclude parent-layer
+        # features -- this query does not traverse them anyhow, since the
+        # the parent layer feature is added as an "inline feature" above.
+        targets_and_outputs = " ".join(targets_and_outputs_arg_list(
+            name = name,
+            query = deps_query,
+        )),
     )
 
 def compile_image_features(
@@ -202,10 +202,10 @@ def compile_image_features(
         struct(),
         extra_deps = extra_deps + ([maybe_add_feature_rule(
             name = "parent_layer",
-            include_in_target_name = {"parent_layer": parent_layer},
             feature_shape = parent_layer_t(
                 subvol = tag_target(target_tagger, parent_layer, is_layer = True),
             ),
+            include_in_target_name = {"parent_layer": parent_layer},
             deps = [parent_layer],
         )] if parent_layer else []),
     ))
@@ -231,8 +231,8 @@ def compile_image_features(
                 )}]),
             )] if parent_layer else []
         ),
-        parent_layer = parent_layer,
         flavors = flavors,
+        parent_layer = parent_layer,
         visibility = ["PUBLIC"],
     )
     normalized_features = normalize_features(
@@ -249,15 +249,15 @@ def compile_image_features(
             query.set(normalized_features.direct_deps),
             # We will query the deps of the features that are targets.
             query.deps(
+                depth = 1,
                 expr = query.attrfilter(
+                    expr = query.deps(
+                        depth = query.UNBOUNDED,
+                        expr = query.set(normalized_features.targets),
+                    ),
                     label = "type",
                     value = "image_feature",
-                    expr = query.deps(
-                        expr = query.set(normalized_features.targets),
-                        depth = query.UNBOUNDED,
-                    ),
                 ),
-                depth = 1,
             ),
         ] + ([
             layer_deps_query(parent_layer),
