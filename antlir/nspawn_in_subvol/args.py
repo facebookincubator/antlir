@@ -684,7 +684,7 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     args.subvolume_on_disk = find_subvolume_on_disk(layer_path)
 
     proxy_server_config = (
-        proxy_server_config_t(fbpkg_pkg_list=[{"path": args.fbpkg_db_path}])
+        proxy_server_config_t(fbpkg_pkg_list=[])
         if args.run_proxy_server
         else None
     )
