@@ -24,6 +24,8 @@ export_file(name = "shape.bzl")
 
 export_file(name = "stat.bzl")
 
+export_file(name = "sha256.bzl")
+
 python_binary(
     name = "fail-with-message",
     srcs = ["fail_with_message.py"],

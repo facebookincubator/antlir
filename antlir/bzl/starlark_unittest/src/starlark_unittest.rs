@@ -20,6 +20,8 @@ use anyhow::Result;
 use clap::Parser;
 use gazebo::any::ProvidesStaticType;
 use regex::Regex;
+use sha2::Digest;
+use sha2::Sha256;
 use starlark::environment::FrozenModule;
 use starlark::environment::Globals;
 use starlark::environment::GlobalsBuilder;
@@ -129,6 +131,14 @@ fn unittest(gb: &mut GlobalsBuilder) {
     }
 }
 
+#[starlark_module]
+fn native(gb: &mut GlobalsBuilder) {
+    fn sha256(val: &str) -> anyhow::Result<String> {
+        let hash = Sha256::digest(val.as_bytes());
+        Ok(hex::encode(&hash))
+    }
+}
+
 #[derive(Debug, Clone)]
 struct TestModule {
     name: String,
@@ -198,6 +208,7 @@ fn globals() -> Globals {
     GlobalsBuilder::extended()
         .with_struct("unittest", unittest)
         .with(saving_fail)
+        .with_struct("native", native)
         .build()
 }
 
