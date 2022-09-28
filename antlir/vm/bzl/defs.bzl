@@ -245,9 +245,14 @@ def _vm_multi_kernel_unittest(
         vm_unittest,
         kernel_list,
         vm_opts = None,
+        disks = None,
+        disk = None,
+        custom_rootfs_layer = None,
         **kwargs):
     if len(kernel_list) == 0:
         fail("{}: will not run on any kernels, check the selection query!".format(name))
+    if disks or disk:
+        fail("disk(s) are not allowed with multi_kernel tests")
     kernel_list = sets.to_list(sets.make(kernel_list))
     for uname in kernel_list:
         kernel = kernels.get(uname)
@@ -256,9 +261,16 @@ def _vm_multi_kernel_unittest(
             merged_vm_opts = shape.as_dict_shallow(vm_opts)
             merged_vm_opts["kernel"] = kernel
 
-            # Don't provide the initrd originally constructed since
-            # the kernel version likely changed
+            # Don't provide the initrd originally constructed since the
+            # kernel version has changed and it's now invalid
             merged_vm_opts.pop("initrd")
+
+            # Same with disks
+            merged_vm_opts.pop("disks")
+
+            if custom_rootfs_layer:
+                merged_vm_opts["disks"] = [api.disk.root(layer = custom_rootfs_layer, kernel = kernel)]
+
             vm_opts = api.opts.new(**merged_vm_opts)
         else:
             vm_opts = api.opts.new(kernel = kernel)
@@ -298,9 +310,6 @@ vm = struct(
     artifacts = struct(
         rootfs = struct(
             layer = REPO_CFG.artifact["vm.rootfs.layer"],
-            disk = api.disk.new(
-                package = REPO_CFG.artifact["vm.rootfs.btrfs"],
-            ),
         ),
     ),
     # An API for constructing a set of tests that are all the

@@ -31,7 +31,10 @@ disk_t = shape.shape(
     # request more disk space (e.g creating a new GPT partition)
     additional_scratch_mb = shape.field(int, optional = True),
     interface = shape.field(disk_interface_t, default = "virtio-blk"),
-    subvol = shape.field(str, default = "volume"),
+    subvol = shape.field(str, optional = True),
+    # root disks are built with a kernel image inside them, track what version
+    # that is to ensure it matches the kernel we're trying to boot the vm with
+    contains_kernel = shape.field(kernel_t, optional = True),
 )
 
 connection_t = shape.shape(

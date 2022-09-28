@@ -129,11 +129,10 @@ python_binary(
 vm.run(
     name = "default",
     vm_opts = vm.types.opts.new(
-        disk = vm.artifacts.rootfs.disk,
-        disks = [vm.types.disk.new(
-            additional_scratch_mb = 1024,
+        disk = vm.types.disk.root(),
+        disks = [vm.types.disk.scratch(
             interface = "nvme",
-            package = "//antlir:empty",
+            size_mb = 1024,
         )],
         kernel = kernels.default,
     ),
@@ -150,7 +149,7 @@ vm.run(
             "initrd.break=sysinit",
             "initrd.break=initrd",
         ],
-        disk = vm.artifacts.rootfs.disk,
+        disk = vm.types.disk.root(),
         kernel = kernels.default,
     ),
 )

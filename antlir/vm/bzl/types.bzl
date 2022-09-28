@@ -6,7 +6,7 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
+load(":disk.bzl", "control_disk")
 load(":kernel.bzl", "normalize_kernel")
 load(":vm.shape.bzl", "connection_t", "disk_t", "emulator_t", "runtime_t", "vm_opts_t")
 
@@ -42,55 +42,57 @@ _vm_emulator_api = struct(
     t = emulator_t,
 )
 
-def _new_vm_disk(
-        package = None,
-        layer = None,
-        layer_free_mb = 0,
-        layer_label = "/",
-        additional_scratch_mb = None,
-        interface = "virtio-blk",
-        subvol = "volume"):
-    if package and layer:
-        fail("disk.new() accepts `package` OR `layer`, not both")
+def _new_vm_root_disk(
+        layer = REPO_CFG.artifact["vm.rootfs.layer"],
+        kernel = kernels.default,
+        disk_free_mb = 0,
+        interface = "virtio-blk"):
+    kernel = normalize_kernel(kernel)
 
-    if layer:
-        # Convert the provided layer name into something that we can safely use
-        # as the base for a new target name.  This is only used for the
-        # vm being constructed here, so it doesn't have to be pretty.
-        layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
-        package_target = "{}=image.btrfs".format(layer_name)
-        if not native.rule_exists(package_target):
-            btrfs.new(
-                name = package_target,
-                opts = btrfs.opts.new(
-                    subvols = {
-                        "/" + subvol: btrfs.opts.subvol.new(
-                            layer = layer,
-                            writable = True,
-                        ),
-                    },
-                    free_mb = layer_free_mb,
-                    loopback_opts = struct(
-                        label = layer_label,
-                    ),
-                ),
-                visibility = [],
-                antlir_rule = "user-internal",
-            )
-        package = ":" + package_target
+    # Convert the provided layer name into something that we can safely use as
+    # the base for a new target name.  This is only used for the vm being
+    # constructed here, so it doesn't have to be pretty.
+    layer_name = layer.lstrip(":").lstrip("//").replace("/", "_").replace(":", "__")
+    package_target = "{}=image-{}.btrfs".format(layer_name, kernel.uname)
 
-    elif not package:
-        package = REPO_CFG.artifact["vm.rootfs.btrfs"]
+    if not native.rule_exists(package_target):
+        control_disk(
+            name = package_target,
+            rootfs = layer,
+            kernel = kernel,
+            free_mb = disk_free_mb,
+            visibility = [],
+        )
+    package = ":" + package_target
 
     return disk_t(
         package = package,
-        additional_scratch_mb = additional_scratch_mb,
+        interface = interface,
+        subvol = "volume",
+        contains_kernel = kernel,
+    )
+
+def _new_vm_scratch_disk(size_mb, interface = "virtio-blk"):
+    return disk_t(package = "//antlir:empty", additional_scratch_mb = size_mb, interface = interface, subvol = None)
+
+def _new_vm_disk_from_package(
+        package,
+        interface = "virtio-blk",
+        subvol = "volume",
+        additional_scratch_mb = None,
+        contains_kernel = None):
+    return disk_t(
+        package = package,
         interface = interface,
         subvol = subvol,
+        additional_scratch_mb = additional_scratch_mb,
+        contains_kernel = contains_kernel,
     )
 
 _vm_disk_api = struct(
-    new = _new_vm_disk,
+    root = _new_vm_root_disk,
+    scratch = _new_vm_scratch_disk,
+    from_package = _new_vm_disk_from_package,
     t = disk_t,
 )
 
@@ -154,7 +156,14 @@ def _new_vm_opts(
     elif disk and disks:
         disks = [disk] + list(disks)
     elif not disk and not disks:
-        disks = [_new_vm_disk()]
+        disks = [_vm_disk_api.root(kernel = kernel)]
+
+    if not boot_from_disk:
+        root_disk = disks[0]
+        if not root_disk.contains_kernel:
+            fail("root disk must be built with a kernel image")
+        elif root_disk.contains_kernel != kernel:
+            fail("kernel installed in root disk must match boot kernel ({} != {})".format(root_disk.contains_kernel.uname, kernel.uname))
 
     runtime = runtime or _new_vm_runtime()
 
