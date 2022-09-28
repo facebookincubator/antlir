@@ -213,7 +213,7 @@ def _tmp_qcow2_disk(
         ],
     )
 
-    if additional_scratch_mb is not None:
+    if additional_scratch_mb is not None:  # pragma: no cover
         _run_qemu_img(
             qemu_img,
             [
@@ -238,7 +238,7 @@ class QCow2Disk(Share):
     qemu_img: Path
     stack: AsyncExitStack
     interface: disk_interface_t
-    subvol: str = "volume"
+    subvol: Optional[str] = "volume"
     additional_scratch_mb: Optional[int] = None
     cow_disk: Optional[Path] = None
     dev: str = field(default_factory=_next_drive)
