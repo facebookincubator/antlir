@@ -68,6 +68,7 @@ def _image_layer_impl(
     # IMPORTANT: If you touch this genrule, update `image_layer_alias`.
     buck_genrule(
         name = _layer_name,
+        antlir_rule = antlir_rule,
         bash = wrap_bash_build_in_common_boilerplate(
             bash = '''
             # We want subvolume names to be user-controllable. To permit
@@ -131,6 +132,17 @@ def _image_layer_impl(
                 layer_target_quoted = shell.quote(
                     normalize_target(":" + _layer_name),
                 ),
+                make_subvol_cmd = _make_subvol_cmd,
+                # To make layers "image-mountable", provide `mountconfig.json`.
+                print_mount_config = (
+                    # `mount_config` was a target path
+                    "cat $(location {})".format(mount_config)
+                ) if types.is_string(mount_config) else (
+                    # inline `mount_config` dict
+                    "echo {}".format(
+                        shell.quote(structs.as_json(struct(**mount_config))),
+                    )
+                ),
                 # The `buck-out` path is configurable in buck and we should not
                 # hard code it. Unfortunately there is no good way to discover
                 # the full abs path of this configured dir from bzl. So we use a
@@ -144,22 +156,11 @@ def _image_layer_impl(
                 # like (assuming `buck-out` is the configured path):
                 # ${GEN_DIR%%/buck-out/*}/buck-out/.volume-refcount-hardlinks/
                 refcounts_dir_quoted = "${parameter_expand}/{buck_out}/.volume-refcount-hardlinks/".format(
+                    buck_out = buck_out_base_dir,
                     parameter_expand = "{" + "GEN_DIR%%/{buck_out}/*".format(
                         buck_out = buck_out_base_dir,
                     ) + "}",
-                    buck_out = buck_out_base_dir,
                 ) if not is_buck2() else "buck-out/.volume-refcount-hardlinks",
-                make_subvol_cmd = _make_subvol_cmd,
-                # To make layers "image-mountable", provide `mountconfig.json`.
-                print_mount_config = (
-                    # `mount_config` was a target path
-                    "cat $(location {})".format(mount_config)
-                ) if types.is_string(mount_config) else (
-                    # inline `mount_config` dict
-                    "echo {}".format(
-                        shell.quote(structs.as_json(struct(**mount_config))),
-                    )
-                ),
                 subvolume_garbage_collector = antlir_dep(":subvolume-garbage-collector"),
                 subvolume_version = antlir_dep(":subvolume-version"),
             ),
@@ -171,10 +172,9 @@ def _image_layer_impl(
         # keep our output JSON out of the distributed Buck cache.  See
         # the docs for BuildRule::isCacheable.
         cacheable = False,
+        labels = ["image_layer", "uses_sudo"] + (labels or []),
         type = _rule_type,  # For queries
         visibility = visibility,
-        antlir_rule = antlir_rule,
-        labels = ["image_layer", "uses_sudo"] + (labels or []),
     )
 
     add_runtime_targets(_layer_name, runtime)
