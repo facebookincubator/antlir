@@ -7,9 +7,7 @@ load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "ADMIN_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/bzl/image/package:defs.bzl", "package")
-load("//antlir/bzl/linux/boot:defs.bzl", "boot")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
 # Future: when we run a VM the tap device is actually created
