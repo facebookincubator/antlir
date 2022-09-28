@@ -947,25 +947,3 @@ shape = struct(
     union = _union,
     union_t = _union_type,
 )
-
-def _self_test_hash():
-    # putting the test here to avoid having to deal with `sha256_b64` in the
-    # python test file
-
-    a = shape.shape(x = int)
-    b = shape.shape(
-        y = shape.dict(str, shape.list(int)),
-        z = a,
-    )
-
-    test_1 = shape.hash(b(y = {"c": [6, 5, 4], "d": [1, 3, 2]}, z = a(x = 5)))
-    test_2 = shape.hash(b(y = {"c": [5, 6, 4], "d": [3, 1, 2]}, z = a(x = 5)))
-
-    if test_1 != test_2:  # pragma: no cover
-        fail(
-            "{function} failed test".format(
-                function = "shape.hash",
-            ),
-        )
-
-_self_test_hash()
