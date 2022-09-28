@@ -183,29 +183,28 @@ def _tmp_qcow2_disk(
     """
     Create a qcow2 scratch disk using qemu-img.
     """
-    disk = stack.enter_context(
-        tempfile.NamedTemporaryFile(
+    tmpdir = stack.enter_context(
+        tempfile.TemporaryDirectory(
             prefix="vm_",
-            suffix="_rw.qcow2",
-            # If available, create this temporary disk image in a temporary
-            # directory that we know will be on disk, instead of /tmp which
-            # may be a space-constrained tmpfs whichcan cause sporadic
-            # failures depending on how much VMs decide to write to the
-            # root partition multiplied by however many VMs are running
-            # concurrently. If DISK_TEMP is not set, Python will follow the
-            # normal mechanism to determine where to create this file as
-            # described in:
+            # In CI, DISK_TEMP is set to a path that is guaranteed to be on
+            # disk, not a tmpfs. When available, put the root disk here to avoid
+            # very high memory usage (and the associated OOM kills or sporadic
+            # failures) when running many concurrent vmtests.
+            # If DISK_TEMP is not set, Python will follow the normal mechanism
+            # to determine where to create this file as described in:
             # https://docs.python.org/3/library/tempfile.html#tempfile.gettempdir
             dir=os.getenv("DISK_TEMP"),
         )
     )
+    subprocess.run(["chattr", "+C", tmpdir], check=True)
+    disk = os.path.join(tmpdir, "vm.qcow2")
     _run_qemu_img(
         qemu_img,
         [
             "create",
             "-f",  # format
             "qcow2",
-            disk.name,
+            disk,
             "-F",  # backing format
             "raw",
             "-b",
@@ -218,12 +217,12 @@ def _tmp_qcow2_disk(
             qemu_img,
             [
                 "resize",
-                disk.name,
+                disk,
                 f"+{additional_scratch_mb}M",
             ],
         )
 
-    return Path(disk.name)
+    return Path(disk)
 
 
 @dataclass(frozen=True)
