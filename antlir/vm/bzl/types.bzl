@@ -46,7 +46,8 @@ def _new_vm_root_disk(
         layer = REPO_CFG.artifact["vm.rootfs.layer"],
         kernel = kernels.default,
         disk_free_mb = 0,
-        interface = "virtio-blk"):
+        interface = "virtio-blk",
+        serial = None):
     kernel = normalize_kernel(kernel)
 
     # Convert the provided layer name into something that we can safely use as
@@ -64,12 +65,12 @@ def _new_vm_root_disk(
             visibility = [],
         )
     package = ":" + package_target
-
     return disk_t(
         package = package,
         interface = interface,
         subvol = "volume",
         contains_kernel = kernel,
+        serial = serial,
     )
 
 def _new_vm_scratch_disk(size_mb, interface = "virtio-blk"):
@@ -80,13 +81,15 @@ def _new_vm_disk_from_package(
         interface = "virtio-blk",
         subvol = "volume",
         additional_scratch_mb = None,
-        contains_kernel = None):
+        contains_kernel = None,
+        serial = None):
     return disk_t(
         package = package,
         interface = interface,
         subvol = subvol,
         additional_scratch_mb = additional_scratch_mb,
         contains_kernel = contains_kernel,
+        serial = serial,
     )
 
 _vm_disk_api = struct(
