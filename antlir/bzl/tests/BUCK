@@ -254,6 +254,14 @@ python_unittest(
 )
 
 starlark_unittest(
+    name = "test-sha256",
+    srcs = ["test_sha256.bzl"],
+    deps = [
+        "//antlir/bzl:sha256.bzl",
+    ],
+)
+
+starlark_unittest(
     name = "test-stat",
     srcs = ["test_stat.bzl"],
     deps = [

@@ -39,19 +39,3 @@ def hex_to_base64(x):
 def sha256_b64(s):
     # @lint-ignore BUCKLINT
     return hex_to_base64(native.sha256(s))
-
-def _self_test():
-    # The computations were checked via Python3, plus `.decode.strip('=')`:
-    #   base64.urlsafe_b64encode(hashlib.sha256(b'foobar').digest())
-    #   base64.urlsafe_b64encode(b'\xfb')
-    #   base64.urlsafe_b64encode(b'\xDE\xAD')
-    #   base64.urlsafe_b64encode(b'\xde\xad\xbe')
-    if (
-        sha256_b64("foobar") != "w6uP8Tcg6K2QR905Rms8iXTlksL6OD1KOWBxTK7wxPI" or
-        hex_to_base64("fb") != "-w" or  # 2-byte final hex chunk
-        hex_to_base64("DEAD") != "3q0" or  # 1-byte final hex chunk; uppercase
-        hex_to_base64("deadbe") != "3q2-"  # 3-byte final hex chunk
-    ):
-        fail("sha256_b64 failed test")
-
-_self_test()
