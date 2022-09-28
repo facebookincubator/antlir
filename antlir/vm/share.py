@@ -241,6 +241,7 @@ class QCow2Disk(Share):
     additional_scratch_mb: Optional[int] = None
     cow_disk: Optional[Path] = None
     dev: str = field(default_factory=_next_drive)
+    serial: Optional[str] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -256,6 +257,7 @@ class QCow2Disk(Share):
 
     @property
     def qemu_args(self) -> Iterable[str]:
+        serial = self.serial or self.dev
         return (
             "--blockdev",
             (
@@ -263,7 +265,7 @@ class QCow2Disk(Share):
                 f"file.driver=file,file.filename={self.cow_disk!s},"
             ),
             "--device",
-            f"{self.interface.value},drive={self.dev},serial={self.dev}",
+            f"{self.interface.value},drive={self.dev},serial={serial}",
         )
 
     @property

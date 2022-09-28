@@ -35,6 +35,7 @@ disk_t = shape.shape(
     # root disks are built with a kernel image inside them, track what version
     # that is to ensure it matches the kernel we're trying to boot the vm with
     contains_kernel = shape.field(kernel_t, optional = True),
+    serial = shape.field(str, optional = True),
 )
 
 connection_t = shape.shape(
