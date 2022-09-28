@@ -44,6 +44,7 @@ python_library(
         ":server_launcher",
         "//antlir:common",
         "//antlir:fs_utils",
+        "//antlir/fbpkg/db:constants",
     ],
 )
 

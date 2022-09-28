@@ -17,14 +17,19 @@ built by the `rpm_repo_snapshot()` target, and installed via
 Also starts FBPKG proxy server if needed.
 """
 import logging
+import os
 import textwrap
 from contextlib import contextmanager, ExitStack
 from dataclasses import dataclass
 from io import BytesIO
 from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple
 
+from antlir.artifacts_dir import find_repo_root
+
 from antlir.bzl.proxy_server_config import proxy_server_config_t
 from antlir.common import get_logger, pipe
+
+from antlir.fbpkg.db.constants import MAIN_DB_PATH
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
 from antlir.nspawn_in_subvol.netns_socket import create_sockets_inside_netns
@@ -179,19 +184,8 @@ class RepoServers(NspawnPlugin):
         if proxy_server_config:
             self._run_proxy_server = True
 
-            if not proxy_server_config.fbpkg_pkg_list:  # pragma: no cover
-                raise RuntimeError(
-                    "fbpkg_pkg_list is requiered to run proxy_server"
-                )
-
             self._fbpkg_db_path = (
-                proxy_server_config.fbpkg_pkg_list[0].path
-                if not proxy_server_config.fbpkg_pkg_list[0].path.endswith(
-                    b".json"
-                )
-                else proxy_server_config.fbpkg_pkg_list[0]
-                .path.dirname()
-                .dirname()
+                find_repo_root(Path(os.getcwd())) / MAIN_DB_PATH
             )
 
     @staticmethod
