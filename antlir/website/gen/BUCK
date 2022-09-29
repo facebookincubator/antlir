@@ -7,6 +7,6 @@ rust_binary(
     deps = [
         "anyhow",
         "serde",
-        "//antlir/buck_query:buck_query",
+        "//antlir/buck/buck_query:buck_query",
     ],
 )
