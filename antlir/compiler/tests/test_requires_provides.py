@@ -22,7 +22,6 @@ from antlir.compiler.requires_provides import (
     RequireFile,
     RequireGroup,
     RequireKey,
-    RequirementKind,
     RequireSymlink,
     RequireUser,
 )
@@ -95,21 +94,18 @@ class RequiresProvidesTestCase(unittest.TestCase):
         groupname = "foo"
         g = RequireGroup(groupname)
         self.assertEqual(g.name, groupname)
-        self.assertEqual(g.kind, RequirementKind.GROUP)
 
     def test_provides_group(self) -> None:
         groupname = "foo"
         pg = ProvidesGroup(groupname)
         # pyre-fixme[16]: `Requirement` has no attribute `name`.
         self.assertEqual(pg.req.name, groupname)
-        self.assertEqual(pg.req.kind, RequirementKind.GROUP)
         self.assertTrue(pg.provides(RequireGroup(groupname)))
 
     def test_require_user(self) -> None:
         username = "user"
         ru = RequireUser(username)
         self.assertEqual(ru.name, username)
-        self.assertEqual(ru.kind, RequirementKind.USER)
         ru2 = RequireUser(username)
         self.assertEqual(ru, ru2)
 
@@ -118,7 +114,6 @@ class RequiresProvidesTestCase(unittest.TestCase):
         pu = ProvidesUser(username)
         # pyre-fixme[16]: `Requirement` has no attribute `name`.
         self.assertEqual(pu.req.name, username)
-        self.assertEqual(pu.req.kind, RequirementKind.USER)
         self.assertTrue(pu.provides(RequireUser(username)))
         self.assertFalse(pu.provides(RequireUser("user2")))
 
@@ -126,7 +121,6 @@ class RequiresProvidesTestCase(unittest.TestCase):
         path = Path("/foo")
         target = Path("/bar")
         rs = RequireSymlink(path=path, target=target)
-        self.assertEqual(rs.kind, RequirementKind.PATH)
         self.assertEqual(rs.path, path)
         self.assertEqual(rs.target, target)
 
@@ -152,7 +146,6 @@ class RequiresProvidesTestCase(unittest.TestCase):
     def test_require_key(self) -> None:
         rk = RequireKey(key="key")
 
-        self.assertEqual(rk.kind, RequirementKind.META_KEY_VALUE_STORE)
         self.assertEqual(rk.key, "key")
 
     def test_provides_key(self) -> None:

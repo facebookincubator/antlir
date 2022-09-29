@@ -44,21 +44,13 @@ with short-circuiting.  E.g. FollowsSymlinks(Pred) would expand to:
   )
 '''
 import dataclasses
-from enum import auto, Enum
 
 from antlir.fs_utils import Path
 
 
-class RequirementKind(Enum):
-    PATH = auto()
-    GROUP = auto()
-    USER = auto()
-    META_KEY_VALUE_STORE = auto()
-
-
 @dataclasses.dataclass(frozen=True)
 class Requirement:
-    kind: RequirementKind
+    pass
 
 
 def _normalize_path(path: Path) -> Path:
@@ -73,7 +65,7 @@ class RequirePath(Requirement):
     path: Path
 
     def __init__(self, path: Path) -> None:
-        super().__init__(kind=RequirementKind.PATH)
+        super().__init__()
         object.__setattr__(self, "path", _normalize_path(path))
 
 
@@ -108,7 +100,7 @@ class RequireGroup(Requirement):
     name: str
 
     def __init__(self, name: str) -> None:
-        super().__init__(kind=RequirementKind.GROUP)
+        super().__init__()
         object.__setattr__(self, "name", name)
 
 
@@ -118,7 +110,7 @@ class RequireUser(Requirement):
     name: str
 
     def __init__(self, name: str) -> None:
-        super().__init__(kind=RequirementKind.USER)
+        super().__init__()
         object.__setattr__(self, "name", name)
 
 
@@ -128,7 +120,7 @@ class RequireKey(Requirement):
     key: str
 
     def __init__(self, key: str) -> None:
-        super().__init__(kind=RequirementKind.META_KEY_VALUE_STORE)
+        super().__init__()
         object.__setattr__(self, "key", key)
 
 
