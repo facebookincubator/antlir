@@ -101,7 +101,6 @@ def package_new(
             ),
             rule_type = _IMAGE_PACKAGE,
             target_name = name,
-            volume_min_free_bytes = 0,  # We are not writing to the volume.
         ),
         visibility = visibility,
         labels = ["uses_sudo"] + (labels or []),

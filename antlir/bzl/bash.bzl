@@ -9,8 +9,7 @@ load(":oss_shim.bzl", "antlir_buck_env")
 def wrap_bash_build_in_common_boilerplate(
         bash,
         rule_type,
-        target_name,
-        volume_min_free_bytes = None):
+        target_name):
     return """\
 # CAREFUL: To avoid inadvertently masking errors, we should only perform
 # command substitutions with variable assignments.
@@ -31,7 +30,7 @@ artifacts_dir=\\$( ANTLIR_BUCK="{antlir_buck}" "${{binary_path[@]}}" )
 # per-repo volume, so that we can easily add other types of subvolumes in
 # the future.
 binary_path=( $(exe {volume_for_repo}) )
-volume_dir=\\$( "${{binary_path[@]}}" "$artifacts_dir" {min_free_bytes} )
+volume_dir=\\$( "${{binary_path[@]}}" "$artifacts_dir" )
 subvolumes_dir="$volume_dir/targets"
 mkdir -m 0700 -p "$subvolumes_dir"
 
@@ -90,7 +89,6 @@ trap log_on_error EXIT
         artifacts_dir = antlir_dep(":artifacts-dir"),
         antlir_buck = antlir_buck_env(),
         bash = bash,
-        min_free_bytes = volume_min_free_bytes if volume_min_free_bytes else "None",
         log_description = "{}:{}(name={})".format(
             native.package_name(),
             rule_type,
