@@ -53,7 +53,7 @@ def antlir_tool(rule, name, **kwargs):
         name = name + "-cached",
         out = "tool",
         cmd = "cp --reflink=auto $(location {})/{} $OUT".format(
-            # @oss-disable: fbpkg.fetched_with_nondeterministic_fs_metadata("antlir.tools", repo_committed_tag = "latest"), 
+            # @oss-disable: fbpkg.fetched_with_nondeterministic_fs_metadata("antlir.tools", repo_committed_tag = "repo_stable"), 
             # @oss-enable "oss antlir does not support cached tools",
             TOOLS[full_label],
         ),
