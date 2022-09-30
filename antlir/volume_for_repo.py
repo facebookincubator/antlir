@@ -29,19 +29,11 @@ VOLUME_DIR = "volume"
 LOOP_SIZE = 1e11
 
 
-def get_volume_for_current_repo(artifacts_dir: Path, min_free_bytes=LOOP_SIZE):
+def get_volume_for_current_repo(artifacts_dir: Path):
     """
     Multiple repos need to be able to concurrently build images on the same
     host.  The cleanest way to achieve such isolation is to supply each repo
     with its own volume, which will store the repo's image build outputs.
-
-    It is easiest to back this volume with a loop device. The appropriate
-    size of the loop device depends on the expected size of the target being
-    built.  To address this this by ensuring that prior to every build, the
-    volume has at least a specified amount of space.  The default in
-    `image_layer` is large enough for most builds, but really huge
-    `image_layer` targets can further increase their requested
-    `min_free_bytes`.
 
     Image-build tooling **must never** access paths in this volume without
     going through this function.  Otherwise, the volume will not get
@@ -64,7 +56,7 @@ def get_volume_for_current_repo(artifacts_dir: Path, min_free_bytes=LOOP_SIZE):
                 artifacts_dir / ".lock.set_up_volume.sh.never.rm.or.mv",
                 "sudo",
                 binary,
-                str(int(min_free_bytes)),  # Accepts floats & ints
+                str(int(LOOP_SIZE)),  # Accepts floats & ints
                 artifacts_dir / IMAGE_FILE,
                 volume_dir,
             ]
@@ -96,7 +88,5 @@ if __name__ == "__main__":  # pragma: no cover
         )
         sys.exit(1)
 
-    second_arg = [] if sys.argv[2] == "None" else [float(sys.argv[2])]
-    args = [Path(sys.argv[1])] + second_arg
-    # pyre-fixme[6]: For 1st param expected `Path` but got `Union[Path, float]`.
+    args = [Path(sys.argv[1])]
     print(get_volume_for_current_repo(*args))

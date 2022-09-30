@@ -37,21 +37,6 @@ def _image_layer_impl(
         # variety of ways, so it's not part of `image.layer` itself, and
         # must be set from outside.
         mount_config = None,
-        # Most use-cases should never need to set this.  A string is used
-        # instead of int because Starlark supports only 32-bit integers.
-        # Future:
-        #  (i) Should we determine this dynamically from the installed
-        #      artifacts (by totaling up the bytes needed for copied files,
-        #      RPMs, tarballs, etc)?  NB: At the moment, this number doesn't
-        #      work precisely as a user would want -- we just require that
-        #      the base volume have at least this much space, -- but
-        #      hopefully people don't have to change it too much.
-        # (ii) For sendstreams, it's much more plausible to correctly
-        #      estimate the size requirements, so we might do that sooner.
-        # The default is `LOOP_SIZE`, see definition in
-        # `antlir/volume_for_repo.py`. Setting this here would introduce an
-        # issue. See an explanation above definition.
-        layer_size_bytes = None,
         # For each element set within runtime, an additional target labelled with the suffix `=<runtime>` will be emitted.
         # A target with runtime suffix `container` is always emitted by default.
         # See [docs](/docs/tutorials/helper-buck-targets#imagelayer).
@@ -166,7 +151,6 @@ def _image_layer_impl(
             ),
             rule_type = _rule_type,
             target_name = _layer_name,
-            volume_min_free_bytes = layer_size_bytes,
         ),
         # Layers are only usable on the same host that built them, so
         # keep our output JSON out of the distributed Buck cache.  See
