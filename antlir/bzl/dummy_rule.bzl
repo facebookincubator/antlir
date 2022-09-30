@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 
-def dummy_rule(name, deps = None, visibility = None):
+def dummy_rule(name, deps = None, visibility = None, **kwargs):
     """
     Helps make the buck1 dependency graph mirror buck2 dependency graph by
     allowing us to add rules in buck1 that have the same name and dependencies
@@ -26,6 +26,7 @@ def dummy_rule(name, deps = None, visibility = None):
             ),
             visibility = visibility,
             antlir_rule = "user-internal",
+            **kwargs
         )
 
     return ":" + name
