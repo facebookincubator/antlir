@@ -5,7 +5,6 @@
 
 "See the docs in antlir/website/docs/genrule-layer.md"
 
-load("//antlir/bzl2/layer:genrule_layer_rule.bzl", "maybe_add_genrule_layer_rule")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -123,17 +122,6 @@ Optional arguments:
                 ),
             ),
         ]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_genrule_layer_rule(
-                cmd = cmd,
-                user = user,
-                container_opts = container_opts,
-                bind_repo_ro = bind_repo_ro,
-                boot = boot,
-                include_in_target_name = {"name": name},
-            ),
-        ],
     )]
 
     image_genrule_layer_helper(

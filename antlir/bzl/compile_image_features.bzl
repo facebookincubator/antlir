@@ -9,8 +9,6 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "normalize_features", "private_feature_new")
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
-load("//antlir/bzl2:parent_layer.shape.bzl", "parent_layer_t")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -200,14 +198,7 @@ def compile_image_features(
     features.append(target_tagger_to_feature(
         target_tagger,
         struct(),
-        extra_deps = extra_deps + ([maybe_add_feature_rule(
-            name = "parent_layer",
-            feature_shape = parent_layer_t(
-                subvol = tag_target(target_tagger, parent_layer, is_layer = True),
-            ),
-            include_in_target_name = {"parent_layer": parent_layer},
-            deps = [parent_layer],
-        )] if parent_layer else []),
+        extra_deps = extra_deps,
     ))
 
     # This is the list of supported flavors for the features of the layer.

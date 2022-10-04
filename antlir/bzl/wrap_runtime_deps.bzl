@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
-load("//antlir/bzl2:wrap_executable_target_rule.bzl", "maybe_wrap_executable_target_rule")
 load(":constants.bzl", "REPO_CFG")
 load(":exec_wrapper.bzl", "build_exec_wrapper")
 load(":oss_shim.bzl", "buck_genrule", "get_visibility")
@@ -188,31 +186,21 @@ fi
         )
         unquoted_heredoc_preamble = ""
 
-    if use_buck2_macros():
-        maybe_wrap_executable_target_rule(
-            name = name,
-            target = target,
+    buck_genrule(
+        name = name,
+        bash = build_exec_wrapper(
+            runnable = target,
             path_in_output = path_in_output,
             literal_preamble = literal_preamble,
             unquoted_heredoc_preamble = unquoted_heredoc_preamble,
-            visibility = get_visibility(visibility),
-        )
-    else:
-        buck_genrule(
-            name = name,
-            bash = build_exec_wrapper(
-                runnable = target,
-                path_in_output = path_in_output,
-                literal_preamble = literal_preamble,
-                unquoted_heredoc_preamble = unquoted_heredoc_preamble,
-            ),
-            # We deliberately generate a unique output on each rebuild.
-            cacheable = False,
-            # Whatever we wrap was executable, so the wrapper might as well be, too
-            executable = True,
-            visibility = get_visibility(visibility),
-            antlir_rule = "user-internal",
-        )
+        ),
+        # We deliberately generate a unique output on each rebuild.
+        cacheable = False,
+        # Whatever we wrap was executable, so the wrapper might as well be, too
+        executable = True,
+        visibility = get_visibility(visibility),
+        antlir_rule = "user-internal",
+    )
 
     return True, ":" + name
 

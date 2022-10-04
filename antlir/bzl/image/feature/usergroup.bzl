@@ -5,7 +5,6 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
 load(":usergroup.shape.bzl", "group_t", "user_t")
 
@@ -63,15 +62,6 @@ user's initial login group or home directory.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(users = [user]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_feature_rule(
-                name = "user_add",
-                key = "users",
-                include_in_target_name = {"username": username},
-                feature_shape = user,
-            ),
-        ],
     )
 
 def feature_group_add(groupname, gid = None):
@@ -92,17 +82,6 @@ are auto-assigned, they may change if underlying layers add/remove groups.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(groups = [group]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_feature_rule(
-                name = "group_add",
-                key = "groups",
-                include_in_target_name = {
-                    "groupname": groupname,
-                },
-                feature_shape = group,
-            ),
-        ],
     )
 
 def feature_setup_standard_user(user, group, homedir = None, shell = SHELL_BASH):

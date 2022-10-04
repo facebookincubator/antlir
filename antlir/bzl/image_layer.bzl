@@ -89,14 +89,12 @@ The consequences of this information hiding are:
     that metadata during compilation.
 """
 
-load("//antlir/bzl2:use_buck2_macros.bzl", "use_buck2_macros")
-load("//antlir/bzl2/layer:new.bzl", image_layer_buck2 = "layer_new")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
 
-def image_layer_buck1(
+def image_layer(
         name,
         parent_layer = None,
         features = None,
@@ -144,5 +142,3 @@ def image_layer_buck1(
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )
-
-image_layer = image_layer_buck2 if use_buck2_macros() else image_layer_buck1
