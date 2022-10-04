@@ -3,8 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
-load("//antlir/bzl2/layer:from_package.shape.bzl", "layer_from_package_t")
+load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "REPO_CFG")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -109,15 +108,6 @@ def image_layer_from_package(
         struct(
             layer_from_package = [feature_shape],
         ),
-        # copy in buck2 version
-        extra_deps = [
-            maybe_add_feature_rule(
-                name = "layer_from_package",
-                include_in_target_name = {"name": name},
-                feature_shape = feature_shape,
-                deps = [source_target],
-            ),
-        ],
     )]
 
     image_layer_from_package_helper(

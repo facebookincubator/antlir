@@ -4,8 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
-load("//antlir/bzl2/feature:meta_key_value_store.bzl", bzl2_feature_remove_meta_store = "feature_remove_meta_store")
 load(":meta_key_value_store.shape.bzl", "meta_key_value_store_item_t", "remove_meta_key_value_store_item_t")
 
 def feature_meta_store(key, value, require_keys = None, store_if_not_exists = False):
@@ -39,17 +37,6 @@ def feature_meta_store(key, value, require_keys = None, store_if_not_exists = Fa
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(meta_key_value_store = [item]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_feature_rule(
-                name = "meta_key_value_store",
-                include_in_target_name = {
-                    "key": key,
-                    "value": value,
-                },
-                feature_shape = item,
-            ),
-        ],
     )
 
 def feature_remove_meta_store(key):
@@ -67,5 +54,4 @@ def feature_remove_meta_store(key):
                 key = key,
             ),
         ]),
-        extra_deps = [bzl2_feature_remove_meta_store(key)],
     )

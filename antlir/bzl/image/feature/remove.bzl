@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":remove.shape.bzl", "remove_paths_t")
 
 def feature_remove(dest, must_exist = True):
@@ -28,13 +27,4 @@ though this can be avoided by setting `must_exist` to `False`.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(remove_paths = [remove_spec]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_feature_rule(
-                name = "remove",
-                key = "remove_paths",
-                include_in_target_name = {"dest": dest},
-                feature_shape = remove_spec,
-            ),
-        ],
     )

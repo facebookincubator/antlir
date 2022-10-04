@@ -11,7 +11,6 @@ load(
     "new_target_tagger",
     "target_tagger_to_feature",
 )
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":tarball.shape.bzl", "tarball_t")
 
 def feature_tarball(source, dest, force_root_ownership = False):
@@ -40,17 +39,4 @@ def feature_tarball(source, dest, force_root_ownership = False):
     return target_tagger_to_feature(
         target_tagger,
         items = struct(tarballs = [tarball]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_feature_rule(
-                name = "tarball",
-                key = "tarballs",
-                include_in_target_name = {
-                    "dest": dest,
-                    "source": target,
-                },
-                feature_shape = tarball,
-                deps = [target],
-            ),
-        ],
     )

@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":requires.shape.bzl", "requires_t")
 
 def feature_requires(
@@ -32,16 +31,4 @@ groups or files do indeed exist.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(requires = [req]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_feature_rule(
-                name = "requires",
-                include_in_target_name = {
-                    "files": files,
-                    "groups": groups,
-                    "users": users,
-                },
-                feature_shape = req,
-            ),
-        ],
     )

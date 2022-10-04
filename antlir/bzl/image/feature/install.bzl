@@ -69,7 +69,6 @@ load(
     "target_tagger_to_feature",
 )
 load("//antlir/bzl:target_tagger.shape.bzl", "target_tagged_image_source_t")
-load("//antlir/bzl2/feature:install.bzl", "maybe_add_install_rule")
 load(":install.shape.bzl", "install_files_t")
 
 _BUCK_RUNNABLE_WRAP_SUFFIX = "install_buck_runnable_wrap_source"
@@ -100,20 +99,6 @@ def _install_target_tagger(
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [wrapped_shape if wrapped_shape else unwrapped_shape]),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_install_rule(
-                include_in_target_name = {
-                    "dest": dest,
-                    "source": unwrapped_target,
-                },
-                unwrapped_shape = unwrapped_shape,
-                wrapped_shape = None,
-                unwrapped_target = unwrapped_target,
-                wrapped_target = wrapped_target,
-                wrap_as_buck_runnable = False,
-            ),
-        ],
     )
 
 # KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`

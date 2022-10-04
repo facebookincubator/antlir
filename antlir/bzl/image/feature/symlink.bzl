@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load("//antlir/bzl2:feature_rule.bzl", "maybe_add_feature_rule")
 load(":symlink.shape.bzl", "symlink_t")
 
 def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
@@ -15,18 +14,6 @@ def _build_symlink_feature(link_target, link_name, symlinks_to_arg):
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(**{symlinks_to_arg: [symlink_spec]}),
-        extra_deps = [
-            # copy in buck2 version
-            maybe_add_feature_rule(
-                name = "symlink",
-                key = symlinks_to_arg,
-                include_in_target_name = {
-                    "link_name": link_name,
-                    "link_target": link_target,
-                },
-                feature_shape = symlink_spec,
-            ),
-        ],
     )
 
 def feature_ensure_dir_symlink(link_target, link_name):
