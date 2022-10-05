@@ -475,11 +475,13 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
         ),
     )
 
+    ir2code_prefix = "$(exe {}) --templates $(location {})/templates".format(antlir_dep("bzl/shape2:ir2code"), antlir_dep("bzl/shape2:templates"))
+
     if not expert_only_custom_impl:
         buck_genrule(
             name = "{}.py".format(name),
+            cmd = "{} pydantic $(location :{}) > $OUT".format(ir2code_prefix, name),
             antlir_rule = "user-internal",
-            cmd = "$(exe {}) pydantic $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
         )
         python_library(
             name = "{}-python".format(name),
@@ -492,8 +494,8 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
         )
         buck_genrule(
             name = "{}.rs".format(name),
+            cmd = "{} rust $(location :{}) > $OUT".format(ir2code_prefix, name),
             antlir_rule = "user-internal",
-            cmd = "$(exe {}) rust $(location :{}) > $OUT".format(antlir_dep("bzl/shape2:ir2code"), name),
         )
         rust_library(
             name = "{}-rust".format(name),
