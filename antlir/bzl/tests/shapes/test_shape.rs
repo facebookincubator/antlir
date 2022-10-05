@@ -15,6 +15,7 @@ use test_shape::character_collection_t;
 use test_shape::character_t;
 use test_shape::friend_t;
 use test_shape::weapon_t;
+use test_shape::with_optional_int;
 
 #[test]
 fn load() -> Result<()> {
@@ -100,5 +101,17 @@ fn thrift() -> Result<()> {
         .unwrap()
     );
 
+    Ok(())
+}
+
+#[test]
+fn optional_int() -> Result<()> {
+    let s: with_optional_int = serde_json::from_str(r#"{"optint": null}"#)?;
+    assert_eq!(s, with_optional_int { optint: None });
+    let s: with_optional_int = serde_json::from_str(r#"{"optint": 42}"#)?;
+    assert_eq!(s, with_optional_int { optint: Some(42) });
+    let s: with_optional_int =
+        serde_json::from_str(r#"{"foo": "bar"}"#).context("failed to deser")?;
+    assert_eq!(s, with_optional_int { optint: None });
     Ok(())
 }
