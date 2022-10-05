@@ -64,3 +64,7 @@ hashable_t = shape.shape(
         default = {"species": "human"},
     ),
 )
+
+with_optional_int = shape.shape(
+    optint = shape.field(int, optional = True),
+)
