@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library")
+load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "rust_binary", "rust_library")
 load("//antlir/bzl:tool.bzl", "antlir_tool")
 
 rust_library(
@@ -35,18 +35,24 @@ antlir_tool(
 antlir_tool(
     rust_binary,
     name = "ir2code",
-    srcs = ["ir2code.rs"] + glob(["templates/*.handlebars"]),
+    srcs = ["ir2code.rs"],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "clap",
         "derive_more",
         "handlebars",
         "itertools",
         "serde",
         "serde_json",
-        "structopt",
         ":ir",
     ],
+)
+
+buck_filegroup(
+    name = "templates",
+    srcs = glob(["templates/*.handlebars"]),
+    visibility = ["PUBLIC"],
 )
 
 rust_library(

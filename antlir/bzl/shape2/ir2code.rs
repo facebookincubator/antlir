@@ -14,6 +14,8 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use anyhow::Context as _;
 use anyhow::Result;
+use clap::arg_enum;
+use clap::Parser;
 use derive_more::AsRef;
 use derive_more::Deref;
 use derive_more::From;
@@ -33,8 +35,6 @@ use ir::Union;
 use itertools::Itertools;
 use serde::Serialize;
 use serde_json::Value;
-use structopt::clap::arg_enum;
-use structopt::StructOpt;
 
 arg_enum! {
     #[derive(Debug)]
@@ -46,11 +46,24 @@ arg_enum! {
     }
 }
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 struct Opts {
+    #[clap(long)]
+    templates: PathBuf,
     format: RenderFormat,
     // path to json-serialized IR
     ir: PathBuf,
+}
+
+#[derive(Debug, Clone)]
+pub struct TemplatesDir(PathBuf);
+
+impl TemplatesDir {
+    fn read_template(&self, name: &str) -> Result<String> {
+        let path = self.0.join(name);
+        std::fs::read_to_string(&path)
+            .with_context(|| format!("while trying to read {}", path.display()))
+    }
 }
 
 pub fn main() -> Result<()> {
@@ -59,9 +72,10 @@ pub fn main() -> Result<()> {
         File::open(&opts.ir).with_context(|| format!("failed to open {}", opts.ir.display()))?;
     let ir: Module = serde_json::from_reader(f)
         .with_context(|| format!("failed to deserialize {}", opts.ir.display()))?;
+    let templates = TemplatesDir(opts.templates);
     let code = match opts.format {
-        RenderFormat::Pydantic => render::<Pydantic>(&ir),
-        RenderFormat::Rust => render::<Rust>(&ir),
+        RenderFormat::Pydantic => render::<Pydantic>(&ir, &templates),
+        RenderFormat::Rust => render::<Rust>(&ir, &templates),
     }
     .context("failed to render code")?;
     println!("{}", code);
@@ -82,7 +96,10 @@ pub struct Pydantic(String);
 #[repr(transparent)]
 pub struct Rust(String);
 pub trait RegisterTemplates<T> {
-    fn register_templates(hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+    fn register_templates(
+        hb: Handlebars<'static>,
+        _templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
         Ok(hb)
     }
 }
@@ -107,7 +124,7 @@ where
     fn to_literal(&self) -> T;
 }
 
-pub(crate) fn render<T>(types: &Module) -> Result<String>
+pub(crate) fn render<T>(types: &Module, templates: &TemplatesDir) -> Result<String>
 where
     Module: Render<T>,
     ComplexType: Render<T>,
@@ -117,13 +134,13 @@ where
     T: Deref<Target = str>,
     T: From<String>,
 {
-    let hb = setup_handlebars::<T>().context("When setting up handlebars")?;
+    let hb = setup_handlebars::<T>(templates).context("When setting up handlebars")?;
     let code: T = types.render(&hb)?;
     let code = code.replace("@_generated", concat!('@', "generated"));
     Ok(code)
 }
 
-fn setup_handlebars<T>() -> Result<Handlebars<'static>>
+fn setup_handlebars<T>(templates: &TemplatesDir) -> Result<Handlebars<'static>>
 where
     Module: Render<T>,
     ComplexType: Render<T>,
@@ -140,16 +157,17 @@ where
     handlebars.register_helper("upper", Box::new(upper_helper));
     handlebars.register_helper("ident", Box::new(ident_helper));
 
-    let handlebars = <Module as RegisterTemplates<T>>::register_templates(handlebars)
+    let handlebars = <Module as RegisterTemplates<T>>::register_templates(handlebars, templates)
         .context("When setting up handlebars for Module")?;
-    let handlebars = <ComplexType as RegisterTemplates<T>>::register_templates(handlebars)
-        .context("When setting up handlebars for ComplexType")?;
     let handlebars =
-        Enum::register_templates(handlebars).context("When setting up handlebars for Enum")?;
-    let handlebars =
-        Struct::register_templates(handlebars).context("When setting up handlebars for Struct")?;
-    let handlebars =
-        Union::register_templates(handlebars).context("When setting up handlebars for Union")?;
+        <ComplexType as RegisterTemplates<T>>::register_templates(handlebars, templates)
+            .context("When setting up handlebars for ComplexType")?;
+    let handlebars = Enum::register_templates(handlebars, templates)
+        .context("When setting up handlebars for Enum")?;
+    let handlebars = Struct::register_templates(handlebars, templates)
+        .context("When setting up handlebars for Struct")?;
+    let handlebars = Union::register_templates(handlebars, templates)
+        .context("When setting up handlebars for Union")?;
 
     Ok(handlebars)
 }
@@ -198,10 +216,13 @@ where
 }
 
 impl RegisterTemplates<Pydantic> for Module {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
         hb.register_template_string(
             "module",
-            include_str!("templates/module.pydantic.handlebars"),
+            templates.read_template("module.pydantic.handlebars")?,
         )
         .context("Trying to register preamble template")?;
         hb.register_helper("type-hint", Box::new(py_type_hint));
@@ -419,8 +440,11 @@ impl Render<Pydantic> for Module {
 }
 
 impl RegisterTemplates<Rust> for Module {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
-        hb.register_template_string("lib", include_str!("templates/lib.rs.handlebars"))
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
+        hb.register_template_string("lib", templates.read_template("lib.rs.handlebars")?)
             .context("Trying to register preamble template")?;
         hb.register_helper("type", Box::new(rs_type));
         hb.register_helper("union-name", Box::new(rs_union_name));
@@ -472,16 +496,22 @@ where
 }
 
 impl RegisterTemplates<Pydantic> for Enum {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
-        hb.register_template_string("enum", include_str!("templates/enum.pydantic.handlebars"))
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
+        hb.register_template_string("enum", templates.read_template("enum.pydantic.handlebars")?)
             .context("Trying to register enum template")?;
         Ok(hb)
     }
 }
 
 impl RegisterTemplates<Rust> for Enum {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
-        hb.register_template_string("enum", include_str!("templates/enum.rs.handlebars"))
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
+        hb.register_template_string("enum", templates.read_template("enum.rs.handlebars")?)
             .context("Trying to register enum template")?;
         Ok(hb)
     }
@@ -496,10 +526,13 @@ where
 }
 
 impl RegisterTemplates<Pydantic> for Struct {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
         hb.register_template_string(
             "struct",
-            include_str!("templates/struct.pydantic.handlebars"),
+            templates.read_template("struct.pydantic.handlebars")?,
         )
         .context("Trying to register struct template")?;
         Ok(hb)
@@ -507,8 +540,11 @@ impl RegisterTemplates<Pydantic> for Struct {
 }
 
 impl RegisterTemplates<Rust> for Struct {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
-        hb.register_template_string("struct", include_str!("templates/struct.rs.handlebars"))
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
+        hb.register_template_string("struct", templates.read_template("struct.rs.handlebars")?)
             .context("Trying to register struct template")?;
         Ok(hb)
     }
@@ -523,16 +559,25 @@ where
 }
 
 impl RegisterTemplates<Pydantic> for Union {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
-        hb.register_template_string("union", include_str!("templates/union.pydantic.handlebars"))
-            .context("Trying to register union template")?;
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
+        hb.register_template_string(
+            "union",
+            templates.read_template("union.pydantic.handlebars")?,
+        )
+        .context("Trying to register union template")?;
         Ok(hb)
     }
 }
 
 impl RegisterTemplates<Rust> for Union {
-    fn register_templates(mut hb: Handlebars<'static>) -> Result<Handlebars<'static>> {
-        hb.register_template_string("union", include_str!("templates/union.rs.handlebars"))
+    fn register_templates(
+        mut hb: Handlebars<'static>,
+        templates: &TemplatesDir,
+    ) -> Result<Handlebars<'static>> {
+        hb.register_template_string("union", templates.read_template("union.rs.handlebars")?)
             .context("Trying to register union template")?;
         Ok(hb)
     }
