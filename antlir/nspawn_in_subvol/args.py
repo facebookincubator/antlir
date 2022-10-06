@@ -607,11 +607,18 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
         dest="run_proxy_server",
         help="Enabling this flag will start proxy server in the container.",
     )
-
     parser.add_argument(
         "--fbpkg-db-path",
         dest="fbpkg_db_path",
         help="Path to the Repo DB. Requiered parameter for proxy_server",
+    )
+    parser.add_argument(
+        "--allow-unknown-fbpkg",
+        action="store_true",
+        dest="allow_unknown_fbpkg",
+        help="Enabling this flag will allow proxy server to "
+        "to install fbpkg tags that are not currently tracked by Antlir's "
+        "in-repo fbpkg DB (https://fburl.com/antlir-fbpkg).",
     )
 
 
