@@ -47,7 +47,6 @@ from antlir.nspawn_in_subvol.plugins.launch_apt_proxy_server import (
 )
 from antlir.nspawn_in_subvol.plugins.launch_proxy_server import (
     launch_proxy_server_for_netns,
-    PROXY_SERVER_PORT,
 )
 from antlir.nspawn_in_subvol.plugins.launch_repo_servers import (
     launch_repo_servers_for_netns,
@@ -178,8 +177,7 @@ class RepoServers(NspawnPlugin):
         run_apt_proxy: bool = False,
     ) -> None:
         self._serve_rpm_snapshots = serve_rpm_snapshots
-        self._run_proxy_server: bool = False
-        self._fbpkg_db_path: Optional[Path] = None
+        self._proxy_server_config = proxy_server_config
         self._run_apt_proxy: bool = run_apt_proxy
         if proxy_server_config:
             self._run_proxy_server = True
@@ -272,7 +270,7 @@ class RepoServers(NspawnPlugin):
                 serve_rpm_snapshots, snap_subvol
             )
 
-            if self._run_proxy_server:
+            if self._proxy_server_config:
                 ns_count += 1
 
             if self._run_apt_proxy:
@@ -313,15 +311,15 @@ class RepoServers(NspawnPlugin):
                     )
                 )
 
-            if self._run_proxy_server:
+            if self._proxy_server_config:
                 stack.enter_context(
                     launch_proxy_server_for_netns(
                         ns_socket=ns_sockets_pool.pop(),
                         fbpkg_db_path=self._fbpkg_db_path,
+                        proxy_server_config=self._proxy_server_config,
                     )
                 )
 
-                log.info(f"Started `proxy-server` on port {PROXY_SERVER_PORT}")
             if self._run_apt_proxy:  # pragma: no cover
                 stack.enter_context(
                     launch_apt_proxy_server_for_netns(
