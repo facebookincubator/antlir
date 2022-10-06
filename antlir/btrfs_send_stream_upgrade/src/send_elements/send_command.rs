@@ -1249,11 +1249,11 @@ impl SendCommand {
             - (context.get_write_offset() + pre_data_attribute_size + data_attribute_header_size)
                 % BLOCK_SIZE;
         // Account for the minimum size of the command
-        let minimum_command_overhead = header_size
+        let minimum_command_size = header_size
             + path_attribute.get_size()
             + file_offset_attribute.get_size()
             + size_attribute.get_size();
-        if pad_size < minimum_command_overhead {
+        if pad_size < minimum_command_size {
             pad_size += BLOCK_SIZE;
         }
         let pad_payload_size = pad_size - header_size;
@@ -1261,10 +1261,12 @@ impl SendCommand {
         let mut buffer = vec![0; pad_size];
         // Generate a string -- this will constitute the bulk of the pad
         let mut pad_path = String::new();
-        for _i in 0..pad_size {
+        let path_string_length = pad_size - minimum_command_size;
+        for _i in 0..path_string_length {
             pad_path.push('a');
         }
-        // Regenerate the path attribute with the new path
+        // Regenerate the path atttribute to fill up the pad command to the
+        // required length
         let path_attribute = SendAttribute::new_from_string(
             context,
             BtrfsSendAttributeType::BTRFS_SEND_A_PATH,
@@ -1274,11 +1276,20 @@ impl SendCommand {
         {
             let mut sub_context =
                 context.clone_with_new_buffers(None, Some(&mut buffer), version, version);
+            let start_offset = sub_context.get_write_offset();
             // Skip the CRC update for now
             header.persist(&mut sub_context, true)?;
             path_attribute.persist(&mut sub_context)?;
             file_offset_attribute.persist(&mut sub_context)?;
             size_attribute.persist(&mut sub_context)?;
+            let end_offset = sub_context.get_write_offset();
+            anyhow::ensure!(
+                end_offset - start_offset == pad_size,
+                "Expected start offset {} end offset {} to align with pad {}",
+                start_offset,
+                end_offset,
+                pad_size
+            );
             context.return_child(&mut sub_context);
         }
 
