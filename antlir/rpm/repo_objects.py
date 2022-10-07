@@ -83,7 +83,7 @@ class Repodata(NamedTuple):
         )
 
     def is_primary_xml(self) -> bool:
-        return self.location.endswith("-primary.xml.gz")
+        return self.location.endswith("primary.xml.gz")
 
     def best_checksum(self) -> Checksum:
         return self.checksum
