@@ -607,19 +607,21 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
         dest="run_proxy_server",
         help="Enabling this flag will start proxy server in the container.",
     )
-    parser.add_argument(
-        "--fbpkg-db-path",
-        dest="fbpkg_db_path",
-        help="Path to the Repo DB. Requiered parameter for proxy_server",
-    )
-    parser.add_argument(
-        "--allow-unknown-fbpkg",
-        action="store_true",
-        dest="allow_unknown_fbpkg",
-        help="Enabling this flag will allow proxy server to "
-        "to install fbpkg tags that are not currently tracked by Antlir's "
-        "in-repo fbpkg DB (https://fburl.com/antlir-fbpkg).",
-    )
+    # @oss-disable: parser.add_argument( 
+        # @oss-disable: "--fbpkg-db-path", 
+        # @oss-disable: dest="fbpkg_db_path", 
+        # @oss-disable: help="Path to the Repo DB. Requiered parameter for " 
+        # @oss-disable: "proxy_server", 
+    # @oss-disable: ) 
+    # @oss-disable: parser.add_argument( 
+        # @oss-disable: "--allow-unknown-fbpkg", 
+        # @oss-disable: action="store_true", 
+        # @oss-disable: dest="allow_unknown_fbpkg", 
+        # @oss-disable: help="Enabling this flag will allow proxy server to " 
+        # @oss-disable: "to install fbpkg tags that are not currently " 
+        # @oss-disable: "tracked by Antlir's " 
+        # @oss-disable: "in-repo fbpkg DB (https://fburl.com/antlir-fbpkg).", 
+    # @oss-disable: ) 
 
 
 # Only for internal use by `nspawn-{run,test}-in-subvol`.
@@ -691,7 +693,10 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     args.subvolume_on_disk = find_subvolume_on_disk(layer_path)
 
     proxy_server_config = (
-        proxy_server_config_t(fbpkg_pkg_list=[])
+        proxy_server_config_t(
+            # @oss-disable: fbpkg_pkg_list=[], 
+            # @oss-disable: allow_unknown_fbpkg=args.allow_unknown_fbpkg, 
+        )
         if args.run_proxy_server
         else None
     )
