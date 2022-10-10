@@ -4,6 +4,8 @@
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
+oncall("twimage")
+
 # To remove a path in this feature it should match these criteria:
 #  - its absence should makes the running image operate no less correctly
 #    than before,

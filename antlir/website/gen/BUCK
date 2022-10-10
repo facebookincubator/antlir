@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "rust_binary")
 
+oncall("twimage")
+
 rust_binary(
     name = "generate-metalos-apis",
     srcs = ["generate_metalos_apis.rs"],

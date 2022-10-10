@@ -34,6 +34,8 @@ load(":defs.bzl", "defs")
 #   tar --sort=name --mtime=2018-01-01 --owner=0 --group=0 --numeric-owner \
 #       -C "$tmp_dir/d" "./prebuilt_hello_world.tar" -cf .
 
+oncall("twimage")
+
 # Notes on what breaks across distros/versions:
 # See https://www.gnu.org/software/tar/manual/html_node/Standard.html for
 # the details on the tar structure.  The 1 part of the tar header that

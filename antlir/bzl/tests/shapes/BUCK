@@ -6,6 +6,8 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t", "friend_t", "hashable_t", "lightsaber_t")
 
+oncall("twimage")
+
 shape.impl(
     name = "test.shape",
     rust_crate = "test_shape",

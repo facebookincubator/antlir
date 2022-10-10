@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "rust_binary", "rust_library", "rust_unittest")
 
+oncall("twimage")
+
 rust_library(
     name = "btrfs_send_stream_upgrade_lib",
     srcs = ["src/lib.rs"] + glob([

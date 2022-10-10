@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "export_file")
 
+oncall("twimage")
+
 # The static test keys were generated with the following commands:
 #
 # export GNUPGHOME=$(mktemp -d)

@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "python_binary")
 
+oncall("twimage")
+
 python_binary(
     # @autodeps-skip
     name = "btrfs",

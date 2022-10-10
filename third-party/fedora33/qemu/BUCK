@@ -3,6 +3,8 @@ load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":hoist.bzl", "hoist")
 
+package(name = "twimage")
+
 # these need to be updated manually based on the downloaded version
 qemu = {
     "sha256": "87bc1a471ca24b97e7005711066007d443423d19aacda3d442558ae032fa30b9",

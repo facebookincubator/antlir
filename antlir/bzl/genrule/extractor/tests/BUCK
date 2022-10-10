@@ -5,6 +5,8 @@ load("//antlir/bzl:oss_shim.bzl", "python_unittest", "rust_binary")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
+oncall("twimage")
+
 image.layer(
     name = "deps",
     features = [

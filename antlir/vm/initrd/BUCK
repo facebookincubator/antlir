@@ -4,6 +4,8 @@ load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
 
+oncall("twimage")
+
 export_file(
     name = "modules.conf",
 )

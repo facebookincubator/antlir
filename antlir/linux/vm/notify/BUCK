@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 
+oncall("twimage")
+
 export_file(
     name = "virtio-notify@.service",
     visibility = ["PUBLIC"],

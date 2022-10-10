@@ -10,6 +10,8 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
+oncall("twimage")
+
 # Future: when we run a VM the tap device is actually created
 # on the host, but this test runs inside a VM, which needs
 # a tap device...  Yes, this is circular, since tap devices

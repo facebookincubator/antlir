@@ -2,6 +2,8 @@ load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
+oncall("twimage")
+
 export_file(
     name = "eth0.link",
     visibility = ["PUBLIC"],

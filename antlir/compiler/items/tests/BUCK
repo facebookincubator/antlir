@@ -9,6 +9,8 @@ load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest", "third_pa
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
+oncall("twimage")
+
 image.layer(
     name = "test_compiler_item_layer",
     features = [

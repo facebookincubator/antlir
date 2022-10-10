@@ -1,5 +1,7 @@
 load("//antlir/bzl:template.bzl", "template")
 
+oncall("twimage")
+
 template(
     name = "unit",
     srcs = ["unit.jinja2"],

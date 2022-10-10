@@ -1,6 +1,8 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "rust_binary", "rust_library")
 load("//antlir/bzl:tool.bzl", "antlir_tool")
 
+oncall("twimage")
+
 rust_binary(
     name = "deb-snapshotter",
     srcs = [

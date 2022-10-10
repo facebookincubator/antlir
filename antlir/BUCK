@@ -10,6 +10,8 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
+oncall("twimage")
+
 python_library(
     name = "common",
     srcs = ["common.py"],

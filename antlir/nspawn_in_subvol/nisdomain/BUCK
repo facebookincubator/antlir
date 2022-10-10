@@ -3,6 +3,8 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
+oncall("twimage")
+
 image.layer(
     name = "setup",
     features = [

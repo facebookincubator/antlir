@@ -6,6 +6,8 @@
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
+oncall("twimage")
+
 third_party.build(
     name = "json-glib",
     src = third_party.source("json-glib"),

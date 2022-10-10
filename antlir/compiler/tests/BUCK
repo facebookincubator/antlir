@@ -10,6 +10,8 @@ load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "image_feature_python_unittest")
 
+oncall("twimage")
+
 python_unittest(
     name = "test-subvolume-on-disk",
     srcs = ["test_subvolume_on_disk.py"],

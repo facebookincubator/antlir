@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "rust_binary")
 
+oncall("twimage")
+
 rust_binary(
     name = "starlark-unittest",
     srcs = glob(["src/*.rs"]),
