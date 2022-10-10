@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_library", "python_unittest")
 
+oncall("twimage")
+
 python_library(
     name = "coroutine_utils",
     srcs = ["coroutine_utils.py"],

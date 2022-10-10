@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "export_file")
 
+oncall("twimage")
+
 # This file is used for validating rpm version comparsion logic.  It is
 # retrieved from the upstream rpm source repo.  The test cases defined in
 # this file comprise the 'canonical' tests that are used by the rpm code

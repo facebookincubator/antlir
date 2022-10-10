@@ -5,6 +5,8 @@
 
 load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library")
 
+oncall("twimage")
+
 python_library(
     name = "subvolume_on_disk",
     srcs = ["subvolume_on_disk.py"],

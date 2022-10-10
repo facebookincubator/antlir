@@ -1,5 +1,7 @@
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest")
 
+oncall("twimage")
+
 python_library(
     name = "http_socket_server",
     srcs = ["http_socket_server.py"],

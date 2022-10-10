@@ -9,6 +9,8 @@ load("//antlir/linux/vm/network:defs.bzl", "network")
 load("//antlir/linux/vm/notify:defs.bzl", "notify")
 load("//antlir/linux/vm/ssh:defs.bzl", "ssh")
 
+package(name = "twimage")
+
 snapshot_fedora_override = image.opts(
     # This is the default, but I am making it explicit since the target is
     # named fedora

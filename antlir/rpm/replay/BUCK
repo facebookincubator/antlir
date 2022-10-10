@@ -2,6 +2,8 @@
 
 load("//antlir/bzl:oss_shim.bzl", "export_file", "python_library")
 
+oncall("twimage")
+
 export_file(name = "fake_pty_real.py")
 
 python_library(

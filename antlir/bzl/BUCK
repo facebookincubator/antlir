@@ -3,6 +3,8 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":test_hoist.bzl", "test_hoist")
 
+oncall("twimage")
+
 shape.impl(
     name = "container_opts.shape",
     deps = ["//antlir/bzl:proxy_server_config.shape"],

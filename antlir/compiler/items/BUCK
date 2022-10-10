@@ -2,6 +2,8 @@
 
 load("//antlir/bzl:oss_shim.bzl", "python_library", "third_party")
 
+oncall("twimage")
+
 python_library(
     name = "clone",
     srcs = ["clone.py"],

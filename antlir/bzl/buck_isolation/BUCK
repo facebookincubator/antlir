@@ -3,6 +3,8 @@
 load("//antlir/bzl:oss_shim.bzl", "python_library")
 load(":defs.bzl", "buck_isolation_py")
 
+oncall("twimage")
+
 buck_isolation_py(name = "buck_isolation.py")
 
 python_library(

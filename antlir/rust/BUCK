@@ -4,6 +4,8 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_library", "rust_binary", "rust_python_extension", "third_party")
 load(":modules.bzl", "extension_modules", "extension_rust_targets")
 
+oncall("twimage")
+
 # Main entrypoint to the rust python extension modules
 # This exists because Python import resolution is annoying and would otherwise
 # make it impossible to have any python_{library,binary,unittest} targets under

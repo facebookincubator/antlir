@@ -9,6 +9,8 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/starlark_unittest:defs.bzl", "starlark_unittest")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
+oncall("twimage")
+
 # Powers `image.test_rpm_names`
 python_library(
     name = "check_rpm_names",

@@ -9,6 +9,8 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/rpm/replay:queries.bzl", "test_env_map")
 
+oncall("twimage")
+
 python_unittest(
     name = "test-fake-pty",
     srcs = ["test_fake_pty.py"],

@@ -1,5 +1,7 @@
 load("//antlir/bzl:shape.bzl", "shape")
 
+oncall("twimage")
+
 shape.impl(
     name = "btrfs.shape",
     deps = [

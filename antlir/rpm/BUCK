@@ -7,6 +7,8 @@ load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary", "python_librar
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":defs.bzl", "test_rpm_repo_snapshot")
 
+oncall("twimage")
+
 python_library(
     name = "pluggable",
     srcs = ["pluggable.py"],

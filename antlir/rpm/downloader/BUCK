@@ -2,6 +2,8 @@
 
 load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
 
+oncall("twimage")
+
 python_library(
     name = "common",
     srcs = ["common.py"],

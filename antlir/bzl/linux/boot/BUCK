@@ -1,6 +1,8 @@
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 
+oncall("twimage")
+
 shape.impl(
     name = "boot_loader_entry.shape",
     deps = ["//antlir/bzl:target.shape"],

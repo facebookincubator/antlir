@@ -3,6 +3,8 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "third_party")
 
+oncall("twimage")
+
 [
     hoist(
         name = paths.basename(binary),

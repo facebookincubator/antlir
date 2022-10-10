@@ -2,6 +2,8 @@
 
 load("//antlir/bzl:oss_shim.bzl", "cxx_genrule", "export_file", "python_library", "python_unittest")
 
+oncall("twimage")
+
 export_file(
     name = "rename_shadowed.c",
     # This file has to be visible to anything that uses the genrule
