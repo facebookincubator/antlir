@@ -183,6 +183,7 @@ impl TestModule {
                     evaluator
                         .eval_function(starlark_func.value(), &[], &[])
                         .expect("test function failed");
+                    Ok(())
                 })),
             })
             .collect()
