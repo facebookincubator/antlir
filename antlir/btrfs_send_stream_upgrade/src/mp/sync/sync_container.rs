@@ -63,8 +63,7 @@ impl SyncContainer {
             sc_buffer_cache: Some(Arc::new(ReadOnceBufferCache::new(
                 options.read_buffer_size,
                 SendHeader::get_size(),
-                // TODO: Pull from option
-                1000,
+                options.extra_buffer_cache_backlog / options.read_buffer_size,
             )?)),
             sc_command_construction_queue: Some(Arc::new(
                 UnorderedElementQueue::<CommandInfo>::new("Command construction queue")?,
