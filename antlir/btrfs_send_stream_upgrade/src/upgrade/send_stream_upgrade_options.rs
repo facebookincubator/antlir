@@ -28,8 +28,6 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// This represents the maximum number of command bytes dumped as a part of
     /// serde checks
-    ///
-    /// 0 is the default value
     #[structopt(short, long, default_value = "0")]
     pub bytes_to_log: usize,
 
@@ -40,11 +38,19 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// 0 will disable compression
     ///
-    /// 3 is the default compression value
+    /// 3 is the default value that is typically used by zstd on the CLI and in
+    /// the kernel
     ///
     /// 22 is the maximum value that can be used
     #[structopt(short, long, default_value = "3")]
     pub compression_level: i32,
+
+    /// Extra buffer cache backlog
+    ///
+    /// This will specify the maximum backlog that can be held in the buffer
+    /// cache in bytes
+    #[structopt(short, long, default_value = "1073741824")]
+    pub extra_buffer_cache_backlog: usize,
 
     /// Path to input file representing a send stream to upgrade
     ///
@@ -62,8 +68,6 @@ pub struct SendStreamUpgradeOptions {
     /// size)
     ///
     /// 0 will disable batching
-    ///
-    /// 131072 is the default
     ///
     /// 131072 is the maximum value that can be used
     #[structopt(short, long, default_value = "131072")]
@@ -97,9 +101,7 @@ pub struct SendStreamUpgradeOptions {
     /// Read buffer size
     ///
     /// This controls the maximum size of the read buffer
-    ///
-    /// The default value is 8KiB
-    #[structopt(short, long, default_value = "8192")]
+    #[structopt(short, long, default_value = "1048576")]
     pub read_buffer_size: usize,
 
     /// Serialize-Deserialize Checks
@@ -146,7 +148,7 @@ pub struct SendStreamUpgradeOptions {
     ///
     /// Writer threads will flush commands in the order they were originally
     /// read
-    #[structopt(short, long, default_value = "1")]
+    #[structopt(short, long, default_value = "0")]
     pub thread_count: usize,
 
     /// Verbosity
@@ -159,8 +161,6 @@ pub struct SendStreamUpgradeOptions {
     /// Write buffer size
     ///
     /// This controls the maximum size of the write buffer
-    ///
-    /// The default value is 8KiB
     #[structopt(short, long, default_value = "8192")]
     pub write_buffer_size: usize,
 }
