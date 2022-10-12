@@ -5,5 +5,8 @@ oncall("twimage")
 rust_library(
     name = "absolute_path",
     srcs = ["src/absolute_path.rs"],
-    deps = ["thiserror"],
+    deps = [
+        "ref-cast",
+        "thiserror",
+    ],
 )
