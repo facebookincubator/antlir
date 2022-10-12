@@ -10,6 +10,9 @@ use std::ops::Deref;
 use std::path::Path;
 use std::path::PathBuf;
 
+use ref_cast::ref_cast_custom;
+use ref_cast::RefCastCustom;
+
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("{0} is not absolute")]
@@ -26,7 +29,7 @@ pub type Result<R> = std::result::Result<R, Error>;
 pub struct AbsolutePathBuf(PathBuf);
 
 /// Version of [std::path::Path] that is verified to be an absolute path
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, RefCastCustom)]
 #[repr(transparent)]
 pub struct AbsolutePath(Path);
 
@@ -89,7 +92,10 @@ impl AbsolutePath {
     }
 
     fn new_unchecked<S: AsRef<OsStr> + ?Sized>(s: &S) -> &Self {
-        unsafe { &*(s.as_ref() as *const OsStr as *const AbsolutePath) }
+        #[ref_cast_custom]
+        fn ref_cast(s: &Path) -> &AbsolutePath;
+
+        ref_cast(Path::new(s))
     }
 }
 
