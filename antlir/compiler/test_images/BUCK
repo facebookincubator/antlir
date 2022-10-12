@@ -1042,22 +1042,6 @@ package.new(
     visibility = ["//antlir/..."],
 )
 
-image.layer_from_package(
-    name = "create_ops-layer-via-tarball-package",
-    flavor = "antlir_test",
-    format = "tar",
-    source = ":create_ops.tar.gz",
-    visibility = ["//antlir/..."],
-)
-
-image.layer_from_package(
-    name = "create_ops-layer-via-cpio-package",
-    flavor = "antlir_test",
-    format = "cpio",
-    source = ":create_ops.cpio.gz",
-    visibility = ["//antlir/..."],
-)
-
 package.new(
     name = "create_ops.cpio.gz",
     format = "cpio.gz",

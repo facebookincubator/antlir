@@ -174,60 +174,6 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 ),
             )
 
-    @with_temp_subvols
-    def test_image_layer_composed_with_cpio_package(self, temp_subvolumes):
-        # check that an image layer composed out of a tar-packaged create_ops
-        # layer is equivalent to the original create_ops layer.
-        demo_sv_name = "demo_sv"
-        demo_sv = temp_subvolumes.caller_will_create(demo_sv_name)
-        with open(
-            self._sibling_path("create_ops.sendstream")
-        ) as f, demo_sv.receive(f):
-            pass
-
-        demo_render = render_demo_as_corrupted_by_cpio(create_ops=demo_sv_name)
-
-        with self._package_image(
-            self._sibling_path("create_ops-layer-via-cpio-package"),
-            "sendstream",
-        ) as out_path:
-            rendered_cpio_image = self._render_sendstream_path(out_path)
-            # This is metadata generated during the buck image build process
-            # and is not useful for purposes of comparing the subvolume
-            # contents.  However, it's useful to verify that the meta dir
-            # we popped is what we expect.
-            self._assert_meta_valid_and_sendstreams_equal(
-                demo_render, rendered_cpio_image
-            )
-
-    @with_temp_subvols
-    def test_image_layer_composed_with_tarball_package(self, temp_subvolumes):
-        # check that an image layer composed out of a tar-packaged create_ops
-        # layer is equivalent to the original create_ops layer.
-        demo_sv_name = "demo_sv"
-        demo_sv = temp_subvolumes.caller_will_create(demo_sv_name)
-        with open(
-            self._sibling_path("create_ops.sendstream")
-        ) as f, demo_sv.receive(f):
-            pass
-
-        demo_render = render_demo_as_corrupted_by_gnu_tar(
-            create_ops=demo_sv_name
-        )
-
-        with self._package_image(
-            self._sibling_path("create_ops-layer-via-tarball-package"),
-            "sendstream",
-        ) as out_path:
-            rendered_tarball_image = self._render_sendstream_path(out_path)
-            # This is metadata generated during the buck image build process
-            # and is not useful for purposes of comparing the subvolume
-            # contents.  However, it's useful to verify that the meta dir
-            # we popped is what we expect.
-            self._assert_meta_valid_and_sendstreams_equal(
-                demo_render, rendered_tarball_image
-            )
-
     def test_format_name_collision(self):
         with self.assertRaisesRegex(AssertionError, "share format_name"):
 

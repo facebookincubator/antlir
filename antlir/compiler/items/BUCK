@@ -141,7 +141,6 @@ python_library(
     srcs = ["make_subvol.py"],
     deps = [
         ":common",
-        ":cpio",
         ":mount_utils",
         ":tarball",
         "//antlir:fs_utils",
@@ -167,11 +166,6 @@ python_library(
     deps = [
         "//antlir/bzl/image/feature:tarball.shape-python",
     ],
-)
-
-python_library(
-    name = "cpio",
-    srcs = ["cpio.py"],
 )
 
 python_library(

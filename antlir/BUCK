@@ -579,8 +579,6 @@ TEST_PACKAGE_RESOURCES = {
     TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
     TEST_IMAGE_PREFIX + "create_ops.cpio.gz": "tests/create_ops.cpio.gz",
     TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
-    TEST_IMAGE_PREFIX + "create_ops-layer-via-cpio-package": "tests/create_ops-layer-via-cpio-package",
-    TEST_IMAGE_PREFIX + "create_ops-layer-via-tarball-package": "tests/create_ops-layer-via-tarball-package",
     TEST_IMAGE_PREFIX + "empty.layer": "tests/empty.layer",
     TEST_IMAGE_PREFIX + "empty_bios_boot": "tests/empty_bios_boot",
     TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
