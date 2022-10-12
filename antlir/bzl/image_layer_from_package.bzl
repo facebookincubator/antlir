@@ -38,7 +38,7 @@ def image_layer_from_package_helper(
             if bad_kwarg in image_layer_kwargs:
                 fail("Unsupported with layer_from_package", bad_kwarg)
 
-        if format not in ["cpio", "sendstream", "tar"]:
+        if format != "sendstream":
             fail("Unsupported format for layer_from_package", format)
 
         image_layer_utils.image_layer_impl(
