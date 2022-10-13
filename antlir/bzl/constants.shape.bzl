@@ -89,4 +89,5 @@ repo_config_t = shape.shape(
     antlir_linux_flavor = str,
     antlir_cell_name = str,
     rc_targets = shape.list(str),
+    flavor_alias = shape.field(str, optional = True),
 )

@@ -215,4 +215,5 @@ REPO_CFG = repo_config_t(
     antlir_linux_flavor = _get_str_cfg("antlir_linux_flavor", allow_none = True),
     antlir_cell_name = config.get_antlir_cell_name(),
     rc_targets = [normalize_target(t) for t in _get_str_list_cfg("rc_targets", separator = ",")],
+    flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
 )
