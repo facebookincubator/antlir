@@ -11,7 +11,7 @@ load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "normalize_features", "private_feature_new")
 load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
 load(":flavor_helpers.bzl", "flavor_helpers")
-load(":flavor_impl.bzl", "flavor_to_struct")
+load(":flavor_impl.bzl", "flavor_to_struct", "get_flavor_aliased_layer")
 load(":query.bzl", "layer_deps_query", "query")
 load(":target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 load(":target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
@@ -175,6 +175,7 @@ def compile_image_features(
     https://fburl.com/diff/3050aw26
     '''
     flavor = flavor_to_struct(flavor)
+    parent_layer = get_flavor_aliased_layer(parent_layer, flavor)
     if features == None:
         features = []
     if extra_deps == None:

@@ -19,6 +19,7 @@ def image_python_unittest(
         par_style = None,
         hostname = None,
         container_opts = None,
+        flavor = None,
         **python_unittest_kwargs):
     visibility = visibility or []
 
@@ -35,6 +36,7 @@ def image_python_unittest(
         visibility = visibility,
         hostname = hostname,
         container_opts = container_opts,
+        flavor = flavor,
     )
 
     wrapper_props.outer_test_kwargs["tags"] = \

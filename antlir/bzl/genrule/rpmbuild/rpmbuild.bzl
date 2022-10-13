@@ -63,6 +63,7 @@ def image_rpmbuild(
         **image_layer_kwargs):
     flavor = flavor_to_struct(flavor or flavor_helpers.get_flavor_default())
     parent_layer = parent_layer or flavor_helpers.get_build_appliance()
+
     private_image_rpmbuild_impl(
         name,
         specfile,
