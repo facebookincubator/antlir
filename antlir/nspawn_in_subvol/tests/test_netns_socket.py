@@ -22,10 +22,16 @@ class NetnsSocketTestCase(AntlirTestCase):
     """
 
     @patch(
+        "antlir.nspawn_in_subvol.netns_socket.log.isEnabledFor",
+        return_value=True,
+    )
+    @patch(
         "antlir.nspawn_in_subvol.netns_socket.recv_fds_from_unix_sock",
     )
     @patch("antlir.nspawn_in_subvol.netns_socket._mockable_popen")
-    def test_create_sockets_inside_netns(self, s_patch, r_patch) -> None:
+    def test_create_sockets_inside_netns(
+        self, s_patch, r_patch, enabled_patch
+    ) -> None:
         expected_cmd = [
             "sudo",
             "env",

@@ -86,6 +86,8 @@ def init_logging(*, debug: bool = False) -> None:
     global _INITIALIZED_LOGGING
     level = logging.DEBUG if debug else logging.INFO
     logger = logging.getLogger(_ANTLIR_ROOT_LOGGER)
+    logger.setLevel(level)
+
     # The first time around, just set up the stream handler & formatter --
     # this will be inherited by all `get_logger` instances.
     if not _INITIALIZED_LOGGING:
@@ -93,23 +95,14 @@ def init_logging(*, debug: bool = False) -> None:
         hdlr = logging.StreamHandler()
         hdlr.setFormatter(ColorFormatter())
         logger.addHandler(hdlr)
-        return
-    # Logging is being "explicitly" re-initialized, so we may need to update
-    # the level.  We only need to touch the root logger because all others
-    # use `NOTSET` per `get_logger`.
-    logger.setLevel(level)
 
 
 def get_logger():
-    # Default-initialize with `debug=True` until the user tells us otherwise.
-    if not _INITIALIZED_LOGGING:
-        init_logging(debug=True)
     calling_file = os.path.basename(inspect.stack()[1].filename)
     # Strip extension from name of logger
     if calling_file.endswith(".py"):
         calling_file = calling_file[: -len(".py")]
     logger = logging.getLogger(_ANTLIR_ROOT_LOGGER + "." + calling_file)
-    logger.setLevel(logging.NOTSET)
     return logger
 
 
