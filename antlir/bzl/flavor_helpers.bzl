@@ -10,6 +10,7 @@ information check out [the flavor docs](/docs/concepts/rpms/overview).
 
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "REPO_CFG", "new_flavor_config")
+load(":flavor_alias.bzl", "alias_flavor")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
@@ -53,10 +54,18 @@ def _get_flavor_config(flavor, flavor_config_override):
     return new_flavor_config(**flavor_config)
 
 def _get_flavor_default():
-    return REPO_CFG.flavor_default
+    #
+    # Technically we don't need to call alias_flavor() here (since it's
+    # already been invoked for this REPO_CFG variable), but we do it
+    # anyway to support `fail-on-flavor-aliasing` testing. Basically,
+    # alias_flavor() will fail() if flavor aliasing is disabled and we
+    # try to return an aliased flavor.
+    #
+    return alias_flavor(REPO_CFG.flavor_default)
 
 def _get_antlir_linux_flavor():
-    return REPO_CFG.antlir_linux_flavor
+    # See the comment above in _get_flavor_default().
+    return alias_flavor(REPO_CFG.antlir_linux_flavor)
 
 def _get_build_appliance(flavor = None):
     """
