@@ -63,9 +63,7 @@ def _get_build_appliance(flavor = None):
     Arguments
     - `flavor`: The flavor of the build appliance to return.
     """
-    if flavor == None:
-        flavor = _get_flavor_default()
-    flavor = flavor_to_struct(flavor)
+    flavor = flavor_to_struct(flavor or _get_flavor_default())
     return REPO_CFG.flavor_to_config[flavor.name].build_appliance
 
 def _get_rpm_installer(flavor = None):
@@ -73,9 +71,7 @@ def _get_rpm_installer(flavor = None):
     Arguments
     - `flavor`: The flavor of the rpm installer to return.
     """
-    if flavor == None:
-        flavor = _get_flavor_default()
-    flavor = flavor_to_struct(flavor)
+    flavor = flavor_to_struct(flavor or _get_flavor_default())
     return REPO_CFG.flavor_to_config[flavor.name].rpm_installer
 
 def _get_rpm_installers_supported():

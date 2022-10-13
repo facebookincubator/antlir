@@ -7,4 +7,5 @@ load("//antlir/bzl:shape.bzl", "shape")
 
 flavor_t = shape.shape(
     name = str,
+    unaliased_name = str,
 )

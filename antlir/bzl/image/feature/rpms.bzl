@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
-load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs")
+load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs", "get_unaliased_flavors")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 load(":rpms.shape.bzl", "rpm_action_item_t")
@@ -66,7 +66,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
                 vs_name = name
 
         flavor_to_version_set = {}
-        for flavor in flavors or flavors_to_structs(REPO_CFG.flavor_to_config.keys()):
+        for flavor in flavors or get_unaliased_flavors(REPO_CFG.flavor_to_config.keys()):
             vs_path_prefix = REPO_CFG.flavor_to_config[flavor.name].version_set_path
 
             # We just add the version set for user given flavors, even
