@@ -57,10 +57,6 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
     ) -> Iterator[str]:
         with temp_dir() as td:
             out_path = td / "image.btrfs"
-            opts_path = td / "opts.json"
-            with opts_path.open("w") as f:
-                f.write(opts.json())
-
             package_btrfs(
                 [
                     "--subvolumes-dir",
@@ -68,7 +64,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     "--output-path",
                     out_path,
                     "--opts",
-                    opts_path,
+                    opts.json(),
                 ]
             )
             yield out_path
