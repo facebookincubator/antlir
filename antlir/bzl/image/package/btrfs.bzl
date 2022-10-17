@@ -70,15 +70,6 @@ def _new_btrfs(
 
         layers.append(subvol.layer)
 
-    opts_name = name + "__opts"
-    buck_genrule(
-        name = opts_name,
-        out = "opts.json",
-        cmd = "echo {} > $OUT".format(shell.quote(shape.do_not_cache_me_json(opts))),
-        cacheable = False,
-        antlir_rule = antlir_rule,
-    )
-
     buck_genrule(
         name = name,
         out = "image.btrfs",
@@ -98,10 +89,10 @@ def _new_btrfs(
                 $(exe {package_btrfs}) \
                     --subvolumes-dir "$subvolumes_dir" \
                     --output-path "$OUT" \
-                    --opts $(location :{opts_name})
+                    --opts {quoted_opts_json}
             '''.format(
                 package_btrfs = antlir_dep("package:btrfs"),
-                opts_name = opts_name,
+                quoted_opts_json = shell.quote(shape.do_not_cache_me_json(opts)),
             ),
             rule_type = _rule_type,
             target_name = name,

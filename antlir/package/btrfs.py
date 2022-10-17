@@ -678,7 +678,7 @@ def package_btrfs(args) -> None:
         )
         cli.parser.add_argument(
             "--opts",
-            type=btrfs_opts_t.load,
+            type=btrfs_opts_t.parse_raw,
             required=True,
             help="Inline serialized loopback_opts_t instance containing "
             "configuration options for loopback formats",
