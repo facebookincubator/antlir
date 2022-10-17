@@ -6,7 +6,7 @@
     "start": "yarn gen-pages && docusaurus start",
     "build": "yarn gen-pages && yarn docusaurus build",
     "gen-pages": "yarn bzldoc && yarn metalos-api",
-    "metalos-api": "/bin/bash -c 'buck2 run //antlir/website/gen:generate-metalos-apis > docs/metalos/apis.md'",
+    "metalos-api": "/bin/bash -c 'buck2 run //antlir/website/gen:generate-metalos-apis > docs/rustdoc.md'",
     "bzldoc": "node ./bzldoc.js --files='//antlir/bzl:image.bzl //antlir/bzl:shape.bzl //antlir/bzl/image/feature:defs.bzl //antlir/bzl/image/package:defs.bzl //antlir/vm/bzl:defs.bzl //antlir/bzl:flavor_helpers.bzl //antlir/bzl:test_rpms.bzl'",
     "swizzle": "docusaurus swizzle",
     "deploy": "docusaurus deploy",
