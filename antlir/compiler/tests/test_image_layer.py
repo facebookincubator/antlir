@@ -205,11 +205,11 @@ class ImageLayerTestCase(unittest.TestCase):
         #  - Currently, `mutate_ops` also uses `--no-data`, which would
         #    break this test of idempotence.
         for original_name, subvol_name, mount_config in [
-            ("create_ops", "create_ops", None),
-            ("create_ops", "create_ops-from-dir", None),
-            ("create_ops", "create_ops-from-layer", None),
+            ("volume", "create_ops", None),
+            ("volume", "create_ops-from-dir", None),
+            ("volume", "create_ops-from-layer", None),
             (
-                "create_ops",
+                "volume",
                 "create_ops-alias",
                 {
                     "build_source": {
@@ -228,7 +228,7 @@ class ImageLayerTestCase(unittest.TestCase):
                     pop_path(rendered_subvol, ".meta"),
                 )
                 self.assertEqual(
-                    render_demo_subvols(**{original_name: original_name}),
+                    render_demo_subvols(create_ops=original_name),
                     rendered_subvol,
                 )
 

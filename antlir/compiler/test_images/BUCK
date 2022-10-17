@@ -968,7 +968,6 @@ image.layer_from_package(
     flavor = "antlir_test",
     format = "sendstream",
     source = ":" + op + "-original.sendstream",
-    subvol_name = op,
     visibility = ["//antlir/..."],
 )
 
@@ -976,6 +975,7 @@ package.new(
     name = op + ".sendstream",
     format = "sendstream",
     layer = ":" + op,
+    subvol_name = op,
     visibility = ["//antlir/..."],
 )
 
@@ -1000,7 +1000,6 @@ image.layer_from_package(
         ":create_ops-dir",
         path = "sendstream",
     ),
-    subvol_name = "create_ops",
     visibility = ["//antlir/compiler/..."],
 )
 
@@ -1020,7 +1019,6 @@ image.layer_from_package(
         layer = ":create_ops-layer",
         path = "sendstream",
     ),
-    subvol_name = "create_ops",
     visibility = ["//antlir/..."],
 )
 

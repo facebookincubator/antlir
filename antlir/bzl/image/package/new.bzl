@@ -18,6 +18,8 @@ load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_l
 
 _IMAGE_PACKAGE = "image_package"
 
+_SENDSTREAM_FORMATS = ("sendstream", "sendstream.v2", "sendstream.zst")
+
 def package_new(
         name,
         layer,
@@ -33,7 +35,8 @@ def package_new(
         # Buck `labels` to add to the resulting target; aka `tags` in fbcode.
         labels = None,
         # Opts are required when format == ext3 | vfat | btrfs
-        loopback_opts = None):
+        loopback_opts = None,
+        subvol_name = None):
     visibility = visibility or []
 
     if not format:
@@ -41,6 +44,11 @@ def package_new(
 
     if format in ("ext3", "vfat") and not loopback_opts:
         fail("loopback_opts are required when using format: {}".format(format))
+
+    if subvol_name and format not in _SENDSTREAM_FORMATS:
+        fail("subvol_name is only supported for sendstreams")
+    if format in _SENDSTREAM_FORMATS and not subvol_name:
+        subvol_name = "volume"
 
     loopback_opts = normalize_loopback_opts(loopback_opts)
 
@@ -69,7 +77,8 @@ def package_new(
               --format {format} \
               --output-path "$OUT" \
               {targets_and_outputs} \
-              {maybe_loopback_opts}
+              {maybe_loopback_opts} \
+              {maybe_subvol_name} \
             '''.format(
                 format = format,
                 layer = layer,
@@ -85,6 +94,9 @@ def package_new(
                 maybe_loopback_opts = "--loopback-opts {}".format(
                     shell.quote(shape.do_not_cache_me_json(loopback_opts)),
                 ) if loopback_opts else "",
+                maybe_subvol_name = "--subvol-name {}".format(
+                    shell.quote(subvol_name),
+                ) if subvol_name else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
                 # so that the packager can verify that the specified

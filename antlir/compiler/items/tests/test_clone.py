@@ -227,7 +227,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         self.assertEqual({RequireDirectory(path=Path("/"))}, set(ci.requires()))
         self.assertGreater(len(set(ci.provides())), 1)
         with TempSubvolumes() as temp_subvols:
-            dest_subvol = temp_subvols.create("create_ops")
+            dest_subvol = temp_subvols.create("volume")
             ci.build(dest_subvol, DUMMY_LAYER_OPTS)
             self.assertEqual(
                 render_subvol(src_subvol), render_subvol(dest_subvol)

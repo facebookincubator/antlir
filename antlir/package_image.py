@@ -7,7 +7,7 @@
 import os
 import pwd
 import subprocess
-from typing import AnyStr, Callable, Mapping, NamedTuple, Optional, Tuple
+from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
 
 from antlir.bzl.loopback_opts import loopback_opts_t
 from antlir.cli import (
@@ -22,7 +22,7 @@ from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import create_ro, generate_work_dir, META_FLAVOR_FILE, Path
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import popen_nspawn, run_nspawn
-from antlir.subvol_utils import Subvol
+from antlir.subvol_utils import Subvol, TempSubvolumes
 
 log = get_logger()
 KiB = 2**10
@@ -39,6 +39,7 @@ class _Opts(NamedTuple):
     build_appliance: Optional[Subvol]
     loopback_opts: loopback_opts_t
     zstd_compression_level: int
+    subvol_name: Optional[str]
 
 
 class Format:
@@ -69,10 +70,15 @@ class Sendstream(Format, format_name="sendstream"):
     def package_full(
         self, subvol: Subvol, output_path: Path, opts: _Opts
     ) -> None:
-        with create_ro(
-            output_path, "wb"
-        ) as f, subvol.mark_readonly_and_write_sendstream_to_file(outfile=f):
-            pass
+        with TempSubvolumes() as ts:
+            assert opts.subvol_name is not None
+            renamed = ts.snapshot(subvol, opts.subvol_name)
+            with create_ro(
+                output_path, "wb"
+            ) as f, renamed.mark_readonly_and_write_sendstream_to_file(
+                outfile=f
+            ):
+                pass
 
 
 class SendstreamV2(Format, format_name="sendstream.v2"):
@@ -88,7 +94,7 @@ class SendstreamV2(Format, format_name="sendstream.v2"):
             __package__,
             "btrfs-send-stream-upgrade",
             exe=True,
-        ) as upgrader_path:
+        ) as upgrader_path, TempSubvolumes() as ts:
             send_stream_upgrade_args = [
                 upgrader_path,
                 "-v",
@@ -100,11 +106,13 @@ class SendstreamV2(Format, format_name="sendstream.v2"):
                 f"{send_stream_upgrade_args}"
             )
 
+            assert opts.subvol_name is not None
+            renamed = ts.snapshot(subvol, opts.subvol_name)
             with create_ro(output_path, "wb") as f, subprocess.Popen(
                 send_stream_upgrade_args,
                 stdin=subprocess.PIPE,
                 stdout=f,
-            ) as up_proc, subvol.mark_readonly_and_write_sendstream_to_file(
+            ) as up_proc, renamed.mark_readonly_and_write_sendstream_to_file(
                 outfile=up_proc.stdin
             ):
                 pass
@@ -146,14 +154,17 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
                 args.append("--ultra")
             args.append(f"-{opts.zstd_compression_level}")
 
-        with create_ro(output_path, "wb") as zst_file, subprocess.Popen(
-            args,
-            stdin=subprocess.PIPE,
-            stdout=zst_file,
-        ) as zstd_proc, subvol.mark_readonly_and_write_sendstream_to_file(
-            outfile=zstd_proc.stdin,
-        ):
-            pass
+        with TempSubvolumes() as ts:
+            assert opts.subvol_name is not None
+            renamed = ts.snapshot(subvol, opts.subvol_name)
+            with create_ro(output_path, "wb") as zst_file, subprocess.Popen(
+                args,
+                stdin=subprocess.PIPE,
+                stdout=zst_file,
+            ) as zstd_proc, renamed.mark_readonly_and_write_sendstream_to_file(
+                outfile=zstd_proc.stdin,
+            ):
+                pass
         check_popen_returncode(zstd_proc)
 
 
@@ -465,6 +476,10 @@ def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
             "zstd compression for synthetic sendstreams and will fail for "
             "sendstream.zst format",
         )
+        cli.parser.add_argument(
+            "--subvol-name",
+            help="Name for subvolume in certain formats",
+        )
 
         add_targets_and_outputs_arg(cli.parser)
 
@@ -500,6 +515,7 @@ def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
             build_appliance=build_appliance,
             loopback_opts=cli.args.loopback_opts,
             zstd_compression_level=cli.args.zstd_compression_level,
+            subvol_name=cli.args.subvol_name,
         ),
         subvol=layer,
     )

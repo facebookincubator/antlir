@@ -63,7 +63,6 @@ def compile_image_features_output(
         parent_layer,
         flavor,
         flavor_config,
-        subvol_name,
         internal_only_is_genrule_layer,
         vset_override_name,
         deps_query,
@@ -86,7 +85,7 @@ def compile_image_features_output(
           ${{ANTLIR_DEBUG:+--debug}} \
           --subvolumes-dir "$subvolumes_dir" \
           --subvolume-rel-path \
-            "$subvolume_wrapper_dir/"{subvol_name_quoted} \
+            "$subvolume_wrapper_dir/"volume \
           {maybe_flavor_config} \
           {maybe_allowed_host_mount_target_args} \
           {maybe_version_set_override} \
@@ -142,7 +141,6 @@ def compile_image_features_output(
             "--version-set-override $(location :{})".format(vset_override_name) if vset_override_name else ""
         ),
         quoted_child_feature_json_args = quoted_child_feature_json_args,
-        subvol_name_quoted = shell.quote(subvol_name or "volume"),
         # We will ask Buck to ensure that the outputs of the direct
         # dependencies of our `feature`s are available on local disk.
         #
@@ -164,16 +162,7 @@ def compile_image_features(
         flavor,
         flavor_config_override,
         extra_deps = None,
-        subvol_name = None,
         internal_only_is_genrule_layer = False):
-    '''
-    Arguments
-
-    - `subvol_name`: Future: eliminate this argument so that the build-time
-    hardcodes this to "volume". Move this setting into btrfs-specific
-    `package.new` options. See this post for more details
-    https://fburl.com/diff/3050aw26
-    '''
     flavor = flavor_to_struct(flavor)
     parent_layer = get_flavor_aliased_layer(parent_layer, flavor)
     if features == None:
@@ -274,7 +263,6 @@ def compile_image_features(
         parent_layer,
         flavor,
         flavor_config,
-        subvol_name,
         internal_only_is_genrule_layer,
         vset_override_name,
         deps_query,

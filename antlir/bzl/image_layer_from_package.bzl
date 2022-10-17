@@ -20,7 +20,6 @@ def image_layer_from_package_helper(
         flavor_config_override,
         antlir_rule,
         rc_layer,
-        subvol_name,
         features,
         compile_image_features_fn,
         image_layer_kwargs):
@@ -51,7 +50,6 @@ def image_layer_from_package_helper(
                 features = features,
                 flavor = flavor,
                 flavor_config_override = flavor_config_override,
-                subvol_name = subvol_name,
             ),
             antlir_rule = antlir_rule,
             **image_layer_kwargs
@@ -72,7 +70,6 @@ def image_layer_from_package(
         # packaged layer.  Used in conjunction with the `-c antlir.rc.layers`
         # config to test changes to packaged layers.
         rc_layer = None,
-        subvol_name = None,
         # Mechanistically, applying a send-stream on top of an existing layer
         # is just a regular `btrfs receive`.  However, the rules in the
         # current `receive` implementation for matching the parent to the
@@ -117,7 +114,6 @@ def image_layer_from_package(
         flavor_config_override,
         antlir_rule,
         rc_layer,
-        subvol_name,
         features,
         compile_image_features,
         image_layer_kwargs,
