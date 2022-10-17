@@ -9,7 +9,7 @@ import pwd
 import subprocess
 import tempfile
 from contextlib import contextmanager
-from typing import Iterator
+from typing import Iterator, Optional
 
 from antlir.btrfs_diff.parse_send_stream import check_magic, check_version
 
@@ -52,6 +52,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         btrfs_sendstream_version: str = None,
         btrfs_sendstream_kernel_version_path: str = None,
         zstd_compression_level: int = None,
+        subvol_name: Optional[str] = None,
     ) -> Iterator[str]:
         target_map = make_target_path_map(os.environ["target_map"].split())
         with temp_dir() as td:
@@ -75,6 +76,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                         if loopback_opts
                         else []
                     ),
+                    *(["--subvol-name", subvol_name] if subvol_name else []),
                     "--targets-and-outputs",
                     targets_and_outputs,
                     *(
@@ -112,6 +114,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         with self._package_image(
             self._sibling_path("create_ops.layer"),
             "sendstream",
+            subvol_name="create_ops",
         ) as out_path:
             self._assert_sendstream_files_equal(
                 self._sibling_path("create_ops-original.sendstream"),
@@ -129,6 +132,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 self._sibling_path("create_ops.layer"),
                 "sendstream.zst",
                 zstd_compression_level=compression_level,
+                subvol_name="create_ops",
             ) as out_path:
                 self._assert_sendstream_files_equal(
                     self._sibling_path("create_ops-original.sendstream"),
@@ -154,6 +158,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             self._sibling_path("create_ops.layer"),
             format,
             zstd_compression_level=compression_level,
+            subvol_name="create_ops",
         ) as out_path:
             with out_path.open(mode="rb") as f:
                 check_magic(f)
