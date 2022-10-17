@@ -1,0 +1,14 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_library")
+
+rust_library(
+    name = "buck_label",
+    srcs = glob(["src/**/*.rs"]),
+    test_deps = [
+        "serde_json",
+        "static_assertions",
+    ],
+    deps = [
+        "serde",
+        "thiserror",
+    ],
+)
