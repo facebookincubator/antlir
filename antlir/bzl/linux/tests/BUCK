@@ -27,11 +27,7 @@ image.layer(
     name = "busybox-src-from-third-party",
     features = [
         feature.install(
-            third_party.library(
-                "busybox",
-                "bin/busybox",
-                platform = "genrule",
-            ),
+            third_party.library("busybox", "bin/busybox"),
             "/busybox",
         ),
     ],

@@ -39,7 +39,6 @@ buck_genrule(
         third_party.library(
             "qemu",
             "share/qemu/edk2-x86_64-code.fd",
-            platform = "genrule",
         ),
     ),
     visibility = ["PUBLIC"],
