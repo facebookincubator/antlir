@@ -21,7 +21,6 @@ from antlir.compiler.items.common import (
 from antlir.fs_utils import META_FLAVOR_FILE, open_for_read_decompress
 from antlir.subvol_utils import Subvol
 
-
 # This checks to make sure that the parent layer of an layer has the same flavor
 # as the flavor specified by the current layer.
 def _check_parent_flavor(parent_subvol, flavor) -> None:
@@ -101,7 +100,7 @@ class LayerFromPackageItem(ImageItem):
         (item,) = items
 
         def builder(subvol: Subvol):
-            if item.format == "sendstream":
+            if item.format in ["sendstream", "sendstream.v2"]:
                 with open_for_read_decompress(
                     item.source
                 ) as sendstream, subvol.receive(sendstream):
