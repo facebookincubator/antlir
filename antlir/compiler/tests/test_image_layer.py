@@ -363,7 +363,9 @@ class ImageLayerTestCase(unittest.TestCase):
                 self.assertEqual(["(Dir)", {}], pop_path(r, d))
             # ignore /root if it is not present - when the repo is present and
             # under /root it will be processed above
-            self.assertEqual(["(Dir)", {}], pop_path(r, "/root", ["(Dir)", {}]))
+            self.assertEqual(
+                ["(Dir m750)", {}], pop_path(r, "/root", ["(Dir m750)", {}])
+            )
 
             # This nspawn-created symlink isn't great, but, again, it
             # shouldn't affect production use-cases.
