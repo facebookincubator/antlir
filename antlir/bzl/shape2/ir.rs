@@ -43,7 +43,7 @@
 //! ```
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use derive_more::Deref;
 use derive_more::Display;
@@ -165,12 +165,12 @@ impl Target {
 pub struct Module {
     pub name: String,
     pub target: Target,
-    pub types: BTreeMap<TypeName, Rc<Type>>,
+    pub types: BTreeMap<TypeName, Arc<Type>>,
     pub docstring: Option<DocString>,
 }
 
 impl Module {
-    pub fn get_type(&self, name: &TypeName) -> Option<Rc<Type>> {
+    pub fn get_type(&self, name: &TypeName) -> Option<Arc<Type>> {
         self.types.get(name).cloned()
     }
 }
@@ -180,11 +180,11 @@ impl Module {
 pub enum Type {
     Primitive(Primitive),
     List {
-        item_type: Rc<Type>,
+        item_type: Arc<Type>,
     },
     Map {
-        key_type: Rc<Type>,
-        value_type: Rc<Type>,
+        key_type: Arc<Type>,
+        value_type: Arc<Type>,
     },
     Complex(ComplexType),
     Foreign {
@@ -240,14 +240,14 @@ pub struct Struct {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Union {
     pub name: Option<TypeName>,
-    pub types: Vec<Rc<Type>>,
+    pub types: Vec<Arc<Type>>,
     pub docstring: Option<DocString>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Field {
     #[serde(rename = "type")]
-    pub ty: Rc<Type>,
+    pub ty: Arc<Type>,
     pub default_value: Option<serde_json::Value>,
     pub required: bool,
 }
