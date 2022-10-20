@@ -6,6 +6,7 @@
 
 import copy
 import sys
+import tempfile
 
 from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
     render_demo_subvols,
@@ -17,9 +18,11 @@ from antlir.compiler.items.ensure_dirs_exist import (
     EnsureDirsExistItem,
 )
 from antlir.compiler.items.make_subvol import (
+    _resolve_image_source,
     FilesystemRootItem,
     LayerFromPackageItem,
     ParentLayerItem,
+    ZST_EXTENSION,
 )
 from antlir.compiler.items.tests.common import (
     BaseItemTestCase,
@@ -133,3 +136,19 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
                     source=Path(__file__).dirname() / "create_ops.tar.gz",
                 ),
             )
+
+    def test_resolve_image_source_v1_from_v2(self):
+        format = "sendstream"
+        with tempfile.NamedTemporaryFile() as f:
+            v1_file = Path(f.name + ZST_EXTENSION.decode("ascii"))
+            v2_file = _resolve_image_source(format, v1_file)
+            self.assertEqual(f.name, str(v2_file))
+
+    def test_resolve_image_source_v2_from_v1(self):
+        format = "sendstream.v2"
+        with tempfile.NamedTemporaryFile(
+            suffix=ZST_EXTENSION.decode("ascii")
+        ) as f:
+            v2_file = Path(f.name[: -len(ZST_EXTENSION)])
+            v1_file = _resolve_image_source(format, v2_file)
+            self.assertEqual(f.name, str(v1_file))

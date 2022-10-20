@@ -18,8 +18,34 @@ from antlir.compiler.items.common import (
     setup_meta_dir,
 )
 
-from antlir.fs_utils import META_FLAVOR_FILE, open_for_read_decompress
+from antlir.fs_utils import META_FLAVOR_FILE, open_for_read_decompress, Path
 from antlir.subvol_utils import Subvol
+
+ZST_EXTENSION = b".zst"
+
+
+# This tries to look for alternate sources for an image
+# This might be necessary if the source is in a v1 format but we are trying
+# to build a v2 image or vice-versa
+# NOTE: This code is temporary; eventually everything should be in the v2 format
+# and this should be removed
+def _resolve_image_source(format: str, source: Path) -> Path:
+    if format == "sendstream":
+        # If the source doesn't exist, check to see if we have a non-zst package
+        if not source.exists() and source.endswith(ZST_EXTENSION):
+            # Exclude the zst extension
+            alternative_path = Path(source[: -len(ZST_EXTENSION)])
+            if alternative_path.exists():
+                source = alternative_path
+    elif format == "sendstream.v2":
+        # If the source doesn't exist, check to see if we have a .zst package
+        if not source.exists() and not source.endswith(ZST_EXTENSION):
+            # Add the zst extension
+            alternative_path = Path(source + ZST_EXTENSION)
+            if alternative_path.exists():
+                source = alternative_path
+    return source
+
 
 # This checks to make sure that the parent layer of an layer has the same flavor
 # as the flavor specified by the current layer.
@@ -102,7 +128,7 @@ class LayerFromPackageItem(ImageItem):
         def builder(subvol: Subvol):
             if item.format in ["sendstream", "sendstream.v2"]:
                 with open_for_read_decompress(
-                    item.source
+                    _resolve_image_source(item.format, Path(item.source))
                 ) as sendstream, subvol.receive(sendstream):
                     pass
             else:
