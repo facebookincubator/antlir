@@ -68,6 +68,9 @@ antlir_rust_extension(
     srcs = ["fs_utils_rs.rs"],
     crate_root = "fs_utils_rs.rs",
     typestub = "fs_utils_rs.pyi",
+    deps = [
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ],
 )
 
 python_library(
@@ -399,9 +402,9 @@ python_library(
     srcs = ["find_built_subvol.py"],
     deps = [
         ":artifacts_dir",
+        ":find_built_subvol_rs",
         ":fs_utils",
         ":subvol_utils",
-        "//antlir/compiler:subvolume_on_disk",
     ],
 )
 
@@ -925,4 +928,31 @@ buck_genrule(
     name = "vcs_revision",
     cmd = "$(exe :vcs) --rev >$OUT",
     visibility = ["PUBLIC"],
+)
+
+rust_library(
+    name = "find_built_subvol_rust_lib",
+    srcs = ["find_built_subvol_lib.rs"],
+    crate_root = "find_built_subvol_lib.rs",
+    visibility = ["PUBLIC"],
+    deps =
+        [
+            "anyhow",
+            "serde",
+            "serde_json",
+            "thiserror",
+            "//antlir/filesystem/absolute_path:absolute_path",
+        ],
+)
+
+antlir_rust_extension(
+    name = "find_built_subvol_rs",
+    srcs = ["find_built_subvol_rs.rs"],
+    crate_root = "find_built_subvol_rs.rs",
+    typestub = "find_built_subvol_rs.pyi",
+    deps = [
+        ":find_built_subvol_rust_lib",
+        ":fs_utils_rs-rust",
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ],
 )
