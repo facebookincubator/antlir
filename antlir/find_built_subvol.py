@@ -7,9 +7,11 @@
 import sys
 from typing import Optional
 
-from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
+from antlir.artifacts_dir import find_buck_cell_root
+
+from antlir.find_built_subvol_rs import find_built_subvol_internal
 from antlir.fs_utils import Path
-from antlir.subvol_utils import get_subvolumes_dir, Subvol
+from antlir.subvol_utils import Subvol
 
 
 def find_built_subvol(
@@ -18,13 +20,18 @@ def find_built_subvol(
     # It's OK for both to be None (uses the current file to find repo), but
     # it's not OK to set both.
     assert (path_in_repo is None) or (subvolumes_dir is None)
-    with open(Path(layer_output) / "layer.json") as infile:
-        return Subvol(
-            SubvolumeOnDisk.from_json_file(
-                infile, subvolumes_dir or get_subvolumes_dir(path_in_repo)
-            ).subvolume_path(),
-            already_exists=True,
-        )
+
+    buck_root = find_buck_cell_root(path_in_repo)
+
+    layer_output = Path(layer_output).abspath()
+
+    subvol = find_built_subvol_internal(
+        layer_output,
+        subvolumes_dir,
+        buck_root,
+    )
+
+    return Subvol(path=subvol, already_exists=True)
 
 
 # The manual test was as follows:
