@@ -33,6 +33,7 @@ fn gen_modules_bzl() -> Result<String> {
         .arg("query")
         .arg("--output-attributes=labels")
         .arg("attrfilter(labels, 'antlir-rust-extension', set('//antlir/...'))")
+        .arg("--reuse-current-config")
         .output()
         .context("buck query failed")?;
     out.status.exit_ok().context("buck query failed")?;
