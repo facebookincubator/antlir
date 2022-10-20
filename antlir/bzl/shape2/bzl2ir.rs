@@ -9,7 +9,7 @@
 use std::cell::RefCell;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::rc::Rc;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use anyhow::bail;
@@ -51,7 +51,7 @@ use structopt::StructOpt;
 fn eval_and_freeze_module(
     deps: &Dependencies,
     ast: AstModule,
-) -> Result<(FrozenModule, SlotMap<TypeId, Rc<ir::Type>>)> {
+) -> Result<(FrozenModule, SlotMap<TypeId, Arc<ir::Type>>)> {
     let module = Module::new();
     let globals = Globals::extended();
     let mut evaluator: Evaluator = Evaluator::new(&module);
@@ -90,14 +90,14 @@ impl<'v> StarlarkValue<'v> for TypeId {
 struct TypeRegistryRefCell(RefCell<TypeRegistry>);
 
 #[derive(Debug, ProvidesStaticType, Default)]
-struct TypeRegistry(SlotMap<TypeId, Rc<ir::Type>>);
+struct TypeRegistry(SlotMap<TypeId, Arc<ir::Type>>);
 
 impl TypeRegistry {
     fn add(&mut self, ty: ir::Type) -> TypeId {
-        self.0.insert(Rc::new(ty))
+        self.0.insert(Arc::new(ty))
     }
 
-    fn get(&self, id: TypeId) -> Option<Rc<ir::Type>> {
+    fn get(&self, id: TypeId) -> Option<Arc<ir::Type>> {
         self.0.get(id).cloned()
     }
 }
@@ -105,22 +105,22 @@ impl TypeRegistry {
 #[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize)]
 #[display(fmt = "{:?}", self)]
 #[repr(transparent)]
-struct StarlarkType(Rc<ir::Type>);
+struct StarlarkType(Arc<ir::Type>);
 starlark_simple_value!(StarlarkType);
 impl<'v> StarlarkValue<'v> for StarlarkType {
     starlark_type!("StarlarkType");
 }
 
 trait TryToType {
-    fn try_to_type(&self, reg: &TypeRegistry) -> Result<Rc<ir::Type>>;
+    fn try_to_type(&self, reg: &TypeRegistry) -> Result<Arc<ir::Type>>;
 }
 
 impl<'v> TryToType for Value<'v> {
-    fn try_to_type(&self, reg: &TypeRegistry) -> Result<Rc<ir::Type>> {
+    fn try_to_type(&self, reg: &TypeRegistry) -> Result<Arc<ir::Type>> {
         if let Some(tid) = self.downcast_ref::<TypeId>() {
             reg.get(*tid).ok_or_else(|| anyhow!("{:?} not found", tid))
         } else if let Some(nf) = self.downcast_ref::<NativeFunction>() {
-            Ok(Rc::new(match nf.to_string().as_str() {
+            Ok(Arc::new(match nf.to_string().as_str() {
                 "bool" => ir::Type::Primitive(ir::Primitive::Bool),
                 "int" => ir::Type::Primitive(ir::Primitive::I32),
                 "str" => ir::Type::Primitive(ir::Primitive::String),
@@ -204,7 +204,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         let reg = get_type_registry(eval)?.try_borrow()?;
         ty.try_to_type(&reg)
             .map(|ty| ir::Type::List { item_type: ty })
-            .map(Rc::new)
+            .map(Arc::new)
             .map(StarlarkType)
     }
 
@@ -274,7 +274,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         let value_type = value_type
             .try_to_type(&reg)
             .context("dict value must be a type")?;
-        Ok(StarlarkType(Rc::new(ir::Type::Map {
+        Ok(StarlarkType(Arc::new(ir::Type::Map {
             key_type,
             value_type,
         })))
@@ -352,7 +352,7 @@ impl FileLoader for Dependencies {
 fn ir_to_module(m: ir::Module) -> Result<FrozenModule> {
     let module = Module::new();
     for name in m.types.into_keys() {
-        let ty = StarlarkType(Rc::new(ir::Type::Foreign {
+        let ty = StarlarkType(Arc::new(ir::Type::Foreign {
             target: m.target.clone(),
             name: name.clone(),
         }));
@@ -363,7 +363,7 @@ fn ir_to_module(m: ir::Module) -> Result<FrozenModule> {
 
 fn starlark_to_ir(
     f: FrozenModule,
-    types: SlotMap<TypeId, Rc<ir::Type>>,
+    types: SlotMap<TypeId, Arc<ir::Type>>,
     target: ir::Target,
 ) -> Result<ir::Module> {
     let named_types: BTreeMap<ir::TypeName, _> = f
@@ -389,7 +389,7 @@ fn starlark_to_ir(
             // to store references to types declared in the same module,
             // similarly to how foreign types work.
             unsafe {
-                match Rc::get_mut_unchecked(&mut ty) {
+                match Arc::get_mut_unchecked(&mut ty) {
                     ir::Type::Complex(ct) => ct.set_name(name.clone()),
                     _ => unreachable!("all top-level types are ComplexType"),
                 };
@@ -462,11 +462,11 @@ top = shape.shape(hello=str)
                 name: "simple".into(),
                 target: "//antlir/shape:simple.shape".try_into()?,
                 types: btreemap! {
-                    "top".into() => Rc::new(ir::Type::Complex(ir::ComplexType::Struct(ir::Struct{
+                    "top".into() => Arc::new(ir::Type::Complex(ir::ComplexType::Struct(ir::Struct{
                         name: Some("top".into()),
                         fields :btreemap! {
                             "hello".into() => ir::Field {
-                                ty: Rc::new(ir::Type::Primitive(ir::Primitive::String)),
+                                ty: Arc::new(ir::Type::Primitive(ir::Primitive::String)),
                                 default_value: None,
                                 required: true,
                             }
