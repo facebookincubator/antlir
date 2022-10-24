@@ -67,6 +67,8 @@ impl<'a> SendStreamUpgradeContext<'a> {
         let read_buffer_size = options.read_buffer_size;
         let output_file = options.output.clone();
         let write_buffer_size = options.write_buffer_size;
+        // Don't buffer stdin if we are running in mp mode
+        let skip_buffering_for_stdin = options.thread_count != 1;
         Ok(SendStreamUpgradeContext {
             ssuc_stats: SendStreamUpgradeStats::new(),
             ssuc_logger: logger,
@@ -74,6 +76,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
             ssuc_source: SendStreamUpgradeSource::new_from_file(
                 input_file,
                 read_buffer_size,
+                skip_buffering_for_stdin,
                 0,
                 None,
             )?,
@@ -134,6 +137,7 @@ impl<'a> SendStreamUpgradeContext<'a> {
                 SendStreamUpgradeSource::new_from_file(
                     input_file,
                     read_buffer_size,
+                    false,
                     source_offset,
                     Some(source_version),
                 )?

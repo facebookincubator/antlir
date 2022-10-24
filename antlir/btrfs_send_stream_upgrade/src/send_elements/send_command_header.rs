@@ -126,8 +126,9 @@ impl SendCommandHeader {
             match num::FromPrimitive::from_u16(command_type_u16) {
                 Some(t) => t,
                 None => anyhow::bail!(
-                    "Constructing a Send Command Header from a Bad Type {}",
-                    command_type_u16
+                    "Constructing a Send Command Header from a Bad Type {} at offset {}",
+                    command_type_u16,
+                    context.get_read_offset()
                 ),
             };
         let crc32c = context.read32()?;

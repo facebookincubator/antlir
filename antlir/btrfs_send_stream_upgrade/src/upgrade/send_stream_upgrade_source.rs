@@ -19,6 +19,8 @@ use crate::send_elements::send_version::SendVersion;
 enum SendStreamSource<'a> {
     /// A BufReader source for IO from stdin or a file
     SssBufReader(BufReader<Box<dyn Read + Send>>),
+    /// A Reader source for IO from stdin in the mp case
+    SssReader(Box<dyn Read + Send>),
     /// A slice source
     SssSliceReader(&'a [u8]),
     /// A buffer cache
@@ -40,14 +42,15 @@ impl<'a> SendStreamUpgradeSource<'a> {
     pub fn new_from_file(
         input: Option<PathBuf>,
         read_buffer_size: usize,
+        skip_buffering_for_stdin: bool,
         offset: usize,
         version: Option<SendVersion>,
     ) -> anyhow::Result<Self> {
         // Open up the input file
-        let input_file: Box<dyn Read + Send + Sync> = match input {
+        let (input_file, skip_buffering): (Box<dyn Read + Send + Sync>, bool) = match input {
             // Ignore the seek for stdin -- this is a pipe, and the stream
             // will be at the right spot
-            None => Box::new(std::io::stdin()),
+            None => (Box::new(std::io::stdin()), skip_buffering_for_stdin),
             Some(ref value) => {
                 let mut file = OpenOptions::new().read(true).open(value)?;
                 // If we had a file input, then we need to seek forward
@@ -55,14 +58,16 @@ impl<'a> SendStreamUpgradeSource<'a> {
                 if offset != 0 {
                     file.seek(SeekFrom::Start(offset as u64))?;
                 }
-                Box::new(file)
+                (Box::new(file), false)
             }
         };
+        let source = if skip_buffering {
+            SendStreamSource::SssReader(input_file)
+        } else {
+            SendStreamSource::SssBufReader(BufReader::with_capacity(read_buffer_size, input_file))
+        };
         Ok(Self {
-            ssus_source: SendStreamSource::SssBufReader(BufReader::with_capacity(
-                read_buffer_size,
-                input_file,
-            )),
+            ssus_source: source,
             ssus_offset: offset,
             ssus_version: version,
         })
@@ -108,6 +113,18 @@ impl<'a> SendStreamUpgradeSource<'a> {
                     total_bytes_read += bytes_read;
                 }
             }
+            SendStreamSource::SssReader(ref mut reader) => {
+                while total_bytes_read < buffer.len() {
+                    // Try to read some data
+                    let bytes_read = reader.read(&mut buffer[total_bytes_read..])?;
+                    // If we read nothing, then assume that we hit the EOF
+                    // Time to exit
+                    if bytes_read == 0 {
+                        break;
+                    }
+                    total_bytes_read += bytes_read;
+                }
+            }
             SendStreamSource::SssSliceReader(slice) => {
                 // Assume that we can service everything from the given slice
                 let end_offset = self.ssus_offset + buffer.len();
@@ -126,6 +143,7 @@ impl<'a> SendStreamUpgradeSource<'a> {
     pub fn is_external(&self) -> bool {
         match self.ssus_source {
             SendStreamSource::SssBufReader(_) => true,
+            SendStreamSource::SssReader(_) => true,
             _ => false,
         }
     }
