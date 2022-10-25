@@ -7,8 +7,6 @@
 import sys
 from typing import Optional
 
-from antlir.artifacts_dir import find_buck_cell_root
-
 from antlir.find_built_subvol_rs import find_built_subvol_internal
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -21,14 +19,12 @@ def find_built_subvol(
     # it's not OK to set both.
     assert (path_in_repo is None) or (subvolumes_dir is None)
 
-    buck_root = find_buck_cell_root(path_in_repo)
-
     layer_output = Path(layer_output).abspath()
 
     subvol = find_built_subvol_internal(
         layer_output,
         subvolumes_dir,
-        buck_root,
+        path_in_repo,
     )
 
     return Subvol(path=subvol, already_exists=True)

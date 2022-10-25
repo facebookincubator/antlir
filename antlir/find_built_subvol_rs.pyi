@@ -10,7 +10,7 @@ from antlir.fs_utils import Path
 def find_built_subvol_internal(
     layer_output: Path,
     subvolumes_dir: Optional[Path],
-    buck_root: Path,
+    path_in_repo: Optional[Path],
 ) -> Path: ...
 
 class SubvolNotFound(Exception): ...
