@@ -16,7 +16,10 @@ create_exception!(artifacts_dir, SigilNotFound, pyo3::exceptions::PyException);
 
 use fs_utils_rs::AntlirPath;
 
-fn ensure_path_in_repo(py: Python<'_>, path_in_repo: Option<PathBuf>) -> PyResult<AbsolutePathBuf> {
+pub fn ensure_path_in_repo(
+    py: Python<'_>,
+    path_in_repo: Option<PathBuf>,
+) -> PyResult<AbsolutePathBuf> {
     let maybe_relpath = match path_in_repo {
         Some(p) => p,
         None => match std::env::var_os("ANTLIR_PATH_IN_REPO") {

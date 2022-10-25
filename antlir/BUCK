@@ -941,6 +941,7 @@ rust_library(
             "serde",
             "serde_json",
             "thiserror",
+            "//antlir:find_root",
             "//antlir/filesystem/absolute_path:absolute_path",
         ],
 )
@@ -951,8 +952,10 @@ antlir_rust_extension(
     crate_root = "find_built_subvol_rs.rs",
     typestub = "find_built_subvol_rs.pyi",
     deps = [
+        ":artifacts_dir_rs-rust",
         ":find_built_subvol_rust_lib",
         ":fs_utils_rs-rust",
+        "//antlir:find_root",
         "//antlir/filesystem/absolute_path:absolute_path",
     ],
 )
