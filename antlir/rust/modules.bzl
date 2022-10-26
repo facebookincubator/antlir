@@ -1,8 +1,8 @@
 # @generated
 extension_rust_targets = [
-    "fbcode//antlir:artifacts_dir_rs-rust",
-    "fbcode//antlir:find_built_subvol_rs-rust",
-    "fbcode//antlir:fs_utils_rs-rust",
+    "//antlir:artifacts_dir_rs-rust",
+    "//antlir:find_built_subvol_rs-rust",
+    "//antlir:fs_utils_rs-rust",
 ]
 extension_modules = {
     "artifacts_dir_rs": "antlir.artifacts_dir_rs",

@@ -22,7 +22,7 @@ pub enum Error {
 
 /// A buck target label. Points to a specific target and is always fully
 /// qualified (aka, with cell name).
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Label {
     cell: String,
     package: String,
