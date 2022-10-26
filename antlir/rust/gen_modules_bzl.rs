@@ -15,6 +15,7 @@ use std::process::Command;
 
 use anyhow::Context;
 use anyhow::Result;
+use buck_label::Label;
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -37,9 +38,12 @@ fn gen_modules_bzl() -> Result<String> {
         .output()
         .context("buck query failed")?;
     out.status.exit_ok().context("buck query failed")?;
-    let targets: BTreeMap<String, Labels> =
+    let targets: BTreeMap<Label, Labels> =
         serde_json::from_slice(&out.stdout).context("while parsing buck query output")?;
-    let target_list: Vec<&str> = targets.keys().map(String::as_str).collect();
+    let target_list: Vec<String> = targets
+        .keys()
+        .map(|l| format!("//{}:{}", l.package(), l.name()))
+        .collect();
     let mut bzl = concat!("# @", "generated\n").to_string();
     writeln!(
         bzl,
