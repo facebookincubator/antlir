@@ -53,7 +53,6 @@ def _image_layer_impl(
     # IMPORTANT: If you touch this genrule, update `image_layer_alias`.
     buck_genrule(
         name = _layer_name,
-        antlir_rule = antlir_rule,
         bash = wrap_bash_build_in_common_boilerplate(
             bash = '''
             # We want subvolume names to be user-controllable. To permit
@@ -156,9 +155,11 @@ def _image_layer_impl(
         # keep our output JSON out of the distributed Buck cache.  See
         # the docs for BuildRule::isCacheable.
         cacheable = False,
+        antlir_rule = antlir_rule,
         labels = ["image_layer", "uses_sudo"] + (labels or []),
         type = _rule_type,  # For queries
         visibility = visibility,
+        # @oss-disable: exec_compatible_with = ["fbcode//buck2/platform/execution:runs_only_local"], 
     )
 
     add_runtime_targets(_layer_name, runtime)
