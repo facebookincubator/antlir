@@ -44,6 +44,7 @@ exec -a "$0" {quoted_snap_dir}/yum-dnf-from-snapshot \\
                 yum_or_dnf = shell.quote(yum_or_dnf),
             ),
         )),
+        labels = ["uses_sudo"],
         visibility = ["PUBLIC"],
     )
     return ":" + name
@@ -149,7 +150,7 @@ def rpm_repo_snapshot(
     per_installer_cmds = []
     for rpm_installer in rpm_installers:
         per_installer_cmds.append('''
-$(exe //antlir/rpm:write-yum-dnf-conf) \\
+$(exe_target //antlir/rpm:write-yum-dnf-conf) \\
     --rpm-installer {prog} \\
     --input-conf "$OUT"/snapshot/{prog}.conf \\
     --output-dir "$OUT"/{prog} \\
@@ -178,7 +179,7 @@ mkdir "$OUT"
 # Copy the basic snapshot, e.g. `snapshot.storage_id`, `repos`, `yum|dnf.conf`
 cp --no-target-directory -r $(location {src}) "$OUT/snapshot"
 
-$(exe //antlir/rpm/storage{fb_dir}:cli) --storage {quoted_cli_storage_cfg} \\
+$(exe_target //antlir/rpm/storage{fb_dir}:cli) --storage {quoted_cli_storage_cfg} \\
     get "\\$(cat "$OUT"/snapshot/snapshot.storage_id)" \\
         > "$OUT"/snapshot/snapshot.sql3
 # Write-protect the SQLite DB because it's common to use the `sqlite3` to
@@ -216,6 +217,7 @@ echo {quoted_storage_cfg} > "$OUT"/snapshot/storage.json
         # useful to move the binary installation as `install_buck_runnable`
         # into `install_rpm_repo_snapshot`.
         cacheable = False,
+        labels = ["uses_sudo"],
         visibility = get_visibility(visibility),
     )
 
