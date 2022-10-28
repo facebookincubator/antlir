@@ -44,7 +44,6 @@ def image_gpt(
             target_name = name,
         ),
         cacheable = False,
-        executable = True,
         visibility = visibility,
         antlir_rule = "user-internal",
     )
