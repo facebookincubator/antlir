@@ -56,8 +56,6 @@ def package_new(
         name = name,
         out = "layer." + format,
         type = _IMAGE_PACKAGE,  # For queries
-        # This is very temporary to work around an FB-internal issue.
-        cacheable = False,
         bash = wrap_bash_build_in_common_boilerplate(
             # We don't need to hold any subvolume lock because we trust
             # that (a) Buck will keep our input JSON alive, and (b) the
