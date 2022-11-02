@@ -126,19 +126,21 @@ def image_layer(
     """
     flavor = flavor_to_struct(flavor)
 
+    # Build a new layer. It may be empty.
+    _make_subvol_cmd, _deps_query = compile_image_features(
+        name = name,
+        current_target = normalize_target(":" + name),
+        parent_layer = parent_layer,
+        features = features,
+        extra_deps = extra_deps,
+        flavor = flavor,
+        flavor_config_override = flavor_config_override,
+    )
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer",
         _layer_name = name,
-        # Build a new layer. It may be empty.
-        _make_subvol_cmd = compile_image_features(
-            name = name,
-            current_target = normalize_target(":" + name),
-            parent_layer = parent_layer,
-            features = features,
-            extra_deps = extra_deps,
-            flavor = flavor,
-            flavor_config_override = flavor_config_override,
-        ),
+        _make_subvol_cmd = _make_subvol_cmd,
+        _deps_query = _deps_query,
         antlir_rule = antlir_rule,
         **image_layer_kwargs
     )

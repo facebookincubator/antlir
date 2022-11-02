@@ -40,7 +40,6 @@ def image_gpt(
                 opts_quoted = shell.quote(shape.do_not_cache_me_json(gpt)),
                 build_appliance = build_appliance,
             ),
-            rule_type = "image_gpt",
             target_name = name,
         ),
         cacheable = False,

@@ -40,17 +40,20 @@ def image_layer_from_package_helper(
         if format not in ["sendstream", "sendstream.v2"]:
             fail("Unsupported format for layer_from_package", format)
 
+        _make_subvol_cmd, _deps_query = compile_image_features_fn(
+            name = name,
+            current_target = normalize_target(":" + name),
+            parent_layer = None,
+            features = features,
+            flavor = flavor,
+            flavor_config_override = flavor_config_override,
+        )
+
         image_layer_utils.image_layer_impl(
             _rule_type = "image_layer_from_package",
             _layer_name = name,
-            _make_subvol_cmd = compile_image_features_fn(
-                name = name,
-                current_target = normalize_target(":" + name),
-                parent_layer = None,
-                features = features,
-                flavor = flavor,
-                flavor_config_override = flavor_config_override,
-            ),
+            _make_subvol_cmd = _make_subvol_cmd,
+            _deps_query = _deps_query,
             antlir_rule = antlir_rule,
             **image_layer_kwargs
         )

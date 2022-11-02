@@ -87,14 +87,13 @@ def _new_btrfs(
             sudo PYTHONDONTWRITEBYTECODE=1 \
             unshare --mount --pid --fork \
                 $(exe {package_btrfs}) \
-                    --subvolumes-dir "$subvolumes_dir" \
+                    --subvolumes-dir "$SUBVOLUMES_DIR" \
                     --output-path "$OUT" \
                     --opts {quoted_opts_json}
             '''.format(
                 package_btrfs = antlir_dep("package:btrfs"),
                 quoted_opts_json = shell.quote(shape.do_not_cache_me_json(opts)),
             ),
-            rule_type = _rule_type,
             target_name = name,
         ),
         visibility = visibility,

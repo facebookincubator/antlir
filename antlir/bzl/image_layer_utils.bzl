@@ -15,6 +15,7 @@ def _image_layer_impl(
         _rule_type,
         _layer_name,
         _make_subvol_cmd,
+        _deps_query,
         # For now, layer implementations mark this explicitly.  I doubt that
         # "antlir-private" is a sensible default here.
         antlir_rule,
@@ -98,7 +99,7 @@ def _image_layer_impl(
             # `exe` vs `location` is explained in `image_package.py`
             $(exe {subvolume_garbage_collector}) \
                 --refcounts-dir "$refcounts_dir" \
-                --subvolumes-dir "$subvolumes_dir" \
+                --subvolumes-dir "$SUBVOLUMES_DIR" \
                 --new-subvolume-wrapper-dir "$subvolume_wrapper_dir" \
                 --new-subvolume-json "$layer_json"
 
@@ -148,8 +149,8 @@ def _image_layer_impl(
                 subvolume_garbage_collector = antlir_dep(":subvolume-garbage-collector"),
                 subvolume_version = antlir_dep(":subvolume-version"),
             ),
-            rule_type = _rule_type,
             target_name = _layer_name,
+            deps_query = _deps_query,
         ),
         # Layers are only usable on the same host that built them, so
         # keep our output JSON out of the distributed Buck cache.  See
