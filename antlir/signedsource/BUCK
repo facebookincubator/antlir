@@ -1,0 +1,10 @@
+load("//antlir/bzl:oss_shim.bzl", "rust_library")
+
+rust_library(
+    name = "signedsource",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "md-5",
+        "thiserror",
+    ],
+)
