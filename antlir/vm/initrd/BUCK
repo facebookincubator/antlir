@@ -11,4 +11,7 @@ export_file(
 )
 
 # build a vmtest initrd for every kernel
-[initrd(kernel = kernels.get(uname)) for uname in kernels.versions.keys()]
+[initrd(
+    kernel = kernels.get(uname),
+    visibility = ["PUBLIC"],
+) for uname in kernels.versions.keys()]
