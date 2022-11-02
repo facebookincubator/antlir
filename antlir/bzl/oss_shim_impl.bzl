@@ -150,10 +150,9 @@ def _normalize_visibility(vis, name = None):
     The default is to be not visible.
     For more info see: https://buck.build/concept/visibility.html
     """
-    if vis == None:
-        return ["PUBLIC"]
-    else:
+    if vis:
         return vis
+    return ["//antlir/..."]
 
 def _normalize_pkg_style(style):
     """
@@ -271,11 +270,7 @@ def _wrap_internal(fn, args, kwargs):
     # Antlir build outputs should not be visible outside of antlir by default. This
     # helps prevent our abstractions from leaking into other codebases as Antlir
     # becomes more widely adopted.
-    kwargs["visibility"] = _normalize_visibility(kwargs.pop("visibility", None)) + [
-        "//antlir/...",
-        "//bot_generated/antlir/...",
-        "//metalos/...",
-    ]
+    kwargs["visibility"] = _normalize_visibility(kwargs.pop("visibility", None))
 
     fn(*args, **kwargs)
 
