@@ -17,6 +17,7 @@ use anyhow::Context;
 use anyhow::Result;
 use buck_label::Label;
 use serde::Deserialize;
+use signedsource::Comment;
 
 #[derive(Deserialize)]
 struct Labels {
@@ -44,7 +45,7 @@ fn gen_modules_bzl() -> Result<String> {
         .keys()
         .map(|l| format!("//{}:{}", l.package(), l.name()))
         .collect();
-    let mut bzl = concat!("# @", "generated\n").to_string();
+    let mut bzl = String::new();
     writeln!(
         bzl,
         "extension_rust_targets = {}",
@@ -63,18 +64,20 @@ fn gen_modules_bzl() -> Result<String> {
             .with_context(|| format!("while parsing {}", detail_json))?;
         target_modules.insert(details.rust_crate, details.module);
     }
-    writeln!(
+    write!(
         bzl,
         "extension_modules = {}",
         serde_starlark::to_string_pretty(&target_modules)
             .context("while serializing target modules map")?
     )?;
-
-    Ok(bzl)
+    Ok(signedsource::sign_with_generated_header(
+        Comment::Python,
+        &bzl,
+    ))
 }
 
 fn main() -> Result<()> {
-    println!("{}", gen_modules_bzl()?);
+    print!("{}", gen_modules_bzl()?);
     Ok(())
 }
 
@@ -87,8 +90,10 @@ mod tests {
     #[test]
     fn modules_bzl_uptodate() {
         assert_eq!(
-            gen_modules_bzl().expect("generating modules.bzl failed"),
-            include_str!("modules.bzl"),
+            gen_modules_bzl()
+                .expect("generating modules.bzl failed")
+                .trim(),
+            include_str!("modules.bzl").trim(),
         );
     }
 }

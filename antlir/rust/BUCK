@@ -63,5 +63,6 @@ rust_binary(
         "serde_json",
         "serde_starlark",
         "//antlir/buck/buck_label:buck_label",
+        "//antlir/signedsource:signedsource",
     ],
 )
