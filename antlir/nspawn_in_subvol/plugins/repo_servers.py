@@ -182,9 +182,12 @@ class RepoServers(NspawnPlugin):
         if proxy_server_config:
             self._run_proxy_server = True
 
-            self._fbpkg_db_path = (
-                find_repo_root(Path(os.getcwd())) / MAIN_DB_PATH
-            )
+            # We need to have access to the main fbpkg DB. chef_solo layer
+            # builds explicit dpendencies between packages and images but
+            # we do not want to declare a dependency between a whole directory
+            # and all images because it can trigger a rebuild for all images
+            # that use proxy_server if any of the fbpkg packages changes.
+            self._fbpkg_db_path = find_repo_root() / MAIN_DB_PATH
 
     @staticmethod
     def _ns_sockets_needed(
