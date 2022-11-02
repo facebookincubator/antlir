@@ -120,7 +120,6 @@ class ProxyServerTestCase(NspawnTestBase):
                     "--user=root",
                     "--run-proxy-server",
                     f"--forward-fd={curl_stdout.fileno()}",
-                    f"--fbpkg-db-path={tmpdir}",
                     "--",
                     "/bin/sh",
                     "-c",

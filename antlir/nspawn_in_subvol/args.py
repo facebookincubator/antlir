@@ -608,12 +608,6 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
         help="Enabling this flag will start proxy server in the container.",
     )
     # @oss-disable: parser.add_argument( 
-        # @oss-disable: "--fbpkg-db-path", 
-        # @oss-disable: dest="fbpkg_db_path", 
-        # @oss-disable: help="Path to the Repo DB. Requiered parameter for " 
-        # @oss-disable: "proxy_server", 
-    # @oss-disable: ) 
-    # @oss-disable: parser.add_argument( 
         # @oss-disable: "--allow-unknown-fbpkg", 
         # @oss-disable: action="store_true", 
         # @oss-disable: dest="allow_unknown_fbpkg", 
