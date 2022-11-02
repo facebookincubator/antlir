@@ -70,7 +70,7 @@ def package_new(
             # but rather to a shell snippet, so it's not always what one
             # wants either.
             $(exe {package_image}) \
-              --subvolumes-dir "$subvolumes_dir" \
+              --subvolumes-dir "$SUBVOLUMES_DIR" \
               --layer-path $(query_outputs {layer}) \
               --format {format} \
               --output-path "$OUT" \
@@ -109,7 +109,6 @@ def package_new(
                 # we now have this ancestor history available.
                 package_image = antlir_dep(":package-image"),
             ),
-            rule_type = _IMAGE_PACKAGE,
             target_name = name,
         ),
         visibility = visibility,

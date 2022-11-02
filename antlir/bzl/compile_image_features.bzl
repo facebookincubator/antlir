@@ -83,7 +83,7 @@ def compile_image_features_output(
         # change the output, so it's deliberately not a Buck input.
         $(exe {compiler}) {maybe_artifacts_require_repo} \
           ${{ANTLIR_DEBUG:+--debug}} \
-          --subvolumes-dir "$subvolumes_dir" \
+          --subvolumes-dir "$SUBVOLUMES_DIR" \
           --subvolume-rel-path \
             "$subvolume_wrapper_dir/"volume \
           {maybe_flavor_config} \
@@ -98,12 +98,6 @@ def compile_image_features_output(
           {maybe_profile} \
               > "$layer_json"
 
-        # Insert the outputs of the queried dependencies to short-circuit
-        # the dep-graph. This will ensure that this target gets rebuilt
-        # if any dep returned by the query has changed. This is a bit of
-        # an unfortunate requirement due to the non-cachable nature of this
-        # rule.
-        # $(query_outputs '{deps_query}')
     '''.format(
         compiler = antlir_dep(":compiler"),
         current_target_quoted = shell.quote(current_target),
@@ -267,4 +261,4 @@ def compile_image_features(
         vset_override_name,
         deps_query,
         quoted_child_feature_json_args,
-    )
+    ), deps_query

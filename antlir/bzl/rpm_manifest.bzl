@@ -25,7 +25,6 @@ def extract_rpm_manifest(name, layer, visibility = None, build_appliance = None)
                 layer = layer,
                 build_appliance = build_appliance,
             ),
-            rule_type = "image_rpm_manifest",
             target_name = name,
         ),
         cacheable = False,

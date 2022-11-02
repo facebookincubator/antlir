@@ -35,20 +35,22 @@ def image_genrule_layer_helper(
     if "features" in image_layer_kwargs:
         fail("\"features\" are not supported in image.genrule_layer")
 
+    # Build a new layer. It may be empty.
+    _make_subvol_cmd, _deps_query = compile_image_features_fn(
+        name = name,
+        current_target = normalize_target(":" + name),
+        parent_layer = parent_layer,
+        features = features,
+        flavor = flavor,
+        flavor_config_override = flavor_config_override,
+        internal_only_is_genrule_layer = True,
+        extra_deps = extra_deps,
+    )
     image_layer_utils.image_layer_impl(
         _rule_type = "image_layer_genrule_" + rule_type,
         _layer_name = name,
-        # Build a new layer. It may be empty.
-        _make_subvol_cmd = compile_image_features_fn(
-            name = name,
-            current_target = normalize_target(":" + name),
-            parent_layer = parent_layer,
-            features = features,
-            flavor = flavor,
-            flavor_config_override = flavor_config_override,
-            internal_only_is_genrule_layer = True,
-            extra_deps = extra_deps,
-        ),
+        _make_subvol_cmd = _make_subvol_cmd,
+        _deps_query = _deps_query,
         **image_layer_kwargs
     )
 
@@ -73,35 +75,35 @@ with new macros.  It must be used with *extreme caution*.  Please
 **carefully read [the full docs](/docs/genrule-layer)** before using.
 
 Mandatory arguments:
-  - `cmd`: The command to execute inside the layer.  See the [full
-    docs](/docs/genrule-layer) for details on the constraints.  **PLEASE
-    KEEP THIS DETERMINISTIC.**
-  - `rule_type`: The resulting Buck target node will have type
-    `image_layer_genrule_{rule_type}`, which allows `buck query`ing for this
-    specific kind of genrule layer.  Required because the intended usage for
-    genrule layers is the creation of new macros, and type-tagging lets
-    Antlir maintainers survey this ecosystem without resorting to `grep`.
+    - `cmd`: The command to execute inside the layer.  See the [full
+        docs](/docs/genrule-layer) for details on the constraints.  **PLEASE
+        KEEP THIS DETERMINISTIC.**
+    - `rule_type`: The resulting Buck target node will have type
+        `image_layer_genrule_{rule_type}`, which allows `buck query`ing for this
+        specific kind of genrule layer.  Required because the intended usage for
+        genrule layers is the creation of new macros, and type-tagging lets
+        Antlir maintainers survey this ecosystem without resorting to `grep`.
 
 Optional arguments:
-  - `user` (defaults to `nobody`): Run `cmd` as this user inside the image.
-  - `parent_layer`: The name of another layer target, inside of which
-    `cmd` will be executed.
-  - `flavor`: The build flavor that will be used to load the config from
-    REPO_CFG.flavor_to_config
-  - `flavor_config_overrde`: A struct that contains fields that override
-    the default values specific by `flavor`.
-  - `container_opts`: An `image.opts` containing keys from `container_opts_t`.
-    If you want to install packages, you will usually want to set
-    `shadow_proxied_binaries` here.
-  - `bind_repo_ro`: Bind the repository into the layer for use.  This is
-    generally not advised as it creates the possibility of subverting the
-    buck dependency graph and generally wreaking havok.  Use with extreme
-    caution.
-  - `boot`: Run `cmd` in a container booted with systemd. This should generally
-    not be required except in cases where a `cmd` has assumptions about running
-    in an environment where a running systemd is available.
-  - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
-    for supported, but less commonly used, kwargs.
+    - `user` (defaults to `nobody`): Run `cmd` as this user inside the image.
+    - `parent_layer`: The name of another layer target, inside of which
+        `cmd` will be executed.
+    - `flavor`: The build flavor that will be used to load the config from
+        REPO_CFG.flavor_to_config
+    - `flavor_config_overrde`: A struct that contains fields that override
+        the default values specific by `flavor`.
+    - `container_opts`: An `image.opts` containing keys from `container_opts_t`.
+        If you want to install packages, you will usually want to set
+        `shadow_proxied_binaries` here.
+    - `bind_repo_ro`: Bind the repository into the layer for use.  This is
+        generally not advised as it creates the possibility of subverting the
+        buck dependency graph and generally wreaking havok.  Use with extreme
+        caution.
+    - `boot`: Run `cmd` in a container booted with systemd. This should generally
+        not be required except in cases where a `cmd` has assumptions about running
+        in an environment where a running systemd is available.
+    - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
+        for supported, but less commonly used, kwargs.
     """
     flavor = flavor_to_struct(flavor)
     container_opts = normalize_container_opts(container_opts)
