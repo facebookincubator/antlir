@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load(":flavor_helpers.bzl", "flavor_helpers")

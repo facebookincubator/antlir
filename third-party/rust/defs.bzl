@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "rust_binary", "rust_library")
 # @lint-ignore-every BUCKLINT
 
 def third_party_rust_library(*args, **kwargs):

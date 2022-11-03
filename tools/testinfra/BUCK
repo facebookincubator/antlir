@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "buck_genrule", "export_file", "http_archive")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "buck_genrule", "export_file", "http_archive")
 
 http_archive(
     name = "saxon.zip",

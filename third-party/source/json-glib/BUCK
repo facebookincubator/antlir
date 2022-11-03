@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 
 src = {
     "sha256": "bf4d1cd6c343ce13b9258e6703a0411a3b659887b65877e85a2aa488ae18b865",

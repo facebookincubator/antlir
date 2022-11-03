@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:oss_shim.bzl", "python_library", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "python_library", "rust_library")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 

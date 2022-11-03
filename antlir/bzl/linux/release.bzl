@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 

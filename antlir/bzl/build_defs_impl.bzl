@@ -33,14 +33,14 @@ _DEFAULT_NATIVE_PLATFORM = "fedora33"
 # Serves two important purposes:
 #  - Ensures that all user-instanted rules are annotated with
 #    `antlir_rule = "user-{facing,internal}", which is important for FB CI.
-#  - Discourages users from loading rules or functions from `oss_shim.bzl`.
+#  - Discourages users from loading rules or functions from `build_defs.bzl`.
 def _assert_package():
     package = native.package_name()
     if package == "antlir/compiler/test_images":
         fail(
             '`antlir/compiler/test_images` is treated as "outside of the ' +
             'Antlir codebase" for the purposes of testing `antlir_rule`. ' +
-            "Therefore, you may not access `oss_shim.bzl` directly from its " +
+            "Therefore, you may not access `build_defs.bzl` directly from its " +
             "build file -- instead add and use a shim inside of " +
             "`antlir/compiler/test_images/defs.bzl`. You may also get this " +
             "error if you are adding a new user-instantiatable rule to the " +
@@ -51,7 +51,7 @@ def _assert_package():
     # In OSS, the shimmed rules are preferred over the native rules (the
     # implicit loads of native rules is disabled) for consistency. Everything
     # in the main cell except the above exception(s) are allowed to use
-    # oss_shim.bzl
+    # build_defs.bzl
     cell = _repository_name()
 
     # TODO: if antlir is intended to _only_ be used as a Buck cell, the '@'
@@ -60,7 +60,7 @@ def _assert_package():
     if cell != "@antlir" and cell != "@":
         fail(
             'Package `{}` must not `load("//antlir/bzl:'.format(package) +
-            'oss_shim.bzl")`. Antlir devs: read about `antlir_rule` in ' +
+            'build_defs.bzl")`. Antlir devs: read about `antlir_rule` in ' +
             "`website/docs/coding-conventions/bzl-and-targets.md`.",
         )
 
@@ -188,7 +188,7 @@ def _third_party_library(project, rule = None, platform = None):
 
     If `rule` is not provided it is assumed to be the same as `project`.
     """
-    _assert_package()  # Antlir-private: only use with `oss_shim.bzl` macros.
+    _assert_package()  # Antlir-private: only use with `build_defs.bzl` macros.
 
     if not rule:
         rule = project

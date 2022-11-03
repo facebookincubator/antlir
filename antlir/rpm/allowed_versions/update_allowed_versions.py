@@ -456,7 +456,7 @@ def _populate_vset_buck_file(
 # removed it from repos. If this is the case, please wait for the next update
 # (no need to clean up it from this file manually).
 
-load("//antlir/bzl:oss_shim.bzl", "rpm_vset")
+load("//antlir/bzl:build_defs.bzl", "rpm_vset")
 
 """
     )

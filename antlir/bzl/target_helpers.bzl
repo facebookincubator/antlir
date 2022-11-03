@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
-load(":oss_shim.bzl", "buck_genrule", "config", "repository_name", "target_utils")
+load(":build_defs.bzl", "buck_genrule", "config", "repository_name", "target_utils")
 load(":sha256.bzl", "sha256_b64")
 
 # KEEP IN SYNC with its copy in `compiler/tests/sample_items.py`

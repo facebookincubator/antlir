@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
 
 http_file(
     name = "busybox-download",

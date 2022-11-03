@@ -26,7 +26,7 @@ follow two critical rules:
 
 ## Using Flavors
 
-To create a flavor add a mapping to `antlir/bzl/oss_shim_impl.bzl`
+To create a flavor add a mapping to `antlir/bzl/build_defs_impl.bzl`
 
 ```
 shim = struct(

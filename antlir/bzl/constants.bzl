@@ -9,7 +9,7 @@
 # Note that there's no deep reason for this struct / non-struct split, so we
 # could easily move everything into the struct.
 #
-load("//antlir/bzl:oss_shim.bzl", "config", "do_not_use_repo_cfg")
+load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")

@@ -1,6 +1,6 @@
+load("//antlir/bzl:build_defs.bzl", "http_file")
 load("//antlir/bzl:constants.bzl", "DO_NOT_USE_BUILD_APPLIANCE")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "http_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":stable_appliance.bzl", "stable_build_appliance_sha")

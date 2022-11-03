@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "python_binary")
 
 oncall("twimage")
 

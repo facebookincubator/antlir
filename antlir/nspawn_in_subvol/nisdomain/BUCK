@@ -1,6 +1,6 @@
+load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "export_file")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 oncall("twimage")

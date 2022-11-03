@@ -10,8 +10,8 @@ files, as described by the specified `format`.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:query.bzl", "layer_deps_query")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
@@ -26,7 +26,7 @@ def package_new(
         visibility = None,
         # Since `package` produces a real Buck-visible build artifact,
         # "user-facing" is the only sane default.  See comments in
-        # `oss_shim.bzl` for how this works.
+        # `build_defs.bzl` for how this works.
         antlir_rule = "user-facing",
         # The format to use
         # For supported formats, see `--format` here:

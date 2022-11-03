@@ -1,6 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 
 oncall("twimage")
 

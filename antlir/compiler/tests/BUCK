@@ -3,10 +3,10 @@
 # NB: There is no binary here because the image compiler does not get built
 # by Buck, it is executed in-place using the system Python.
 
+load("//antlir/bzl:build_defs.bzl", "python_library", "python_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:layer_resource.bzl", "LAYER_SLASH_ENCODE", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_library", "python_unittest")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "image_feature_python_unittest")
 

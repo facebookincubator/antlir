@@ -1,6 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_library")
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_library")
 
 oncall("twimage")
 

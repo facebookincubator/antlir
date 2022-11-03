@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "export_file")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "export_file")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 load(":defs.bzl", "fedora_storage_config")
 

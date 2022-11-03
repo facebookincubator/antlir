@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "http_file")
+load("//antlir/bzl:build_defs.bzl", "http_file")
 
 # This wrapper function around `native.prebuilt_python_library`
 # exists because directly using `native.prebuilt_python_library`

@@ -4,10 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load(":build_defs.bzl", "python_unittest")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":hoist.bzl", "hoist")
 load(":image.bzl", "image")
-load(":oss_shim.bzl", "python_unittest")
 
 def test_hoist(name):
     image.layer(

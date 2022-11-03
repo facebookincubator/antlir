@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 
 def hoist(name, out, layer, path, **buck_genrule_kwargs):
     """Creates a rule to lift an artifact out of the image it was built in."""

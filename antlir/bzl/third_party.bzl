@@ -5,9 +5,9 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load(":build_defs.bzl", "buck_genrule", third_party_shim = "third_party")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":image.bzl", "image")
-load(":oss_shim.bzl", "buck_genrule", third_party_shim = "third_party")
 load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third-party-build"

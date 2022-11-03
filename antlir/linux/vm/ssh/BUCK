@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "export_file")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 
 oncall("twimage")
 

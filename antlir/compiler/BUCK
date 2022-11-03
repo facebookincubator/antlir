@@ -3,7 +3,7 @@
 # NB: There is no binary here because the image compiler does not get built
 # by Buck, it is executed in-place using the system Python.
 
-load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library")
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library")
 
 oncall("twimage")
 

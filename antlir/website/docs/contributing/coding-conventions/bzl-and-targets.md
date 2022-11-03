@@ -155,7 +155,7 @@ sometimes be an in-repo file, use [maybe_export_file](
 https://github.com/facebookincubator/antlir/blob/master/antlir/bzl/maybe_export_file.bzl
 ).
 
-## Load from `oss_shim.bzl`, avoid built-in (or fbcode) build rules
+## Load from `build_defs.bzl`, avoid built-in (or fbcode) build rules
 
 This shim exists to bridge the differences between the semantics of
 FB-internal build rules, and those of OSS Buck.  If you bypass it, you will
@@ -204,10 +204,10 @@ will fail if the Buck package path does not start with `antlir/`. This
 has two desirable effects:
  - Antlir devs will not forget to annotate user-instantiated rules.
  - External devs will not be able to (erroneously) load rules from
-   `oss_shim.bzl`.
+   `build_defs.bzl`.
 
 The implementation details and more specific docs can be found in
-`antlir/bzl/oss_shim_impl.bzl`.
+`antlir/bzl/build_defs_impl.bzl`.
 
 ## Naming conventions when using `shape.bzl`
 

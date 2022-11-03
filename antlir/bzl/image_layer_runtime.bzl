@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load(":oss_shim.bzl", "buck_command_alias")
+load(":build_defs.bzl", "buck_command_alias")
 load(":query.bzl", "layer_deps_query")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target", "targets_and_outputs_arg_list")
 
