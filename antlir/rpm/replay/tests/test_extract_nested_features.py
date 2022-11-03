@@ -34,15 +34,11 @@ class ExtractNestedFeaturesTestCase(unittest.TestCase):
         self.assertIsNone(lfp["source"]["path"])
 
         # This would only exit in the test's base, but not on a host running us
-        self.assertTrue(
-            ef.packaged_root.layer.path("/from/test_base/").exists()
-        )
+        self.assertTrue(ef.packaged_root.layer.path("/from/test_base/").exists())
 
         self.assertEqual({"rpm-test-milk"}, ef.install_rpm_names)
 
-        self.assertTrue(
-            os.path.exists(ef.packaged_root.layer.path("/from/test_base/"))
-        )
+        self.assertTrue(os.path.exists(ef.packaged_root.layer.path("/from/test_base/")))
 
     def test_custom_remove_rpm(self) -> None:
         with self.assertLogs(enf_log, level="ERROR") as ctx:

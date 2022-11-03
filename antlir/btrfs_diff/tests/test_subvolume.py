@@ -26,9 +26,7 @@ from antlir.btrfs_diff.tests.subvolume_utils import (
 
 
 class SubvolumeTestCase(DeepCopyTestCase):
-    def _check_render(
-        self, expected_ser, subvol: Subvolume, path: str = "."
-    ) -> None:
+    def _check_render(self, expected_ser, subvol: Subvolume, path: str = ".") -> None:
         self.assertEqual(
             *[
                 emit_all_traversal_ids(ser)
@@ -125,9 +123,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
         self._check_both_renders(cat_final_repr, cat)
 
         # Make a snapshot using the hack from `SubvolumeSetMutator`
-        tiger = copy.deepcopy(
-            cat, memo={id(cat.id_map.inner.description): "tiger"}
-        )
+        tiger = copy.deepcopy(cat, memo={id(cat.id_map.inner.description): "tiger"})
         tiger = yield "freshly copied tiger", tiger
         self._check_both_renders(cat_final_repr, tiger)
 
@@ -275,16 +271,10 @@ class SubvolumeTestCase(DeepCopyTestCase):
                 {
                     "wolf": ["(Char m444 4321)"],
                     "tamaskan": [
-                        (
-                            "(File m700 d3h7(tiger@dolly:0+5@2)d10"
-                            "(tiger@dolly:5+5@0))"
-                        )
+                        ("(File m700 d3h7(tiger@dolly:0+5@2)d10" "(tiger@dolly:5+5@0))")
                     ],
                     "dolly": [
-                        (
-                            "(File h5(tiger@tamaskan:5+5@0)d5"
-                            "(tiger@tamaskan:10+5@0))"
-                        )
+                        ("(File h5(tiger@tamaskan:5+5@0)d5" "(tiger@tamaskan:10+5@0))")
                     ],
                 },
             ],
@@ -361,11 +351,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
                     ],
                     "dolly": [
                         "(File h2(tiger@tamaskan:5+2@0)d2"
-                        + (
-                            ""
-                            if deepcopy_shenanigan
-                            else "(tiger@tamaskan:1+2@0)"
-                        )
+                        + ("" if deepcopy_shenanigan else "(tiger@tamaskan:1+2@0)")
                         + "h1(tiger@tamaskan:9+1@0)d5(tiger@tamaskan:10+5@0))"
                     ],
                 },
@@ -405,9 +391,7 @@ class SubvolumeTestCase(DeepCopyTestCase):
             while True:
                 step, subvol = ctx.send(subvol)
                 frozen_subvol = freeze(subvol)
-                step_subvol_repr.append(
-                    (step, frozen_subvol, frozen_subvol.render())
-                )
+                step_subvol_repr.append((step, frozen_subvol, frozen_subvol.render()))
         for step, frozen_subvol, frozen_repr in step_subvol_repr:
             # Sneak in some test coverage for both variants of `emit_`:
             for emit_fn in (

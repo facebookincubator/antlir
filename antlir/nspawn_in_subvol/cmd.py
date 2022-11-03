@@ -26,10 +26,7 @@ from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path, temp_dir
 
 from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
-from antlir.nspawn_in_subvol.common import (
-    find_cgroup2_mountpoint,
-    parse_cgroup2_path,
-)
+from antlir.nspawn_in_subvol.common import find_cgroup2_mountpoint, parse_cgroup2_path
 from antlir.send_fds_and_run import popen_and_inject_fds_after_sudo
 from antlir.subvol_utils import TempSubvolumes
 from antlir.unshare import Namespace, Unshare
@@ -207,9 +204,7 @@ def _recursive_layer_mount_args(
     if mount.build_source.type != "layer":
         return
     target = mount.build_source.source
-    mount_source_path = find_built_subvol(
-        targets_and_outputs[str(target)]
-    ).path()
+    mount_source_path = find_built_subvol(targets_and_outputs[str(target)]).path()
     yield from bind_args(
         mount_source_path,
         prefix + "/" + mount.mountpoint,
@@ -377,9 +372,9 @@ def _snapshot_subvol(
             # To make it easier to debug where a temporary subvolume came
             # from, make make its name resemble that of its source.
             tmp_name = os.path.normpath(src_subvol.path())
-            tmp_name = os.path.basename(
-                os.path.dirname(tmp_name)
-            ) or os.path.basename(tmp_name)
+            tmp_name = os.path.basename(os.path.dirname(tmp_name)) or os.path.basename(
+                tmp_name
+            )
             nspawn_subvol = tmp_subvols.snapshot(src_subvol, tmp_name)
             yield nspawn_subvol
 

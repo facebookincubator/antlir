@@ -13,18 +13,9 @@ from typing import Iterator, Optional
 
 from antlir.btrfs_diff.parse_send_stream import check_magic, check_version
 
-from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
-    render_demo_as_corrupted_by_cpio,
-    render_demo_as_corrupted_by_gnu_tar,
-)
 from antlir.bzl.loopback_opts import loopback_opts_t
 from antlir.errors import UserError
-from antlir.fs_utils import (
-    generate_work_dir,
-    open_for_read_decompress,
-    Path,
-    temp_dir,
-)
+from antlir.fs_utils import generate_work_dir, open_for_read_decompress, Path, temp_dir
 from antlir.nspawn_in_subvol.args import new_nspawn_opts, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.package_image import (
@@ -172,11 +163,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             # functionality, so we just need to test the integration here.
             self.assertLess(
                 10,  # There are more files than that in `create_ops`
-                len(
-                    subprocess.check_output(["tar", "tzf", out_path]).split(
-                        b"\n"
-                    )
-                ),
+                len(subprocess.check_output(["tar", "tzf", out_path]).split(b"\n")),
             )
 
     def test_format_name_collision(self):
@@ -220,9 +207,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 )
             )
         with tempfile.NamedTemporaryFile() as temp_sendstream:
-            with subvol.mark_readonly_and_write_sendstream_to_file(
-                temp_sendstream
-            ):
+            with subvol.mark_readonly_and_write_sendstream_to_file(temp_sendstream):
                 pass
             original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")
@@ -257,14 +242,11 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 cmd=[
                     "/bin/bash",
                     "-c",
-                    "set -ue -o pipefail;"
-                    f"pushd {work_dir.decode()} >/dev/null;"
+                    "set -ue -o pipefail;" f"pushd {work_dir.decode()} >/dev/null;"
                     # -S to properly handle sparse files on extract
                     "/bin/bsdtar --file - --extract -S;",
                 ],
-                layer=layer_resource_subvol(
-                    __package__, "build-appliance-testing"
-                ),
+                layer=layer_resource_subvol(__package__, "build-appliance-testing"),
                 bindmount_rw=[(extract_sv.path(), work_dir)],
                 user=pwd.getpwnam("root"),
                 allow_mknod=True,  # cpio archives support device files
@@ -273,9 +255,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             with open_for_read_decompress(pkg_path) as r:
                 run_nspawn(opts, PopenArgs(stdin=r))
 
-            with extract_sv.mark_readonly_and_write_sendstream_to_file(
-                temp_sendstream
-            ):
+            with extract_sv.mark_readonly_and_write_sendstream_to_file(temp_sendstream):
                 pass
 
             original_render = self._render_sendstream_path(
@@ -354,9 +334,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             self._verify_package_as_vfat(pkg_path, fat_size=16)
 
         # Verify the explicit format version from the bzl
-        self._verify_package_as_vfat(
-            self._sibling_path("vfat-test.vfat"), label="cats"
-        )
+        self._verify_package_as_vfat(self._sibling_path("vfat-test.vfat"), label="cats")
 
         # Verify size_mb is required
         with self.assertRaisesRegex(ValueError, "size_mb is required"):

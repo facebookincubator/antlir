@@ -2,8 +2,8 @@
 
 # Extract additional rustc flags to pass as part of rust_library rules from the
 # output of build.rs, as normally parsed by cargo
-import sys
 import re
+import sys
 
 cfg_re = re.compile(r"^cargo:rustc-cfg=(.*)$")
 

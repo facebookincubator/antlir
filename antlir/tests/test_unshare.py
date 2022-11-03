@@ -59,10 +59,7 @@ class UnshareTestCase(unittest.TestCase):
         in_ns, out_ns = [
             dict(
                 ns_ino.split(":")
-                for ns_ino in subprocess.check_output(cmd)
-                .decode()
-                .strip()
-                .split("\n")
+                for ns_ino in subprocess.check_output(cmd).decode().strip().split("\n")
             )
             for cmd in [list_ns_cmd, nsenter_as_root(unshare, *list_ns_cmd)]
         ]
@@ -97,9 +94,7 @@ class UnshareTestCase(unittest.TestCase):
 
             self._check_ns_diff(unshare, {"pid"})
 
-        self.assertEqual(
-            -signal.SIGKILL, proc.wait(timeout=30)
-        )  # Reaped by PID NS
+        self.assertEqual(-signal.SIGKILL, proc.wait(timeout=30))  # Reaped by PID NS
 
     def test_pid_namespace_dead_keepalive(self) -> None:
         with Unshare([Namespace.PID]) as unshare:
@@ -165,9 +160,7 @@ class UnshareTestCase(unittest.TestCase):
                     # But we can read it from inside the namespace
                     self.assertEqual(
                         b"kvoh",
-                        subprocess.check_output(
-                            nsenter_as_user(unshare, "cat", cypa)
-                        ),
+                        subprocess.check_output(nsenter_as_user(unshare, "cat", cypa)),
                     )
 
                 with Unshare([Namespace.MOUNT]) as unshare:

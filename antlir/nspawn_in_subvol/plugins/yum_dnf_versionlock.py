@@ -25,11 +25,7 @@ from typing import Dict, Iterable, Tuple
 from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import create_ro, Path, temp_dir
 from antlir.nspawn_in_subvol.args import _NspawnOpts, PopenArgs
-from antlir.nspawn_in_subvol.plugin_hooks import (
-    _NspawnSetup,
-    _NspawnSetupCtxMgr,
-    _SetupSubvolCtxMgr,
-)
+from antlir.nspawn_in_subvol.plugin_hooks import _NspawnSetup, _NspawnSetupCtxMgr
 
 from antlir.nspawn_in_subvol.plugins import NspawnPlugin
 from antlir.subvol_utils import Subvol
@@ -54,9 +50,9 @@ def _prepare_versionlock_lists(
     dest_to_src_and_size = {}
     with temp_dir() as d:
         # Only bind-mount lists for those binaries that exist in the snapshot.
-        for prog in {
-            f"{p}" for p in (subvol.path(snapshot_dir)).listdir()
-        } & set(templates.keys()):
+        for prog in {f"{p}" for p in (subvol.path(snapshot_dir)).listdir()} & set(
+            templates.keys()
+        ):
             template = templates[prog]
             src = d / (prog + "-versionlock.list")
             with create_ro(src, "w") as wf:

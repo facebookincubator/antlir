@@ -164,9 +164,7 @@ def _with_generated_header(contents, how_to_generate) -> str:
     )
 
 
-def _write_json_dir_db(
-    db: PackageTagDb, path: Path, how_to_generate: str
-) -> None:
+def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str) -> None:
     # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(path, overwrite=True) as td:
         for package, tag_to_info in db.items():
@@ -202,9 +200,7 @@ def _read_json_dir_db(path: Path) -> PackageTagDb:
     return db
 
 
-def _validate_updates(
-    existing_db: PackageTagDb, pkg_updates: ExplicitUpdates
-) -> None:
+def _validate_updates(existing_db: PackageTagDb, pkg_updates: ExplicitUpdates) -> None:
     """Perform validations on any updates that were provided:
     - Don't create package:tag pairs that already exist
     - Don't replace package:tag pairs that don't already exist
@@ -294,9 +290,7 @@ async def _get_updated_db(
     for f in asyncio.as_completed(futures):
         pkg, tag, new_maybe_info = await f
         if new_maybe_info is None:
-            log.warning(
-                f"Empty info returned for {pkg}:{tag} - not including in DB"
-            )
+            log.warning(f"Empty info returned for {pkg}:{tag} - not including in DB")
             db_to_update[pkg].pop(tag, None)
         else:
             log.info(f"New info for {pkg}:{tag} -> {new_maybe_info}")
@@ -331,9 +325,7 @@ async def update_package_db(
 UpdateArgs = List[Tuple[Package, Tag, str]]
 
 
-def _parse_update_args(
-    creates: UpdateArgs, replaces: UpdateArgs
-) -> ExplicitUpdates:
+def _parse_update_args(creates: UpdateArgs, replaces: UpdateArgs) -> ExplicitUpdates:
     """Parses the provided update arg lists and creates corresponding
     PackageDbUpdate tuples for each action.
 
@@ -349,8 +341,7 @@ def _parse_update_args(
         for package, tag, *opts_json in action_updates:
             if len(opts_json) > 1:
                 raise RuntimeError(
-                    f"Invalid options specified for action {action}: "
-                    f"{opts_json}"
+                    f"Invalid options specified for action {action}: " f"{opts_json}"
                 )
             opts = json.loads(opts_json[0]) if opts_json else {}
             if tag in pkg_updates.setdefault(package, {}):
@@ -360,9 +351,7 @@ def _parse_update_args(
                     f'"{action.value}" with {opts} and '
                     f'"{existing_up.action.value}" with {existing_up.options}'
                 )
-            pkg_updates[package][tag] = PackageDbUpdate(
-                action=action, options=opts
-            )
+            pkg_updates[package][tag] = PackageDbUpdate(action=action, options=opts)
     return pkg_updates
 
 
@@ -375,9 +364,7 @@ def _parse_args(
     show_oss_overview_doc: bool = True,
 ):
     parser = argparse.ArgumentParser(
-        description=(__doc__ + overview_doc)
-        if show_oss_overview_doc
-        else overview_doc,
+        description=(__doc__ + overview_doc) if show_oss_overview_doc else overview_doc,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(

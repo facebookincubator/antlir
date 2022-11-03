@@ -16,9 +16,7 @@ from antlir.bzl.tests.shapes.shape_bzl import (
     struct,
     structs,
 )
-from antlir.bzl.tests.shapes.target_tagger_helper_bzl import (
-    target_tagger_helper,
-)
+from antlir.bzl.tests.shapes.target_tagger_helper_bzl import target_tagger_helper
 
 
 TestUnionType = shape.union_t(bool, int)
@@ -439,18 +437,14 @@ class TestShapeBzl(unittest.TestCase):
         tagger = target_tagger_helper.new_target_tagger()
 
         target = {"target": "target_path"}
-        target_tagger_helper.tag_required_target_key(
-            tagger, target, "target", False
-        )
+        target_tagger_helper.tag_required_target_key(tagger, target, "target", False)
         self.assertEqual(
             target,
             {"target": {"__BUCK_TARGET": "target_path"}},
         )
 
         layer = {"layer": "layer_path"}
-        target_tagger_helper.tag_required_target_key(
-            tagger, layer, "layer", True
-        )
+        target_tagger_helper.tag_required_target_key(tagger, layer, "layer", True)
         self.assertEqual(
             layer,
             {"layer": {"__BUCK_LAYER_TARGET": "layer_path"}},

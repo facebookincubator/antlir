@@ -15,9 +15,7 @@ from antlir.rpm.find_snapshot import snapshot_install_dir
 
 class RpmNspawnTestBase(NspawnTestBase):
 
-    _SNAPSHOT_DIR = snapshot_install_dir(
-        antlir_dep("rpm:repo-snapshot-for-tests")
-    )
+    _SNAPSHOT_DIR = snapshot_install_dir(antlir_dep("rpm:repo-snapshot-for-tests"))
 
     def _yum_or_dnf_install(
         self,

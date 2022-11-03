@@ -57,9 +57,7 @@ def forward_env_vars(environ: Dict[str, str]) -> Iterable[str]:
 
 
 @contextmanager
-def do_not_rewrite_cmd(
-    cmd: List[str], next_fd: int
-) -> Tuple[List[str], List[int]]:
+def do_not_rewrite_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], List[int]]:
     # pyre-fixme[7]: Expected `Tuple[List[str], List[int]]` but got
     #  `Generator[Tuple[List[str], List[Variable[_T]]], None, None]`.
     yield cmd, []
@@ -147,9 +145,7 @@ def rewrite_testpilot_python_cmd(
 
 
 @contextmanager
-def rewrite_tpx_gtest_cmd(
-    cmd: List[str], next_fd: int
-) -> Tuple[List[str], List[int]]:
+def rewrite_tpx_gtest_cmd(cmd: List[str], next_fd: int) -> Tuple[List[str], List[int]]:
     """
     The new test runner TPX expects gtest to write XML to a file specified
     by an environment variable. We'll give the test container access to the

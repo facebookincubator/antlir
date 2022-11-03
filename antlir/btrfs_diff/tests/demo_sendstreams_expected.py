@@ -122,9 +122,7 @@ def get_filtered_and_expected_items(
             yield utimes(os.path.dirname(bytes(renamed_item.dest)))
 
     def temp_path(prefix):
-        return p(
-            f"o{next(temp_path_counter)}-" f"{TEMP_PATH_MIDDLES[prefix]}-0"
-        )
+        return p(f"o{next(temp_path_counter)}-" f"{TEMP_PATH_MIDDLES[prefix]}-0")
 
     def write(path, *, offset: int, data: bytes):
         if dump_mode:
@@ -134,18 +132,12 @@ def get_filtered_and_expected_items(
     return (
         filtered_items,
         [
-            di.subvol(
-                path=p("create_ops"), uuid=UUID_CREATE, transid=TRANSID_CREATE
-            ),
+            di.subvol(path=p("create_ops"), uuid=UUID_CREATE, transid=TRANSID_CREATE),
             *base_metadata(".", mode=0o755),
             *and_rename(di.mkdir(path=temp_path("create_ops")), b"hello"),
-            di.set_xattr(
-                path=p("hello"), name=b"user.test_attr", data=b"chickens"
-            ),
+            di.set_xattr(path=p("hello"), name=b"user.test_attr", data=b"chickens"),
             *base_metadata("hello", mode=0o755),
-            *and_rename(
-                di.mkdir(path=temp_path("create_ops")), b"dir_to_remove"
-            ),
+            *and_rename(di.mkdir(path=temp_path("create_ops")), b"dir_to_remove"),
             *base_metadata("dir_to_remove", mode=0o755),
             *and_rename(
                 di.mkfile(path=temp_path("create_ops")),
@@ -188,9 +180,7 @@ def get_filtered_and_expected_items(
             write("56KB_nuls", offset=0, data=b"\0" * FILE_SZ1),
             write("56KB_nuls", offset=FILE_SZ1, data=b"\0" * FILE_SZ2),
             *base_metadata("56KB_nuls"),
-            *and_rename(
-                di.mkfile(path=temp_path("create_ops")), b"56KB_nuls_clone"
-            ),
+            *and_rename(di.mkfile(path=temp_path("create_ops")), b"56KB_nuls_clone"),
             di.clone(
                 path=p("56KB_nuls_clone"),
                 offset=0,
@@ -203,33 +193,23 @@ def get_filtered_and_expected_items(
                 clone_offset=0,
             ),
             *base_metadata("56KB_nuls_clone"),
-            *and_rename(
-                di.mkfile(path=temp_path("create_ops")), b"zeros_hole_zeros"
-            ),
+            *and_rename(di.mkfile(path=temp_path("create_ops")), b"zeros_hole_zeros"),
             write("zeros_hole_zeros", offset=0, data=b"\0" * 16384),
             write("zeros_hole_zeros", offset=32768, data=b"\0" * 16384),
             *base_metadata("zeros_hole_zeros"),
-            *and_rename(
-                di.mkfile(path=temp_path("create_ops")), b"hello_big_hole"
-            ),
+            *and_rename(di.mkfile(path=temp_path("create_ops")), b"hello_big_hole"),
             write("hello_big_hole", offset=0, data=b"hello\n" + b"\0" * 4090),
             di.truncate(path=p("hello_big_hole"), size=2**30),
             *base_metadata("hello_big_hole", mode=0o644),
-            *and_rename(
-                di.mkfile(path=temp_path("create_ops")), b"selinux_xattrs"
-            ),
+            *and_rename(di.mkfile(path=temp_path("create_ops")), b"selinux_xattrs"),
             *base_metadata("selinux_xattrs"),
-            *and_rename(
-                di.mkdir(path=temp_path("create_ops")), b"dir_perms_0500"
-            ),
+            *and_rename(di.mkdir(path=temp_path("create_ops")), b"dir_perms_0500"),
             *base_metadata("dir_perms_0500", mode=0o500),
             *and_rename(di.mkdir(path=temp_path("create_ops")), b"user1"),
             *base_metadata("user1", mode=0o700, gid=1, uid=1),
             *and_rename(di.mkfile(path=temp_path("create_ops")), b"user1/data"),
             *base_metadata("user1/data", mode=0o400, gid=1, uid=1),
-            *and_rename(
-                di.mkdir(path=temp_path("create_ops")), b"dir_with_acls"
-            ),
+            *and_rename(di.mkdir(path=temp_path("create_ops")), b"dir_with_acls"),
             di.set_xattr(
                 path=p("dir_with_acls"),
                 name=b"system.posix_acl_default",
@@ -265,9 +245,7 @@ def get_filtered_and_expected_items(
             utimes("farewell"),
             di.truncate(path=p("hello_big_hole"), size=2),
             utimes("hello_big_hole"),
-            *and_rename(
-                di.mkfile(path=temp_path("mutate_ops")), b"hello_renamed/een"
-            ),
+            *and_rename(di.mkfile(path=temp_path("mutate_ops")), b"hello_renamed/een"),
             di.set_xattr(
                 path=p("hello_renamed/een"),
                 name=b"btrfs.compression",
@@ -280,9 +258,7 @@ def get_filtered_and_expected_items(
     )
 
 
-def render_demo_subvols(
-    *, create_ops=None, mutate_ops=None, lossy_packaging=None
-):
+def render_demo_subvols(*, create_ops=None, mutate_ops=None, lossy_packaging=None):
     """
     Test-friendly renderings of the subvolume contents that should be
     produced by the commands in `demo_sendstreams.py`.
@@ -321,9 +297,7 @@ def render_demo_subvols(
                     "unbuffered": [f"(Char {os.makedev(42, 31):x})"],
                     "fifo": ["(FIFO)"],
                     **(
-                        {"unix_sock": ["(Sock m755)"]}
-                        if not lossy_packaging
-                        else {}
+                        {"unix_sock": ["(Sock m755)"]} if not lossy_packaging else {}
                     ),  # default mode for sockets
                     "user1": [
                         "(Dir m700 o1:1)",
@@ -350,9 +324,7 @@ def render_demo_subvols(
                     "bye_symlink": ["(Symlink hello/world)"],
                     "dir_perms_0500": ["(Dir m500)", {}],
                     "56KB_nuls": [f"(File {file_mode}{FILE_SZ}{kb_nuls})"],
-                    "56KB_nuls_clone": [
-                        f"(File {file_mode}{FILE_SZ}{kb_nuls_clone})"
-                    ],
+                    "56KB_nuls_clone": [f"(File {file_mode}{FILE_SZ}{kb_nuls_clone})"],
                     "zeros_hole_zeros": [f"(File {zeros_holes_zeros})"],
                     # We have 6 bytes of data, but holes are block-aligned
                     "hello_big_hole": [f"(File d4096{big_hole}h1073737728)"],
@@ -376,9 +348,7 @@ def render_demo_subvols(
                     "unbuffered": [f"(Char {os.makedev(42, 31):x})"],
                     "fifo": ["(FIFO)"],
                     **(
-                        {"unix_sock": ["(Sock m755)"]}
-                        if not lossy_packaging
-                        else {}
+                        {"unix_sock": ["(Sock m755)"]} if not lossy_packaging else {}
                     ),  # default mode for sockets
                     "user1": [
                         "(Dir m700 o1:1)",

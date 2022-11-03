@@ -56,16 +56,16 @@ class RemovePathItemTestCase(BaseItemTestCase):
             ):
                 item.build(subvol, DUMMY_LAYER_OPTS_BA)
             # Checks that `rm` won't follow symlinks
-            SymlinkToDirItem(
-                from_target="t", source="/f", dest="/a/b/f_sym"
-            ).build(subvol, DUMMY_LAYER_OPTS_BA)
+            SymlinkToDirItem(from_target="t", source="/f", dest="/a/b/f_sym").build(
+                subvol, DUMMY_LAYER_OPTS_BA
+            )
             for d in ["h", "i"]:
                 InstallFileItem(
                     from_target="t", source=empty_tf.name, dest=f"/f/{d}"
                 ).build(subvol, DUMMY_LAYER_OPTS_BA)
-            SymlinkToDirItem(
-                from_target="t", source="/f/i", dest="/f/i_sym"
-            ).build(subvol, DUMMY_LAYER_OPTS_BA)
+            SymlinkToDirItem(from_target="t", source="/f/i", dest="/f/i_sym").build(
+                subvol, DUMMY_LAYER_OPTS_BA
+            )
             intact_subvol = [
                 "(Dir)",
                 {
@@ -106,8 +106,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
             for prot_path in ["xyz", "xyz/potato/carrot"]:
                 with unittest.mock.patch(
                     "antlir.compiler.items.remove_path.protected_path_set",
-                    side_effect=lambda sv: protected_path_set(sv)
-                    | {Path("xyz")},
+                    side_effect=lambda sv: protected_path_set(sv) | {Path("xyz")},
                 ), self.assertRaisesRegex(
                     UserError,
                     f".*Path to be removed \\({prot_path}\\) is protected.*",
@@ -130,9 +129,7 @@ class RemovePathItemTestCase(BaseItemTestCase):
                 path="/does/not/exist",
             )
             self.assertEqual(PhaseOrder.REMOVE_PATHS, remove.phase_order())
-            RemovePathItem.get_phase_builder([remove], DUMMY_LAYER_OPTS_BA)(
-                subvol
-            )
+            RemovePathItem.get_phase_builder([remove], DUMMY_LAYER_OPTS_BA)(subvol)
             with self.assertRaisesRegex(UserError, "does not exist"):
                 RemovePathItem.get_phase_builder(
                     [

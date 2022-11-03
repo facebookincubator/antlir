@@ -116,9 +116,7 @@ class Subvolume(NamedTuple):
         )
         return cls(id_map=id_map, **kwargs)
 
-    def inode_at_path(
-        self, path: bytes
-    ) -> Optional[Union[IncompleteInode, Inode]]:
+    def inode_at_path(self, path: bytes) -> Optional[Union[IncompleteInode, Inode]]:
         id = self.id_map.get_id(path)
         # Using `[]` instead of `.get()` to assert that `id_to_inode`
         # remains a superset of `id_map`.  The converse is harder to check.
@@ -209,9 +207,7 @@ class Subvolume(NamedTuple):
             # pyre-fixme[16]: Inode doesn't have apply_item() ...
             self._require_inode_at_path(item, item.path).apply_item(item=item)
 
-    def apply_clone(
-        self, item: SendStreamItems.clone, from_subvol: "Subvolume"
-    ):
+    def apply_clone(self, item: SendStreamItems.clone, from_subvol: "Subvolume"):
         assert isinstance(item, SendStreamItems.clone)
         # pyre-fixme[16]: Inode doesn't have apply_clone() ...
         return self._require_inode_at_path(item, item.path).apply_clone(
@@ -242,9 +238,7 @@ class Subvolume(NamedTuple):
         """
         if id_to_chunks is None:
             id_to_chunks = dict(
-                extents_to_chunks_with_clones(
-                    list(self._inode_ids_and_extents())
-                )
+                extents_to_chunks_with_clones(list(self._inode_ids_and_extents()))
             )
         return type(self)(
             id_map=freeze(self.id_map, _memo=_memo),
@@ -359,9 +353,7 @@ class Subvolume(NamedTuple):
                     else [
                         ret,
                         {
-                            child_name.decode(
-                                errors="surrogateescape"
-                            ): child_result
+                            child_name.decode(errors="surrogateescape"): child_result
                             for child_name, child_result in child_results.items()  # noqa: E501
                         },
                     ]

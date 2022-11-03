@@ -9,10 +9,7 @@ from contextlib import contextmanager
 from unittest.mock import ANY, MagicMock, patch
 
 from antlir.rpm.storage import s3_storage
-from antlir.rpm.storage.tests.storage_base_test import (
-    Storage,
-    StorageBaseTestCase,
-)
+from antlir.rpm.storage.tests.storage_base_test import Storage, StorageBaseTestCase
 
 
 class S3StorageTestCase(StorageBaseTestCase):
@@ -71,9 +68,7 @@ class S3StorageTestCase(StorageBaseTestCase):
         # The s3 client does not do any partial writes or buffering, so as long
         # as it is called with the correct contents, that is enough to pass.
         for contents, sid in self.check_storage_impl(self.storage):
-            self.s3.upload_fileobj.assert_any_call(
-                ANY, self.storage._object_key(sid)
-            )
+            self.s3.upload_fileobj.assert_any_call(ANY, self.storage._object_key(sid))
             # ensure that the written data was sent to s3 correctly, as one
             # blob regardless of how many chunks it was input as
             with self.storage.reader(sid) as f:
@@ -105,8 +100,7 @@ class S3StorageTestCase(StorageBaseTestCase):
             with self.storage.reader("test/prefix/1234") as _:
                 pass
             open_url.assert_called_with(
-                "https://antlir-test.s3-test-region.amazonaws.com/"
-                "test/prefix/1234"
+                "https://antlir-test.s3-test-region.amazonaws.com/" "test/prefix/1234"
             )
 
     def test_object_key(self) -> None:

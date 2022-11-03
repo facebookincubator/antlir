@@ -140,9 +140,7 @@ class SubvolumeSet(NamedTuple):
                     for uuid, subvol in self.uuid_to_subvolume.items()
                 }
             ),
-            name_uuid_prefix_counts=freeze(
-                self.name_uuid_prefix_counts, _memo=_memo
-            ),
+            name_uuid_prefix_counts=freeze(self.name_uuid_prefix_counts, _memo=_memo),
         )
 
     def inodes(self) -> Iterator[Union[Inode, IncompleteInode]]:
@@ -189,9 +187,7 @@ class SubvolumeSetMutator(NamedTuple):
         ):
             raise RuntimeError(f"{subvol_item} must specify subvolume")
 
-        my_id = SubvolumeID(
-            uuid=subvol_item.uuid.decode(), transid=subvol_item.transid
-        )
+        my_id = SubvolumeID(uuid=subvol_item.uuid.decode(), transid=subvol_item.transid)
         parent_id = (
             SubvolumeID(
                 uuid=subvol_item.parent_uuid.decode(),
@@ -223,9 +219,7 @@ class SubvolumeSetMutator(NamedTuple):
                 memo={id(parent_subvol.id_map.inner.description): description},
             )
         else:
-            subvol = Subvolume.new(
-                id_map=InodeIDMap.new(description=description)
-            )
+            subvol = Subvolume.new(id_map=InodeIDMap.new(description=description))
 
         dup_subvol = subvol_set.uuid_to_subvolume.get(my_id.uuid)
         if dup_subvol is not None:
@@ -235,9 +229,7 @@ class SubvolumeSetMutator(NamedTuple):
 
         # insertion can fail, so update the description disambiguator last.
         # pyre-fixme[16]: This is supposed to be frozen!!!
-        subvol_set.name_uuid_prefix_counts.update(
-            description.name_uuid_prefixes()
-        )
+        subvol_set.name_uuid_prefix_counts.update(description.name_uuid_prefixes())
 
         return cls(subvolume=subvol, subvolume_set=subvol_set)
 

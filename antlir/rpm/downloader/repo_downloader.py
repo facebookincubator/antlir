@@ -75,9 +75,7 @@ def visit_results(
             # `.canonical_checksum` set, to better detect identical RPMs from
             # different repos.
             res_rpms = not_none(res.rpms, "rpms")
-            res_sid_to_rpm = not_none(
-                res.storage_id_to_rpm, "storage_id_to_rpm"
-            )
+            res_sid_to_rpm = not_none(res.storage_id_to_rpm, "storage_id_to_rpm")
             for rpm in {
                 **{r.location: r for r in res_rpms},
                 # Post-download Rpm objects override the pre-download ones
@@ -122,9 +120,7 @@ def download_repos(
         # commits a full snasphot, given that the repodata & RPM objects will
         # now be referenced).
         for res in rpm_results:
-            rw_repo_db.store_repomd(
-                res.repo_universe, res.repo.name, res.repomd
-            )
+            rw_repo_db.store_repomd(res.repo_universe, res.repo.name, res.repomd)
         try:
             rw_repo_db.commit()
         except Exception:  # pragma: no cover
@@ -144,9 +140,7 @@ def download_repos(
                 storage_id_to_repodata=not_none(
                     res.storage_id_to_repodata, "storage_id_to_repodata"
                 ),
-                storage_id_to_rpm=not_none(
-                    res.storage_id_to_rpm, "storage_id_to_rpm"
-                ),
+                storage_id_to_rpm=not_none(res.storage_id_to_rpm, "storage_id_to_rpm"),
             ),
         )
         for res in rpm_results

@@ -35,9 +35,7 @@ def check_magic(infile) -> None:
 def check_version(infile, expected) -> None:
     (version,) = file_unpack("<I", infile)
     if version != expected:
-        raise RuntimeError(
-            f"Got version {version}, but expected version {expected}"
-        )
+        raise RuntimeError(f"Got version {version}, but expected version {expected}")
 
 
 class CommandKind(enum.Enum):

@@ -8,7 +8,6 @@ import importlib.resources
 import os
 import subprocess
 import tempfile
-import unittest
 from dataclasses import dataclass
 from typing import Optional
 
@@ -70,9 +69,7 @@ Options=version=9p2000.L,posixacl,cache=loose,ro,msize=209715200
         None,
     ),
     TestShare(
-        Plan9Export(
-            path=Path("/some/host/path"), mountpoint=Path("/guest/other")
-        ),
+        Plan9Export(path=Path("/some/host/path"), mountpoint=Path("/guest/other")),
         "guest-other.mount",
         """[Unit]
 Description=Mount fs2 at /guest/other
@@ -130,9 +127,7 @@ class TestShareGenerator(AntlirTestCase):
                 ),
             )
             self.assertEqual(
-                set(
-                    os.listdir(os.path.join(outdir, "local-fs.target.requires"))
-                ),
+                set(os.listdir(os.path.join(outdir, "local-fs.target.requires"))),
                 units,
             )
             for share in TEST_SHARES:
@@ -145,9 +140,7 @@ class TestShareGenerator(AntlirTestCase):
                 # set as a requirement of local-fs.target
                 self.assertEqual(
                     os.readlink(
-                        os.path.join(
-                            outdir, "local-fs.target.requires", share.unit
-                        )
+                        os.path.join(outdir, "local-fs.target.requires", share.unit)
                     ),
                     os.path.join(outdir, share.unit),
                 )

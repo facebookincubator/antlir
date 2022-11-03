@@ -28,10 +28,7 @@ from typing import List, Optional
 
 from antlir.bzl.constants import flavor_config_t
 from antlir.cli import add_targets_and_outputs_arg, normalize_buck_path
-from antlir.compiler.helpers import (
-    compile_items_to_subvol,
-    get_compiler_nspawn_opts,
-)
+from antlir.compiler.helpers import compile_items_to_subvol, get_compiler_nspawn_opts
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.rpm_action import RpmActionItem
 from antlir.compiler.items_for_features import gen_items_for_features
@@ -157,13 +154,9 @@ def get_parent_layer_flavor_config(parent_layer: Subvol) -> flavor_config_t:
     return repo_config().flavor_to_config[flavor]
 
 
-def construct_profile_filename(
-    layer_target: str, is_nested: bool = True
-) -> Path:
+def construct_profile_filename(layer_target: str, is_nested: bool = True) -> Path:
     return Path(
-        layer_target.replace("/", "_")
-        + ("_outer" if not is_nested else "")
-        + ".pstat"
+        layer_target.replace("/", "_") + ("_outer" if not is_nested else "") + ".pstat"
     )
 
 
@@ -283,8 +276,7 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
     layer_items = list(
         gen_items_for_features(
             features_or_paths=[
-                normalize_buck_path(output)
-                for output in args.child_feature_json
+                normalize_buck_path(output) for output in args.child_feature_json
             ],
             layer_opts=layer_opts,
         )

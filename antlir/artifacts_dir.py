@@ -38,10 +38,7 @@ def _is_edenfs(repo_root: Path) -> bool:
 
 
 def _is_edenfs_redirection(artifacts_dir: Path) -> bool:
-    return (
-        artifacts_dir.islink()
-        and b"edenfsZredirections" in artifacts_dir.realpath()
-    )
+    return artifacts_dir.islink() and b"edenfsZredirections" in artifacts_dir.realpath()
 
 
 def _make_eden_redirection(
@@ -146,9 +143,7 @@ def _ensure_clean_sh_exists(
     ), "ANTLIR_BUCK must be set in the environment for this utility."
     clean_sh_path = artifacts_dir / "clean.sh"
 
-    with populate_temp_file_and_rename(
-        clean_sh_path, overwrite=True, mode="w"
-    ) as f:
+    with populate_temp_file_and_rename(clean_sh_path, overwrite=True, mode="w") as f:
         # We do not want to remove image_build.log because the potential
         # debugging value far exceeds the disk waste
         f.write(
@@ -183,8 +178,7 @@ def _ensure_clean_sh_exists(
         )
     os.chmod(
         clean_sh_path,
-        os.stat(clean_sh_path).st_mode
-        | (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH),
+        os.stat(clean_sh_path).st_mode | (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH),
     )
 
 

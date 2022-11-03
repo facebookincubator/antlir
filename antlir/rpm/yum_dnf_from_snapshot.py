@@ -335,9 +335,7 @@ def _dummies_for_protected_paths(
         # NB: The bind mount is read-only, so this is just paranoia.  If it
         # were left RW, we'd need to check its owner / permissions too.
         for expected, actual in (([], td.listdir()), (b"", tf.read())):
-            assert (
-                expected == actual
-            ), f"Some RPM wrote {actual} to {protected_paths}"
+            assert expected == actual, f"Some RPM wrote {actual} to {protected_paths}"
 
 
 def _ensure_antlir_container():
@@ -425,9 +423,7 @@ def _resolve_rpm_installer_binary(
     # private mount NS.  Caveat: we'd also need a "protective" RO bind mount
     # on top, because otherwise an `unlink` in the mount NS would remove the
     # bind mount in the parent NS.
-    shadowed_binary = (
-        SHADOWED_PATHS_ROOT / yum_dnf_binary.strip_leading_slashes()
-    )
+    shadowed_binary = SHADOWED_PATHS_ROOT / yum_dnf_binary.strip_leading_slashes()
 
     # We can't cover both branches in the same `image_python_unittest`,
     # since either the binary will or won't be shadowed.  However, one can
@@ -439,9 +435,7 @@ def _resolve_rpm_installer_binary(
         log.debug(f"Using shadowed installer {shadowed_binary}")
         return shadowed_binary
     else:  # pragma: no cover
-        log.debug(
-            f"no {shadowed_binary}, using unshadowed installer {yum_dnf_binary}"
-        )
+        log.debug(f"no {shadowed_binary}, using unshadowed installer {yum_dnf_binary}")
         return yum_dnf_binary
 
 

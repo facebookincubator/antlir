@@ -33,8 +33,7 @@ def _apt_get_cmd(args: Iterable[str], action) -> Optional[str]:
             shlex.join(["apt-get", "update"])
             + " && "
             + shlex.join(
-                ["apt-get", "-y", "--no-install-recommends", "install"]
-                + list(args)
+                ["apt-get", "-y", "--no-install-recommends", "install"] + list(args)
             )
             + " && "
             + shlex.join(["apt-get", "clean"])

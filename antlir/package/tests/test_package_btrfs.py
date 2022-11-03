@@ -132,9 +132,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
 
             self._assert_meta_valid_and_sendstreams_equal(
                 self._render_sendstream_path(
-                    layer_resource(
-                        __package__, "create_ops-original.sendstream"
-                    )
+                    layer_resource(__package__, "create_ops-original.sendstream")
                 ),
                 self._render_sendstream_path(
                     Path(temp_sendstream.name),
@@ -145,9 +143,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         # actual subvol so that we can force minimizing the final volume
         with temp_dir() as td:
             out_path = td / "image.btrs"
-            subvol = layer_resource_subvol(
-                __package__, "build-appliance-testing"
-            )
+            subvol = layer_resource_subvol(__package__, "build-appliance-testing")
 
             subvol.estimate_content_bytes = unittest.mock.MagicMock(
                 return_value=2048 * MiB
@@ -242,9 +238,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
 
         # Verify the size of the package created via the bzl
         self.assertEqual(
-            os.stat(
-                layer_resource(__package__, "create_ops_free_mb_btrfs")
-            ).st_size,
+            os.stat(layer_resource(__package__, "create_ops_free_mb_btrfs")).st_size,
             test_size,
         )
 
@@ -381,9 +375,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         ):
             with temp_dir() as td:
                 out_path = td / "image.btrs"
-                subvol = layer_resource_subvol(
-                    __package__, "build-appliance-testing"
-                )
+                subvol = layer_resource_subvol(__package__, "build-appliance-testing")
 
                 # This size will force the receive itself to fail
                 subvol.estimate_content_bytes = unittest.mock.MagicMock(

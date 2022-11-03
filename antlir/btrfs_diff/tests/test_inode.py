@@ -176,15 +176,11 @@ class InodeTestCase(AntlirTestCase):
         self.assertEqual("(DATA/12)", repr(chunk))
         ino_id = self.id_map.add_file(self.id_map.next(), b"a")
         chunk.chunk_clones.add(
-            ChunkClone(
-                offset=3, clone=Clone(inode_id=ino_id, offset=7, length=2)
-            )
+            ChunkClone(offset=3, clone=Clone(inode_id=ino_id, offset=7, length=2))
         )
         self.assertEqual("(DATA/12: a:7+2@3)", repr(chunk))
         chunk.chunk_clones.add(
-            ChunkClone(
-                offset=4, clone=Clone(inode_id=ino_id, offset=5, length=6)
-            )
+            ChunkClone(offset=4, clone=Clone(inode_id=ino_id, offset=5, length=6))
         )
         self.assertIn(
             repr(chunk),  # The set can be in one of two orders
@@ -209,9 +205,7 @@ class InodeTestCase(AntlirTestCase):
         self.assertEqual("+3.001", _repr_time_delta(3, 1000000))
 
     def test_repr_time(self) -> None:
-        self.assertEqual(
-            "70/05/23.21:21:18.91", _repr_time(12345678, 910111213)
-        )
+        self.assertEqual("70/05/23.21:21:18.91", _repr_time(12345678, 910111213))
 
     def test_repr_utimes(self) -> None:
         self.assertEqual(

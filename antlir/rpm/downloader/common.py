@@ -31,11 +31,7 @@ from antlir.rpm.db_connection import DBConnectionContext
 from antlir.rpm.open_url import open_url
 from antlir.rpm.repo_db import RepoDBContext, StorageTable
 from antlir.rpm.repo_objects import Checksum, Repodata, RepoMetadata, Rpm
-from antlir.rpm.repo_snapshot import (
-    FileIntegrityError,
-    HTTPError,
-    MaybeStorageID,
-)
+from antlir.rpm.repo_snapshot import FileIntegrityError, HTTPError, MaybeStorageID
 from antlir.rpm.storage import Storage
 from antlir.rpm.yum_dnf_conf import YumDnfConfRepo
 
@@ -95,9 +91,7 @@ class DownloadConfig(NamedTuple):
         self, *, readonly: bool, force_master: bool = True
     ) -> DBConnectionContext:
         assert "readonly" not in self.db_cfg, "readonly is picked by the caller"
-        assert (
-            "force_master" not in self.db_cfg
-        ), "force_master is picked by the caller"
+        assert "force_master" not in self.db_cfg, "force_master is picked by the caller"
         # pyre-fixme [9]: Technically could be any `Pluggable`, but we use it as
         # a DBConnectionContext
         conn_ctx: DBConnectionContext = DBConnectionContext.from_json(
@@ -156,9 +150,7 @@ def verify_chunk_stream(
 
 def _log_if_storage_ids_differ(obj, storage_id, db_storage_id) -> None:
     if db_storage_id != storage_id:
-        log.warning(
-            f"Another writer already committed {obj} at {db_storage_id}"
-        )
+        log.warning(f"Another writer already committed {obj} at {db_storage_id}")
 
 
 def log_size(what_str: str, total_bytes: float) -> None:
@@ -197,9 +189,7 @@ def download_resource(repo_url: str, relative_url: str) -> Iterator[BytesIO]:
         # in practice, we could retry automatically before
         # waiting for the next snapshot, but the complexity is
         # not worth it for now.
-        raise HTTPError(
-            location=relative_url, http_status=ex.response.status_code
-        )
+        raise HTTPError(location=relative_url, http_status=ex.response.status_code)
 
 
 # Note that we use this function serially from the master thread after

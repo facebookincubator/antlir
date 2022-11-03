@@ -15,9 +15,7 @@ NOT_NONE_NEVRA_KEYS = ["name", "release", "version"]
 
 class RpmManifestTestCase(unittest.TestCase):
     def test_rpm_manifest_structure(self) -> None:
-        with Path.resource(
-            __package__, "rpm-manifest.json", exe=False
-        ) as manifest:
+        with Path.resource(__package__, "rpm-manifest.json", exe=False) as manifest:
             with open(manifest, "r") as mf:
                 obj = json.load(mf)
             self.assertIsNotNone(obj)

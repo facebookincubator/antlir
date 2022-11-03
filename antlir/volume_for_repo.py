@@ -68,9 +68,7 @@ def get_volume_for_current_repo(artifacts_dir: Path):
     #    directories owned by the user, with mode 0700.
     #  - This reduces the number of places we have to `sudo` to create
     #    directories inside the subvolume.
-    subprocess.check_call(
-        ["sudo", "chown", f"{os.getuid()}:{os.getgid()}", volume_dir]
-    )
+    subprocess.check_call(["sudo", "chown", f"{os.getuid()}:{os.getgid()}", volume_dir])
     return volume_dir
 
 

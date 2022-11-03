@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
-import unittest
 
 from antlir.tests.common import AntlirTestCase
 from antlir.vm.kernel_artifacts_t import kernel_artifacts_t

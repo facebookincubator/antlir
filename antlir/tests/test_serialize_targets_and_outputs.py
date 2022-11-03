@@ -83,9 +83,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
 
     def test_simple_case(self) -> None:
         self._run_test(
-            targets_and_locs={
-                "//this/is/a:target": "this/is/the/target/location"
-            },
+            targets_and_locs={"//this/is/a:target": "this/is/the/target/location"},
             delim="|",
         )
 
@@ -97,9 +95,7 @@ class TestSerializeTargetsAndOutputs(unittest.TestCase):
 
     def test_space_case(self) -> None:
         self._run_test(
-            targets_and_locs={
-                "//this/has a/space:in it": "this/has a/space/in it"
-            },
+            targets_and_locs={"//this/has a/space:in it": "this/has a/space/in it"},
             delim="|",
         )
 

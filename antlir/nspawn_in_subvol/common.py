@@ -51,9 +51,7 @@ def nspawn_version() -> NSpawnVersion:
     We hope that the output of systemd-nspawn --version is stable enough
     to keep parsing it like this.
     """
-    parts = subprocess.check_output(
-        ["systemd-nspawn", "--version"], text=True
-    ).split()
+    parts = subprocess.check_output(["systemd-nspawn", "--version"], text=True).split()
     full = parts[2]
     assert full.startswith("(") and full.endswith(")"), parts
     full = parts[2][1:-1].lstrip("v")

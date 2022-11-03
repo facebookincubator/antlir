@@ -265,9 +265,7 @@ def pwconv(passwd_file: PasswdFile) -> str:
     return "\n".join(shadow_entries[name] for name in shadow_entries) + "\n"
 
 
-_VALID_USERNAME_RE = re.compile(
-    r"^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$"
-)
+_VALID_USERNAME_RE = re.compile(r"^[a-z_]([a-z0-9_-]{0,31}|[a-z0-9_-]{0,30}\$)$")
 
 
 # These provide mocking capabilities for testing

@@ -16,10 +16,7 @@ from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
 from antlir.compiler.items.genrule_layer import GenruleLayerItem
 from antlir.compiler.items.group import GroupItem
 from antlir.compiler.items.install_file import InstallFileItem
-from antlir.compiler.items.make_subvol import (
-    LayerFromPackageItem,
-    ParentLayerItem,
-)
+from antlir.compiler.items.make_subvol import LayerFromPackageItem, ParentLayerItem
 from antlir.compiler.items.meta_key_value_store import (
     MetaKeyValueStoreItem,
     RemoveMetaKeyValueStoreItem,
@@ -95,9 +92,7 @@ def gen_included_features(
     features_ctx: GenFeaturesContext,
 ):
     for feature_or_path in features_or_paths:
-        if isinstance(feature_or_path, Path) or isinstance(
-            feature_or_path, str
-        ):
+        if isinstance(feature_or_path, Path) or isinstance(feature_or_path, str):
             with open(feature_or_path) as f:
                 items = replace_targets_by_paths(json.load(f), features_ctx)
         else:
@@ -127,9 +122,7 @@ class ItemFactory:
             "groups": GroupItem,
             "install_files": self._image_sourcify(InstallFileItem),
             "layer_from_package": self._image_sourcify(LayerFromPackageItem),
-            "mounts": lambda **kwargs: MountItem(
-                **kwargs, layer_opts=layer_opts
-            ),
+            "mounts": lambda **kwargs: MountItem(**kwargs, layer_opts=layer_opts),
             "parent_layer": ParentLayerItem,
             "remove_paths": RemovePathItem,
             "rpms": self._image_sourcify(
@@ -153,9 +146,7 @@ class ItemFactory:
 
     def gen_items_for_feature(self, feature_key: str, target: str, config):
         if feature_key in self._key_to_item_factory:
-            yield self._key_to_item_factory[feature_key](
-                from_target=target, **config
-            )
+            yield self._key_to_item_factory[feature_key](from_target=target, **config)
         elif feature_key in self._key_to_items_factory:
             yield from self._key_to_items_factory[feature_key](
                 from_target=target, **config

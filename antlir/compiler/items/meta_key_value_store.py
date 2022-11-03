@@ -12,11 +12,7 @@ from antlir.bzl.image.feature.meta_key_value_store import (
 )
 
 from antlir.compiler.items.common import ImageItem, LayerOpts, PhaseOrder
-from antlir.compiler.requires_provides import (
-    ProvidesKey,
-    RequireKey,
-    RequireUser,
-)
+from antlir.compiler.requires_provides import ProvidesKey, RequireKey, RequireUser
 from antlir.fs_utils import META_DIR
 from antlir.subvol_utils import Subvol
 
@@ -67,9 +63,7 @@ class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
 
 
 # pyre-fixme[13]: Attribute `key` is never initialized.
-class RemoveMetaKeyValueStoreItem(
-    remove_meta_key_value_store_item_t, ImageItem
-):
+class RemoveMetaKeyValueStoreItem(remove_meta_key_value_store_item_t, ImageItem):
     key: str
 
     def phase_order(self):
@@ -100,11 +94,7 @@ class RemoveMetaKeyValueStoreItem(
 
             store_meta_key_value_store_items(
                 subvol,
-                [
-                    item
-                    for item in stored_items
-                    if item.key not in keys_to_remove
-                ],
+                [item for item in stored_items if item.key not in keys_to_remove],
             )
 
         return builder

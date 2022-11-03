@@ -39,9 +39,7 @@ from antlir.nspawn_in_subvol.args import (
     PopenArgs,
 )
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
-from antlir.nspawn_in_subvol.plugins.yum_dnf_versionlock import (
-    YumDnfVersionlock,
-)
+from antlir.nspawn_in_subvol.plugins.yum_dnf_versionlock import YumDnfVersionlock
 from antlir.rpm.rpm_metadata import compare_rpm_versions, RpmMetadata
 from antlir.subvol_utils import Subvol
 from pydantic import root_validator
@@ -171,9 +169,7 @@ def _action_to_command(
     # Local RPM?
     if action == RpmAction.install:
         try:
-            old = RpmMetadata.from_subvol(
-                subvol, build_appliance, nor.metadata.name
-            )
+            old = RpmMetadata.from_subvol(subvol, build_appliance, nor.metadata.name)
         except (RuntimeError, ValueError) as ex:
             # This can happen if the RPM DB does not exist in the
             # subvolume or the package is not installed.
@@ -219,9 +215,7 @@ def _convert_actions_to_commands(
     cmd_to_names_or_rpms = {}
     for action, names_or_rpms in action_to_names_or_rpms.items():
         for nor in names_or_rpms:
-            cmd, new_nor = _action_to_command(
-                subvol, build_appliance, action, nor
-            )
+            cmd, new_nor = _action_to_command(subvol, build_appliance, action, nor)
             if cmd == YumDnfCommand.noop:
                 continue
             if cmd is None:  # pragma: no cover
@@ -326,9 +320,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
         }[self.action]
 
     @classmethod
-    def get_phase_builder(
-        cls, items: Iterable["RpmActionItem"], layer_opts: LayerOpts
-    ):
+    def get_phase_builder(cls, items: Iterable["RpmActionItem"], layer_opts: LayerOpts):
         # THIS IGNORES RPMS THAT DON'T HAVE A MATCHING FLAVOR
         # IN LAYER_OPTS. WE NEED THIS TO ENABLE CROSS FLAVOR MIGRATIONS.
         matching_flavor_items = []
@@ -340,11 +332,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
                 and layer_opts.flavor not in repo_config().stable_flavors
             ):
                 unspecified_rpms = ",".join(
-                    [
-                        f"{{{item}}}"
-                        for item in items
-                        if not item.flavors_specified
-                    ]
+                    [f"{{{item}}}" for item in items if not item.flavors_specified]
                 )
                 raise RuntimeError(
                     "You must specify the flavor on rpms "
@@ -374,9 +362,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
             version_sets.update(
                 [
                     Path(version_set)
-                    for flavor, version_set in (
-                        item.flavor_to_version_set.items()
-                    )
+                    for flavor, version_set in (item.flavor_to_version_set.items())
                     if flavor == layer_opts.flavor
                     and version_set != BZL_CONST.version_set_allow_all_versions
                 ]

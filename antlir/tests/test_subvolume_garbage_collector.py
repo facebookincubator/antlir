@@ -91,15 +91,11 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
         self.assertTrue(sgc.has_new_subvolume(dir_json("x:y", "z")))
 
         for bad_example in [("x:y", None), (None, "z")]:
-            with self.assertRaisesRegex(
-                RuntimeError, "pass both .* or pass none"
-            ):
+            with self.assertRaisesRegex(RuntimeError, "pass both .* or pass none"):
                 sgc.has_new_subvolume(dir_json(*bad_example))
 
         for bad_example in [("x/y", "z"), ("no_colon", "z")]:
-            with self.assertRaisesRegex(
-                RuntimeError, "must contain : but not /"
-            ):
+            with self.assertRaisesRegex(RuntimeError, "must contain : but not /"):
                 sgc.has_new_subvolume(dir_json(*bad_example))
 
         with tempfile.TemporaryDirectory() as td:
@@ -120,9 +116,7 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
         with tempfile.TemporaryDirectory() as refs_dir, tempfile.TemporaryDirectory() as subs_dir:  # noqa: E501
             os.makedirs(Path(subs_dir) / "no:refs/subvol1")
             os.makedirs(Path(subs_dir) / "no:refs/subvol2")
-            with self.assertRaisesRegex(
-                RuntimeError, "must contain just 1 subvol"
-            ):
+            with self.assertRaisesRegex(RuntimeError, "must contain just 1 subvol"):
                 sgc.subvolume_garbage_collector(
                     [
                         f"--refcounts-dir={refs_dir}",
@@ -256,12 +250,8 @@ class SubvolumeGarbageCollectorTestCase(unittest.TestCase):
             finally:
                 os.close(fd)
 
-            self.assertEqual(
-                n.kept_refs | n.gcd_refs, set(n.refs_dir.listdir())
-            )
-            self.assertEqual(
-                n.kept_subs | n.gcd_subs, set(n.subs_dir.listdir())
-            )
+            self.assertEqual(n.kept_refs | n.gcd_refs, set(n.refs_dir.listdir()))
+            self.assertEqual(n.kept_subs | n.gcd_subs, set(n.subs_dir.listdir()))
 
     def test_garbage_collect_and_make_new_subvolume(self) -> None:
         with self._gc_test_case() as n, temp_dir() as json_dir:

@@ -54,9 +54,7 @@ def clean_target_name(name: str) -> str:
 # This hard codes the wrap_suffix used since we only need this for the
 # buck runnable case.
 ###
-def wrap_buck_runnable_target(
-    normalized_target: str, path_in_output: str
-) -> str:
+def wrap_buck_runnable_target(normalized_target: str, path_in_output: str) -> str:
     wrap_suffix = "install_buck_runnable_wrap_source" + path_in_output
     _, name = normalized_target.split(":")
     wrapped_target = (
@@ -156,12 +154,8 @@ DUMMY_LAYER_OPTS = LayerOpts(
 ID_TO_ITEM = {
     "/": FilesystemRootItem(from_target=None),
     # From `feature_dirs`:
-    "foo": EnsureDirsExistItem(
-        from_target=T_DIRS, into_dir="/", basename="foo"
-    ),
-    "foo/bar": EnsureDirsExistItem(
-        from_target=T_DIRS, into_dir="/foo", basename="bar"
-    ),
+    "foo": EnsureDirsExistItem(from_target=T_DIRS, into_dir="/", basename="foo"),
+    "foo/bar": EnsureDirsExistItem(from_target=T_DIRS, into_dir="/foo", basename="bar"),
     "foo/bar/baz": EnsureDirsExistItem(
         from_target=T_DIRS, into_dir="/foo/bar", basename="baz"
     ),
@@ -381,9 +375,7 @@ ID_TO_ITEM = {
         path="/another/path/to/remove",
         must_exist=True,
     ),
-    "etc": EnsureDirsExistItem(
-        from_target=T_BAD_DIR, into_dir="/", basename="etc"
-    ),
+    "etc": EnsureDirsExistItem(from_target=T_BAD_DIR, into_dir="/", basename="etc"),
     "etc/passwd": InstallFileItem(
         from_target=T_BAD_DIR,
         source=Path(TARGET_TO_PATH[T_SHADOW_ME]),

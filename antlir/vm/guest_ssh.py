@@ -68,11 +68,7 @@ class GuestSSHConnection:
         )
 
         maybe_forward = (
-            list(
-                chain.from_iterable(
-                    ["-R", f"{k}:{v}"] for k, v in forward.items()
-                )
-            )
+            list(chain.from_iterable(["-R", f"{k}:{v}"] for k, v in forward.items()))
             if forward
             else []
         )

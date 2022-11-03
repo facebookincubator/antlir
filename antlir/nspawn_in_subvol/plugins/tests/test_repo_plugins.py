@@ -10,11 +10,7 @@ import unittest
 from unittest import mock
 
 from antlir.bzl.container_opts import shadow_path_t
-from antlir.fs_utils import (
-    ANTLIR_DIR,
-    Path,
-    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
-)
+from antlir.fs_utils import ANTLIR_DIR, Path, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
 from antlir.nspawn_in_subvol.args import (
     AttachAntlirDirMode,
     new_nspawn_opts,
@@ -74,9 +70,7 @@ class RpmPluginsTestCase(unittest.TestCase):
 
         return (
             repo_plugins._get_snapshot_dir(
-                opts=new_nspawn_opts(
-                    cmd=[], layer=mock_subvol, subvolume_on_disk=svod
-                ),
+                opts=new_nspawn_opts(cmd=[], layer=mock_subvol, subvolume_on_disk=svod),
                 plugin_args=NspawnPluginArgs(
                     shadow_proxied_binaries=False,
                     shadow_paths=[shadow_path_t(dst="src", src="dest")],
@@ -89,9 +83,7 @@ class RpmPluginsTestCase(unittest.TestCase):
         )
 
     def test_get_snapshot_dir(self):
-        snapshot_dir, mock_subvol = self._create_snapshot_dir(
-            AttachAntlirDirMode.OFF
-        )
+        snapshot_dir, mock_subvol = self._create_snapshot_dir(AttachAntlirDirMode.OFF)
 
         self.assertEqual(
             mock_subvol.path(RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR),
@@ -255,9 +247,7 @@ class RpmPluginsTestCase(unittest.TestCase):
                 paths_check_count
             ), "Path must have a corresponding call count"
             for check_count, path in zip(paths_check_count, paths):
-                self.assertEqual(
-                    check_count, mock_subvol.path(path).exists.call_count
-                )
+                self.assertEqual(check_count, mock_subvol.path(path).exists.call_count)
 
         # Now, let's check automatic shadowing
 
@@ -305,9 +295,7 @@ class RpmPluginsTestCase(unittest.TestCase):
             ),
         )
 
-        mock_subvol.path.assert_called_once_with(
-            RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
-        )
+        mock_subvol.path.assert_called_once_with(RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR)
         mock_path.exists.assert_called_once_with()
         mock_path.listdir.assert_called_once_with()
 
@@ -316,9 +304,7 @@ class RpmPluginsTestCase(unittest.TestCase):
         self.assertEqual(
             (),
             repo_plugins.repo_nspawn_plugins(
-                opts=new_nspawn_opts(
-                    cmd=[], layer=subvol, user=pwd.getpwnam("root")
-                ),
+                opts=new_nspawn_opts(cmd=[], layer=subvol, user=pwd.getpwnam("root")),
                 plugin_args=NspawnPluginArgs(
                     shadow_proxied_binaries=False,
                     attach_antlir_dir=AttachAntlirDirMode.DEFAULT_ON,
@@ -333,9 +319,7 @@ class RpmPluginsTestCase(unittest.TestCase):
 
         plugins = (
             repo_plugins.repo_nspawn_plugins(
-                opts=new_nspawn_opts(
-                    cmd=[], layer=subvol, user=pwd.getpwnam("root")
-                ),
+                opts=new_nspawn_opts(cmd=[], layer=subvol, user=pwd.getpwnam("root")),
                 plugin_args=NspawnPluginArgs(
                     shadow_proxied_binaries=True,
                     attach_antlir_dir=AttachAntlirDirMode.DEFAULT_ON,

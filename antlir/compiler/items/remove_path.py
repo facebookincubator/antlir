@@ -75,9 +75,7 @@ class RemovePathItem(remove_paths_t, ImageItem):
                 if not os.path.lexists(path):
                     if not item.must_exist:
                         continue
-                    raise UserError(
-                        f"Path to be removed does not exist: {item.path}"
-                    )
+                    raise UserError(f"Path to be removed does not exist: {item.path}")
 
                 assert_running_inside_ba()
                 if os.path.isdir(path) and not os.path.islink(path):

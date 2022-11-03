@@ -7,10 +7,7 @@
 import unittest
 from typing import Any, List
 
-from antlir.btrfs_diff.coroutine_utils import (
-    GeneratorExitWithResult,
-    while_not_exited,
-)
+from antlir.btrfs_diff.coroutine_utils import GeneratorExitWithResult, while_not_exited
 
 
 class CoroutineTestError(Exception):
@@ -30,9 +27,7 @@ class SendToCoroutineTestCase(unittest.TestCase):
         except GeneratorExit:
             raise GeneratorExitWithResult("coroutine closed")
 
-    def send_to_demo(
-        self, coroutine_steps: int, close_on_step: int, *, do_close: bool
-    ):
+    def send_to_demo(self, coroutine_steps: int, close_on_step: int, *, do_close: bool):
         with while_not_exited(self.demo_coroutine(coroutine_steps)) as ctx:
             self.events = []
             self.events.append(("initialized", ctx.send(None)))
@@ -67,9 +62,7 @@ class SendToCoroutineTestCase(unittest.TestCase):
 
             yielded1 = sent0 + [("yielded", 1)]
             for i in range(2, 5):
-                self.assertEqual(
-                    send_to_demo(i, 1), ("coroutine closed", yielded1)
-                )
+                self.assertEqual(send_to_demo(i, 1), ("coroutine closed", yielded1))
 
             sent2 = yielded1 + [("sent", 1), ("yielded", 2), ("sent", 2)]
             for i in range(3, 8):
@@ -77,9 +70,7 @@ class SendToCoroutineTestCase(unittest.TestCase):
 
             yielded3 = sent2 + [("yielded", 3)]
             for i in range(4, 8):
-                self.assertEqual(
-                    send_to_demo(i, 3), ("coroutine closed", yielded3)
-                )
+                self.assertEqual(send_to_demo(i, 3), ("coroutine closed", yielded3))
 
     def yield_and_raise_coroutine(self):
         self.events.append("yielding")

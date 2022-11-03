@@ -8,11 +8,7 @@ import os
 import subprocess
 import unittest
 
-from antlir.compiler.procfs_serde import (
-    deserialize_int,
-    deserialize_untyped,
-    serialize,
-)
+from antlir.compiler.procfs_serde import deserialize_int, deserialize_untyped, serialize
 
 from antlir.subvol_utils import with_temp_subvols
 from antlir.tests.subvol_helpers import render_subvol
@@ -29,12 +25,8 @@ class TestProcfsSerDe(unittest.TestCase):
         self._next_dir_idx += 1
         return str(self._next_dir_idx)
 
-    def _check_serialize_deserialize_idempotence(
-        self, subvol, orig_dir, name_with_ext
-    ):
-        data = deserialize_untyped(
-            subvol.path(), os.path.join(orig_dir, name_with_ext)
-        )
+    def _check_serialize_deserialize_idempotence(self, subvol, orig_dir, name_with_ext):
+        data = deserialize_untyped(subvol.path(), os.path.join(orig_dir, name_with_ext))
         new_dir = self._next_dir()
         serialize(data, subvol, os.path.join(new_dir, name_with_ext))
         rendered = render_subvol(subvol)[1]
@@ -46,15 +38,11 @@ class TestProcfsSerDe(unittest.TestCase):
             ["diff", "--recursive", subvol.path(orig_dir), subvol.path(new_dir)]
         )
 
-    def _check_serialize_scalar(
-        self, expected, data, subvol, name_with_ext
-    ) -> None:
+    def _check_serialize_scalar(self, expected, data, subvol, name_with_ext) -> None:
         outer_dir = self._next_dir()
         path_with_ext = os.path.join(outer_dir, name_with_ext)
         serialize(data, subvol, path_with_ext)
-        self._check_serialize_deserialize_idempotence(
-            subvol, outer_dir, name_with_ext
-        )
+        self._check_serialize_deserialize_idempotence(subvol, outer_dir, name_with_ext)
         self.assertEqual(
             ["(Dir)", {name_with_ext: [f"(File d{len(expected)})"]}],
             render_subvol(subvol)[1][outer_dir],
@@ -62,18 +50,12 @@ class TestProcfsSerDe(unittest.TestCase):
         with open(subvol.path(path_with_ext), "rb") as f:
             self.assertEqual(expected, f.read())
 
-    def _check_serialize_dict(
-        self, expect_render, data, subvol, name_with_ext
-    ) -> None:
+    def _check_serialize_dict(self, expect_render, data, subvol, name_with_ext) -> None:
         outer_dir = self._next_dir()
         path_with_ext = os.path.join(outer_dir, name_with_ext)
         serialize(data, subvol, path_with_ext)
-        self._check_serialize_deserialize_idempotence(
-            subvol, outer_dir, name_with_ext
-        )
-        self.assertEqual(
-            ["(Dir)", expect_render], render_subvol(subvol)[1][outer_dir]
-        )
+        self._check_serialize_deserialize_idempotence(subvol, outer_dir, name_with_ext)
+        self.assertEqual(["(Dir)", expect_render], render_subvol(subvol)[1][outer_dir])
         # NB: Not checking file contents because the scalar test cover that.
 
     @with_temp_subvols
@@ -138,9 +120,7 @@ class TestProcfsSerDe(unittest.TestCase):
     def test_deserialize(self, temp_subvols) -> None:
         subvol = temp_subvols.create("y")
         # Writing this test is easier if we don't need to write as root.
-        subvol.run_as_root(
-            ["chown", f"{os.geteuid()}:{os.getegid()}", subvol.path()]
-        )
+        subvol.run_as_root(["chown", f"{os.geteuid()}:{os.getegid()}", subvol.path()])
 
         # Test type coercion.  Not testing untyped deserialization, since
         # `test_serialize` checks `serialize(deserialize_untyped(x)) == x`.

@@ -70,9 +70,7 @@ class TestProxyURL(TestCase):
     def test_proxy_url(self) -> None:
         handler = _mock_handler()
 
-        proxy_url(
-            f"https://localhost:{self.port}", handler, context=self.ssl_context
-        )
+        proxy_url(f"https://localhost:{self.port}", handler, context=self.ssl_context)
 
         handler.send_response.assert_called_once_with(HTTPStatus.OK)
         self.assertEqual(
@@ -89,16 +87,12 @@ class TestProxyURL(TestCase):
             context=self.ssl_context,
         )
 
-        handler.send_response.assert_called_once_with(
-            HTTPStatus.INTERNAL_SERVER_ERROR
-        )
+        handler.send_response.assert_called_once_with(HTTPStatus.INTERNAL_SERVER_ERROR)
 
     def test_proxy_url_http(self) -> None:
         handler = _mock_handler()
 
-        proxy_url(
-            f"http://localhost:{self.port}/", handler, allow_insecure_http=True
-        )
+        proxy_url(f"http://localhost:{self.port}/", handler, allow_insecure_http=True)
         handler.send_response.assert_not_called()
         handler.send_error.assert_called_once_with(
             HTTPStatus.INTERNAL_SERVER_ERROR,

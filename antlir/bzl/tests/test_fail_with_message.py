@@ -20,9 +20,7 @@ class FailWithMessageTestCase(unittest.TestCase):
 
     def test_fail_with_message_e2e(self) -> None:
         msg_to_log = "TEST FAILURE MSG"
-        with Path.resource(
-            __package__, "fail-with-message", exe=True
-        ) as binary:
+        with Path.resource(__package__, "fail-with-message", exe=True) as binary:
             res = subprocess.run(
                 [binary, "--message", msg_to_log],
                 check=True,

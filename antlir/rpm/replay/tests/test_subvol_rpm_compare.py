@@ -40,9 +40,7 @@ class SubvolRpmCompareTestImpl:
     def test_subvol_rpm_compare_identical_subvols(self):
         root_subvol = layer_resource_subvol(__package__, "root_subvol")
 
-        subvols = self.construct_subvols_to_compare(
-            root=root_subvol, leaf=root_subvol
-        )
+        subvols = self.construct_subvols_to_compare(root=root_subvol, leaf=root_subvol)
         rd = subvol_rpm_compare(subvols=subvols)
 
         # if root == leaf then no rpms should added/removed
@@ -94,9 +92,7 @@ class SubvolRpmCompareTestImpl:
             rpm_diff,
             rpm_download_subvol,
         ):
-            downloaded_rpms = {
-                f"{rpm}" for rpm in rpm_download_subvol.path().listdir()
-            }
+            downloaded_rpms = {f"{rpm}" for rpm in rpm_download_subvol.path().listdir()}
             self.assertEqual(
                 {
                     "rpm-test-has-epoch-0-0.x86_64.rpm",

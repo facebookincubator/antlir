@@ -24,9 +24,7 @@ from antlir.subvol_utils import Subvol
 
 _PopenResult = Tuple[subprocess.Popen, subprocess.Popen]
 _SetupSubvolCtxMgr = Callable[[_NspawnOpts], ContextManager[Subvol]]
-_NspawnSetupCtxMgr = Callable[
-    [_NspawnOpts, PopenArgs], ContextManager[_NspawnSetup]
-]
+_NspawnSetupCtxMgr = Callable[[_NspawnOpts, PopenArgs], ContextManager[_NspawnSetup]]
 _PostSetupPopenCtxMgr = Callable[[_NspawnSetup], ContextManager[_PopenResult]]
 
 

@@ -8,9 +8,7 @@ import copy
 import sys
 import tempfile
 
-from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
-    render_demo_subvols,
-)
+from antlir.btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
 
 from antlir.compiler.items.common import PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import (
@@ -74,9 +72,9 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
             # Take a snapshot and add one more directory.
             child = temp_subvolumes.caller_will_create("child")
             item.get_phase_builder([item], DUMMY_LAYER_OPTS_BA)(child)
-            EnsureDirsExistItem(
-                from_target="t", into_dir="a", basename="c"
-            ).build(child, DUMMY_LAYER_OPTS_BA)
+            EnsureDirsExistItem(from_target="t", into_dir="a", basename="c").build(
+                child, DUMMY_LAYER_OPTS_BA
+            )
 
             # The parent is unchanged.
             self.assertEqual(parent_content, render_subvol(parent))
@@ -146,9 +144,7 @@ class MakeSubvolItemsTestCase(BaseItemTestCase):
 
     def test_resolve_image_source_v2_from_v1(self):
         format = "sendstream.v2"
-        with tempfile.NamedTemporaryFile(
-            suffix=ZST_EXTENSION.decode("ascii")
-        ) as f:
+        with tempfile.NamedTemporaryFile(suffix=ZST_EXTENSION.decode("ascii")) as f:
             v2_file = Path(f.name[: -len(ZST_EXTENSION)])
             v1_file = _resolve_image_source(format, v2_file)
             self.assertEqual(f.name, str(v1_file))

@@ -66,9 +66,7 @@ class RepoServerTestCase(unittest.TestCase):
         storage_dir = self.storage_dir_ctx.__enter__()
         self.addCleanup(self.storage_dir_ctx.__exit__, None, None, None)
         # I could write some kind of in-memory storage, but this seems easier.
-        self.storage = Storage.make(
-            key="test", kind="filesystem", base_dir=storage_dir
-        )
+        self.storage = Storage.make(key="test", kind="filesystem", base_dir=storage_dir)
 
     @contextmanager
     def repo_server_thread(self, location_to_obj):
@@ -202,9 +200,7 @@ class RepoServerTestCase(unittest.TestCase):
         with temp_repos.temp_repos_steps(
             gpg_signing_key=temp_repos.get_test_signing_key(),
             repo_change_steps=[{"nil": temp_repos.Repo([])}],
-        ) as repos_root, open(
-            repos_root / "0/nil/repodata/repomd.xml", "rb"
-        ) as infile:
+        ) as repos_root, open(repos_root / "0/nil/repodata/repomd.xml", "rb") as infile:
             repomd = RepoMetadata.new(xml=infile.read())
 
         repodata_bytes, repodata_sid = self._write(b"A Repodata blob")

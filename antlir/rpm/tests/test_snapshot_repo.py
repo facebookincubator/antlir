@@ -45,9 +45,7 @@ class SnapshotRepoTestCase(unittest.TestCase):
                     f'--snapshot-dir={td / "snap"}',
                     f"--storage={Path.json_dumps(storage_dict)}",
                     "--db="
-                    + Path.json_dumps(
-                        {"kind": "sqlite", "db_path": td / "db.sqlite3"}
-                    ),
+                    + Path.json_dumps({"kind": "sqlite", "db_path": td / "db.sqlite3"}),
                     "--threads=4",
                 ]
             )
@@ -73,8 +71,6 @@ class SnapshotRepoTestCase(unittest.TestCase):
                     },
                     {
                         path
-                        for path, in db.execute(
-                            'SELECT "path" FROM "rpm";'
-                        ).fetchall()
+                        for path, in db.execute('SELECT "path" FROM "rpm";').fetchall()
                     },
                 )

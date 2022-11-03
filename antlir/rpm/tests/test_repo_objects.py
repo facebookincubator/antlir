@@ -45,9 +45,7 @@ class RepoObjectsTestCase(unittest.TestCase):
             "zalgo:e1de41",
             str(
                 rpm._replace(
-                    canonical_checksum=Checksum(
-                        algorithm="zalgo", hexdigest="e1de41"
-                    )
+                    canonical_checksum=Checksum(algorithm="zalgo", hexdigest="e1de41")
                 ).best_checksum()
             ),
         )
@@ -56,15 +54,9 @@ class RepoObjectsTestCase(unittest.TestCase):
         with tr.temp_repos_steps(
             gpg_signing_key=tr.get_test_signing_key(),
             repo_change_steps=[
-                {
-                    "whale": tr.Repo(
-                        [tr.Rpm("x", "5", "6"), tr.Rpm("y", "3.4", "b")]
-                    )
-                }
+                {"whale": tr.Repo([tr.Rpm("x", "5", "6"), tr.Rpm("y", "3.4", "b")])}
             ],
-        ) as repos_dir, open(
-            repos_dir / "0/whale/repodata/repomd.xml", "rb"
-        ) as infile:
+        ) as repos_dir, open(repos_dir / "0/whale/repodata/repomd.xml", "rb") as infile:
             rmd = RepoMetadata.new(xml=infile.read())
             self.assertGreaterEqual(rmd.fetch_timestamp, rmd.build_timestamp)
             # If this assert fires, you are changing the canonical hash,
@@ -73,12 +65,8 @@ class RepoObjectsTestCase(unittest.TestCase):
             # canonical hashes in the database.
             self.assertEqual("sha384", rmd.checksum.algorithm)
             self.assertIs(rmd.checksum, rmd.best_checksum())
-            self.assertEqual(
-                1, sum(rd.is_primary_sqlite() for rd in rmd.repodatas)
-            )
-            self.assertEqual(
-                1, sum(rd.is_primary_xml() for rd in rmd.repodatas)
-            )
+            self.assertEqual(1, sum(rd.is_primary_sqlite() for rd in rmd.repodatas))
+            self.assertEqual(1, sum(rd.is_primary_xml() for rd in rmd.repodatas))
             for rd in rmd.repodatas:
                 # The currently checked-in test repos all use sha256, which
                 # seems to be the default for newer rpm tools.

@@ -87,9 +87,7 @@ def get_vset_to_policy(version_set, policy, versions):
     }
 
 
-def get_packages(
-    packages_source: str, package_names: Optional[List[str]] = None
-):
+def get_packages(packages_source: str, package_names: Optional[List[str]] = None):
     if package_names is None:
         package_names = [_FOO_RPM, _BAR_RPM, _NON_RPM]
     return {
@@ -247,9 +245,7 @@ class UpdateAllowedVersionsTestCase(TestCase):
                 dir_path=package_groups_dir,
                 json_name=_DUP_JSON,
                 packages=get_packages("manual"),
-                vset_to_policy=get_vset_to_policy(
-                    _VSET_NAME, "manual", _STR_VERSIONS
-                ),
+                vset_to_policy=get_vset_to_policy(_VSET_NAME, "manual", _STR_VERSIONS),
             )
             parsed_args = parse_args(args)
             with self.assertRaisesRegex(RuntimeError, "^Loading config "):

@@ -13,16 +13,7 @@ already been installed.  This is known as dependency order or topological
 sort.
 """
 from collections import defaultdict
-from typing import (
-    Dict,
-    Generator,
-    Iterable,
-    Iterator,
-    List,
-    NamedTuple,
-    Optional,
-    Set,
-)
+from typing import Dict, Generator, Iterable, Iterator, List, NamedTuple, Optional, Set
 
 from antlir.compiler.items.common import ImageItem, PhaseOrder
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
@@ -97,9 +88,7 @@ class ItemProv(NamedTuple):
                 assert isinstance(
                     a.provides, ProvidesDirectory
                 ), "EnsureDirsExistItem must provide a directory"
-                return not isinstance(
-                    b.provides, (ProvidesDirectory, ProvidesSymlink)
-                )
+                return not isinstance(b.provides, (ProvidesDirectory, ProvidesSymlink))
 
         for it in (SymlinkToDirItem, SymlinkToFileItem):
             if isinstance(self.item, it) and isinstance(other.item, it):
@@ -113,9 +102,7 @@ class ItemProv(NamedTuple):
         if isinstance(self.item, MetaKeyValueStoreItem) and isinstance(
             other.item, MetaKeyValueStoreItem
         ):
-            return not (
-                self.item.store_if_not_exists ^ other.item.store_if_not_exists
-            )
+            return not (self.item.store_if_not_exists ^ other.item.store_if_not_exists)
 
         return True
 
@@ -280,9 +267,7 @@ class PathItemReqsProvs:
             history = set()
 
         if path in history:
-            raise RuntimeError(
-                f"Circular realpath, revisiting {path} in {history}"
-            )
+            raise RuntimeError(f"Circular realpath, revisiting {path} in {history}")
         else:
             history.add(path)
 
@@ -305,14 +290,10 @@ class PathItemReqsProvs:
 
             # pyre-fixme[16]: `Requirement` has no attribute `target`.
             symlink_target = symlink_item_prov.provides.req.target
-            search_path_realpath = _symlink_target_normpath(
-                search_path, symlink_target
-            )
+            search_path_realpath = _symlink_target_normpath(search_path, symlink_target)
             if path_parts:
                 search_path_realpath /= Path.join(*path_parts)
-            nested_provs = self._realpath_item_provs(
-                search_path_realpath, history
-            )
+            nested_provs = self._realpath_item_provs(search_path_realpath, history)
             if nested_provs is None:
                 return None
             return {symlink_item_prov} | nested_provs
@@ -357,9 +338,7 @@ class ValidatedReqsProvs:
         self._path_item_reqs_provs.validate()
         for irps in self._item_reqs_provs.values():
             for item_req in irps.unfulfilled_item_reqs():
-                raise UserError(
-                    f"{irps.item_provs} does not provide {item_req}"
-                )
+                raise UserError(f"{irps.item_provs} does not provide {item_req}")
 
     def _get_item_reqs_provs(self, req: Requirement) -> ItemReqsProvs:
         return self._item_reqs_provs.setdefault(
@@ -380,9 +359,7 @@ class DependencyGraph:
     """
 
     # Consumes a mix of dependency-ordered and `PhaseOrder`ed `ImageItem`s.
-    def __init__(
-        self, iter_items: Iterable[ImageItem], layer_target: str
-    ) -> None:
+    def __init__(self, iter_items: Iterable[ImageItem], layer_target: str) -> None:
         # Without deduping, dependency diamonds would cause a lot of
         # redundant work below.  `_prep_item_predecessors` mutates this.
         self.items = set()
@@ -392,9 +369,9 @@ class DependencyGraph:
             if item.phase_order() is None:
                 self.items.add(item)
             else:
-                self.order_to_phase_items.setdefault(
-                    item.phase_order(), []
-                ).append(item)
+                self.order_to_phase_items.setdefault(item.phase_order(), []).append(
+                    item
+                )
         # If there is no MAKE_SUBVOL item, create an empty subvolume.
         make_subvol_items = self.order_to_phase_items.setdefault(
             PhaseOrder.MAKE_SUBVOL,
@@ -450,9 +427,7 @@ class DependencyGraph:
             or isinstance(x.provides, ProvidesKey)
         }
 
-        assert (
-            len(non_ede_item_provs - checked_item_provs) <= 1
-        ), f"{item_provs}"
+        assert len(non_ede_item_provs - checked_item_provs) <= 1, f"{item_provs}"
 
         for item_prov in non_ede_item_provs:
             for ede_item_prov in ede_item_provs:
@@ -494,9 +469,7 @@ class DependencyGraph:
 
         # pyre-fixme[16]: `Namespace` has no attribute
         # `items_without_predecessors`.
-        ns.items_without_predecessors = (
-            self.items - ns.item_to_predecessors.keys()
-        )
+        ns.items_without_predecessors = self.items - ns.item_to_predecessors.keys()
 
         return ns
 
@@ -518,9 +491,7 @@ class DependencyGraph:
                     len(items) == 1
                 ), f"PhasesProvideItem must be alone in the first step: {items}"
                 item = next(iter(items))
-                assert (
-                    item is phases_provide
-                ), f"{item}: PhasesProvideItem must be 1st"
+                assert item is phases_provide, f"{item}: PhasesProvideItem must be 1st"
 
             for item in items:
                 # `_prep_item_predecessors` ensures that we will encounter

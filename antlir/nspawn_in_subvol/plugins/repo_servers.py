@@ -17,7 +17,6 @@ built by the `rpm_repo_snapshot()` target, and installed via
 Also starts FBPKG proxy server if needed.
 """
 import logging
-import os
 import textwrap
 from contextlib import contextmanager, ExitStack
 from dataclasses import dataclass
@@ -195,9 +194,7 @@ class RepoServers(NspawnPlugin):
     ) -> Tuple[int, Dict[Path, int]]:
         socks_needed, socks_per_snapshot = 0, {}
         for snap_dir in serve_rpm_snapshots:
-            with open(
-                snap_subvol.path(snap_dir) / "ports-for-repo-server"
-            ) as f:
+            with open(snap_subvol.path(snap_dir) / "ports-for-repo-server") as f:
                 s_count = len({int(v) for v in f.read().split() if v})
                 socks_needed += s_count
                 socks_per_snapshot[snap_dir] = s_count
@@ -265,8 +262,7 @@ class RepoServers(NspawnPlugin):
             # This must occur after `AttachAntlirDir.wrap_setup_subvol`
             # so that we can resolve symlinks in `__antlir__`.
             serve_rpm_snapshots = frozenset(
-                snap_subvol.canonicalize_path(p)
-                for p in self._serve_rpm_snapshots
+                snap_subvol.canonicalize_path(p) for p in self._serve_rpm_snapshots
             )
 
             ns_count, sockets_per_snapshot = self._ns_sockets_needed(
@@ -279,9 +275,7 @@ class RepoServers(NspawnPlugin):
             if self._run_apt_proxy:
                 ns_count += 1  # pragma: no cover
 
-            ns_sockets_pool = create_sockets_inside_netns(
-                container_pid, ns_count
-            )
+            ns_sockets_pool = create_sockets_inside_netns(container_pid, ns_count)
             log.debug(f"Created {ns_count} sockets in {container_pid} ns ")
 
             # To speed up startup, launch all the servers, and then await them.
@@ -290,18 +284,12 @@ class RepoServers(NspawnPlugin):
             for snap_dir in serve_rpm_snapshots:
                 snap_to_servers[snap_dir] = stack.enter_context(
                     launch_repo_servers_for_netns(
-                        ns_sockets=ns_sockets_pool[
-                            0 : sockets_per_snapshot[snap_dir]
-                        ],
+                        ns_sockets=ns_sockets_pool[0 : sockets_per_snapshot[snap_dir]],
                         snapshot_dir=snap_subvol.path(snap_dir),
-                        repo_server_bin=snap_subvol.path(
-                            snap_dir / "repo-server"
-                        ),
+                        repo_server_bin=snap_subvol.path(snap_dir / "repo-server"),
                     )
                 )
-                ns_sockets_pool = ns_sockets_pool[
-                    sockets_per_snapshot[snap_dir] :
-                ]
+                ns_sockets_pool = ns_sockets_pool[sockets_per_snapshot[snap_dir] :]
 
             if snap_to_servers:
                 log.info(
@@ -331,9 +319,7 @@ class RepoServers(NspawnPlugin):
                         api_key="antlir_snapshots-key",
                     )
                 )
-                log.info(
-                    f"Started `deb-proxy-server` on port {DEB_PROXY_SERVER_PORT}"
-                )
+                log.info(f"Started `deb-proxy-server` on port {DEB_PROXY_SERVER_PORT}")
 
             self._container_pid_exfiltrator.send_ready()
             yield popen_res

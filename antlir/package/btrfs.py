@@ -283,9 +283,7 @@ class _BtrfsLoopbackVolume:
         `self._size_bytes`
         """
 
-        log.info(
-            f"Formatting btrfs {self._size_bytes}-byte FS at {self._image_path}"
-        )
+        log.info(f"Formatting btrfs {self._size_bytes}-byte FS at {self._image_path}")
         self._size_bytes = self._create_or_resize_image_file(self._size_bytes)
         maybe_label = ["--label", self._label] if self._label else []
         # Note that this can fail with 'cannot check mount status' if the
@@ -327,9 +325,7 @@ class _BtrfsLoopbackVolume:
 
         return size_bytes
 
-    def receive(
-        self, send: int, receive_dir: Path
-    ) -> subprocess.CompletedProcess:
+    def receive(self, send: int, receive_dir: Path) -> subprocess.CompletedProcess:
         """
         Receive a btrfs sendstream from the `send` fd
         """
@@ -392,9 +388,7 @@ class _BtrfsLoopbackVolume:
         # This helps perf and avoids doubling our usage of buffer cache.
         # Also, when the image is on tmpfs, setting direct IO fails.
         if (
-            run_stdout_to_err(
-                ["losetup", "--direct-io=on", self._loop_dev]
-            ).returncode
+            run_stdout_to_err(["losetup", "--direct-io=on", self._loop_dev]).returncode
             != 0
         ):  # pragma: nocover
             log.error(
@@ -575,10 +569,7 @@ class BtrfsImage:
         ).mount() as loop_vol, temp_dir(dir=mount_dir) as receive_dir:
 
             for subvol_name, (subvol, _) in subvols.items():
-                log.info(
-                    f"Receiving {subvol.path()} -> "
-                    f"{receive_dir}{subvol_name}"
-                )
+                log.info(f"Receiving {subvol.path()} -> " f"{receive_dir}{subvol_name}")
                 with pipe() as (
                     r_send,
                     w_send,
@@ -593,12 +584,8 @@ class BtrfsImage:
                         )
 
                         if recv_ret.returncode != 0:
-                            err = recv_ret.stderr.decode(
-                                errors="surrogateescape"
-                            )
-                            if recv_ret.stderr.endswith(
-                                self._OUT_OF_SPACE_SUFFIX
-                            ):
+                            err = recv_ret.stderr.decode(errors="surrogateescape")
+                            if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
                                 err = (
                                     f"Receive failed. Subvol of "
                                     f"{estimated_fs_bytes} bytes did not fit "
@@ -642,9 +629,7 @@ class BtrfsImage:
                 # The output of this command looks like:
                 #
                 # b'ID 256 gen 7 top level 5 path volume\n'
-                subvol_id = btrfsutil.subvolume_id(
-                    mount_dir / default_subvol[1:]
-                )
+                subvol_id = btrfsutil.subvolume_id(mount_dir / default_subvol[1:])
                 log.debug(f"subvol_id to set as default: {subvol_id}")
 
                 # Actually set the default

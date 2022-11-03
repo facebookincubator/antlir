@@ -10,7 +10,7 @@ import unittest
 import unittest.mock
 from uuid import UUID
 
-from antlir.btrfsutil import BtrfsUtilError, subvolume_info
+from antlir.btrfsutil import subvolume_info
 
 from antlir.compiler import subvolume_on_disk
 from antlir.fs_utils import Path
@@ -80,15 +80,12 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
             bad_path[subvolume_on_disk._SUBVOLUME_REL_PATH]
         )
         with self.assertRaisesRegex(RuntimeError, "must have the form"):
-            subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(
-                bad_path, subvols
-            )
+            subvolume_on_disk.SubvolumeOnDisk.from_serializable_dict(bad_path, subvols)
         bad_path_subvol.delete()
 
         wrong_inner = good.copy()
         wrong_inner_relpath = (
-            wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH]
-            + b"x"  # pyre-ignore[6]
+            wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH] + b"x"  # pyre-ignore[6]
         )
         wrong_inner[subvolume_on_disk._SUBVOLUME_REL_PATH] = wrong_inner_relpath
         wrong_inner_subvol = temp_subvols.create(wrong_inner_relpath)
@@ -158,9 +155,7 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                         subvolume_on_disk._HOSTNAME: _MY_HOST,
                         subvolume_on_disk._SUBVOLUME_REL_PATH: rel_path,
                         subvolume_on_disk._SUBVOLUMES_BASE_DIR: subvols,
-                        subvolume_on_disk._BUILD_APPLIANCE_PATH: (
-                            build_appliance_path
-                        ),
+                        subvolume_on_disk._BUILD_APPLIANCE_PATH: (build_appliance_path),
                     }
                 ),
             )

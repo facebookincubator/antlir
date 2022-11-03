@@ -58,9 +58,7 @@ class DeepCopyTestCase(AntlirTestCase):
 
     def _check_deepcopy(
         self,
-        gen_fn: Callable[
-            [], Generator[Tuple[str, Any], Any, Optional[List[str]]]
-        ],
+        gen_fn: Callable[[], Generator[Tuple[str, Any], Any, Optional[List[str]]]],
         replace_step=None,
         expected_name=None,
         *,

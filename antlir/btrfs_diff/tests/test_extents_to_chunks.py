@@ -225,9 +225,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
             },
             {
                 repr(id): list(extent.gen_trimmed_leaves())
-                for id, extent in self._gen_ids_and_extents_from_figure(
-                    self.FIG1
-                )
+                for id, extent in self._gen_ids_and_extents_from_figure(self.FIG1)
             },
         )
 
@@ -295,9 +293,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
         # A, but here they became one chunk of 12:
         "A": [("DATA/12", {"C:0+4@5", "D:0+6@3", "E:6+1@9"})],
         "B": [("DATA/5", {"C:4+5@0", "D:6+1@0", "E:0+4@1", "F:0+2@2"})],
-        "C": [
-            ("DATA/9", {"A:5+4@0", "B:0+5@4", "D:2+5@0", "E:0+4@5", "F:0+2@6"})
-        ],
+        "C": [("DATA/9", {"A:5+4@0", "B:0+5@4", "D:2+5@0", "E:0+4@5", "F:0+2@6"})],
         "D": [("DATA/7", {"A:3+6@0", "B:0+1@6", "C:0+5@2"})],
         "E": [("DATA/7", {"A:9+1@6", "B:1+4@0", "C:5+4@0", "F:0+2@1"})],
         "F": [("DATA/2", {"B:2+2@0", "C:6+2@0", "E:1+2@0"})],

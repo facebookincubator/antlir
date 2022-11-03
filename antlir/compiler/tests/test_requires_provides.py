@@ -40,9 +40,7 @@ class RequiresProvidesTestCase(unittest.TestCase):
         self.assertEqual(
             Path("/b/d"), ProvidesDirectory(path=Path("/b/c//../d")).req.path
         )
-        self.assertEqual(
-            Path("/x/y"), ProvidesFile(path=Path("///x/./y/")).req.path
-        )
+        self.assertEqual(Path("/x/y"), ProvidesFile(path=Path("///x/./y/")).req.path)
 
     def test_provides_requires(self) -> None:
         pf1 = ProvidesFile(path=Path("f"))
@@ -79,9 +77,7 @@ class RequiresProvidesTestCase(unittest.TestCase):
     def test_with_new_path(self) -> None:
         for new_path in ["b", "b/", "/b", "/../a/../b/c/.."]:
             self.assertEqual(
-                ProvidesDirectory(path=Path("unused")).with_new_path(
-                    Path(new_path)
-                ),
+                ProvidesDirectory(path=Path("unused")).with_new_path(Path(new_path)),
                 ProvidesDirectory(path=Path("b")),
             )
 

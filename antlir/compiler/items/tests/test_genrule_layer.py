@@ -146,9 +146,7 @@ class GenruleLayerItemTestCase(unittest.TestCase):
         # @oss-disable: # and antlir/proxy/facebook/tests              
         fbpkg_pkg = target_t(name="fbpkg_pkg", path="path")
 
-        with self._temp_resource_subvol(
-            "genrule-layer-busybox-base"
-        ) as sv, patch(
+        with self._temp_resource_subvol("genrule-layer-busybox-base") as sv, patch(
             "antlir.compiler.items.genrule_layer.run_nspawn"
         ) as run_nspawn, patch(
             "antlir.compiler.items.genrule_layer.NspawnPluginArgs"
@@ -167,8 +165,6 @@ class GenruleLayerItemTestCase(unittest.TestCase):
                 shadow_proxied_binaries=False,
                 run_apt_proxy=False,
                 shadow_paths=(),
-                proxy_server_config=proxy_server_config_t(
-                    fbpkg_pkg_list=[fbpkg_pkg]
-                ),
+                proxy_server_config=proxy_server_config_t(fbpkg_pkg_list=[fbpkg_pkg]),
                 attach_antlir_dir=(AttachAntlirDirMode.OFF),
             )

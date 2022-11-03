@@ -31,9 +31,7 @@ from antlir.btrfs_diff.rendered_tree import emit_non_unique_traversal_ids
 from antlir.btrfs_diff.subvolume_set import SubvolumeSet
 from antlir.btrfs_diff.tests import render_subvols as render_sv
 from antlir.btrfs_diff.tests.demo_sendstreams import make_demo_sendstreams
-from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
-    render_demo_subvols,
-)
+from antlir.btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase
 from antlir.volume_for_repo import get_volume_for_current_repo
@@ -82,10 +80,6 @@ class SendstreamToSubvolumeSetIntegrationTestCase(AntlirTestCase):
             ),
         )
         self.assertEqual(
-            render_demo_subvols(
-                create_ops="create_ops", mutate_ops="mutate_ops"
-            ),
-            freeze(subvols).map(
-                lambda sv: emit_non_unique_traversal_ids(sv.render())
-            ),
+            render_demo_subvols(create_ops="create_ops", mutate_ops="mutate_ops"),
+            freeze(subvols).map(lambda sv: emit_non_unique_traversal_ids(sv.render())),
         )

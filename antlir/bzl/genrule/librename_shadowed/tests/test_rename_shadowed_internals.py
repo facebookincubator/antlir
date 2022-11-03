@@ -152,9 +152,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
             # Destination is a directory
             self.assertEqual(
                 None,
-                self._get_shadowed_rename_dest(
-                    b"/etc", td / "real_file_exists"
-                ),
+                self._get_shadowed_rename_dest(b"/etc", td / "real_file_exists"),
             )
             # Same inode
             self.assertEqual(
@@ -222,9 +220,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
             )
 
             with _capture_fd(2) as res:
-                self.assertEqual(
-                    0, self._rename(td / "gets_moved", td / "ok_dest")
-                )
+                self.assertEqual(0, self._rename(td / "gets_moved", td / "ok_dest"))
             self.assertEqual(
                 f"`rename({td}/gets_moved, {td}/ok_dest)` will replace "
                 + f"shadowed original `{shadow_td}/ok_dest`\n",
@@ -254,9 +250,7 @@ class TestRenameShadowedInternals(unittest.TestCase):
             )
 
             with _capture_fd(2) as res:
-                self.assertEqual(
-                    0, self._rename(td / "also_moved", td / "unshadowed")
-                )
+                self.assertEqual(0, self._rename(td / "also_moved", td / "unshadowed"))
             self.assertEqual(b"", res.contents)
 
             self.assertFalse(os.path.exists(td / "also_moved"))

@@ -19,9 +19,7 @@ def build_env_map(environ: Mapping[str, str], infix: str) -> Dict[str, Any]:
     prefix = f"antlir_test__{infix}__"
     layer_output = Path(environ[prefix + "layer_output"])
     _, layer_feature_json = environ[prefix + "layer_feature_json"].split()
-    target_map = make_target_path_map(
-        environ[prefix + "target_path_pairs"].split()
-    )
+    target_map = make_target_path_map(environ[prefix + "target_path_pairs"].split())
     return {
         "layer_output": layer_output,
         "layer_feature_json": layer_feature_json,

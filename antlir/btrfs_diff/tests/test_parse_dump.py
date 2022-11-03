@@ -28,9 +28,7 @@ from antlir.tests.common import AntlirTestCase
 
 
 def _parse_demo_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
-    return list(
-        parse_demo_sendstreams_btrfs_dump(io.BytesIO(b"\n".join(s) + b"\n"))
-    )
+    return list(parse_demo_sendstreams_btrfs_dump(io.BytesIO(b"\n".join(s) + b"\n")))
 
 
 def _parse_lines_to_list(s: Sequence[bytes]) -> List[SendStreamItem]:
@@ -77,9 +75,7 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
             "utimes",
             # Omitted since `--dump` never prints data: 'write',
         }
-        self.assertEqual(
-            {n.decode() for n in NAME_TO_PARSER_TYPE.keys()}, expected_ops
-        )
+        self.assertEqual({n.decode() for n in NAME_TO_PARSER_TYPE.keys()}, expected_ops)
 
         # Now check that `demo_sendstream.py` also exercises those operations.
         stream_dict = make_demo_sendstreams(Path(sys.argv[0]))
@@ -134,9 +130,7 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
         ok_line = b"mkfile ./s/cat\\ and\\ dog"  # Drive-by test of unquoting
         self.assertEqual(
             [
-                SendStreamItems.subvol(
-                    path=b"s", uuid=uuid.encode(), transid=12
-                ),
+                SendStreamItems.subvol(path=b"s", uuid=uuid.encode(), transid=12),
                 SendStreamItems.mkfile(path=b"cat and dog"),
             ],
             _parse_lines_to_list([subvol_line, ok_line]),
@@ -174,12 +168,8 @@ class ParseBtrfsDumpTestCase(AntlirTestCase):
         for data in (b"MY_DATA", b"MY_DATA\0"):
             self.assertEqual(
                 [
-                    SendStreamItems.subvol(
-                        path=b"s", uuid=uuid.encode(), transid=7
-                    ),
-                    SendStreamItems.set_xattr(
-                        path=b"file", name=b"MY_ATTR", data=data
-                    ),
+                    SendStreamItems.subvol(path=b"s", uuid=uuid.encode(), transid=7),
+                    SendStreamItems.set_xattr(path=b"file", name=b"MY_ATTR", data=data),
                     # The `--dump` line does NOT show the \0, the parser infers
                     # it.
                 ],

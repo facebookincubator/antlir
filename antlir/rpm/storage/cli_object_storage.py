@@ -33,9 +33,7 @@ class _StorageRemover(NamedTuple):
                 self.storage._remove_cmd(
                     # pyre-fixme[16]: `Storage` has no attribute
                     # `_path_for_storage_id`.
-                    path=self.storage._path_for_storage_id(
-                        self.storage.strip_key(sid)
-                    )
+                    path=self.storage._path_for_storage_id(self.storage.strip_key(sid))
                 ),
                 # pyre-fixme[16]: `Storage` has no attribute `_configured_env`.
                 env=self.storage._configured_env(),
@@ -122,9 +120,7 @@ class CLIObjectStorage(Storage):
                         # innermost remover.
                         subprocess.run(
                             ["setsid"]
-                            + self._remove_cmd(
-                                path=self._path_for_storage_id(sid)
-                            ),
+                            + self._remove_cmd(path=self._path_for_storage_id(sid)),
                             env=self._configured_env(),
                             stdout=2,
                         )
@@ -133,9 +129,7 @@ class CLIObjectStorage(Storage):
                     # f-string is ensured by `flake8`.
                     except Exception:  # pragma: no cover
                         # Log & ignore: we'll re-raise the original exception
-                        log.exception(
-                            f"{log_prefix} - While cleaning up partial {sid}"
-                        )
+                        log.exception(f"{log_prefix} - While cleaning up partial {sid}")
                     raise
                 yield sid
 
@@ -170,9 +164,7 @@ class CLIObjectStorage(Storage):
             #  `Optional[typing.IO[typing.Any]]`.
             yield StorageInput(input=proc.stdout)
             log.debug(f"{log_prefix} - Waiting for {path} GET")
-        log.debug(
-            f"{log_prefix} - Exit code {proc.returncode} from  {path} GET"
-        )
+        log.debug(f"{log_prefix} - Exit code {proc.returncode} from  {path} GET")
         # No `finally`: this doesn't need to run if the context block raises.
         check_popen_returncode(proc)
 

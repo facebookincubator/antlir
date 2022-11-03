@@ -30,11 +30,7 @@ def _run(argv):
 
 def _clean_err(err):
     logging.info(f"From wrapper:\n{err}")
-    err = [
-        l
-        for l in err.split("\n")
-        if not re.search(r"D.+recv_fds_and_run.py:", l)
-    ]
+    err = [l for l in err.split("\n") if not re.search(r"D.+recv_fds_and_run.py:", l)]
     assert err[-1] == ""  # `split` will always leave us at least one empty str
     return err[:-1]
 
@@ -75,10 +71,7 @@ class SendFdsAndRunTestCase(unittest.TestCase):
             self.assertEqual((0, "/\n", []), (ret, out, _clean_err(err)))
 
             # Exercise actual FD passing, both input and output
-            with pipe() as (r_fd4, w_fd4), pipe() as (
-                r_fd3,
-                w_fd3,
-            ), subprocess.Popen(
+            with pipe() as (r_fd4, w_fd4), pipe() as (r_fd3, w_fd3,), subprocess.Popen(
                 ["echo", "hi-diddly-ho"], stdout=w_fd4
             ), tempfile.TemporaryFile() as tf:
                 w_fd4.close()  # or the Flanders cat might wait forever

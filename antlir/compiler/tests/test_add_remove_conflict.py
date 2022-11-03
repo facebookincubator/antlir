@@ -6,7 +6,6 @@
 
 import unittest
 
-from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource_subvol
 from antlir.tests.subvol_helpers import get_meta_dir_contents, render_subvol
 

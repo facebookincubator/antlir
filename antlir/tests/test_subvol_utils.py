@@ -168,9 +168,7 @@ class SubvolTestCase(AntlirTestCase):
         with temp_dir() as td:
             with unittest.mock.patch(
                 "antlir.subvol_utils._path_is_btrfs_subvol",
-                unittest.mock.Mock(
-                    side_effect=lambda path: path.startswith(td)
-                ),
+                unittest.mock.Mock(side_effect=lambda path: path.startswith(td)),
             ):
                 sv = Subvol(td, already_exists=True)
                 os.mkdir(td / "real")
@@ -178,9 +176,7 @@ class SubvolTestCase(AntlirTestCase):
                 os.symlink("real/file", td / "indirect1")
                 os.mkdir(td / "indirect2")
                 os.symlink("../indirect1", td / "indirect2/link")
-                self.assertEqual(
-                    b"/real/file", sv.canonicalize_path("indirect2/link")
-                )
+                self.assertEqual(b"/real/file", sv.canonicalize_path("indirect2/link"))
                 self.assertEqual(b"/", sv.canonicalize_path("./."))
 
     @with_temp_subvols
@@ -206,9 +202,9 @@ class SubvolTestCase(AntlirTestCase):
     def test_receive(self, temp_subvols):
         new_subvol_name = "differs_from_create_ops"
         sv = temp_subvols.caller_will_create(new_subvol_name)
-        with open(
-            Path(__file__).dirname() / "create_ops.sendstream"
-        ) as f, sv.receive(f):
+        with open(Path(__file__).dirname() / "create_ops.sendstream") as f, sv.receive(
+            f
+        ):
             pass
         self.assertEqual(
             render_demo_subvols(create_ops=new_subvol_name), render_subvol(sv)
@@ -242,9 +238,7 @@ class SubvolTestCase(AntlirTestCase):
                 ]
             )
 
-        demo_render = render_demo_as_corrupted_by_gnu_tar(
-            create_ops=demo_sv_name
-        )
+        demo_render = render_demo_as_corrupted_by_gnu_tar(create_ops=demo_sv_name)
 
         self.assertEqual(demo_render, render_subvol(unpacked_sv))
 
@@ -355,9 +349,7 @@ class SubvolTestCase(AntlirTestCase):
             sv = ts.create("test1")
             # Write a file with random data.  53kb because the size doesn't
             # really matter and prime is the coolest.
-            sv.overwrite_path_as_root(
-                Path("data"), contents=os.urandom(53 * KiB)
-            )
+            sv.overwrite_path_as_root(Path("data"), contents=os.urandom(53 * KiB))
             estimated_fs_bytes = sv.estimate_content_bytes()
 
             # This _should_ be 54272 to match the exact number of bytes

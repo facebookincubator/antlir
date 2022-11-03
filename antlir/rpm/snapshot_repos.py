@@ -50,9 +50,7 @@ from antlir.rpm.storage import Storage
 from antlir.rpm.yum_dnf_conf import YumDnf, YumDnfConfParser, YumDnfConfRepo
 
 try:
-    from antlir.rpm.facebook.validate_universe_name import (
-        fb_validate_universe_name,
-    )
+    from antlir.rpm.facebook.validate_universe_name import fb_validate_universe_name
 except ImportError:  # pragma: no cover
 
     def fb_validate_universe_name(repo: YumDnfConfRepo, name: str):
@@ -89,11 +87,7 @@ def _write_confs_get_repos(
                 out.seek(0)
                 new_content = out.read()
             yum_dnf_repos.append(
-                set(
-                    YumDnfConfParser(
-                        YumDnf.dnf, StringIO(new_content)
-                    ).gen_repos()
-                )
+                set(YumDnfConfParser(YumDnf.dnf, StringIO(new_content)).gen_repos())
             )
 
     # Only cento7 and centos8 use both yum.conf and dnf.conf.
@@ -262,12 +256,8 @@ def snapshot_repos_from_args(
         snapshot_repos(
             dest=td,
             repo_to_universe=repo_to_universe,
-            yum_conf_content=args.yum_conf.read_text()
-            if args.yum_conf
-            else None,
-            dnf_conf_content=args.dnf_conf.read_text()
-            if args.dnf_conf
-            else None,
+            yum_conf_content=args.yum_conf.read_text() if args.yum_conf else None,
+            dnf_conf_content=args.dnf_conf.read_text() if args.dnf_conf else None,
             db_cfg=args.db,
             storage_cfg=args.storage,
             rpm_shard=args.rpm_shard,

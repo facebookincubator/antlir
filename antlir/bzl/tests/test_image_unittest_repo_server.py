@@ -16,9 +16,7 @@ from antlir.tests.flavor_helpers import get_rpm_installers_supported
 
 class ImageUnittestTestRepoServer(unittest.TestCase):
     def test_install_rpm(self) -> None:
-        snapshot_dir = snapshot_install_dir(
-            antlir_dep("rpm:repo-snapshot-for-tests")
-        )
+        snapshot_dir = snapshot_install_dir(antlir_dep("rpm:repo-snapshot-for-tests"))
         for prog in get_rpm_installers_supported():
             with temp_dir() as td:
                 os.mkdir(td / ".meta")

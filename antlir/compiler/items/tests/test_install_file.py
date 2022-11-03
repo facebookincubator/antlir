@@ -33,9 +33,7 @@ def _install_file_item(**kwargs):
     # The dummy object works here because `subvolumes_dir` of `None` runs
     # `artifacts_dir` internally, while our "prod" path uses the
     # already-computed value.
-    return image_source_item(InstallFileItem, layer_opts=DUMMY_LAYER_OPTS)(
-        **kwargs
-    )
+    return image_source_item(InstallFileItem, layer_opts=DUMMY_LAYER_OPTS)(**kwargs)
 
 
 class InstallFileItemTestCase(BaseItemTestCase):
@@ -53,9 +51,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             exe_item = _install_file_item(
                 from_target="t", source={"source": tf.name}, dest="d/c"
             )
-        ep = _InstallablePath(
-            Path(tf.name), ProvidesFile(path=Path("d/c")), 0o555
-        )
+        ep = _InstallablePath(Path(tf.name), ProvidesFile(path=Path("d/c")), 0o555)
         self.assertEqual((ep,), exe_item._paths)
         self.assertEqual(tf.name.encode(), exe_item.source)
         self._check_item(
@@ -106,9 +102,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             dest="cheese2",
         )
         source_path = layer.path(path_in_layer)
-        p = _InstallablePath(
-            source_path, ProvidesFile(path=Path("cheese2")), 0o444
-        )
+        p = _InstallablePath(source_path, ProvidesFile(path=Path("cheese2")), 0o444)
         self.assertEqual((p,), item._paths)
         self.assertEqual(source_path, item.source)
         self._check_item(
@@ -171,9 +165,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 from_target="t", source={"source": "/dev/null"}, dest="d/c"
             )
         with self.assertRaisesRegex(RuntimeError, " neither a file nor a dir"):
-            _install_file_item(
-                from_target="t", source={"source": "/dev"}, dest="d/c"
-            )
+            _install_file_item(from_target="t", source={"source": "/dev"}, dest="d/c")
 
     @with_mocked_temp_volume_dir
     def test_install_file_command_recursive(self):
@@ -194,9 +186,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                 )
 
                 ps = [
-                    _InstallablePath(
-                        td, ProvidesDirectory(path=Path("d/a")), 0o755
-                    ),
+                    _InstallablePath(td, ProvidesDirectory(path=Path("d/a")), 0o755),
                     _InstallablePath(
                         td / "data.txt",
                         ProvidesFile(path=Path("d/a/data.txt")),
@@ -259,8 +249,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
         with temp_dir() as td:
             arg_max = os.sysconf(os.sysconf_names["SC_ARG_MAX"])
             paths = [
-                f"{td}/{i:0120d}"
-                for i in range(10 + arg_max // (len(td) + 1 + 120))
+                f"{td}/{i:0120d}" for i in range(10 + arg_max // (len(td) + 1 + 120))
             ]
             # simple check that the large exec behavior would otherwise be
             # triggered by this test case
@@ -284,10 +273,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
                         {
                             "d": [
                                 "(Dir)",
-                                {
-                                    os.path.basename(p): ["(File m444)"]
-                                    for p in paths
-                                },
+                                {os.path.basename(p): ["(File m444)"] for p in paths},
                             ]
                         },
                     ],

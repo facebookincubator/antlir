@@ -242,9 +242,7 @@ class _CloneOp(NamedTuple):
     __ge__ = _clone_op_compare(tuple.__ge__)
 
 
-def _leaf_extent_id_to_clone_ops(
-    ids_and_extents: Iterable[Tuple[InodeID, Extent]]
-):
+def _leaf_extent_id_to_clone_ops(ids_and_extents: Iterable[Tuple[InodeID, Extent]]):
     """
     To collect the parts of a Chunk that are cloned, we will run a variation
     on the standard interval-overlap algorithm.  We first sort the starts &
@@ -334,14 +332,10 @@ def _leaf_ref_to_chunk_clones_from_clone_ops(
     return leaf_ref_to_chunk_clones
 
 
-def _id_to_leaf_idx_to_chunk_clones(
-    ids_and_extents: Iterable[Tuple[InodeID, Extent]]
-):
+def _id_to_leaf_idx_to_chunk_clones(ids_and_extents: Iterable[Tuple[InodeID, Extent]]):
     'Aggregates newly created ChunkClones per InodeID, and per "trimmed leaf"'
     id_to_leaf_idx_to_chunk_clones = defaultdict(dict)
-    for extent_id, clone_ops in _leaf_extent_id_to_clone_ops(
-        ids_and_extents
-    ).items():
+    for extent_id, clone_ops in _leaf_extent_id_to_clone_ops(ids_and_extents).items():
         leaf_ref_to_chunk_clones = _leaf_ref_to_chunk_clones_from_clone_ops(
             extent_id, clone_ops
         )
@@ -368,9 +362,7 @@ def extents_to_chunks_with_clones(
     described in this file's docblock.  The `InodeID`s are needed to ensure
     that the `Chunk`s' `Clone` objects refer to the appropriate files.
     """
-    id_to_leaf_idx_to_chunk_clones = _id_to_leaf_idx_to_chunk_clones(
-        ids_and_extents
-    )
+    id_to_leaf_idx_to_chunk_clones = _id_to_leaf_idx_to_chunk_clones(ids_and_extents)
     for ino_id, extent in ids_and_extents:
         leaf_to_chunk_clones = id_to_leaf_idx_to_chunk_clones.get(ino_id, {})
         new_chunks = []

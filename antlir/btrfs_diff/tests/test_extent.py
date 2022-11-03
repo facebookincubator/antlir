@@ -47,9 +47,7 @@ class ExtentTestCase(AntlirTestCase):
 
     def test_write_and_clone(self) -> None:
         # 3-byte hole, 4-byte data, 5-byte hole, 6-byte data
-        four = (
-            Extent.empty().write(offset=3, length=4).write(offset=12, length=6)
-        )
+        four = Extent.empty().write(offset=3, length=4).write(offset=12, length=6)
         self.assertEqual("h3d4h5d6", repr(four))
         _, _, (a, b, c, d) = zip(*four.gen_trimmed_leaves())
         # The "Control run" below will check that we preserved object identity.
@@ -69,9 +67,7 @@ class ExtentTestCase(AntlirTestCase):
 
         # An extent-to-clone with a little nesting -- but its content
         # should not matter for the result, it just affects the leaves.
-        clone = (
-            Extent.empty().write(offset=7, length=5).write(offset=5, length=4)
-        )
+        clone = Extent.empty().write(offset=7, length=5).write(offset=5, length=4)
         self.assertEqual("h5d7", repr(clone))  # repr merged two DATA leaves
         _, _, (ca, cb, cc) = zip(*clone.gen_trimmed_leaves())
         self.assertEqual(
@@ -362,9 +358,7 @@ class ExtentTestCase(AntlirTestCase):
                     from_offset=0,
                     length=clone.length,
                 ),
-                result=Extent(
-                    (Extent((one,), 0, 3), clone), 0, clone.length + 3
-                ),
+                result=Extent((Extent((one,), 0, 3), clone), 0, clone.length + 3),
                 leaves=[(0, 3, one), *clone_leaves],
             ),
             SimpleNamespace(
@@ -446,9 +440,7 @@ class ExtentTestCase(AntlirTestCase):
     #
     # Additionally, it contributes "complex" case coverage for `truncate`.
     def test_leaf_commutativity(self) -> None:
-        clone = (
-            Extent.empty().write(offset=0, length=2).write(offset=3, length=1)
-        )
+        clone = Extent.empty().write(offset=0, length=2).write(offset=3, length=1)
         self.assertEqual("d2h1d1", repr(clone))
         # If we treat as identical holes of different provenance but the
         # same length, these operations should commute since they write data

@@ -10,11 +10,7 @@ import subprocess
 from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
 
 from antlir.bzl.loopback_opts import loopback_opts_t
-from antlir.cli import (
-    add_targets_and_outputs_arg,
-    init_cli,
-    normalize_buck_path,
-)
+from antlir.cli import add_targets_and_outputs_arg, init_cli, normalize_buck_path
 from antlir.common import check_popen_returncode, get_logger
 from antlir.config import repo_config
 from antlir.errors import UserError
@@ -67,17 +63,13 @@ class Sendstream(Format, format_name="sendstream"):
     See the script-level docs for details on supporting incremental ones.
     """
 
-    def package_full(
-        self, subvol: Subvol, output_path: Path, opts: _Opts
-    ) -> None:
+    def package_full(self, subvol: Subvol, output_path: Path, opts: _Opts) -> None:
         with TempSubvolumes() as ts:
             assert opts.subvol_name is not None
             renamed = ts.snapshot(subvol, opts.subvol_name)
             with create_ro(
                 output_path, "wb"
-            ) as f, renamed.mark_readonly_and_write_sendstream_to_file(
-                outfile=f
-            ):
+            ) as f, renamed.mark_readonly_and_write_sendstream_to_file(outfile=f):
                 pass
 
 
@@ -87,9 +79,7 @@ class SendstreamV2(Format, format_name="sendstream.v2"):
     v2 format, which allows for internally compressed extents.
     """
 
-    def package_full(
-        self, subvol: Subvol, output_path: Path, opts: _Opts
-    ) -> None:
+    def package_full(self, subvol: Subvol, output_path: Path, opts: _Opts) -> None:
         with Path.resource(
             __package__,
             "btrfs-send-stream-upgrade",
@@ -174,9 +164,7 @@ class SquashfsImage(Format, format_name="squashfs"):
       mount -t squashfs image.squashfs dest/ -o loop
     """
 
-    def package_full(
-        self, subvol: Subvol, output_path: str, opts: _Opts
-    ) -> None:
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts) -> None:
         create_ro(output_path, "wb").close()  # Ensure non-root ownership
         subvol.run_as_root(
             [
@@ -198,9 +186,7 @@ class TarballGzipImage(Format, format_name="tar.gz"):
       tar xzf image.tar.gz -C dest/
     """
 
-    def package_full(
-        self, subvol: Subvol, output_path: str, opts: _Opts
-    ) -> None:
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts) -> None:
         with create_ro(output_path, "wb") as outfile, subprocess.Popen(
             ["gzip", "--stdout"],
             stdin=subprocess.PIPE,
@@ -218,9 +204,7 @@ class CPIOGzipImage(Format, format_name="cpio.gz"):
     Packages the subvol as a gzip-compressed cpio.
     """
 
-    def package_full(
-        self, subvol: Subvol, output_path: str, opts: _Opts
-    ) -> None:
+    def package_full(self, subvol: Subvol, output_path: str, opts: _Opts) -> None:
         work_dir = generate_work_dir()
 
         # This command is partly based on the recomendations of
@@ -315,9 +299,7 @@ class VfatImage(Format, format_name="vfat"):
     packaging regular files/dirs into a vfat image.
     """
 
-    def package_full(
-        self, subvol: Subvol, output_path: Path, opts: _Opts
-    ) -> None:
+    def package_full(self, subvol: Subvol, output_path: Path, opts: _Opts) -> None:
         if opts.loopback_opts.size_mb is None:
             raise ValueError(
                 "loopback_opts.size_mb is required when packaging a vfat image"
@@ -353,9 +335,7 @@ class Ext3Image(Format, format_name="ext3"):
       mount -t ext3 image.ext3 dest/ -o loop
     """
 
-    def package_full(
-        self, subvol: Subvol, output_path: Path, opts: _Opts
-    ) -> None:
+    def package_full(self, subvol: Subvol, output_path: Path, opts: _Opts) -> None:
         if opts.loopback_opts.size_mb is None:
             raise ValueError(
                 "loopback_opts.size_mb is required when packaging an ext3 image"

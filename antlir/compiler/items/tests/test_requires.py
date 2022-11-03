@@ -6,11 +6,7 @@
 
 from antlir.compiler.items.requires import RequiresItem
 from antlir.compiler.items.tests.common import BaseItemTestCase
-from antlir.compiler.requires_provides import (
-    RequireFile,
-    RequireGroup,
-    RequireUser,
-)
+from antlir.compiler.requires_provides import RequireFile, RequireGroup, RequireUser
 from antlir.fs_utils import Path
 
 

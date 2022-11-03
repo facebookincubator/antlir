@@ -45,11 +45,7 @@ class SymlinkItemsTestCase(BaseItemTestCase):
             SymlinkToFileItem(
                 from_target="t", source="source_file", dest="dest_symlink"
             ),
-            {
-                ProvidesSymlink(
-                    path=Path("dest_symlink"), target=Path("source_file")
-                )
-            },
+            {ProvidesSymlink(path=Path("dest_symlink"), target=Path("source_file"))},
             {
                 RequireDirectory(path=Path("/")),
                 RequireFile(path=Path("/source_file")),
@@ -125,13 +121,13 @@ class SymlinkItemsTestCase(BaseItemTestCase):
 
             # We need a source file to validate a SymlinkToFileItem
             with tempfile.NamedTemporaryFile() as tf:
-                InstallFileItem(
-                    from_target="t", source=tf.name, dest="/file"
-                ).build(subvol, layer_opts)
+                InstallFileItem(from_target="t", source=tf.name, dest="/file").build(
+                    subvol, layer_opts
+                )
 
-            SymlinkToDirItem(
-                from_target="t", source="/dir", dest="/dir_symlink"
-            ).build(subvol, layer_opts)
+            SymlinkToDirItem(from_target="t", source="/dir", dest="/dir_symlink").build(
+                subvol, layer_opts
+            )
             SymlinkToFileItem(
                 from_target="t", source="file", dest="/file_symlink"
             ).build(subvol, layer_opts)

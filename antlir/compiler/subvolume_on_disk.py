@@ -33,11 +33,7 @@ _BUILD_APPLIANCE_PATH = "build_appliance_path"  # (1-3)
 
 
 def _parent_uuid(info: SubvolumeInfo) -> Optional[str]:
-    return (
-        str(UUID(bytes=info.parent_uuid))
-        if info.parent_uuid != b"\0" * 16
-        else None
-    )
+    return str(UUID(bytes=info.parent_uuid)) if info.parent_uuid != b"\0" * 16 else None
 
 
 class SubvolumeOnDisk(
@@ -105,9 +101,7 @@ class SubvolumeOnDisk(
         return self
 
     @classmethod
-    def from_serializable_dict(
-        cls, d, subvolumes_dir: Path
-    ) -> "SubvolumeOnDisk":
+    def from_serializable_dict(cls, d, subvolumes_dir: Path) -> "SubvolumeOnDisk":
         subvol_rel_path = Path(d[_SUBVOLUME_REL_PATH])
         # This is copypasta of subvolume_path() but I need it before
         # creating the object. The assert below keeps them in sync.
@@ -173,9 +167,7 @@ class SubvolumeOnDisk(
         }
         # Self-test -- there should be no way for this assertion to fail
         new_self = self.from_serializable_dict(d, self.subvolumes_base_dir)
-        assert (
-            self == new_self
-        ), f"Got {new_self} from {d}, when serializing {self}"
+        assert self == new_self, f"Got {new_self} from {d}, when serializing {self}"
         return d
 
     @classmethod

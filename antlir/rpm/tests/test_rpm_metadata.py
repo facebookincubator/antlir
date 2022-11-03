@@ -31,9 +31,7 @@ from antlir.tests.layer_resource import layer_resource_subvol
 
 class RpmMetadataTestCase(unittest.TestCase):
     def _load_canonical_tests(self):
-        STMT = re.compile(
-            r"(.*)RPMVERCMP\(([^, ]*) *, *([^, ]*) *, *([^\)]*)\).*"
-        )
+        STMT = re.compile(r"(.*)RPMVERCMP\(([^, ]*) *, *([^, ]*) *, *([^\)]*)\).*")
 
         for line in importlib.resources.open_text(
             "antlir.rpm", "version-compare-tests"
@@ -55,27 +53,19 @@ class RpmMetadataTestCase(unittest.TestCase):
 
         # not installed
         with self.assertRaises(RpmNotInstalledError):
-            a = RpmMetadata.from_subvol(
-                child_subvol, ba_subvol, "rpm-test-carrot"
-            )
+            a = RpmMetadata.from_subvol(child_subvol, ba_subvol, "rpm-test-carrot")
 
         # subvol with no RPM DB
         layer_path = os.path.join(os.path.dirname(__file__), "hello-layer")
         hello_subvol = find_built_subvol(layer_path)
         with self.assertRaisesRegex(ValueError, " does not exist$"):
-            a = RpmMetadata.from_subvol(
-                hello_subvol, ba_subvol, "rpm-test-mice"
-            )
+            a = RpmMetadata.from_subvol(hello_subvol, ba_subvol, "rpm-test-mice")
 
     def test_rpm_metadata_from_file(self):
         with temp_repos_steps(
             gpg_signing_key=get_test_signing_key(),
             repo_change_steps=[
-                {
-                    "repo": Repo(
-                        [Rpm("sheep", "0.3.5.beta", "l33t.deadbeef.777")]
-                    )
-                }
+                {"repo": Repo([Rpm("sheep", "0.3.5.beta", "l33t.deadbeef.777")])}
             ],
         ) as repos_root, temp_dir() as td:
             src_rpm_path = repos_root / (

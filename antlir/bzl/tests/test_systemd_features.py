@@ -54,9 +54,7 @@ unit_test_specs: List[SystemdUnitTestSpec] = [
         target_dep_type="wants",
         dropin_name="cheese-dropin-with-dest.conf",
     ),
-    SystemdUnitTestSpec(
-        "cheese-generated.service", dropin_name="cheese-dropin.conf"
-    ),
+    SystemdUnitTestSpec("cheese-generated.service", dropin_name="cheese-dropin.conf"),
     SystemdUnitTestSpec(
         "cheese-source.service",
         dropin_name="cheese-dropin.conf",
@@ -101,9 +99,7 @@ class TestSystemdFeatures(unittest.TestCase):
             # Make sure it's enabled where it should be
             if unit.enabled_target:
                 link_name = (
-                    unit.enabled_link_name
-                    if unit.enabled_link_name
-                    else unit.name
+                    unit.enabled_link_name if unit.enabled_link_name else unit.name
                 )
                 enabled_in_target = (
                     unit.installed_root
@@ -111,12 +107,8 @@ class TestSystemdFeatures(unittest.TestCase):
                     / link_name
                 )
 
-                self.assertTrue(
-                    os.path.islink(enabled_in_target), enabled_in_target
-                )
-                self.assertTrue(
-                    os.path.isfile(enabled_in_target), enabled_in_target
-                )
+                self.assertTrue(os.path.islink(enabled_in_target), enabled_in_target)
+                self.assertTrue(os.path.isfile(enabled_in_target), enabled_in_target)
 
             # make sure it's *not* enabled where it shouldn't be
             for avail_target in [
@@ -125,8 +117,7 @@ class TestSystemdFeatures(unittest.TestCase):
                 if unit.enabled_target
                 and (
                     avail.basename() != _tdep(unit.enabled_target, "wants")
-                    and avail.basename()
-                    != _tdep(unit.enabled_target, "requires")
+                    and avail.basename() != _tdep(unit.enabled_target, "requires")
                 )
             ]:
                 # pyre-fixme[61]: `link_name` is undefined, or not always defined.

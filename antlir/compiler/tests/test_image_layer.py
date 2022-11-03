@@ -11,9 +11,7 @@ import unittest
 from contextlib import contextmanager
 
 from antlir.artifacts_dir import find_repo_root
-from antlir.btrfs_diff.tests.demo_sendstreams_expected import (
-    render_demo_subvols,
-)
+from antlir.btrfs_diff.tests.demo_sendstreams_expected import render_demo_subvols
 from antlir.compiler.items.meta_key_value_store import (
     load_meta_key_value_store_items,
     MetaKeyValueStoreItem,
@@ -24,10 +22,7 @@ from antlir.compiler.procfs_serde import deserialize_int
 from antlir.config import antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
-from antlir.tests.flavor_helpers import (
-    get_rpm_installers_supported,
-    render_flavor,
-)
+from antlir.tests.flavor_helpers import get_rpm_installers_supported, render_flavor
 from antlir.tests.layer_resource import layer_resource, LAYER_SLASH_ENCODE
 from antlir.tests.subvol_helpers import (
     check_common_rpm_render,
@@ -90,21 +85,16 @@ class ImageLayerTestCase(unittest.TestCase):
             b"rpm_test/hello_world.tar",
             b"foo/bar/even_more_hello_world.tar",
         ]:
-            self.assertTrue(
-                os.path.isfile(os.path.join(subvol_path, path)), path
-            )
+            self.assertTrue(os.path.isfile(os.path.join(subvol_path, path)), path)
 
         # :feature_dirs not tested by :parent_layer
-        self.assertTrue(
-            os.path.isdir(os.path.join(subvol_path, b"foo/bar/baz"))
-        )
+        self.assertTrue(os.path.isdir(os.path.join(subvol_path, b"foo/bar/baz")))
         self.assertTrue(os.path.isdir(os.path.join(subvol_path, b"alpha/beta")))
 
         # :hello_world_base has a mount entry in the meta.  Note that this
         # *does not* validate that the mount itself exists.
         self.assertTrue(
-            "mounted_hello"
-            in (m.mountpoint for m in mounts_from_meta(subvol.path()))
+            "mounted_hello" in (m.mountpoint for m in mounts_from_meta(subvol.path()))
         )
 
         # :feature_symlinks
@@ -120,12 +110,8 @@ class ImageLayerTestCase(unittest.TestCase):
                 ),
                 (dest, source),
             )
-            self.assertTrue(
-                os.path.islink(os.path.join(subvol_path, dest)), dest
-            )
-            self.assertEqual(
-                source, os.readlink(os.path.join(subvol_path, dest))
-            )
+            self.assertTrue(os.path.islink(os.path.join(subvol_path, dest)), dest)
+            self.assertEqual(source, os.readlink(os.path.join(subvol_path, dest)))
 
     def _check_child(self, subvol):
         subvol_path = subvol.path()
@@ -166,29 +152,17 @@ class ImageLayerTestCase(unittest.TestCase):
         with self.target_subvol("child/layer") as subvol:
             self._check_child(subvol)
         with self.target_subvol("base_cheese_layer") as subvol:
-            self.assertTrue(
-                os.path.isfile(subvol.path("/rpm_test/cheese2.txt"))
-            )
+            self.assertTrue(os.path.isfile(subvol.path("/rpm_test/cheese2.txt")))
         with self.target_subvol("older_cheese_layer") as subvol:
-            self.assertTrue(
-                os.path.isfile(subvol.path("/rpm_test/cheese1.txt"))
-            )
+            self.assertTrue(os.path.isfile(subvol.path("/rpm_test/cheese1.txt")))
             # Make sure the original file is removed when the RPM is downgraded
-            self.assertFalse(
-                os.path.isfile(subvol.path("/rpm_test/cheese2.txt"))
-            )
+            self.assertFalse(os.path.isfile(subvol.path("/rpm_test/cheese2.txt")))
         with self.target_subvol("newer_cheese_layer") as subvol:
-            self.assertTrue(
-                os.path.isfile(subvol.path("/rpm_test/cheese3.txt"))
-            )
+            self.assertTrue(os.path.isfile(subvol.path("/rpm_test/cheese3.txt")))
             # Make sure the original file is removed when the RPM is upgraded
-            self.assertFalse(
-                os.path.isfile(subvol.path("/rpm_test/cheese2.txt"))
-            )
+            self.assertFalse(os.path.isfile(subvol.path("/rpm_test/cheese2.txt")))
         with self.target_subvol("reinstall_cheese_layer") as subvol:
-            self.assertTrue(
-                os.path.isfile(subvol.path("/rpm_test/cheese2.txt"))
-            )
+            self.assertTrue(os.path.isfile(subvol.path("/rpm_test/cheese2.txt")))
 
     def test_layer_from_demo_sendstreams(self):
         # `btrfs_diff.demo_sendstream` produces a subvolume send-stream with
@@ -219,9 +193,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 },
             ),
         ]:
-            with self.target_subvol(
-                subvol_name, mount_config=mount_config
-            ) as sv:
+            with self.target_subvol(subvol_name, mount_config=mount_config) as sv:
                 rendered_subvol = render_subvol(sv)
                 self.assertEqual(
                     get_meta_dir_contents(subvol=sv),
@@ -278,9 +250,10 @@ class ImageLayerTestCase(unittest.TestCase):
         "dnf not supported",
     )
     def test_dnf_build_appliance(self):
-        with self._check_build_appliance(
-            "validates-dnf-build-appliance", "dnf"
-        ) as (_, r):
+        with self._check_build_appliance("validates-dnf-build-appliance", "dnf") as (
+            _,
+            r,
+        ):
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr/lib"))
 
     @unittest.skipUnless(
@@ -288,9 +261,10 @@ class ImageLayerTestCase(unittest.TestCase):
         "yum not supported",
     )
     def test_yum_build_appliance(self):
-        with self._check_build_appliance(
-            "validates-yum-build-appliance", "yum"
-        ) as (_, r):
+        with self._check_build_appliance("validates-yum-build-appliance", "yum") as (
+            _,
+            r,
+        ):
             self.assertEqual(["(Dir)", {}], pop_path(r, "usr/lib"))
 
     def test_genrule_layer(self):

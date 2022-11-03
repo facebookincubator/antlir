@@ -642,8 +642,7 @@ def _new_nspawn_cli_args(**kwargs) -> _NspawnCLIArgs:
     # the `repo-server` under `--as-pid2` currently requires `root` to
     # unmount and remove our `_OUTER_PROC` mount.
     assert (
-        not args.plugin_args.serve_rpm_snapshots
-        or args.opts.user.pw_name == "root"
+        not args.plugin_args.serve_rpm_snapshots or args.opts.user.pw_name == "root"
     ), f"You must set --user=root to use --serve-rpm-snapshot: {args}"
     return args
 
@@ -677,9 +676,7 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     args = Path.parse_args(parser, argv)
 
     if allow_debug_only_opts and args.register:
-        assert (
-            args.register and args.boot
-        ), "--register can only be used with --boot"
+        assert args.register and args.boot, "--register can only be used with --boot"
 
     layer_path = args.layer_path
     del args.layer_path
@@ -709,9 +706,7 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
             args.__dict__,
             debug_only_opts=_extract_opts_from_dict(
                 _new_nspawn_debug_only_not_for_prod_opts,
-                _NspawnDebugOnlyNotForProdOpts._fields
-                if allow_debug_only_opts
-                else (),
+                _NspawnDebugOnlyNotForProdOpts._fields if allow_debug_only_opts else (),
                 args.__dict__,
             ),
         ),

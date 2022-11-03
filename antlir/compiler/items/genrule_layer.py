@@ -53,9 +53,7 @@ class GenruleLayerItem(genrule_layer_t):
                 layer=subvol,
                 snapshot=False,
                 cmd=item.cmd,
-                chdir=repo_config().repo_root
-                if item.bind_repo_ro
-                else Path("/"),
+                chdir=repo_config().repo_root if item.bind_repo_ro else Path("/"),
                 bindmount_ro=(
                     # The command can never change `/.meta`.
                     (subvol.path("/.meta"), "/.meta"),

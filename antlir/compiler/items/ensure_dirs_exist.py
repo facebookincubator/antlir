@@ -12,11 +12,7 @@ from typing import Iterator, Optional
 
 from antlir.bzl.image.feature.ensure_subdirs_exist import ensure_subdirs_exist_t
 
-from antlir.compiler.items.common import (
-    ImageItem,
-    LayerOpts,
-    make_path_normal_relative,
-)
+from antlir.compiler.items.common import ImageItem, LayerOpts, make_path_normal_relative
 from antlir.compiler.items.stat_options import build_stat_options
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
@@ -113,9 +109,7 @@ class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
 
         xattrs = os.listxattr(path_to_make)
         if xattrs:
-            raise MismatchError(
-                f"{path_to_make} had unexpected xattrs {xattrs}"
-            )
+            raise MismatchError(f"{path_to_make} had unexpected xattrs {xattrs}")
 
         if not path_to_make_exists:
             build_stat_options(

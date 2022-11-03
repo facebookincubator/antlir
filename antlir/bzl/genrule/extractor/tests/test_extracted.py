@@ -34,9 +34,7 @@ class TestExtracted(unittest.TestCase):
         # setup
         source_subvol = layer_resource_subvol(__package__, "source")
         self.assertTrue(source_subvol.path("/lib64").islink())
-        self.assertEqual(
-            source_subvol.path("/lib64").readlink(), Path("usr/lib64")
-        )
+        self.assertEqual(source_subvol.path("/lib64").readlink(), Path("usr/lib64"))
 
         subvol = layer_resource_subvol(__package__, "layer")
         self.assertEqual(subvol.path("/lib64").readlink(), Path("usr/lib64"))
@@ -49,16 +47,12 @@ class TestExtracted(unittest.TestCase):
             with self.subTest(path):
                 src = os.stat(src_subvol.path(path))
                 dst = os.stat(dst_subvol.path(path))
-                self.assertEqual(
-                    stat.filemode(src.st_mode), stat.filemode(dst.st_mode)
-                )
+                self.assertEqual(stat.filemode(src.st_mode), stat.filemode(dst.st_mode))
 
     def test_binaries_run(self):
         subvol = layer_resource_subvol(__package__, "layer")
         # repo built binary
-        subvol.run_as_root(
-            [subvol.path("/usr/bin/repo-built-binary")], check=True
-        )
+        subvol.run_as_root([subvol.path("/usr/bin/repo-built-binary")], check=True)
 
         # binary from rpms
         for binary in (
@@ -69,6 +63,4 @@ class TestExtracted(unittest.TestCase):
             # are properly loaded from within the image.layer and _not_ the
             # host environment.  We don't use systemd-nspawn here because it
             # requires a "real" os that has a passwd db and everything.
-            subvol.run_as_root(
-                ["chroot", subvol.path(), binary, "--help"], check=True
-            )
+            subvol.run_as_root(["chroot", subvol.path(), binary, "--help"], check=True)

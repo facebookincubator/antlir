@@ -47,9 +47,7 @@ class UpdatePackageDbTestBase:
         if not (os.path.exists(path)):
             db_dir = Path(path).dirname().dirname()
             # pyre-ignore[16]
-            self.fail(
-                f"File {path} did not exist, dir: {list(os.walk(db_dir))}"
-            )
+            self.fail(f"File {path} did not exist, dir: {list(os.walk(db_dir))}")
         with open(path) as infile:
             # pyre-ignore[16]
             self.assertEqual(content, infile.read())
@@ -97,9 +95,7 @@ class UpdatePackageDbTestBase:
     async def test_explicit_update(self) -> None:
         with temp_dir() as td:
             db_path = td / "idb"
-            _write_json_db(
-                db_path / "p1" / "tik.json", {"foo": "bar"}  # replaced
-            )
+            _write_json_db(db_path / "p1" / "tik.json", {"foo": "bar"})  # replaced
             _write_json_db(db_path / "p2" / "tok.json", {"a": "b"})  # preserved
             await self._update(
                 db=db_path,
@@ -156,17 +152,11 @@ class UpdatePackageDbTestBase:
             _write_json_db(db_path / "p2" / "b.json", {})
             # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute
             #  `assertRaisesRegex`.
-            with self.assertRaisesRegex(
-                updb.PackageExistsError, r".*create.*p1:a"
-            ):
+            with self.assertRaisesRegex(updb.PackageExistsError, r".*create.*p1:a"):
                 await self._update(
                     db=db_path,
                     pkg_updates={
-                        "p1": {
-                            "a": updb.PackageDbUpdate(
-                                updb.UpdateAction.CREATE, {}
-                            )
-                        }
+                        "p1": {"a": updb.PackageDbUpdate(updb.UpdateAction.CREATE, {})}
                     },
                 )
             with self.assertRaisesRegex(
@@ -175,11 +165,7 @@ class UpdatePackageDbTestBase:
                 await self._update(
                     db=db_path,
                     pkg_updates={
-                        "p2": {
-                            "c": updb.PackageDbUpdate(
-                                updb.UpdateAction.REPLACE, {}
-                            )
-                        }
+                        "p2": {"c": updb.PackageDbUpdate(updb.UpdateAction.REPLACE, {})}
                     },
                 )
 
@@ -194,9 +180,7 @@ class UpdatePackageDbTestBase:
         with temp_dir() as td:
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "tik.json", {"a": "b"})
-            _write_json_db(
-                db_path / "p2" / "tok.json", {"y": "z"}
-            )  # Will be deleted
+            _write_json_db(db_path / "p2" / "tok.json", {"y": "z"})  # Will be deleted
             await self._update(
                 db=db_path,
                 pkg_updates={
@@ -287,8 +271,7 @@ class UpdatePackageDbCliTestCase(
             with self.assertRaisesRegex(
                 RuntimeError,
                 # Don't rely on ordering of options in error message
-                r"(\{'c': 'd'\}.*\{'a': 'b'\})"
-                r"|(\{'a': 'b'\} .*\{'c': 'd'\})",
+                r"(\{'c': 'd'\}.*\{'a': 'b'\})" r"|(\{'a': 'b'\} .*\{'c': 'd'\})",
             ):
                 await updb.main_cli(
                     [
@@ -307,9 +290,7 @@ class UpdatePackageDbCliTestCase(
             db_path = td / "idb"
             _write_json_db(db_path / "p1" / "a.json", {})
             get_info_fn = _base_get_db_info_fn()
-            with self.assertRaisesRegex(
-                RuntimeError, "Invalid options specified"
-            ):
+            with self.assertRaisesRegex(RuntimeError, "Invalid options specified"):
                 await updb.main_cli(
                     [
                         f"--db={db_path}",
@@ -368,16 +349,12 @@ class UpdatePackageDbLibraryTestCase(
             )
             self._check_file(
                 db_path / "p1" / "tik.json",
-                _get_js_content(
-                    "3e6962dd153ee611fd6b78163d3d9ccd", {"xx": "zz"}
-                ),
+                _get_js_content("3e6962dd153ee611fd6b78163d3d9ccd", {"xx": "zz"}),
             )
             # Unchanged due to skippable exception
             self._check_file(
                 db_path / "p2" / "tok.json",
-                _get_js_content(
-                    "d677a771acf63e8058e979152dff8d06", {"a2": "b2"}
-                ),
+                _get_js_content("d677a771acf63e8058e979152dff8d06", {"a2": "b2"}),
             )
 
             # Now ensure an unskippable exception propagates

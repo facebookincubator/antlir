@@ -123,9 +123,7 @@ if __name__ == "__main__":  # pragma: no cover
     return_pipe = multiprocessing.connection.Connection(sys.stdout.fileno())
 
     if os.geteuid() != 0:
-        return_pipe.send(
-            RuntimeError("btrfsutil binary must be called as root")
-        )
+        return_pipe.send(RuntimeError("btrfsutil binary must be called as root"))
         sys.exit(1)
 
     func = args.func

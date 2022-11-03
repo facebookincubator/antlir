@@ -20,12 +20,8 @@ class EnvraTestCase(TestCase):
         self.assertEqual(e, e)
 
     def test_lt(self) -> None:
-        e0 = SortableENVRA(
-            epoch=0, name="n", version="v", release="r", arch="a"
-        )
-        e1 = SortableENVRA(
-            epoch=1, name="n", version="v", release="r", arch="a"
-        )
+        e0 = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
+        e1 = SortableENVRA(epoch=1, name="n", version="v", release="r", arch="a")
         self.assertTrue(e0 < e1)
 
     def test_repr(self) -> None:
@@ -76,12 +72,8 @@ class EnvraTestCase(TestCase):
         self.assertEqual(e.to_versionlock_line(), "0\tn\tv\tr\ta")
 
     def test_compare_returns_negative(self) -> None:
-        e0 = SortableENVRA(
-            epoch=0, name="m", version="v", release="r", arch="a"
-        )
-        e1 = SortableENVRA(
-            epoch=0, name="n", version="v", release="r", arch="a"
-        )
+        e0 = SortableENVRA(epoch=0, name="m", version="v", release="r", arch="a")
+        e1 = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
         self.assertTrue(e0 < e1)
 
     def test_compare_raise(self) -> None:
@@ -116,18 +108,12 @@ class EnvraTestCase(TestCase):
             self.assertTrue(e0 < e1)
 
     def test_compare_both_epochs_wildcard(self) -> None:
-        e = SortableENVRA(
-            epoch=None, name="n", version="v", release="r", arch="a"
-        )
+        e = SortableENVRA(epoch=None, name="n", version="v", release="r", arch="a")
         self.assertEqual(e, e)
 
     def test_compare_one_epoch_wildcard(self) -> None:
-        e0 = SortableENVRA(
-            epoch=None, name="n", version="v", release="r", arch="a"
-        )
-        e1 = SortableENVRA(
-            epoch=0, name="n", version="v", release="r", arch="a"
-        )
+        e0 = SortableENVRA(epoch=None, name="n", version="v", release="r", arch="a")
+        e1 = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
         with self.assertRaises(TypeError):
             self.assertEqual(e0, e1)
 
@@ -151,34 +137,22 @@ class EnvraTestCase(TestCase):
             # pyre-fixme[6]: For 5th param expected `str` but got `None`.
             arch=None,
         )
-        e1 = SortableENVRA(
-            epoch=0, name="n", version="v", release="r", arch="a"
-        )
+        e1 = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
         with self.assertRaises(TypeError):
             self.assertEqual(e0, e1)
 
     def test_compare_self_greater_than_other(self) -> None:
-        e0 = SortableENVRA(
-            epoch=0, name="n", version="v", release="r", arch="a"
-        )
-        e1 = SortableENVRA(
-            epoch=0, name="m", version="v", release="r", arch="a"
-        )
+        e0 = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
+        e1 = SortableENVRA(epoch=0, name="m", version="v", release="r", arch="a")
         self.assertFalse(e0 < e1)
 
     def test_compare_both_names_wildcard(self) -> None:
-        e = SortableENVRA(
-            epoch=0, name=None, version="v", release="r", arch="a"
-        )
+        e = SortableENVRA(epoch=0, name=None, version="v", release="r", arch="a")
         self.assertEqual(e, e)
 
     def test_compare_one_name_wildcard(self) -> None:
-        e0 = SortableENVRA(
-            epoch=0, name=None, version="v", release="r", arch="a"
-        )
-        e1 = SortableENVRA(
-            epoch=0, name="n", version="v", release="r", arch="a"
-        )
+        e0 = SortableENVRA(epoch=0, name=None, version="v", release="r", arch="a")
+        e1 = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
         with self.assertRaises(TypeError):
             self.assertEqual(e0, e1)
 

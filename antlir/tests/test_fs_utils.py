@@ -35,9 +35,7 @@ _BAD_UTF = b"\xc3("
 
 class TestFsUtils(unittest.TestCase):
     def test_path_basics(self) -> None:
-        self.assertEqual(
-            byteme(os.getcwd()) + b"/foo/bar", Path("foo/bar").abspath()
-        )
+        self.assertEqual(byteme(os.getcwd()) + b"/foo/bar", Path("foo/bar").abspath())
         self.assertEqual(b"/a/c", Path("/a/b/../c").realpath())
         self.assertEqual(b"foo/bar", Path("foo") / "bar")
         # pyre-fixme[58]: `/` is not supported for operand types `bytes` and `Any`.
@@ -190,9 +188,7 @@ class TestFsUtils(unittest.TestCase):
         # Demangle non-UTF bytes in the same way that `sys.argv` mangles them.
         self.assertEqual(
             _BAD_UTF,
-            Path.from_argparse(
-                ast.literal_eval(res.stdout.rstrip(b"\n").decode())
-            ),
+            Path.from_argparse(ast.literal_eval(res.stdout.rstrip(b"\n").decode())),
         )
 
     def test_normalized_subpath(self) -> None:
@@ -293,9 +289,7 @@ class TestFsUtils(unittest.TestCase):
 
     def test_path_str(self) -> None:
         self.assertEqual("a/b", str(Path("a/b")))
-        self.assertEqual(
-            _BAD_UTF.decode(errors="surrogateescape"), str(Path(_BAD_UTF))
-        )
+        self.assertEqual(_BAD_UTF.decode(errors="surrogateescape"), str(Path(_BAD_UTF)))
 
     def test_path_has_leading_dot_dot(self) -> None:
         self.assertTrue(Path("..").has_leading_dot_dot())
@@ -544,6 +538,4 @@ class TestFsUtils(unittest.TestCase):
         }
         for desc, test in tests.items():
             have = Path.join(*test.paths)
-            self.assertEqual(
-                have, test.want, f"{desc}: have={have}, want={test.want}"
-            )
+            self.assertEqual(have, test.want, f"{desc}: have={have}, want={test.want}")

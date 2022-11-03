@@ -28,9 +28,7 @@ class NspawnTestInSubvolTestCase(unittest.TestCase):
         self.assertEqual(
             ["--setenv=ANTLIR_DEBUG=1", "--setenv=TEST_PILOT=foo"],
             list(
-                forward_env_vars(
-                    {"a": "b", "ANTLIR_DEBUG": "1", "TEST_PILOT": "foo"}
-                )
+                forward_env_vars({"a": "b", "ANTLIR_DEBUG": "1", "TEST_PILOT": "foo"})
             ),
         )
 
