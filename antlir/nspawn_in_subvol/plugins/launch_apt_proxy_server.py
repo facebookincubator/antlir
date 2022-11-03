@@ -34,9 +34,7 @@ class AptProxyServer(ServerLauncher):
 
         if not bin_path:  # pragma: no cover
             raise RuntimeError("apt-proxy-server file could not be found.")
-        super().__init__(
-            port=DEB_PROXY_SERVER_PORT, sock=sock, bin_path=bin_path
-        )
+        super().__init__(port=DEB_PROXY_SERVER_PORT, sock=sock, bin_path=bin_path)
 
     def __format__(self, format_spec: str) -> str:
         return f"DebProxyServer(port={self.port})"

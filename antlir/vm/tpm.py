@@ -9,7 +9,7 @@ import os
 import subprocess
 import threading
 from dataclasses import dataclass, field
-from typing import Awaitable, Iterable, List, Union
+from typing import Iterable, List, Union
 
 from antlir.fs_utils import Path
 from antlir.unshare import Unshare
@@ -69,9 +69,7 @@ class VmTPM(object):
     def __post_init__(self):
         # sacrifices for a frozen instance with init fields, see:
         # https://docs.python.org/3/library/dataclasses.html#frozen-instances
-        object.__setattr__(
-            self, "sock_path", self.context_path / "tpm_ctrl.sock"
-        )
+        object.__setattr__(self, "sock_path", self.context_path / "tpm_ctrl.sock")
         object.__setattr__(self, "state_path", self.context_path / "tpm_state")
         os.mkdir(self.state_path)
 

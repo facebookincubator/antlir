@@ -20,8 +20,6 @@ import hashlib
 import inspect
 import os
 import socket
-import subprocess
-import tempfile
 from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from antlir.bzl_const import hostname_for_compiler_in_ba
@@ -174,24 +172,20 @@ class ImageItem:
             fields=[
                 f
                 for f in dataclasses.fields(self)
-                if f._field_type
-                in (dataclasses._FIELD, dataclasses._FIELD_INITVAR)
+                if f._field_type in (dataclasses._FIELD, dataclasses._FIELD_INITVAR)
             ],
             frozen=True,
             has_post_init=False,
             self_name="self",
             **(
                 {"globals": {}}
-                if "globals"
-                in inspect.getfullargspec(dataclasses._init_fn).args
+                if "globals" in inspect.getfullargspec(dataclasses._init_fn).args
                 else {}
             ),
         )(self, **kwargs)
 
 
-META_ARTIFACTS_REQUIRE_REPO = (
-    META_DIR / "private/opts/artifacts_may_require_repo"
-)
+META_ARTIFACTS_REQUIRE_REPO = META_DIR / "private/opts/artifacts_may_require_repo"
 
 
 def _validate_artifacts_require_repo(
@@ -276,9 +270,7 @@ def is_path_protected(path: Path, protected_paths: Set[Path]) -> bool:
 
 
 def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
-    subvol.run_as_root(
-        ["mkdir", "--mode=0755", "--parents", subvol.path(META_DIR)]
-    )
+    subvol.run_as_root(["mkdir", "--mode=0755", "--parents", subvol.path(META_DIR)])
     # One might ask: why are we serializing this into the image instead of
     # just putting a condition on `ARTIFACTS_REQUIRE_REPO` into our Buck
     # macros?  Two reasons:
@@ -306,9 +298,7 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
 
     # Add metadata info
     if not os.path.isdir(subvol.path(META_BUILD_DIR)):
-        subvol.run_as_root(
-            ["mkdir", "--mode=0755", subvol.path(META_BUILD_DIR)]
-        )
+        subvol.run_as_root(["mkdir", "--mode=0755", subvol.path(META_BUILD_DIR)])
 
     subvol.overwrite_path_as_root(
         META_BUILD_DIR / "target", f"{layer_opts.layer_target}\n"
@@ -326,9 +316,7 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
     # TODO: Remove the existence check once the flavor has been written
     # in all built sendstreams.
     if build_appliance and build_appliance.path(META_FLAVOR_FILE).exists():
-        build_appliance_flavor = build_appliance.read_path_text(
-            META_FLAVOR_FILE
-        )
+        build_appliance_flavor = build_appliance.read_path_text(META_FLAVOR_FILE)
         assert flavor == build_appliance_flavor, (
             f"The flavor `{flavor}` given differs from "
             f"the flavor `{build_appliance_flavor}` of the "
@@ -389,9 +377,7 @@ def _make_image_source_item(
     if source is None:
         return item_cls(**kwargs, source=None)
 
-    assert 1 == (
-        +bool(source.get("source")) + bool(source.get("layer"))
-    ), source
+    assert 1 == (+bool(source.get("source")) + bool(source.get("layer"))), source
 
     # pyre-fixme[16]: `Mapping` has no attribute `pop`.
     algo_and_hash = source.pop("content_hash", None)
@@ -410,9 +396,7 @@ def _make_image_source_item(
 
 
 def image_source_item(item_cls, layer_opts: LayerOpts):
-    return lambda **kwargs: _make_image_source_item(
-        item_cls, layer_opts, **kwargs
-    )
+    return lambda **kwargs: _make_image_source_item(item_cls, layer_opts, **kwargs)
 
 
 def assert_running_inside_ba() -> None:  # pragma: no cover

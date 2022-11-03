@@ -166,11 +166,7 @@ class Inode(NamedTuple):
             yield "".join(
                 f"{EXTENT_KIND_TO_ABBREV[c.kind]}{c.length}"
                 + (
-                    (
-                        "("
-                        + "/".join(sorted(repr(cc) for cc in c.chunk_clones))
-                        + ")"
-                    )
+                    ("(" + "/".join(sorted(repr(cc) for cc in c.chunk_clones)) + ")")
                     if c.chunk_clones
                     else ""
                 )

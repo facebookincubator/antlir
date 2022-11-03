@@ -101,9 +101,7 @@ def _make_sockets_and_send_via(*, num_socks: int, unix_sock_fd: int):
     ]
 
 
-def create_sockets_inside_netns(
-    target_pid: int, num_socks: int
-) -> List[socket.socket]:
+def create_sockets_inside_netns(target_pid: int, num_socks: int) -> List[socket.socket]:
     """
     Creates requested number of TCP stream sockets inside the container.
 

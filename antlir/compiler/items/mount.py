@@ -23,10 +23,7 @@ from antlir.compiler.items.common import (
     make_path_normal_relative,
 )
 from antlir.compiler.items.mount_utils import META_MOUNTS_DIR, MOUNT_MARKER
-from antlir.compiler.requires_provides import (
-    ProvidesDoNotAccess,
-    RequireDirectory,
-)
+from antlir.compiler.requires_provides import ProvidesDoNotAccess, RequireDirectory
 from antlir.config import antlir_dep
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
@@ -43,18 +40,12 @@ class BuildSource(NamedTuple):
         if self.type == "layer":
             out_path = target_to_path.get(str(self.source))
             if out_path is None:
-                raise AssertionError(
-                    f"MountItem could not resolve {self.source}"
-                )
-            return find_built_subvol(
-                out_path, subvolumes_dir=subvolumes_dir
-            ).path()
+                raise AssertionError(f"MountItem could not resolve {self.source}")
+            return find_built_subvol(out_path, subvolumes_dir=subvolumes_dir).path()
         elif self.type == "host":
             return Path(self.source)
         else:  # pragma: no cover
-            raise AssertionError(
-                f'Bad mount source "{self.type}" for {self.source}'
-            )
+            raise AssertionError(f'Bad mount source "{self.type}" for {self.source}')
 
 
 @dataclass(frozen=True)
@@ -167,9 +158,7 @@ class MountItem(ImageItem):
             ("runtime_source", json.loads(self.runtime_source)),
             ("layer_publisher", json.loads(self.layer_publisher)),
         ):
-            procfs_serde.serialize(
-                data, subvol, Path(mount_dir / name).decode()
-            )
+            procfs_serde.serialize(data, subvol, Path(mount_dir / name).decode())
 
         source_path = self.build_source.to_path(
             target_to_path=layer_opts.target_to_path,

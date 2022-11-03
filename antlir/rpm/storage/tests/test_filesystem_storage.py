@@ -10,10 +10,7 @@ import tempfile
 from collections import Counter
 from contextlib import contextmanager
 
-from antlir.rpm.storage.tests.storage_base_test import (
-    Storage,
-    StorageBaseTestCase,
-)
+from antlir.rpm.storage.tests.storage_base_test import Storage, StorageBaseTestCase
 
 
 class FilesystemStorageTestCase(StorageBaseTestCase):

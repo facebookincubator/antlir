@@ -10,7 +10,6 @@ import subprocess
 import sys
 import tarfile
 import tempfile
-from contextlib import ExitStack
 
 from antlir.compiler.items.common import _hash_path, image_source_item
 from antlir.compiler.items.tarball import TarballItem
@@ -104,9 +103,7 @@ class TarballItemTestCase(BaseItemTestCase):
                 with tarfile.TarFile(t.name, "w") as tar_obj:
                     tar_obj.addfile(tarfile.TarInfo("exists"))
                 with self.assertRaises(subprocess.CalledProcessError):
-                    _tarball_item(t.name, "/d").build(
-                        subvol, DUMMY_LAYER_OPTS_BA
-                    )
+                    _tarball_item(t.name, "/d").build(subvol, DUMMY_LAYER_OPTS_BA)
 
             # Adding new files & directories works. Overwriting a
             # pre-existing directory leaves the owner+mode of the original

@@ -9,11 +9,7 @@ import json
 import sys
 from typing import Optional
 
-from antlir.artifacts_dir import (
-    find_artifacts_dir,
-    find_repo_root,
-    SigilNotFound,
-)
+from antlir.artifacts_dir import find_artifacts_dir, find_repo_root, SigilNotFound
 from antlir.bzl.buck_isolation.buck_isolation import is_buck_using_isolation
 from antlir.errors import UserError
 from antlir.fs_utils import Path

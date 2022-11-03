@@ -84,16 +84,12 @@ class Share(ABC):
                 if not share.generator:
                     continue
                 unit_name, unit_contents = share.mount_unit
-                assert (
-                    unit_name and unit_contents
-                ), f"Invalid mount unit for {share}"
+                assert unit_name and unit_contents, f"Invalid mount unit for {share}"
                 unit_path = exportdir / unit_name
                 with unit_path.open(mode="w") as f:
                     f.write(unit_contents)
 
-            yield Plan9Export(
-                path=exportdir, mountpoint=exportdir, mount_tag="exports"
-            )
+            yield Plan9Export(path=exportdir, mountpoint=exportdir, mount_tag="exports")
 
 
 @dataclass(frozen=True)

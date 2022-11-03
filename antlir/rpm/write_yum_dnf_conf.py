@@ -72,8 +72,7 @@ def write_yum_dnf_conf(
         .isolate_repos(
             repo._replace(
                 base_url=[
-                    urlunparse(url._replace(path=repo.name))
-                    for url in server_urls
+                    urlunparse(url._replace(path=repo.name)) for url in server_urls
                 ],
                 gpg_key_urls=[
                     urlunparse(

@@ -15,11 +15,7 @@ from typing import Iterator, List, NamedTuple, Optional, Set, Tuple
 
 from antlir.common import get_logger
 from antlir.fs_utils import Path
-from antlir.nspawn_in_subvol.args import (
-    new_nspawn_opts,
-    NspawnPluginArgs,
-    PopenArgs,
-)
+from antlir.nspawn_in_subvol.args import new_nspawn_opts, NspawnPluginArgs, PopenArgs
 from antlir.nspawn_in_subvol.nspawn import run_nspawn
 from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 
@@ -101,16 +97,10 @@ def _gen_nevras_from_installer_output(
     requested_nevras: Set[NEVRA],
 ) -> Iterator[NEVRA]:
     # `yum` and `dnf` differ in how they format the "progress" part
-    installing_re = re.compile(
-        r"^ +(Upgrading|Updating|Installing) +: +([^ ]+) "
-    )
+    installing_re = re.compile(r"^ +(Upgrading|Updating|Installing) +: +([^ ]+) ")
     nvra_re = re.compile(r"^([a-zA-Z0-9._+-]+)-([^-]+)-([^-]+)\.([^.]+)$")
-    nevra_re = re.compile(
-        r"^([a-zA-Z0-9._+-]+)-([0-9]+):([^-]+)-([^-]+)\.([^.]+)$"
-    )
-    envra_re = re.compile(
-        r"^([0-9]+):([a-zA-Z0-9._+-]+)-([^-]+)-([^-]+)\.([^.]+)$"
-    )
+    nevra_re = re.compile(r"^([a-zA-Z0-9._+-]+)-([0-9]+):([^-]+)-([^-]+)\.([^.]+)$")
+    envra_re = re.compile(r"^([0-9]+):([a-zA-Z0-9._+-]+)-([^-]+)-([^-]+)\.([^.]+)$")
 
     just_yielded = None
     installed_nevras = set()
@@ -131,9 +121,7 @@ def _gen_nevras_from_installer_output(
         elif rpm_installer == YumDnf.yum:  # ENVRA
             m = envra_re.match(pkg_spec)
             assert m, f"Could not parse {rpm_installer} output: {line}"
-            nevra = NEVRA(
-                m.group(2), m.group(1), m.group(3), m.group(4), m.group(5)
-            )
+            nevra = NEVRA(m.group(2), m.group(1), m.group(3), m.group(4), m.group(5))
         else:  # pragma: no cover
             raise NotImplementedError(rpm_installer)
 
@@ -220,10 +208,7 @@ def _gen_yum_dnf_install_order(
     download_cmd = common_cmd_prefix + [
         "--downloadonly",
         "--downloaddir=/d",
-        *(
-            f"{r.name}-{r.epoch}:{r.version}-{r.release}.{r.arch}"
-            for r in added_nevras
-        ),
+        *(f"{r.name}-{r.epoch}:{r.version}-{r.release}.{r.arch}" for r in added_nevras),
     ]
     install_cmd = common_cmd_prefix + [
         # Avoid the IO of actually unpacking the RPMs
@@ -329,17 +314,13 @@ def subvol_rpm_compare(
             _gen_yum_dnf_install_order(
                 fake_pty=fake_pty,
                 subvols=subvols,
-                install_subvol=tmp_subvols.snapshot(
-                    subvols.root, "subvol_rpm_compare"
-                ),
+                install_subvol=tmp_subvols.snapshot(subvols.root, "subvol_rpm_compare"),
                 added_nevras=added_nevras,
                 rpm_download_subvol=rpm_download_subvol,
             ),
         )
         # Check that the set of downloaded RPMs is exactly what we requested
-        actual_downloaded = {
-            f"{p}" for p in rpm_download_subvol.path().listdir()
-        }
+        actual_downloaded = {f"{p}" for p in rpm_download_subvol.path().listdir()}
         expected_downloaded = {r.download_path() for r in added_in_order}
         assert expected_downloaded == actual_downloaded, (
             expected_downloaded,

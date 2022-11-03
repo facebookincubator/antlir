@@ -94,9 +94,7 @@ class IncompleteInode(ABC):
             self.xattrs[item.name] = item.data
         elif isinstance(item, SendStreamItems.chmod):
             if stat.S_IFMT(item.mode) != 0:
-                raise RuntimeError(
-                    f"{item} cannot change file type bits of {self}"
-                )
+                raise RuntimeError(f"{item} cannot change file type bits of {self}")
             self.mode = item.mode
         elif isinstance(item, SendStreamItems.chown):
             self.owner = InodeOwner(uid=item.uid, gid=item.gid)
@@ -144,9 +142,7 @@ class IncompleteFile(IncompleteInode):
         if isinstance(item, SendStreamItems.truncate):
             self.extent = self.extent.truncate(length=item.size)
         elif isinstance(item, SendStreamItems.write):
-            self.extent = self.extent.write(
-                offset=item.offset, length=len(item.data)
-            )
+            self.extent = self.extent.write(offset=item.offset, length=len(item.data))
         elif isinstance(item, SendStreamItems.update_extent):
             self.extent = self.extent.write(offset=item.offset, length=item.len)
         else:
@@ -212,9 +208,7 @@ class IncompleteDevice(IncompleteInode):
 
     def __init__(self, *, item: SendStreamItem) -> None:
         if not isinstance(item, self.INITIAL_ITEM):
-            raise RuntimeError(
-                f"unexpected {type(item)}, expected {self.INITIAL_ITEM}"
-            )
+            raise RuntimeError(f"unexpected {type(item)}, expected {self.INITIAL_ITEM}")
         self.FILE_TYPE = stat.S_IFMT(item.mode)
         if self.FILE_TYPE not in (stat.S_IFBLK, stat.S_IFCHR):
             raise RuntimeError(f"unexpected device mode in {item}")
@@ -239,9 +233,7 @@ class IncompleteSymlink(IncompleteInode):
 
     def __init__(self, *, item: SendStreamItem) -> None:
         if not isinstance(item, self.INITIAL_ITEM):
-            raise RuntimeError(
-                f"unexpected {type(item)}, expected {self.INITIAL_ITEM}"
-            )
+            raise RuntimeError(f"unexpected {type(item)}, expected {self.INITIAL_ITEM}")
         super().__init__(item=item)
         self.dest = item.dest
 

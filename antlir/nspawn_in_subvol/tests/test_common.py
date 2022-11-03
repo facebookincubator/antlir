@@ -73,9 +73,7 @@ class CommonTestCase(unittest.TestCase):
                 b"subvol=/ 0 0\n"
             ),
         ):
-            self.assertEqual(
-                b"/sys/fs/cgroup/unified", find_cgroup2_mountpoint()
-            )
+            self.assertEqual(b"/sys/fs/cgroup/unified", find_cgroup2_mountpoint())
 
     def test_cgroup2_custom_fs_spec(self) -> None:
         with patch(
@@ -101,9 +99,7 @@ class CommonTestCase(unittest.TestCase):
                 b"subvol=/ 0 0\n"
             ),
         ):
-            with self.assertRaisesRegex(
-                RuntimeError, "No cgroupv2 mountpoint found"
-            ):
+            with self.assertRaisesRegex(RuntimeError, "No cgroupv2 mountpoint found"):
                 find_cgroup2_mountpoint()
 
     def test_parse_cgroup_path(self) -> None:

@@ -77,8 +77,7 @@ def nonblocking_flock(path: Path) -> Iterator[bool]:
 def list_subvolume_wrappers(subvolumes_dir: Path) -> List[Path]:
     # Ignore directories that don't match the <subvol name>:<id> pattern.
     subvolumes = [
-        Path(p).relpath(subvolumes_dir)
-        for p in glob.glob(f"{subvolumes_dir}/*:*/")
+        Path(p).relpath(subvolumes_dir) for p in glob.glob(f"{subvolumes_dir}/*:*/")
     ]
     # If glob works correctly, this list should always be empty.
     bad_subvolumes = [s for s in subvolumes if b"/" in s]
@@ -103,9 +102,7 @@ def list_refcounts(refcounts_dir: Path) -> Iterator[Tuple[Path, int]]:
         yield (Path(f"{m.group('name')}:{m.group('version')}"), st.st_nlink)
 
 
-def garbage_collect_subvolumes(
-    refcounts_dir: Path, subvolumes_dir: Path
-) -> None:
+def garbage_collect_subvolumes(refcounts_dir: Path, subvolumes_dir: Path) -> None:
     # IMPORTANT: We must list subvolumes BEFORE refcounts. The risk is that
     # this runs concurrently with another build, which will create a new
     # refcount & subvolume (in that order).  If we read refcounts first, we
@@ -129,9 +126,7 @@ def garbage_collect_subvolumes(
             log.info(f"{nlink} > 2 links to subvolume {subvol_wrapper}")
             continue
         refcount_path = Path(refcounts_dir) / f"{subvol_wrapper}.json"
-        log.info(
-            f"Deleting {subvol_wrapper} since its refcount has {nlink} links"
-        )
+        log.info(f"Deleting {subvol_wrapper} since its refcount has {nlink} links")
         # Start by unlinking the refcount to dramatically decrease the
         # chance of leaving an orphaned refcount file on disk.  The most
         # obvious way to get an orphaned refcount is for this program to
@@ -243,9 +238,7 @@ def has_new_subvolume(args) -> bool:
             )
         wrapper_path = args.subvolumes_dir / args.new_subvolume_wrapper_dir
         if wrapper_path.exists():
-            raise RuntimeError(
-                f"--new-subvolume-wrapper-dir exists {wrapper_path}"
-            )
+            raise RuntimeError(f"--new-subvolume-wrapper-dir exists {wrapper_path}")
         return True
     if new_subvolume_args != (None,) * 2:
         raise RuntimeError(
@@ -337,9 +330,7 @@ def subvolume_garbage_collector(argv) -> None:
         # This should never happen since the name & version are supposed to
         # be unique for this one subvolume (KEY ASSUMPTIONS).
         if new_subvolume_refcount.exists():
-            raise RuntimeError(
-                f"Refcount already exists: {new_subvolume_refcount}"
-            )
+            raise RuntimeError(f"Refcount already exists: {new_subvolume_refcount}")
 
         # Our refcounting relies on the hard-link counts of the output
         # files.  Therefore, we must not write into an existing output file,

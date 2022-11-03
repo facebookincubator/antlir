@@ -8,10 +8,7 @@ import subprocess
 import unittest.mock
 
 from antlir.rpm.storage import storage
-from antlir.rpm.storage.tests.storage_base_test import (
-    Storage,
-    StorageBaseTestCase,
-)
+from antlir.rpm.storage.tests.storage_base_test import Storage, StorageBaseTestCase
 
 
 class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
@@ -81,17 +78,13 @@ class CLIObjectStorageBaseTestCase(StorageBaseTestCase):
         # an externally visible exception:
         with self.assertLogs(storage.__name__, level="ERROR") as cm:
             # pyre-fixme[16]: `Pluggable` has no attribute `writer`.
-            with Storage.make(
-                key="test", kind=storage_kind, **kwargs
-            ).writer() as out:
+            with Storage.make(key="test", kind=storage_kind, **kwargs).writer() as out:
                 out.write(b"triggers error cleanup via commit-to-delete")
         (msg,) = cm.output
         self.assertRegex(msg, r"Error retrieving ID .* uncommitted blob\.")
 
         # If we do try to commit, error from the underlying CLI will be raised.
-        with Storage.make(
-            key="test", kind=storage_kind, **kwargs
-        ).writer() as out:
+        with Storage.make(key="test", kind=storage_kind, **kwargs).writer() as out:
             out.write(b"something")
             with self.assertRaises(subprocess.CalledProcessError):
                 out.commit()

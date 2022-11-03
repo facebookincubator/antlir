@@ -118,9 +118,7 @@ _VALID_UNIVERSE_REGEX = re.compile("^[a-zA-Z0-9.]*$")
 
 def validate_universe_name(u):
     if not _VALID_UNIVERSE_REGEX.match(u):
-        raise RuntimeError(
-            f"Universe {u} must match {_VALID_UNIVERSE_REGEX.pattern}"
-        )
+        raise RuntimeError(f"Universe {u} must match {_VALID_UNIVERSE_REGEX.pattern}")
     return u
 
 
@@ -452,9 +450,7 @@ class RepoDBContext(AbstractContextManager):
                         raise  # pragma: no cover
                     _ensure_line_is_covered()
 
-    def store_repomd(
-        self, universe: str, repo: str, repomd: RepoMetadata
-    ) -> int:
+    def store_repomd(self, universe: str, repo: str, repomd: RepoMetadata) -> int:
         "Returns the inserted `fetch_timestamp`, ours or from a racing writer"
         validate_universe_name(universe)
         with self._cursor() as cursor:
@@ -631,9 +627,7 @@ class RepoDBContext(AbstractContextManager):
                 # doc.  In essence, we could have seen the same repodata
                 # from a `repomd.xml` that was built either earlier or later
                 # than the one already in the DB.
-                if not (
-                    col_name == "build_timestamp" and type(obj) is Repodata
-                ):
+                if not (col_name == "build_timestamp" and type(obj) is Repodata):
                     assert db_val == val, (db_val, val, obj)
             return db_values[-1]  # We put `storage_id` last
 

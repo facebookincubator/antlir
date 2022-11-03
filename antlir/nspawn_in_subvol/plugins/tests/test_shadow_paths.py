@@ -21,9 +21,7 @@ _SRC_SUBVOL = layer_resource_subvol(*_SRC_SUBVOL_PAIR)
 class ShadowPathTestCase(NspawnTestBase):
     def _assert_original_shadow_me(self, subvol=_SRC_SUBVOL):
         # The layer is just as the source was when we're not shadowing.
-        self.assertEqual(
-            "shadow me\n", subvol.path("/real/shadow_me").read_text()
-        )
+        self.assertEqual("shadow me\n", subvol.path("/real/shadow_me").read_text())
 
     def test_ephemeral_subvol(self):
         self._assert_original_shadow_me()

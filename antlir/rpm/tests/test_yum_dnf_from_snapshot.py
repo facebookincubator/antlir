@@ -20,22 +20,14 @@ from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 from antlir.tests.flavor_helpers import get_rpm_installers_supported
-from antlir.tests.subvol_helpers import (
-    check_common_rpm_render,
-    pop_path,
-    render_subvol,
-)
+from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path, render_subvol
 
 _INSTALL_ARGS = ["install", "--assumeyes", "rpm-test-carrot", "rpm-test-milk"]
 _SNAPSHOT_DIR = snapshot_install_dir(antlir_dep("rpm:repo-snapshot-for-tests"))
 
 
 def _temp_subvol(name: str):
-    return (
-        Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}")
-        .create()
-        .delete_on_exit()
-    )
+    return Subvol(Path("/") / f"{name}-{uuid.uuid4().hex}").create().delete_on_exit()
 
 
 class YumDnfFromSnapshotTestImpl:
@@ -213,9 +205,7 @@ class YumDnfFromSnapshotTestImpl:
                 pass
         # It was none other than `yum install` that failed.
         # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `assertEqual`.
-        self.assertEqual(
-            _INSTALL_ARGS, ctx.exception.cmd[-len(_INSTALL_ARGS) :]
-        )
+        self.assertEqual(_INSTALL_ARGS, ctx.exception.cmd[-len(_INSTALL_ARGS) :])
 
     def test_verify_install_to_container_root(self) -> None:
         # Hack alert: if we run both `{Dnf,Yum}FromSnapshotTestCase` in one
@@ -255,9 +245,7 @@ class YumDnfFromSnapshotTestImpl:
 
         # Shadow the file that `yum` / `dnf` wants to write -- writing to
         # this location will now fail since it's read-only.
-        subprocess.check_call(
-            ["mount", "-o", "bind,ro", replacement, to_shadow]
-        )
+        subprocess.check_call(["mount", "-o", "bind,ro", replacement, to_shadow])
         try:
             yield
         finally:
@@ -406,11 +394,7 @@ class YumDnfFromSnapshotTestImpl:
     def test_error_repr(self):
         self.assertEqual(
             "YumDnfError(returncode=37)",
-            repr(
-                yum_dnf_from_snapshot._YumDnfError(
-                    returncode=37, cmd=["unused"]
-                )
-            ),
+            repr(yum_dnf_from_snapshot._YumDnfError(returncode=37, cmd=["unused"])),
         )
 
 

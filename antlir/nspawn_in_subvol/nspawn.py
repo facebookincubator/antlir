@@ -163,10 +163,7 @@ def _post_setup_popen_nspawn(
     setup: _NspawnSetup,
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
-    with _popen_nspawn(setup) as (
-        nspawn_proc,
-        container_proc_pid,
-    ), Path.resource(
+    with _popen_nspawn(setup) as (nspawn_proc, container_proc_pid,), Path.resource(
         __package__, "clonecaps", exe=True
     ) as clonecaps, _popen_nsenter_into_container(
         setup,
@@ -207,9 +204,7 @@ def _script_to_exfiltrate_container_proc_pid(
     *, do_set_antlir_nis_domainname: bool
 ) -> str:
     maybe_set_nis_domainname = (
-        f"{_TMP_MOUNT_NIS_DOMAINNAME} set"
-        if do_set_antlir_nis_domainname
-        else ""
+        f"{_TMP_MOUNT_NIS_DOMAINNAME} set" if do_set_antlir_nis_domainname else ""
     )
     return f"""\
 function bbexec() {{
@@ -293,13 +288,9 @@ def _make_nspawn_cmd(
             f"--bind-ro={busybox}:{_TMP_MOUNT}/busybox",
         ]
     )
-    nis_domainname_path = (
-        setup.opts.debug_only_opts.container_not_part_of_build_step
-    )
+    nis_domainname_path = setup.opts.debug_only_opts.container_not_part_of_build_step
     if nis_domainname_path:
-        cmd.append(
-            f"--bind-ro={nis_domainname_path}:{_TMP_MOUNT_NIS_DOMAINNAME}"
-        )
+        cmd.append(f"--bind-ro={nis_domainname_path}:{_TMP_MOUNT_NIS_DOMAINNAME}")
     if setup.opts.boot:
         # Instead of using the `--boot` argument to `systemd-nspawn`, tell
         # it to invoke a simple shell script so that we can exfiltrate the
@@ -321,8 +312,7 @@ def _make_nspawn_cmd(
             #     in `proc-cmdline.c`).
             _wrap_systemd_exec(
                 (
-                    "systemd.setenv="
-                    "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
+                    "systemd.setenv=" "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
                     if "ANTLIR_CONTAINER_IS_NOT_PART_OF_A_BUILD_STEP=1"
                     in setup.opts.setenv
                     else ""
@@ -562,11 +552,7 @@ def _popen_nsenter_into_container(
         "--all",
         f"--setuid={opts.user.pw_uid}",
         f"--setgid={opts.user.pw_gid}",
-        *(
-            [f"--wd=/proc/{container_proc_pid}/root{opts.chdir}"]
-            if opts.chdir
-            else []
-        ),
+        *([f"--wd=/proc/{container_proc_pid}/root{opts.chdir}"] if opts.chdir else []),
     ]
     if setup.opts.boot and setup.opts.boot_await_dbus:
         nsenter_cmd += [

@@ -18,9 +18,7 @@ from antlir.tests.layer_resource import layer_resource
 
 @contextmanager
 def _mocks_for_parse_cli_args():
-    with mock.patch(
-        "antlir.nspawn_in_subvol.args.pwd.getpwnam"
-    ) as getpwnam_mock:
+    with mock.patch("antlir.nspawn_in_subvol.args.pwd.getpwnam") as getpwnam_mock:
         getpwnam_mock.side_effect = [
             struct_passwd(
                 [
@@ -39,9 +37,7 @@ def _mocks_for_parse_cli_args():
 
 @contextmanager
 def _mocks_for_extra_nspawn_args(*, artifacts_require_repo):
-    with mock.patch(
-        "antlir.nspawn_in_subvol.cmd._artifacts_require_repo"
-    ) as amrr_mock:
+    with mock.patch("antlir.nspawn_in_subvol.cmd._artifacts_require_repo") as amrr_mock:
         amrr_mock.side_effect = [artifacts_require_repo]
         yield
 
@@ -54,9 +50,7 @@ class NspawnTestBase(TestCase):
         # `run.py`.  It would disappear if we passed `--quiet` to nspawn,
         # but we want to retain the extra debug logging.
         self.nspawn_version = nspawn_version()
-        self.maybe_extra_ending = (
-            b"\n" if self.nspawn_version.major < 242 else b""
-        )
+        self.maybe_extra_ending = b"\n" if self.nspawn_version.major < 242 else b""
 
     def _nspawn_in_boot_ret(self, rsrc_pair, argv, **kwargs):
         with _set_up_run_cli(

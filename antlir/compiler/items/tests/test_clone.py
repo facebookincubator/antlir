@@ -140,9 +140,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             dest_subvol = temp_subvols.create("test_clone_special_files_dest")
 
             src_subvol.run_as_root(["mkfifo", src_subvol.path("fifo")])
-            src_subvol.run_as_root(
-                ["mknod", src_subvol.path("null"), "c", "1", "3"]
-            )
+            src_subvol.run_as_root(["mknod", src_subvol.path("null"), "c", "1", "3"])
 
             for name in ["fifo", "null"]:
                 ci = self._clone_item(name, name, subvol=src_subvol)
@@ -167,9 +165,7 @@ class InstallFileItemTestCase(BaseItemTestCase):
             dest_subvol = temp_subvols.create("test_clone_hardlinks_dest")
 
             src_subvol.run_as_root(["touch", src_subvol.path("a")])
-            src_subvol.run_as_root(
-                ["ln", src_subvol.path("a"), src_subvol.path("b")]
-            )
+            src_subvol.run_as_root(["ln", src_subvol.path("a"), src_subvol.path("b")])
 
             ci = self._clone_item(
                 "/",
@@ -229,6 +225,4 @@ class InstallFileItemTestCase(BaseItemTestCase):
         with TempSubvolumes() as temp_subvols:
             dest_subvol = temp_subvols.create("volume")
             ci.build(dest_subvol, DUMMY_LAYER_OPTS)
-            self.assertEqual(
-                render_subvol(src_subvol), render_subvol(dest_subvol)
-            )
+            self.assertEqual(render_subvol(src_subvol), render_subvol(dest_subvol))

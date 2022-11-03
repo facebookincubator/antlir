@@ -11,11 +11,7 @@ from typing import Iterable, NamedTuple, Union
 
 from antlir.bzl.image.feature.install import install_files_t
 
-from antlir.compiler.items.common import (
-    ImageItem,
-    LayerOpts,
-    make_path_normal_relative,
-)
+from antlir.compiler.items.common import ImageItem, LayerOpts, make_path_normal_relative
 from antlir.compiler.items.stat_options import build_stat_options
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
@@ -99,9 +95,7 @@ class InstallFileItem(install_files_t, ImageItem):
         # The 3 separate `*_mode` arguments must be set instead of `mode` for
         # directory sources.
         popped_args = ["mode", "exe_mode", "data_mode", "dir_mode"]
-        mode, dir_mode, exe_mode, data_mode = (
-            kwargs.pop(a, None) for a in popped_args
-        )
+        mode, dir_mode, exe_mode, data_mode = (kwargs.pop(a, None) for a in popped_args)
 
         st_source = os.stat(str(source), follow_symlinks=False)
         if stat.S_ISDIR(st_source.st_mode):

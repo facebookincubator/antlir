@@ -27,9 +27,7 @@ def normalize_buck_path(bucked: Union[MehStr, Path]) -> Path:
 def _load_targets_and_outputs(arg: AnyStr) -> Mapping[AnyStr, Path]:
     return {
         target: normalize_buck_path(output)
-        for target, output in json.loads(
-            normalize_buck_path(arg).read_text()
-        ).items()
+        for target, output in json.loads(normalize_buck_path(arg).read_text()).items()
     }
 
 
@@ -75,7 +73,5 @@ def init_cli(
     )
     yield cli
     add_antlir_debug_arg(cli.parser)
-    cli.args = Path.parse_args(
-        cli.parser, argv if argv is not None else sys.argv[1:]
-    )
+    cli.args = Path.parse_args(cli.parser, argv if argv is not None else sys.argv[1:])
     init_logging(debug=cli.args.debug)

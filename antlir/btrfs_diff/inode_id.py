@@ -14,16 +14,7 @@ possible.
 import itertools
 import os
 from collections import defaultdict, deque
-from typing import (
-    Any,
-    Iterator,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Set,
-    Tuple,
-)
+from typing import Any, Iterator, Mapping, NamedTuple, Optional, Sequence, Set, Tuple
 
 from antlir.btrfs_diff.freeze import freeze
 
@@ -136,9 +127,7 @@ class _InnerInodeIDMap(NamedTuple):
             raise RuntimeError(f"Wrong map for InodeID #{inode_id.id}")
         return inode_id
 
-    def _rev_entry_to_path(
-        self, rev_entry: _ReversePathEntry
-    ) -> Iterator[bytes]:
+    def _rev_entry_to_path(self, rev_entry: _ReversePathEntry) -> Iterator[bytes]:
         parent_id = rev_entry.parent_int_id
         assert parent_id is not None, "Never called with _ROOT_REVERSE_ENTRY"
         (  # Directories don't have hardlink, so they have just 1 reverse entry
@@ -203,9 +192,7 @@ class InodeIDMap(NamedTuple):
             ),
             inner=inner,
         )
-        self.inner.id_to_reverse_entries[self.root.id.id].add(
-            _ROOT_REVERSE_ENTRY
-        )
+        self.inner.id_to_reverse_entries[self.root.id.id].add(_ROOT_REVERSE_ENTRY)
         return self
 
     def freeze(self, *, _memo):
@@ -218,9 +205,7 @@ class InodeIDMap(NamedTuple):
     def next(self) -> InodeID:
         return InodeID(id=next(self.inode_id_counter), inner_id_map=self.inner)
 
-    def _gen_entries(
-        self, parts: Sequence[bytes]
-    ) -> Iterator[Optional[_PathEntry]]:
+    def _gen_entries(self, parts: Sequence[bytes]) -> Iterator[Optional[_PathEntry]]:
         entry = self.root
         yield entry
         for name in parts:
@@ -266,9 +251,7 @@ class InodeIDMap(NamedTuple):
         for prev_path in self.inner.gen_paths(entry.id):
             prev_entry = self._get_entry(prev_path)
             if (entry.name_to_child, prev_entry.name_to_child) != (None, None):
-                raise RuntimeError(
-                    f"Tried to add non-file hardlink for {entry.id}"
-                )
+                raise RuntimeError(f"Tried to add non-file hardlink for {entry.id}")
             break  # It's enough to check 1 entry
 
         parts = _norm_split_path(path)
@@ -331,9 +314,9 @@ class InodeIDMap(NamedTuple):
         for reverse_entry in reverse_entries:
             if self._reverse_entry_matches_path_parts(reverse_entry, parts):
                 return reverse_entry
-        raise AssertionError(  # pragma: no cover
+        raise AssertionError(
             f"No _ReversePathEntry matched {parts}"
-        )
+        )  # pragma: no cover
 
     def _remove_path_unsafe(self, path: bytes) -> _PathEntry:
         "Does not check if path has children, used by `rename_path`."
@@ -395,6 +378,4 @@ class InodeIDMap(NamedTuple):
         if maybe_map is None:
             return None
         else:
-            return {
-                os.path.normpath(os.path.join(path, name)) for name in maybe_map
-            }
+            return {os.path.normpath(os.path.join(path, name)) for name in maybe_map}

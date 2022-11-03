@@ -10,9 +10,7 @@ from antlir.btrfs_diff.freeze import freeze
 from antlir.btrfs_diff.parse_dump import SendStreamItems
 from antlir.btrfs_diff.rendered_tree import emit_all_traversal_ids
 from antlir.btrfs_diff.subvolume_set import SubvolumeSet, SubvolumeSetMutator
-from antlir.btrfs_diff.tests.subvolume_utils import (
-    expected_subvol_add_traversal_ids,
-)
+from antlir.btrfs_diff.tests.subvolume_utils import expected_subvol_add_traversal_ids
 
 from antlir.tests.common import AntlirTestCase
 
@@ -208,12 +206,8 @@ class SubvolumeSetTestCase(AntlirTestCase):
                     "cat@ab": [
                         "(Dir)",
                         {
-                            "from": [
-                                "(File d2(cat@ab@to:0+2@0/tiger@to:0+1@0))"
-                            ],
-                            "to": [
-                                "(File d2(cat@ab@from:0+2@0/tiger@to:0+1@0))"
-                            ],
+                            "from": ["(File d2(cat@ab@to:0+2@0/tiger@to:0+1@0))"],
+                            "to": ["(File d2(cat@ab@from:0+2@0/tiger@to:0+1@0))"],
                             "hole": ["(File h5(tiger@to:1+2@2))"],
                         },
                     ],

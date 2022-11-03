@@ -92,17 +92,13 @@ def print_rpms_with_reason(wanted_rpms) -> None:
             text=True,
             check=False,
         )
-        m = re.search(
-            " removing the following protected packages: (.*)\n", p.stderr
-        )
+        m = re.search(" removing the following protected packages: (.*)\n", p.stderr)
         if m:
             print_required_by(rpm, wanted, {p for p in m.group(1).split() if p})
             continue
 
         if re.search("\nRemove +[0-9]+ Packages?\n", p.stdout):
-            removed = [
-                l.split()[0] for l in p.stdout.split("\n") if l.startswith(" ")
-            ]
+            removed = [l.split()[0] for l in p.stdout.split("\n") if l.startswith(" ")]
             assert "Package" == removed[0], removed[0]
             removed = removed[1:]
             print_required_by(

@@ -6,7 +6,6 @@
 
 import argparse
 import asyncio
-import importlib.resources
 import os
 import subprocess
 import sys
@@ -26,11 +25,7 @@ from antlir.fs_utils import Path
 from antlir.shape import Shape
 from antlir.unshare import Namespace, Unshare
 from antlir.vm.bzl.vm import vm_opts_t
-from antlir.vm.common import (
-    create_sidecar_subprocess,
-    insertstack,
-    SidecarProcess,
-)
+from antlir.vm.common import create_sidecar_subprocess, insertstack, SidecarProcess
 from antlir.vm.guest_ssh import GuestSSHConnection
 from antlir.vm.share import Plan9Export, QCow2Disk, Share
 from antlir.vm.tap import VmTap
@@ -84,13 +79,9 @@ async def _wait_for_boot(sockfile: Path, timeout_ms: int = 300 * 1000) -> int:
             raise VMBootError(f"Received invalid boot notification: {msg}")
 
     try:
-        await asyncio.wait_for(
-            _connect_and_readline(), timeout=recv_timeout_ms / 1000
-        )
+        await asyncio.wait_for(_connect_and_readline(), timeout=recv_timeout_ms / 1000)
     except asyncio.TimeoutError:
-        raise VMBootError(
-            f"Timeout waiting for boot notify: {recv_timeout_ms}ms"
-        )
+        raise VMBootError(f"Timeout waiting for boot notify: {recv_timeout_ms}ms")
 
     # Return elapsed ms
     return int(time.monotonic() * 1000) - start_ms
@@ -239,9 +230,7 @@ class VMExecOpts(Shape):
             logger.debug(f"Got extra args: {extra} from {argv}")
             args.extra = extra
 
-        logger.debug(
-            f"Creating instance of {cls} for VM execution args using: {args}"
-        )
+        logger.debug(f"Creating instance of {cls} for VM execution args using: {args}")
         return cls(**args.__dict__)
 
 
@@ -427,9 +416,7 @@ async def vm(
         # (see: //antlir/vm/bzl:initrd.bzl)
         shares.append(
             Plan9Export(
-                path=find_built_subvol(
-                    opts.kernel.derived_targets.image.path
-                ).path()
+                path=find_built_subvol(opts.kernel.derived_targets.image.path).path()
                 / "modules",
                 mount_tag="kernel-modules",
                 generator=False,
@@ -514,8 +501,7 @@ async def vm(
             raise VMBootError(f"Timeout waiting for boot event: {timeout_ms}ms")
 
         logger.debug(
-            f"VM boot time: {boot_elapsed_ms}ms, "
-            f"timeout_ms is now: {timeout_ms}ms"
+            f"VM boot time: {boot_elapsed_ms}ms, " f"timeout_ms is now: {timeout_ms}ms"
         )
         logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
 

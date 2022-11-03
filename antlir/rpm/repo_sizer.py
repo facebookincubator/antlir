@@ -103,9 +103,7 @@ class RepoSizer:
     visit_repomd = _add_object
 
     def _get_classname_to_size(self) -> Dict[str, int]:
-        return {
-            t.__name__: c.total_size() for t, c in self._type_to_counter.items()
-        }
+        return {t.__name__: c.total_size() for t, c in self._type_to_counter.items()}
 
     def get_report(self, msg: str) -> str:
         classname_to_size = self._get_classname_to_size()

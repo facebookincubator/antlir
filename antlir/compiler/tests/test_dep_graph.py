@@ -68,9 +68,7 @@ def _fs_root_phases(item, layer_target=None):
 def _build_req_prov(path, req_items, prov_items, prov_t=None):
     prov_t = ProvidesDirectory if prov_t is None else prov_t
     return ItemReqsProvs(
-        item_reqs={
-            ItemReq(RequireDirectory(path=Path(path)), i) for i in req_items
-        },
+        item_reqs={ItemReq(RequireDirectory(path=Path(path)), i) for i in req_items},
         item_provs={ItemProv(prov_t(path=Path(path)), i) for i in prov_items},
     )
 
@@ -101,30 +99,22 @@ class ItemProvTest(unittest.TestCase):
         self.assertFalse(
             ItemProv(
                 provides=ProvidesDirectory(path=Path("/a/b")),
-                item=SymlinkToDirItem(
-                    from_target="", source="/x/y", dest="/a/b"
-                ),
+                item=SymlinkToDirItem(from_target="", source="/x/y", dest="/a/b"),
             ).conflicts(
                 ItemProv(
                     provides=ProvidesDirectory(path=Path("/a/b")),
-                    item=SymlinkToDirItem(
-                        from_target="", source="/x/y", dest="/a/b"
-                    ),
+                    item=SymlinkToDirItem(from_target="", source="/x/y", dest="/a/b"),
                 )
             )
         )
         self.assertFalse(
             ItemProv(
                 provides=ProvidesFile(path=Path("/a/b")),
-                item=SymlinkToFileItem(
-                    from_target="", source="/x/y", dest="/a/b"
-                ),
+                item=SymlinkToFileItem(from_target="", source="/x/y", dest="/a/b"),
             ).conflicts(
                 ItemProv(
                     provides=ProvidesFile(path=Path("/a/b")),
-                    item=SymlinkToFileItem(
-                        from_target="", source="/x/y", dest="/a/b"
-                    ),
+                    item=SymlinkToFileItem(from_target="", source="/x/y", dest="/a/b"),
                 )
             )
         )
@@ -162,18 +152,14 @@ class ItemProvTest(unittest.TestCase):
             ).conflicts(
                 ItemProv(
                     provides=ProvidesDirectory(path=Path("/a/b")),
-                    item=SymlinkToDirItem(
-                        from_target="", source="/x/y", dest="/a/b"
-                    ),
+                    item=SymlinkToDirItem(from_target="", source="/x/y", dest="/a/b"),
                 )
             )
         )
         self.assertFalse(
             ItemProv(
                 provides=ProvidesDirectory(path=Path("/a/b")),
-                item=SymlinkToDirItem(
-                    from_target="", source="/x/y", dest="/a/b"
-                ),
+                item=SymlinkToDirItem(from_target="", source="/x/y", dest="/a/b"),
             ).conflicts(
                 ItemProv(
                     provides=ProvidesDirectory(path=Path("/a/b")),
@@ -194,9 +180,7 @@ class ItemProvTest(unittest.TestCase):
             ).conflicts(
                 ItemProv(
                     provides=ProvidesFile(path=Path("/y/x")),
-                    item=SymlinkToFileItem(
-                        from_target="", source=_FILE1, dest="y/x"
-                    ),
+                    item=SymlinkToFileItem(from_target="", source=_FILE1, dest="y/x"),
                 )
             )
         )
@@ -205,30 +189,22 @@ class ItemProvTest(unittest.TestCase):
         self.assertTrue(
             ItemProv(
                 provides=ProvidesFile(path=Path("/a/b")),
-                item=SymlinkToFileItem(
-                    from_target="", source="/x/y", dest="/a/b"
-                ),
+                item=SymlinkToFileItem(from_target="", source="/x/y", dest="/a/b"),
             ).conflicts(
                 ItemProv(
                     provides=ProvidesFile(path=Path("/a/b")),
-                    item=SymlinkToFileItem(
-                        from_target="", source="/x/y", dest="/d/c"
-                    ),
+                    item=SymlinkToFileItem(from_target="", source="/x/y", dest="/d/c"),
                 )
             )
         )
         self.assertTrue(
             ItemProv(
                 provides=ProvidesDirectory(path=Path("/a/b")),
-                item=SymlinkToDirItem(
-                    from_target="", source="/x/y", dest="/a/b"
-                ),
+                item=SymlinkToDirItem(from_target="", source="/x/y", dest="/a/b"),
             ).conflicts(
                 ItemProv(
                     provides=ProvidesDirectory(path=Path("/a/b")),
-                    item=SymlinkToDirItem(
-                        from_target="", source="/x/y", dest="/d/c"
-                    ),
+                    item=SymlinkToDirItem(from_target="", source="/x/y", dest="/d/c"),
                 )
             )
         )
@@ -389,9 +365,7 @@ class ItemReqsProvsTest(unittest.TestCase):
                     item_provs=[],
                     # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
                     #  `List[ItemReq]`.
-                    item_reqs=[
-                        ItemReq(requires=req, item=item_with_duplicate_req)
-                    ],
+                    item_reqs=[ItemReq(requires=req, item=item_with_duplicate_req)],
                 ),
                 item=item_with_duplicate_req,
                 want=True,
@@ -400,9 +374,7 @@ class ItemReqsProvsTest(unittest.TestCase):
                 item_reqs_provs=ItemReqsProvs(
                     # pyre-fixme[6]: For 1st param expected `Set[ItemProv]` but got
                     #  `List[ItemProv]`.
-                    item_provs=[
-                        ItemProv(provides=prov, item=item_with_duplicate_prov)
-                    ],
+                    item_provs=[ItemProv(provides=prov, item=item_with_duplicate_prov)],
                     # pyre-fixme[6]: For 2nd param expected `Set[ItemReq]` but got
                     #  `List[Variable[_T]]`.
                     item_reqs=[],
@@ -516,9 +488,7 @@ class ItemReqsProvsTest(unittest.TestCase):
         for desc, test in tests.items():
             irps = ItemReqsProvs(item_provs=test.item_provs, item_reqs=set())
             have = irps.symlink_item_prov()
-            self.assertEqual(
-                have, test.want, f"{desc}: have={have}, want={test.want}"
-            )
+            self.assertEqual(have, test.want, f"{desc}: have={have}, want={test.want}")
 
 
 class PathItemReqsProvsTestCase(unittest.TestCase):
@@ -544,9 +514,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         pirp.add_provider(prov_usr_bin_bash, prov_usr_bin_bash_item)
 
         req_usr_bin = RequireDirectory(path=Path("/usr/bin"))
-        prov_symlink = ProvidesSymlink(
-            path=Path("/bin"), target=Path("/usr/bin")
-        )
+        prov_symlink = ProvidesSymlink(path=Path("/bin"), target=Path("/usr/bin"))
         prov_symlink_item = TestImageItem(
             # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
             #  `List[RequireDirectory]`.
@@ -703,9 +671,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         # pyre-fixme[24]: Generic type `dict` expects 2 type parameters, received 1,
         #  use `typing.Dict` to avoid runtime subscripting errors.
         tests: Dict[Test] = {
-            "no paths": Test(
-                path_to_item_reqs_provs={}, path=Path("/foo"), want=None
-            ),
+            "no paths": Test(path_to_item_reqs_provs={}, path=Path("/foo"), want=None),
             "busted symlink": Test(
                 path_to_item_reqs_provs={
                     Path("/foo"): ItemReqsProvs(
@@ -762,9 +728,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
             pirp = PathItemReqsProvs()
             pirp.path_to_item_reqs_provs = test.path_to_item_reqs_provs
             have = pirp._realpath_item_provs(test.path)
-            self.assertEqual(
-                have, test.want, f"{desc}: have={have}, want={test.want}"
-            )
+            self.assertEqual(have, test.want, f"{desc}: have={have}, want={test.want}")
 
     def test_realpath_item_provs_absolute(self) -> None:
         pirp = PathItemReqsProvs()
@@ -851,9 +815,7 @@ class PathItemReqsProvsTestCase(unittest.TestCase):
         assert len(tests) == 6
         for desc, test in tests.items():
             have = _symlink_target_normpath(test.path, test.target)
-            self.assertEqual(
-                have, test.want, f"{desc}: have={have}, want={test.want}"
-            )
+            self.assertEqual(have, test.want, f"{desc}: have={have}, want={test.want}")
 
 
 class DepGraphTestBase(unittest.TestCase):
@@ -923,9 +885,7 @@ class DepGraphTestBase(unittest.TestCase):
         }
         # [[items, requiring, it], [items, it, requires]]
         item_reqs_provs = [
-            _build_req_prov(
-                "/.meta", [], [self.provides_root], ProvidesDoNotAccess
-            ),
+            _build_req_prov("/.meta", [], [self.provides_root], ProvidesDoNotAccess),
             _build_req_prov("/", [a], [self.provides_root]),
             _build_req_prov("/a", [ab, ad, a_ln], [a]),
             _build_req_prov("/a/b", [abc], [ab]),
@@ -990,9 +950,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             )
 
     def test_duplicate_paths_provided_different_types(self) -> None:
-        with self.assertRaisesRegex(
-            UserError, r"ItemProv.*conflicts with ItemProv"
-        ):
+        with self.assertRaisesRegex(UserError, r"ItemProv.*conflicts with ItemProv"):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
                 #  `List[Union[EnsureDirsExistItem, InstallFileItem,
@@ -1007,9 +965,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             )
 
     def test_duplicate_paths_provided(self) -> None:
-        with self.assertRaisesRegex(
-            UserError, r"ItemProv.*conflicts with ItemProv"
-        ):
+        with self.assertRaisesRegex(UserError, r"ItemProv.*conflicts with ItemProv"):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
                 #  `List[Union[InstallFileItem, PhasesProvideItem,
@@ -1022,9 +978,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             )
 
     def test_path_provided_twice(self) -> None:
-        with self.assertRaisesRegex(
-            UserError, r"ItemProv.*conflicts with ItemProv"
-        ):
+        with self.assertRaisesRegex(UserError, r"ItemProv.*conflicts with ItemProv"):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
                 #  `List[Union[InstallFileItem, PhasesProvideItem]]`.
@@ -1060,9 +1014,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
         )
 
     def test_duplicate_symlink_paths_different_sources(self) -> None:
-        with self.assertRaisesRegex(
-            UserError, r"ItemProv.*conflicts with ItemProv"
-        ):
+        with self.assertRaisesRegex(UserError, r"ItemProv.*conflicts with ItemProv"):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
                 #  `List[Union[InstallFileItem, PhasesProvideItem,
@@ -1077,9 +1029,7 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
             )
 
     def test_duplicate_symlink_file_and_dir_conflict(self) -> None:
-        with self.assertRaisesRegex(
-            UserError, r"ItemProv.*conflicts with ItemProv"
-        ):
+        with self.assertRaisesRegex(UserError, r"ItemProv.*conflicts with ItemProv"):
             ValidatedReqsProvs(
                 # pyre-fixme[6]: For 1st param expected `Set[ImageItem]` but got
                 #  `List[Union[EnsureDirsExistItem, InstallFileItem, PhasesProvideItem,
@@ -1149,12 +1099,8 @@ class ValidateReqsProvsTestCase(DepGraphTestBase):
                 from_target="t", into_dir="/", subdirs_to_create="usr/bin"
             )
         )
-        bash = InstallFileItem(
-            from_target="t", source=_FILE1, dest="usr/bin/bash"
-        )
-        symlink = SymlinkToDirItem(
-            from_target="t", source="/usr/bin", dest="/bin"
-        )
+        bash = InstallFileItem(from_target="t", source=_FILE1, dest="usr/bin/bash")
+        symlink = SymlinkToDirItem(from_target="t", source="/usr/bin", dest="/bin")
         # pyre-fixme[6]: For 1st param expected `Iterator[ItemReq]` but got
         #  `List[RequireFile]`.
         test_item = TestImageItem(reqs=[RequireFile(path=Path("/bin/bash"))])
@@ -1355,11 +1301,7 @@ class DependencyOrderItemsTestCase(DepGraphTestBase):
         )
         self.assertEqual(
             rest,
-            list(
-                itertools.chain(
-                    *dg.gen_dependency_order_items(self.provides_root)
-                )
-            ),
+            list(itertools.chain(*dg.gen_dependency_order_items(self.provides_root))),
         )
 
     def test_parallel_items(self) -> None:

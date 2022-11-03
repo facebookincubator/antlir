@@ -15,11 +15,7 @@ RPM_SNAPSHOT_BASE_DIR = Path("/__antlir__/rpm/repo-snapshot")
 
 
 def _sha256_b64(b: bytes) -> str:
-    return (
-        base64.urlsafe_b64encode(hashlib.sha256(b).digest())
-        .strip(b"=")
-        .decode()
-    )
+    return base64.urlsafe_b64encode(hashlib.sha256(b).digest()).strip(b"=").decode()
 
 
 # KEEP IN SYNC with its copy in `bzl/wrap_target.bzl`.

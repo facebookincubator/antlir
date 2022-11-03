@@ -35,9 +35,7 @@ def _make_rsync_style_dest_path(dest: str, source: str) -> str:
     # Normalize after applying the rsync convention, since this would
     # remove any trailing / in 'dest'.
     return make_path_normal_relative(
-        os.path.join(dest, os.path.basename(source))
-        if dest.endswith("/")
-        else dest
+        os.path.join(dest, os.path.basename(source)) if dest.endswith("/") else dest
     )
 
 

@@ -77,15 +77,20 @@ def _parse_diff_output(
     right_base = right_base.rstrip(b"/") + b"/"
     assert not left_base.startswith(right_base) and not right_base.startswith(
         left_base
-    ), (left_base, right_base)
+    ), (
+        left_base,
+        right_base,
+    )
     for l in out.splitlines():
         m = re.match(b"Files (.*) and (.*) differ$", l)
         if m:
             assert all(b" and " not in g for g in m.groups()), ("ambiguous", l)
             left, right = m.groups()
-            assert left.startswith(left_base) and right.startswith(
-                right_base
-            ), (left_base, right_base, l)
+            assert left.startswith(left_base) and right.startswith(right_base), (
+                left_base,
+                right_base,
+                l,
+            )
             left = os.path.relpath(left, left_base)
             right = os.path.relpath(right, right_base)
             assert left == right, l

@@ -9,10 +9,7 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional, Union
 
-from antlir.compiler.items.make_subvol import (
-    FilesystemRootItem,
-    ParentLayerItem,
-)
+from antlir.compiler.items.make_subvol import FilesystemRootItem, ParentLayerItem
 from antlir.compiler.items.mount import (
     BuildSource,
     Mount,
@@ -42,9 +39,7 @@ from antlir.subvol_utils import Subvol, TempSubvolumes
 from antlir.tests.subvol_helpers import get_meta_dir_contents
 
 
-def _mount_item_new(
-    from_target: str, mount_config: Dict[str, Any]
-) -> MountItem:
+def _mount_item_new(from_target: str, mount_config: Dict[str, Any]) -> MountItem:
     return MountItem(
         layer_opts=DUMMY_LAYER_OPTS._replace(
             allowed_host_mount_targets=["//dummy/host_mounts:t"]
@@ -78,9 +73,7 @@ class MountItemTestCase(BaseItemTestCase):
             subvol = temp_subvolumes.create("mounter")
             mount_item.build(
                 subvol,
-                DUMMY_LAYER_OPTS._replace(
-                    target_to_path={}, subvolumes_dir="unused"
-                ),
+                DUMMY_LAYER_OPTS._replace(target_to_path={}, subvolumes_dir="unused"),
             )
 
             mount = [
@@ -97,9 +90,7 @@ class MountItemTestCase(BaseItemTestCase):
                                         "(Dir)",
                                         {
                                             "type": ["(File d5)"],
-                                            "source": [
-                                                f'(File d{len("/dev/null")+1})'
-                                            ],
+                                            "source": [f'(File d{len("/dev/null")+1})'],
                                         },
                                     ],
                                 },
@@ -218,9 +209,7 @@ class MountItemTestCase(BaseItemTestCase):
                                     "(Dir)",
                                     {
                                         "type": ["(File d6)"],
-                                        "source": [
-                                            f'(File d{len("//fake:path") + 1})'
-                                        ],
+                                        "source": [f'(File d{len("//fake:path") + 1})'],
                                     },
                                 ],
                                 "runtime_source": [
@@ -303,9 +292,7 @@ class MountItemTestCase(BaseItemTestCase):
             mountee = temp_subvolumes.create("moun:tee/volume")
 
             # Make the JSON file normally in "buck-out" that refers to `mountee`
-            mountee_subvolumes_dir = self._write_layer_json_into(
-                mountee, source_dir
-            )
+            mountee_subvolumes_dir = self._write_layer_json_into(mountee, source_dir)
 
             # Create a Mount <mountee> at <mounter>/meow
             mounter = temp_subvolumes.caller_will_create("mount:er/volume")
@@ -314,9 +301,7 @@ class MountItemTestCase(BaseItemTestCase):
             mount_meow = self._make_mount_item(
                 mountpoint="meow", target=source_dir, mount_config=mount_config
             )
-            self.assertEqual(
-                runtime_source, json.loads(mount_meow.runtime_source)
-            )
+            self.assertEqual(runtime_source, json.loads(mount_meow.runtime_source))
             with self.assertRaisesRegex(AssertionError, " could not resolve "):
                 mount_meow.build_source.to_path(
                     target_to_path={}, subvolumes_dir=mountee_subvolumes_dir
@@ -370,9 +355,7 @@ class MountItemTestCase(BaseItemTestCase):
                 ),
                 is_directory=True,
                 mountpoint="meownt",
-                runtime_source=RuntimeSource(
-                    type="chicken", package=None, uuid=None
-                ),
+                runtime_source=RuntimeSource(type="chicken", package=None, uuid=None),
             ),
             Mount(
                 build_source=BuildSource(type="host", source="/dev/null"),
@@ -392,9 +375,7 @@ class MountItemTestCase(BaseItemTestCase):
         # more mounts than we are explicitly adding in our test cases.  Lets
         # just confirm that the mounts we expect are there.
         self.assertTrue(
-            set(expected_mounts).issubset(
-                set(mounts_from_meta(test_subvol.path()))
-            )
+            set(expected_mounts).issubset(set(mounts_from_meta(test_subvol.path())))
         )
 
         # Test a layer that has no mounts
@@ -403,9 +384,7 @@ class MountItemTestCase(BaseItemTestCase):
             already_exists=True,
         )
 
-        self.assertEqual(
-            [], list(mounts_from_meta(test_subvol_no_mounts.path()))
-        )
+        self.assertEqual([], list(mounts_from_meta(test_subvol_no_mounts.path())))
 
         # Test when the path doesn't have a meta dir
         with temp_dir() as td:

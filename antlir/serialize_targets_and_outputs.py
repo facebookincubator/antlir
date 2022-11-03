@@ -32,9 +32,7 @@ def get_main_cell_names(
     buck_config: BuckConfigParser,
 ) -> Generator[str, None, None]:
     yield from (
-        cell
-        for cell, path in buck_config["repositories"].items()
-        if path == "."
+        cell for cell, path in buck_config["repositories"].items() if path == "."
     )
 
 

@@ -103,9 +103,7 @@ class YumDnfConfIsolator:
         self._isolated_main = False
         self._isolated_repos = False
 
-    def isolate_repos(
-        self, repos: Iterable[YumDnfConfRepo]
-    ) -> "YumDnfConfIsolator":
+    def isolate_repos(self, repos: Iterable[YumDnfConfRepo]) -> "YumDnfConfIsolator":
         """
         Asserts that the passed repos are exactly those defined in the
         config file. This ensures that we leave no repo unisolated.

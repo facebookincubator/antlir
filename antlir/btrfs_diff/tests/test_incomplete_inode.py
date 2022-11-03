@@ -62,9 +62,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
 
         t = 10**8  # tenth of a second in nanoseconds
         ino.apply_item(
-            SSI.utimes(
-                path=b"a", ctime=(1, 9 * t), mtime=(2, 8 * t), atime=(1, 7 * t)
-            )
+            SSI.utimes(path=b"a", ctime=(1, 9 * t), mtime=(2, 8 * t), atime=(1, 7 * t))
         )
         self.assertEqual(
             InodeUtimes(ctime=(1, 9 * t), mtime=(2, 8 * t), atime=(1, 7 * t)),
@@ -96,22 +94,16 @@ class IncompleteInodeTestCase(unittest.TestCase):
             self.assertEqual(file_type, ino.file_type)
 
     def test_devices(self) -> None:
-        with self.assertRaisesRegex(
-            RuntimeError, "unexpected [^,]*, expected.*$"
-        ):
+        with self.assertRaisesRegex(RuntimeError, "unexpected [^,]*, expected.*$"):
             ino_chr = IncompleteDevice(item=SSI.mkfile(path=b"unused"))
 
-        ino_chr = IncompleteDevice(
-            item=SSI.mknod(path=b"chr", mode=0o20711, dev=0x123)
-        )
+        ino_chr = IncompleteDevice(item=SSI.mknod(path=b"chr", mode=0o20711, dev=0x123))
         self.assertEqual("(Char m711 123)", repr(ino_chr))
         self.assertEqual(stat.S_IFCHR, ino_chr.file_type)
         self.assertEqual(0x123, ino_chr.dev)
         self.assertEqual(0o711, ino_chr.mode)
 
-        ino_blk = IncompleteDevice(
-            item=SSI.mknod(path=b"blk", mode=0o60544, dev=0x345)
-        )
+        ino_blk = IncompleteDevice(item=SSI.mknod(path=b"blk", mode=0o60544, dev=0x345))
         self.assertEqual("(Block m544 345)", repr(ino_blk))
         self.assertEqual(stat.S_IFBLK, ino_blk.file_type)
         self.assertEqual(0x345, ino_blk.dev)
@@ -121,9 +113,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
             IncompleteDevice(item=SSI.mknod(path=b"e", mode=0o10644, dev=3))
 
     def test_symlink(self) -> None:
-        with self.assertRaisesRegex(
-            RuntimeError, "unexpected [^,]*, expected.*$"
-        ):
+        with self.assertRaisesRegex(RuntimeError, "unexpected [^,]*, expected.*$"):
             ino = IncompleteSymlink(item=SSI.mkfile(path=b"unused"))
 
         ino = IncompleteSymlink(item=SSI.symlink(path=b"l", dest=b"cat"))
@@ -163,9 +153,7 @@ class IncompleteInodeTestCase(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, r"\(Dir\) cannot clone "):
             d.apply_clone(clone_5_10, f1)
 
-        with self.assertRaisesRegex(
-            RuntimeError, r"Cannot clone.* from \(Dir\)"
-        ):
+        with self.assertRaisesRegex(RuntimeError, r"Cannot clone.* from \(Dir\)"):
             f1.apply_clone(clone_5_10, d)
 
         f2 = IncompleteFile(item=SSI.mkfile(path=b"unused"))

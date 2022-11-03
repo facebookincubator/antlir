@@ -15,12 +15,7 @@ from antlir.compiler.items.group import (
 )
 from antlir.compiler.items.tests.common import BaseItemTestCase
 
-from antlir.compiler.requires_provides import (
-    Provider,
-    ProvidesGroup,
-    RequireFile,
-    RequireGroup,
-)
+from antlir.compiler.requires_provides import ProvidesGroup, RequireFile
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes
 
@@ -132,15 +127,11 @@ class GroupFileTest(unittest.TestCase):
         )
 
     def test_init_with_bad_line(self) -> None:
-        with self.assertRaisesRegex(
-            RuntimeError, r"^Invalid line in group file"
-        ):
+        with self.assertRaisesRegex(RuntimeError, r"^Invalid line in group file"):
             GroupFile("root:0\n")
 
     def test_init_with_duplicate_gid(self) -> None:
-        with self.assertRaisesRegex(
-            RuntimeError, r"^Duplicate GID in group file"
-        ):
+        with self.assertRaisesRegex(RuntimeError, r"^Duplicate GID in group file"):
             GroupFile("root:x:42:\nbin:x:42:")
 
     def test_init_with_duplicate_groupname(self) -> None:
@@ -189,9 +180,7 @@ class GroupFileTest(unittest.TestCase):
         gf.add("a", 1)
         self.assertEqual(gf.lines[1], GroupFileLine(name="a", id=1, members=[]))
         gf.join("a", "me")
-        self.assertEqual(
-            gf.lines[1], GroupFileLine(name="a", id=1, members=["me"])
-        )
+        self.assertEqual(gf.lines[1], GroupFileLine(name="a", id=1, members=["me"]))
         gf.join("a", "you")
         self.assertEqual(
             gf.lines[1], GroupFileLine(name="a", id=1, members=["me", "you"])

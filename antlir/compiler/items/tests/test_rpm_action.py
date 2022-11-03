@@ -35,9 +35,7 @@ class InstallerIndependentRpmActionItemTest(BaseItemTestCase):
     def test_phase_orders(self) -> None:
         self.assertEqual(
             PhaseOrder.RPM_INSTALL,
-            create_rpm_action_item(
-                name="n", action=RpmAction.install
-            ).phase_order(),
+            create_rpm_action_item(name="n", action=RpmAction.install).phase_order(),
         )
         self.assertEqual(
             PhaseOrder.RPM_REMOVE,
@@ -93,9 +91,9 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
     def _check_rpm_action_item_subvol(
         self, subvol, rpm_item: RpmActionItem, fs_render, *, opts=None
     ) -> None:
-        RpmActionItem.get_phase_builder(
-            [rpm_item], opts if opts else self._opts()
-        )(subvol)
+        RpmActionItem.get_phase_builder([rpm_item], opts if opts else self._opts())(
+            subvol
+        )
         subvol.run_as_root(
             [
                 "rm",
@@ -122,9 +120,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 create_rpm_action_item(
                     name="rpm-test-carrot",
                     action=RpmAction.install,
-                    flavor_to_version_set={
-                        "antlir_test": (td / "vset").decode()
-                    },
+                    flavor_to_version_set={"antlir_test": (td / "vset").decode()},
                 ),
                 {"rpm_test": ["(Dir)", {"carrot.txt": ["(File d16)"]}]},
             )
@@ -207,9 +203,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
 
             subvol = temp_subvolumes.create("rpm_ver_lock")
             subvol.run_as_root(["mkdir", subvol.path(".meta")])
-            layer_opts = self._opts(
-                version_set_override=td / "vset_version_override"
-            )
+            layer_opts = self._opts(version_set_override=td / "vset_version_override")
             self._check_rpm_action_item_subvol(
                 subvol,
                 create_rpm_action_item(
@@ -249,9 +243,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             subvol = temp_subvolumes.snapshot(parent_subvol, "rpm_action")
             self._check_rpm_action_item_subvol(
                 subvol,
-                create_rpm_action_item(
-                    source=src_rpm, action=RpmAction.install
-                ),
+                create_rpm_action_item(source=src_rpm, action=RpmAction.install),
                 {"rpm_test": ["(Dir)", {"cheese1.txt": ["(File d42)"]}]},
             )
 
@@ -289,10 +281,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             with self.assertRaisesRegex(RuntimeError, "RPM action conflict "):
                 # Note that we don't need to run the builder to hit the error
                 RpmActionItem.get_phase_builder(
-                    [
-                        create_rpm_action_item(name=r, action=a)
-                        for r, a in rpm_actions
-                    ],
+                    [create_rpm_action_item(name=r, action=a) for r, a in rpm_actions],
                     self._opts(),
                 )
 

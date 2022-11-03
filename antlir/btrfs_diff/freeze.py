@@ -69,9 +69,7 @@ class frozendict(Mapping, tuple, DoNotFreeze):
         return not self == other
 
     def __repr__(self) -> str:
-        return (
-            f"{type(self).__name__}({repr(dict(tuple.__getitem__(self, 0)))})"
-        )
+        return f"{type(self).__name__}({repr(dict(tuple.__getitem__(self, 0)))})"
 
     def __hash__(self) -> int:
         # Although python dictionaries are order preserving,
@@ -110,10 +108,7 @@ def freeze(obj, *, _memo=None, **kwargs):
             frozen = tuple(freeze(i, _memo=_memo) for i in obj)
         elif isinstance(obj, dict):
             frozen = frozendict(
-                {
-                    freeze(k, _memo=_memo): freeze(v, _memo=_memo)
-                    for k, v in obj.items()
-                }
+                {freeze(k, _memo=_memo): freeze(v, _memo=_memo) for k, v in obj.items()}
             )
         elif isinstance(obj, (set, frozenset)):
             frozen = frozenset(freeze(i, _memo=_memo) for i in obj)

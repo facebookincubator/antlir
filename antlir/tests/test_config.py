@@ -88,9 +88,7 @@ class RepoConfigTestCase(unittest.TestCase):
         self.assertIsNone(config.repo_root)
 
     @unittest.mock.patch("antlir.config.repo_config_data")
-    def test_repo_config_fail_artifacts_require_repo_true(
-        self, mock_data
-    ) -> None:
+    def test_repo_config_fail_artifacts_require_repo_true(self, mock_data) -> None:
         # Test the case where the artifacts require the repo, but we can't
         # find it.
 
@@ -106,9 +104,7 @@ class RepoConfigTestCase(unittest.TestCase):
 
     @unittest.mock.patch("antlir.config.find_artifacts_dir")
     @unittest.mock.patch("antlir.config.repo_config_data")
-    def test_repo_config_host_mounts(
-        self, mock_data, artifacts_dir_mock
-    ) -> None:
+    def test_repo_config_host_mounts(self, mock_data, artifacts_dir_mock) -> None:
         # Force the value of `artifacts_require_repo` to True so we can force
         # looking for the artifacts_dir
         mock_data.dict = unittest.mock.Mock()

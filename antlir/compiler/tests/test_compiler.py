@@ -20,22 +20,13 @@ from antlir.bzl.constants import flavor_config_t
 
 from antlir.compiler import subvolume_on_disk as svod
 from antlir.compiler.compiler import build_image, parse_args
-from antlir.fs_utils import (
-    Path,
-    RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR,
-    temp_dir,
-)
+from antlir.fs_utils import Path, RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR, temp_dir
 from antlir.subvol_utils import Subvol, TempSubvolumes
 from antlir.tests.flavor_helpers import render_flavor
 from antlir.tests.layer_resource import layer_resource, layer_resource_subvol
-from antlir.tests.subvol_helpers import (
-    render_meta_build_contents,
-    render_subvol,
-)
+from antlir.tests.subvol_helpers import render_meta_build_contents, render_subvol
 
-_TEST_BA_TARGET_PATH = (
-    "fbcode//antlir/compiler/test_images:build_appliance_testing"
-)
+_TEST_BA_TARGET_PATH = "fbcode//antlir/compiler/test_images:build_appliance_testing"
 _TEST_BA = layer_resource(__package__, "test-build-appliance")
 _TEST_BA_SUBVOL = layer_resource_subvol(__package__, "test-build-appliance")
 
@@ -56,8 +47,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
                 if include_build_appliance
                 else None,
                 rpm_installer="dnf",
-                rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR
-                / "dnf",
+                rpm_repo_snapshot=RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR / "dnf",
             )
 
             # We want the compiler to create a nested subvol so the outer test

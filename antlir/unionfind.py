@@ -62,9 +62,7 @@ class UnionFind(object):
             return id
 
         root = self.find(parent)
-        self._representative_dict[
-            id
-        ] = root  # imperative, path compression heuristic !
+        self._representative_dict[id] = root  # imperative, path compression heuristic !
         return root
 
     def flatten(self) -> None:

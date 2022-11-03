@@ -151,8 +151,7 @@ class Extent(NamedTuple):
             content = (content,)
         # Runtime enforcement because I don't trust my coding :)
         assert isinstance(content, Extent.Kind) or (
-            isinstance(content, tuple)
-            and all(isinstance(e, Extent) for e in content)
+            isinstance(content, tuple) and all(isinstance(e, Extent) for e in content)
         ), f"Invalid extent content: {content}"
         # If you hit this, you should create a HOLE followed by DATA.
         assert (
@@ -249,9 +248,7 @@ class Extent(NamedTuple):
             Extent.__new(from_extent, offset=from_offset, length=length),
         )
 
-    def gen_trimmed_leaves(
-        self, *, offset: int = 0, length: Optional[int] = None
-    ):
+    def gen_trimmed_leaves(self, *, offset: int = 0, length: Optional[int] = None):
         """
         Yields the sequence of
            (offset, length, leaf subextent with Extent.Kind content),
@@ -307,9 +304,7 @@ class Extent(NamedTuple):
         return "".join(
             # merge adjacent leaves of the same type
             f"{k}{sum(l for _, l in leaves)}"
-            for k, leaves in itertools.groupby(
-                self._gen_leaf_reprs(), lambda kl: kl[0]
-            )
+            for k, leaves in itertools.groupby(self._gen_leaf_reprs(), lambda kl: kl[0])
         )
 
     def __copy__(self) -> "Extent":

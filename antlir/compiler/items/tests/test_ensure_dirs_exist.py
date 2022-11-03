@@ -140,9 +140,9 @@ class EnsureDirsExistItemTestCase(BaseItemTestCase):
                     subvol, DUMMY_LAYER_OPTS_BA
                 )
             with self.assertRaises(MismatchError):
-                EnsureDirsExistItem(
-                    **{**good, "user": "77", "group": "88"}
-                ).build(subvol, DUMMY_LAYER_OPTS_BA)
+                EnsureDirsExistItem(**{**good, "user": "77", "group": "88"}).build(
+                    subvol, DUMMY_LAYER_OPTS_BA
+                )
 
     @with_mocked_temp_volume_dir
     def test_ensure_dirs_exist_item_xattrs_check(self):

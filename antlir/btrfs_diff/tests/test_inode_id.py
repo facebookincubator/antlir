@@ -161,9 +161,7 @@ class InodeIDTestCase(DeepCopyTestCase):
 
             # Other errors
             with self.assertRaisesRegex(RuntimeError, "Wrong map for .* #17"):
-                im.get_paths(
-                    InodeID(id=17, inner_id_map=InodeIDMap.new().inner)
-                )
+                im.get_paths(InodeID(id=17, inner_id_map=InodeIDMap.new().inner))
             # Since `im` may be frozen, we can't actually count from it
             fake_ino_id = InodeID(id=1337, inner_id_map=im.inner)
             with self.assertRaisesRegex(ValueError, "Need relative path"):
@@ -172,13 +170,9 @@ class InodeIDTestCase(DeepCopyTestCase):
                 im.add_file(fake_ino_id, b"b/c")
 
         # This error differs between unfrozen & frozen:
-        with self.assertRaisesRegex(
-            RuntimeError, "Adding #3 to b'a' which has #1"
-        ):
+        with self.assertRaisesRegex(RuntimeError, "Adding #3 to b'a' which has #1"):
             id_map.add_dir(id_map.next(), b"a")
-        with self.assertRaisesRegex(
-            TypeError, "'NoneType' object is not an iterator"
-        ):
+        with self.assertRaisesRegex(TypeError, "'NoneType' object is not an iterator"):
             freeze(id_map).next()
 
         # OK to remove since it's now empty
@@ -190,9 +184,7 @@ class InodeIDTestCase(DeepCopyTestCase):
                 im.inner.id_to_reverse_entries,
             )
             self.assertEqual(
-                _PathEntry(
-                    id=InodeID(id=0, inner_id_map=im.inner), name_to_child={}
-                ),
+                _PathEntry(id=InodeID(id=0, inner_id_map=im.inner), name_to_child={}),
                 im.root,
             )
 
@@ -205,9 +197,7 @@ class InodeIDTestCase(DeepCopyTestCase):
         id_map.add_file(id_map.get_id(b"x/y/z"), b"u/v/w")  # hardlink to z
         id_map = yield from maybe_replace_map(id_map, "created x/y/z, u/v/w")
         for im, _ns in unfrozen_and_frozen(id_map, mut_ns):
-            self.assertEqual(
-                {b"x/y/z", b"u/v/w"}, im.get_paths(im.get_id(b"x/y/z"))
-            )
+            self.assertEqual({b"x/y/z", b"u/v/w"}, im.get_paths(im.get_id(b"x/y/z")))
             self.assertEqual({b"x/y/z"}, im.get_children(im.get_id(b"x/y")))
         id_map.rename_path(b"u/v", b"x/y/v")
         id_map.rename_path(b"x", b"x1")
@@ -292,9 +282,7 @@ class InodeIDTestCase(DeepCopyTestCase):
                 id=InodeID(id=0, inner_id_map=saved_frozen_map.inner),
                 name_to_child={
                     b"a": _PathEntry(
-                        id=InodeID(
-                            id=INO1_ID, inner_id_map=saved_frozen_map.inner
-                        ),
+                        id=InodeID(id=INO1_ID, inner_id_map=saved_frozen_map.inner),
                         name_to_child={
                             b"d": _PathEntry(
                                 id=InodeID(
@@ -324,9 +312,7 @@ class InodeIDTestCase(DeepCopyTestCase):
 
     def test_description(self) -> None:
         cat_map = InodeIDMap.new(description="cat")
-        self.assertEqual(
-            "cat@food", repr(cat_map.add_file(cat_map.next(), b"food"))
-        )
+        self.assertEqual("cat@food", repr(cat_map.add_file(cat_map.next(), b"food")))
 
     def test_hashing_and_equality(self) -> None:
         maps = [InodeIDMap.new() for i in range(100)]

@@ -5,11 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 from antlir.compiler.items.group import GroupItem
-from antlir.compiler.items.tests.common import (
-    BaseItemTestCase,
-    getent,
-    run_in_ba,
-)
+from antlir.compiler.items.tests.common import BaseItemTestCase, getent, run_in_ba
 from antlir.compiler.items.user import UserItem
 from antlir.subvol_utils import TempSubvolumes
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -44,9 +40,7 @@ class UserItemIntegrationTestCase(BaseItemTestCase):
 
     def test_check_groups_added_layer(self):
         layer = layer_resource_subvol(__package__, "users-added")
-        self.assertRegex(
-            getent(layer, "group", "newuser"), rb"^newuser:x:\d+:\n$"
-        )
+        self.assertRegex(getent(layer, "group", "newuser"), rb"^newuser:x:\d+:\n$")
         self.assertRegex(
             getent(layer, "passwd", "newuser"),
             rb"^newuser:x:\d+:\d+::/home/newuser:/bin/bash\n$",

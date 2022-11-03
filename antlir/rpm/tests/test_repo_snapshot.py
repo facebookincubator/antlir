@@ -107,9 +107,7 @@ class RepoSnapshotTestCase(unittest.TestCase):
             storage = FilesystemStorage(key="test", base_dir=td / "storage")
             os.mkdir(td / "snapshot")
             # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
-            with RepoSnapshot.add_sqlite_to_storage(
-                storage, td / "snapshot"
-            ) as db:
+            with RepoSnapshot.add_sqlite_to_storage(storage, td / "snapshot") as db:
                 snapshot.to_sqlite("fake_repo", db)
             with sqlite3.connect(
                 RepoSnapshot.fetch_sqlite_from_storage(
@@ -155,9 +153,7 @@ class RepoSnapshotTestCase(unittest.TestCase):
                     "size": rpm_base.size,
                     "source_rpm": rpm_base.source_rpm,
                 }
-                file_integrity_err_msg = error_file_integrity.to_dict()[
-                    "message"
-                ]
+                file_integrity_err_msg = error_file_integrity.to_dict()["message"]
                 self.assertEqual(
                     sorted(
                         json.dumps(row, sort_keys=True)
@@ -194,9 +190,7 @@ class RepoSnapshotTestCase(unittest.TestCase):
                                 "error": "http",
                                 "error_json": json.dumps(
                                     {
-                                        "message": error_http.to_dict()[
-                                            "message"
-                                        ],
+                                        "message": error_http.to_dict()["message"],
                                         "location": rpm_http.location,
                                         "http_status": 404,
                                     },

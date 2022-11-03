@@ -7,7 +7,6 @@
 import importlib.resources
 import subprocess
 import tempfile
-import unittest
 
 from antlir.fs_utils import Path
 from antlir.tests.common import AntlirTestCase

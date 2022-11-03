@@ -19,15 +19,10 @@ from antlir.btrfs_diff.inode_utils import (
     erase_utimes_in_range,
 )
 from antlir.btrfs_diff.parse_send_stream import parse_send_stream
-from antlir.btrfs_diff.rendered_tree import (
-    emit_non_unique_traversal_ids,
-    RenderedTree,
-)
+from antlir.btrfs_diff.rendered_tree import emit_non_unique_traversal_ids, RenderedTree
 from antlir.btrfs_diff.subvolume import Subvolume
 from antlir.btrfs_diff.subvolume_set import SubvolumeSet, SubvolumeSetMutator
-from antlir.btrfs_diff.tests.subvolume_utils import (
-    expected_subvol_add_traversal_ids,
-)
+from antlir.btrfs_diff.tests.subvolume_utils import expected_subvol_add_traversal_ids
 
 
 def expected_rendering(expected_subvol):

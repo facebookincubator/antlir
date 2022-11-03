@@ -6,7 +6,6 @@
 
 import os
 import subprocess
-import unittest
 from typing import Set
 
 from antlir.tests.common import AntlirTestCase

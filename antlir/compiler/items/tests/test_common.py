@@ -19,10 +19,7 @@ from antlir.compiler.items.common import (
 )
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
 from antlir.compiler.items.install_file import InstallFileItem
-from antlir.compiler.items.tests.common import (
-    BaseItemTestCase,
-    DUMMY_LAYER_OPTS,
-)
+from antlir.compiler.items.tests.common import BaseItemTestCase, DUMMY_LAYER_OPTS
 
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
@@ -46,9 +43,9 @@ class FakeImageSourceItem(ImageItem):
 class ItemsCommonTestCase(BaseItemTestCase):
     def test_image_source_item(self):
         # Cover the `source=None` branch in `image_source_item`.
-        it = image_source_item(
-            FakeImageSourceItem, layer_opts=DUMMY_LAYER_OPTS
-        )(from_target="m", source=None, kitteh="meow")
+        it = image_source_item(FakeImageSourceItem, layer_opts=DUMMY_LAYER_OPTS)(
+            from_target="m", source=None, kitteh="meow"
+        )
         self.assertEqual(
             FakeImageSourceItem(from_target="m", source=None, kitteh="meow"), it
         )
@@ -61,10 +58,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
         setup_meta_dir(subvol, self._get_layer_opts())
         path_in_layer = "test_source_dir"
         subvol.run_as_root(["mkdir", subvol.path(path_in_layer)])
-        item = image_source_item(
-            FakeImageSourceItem,
-            layer_opts=DUMMY_LAYER_OPTS,
-        )(
+        item = image_source_item(FakeImageSourceItem, layer_opts=DUMMY_LAYER_OPTS,)(
             from_target="m",
             source={"layer": subvol, "path": path_in_layer},
             kitteh="meow",
@@ -73,9 +67,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
 
     def test_enforce_no_parent_dir(self):
         with self.assertRaisesRegex(AssertionError, r"cannot start with \.\."):
-            InstallFileItem(
-                from_target="t", source="/etc/passwd", dest="a/../../b"
-            )
+            InstallFileItem(from_target="t", source="/etc/passwd", dest="a/../../b")
 
     def test_stat_options(self):
         self._check_item(
@@ -101,9 +93,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
             invalid: str
 
         with self.assertRaisesRegex(TypeError, "follows default"):
-            TestImageSourceItem(
-                from_target="m", source="x", kitteh="y", invalid="z"
-            )
+            TestImageSourceItem(from_target="m", source="x", kitteh="y", invalid="z")
 
     def test_image_defaults(self):
         item = FakeImageSourceItem(from_target="m", source="x", kitteh="y")
@@ -209,9 +199,7 @@ class ItemsCommonTestCase(BaseItemTestCase):
 
     @with_temp_subvols
     def test_flavor_file_exists_do_nothing(self, temp_subvols):
-        subvol = self._setup_flavor_test_subvol(
-            temp_subvols, flavor="antlir_test"
-        )
+        subvol = self._setup_flavor_test_subvol(temp_subvols, flavor="antlir_test")
         setup_meta_dir(subvol, self._get_layer_opts())
 
         self.assertEqual("antlir_test", subvol.read_path_text(META_FLAVOR_FILE))

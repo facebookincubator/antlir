@@ -7,7 +7,7 @@
 import errno
 import os.path
 import sys
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import btrfsutil as _raw_btrfsutil  # pyre-ignore[21]
 from antlir import btrfsutil
@@ -86,9 +86,7 @@ class BtrfsUtilTestCase(AntlirTestCase):
         def unittest_fail():
             pass
 
-        with self.assertRaises(
-            RuntimeError, msg="failing for unittest coverage"
-        ):
+        with self.assertRaises(RuntimeError, msg="failing for unittest coverage"):
             btrfsutil._sudo_retry(unittest_fail, None, None)
 
     @patch("antlir.btrfsutil._sudo_retry", wraps=btrfsutil._sudo_retry)

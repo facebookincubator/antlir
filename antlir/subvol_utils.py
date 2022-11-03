@@ -307,9 +307,7 @@ class Subvol(DoNotFreeze):
 
         # Any child subvolumes must be marked as read-write before the parent
         # can be deleted
-        for (child_path, _) in btrfsutil.SubvolumeIterator(
-            self._path, post_order=True
-        ):
+        for (child_path, _) in btrfsutil.SubvolumeIterator(self._path, post_order=True):
             child_path = self._path / child_path
             btrfsutil.set_subvolume_read_only(child_path, False)
 
@@ -390,9 +388,7 @@ class Subvol(DoNotFreeze):
             yield proc
 
     def mark_readonly_and_get_sendstream(self, **kwargs) -> bytes:
-        with self._mark_readonly_and_send(
-            stdout=subprocess.PIPE, **kwargs
-        ) as proc:
+        with self._mark_readonly_and_send(stdout=subprocess.PIPE, **kwargs) as proc:
             # pyre-fixme[16]: Optional type has no attribute `read`.
             return proc.stdout.read()
 
@@ -406,9 +402,7 @@ class Subvol(DoNotFreeze):
             yield
 
     @contextmanager
-    def write_tarball_to_file(
-        self, outfile: BinaryIO, **kwargs
-    ) -> Iterator[None]:
+    def write_tarball_to_file(self, outfile: BinaryIO, **kwargs) -> Iterator[None]:
         # gnu tar has a nasty bug where even if you specify `--one-file-system`
         # it still tries to perform various operations on other mount points.
         # The problem with this is that some filesystem types don't support all
@@ -538,10 +532,7 @@ class Subvol(DoNotFreeze):
                         "receive",
                         # Future: If we get `pass_fds` support, use
                         # `/proc/self/fd'
-                        Path("/proc")
-                        / str(os.getpid())
-                        / "fd"
-                        / str(parent_fd),
+                        Path("/proc") / str(os.getpid()) / "fd" / str(parent_fd),
                     ],
                     _subvol_exists=False,
                     stdin=from_file,
@@ -674,9 +665,7 @@ class TempSubvolumes:
         exposing setuid binaries inside the built subvolumes.
         """
         rel_path = (
-            (self.temp_dir / rel_path)
-            .realpath()
-            .relpath(self.temp_dir.realpath())
+            (self.temp_dir / rel_path).realpath().relpath(self.temp_dir.realpath())
         )
         if rel_path.has_leading_dot_dot():
             raise AssertionError(

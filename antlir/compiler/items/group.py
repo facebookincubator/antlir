@@ -81,9 +81,7 @@ class GroupFile:
     def add(self, name: str, gid: int) -> None:
         if gid in self.lines:
             line = self.lines[gid]
-            raise ValueError(
-                f"new group {name}/{gid} conflicts with {line.name}"
-            )
+            raise ValueError(f"new group {name}/{gid} conflicts with {line.name}")
         if name in self.nameToGID:
             raise ValueError(f"group {name} already exists")
         self.lines[gid] = GroupFileLine(name=name, id=gid, members=[])

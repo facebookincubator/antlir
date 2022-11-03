@@ -95,9 +95,7 @@ _ESCAPED_TO_UNESCAPED = OrderedDict(
 #           fillvalue=(None, None),
 #       )
 #   ))
-_ESCAPED_REGEX = re.compile(
-    b"|".join(re.escape(e) for e in _ESCAPED_TO_UNESCAPED)
-)
+_ESCAPED_REGEX = re.compile(b"|".join(re.escape(e) for e in _ESCAPED_TO_UNESCAPED))
 
 
 def unquote_btrfs_progs_path(s):
@@ -129,9 +127,7 @@ class RegexItemParser:
                 #
                 # We currently only use `context_conv_FIELD_NAME` when a detail
                 # field needs to know the subvolume name, see e.g. `clone`.
-                k: getattr(
-                    cls, f"context_conv_{k}", lambda value, subvol_name: value
-                )(
+                k: getattr(cls, f"context_conv_{k}", lambda value, subvol_name: value)(
                     getattr(cls, f"conv_{k}", lambda x: x)(v),
                     subvol_name=subvol_name,
                 )
@@ -339,9 +335,7 @@ class SendStreamItemParsers:
 # The inner classes of SendStreamItems, omitting internals like __doc__.
 # The keys must be bytes because `btrfs` does not give us unicode.
 NAME_TO_PARSER_TYPE = {
-    k.encode(): v
-    for k, v in SendStreamItemParsers.__dict__.items()
-    if k[0] != "_"
+    k.encode(): v for k, v in SendStreamItemParsers.__dict__.items() if k[0] != "_"
 }
 NAME_TO_ITEM_TYPE = {
     k.encode(): v
@@ -382,21 +376,15 @@ def parse_btrfs_dump(
 
         if subvol_name is None:
             if not item_class.sets_subvol_name:
-                raise RuntimeError(
-                    f"First stream item did not set subvolume name: {l}"
-                )
+                raise RuntimeError(f"First stream item did not set subvolume name: {l}")
             path = os.path.normpath(unnormalized_path)
             subvol_name = path
             if b"/" in path:
                 raise RuntimeError(f"subvol path {path} contains /")
         elif item_class.sets_subvol_name:
-            raise RuntimeError(
-                f"Subvolume {subvol_name} created more than once."
-            )
+            raise RuntimeError(f"Subvolume {subvol_name} created more than once.")
         else:
-            path = _normalize_subvolume_path(
-                unnormalized_path, subvol_name=subvol_name
-            )
+            path = _normalize_subvolume_path(unnormalized_path, subvol_name=subvol_name)
 
         if fix_fields and details in fix_fields.keys():
             fields = fix_fields[details]

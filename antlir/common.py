@@ -71,9 +71,7 @@ class ColorFormatter(logging.Formatter):
 
     def format(self, record) -> str:
         try:
-            self._style._fmt = (
-                self._level_to_prefix[record.levelno] + self._base_fmt
-            )
+            self._style._fmt = self._level_to_prefix[record.levelno] + self._base_fmt
         except KeyError:
             # Fall back to just prepending the log level int
             self._style._fmt = str(record.levelno) + self._base_fmt
@@ -119,9 +117,7 @@ def check_popen_returncode(proc: subprocess.Popen) -> None:
         #     File "<stdin>", line 1, in <module>
         #   subprocess.CalledProcessError: Command '['a']' returned non-zero
         #   exit status 5.
-        raise subprocess.CalledProcessError(
-            returncode=proc.returncode, cmd=proc.args
-        )
+        raise subprocess.CalledProcessError(returncode=proc.returncode, cmd=proc.args)
 
 
 def set_new_key(d, k, v) -> None:
@@ -222,9 +218,7 @@ def open_fd(path: AnyStr, flags) -> Iterator[int]:
         os.close(fd)
 
 
-def not_none(
-    var: Optional[T], var_name: str = "", detail: Optional[str] = None
-) -> T:
+def not_none(var: Optional[T], var_name: str = "", detail: Optional[str] = None) -> T:
     """Used for type-refinement with `Optional`s."""
     if var is not None:
         return var
@@ -376,9 +370,7 @@ def kernel_version() -> Tuple[int, int]:
     """
     m = re.match(r"(\d+)\.(\d+)\.\d+.*", _mockable_platform_release())
     if not m or len(m.groups()) != 2:
-        raise ValueError(
-            f"Invalid kernel version format '{platform.release()}'"
-        )
+        raise ValueError(f"Invalid kernel version format '{platform.release()}'")
     return int(m.group(1)), int(m.group(2))
 
 

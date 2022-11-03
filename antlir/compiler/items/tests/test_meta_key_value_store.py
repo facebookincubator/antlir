@@ -16,11 +16,7 @@ from antlir.compiler.items.tests.common import (
     with_mocked_temp_volume_dir,
 )
 
-from antlir.compiler.requires_provides import (
-    ProvidesKey,
-    RequireKey,
-    RequireUser,
-)
+from antlir.compiler.requires_provides import ProvidesKey, RequireKey, RequireUser
 from antlir.subvol_utils import TempSubvolumes
 
 

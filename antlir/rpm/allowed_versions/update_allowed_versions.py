@@ -56,9 +56,7 @@ _PLUGGABLE_TO_DIR_NAME = {
     VersionPolicy: "version_policy",
 }
 # Not sure how to make the next 2 derive from _PLUGGABLE_TO_DIR_NAME
-LiteralKnownPluggable = Union[
-    Literalish(PackageGroup), Literalish(VersionPolicy)
-]
+LiteralKnownPluggable = Union[Literalish(PackageGroup), Literalish(VersionPolicy)]
 KnownPluggable = Union[PackageGroup, VersionPolicy]
 # pyre-fixme[6]: Expected `Tuple[typing.Any,
 #  typing.Type[Variable[$synthetic_attribute_resolution_variable]]]` for 1st
@@ -69,11 +67,7 @@ LoadConfigFns = Mapping[LiteralKnownPluggable, Mapping[str, Callable[..., Any]]]
 # FB's TARGETS file auto-formatting requires double-quotes, while Python
 # (much more reasonably) prefers single quotes.
 def _drepr(s) -> str:
-    return (
-        '"'
-        + s.encode("unicode_escape").decode("ascii").replace('"', '\\"')
-        + '"'
-    )
+    return '"' + s.encode("unicode_escape").decode("ascii").replace('"', '\\"') + '"'
 
 
 class _PluginRef(NamedTuple):
@@ -88,9 +82,7 @@ class _PluginRef(NamedTuple):
             # pyre-fixme[16]: `PackageGroup` has no attribute `SNAPSHOT_DIR`.
             snapshot_dir = self.plugin.SNAPSHOT_DIR
         else:
-            snapshot_dir = (
-                Path(_PLUGGABLE_TO_DIR_NAME[self.pluggable]) / self.kind()
-            )
+            snapshot_dir = Path(_PLUGGABLE_TO_DIR_NAME[self.pluggable]) / self.kind()
         return snapshot_root / snapshot_dir
 
     def kind(self) -> str:
@@ -227,9 +219,7 @@ def _load_version_sets(
         try:
             json_suffix = b".json"
             assert group_path.endswith(json_suffix), group_path
-            group_id = os.path.basename(
-                group_path[: -len(json_suffix)]
-            ).decode()
+            group_id = os.path.basename(group_path[: -len(json_suffix)]).decode()
             assert group_id not in known_group_ids, group_id
 
             with open(group_path) as f:
@@ -241,9 +231,7 @@ def _load_version_sets(
             packages = frozenset(_load_package_names(packages_cfg, group_fn))
             log.info(f"XXX1 {packages_cfg} {packages}")
 
-            for vset, policy_cfg in group_cfg.pop(
-                "version_set_to_policy"
-            ).items():
+            for vset, policy_cfg in group_cfg.pop("version_set_to_policy").items():
                 vpgroups = vset_to_vpgroups.setdefault(vset, [])
 
                 try:
@@ -262,9 +250,9 @@ def _load_version_sets(
                     )
 
                 for pkg in packages:
-                    prev = vset_to_pkg_to_vpgroup.setdefault(
-                        vset, {}
-                    ).setdefault(pkg, vpgroup)
+                    prev = vset_to_pkg_to_vpgroup.setdefault(vset, {}).setdefault(
+                        pkg, vpgroup
+                    )
                     if prev is not vpgroup:
                         raise RuntimeError(
                             f"{pkg} was already added to this version set by "
@@ -347,8 +335,7 @@ def _resolve_envras_for_package_group(
         if pkg not in n_to_vra_to_e:
             continue
         cur_evr_to_a_to_pkgs = {
-            (e, v, r): {a: {pkg}}
-            for (v, r, a), e in n_to_vra_to_e.get(pkg, {}).items()
+            (e, v, r): {a: {pkg}} for (v, r, a), e in n_to_vra_to_e.get(pkg, {}).items()
         }
         if evr_to_a_to_pkgs is None:
             evr_to_a_to_pkgs = cur_evr_to_a_to_pkgs
@@ -502,10 +489,7 @@ def update_allowed_versions(args: argparse.Namespace) -> None:
             map(
                 lambda x: Path(x),
                 sum(
-                    [
-                        glob.glob(dir / "*.json")
-                        for dir in args.package_groups_dir
-                    ],
+                    [glob.glob(dir / "*.json") for dir in args.package_groups_dir],
                     [],
                 ),
             ),
@@ -514,9 +498,7 @@ def update_allowed_versions(args: argparse.Namespace) -> None:
         )
     log.info(f"XXXvsets {vset_to_vpgroups}")
     # pyre-fixme[16]: `Path` has no attribute `__enter__`.
-    with populate_temp_dir_and_rename(
-        args.version_sets_dir, overwrite=True
-    ) as td:
+    with populate_temp_dir_and_rename(args.version_sets_dir, overwrite=True) as td:
         for vset, vpgroups in vset_to_vpgroups.items():
             _save_allowed_versions(
                 vpgroups=vpgroups,

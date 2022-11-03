@@ -27,16 +27,12 @@ class TestCommon(unittest.TestCase):
     def test_readonly_snapshot_db(self) -> None:
         with self.assertRaises(FileNotFoundError):
             readonly_snapshot_db(Path("/DoEs/nOt/eXiSt"))
-        with readonly_snapshot_db(
-            Path(os.environ["antlir_test_snapshot"])
-        ) as db:
+        with readonly_snapshot_db(Path(os.environ["antlir_test_snapshot"])) as db:
             ((rows,),) = db.execute("SELECT COUNT(1) FROM `rpm`").fetchall()
             self.assertGreaterEqual(rows, 1)
 
     def test_rpm_shard(self) -> None:
-        self.assertEqual(
-            RpmShard(shard=3, modulo=7), RpmShard.from_string("3:7")
-        )
+        self.assertEqual(RpmShard(shard=3, modulo=7), RpmShard.from_string("3:7"))
 
         class FakeRpm:
             def __init__(self, nevra):
@@ -61,9 +57,7 @@ class TestCommon(unittest.TestCase):
         for algo in ["sha1", "sha"]:
             h = Checksum(algo, "ignored").hasher()
             h.update(b"banana")
-            self.assertEqual(
-                "250e77f12a5ab6972a0895d290c4792f0a326ea8", h.hexdigest()
-            )
+            self.assertEqual("250e77f12a5ab6972a0895d290c4792f0a326ea8", h.hexdigest())
 
     def test_read_chunks(self) -> None:
         self.assertEqual(

@@ -11,17 +11,10 @@ import textwrap
 from antlir.fs_utils import Path, populate_temp_dir_and_rename, temp_dir
 from antlir.rpm.common import RpmShard
 from antlir.rpm.snapshot_repos import snapshot_repos
-from antlir.rpm.tests.temp_repos import (
-    Repo,
-    Rpm,
-    SAMPLE_STEPS,
-    temp_repos_steps,
-)
+from antlir.rpm.tests.temp_repos import Repo, Rpm, SAMPLE_STEPS, temp_repos_steps
 
 
-def _make_test_yum_dnf_conf(
-    yum_dnf: str, repos_path: Path, gpg_key_path: Path
-) -> str:
+def _make_test_yum_dnf_conf(yum_dnf: str, repos_path: Path, gpg_key_path: Path) -> str:
     return (
         textwrap.dedent(
             f"""\
@@ -99,9 +92,7 @@ if __name__ == "__main__":
         "sample-step-0": SAMPLE_STEPS[0],  # Used by most tests
         # Used to test non-default repo snapshot selection
         "non-default": {
-            "cheese": Repo(
-                [Rpm("cake", "non", "default"), Rpm("cheese", "0", "0")]
-            )
+            "cheese": Repo([Rpm("cake", "non", "default"), Rpm("cheese", "0", "0")])
         },
         "rpm-replay": {
             "cheese": Repo(
@@ -130,9 +121,7 @@ if __name__ == "__main__":
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--kind", choices=list(kind_to_steps))
-    parser.add_argument(
-        "--gpg-keypair-dir", type=Path.from_argparse, required=True
-    )
+    parser.add_argument("--gpg-keypair-dir", type=Path.from_argparse, required=True)
     parser.add_argument(
         "out_dir", help="Write the temporary snapshot to this directory."
     )

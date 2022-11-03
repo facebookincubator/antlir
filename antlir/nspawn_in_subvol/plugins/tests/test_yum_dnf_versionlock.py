@@ -27,9 +27,7 @@ class TestImpl:
     def _check_version_lock(self, build_appliance_pair):
         # Version-locking carrot causes a non-latest version to be installed
         # -- compare with `test_yum_with_repo_server`.
-        with self._write_versionlocks(
-            ["0\trpm-test-carrot\t1\tlockme\tx86_64"]
-        ) as vl:
+        with self._write_versionlocks(["0\trpm-test-carrot\t1\tlockme\tx86_64"]) as vl:
             self._check_yum_dnf_boot_or_not(
                 self._PROG,
                 "rpm-test-carrot",

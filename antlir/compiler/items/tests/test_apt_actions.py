@@ -12,7 +12,6 @@ from antlir.compiler.items.common import PhaseOrder
 from antlir.compiler.items.tests.common import BaseItemTestCase
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
-from antlir.tests.layer_resource import layer_resource_subvol
 
 _DPKG_STATUS_FILE = "/var/lib/dpkg/status"
 
@@ -21,9 +20,7 @@ class AptActionItemsTestCase(BaseItemTestCase):
     def test_phase_order(self):
         self.assertEqual(
             PhaseOrder.APT_INSTALL,
-            AptActionItems(
-                package_names=["test"], action="install"
-            ).phase_order(),
+            AptActionItems(package_names=["test"], action="install").phase_order(),
         )
         self.assertEqual(
             PhaseOrder.APT_REMOVE,

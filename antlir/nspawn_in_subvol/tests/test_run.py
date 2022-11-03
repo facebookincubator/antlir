@@ -16,10 +16,7 @@ from antlir.config import _unmemoized_repo_config, antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
 from antlir.nspawn_in_subvol.args import _NOBODY_USER, _parse_cli_args
-from antlir.nspawn_in_subvol.cmd import (
-    _colon_quote_path,
-    _extra_nspawn_args_and_env,
-)
+from antlir.nspawn_in_subvol.cmd import _colon_quote_path, _extra_nspawn_args_and_env
 from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 from antlir.nspawn_in_subvol.nspawn import NspawnError
 from antlir.nspawn_in_subvol.tests.base import (
@@ -36,9 +33,7 @@ TEST_IMAGE_PREFIX = antlir_dep("compiler/test_images:")
 
 class NspawnTestCase(NspawnTestBase):
     def _assertIsSubseq(self, subseq, seq, msg=None):
-        subseqs = [
-            seq[i : i + len(subseq)] for i in range(len(seq) - len(subseq) + 1)
-        ]
+        subseqs = [seq[i : i + len(subseq)] for i in range(len(seq) - len(subseq) + 1)]
         self.assertIn(subseq, subseqs)
 
     def test_extra_nspawn_args_private_network_opts(self):
@@ -91,9 +86,7 @@ class NspawnTestCase(NspawnTestBase):
 
     @mock.patch("antlir.nspawn_in_subvol.cmd._load_repo_config")
     @mock.patch("antlir.config.find_repo_root")
-    def test_extra_nspawn_args_bind_repo_opts(
-        self, root_mock, load_repo_config
-    ):
+    def test_extra_nspawn_args_bind_repo_opts(self, root_mock, load_repo_config):
         root_mock.return_value = "/repo/root"
         load_repo_config.return_value = _unmemoized_repo_config()
         # opts.bind_repo_ro
@@ -117,9 +110,7 @@ class NspawnTestCase(NspawnTestBase):
         )
 
     @mock.patch("antlir.nspawn_in_subvol.cmd.find_artifacts_dir")
-    def test_extra_nspawn_args_bind_artifacts_dir_rw_opts(
-        self, artifacts_dir_mock
-    ):
+    def test_extra_nspawn_args_bind_artifacts_dir_rw_opts(self, artifacts_dir_mock):
         with temp_dir() as td:
             mock_backing_dir = td / "backing-dir"
             mock_artifact_dir = Path(td / "buck-image-out")
@@ -550,8 +541,7 @@ class NspawnTestCase(NspawnTestBase):
                     ],
                 )
                 self.assertEqual(
-                    "touch: cannot touch '/tmp/testfile': "
-                    + "Read-only file system",
+                    "touch: cannot touch '/tmp/testfile': " + "Read-only file system",
                     ret.stdout,
                 )
 
@@ -564,9 +554,7 @@ class NspawnTestCase(NspawnTestBase):
             check=False,
         )
         self.assertNotEqual(0, ret.returncode)
-        self.assertRegex(
-            ret.stderr, b"mknod: (|')/foo(|'): Operation not permitted\n"
-        )
+        self.assertRegex(ret.stderr, b"mknod: (|')/foo(|'): Operation not permitted\n")
 
     def _check_boot_cmd_is_system_running(self, *, wait: bool):
         ret = self._nspawn_in(
@@ -876,9 +864,7 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
         self.assertEqual(0, ret.returncode)
         self.assertEqual(repo_root, ret.stdout.strip())
 
-        with self.assertRaisesRegex(
-            AssertionError, "chdir must be an absolute path:"
-        ):
+        with self.assertRaisesRegex(AssertionError, "chdir must be an absolute path:"):
             ret = self._nspawn_in(
                 (__package__, "bootable-systemd-os"),
                 ["--chdir=tmp", "--", "/bin/pwd"],
@@ -916,9 +902,7 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
                         ),
                         TEST_IMAGE_PREFIX
                         + "create_ops-from-layer": str(
-                            layer_resource(
-                                __package__, "test-create-ops-from-layer"
-                            )
+                            layer_resource(__package__, "test-create-ops-from-layer")
                         ),
                         TEST_IMAGE_PREFIX
                         + "first-layer-for-nested-layer-mount": str(
@@ -999,9 +983,7 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
                         ),
                         TEST_IMAGE_PREFIX
                         + "create_ops-from-layer": str(
-                            layer_resource(
-                                __package__, "test-create-ops-from-layer"
-                            )
+                            layer_resource(__package__, "test-create-ops-from-layer")
                         ),
                         TEST_IMAGE_PREFIX
                         + "first-layer-for-nested-layer-mount": str(

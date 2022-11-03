@@ -30,9 +30,7 @@ class InnerSubvolTestCase(unittest.TestCase):
             except FileExistsError:
                 pass
 
-        with temp_dir(
-            dir=volume_tmp_dir.decode(), prefix="delete_recursive"
-        ) as td:
+        with temp_dir(dir=volume_tmp_dir.decode(), prefix="delete_recursive") as td:
             with Subvol(td / "outer").create().delete_on_exit() as outer:
                 inner1 = Subvol(td / "outer/inner1").create()
                 inner2 = Subvol(td / "outer/inner1/inner2").create()
@@ -42,11 +40,9 @@ class InnerSubvolTestCase(unittest.TestCase):
                 self.assertTrue(btrfsutil.is_subvolume(outer.path()))
                 # pass useful to show if any exceptions are happening inside the
                 # context manager
-                pass
             # show that the subvol was deleted by the delete_on_exit context,
             # not just temp_dir
             self.assertFalse(os.path.exists(outer.path()))
-            pass
         with self.assertRaises(btrfsutil.BtrfsUtilError) as e:
             self.assertFalse(btrfsutil.is_subvolume(outer.path()))
         self.assertEqual(e.exception.errno, errno.ENOENT)

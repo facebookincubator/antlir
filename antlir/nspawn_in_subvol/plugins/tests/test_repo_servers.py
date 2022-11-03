@@ -65,9 +65,7 @@ class TestImpl:
 
     def setUp(self):
         if self._PROG not in get_rpm_installers_supported():
-            self.skipTest(
-                f"'{self._PROG}'' not in '{get_rpm_installers_supported()}'"
-            )
+            self.skipTest(f"'{self._PROG}'' not in '{get_rpm_installers_supported()}'")
 
     def _check_repo_servers(self, build_appliance):
         # Get basic coverage for our non-trivial debug log code.

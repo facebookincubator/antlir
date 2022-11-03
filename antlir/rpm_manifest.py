@@ -112,9 +112,7 @@ def extract_rpm_manifest(argv) -> None:
         ),
         PopenArgs(stdout=subprocess.PIPE),
     )
-    root = ET.fromstring(
-        "<docroot>" + res.stdout.decode("utf-8") + "</docroot>"
-    )
+    root = ET.fromstring("<docroot>" + res.stdout.decode("utf-8") + "</docroot>")
 
     objs = []
     for hdr in root.findall("./rpmHeader"):
@@ -124,13 +122,9 @@ def extract_rpm_manifest(argv) -> None:
         r = _xpath_to_string(hdr.findall("./rpmTag[@name='Release']/string"))
         a = _xpath_to_string(hdr.findall("./rpmTag[@name='Arch']/string"))
         o = _xpath_to_string(hdr.findall("./rpmTag[@name='Os']/string"))
-        src = _xpath_to_string(
-            hdr.findall("./rpmTag[@name='Sourcerpm']/string")
-        )
+        src = _xpath_to_string(hdr.findall("./rpmTag[@name='Sourcerpm']/string"))
         sz = _xpath_to_integer(hdr.findall("./rpmTag[@name='Size']/integer"))
-        cves = _xpath_to_cves(
-            hdr.findall("./rpmTag[@name='Changelogtext']/string")
-        )
+        cves = _xpath_to_cves(hdr.findall("./rpmTag[@name='Changelogtext']/string"))
         name = _nvra_to_name(n, v, r, a)
 
         objs.append(

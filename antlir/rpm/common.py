@@ -11,14 +11,7 @@ import sqlite3
 import struct
 from contextlib import AbstractContextManager
 from io import BytesIO
-from typing import (
-    ContextManager,
-    Generic,
-    Iterable,
-    Iterator,
-    NamedTuple,
-    TypeVar,
-)
+from typing import ContextManager, Generic, Iterable, NamedTuple, TypeVar
 
 from antlir.common import byteme, get_logger
 from antlir.fs_utils import Path
@@ -79,9 +72,7 @@ class RpmShard(NamedTuple):
             # fast non-cryptographic hashes like CityHash or SpookyHashV2.
             # adler32 is faster, but way too collision-prone to bother.
             h,
-        ) = _UINT64_STRUCT.unpack_from(
-            hashlib.sha1(byteme(rpm.nevra())).digest(), 12
-        )
+        ) = _UINT64_STRUCT.unpack_from(hashlib.sha1(byteme(rpm.nevra())).digest(), 12)
         return h % self.modulo == self.shard
 
 

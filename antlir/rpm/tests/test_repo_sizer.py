@@ -33,9 +33,7 @@ class RepoSizerTestCase(unittest.TestCase):
     # checksums) and it will make a sizer with those synonym sets. Also call
     # _set_expected_unions prior to this, to set what the final result of the
     # merge is expected to be
-    def _make_sizer(
-        self, *syn_sets: Iterable[Set[str]]
-    ) -> Tuple[RepoSizer, List[int]]:
+    def _make_sizer(self, *syn_sets: Iterable[Set[str]]) -> Tuple[RepoSizer, List[int]]:
         sizer = RepoSizer()
         for syns in syn_sets:
             # pyre-fixme[6]: Expected `Sized` for 1st param but got
@@ -61,9 +59,7 @@ class RepoSizerTestCase(unittest.TestCase):
         # `RepoSizer`.
         return sizer
 
-    def _expected_chk_size_map(
-        self, *ids: Iterable[str]
-    ) -> Mapping[Checksum, int]:
+    def _expected_chk_size_map(self, *ids: Iterable[str]) -> Mapping[Checksum, int]:
         # pyre-fixme[6]: Expected `str` for 1st param but got `Iterable[str]`.
         # pyre-fixme[58]: `+` is not supported for operand types `Iterable[str]`
         # and `str`.
@@ -71,9 +67,7 @@ class RepoSizerTestCase(unittest.TestCase):
 
     def test_sizer(self) -> None:
         sizer = RepoSizer()
-        rpm1 = _FAKE_RPM._replace(
-            checksum=Checksum("a1", "a1v1"), size=1_000_000
-        )
+        rpm1 = _FAKE_RPM._replace(checksum=Checksum("a1", "a1v1"), size=1_000_000)
         sizer.visit_rpm(rpm1)
 
         # This changes best_checksum, so a synonym will be made.
@@ -120,9 +114,7 @@ class RepoSizerTestCase(unittest.TestCase):
         sizer.visit_rpm(
             _FAKE_RPM._replace(checksum=Checksum("a1", "a1v2"), size=234_000)
         )
-        sizer.visit_rpm(
-            _FAKE_RPM._replace(checksum=Checksum("a1", "a1v3"), size=567)
-        )
+        sizer.visit_rpm(_FAKE_RPM._replace(checksum=Checksum("a1", "a1v3"), size=567))
         self.assertEqual({"Rpm": 1_234_567}, sizer._get_classname_to_size())
         self.assertRegex(
             sizer.get_report("Msg"),
@@ -184,9 +176,7 @@ class RepoSizerTestCase(unittest.TestCase):
         sizer_a = RepoSizer()
         sizer_b = RepoSizer()
 
-        rpm = _FAKE_RPM._replace(
-            checksum=Checksum("a1", "a1v1"), size=1_000_000
-        )
+        rpm = _FAKE_RPM._replace(checksum=Checksum("a1", "a1v1"), size=1_000_000)
         sizer_a.visit_rpm(rpm)
 
         repodata_a = Repodata(
@@ -217,9 +207,7 @@ class RepoSizerTestCase(unittest.TestCase):
         sizer_a = RepoSizer()
         sizer_b = RepoSizer()
 
-        rpm = _FAKE_RPM._replace(
-            size=1_000_000, checksum=Checksum("a1", "a1v1")
-        )
+        rpm = _FAKE_RPM._replace(size=1_000_000, checksum=Checksum("a1", "a1v1"))
         sizer_a.visit_rpm(rpm)
         repodata = Repodata(
             checksum=Checksum("a1", "a1v1"),

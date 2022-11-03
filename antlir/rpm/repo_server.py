@@ -315,9 +315,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             #  typing.Any]]` but got `Tuple[None, None]`.
             return None, None
         # Thread-safe: one-key read from `location_to_memoized_err`.
-        obj_error = obj.get("error") or self.location_to_memoized_err.get(
-            location
-        )
+        obj_error = obj.get("error") or self.location_to_memoized_err.get(location)
         if (
             ("storage_id" not in obj and "content_bytes" not in obj)
             # `error` is not currently populated simultaneously with
@@ -338,9 +336,7 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-type", self.type_for_path(location))
         self.send_header("Content-Length", str(obj["size"]))
-        self.send_header(
-            "Last-Modified", self.date_time_string(obj["build_timestamp"])
-        )
+        self.send_header("Last-Modified", self.date_time_string(obj["build_timestamp"]))
         # Future: if useful, could send_header('ETag', obj['checksum'])
         self.end_headers()
         return location, obj

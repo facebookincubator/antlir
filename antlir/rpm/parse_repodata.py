@@ -184,9 +184,7 @@ class XMLRpmParser(AbstractContextManager):
         self.decompressor = zlib.decompressobj(wbits=zlib.MAX_WBITS + 16)
         self.xml_parser = ElementTree.XMLPullParser(["end"])
         # ElementTree mangles the tags thus: '{xml_namespace}tag_name'
-        self.tag_re = re.compile(
-            "({[^}]+}|)(" + "|".join(self._KNOWN_TAGS) + ")$"
-        )
+        self.tag_re = re.compile("({[^}]+}|)(" + "|".join(self._KNOWN_TAGS) + ")$")
         # Package state must persist across `feed()` calls, since a
         # package element may straddle a chunk boundary.
         self._package = {}

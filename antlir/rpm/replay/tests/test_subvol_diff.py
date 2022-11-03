@@ -76,21 +76,15 @@ class SubvolDiffTestCase(unittest.TestCase):
             right_subvol.overwrite_path_as_root(Path("foo.txt"), "rightcontent")
 
             # test paths expected to differ aren't caught
-            left_subvol.run_as_root(
-                ["mkdir", "-p", left_subvol.path("var/lib/yum")]
-            )
-            right_subvol.run_as_root(
-                ["mkdir", "-p", right_subvol.path("var/lib/dnf")]
-            )
+            left_subvol.run_as_root(["mkdir", "-p", left_subvol.path("var/lib/yum")])
+            right_subvol.run_as_root(["mkdir", "-p", right_subvol.path("var/lib/dnf")])
             right_subvol.run_as_root(
                 ["mkdir", "-p", right_subvol.path("etc/dnf/modules.d")]
             )
             right_subvol.run_as_root(
                 ["touch", right_subvol.path("etc/dnf/modules.d/foomodule")]
             )
-            left_subvol.run_as_root(
-                ["mkdir", "-p", left_subvol.path("etc/dnf")]
-            )
+            left_subvol.run_as_root(["mkdir", "-p", left_subvol.path("etc/dnf")])
             left_subvol.run_as_root(
                 ["mkdir", "-p", left_subvol.path("usr/share/fonts/abc")]
             )

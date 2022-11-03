@@ -78,8 +78,7 @@ def _detect_mutable_rpms(
         )
     assert all_canonical_checksums_and_universes, (rpm, storage_id)
     assert all(
-        c.algorithm == CANONICAL_HASH
-        for c, _u in all_canonical_checksums_and_universes
+        c.algorithm == CANONICAL_HASH for c, _u in all_canonical_checksums_and_universes
     ), all_canonical_checksums_and_universes
 
     # Tolerate multiple copies of the current RPM's contents.  Also check
@@ -210,9 +209,7 @@ def _handle_rpm(
         #    actually get valuable information from the download --
         #    this lets us know whether the file is wrong or the
         #    repodata is wrong.
-        with timeit(
-            partial(log_sample, LogOp.RPM_QUERY, rpm=rpm, universe=universe)
-        ):
+        with timeit(partial(log_sample, LogOp.RPM_QUERY, rpm=rpm, universe=universe)):
             (
                 storage_id,
                 canonical_chk,
@@ -318,9 +315,7 @@ def _download_rpms(
                 )
                 # We don't care if locations diverge because we only need a
                 # single location for a NEVRA to be able to fetch the RPM.
-                if existing_rpm._replace(location=None) == rpm._replace(
-                    location=None
-                ):
+                if existing_rpm._replace(location=None) == rpm._replace(location=None):
                     log.warning(message)
                 else:
                     raise RuntimeError(message)
@@ -343,9 +338,7 @@ def gen_rpms_from_repodatas(
         res_rpms = not_none(res.rpms, "rpms")
         repo_weight_bytes = sum(r.size for r in res_rpms)
         num_rpms = len(res_rpms)
-        log_size(
-            f"`{res.repo.name}` has {num_rpms} RPMs weighing", repo_weight_bytes
-        )
+        log_size(f"`{res.repo.name}` has {num_rpms} RPMs weighing", repo_weight_bytes)
         start_t = time.time()
         total_dl = 0
         try:
@@ -358,9 +351,7 @@ def gen_rpms_from_repodatas(
                 cfg,
                 log_sample,
             )
-            yield res._replace(
-                storage_id_to_rpm=MappingProxyType(storage_id_to_rpm)
-            )
+            yield res._replace(storage_id_to_rpm=MappingProxyType(storage_id_to_rpm))
         finally:
             log_sample(
                 LogOp.REPO_DOWNLOAD,

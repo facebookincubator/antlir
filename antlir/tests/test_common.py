@@ -54,8 +54,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             )
         self.assertTrue(
             any(
-                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n"
-                in o
+                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n" in o
                 for o in log_ctx.output
             )
         )
@@ -74,8 +73,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             )
         self.assertTrue(
             any(
-                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n"
-                in o
+                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n" in o
                 for o in log_ctx.output
             )
         )
@@ -113,9 +111,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
         def to_be_retried(a: int, b: int, c: int = 5):
             raise RuntimeError("retrying...")
 
-        with self.assertRaises(RuntimeError), self.assertLogs(
-            common_log
-        ) as logs:
+        with self.assertRaises(RuntimeError), self.assertLogs(common_log) as logs:
             to_be_retried(1, b=2)
         self.assertIn("got 1, 2, 5", "".join(logs.output))
 
@@ -151,8 +147,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             )
         self.assertTrue(
             any(
-                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n"
-                in o
+                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n" in o
                 for o in log_ctx.output
             )
         )
@@ -171,8 +166,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
             )
         self.assertTrue(
             any(
-                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n"
-                in o
+                "\n[Retry 3 of 3] succeeds on try 4 -- waiting 0.2 seconds.\n" in o
                 for o in log_ctx.output
             )
         )
@@ -212,9 +206,7 @@ class TestCommon(unittest.IsolatedAsyncioTestCase):
         async def to_be_retried(a: int, b: int, c: int = 5):
             raise RuntimeError("retrying...")
 
-        with self.assertRaises(RuntimeError), self.assertLogs(
-            common_log
-        ) as logs:
+        with self.assertRaises(RuntimeError), self.assertLogs(common_log) as logs:
             await to_be_retried(1, b=2)
         self.assertIn("got 1, 2, 5", "".join(logs.output))
 

@@ -42,8 +42,6 @@ class OpenUrlTestCase(unittest.TestCase):
             with temp_dir() as snapshot_dir:
                 try_snapshot(snapshot_dir)
                 self.assertEqual([b"gpg_keys"], snapshot_dir.listdir())
-                self.assertEqual(
-                    [b"hello"], (snapshot_dir / "gpg_keys").listdir()
-                )
+                self.assertEqual([b"hello"], (snapshot_dir / "gpg_keys").listdir())
                 with open(snapshot_dir / "gpg_keys/hello") as in_f:
                     self.assertEqual("world", in_f.read())

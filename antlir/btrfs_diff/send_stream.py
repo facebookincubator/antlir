@@ -214,9 +214,7 @@ class ItemFilters:
         """
         for item in items:
             if isinstance(item, SendStreamItems.set_xattr):
-                if item.name == _SELINUX_XATTR and discard_fn(
-                    item.path, item.data
-                ):
+                if item.name == _SELINUX_XATTR and discard_fn(item.path, item.data):
                     continue
             yield item
 

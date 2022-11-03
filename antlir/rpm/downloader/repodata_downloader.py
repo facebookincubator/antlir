@@ -57,9 +57,7 @@ class DownloadRepodataReturnType(NamedTuple):
 
 
 # May raise `ReportableError`, which will abort the snapshot
-@retryable(
-    "Download failed: repodata at {repodata.location}", REPODATA_MAX_RETRY_S
-)
+@retryable("Download failed: repodata at {repodata.location}", REPODATA_MAX_RETRY_S)
 def _download_repodata(
     repodata: Repodata,
     *,
@@ -101,9 +99,7 @@ def _download_repodata(
             outfile = None
         else:
             # Nothing stored, must download - can fail due to repo updates
-            infile = cm.enter_context(
-                download_resource(repo_url, repodata.location)
-            )
+            infile = cm.enter_context(download_resource(repo_url, repodata.location))
             # Want to persist the downloaded repodata into storage so that
             # future runs don't need to redownload it
             outfile = cm.enter_context(storage.writer())
@@ -134,9 +130,7 @@ def _download_repodata(
             assert not no_source_rpm, f"Empty source_rpm: {no_source_rpm}"
         # Must commit the output context to get a storage_id.
         if outfile:
-            return DownloadRepodataReturnType(
-                repodata, True, outfile.commit(), rpms
-            )
+            return DownloadRepodataReturnType(repodata, True, outfile.commit(), rpms)
     # The primary repodata was already stored, and we just parsed it for RPMs.
     assert storage_id is not None
     return DownloadRepodataReturnType(repodata, False, storage_id, rpms)
@@ -220,9 +214,7 @@ def gen_repodatas_from_repomds(
         # objects taking up too much space, we can easily add a periodic job to
         # scan the db and remove any unused references. We are also able to
         # avoid implementing a lot of complex cleanup logic this way.
-        rpm_set, storage_id_to_repodata = _download_repodatas(
-            res.repo, res.repomd, cfg
-        )
+        rpm_set, storage_id_to_repodata = _download_repodatas(res.repo, res.repomd, cfg)
         yield res._replace(
             storage_id_to_repodata=MappingProxyType(storage_id_to_repodata),
             rpms=rpm_set,

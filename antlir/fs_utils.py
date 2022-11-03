@@ -111,9 +111,7 @@ class Path(bytes):
         if not paths:
             # pyre-fixme[7]: Expected `Path` but got `None`.
             return None
-        return Path(
-            os.path.join(byteme(paths[0]), *(byteme(p) for p in paths[1:]))
-        )
+        return Path(os.path.join(byteme(paths[0]), *(byteme(p) for p in paths[1:])))
 
     def __truediv__(self, right: AnyStr) -> "Path":
         return Path(os.path.join(self, byteme(right)))
@@ -214,9 +212,7 @@ class Path(bytes):
         )
         altroot_fd = os.open(altroot, os.O_RDONLY)
         open_how = _OpenHow(flags=0, mode=0, resolve=__RESOLVE_IN_ROOT)
-        fd = _openat2(
-            __NR_openat2, altroot_fd, path, open_how, ctypes.sizeof(open_how)
-        )
+        fd = _openat2(__NR_openat2, altroot_fd, path, open_how, ctypes.sizeof(open_how))
         errno = ctypes.get_errno()
         os.close(altroot_fd)
         if fd == -1:
@@ -334,9 +330,7 @@ class Path(bytes):
         """
         return parser.parse_args(
             [
-                a.decode(errors="surrogateescape")
-                if isinstance(a, bytes)
-                else a
+                a.decode(errors="surrogateescape") if isinstance(a, bytes) else a
                 for a in argv
             ]
         )
@@ -378,9 +372,9 @@ class Path(bytes):
                 # is fixed (https://fburl.com/42s41c0g), this can just check
                 # for boolean equality.
                 if exe and not os.access(rsrc_in.name, os.X_OK):
-                    raise RuntimeError(  # pragma: no cover
+                    raise RuntimeError(
                         f"{package}.{name} is not executable"
-                    )
+                    )  # pragma: no cover
                 yield Path(rsrc_in.name).abspath()
             else:  # pragma: no cover
                 # The resource has no path, so we have to materialize it.
@@ -532,9 +526,7 @@ def open_for_read_decompress(
     #     if it's even desirable.
     #   - The extra API complexity is of dubious utility.
     if proc.returncode == -signal.SIGPIPE:
-        log.error(
-            f"Ignoring SIGPIPE exit of child `{decompress_cmd[0]}` for `{path}`"
-        )
+        log.error(f"Ignoring SIGPIPE exit of child `{decompress_cmd[0]}` for `{path}`")
     else:
         check_popen_returncode(proc)
 

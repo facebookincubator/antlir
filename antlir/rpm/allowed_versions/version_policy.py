@@ -30,9 +30,7 @@ except ImportError:  # pragma: no cover
     pass
 
 
-def _deserialize_evra(
-    arch: str, evr: Union[str, Mapping[str, Any]]
-) -> SortableEVRA:
+def _deserialize_evra(arch: str, evr: Union[str, Mapping[str, Any]]) -> SortableEVRA:
     def evr_to_evra(e, v, r):
         # Fixme: this EVRA is implemented as an ENVRA
         return SortableEVRA(

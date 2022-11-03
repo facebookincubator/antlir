@@ -94,11 +94,7 @@ _CHAOS_CAT2 = temp_repos.Repo([temp_repos.Rpm("sausage", "3", "alpha")])
 
 # Tests "mutable RPM" errors
 _BAD_DOG = temp_repos.Repo(
-    [
-        temp_repos.Rpm(
-            "milk", "1.41", "42", override_contents="differs from good_dog"
-        )
-    ]
+    [temp_repos.Rpm("milk", "1.41", "42", override_contents="differs from good_dog")]
 )
 
 # Tests case of having a repo with no RPMs
@@ -175,9 +171,7 @@ class DownloadReposTestCase(unittest.TestCase):
     @contextmanager
     def _make_downloader(self, step_and_repo):
         with tempfile.NamedTemporaryFile() as tmp_db, temp_dir() as storage_dir:
-            yield self._make_downloader_from_ctx(
-                step_and_repo, tmp_db, storage_dir
-            )
+            yield self._make_downloader_from_ctx(step_and_repo, tmp_db, storage_dir)
 
     def _check_storage_id_error(self, storage_id_to_obj, error_cls):
         'Ensure exactly one of the objects has an "error" storage ID.'
@@ -249,12 +243,10 @@ class DownloadReposTestCase(unittest.TestCase):
                 (res,) = list(downloader())
                 bad_repo, bad_snapshot = res
                 self.assertEqual("0/good_dog", bad_repo.name)
-                self._check_snapshot(
-                    bad_snapshot, _GOOD_DOG_LOCATIONS, has_errors=True
-                )
-                (  # Exactly one of RPMs & repodatas will have an error.
+                self._check_snapshot(bad_snapshot, _GOOD_DOG_LOCATIONS, has_errors=True)
+                (
                     storage_id_to_obj,
-                ) = [
+                ) = [  # Exactly one of RPMs & repodatas will have an error.
                     sito
                     for sito in [
                         bad_snapshot.storage_id_to_rpm,
@@ -329,16 +321,12 @@ class DownloadReposTestCase(unittest.TestCase):
                 r".*repomd.xml", raise_fake_http_error
             ), self.assertRaises(HTTPError):
                 next(downloader())
-        self.assertEqual(
-            len(REPOMD_MAX_RETRY_S), len(mock_sleep.call_args_list)
-        )
+        self.assertEqual(len(REPOMD_MAX_RETRY_S), len(mock_sleep.call_args_list))
 
     @mock.patch("antlir.common._mockable_retry_fn_sleep")
     def test_rpm_download_errors_http_5xx(self, mock_sleep):
         def raise_5xx(_):
-            raise requests.exceptions.HTTPError(
-                response=mock.Mock(status_code=500)
-            )
+            raise requests.exceptions.HTTPError(response=mock.Mock(status_code=500))
 
         mice_location = "good_dog-pkgs/rpm-test-mice-0.1-a.x86_64.rpm"
         # Unlike 4xx errors, we retry 5xx ones (and 408s) on the presumption
@@ -405,21 +393,15 @@ class DownloadReposTestCase(unittest.TestCase):
                 downloader()
 
     def _download_repo_twice(self, repo, step_and_repo, tmp_db, storage_dir):
-        downloader = self._make_downloader_from_ctx(
-            step_and_repo, tmp_db, storage_dir
-        )
+        downloader = self._make_downloader_from_ctx(step_and_repo, tmp_db, storage_dir)
         (res1,) = list(downloader())
         repo1, snap1 = res1
         (res2,) = list(downloader())
         repo2, snap2 = res2
         self.assertEqual(repo1, repo2)
         self._check_repomd_equal(snap1.repomd, snap2.repomd)
-        self.assertEqual(
-            snap1._replace(repomd=None), snap2._replace(repomd=None)
-        )
-        self._check_snapshot(
-            snap1, repo.locations(os.path.basename(step_and_repo))
-        )
+        self.assertEqual(snap1._replace(repomd=None), snap2._replace(repomd=None))
+        self._check_snapshot(snap1, repo.locations(os.path.basename(step_and_repo)))
         return snap1
 
     def test_download_evolving_multi_repos(self):
@@ -427,9 +409,7 @@ class DownloadReposTestCase(unittest.TestCase):
             snap_dog, snap_cat, snap_dog2, snap_cat2 = (
                 # Downloading a repo twice in a row should always be a
                 # no-op, so we do that for all repos here just in case.
-                self._download_repo_twice(
-                    repo, step_and_repo, tmp_db, storage_dir
-                )
+                self._download_repo_twice(repo, step_and_repo, tmp_db, storage_dir)
                 for repo, step_and_repo in [
                     (_GOOD_DOG, "0/good_dog"),
                     (_CHAOS_CAT, "0/chaos_cat"),
@@ -500,9 +480,7 @@ class DownloadReposTestCase(unittest.TestCase):
             storage_id_to_rpm=storage_id_to_rpm,
         )
 
-    def _check_visitors_match_snapshot(
-        self, visitors: List, snapshot: RepoSnapshot
-    ):
+    def _check_visitors_match_snapshot(self, visitors: List, snapshot: RepoSnapshot):
         self._check_snapshot(snapshot, _GOOD_DOG_LOCATIONS)
         (
             # All visitors should have 1 repodata set
@@ -516,12 +494,8 @@ class DownloadReposTestCase(unittest.TestCase):
             for v in visitors
         }
         self.assertEqual(1, len(visitor_rpm_sets), visitor_rpm_sets)
-        visitor_rpms = [
-            r for v in visitors for r in v.rpms if r.canonical_checksum
-        ]
-        self.assertEqual(
-            len(visitor_rpms), len(set(visitor_rpms)), visitor_rpms
-        )
+        visitor_rpms = [r for v in visitors for r in v.rpms if r.canonical_checksum]
+        self.assertEqual(len(visitor_rpms), len(set(visitor_rpms)), visitor_rpms)
 
         # Snapshot & visitors' repodatas agree
         self.assertEqual(
@@ -529,9 +503,7 @@ class DownloadReposTestCase(unittest.TestCase):
         )
 
         # Rpms agree between snapshot & visitor
-        self.assertEqual(
-            set(snapshot.storage_id_to_rpm.values()), set(visitor_rpms)
-        )
+        self.assertEqual(set(snapshot.storage_id_to_rpm.values()), set(visitor_rpms))
 
         # If other fields get added, this reminds us to update the above test
         self._check_no_other_fields(
@@ -572,9 +544,9 @@ class DownloadReposTestCase(unittest.TestCase):
             visitors = [Visitor() for _ in range(10)]
             repo_snapshots = []
             for shard, visitor in enumerate(visitors):
-                repo_snapshots += partial_downloader(
-                    RpmShard(shard, len(visitors))
-                )(visitors=[visitor])
+                repo_snapshots += partial_downloader(RpmShard(shard, len(visitors)))(
+                    visitors=[visitor]
+                )
 
             # It's about 1:1000 that all 3 RPMs end up in one shard, and
             # since this test is deterministic, it won't be flaky.
@@ -615,9 +587,7 @@ class DownloadReposTestCase(unittest.TestCase):
     def test_lose_rpm_commit_race(self):
         "We downloaded & stored an RPM, but in the meantime some other"
         "writer committed the same RPM."
-        original_get_canonical = (
-            RepoDBContext.get_rpm_canonical_checksums_per_universe
-        )
+        original_get_canonical = RepoDBContext.get_rpm_canonical_checksums_per_universe
 
         # When we download the RPM, the mock `my_maybe_store` writes a
         # single `Checksum` here, the canonical one for the `mice` RPM.
@@ -630,9 +600,7 @@ class DownloadReposTestCase(unittest.TestCase):
         def my_get_canonical(self, table, rpm, all_snapshot_universes):
             if rpm.nevra() == "rpm-test-mice-0:0.1-a.x86_64":
                 return {(mice_canonical_checksums[0], "fakeverse")}
-            return original_get_canonical(
-                self, table, rpm, all_snapshot_universes
-            )
+            return original_get_canonical(self, table, rpm, all_snapshot_universes)
 
         original_maybe_store = RepoDBContext.maybe_store
 
@@ -659,9 +627,7 @@ class DownloadReposTestCase(unittest.TestCase):
             # We should be using the winning writer's storage ID.
             self.assertEqual(
                 mice_rpm,
-                snapshot.storage_id_to_rpm[
-                    f"fake_already_stored_{mice_rpm.location}"
-                ],
+                snapshot.storage_id_to_rpm[f"fake_already_stored_{mice_rpm.location}"],
             )
 
     # Test case of having dangling repodata refs without a repomd
@@ -681,9 +647,7 @@ class DownloadReposTestCase(unittest.TestCase):
             mock_store.side_effect = RuntimeError
             with self.assertRaises(RuntimeError):
                 next(
-                    self._make_downloader_from_ctx(
-                        "0/good_dog", tmp_db, storage_dir
-                    )()
+                    self._make_downloader_from_ctx("0/good_dog", tmp_db, storage_dir)()
                 )
             # Get the repodatas that the mocked fn was passed
             called_rds = [x[0][0] for x in mock_rd.call_args_list]
@@ -692,8 +656,7 @@ class DownloadReposTestCase(unittest.TestCase):
             repodata_table = RepodataTable()
             with db_ctx as repo_db_ctx:
                 storage_ids = [
-                    repo_db_ctx.get_storage_id(repodata_table, rd)
-                    for rd in called_rds
+                    repo_db_ctx.get_storage_id(repodata_table, rd) for rd in called_rds
                 ]
             # All of these repodatas got stored in the db
             self.assertEqual(len(called_rds), len(storage_ids))
@@ -710,16 +673,12 @@ class DownloadReposTestCase(unittest.TestCase):
     def test_mutable_rpm(self):
         with tempfile.NamedTemporaryFile() as tmp_db, temp_dir() as storage_dir:
             (good_res,) = list(
-                self._make_downloader_from_ctx(
-                    "0/good_dog", tmp_db, storage_dir
-                )()
+                self._make_downloader_from_ctx("0/good_dog", tmp_db, storage_dir)()
             )
             _, good_snapshot = good_res
             self._check_snapshot(good_snapshot, _GOOD_DOG_LOCATIONS)
             (bad_res,) = list(
-                self._make_downloader_from_ctx(
-                    "0/bad_dog", tmp_db, storage_dir
-                )()
+                self._make_downloader_from_ctx("0/bad_dog", tmp_db, storage_dir)()
             )
             _, bad_snapshot = bad_res
             (bad_location,) = _BAD_DOG.locations("bad_dog")
@@ -735,9 +694,7 @@ class DownloadReposTestCase(unittest.TestCase):
             self.assertEqual(bad_location, error_dict["location"])
 
             self.assertRegex(error_dict["storage_id"], "^test:")
-            self.assertEqual(
-                str(bad_rpm.canonical_checksum), error_dict["checksum"]
-            )
+            self.assertEqual(str(bad_rpm.canonical_checksum), error_dict["checksum"])
             (good_rpm,) = [
                 r
                 for r in good_snapshot.storage_id_to_rpm.values()
@@ -751,9 +708,7 @@ class DownloadReposTestCase(unittest.TestCase):
             # Now, even fetching `good_dog` will show a mutable_rpm error.
             self._check_snapshot(
                 list(
-                    self._make_downloader_from_ctx(
-                        "0/good_dog", tmp_db, storage_dir
-                    )()
+                    self._make_downloader_from_ctx("0/good_dog", tmp_db, storage_dir)()
                 )[0][1],
                 _GOOD_DOG_LOCATIONS,
                 has_errors=True,
@@ -764,11 +719,7 @@ class DownloadReposTestCase(unittest.TestCase):
             with mock.patch.object(
                 rpm_downloader,
                 "deleted_mutable_rpms",
-                new={
-                    os.path.basename(bad_rpm.location): {
-                        bad_rpm.canonical_checksum
-                    }
-                },
+                new={os.path.basename(bad_rpm.location): {bad_rpm.canonical_checksum}},
             ):
                 self._check_snapshot(
                     list(
@@ -812,23 +763,16 @@ class DownloadReposTestCase(unittest.TestCase):
             )
             # Assert rpm locations in the snapshot match expectations
             self.assertEqual(
+                {k: sorted(v.locations(k)) for k, v in self.multi_repo_dict.items()},
                 {
-                    k: sorted(v.locations(k))
-                    for k, v in self.multi_repo_dict.items()
-                },
-                {
-                    r.name: sorted(
-                        rpm.location for rpm in s.storage_id_to_rpm.values()
-                    )
+                    r.name: sorted(rpm.location for rpm in s.storage_id_to_rpm.values())
                     for r, s in repo_snapshots
                 },
             )
             # We have duplicate RPMs across snapshots..
             # First, get the list of all RPMs
             fake_rpms = [
-                rpm
-                for repo in self.multi_repo_dict.values()
-                for rpm in repo.rpms
+                rpm for repo in self.multi_repo_dict.values() for rpm in repo.rpms
             ]
             # Next extract the number of unique RPMs
             unique_fake_rpms = len(set(fake_rpms))
@@ -860,9 +804,7 @@ class DownloadReposTestCase(unittest.TestCase):
         with mock.patch.object(downloader_common, "open_url") as mock_fn:
             mock_fn.side_effect = my_open_url
             with self._make_downloader("0/good_dog") as downloader:
-                with self.assertRaisesRegex(
-                    RuntimeError, "Integrity issue with repos"
-                ):
+                with self.assertRaisesRegex(RuntimeError, "Integrity issue with repos"):
                     list(downloader())
 
     def test_empty_repo(self):

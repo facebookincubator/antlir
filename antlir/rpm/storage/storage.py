@@ -143,9 +143,7 @@ class _CommitCallback(AbstractContextManager):
                 release_resources_that_were_held_for_the_blob_write()
     """
 
-    def __init__(
-        self, storage: Storage, get_id_and_release_resources: ContextManager
-    ):
+    def __init__(self, storage: Storage, get_id_and_release_resources: ContextManager):
         self.storage = storage
         self.get_id_and_release_resources = get_id_and_release_resources
         self.id = None  # Populated via `get_id_and_release_resources()`

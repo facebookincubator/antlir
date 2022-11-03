@@ -12,9 +12,7 @@ import time
 
 
 def b64(i) -> bytes:
-    return base64.urlsafe_b64encode(i.to_bytes(16, "big").lstrip(b"\0")).strip(
-        b"="
-    )
+    return base64.urlsafe_b64encode(i.to_bytes(16, "big").lstrip(b"\0")).strip(b"=")
 
 
 # '.' is not part of the `urlsafe_b64encode` alphabet.

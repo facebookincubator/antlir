@@ -97,9 +97,7 @@ def build_stat_options(
                 )
 
         if not do_not_set_mode:
-            _recursive_fs_op(
-                full_target_path, lambda path: os.chmod(path, item.mode)
-            )
+            _recursive_fs_op(full_target_path, lambda path: os.chmod(path, item.mode))
 
         _recursive_fs_op(
             full_target_path,

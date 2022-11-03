@@ -18,17 +18,13 @@ class _Hg:
     def rev_id(self, rev: Optional[str], cwd: Optional[Path]) -> str:
         return subprocess.check_output(
             (
-                ["hg", "log", "-T", "{node}", "-r", rev]
-                if rev
-                else ["hg", "whereami"]  # 10x faster
-            ),
+                ["hg", "log", "-T", "{node}", "-r", rev] if rev else ["hg", "whereami"]
+            ),  # 10x faster
             text=True,
             cwd=cwd,
         ).strip()
 
-    def rev_timestamp(
-        self, rev: Optional[str], cwd: Optional[Path]
-    ) -> datetime:
+    def rev_timestamp(self, rev: Optional[str], cwd: Optional[Path]) -> datetime:
         return datetime.fromisoformat(
             subprocess.check_output(
                 [
@@ -55,9 +51,7 @@ class _Git:
             ["git", "rev-parse", rev or "HEAD"], text=True, cwd=cwd
         ).strip()
 
-    def rev_timestamp(
-        self, rev: Optional[str], cwd: Optional[Path]
-    ) -> datetime:
+    def rev_timestamp(self, rev: Optional[str], cwd: Optional[Path]) -> datetime:
         return datetime.fromisoformat(
             subprocess.check_output(
                 [

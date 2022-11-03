@@ -9,7 +9,6 @@ import logging
 import os
 import subprocess
 from functools import wraps
-from typing import Awaitable
 
 logger = logging.getLogger(__name__)
 

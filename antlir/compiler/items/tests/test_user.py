@@ -26,11 +26,7 @@ from antlir.compiler.items.user import (
     UserItem,
 )
 
-from antlir.compiler.requires_provides import (
-    ProvidesUser,
-    RequireFile,
-    RequireGroup,
-)
+from antlir.compiler.requires_provides import ProvidesUser, RequireFile, RequireGroup
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -137,9 +133,7 @@ bin:x:1:1:bin:/bin:/sbin/nologin
     def test_default_lastchanged(self):
         pf = PasswdFile(_SAMPLE_ETC_PASSWD)
         sf = ShadowFile(pwconv(pf))
-        self.assertEqual(
-            SHADOW_DEFAULT_LASTCHANGED_DAYS, sf.lines["root"].lastchanged
-        )
+        self.assertEqual(SHADOW_DEFAULT_LASTCHANGED_DAYS, sf.lines["root"].lastchanged)
 
 
 class ShadowFileLineTest(unittest.TestCase):
@@ -175,9 +169,7 @@ pesign3:!!:18609::::::
 """,
         ]:
 
-            with self.assertRaisesRegex(
-                RuntimeError, r"^Invalid shadow file line "
-            ):
+            with self.assertRaisesRegex(RuntimeError, r"^Invalid shadow file line "):
                 ShadowFile(shadow_file)
 
     def test_init_duplicate_name(self):
@@ -213,15 +205,12 @@ pesign:!!:1234::::::
 
         with self.assertRaisesRegex(
             ValueError,
-            r"^new user pesign:!!:1234:::::: conflicts "
-            "with pesign:!!:18609::::::$",
+            r"^new user pesign:!!:1234:::::: conflicts " "with pesign:!!:18609::::::$",
         ):
             sf.add(new_shadow_file_line("pesign:!!:1234::::::"))
 
     def test_str(self):
-        self.assertEqual(
-            str(ShadowFile(_SAMPLE_ETC_SHADOW)), _SAMPLE_ETC_SHADOW
-        )
+        self.assertEqual(str(ShadowFile(_SAMPLE_ETC_SHADOW)), _SAMPLE_ETC_SHADOW)
 
 
 class PasswdFileTest(unittest.TestCase):
@@ -245,15 +234,11 @@ bin:x:1:1:bin:/bin:/sbin/nologin
 """,
         ]:
 
-            with self.assertRaisesRegex(
-                RuntimeError, r"^Invalid passwd file line: "
-            ):
+            with self.assertRaisesRegex(RuntimeError, r"^Invalid passwd file line: "):
                 PasswdFile(passwd_file)
 
     def test_init_duplicate_uid(self):
-        with self.assertRaisesRegex(
-            RuntimeError, r"^Duplicate UID in passwd file"
-        ):
+        with self.assertRaisesRegex(RuntimeError, r"^Duplicate UID in passwd file"):
             PasswdFile(
                 """root:x:0:0:root:/root:/bin/bash
 bin:x:1:1:bin:/bin:/sbin/nologin
@@ -288,9 +273,7 @@ root:x:1:1:bin:/bin:/sbin/nologin
         with self.assertRaisesRegex(
             RuntimeError, r"^user ids exhausted \(max: 60000\)$"
         ):
-            pf = PasswdFile(
-                "myuser:x:60000:100:a user:/home/myuser:/bin/bash\n"
-            )
+            pf = PasswdFile("myuser:x:60000:100:a user:/home/myuser:/bin/bash\n")
             pf.next_user_id()
 
     def test_add(self):
@@ -317,20 +300,12 @@ root:x:1:1:bin:/bin:/sbin/nologin
             r"conflicts with "
             r"root:x:0:0:root:/root:/bin/bash$",
         ):
-            pf.add(
-                new_passwd_file_line(
-                    "myuser:x:0:0:a user:/home/myuser:/bin/bash"
-                )
-            )
+            pf.add(new_passwd_file_line("myuser:x:0:0:a user:/home/myuser:/bin/bash"))
         with self.assertRaisesRegex(ValueError, r"^user root already exists$"):
-            pf.add(
-                new_passwd_file_line("root:x:1:1:another root:/root:/bin/bash")
-            )
+            pf.add(new_passwd_file_line("root:x:1:1:another root:/root:/bin/bash"))
 
     def test_str(self):
-        self.assertEqual(
-            str(PasswdFile(_SAMPLE_ETC_PASSWD)), _SAMPLE_ETC_PASSWD
-        )
+        self.assertEqual(str(PasswdFile(_SAMPLE_ETC_PASSWD)), _SAMPLE_ETC_PASSWD)
 
     def test_provides(self):
         pf = PasswdFile(_SAMPLE_ETC_PASSWD)

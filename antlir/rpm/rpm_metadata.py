@@ -85,9 +85,7 @@ def _repo_query(
     elif package_path and (db_path is None and package_name is None):
         query_args += ["--package", package_path]
     else:
-        raise ValueError(
-            "Must pass only (--dbpath and --package_name) or --package"
-        )
+        raise ValueError("Must pass only (--dbpath and --package_name) or --package")
 
     try:
         result = check_output_fn(query_args).decode().strip("'\"")

@@ -12,12 +12,7 @@ from unittest import mock
 
 from antlir.rpm.common import Checksum
 from antlir.rpm.db_connection import DBConnectionContext
-from antlir.rpm.repo_db import (
-    RepodataTable,
-    RepoDBContext,
-    RpmTable,
-    SQLDialect,
-)
+from antlir.rpm.repo_db import RepodataTable, RepoDBContext, RpmTable, SQLDialect
 from antlir.rpm.repo_objects import Repodata, RepoMetadata, Rpm
 
 
@@ -180,9 +175,7 @@ class RepoDBTestCase(unittest.TestCase):
                     db_ctx.ensure_tables_exist()
                     self.assertEqual(
                         db_repomd.fetch_timestamp,
-                        db_ctx.store_repomd(
-                            "fakevers", "fake_repo", insert_repomd
-                        ),
+                        db_ctx.store_repomd("fakevers", "fake_repo", insert_repomd),
                     )
                     if do_commit:
                         db_ctx.commit()

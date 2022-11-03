@@ -61,7 +61,5 @@ class ServerLauncher(object):
                     try:
                         server_proc.wait(60.0)
                     except subprocess.TimeoutExpired:  # pragma: no cover
-                        log.warning(
-                            f"Killing unresponsive server {server_proc.pid}"
-                        )
+                        log.warning(f"Killing unresponsive server {server_proc.pid}")
                         server_proc.kill()

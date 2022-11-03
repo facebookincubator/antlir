@@ -13,7 +13,6 @@ import sys
 import uuid
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Union
 
-from antlir.artifacts_dir import find_buck_cell_root
 from antlir.cli import normalize_buck_path
 from antlir.common import get_logger, not_none
 from antlir.config import repo_config
@@ -273,9 +272,7 @@ async def run(
 
     if devel_layer:
         devel_path = (
-            not_none(
-                find_built_subvol(opts.kernel.derived_targets.image.path)
-            ).path()
+            not_none(find_built_subvol(opts.kernel.derived_targets.image.path)).path()
             / "devel"
         )
         shares += [
@@ -287,17 +284,13 @@ async def run(
             ),
             Plan9Export(
                 path=devel_path,
-                mountpoint=Path("/usr/lib/modules")
-                / opts.kernel.uname
-                / "build",
+                mountpoint=Path("/usr/lib/modules") / opts.kernel.uname / "build",
                 mount_tag="kernel-devel-build",
                 generator=True,
             ),
             Plan9Export(
                 path=devel_path,
-                mountpoint=Path("/usr/lib/modules")
-                / opts.kernel.uname
-                / "source",
+                mountpoint=Path("/usr/lib/modules") / opts.kernel.uname / "source",
                 mount_tag="kernel-devel-modules-source",
                 generator=True,
             ),

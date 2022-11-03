@@ -13,11 +13,7 @@ from antlir.bzl.target import target_t
 
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
-from antlir.bzl.tests.shapes.test import (
-    character_collection_t,
-    character_t,
-    hashable_t,
-)
+from antlir.bzl.tests.shapes.test import character_collection_t, character_t, hashable_t
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 
@@ -63,9 +59,7 @@ class TestShape(unittest.TestCase):
             ),
         )
         self.assertEqual(c.metadata, frozendict({"species": "human"}))
-        self.assertEqual(
-            c.personnel_file, Path("/rebellion/luke_skywalker.txt")
-        )
+        self.assertEqual(c.personnel_file, Path("/rebellion/luke_skywalker.txt"))
         self.assertIsInstance(c.personnel_file, Path)
 
     def test_data_and_resources(self):
@@ -116,9 +110,7 @@ class TestShape(unittest.TestCase):
             "appears_in": Tuple[int, ...],
             "metadata": Mapping[str, str],
         }
-        self.assertEqual(
-            expected, {k: v for k, v in hints.items() if k in expected}
-        )
+        self.assertEqual(expected, {k: v for k, v in hints.items() if k in expected})
 
     def test_instance_repr(self):
         # The on-disk path for resolved targets will be different between

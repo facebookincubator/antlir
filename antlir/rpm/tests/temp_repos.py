@@ -65,9 +65,7 @@ class Rpm(NamedTuple):
                 else self.override_contents
             ),
             "quoted_busybox_path": busybox_path.shell_quote(),
-            "requires_line": f"Requires: {self.requires}"
-            if self.requires
-            else "",
+            "requires_line": f"Requires: {self.requires}" if self.requires else "",
             "epoch_line": f"Epoch: {self.epoch}" if self.epoch else "",
         }
 
@@ -299,9 +297,7 @@ rpmsign --define="_gpg_name $fingerprint" --addsign \
         p.stdin.write(gpg_signing_key.encode())
 
 
-def build_rpm(
-    package_dir: Path, arch: str, rpm: Rpm, gpg_signing_key: str
-) -> Path:
+def build_rpm(package_dir: Path, arch: str, rpm: Rpm, gpg_signing_key: str) -> Path:
     "Returns the filename of the built RPM."
     with temp_dir(
         dir=package_dir

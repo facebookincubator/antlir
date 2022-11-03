@@ -47,9 +47,7 @@ class PhaseProvidesItemTestCase(BaseItemTestCase):
             populate_temp_filesystem(parent.path().decode())
 
             with self.assertRaises(subprocess.CalledProcessError):
-                list(
-                    gen_subvolume_subtree_provides(parent, Path("no_such/path"))
-                )
+                list(gen_subvolume_subtree_provides(parent, Path("no_such/path")))
 
             for create_meta in [False, True]:
                 # Check that we properly handle ignoring a /.meta if it's

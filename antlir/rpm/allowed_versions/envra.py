@@ -63,8 +63,7 @@ class SortableENVRA(NamedTuple):
         # and into `compare_rpm_versions`.
         if self.epoch is None or self.arch is None:
             raise TypeError(
-                "Cannot use `as_rpm_metadata()` with wildcard epoch or arch: "
-                f"{self}"
+                "Cannot use `as_rpm_metadata()` with wildcard epoch or arch: " f"{self}"
             )
         return self._as_rpm_metadata()
 
@@ -112,9 +111,7 @@ class SortableENVRA(NamedTuple):
 
     def to_versionlock_line(self) -> str:
         if self.epoch is None or self.name is None or self.arch is None:
-            raise ValueError(
-                f"Versionlock needs concrete name & epoch & arch: {self}"
-            )
+            raise ValueError(f"Versionlock needs concrete name & epoch & arch: {self}")
         # Our `yum_dnf_versionlock.py` expects TAB-separated ENVRAs.
         return "\t".join(
             [str(self.epoch), self.name, self.version, self.release, self.arch]

@@ -72,12 +72,8 @@ class ImageFeatureTestCase(unittest.TestCase):
             {v for k, v in si.ID_TO_ITEM.items() if k != "/"}
             | {
                 # These come the inline features added above.
-                EnsureDirsExistItem(
-                    from_target="t1", into_dir="/a", basename="b"
-                ),
-                EnsureDirsExistItem(
-                    from_target="t2", into_dir="/c", basename="d"
-                ),
+                EnsureDirsExistItem(from_target="t1", into_dir="/a", basename="b"),
+                EnsureDirsExistItem(from_target="t2", into_dir="/c", basename="d"),
             },
             self._items_for_features(),
         )
@@ -111,9 +107,7 @@ class ImageFeatureTestCase(unittest.TestCase):
                     (
                         si.ID_TO_ITEM[".remove_if_exists/path/to/remove"],
                         si.ID_TO_ITEM[".remove_assert_exists/path/to/remove"],
-                        si.ID_TO_ITEM[
-                            ".remove_assert_exists/another/path/to/remove"
-                        ],
+                        si.ID_TO_ITEM[".remove_assert_exists/another/path/to/remove"],
                     ),
                 ),
             ],
@@ -135,9 +129,7 @@ class ImageFeatureTestCase(unittest.TestCase):
             msg="Duplicate items?",
         )
         id_to_idx = {
-            k: doi.index(v)
-            for k, v in si.ID_TO_ITEM.items()
-            if v not in phase_items
+            k: doi.index(v) for k, v in si.ID_TO_ITEM.items() if v not in phase_items
         }
         self.assertLess(id_to_idx["alpha"], id_to_idx["alpha/beta"])
         self.assertLess(id_to_idx["bad_mode:alpha"], id_to_idx["alpha/beta"])
@@ -147,9 +139,7 @@ class ImageFeatureTestCase(unittest.TestCase):
         self.assertLess(id_to_idx["foo/bar"], id_to_idx["foo/bar/baz"])
         self.assertLess(id_to_idx["foo/bar"], id_to_idx["foo/fighter"])
         self.assertLess(id_to_idx["foo/bar"], id_to_idx["foo/face"])
-        self.assertLess(
-            id_to_idx["foo/borf"], id_to_idx["foo/borf/hello_world"]
-        )
+        self.assertLess(id_to_idx["foo/borf"], id_to_idx["foo/borf/hello_world"])
 
 
 if __name__ == "__main__":

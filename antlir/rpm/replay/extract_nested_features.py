@@ -5,14 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 import dataclasses
-from typing import Any, Dict, List, Mapping, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Mapping, Optional, Set, Tuple
 
 from antlir.bzl_const import feature_for_layer
 from antlir.common import get_logger
-from antlir.compiler.items_for_features import (
-    gen_included_features,
-    GenFeaturesContext,
-)
+from antlir.compiler.items_for_features import gen_included_features, GenFeaturesContext
 from antlir.find_built_subvol import find_built_subvol, Subvol
 from antlir.fs_utils import Path
 
@@ -36,14 +33,12 @@ class ExtractedFeatures:
     packaged_root: Optional[PackagedRoot] = None
     make_dir_paths: Set[str] = dataclasses.field(default_factory=set)
     install_rpm_names: Set[str] = dataclasses.field(default_factory=set)
-    features_needing_custom_image: Set[str] = dataclasses.field(
-        default_factory=set
-    )
+    features_needing_custom_image: Set[str] = dataclasses.field(default_factory=set)
     # Arguments to `gen_items_for_feature`.  This is a list if and only if
     # `features_needing_custom_image` is empty.
-    features_to_replay: Optional[
-        List[Tuple[str, str, Any]]
-    ] = dataclasses.field(default_factory=list)
+    features_to_replay: Optional[List[Tuple[str, str, Any]]] = dataclasses.field(
+        default_factory=list
+    )
     paths_to_remove: Set[PathToRemove] = dataclasses.field(default_factory=set)
 
     def __iadd__(self, other: "ExtractedFeatures") -> "ExtractedFeatures":
@@ -55,9 +50,7 @@ class ExtractedFeatures:
         )
         self.make_dir_paths |= other.make_dir_paths
         self.install_rpm_names |= other.install_rpm_names
-        self.features_needing_custom_image |= (
-            other.features_needing_custom_image
-        )
+        self.features_needing_custom_image |= other.features_needing_custom_image
         self.paths_to_remove |= other.paths_to_remove
         # `other` gets populated by recursive `extract_nested_features`
         # calls, e.g. for `parent_layer`.
@@ -136,8 +129,7 @@ class _FeatureHandlers:
         return ExtractedFeatures(
             make_dir_paths={
                 (
-                    Path(self.config["into_dir"])
-                    / self.config["subdirs_to_create"]
+                    Path(self.config["into_dir"]) / self.config["subdirs_to_create"]
                 ).decode()
             },
         )
@@ -200,9 +192,7 @@ def extract_nested_features(
                 features_needing_custom_image={feature_key}
             )
         # pyre-fixme[16]: `Optional` has no attribute `append`.
-        extracted_features.features_to_replay.append(
-            (feature_key, target, config)
-        )
+        extracted_features.features_to_replay.append((feature_key, target, config))
     assert (
         extracted_features.packaged_root
     ), f"Root not set on extracted features {layer_features_out}"

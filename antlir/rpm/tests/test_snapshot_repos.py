@@ -37,9 +37,7 @@ class SnapshotReposTestCase(unittest.TestCase):
             "--gpg-key-allowlist-dir",
             ("not_used/gpg_allowlist"),
             "--storage",
-            json.dumps(
-                {"key": "test", "kindd": "filesystem", "base_dir": "foo"}
-            ),
+            json.dumps({"key": "test", "kindd": "filesystem", "base_dir": "foo"}),
             "--db",
             json.dumps({"kind": "sqlite", "db_path": "foo_path"}),
             "--one-universe-for-all-repos",
@@ -56,9 +54,7 @@ class SnapshotReposTestCase(unittest.TestCase):
         with self.assertRaises(KeyError):
             snapshot_repos_from_args(args)
 
-        args[3] = json.dumps(
-            {"key": "test", "kindd": "filesystem", "base_dir": "foo"}
-        )
+        args[3] = json.dumps({"key": "test", "kindd": "filesystem", "base_dir": "foo"})
         args[5] = json.dumps({"kind": "sqlite", "bd_path": "bad_key"})
         with self.assertRaises(KeyError):
             snapshot_repos_from_args(args)
@@ -108,9 +104,7 @@ class SnapshotReposTestCase(unittest.TestCase):
                     f'--gpg-key-allowlist-dir={td / "gpg_allowlist"}',
                     "--storage=" + Path.json_dumps(storage_dict),
                     "--db="
-                    + Path.json_dumps(
-                        {"kind": "sqlite", "db_path": repo_db_path}
-                    ),
+                    + Path.json_dumps({"kind": "sqlite", "db_path": repo_db_path}),
                     "--threads=4",
                 ]
                 snapshot_repos_from_args(

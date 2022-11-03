@@ -72,16 +72,7 @@ wraps only objects that occur more than once. For example, (ii) becomes:
 """
 import os
 from itertools import count
-from typing import (
-    Any,
-    Coroutine,
-    Hashable,
-    Mapping,
-    NamedTuple,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Any, Coroutine, Hashable, Mapping, NamedTuple, Optional, Tuple, Union
 
 from antlir.btrfs_diff.coroutine_utils import while_not_exited
 

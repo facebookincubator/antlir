@@ -31,8 +31,6 @@ class SingleLocaleArchiveTestCase(LayerWithLocalesTestCase, unittest.TestCase):
     _TEST_LOCALES = "en_US.utf8"
 
 
-class MultipleLocaleArchiveTestCase(
-    LayerWithLocalesTestCase, unittest.TestCase
-):
+class MultipleLocaleArchiveTestCase(LayerWithLocalesTestCase, unittest.TestCase):
     _TEST_LOCALE_ARCHIVE = "/multiple-locale-archive"
     _TEST_LOCALES = "en_CA.utf8,en_US.utf8"

@@ -5,7 +5,6 @@
 # LICENSE file in the root directory of this source tree.
 
 
-import os
 import subprocess
 import tempfile
 
@@ -34,9 +33,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
 
     def _render_sendstream_path(self, path: Path) -> RenderedTree:
         if path.endswith(b".zst"):
-            data = subprocess.check_output(
-                ["zstd", "--decompress", "--stdout", path]
-            )
+            data = subprocess.check_output(["zstd", "--decompress", "--stdout", path])
         else:
             with open(path, "rb") as infile:
                 data = infile.read()
@@ -89,9 +86,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
         )
         original_render[1]["zeros_hole_zeros"] = ["(File h49152)"]
 
-    def _assert_meta_valid_and_sendstreams_equal(
-        self, expected_stream, stream
-    ) -> None:
+    def _assert_meta_valid_and_sendstreams_equal(self, expected_stream, stream) -> None:
         real_meta_contents = pop_path(stream, ".meta")
         if "build" in real_meta_contents[1]:
             # Don't check "build" key because length of target is unknown
@@ -123,9 +118,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
             )
         )
         with tempfile.NamedTemporaryFile() as temp_sendstream:
-            with subvol.mark_readonly_and_write_sendstream_to_file(
-                temp_sendstream
-            ):
+            with subvol.mark_readonly_and_write_sendstream_to_file(temp_sendstream):
                 pass
             original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")
