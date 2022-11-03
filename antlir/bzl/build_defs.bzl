@@ -179,11 +179,19 @@ def _rust_common(rule, **kwargs):
     if not kwargs.pop("allow_unused_crate_dependencies", False):
         rustc_flags.append("--forbid=unused_crate_dependencies")
     rustc_flags.append("--warn=clippy::unwrap_used")
-    kwargs["rustc_flags"] = rustc_flags
 
     # always handled by the antlir macros themselves
     if rule != shim.rust_unittest and rule != shim.rust_python_extension and rule != shim.rust_bindgen_library:
         kwargs["unittests"] = False
+
+    if shim.is_facebook:
+        rustc_flags.append("--cfg=facebook")
+        kwargs["deps"] = list(kwargs.pop("deps", [])) + list(kwargs.pop("fb_deps", []))
+        if kwargs.get("unittests", False):
+            kwargs["test_deps"] = list(kwargs.pop("test_deps", [])) + list(kwargs.pop("fb_test_deps", []))
+
+    kwargs["rustc_flags"] = rustc_flags
+
     deps = [_normalize_rust_dep(d) for d in kwargs.pop("deps", [])]
     rule(deps = deps, **kwargs)
 
@@ -242,6 +250,7 @@ get_visibility = shim.get_visibility
 http_file = shim.http_file
 http_archive = shim.http_archive
 is_buck2 = shim.is_buck2
+is_facebook = shim.is_facebook
 get_cxx_platform_for_current_buildfile = shim.get_cxx_platform_for_current_buildfile
 do_not_use_repo_cfg = shim.do_not_use_repo_cfg
 rpm_vset = shim.rpm_vset
