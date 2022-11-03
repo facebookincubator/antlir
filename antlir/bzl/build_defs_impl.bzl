@@ -710,6 +710,7 @@ shim = struct(
     http_file = _http_file,
     http_archive = _http_archive,
     is_buck2 = _is_buck2,
+    is_facebook = False,
     platform_utils = None,
     python_binary = _python_binary,
     python_library = _python_library,
