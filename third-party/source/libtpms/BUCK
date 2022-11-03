@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "http_file")
+load("//antlir/bzl:build_defs.bzl", "http_file")
 
 src = {
     "sha256": "4eb7df26edc64d27580c8b920a2b9d8d0958eb45720fda835fde3531a4ca6a73",

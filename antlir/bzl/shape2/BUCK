@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_filegroup", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "buck_filegroup", "rust_binary", "rust_library")
 load("//antlir/bzl:tool.bzl", "antlir_tool")
 
 oncall("twimage")

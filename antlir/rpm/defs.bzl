@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "rpm_repo_snapshot")
 
 def test_rpm_repo_snapshot(name, kind, rpm_installers, repo_server_ports):

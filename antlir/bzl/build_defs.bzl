@@ -7,7 +7,7 @@
 # fbcode macro API that is allowed within `antlir/`.  This way,
 # FB-internal contributors will be less likely to accidentally break
 # open-source by starting to use un-shimmed features.
-load(":oss_shim_impl.bzl", "shim")
+load(":build_defs_impl.bzl", "shim")
 
 def _check_args(rule, args, kwargs, allowed_kwargs):
     if args:
@@ -20,7 +20,7 @@ def _check_args(rule, args, kwargs, allowed_kwargs):
             ))
 
 def _make_rule_kwargs_dict(lst):
-    # `antlir_rule` is forwarded to oss_shim_impl.bzl and is used to mark
+    # `antlir_rule` is forwarded to build_defs_impl.bzl and is used to mark
     # rules as "antlir-private", "user-internal", or "user-facing".  Read
     # the comments in that file for the detailed rationale.
     return {k: 1 for k in lst + ["antlir_rule"]}

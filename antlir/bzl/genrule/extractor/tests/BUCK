@@ -1,7 +1,7 @@
+load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_binary")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_unittest", "rust_binary")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 

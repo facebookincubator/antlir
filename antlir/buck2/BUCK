@@ -1,5 +1,5 @@
 load("//antlir/buck2/bzl:toolchain.bzl?v2_only", "antlir_toolchain")
-load("//antlir/bzl:oss_shim.bzl", "is_buck2")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 
 antlir_toolchain(
     name = "toolchain",

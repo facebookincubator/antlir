@@ -1,10 +1,10 @@
 # @noautodeps
 
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")

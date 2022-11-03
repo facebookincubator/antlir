@@ -10,12 +10,12 @@ available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:flavor_impl.bzl", "flavor_to_struct")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_layer.bzl", "image_layer")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")

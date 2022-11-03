@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "get_visibility", "python_binary", "python_library")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "python_binary", "python_library")
 
 def template(
         name,

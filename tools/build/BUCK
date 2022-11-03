@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias")
 load(":rust.bzl", "rustc_toolchain")
 
 # The latest nightly and it's sha can be found in

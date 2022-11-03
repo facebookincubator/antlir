@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
+load(":build_defs.bzl", "buck_genrule")
 load(":flavor_helpers.bzl", "flavor_helpers")
-load(":oss_shim.bzl", "buck_genrule")
 load(":target_helpers.bzl", "antlir_dep")
 
 def extract_rpm_manifest(name, layer, visibility = None, build_appliance = None):

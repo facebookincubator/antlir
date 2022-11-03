@@ -5,8 +5,8 @@
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")

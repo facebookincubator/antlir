@@ -1,5 +1,5 @@
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_binary")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl/genrule/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")

@@ -1,5 +1,5 @@
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":hoist.bzl", "hoist")
 

@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "cpp_binary")
+load("//antlir/bzl:build_defs.bzl", "cpp_binary")
 
 oncall("twimage")
 

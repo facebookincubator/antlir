@@ -47,7 +47,7 @@ flavor_config_t = shape.shape(
 # the CI cost to updating `.buckconfig` is quite high (every project
 # potentially needs to be tested and rebuilt).
 #
-# Instead, we keep the per-repo configuration in `oss_shim_impl.bzl`, and
+# Instead, we keep the per-repo configuration in `build_defs_impl.bzl`, and
 # the global defaults here, in `constants.bzl`.
 #
 # Our underlying configs use the simple type signature of `Mapping[str,
@@ -58,7 +58,7 @@ flavor_config_t = shape.shape(
 #   - `buck -c antlir.CONFIG_NAME='foo bar'` -- note that our lists are
 #     generally space-separated, so you'll want to bash quote those.
 #   - `.buckconfig` -- DO NOT PUT OUR CONFIGS THERE!
-#   - `do_not_use_repo_cfg` loaded via `oss_shim.bzl`
+#   - `do_not_use_repo_cfg` loaded via `build_defs.bzl`
 #   - the defaults below -- these have to be reasonable since this is what a
 #     clean open-source install will use
 #

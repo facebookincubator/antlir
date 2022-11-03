@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":oss_shim.bzl", "is_buck2")
+load(":build_defs.bzl", "is_buck2")
 
 """
 Forwards-and-backwards compatible utilities for dealing with structs.

@@ -6,8 +6,8 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
+load(":build_defs.bzl", "buck_genrule", "config", "is_buck2")
 load(":image_layer_runtime.bzl", "add_runtime_targets")
-load(":oss_shim.bzl", "buck_genrule", "config", "is_buck2")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 

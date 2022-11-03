@@ -3,8 +3,8 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:oss_shim.bzl", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
 oncall("twimage")

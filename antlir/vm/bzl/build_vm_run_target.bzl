@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/bzl:build_defs.bzl", "antlir_buck_env", "buck_genrule")
 load("//antlir/bzl:exec_wrapper.bzl", "build_exec_wrapper")
-load("//antlir/bzl:oss_shim.bzl", "antlir_buck_env", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "api")

@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
 load("//antlir/vm/bzl:build_kernel_artifacts.bzl", "build_kernel_artifacts")
 
 def fedora_kernel(

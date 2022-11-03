@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "http_file")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
 
 def rustc_toolchain(
         version,

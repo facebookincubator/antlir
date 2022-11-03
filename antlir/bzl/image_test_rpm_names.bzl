@@ -4,9 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load(":build_defs.bzl", "buck_genrule")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":maybe_export_file.bzl", "maybe_export_file")
-load(":oss_shim.bzl", "buck_genrule")
 
 def _str_set(s):
     return sets.make([s[i] for i in range(len(s))])

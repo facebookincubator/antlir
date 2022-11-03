@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":build_defs.bzl", "buck_genrule", "get_visibility")
 load(":constants.bzl", "REPO_CFG")
 load(":exec_wrapper.bzl", "build_exec_wrapper")
-load(":oss_shim.bzl", "buck_genrule", "get_visibility")
 load(":target_helpers.bzl", "wrap_target")
 
 def _maybe_wrap_runtime_deps_as_build_time_deps(

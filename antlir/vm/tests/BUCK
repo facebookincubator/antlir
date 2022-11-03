@@ -1,9 +1,9 @@
 # @noautodeps
 
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_unittest", "rust_binary")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/bzl:oss_shim.bzl", "export_file", "python_unittest", "rust_binary")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "ADMIN_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")

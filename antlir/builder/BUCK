@@ -1,4 +1,4 @@
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias", "is_buck2", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "is_buck2", "rust_binary")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
 rust_binary(

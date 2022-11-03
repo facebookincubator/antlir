@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:oss_shim.bzl", "antlir_buck_env", "is_buck2")
+load("//antlir/bzl:build_defs.bzl", "antlir_buck_env", "is_buck2")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
 def build_exec_wrapper(

@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 # @oss-disable: load("//antlir/fbpkg:fbpkg.bzl", "fbpkg") 
-load(":oss_shim.bzl", "alias", "buck_genrule", "config", "get_visibility", "rust_binary", "rust_library", "rust_unittest")
+load(":build_defs.bzl", "alias", "buck_genrule", "config", "get_visibility", "rust_binary", "rust_library", "rust_unittest")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
 # @oss-disable: is_facebook = True 

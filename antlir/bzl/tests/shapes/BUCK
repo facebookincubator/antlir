@@ -1,7 +1,7 @@
 # @noautodeps
 
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest")
 load("//antlir/bzl:defs.bzl", "bzl_to_py")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t", "friend_t", "hashable_t", "lightsaber_t")

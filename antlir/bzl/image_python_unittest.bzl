@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":build_defs.bzl", "add_test_framework_label", "python_unittest")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "add_test_framework_label", "python_unittest")
 
 # This exists to hack around a complex FB-internal migration. *sigh*
 # It should be removable when this is done:  https://fburl.com/nxc3u5mk

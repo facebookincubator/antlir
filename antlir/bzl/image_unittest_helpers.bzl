@@ -4,12 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "special_tags") 
-load("//antlir/bzl:oss_shim.bzl", "buck_command_alias")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load(":build_defs.bzl", "buck_genrule", "python_library")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_runtime.bzl", "container_target_name", "systemd_target_name")
-load(":oss_shim.bzl", "buck_genrule", "python_library")
 load(":query.bzl", "layer_deps_query")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")

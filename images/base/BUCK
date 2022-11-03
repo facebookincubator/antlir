@@ -1,5 +1,5 @@
+load("//antlir/bzl:build_defs.bzl", "kernel_get")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:oss_shim.bzl", "kernel_get")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")

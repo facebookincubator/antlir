@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_binary")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
-load(":oss_shim.bzl", "buck_sh_test", "cpp_unittest", "python_binary")
 
 def image_cpp_unittest(
         name,

@@ -4,20 +4,20 @@
 # LICENSE file in the root directory of this source tree.
 
 # IMPORTANT: Add an ANTLIR_RULE_TEST shim below for any new loads.
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary")
 
 #
 # Why do we need these shims?
 #
-# `_assert_package` in `oss_shim_impl.bzl` deliberately treats
+# `_assert_package` in `build_defs_impl.bzl` deliberately treats
 # `compiler/test_images` as being outside of the Antlir codebase.
 #
 # This allows our collection of test images to validate that the Antlir
 # user-instantiatable API is properly annotated with `antlir_rule` kwargs.
 #
 # However, this also means that we cannot directly use Buck rules as
-# provided by `oss_shim.bzl` inside `test_images`.  But all of these rule
-# invocations still need to go through `oss_shim.bzl` for FB/OSS
+# provided by `build_defs.bzl` inside `test_images`.  But all of these rule
+# invocations still need to go through `build_defs.bzl` for FB/OSS
 # compatibility.
 #
 # So, we shim the shim for the few rules that `test_images` rely on.  For

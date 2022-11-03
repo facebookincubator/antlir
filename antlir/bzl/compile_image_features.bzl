@@ -5,7 +5,7 @@
 
 # Implementation detail for `image/layer/layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "normalize_features", "private_feature_new")

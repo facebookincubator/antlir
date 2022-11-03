@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load(":oss_shim.bzl", "target_utils")
+load(":build_defs.bzl", "target_utils")
 load(":shape.bzl", "shape")
 load(":systemd.shape.bzl", "mount_t", "unit_t")
 

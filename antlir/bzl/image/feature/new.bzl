@@ -49,9 +49,9 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_names", "flavors_to_structs")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")

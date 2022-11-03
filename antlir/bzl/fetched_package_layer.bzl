@@ -79,7 +79,7 @@ Now you can refer to a stable version of a package, represented as an
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:oss_shim.bzl", "buck_genrule", "export_file", "get_visibility")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":flavor_impl.bzl", "flavor_to_struct")
