@@ -124,6 +124,7 @@ python_library(
     srcs = ["mount.py"],
     visibility = [
         "//antlir/...",
+        "//fbpkg/caf/...",
         "//tupperware/cm/antlir/...",
     ],
     deps = [
