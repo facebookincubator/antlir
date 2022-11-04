@@ -53,6 +53,7 @@ python_library(
     srcs = ["cli.py"],
     visibility = [
         "//antlir/...",
+        "//fbpkg/caf/...",
         "//tupperware/cm/antlir/...",
         "//windtunnel/cogwheel/generators/...",
     ],
@@ -78,6 +79,7 @@ python_library(
     srcs = ["fs_utils.py"],
     visibility = [
         "//antlir/...",
+        "//fbpkg/caf/...",
         "//metalos/initrd/facebook/...",
         "//syseng/yard/installer/...",
         "//ti/platform/edgeos/...",
