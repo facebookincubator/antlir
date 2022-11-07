@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//metalos/os/tests:defs.bzl", "skip_unit")
@@ -34,6 +35,15 @@ def initrd(kernel, visibility = None):
             feature.install(kernel.derived_targets.disk_boot_modules, paths.join("/usr/lib/modules", kernel.uname)),
             # vm has no network
             skip_unit("systemd-networkd-wait-online.service"),
+            # these units are masked for the official MetalOS disk initrd. But are needed for other vm tests.
+            systemd.unmask_units([
+                "initrd-cleanup.service",
+                "initrd-parse-etc.service",
+                "initrd-switch-root.service",
+                "initrd-switch-root.target",
+            ]),
+            # This unit requires initrd.target in the official MetalOS disk initrd, but it needs to require initrd-switch-root.target
+            systemd.enable_unit("metalos-init.service", "initrd-switch-root.target", "requires"),
         ],
     )
 
