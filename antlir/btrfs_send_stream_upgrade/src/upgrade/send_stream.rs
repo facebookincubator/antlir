@@ -157,7 +157,9 @@ impl SendStream<'_> {
             None => anyhow::bail!("Upgrading a send stream with no context"),
             Some(ref context) => context.ssuc_options.thread_count,
         };
-        if thread_count == 1 {
+        // Fall back to single threaded mode for tsan builds
+        // See the note in src/lib.rs for more details
+        if thread_count == 1 || cfg!(sanitize = "thread") {
             self.upgrade_commands_single_threaded()?;
         } else {
             self.upgrade_commands_multi_threaded()?;
