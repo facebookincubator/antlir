@@ -45,6 +45,7 @@ def image_rust_unittest(
         par_style = "zip",
         antlir_rule = "user-internal",
         visibility = [],
+        tags = ["no_pyre"],
     )
 
     buck_sh_test(
