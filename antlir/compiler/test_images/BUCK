@@ -1081,7 +1081,7 @@ add_rpm_repo_snapshots_layer(
     parent_layer = flavor_helpers.get_build_appliance("centos7"),
     visibility = [
         "//antlir/...",
-        "//hermetic_infra/hermit/integration/...",
+        "//hermetic_infra/reproducible_builds/integration/...",
         "//metalos/os/whatchanged/...",
         "//tupperware/cm/antlir/tests/...",
     ],
