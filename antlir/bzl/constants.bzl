@@ -177,6 +177,11 @@ def _get_flavor_to_config():
 
     return flavor_to_config
 
+def use_rc_target(target):
+    if REPO_CFG.rc_targets == ["all"]:
+        return True
+    return normalize_target(target) in REPO_CFG.rc_targets
+
 REPO_CFG = repo_config_t(
     artifacts_require_repo = (
         (native.read_config("defaults.cxx_library", "type") == "shared") or
@@ -214,6 +219,9 @@ REPO_CFG = repo_config_t(
     # supported providers like Bazel does.
     antlir_linux_flavor = _get_str_cfg("antlir_linux_flavor", allow_none = True),
     antlir_cell_name = config.get_antlir_cell_name(),
-    rc_targets = [normalize_target(t) for t in _get_str_list_cfg("rc_targets", separator = ",")],
+    rc_targets = [
+        (t if t == "all" else normalize_target(t))
+        for t in _get_str_list_cfg("rc_targets", separator = ",")
+    ],
     flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
 )
