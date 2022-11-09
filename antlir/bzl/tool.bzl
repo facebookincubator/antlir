@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:constants.bzl", "use_rc_target")
 # @oss-disable: load("//antlir/fbpkg:fbpkg.bzl", "fbpkg") 
 load(":build_defs.bzl", "alias", "buck_genrule", "config", "get_visibility", "rust_binary", "rust_library", "rust_unittest")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
@@ -37,7 +37,7 @@ def antlir_tool(rule, name, **kwargs):
 
     # If the target being built is in `rc_targets` build it fresh instead of
     # using the cached stable version.
-    if (not is_facebook) or (target in REPO_CFG.rc_targets):
+    if (not is_facebook) or use_rc_target(target):
         alias(
             name = name,
             actual = ":{}-rc".format(name),

@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
 load(":compile_image_features.bzl", "compile_image_features")
-load(":constants.bzl", "REPO_CFG")
+load(":constants.bzl", "use_rc_target")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer_alias.bzl", "image_layer_alias")
 load(":image_layer_utils.bzl", "image_layer_utils")
@@ -24,7 +24,7 @@ def image_layer_from_package_helper(
         compile_image_features_fn,
         image_layer_kwargs):
     flavor = flavor_to_struct(flavor)
-    if normalize_target(":" + name) in REPO_CFG.rc_targets:
+    if use_rc_target(":" + name):
         if rc_layer == None:
             fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
 
