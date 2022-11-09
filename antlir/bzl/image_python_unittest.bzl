@@ -70,6 +70,9 @@ def image_python_unittest(
         "test-framework=7:antlir_image_test",
     )
 
+    # This is used by Buck2
+    inner_tags = inner_tags + ["antlir_inner_test"]
+
     if _TEMP_TP_TAG in wrapper_props.outer_test_kwargs.get("tags", {}):
         inner_tags = inner_tags + [_TEMP_TP_TAG]
 
