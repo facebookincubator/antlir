@@ -98,3 +98,9 @@ class types(object):
     @staticmethod
     def is_tuple(x):
         return type(x) == tuple
+
+
+class collections(object):
+    @staticmethod
+    def uniq(it):
+        return list(set(it))
