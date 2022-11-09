@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 use anyhow::anyhow;
 use anyhow::bail;
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use derive_more::Deref;
@@ -181,18 +182,38 @@ fn get_type_registry<'a>(eval: &'a Evaluator) -> Result<&'a TypeRegistryRefCell>
 #[starlark_module]
 fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
+        #[starlark(require = named)] __thrift: Option<DictOf<'v, u32, &'v str>>,
         #[starlark(kwargs)] kwargs: DictOf<'v, &'v str, Value<'v>>,
         eval: &mut Evaluator<'v, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
-        let fields = kwargs
+        let fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = kwargs
             .to_dict()
             .into_iter()
-            .filter(|(key, _)| *key != "__I_AM_TARGET__")
-            .map(|(key, val)| val.try_to_field(&reg).map(|f| (key.into(), f)))
+            .filter(|(key, _)| (*key != "__I_AM_TARGET__") && (*key != "__thrift_fields"))
+            .map(|(key, val)| val.try_to_field(&reg).map(|f| (key.into(), Arc::new(f))))
             .collect::<Result<_>>()?;
+        let thrift_fields = __thrift
+            .map(|t| {
+                t.to_dict()
+                    .into_iter()
+                    .map(|(k, v)| {
+                        let field_name = ir::FieldName(v.to_owned());
+                        let field = fields
+                            .get(&field_name)
+                            .with_context(|| format!("'{}' is not a thrift field", k))?
+                            .clone();
+                        Ok((k, (field_name, field)))
+                    })
+                    .collect::<Result<_>>()
+            })
+            .transpose()
+            .context(
+                "Thrift fields don't match shape fields. This would already have failed in Buck",
+            )?;
         let s = ir::Struct {
             fields,
+            thrift_fields,
             docstring: None,
             name: None,
         };
@@ -282,10 +303,11 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
+        #[starlark(require = named)] __thrift: Option<Vec<u32>>,
         eval: &mut Evaluator<'v, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
-        let types = args
+        let types: Vec<_> = args
             .iterate_collect(eval.heap())?
             .into_iter()
             .enumerate()
@@ -294,8 +316,24 @@ fn shape(builder: &mut GlobalsBuilder) {
                     .with_context(|| format!("union item at {} is not a type", i))
             })
             .collect::<Result<_>>()?;
+        let thrift_types = match __thrift {
+            Some(t) => {
+                ensure!(
+                    t.len() == types.len(),
+                    "Mismatched number of fields. This would have already failed in Buck."
+                );
+                Some(
+                    t.into_iter()
+                        .zip(&types)
+                        .map(|(thrift_num, typ)| (thrift_num, typ.clone()))
+                        .collect(),
+                )
+            }
+            None => None,
+        };
         let u = ir::Union {
             types,
+            thrift_types,
             docstring: None,
             name: None,
         };
@@ -465,12 +503,13 @@ top = shape.shape(hello=str)
                     "top".into() => Arc::new(ir::Type::Complex(ir::ComplexType::Struct(ir::Struct{
                         name: Some("top".into()),
                         fields :btreemap! {
-                            "hello".into() => ir::Field {
+                            "hello".into() => Arc::new(ir::Field {
                                 ty: Arc::new(ir::Type::Primitive(ir::Primitive::String)),
                                 default_value: None,
                                 required: true,
-                            }
+                            })
                         },
+                        thrift_fields: None,
                         docstring: None,
                     })))
                 },

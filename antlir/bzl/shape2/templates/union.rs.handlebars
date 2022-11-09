@@ -6,6 +6,7 @@ pub enum {{name}} {
     {{/each}}
 }
 
+{{#if thrift_types}}
 impl ::fbthrift::ttype::GetTType for {{name}} {
     const TTYPE: ::fbthrift::ttype::TType = ::fbthrift::ttype::TType::Struct;
 }
@@ -16,9 +17,9 @@ where P: ::fbthrift::protocol::ProtocolWriter
     fn write(&self, p: &mut P) {
         p.write_struct_begin("{{name}}");
         match &self {
-        {{#each types}}
+        {{#each thrift_types}}
             Self::{{union-name this}}(x) => {
-                p.write_field_begin("{{union-name this}}", <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@index}});
+                p.write_field_begin("{{union-name this}}", <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@key}});
                 ::fbthrift::Serialize::write(x, p);
                 p.write_field_end();
             },
@@ -35,8 +36,8 @@ where
 {
     fn read(p: &mut P) -> ::anyhow::Result<Self> {
         static FIELDS: &[::fbthrift::Field] = &[
-            {{#each types}}
-            ::fbthrift::Field::new("{{union-name this}}", <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@index}}),
+            {{#each thrift_types}}
+            ::fbthrift::Field::new("{{union-name this}}", <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE, {{@key}}),
             {{/each}}
         ];
         let mut alt = ::std::option::Option::None;
@@ -46,10 +47,10 @@ where
             if fty == ::fbthrift::TType::Stop {
                 break;
             }
-            {{#each types}}
-            else if (fty == <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE) && (fid == {{@index}}) {
+            {{#each thrift_types}}
+            else if (fty == <{{type this}} as ::fbthrift::ttype::GetTType>::TTYPE) && (fid == {{@key}}) {
                 if let ::std::option::Option::Some(already) = alt {
-                    return ::std::result::Result::Err(::anyhow::anyhow!("extra union id {} found after {:?}", {{@index}}, already));
+                    return ::std::result::Result::Err(::anyhow::anyhow!("extra union id {} found after {:?}", {{@key}}, already));
                 }
                 alt = ::std::option::Option::Some(Self::{{union-name this}}(::fbthrift::Deserialize::read(p)?));
             }
@@ -63,3 +64,4 @@ where
         alt.ok_or_else(|| ::anyhow::anyhow!("No union variant for {{name}} found"))
     }
 }
+{{/if}}

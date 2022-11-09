@@ -233,7 +233,8 @@ pub struct Enum {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Struct {
     pub name: Option<TypeName>,
-    pub fields: BTreeMap<FieldName, Field>,
+    pub fields: BTreeMap<FieldName, Arc<Field>>,
+    pub thrift_fields: Option<BTreeMap<u32, (FieldName, Arc<Field>)>>,
     pub docstring: Option<DocString>,
 }
 
@@ -241,6 +242,7 @@ pub struct Struct {
 pub struct Union {
     pub name: Option<TypeName>,
     pub types: Vec<Arc<Type>>,
+    pub thrift_types: Option<BTreeMap<u32, Arc<Type>>>,
     pub docstring: Option<DocString>,
 }
 

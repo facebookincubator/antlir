@@ -14,6 +14,10 @@ use anyhow::Result;
 use test_shape::character_collection_t;
 use test_shape::character_t;
 use test_shape::friend_t;
+use test_shape::thrift_new;
+use test_shape::thrift_old;
+use test_shape::union_new;
+use test_shape::union_old;
 use test_shape::weapon_t;
 use test_shape::with_optional_int;
 
@@ -102,6 +106,45 @@ fn thrift() -> Result<()> {
     );
 
     Ok(())
+}
+
+#[test]
+fn thrift_compat() {
+    assert_eq!(
+        thrift_new {
+            foo: 42,
+            baz: None,
+            qux: None
+        },
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(&thrift_old {
+            foo: 42,
+            bar: Some("hello-bar".into()),
+        }))
+        .expect("could not deserialize thrift_old as thrift_new")
+    );
+    assert_eq!(
+        thrift_old { foo: 42, bar: None },
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(&thrift_new {
+            foo: 42,
+            baz: Some("hello-baz".into()),
+            qux: Some(true),
+        }))
+        .expect("could not deserialize thrift_new as thrift_old")
+    );
+    assert_eq!(
+        union_old::Int(42),
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(
+            &union_new::Int(42)
+        ))
+        .expect("could not deserialize union_new as union_old"),
+    );
+    assert_eq!(
+        union_new::Int(42),
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(
+            &union_old::Int(42)
+        ))
+        .expect("could not deserialize union_old as union_new"),
+    );
 }
 
 #[test]

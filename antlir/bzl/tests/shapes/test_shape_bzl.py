@@ -502,3 +502,21 @@ class TestShapeBzl(unittest.TestCase):
         test_1 = shape.hash(b(y={"c": [6, 5, 4], "d": [1, 3, 2]}, z=a(x=5)))
         test_2 = shape.hash(b(y={"c": [5, 6, 4], "d": [3, 1, 2]}, z=a(x=5)))
         self.assertEqual(test_1, test_2)
+
+    def test_thrift(self) -> None:
+        shape.shape(x=int, __thrift={1: "x"})
+        # wrong field name
+        with self.assertRaises(Fail):
+            shape.shape(x=int, __thrift={2: "y"})
+        # mismatched set of fields
+        with self.assertRaises(Fail):
+            shape.shape(x=int, __thrift={})
+        with self.assertRaises(Fail):
+            shape.shape(x=int, __thrift={1: "x", 2: "y"})
+
+        shape.union(int, str, __thrift=[1, 2])
+        # wrong numbers of fields
+        with self.assertRaises(Fail):
+            shape.union(int, str, __thrift=[1])
+        with self.assertRaises(Fail):
+            shape.union(int, str, __thrift=[1, 2, 3])

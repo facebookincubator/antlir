@@ -112,6 +112,7 @@ mount = mount_t(
 See tests/shape_test.bzl for full example usage and selftests.
 """
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_library", "rust_library", "target_utils", "third_party")
@@ -293,7 +294,7 @@ def _is_collection(x):
 def _is_union(x):
     return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types"])
 
-def _union_type(*union_types):
+def _union_type(*union_types, __thrift = None):
     """
     Define a new union type that can be used when defining a field. Most
     useful when a union type is meant to be typedef'd and reused. To define
@@ -309,13 +310,15 @@ def _union_type(*union_types):
     """
     if len(union_types) == 0:
         fail("union must specify at least one type")
+    if __thrift != None and (len(union_types) != len(__thrift)):
+        fail("if using thrift, must have same number of types")
     return struct(
         union_types = tuple([_normalize_type(t) for t in union_types]),
     )
 
-def _union(*union_types, **field_kwargs):
+def _union(*union_types, __thrift = None, **field_kwargs):
     return _field(
-        type = _union_type(*union_types),
+        type = _union_type(__thrift = __thrift, *union_types),
         **field_kwargs
     )
 
@@ -337,7 +340,7 @@ def _is_enum(t):
 def _path(**field_kwargs):
     fail("shape.path() is no longer supported, use `shape.path` directly, or wrap in `shape.field()`")
 
-def _shape(**fields):
+def _shape(__thrift = None, **fields):
     """
     Define a new shape type with the fields as given by the kwargs.
 
@@ -372,6 +375,16 @@ def _shape(**fields):
     shape_struct = struct(
         fields = fields,
     )
+
+    if __thrift != None:
+        thrift_names = collections.uniq(__thrift.values())
+        if thrift_names != collections.uniq(fields.keys()):
+            fail("thrift mapping field names must match exactly with field names ({} != {})".format(fields.keys(), thrift_names))
+
+        # It would be even better if we could recursively check that all the
+        # included shape types also support thrift, but that's hairy to do in
+        # starlark and the rust compilation will fail fast enough, and prevent
+        # the implementation from being unsafe in the first place
 
     # the name of this function is important and makes the
     # backwards-compatibility hack in _new_shape work!
