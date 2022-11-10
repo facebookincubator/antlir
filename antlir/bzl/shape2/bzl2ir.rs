@@ -11,6 +11,7 @@ use std::collections::BTreeMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
+use allocative::Allocative;
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::ensure;
@@ -74,7 +75,8 @@ fn eval_and_freeze_module(
 slotmap::new_key_type! {
     /// TypeId and TypeRegistry exist to store unique references to complex types.
     /// These are types that end up getting codegenned, not primitives.
-    #[derive(ProvidesStaticType, NoSerialize)]
+    #[derive(ProvidesStaticType, NoSerialize, Allocative)]
+    #[allocative(skip)]
     struct TypeId;
 }
 impl std::fmt::Display for TypeId {
@@ -103,9 +105,10 @@ impl TypeRegistry {
     }
 }
 
-#[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize)]
+#[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize, Allocative)]
 #[display(fmt = "{:?}", self)]
 #[repr(transparent)]
+#[allocative(skip)]
 struct StarlarkType(Arc<ir::Type>);
 starlark_simple_value!(StarlarkType);
 impl<'v> StarlarkValue<'v> for StarlarkType {
@@ -156,9 +159,10 @@ impl<'v> TryToField for Value<'v> {
     }
 }
 
-#[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize)]
+#[derive(Debug, Clone, Display, ProvidesStaticType, NoSerialize, Allocative)]
 #[display(fmt = "{:?}", self)]
 #[repr(transparent)]
+#[allocative(skip)]
 struct StarlarkField(ir::Field);
 starlark_simple_value!(StarlarkField);
 impl<'v> StarlarkValue<'v> for StarlarkField {
