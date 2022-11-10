@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(backtrace)]
 #![feature(mutex_unlock)]
 /*
  * With rust 1.62, it appears that the thread sanitizer has been completely

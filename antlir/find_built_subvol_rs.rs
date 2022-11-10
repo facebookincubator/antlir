@@ -11,7 +11,6 @@ use absolute_path::AbsolutePathBuf;
 use artifacts_dir_rs::ensure_path_in_repo;
 use fs_utils_rs::AntlirPath;
 use pyo3::create_exception;
-use pyo3::exceptions::PyFileNotFoundError;
 use pyo3::prelude::*;
 
 create_exception!(artifacts_dir, SubvolNotFound, pyo3::exceptions::PyException);
