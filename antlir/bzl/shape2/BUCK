@@ -22,6 +22,7 @@ antlir_tool(
     test_deps = ["maplit"],
     visibility = ["PUBLIC"],
     deps = [
+        "allocative",
         "anyhow",
         "derive_more",
         "gazebo",
