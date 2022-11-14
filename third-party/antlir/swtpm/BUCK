@@ -53,7 +53,7 @@ rm -rf "${OUTPUT}/var"
 export CFLAGS="-B/opt/rh/gcc-toolset-9/root/bin -I/third-party-build/deps/libffi/include -I/third-party-build/deps/json-glib/include/json-glib-1.0 -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -I/third-party-build/deps/libtpms/include"
 export LDFLAGS="-L/third-party-build/deps/libtpms/lib -L/third-party-build/deps/libffi/lib/../lib64 -L/third-party-build/deps/json-glib/lib64 -lcrypto -ldl -lpthread"
 
-./autogen.sh --prefix="${OUTPUT}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
+./autogen.sh --prefix="${OUTPUT}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp 
         """,
     ),
     visibility = ["//antlir/vm/..."],
