@@ -46,8 +46,8 @@ to serialize a btrfs subvolume (for that, we have `package.new`).
 
 That said, we should still follow best practices to avoid problems if e.g.
 the user renames their repo, or similar.  These practices include:
-  - The output JSON must store no absolute paths.
-  - Store Buck target paths instead of paths into the output directory.
+    - The output JSON must store no absolute paths.
+    - Store Buck target paths instead of paths into the output directory.
 
 ### Dependency resolution
 
@@ -67,26 +67,26 @@ because we treat the parent layer as a black box -- whatever it has laid
 down in the image, that's what it provides (and we don't care about how).
 The consequences of this information hiding are:
 
-  - Better Buck cache efficiency -- we don't have to download
-    the dependencies of the ancestor layers' features. Doing that would be
-    wasteful, since those bits are redundant with what's in the parent.
+    - Better Buck cache efficiency -- we don't have to download
+        the dependencies of the ancestor layers' features. Doing that would be
+        wasteful, since those bits are redundant with what's in the parent.
 
-  - Ability to use genrule image layers / apply non-pure post-processing to
-    a layer.  In terms of engineering, both of these non-pure approaches are
-    a terrible idea and a maintainability headache, but they do provide a
-    useful bridge for transitioning to Buck image builds from legacy
-    imperative systems.
+    - Ability to use genrule image layers / apply non-pure post-processing to
+        a layer.  In terms of engineering, both of these non-pure approaches are
+        a terrible idea and a maintainability headache, but they do provide a
+        useful bridge for transitioning to Buck image builds from legacy
+        imperative systems.
 
-  - The image compiler needs a litte extra code to walk the parent layer and
-    determine what it provides.
+    - The image compiler needs a litte extra code to walk the parent layer and
+        determine what it provides.
 
-  - We cannot have "unobservable" dependencies between features.  Since
-    feature dependencies are expected to routinely cross layer boundaries,
-    feature implementations are forced only to depend on data that can be
-    inferred from the filesystem -- since this is all that the parent layer
-    implementation can do.  NB: This is easy to relax in the future by
-    writing a manifest with additional metadata into each layer, and using
-    that metadata during compilation.
+    - We cannot have "unobservable" dependencies between features.  Since
+        feature dependencies are expected to routinely cross layer boundaries,
+        feature implementations are forced only to depend on data that can be
+        inferred from the filesystem -- since this is all that the parent layer
+        implementation can do.  NB: This is easy to relax in the future by
+        writing a manifest with additional metadata into each layer, and using
+        that metadata during compilation.
 """
 
 load(":compile_image_features.bzl", "compile_image_features")
