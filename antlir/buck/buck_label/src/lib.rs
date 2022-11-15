@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::de::Deserializer;
 use serde::de::Error as _;
 use serde::ser::Serializer;
@@ -12,12 +14,25 @@ use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Debug, Error, Copy, Clone, PartialEq, Eq)]
+static ALLOWED_NAME_CHARSET: &str = r"[a-zA-Z0-9,.=\-/~@!+$_]";
+static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
+    format!(
+        r"(?P<cell>.+?)//(?P<package>{}*?):(?P<name>{}+)",
+        ALLOWED_NAME_CHARSET, ALLOWED_NAME_CHARSET,
+    )
+});
+static LABEL_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(&format!("^{}$", *LABEL_PATTERN)).expect("I know this works"));
+static LABEL_WITH_CONFIG_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(&format!(r"^{}\s+\((?P<cfg>.+)\)$", *LABEL_PATTERN)).expect("I know this works")
+});
+
+#[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum Error {
-    #[error("label does not contain a cell")]
-    MissingCell,
-    #[error("label must contain exactly one ':'")]
-    TargetSeparator,
+    #[error("label '{0}' does not match the regex")]
+    NoMatch(String),
+    #[error("label config was not a valid label: '{0}'")]
+    InvalidConfig(Box<Error>),
 }
 
 /// A buck target label. Points to a specific target and is always fully
@@ -27,32 +42,35 @@ pub struct Label {
     cell: String,
     package: String,
     name: String,
+    config: Option<Box<Label>>,
 }
 
 impl Label {
-    pub fn new(s: String) -> Result<Self, Error> {
-        if !s.contains("//") {
-            return Err(Error::MissingCell);
-        }
-        if s.chars().filter(|s| *s == ':').count() != 1 {
-            return Err(Error::TargetSeparator);
-        }
-        match s.split_once("//") {
-            Some((cell, rest)) => {
-                if cell.is_empty() {
-                    Err(Error::MissingCell)
-                } else {
-                    match rest.split_once(':') {
-                        Some((package, name)) => Ok(Self {
-                            cell: cell.into(),
-                            package: package.into(),
-                            name: name.into(),
-                        }),
-                        None => Err(Error::TargetSeparator),
-                    }
-                }
+    pub fn new(s: &str) -> Result<Self, Error> {
+        match LABEL_WITH_CONFIG_RE.captures(s) {
+            Some(cap) => {
+                let mut label = Self::from_caps(&cap);
+                let config = Self::new(cap.name("cfg").expect("cfg must exist").as_str())
+                    .map_err(|e| Error::InvalidConfig(Box::new(e)))?;
+                label.config = Some(Box::new(config));
+                Ok(label)
             }
-            None => Err(Error::MissingCell),
+            None => match LABEL_RE.captures(s) {
+                Some(cap) => Ok(Self::from_caps(&cap)),
+                None => Err(Error::NoMatch(s.to_owned())),
+            },
+        }
+    }
+
+    fn from_caps(cap: &regex::Captures) -> Self {
+        let cell = cap.name("cell").expect("cell must exist");
+        let package = cap.name("package").expect("package must exist");
+        let name = cap.name("name").expect("name must exist");
+        Self {
+            cell: cell.as_str().to_owned(),
+            package: package.as_str().to_owned(),
+            name: name.as_str().to_owned(),
+            config: None,
         }
     }
 
@@ -60,12 +78,7 @@ impl Label {
     /// so that a directory hierarchy does not need to be created to match the
     /// repo structure (in other words, '/' gets replaced).
     pub fn flat_filename(&self) -> String {
-        format!(
-            "{}@{}:{}",
-            self.cell,
-            self.package.replace('/', "_"),
-            self.name
-        )
+        self.to_string().replace('/', "-")
     }
 
     pub fn cell(&self) -> &str {
@@ -79,19 +92,30 @@ impl Label {
     pub fn name(&self) -> &str {
         &self.name
     }
+
+    pub fn config(&self) -> Option<&Label> {
+        self.config.as_deref()
+    }
 }
 
 impl std::str::FromStr for Label {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Self::new(s.into())
+        Self::new(s)
     }
 }
 
 impl std::fmt::Display for Label {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}//{}:{}", self.cell, self.package, self.name)
+        match &self.config {
+            Some(cfg) => {
+                write!(f, "{}//{}:{} ({})", self.cell, self.package, self.name, cfg)
+            }
+            None => {
+                write!(f, "{}//{}:{}", self.cell, self.package, self.name)
+            }
+        }
     }
 }
 
@@ -101,7 +125,7 @@ impl<'de> Deserialize<'de> for Label {
         D: Deserializer<'de>,
     {
         let label = String::deserialize(deserializer)?;
-        Label::new(label).map_err(D::Error::custom)
+        Label::new(&label).map_err(D::Error::custom)
     }
 }
 
@@ -116,6 +140,7 @@ impl Serialize for Label {
 
 #[cfg(test)]
 mod tests {
+    use rstest::rstest;
     use static_assertions::assert_impl_all;
 
     use super::*;
@@ -129,27 +154,53 @@ mod tests {
                 cell: "abc".into(),
                 package: "path/to/target".into(),
                 name: "label".into(),
+                config: None,
             }),
             Label::new("abc//path/to/target:label".into()),
         );
         assert_eq!(
-            Err(Error::MissingCell),
-            Label::new("//path/to/target:label".into()),
+            Ok(Label {
+                cell: "abc".into(),
+                package: "path/to/target".into(),
+                name: "label".into(),
+                config: Some(Box::new(Label {
+                    cell: "config".into(),
+                    package: "path/to".into(),
+                    name: "config".into(),
+                    config: None
+                })),
+            }),
+            Label::new("abc//path/to/target:label (config//path/to:config)"),
         );
+    }
+
+    #[rstest]
+    #[case::no_cell("//path/to/target:label")]
+    #[case::no_colon("abc//path/to/target/label")]
+    #[case::double_colon("abc//path/to/target::label")]
+    fn bad_labels(#[case] s: &str) {
         assert_eq!(
-            Err(Error::TargetSeparator),
-            Label::new("abc//path/to/target/label".into()),
+            Err(Error::NoMatch(s.into())),
+            Label::new(s),
+            "'{}' should not have parsed",
+            s
         );
-        assert_eq!(
-            Err(Error::TargetSeparator),
-            Label::new("abc//path/to/target::label".into()),
-        );
+    }
+
+    /// The Display impl should produce the same input when given a well-formed
+    /// label
+    #[rstest]
+    #[case::raw("abc//path/to/target:label")]
+    #[case::with_cfg("abc//path/to/target:label (config//path/to:config)")]
+    fn display(#[case] s: &str) {
+        let label = Label::new(s).expect("well-formed");
+        assert_eq!(s, label.to_string());
     }
 
     #[test]
     fn escape() {
-        let label: Label = Label::new("abc//path/to/target:label".into()).expect("well-formed");
-        assert_eq!("abc@path_to_target:label", label.flat_filename());
+        let label: Label = Label::new("abc//path/to/target:label").expect("well-formed");
+        assert_eq!("abc--path-to-target:label", label.flat_filename());
     }
 
     #[test]
@@ -161,6 +212,7 @@ mod tests {
                 cell: "abc".into(),
                 package: "path/to/target".into(),
                 name: "label".into(),
+                config: None,
             },
             label
         );

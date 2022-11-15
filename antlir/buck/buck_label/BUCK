@@ -4,10 +4,13 @@ rust_library(
     name = "buck_label",
     srcs = glob(["src/**/*.rs"]),
     test_deps = [
+        "rstest",
         "serde_json",
         "static_assertions",
     ],
     deps = [
+        "once_cell",
+        "regex",
         "serde",
         "thiserror",
     ],
