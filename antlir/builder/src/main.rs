@@ -47,7 +47,7 @@ struct Args {
     debug: bool,
     #[clap(long)]
     label: Label,
-    #[clap(long, env = "TMPDIR")]
+    #[clap(long)]
     tmp_dir: PathBuf,
     #[clap(long)]
     out: PathBuf,
@@ -74,28 +74,17 @@ struct Tools {
 
 #[derive(Debug, Clone)]
 struct WrappedEnv {
-    out: PathBuf,
-    tmp: PathBuf,
     subvolumes_dir: PathBuf,
 }
 
 impl IntoIterator for WrappedEnv {
-    type Item = (&'static str, OsString);
-    type IntoIter = <Vec<(&'static str, OsString)> as IntoIterator>::IntoIter;
+    type Item = (OsString, OsString);
+    type IntoIter = <Vec<(OsString, OsString)> as IntoIterator>::IntoIter;
 
     #[deny(unused_variables)]
     fn into_iter(self) -> Self::IntoIter {
-        let WrappedEnv {
-            subvolumes_dir,
-            out,
-            tmp,
-        } = self;
-        vec![
-            ("SUBVOLUMES_DIR", subvolumes_dir.into()),
-            ("OUT", out.into()),
-            ("TMP", tmp.into()),
-        ]
-        .into_iter()
+        let WrappedEnv { subvolumes_dir } = self;
+        vec![("SUBVOLUMES_DIR".into(), subvolumes_dir.into())].into_iter()
     }
 }
 
@@ -153,11 +142,7 @@ fn main() -> Result<()> {
         .create(&subvolumes_dir)
         .with_context(|| format!("while creating '{}'", subvolumes_dir.display()))?;
 
-    let wrapped_env = WrappedEnv {
-        subvolumes_dir,
-        out: args.out.clone(),
-        tmp: args.tmp_dir.clone(),
-    };
+    let wrapped_env = WrappedEnv { subvolumes_dir };
 
     let wrapped_out = Command::new(&args.wrapped_cmd)
         .args(args.wrapped_args)
