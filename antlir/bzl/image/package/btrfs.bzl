@@ -4,7 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:bash.bzl", "boilerplate_genrule")
+load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
@@ -69,11 +70,12 @@ def _new_btrfs(
 
         layers.append(subvol.layer)
 
-    boilerplate_genrule(
+    buck_genrule(
         name = name,
         out = "image.btrfs",
         type = _rule_type,
-        bash = '''
+        bash = wrap_bash_build_in_common_boilerplate(
+            bash = '''
             # Create the file as the build user first
             touch "$OUT"
             # Packaging currently requires root but to avoid
@@ -89,8 +91,10 @@ def _new_btrfs(
                     --output-path "$OUT" \
                     --opts {quoted_opts_json}
             '''.format(
-            package_btrfs = antlir_dep("package:btrfs"),
-            quoted_opts_json = shell.quote(shape.do_not_cache_me_json(opts)),
+                package_btrfs = antlir_dep("package:btrfs"),
+                quoted_opts_json = shell.quote(shape.do_not_cache_me_json(opts)),
+            ),
+            target_name = name,
         ),
         visibility = visibility,
         labels = ["uses_sudo"] + (labels or []),

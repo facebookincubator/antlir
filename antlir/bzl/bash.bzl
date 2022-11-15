@@ -4,52 +4,24 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "is_buck2")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
-load(":bash.2.bzl?v2_only", buck2_boilerplate_genrule = "boilerplate_genrule")
 
-def _buck1_boilerplate_genrule(
-        name,
-        bash,
-        out = "out",
-        deps_query = None,
-        antlir_rule = None,
-        **genrule_kwargs):
-    buck_genrule(
-        name = name,
-        bash = _make_shell_script(bash, name, deps_query),
-        out = out,
-        antlir_rule = antlir_rule,
-        **genrule_kwargs
-    )
-
-"""
-Wrap a bash script to run in an environment that takes care of
-buck-image-out existence, permissions and logging.
-
-If the script has some dependencies that can't adequately be tracked by buck
-with $(location) (for example, a `python_binary` in @//mode/dev),
-`deps_query` can be used to insert a cache-buster into the script so that a
-`buck_genrule` containing this script contents will re-run when any of the
-targets matching `deps_query` are changed.
-"""
-boilerplate_genrule = buck2_boilerplate_genrule if is_buck2() else _buck1_boilerplate_genrule
-
-def _make_shell_script(
+def wrap_bash_build_in_common_boilerplate(
         bash,
         target_name,
         deps_query = None):
-    cmd = "$(exe {})".format(antlir_dep("builder:builder-with-defaults"))
-    args = [
-        "--tmp-dir",
-        "$TMP",
-        "--out",
-        "$OUT",
-        "--label={}".format(normalize_target(":" + target_name)),
-    ]
-    if deps_query:
-        args += ["--cache-buster", "BUCK_QUERY:'$(query_outputs '{}')'".format(deps_query)]
-    args += ["--", "/bin/bash", "-e", "-c", bash]
+    """
+    Wrap a bash script to run in an environment that takes care of
+    buck-image-out existence, permissions and logging.
+
+    If the script has some dependencies that can't adequately be tracked by buck
+    with $(location) (for example, a `python_binary` in @//mode/dev),
+    `deps_query` can be used to insert a cache-buster into the script so that a
+    `buck_genrule` containing this script contents will re-run when any of the
+    targets matching `deps_query` are changed.
+    """
+    args = wrap_bash_build_in_common_boilerplate_args(bash, target_name, deps_query)
+    cmd, args = args[0], args[1:]
     return cmd + " " + " ".join([_maybe_quote(a) for a in args])
 
 def _maybe_quote(arg):
@@ -62,3 +34,20 @@ def _maybe_quote(arg):
     if arg in ("$OUT", "$TMP"):
         return arg
     return shell.quote(arg)
+
+def wrap_bash_build_in_common_boilerplate_args(
+        bash,
+        target_name,
+        deps_query = None):
+    args = [
+        "$(exe {})".format(antlir_dep("builder:builder-with-defaults")),
+        "--tmp-dir",
+        "$TMP",
+        "--out",
+        "$OUT",
+        "--label={}".format(normalize_target(":" + target_name)),
+    ]
+    if deps_query:
+        args += ["--cache-buster", "BUCK_QUERY:'$(query_outputs '{}')'".format(deps_query)]
+    args += ["--", "/bin/bash", "-e", "-c", bash]
+    return args

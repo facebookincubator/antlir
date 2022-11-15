@@ -5,8 +5,8 @@
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load(":bash.bzl", "boilerplate_genrule")
-load(":build_defs.bzl", "config", "is_buck2")
+load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
+load(":build_defs.bzl", "buck_genrule", "config", "is_buck2")
 load(":image_layer_runtime.bzl", "add_runtime_targets")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
@@ -52,9 +52,10 @@ def _image_layer_impl(
     buck_out_base_dir = config.get_buck_out_path().split("/")[0]
 
     # IMPORTANT: If you touch this genrule, update `image_layer_alias`.
-    boilerplate_genrule(
+    buck_genrule(
         name = _layer_name,
-        bash = '''
+        bash = wrap_bash_build_in_common_boilerplate(
+            bash = '''
             # We want subvolume names to be user-controllable. To permit
             # this, we wrap each subvolume in a temporary subdirectory.
             # This also allows us to prevent access to capability-
@@ -106,49 +107,51 @@ def _image_layer_impl(
 
             mv "$TMP/out" "$OUT"  # Allow the rule to succeed.
             '''.format(
-            layer_mount_config = antlir_dep(":layer-mount-config"),
-            # Buck target names permit `/`, but we want a 1-level
-            # hierarchy for layer wrapper directories in
-            # `buck-image-out`, so mangle `/`.
-            layer_name_mangled_quoted = shell.quote(
-                _layer_name.replace("/", "=="),
-            ),
-            layer_target_quoted = shell.quote(
-                normalize_target(":" + _layer_name),
-            ),
-            make_subvol_cmd = _make_subvol_cmd,
-            # To make layers "image-mountable", provide `mountconfig.json`.
-            print_mount_config = (
-                # `mount_config` was a target path
-                "cat $(location {})".format(mount_config)
-            ) if types.is_string(mount_config) else (
-                # inline `mount_config` dict
-                "echo {}".format(
-                    shell.quote(structs.as_json(struct(**mount_config))),
-                )
-            ),
-            # The `buck-out` path is configurable in buck and we should not
-            # hard code it. Unfortunately there is no good way to discover
-            # the full abs path of this configured dir from bzl. So we use a
-            # bash parameter expansion to figure this out via the provided
-            # GEN_DIR environment variable. The tricky thing is that you
-            # can't have nested substitutions in starlark, and to use a bash
-            # parameter expansion it must be wrapped with ${}. To work
-            # around this we awkwardly construct the "inner" parameter
-            # expansion, hug it with `{` and `}`, and then finally insert
-            # it into the full expression to yield something that looks
-            # like (assuming `buck-out` is the configured path):
-            # ${GEN_DIR%%/buck-out/*}/buck-out/.volume-refcount-hardlinks/
-            refcounts_dir_quoted = "${parameter_expand}/{buck_out}/.volume-refcount-hardlinks/".format(
-                buck_out = buck_out_base_dir,
-                parameter_expand = "{" + "GEN_DIR%%/{buck_out}/*".format(
+                layer_mount_config = antlir_dep(":layer-mount-config"),
+                # Buck target names permit `/`, but we want a 1-level
+                # hierarchy for layer wrapper directories in
+                # `buck-image-out`, so mangle `/`.
+                layer_name_mangled_quoted = shell.quote(
+                    _layer_name.replace("/", "=="),
+                ),
+                layer_target_quoted = shell.quote(
+                    normalize_target(":" + _layer_name),
+                ),
+                make_subvol_cmd = _make_subvol_cmd,
+                # To make layers "image-mountable", provide `mountconfig.json`.
+                print_mount_config = (
+                    # `mount_config` was a target path
+                    "cat $(location {})".format(mount_config)
+                ) if types.is_string(mount_config) else (
+                    # inline `mount_config` dict
+                    "echo {}".format(
+                        shell.quote(structs.as_json(struct(**mount_config))),
+                    )
+                ),
+                # The `buck-out` path is configurable in buck and we should not
+                # hard code it. Unfortunately there is no good way to discover
+                # the full abs path of this configured dir from bzl. So we use a
+                # bash parameter expansion to figure this out via the provided
+                # GEN_DIR environment variable. The tricky thing is that you
+                # can't have nested substitutions in starlark, and to use a bash
+                # parameter expansion it must be wrapped with ${}. To work
+                # around this we awkwardly construct the "inner" parameter
+                # expansion, hug it with `{` and `}`, and then finally insert
+                # it into the full expression to yield something that looks
+                # like (assuming `buck-out` is the configured path):
+                # ${GEN_DIR%%/buck-out/*}/buck-out/.volume-refcount-hardlinks/
+                refcounts_dir_quoted = "${parameter_expand}/{buck_out}/.volume-refcount-hardlinks/".format(
                     buck_out = buck_out_base_dir,
-                ) + "}",
-            ) if not is_buck2() else "buck-out/.volume-refcount-hardlinks",
-            subvolume_garbage_collector = antlir_dep(":subvolume-garbage-collector"),
-            subvolume_version = antlir_dep(":subvolume-version"),
+                    parameter_expand = "{" + "GEN_DIR%%/{buck_out}/*".format(
+                        buck_out = buck_out_base_dir,
+                    ) + "}",
+                ) if not is_buck2() else "buck-out/.volume-refcount-hardlinks",
+                subvolume_garbage_collector = antlir_dep(":subvolume-garbage-collector"),
+                subvolume_version = antlir_dep(":subvolume-version"),
+            ),
+            target_name = _layer_name,
+            deps_query = _deps_query,
         ),
-        deps_query = _deps_query,
         # Layers are only usable on the same host that built them, so
         # keep our output JSON out of the distributed Buck cache.  See
         # the docs for BuildRule::isCacheable.
