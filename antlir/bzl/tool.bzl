@@ -4,11 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:constants.bzl", "use_rc_target")
-# @oss-disable: load("//antlir/fbpkg:fbpkg.bzl", "fbpkg") 
+# @oss-disable
 load(":build_defs.bzl", "alias", "buck_genrule", "config", "get_visibility", "rust_binary", "rust_library", "rust_unittest")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
-# @oss-disable: is_facebook = True 
+# @oss-disable
 # @oss-enable is_facebook = False
 
 TOOLS = {
@@ -53,7 +53,7 @@ def antlir_tool(rule, name, **kwargs):
         name = name + "-cached",
         out = "tool",
         cmd = "cp --reflink=auto $(location {})/{} $OUT".format(
-            # @oss-disable: fbpkg.fetched_with_nondeterministic_fs_metadata("antlir.tools", repo_committed_tag = "repo_stable"), 
+            # @oss-disable
             # @oss-enable "oss antlir does not support cached tools",
             TOOLS[full_label],
         ),

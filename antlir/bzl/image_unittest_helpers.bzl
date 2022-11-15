@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @oss-disable: load("@fbsource//tools/build_defs:testpilot_defs.bzl", "special_tags") 
+# @oss-disable
 load("//antlir/bzl:build_defs.bzl", "buck_command_alias")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":build_defs.bzl", "buck_genrule", "python_library")
@@ -129,7 +129,7 @@ def _nspawn_wrapper_properties(
     # Inside FB, this allows us to report full container logs instead of
     # just the test output
     outer_test_kwargs["labels"] = outer_test_kwargs.pop("labels", [])
-    # @oss-disable: outer_test_kwargs["labels"].append(special_tags.enable_artifact_reporting) 
+    # @oss-disable
 
     # This target name gets a suffix to keep it discoverable via tab-completion
     test_layer = name + "__test_layer"

@@ -160,7 +160,7 @@ def _image_layer_impl(
         labels = ["image_layer", "uses_sudo"] + (labels or []),
         type = _rule_type,  # For queries
         visibility = visibility,
-        # @oss-disable: exec_compatible_with = ["fbcode//buck2/platform/execution:runs_only_local"], 
+        # @oss-disable
     )
 
     add_runtime_targets(_layer_name, runtime)
