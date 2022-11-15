@@ -48,17 +48,17 @@ class ProxyServer(ServerLauncher):
     @property
     def command_line(self):
         optional_args = []
-        # @oss-disable: if ( 
-            # @oss-disable: self.proxy_server_config.allow_unknown_fbpkg 
+        # @oss-disable
+            # @oss-disable
         ):  # @oss-disable pragma: no cover
-            # @oss-disable: optional_args.append("--allow-unknown-fbpkg") 
+            # @oss-disable
         if log.isEnabledFor(logging.DEBUG):  # pragma: no cover
             optional_args.append("--debug")
 
         return [
             self.bin_path,
             f"--socket-fd={self.sock.fileno()}",
-            # @oss-disable: f"--fbpkg-db-path={self.fbpkg_db_path}", 
+            # @oss-disable
             *(optional_args),
         ]
 

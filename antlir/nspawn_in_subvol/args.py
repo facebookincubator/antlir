@@ -607,15 +607,15 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
         dest="run_proxy_server",
         help="Enabling this flag will start proxy server in the container.",
     )
-    # @oss-disable: parser.add_argument( 
-        # @oss-disable: "--allow-unknown-fbpkg", 
-        # @oss-disable: action="store_true", 
-        # @oss-disable: dest="allow_unknown_fbpkg", 
-        # @oss-disable: help="Enabling this flag will allow proxy server to " 
-        # @oss-disable: "to install fbpkg tags that are not currently " 
-        # @oss-disable: "tracked by Antlir's " 
-        # @oss-disable: "in-repo fbpkg DB (https://fburl.com/antlir-fbpkg).", 
-    # @oss-disable: ) 
+    # @oss-disable
+        # @oss-disable
+        # @oss-disable
+        # @oss-disable
+        # @oss-disable
+        # @oss-disable
+        # @oss-disable
+        # @oss-disable
+    # @oss-disable
 
 
 # Only for internal use by `nspawn-{run,test}-in-subvol`.
@@ -685,8 +685,8 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
 
     proxy_server_config = (
         proxy_server_config_t(
-            # @oss-disable: fbpkg_pkg_list=[], 
-            # @oss-disable: allow_unknown_fbpkg=args.allow_unknown_fbpkg, 
+            # @oss-disable
+            # @oss-disable
         )
         if args.run_proxy_server
         else None

@@ -141,9 +141,9 @@ class GenruleLayerItemTestCase(unittest.TestCase):
 
     def test_genrule_proxy_server(self):
         # This test only ensures proper calls to nspawn plugins.
-        # @oss-disable: # Full integration tests are done in           
-        # @oss-disable: # antlir/bzl/genrule/facebook/chef_solo/tests  
-        # @oss-disable: # and antlir/proxy/facebook/tests              
+        # @oss-disable
+        # @oss-disable
+        # @oss-disable
         fbpkg_pkg = target_t(name="fbpkg_pkg", path="path")
 
         with self._temp_resource_subvol("genrule-layer-busybox-base") as sv, patch(
