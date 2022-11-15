@@ -4,9 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
-load(":bash.bzl", "wrap_bash_build_in_common_boilerplate")
+load(":bash.bzl", "boilerplate_genrule")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 
@@ -28,19 +27,16 @@ def image_gpt(
     build_appliance = build_appliance or flavor_helpers.get_build_appliance()
 
     gpt = gpt_t(name = name, table = table, disk_guid = disk_guid)
-    buck_genrule(
+    boilerplate_genrule(
         name = name,
-        bash = wrap_bash_build_in_common_boilerplate(
-            bash = '''
+        bash = '''
             $(exe //antlir:gpt) \
               --output-path "$OUT" \
               --gpt {opts_quoted} \
               --build-appliance $(query_outputs {build_appliance}) \
             '''.format(
-                opts_quoted = shell.quote(shape.do_not_cache_me_json(gpt)),
-                build_appliance = build_appliance,
-            ),
-            target_name = name,
+            opts_quoted = shell.quote(shape.do_not_cache_me_json(gpt)),
+            build_appliance = build_appliance,
         ),
         cacheable = False,
         visibility = visibility,

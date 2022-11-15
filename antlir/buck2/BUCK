@@ -4,6 +4,7 @@ load("//antlir/bzl:build_defs.bzl", "is_buck2")
 antlir_toolchain(
     name = "toolchain",
     artifacts_dir = "//antlir:artifacts-dir",
+    builder = "//antlir/builder:builder",
     visibility = ["PUBLIC"],
     volume_for_repo = "//antlir:volume-for-repo",
 ) if is_buck2() else None
