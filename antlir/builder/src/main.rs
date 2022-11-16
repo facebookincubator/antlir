@@ -46,7 +46,7 @@ struct Args {
     #[clap(long, env = "ANTLIR_DEBUG", help = "be extra verbose")]
     debug: bool,
     #[clap(long)]
-    label: Label,
+    label: Label<'static>,
     #[clap(long)]
     tmp_dir: PathBuf,
     #[clap(long)]
