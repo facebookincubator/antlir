@@ -57,14 +57,19 @@ load(":mount.bzl", "mount_to_json")
 load(":rpms.bzl", "rpms_to_json")
 load(":usergroup.bzl", "group_to_json", "user_to_json")
 
+Features = transitive_set()
 FeatureDeps = transitive_set()
 
 FeatureInfo = provider(fields = [
-    # list of json items deserializable by the antlir compiler
-    "json_items",
-    # targets that must be materialized on disk for the compiler to be able to
-    # build the feature (FeatureDeps transitive set)
+    # FeatureDeps transitive set
+    # All the targets that must be materialized on disk for the compiler to be
+    # able to build this feature
     "deps",
+    # Features transitive set
+    # List of output files that contain lists of features deserializable by
+    # Antlir tools. Files include inline features in this rule, as well as all
+    # the features this one brings in via deps
+    "json_files",
 ])
 
 _feature_to_json = {
@@ -76,9 +81,8 @@ _feature_to_json = {
 }
 
 def _impl(ctx: "context") -> ["provider"]:
-    # merge all the inline features and all of the feature targets into a single
-    # FeatureInfo provider
-    json_items = []
+    # Merge inline features into a single JSON file
+    inline_features = []
     inline_deps = []
     for key, inline in ctx.attrs.inline_features.items():
         inline = InlineFeatureInfo(**json.decode(inline))
@@ -90,19 +94,29 @@ def _impl(ctx: "context") -> ["provider"]:
 
         feature_json = _feature_to_json[inline.feature_type](sources = feature_sources, deps = feature_deps, **inline.kwargs)
         feature_json["__feature_type"] = inline.feature_type
-        json_items.append(feature_json)
+        inline_features.append(feature_json)
+    json_out = ctx.actions.write_json("features.json", inline_features)
 
-    dep_children_sets = []
-    for feature in ctx.attrs.feature_targets:
-        feature = feature[FeatureInfo]
-        json_items.extend(feature.json_items)
-        dep_children_sets.append(feature.deps)
-    deps = ctx.actions.tset(FeatureDeps, value = inline_deps, children = dep_children_sets)
+    # Track the JSON outputs and deps of other feature targets with transitive
+    # sets. Note that we cannot produce a single JSON file with all the
+    # transitive features, because we need to support "genrule" features where a
+    # command outside of buck can be used to produce much more dynamic feature
+    # JSON (for example, extract.bzl requires Rust logic to produce its feature
+    # output)
+    json_files = ctx.actions.tset(
+        Features,
+        value = [json_out],
+        children = [f[FeatureInfo].json_files for f in ctx.attrs.feature_targets],
+    )
+    deps = ctx.actions.tset(
+        FeatureDeps,
+        value = inline_deps,
+        children = [f[FeatureInfo].deps for f in ctx.attrs.feature_targets],
+    )
 
-    json_out = ctx.actions.write_json("features.json", json_items)
     return [
         FeatureInfo(
-            json_items = json_items,
+            json_files = json_files,
             deps = deps,
         ),
         DefaultInfo(default_outputs = [json_out]),
