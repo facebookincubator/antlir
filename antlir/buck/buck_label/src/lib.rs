@@ -5,6 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(cow_is_borrowed)]
+
+use std::borrow::Cow;
+use std::cmp::Ordering;
+use std::cmp::PartialOrd;
+use std::ops::Range;
+
 use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::de::Deserializer;
@@ -17,14 +24,16 @@ use thiserror::Error;
 static ALLOWED_NAME_CHARSET: &str = r"[a-zA-Z0-9,.=\-/~@!+$_]";
 static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
     format!(
-        r"(?P<cell>.+?)//(?P<package>{}*?):(?P<name>{}+)",
+        r"(.+?)//({}*?):({}+)",
         ALLOWED_NAME_CHARSET, ALLOWED_NAME_CHARSET,
     )
 });
-static LABEL_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(&format!("^{}$", *LABEL_PATTERN)).expect("I know this works"));
 static LABEL_WITH_CONFIG_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(&format!(r"^{}\s+\((?P<cfg>.+)\)$", *LABEL_PATTERN)).expect("I know this works")
+    Regex::new(&format!(
+        r"^{}(?:\s+\({}\))?$",
+        *LABEL_PATTERN, *LABEL_PATTERN
+    ))
+    .expect("I know this works")
 });
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
@@ -37,40 +46,85 @@ pub enum Error {
 
 /// A buck target label. Points to a specific target and is always fully
 /// qualified (aka, with cell name).
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct Label {
-    cell: String,
-    package: String,
-    name: String,
-    config: Option<Box<Label>>,
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub struct Label<'a> {
+    full: Cow<'a, str>,
+    cell: Range<usize>,
+    package: Range<usize>,
+    name: Range<usize>,
+    config: Option<Box<Label<'a>>>,
 }
 
-impl Label {
-    pub fn new(s: &str) -> Result<Self, Error> {
-        match LABEL_WITH_CONFIG_RE.captures(s) {
+impl<'a> PartialOrd for Label<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.full.partial_cmp(&other.full)
+    }
+}
+
+impl<'a> Ord for Label<'a> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.full.cmp(&other.full)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Parts<'a> {
+    cell: &'a str,
+    package: &'a str,
+    name: &'a str,
+    config: Option<Box<Parts<'a>>>,
+}
+
+impl<'a> Label<'a> {
+    pub fn new(s: impl Into<Cow<'a, str>>) -> Result<Self, Error> {
+        let full: Cow<'a, str> = s.into();
+        match LABEL_WITH_CONFIG_RE.captures(&full) {
             Some(cap) => {
-                let mut label = Self::from_caps(&cap);
-                let config = Self::new(cap.name("cfg").expect("cfg must exist").as_str())
-                    .map_err(|e| Error::InvalidConfig(Box::new(e)))?;
-                label.config = Some(Box::new(config));
-                Ok(label)
+                assert_eq!(
+                    cap.len(),
+                    7,
+                    "the regex matched, there must be exactly 7 groups"
+                );
+                let cell = cap.get(1).expect("cell must exist").range();
+                let package = cap.get(2).expect("package must exist").range();
+                let name = cap.get(3).expect("name must exist").range();
+                // If group 4 (the cell of the config) participated in the
+                // match, then all the others parts of the config must have as
+                // well. This unintuitive condition is necessary because
+                // `cap.len()` always returns the total number of groups, even
+                // if they didn't participate in the match
+                let config = if let Some(cfg_cell) = cap.get(4) {
+                    let cfg_cell = cfg_cell.range();
+                    let cfg_package = cap.get(5).expect("cfg_package must exist").range();
+                    let cfg_name = cap.get(6).expect("cfg_name must exist").range();
+                    Some(Box::new(Self {
+                        full: full.clone(),
+                        cell: cfg_cell,
+                        package: cfg_package,
+                        name: cfg_name,
+                        config: None,
+                    }))
+                } else {
+                    None
+                };
+                Ok(Self {
+                    full,
+                    cell,
+                    package,
+                    name,
+                    config,
+                })
             }
-            None => match LABEL_RE.captures(s) {
-                Some(cap) => Ok(Self::from_caps(&cap)),
-                None => Err(Error::NoMatch(s.to_owned())),
-            },
+            None => Err(Error::NoMatch(full.to_string())),
         }
     }
 
-    fn from_caps(cap: &regex::Captures) -> Self {
-        let cell = cap.name("cell").expect("cell must exist");
-        let package = cap.name("package").expect("package must exist");
-        let name = cap.name("name").expect("name must exist");
-        Self {
-            cell: cell.as_str().to_owned(),
-            package: package.as_str().to_owned(),
-            name: name.as_str().to_owned(),
-            config: None,
+    pub fn parts(&'a self) -> Parts<'a> {
+        Parts {
+            cell: self.cell(),
+            package: self.package(),
+            name: self.name(),
+            config: self.config().map(Label::parts).map(Box::new),
         }
     }
 
@@ -82,15 +136,15 @@ impl Label {
     }
 
     pub fn cell(&self) -> &str {
-        &self.cell
+        &self.full[self.cell.clone()]
     }
 
     pub fn package(&self) -> &str {
-        &self.package
+        &self.full[self.package.clone()]
     }
 
     pub fn name(&self) -> &str {
-        &self.name
+        &self.full[self.name.clone()]
     }
 
     pub fn config(&self) -> Option<&Label> {
@@ -98,38 +152,42 @@ impl Label {
     }
 }
 
-impl std::str::FromStr for Label {
+impl<'a> std::str::FromStr for Label<'a> {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
-        Self::new(s)
+        Self::new(s.to_owned())
     }
 }
 
-impl std::fmt::Display for Label {
+impl<'a> std::fmt::Debug for Label<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match &self.config {
-            Some(cfg) => {
-                write!(f, "{}//{}:{} ({})", self.cell, self.package, self.name, cfg)
-            }
-            None => {
-                write!(f, "{}//{}:{}", self.cell, self.package, self.name)
-            }
-        }
+        f.debug_struct("Label")
+            .field("cell", &self.cell())
+            .field("package", &self.package())
+            .field("name", &self.name())
+            .field("config", &self.config())
+            .finish()
     }
 }
 
-impl<'de> Deserialize<'de> for Label {
+impl<'a> std::fmt::Display for Label<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.full)
+    }
+}
+
+impl<'de> Deserialize<'de> for Label<'de> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let label = String::deserialize(deserializer)?;
-        Label::new(&label).map_err(D::Error::custom)
+        let label = <&str>::deserialize(deserializer)?;
+        Label::new(label).map_err(D::Error::custom)
     }
 }
 
-impl Serialize for Label {
+impl<'a> Serialize for Label<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -148,29 +206,58 @@ mod tests {
     assert_impl_all!(Label: Send, Sync);
 
     #[test]
+    fn cow_behavior() {
+        let l =
+            Label::new("abc//path/to/target:label (config//path/to:config)").expect("valid label");
+        assert!(
+            l.full.is_borrowed(),
+            "static str should produce borrowed Label"
+        );
+        assert!(
+            l.config.as_ref().expect("has config").full.is_borrowed(),
+            "static str should produce borrowed config Label"
+        );
+
+        let l = Label::new("abc//path/to/target:label (config//path/to:config)".to_string())
+            .expect("valid label");
+        assert!(
+            l.full.is_owned(),
+            "passing owned String should produce owned Label"
+        );
+        assert!(
+            l.config.as_ref().expect("has config").full.is_owned(),
+            "passing owned String should produce owned config Label"
+        );
+    }
+
+    #[test]
     fn parse_label() {
         assert_eq!(
-            Ok(Label {
-                cell: "abc".into(),
-                package: "path/to/target".into(),
-                name: "label".into(),
+            Parts {
+                cell: "abc",
+                package: "path/to/target",
+                name: "label",
                 config: None,
-            }),
-            Label::new("abc//path/to/target:label".into()),
+            },
+            Label::new("abc//path/to/target:label")
+                .expect("valid label")
+                .parts(),
         );
         assert_eq!(
-            Ok(Label {
-                cell: "abc".into(),
-                package: "path/to/target".into(),
-                name: "label".into(),
-                config: Some(Box::new(Label {
-                    cell: "config".into(),
-                    package: "path/to".into(),
-                    name: "config".into(),
+            Parts {
+                cell: "abc",
+                package: "path/to/target",
+                name: "label",
+                config: Some(Box::new(Parts {
+                    cell: "config",
+                    package: "path/to",
+                    name: "config",
                     config: None
                 })),
-            }),
-            Label::new("abc//path/to/target:label (config//path/to:config)"),
+            },
+            Label::new("abc//path/to/target:label (config//path/to:config)")
+                .expect("valid label")
+                .parts(),
         );
     }
 
@@ -208,13 +295,13 @@ mod tests {
         let label: Label =
             serde_json::from_str(r#""abc//path/to/target:label""#).expect("well formed");
         assert_eq!(
-            Label {
-                cell: "abc".into(),
-                package: "path/to/target".into(),
-                name: "label".into(),
+            Parts {
+                cell: "abc",
+                package: "path/to/target",
+                name: "label",
                 config: None,
             },
-            label
+            label.parts()
         );
         assert_eq!(
             r#""abc//path/to/target:label""#,
