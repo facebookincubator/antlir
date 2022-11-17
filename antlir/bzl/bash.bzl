@@ -49,5 +49,5 @@ def wrap_bash_build_in_common_boilerplate_args(
     ]
     if deps_query:
         args += ["--cache-buster", "BUCK_QUERY:'$(query_outputs '{}')'".format(deps_query)]
-    args += ["--", "/bin/bash", "-e", "-c", bash]
+    args += ["generic", "--", "/bin/bash", "-e", "-c", bash]
     return args
