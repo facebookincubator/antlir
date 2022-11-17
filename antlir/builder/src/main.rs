@@ -56,10 +56,8 @@ struct Args {
     cache_buster: Option<String>,
     #[clap(flatten)]
     tools: Tools,
-    #[clap(help = "binary to execute after prepping buck-image-out")]
-    wrapped_cmd: PathBuf,
-    #[clap(help = "arguments to pass to wrapped binary")]
-    wrapped_args: Vec<OsString>,
+    #[clap(subcommand)]
+    subcommand: Subcommand,
 }
 
 #[derive(Parser)]
@@ -70,6 +68,20 @@ struct Tools {
     ensure_artifacts_dir_exists: PathBuf,
     #[clap(long)]
     volume_for_repo: PathBuf,
+}
+
+#[derive(Parser)]
+enum Subcommand {
+    Generic(Generic),
+}
+
+/// Wrap a generic subcommand
+#[derive(Parser)]
+struct Generic {
+    #[clap(help = "binary to execute after prepping buck-image-out")]
+    wrapped_cmd: PathBuf,
+    #[clap(help = "arguments to pass to wrapped binary")]
+    wrapped_args: Vec<OsString>,
 }
 
 #[derive(Debug, Clone)]
@@ -142,48 +154,52 @@ fn main() -> Result<()> {
         .create(&subvolumes_dir)
         .with_context(|| format!("while creating '{}'", subvolumes_dir.display()))?;
 
-    let wrapped_env = WrappedEnv { subvolumes_dir };
+    match args.subcommand {
+        Subcommand::Generic(generic) => {
+            let wrapped_env = WrappedEnv { subvolumes_dir };
 
-    let wrapped_out = Command::new(&args.wrapped_cmd)
-        .args(args.wrapped_args)
-        .envs(wrapped_env)
-        .output()
-        .with_context(|| format!("while running {}", args.wrapped_cmd.display()))?;
-    let stdout = strip_ansi_escapes::strip(&wrapped_out.stdout)
-        .context("while stripping ansi escapes from stdout")?;
-    let stderr = strip_ansi_escapes::strip(&wrapped_out.stderr)
-        .context("while stripping ansi escapes from stderr")?;
-    ensure!(
-        wrapped_out.status.success(),
-        "wrapped command failed: stderr: {}",
-        std::str::from_utf8(&stderr).unwrap_or("<not utf8>")
-    );
+            let wrapped_out = Command::new(&generic.wrapped_cmd)
+                .args(generic.wrapped_args)
+                .envs(wrapped_env)
+                .output()
+                .with_context(|| format!("while running {}", generic.wrapped_cmd.display()))?;
+            let stdout = strip_ansi_escapes::strip(&wrapped_out.stdout)
+                .context("while stripping ansi escapes from stdout")?;
+            let stderr = strip_ansi_escapes::strip(&wrapped_out.stderr)
+                .context("while stripping ansi escapes from stderr")?;
+            ensure!(
+                wrapped_out.status.success(),
+                "wrapped command failed: stderr: {}",
+                std::str::from_utf8(&stderr).unwrap_or("<not utf8>")
+            );
 
-    let elapsed = chrono::Duration::from_std(std::time::Instant::elapsed(&start_instant))
-        .expect("if image build times overflow, we have bigger problems");
+            let elapsed = chrono::Duration::from_std(std::time::Instant::elapsed(&start_instant))
+                .expect("if image build times overflow, we have bigger problems");
 
-    let mut logs_file = std::fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(artifacts_dir.join("image_build.log"))
-        .context("while opening logs file")?;
-    logs_file
-        .lock_exclusive()
-        .context("while locking logs file")?;
-    writeln!(
-        logs_file,
-        "{} {} (elapsed {})",
-        start_time.to_rfc3339(),
-        args.label,
-        elapsed,
-    )
-    .context("while writing header to logs file")?;
-    logs_file
-        .write_all(&stdout)
-        .context("while copying logs to logs file")?;
-    logs_file
-        .write_all(&stderr)
-        .context("while copying logs to logs file")?;
+            let mut logs_file = std::fs::OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(artifacts_dir.join("image_build.log"))
+                .context("while opening logs file")?;
+            logs_file
+                .lock_exclusive()
+                .context("while locking logs file")?;
+            writeln!(
+                logs_file,
+                "{} {} (elapsed {})",
+                start_time.to_rfc3339(),
+                args.label,
+                elapsed,
+            )
+            .context("while writing header to logs file")?;
+            logs_file
+                .write_all(&stdout)
+                .context("while copying logs to logs file")?;
+            logs_file
+                .write_all(&stderr)
+                .context("while copying logs to logs file")?;
+        }
+    }
 
     // It is always a terrible idea to mutate Buck outputs after creation, so as
     // an extra safety precation let's mark them readonly so we can't
