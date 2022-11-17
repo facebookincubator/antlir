@@ -177,13 +177,19 @@ impl<'a> std::fmt::Display for Label<'a> {
     }
 }
 
-impl<'de> Deserialize<'de> for Label<'de> {
+/// This simple CowWrapper struct with #[serde(borrow)] makes it easy to
+/// deserialize a `Label` using borrowed or owned data as appropriate, without
+/// having to figure it out ourselves. See [tests::serde] for proof.
+#[derive(Deserialize, Serialize)]
+struct CowWrapper<'a>(#[serde(borrow)] Cow<'a, str>);
+
+impl<'de: 'a, 'a> Deserialize<'de> for Label<'a> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let label = <&str>::deserialize(deserializer)?;
-        Label::new(label).map_err(D::Error::custom)
+        let c = CowWrapper::deserialize(deserializer)?;
+        Label::new(c.0).map_err(D::Error::custom)
     }
 }
 
@@ -303,6 +309,19 @@ mod tests {
             },
             label.parts()
         );
+        assert!(
+            label.full.is_borrowed(),
+            "serde_json::from_str should produce borrowed Label"
+        );
+        let mut deser =
+            serde_json::Deserializer::from_reader(&br#""abc//path/to/target:label""#[..]);
+        let label = Label::deserialize(&mut deser).expect("well formed");
+        assert!(
+            label.full.is_owned(),
+            "serde_json::from_reader should produce owned Label"
+        );
+
+        // serialization is easier to check
         assert_eq!(
             r#""abc//path/to/target:label""#,
             serde_json::to_string(&label).expect("infallible")
