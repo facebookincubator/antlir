@@ -43,8 +43,6 @@ impl BuckVersion {
 struct Args {
     #[clap(long, value_enum)]
     buck_version: BuckVersion,
-    #[clap(long, env = "ANTLIR_DEBUG", help = "be extra verbose")]
-    debug: bool,
     #[clap(long)]
     label: Label<'static>,
     #[clap(long)]
@@ -90,26 +88,24 @@ struct WrappedEnv {
 }
 
 impl IntoIterator for WrappedEnv {
-    type Item = (OsString, OsString);
-    type IntoIter = <Vec<(OsString, OsString)> as IntoIterator>::IntoIter;
+    type Item = (&'static str, OsString);
+    type IntoIter = <Vec<(&'static str, OsString)> as IntoIterator>::IntoIter;
 
     #[deny(unused_variables)]
     fn into_iter(self) -> Self::IntoIter {
         let WrappedEnv { subvolumes_dir } = self;
-        vec![("SUBVOLUMES_DIR".into(), subvolumes_dir.into())].into_iter()
+        vec![
+            ("SUBVOLUMES_DIR", subvolumes_dir.into()),
+            ("ANTLIR_DEBUG", "1".into()),
+        ]
+        .into_iter()
     }
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let filter_level = match args.debug {
-        true => slog::Level::Warning,
-        false => slog::Level::Debug,
-    };
     let log = slog::Logger::root(
-        slog_glog_fmt::default_drain()
-            .filter_level(filter_level)
-            .fuse(),
+        slog_glog_fmt::default_drain().fuse(),
         slog::o!(
             "label" => args.label.to_string(),
         ),
