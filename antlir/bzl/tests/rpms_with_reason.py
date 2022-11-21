@@ -52,9 +52,11 @@ Future: It would be pretty easy to let this derive wanted RPMs from
 
 import re
 import subprocess
+from concurrent.futures import ThreadPoolExecutor
+from functools import partial
 
 
-def print_required_by(rpm, wanted, required_by, cost=None) -> None:
+def fmt_required_by(rpm, wanted, required_by, cost=None) -> str:
     notes = []
     if rpm in wanted:
         notes.append("wanted")
@@ -65,7 +67,37 @@ def print_required_by(rpm, wanted, required_by, cost=None) -> None:
         notes.append("NOT REQUIRED")
     elif cost:
         notes.append("remove to free: " + cost)
-    print(f"{rpm}\t{'; '.join(notes)}")
+    return f"{rpm}\t{'; '.join(notes)}"
+
+
+def fmt_single_rpm(rpm: str, wanted) -> str:
+    if rpm == "gpg-pubkey":
+        return f"{rpm}\tfor RPM signature checking"
+
+    p = subprocess.run(
+        ["dnf", "remove", "--assumeno", rpm],
+        stderr=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True,
+        check=False,
+    )
+    m = re.search(" removing the following protected packages: (.*)\n", p.stderr)
+    if m:
+        return fmt_required_by(rpm, wanted, {p for p in m.group(1).split() if p})
+
+    if re.search("\nRemove +[0-9]+ Packages?\n", p.stdout):
+        removed = [l.split()[0] for l in p.stdout.split("\n") if l.startswith(" ")]
+        assert "Package" == removed[0], removed[0]
+        removed = removed[1:]
+        return fmt_required_by(
+            rpm,
+            wanted,
+            wanted.intersection(removed),
+            # pyre-fixme[16]: Optional type has no attribute `group`.
+            cost=re.search("\nFreed space: (.*)\n", p.stdout).group(1),
+        )
+
+    raise AssertionError(p)
 
 
 def print_rpms_with_reason(wanted_rpms) -> None:
@@ -80,37 +112,10 @@ def print_rpms_with_reason(wanted_rpms) -> None:
         .strip()
         .split("\n")
     )
-    for rpm in sorted(set(rpms)):
-        if rpm == "gpg-pubkey":
-            print(f"{rpm}\tfor RPM signature checking")
-            continue
-
-        p = subprocess.run(
-            ["dnf", "remove", "--assumeno", rpm],
-            stderr=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            text=True,
-            check=False,
-        )
-        m = re.search(" removing the following protected packages: (.*)\n", p.stderr)
-        if m:
-            print_required_by(rpm, wanted, {p for p in m.group(1).split() if p})
-            continue
-
-        if re.search("\nRemove +[0-9]+ Packages?\n", p.stdout):
-            removed = [l.split()[0] for l in p.stdout.split("\n") if l.startswith(" ")]
-            assert "Package" == removed[0], removed[0]
-            removed = removed[1:]
-            print_required_by(
-                rpm,
-                wanted,
-                wanted.intersection(removed),
-                # pyre-fixme[16]: Optional type has no attribute `group`.
-                cost=re.search("\nFreed space: (.*)\n", p.stdout).group(1),
-            )
-            continue
-
-        raise AssertionError(p)
+    with ThreadPoolExecutor() as executor:
+        lines = executor.map(partial(fmt_single_rpm, wanted=wanted), sorted(set(rpms)))
+    for line in lines:
+        print(line)
 
 
 if __name__ == "__main__":
