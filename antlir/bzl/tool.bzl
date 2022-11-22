@@ -37,7 +37,7 @@ def antlir_tool(rule, name, **kwargs):
 
     # If the target being built is in `rc_targets` build it fresh instead of
     # using the cached stable version.
-    if (not is_facebook) or use_rc_target(target):
+    if (not is_facebook) or use_rc_target(target = target):
         alias(
             name = name,
             actual = ":{}-rc".format(name),
