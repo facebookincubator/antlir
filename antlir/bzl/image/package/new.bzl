@@ -36,7 +36,8 @@ def package_new(
         labels = None,
         # Opts are required when format == ext3 | vfat | btrfs
         loopback_opts = None,
-        subvol_name = None):
+        subvol_name = None,
+        ba_tgt = None):
     visibility = visibility or []
 
     if not format:
@@ -77,6 +78,7 @@ def package_new(
               {targets_and_outputs} \
               {maybe_loopback_opts} \
               {maybe_subvol_name} \
+              {maybe_ba_tgt} \
             '''.format(
                 format = format,
                 layer = layer,
@@ -95,6 +97,9 @@ def package_new(
                 maybe_subvol_name = "--subvol-name {}".format(
                     shell.quote(subvol_name),
                 ) if subvol_name else "",
+                maybe_ba_tgt = "--ba-tgt {}".format(
+                    shell.quote(ba_tgt),
+                ) if ba_tgt else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
                 # so that the packager can verify that the specified
