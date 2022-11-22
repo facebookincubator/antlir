@@ -967,6 +967,7 @@ image.layer_from_package(
     name = op,
     flavor = "antlir_test",
     format = "sendstream",
+    rc_layer = None,
     source = ":" + op + "-original.sendstream",
     visibility = ["//antlir/..."],
 )
@@ -996,6 +997,7 @@ image.layer_from_package(
     name = "create_ops-from-dir",
     flavor = "antlir_test",
     format = "sendstream",
+    rc_layer = None,
     source = image.source(
         ":create_ops-dir",
         path = "sendstream",
@@ -1015,6 +1017,7 @@ image.layer_from_package(
     name = "create_ops-from-layer",
     flavor = "antlir_test",
     format = "sendstream",
+    rc_layer = None,
     source = image.source(
         layer = ":create_ops-layer",
         path = "sendstream",

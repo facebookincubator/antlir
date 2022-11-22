@@ -82,7 +82,7 @@ def image_layer_from_package(
         # The target path of the rc-layer implementation that built this
         # packaged layer.  Used in conjunction with the `-c antlir.rc.layers`
         # config to test changes to packaged layers.
-        rc_layer = None,
+        rc_layer = "__unset__",
         # Mechanistically, applying a send-stream on top of an existing layer
         # is just a regular `btrfs receive`.  However, the rules in the
         # current `receive` implementation for matching the parent to the
@@ -98,6 +98,8 @@ def image_layer_from_package(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
+    if rc_layer == "__unset__":
+        fail("rc_layer must be specified or explicitly set to None")
     flavor = flavor_to_struct(flavor)
     target_tagger = new_target_tagger()
     source_dict = image_source_as_target_tagged_dict(

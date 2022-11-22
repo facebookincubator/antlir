@@ -80,6 +80,7 @@ image.layer_from_package(
     name = "base",
     flavor = "antlir_test",
     format = "sendstream",
+    rc_layer = None,
     source = ":base.sendstream",
     visibility = ["//tupperware/cm/antlir/tests/..."],
 )
