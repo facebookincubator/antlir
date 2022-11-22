@@ -25,6 +25,7 @@ def image_layer_from_package_helper(
         compile_image_features_fn,
         image_layer_kwargs):
     flavor = flavor_to_struct(flavor)
+    target = normalize_target(":" + name)
 
     # Do argument validation
     for bad_kwarg in ["parent_layer", "features"]:
@@ -40,11 +41,10 @@ def image_layer_from_package_helper(
             name = PRIVATE_DO_NOT_USE_feature_target_name(name),
             layer = rc_layer,
         )
+    if use_rc_target(target = target, exact_match = True) and rc_layer == None:
+        fail("{}'s rc build was requested but `rc_layer` is unset!".format(target))
 
-    if use_rc_target(":" + name):
-        if rc_layer == None:
-            fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
-
+    if use_rc_target(target = target) and rc_layer != None:
         image_layer_alias(
             name = name,
             layer = rc_layer,

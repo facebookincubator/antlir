@@ -177,8 +177,8 @@ def _get_flavor_to_config():
 
     return flavor_to_config
 
-def use_rc_target(target):
-    if REPO_CFG.rc_targets == ["all"]:
+def use_rc_target(*, target, exact_match = False):
+    if not exact_match and REPO_CFG.rc_targets == ["all"]:
         return True
     return normalize_target(target) in REPO_CFG.rc_targets
 
