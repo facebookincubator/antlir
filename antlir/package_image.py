@@ -394,14 +394,12 @@ class Ext3Image(Format, format_name="ext3"):
 #     return subvol_stack
 
 
-def _get_build_appliance_from_layer_flavor_config(
-    layer: Subvol, targets_and_outputs: Mapping[AnyStr, Path]
-) -> Path:
-    return targets_and_outputs[
+def _get_ba_tgt_from_layer_flavor_config(layer: Subvol) -> str:
+    return (
         repo_config()
         .flavor_to_config[layer.read_path_text(META_FLAVOR_FILE)]
         .build_appliance
-    ]
+    )
 
 
 def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
@@ -460,6 +458,11 @@ def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
             "--subvol-name",
             help="Name for subvolume in certain formats",
         )
+        cli.parser.add_argument(
+            "--ba-tgt",
+            help="Use the specified build appliance target (instead of "
+            "inferring it from the target image flavor).",
+        )
 
         add_targets_and_outputs_arg(cli.parser)
 
@@ -483,9 +486,11 @@ def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
     )
 
     build_appliance = find_built_subvol(
-        _get_build_appliance_from_layer_flavor_config(
-            layer=layer, targets_and_outputs=cli.args.targets_and_outputs
-        )
+        cli.args.targets_and_outputs[
+            _get_ba_tgt_from_layer_flavor_config(layer=layer)
+            if not cli.args.ba_tgt
+            else cli.args.ba_tgt
+        ]
     )
 
     # pyre-fixme[16]: `Format` has no attribute `package_full`.
