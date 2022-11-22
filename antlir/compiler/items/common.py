@@ -309,6 +309,16 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
         f"{repo_config().vcs_revision}\n",
     )
 
+    subvol.overwrite_path_as_root(
+        META_BUILD_DIR / "revision_timestamp",
+        f"{repo_config().revision_timestamp}\n",
+    )
+
+    subvol.overwrite_path_as_root(
+        META_BUILD_DIR / "revision_time_iso8601",
+        f"{repo_config().revision_time_iso8601}\n",
+    )
+
     if layer_opts.unsafe_bypass_flavor_check:
         subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
         return

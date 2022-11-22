@@ -7,6 +7,7 @@
 import csv
 import re
 import unittest
+from datetime import datetime
 
 from antlir.fs_utils import Path
 
@@ -16,7 +17,6 @@ class OsReleaseTest(unittest.TestCase):
         """Verify that the os-release file properly built."""
 
         rev_id_regex = r"\b([a-f0-9]{40})\b"
-        rev_ts_regex = r"^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?$"
 
         with Path("/usr/lib/os-release").open() as f:
             reader = csv.reader(f, delimiter="=")
@@ -51,13 +51,18 @@ class OsReleaseTest(unittest.TestCase):
         # Validate the second part of the BUILD_ID is a vcs rev
         self.assertTrue(re.match(rev_id_regex, os_release["IMAGE_VCS_REV"]))
 
-        # Version and image_timestamp should be an ISO8601
-        self.assertTrue(
-            re.match(rev_ts_regex, os_release["VERSION"]),
-        )
-        self.assertTrue(
-            re.match(rev_ts_regex, os_release["IMAGE_VCS_REV_TIME"]),
-        )
+        try:
+            datetime.strptime(os_release["VERSION"], "%Y-%m-%dT%H:%M:%S%z")
+        except Exception as e:
+            self.fail(
+                f"Can't parse revision_time_iso8601 {os_release['VERSION']} as date: {e}"
+            )
+        try:
+            datetime.strptime(os_release["IMAGE_VCS_REV_TIME"], "%Y-%m-%dT%H:%M:%S%z")
+        except Exception as e:
+            self.fail(
+                f"Can't parse revision_time_iso8601 {os_release['IMAGE_VCS_REV_TIME']} as date: {e}"
+            )
 
         # Validate the API Version rendering
         self.assertEqual(os_release["API_VER_BAR"], "22")

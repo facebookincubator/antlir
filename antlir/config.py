@@ -30,6 +30,8 @@ _read_text = importlib.resources.read_text
 class repo_config_t(base_repo_config_t):
     repo_root: Optional[Path] = None
     vcs_revision: Optional[str] = None
+    revision_timestamp: Optional[str] = None
+    revision_time_iso8601: Optional[str] = None
 
 
 # Separated for tests, which mock and thus don't want memoization.
@@ -63,6 +65,8 @@ def _unmemoized_repo_config(*, path_in_repo=None) -> repo_config_t:
         repo_root=repo_root,
         host_mounts_for_repo_artifacts=host_mounts_for_repo_artifacts,
         vcs_revision=_read_text(__package__, "vcs_revision").strip(),
+        revision_timestamp=_read_text(__package__, "revision_timestamp").strip(),
+        revision_time_iso8601=_read_text(__package__, "revision_time_iso8601").strip(),
         **data,
     )
 

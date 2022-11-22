@@ -155,6 +155,12 @@ def render_meta_build_contents(subvol: Subvol):
         "(Dir)",
         {
             "revision": [f"(File d{len(repo_config().vcs_revision) + 1})"],
+            "revision_timestamp": [
+                f"(File d{len(repo_config().revision_timestamp) + 1})"
+            ],
+            "revision_time_iso8601": [
+                f"(File d{len(repo_config().revision_time_iso8601) + 1})"
+            ],
             "target": [f"(File d{len(target)})"],
         },
     ]

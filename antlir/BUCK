@@ -715,7 +715,11 @@ python_library(
 python_library(
     name = "config",
     srcs = ["config.py"],
-    resources = {":vcs_revision": "vcs_revision"},
+    resources = {
+        ":revision_time_iso8601": "revision_time_iso8601",
+        ":revision_timestamp": "revision_timestamp",
+        ":vcs_revision": "vcs_revision",
+    },
     deps = [
         ":artifacts_dir",
         ":fs_utils",
@@ -925,6 +929,20 @@ python_library(
 buck_genrule(
     name = "vcs_revision",
     cmd = "$(exe :vcs) --rev >$OUT",
+    visibility = ["PUBLIC"],
+)
+
+# Generate UNIX timestamp of the current revision and make it public.
+buck_genrule(
+    name = "revision_timestamp",
+    cmd = "$(exe :vcs) --revision_timestamp >$OUT",
+    visibility = ["PUBLIC"],
+)
+
+# Generate iso8601 datetime of the current revision and make it public.
+buck_genrule(
+    name = "revision_time_iso8601",
+    cmd = "$(exe :vcs) --revision_time_iso8601 >$OUT",
     visibility = ["PUBLIC"],
 )
 
