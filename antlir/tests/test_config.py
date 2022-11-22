@@ -6,6 +6,7 @@
 import os
 import unittest
 import unittest.mock
+from datetime import datetime
 
 from antlir.artifacts_dir import find_repo_root
 from antlir.config import (
@@ -64,6 +65,20 @@ class RepoConfigTestCase(unittest.TestCase):
             int(config.vcs_revision, 16)
         except ValueError:
             self.fail("vcs_revision is not a hex integer")
+
+        try:
+            datetime.strptime(config.revision_time_iso8601, "%Y-%m-%dT%H:%M:%S%z")
+        except Exception as e:
+            self.fail(
+                f"Can't parse revision_time_iso8601 {config.revision_time_iso8601} as date: {e}"
+            )
+
+        try:
+            datetime.fromtimestamp(float(config.revision_timestamp))
+        except Exception as e:
+            self.fail(
+                f"Can't parse revision_timestamp {config.revision_timestamp} as date: {e}"
+            )
 
     @unittest.mock.patch("antlir.config.repo_config_data")
     def test_repo_config_artifacts_require_repo_false(self, mock_data) -> None:

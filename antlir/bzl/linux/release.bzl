@@ -83,7 +83,7 @@ def _install(path, layer, os_name, variant, ansi_color = "0;34", api_versions = 
 set -x -eu
 
 rev="`$(exe {vcs}) --rev`"
-rev_time="`$(exe {vcs}) --timestamp`"
+rev_time="`$(exe {vcs}) --revision_time_iso8601`"
 
 cat > $OUT << EOF
 NAME="{os_name}"

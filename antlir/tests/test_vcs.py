@@ -8,7 +8,7 @@ import re
 import unittest
 from datetime import datetime
 
-from antlir.vcs import rev_id, rev_timestamp
+from antlir.vcs import rev_id, revision_timestamp
 
 
 class TestVCS(unittest.TestCase):
@@ -16,14 +16,14 @@ class TestVCS(unittest.TestCase):
         # Assert it is a 40 char sha-1 looking thing
         self.assertTrue(re.match(r"\b([a-f0-9]{40})\b", rev_id()))
 
-    def test_rev_timestamp(self) -> None:
+    def test_revision_time_iso8601(self) -> None:
         # We get a datetime instance back from this, so just
         # test that the current (as of the test run) timestamp
         # doesn't go backwards in time.
         # This change was first introduced on Dec 29th, 2021
         # so lets make sure every commit that this test runs
         # against is newer.
-        ts = rev_timestamp()
+        ts = revision_timestamp()
         self.assertTrue(
             # Timezone info comes from the parsed output of
             # the vcs time, to make sure we don't have any

@@ -24,7 +24,7 @@ class _Hg:
             cwd=cwd,
         ).strip()
 
-    def rev_timestamp(self, rev: Optional[str], cwd: Optional[Path]) -> datetime:
+    def revision_timestamp(self, rev: Optional[str], cwd: Optional[Path]) -> datetime:
         return datetime.fromisoformat(
             subprocess.check_output(
                 [
@@ -51,7 +51,7 @@ class _Git:
             ["git", "rev-parse", rev or "HEAD"], text=True, cwd=cwd
         ).strip()
 
-    def rev_timestamp(self, rev: Optional[str], cwd: Optional[Path]) -> datetime:
+    def revision_timestamp(self, rev: Optional[str], cwd: Optional[Path]) -> datetime:
         return datetime.fromisoformat(
             subprocess.check_output(
                 [
@@ -83,11 +83,11 @@ def rev_id(rev: Optional[str] = None, cwd: Optional[Path] = None) -> str:
     return _new_vcs(path_in_repo=cwd).rev_id(rev=rev, cwd=cwd)
 
 
-def rev_timestamp(
+def revision_timestamp(
     rev: Optional[str] = None,
     cwd: Optional[Path] = None,
 ) -> datetime:
-    return _new_vcs(path_in_repo=cwd).rev_timestamp(rev=rev, cwd=cwd)
+    return _new_vcs(path_in_repo=cwd).revision_timestamp(rev=rev, cwd=cwd)
 
 
 if __name__ == "__main__":
@@ -98,7 +98,12 @@ if __name__ == "__main__":
         help="Print the current revision id",
     )
     parser.add_argument(
-        "--timestamp",
+        "--revision_timestamp",
+        action="store_true",
+        help="Print the current revision timestamp in UNIX timestamp.",
+    )
+    parser.add_argument(
+        "--revision_time_iso8601",
         action="store_true",
         help="Print the current revision timestamp in ISO8601 format.",
     )
@@ -106,5 +111,7 @@ if __name__ == "__main__":
 
     if opts.rev:
         print(rev_id())
-    if opts.timestamp:
-        print(rev_timestamp().strftime("%Y-%m-%dT%H:%M:%S"))
+    if opts.revision_timestamp:
+        print(int(revision_timestamp().timestamp()))
+    if opts.revision_time_iso8601:
+        print(revision_timestamp().strftime("%Y-%m-%dT%H:%M:%S%z"))
