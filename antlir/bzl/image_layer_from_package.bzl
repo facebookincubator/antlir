@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
+load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "use_rc_target")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -24,6 +25,22 @@ def image_layer_from_package_helper(
         compile_image_features_fn,
         image_layer_kwargs):
     flavor = flavor_to_struct(flavor)
+
+    # Do argument validation
+    for bad_kwarg in ["parent_layer", "features"]:
+        if bad_kwarg in image_layer_kwargs:
+            fail("Unsupported with layer_from_package", bad_kwarg)
+    if format not in ["sendstream", "sendstream.v2"]:
+        fail("Unsupported format for layer_from_package", format)
+    if rc_layer != None:
+        # If rc_layer was specified, create an unused layer alias that depends
+        # on it to ensure the target exists and is visible. This ensures that
+        # building with "-c antlir.rc_targets=XXX" won't fail.
+        image_layer_alias(
+            name = PRIVATE_DO_NOT_USE_feature_target_name(name),
+            layer = rc_layer,
+        )
+
     if use_rc_target(":" + name):
         if rc_layer == None:
             fail("{}'s rc build was requested but `rc_layer` is unset!".format(normalize_target(":" + name)))
@@ -33,13 +50,6 @@ def image_layer_from_package_helper(
             layer = rc_layer,
         )
     else:
-        for bad_kwarg in ["parent_layer", "features"]:
-            if bad_kwarg in image_layer_kwargs:
-                fail("Unsupported with layer_from_package", bad_kwarg)
-
-        if format not in ["sendstream", "sendstream.v2"]:
-            fail("Unsupported format for layer_from_package", format)
-
         _make_subvol_cmd, _deps_query = compile_image_features_fn(
             name = name,
             current_target = normalize_target(":" + name),
