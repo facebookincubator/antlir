@@ -66,6 +66,7 @@ def _write_confs_get_repos(
     dnf_conf_content: Optional[str],
     *,
     exclude_repos: FrozenSet[str],
+    exclude_rpms: FrozenSet[str],
 ) -> Iterable[YumDnfConfRepo]:
     assert not (exclude_repos & {"main", "DEFAULT"}), exclude_repos
     yum_dnf_repos = []
@@ -82,6 +83,10 @@ def _write_confs_get_repos(
             cp.read_string(content)
             for excluded in exclude_repos:
                 cp.remove_section(excluded)
+            if exclude_rpms:
+                cp["main"]["exclude"] = (
+                    cp["main"].get("exclude", "") + " " + " ".join(exclude_rpms)
+                )
             with create_ro(dest / out_name, "w+") as out:
                 cp.write(out)
                 out.seek(0)
@@ -123,14 +128,19 @@ def snapshot_repos(
     storage_cfg: Dict[str, str],
     rpm_shard: RpmShard,
     gpg_key_allowlist_dir: str,
-    exclude: FrozenSet[str],
+    exclude_repos: FrozenSet[str],
+    exclude_rpms: FrozenSet[str],
     threads: int,
     log_sample: Callable = lambda *_, **__: None,
 ):
     all_repos_sizer = RepoSizer()
     shard_sizer = RepoSizer()
     repos = _write_confs_get_repos(
-        dest, yum_conf_content, dnf_conf_content, exclude_repos=exclude
+        dest,
+        yum_conf_content,
+        dnf_conf_content,
+        exclude_repos=exclude_repos,
+        exclude_rpms=exclude_rpms,
     )
     os.mkdir(dest / "repos")
     repos_and_universes = [
@@ -143,7 +153,7 @@ def snapshot_repos(
             ),
         )
         for repo in repos
-        if repo.name not in exclude
+        if repo.name not in exclude_repos
     ]
     # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
     with RepoSnapshot.add_sqlite_to_storage(
@@ -210,10 +220,16 @@ def snapshot_repos_from_args(
         help="Snapshot this `yum.conf`; see help for `--dnf-conf`",
     )
     parser.add_argument(
-        "--exclude",
+        "--exclude-repos",
         action="append",
         default=[],
         help="Repos to be excluded in the snapshot.",
+    )
+    parser.add_argument(
+        "--exclude-rpms",
+        action="append",
+        default=[],
+        help="Additional rpms to excluded in the yum.conf.",
     )
 
     universe_warning = (
@@ -262,7 +278,8 @@ def snapshot_repos_from_args(
             storage_cfg=args.storage,
             rpm_shard=args.rpm_shard,
             gpg_key_allowlist_dir=args.gpg_key_allowlist_dir,
-            exclude=frozenset(args.exclude),
+            exclude_repos=frozenset(args.exclude_repos),
+            exclude_rpms=frozenset(args.exclude_rpms),
             threads=args.threads,
             log_sample=log_sample,
         )

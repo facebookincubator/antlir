@@ -73,7 +73,8 @@ def make_temp_snapshot(
             },
             rpm_shard=RpmShard(shard=0, modulo=1),
             gpg_key_allowlist_dir=gpg_key_allowlist_dir,
-            exclude=frozenset(),
+            exclude_repos=frozenset(),
+            exclude_rpms=frozenset(),
             threads=4,
         )
 
