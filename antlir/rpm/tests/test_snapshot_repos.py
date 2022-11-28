@@ -114,7 +114,8 @@ class SnapshotReposTestCase(unittest.TestCase):
                         f'--dnf-conf={repos_root / "0/dnf.conf"}',
                         f'--yum-conf={repos_root / "0/yum.conf"}',
                         f'--snapshot-dir={td / "snap0"}',
-                        "--exclude=gonna_skip_for_0",
+                        "--exclude-repos=gonna_skip_for_0",
+                        "--exclude-rpms=some-non-existant-rpm",
                     ]
                 )
                 # We want to avoid involving the "mammal" universe to
