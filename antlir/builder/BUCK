@@ -15,6 +15,7 @@ rust_binary(
         "strip-ansi-escapes",
         "walkdir",
         "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck/buck_version:buck_version",
     ],
 )
 
