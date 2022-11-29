@@ -1,0 +1,12 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+rust_library(
+    name = "buck_version",
+    srcs = ["src/lib.rs"],
+    test_deps = ["serde_json"],
+    deps = [
+        "clap",
+        "serde",
+        "thiserror",
+    ],
+)

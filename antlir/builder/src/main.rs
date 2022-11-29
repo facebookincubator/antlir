@@ -15,29 +15,12 @@ use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use buck_label::Label;
+use buck_version::BuckVersion;
 use clap::Parser;
-use clap::ValueEnum;
 use fs2::FileExt;
 use slog::info;
 use slog::Drain;
 use walkdir::WalkDir;
-
-#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
-enum BuckVersion {
-    #[clap(name = "1")]
-    One,
-    #[clap(name = "2")]
-    Two,
-}
-
-impl BuckVersion {
-    fn buck_cmd(self) -> &'static str {
-        match self {
-            Self::One => "buck",
-            Self::Two => "buck2",
-        }
-    }
-}
 
 #[derive(Parser)]
 struct Args {
@@ -116,7 +99,7 @@ fn main() -> Result<()> {
     // TODO(image_out): add initial creation functionality to `image_out` lib to
     // remove the need to shell out to python
     let out = Command::new(&args.tools.ensure_artifacts_dir_exists)
-        .env("ANTLIR_BUCK", args.buck_version.buck_cmd())
+        .envs([args.buck_version.antlir_env()])
         .output()
         .context("while running ensure_artifacts_dir_exists")?;
     ensure!(
