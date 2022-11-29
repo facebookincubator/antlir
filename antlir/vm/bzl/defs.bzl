@@ -303,6 +303,17 @@ def _vm_multi_kernel_python_unittest(
         **kwargs
     )
 
+def _vm_multi_kernel_rust_unittest(
+        name,
+        kernels,
+        **kwargs):
+    _vm_multi_kernel_unittest(
+        name,
+        _vm_rust_unittest,
+        kernel_list = kernels,
+        **kwargs
+    )
+
 vm = struct(
     cpp_unittest = _vm_cpp_unittest,
     # This nested structure is for looking up the default set of artifacts
@@ -317,6 +328,7 @@ vm = struct(
     multi_kernel = struct(
         cpp_unittest = _vm_multi_kernel_cpp_unittest,
         python_unittest = _vm_multi_kernel_python_unittest,
+        rust_unittest = _vm_multi_kernel_rust_unittest,
     ),
     python_unittest = _vm_python_unittest,
     rust_unittest = _vm_rust_unittest,
