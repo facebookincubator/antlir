@@ -20,7 +20,7 @@ cadence than we change repo snapshots.
 """
 from contextlib import contextmanager, ExitStack
 from types import MappingProxyType
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, Set, Tuple
 
 from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import create_ro, Path, temp_dir
@@ -37,7 +37,7 @@ log = get_logger()
 @contextmanager
 def _prepare_versionlock_lists(
     subvol: Subvol, snapshot_dir: Path, list_path: Path
-) -> Dict[str, Tuple[str, int]]:
+) -> Dict[str, Tuple[str, Set[Tuple[str, ...]]]]:
     """
     Returns a map of "in-snapshot path" -> "tempfile with its contents",
     with the intention that the tempfile in the value will be a read-only
@@ -45,7 +45,7 @@ def _prepare_versionlock_lists(
     """
     # `dnf` and `yum` expect different formats, so we parse our own.
     with open(list_path) as rf:
-        envra_set = {tuple(l.split("\t")) for l in rf}
+        envra_set: Set[Tuple[str, ...]] = {tuple(l.split("\t")) for l in rf}
     templates = {"yum": "{e}:{n}-{v}-{r}.{a}", "dnf": "{n}-{e}:{v}-{r}.{a}"}
     dest_to_src_and_size = {}
     with temp_dir() as d:
@@ -63,7 +63,7 @@ def _prepare_versionlock_lists(
                 # This path convention must match how `write_yum_dnf_conf.py`
                 # and `rpm_repo_snapshot.bzl` set up their output.
                 snapshot_dir / f"{prog}/etc/{prog}/plugins/versionlock.list",
-                (src, len(envra_set)),
+                (src, envra_set),
             )
         # pyre-fixme[7]: Expected `Dict[str, Tuple[str, int]]` but got
         #  `Generator[Dict[typing.Any, typing.Any], None, None]`.
@@ -107,7 +107,7 @@ class YumDnfVersionlock(NspawnPlugin):
         with ExitStack() as stack:
             dest_to_src = {}
             for snapshot, versionlock in snapshot_to_versionlock.items():
-                for dest, (src, vl_size) in stack.enter_context(
+                for dest, (src, vl) in stack.enter_context(
                     # pyre-fixme[6]: Expected
                     # `ContextManager[Variable[contextlib._T]]` for 1st param
                     # but got `Dict[str, Tuple[str, int]]`.
@@ -117,7 +117,7 @@ class YumDnfVersionlock(NspawnPlugin):
                         versionlock,
                     )
                 ).items():
-                    log.info(f"Locking {vl_size} RPM versions via {dest}")
+                    log.info(f"Locking {len(vl)} RPM versions via {dest}: {vl}")
                     set_new_key(dest_to_src, dest, src)
             # pyre-fixme[7]: Expected `_NspawnSetup` but got
             #  `Generator[antlir.nspawn_in_subvol.cmd._NspawnSetup, None,
