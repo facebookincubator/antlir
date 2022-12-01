@@ -21,6 +21,15 @@ pub enum Error {
     Canonicalize(PathBuf, std::io::Error),
 }
 
+impl Error {
+    pub fn into_original_path(self) -> PathBuf {
+        match self {
+            Self::NotAbsolute(p) => p,
+            Self::Canonicalize(p, _) => p,
+        }
+    }
+}
+
 pub type Result<R> = std::result::Result<R, Error>;
 
 /// Version of [std::path::PathBuf] that is verified to be an absolute path
@@ -55,6 +64,10 @@ impl AbsolutePathBuf {
             true => Ok(Self(p)),
             false => Err(Error::NotAbsolute(p)),
         }
+    }
+
+    fn new_unchecked(p: PathBuf) -> Self {
+        Self(p)
     }
 
     /// Attempt to coerce a path into an absolute path, but don't canonicalize
@@ -96,6 +109,10 @@ impl AbsolutePath {
         fn ref_cast(s: &Path) -> &AbsolutePath;
 
         ref_cast(Path::new(s))
+    }
+
+    pub fn join<S: AsRef<Path>>(&self, s: S) -> AbsolutePathBuf {
+        AbsolutePathBuf::new_unchecked(self.0.join(s))
     }
 }
 
@@ -148,5 +165,17 @@ impl<'a> TryFrom<&'a Path> for &'a AbsolutePath {
 
     fn try_from(p: &'a Path) -> Result<Self> {
         AbsolutePath::new(p)
+    }
+}
+
+impl AsRef<Path> for AbsolutePath {
+    fn as_ref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl AsRef<Path> for AbsolutePathBuf {
+    fn as_ref(&self) -> &Path {
+        &self.0
     }
 }

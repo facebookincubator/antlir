@@ -10,10 +10,10 @@ extern crate test;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
-use std::path::Path;
 use std::path::PathBuf;
 
 use absolute_path::AbsolutePath;
+use absolute_path::AbsolutePathBuf;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
@@ -216,14 +216,11 @@ fn globals() -> Globals {
 impl FileLoader for Loader {
     fn load(&self, path: &str) -> Result<FrozenModule> {
         let path = path.trim_start_matches('@');
-        let file_path = self
-            .0
-            .get(path)
-            .map_or_else(|| Path::new(path), PathBuf::as_path);
+        let file_path = self.0.get(path).cloned().unwrap_or_else(|| path.into());
 
-        let file_path = match file_path.is_absolute() {
-            true => file_path.to_path_buf(),
-            false => {
+        let file_path = match AbsolutePathBuf::new(file_path) {
+            Ok(abspath) => abspath,
+            Err(e) => {
                 let repo_root = find_root::find_repo_root(
                     AbsolutePath::new(
                         &std::env::current_exe().expect("current_exe is always here"),
@@ -231,7 +228,7 @@ impl FileLoader for Loader {
                     .expect("current_exe must be absolute"),
                 )
                 .context("could not find repo root")?;
-                repo_root.join(file_path)
+                repo_root.join(e.into_original_path())
             }
         };
 
