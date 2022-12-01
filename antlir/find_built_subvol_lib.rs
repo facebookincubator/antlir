@@ -21,8 +21,6 @@ pub struct LayerInfo {
 
 #[derive(Debug, thiserror::Error)]
 pub enum FindBuiltSubvolError {
-    #[error(transparent)]
-    AbsolutePath(absolute_path::Error),
     #[error("For file {0} JSON Parse failed because {1}")]
     JSONParseError(PathBuf, anyhow::Error),
     #[error("both path_in_repo and subvolumes_dir are provided")]
@@ -62,14 +60,10 @@ pub fn find_built_subvol(
     let subvolumes_dir: AbsolutePathBuf = match subvolumes_dir {
         Some(dir) => dir,
         None => match path_in_repo {
-            Some(path) => AbsolutePathBuf::new(path.join(subvolumes_dir_rel_path))
-                .map_err(FindBuiltSubvolError::AbsolutePath)?,
-
+            Some(path) => path.join(subvolumes_dir_rel_path),
             None => return Err(FindBuiltSubvolError::NoSourceOfTruth),
         },
     };
 
-    let target_subvol_path = subvolumes_dir.join(layer_info.subvolume_rel_path);
-
-    AbsolutePathBuf::new(target_subvol_path).map_err(FindBuiltSubvolError::AbsolutePath)
+    Ok(subvolumes_dir.join(layer_info.subvolume_rel_path))
 }

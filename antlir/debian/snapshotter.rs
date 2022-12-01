@@ -523,7 +523,7 @@ async fn main(fb: FacebookInit) -> Result<()> {
         repo.distro,
         args.flavor,
         format!("{:?}", repo.arch).to_lowercase(),
-        repo_root.join(Path::new(REPO_SNAPSHOT_FILE)),
+        &repo_root.join(Path::new(REPO_SNAPSHOT_FILE)),
     )?;
     commit_deb_snapshot::commit()?;
     info!(log, ""; "release_hash" => release_hash);
