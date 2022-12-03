@@ -180,7 +180,7 @@ def _normalize_feature_and_get_deps(feature, flavors):
                 target = extract_tagged_target(version_set)
                 deps.pop(target)
 
-        if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM:
+        if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM and rpm_item["action"] == "install":
             fail("Rpm `{}` must have one of the flavors `{}`".format(
                 rpm_item["name"] or rpm_item["source"],
                 flavor_names,
