@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:container_opts.shape.bzl", "shadow_path_t")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
