@@ -1,5 +1,3 @@
-# @noautodeps
-
 # NB: There is no binary here because the image compiler does not get built
 # by Buck, it is executed in-place using the system Python.
 

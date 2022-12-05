@@ -1,5 +1,3 @@
-# @noautodeps
-
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 

@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")

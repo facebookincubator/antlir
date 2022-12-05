@@ -1,5 +1,3 @@
-# @noautodeps
-
 load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
