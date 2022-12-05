@@ -116,6 +116,7 @@ def private_image_rpmbuild_impl(
     image_layer(
         name = setup_layer,
         parent_layer = parent_layer,
+        flavor = flavor,
         features = [
             feature.install(specfile, specfile_path),
             feature.ensure_subdirs_exist("/", "rpmbuild"),
