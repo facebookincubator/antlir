@@ -6,17 +6,28 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
 load("//antlir/bzl:image.bzl", "image")
+load("//antlir/bzl:systemd.bzl", "systemd")
+load("//antlir/bzl:types.bzl", "types")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
+load("//metalos/kernel:kernel.shape.bzl", "kernel_t")
 load("//metalos/os/tests:defs.bzl", "skip_unit")
 
-def initrd(kernel, visibility = None):
+types.lint_noop(kernel_t)
+
+def initrd(
+        kernel: types.shape(kernel_t),
+        *,
+        name: types.optional(types.str) = None,
+        features = None,
+        visibility: types.optional(types.visibility) = None):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine.
     """
 
-    name = "{}-initrd".format(kernel.uname)
+    if not name:
+        name = "{}-initrd".format(kernel.uname)
     visibility = get_visibility(visibility)
 
     # Build an initrd specifically for operating as a VM. This is built on top of the
@@ -32,9 +43,11 @@ def initrd(kernel, visibility = None):
             feature.install("//antlir/vm/initrd:modules.conf", "/usr/lib/modules-load.d/vm.conf"),
             feature.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
             feature.install(kernel.derived_targets.disk_boot_modules, paths.join("/usr/lib/modules", kernel.uname)),
+            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "default.target"),
+            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "metalos-init.service"),
             # vm has no network
             skip_unit("systemd-networkd-wait-online.service"),
-        ],
+        ] + (features or []),
     )
 
     package.new(

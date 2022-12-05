@@ -8,6 +8,10 @@ export_file(
     name = "modules.conf",
 )
 
+export_file(
+    name = "reboot-on-fail.conf",
+)
+
 # build a vmtest initrd for every kernel
 [initrd(
     kernel = kernels.get(uname),
