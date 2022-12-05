@@ -7,6 +7,8 @@ load("//antlir/bzl:systemd.bzl", "ADMIN_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/vm/bzl:defs.bzl", "vm")
+load("//antlir/vm/bzl:initrd.bzl", "initrd")
+load("//metalos/os/tests:defs.bzl", "fail_unit")
 
 oncall("twimage")
 
@@ -26,6 +28,14 @@ vm.python_unittest(
     ],
 )
 
+initrd(
+    name = "initrd-fail-metalinit",
+    features = [
+        fail_unit("metalos-init.service"),
+    ],
+    kernel = kernels.default,
+)
+
 python_unittest(
     name = "test-vm",
     srcs = [
@@ -33,6 +43,11 @@ python_unittest(
         "test_vm.py",
     ],
     env = {
+        "test-vm-initrd-fail-json": shape.do_not_cache_me_json(
+            vm.types.opts.new(
+                initrd = ":initrd-fail-metalinit",
+            ),
+        ),
         "test-vm-json": shape.do_not_cache_me_json(
             vm.types.opts.new(
                 disk = vm.types.disk.root(

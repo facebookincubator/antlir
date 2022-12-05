@@ -8,6 +8,7 @@ import contextlib
 import os
 import subprocess
 import tempfile
+import time
 
 from antlir.fs_utils import Path, temp_dir
 from antlir.tests.common import AntlirTestCase
@@ -16,6 +17,7 @@ from antlir.vm.bzl.vm import vm_opts_t
 from antlir.vm.vm import (
     _create_tpm,
     _wait_for_boot,
+    DEFAULT_TIMEOUT_MS,
     ShellMode,
     vm,
     VMBootError,
@@ -205,6 +207,28 @@ class TestAntlirVM(AntlirTestCase):
             console=2,
         ) as (instance, boottime_ms, timeout_ms):
             pass
+
+    async def test_api_initrd_fail(self):
+        opts_instance = vm_opts_t.from_env("test-vm-initrd-fail-json")
+
+        with tempfile.NamedTemporaryFile() as console_file:
+            start = time.time()
+            with self.assertRaisesRegex(RuntimeError, "VM failed to boot"):
+                async with vm(
+                    opts=opts_instance,
+                    console=Path(console_file.name),
+                    timeout_ms=DEFAULT_TIMEOUT_MS,
+                ) as (instance, boottime_ms, timeout_ms):
+                    pass
+            elapsed_s = time.time() - start
+            console_logs = console_file.read()
+        self.assertLess(
+            elapsed_s,
+            DEFAULT_TIMEOUT_MS / 1000.0 / 3,
+            "time to detect a failed boot should be significantly faster than the timeout",
+        )
+        # make sure it was actually a vm reboot, not an unrelated infra failure
+        self.assertIn(b"reboot: machine restart", console_logs)
 
     async def test_wait_for_boot_success(self):
         async def _handle(r, w):
