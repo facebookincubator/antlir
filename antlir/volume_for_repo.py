@@ -4,10 +4,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import errno
 import getpass
 import os
+import shutil
 import subprocess
 import sys
+
+from antlir import btrfsutil
 
 from antlir.fs_utils import Path
 
@@ -17,16 +21,7 @@ except ImportError:  # pragma: no cover
     FB_SUDO_ERROR = ""
 
 
-# Exposed for tests
-IMAGE_FILE = "image.btrfs"
 VOLUME_DIR = "volume"
-
-# The size of loop device when it is created first time. Overriding this may
-# introduce an issue: test coverage would depend on the sequence of tests.
-# For example, if we set this high in `image_layer_utils.bzl`, and low here,
-# tests would pass if a "normal" volume is created first, but fail if a "tmp"
-# volume is the first volume created.
-LOOP_SIZE = 1e11
 
 
 def get_volume_for_current_repo(artifacts_dir: Path):
@@ -45,22 +40,32 @@ def get_volume_for_current_repo(artifacts_dir: Path):
         raise RuntimeError(f"{artifacts_dir} must exist")
 
     volume_dir = artifacts_dir / VOLUME_DIR
-    with Path.resource(__package__, "set_up_volume.sh", exe=True) as binary:
-        subprocess.check_call(
-            [
-                # While Buck probably does not call this concurrently under
-                # normal circumstances, the worst-case outcome is that we lose
-                # or corrupt the whole buld cache, so add some locking to be on
-                # the safe side.
-                "flock",
-                artifacts_dir / ".lock.set_up_volume.sh.never.rm.or.mv",
-                "sudo",
-                binary,
-                str(int(LOOP_SIZE)),  # Accepts floats & ints
-                artifacts_dir / IMAGE_FILE,
-                volume_dir,
-            ]
-        )
+    if (
+        # Normal case of an image build on a fresh environment, the subvolume
+        # does not exist yet
+        not volume_dir.exists()
+        # This could happen if it was a loopback and it got unmounted for some
+        # reason without having the dir be deleted
+        or not btrfsutil.is_subvolume(volume_dir)
+        # TODO(vmagro) this check can be removed after this commit has been on
+        # master for a while (loopback volume dir will have subvolid=5)
+        or btrfsutil.subvolume_id(volume_dir) == 5
+    ):
+        # TODO(vmagro) this check can be removed after this commit has been on
+        # master for a while
+        if volume_dir.exists():
+            subprocess.run(["sudo", "umount", volume_dir], check=True)
+            # If the user is bouncing around this commit, unmounting the
+            # loopback may result in the subvol we want to use
+            if not btrfsutil.is_subvolume(volume_dir):
+                shutil.rmtree(volume_dir)
+                btrfsutil.create_subvolume(volume_dir)
+        else:
+            try:
+                btrfsutil.create_subvolume(volume_dir)
+            except btrfsutil.BtrfsUtilError as e:  # pragma: no cover
+                if e.errno != errno.EEXIST:
+                    raise
     # We prefer to have the volume owned by the repo user, instead of root:
     #  - The trusted repo user has to be able to access the built
     #    subvolumes, but nobody else should be able to (they might contain
