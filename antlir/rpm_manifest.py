@@ -93,9 +93,16 @@ def extract_rpm_manifest(argv) -> None:
     layer = find_built_subvol(args.layer)
     ba_layer = find_built_subvol(args.build_appliance)
 
-    db_path_src = layer.path("var/lib/rpm")
+    # C9 has moved the RPM DB
+    potential_rpm_db_paths = [
+        layer.path("usr/lib/sysimage/rpm"),
+        layer.path("var/lib/rpm"),
+    ]
+    for db_path_src in potential_rpm_db_paths:
+        if os.path.exists(db_path_src):
+            break
     if not os.path.exists(db_path_src):
-        raise ValueError(f"RPM DB path {db_path_src} does not exist")
+        raise ValueError(f"RPM DB paths {potential_rpm_db_paths} do not exist")
     db_path_dst = generate_work_dir()
 
     res, _ = run_nspawn(
