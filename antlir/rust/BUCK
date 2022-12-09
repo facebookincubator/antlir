@@ -20,7 +20,7 @@ rust_python_extension(
     mapped_srcs = {
         ":register_modules.rs": "src/register_modules.rs",
     },
-    visibility = [],
+    visibility = ["//antlir/..."],
     deps = [third_party.library(
         "pyo3",
         platform = "rust",
