@@ -557,10 +557,10 @@ _SERIALIZING_LOCATION_MSG = (
 #       `shape.json_file()`.  But, in the future, we should be able to
 #       migrate these to a `target_tagger.bzl`-style approach.
 #
-#     * "uncacheable_location_macro"`, this will replace fields of
-#       type `Target` with a struct that has the target name and its on-disk
-#       path generated via a `$(location )` macro.  This MUST NOT be
-#       included in cacheable Buck outputs.
+#     * "location"`, this will replace fields of type `Target` with a struct
+#       that has the target name and its on-disk path generated via a
+#       `$(location)` macro. This is safe to be cached if it is serialized with
+#       shape.json_file.
 #
 #     * "tag_targets", this will replace fields of type `Target` with a struct
 #       produced by `target_tagger.tag_target` function. That structure can be
@@ -571,14 +571,15 @@ def _recursive_copy_transform(val, t, opts):
     if hasattr(t, "__I_AM_TARGET__"):
         if opts.on_target_fields == "fail":
             fail(_SERIALIZING_LOCATION_MSG)
-        elif opts.on_target_fields == "uncacheable_location_macro":
+        elif opts.on_target_fields == "location":
             return struct(
                 name = val,
                 path = "$(location {})".format(val),
+                __I_AM_TARGET__ = True,
             )
         elif opts.on_target_fields == "tag_targets":
             if (opts.target_tagger == None):  # pragma: no cover
-                fail("`target_tagger` is a rquiered parameter for `tag_targets`")
+                fail("`target_tagger` is a required parameter for `tag_targets`")
 
             return {
                 "path": target_tagger_helper.tag_target(opts.target_tagger, val),
@@ -652,19 +653,18 @@ def _safe_to_serialize_instance(instance):
 
 def _do_not_cache_me_json(instance):
     """
-    Serialize the given shape instance to a JSON string, which is the only
-    way to safely refer to other Buck targets' locations in the case where
-    the binary being invoked with a certain shape instance is cached.
+    Serialize the given shape instance to a JSON string. This is only safe to be
+    cached if used by shape.json_file or shape.python_data.
 
-    Warning: Do not ever put this into a target that can be cached, it should
-    only be used in cmdline args or environment variables.
+    Warning: Do not ever (manually) put this into a target that can be cached,
+    it should only be used in cmdline args or environment variables.
     """
     return structs.as_json(_recursive_copy_transform(
         instance,
         instance.__shape__,
         struct(
             include_dunder_shape = False,
-            on_target_fields = "uncacheable_location_macro",
+            on_target_fields = "location",
             target_tagger = None,
         ),
     ))
@@ -674,17 +674,16 @@ def _json_file(name, instance, visibility = None):  # pragma: no cover
     Serialize the given shape instance to a JSON file that can be used in the
     `resources` section of a `python_binary` or a `$(location)` macro in a
     `buck_genrule`.
-
-    Warning: this will fail to serialize any shape type that contains a
-    reference to a target location, as that cannot be safely cached by buck.
     """
-    instance = structs.as_json(_safe_to_serialize_instance(instance))
     buck_genrule(
         name = name,
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
-        cmd = "echo {} > $OUT".format(shell.quote(instance)),
+        cmd = "echo {} | $(exe {}) - - > $OUT".format(
+            shell.quote(_do_not_cache_me_json(instance)),
+            antlir_dep("bzl/shape2:serialize-shape"),
+        ),
         visibility = visibility,
     )
     return normalize_target(":" + name)
@@ -741,8 +740,6 @@ def _python_data(
 
         from .bin_bzl_args import data
     """
-    shape = instance.__shape__
-    instance = _safe_to_serialize_instance(instance)
     module = module or name
 
     shape_target = target_utils.parse_target(normalize_target(shape_impl))
@@ -753,15 +750,18 @@ def _python_data(
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
         antlir_rule = "user-internal",
-        cmd = """
+        cmd = '''
             echo "from {module} import {type_name}" > $OUT
-            echo {data} >> $OUT
-        """.format(
-            data = shell.quote("data = {classname}.parse_raw({shape_json})".format(
+            echo {data_start} >> $OUT
+            echo {json} | $(exe {serialize}) - - >> $OUT
+            echo '""")' >> $OUT
+        '''.format(
+            data_start = shell.quote('data = {classname}.parse_raw("""'.format(
                 classname = type_name,
-                shape_json = repr(structs.as_json(instance)),
             )),
+            json = shell.quote(_do_not_cache_me_json(instance)),
             module = shape_module,
+            serialize = antlir_dep("bzl/shape2:serialize-shape"),
             type_name = type_name,
         ),
     )

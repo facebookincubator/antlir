@@ -235,11 +235,7 @@ class TestShapeBzl(unittest.TestCase):
                 ser_err = "cannot safely be serialized"
                 # serializing directly to files should be blocked
                 with self.assertRaisesRegex(Fail, ser_err):
-                    shape.json_file("json", i)
-                with self.assertRaisesRegex(Fail, ser_err):
-                    shape.python_data(
-                        name="py", instance=i, shape_impl=":impl", type_name="t"
-                    )
+                    shape.as_serializable_dict(i)
                 # serializing to a json string is allowed as the user is
                 # implicitly acknowledging that they will do the right thing
                 # and not cache the results
