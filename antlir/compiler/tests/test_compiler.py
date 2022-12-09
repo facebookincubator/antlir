@@ -57,16 +57,23 @@ class CompilerIntegrationTestCase(unittest.TestCase):
             subvolumes_dir = temp_subvolumes.temp_dir
             subvol_rel_path = b"test/nested"
 
-            deps = {
-                _TEST_BA_TARGET_PATH: _TEST_BA,
-                "fbcode//antlir:empty": layer_resource(__package__, "empty"),
+            # TODO(targets-and-outputs): create this at buck time, not here
+            tao = {
+                "metadata": {
+                    "buck_version": 2,
+                    "default_cell": "antlir",
+                },
+                "targets_and_outputs": {
+                    _TEST_BA_TARGET_PATH: _TEST_BA,
+                    "fbcode//antlir:empty": layer_resource(__package__, "empty"),
+                },
             }
 
             # We write out tf to the temp subvol dir because it provides
             # cleanup and it resides inside the bind mounted artifacts dir
             # making it readable by the compiler running inside the BA.
             with tempfile.NamedTemporaryFile("w+t", dir=subvolumes_dir) as tf:
-                tf.write(Path.json_dumps(deps))
+                tf.write(Path.json_dumps(tao))
                 tf.seek(0)
                 argv = [
                     "--artifacts-may-require-repo",

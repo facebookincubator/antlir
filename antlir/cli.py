@@ -6,12 +6,12 @@
 
 "Common CLI boilerplate for Antlir binaries."
 import argparse
-import json
 import os
 import sys
 from contextlib import contextmanager
-from typing import AnyStr, Iterable, Iterator, Mapping, Optional, Union
+from typing import Iterable, Iterator, Optional, Union
 
+from antlir.buck.targets_and_outputs.targets_and_outputs_py import TargetsAndOutputs
 from antlir.common import init_logging
 from antlir.config import repo_config
 from antlir.fs_utils import MehStr, Path
@@ -24,19 +24,12 @@ def normalize_buck_path(bucked: Union[MehStr, Path]) -> Path:
     return parsed
 
 
-def _load_targets_and_outputs(arg: AnyStr) -> Mapping[AnyStr, Path]:
-    return {
-        target: normalize_buck_path(output)
-        for target, output in json.loads(normalize_buck_path(arg).read_text()).items()
-    }
-
-
 def add_targets_and_outputs_arg(
     parser: argparse.ArgumentParser, *, action=None, suppress_help: bool = False
 ) -> None:
     parser.add_argument(
         "--targets-and-outputs",
-        type=_load_targets_and_outputs,
+        type=lambda path: TargetsAndOutputs.from_argparse(normalize_buck_path(path)),
         help=argparse.SUPPRESS
         if suppress_help
         else "Load and parse a json document containing a mapping"

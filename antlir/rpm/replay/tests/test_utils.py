@@ -6,23 +6,35 @@
 
 from typing import Any, Dict, Mapping
 
+from antlir.buck.targets_and_outputs.targets_and_outputs_py import TargetsAndOutputs
+from antlir.cli import normalize_buck_path
 from antlir.fs_utils import Path
-
 from antlir.rpm.replay.extract_nested_features import (
     extract_nested_features,
     ExtractedFeatures,
 )
-from antlir.serialize_targets_and_outputs import make_target_path_map
+
+
+def _layer_feature_json(path: Path) -> Path:
+    layer_feature_json_map = list(
+        TargetsAndOutputs.from_file(normalize_buck_path(path)).dict().values()
+    )
+    layer_feature_json = layer_feature_json_map.pop()
+    assert len(layer_feature_json_map) == 0, "should have had exactly one element"
+    return layer_feature_json
 
 
 def build_env_map(environ: Mapping[str, str], infix: str) -> Dict[str, Any]:
     prefix = f"antlir_test__{infix}__"
     layer_output = Path(environ[prefix + "layer_output"])
-    _, layer_feature_json = environ[prefix + "layer_feature_json"].split()
-    target_map = make_target_path_map(environ[prefix + "target_path_pairs"].split())
+    target_map = TargetsAndOutputs.from_file(
+        normalize_buck_path(Path(environ[prefix + "target_path_pairs"]))
+    )
     return {
         "layer_output": layer_output,
-        "layer_feature_json": layer_feature_json,
+        "layer_feature_json": _layer_feature_json(
+            Path(environ[prefix + "layer_feature_json"])
+        ),
         "target_map": target_map,
     }
 

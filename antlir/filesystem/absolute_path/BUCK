@@ -7,6 +7,7 @@ rust_library(
     srcs = ["src/absolute_path.rs"],
     deps = [
         "ref-cast",
+        "serde",
         "thiserror",
     ],
 )

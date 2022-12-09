@@ -26,7 +26,6 @@ from antlir.package_image import (
     ZSTD_LEVEL_MIN,
     ZSTD_LEVEL_NONE,
 )
-from antlir.serialize_targets_and_outputs import make_target_path_map
 from antlir.subvol_utils import get_subvolumes_dir, with_temp_subvols
 from antlir.tests.image_package_testbase import ImagePackageTestCaseBase
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -45,12 +44,8 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
         zstd_compression_level: int = None,
         subvol_name: Optional[str] = None,
     ) -> Iterator[str]:
-        target_map = make_target_path_map(os.environ["target_map"].split())
         with temp_dir() as td:
             out_path = td / format
-            targets_and_outputs = td / "t_and_o.json"
-            with targets_and_outputs.open("w") as f:
-                f.write(Path.json_dumps(target_map))
 
             package_image(
                 [
@@ -69,7 +64,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                     ),
                     *(["--subvol-name", subvol_name] if subvol_name else []),
                     "--targets-and-outputs",
-                    targets_and_outputs,
+                    os.environ["target_map"],
                     *(
                         ["--btrfs-sendstream-version", btrfs_sendstream_version]
                         if btrfs_sendstream_version is not None

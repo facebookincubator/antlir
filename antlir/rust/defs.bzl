@@ -13,6 +13,7 @@ def antlir_rust_extension(
         typestub,
         deps = (),
         labels = (),
+        rust_visibility = (),
         **kwargs):
     deps = list(deps)
     deps.append("pyo3")
@@ -28,7 +29,7 @@ def antlir_rust_extension(
         crate = name,
         srcs = srcs,
         deps = deps,
-        visibility = [antlir_dep("rust:native-lib")],
+        visibility = [antlir_dep("rust:native-lib")] + (rust_visibility or []),
         labels = labels,
         unittests = False,
         **kwargs

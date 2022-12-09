@@ -1,0 +1,55 @@
+load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_binary", "rust_library")
+load("//antlir/rust:defs.bzl", "antlir_rust_extension")
+
+rust_library(
+    name = "targets_and_outputs",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "serde",
+        "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck/buck_version:buck_version",
+    ],
+)
+
+rust_binary(
+    name = "serialize",
+    srcs = ["bin/serialize.rs"],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "itertools",
+        "serde_json",
+        ":targets_and_outputs",
+        "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck/buck_version:buck_version",
+    ],
+)
+
+antlir_rust_extension(
+    name = "targets_and_outputs_py",
+    srcs = ["py.rs"],
+    crate_root = "py.rs",
+    typestub = "targets_and_outputs.pyi",
+    deps = [
+        "anyhow",
+        "serde",
+        "serde_json",
+        "//antlir:artifacts_dir_rs-rust",
+        "//antlir:find_root",
+        "//antlir:fs_utils_rs-rust",
+        "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck/targets_and_outputs:targets_and_outputs",
+        "//antlir/filesystem/absolute_path:absolute_path",
+        "//antlir/rust/py_utils:py_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-targets_and_outputs",
+    srcs = ["test.py"],
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir/buck/targets_and_outputs:targets_and_outputs_py",
+    ],
+)
