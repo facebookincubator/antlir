@@ -5,6 +5,8 @@
 
 load("@bazel_skylib//lib:partial.bzl", "partial")
 load("//antlir/bzl:query.bzl", "query")
+load("//antlir/bzl:sha256.bzl", "sha256_b64")
+load("//antlir/bzl:target_helpers.bzl", "json_targets_and_outputs")
 
 # Find the feature JSON belonging to this layer.
 def layer_features_json_query(layer):
@@ -41,7 +43,12 @@ def _location(target):
     return "$(location {})".format(target)
 
 def _targets_and_outputs(query_fn, target):
-    return "$(query_targets_and_outputs '{}')".format(query_fn(target))
+    query = query_fn(target)
+    json_target = json_targets_and_outputs(
+        name = sha256_b64(query),
+        query = query,
+    )
+    return "$(location {})/targets-and-outputs.json".format(json_target)
 
 # A convenient way to access the results of the above queries in Python
 # unit tests. Use the Python function `build_env_map` to deserialize.

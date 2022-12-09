@@ -896,21 +896,30 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
             tf.write(
                 Path.json_dumps(
                     {
-                        TEST_IMAGE_PREFIX
-                        + "hello_world_base": str(
-                            layer_resource(__package__, "test-hello-world-base")
-                        ),
-                        TEST_IMAGE_PREFIX
-                        + "create_ops-from-layer": str(
-                            layer_resource(__package__, "test-create-ops-from-layer")
-                        ),
-                        TEST_IMAGE_PREFIX
-                        + "first-layer-for-nested-layer-mount": str(
-                            layer_resource(
-                                __package__,
-                                "first-layer-for-nested-layer-mount",
-                            )
-                        ),
+                        # TODO(targets-and-outputs): create this at buck time, not here
+                        "metadata": {
+                            "buck_version": 2,
+                            "default_cell": "antlir",
+                        },
+                        "targets_and_outputs": {
+                            TEST_IMAGE_PREFIX
+                            + "hello_world_base": str(
+                                layer_resource(__package__, "test-hello-world-base")
+                            ),
+                            TEST_IMAGE_PREFIX
+                            + "create_ops-from-layer": str(
+                                layer_resource(
+                                    __package__, "test-create-ops-from-layer"
+                                )
+                            ),
+                            TEST_IMAGE_PREFIX
+                            + "first-layer-for-nested-layer-mount": str(
+                                layer_resource(
+                                    __package__,
+                                    "first-layer-for-nested-layer-mount",
+                                )
+                            ),
+                        },
                     }
                 ).encode()
             )
@@ -976,22 +985,31 @@ run_log=$(/fake-service only_write_to_stdout) && echo can_run
         ) as ts_and_os:
             ts_and_os.write(
                 Path.json_dumps(
+                    # TODO(targets-and-outputs): create this at buck time, not here
                     {
-                        TEST_IMAGE_PREFIX
-                        + "hello_world_base": str(
-                            layer_resource(__package__, "test-hello-world-base")
-                        ),
-                        TEST_IMAGE_PREFIX
-                        + "create_ops-from-layer": str(
-                            layer_resource(__package__, "test-create-ops-from-layer")
-                        ),
-                        TEST_IMAGE_PREFIX
-                        + "first-layer-for-nested-layer-mount": str(
-                            layer_resource(
-                                __package__,
-                                "first-layer-for-nested-layer-mount",
-                            )
-                        ),
+                        "metadata": {
+                            "buck_version": 2,
+                            "default_cell": "antlir",
+                        },
+                        "targets_and_outputs": {
+                            TEST_IMAGE_PREFIX
+                            + "hello_world_base": str(
+                                layer_resource(__package__, "test-hello-world-base")
+                            ),
+                            TEST_IMAGE_PREFIX
+                            + "create_ops-from-layer": str(
+                                layer_resource(
+                                    __package__, "test-create-ops-from-layer"
+                                )
+                            ),
+                            TEST_IMAGE_PREFIX
+                            + "first-layer-for-nested-layer-mount": str(
+                                layer_resource(
+                                    __package__,
+                                    "first-layer-for-nested-layer-mount",
+                                )
+                            ),
+                        },
                     },
                 ).encode()
             )

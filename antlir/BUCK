@@ -7,6 +7,7 @@ load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:target_helpers.bzl", "json_targets_and_outputs")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
@@ -61,6 +62,7 @@ python_library(
         ":common",
         ":config",
         ":fs_utils",
+        "//antlir/buck/targets_and_outputs:targets_and_outputs_py",
     ],
 )
 
@@ -68,6 +70,7 @@ antlir_rust_extension(
     name = "fs_utils_rs",
     srcs = ["fs_utils_rs.rs"],
     crate_root = "fs_utils_rs.rs",
+    rust_visibility = ["//antlir/..."],
     typestub = "fs_utils_rs.pyi",
     deps = [
         "//antlir/filesystem/absolute_path:absolute_path",
@@ -354,6 +357,7 @@ antlir_rust_extension(
     name = "artifacts_dir_rs",
     srcs = ["artifacts_dir_rs.rs"],
     crate_root = "artifacts_dir_rs.rs",
+    rust_visibility = ["//antlir/..."],
     typestub = "artifacts_dir_rs.pyi",
     deps = [
         ":fs_utils_rs-rust",
@@ -599,21 +603,27 @@ TEST_PACKAGE_RESOURCES = {
     layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance-testing",
 }
 
+package_image_query = query.attrregexfilter(
+    expr = query.deps(
+        depth = query.UNBOUNDED,
+        expr = query.set(TEST_PACKAGE_RESOURCES.keys()),
+    ),
+    label = "type",
+    pattern = "image_layer*",
+)
+
+json_targets_and_outputs(
+    name = "test-package-image-targets-and-outputs",
+    query = package_image_query,
+    visibility = ["//antlir:test-package-image"],
+)
+
 # Also tests the Buck macro `image/package/new.bzl`, but we cannot assert coverage.
 python_unittest(
     name = "test-package-image",
     srcs = ["tests/test_package_image.py"],
     env = {
-        "target_map": "$(query_targets_and_outputs '{}')".format(
-            query.attrregexfilter(
-                expr = query.deps(
-                    depth = query.UNBOUNDED,
-                    expr = query.set(TEST_PACKAGE_RESOURCES.keys()),
-                ),
-                label = "type",
-                pattern = "image_layer*",
-            ),
-        ),
+        "target_map": "$(location :test-package-image-targets-and-outputs)/targets-and-outputs.json",
     },
     needed_coverage = [(100, ":package-image-library")],
     resources = TEST_PACKAGE_RESOURCES,
@@ -627,7 +637,6 @@ python_unittest(
         ":testlib_layer_resource",
         ":testlib_subvol_helpers",
         ":unshare",
-        "//antlir:serialize-targets-and-outputs-library",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
@@ -778,30 +787,6 @@ python_unittest(
         ":artifacts_dir",
         ":config",
         ":fs_utils",
-    ],
-)
-
-python_binary(
-    name = "serialize-targets-and-outputs",
-    srcs = ["serialize_targets_and_outputs.py"],
-    main_module = "antlir.serialize_targets_and_outputs",
-    visibility = ["PUBLIC"],
-    deps = [
-        ":artifacts_dir",
-        ":fs_utils",
-    ],
-)
-
-python_unittest(
-    name = "test-serialize-targets-and-outputs",
-    srcs = ["tests/test_serialize_targets_and_outputs.py"],
-    needed_coverage = [
-        (100, ":serialize-targets-and-outputs-library"),
-    ],
-    deps = [
-        ":artifacts_dir",
-        ":fs_utils",
-        ":serialize-targets-and-outputs-library",
     ],
 )
 

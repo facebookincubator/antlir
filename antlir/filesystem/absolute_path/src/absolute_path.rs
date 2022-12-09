@@ -12,6 +12,10 @@ use std::path::PathBuf;
 
 use ref_cast::ref_cast_custom;
 use ref_cast::RefCastCustom;
+use serde::de::Deserializer;
+use serde::de::Error as _;
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -33,12 +37,14 @@ impl Error {
 pub type Result<R> = std::result::Result<R, Error>;
 
 /// Version of [std::path::PathBuf] that is verified to be an absolute path
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(transparent)]
 #[repr(transparent)]
 pub struct AbsolutePathBuf(PathBuf);
 
 /// Version of [std::path::Path] that is verified to be an absolute path
-#[derive(Debug, PartialEq, Eq, RefCastCustom)]
+#[derive(Debug, PartialEq, Eq, RefCastCustom, Serialize)]
+#[serde(transparent)]
 #[repr(transparent)]
 pub struct AbsolutePath(Path);
 
@@ -92,6 +98,10 @@ impl AbsolutePathBuf {
 
     pub fn into_path_buf(self) -> PathBuf {
         self.into()
+    }
+
+    pub fn as_absolute_path(&self) -> &AbsolutePath {
+        self
     }
 }
 
@@ -177,5 +187,15 @@ impl AsRef<Path> for AbsolutePath {
 impl AsRef<Path> for AbsolutePathBuf {
     fn as_ref(&self) -> &Path {
         &self.0
+    }
+}
+
+impl<'de> Deserialize<'de> for AbsolutePathBuf {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let path = PathBuf::deserialize(deserializer)?;
+        Self::new(path).map_err(D::Error::custom)
     }
 }

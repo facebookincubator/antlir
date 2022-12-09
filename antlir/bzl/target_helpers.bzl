@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
-load(":build_defs.bzl", "buck_genrule", "config", "repository_name", "target_utils")
+load(":build_defs.bzl", "buck_genrule", "config", "is_buck2", "repository_name", "target_utils")
 load(":sha256.bzl", "sha256_b64")
 
 # KEEP IN SYNC with its copy in `compiler/tests/sample_items.py`
@@ -102,6 +102,40 @@ def wrap_target(target, wrap_suffix):
     wrapped_target = clean_target_name(wrapped_target)
     return native.rule_exists(wrapped_target), wrapped_target
 
+def json_targets_and_outputs(name, query, visibility = None):
+    """
+    See `targets_and_outputs_arg_list` for how to use this.
+
+    The mapping is generated using `//antlir/buck/targets_and_outputs:serialize`
+    binary to turn the space-separated buck input into well-formed and
+    easy-to-use JSON.
+    """
+    buck_genrule(
+        name = name,
+        out = ".",
+        bash = """
+echo -n "$(query_targets_and_outputs {delim} '{query}')" | \
+$(exe {serialize_targets_and_outputs}) \
+--buck-version {buck_version} \
+--delimiter "{delim}" \
+--default-cell "{default_cell}" \
+    > "$OUT/targets-and-outputs.json"
+echo -n '{query}' > "$OUT/query"
+        """.format(
+            delim = "<|ThisDelimiterIsSizzlin|>",
+            buck_version = "2" if is_buck2() else "1",
+            serialize_targets_and_outputs = antlir_dep("buck/targets_and_outputs:serialize"),
+            default_cell = repository_name()[1:],
+            query = query,
+        ),
+        antlir_rule = "user-internal",
+        # This cannot be cacheable because it is generating machine
+        # specific paths.
+        cacheable = False,
+        visibility = visibility,
+    )
+    return normalize_target(":" + name)
+
 def targets_and_outputs_arg_list(name, query):
     """
     NOTE: This is important.
@@ -120,11 +154,6 @@ def targets_and_outputs_arg_list(name, query):
 
     Use this `.bzl` macro to generate the CLI arg in conjunction with the
     `antlir.cli.add_targets_and_outputs_arg` helper to consume the arg.
-
-    The actual mapping that is consumed by the CLI arg is generated as a json
-    file with the help of the `//antlir:serialize-targets-and-outputs` binary.
-    Using a json file works around the limitations that buck has dealing
-    with proper shell quoting.
     """
 
     if not query:
@@ -132,23 +161,7 @@ def targets_and_outputs_arg_list(name, query):
 
     target = "{}__deps-targets-to-outputs-{}".format(name, sha256_b64(name))
     if not native.rule_exists(target):
-        buck_genrule(
-            name = target,
-            out = ".",
-            bash = """
-echo -n "$(query_targets_and_outputs {delim} '{query}')" | \
-$(exe {serialize_targets_and_outputs}) "{delim}" > "$OUT/targets-and-outputs.json"
-echo -n '{query}' > "$OUT/query"
-            """.format(
-                delim = "<|ThisDelimiterIsSizzlin|>",
-                serialize_targets_and_outputs = antlir_dep(":serialize-targets-and-outputs"),
-                query = query,
-            ),
-            antlir_rule = "user-internal",
-            # This cannot be cacheable because it is generating machine
-            # specific paths.
-            cacheable = False,
-        )
+        json_targets_and_outputs(target, query)
 
     return ["--targets-and-outputs", "$(location :{})/targets-and-outputs.json".format(target)]
 

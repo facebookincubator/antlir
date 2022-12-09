@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use absolute_path::AbsolutePath;
 use absolute_path::AbsolutePathBuf;
 use anyhow::anyhow;
+use anyhow::bail;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -34,6 +35,7 @@ use starlark::syntax::Dialect;
 use starlark::values::none::NoneType;
 use starlark::values::OwnedFrozenValue;
 use starlark::values::Value;
+use targets_and_outputs::TargetsAndOutputs;
 use test::test::ShouldPanic;
 use test::test::TestDesc;
 use test::test::TestDescAndFn;
@@ -203,7 +205,7 @@ impl TestModule {
 }
 
 #[derive(Debug)]
-struct Loader(HashMap<String, PathBuf>);
+struct Loader<'a>(TargetsAndOutputs<'a>);
 
 fn globals() -> Globals {
     GlobalsBuilder::extended()
@@ -213,14 +215,22 @@ fn globals() -> Globals {
         .build()
 }
 
-impl FileLoader for Loader {
+impl<'a> FileLoader for Loader<'a> {
     fn load(&self, path: &str) -> Result<FrozenModule> {
         let path = path.trim_start_matches('@');
-        let file_path = self.0.get(path).cloned().unwrap_or_else(|| path.into());
-
-        let file_path = match AbsolutePathBuf::new(file_path) {
-            Ok(abspath) => abspath,
-            Err(e) => {
+        if path.starts_with(':') {
+            bail!("relative loads not allowed: {path}")
+        }
+        let path = match path.starts_with("//") {
+            true => format!("{}{}", self.0.default_cell(), path),
+            false => path.into(),
+        };
+        let file_path = match path.parse() {
+            Ok(label) => {
+                let relpath = self
+                    .0
+                    .path(&label)
+                    .with_context(|| format!("'{}' is not a dep", label))?;
                 let repo_root = find_root::find_repo_root(
                     AbsolutePath::new(
                         &std::env::current_exe().expect("current_exe is always here"),
@@ -228,13 +238,16 @@ impl FileLoader for Loader {
                     .expect("current_exe must be absolute"),
                 )
                 .context("could not find repo root")?;
-                repo_root.join(e.into_original_path())
+                repo_root.join(relpath)
             }
+            // hopefully it's just a path
+            Err(_) => AbsolutePathBuf::new(path.clone().into())
+                .with_context(|| format!("'{}' is neither a label nor a path", path))?,
         };
 
         let src = std::fs::read_to_string(&file_path)
             .with_context(|| format!("while reading {}", file_path.display()))?;
-        let ast = AstModule::parse(path, src, &Dialect::Extended)?;
+        let ast = AstModule::parse(&path, src, &Dialect::Extended)?;
 
         let module = Module::new();
         let mut eval = Evaluator::new(&module);
