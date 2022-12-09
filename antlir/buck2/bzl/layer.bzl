@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
+load("//antlir/bzl:flatten.bzl", "flatten")
 load(":build_appliance.bzl", "BuildApplianceInfo")
-load(":flatten.bzl", "flatten")
 load(":flavor.bzl", "FlavorInfo")
 load(":layer_info.bzl", "LayerInfo")
 
@@ -54,7 +54,7 @@ def layer(
     feature_target = name + "--features"
     feature(
         name = feature_target,
-        features = flatten(features),
+        features = flatten.flatten(features, item_type = ["InlineFeatureInfo", str.type]),
         visibility = [":" + name],
     )
     feature_target = ":" + feature_target

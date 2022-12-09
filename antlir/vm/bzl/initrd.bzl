@@ -5,6 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
+load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:types.bzl", "types")
@@ -33,6 +34,9 @@ def initrd(
     # Build an initrd specifically for operating as a VM. This is built on top of the
     # MetalOS initrd and modified to support 9p shared mounts for the repository,
     # kernel modules, and others.
+
+    if features:
+        features = flatten.antlir_features(features)
 
     image.layer(
         name = name + "-layer",

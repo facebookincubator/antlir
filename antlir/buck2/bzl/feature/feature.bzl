@@ -50,7 +50,7 @@ added to the `_feature_to_json` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/buck2/bzl:flatten.bzl", "flatten")
+load("//antlir/bzl:flatten.bzl", "flatten")
 load(":feature_info.bzl", "InlineFeatureInfo")
 load(":install.bzl", "install_to_json")
 load(":mount.bzl", "mount_to_json")
@@ -160,7 +160,7 @@ def feature(
         - inline (aka unnamed) features created with macros like `install()`
         - labels referring to other `feature` targets
     """
-    features = flatten(features)
+    features = flatten.flatten(features, item_type = ["InlineFeatureInfo", str.type])
     inline_features = {}
     feature_targets = []
     inline_features_deps = {}

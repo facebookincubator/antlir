@@ -33,14 +33,6 @@ _int = int.type if is_buck2() else "int"
 _str = str.type if is_buck2() else "str"
 _struct = struct.type if is_buck2() else "struct"
 
-def _recursive_list(ty, *, depth = 5):
-    """
-    We frequently use variables that are at arbitrary levels of list nesting.
-    """
-    if depth == 0:
-        return [ty]
-    return [ty] + [_recursive_list(ty, depth = depth - 1)]
-
 def _dict(kt, vt):
     return {kt: vt}
 
@@ -106,12 +98,16 @@ types = struct(
     struct = _struct,
     # either a target label or a file path
     source = _str,
+    # target label pointing to an executable
+    exe = _str,
     str = _str,
     visibility = _list(_str),
     # more complex types
     enum = _enum,
     # TODO: can antlir features be better typed with records and unions?
-    antlir_feature = _recursive_list([_struct, _str]),
+    # Now a feature can be either a struct or target label
+    antlir_feature = [_struct, _str],
+    antlir_rule = _enum("antlir-private", "user-facing", "user-internal"),
     # TODO: when we're all buck2, this can enforce the presence of providers.
     # For now it's just a human-readable hint that only enforces on a string.
     layer_source = _str,
@@ -120,7 +116,6 @@ types = struct(
     dict = _dict,
     list = _list,
     optional = _optional,
-    recursive_list = _recursive_list,
     union = _union,
     # other stuff
     lint_noop = _lint_noop,
