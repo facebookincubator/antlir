@@ -85,6 +85,13 @@ characters = [
     ),
 ]
 
+shape.json_file(
+    name = "characters.json",
+    instance = character_collection_t(
+        characters = characters,
+    ),
+)
+
 python_unittest(
     name = "test-shape",
     srcs = ["test_shape.py"],
