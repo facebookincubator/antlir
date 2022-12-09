@@ -260,7 +260,7 @@ def _rpms_and_bind_ros(
 
 @contextmanager
 def _prepare_versionlock(
-    version_sets: Iterable[Path], version_set_override: Optional[str]
+    version_sets: Iterable[Path], version_set_override: Optional[Path]
 ) -> Path:
     with tempfile.NamedTemporaryFile() as outfile:
         # Calculate overridden_rpm_names -- the names of rpms listed in

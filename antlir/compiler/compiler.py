@@ -15,7 +15,6 @@ that referred therein, creates `ImageItems`, sorts them in dependency order,
 and invokes `.build()` to apply each item to actually construct the subvol.
 """
 
-import argparse
 import cProfile
 import os
 import stat
@@ -27,12 +26,12 @@ from subprocess import CalledProcessError
 from typing import List, Optional
 
 from antlir.bzl.constants import flavor_config_t
-from antlir.cli import add_targets_and_outputs_arg, normalize_buck_path
+from antlir.cli import normalize_buck_path
 from antlir.compiler.helpers import compile_items_to_subvol, get_compiler_nspawn_opts
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.rpm_action import RpmActionItem
 from antlir.compiler.items_for_features import gen_items_for_features
-
+from antlir.compiler.rust.compiler import Args, parse_args
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import repo_config
 from antlir.errors import AntlirError
@@ -45,112 +44,9 @@ from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 
 
-def parse_args(args) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawTextHelpFormatter
-    )
-    parser.add_argument(
-        "--subvolumes-dir",
-        required=True,
-        type=Path.from_argparse,
-        help="A directory on a btrfs volume to store the compiled subvolume "
-        "representing the new layer",
-    )
-    # We separate this from `--subvolumes-dir` in order to help keep our
-    # JSON output ignorant of the absolute path of the repo.
-    parser.add_argument(
-        "--subvolume-rel-path",
-        required=True,
-        type=Path.from_argparse,
-        help="Path underneath --subvolumes-dir where we should create "
-        "the subvolume. Note that all path components but the basename "
-        "should already exist.",
-    )
-    parser.add_argument(
-        "--flavor-config",
-        type=flavor_config_t.parse_raw,
-        help="The serialized config for the flavor. This contains "
-        "information about the build appliance and rpm installer.",
-    )
-    parser.add_argument(
-        "--artifacts-may-require-repo",
-        action="store_true",
-        help='Buck @mode/dev produces "in-place" build artifacts that are '
-        "not truly standalone. It is important to be able to execute "
-        "code from images built in this mode to support rapid "
-        'development and debugging, even though it is not a "true" '
-        "self-contained image. To allow execution of in-place binaries, "
-        "antlir runtimes will automatically mount the repo into any "
-        "`--artifacts-may-require-repo` image at runtime (e.g. when "
-        "running image unit-tests, when using `=container` or `=systemd` "
-        "targets, when using the image as a build appliance).",
-    )
-    parser.add_argument(
-        "--child-layer-target",
-        required=True,
-        help="The name of the Buck target describing the layer being built",
-    )
-    parser.add_argument(
-        "--child-feature-json",
-        action="append",
-        default=[],
-        help="The path of the JSON output of any `feature`s that are"
-        "directly included by the layer being built",
-    )
-    parser.add_argument("--debug", action="store_true", help="Log more")
-    parser.add_argument(
-        "--allowed-host-mount-target",
-        action="append",
-        default=[],
-        help="Target name that is allowed to contain host mounts used as "
-        "build_sources.  Can be specified more than once.",
-    )
-    parser.add_argument(
-        "--version-set-override",
-        help="Path to a file containing TAB-separated ENVRAs, one per line."
-        "Also refer to `build_opts.bzl`.",
-    )
-    parser.add_argument(
-        "--parent-layer",
-        type=normalize_buck_path,
-        help="The directory of the buck image output of the parent layer. "
-        "We will read the flavor from the parent layer to deduce the flavor "
-        "of the child layer",
-    )
-    parser.add_argument(
-        "--profile",
-        dest="profile_dir",
-        type=normalize_buck_path,
-        help="Profile this image build and write pstats files into the given directory.",
-    )
-    parser.add_argument(
-        "--compiler-binary",
-        required=True,
-        type=normalize_buck_path,
-        help="The path to the compiler binary being invoked currently. "
-        "It is used to re-invoke the compiler inside the BA container as root.",
-    )
-    parser.add_argument(
-        "--is-nested",
-        action="store_true",
-        help="Indicates whether the compiler binary is being run nested inside "
-        "a BA container.",
-    )
-    parser.add_argument(
-        "--internal-only-is-genrule-layer",
-        action="store_true",
-        help="Indicates whether the layer being compiled is a genrule layer. "
-        "This is a temporary crutch to avoid running the compiler inside a BA "
-        "container when building genrule layers. This should be removed in "
-        "the future.",
-    )
-    add_targets_and_outputs_arg(parser)
-    return Path.parse_args(parser, args)
-
-
-def get_parent_layer_flavor_config(parent_layer: Subvol) -> flavor_config_t:
-    parent_layer = find_built_subvol(parent_layer)
-    flavor = parent_layer.read_path_text(META_FLAVOR_FILE)
+def get_parent_layer_flavor_config(parent_layer: Path) -> flavor_config_t:
+    parent_layer_subvol = find_built_subvol(parent_layer)
+    flavor = parent_layer_subvol.read_path_text(META_FLAVOR_FILE)
     return repo_config().flavor_to_config[flavor]
 
 
@@ -165,7 +61,7 @@ def invoke_compiler_inside_build_appliance(
     build_appliance: Subvol,
     run_apt_proxy: bool,
     snapshot_dir: Optional[Path],
-    args: argparse.Namespace,
+    args: Args,
     argv: List[str],
 ):
     rw_bindmounts = []
@@ -222,7 +118,7 @@ def invoke_compiler_inside_build_appliance(
         sys.exit(e.returncode)
 
 
-def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
+def build_image(args: Args, argv: List[str]) -> SubvolumeOnDisk:
     # We want check the umask since it can affect the result of the
     # `os.access` check for `image.install*` items.  That said, having a
     # umask that denies execute permission to "user" is likely to break this
@@ -260,7 +156,7 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
         rpm_repo_snapshot=Path(flavor_config.rpm_repo_snapshot)
         if flavor_config.rpm_repo_snapshot
         else None,
-        apt_repo_snapshot=flavor_config.apt_repo_snapshot,
+        apt_repo_snapshot=flavor_config.apt_repo_snapshot or (),
         artifacts_may_require_repo=args.artifacts_may_require_repo,
         target_to_path=args.targets_and_outputs,
         subvolumes_dir=args.subvolumes_dir,
@@ -300,9 +196,9 @@ def build_image(args: argparse.Namespace, argv: List[str]) -> SubvolumeOnDisk:
             snapshot_dir=Path(flavor_config.rpm_repo_snapshot)
             if flavor_config.rpm_repo_snapshot and installs_rpms
             else None,
-            run_apt_proxy=(
+            run_apt_proxy=bool(
                 flavor_config.apt_repo_snapshot
-                and len(flavor_config.apt_repo_snapshot) > 0
+                and (len(flavor_config.apt_repo_snapshot) > 0)
             ),
             args=args,
             argv=argv,

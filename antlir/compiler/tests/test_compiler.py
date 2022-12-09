@@ -10,6 +10,7 @@ See `test_compiler.py` for more granular compiler unit tests.
 
 import os
 import socket
+import sys
 import tempfile
 import unittest
 from typing import List, Optional
@@ -92,7 +93,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
                     "--compiler-binary",
                     os.environ["test_antlir_compiler_binary_path"],
                     "--child-layer-target",
-                    "CHILD_TARGET",
+                    "cell//some/child:target",
                     "--targets-and-outputs",
                     tf.name,
                     # We need to compile at least one feature to cover the code
@@ -101,6 +102,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
                     os.environ["test_compiler_feature"],
                     *extra_args,
                 ]
+                print(argv, file=sys.stderr)
                 res = build_image(parse_args(argv), argv)
 
             # `build_image` should have constructed `sv_nested`.
@@ -157,7 +159,7 @@ class CompilerIntegrationTestCase(unittest.TestCase):
             self.compile(extra_args=[f"--profile={profile_dir}"])
             # This profile won't actually be populated since the profiling and
             # pstat dump should occur outside `build_image`.
-            self.assertTrue((profile_dir / "CHILD_TARGET.pstat").exists())
+            self.assertTrue((profile_dir / "cell__some_child:target.pstat").exists())
 
     def test_no_flavor_config_or_parent_layer_error(self):
         with self.assertRaisesRegex(
