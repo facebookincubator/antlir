@@ -32,7 +32,7 @@ log = get_logger()
 
 # We need this for lists that can contain a combination of `str` and `bytes`,
 # which is very common with `subprocess`. See https://fburl.com/wiki/dqrqyd8r.
-MehStr = Union[str, bytes]
+MehStr = Union[str, bytes, "Path"]
 
 
 class _OpenHow(ctypes.Structure):

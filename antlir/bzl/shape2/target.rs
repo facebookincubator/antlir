@@ -19,7 +19,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use shape::ShapePath;
 
-#[derive(Debug, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct target_t {
     pub name: String,
     pub path: ShapePath,

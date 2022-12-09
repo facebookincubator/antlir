@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use pyo3::prelude::*;
+
 #[macro_export]
 macro_rules! wrap_err {
     ($wrapper:ident, $error:ty) => {
