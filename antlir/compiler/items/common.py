@@ -20,7 +20,7 @@ import hashlib
 import inspect
 import os
 import socket
-from typing import AnyStr, FrozenSet, Mapping, NamedTuple, Optional, Set, Tuple
+from typing import AnyStr, FrozenSet, List, Mapping, NamedTuple, Optional, Set
 
 from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
@@ -121,8 +121,8 @@ class LayerOpts(NamedTuple):
     rpm_repo_snapshot: Optional[Path]
     target_to_path: Mapping[str, Path]
     subvolumes_dir: Path
-    version_set_override: Optional[Path]
-    apt_repo_snapshot: Tuple[str, ...] = ()
+    version_set_override: Optional[str]
+    apt_repo_snapshot: List[str] = []
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
     unsafe_bypass_flavor_check: bool = False

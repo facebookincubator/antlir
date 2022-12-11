@@ -456,11 +456,6 @@ handlebars_helper!(rs_type: |ty: Type| ty.rs_type().to_string());
 handlebars_helper!(rs_union_name: |ty: Type| ty.rs_union_name().to_string());
 handlebars_helper!(json_helper: |v: Value| v.to_string());
 
-#[derive(Serialize)]
-struct RustModuleContext<'a> {
-    python_module: &'a str,
-}
-
 impl Render<Rust> for Module {
     const ENTRYPOINT: &'static str = "lib";
 
@@ -468,13 +463,8 @@ impl Render<Rust> for Module {
         let mut output = String::new();
 
         output.push_str(
-            &hb.render(
-                "lib",
-                &RustModuleContext {
-                    python_module: &self.target.python_module(),
-                },
-            )
-            .context("failed to render the module preamble")?,
+            &hb.render("lib", &())
+                .context("failed to render the module preamble")?,
         );
 
         output.push('\n');

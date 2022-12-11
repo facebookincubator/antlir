@@ -30,7 +30,7 @@ use serde::Serialize;
     module = "antlir.buck.targets_and_outputs.targets_and_outputs_py",
     mapping
 )]
-#[derive(Clone, Deserialize, Serialize)]
+#[derive(Deserialize, Serialize)]
 pub struct TargetsAndOutputs {
     buck_cell_root: AbsolutePathBuf,
     #[serde(borrow)]
@@ -118,7 +118,7 @@ impl TargetsAndOutputs {
     }
 
     #[staticmethod]
-    pub fn from_argparse(
+    fn from_argparse(
         py: Python<'_>,
         path: AntlirPath,
         path_in_repo: Option<AntlirPath>,
