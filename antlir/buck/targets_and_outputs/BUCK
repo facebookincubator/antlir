@@ -30,7 +30,6 @@ antlir_rust_extension(
     name = "targets_and_outputs_py",
     srcs = ["py.rs"],
     crate_root = "py.rs",
-    rust_visibility = ["//antlir/..."],
     typestub = "targets_and_outputs.pyi",
     deps = [
         "anyhow",

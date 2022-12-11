@@ -16,6 +16,7 @@ TOOLS = {
     for target in (
         config.get_antlir_cell_name() + "//antlir/debian:apt-proxy",
         config.get_antlir_cell_name() + "//antlir/bzl/shape2:bzl2ir",
+        config.get_antlir_cell_name() + "//antlir/bzl/shape2:ir2code",
     )
 }
 
