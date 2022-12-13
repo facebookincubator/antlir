@@ -55,7 +55,7 @@ load(":feature_info.bzl", "InlineFeatureInfo")
 load(":install.bzl", "install_to_json")
 load(":mount.bzl", "mount_to_json")
 load(":rpms.bzl", "rpms_to_json")
-load(":usergroup.bzl", "group_to_json", "user_to_json")
+load(":usergroup.bzl", "group_to_json", "user_to_json", "usermod_to_json")
 
 Features = transitive_set()
 FeatureDeps = transitive_set()
@@ -78,6 +78,7 @@ _feature_to_json = {
     "mount": mount_to_json,
     "rpm": rpms_to_json,
     "user": user_to_json,
+    "usermod": usermod_to_json,
 }
 
 def _impl(ctx: "context") -> ["provider"]:

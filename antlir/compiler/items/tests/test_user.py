@@ -24,9 +24,15 @@ from antlir.compiler.items.user import (
     ShadowFile,
     ShadowFileLine,
     UserItem,
+    UsermodItem,
 )
 
-from antlir.compiler.requires_provides import ProvidesUser, RequireFile, RequireGroup
+from antlir.compiler.requires_provides import (
+    ProvidesUser,
+    RequireFile,
+    RequireGroup,
+    RequireUser,
+)
 from antlir.fs_utils import Path
 from antlir.subvol_utils import TempSubvolumes, with_temp_subvols
 from antlir.tests.layer_resource import layer_resource_subvol
@@ -539,4 +545,80 @@ class ReadWriteMethodsTest(unittest.TestCase):
         self.assertEqual(
             _SAMPLE_ETC_SHADOW,
             _read_shadow_file(sv),
+        )
+
+
+class UsermodItemTest(BaseItemTestCase):
+    def test_requires(self):
+        self._check_item(
+            UsermodItem(
+                from_target="t",
+                username="u",
+                add_supplementary_groups=["foo", "bar"],
+            ),
+            set(),
+            {
+                RequireUser("u"),
+                RequireGroup("foo"),
+                RequireGroup("bar"),
+            },
+        )
+
+    @with_temp_subvols
+    def test_build(self, ts: TempSubvolumes):
+        sv = ts.create("test_build")
+        sv.run_as_root(["mkdir", "-p", sv.path("/etc")]).check_returncode()
+        sv.overwrite_path_as_root(
+            GROUP_FILE_PATH,
+            """root:x:0:
+bin:x:1:root,daemon
+daemon:x:2:root,bin
+sys:x:3:root,bin,adm
+adm:x:4:new_user
+""",
+        )
+        sv.overwrite_path_as_root(
+            PASSWD_FILE_PATH,
+            """root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+new_user:x:1000:3:a new user:/home/new_user:/bin/bash
+""",
+        )
+        sv.overwrite_path_as_root(
+            SHADOW_FILE_PATH,
+            """root:!!:1234::::::
+bin:Not_a_real_crypt_string:1234::::::
+daemon:!!:1234::::::
+adm:!!:1234::::::
+lp:!!:1234::::::
+""",
+        )
+
+        UsermodItem(
+            from_target="t",
+            username="new_user",
+            add_supplementary_groups=["daemon"],
+        ).build(sv)
+
+        self.assertEqual(
+            sv.read_path_text(GROUP_FILE_PATH),
+            """root:x:0:
+bin:x:1:root,daemon
+daemon:x:2:root,bin,new_user
+sys:x:3:root,bin,adm
+adm:x:4:new_user
+""",
+        )
+        self.assertEqual(
+            sv.read_path_text(PASSWD_FILE_PATH),
+            """root:x:0:0:root:/root:/bin/bash
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+new_user:x:1000:3:a new user:/home/new_user:/bin/bash
+""",
         )

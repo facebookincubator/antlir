@@ -5,8 +5,11 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
+load("//antlir/bzl:types.bzl", "types")
 load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
-load(":usergroup.shape.bzl", "group_t", "user_t")
+load(":usergroup.shape.bzl", "group_t", "user_t", "usermod_t")
+
+types.lint_noop()
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
@@ -82,6 +85,16 @@ def feature_group_add(groupname, gid = None):
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(groups = [group]),
+    )
+
+def feature_usermod(username: types.str, add_supplementary_groups: types.list(types.str) = []):
+    usermod = usermod_t(
+        username = username,
+        add_supplementary_groups = add_supplementary_groups,
+    )
+    return target_tagger_to_feature(
+        new_target_tagger(),
+        items = struct(usermod = [usermod]),
     )
 
 def feature_setup_standard_user(user, group, homedir = None, shell = SHELL_BASH, uid = None, gid = None):

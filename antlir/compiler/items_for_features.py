@@ -27,7 +27,7 @@ from antlir.compiler.items.requires import RequiresItem
 from antlir.compiler.items.rpm_action import RpmActionItem
 from antlir.compiler.items.symlink import SymlinkToDirItem, SymlinkToFileItem
 from antlir.compiler.items.tarball import TarballItem
-from antlir.compiler.items.user import UserItem
+from antlir.compiler.items.user import UserItem, UsermodItem
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path
 
@@ -133,6 +133,7 @@ class ItemFactory:
             "symlinks_to_files": SymlinkToFileItem,
             "tarballs": self._image_sourcify(TarballItem),
             "users": UserItem,
+            "usermod": UsermodItem,
             "requires": RequiresItem,
             "meta_key_value_store": MetaKeyValueStoreItem,
             "remove_meta_key_value_store": RemoveMetaKeyValueStoreItem,

@@ -42,6 +42,18 @@ def group_add(
         },
     )
 
+def usermod(
+        *,
+        username: str.type,
+        add_supplementary_groups: [[str.type], None] = None) -> InlineFeatureInfo.type:
+    return InlineFeatureInfo(
+        feature_type = "usermod",
+        kwargs = {
+            "add_supplementary_groups": add_supplementary_groups or [],
+            "username": username,
+        },
+    )
+
 def user_to_json(
         username: str.type,
         uid: [int.type, None],
@@ -70,4 +82,14 @@ def group_to_json(
     return {
         "gid": gid,
         "name": groupname,
+    }
+
+def usermod_to_json(
+        username: str.type,
+        add_supplementary_groups: [str.type],
+        sources: {str.type: "artifact"},
+        deps: {str.type: "dependency"}) -> {str.type: ""}:
+    return {
+        "add_supplementary_groups": add_supplementary_groups,
+        "username": username,
     }

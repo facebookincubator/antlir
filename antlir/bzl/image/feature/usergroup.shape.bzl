@@ -19,3 +19,8 @@ group_t = shape.shape(
     name = str,
     id = shape.field(int, optional = True),
 )
+
+usermod_t = shape.shape(
+    username = str,
+    add_supplementary_groups = shape.field(shape.list(str), default = []),
+)
