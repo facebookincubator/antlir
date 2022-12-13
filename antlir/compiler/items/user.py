@@ -7,9 +7,9 @@
 import collections
 import re
 from dataclasses import dataclass
-from typing import AnyStr, Dict, Generator, NamedTuple, Optional, OrderedDict
+from typing import AnyStr, Dict, Generator, List, NamedTuple, Optional, OrderedDict
 
-from antlir.bzl.image.feature.usergroup import user_t
+from antlir.bzl.image.feature.usergroup import user_t, usermod_t
 
 from antlir.compiler.items.common import ImageItem, LayerOpts
 from antlir.compiler.items.group import (
@@ -25,6 +25,7 @@ from antlir.compiler.requires_provides import (
     RequireFile,
     RequireGroup,
     Requirement,
+    RequireUser,
 )
 from antlir.fs_utils import Path
 from antlir.subvol_utils import Subvol
@@ -358,3 +359,24 @@ class UserItem(user_t, ImageItem):
             # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
             #  `Union[ShadowFile, str]`.
             _write_shadow_file(subvol, shadow_file)
+
+
+class UsermodItem(usermod_t, ImageItem):
+    def provides(self) -> List[Requirement]:
+        return []
+
+    def requires(self) -> Generator[Requirement, None, None]:
+        yield RequireUser(self.username)
+        for groupname in self.add_supplementary_groups:
+            yield RequireGroup(groupname)
+
+    # pyre-fixme[9]: layer_opts has type `LayerOpts`; used as `None`.
+    def build(self, subvol: Subvol, layer_opts: LayerOpts = None):
+        with USERGROUP_LOCK:
+            group_file = GroupFile(_read_group_file(subvol))
+
+            for groupname in self.add_supplementary_groups:
+                group_file.join(groupname, self.username)
+            # pyre-fixme[6]: Expected `AnyStr` for 2nd param but got
+            # `GroupFile`.
+            _write_group_file(subvol, group_file)
