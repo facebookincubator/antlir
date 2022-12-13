@@ -53,6 +53,17 @@ pub fn sign_with_generated_header(comment: Comment, src: &str) -> String {
     sign(&s).expect("token is definitely there")
 }
 
+/// If the first line of the src is a generated header from this library, remove
+/// it. Otherwise src is returned untouched.
+pub fn strip_generated_header(comment: Comment, src: &str) -> &str {
+    if src.starts_with(&format!("{} @{} SignedSource<<", comment, "generated")) {
+        if let Some(first_line_index) = src.find('\n') {
+            return &src[first_line_index + 1..];
+        }
+    }
+    src
+}
+
 #[cfg(test)]
 mod tests {
     use super::TOKEN;
@@ -71,6 +82,21 @@ mod tests {
         assert_eq!(
             Error::MissingToken,
             sign("hello world!").expect_err("missing token"),
+        );
+    }
+
+    #[test]
+    fn strip_generated() {
+        assert_eq!(
+            "hello world",
+            strip_generated_header(Comment::Python, "hello world"),
+        );
+        assert_eq!(
+            "hello world",
+            strip_generated_header(
+                Comment::Python,
+                &sign_with_generated_header(Comment::Python, "hello world")
+            ),
         );
     }
 }
