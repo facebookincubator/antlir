@@ -17,7 +17,7 @@ load("//antlir/bzl/image/feature:requires.bzl", "feature_requires")
 load("//antlir/bzl/image/feature:rpms.bzl", "feature_rpms_install", "feature_rpms_remove_if_exists")
 load("//antlir/bzl/image/feature:symlink.bzl", "feature_ensure_dir_symlink", "feature_ensure_file_symlink")
 load("//antlir/bzl/image/feature:tarball.bzl", "feature_tarball")
-load("//antlir/bzl/image/feature:usergroup.bzl", "feature_group_add", "feature_setup_standard_user", "feature_user_add")
+load("//antlir/bzl/image/feature:usergroup.bzl", "feature_group_add", "feature_setup_standard_user", "feature_user_add", "feature_usermod")
 
 feature = struct(
     clone = feature_clone,
@@ -41,6 +41,7 @@ feature = struct(
     setup_standard_user = feature_setup_standard_user,
     tarball = feature_tarball,
     user_add = feature_user_add,
+    usermod = feature_usermod,
     meta_store = feature_meta_store,
     remove_meta_store = feature_remove_meta_store,
 )
