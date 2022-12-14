@@ -118,8 +118,7 @@ class ImagePackageTestCaseBase(AntlirTestCase):
             )
         )
         with tempfile.NamedTemporaryFile() as temp_sendstream:
-            with subvol.mark_readonly_and_write_sendstream_to_file(temp_sendstream):
-                pass
+            subvol.mark_readonly_and_write_sendstream_to_file(temp_sendstream)
             original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")
             )

@@ -193,8 +193,7 @@ class SubvolTestCase(AntlirTestCase):
         sendstream = sv.mark_readonly_and_get_sendstream()
         self.assertIn(b"abracadabra", sendstream)
         with tempfile.TemporaryFile() as outfile:
-            with sv.mark_readonly_and_write_sendstream_to_file(outfile):
-                pass
+            sv.mark_readonly_and_write_sendstream_to_file(outfile)
             outfile.seek(0)
             self.assertEqual(sendstream, outfile.read())
 

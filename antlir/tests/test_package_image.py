@@ -202,8 +202,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
                 )
             )
         with tempfile.NamedTemporaryFile() as temp_sendstream:
-            with subvol.mark_readonly_and_write_sendstream_to_file(temp_sendstream):
-                pass
+            subvol.mark_readonly_and_write_sendstream_to_file(temp_sendstream)
             original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")
             )
@@ -250,8 +249,7 @@ class PackageImageTestCase(ImagePackageTestCaseBase):
             with open_for_read_decompress(pkg_path) as r:
                 run_nspawn(opts, PopenArgs(stdin=r))
 
-            with extract_sv.mark_readonly_and_write_sendstream_to_file(temp_sendstream):
-                pass
+            extract_sv.mark_readonly_and_write_sendstream_to_file(temp_sendstream)
 
             original_render = self._render_sendstream_path(
                 self._sibling_path("create_ops-original.sendstream")

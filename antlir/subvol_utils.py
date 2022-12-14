@@ -15,11 +15,12 @@ from contextlib import contextmanager, ExitStack
 from typing import AnyStr, BinaryIO, Iterator, Optional, TypeVar
 
 import antlir.btrfsutil as btrfsutil
-
 from antlir.artifacts_dir import find_artifacts_dir
 from antlir.btrfs_diff.freeze import DoNotFreeze
 from antlir.common import check_popen_returncode, get_logger, open_fd
 from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
+
+from antlir.errors import InfraError
 from antlir.fs_utils import Path, temp_dir
 
 
@@ -381,6 +382,10 @@ class Subvol(DoNotFreeze):
 
         log.debug(f"arguments to `btrfs send` are {send_args}")
 
+        # `btrfs send` can fail if there is a rebalancing operation in progress.
+        # Retry up to 3 times 30s apart to hopefully get a working send after
+        # the rebalancing operation is complete. This is fairly arbitrary but
+        # was recommended by Kernel folks.
         with self.popen_as_root(
             send_args,
             stdout=stdout,
@@ -392,14 +397,29 @@ class Subvol(DoNotFreeze):
             # pyre-fixme[16]: Optional type has no attribute `read`.
             return proc.stdout.read()
 
-    @contextmanager
     def mark_readonly_and_write_sendstream_to_file(
         self,
         outfile,
+        _retries=3,
         **kwargs,
-    ) -> Iterator[None]:
-        with self._mark_readonly_and_send(stdout=outfile, **kwargs):
-            yield
+    ) -> None:
+        def _maybe_retry():  # pragma: no cover
+            if _retries <= 0:
+                raise InfraError("'btrfs send' failed too many times")
+            log.warning(f"'btrfs send' failed, retries remaining = {_retries}")
+            time.sleep(30)
+            self.mark_readonly_and_write_sendstream_to_file(
+                outfile=outfile, _retries=_retries - 1, **kwargs
+            )
+
+        try:
+            with self._mark_readonly_and_send(stdout=outfile, **kwargs) as proc:
+                code = proc.wait()
+            if code != 0:  # pragma: no cover
+                _maybe_retry()
+            return
+        except subprocess.CalledProcessError:  # pragma: no cover
+            _maybe_retry()
 
     @contextmanager
     def write_tarball_to_file(self, outfile: BinaryIO, **kwargs) -> Iterator[None]:
