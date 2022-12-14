@@ -335,9 +335,8 @@ image_python_unittest(
 python_library(
     name = "volume_for_repo",
     srcs = ["volume_for_repo.py"],
-    # `get_volume_for_current_repo()` needs this to be our sibling in the PAR.
-    resources = {"set_up_volume.sh": "set_up_volume.sh"},
     deps = [
+        ":btrfsutil",
         ":fs_utils",
         "//antlir/facebook:sudo_error",
     ],
@@ -959,4 +958,11 @@ antlir_rust_extension(
         "//antlir:find_root",
         "//antlir/filesystem/absolute_path:absolute_path",
     ],
+)
+
+python_binary(
+    name = "delete-subvolume-recursive",
+    srcs = ["delete_subvolume_recursive.py"],
+    main_module = "antlir.delete_subvolume_recursive",
+    deps = [":btrfsutil"],
 )

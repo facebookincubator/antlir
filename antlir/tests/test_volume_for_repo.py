@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 import unittest
 
-from antlir import volume_for_repo as vfr
+from antlir import btrfsutil, volume_for_repo as vfr
 
 from antlir.fs_utils import Path
 
@@ -19,8 +19,6 @@ class VolumeForRepoTestCase(unittest.TestCase):
     def test_volume_repo(self) -> None:
         artifacts_dir = Path(tempfile.mkdtemp(prefix="test_volume_repo"))
         volume_dir = artifacts_dir / vfr.VOLUME_DIR
-        image_file = artifacts_dir / vfr.IMAGE_FILE
-        min_free_bytes = 250e6
 
         try:
             self.assertEqual(
@@ -29,27 +27,42 @@ class VolumeForRepoTestCase(unittest.TestCase):
                 ),
                 volume_dir,
             )
-            self.assertGreaterEqual(os.stat(image_file).st_size, min_free_bytes)
 
-            fstype_and_avail = subprocess.check_output(
-                [
-                    "findmnt",
-                    "--noheadings",
-                    "--output",
-                    "FSTYPE,AVAIL",
-                    "--bytes",
-                    volume_dir,
-                ]
-            )
-            fstype, avail = fstype_and_avail.strip().split()
-            self.assertEqual(b"btrfs", fstype)
-            self.assertGreaterEqual(int(avail), min_free_bytes)
+            self.assertTrue(btrfsutil.is_subvolume(volume_dir))
         finally:
             try:
-                subprocess.call(["sudo", "umount", volume_dir])
+                btrfsutil.delete_subvolume(volume_dir, recursive=True)
             except Exception:
-                pass  # Might not have been mounted in case of an earlier error
+                pass  # Might not have been created in case of an earlier error
             shutil.rmtree(artifacts_dir)
+
+    def test_upgrade(self):
+        """
+        Can upgrade from loopback to on-host subvol
+        """
+        artifacts_dir = Path(tempfile.mkdtemp(prefix="test_upgrade_"))
+        volume_dir = artifacts_dir / vfr.VOLUME_DIR
+        artifacts_dir_src = Path(tempfile.mkdtemp(prefix="test_upgrade_src_"))
+        os.makedirs(volume_dir)
+        subprocess.run(
+            ["sudo", "mount", "--bind", artifacts_dir_src, volume_dir], check=True
+        )
+
+        try:
+            self.assertEqual(
+                vfr.get_volume_for_current_repo(
+                    artifacts_dir=artifacts_dir,
+                ),
+                volume_dir,
+            )
+            self.assertTrue(btrfsutil.is_subvolume(volume_dir))
+        finally:
+            try:
+                btrfsutil.delete_subvolume(volume_dir, recursive=True)
+            except Exception:
+                pass  # Might not have been created in case of an earlier error
+            shutil.rmtree(artifacts_dir)
+            shutil.rmtree(artifacts_dir_src)
 
 
 if __name__ == "__main__":
