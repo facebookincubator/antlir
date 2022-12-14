@@ -67,10 +67,8 @@ class Sendstream(Format, format_name="sendstream"):
         with TempSubvolumes() as ts:
             assert opts.subvol_name is not None
             renamed = ts.snapshot(subvol, opts.subvol_name)
-            with create_ro(
-                output_path, "wb"
-            ) as f, renamed.mark_readonly_and_write_sendstream_to_file(outfile=f):
-                pass
+            with create_ro(output_path, "wb") as f:
+                renamed.mark_readonly_and_write_sendstream_to_file(outfile=f)
 
 
 class SendstreamV2(Format, format_name="sendstream.v2"):
@@ -102,10 +100,10 @@ class SendstreamV2(Format, format_name="sendstream.v2"):
                 send_stream_upgrade_args,
                 stdin=subprocess.PIPE,
                 stdout=f,
-            ) as up_proc, renamed.mark_readonly_and_write_sendstream_to_file(
-                outfile=up_proc.stdin
-            ):
-                pass
+            ) as up_proc:
+                renamed.mark_readonly_and_write_sendstream_to_file(
+                    outfile=up_proc.stdin
+                )
 
             check_popen_returncode(up_proc)
 
@@ -151,10 +149,10 @@ class SendstreamZst(Format, format_name="sendstream.zst"):
                 args,
                 stdin=subprocess.PIPE,
                 stdout=zst_file,
-            ) as zstd_proc, renamed.mark_readonly_and_write_sendstream_to_file(
-                outfile=zstd_proc.stdin,
-            ):
-                pass
+            ) as zstd_proc:
+                renamed.mark_readonly_and_write_sendstream_to_file(
+                    outfile=zstd_proc.stdin,
+                )
         check_popen_returncode(zstd_proc)
 
 

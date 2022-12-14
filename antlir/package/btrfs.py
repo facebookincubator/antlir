@@ -219,13 +219,14 @@ base images. Specific advantages to this include:
 import collections
 import os
 import subprocess
+import tempfile
 from contextlib import contextmanager
 from typing import Any, Dict, Generator, List, NamedTuple, Optional
 
 from antlir import btrfsutil
 from antlir.bzl.image.package.btrfs import btrfs_opts_t
 from antlir.cli import init_cli, normalize_buck_path
-from antlir.common import get_logger, pipe, run_stdout_to_err
+from antlir.common import get_logger, run_stdout_to_err
 from antlir.errors import UserError
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
@@ -567,32 +568,33 @@ class BtrfsImage:
                 f"compress-force=zstd:{compression_level}",
             ],
         ).mount() as loop_vol, temp_dir(dir=mount_dir) as receive_dir:
-
             for subvol_name, (subvol, _) in subvols.items():
-                log.info(f"Receiving {subvol.path()} -> " f"{receive_dir}{subvol_name}")
-                with pipe() as (
-                    r_send,
-                    w_send,
-                ), subvol.mark_readonly_and_write_sendstream_to_file(w_send):
-                    # This end is now fully owned by `btrfs send`
-                    w_send.close()
-                    with r_send:
+                with tempfile.NamedTemporaryFile() as sendstream_f:
+                    # Just write the sendtream to a file instead of piping. Obviously
+                    # this is less efficient, but will benefit from automatic retries on
+                    # transient 'btrfs send' failures (which is likely to happen on CI
+                    # due to high disk usage)
+                    subvol.mark_readonly_and_write_sendstream_to_file(sendstream_f)
+                    sendstream_f.seek(0)
 
-                        recv_ret = loop_vol.receive(
-                            send=r_send,
-                            receive_dir=receive_dir,
+                    log.info(
+                        f"Receiving {subvol.path()} -> " f"{receive_dir}{subvol_name}"
+                    )
+                    recv_ret = loop_vol.receive(
+                        send=sendstream_f,
+                        receive_dir=receive_dir,
+                    )
+
+                if recv_ret.returncode != 0:
+                    err = recv_ret.stderr.decode(errors="surrogateescape")
+                    if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
+                        err = (
+                            f"Receive failed. Subvol of "
+                            f"{estimated_fs_bytes} bytes did not fit "
+                            f"into loopback of {fs_bytes} bytes: {err}"
                         )
 
-                        if recv_ret.returncode != 0:
-                            err = recv_ret.stderr.decode(errors="surrogateescape")
-                            if recv_ret.stderr.endswith(self._OUT_OF_SPACE_SUFFIX):
-                                err = (
-                                    f"Receive failed. Subvol of "
-                                    f"{estimated_fs_bytes} bytes did not fit "
-                                    f"into loopback of {fs_bytes} bytes: {err}"
-                                )
-
-                            raise UserError(err)
+                    raise UserError(err)
 
                 # Mark as read-write for potential future operations.
                 subvol_path_src = receive_dir / subvol.path().basename()
