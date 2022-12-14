@@ -156,13 +156,9 @@ def _ensure_clean_sh_exists(
                 echo "Cleansing with Buck..."
                 pushd {buck_cell_root} >/dev/null
                 {buck_cmd} clean
-                popd >/dev/null
 
-                # Now it is safe to unmount and remove
                 echo "Removing Btrfs Build Volume..."
-                sudo umount -l "{artifacts_dir}/volume" || true
-                rm -f "{artifacts_dir}/image.btrfs"
-
+                {buck_cmd} run //antlir:delete-subvolume-recursive -- "{artifacts_dir}/volume"
             """
             )
             + textwrap.dedent(
