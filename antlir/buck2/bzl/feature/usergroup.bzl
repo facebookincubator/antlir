@@ -61,9 +61,7 @@ def user_to_json(
         primary_group: str.type,
         supplementary_groups: [str.type],
         shell: str.type,
-        comment: [str.type, None],
-        sources: {str.type: "artifact"},
-        deps: {str.type: "dependency"}) -> {str.type: ""}:
+        comment: [str.type, None]) -> {str.type: ""}:
     return {
         "comment": comment,
         "home_dir": home_dir,
@@ -76,9 +74,7 @@ def user_to_json(
 
 def group_to_json(
         groupname: str.type,
-        gid: [int.type, None],
-        sources: {str.type: "artifact"},
-        deps: {str.type: "dependency"}) -> {str.type: ""}:
+        gid: [int.type, None]) -> {str.type: ""}:
     return {
         "gid": gid,
         "name": groupname,

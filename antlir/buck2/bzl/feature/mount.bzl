@@ -49,7 +49,6 @@ def mount_to_json(
         source_kind: _source_kind.type,
         is_directory: [bool.type, None],
         host_source: [str.type, None],
-        sources: {str.type: "artifact"},
         deps: {str.type: "dependency"}) -> {str.type: ""}:
     if source_kind == "layer":
         source = deps.pop("source")
@@ -57,19 +56,17 @@ def mount_to_json(
         if not default_mountpoint and not mountpoint:
             fail("mountpoint is required if source does not have a default mountpoint")
         return {
-            "layer": source.label.raw_target(),
-            "mount_config": None,
-            "mountpoint": mountpoint or default_mountpoint,
+            "layer": {
+                "mountpoint": mountpoint or default_mountpoint,
+                "src": source.label.raw_target(),
+            },
         }
     elif source_kind == "host":
         return {
-            "mount_config": {
-                "build_source": {
-                    "source": host_source,
-                    "type": "host",
-                },
-                "default_mountpoint": mountpoint,
+            "host": {
                 "is_directory": is_directory,
+                "mountpoint": mountpoint,
+                "src": host_source,
             },
         }
     else:

@@ -51,10 +51,17 @@ added to the `_feature_to_json` map in this file.
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:flatten.bzl", "flatten")
+load(":clone.bzl", "clone_to_json")
+load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
 load(":install.bzl", "install_to_json")
+load(":meta_kv.bzl", "meta_remove_to_json", "meta_store_to_json")
 load(":mount.bzl", "mount_to_json")
+load(":remove.bzl", "remove_to_json")
+load(":requires.bzl", "requires_to_json")
 load(":rpms.bzl", "rpms_to_json")
+load(":symlink.bzl", "symlink_to_json")
+load(":tarball.bzl", "tarball_to_json")
 load(":usergroup.bzl", "group_to_json", "user_to_json", "usermod_to_json")
 
 Features = transitive_set()
@@ -73,10 +80,18 @@ FeatureInfo = provider(fields = [
 ])
 
 _feature_to_json = {
+    "clone": clone_to_json,
+    "ensure_dirs_exist": ensure_dirs_exist_to_json,
     "group": group_to_json,
     "install": install_to_json,
+    "meta_key_value_remove": meta_remove_to_json,
+    "meta_key_value_store": meta_store_to_json,
     "mount": mount_to_json,
+    "remove": remove_to_json,
+    "requires": requires_to_json,
     "rpm": rpms_to_json,
+    "symlink": symlink_to_json,
+    "tarball": tarball_to_json,
     "user": user_to_json,
     "usermod": usermod_to_json,
 }
@@ -93,8 +108,15 @@ def _impl(ctx: "context") -> ["provider"]:
         for dep in feature_deps.values():
             inline_deps.extend(dep[DefaultInfo].default_outputs)
 
-        feature_json = _feature_to_json[inline.feature_type](sources = feature_sources, deps = feature_deps, **inline.kwargs)
+        to_json_kwargs = inline.kwargs
+        if feature_sources:
+            to_json_kwargs["sources"] = feature_sources
+        if feature_deps:
+            to_json_kwargs["deps"] = feature_deps
+
+        feature_json = _feature_to_json[inline.feature_type](**to_json_kwargs)
         feature_json["__feature_type"] = inline.feature_type
+        feature_json["__label"] = ctx.label
         inline_features.append(feature_json)
     json_out = ctx.actions.write_json("features.json", inline_features)
 
