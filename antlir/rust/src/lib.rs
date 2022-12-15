@@ -5,9 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-// antlir macros disallow unused crate dependencies to stop the linter from
-// complaining, but this is always added to python modules
-use cpython as _;
 use pyo3::prelude::*;
 
 /// Register a Rust module as a Python submodule. The Rust module must provide a
