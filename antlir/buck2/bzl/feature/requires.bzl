@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":feature_info.bzl", "InlineFeatureInfo")
+
 def requires(
         *,
         files: [str.type] = [],
@@ -20,9 +22,7 @@ def requires(
 def requires_to_json(
         files: [str.type],
         users: [str.type],
-        groups: [str.type],
-        sources: {str.type: "artifact"},
-        deps: {str.type: "dependency"}) -> {str.type: ""}:
+        groups: [str.type]) -> {str.type: ""}:
     return {
         "files": files,
         "groups": groups,

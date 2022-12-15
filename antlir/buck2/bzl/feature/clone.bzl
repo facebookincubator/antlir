@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":feature_info.bzl", "InlineFeatureInfo")
+
 def clone(
         *,
         src_layer: str.type,
@@ -35,7 +37,6 @@ def clone_to_json(
         dst_path: str.type,
         omit_outer_dir: bool.type,
         pre_existing_dest: bool.type,
-        sources: {str.type: "artifact"},
         deps: {str.type: "dependency"}) -> {str.type: ""}:
     return {
         "dest": dst_path,

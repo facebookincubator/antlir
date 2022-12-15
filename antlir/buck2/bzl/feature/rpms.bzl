@@ -90,8 +90,7 @@ def rpms_to_json(
         rpm: str.type,
         flavors_specified: bool.type,
         flavors_to_allow_all_versions: [str.type],
-        sources: {str.type: "artifact"},
-        deps: {str.type: "dependency"}) -> {str.type: ""}:
+        sources: {str.type: "artifact"}) -> {str.type: ""}:
     name = rpm
     source = sources.pop("source", None)
     if source:

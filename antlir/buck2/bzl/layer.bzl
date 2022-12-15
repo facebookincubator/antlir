@@ -47,9 +47,10 @@ _layer = rule(
 def layer(
         *,
         name: str.type,
-        # Accept features as a mix of target labels, inline features or lists of
-        # the same. Add more levels of nesting as necessary
-        features: [["InlineFeatureInfo", str.type, ["InlineFeatureInfo"]]],
+        # Features does not have a direct type hint, but it is still validated
+        # by a type hint inside feature.bzl. Feature targets or
+        # InlineFeatureInfo providers are accepted, at any level of nesting
+        features = [],
         **kwargs):
     feature_target = name + "--features"
     feature(

@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":feature_info.bzl", "InlineFeatureInfo")
+
 def remove(
         *,
         path: str.type,
@@ -17,9 +19,7 @@ def remove(
 
 def remove_to_json(
         path: str.type,
-        must_exist: bool.type,
-        sources: {str.type: "artifact"},
-        deps: {str.type: "dependency"}) -> {str.type: ""}:
+        must_exist: bool.type) -> {str.type: ""}:
     return {
         "must_exist": must_exist,
         "path": path,
