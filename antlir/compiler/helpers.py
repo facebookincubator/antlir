@@ -14,13 +14,14 @@ from antlir.compiler.dep_graph import DependencyGraph, ImageItem
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.phases_provide import PhasesProvideItem
 from antlir.config import repo_config
+from antlir.fs_utils import MehStr
 from antlir.nspawn_in_subvol.args import new_nspawn_opts
 from antlir.subvol_utils import Subvol
 
 
 def get_compiler_nspawn_opts(
     *,
-    cmd: Iterable[AnyStr],
+    cmd: Iterable[MehStr],
     build_appliance: Subvol,
     rw_bindmounts: Iterable[Tuple[AnyStr, AnyStr]] = (),
 ):

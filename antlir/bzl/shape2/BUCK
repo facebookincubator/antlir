@@ -35,8 +35,7 @@ antlir_tool(
     ],
 )
 
-antlir_tool(
-    rust_binary,
+rust_binary(
     name = "ir2code",
     srcs = ["ir2code.rs"],
     visibility = ["PUBLIC"],
