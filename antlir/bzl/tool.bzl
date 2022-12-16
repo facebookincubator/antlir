@@ -66,8 +66,8 @@ def antlir_tool(rule, name, **kwargs):
         name = name,
         actual = select({
             "DEFAULT": ":{}-rc".format(name),
-            # The cached version is currently x86-only.
-            "{}//cpu:x86_64".format(config.get_config_cell_name()): ":{}-cached".format(name),
+            # The cached version is currently Linux + x86-only.
+            "{}//os:linux-x86_64".format(config.get_config_cell_name()): ":{}-cached".format(name),
         }),
         visibility = visibility,
     )
