@@ -518,6 +518,7 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
                 [
                     "anyhow",
                     "fbthrift",
+                    "pyo3",
                     "serde",
                     "serde_json",
                 ],

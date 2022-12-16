@@ -25,6 +25,12 @@ use pyo3::types::PyString;
 #[repr(transparent)]
 pub struct AntlirPath(PathBuf);
 
+impl AntlirPath {
+    pub fn as_path(&self) -> &Path {
+        &self.0
+    }
+}
+
 impl From<PathBuf> for AntlirPath {
     fn from(p: PathBuf) -> Self {
         Self(p)
