@@ -129,6 +129,7 @@ def fetched_package_layers_from_json_dir_db(
         # differ in other significant ways from fetched layers -- this is
         # entirely up to the fetcher's design, so tread carefully.
         nondeterministic_fs_metadata_suffix = None,
+        in_repo_uuid_suffix = None,
         visibility = None):
     fetcher = _PackageFetcherInfo(**fetcher)
 
@@ -157,6 +158,12 @@ def fetched_package_layers_from_json_dir_db(
                 package = package,
                 print_how_to_fetch_json = print_how_to_fetch_json,
                 fetcher = fetcher,
+                visibility = visibility,
+            )
+        if in_repo_uuid_suffix != None:
+            _in_repo_uuid(
+                name = package + "/" + tag + in_repo_uuid_suffix,
+                print_how_to_fetch_json = print_how_to_fetch_json,
                 visibility = visibility,
             )
 
@@ -291,4 +298,18 @@ def _fetched_package_with_nondeterministic_fs_metadata(
         visibility = get_visibility(visibility),
         antlir_rule = "user-internal",
         labels = ["uses_fbpkg"],
+    )
+
+def _in_repo_uuid(
+        name,
+        print_how_to_fetch_json,
+        visibility):
+    buck_genrule(
+        name = name,
+        bash = "{print_how_to_fetch_json} | jq -r .uuid > $OUT".format(
+            print_how_to_fetch_json = print_how_to_fetch_json,
+        ),
+        type = "in_repo_uuid",
+        visibility = get_visibility(visibility),
+        antlir_rule = "user-internal",
     )
