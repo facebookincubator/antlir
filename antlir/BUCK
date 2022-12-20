@@ -337,6 +337,7 @@ python_library(
     srcs = ["volume_for_repo.py"],
     deps = [
         ":btrfsutil",
+        ":errors",
         ":fs_utils",
         "//antlir/facebook:sudo_error",
     ],
@@ -349,7 +350,10 @@ python_unittest(
         100,
         ":volume_for_repo",
     )],
-    deps = [":volume_for_repo"],
+    deps = [
+        ":volume_for_repo",
+        "//antlir:artifacts_dir",
+    ],
 )
 
 antlir_rust_extension(

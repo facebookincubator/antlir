@@ -7,11 +7,11 @@
 import errno
 import getpass
 import os
-import shutil
 import subprocess
 import sys
 
 from antlir import btrfsutil
+from antlir.errors import InfraError
 
 from antlir.fs_utils import Path
 
@@ -40,32 +40,45 @@ def get_volume_for_current_repo(artifacts_dir: Path):
         raise RuntimeError(f"{artifacts_dir} must exist")
 
     volume_dir = artifacts_dir / VOLUME_DIR
-    if (
-        # Normal case of an image build on a fresh environment, the subvolume
-        # does not exist yet
-        not volume_dir.exists()
-        # This could happen if it was a loopback and it got unmounted for some
-        # reason without having the dir be deleted
-        or not btrfsutil.is_subvolume(volume_dir)
-        # TODO(vmagro) this check can be removed after this commit has been on
-        # master for a while (loopback volume dir will have subvolid=5)
-        or btrfsutil.subvolume_id(volume_dir) == 5
-    ):
-        # TODO(vmagro) this check can be removed after this commit has been on
-        # master for a while
-        if volume_dir.exists():
-            subprocess.run(["sudo", "umount", volume_dir], check=True)
-            # If the user is bouncing around this commit, unmounting the
-            # loopback may result in the subvol we want to use
-            if not btrfsutil.is_subvolume(volume_dir):
-                shutil.rmtree(volume_dir)
-                btrfsutil.create_subvolume(volume_dir)
-        else:
+    if volume_dir.exists():
+        # This could happen if it was a loopback and it got unmounted for
+        # some reason without having the dir be deleted
+        if not btrfsutil.is_subvolume(volume_dir):
             try:
-                btrfsutil.create_subvolume(volume_dir)
-            except btrfsutil.BtrfsUtilError as e:  # pragma: no cover
-                if e.errno != errno.EEXIST:
-                    raise
+                os.rmdir(volume_dir)
+            except OSError as e:
+                raise InfraError(
+                    f"{volume_dir} is not a subvolume, but we couldn't remove"
+                    " it. Please ensure it's empty and remove manually"
+                ) from e
+        # This could happen if the loopback volume is still mounted - the id
+        # will never be 5 if it's just a subvolume on the regular host fs
+        if (
+            btrfsutil.is_subvolume(volume_dir)
+            and btrfsutil.subvolume_id(volume_dir) == 5
+        ):
+            try:
+                subprocess.run(["sudo", "umount", volume_dir], check=True)
+            except subprocess.CalledProcessError as e:
+                raise InfraError(
+                    f"{volume_dir} appears to be a mounted btrfs fs, but"
+                    " unmounting it failed. Please kill whatever is using it"
+                    " and unmount manually"
+                ) from e
+            try:
+                os.rmdir(volume_dir)
+            except OSError as e:
+                raise InfraError(
+                    f"{volume_dir} could not be removed. Please ensure it's"
+                    " empty and remove manually"
+                ) from e
+    # Normal case of an image build on a fresh environment, the subvolume
+    # does not exist yet
+    try:
+        btrfsutil.create_subvolume(volume_dir)
+    except btrfsutil.BtrfsUtilError as e:  # pragma: no cover
+        if e.errno != errno.EEXIST:
+            raise
     # We prefer to have the volume owned by the repo user, instead of root:
     #  - The trusted repo user has to be able to access the built
     #    subvolumes, but nobody else should be able to (they might contain

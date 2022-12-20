@@ -146,6 +146,8 @@ def _ensure_clean_sh_exists(
     with populate_temp_file_and_rename(clean_sh_path, overwrite=True, mode="w") as f:
         # We do not want to remove image_build.log because the potential
         # debugging value far exceeds the disk waste
+        # @oss-disable
+        # @oss-enable cell = "antlir"
         f.write(
             textwrap.dedent(
                 f"""\
@@ -158,7 +160,7 @@ def _ensure_clean_sh_exists(
                 {buck_cmd} clean
 
                 echo "Removing Btrfs Build Volume..."
-                {buck_cmd} run //antlir:delete-subvolume-recursive -- "{artifacts_dir}/volume"
+                {buck_cmd} run {cell}//antlir:delete-subvolume-recursive -- "{artifacts_dir}/volume"
             """
             )
             + textwrap.dedent(
