@@ -29,6 +29,10 @@ use serde::Deserializer;
 pub struct ShapePath(String);
 
 impl ShapePath {
+    pub fn new(p: String) -> Self {
+        Self(p)
+    }
+
     pub fn as_path(&self) -> &Path {
         Path::new(&self.0)
     }
