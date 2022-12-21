@@ -17,6 +17,7 @@ do_not_use_repo_cfg = {
             "vm.rootfs.layer": "//images/base:fedora.vm",
         }.items()
     ]),
+    "buck1_tgts_to_flavors": {},
     "flavor_available": " ".join(["fedora33"]),
     "flavor_default": "fedora33",
     # KEEP THIS DICTIONARY SMALL.
@@ -41,7 +42,6 @@ do_not_use_repo_cfg = {
         "//images/appliance:host-build-appliance__layer-feature",
     ]),
     "host_mounts_for_repo_artifacts": [],
-    "stable_flavors": " ".join(["fedora33", "antlir_test"]),
     # Future: Once we can guarantee `libcap-ng` to be at least 0.8, add
     # this in.
     #

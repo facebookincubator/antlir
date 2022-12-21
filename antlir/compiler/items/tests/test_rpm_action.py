@@ -324,32 +324,15 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             # cheese2 file is still there
             assert os.path.isfile(parent_subvol.path("/rpm_test/cheese2.txt"))
 
-    @with_mocked_temp_volume_dir
-    def test_rpm_action_skip_wrong_flavor(self) -> None:
-        with TempSubvolumes() as temp_subvolumes:
-            src_rpm = Path("/rpm-test-cheese-1-1.rpm")
-            subvol = temp_subvolumes.create("subvol")
-            self._check_rpm_action_item_subvol(
-                subvol,
-                create_rpm_action_item(
-                    source=src_rpm,
-                    action=RpmAction.install,
-                    flavor_to_version_set={
-                        "wrong": BZL_CONST.version_set_allow_all_versions
-                    },
-                ),
-                {},
-            )
-
-    def test_unspecified_rpm_flavor_with_unstable_image_flavor(self) -> None:
+    def test_rpm_action_mismatched_rpm_and_image_flavors(self) -> None:
         # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute
         #  `assertRaisesRegex`.
         with self.assertRaisesRegex(
             RuntimeError,
             (
-                "You must specify the flavor on rpms "
-                "`.*` as your image `fake target` has "
-                "flavor `unstable` which is not a stable flavor."
+                "Rpm installation features for the following rpms "
+                " .* are missing a flavor definitions for:"
+                " .*."
             ),
         ):
             RpmActionItem.get_phase_builder(
@@ -357,7 +340,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                     create_rpm_action_item(
                         name="rpm",
                         action=RpmAction.install,
-                        flavors_specified=False,
                     )
                 ],
                 self._opts(flavor="unstable"),

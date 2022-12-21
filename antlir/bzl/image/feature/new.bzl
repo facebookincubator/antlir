@@ -50,7 +50,7 @@ Read that target's docblock for more info, but in essence, that will:
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
-load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
+load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_names", "flavors_to_structs")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
@@ -163,28 +163,31 @@ def _normalize_feature_and_get_deps(feature, flavors):
     for rpm_item in feature_dict.get("rpms", []):
         flavor_to_version_set = {}
 
-        for flavor, version_set in rpm_item.get("flavor_to_version_set", {}).items():
-            # If flavors are not provided, we are reading the flavor
-            # from the parent layer, so we should include all possible flavors
-            # for the rpm as the final flavor is not known until we are in python.
-            if (
-                not flavors and (
-                    rpm_item.get("flavors_specified") or
-                    flavor in REPO_CFG.stable_flavors
-                )
-            ) or (
-                flavors and flavor in flavor_names
-            ):
+        rpm_item_flavors = rpm_item.get("flavor_to_version_set", {}).keys()
+        for flavor in rpm_item_flavors:
+            version_set = rpm_item.get("flavor_to_version_set", {})[flavor]
+            if not flavor_names:
+                # We don't know the image flavor so include version_sets
+                # for all the flavors defined on the rpm.
+                flavor_to_version_set[flavor] = version_set
+            elif flavor in flavor_names:
+                # only include version_sets for the image flavor
                 flavor_to_version_set[flavor] = version_set
             elif version_set != BZL_CONST.version_set_allow_all_versions:
                 target = extract_tagged_target(version_set)
                 deps.pop(target)
 
         if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM and rpm_item["action"] == "install":
-            fail("Rpm `{}` must have one of the flavors `{}`".format(
-                rpm_item["name"] or rpm_item["source"],
-                flavor_names,
-            ))
+            rpm = rpm_item["name"] or rpm_item["source"]
+            fail(
+                (
+                    "An rpm installation feature has been defined for the" +
+                    " rpm `{}` with the following flavors: {} (via rpm" +
+                    " install or stand alone feature definitions), but has" +
+                    " been included in an image with the following " +
+                    " flavors: {}"
+                ).format(rpm, rpm_item_flavors, flavor_names),
+            )
         rpm_item["flavor_to_version_set"] = flavor_to_version_set
 
     direct_deps = []
@@ -238,10 +241,9 @@ def normalize_features(
     # Skip coverage check for `antlir_test` since it's just for testing purposes and doesn't always
     # need to be covered.
     flavor_names = flavors_to_names(flavors)
-    required_flavors = flavor_names or [flavor for flavor in REPO_CFG.stable_flavors if flavor != "antlir_test"]
-    missing_flavors = [flavor for flavor in required_flavors if flavor not in rpm_install_flavors]
+    missing_flavors = [flavor for flavor in flavor_names if flavor not in rpm_install_flavors]
     if rpm_install_flavors and missing_flavors:
-        fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, required_flavors))
+        fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, flavor_names))
 
     return struct(
         targets = targets,

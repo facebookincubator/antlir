@@ -321,32 +321,18 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
 
     @classmethod
     def get_phase_builder(cls, items: Iterable["RpmActionItem"], layer_opts: LayerOpts):
-        # THIS IGNORES RPMS THAT DON'T HAVE A MATCHING FLAVOR
-        # IN LAYER_OPTS. WE NEED THIS TO ENABLE CROSS FLAVOR MIGRATIONS.
-        matching_flavor_items = []
-        for item in items or []:
-            if layer_opts.flavor in item.flavor_to_version_set:
-                matching_flavor_items.append(item)
-            elif (
-                not item.flavors_specified
-                and layer_opts.flavor not in repo_config().stable_flavors
-            ):
-                unspecified_rpms = ",".join(
-                    [f"{{{item}}}" for item in items if not item.flavors_specified]
-                )
-                raise RuntimeError(
-                    "You must specify the flavor on rpms "
-                    f"`{unspecified_rpms}` as "
-                    f"your image `{layer_opts.layer_target}` "
-                    f"has flavor `{layer_opts.flavor}` which "
-                    "is not a stable flavor."
-                )
-            else:
-                log.info(
-                    f"Rpm {item.name} does not match flavor "
-                    f"{layer_opts.flavor}. Skipping..."
-                )
-        items = matching_flavor_items
+
+        bad_rpms = [
+            item.name
+            for item in items or []
+            if layer_opts.flavor not in item.flavor_to_version_set
+        ]
+        if bad_rpms:
+            raise RuntimeError(
+                "Rpm installation features for the following rpms "
+                f" {bad_rpms} are missing a flavor definitions for:"
+                f" {layer_opts.flavor}."
+            )
 
         # Do as much validation as possible outside of the builder to give
         # fast feedback to the user.

@@ -90,6 +90,7 @@ The consequences of this information hiding are:
 """
 
 load(":compile_image_features.bzl", "compile_image_features")
+load(":flavor_helpers.bzl", "flavor_helpers")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
@@ -125,6 +126,8 @@ def image_layer(
     possible helpers, their respective behaviours, and how to invoke them.
     """
     flavor = flavor_to_struct(flavor)
+    if not flavor and parent_layer:
+        flavor = flavor_helpers.maybe_get_tgt_flavor(parent_layer)
 
     # Build a new layer. It may be empty.
     _make_subvol_cmd, _deps_query = compile_image_features(

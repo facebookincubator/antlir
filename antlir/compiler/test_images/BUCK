@@ -862,6 +862,7 @@ image.layer(
         # NB: `host_{dir,file}_mount` is exercised in test-layer-with-mounts
         feature.layer_mount(":hello_world_base", "/mounted_hello"),
     ] + test_rpms.add(["rpm-test-carrot"]),
+    flavor = "antlir_test",
     # Unlike `hello_world_base`, this checks dynamically generated mount configs
     mount_config = ":turkey_mount_config",
     parent_layer = ":hello_world_base",
@@ -915,6 +916,7 @@ package.new(
 image.layer(
     name = "base_cheese_layer",
     features = test_rpms.add([":rpm-test-cheese-2-1.rpm"]),
+    flavor = "antlir_test",
     parent_layer = ":layer-with-non-default-snapshot-no-rpms",
     visibility = ["//antlir/compiler/..."],
 )
@@ -923,6 +925,7 @@ image.layer(
 image.layer(
     name = "older_cheese_layer",
     features = test_rpms.add([":rpm-test-cheese-1-1.rpm"]),
+    flavor = "antlir_test",
     parent_layer = ":base_cheese_layer",
     visibility = ["//antlir/compiler/..."],
 )
@@ -931,6 +934,7 @@ image.layer(
 image.layer(
     name = "newer_cheese_layer",
     features = test_rpms.add([":rpm-test-cheese-3-1.rpm"]),
+    flavor = "antlir_test",
     parent_layer = ":base_cheese_layer",
     visibility = ["//antlir/compiler/..."],
 )
@@ -939,6 +943,7 @@ image.layer(
 image.layer(
     name = "reinstall_cheese_layer",
     features = test_rpms.add([":rpm-test-cheese-2-1.rpm"]),
+    flavor = "antlir_test",
     parent_layer = ":base_cheese_layer",
     visibility = ["//antlir/compiler/..."],
 )

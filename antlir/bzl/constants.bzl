@@ -10,6 +10,7 @@
 # could easily move everything into the struct.
 #
 load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
+load("//antlir/bzl:flavor_alias.bzl", "alias_flavor")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
@@ -84,6 +85,12 @@ def _get_artifact_key_to_path():
         fail("antlir.artifact_key_to_path is a space-separated dict: k1 v1 k2 v2")
 
     return key_to_path
+
+def _get_buck1_tgts_to_flavors():
+    return {
+        tgt: alias_flavor(flavor, required = True)
+        for tgt, flavor in do_not_use_repo_cfg.get("buck1_tgts_to_flavors").items()
+    }
 
 def new_nevra(**kwargs):
     return nevra_t(**kwargs)
@@ -207,7 +214,6 @@ REPO_CFG = repo_config_t(
         "host_mounts_for_repo_artifacts",
     ),
     flavor_available = _get_str_list_cfg("flavor_available"),
-    stable_flavors = _get_str_list_cfg("stable_flavors"),
     flavor_default = _get_str_cfg("flavor_default"),
     flavor_to_config = _get_flavor_to_config(),
     ba_to_flavor = _get_str_cfg("ba_to_flavor"),
@@ -224,4 +230,5 @@ REPO_CFG = repo_config_t(
         for t in _get_str_list_cfg("rc_targets", separator = ",")
     ],
     flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
+    buck1_tgts_to_flavors = _get_buck1_tgts_to_flavors(),
 )
