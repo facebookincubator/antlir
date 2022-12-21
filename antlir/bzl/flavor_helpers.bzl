@@ -14,6 +14,7 @@ load(":flavor_alias.bzl", "alias_flavor")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
+load(":target_helpers.bzl", "normalize_target")
 
 def _get_flavor_config(flavor, flavor_config_override):
     """
@@ -94,7 +95,15 @@ def _get_rpm_installers_supported():
     return rpm_installers.keys()
 
 def _get_flavor_from_build_appliance(build_appliance):
+    build_appliance = normalize_target(build_appliance)
     return REPO_CFG.ba_to_flavor[build_appliance]
+
+def _maybe_get_tgt_flavor(tgt):
+    tgt = normalize_target(tgt)
+    return REPO_CFG.ba_to_flavor.get(
+        tgt,
+        REPO_CFG.buck1_tgts_to_flavors.get(tgt, None),
+    )
 
 flavor_helpers = struct(
     get_build_appliance = _get_build_appliance,
@@ -104,4 +113,5 @@ flavor_helpers = struct(
     get_flavor_config = _get_flavor_config,
     get_rpm_installer = _get_rpm_installer,
     get_rpm_installers_supported = _get_rpm_installers_supported,
+    maybe_get_tgt_flavor = _maybe_get_tgt_flavor,
 )

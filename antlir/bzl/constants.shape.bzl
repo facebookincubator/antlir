@@ -82,12 +82,12 @@ repo_config_t = shape.shape(
     # Compared to `flavor_to_config`, it does not contain the
     # `antlir_test` flavor, which shouldn't be always defined.
     flavor_available = shape.list(str),
-    stable_flavors = shape.list(str),
     flavor_default = str,
     flavor_to_config = shape.dict(str, flavor_config_t),
     ba_to_flavor = shape.dict(str, str),
     antlir_linux_flavor = str,
     antlir_cell_name = str,
     rc_targets = shape.list(str),
+    buck1_tgts_to_flavors = shape.dict(str, str),
     flavor_alias = shape.field(str, optional = True),
 )

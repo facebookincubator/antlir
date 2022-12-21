@@ -32,7 +32,6 @@ class RepoConfigTestCase(unittest.TestCase):
                 "test.artifact": "//build:artifact",
             },
             "flavor_available": ["no_vset", "with_vset"],
-            "stable_flavors": [],
             "flavor_default": "no_vset",
             "antlir_linux_flavor": "no_vset",
             "antlir_cell_name": "test",
@@ -51,6 +50,7 @@ class RepoConfigTestCase(unittest.TestCase):
             "ba_to_flavor": {"ba": "flavor"},
             "host_mounts_allowed_in_targets": [],
             "host_mounts_for_repo_artifacts": [],
+            "buck1_tgts_to_flavors": [],
         }
         defaults.update(kwargs)
         return base_repo_config_t(**defaults).dict()
