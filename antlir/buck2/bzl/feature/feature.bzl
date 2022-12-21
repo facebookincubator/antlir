@@ -64,7 +64,10 @@ load(":symlink.bzl", "symlink_to_json")
 load(":tarball.bzl", "tarball_to_json")
 load(":usergroup.bzl", "group_to_json", "user_to_json", "usermod_to_json")
 
-Features = transitive_set()
+def _project_as_feature_json(value: ["artifact"]):
+    return cmd_args(value, format = "--feature-json={}")
+
+Features = transitive_set(args_projections = {"feature_json": _project_as_feature_json})
 FeatureDeps = transitive_set()
 
 FeatureInfo = provider(fields = [
@@ -137,12 +140,25 @@ def _impl(ctx: "context") -> ["provider"]:
         children = [f[FeatureInfo].deps for f in ctx.attrs.feature_targets],
     )
 
+    buck1_features_json = ctx.actions.declare_output("buck1/features.json")
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs.translate_features[RunInfo],
+            "--label=" + str(ctx.label),
+            json_files.project_as_args("feature_json"),
+            "--output",
+            buck1_features_json.as_output(),
+        ),
+        category = "translate_features_to_buck1",
+    )
     return [
         FeatureInfo(
             json_files = json_files,
             deps = deps,
         ),
-        DefaultInfo(default_outputs = [json_out]),
+        DefaultInfo(default_outputs = [json_out], sub_targets = {
+            "buck1/features.json": [DefaultInfo(default_outputs = [buck1_features_json])],
+        }),
     ]
 
 _feature = rule(
@@ -166,6 +182,7 @@ _feature = rule(
         "inline_features_deps": attrs.dict(attrs.string(), attrs.dict(attrs.string(), attrs.dep())),
         # Map "feature key" -> "feature sources"
         "inline_features_sources": attrs.dict(attrs.string(), attrs.dict(attrs.string(), attrs.source())),
+        "translate_features": attrs.default_only(attrs.exec_dep(default = "//antlir/buck2/translate_features:translate-features")),
     },
 )
 
