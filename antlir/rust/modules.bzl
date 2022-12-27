@@ -1,4 +1,4 @@
-# @generated SignedSource<<1ab0c378cceadc779a229bbf087971f8>>
+# @generated SignedSource<<f3425213fac1f8444a0f2a299c42b8df>>
 extension_rust_targets = [
     "//antlir/buck/targets_and_outputs:targets_and_outputs_py-rust",
     "//antlir/compiler/rust:compiler-rust",

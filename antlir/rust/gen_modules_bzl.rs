@@ -46,10 +46,10 @@ fn gen_modules_bzl() -> Result<String> {
         .map(|l| format!("//{}:{}", l.package(), l.name()))
         .collect();
     let mut bzl = String::new();
-    writeln!(
+    write!(
         bzl,
         "extension_rust_targets = {}",
-        serde_starlark::to_string_pretty(&target_list).context("while serializing target list")?
+        serde_starlark::to_string(&target_list).context("while serializing target list")?
     )?;
 
     let mut target_modules = BTreeMap::new();
@@ -67,7 +67,7 @@ fn gen_modules_bzl() -> Result<String> {
     write!(
         bzl,
         "extension_modules = {}",
-        serde_starlark::to_string_pretty(&target_modules)
+        serde_starlark::to_string(&target_modules)
             .context("while serializing target modules map")?
     )?;
     Ok(signedsource::sign_with_generated_header(
