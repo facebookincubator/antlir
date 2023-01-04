@@ -33,7 +33,7 @@ def with_mock_plugins(method):
         ) as _, unittest.mock.patch.object(
             repo_plugins,
             "RepoServers",
-            side_effect=lambda x, y, z: (
+            side_effect=lambda x, y: (
                 "fake_repo_server",
                 x,
             ),

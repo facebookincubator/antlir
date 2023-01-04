@@ -50,5 +50,4 @@ container_opts_t = shape.shape(
     # mode.
     internal_only_bind_repo_ro = shape.field(bool, default = False),
     internal_only_bind_artifacts_dir_rw = shape.field(bool, default = False),
-    apt_repo_snapshot = shape.field(shape.list(str), default = []),
 )

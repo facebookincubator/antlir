@@ -133,7 +133,6 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
         });
         let obj = v.as_object_mut().expect("this is an object");
         let key = match &new.data {
-            features::Data::Apt(_) => "apt",
             features::Data::Clone(_) => "clone",
             features::Data::EnsureDirsExist(_) => "ensure_subdirs_exist",
             features::Data::Install(_) => "install_files",
@@ -152,7 +151,6 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::GroupAdd(_) => "groups",
         };
         let data: serde_json::Value = match new.data {
-            features::Data::Apt(x) => serde_json::to_value(apt::apt_action_item_t::from_new(x)),
             features::Data::Clone(x) => serde_json::to_value(clone::clone_t::from_new(x)),
             features::Data::EnsureDirsExist(x) => {
                 serde_json::to_value(ensure_subdirs_exist::ensure_subdirs_exist_t::from_new(x))
@@ -188,24 +186,6 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
         .expect("json conversion will not fail");
         obj.insert(key.to_owned(), vec![data].into());
         v
-    }
-}
-
-impl FromNew<features::apt::Apt> for apt::apt_action_item_t {
-    fn from_new(new: features::apt::Apt) -> Self {
-        Self {
-            action: new.action.into_shape(),
-            package_names: new.packages,
-        }
-    }
-}
-
-impl FromNew<features::apt::Action> for apt::action_t {
-    fn from_new(new: features::apt::Action) -> Self {
-        match new {
-            features::apt::Action::Install => Self::INSTALL,
-            features::apt::Action::RemoveIfExists => Self::REMOVE_IF_EXISTS,
-        }
     }
 }
 
@@ -345,7 +325,6 @@ impl FromNew<features::rpms::Rpm<'_>> for rpms::rpm_action_item_t {
                 .into_iter()
                 .map(|(k, v)| (k, v.into_shape()))
                 .collect(),
-            flavors_specified: new.flavors_specified,
         }
     }
 }

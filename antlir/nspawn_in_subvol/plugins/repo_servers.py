@@ -40,10 +40,6 @@ from antlir.nspawn_in_subvol.plugin_hooks import (
 )
 
 from antlir.nspawn_in_subvol.plugins import NspawnPlugin
-from antlir.nspawn_in_subvol.plugins.launch_apt_proxy_server import (
-    DEB_PROXY_SERVER_PORT,
-    launch_apt_proxy_server_for_netns,
-)
 from antlir.nspawn_in_subvol.plugins.launch_proxy_server import (
     launch_proxy_server_for_netns,
 )
@@ -173,11 +169,9 @@ class RepoServers(NspawnPlugin):
         self,
         serve_rpm_snapshots: Iterable[Path],
         proxy_server_config: Optional[proxy_server_config_t] = None,
-        run_apt_proxy: bool = False,
     ) -> None:
         self._serve_rpm_snapshots = serve_rpm_snapshots
         self._proxy_server_config = proxy_server_config
-        self._run_apt_proxy: bool = run_apt_proxy
         if proxy_server_config:
             self._run_proxy_server = True
 
@@ -272,9 +266,6 @@ class RepoServers(NspawnPlugin):
             if self._proxy_server_config:
                 ns_count += 1
 
-            if self._run_apt_proxy:
-                ns_count += 1  # pragma: no cover
-
             ns_sockets_pool = create_sockets_inside_netns(container_pid, ns_count)
             log.debug(f"Created {ns_count} sockets in {container_pid} ns ")
 
@@ -310,16 +301,6 @@ class RepoServers(NspawnPlugin):
                         proxy_server_config=self._proxy_server_config,
                     )
                 )
-
-            if self._run_apt_proxy:  # pragma: no cover
-                stack.enter_context(
-                    launch_apt_proxy_server_for_netns(
-                        ns_socket=ns_sockets_pool.pop(),
-                        bucket_name="antlir_snapshots",
-                        api_key="antlir_snapshots-key",
-                    )
-                )
-                log.info(f"Started `deb-proxy-server` on port {DEB_PROXY_SERVER_PORT}")
 
             self._container_pid_exfiltrator.send_ready()
             yield popen_res

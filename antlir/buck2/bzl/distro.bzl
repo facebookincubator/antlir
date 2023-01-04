@@ -13,7 +13,7 @@ DistroInfo = provider(fields = {
 })
 
 PackageManagerInfo = provider(fields = {
-    "type": "None, 'dnf' or 'apt'",
+    "type": "None, or 'dnf'",
 })
 
 SnapshotInfo = provider(fields = {

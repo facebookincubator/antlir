@@ -5,7 +5,6 @@
 
 "This provides a more friendly UI to the feature.* macros."
 
-load("//antlir/bzl/image/feature:apt.bzl", "feature_apt_install", "feature_apt_remove_if_exists")
 load("//antlir/bzl/image/feature:clone.bzl", "feature_clone")
 load("//antlir/bzl/image/feature:ensure_dirs_exist.bzl", "feature_ensure_dirs_exist", "feature_ensure_subdirs_exist")
 load("//antlir/bzl/image/feature:install.bzl", "feature_install", "feature_install_buck_runnable")
@@ -36,8 +35,6 @@ feature = struct(
     requires = feature_requires,
     rpms_install = feature_rpms_install,
     rpms_remove_if_exists = feature_rpms_remove_if_exists,
-    apt_install = feature_apt_install,
-    apt_remove = feature_apt_remove_if_exists,
     setup_standard_user = feature_setup_standard_user,
     tarball = feature_tarball,
     user_add = feature_user_add,
