@@ -33,7 +33,6 @@ flavor_config_t = shape.shape(
     build_appliance = shape.field(str, optional = True),
     rpm_installer = shape.field(str, optional = True),
     rpm_repo_snapshot = shape.field(str, optional = True),
-    apt_repo_snapshot = shape.field(shape.list(str), optional = True),
     version_set_path = shape.field(str, optional = True),
     rpm_version_set_overrides = shape.field(shape.list(nevra_t), optional = True),
     unsafe_bypass_flavor_check = shape.field(bool, default = False),

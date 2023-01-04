@@ -419,38 +419,3 @@ image_python_unittest(
         "//antlir/compiler/items:phases_provide",
     ],
 )
-
-image.layer(
-    name = "test_apt_layer",
-    features = [
-        feature.layer_mount(
-            TEST_IMAGE_PREFIX + "debian-test-layer",
-            "/base_layer",
-        ),
-        feature.layer_mount(
-            TEST_IMAGE_PREFIX + "install_packages",
-            "/packages_installed_layer",
-        ),
-        feature.layer_mount(
-            TEST_IMAGE_PREFIX + "remove_package",
-            "/packages_removed_layer",
-        ),
-    ],
-    parent_layer = ":test_compiler_item_layer",
-)
-
-image_python_unittest(
-    name = "test-apt-action",
-    srcs = ["test_apt_actions.py"],
-    container_opts = {
-        "apt_repo_snapshot": ["SHA256:76dc38718ac048eed7e6324928909e5317018dbf109c48973dc35a8b6b6aaf66 main restricted universe multiverse"],
-        "attach_antlir_dir": False,
-    },
-    hostname = BZL_CONST.hostname_for_compiler_in_ba,
-    layer = ":test_apt_layer",
-    run_as_user = "root",
-    deps = [
-        ":common_testlib",
-        "//antlir/compiler/items:apt_action",
-    ],
-)

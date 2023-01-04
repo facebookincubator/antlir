@@ -91,8 +91,6 @@ class PhaseOrder(enum.Enum):
     RPM_REMOVE = enum.auto()
     RPM_INSTALL = enum.auto()
 
-    APT_REMOVE = enum.auto()
-    APT_INSTALL = enum.auto()
     # Phase order for Facebook-only items. In this future this should be
     # removed in favor of enforcing custom layers for those features.
     FACEBOOK = enum.auto()
@@ -122,7 +120,6 @@ class LayerOpts(NamedTuple):
     target_to_path: Mapping[str, Path]
     subvolumes_dir: Path
     version_set_override: Optional[Path]
-    apt_repo_snapshot: Tuple[str, ...] = ()
     debug: bool = False
     allowed_host_mount_targets: FrozenSet[str] = frozenset()
     unsafe_bypass_flavor_check: bool = False

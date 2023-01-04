@@ -99,7 +99,6 @@ def new_flavor_config(
         name,
         build_appliance,
         rpm_installer,
-        apt_repo_snapshot = [],
         rpm_repo_snapshot = None,
         rpm_version_set_overrides = None,
         version_set_path = BZL_CONST.version_set_allow_all_versions,
@@ -158,7 +157,6 @@ def new_flavor_config(
         rpm_installer = rpm_installer,
         rpm_repo_snapshot = rpm_repo_snapshot,
         rpm_version_set_overrides = rpm_version_set_overrides,
-        apt_repo_snapshot = apt_repo_snapshot,
         version_set_path = version_set_path,
         unsafe_bypass_flavor_check = unsafe_bypass_flavor_check,
     )

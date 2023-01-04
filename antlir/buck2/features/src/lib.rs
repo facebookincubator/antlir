@@ -9,7 +9,6 @@ use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub mod apt;
 pub mod clone;
 pub mod ensure_dirs_exist;
 pub mod install;
@@ -40,7 +39,6 @@ pub struct Feature<'a> {
     bound(deserialize = "'de: 'a")
 )]
 pub enum Data<'a> {
-    Apt(apt::Apt),
     Clone(clone::Clone<'a>),
     EnsureDirsExist(ensure_dirs_exist::EnsureDirsExist),
     Install(install::Install),

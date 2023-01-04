@@ -9,7 +9,6 @@ import json
 from typing import Any, Iterable, Mapping, NamedTuple, Optional, Union
 
 from antlir.common import get_logger
-from antlir.compiler.items.apt_action import AptActionItems
 from antlir.compiler.items.clone import CloneItem
 from antlir.compiler.items.common import image_source_item, LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import ensure_subdirs_exist_factory
@@ -128,7 +127,6 @@ class ItemFactory:
             "rpms": self._image_sourcify(
                 lambda **kwargs: RpmActionItem(**kwargs, layer_opts=layer_opts)
             ),
-            "apt": AptActionItems,
             "symlinks_to_dirs": SymlinkToDirItem,
             "symlinks_to_files": SymlinkToFileItem,
             "tarballs": self._image_sourcify(TarballItem),

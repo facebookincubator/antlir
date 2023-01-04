@@ -14,7 +14,6 @@ load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 TOOLS = {
     target: target.replace("//", "/").replace(":", "/")
     for target in (
-        config.get_antlir_cell_name() + "//antlir/debian:apt-proxy",
         config.get_antlir_cell_name() + "//antlir/bzl/shape2:bzl2ir",
     )
 }
