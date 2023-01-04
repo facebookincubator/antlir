@@ -40,13 +40,15 @@ def _enum(*values):
     if is_buck2():
         return native.enum(*values)
 
-    def _values():
-        return list(values)
+    values = list(values)
 
-    return struct(
-        values = _values,
-        type = "enum",
-    )
+    # TODO(T139523690)
+    def _buck1_enum(arg):
+        if arg not in values:
+            fail("'{}' not in '{}'".format(arg, values))
+        return arg
+
+    return _buck1_enum
 
 def _union(*types):
     if len(types) <= 1:
