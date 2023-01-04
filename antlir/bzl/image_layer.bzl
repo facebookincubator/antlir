@@ -90,19 +90,23 @@ The consequences of this information hiding are:
 """
 
 load(":compile_image_features.bzl", "compile_image_features")
+load(":flavor.shape.bzl", "flavor_t")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
+load(":types.bzl", "types")
+
+types.lint_noop(flavor_t)
 
 def image_layer(
-        name,
-        parent_layer = None,
+        name: types.str,
+        parent_layer: types.optional(types.label) = None,
         features = None,
-        extra_deps = None,
-        flavor = None,
-        flavor_config_override = None,
-        antlir_rule = "user-internal",
+        extra_deps: types.optional(types.list(types.label)) = None,
+        flavor: types.optional(types.union(types.str, types.shape(flavor_t))) = None,
+        flavor_config_override: types.optional(types.struct) = None,
+        antlir_rule: types.union(types.antlir_rule.type, types.str) = types.antlir_rule("user-internal"),
         **image_layer_kwargs):
     """
     Arguments
@@ -144,6 +148,6 @@ def image_layer(
         _layer_name = name,
         _make_subvol_cmd = _make_subvol_cmd,
         _deps_query = _deps_query,
-        antlir_rule = antlir_rule,
+        antlir_rule = types.antlir_rule(antlir_rule) if types.is_string(antlir_rule) else antlir_rule,
         **image_layer_kwargs
     )
