@@ -384,6 +384,13 @@ def _make_image_source_item(
     if source is None:
         return item_cls(**kwargs, source=None)
 
+    # TODO(T139523690) on buck2, this branch will always be taken, so the other
+    # code exists only for buck1
+    if bool(source.get("path")) and not (
+        bool(source.get("source")) or bool(source.get("layer"))
+    ):
+        return item_cls(**kwargs, source=source.get("path"))
+
     assert 1 == (+bool(source.get("source")) + bool(source.get("layer"))), source
 
     # pyre-fixme[16]: `Mapping` has no attribute `pop`.

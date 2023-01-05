@@ -14,6 +14,8 @@ pub mod ensure_dirs_exist;
 pub mod install;
 pub mod meta_kv;
 pub mod mount;
+pub mod parent_layer;
+pub mod receive_sendstream;
 pub mod remove;
 pub mod requires;
 pub mod rpms;
@@ -44,9 +46,11 @@ pub enum Data<'a> {
     Install(install::Install),
     Meta(meta_kv::Meta),
     Mount(mount::Mount<'a>),
+    ParentLayer(parent_layer::ParentLayer<'a>),
+    ReceiveSendstream(receive_sendstream::ReceiveSendstream),
     Remove(remove::Remove),
     Requires(requires::Requires),
-    Rpm(rpms::Rpm<'a>),
+    Rpm(rpms::Rpm),
     EnsureFileSymlink(symlink::Symlink),
     EnsureDirSymlink(symlink::Symlink),
     Tarball(tarball::Tarball),

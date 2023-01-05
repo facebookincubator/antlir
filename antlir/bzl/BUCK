@@ -22,6 +22,11 @@ shape.impl(
     deps = [":container_opts.shape"],
 )
 
+shape.impl(
+    name = "from_package.shape",
+    deps = ["//antlir/bzl:target_tagger.shape"],
+)
+
 export_file(name = "shape.bzl")
 
 export_file(name = "stat.bzl")
