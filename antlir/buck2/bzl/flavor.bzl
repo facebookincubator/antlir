@@ -27,7 +27,7 @@ def _flavor_impl(ctx: "context") -> ["provider"]:
 flavor = rule(
     impl = _flavor_impl,
     attrs = {
-        "build_appliance": attrs.option(attrs.dep(providers = [BuildApplianceInfo])),
+        "build_appliance": attrs.option(attrs.dep(providers = [BuildApplianceInfo]), default = None),
         "distro": attrs.dep(providers = [DistroInfo]),
     },
 )
