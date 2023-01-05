@@ -8,6 +8,7 @@
 use std::ffi::OsString;
 use std::io::Write as _;
 use std::os::unix::fs::DirBuilderExt;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -66,19 +67,28 @@ struct Generic {
 }
 
 #[derive(Debug, Clone)]
-struct WrappedEnv {
+struct WrappedEnv<'a> {
     subvolumes_dir: PathBuf,
+    out: &'a Path,
+    tmp_dir: &'a Path,
 }
 
-impl IntoIterator for WrappedEnv {
+impl<'a> IntoIterator for WrappedEnv<'a> {
     type Item = (&'static str, OsString);
     type IntoIter = <Vec<(&'static str, OsString)> as IntoIterator>::IntoIter;
 
     #[deny(unused_variables)]
     fn into_iter(self) -> Self::IntoIter {
-        let WrappedEnv { subvolumes_dir } = self;
+        let WrappedEnv {
+            subvolumes_dir,
+            out,
+            tmp_dir,
+        } = self;
         vec![
             ("SUBVOLUMES_DIR", subvolumes_dir.into()),
+            ("OUT", out.into()),
+            ("TMP", tmp_dir.into()),
+            ("TMPDIR", tmp_dir.into()),
             ("ANTLIR_DEBUG", "1".into()),
         ]
         .into_iter()
@@ -135,7 +145,11 @@ fn main() -> Result<()> {
 
     match args.subcommand {
         Subcommand::Generic(generic) => {
-            let wrapped_env = WrappedEnv { subvolumes_dir };
+            let wrapped_env = WrappedEnv {
+                subvolumes_dir,
+                out: &args.out,
+                tmp_dir: &args.tmp_dir,
+            };
 
             let wrapped_out = Command::new(&generic.wrapped_cmd)
                 .args(generic.wrapped_args)

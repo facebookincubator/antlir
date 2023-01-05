@@ -141,6 +141,8 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
                 "remove_meta_key_value_store"
             }
             features::Data::Mount(_) => "mounts",
+            features::Data::ParentLayer(_) => "parent_layer",
+            features::Data::ReceiveSendstream(_) => "layer_from_package",
             features::Data::Remove(_) => "remove_paths",
             features::Data::Requires(_) => "requires",
             features::Data::Rpm(_) => "rpms",
@@ -169,6 +171,10 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             }
             features::Data::Mount(features::mount::Mount::Layer(x)) => {
                 serde_json::to_value(serde_json::Value::from_new(x))
+            }
+            features::Data::ParentLayer(x) => serde_json::to_value(serde_json::Value::from_new(x)),
+            features::Data::ReceiveSendstream(x) => {
+                serde_json::to_value(from_package::layer_from_package_t::from_new(x))
             }
             features::Data::Remove(x) => serde_json::to_value(remove::remove_paths_t::from_new(x)),
             features::Data::Requires(x) => serde_json::to_value(requires::requires_t::from_new(x)),
@@ -271,6 +277,29 @@ impl FromNew<features::mount::LayerMount<'_>> for serde_json::Value {
     }
 }
 
+impl FromNew<features::parent_layer::ParentLayer<'_>> for serde_json::Value {
+    fn from_new(new: features::parent_layer::ParentLayer) -> Self {
+        serde_json::json!({
+            "subvol": <BTreeMap::<String, String>>::from_new(new.layer),
+        })
+    }
+}
+
+impl FromNew<features::receive_sendstream::ReceiveSendstream>
+    for from_package::layer_from_package_t
+{
+    fn from_new(new: features::receive_sendstream::ReceiveSendstream) -> Self {
+        Self {
+            source: new.src.into_shape(),
+            format: match new.format {
+                features::receive_sendstream::Format::Sendstream => "sendstream",
+                features::receive_sendstream::Format::SendstreamV2 => "sendstream.v2",
+            }
+            .to_string(),
+        }
+    }
+}
+
 impl FromNew<features::remove::Remove> for remove::remove_paths_t {
     fn from_new(new: features::remove::Remove) -> Self {
         Self {
@@ -299,16 +328,18 @@ impl FromNew<features::rpms::Action> for rpms::action_t {
     }
 }
 
-impl FromNew<features::rpms::VersionSet<'_>> for rpms::version_set_t {
+impl FromNew<features::rpms::VersionSet> for rpms::version_set_t {
     fn from_new(new: features::rpms::VersionSet) -> Self {
         match new {
-            features::rpms::VersionSet::Target(l) => Self::String(l.to_string()),
+            features::rpms::VersionSet::Path(l) => {
+                Self::String(l.to_str().expect("valid utf8").to_owned())
+            }
             features::rpms::VersionSet::Source(m) => Self::Dict_String_To_String(m),
         }
     }
 }
 
-impl FromNew<features::rpms::Rpm<'_>> for rpms::rpm_action_item_t {
+impl FromNew<features::rpms::Rpm> for rpms::rpm_action_item_t {
     fn from_new(new: features::rpms::Rpm) -> Self {
         Self {
             name: match &new.source {

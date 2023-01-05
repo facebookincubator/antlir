@@ -9,7 +9,11 @@ import json
 
 
 def main(stdin, stdout, layer_target) -> None:
-    mount_config = json.load(stdin)
+    stdin = stdin.read().strip()
+    if stdin:
+        mount_config = json.loads(stdin)
+    else:
+        mount_config = {}
 
     for key in ("build_source", "is_directory"):
         if key in mount_config:

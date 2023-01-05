@@ -6,8 +6,8 @@
  */
 
 use std::collections::BTreeMap;
+use std::path::PathBuf;
 
-use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -38,20 +38,17 @@ pub enum Source {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum VersionSet<'a> {
-    #[serde(borrow)]
-    Target(Label<'a>),
+#[serde(untagged)]
+pub enum VersionSet {
+    Path(PathBuf),
     Source(BTreeMap<String, String>),
 }
 
 /// The RPM action format is pretty hairy, clean this up at some point to have a
 /// nicer, more Rusty/safe structure
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Rpm<'a> {
+pub struct Rpm {
     pub action: Action,
     pub source: Source,
-    #[serde(borrow)]
-    pub flavor_to_version_set: BTreeMap<String, VersionSet<'a>>,
-    pub flavors_specified: bool,
+    pub flavor_to_version_set: BTreeMap<String, VersionSet>,
 }

@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":build_appliance.bzl", "BuildApplianceInfo")
 load(":distro.bzl", "DistroInfo")
 
 """
@@ -16,18 +15,26 @@ FlavorInfo = provider(fields = {
 })
 
 def _flavor_impl(ctx: "context") -> ["provider"]:
+    flavor_json = ctx.actions.write_json("flavor.json", {
+        "label": ctx.label,
+    })
+
     return [
         FlavorInfo(
             distro = ctx.attrs.distro,
             build_appliance = ctx.attrs.build_appliance,
         ),
-        DefaultInfo(default_outputs = []),
+        DefaultInfo(default_outputs = [flavor_json]),
     ]
 
 flavor = rule(
     impl = _flavor_impl,
     attrs = {
-        "build_appliance": attrs.option(attrs.dep(providers = [BuildApplianceInfo]), default = None),
+        "build_appliance": attrs.option(attrs.dep(providers = [
+            # this should be BuildApplianceInfo, but not everything is a proper rule yet
+            # load(":build_appliance.bzl", "BuildApplianceInfo")
+            # BuildApplianceInfo
+        ])),
         "distro": attrs.dep(providers = [DistroInfo]),
     },
 )

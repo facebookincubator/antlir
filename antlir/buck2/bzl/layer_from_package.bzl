@@ -3,25 +3,24 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/buck2/bzl:flavor.bzl", "FlavorInfo")
-load("//antlir/buck2/bzl:layer_info.bzl", "LayerInfo")
+load("//antlir/buck2/bzl:layer.bzl", "layer")
+load("//antlir/buck2/bzl/feature:receive_sendstream.bzl", "receive_sendstream")
 
-def _impl(ctx: "context") -> ["provider"]:
-    return [
-        LayerInfo(
-            default_mountpoint = ctx.attrs.default_mountpoint,
-            features = [],
-            flavor = ctx.attrs.flavor,
-        ),
-        DefaultInfo(),
-    ]
-
-layer_from_package = rule(
-    impl = _impl,
-    attrs = {
-        "default_mountpoint": attrs.option(attrs.string()),
-        "flavor": attrs.option(attrs.dep(providers = [FlavorInfo])),
-        "format": attrs.enum(["sendstream", "sendstream.v2"]),
-        "source": attrs.source(),
-    },
-)
+def layer_from_package(
+        *,
+        name: str.type,
+        src: str.type,
+        format: str.type,
+        **kwargs):
+    if "features" in kwargs:
+        fail("'features' not allowed here")
+    layer(
+        name = name,
+        features = [
+            receive_sendstream(
+                src = src,
+                format = format,
+            ),
+        ],
+        **kwargs
+    )

@@ -5,14 +5,13 @@
 
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs")
-load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
-def rpms_install(rpmlist: [str.type], flavors: [[str.type], None] = None):
-    return _build_rpm_rules("install", rpmlist, flavors)
+def rpms_install(rpms: [str.type], flavors: [[str.type], None] = None):
+    return _build_rpm_rules("install", rpms, flavors)
 
-def rpms_remove_if_exists(rpmlist: [str.type], flavors: [[str.type], None] = None):
-    return _build_rpm_rules("remove_if_exists", rpmlist, flavors)
+def rpms_remove_if_exists(rpms: [str.type], flavors: [[str.type], None] = None):
+    return _build_rpm_rules("remove_if_exists", rpms, flavors)
 
 _flavor_to_version_set_prefix = "flavor_to_version_set:"
 _action_enum = enum("install", "remove_if_exists")
@@ -40,21 +39,12 @@ def _rpms(
             "flavors_to_allow_all_versions": [k for k, v in flavor_to_version_set.items() if v == BZL_CONST.version_set_allow_all_versions],
             "rpm": rpm,
         },
-        deps = {},
     )
 
 def _build_rpm_rules(action, rpmlist, flavors):
     flavors = flavors_to_structs(flavors)
     flavors_specified = len(flavors) > 0
     rpms = []
-    if action == "install":
-        rpms.append(_rpms(
-            rpm = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
-            action = "install",
-            flavor_to_version_set = {flavor.name: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
-            flavors_specified = flavors_specified,
-        ))
-
     needs_version_set = (action == "install")
 
     for name_or_source in rpmlist:
@@ -104,10 +94,13 @@ def rpms_to_json(
     for k in flavors_to_allow_all_versions:
         flavor_to_version_set[k] = BZL_CONST.version_set_allow_all_versions
 
+    if source:
+        source = {"source": source}
+    else:
+        source = {"name": name}
     return {
         "action": action,
         "flavor_to_version_set": flavor_to_version_set,
         "flavors_specified": flavors_specified,
-        "name": name,
         "source": source,
     }

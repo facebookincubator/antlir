@@ -57,6 +57,8 @@ load(":feature_info.bzl", "InlineFeatureInfo")
 load(":install.bzl", "install_to_json")
 load(":meta_kv.bzl", "meta_remove_to_json", "meta_store_to_json")
 load(":mount.bzl", "mount_to_json")
+load(":parent_layer.bzl", "parent_layer_to_json")
+load(":receive_sendstream.bzl", "receive_sendstream_to_json")
 load(":remove.bzl", "remove_to_json")
 load(":requires.bzl", "requires_to_json")
 load(":rpms.bzl", "rpms_to_json")
@@ -90,6 +92,8 @@ _feature_to_json = {
     "meta_key_value_remove": meta_remove_to_json,
     "meta_key_value_store": meta_store_to_json,
     "mount": mount_to_json,
+    "parent_layer": parent_layer_to_json,
+    "receive_sendstream": receive_sendstream_to_json,
     "remove": remove_to_json,
     "requires": requires_to_json,
     "rpm": rpms_to_json,
@@ -107,14 +111,16 @@ def _impl(ctx: "context") -> ["provider"]:
         inline = InlineFeatureInfo(**json.decode(inline))
         feature_sources = ctx.attrs.inline_features_sources[key]
         feature_deps = ctx.attrs.inline_features_deps[key]
-        inline_deps.extend(feature_sources.values())
-        for dep in feature_deps.values():
-            inline_deps.extend(dep[DefaultInfo].default_outputs)
+        if feature_sources:
+            inline_deps.extend(feature_sources.values())
+        if feature_deps:
+            for dep in feature_deps.values():
+                inline_deps.extend(dep[DefaultInfo].default_outputs)
 
         to_json_kwargs = inline.kwargs
-        if feature_sources:
+        if feature_sources != None:
             to_json_kwargs["sources"] = feature_sources
-        if feature_deps:
+        if feature_deps != None:
             to_json_kwargs["deps"] = feature_deps
 
         feature_json = _feature_to_json[inline.feature_type](**to_json_kwargs)
@@ -179,9 +185,9 @@ _feature = rule(
         ),
         # Features need a way to coerce strings to sources or dependencies.
         # Map "feature key" -> "feature deps"
-        "inline_features_deps": attrs.dict(attrs.string(), attrs.dict(attrs.string(), attrs.dep())),
+        "inline_features_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.dep()))),
         # Map "feature key" -> "feature sources"
-        "inline_features_sources": attrs.dict(attrs.string(), attrs.dict(attrs.string(), attrs.source())),
+        "inline_features_sources": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.source()))),
         "translate_features": attrs.default_only(attrs.exec_dep(default = "//antlir/buck2/translate_features:translate-features")),
     },
 )
@@ -210,8 +216,8 @@ def feature(
             feature_targets.append(feat)
         else:
             feature_key = _hash_key(feat.kwargs)
-            inline_features_deps[feature_key] = feat.deps or {}
-            inline_features_sources[feature_key] = feat.sources or {}
+            inline_features_deps[feature_key] = feat.deps
+            inline_features_sources[feature_key] = feat.sources
             inline_features[feature_key] = json.encode(feat)
 
     return _feature(

@@ -16,7 +16,12 @@ load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
 
-def _get_flavor_config(flavor, flavor_config_override):
+def _get_flavor_config(
+        flavor,
+        flavor_config_override,
+        # TODO(T139523690) when flavors are always targets, this check will be
+        # completely unnecessary
+        assume_flavor_exists = False):
     """
     Arguments
     - `flavor`: The name of the flavor to fetch the config.
@@ -35,7 +40,8 @@ def _get_flavor_config(flavor, flavor_config_override):
         fail("Please specify the flavor when overriding the flavor config")
 
     flavor = flavor_to_struct(flavor)
-    check_flavor_exists(flavor)
+    if not assume_flavor_exists:
+        check_flavor_exists(flavor)
 
     flavor_config = shape.as_dict_shallow(REPO_CFG.flavor_to_config[flavor.name])
     overrides = structs.to_dict(flavor_config_override) if flavor_config_override else {}

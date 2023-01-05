@@ -29,3 +29,14 @@ class TestLayerMountConfig(unittest.TestCase):
             },
             json.loads(out.getvalue()),
         )
+
+    def test_empty_stdin(self) -> None:
+        out = StringIO()
+        main(StringIO(""), out, "//layer:path")
+        self.assertEqual(
+            {
+                "is_directory": True,
+                "build_source": {"source": "//layer:path", "type": "layer"},
+            },
+            json.loads(out.getvalue()),
+        )

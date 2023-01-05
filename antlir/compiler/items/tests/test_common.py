@@ -51,6 +51,12 @@ class ItemsCommonTestCase(BaseItemTestCase):
         )
         self.assertIsNone(it.source)
         self.assertEqual("meow", it.kitteh)
+        self.assertEqual(
+            image_source_item(FakeImageSourceItem, layer_opts=DUMMY_LAYER_OPTS)(
+                from_target="m", kitteh="meow", source={"path": "path/to/source"}
+            ).source,
+            "path/to/source",
+        )
 
     @with_temp_subvols
     def test_image_source_item_from_layer(self, temp_subvols):
