@@ -235,11 +235,11 @@ _layer = rule(
         # TODO(T139523690) just use 'features' when we kill the legacy buck1
         # inputs the compiler expects
         "buck1_features_json": attrs.source(),
-        "default_mountpoint": attrs.option(attrs.string(), doc = "default mountpoint when used as the source of a layer mount"),
+        "default_mountpoint": attrs.option(attrs.string(), doc = "default mountpoint when used as the source of a layer mount", default = None),
         "features": attrs.dep(providers = [FeatureInfo]),
-        "flavor": attrs.option(attrs.dep(providers = [FlavorInfo])),
+        "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "nspawn_in_subvol_run": attrs.default_only(attrs.exec_dep(default = "//antlir/nspawn_in_subvol:run")),
-        "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo])),
+        "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "runtime": layer_runtime_attr,
         "toolchain": attrs.default_only(attrs.toolchain_dep(default = "//antlir/buck2:toolchain")),
     },
