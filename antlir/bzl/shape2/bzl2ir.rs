@@ -22,6 +22,7 @@ use derive_more::Display;
 use gazebo::any::ProvidesStaticType;
 use serde::Deserialize;
 use slotmap::SlotMap;
+use starlark::collections::SmallMap;
 use starlark::docs::DocItem;
 use starlark::environment::FrozenModule;
 use starlark::environment::Globals;
@@ -36,7 +37,7 @@ use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
 use starlark::values::dict::DictOf;
 use starlark::values::function::NativeFunction;
-use starlark::values::structs::StructGen;
+use starlark::values::structs::AllocStruct;
 use starlark::values::AllocValue;
 use starlark::values::NoSerialize;
 use starlark::values::StarlarkValue;
@@ -280,11 +281,11 @@ fn shape(builder: &mut GlobalsBuilder) {
     fn new<'v>(
         shape: Value<'v>,
         #[starlark(kwargs)] kwargs: DictOf<'v, StringValue<'v>, Value<'v>>,
-    ) -> anyhow::Result<StructGen<'v, Value<'v>>> {
+    ) -> anyhow::Result<AllocStruct<SmallMap<StringValue<'v>, Value<'v>>>> {
         let _ = shape;
         // no need to type-check, since it will already be done at buck parse
         // time, and will also be done when loading the json
-        Ok(StructGen::new(kwargs.to_dict()))
+        Ok(AllocStruct(kwargs.to_dict()))
     }
 
     fn dict<'v>(
