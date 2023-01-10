@@ -10,6 +10,8 @@
 use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::ops::Range;
 
 use once_cell::sync::Lazy;
@@ -46,25 +48,13 @@ pub enum Error {
 
 /// A buck target label. Points to a specific target and is always fully
 /// qualified (aka, with cell name).
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, Eq)]
 pub struct Label<'a> {
     full: Cow<'a, str>,
     cell: Range<usize>,
     package: Range<usize>,
     name: Range<usize>,
     config: Option<Box<Label<'a>>>,
-}
-
-impl<'a> PartialOrd for Label<'a> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.full.partial_cmp(&other.full)
-    }
-}
-
-impl<'a> Ord for Label<'a> {
-    fn cmp(&self, other: &Self) -> Ordering {
-        self.full.cmp(&other.full)
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -150,6 +140,40 @@ impl<'a> Label<'a> {
     pub fn config(&self) -> Option<&Label> {
         self.config.as_deref()
     }
+
+    pub fn as_unconfigured(&self) -> Self {
+        Self {
+            full: self.full.clone(),
+            cell: self.cell.clone(),
+            package: self.package.clone(),
+            name: self.name.clone(),
+            config: None,
+        }
+    }
+}
+
+impl<'a, 'b> PartialEq<Label<'b>> for Label<'a> {
+    fn eq(&self, other: &Label<'b>) -> bool {
+        self.parts() == other.parts()
+    }
+}
+
+impl<'a, 'b> PartialOrd<Label<'b>> for Label<'a> {
+    fn partial_cmp(&self, other: &Label<'b>) -> Option<Ordering> {
+        self.parts().partial_cmp(&other.parts())
+    }
+}
+
+impl<'a> Ord for Label<'a> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.parts().cmp(&other.parts())
+    }
+}
+
+impl<'a> Hash for Label<'a> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.parts().hash(state);
+    }
 }
 
 impl<'a> std::str::FromStr for Label<'a> {
@@ -173,7 +197,20 @@ impl<'a> std::fmt::Debug for Label<'a> {
 
 impl<'a> std::fmt::Display for Label<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.full)
+        match &self.config {
+            Some(cfg) => {
+                write!(
+                    f,
+                    "{}//{}:{} ({cfg})",
+                    self.cell(),
+                    self.package(),
+                    self.name(),
+                )
+            }
+            None => {
+                write!(f, "{}//{}:{}", self.cell(), self.package(), self.name(),)
+            }
+        }
     }
 }
 
@@ -294,6 +331,16 @@ mod tests {
     fn escape() {
         let label: Label = Label::new("abc//path/to/target:label").expect("well-formed");
         assert_eq!("abc--path-to-target:label", label.flat_filename());
+    }
+
+    #[test]
+    fn as_unconfigured() {
+        let label =
+            Label::new("abc//path/to/target:label (config//path/to:config)").expect("well-formed");
+        assert_eq!(
+            "abc//path/to/target:label",
+            label.as_unconfigured().to_string()
+        );
     }
 
     #[test]

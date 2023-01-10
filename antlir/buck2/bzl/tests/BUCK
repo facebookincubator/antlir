@@ -1,0 +1,10 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "query-test",
+    srcs = ["query_test.rs"],
+    deps = [
+        "clap",
+        "//antlir/buck/buck_label:buck_label",
+    ],
+)
