@@ -50,6 +50,7 @@ added to the `_feature_to_json` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/buck2/bzl:flavor.bzl", "FlavorInfo")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
 load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
@@ -86,7 +87,9 @@ FeatureInfo = provider(fields = [
 
 _feature_to_json = {
     "clone": clone_to_json,
+    "ensure_dir_symlink": symlink_to_json,
     "ensure_dirs_exist": ensure_dirs_exist_to_json,
+    "ensure_file_symlink": symlink_to_json,
     "group": group_to_json,
     "install": install_to_json,
     "meta_key_value_remove": meta_remove_to_json,
@@ -97,7 +100,6 @@ _feature_to_json = {
     "remove": remove_to_json,
     "requires": requires_to_json,
     "rpm": rpms_to_json,
-    "symlink": symlink_to_json,
     "tarball": tarball_to_json,
     "user": user_to_json,
     "usermod": usermod_to_json,
@@ -175,6 +177,10 @@ _feature = rule(
         "feature_targets": attrs.list(
             attrs.dep(providers = [FeatureInfo]),
         ),
+        "flavors": attrs.option(attrs.list(
+            attrs.dep(providers = [FlavorInfo]),
+            doc = "Restrict this feature to only layers that have one of these flavors",
+        )),
         # inline features are direct instances of the FeatureInfo provider
         "inline_features": attrs.dict(
             # Unique key for this feature (see _hash_key below)
@@ -194,10 +200,9 @@ _feature = rule(
 
 def feature(
         name: str.type,
-        # accept FeatureInfo providers, string labels of other feature targets or lists of the same
-        # starlark type annotations do not allow for arbitrary levels of
-        # recursion, so just handwrite nesting down to a few levels
-        features: [["InlineFeatureInfo", str.type, ["InlineFeatureInfo"]]],
+        # No type hint here, but it is validated by flatten_features
+        features,
+        flavors = None,
         visibility = None):
     """
     Create a target representing a collection of one or more image features.
@@ -222,6 +227,7 @@ def feature(
 
     return _feature(
         name = name,
+        flavors = flavors,
         feature_targets = feature_targets,
         inline_features = inline_features,
         inline_features_deps = inline_features_deps,

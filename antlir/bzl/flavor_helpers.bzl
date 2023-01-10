@@ -8,6 +8,7 @@ This provides helpers useful for working with flavors. For more
 information check out [the flavor docs](/docs/concepts/rpms/overview).
 """
 
+load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "REPO_CFG", "new_flavor_config")
 load(":flavor_alias.bzl", "alias_flavor")
@@ -72,6 +73,8 @@ def _get_flavor_default():
 
 def _get_antlir_linux_flavor():
     # See the comment above in _get_flavor_default().
+    if buck2_early_adoption.is_early_adopter():
+        return "//antlir/facebook/flavor:centos8"
     return alias_flavor(REPO_CFG.antlir_linux_flavor)
 
 def _get_build_appliance(flavor = None):

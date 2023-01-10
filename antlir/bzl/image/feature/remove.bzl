@@ -3,6 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
+load(
+    "//antlir/buck2/bzl/feature:remove.bzl?v2_only",
+    buck2_remove = "remove",
+)
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":remove.shape.bzl", "remove_paths_t")
 
@@ -19,6 +24,8 @@ not to conflict with each other.
 By default, it is an error if the specified path is missing from the image,
 though this can be avoided by setting `must_exist` to `False`.
     """
+    if buck2_early_adoption.is_early_adopter():
+        return buck2_remove(path = dest, must_exist = must_exist)
     remove_spec = remove_paths_t(
         path = dest,
         must_exist = must_exist,

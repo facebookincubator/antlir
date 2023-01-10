@@ -89,7 +89,7 @@ class InstallFileItem(install_files_t, ImageItem):
     _paths: Iterable[_InstallablePath] = PrivateAttr()
 
     def __init__(self, **kwargs) -> None:
-        source = kwargs["source"]
+        source = Path(kwargs["source"])
         dest = Path(make_path_normal_relative(kwargs.pop("dest")))
 
         # The 3 separate `*_mode` arguments must be set instead of `mode` for

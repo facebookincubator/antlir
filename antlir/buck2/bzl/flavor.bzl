@@ -3,7 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:constants.shape.bzl", "flavor_config_t")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
+load("//antlir/bzl:types.bzl", "types")
 load(":distro.bzl", "DistroInfo")
+
+types.lint_noop(flavor_config_t)
 
 """
 Describe an image flavor. Basically, this is a set of defaults for image builds,
@@ -38,3 +43,11 @@ flavor = rule(
         "distro": attrs.dep(providers = [DistroInfo]),
     },
 )
+
+def flavor_to_config(flavor: ["dependency", str.type]) -> types.shape(flavor_config_t):
+    # TODO(T139523690) this should be coming from the provider
+    if type(flavor) == "dependency":
+        flavor = flavor.label.name
+    if ":" in flavor:
+        _, flavor = flavor.rsplit(":")
+    return flavor_helpers.get_flavor_config(flavor, flavor_config_override = None)

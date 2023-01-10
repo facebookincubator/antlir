@@ -54,6 +54,6 @@ pub enum Data<'a> {
     EnsureFileSymlink(symlink::Symlink),
     EnsureDirSymlink(symlink::Symlink),
     Tarball(tarball::Tarball),
-    UserAdd(usergroup::User),
-    GroupAdd(usergroup::Group),
+    User(usergroup::User),
+    Group(usergroup::Group),
 }
