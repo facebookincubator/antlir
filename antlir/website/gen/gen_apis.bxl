@@ -1,0 +1,33 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+def _internal_rustdoc_url(target: "target_node") -> str.type:
+    lazy = target.attrs_lazy()
+    crate = lazy.get("crate").value()
+    if not crate:
+        crate = target.label.name
+    return "https://www.internalfb.com/intern/rustdoc/{}:{}/{}/index.html".format(
+        target.label.package,
+        target.label.name,
+        crate,
+    )
+
+def _impl(ctx):
+    targets = target_set()
+    for set in ctx.cli_args.set:
+        targets += ctx.cquery().kind("^rust_library$", set)
+    ctx.output.print("---\nid: apis\ntitle: Rustdoc\n---")
+    ctx.output.print("<FbInternalOnly>")
+    for target in targets:
+        ctx.output.print("[{}]({})".format(target.label.raw_target(), _internal_rustdoc_url(target)))
+    ctx.output.print("</FbInternalOnly>")
+    ctx.output.print("<OssOnly>Rustdoc links coming soon</OssOnly>")
+
+gen_apis = bxl(
+    impl = _impl,
+    cli_args = {
+        "set": cli_args.list(cli_args.target_expr()),
+    },
+)
