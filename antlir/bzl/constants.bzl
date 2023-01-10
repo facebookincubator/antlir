@@ -229,4 +229,5 @@ REPO_CFG = repo_config_t(
     ],
     flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
     buck1_tgts_to_flavors = _get_buck1_tgts_to_flavors(),
+    buck2_early_adopter_packages = _get_str_list_cfg("buck2_early_adopter_packages"),
 )

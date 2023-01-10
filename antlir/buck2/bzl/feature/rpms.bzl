@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/buck2/bzl:flavor.bzl", "flavor_to_config")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
-load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def rpms_install(rpms: [str.type], flavors: [[str.type], None] = None):
@@ -42,7 +42,7 @@ def _rpms(
     )
 
 def _build_rpm_rules(action, rpmlist, flavors):
-    flavors = flavors_to_structs(flavors)
+    flavors = [flavor_to_config(f) for f in flavors] if flavors else []
     flavors_specified = len(flavors) > 0
     rpms = []
     needs_version_set = (action == "install")
@@ -53,7 +53,7 @@ def _build_rpm_rules(action, rpmlist, flavors):
             vs_name = name_or_source
 
         flavor_to_version_set = {}
-        for flavor in flavors or flavors_to_structs(REPO_CFG.flavor_to_config.keys()):
+        for flavor in flavors or [flavor_to_config(f) for f in REPO_CFG.flavor_to_config.keys()]:
             vs_path_prefix = REPO_CFG.flavor_to_config[flavor.name].version_set_path
 
             # We just add the version set for user given flavors, even

@@ -149,8 +149,8 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::EnsureFileSymlink(_) => "symlinks_to_files",
             features::Data::EnsureDirSymlink(_) => "symlinks_to_dirs",
             features::Data::Tarball(_) => "tarballs",
-            features::Data::UserAdd(_) => "users",
-            features::Data::GroupAdd(_) => "groups",
+            features::Data::User(_) => "users",
+            features::Data::Group(_) => "groups",
         };
         let data: serde_json::Value = match new.data {
             features::Data::Clone(x) => serde_json::to_value(clone::clone_t::from_new(x)),
@@ -186,8 +186,8 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
                 serde_json::to_value(symlink::symlink_t::from_new(x))
             }
             features::Data::Tarball(x) => serde_json::to_value(tarball::tarball_t::from_new(x)),
-            features::Data::UserAdd(x) => serde_json::to_value(usergroup::user_t::from_new(x)),
-            features::Data::GroupAdd(x) => serde_json::to_value(usergroup::group_t::from_new(x)),
+            features::Data::User(x) => serde_json::to_value(usergroup::user_t::from_new(x)),
+            features::Data::Group(x) => serde_json::to_value(usergroup::group_t::from_new(x)),
         }
         .expect("json conversion will not fail");
         obj.insert(key.to_owned(), vec![data].into());

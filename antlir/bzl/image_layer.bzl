@@ -89,6 +89,8 @@ The consequences of this information hiding are:
         that metadata during compilation.
 """
 
+load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
+load("//antlir/buck2/bzl:layer.bzl?v2_only", buck2_layer = "layer")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":flavor.shape.bzl", "flavor_t")
 load(":flavor_helpers.bzl", "flavor_helpers")
@@ -129,6 +131,20 @@ def image_layer(
     [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
     possible helpers, their respective behaviours, and how to invoke them.
     """
+    if buck2_early_adoption.is_early_adopter():
+        buck2_layer(
+            **buck2_early_adoption.massage_kwargs(
+                name = name,
+                parent_layer = parent_layer,
+                features = features,
+                extra_deps = extra_deps,
+                flavor = flavor,
+                flavor_config_override = flavor_config_override,
+                **image_layer_kwargs
+            )
+        )
+        return
+
     flavor = flavor_to_struct(flavor)
     if not flavor and parent_layer:
         flavor = flavor_helpers.maybe_get_tgt_flavor(parent_layer)

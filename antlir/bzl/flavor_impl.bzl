@@ -7,6 +7,7 @@ load(":constants.bzl", "REPO_CFG")
 load(":flavor.shape.bzl", "flavor_t")
 load(":flavor_alias.bzl", "alias_flavor")
 load(":target_helpers.bzl", "normalize_target")
+load(":types.bzl", "types")
 
 _flavor_t_type = type(flavor_t(name = "", unaliased_name = ""))
 
@@ -24,7 +25,10 @@ def flavor_to_struct(flavor):
     if not flavor:
         return flavor
 
-    if type(flavor) == type(""):
+    if types.is_string(flavor):
+        # TODO(T139523690) flavors should all be targets
+        if ":" in flavor:
+            _, flavor = flavor.rsplit(":")
         flavor = flavor_t(
             name = alias_flavor(flavor),
             unaliased_name = flavor,
