@@ -7,10 +7,10 @@ load("//antlir/buck2/bzl:flavor.bzl", "flavor_to_config")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
-def rpms_install(rpms: [str.type], flavors: [[str.type], None] = None):
+def rpms_install(*, rpms: [str.type], flavors: [[str.type], None] = None):
     return _build_rpm_rules("install", rpms, flavors)
 
-def rpms_remove_if_exists(rpms: [str.type], flavors: [[str.type], None] = None):
+def rpms_remove_if_exists(*, rpms: [str.type], flavors: [[str.type], None] = None):
     return _build_rpm_rules("remove_if_exists", rpms, flavors)
 
 _flavor_to_version_set_prefix = "flavor_to_version_set:"
@@ -42,8 +42,12 @@ def _rpms(
     )
 
 def _build_rpm_rules(action, rpmlist, flavors):
-    flavors = [flavor_to_config(f) for f in flavors] if flavors else []
-    flavors_specified = len(flavors) > 0
+    if flavors:
+        flavors_specified = len(flavors) > 0
+    else:
+        flavors_specified = False
+        flavors = REPO_CFG.flavor_to_config.keys()
+    flavors = [flavor_to_config(f) for f in flavors]
     rpms = []
     needs_version_set = (action == "install")
 
@@ -53,7 +57,7 @@ def _build_rpm_rules(action, rpmlist, flavors):
             vs_name = name_or_source
 
         flavor_to_version_set = {}
-        for flavor in flavors or [flavor_to_config(f) for f in REPO_CFG.flavor_to_config.keys()]:
+        for flavor in flavors:
             vs_path_prefix = REPO_CFG.flavor_to_config[flavor.name].version_set_path
 
             # We just add the version set for user given flavors, even
