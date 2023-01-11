@@ -39,7 +39,7 @@ flavor = rule(
             # this should be BuildApplianceInfo, but not everything is a proper rule yet
             # load(":build_appliance.bzl", "BuildApplianceInfo")
             # BuildApplianceInfo
-        ])),
+        ]), default = None),
         "distro": attrs.dep(providers = [DistroInfo]),
     },
 )
