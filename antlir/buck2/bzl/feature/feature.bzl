@@ -179,8 +179,7 @@ _feature = rule(
         ),
         "flavors": attrs.option(attrs.list(
             attrs.dep(providers = [FlavorInfo]),
-            doc = "Restrict this feature to only layers that have one of these flavors",
-        )),
+        ), doc = "Restrict this feature to only layers that have one of these flavors", default = None),
         # inline features are direct instances of the FeatureInfo provider
         "inline_features": attrs.dict(
             # Unique key for this feature (see _hash_key below)
