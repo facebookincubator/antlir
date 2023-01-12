@@ -4,7 +4,9 @@ rust_library(
     name = "features",
     srcs = glob(["src/**/*.rs"]),
     deps = [
+        "derivative",
         "serde",
         "//antlir/buck/buck_label:buck_label",
+        "//antlir/bzl:container_opts.shape-rust",
     ],
 )

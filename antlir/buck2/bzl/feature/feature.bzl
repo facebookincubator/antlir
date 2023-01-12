@@ -55,6 +55,7 @@ load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
 load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
+load(":genrule.bzl", "genrule_to_json")
 load(":install.bzl", "install_to_json")
 load(":meta_kv.bzl", "meta_remove_to_json", "meta_store_to_json")
 load(":mount.bzl", "mount_to_json")
@@ -90,6 +91,7 @@ _feature_to_json = {
     "ensure_dir_symlink": symlink_to_json,
     "ensure_dirs_exist": ensure_dirs_exist_to_json,
     "ensure_file_symlink": symlink_to_json,
+    "genrule": genrule_to_json,
     "group": group_to_json,
     "install": install_to_json,
     "meta_key_value_remove": meta_remove_to_json,

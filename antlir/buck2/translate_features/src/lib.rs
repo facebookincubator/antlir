@@ -135,6 +135,7 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
         let key = match &new.data {
             features::Data::Clone(_) => "clone",
             features::Data::EnsureDirsExist(_) => "ensure_subdirs_exist",
+            features::Data::Genrule(_) => "genrule_layer",
             features::Data::Install(_) => "install_files",
             features::Data::Meta(features::meta_kv::Meta::Store(_)) => "meta_key_value_store",
             features::Data::Meta(features::meta_kv::Meta::Remove(_)) => {
@@ -156,6 +157,9 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::Clone(x) => serde_json::to_value(clone::clone_t::from_new(x)),
             features::Data::EnsureDirsExist(x) => {
                 serde_json::to_value(ensure_subdirs_exist::ensure_subdirs_exist_t::from_new(x))
+            }
+            features::Data::Genrule(x) => {
+                serde_json::to_value(genrule_layer::genrule_layer_t::from_new(x))
             }
             features::Data::Install(x) => {
                 serde_json::to_value(install::install_files_t::from_new(x))
@@ -217,6 +221,18 @@ impl FromNew<features::ensure_dirs_exist::EnsureDirsExist>
             mode: new.mode.0.into(),
             user: new.user.into_shape(),
             group: new.group.into_shape(),
+        }
+    }
+}
+
+impl FromNew<features::genrule::Genrule> for genrule_layer::genrule_layer_t {
+    fn from_new(new: features::genrule::Genrule) -> Self {
+        Self {
+            cmd: new.cmd,
+            user: new.user,
+            container_opts: new.container_opts,
+            bind_repo_ro: new.bind_repo_ro,
+            boot: new.boot,
         }
     }
 }

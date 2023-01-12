@@ -20,12 +20,18 @@ def _is_early_adopter():
             return True
     return False
 
+# these kwargs existed because of limitations in buck1, and we don't need to
+# carry them forward
+_drop_legacy_kwargs = (
+    "antlir_rule",
+)
+
 # remove kwargs that are None, and remove shape.DEFAULT_VALUE
 def _massage_kwargs(**kwargs) -> {str.type: ""}:
     return {
         k: v
         for k, v in kwargs.items()
-        if v != None and v != shape.DEFAULT_VALUE
+        if v != None and v != shape.DEFAULT_VALUE and k not in _drop_legacy_kwargs
     }
 
 buck2_early_adoption = struct(

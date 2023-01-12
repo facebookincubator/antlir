@@ -5,6 +5,8 @@
 
 "See the docs in antlir/website/docs/genrule-layer.md"
 
+load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
+load("//antlir/buck2/bzl:genrule_layer.bzl?v2_only", buck2_genrule_layer = "genrule_layer")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -105,6 +107,23 @@ Optional arguments:
     - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
         for supported, but less commonly used, kwargs.
     """
+    if buck2_early_adoption.is_early_adopter():
+        buck2_genrule_layer(
+            **buck2_early_adoption.massage_kwargs(
+                name = name,
+                cmd = cmd,
+                user = user,
+                parent_layer = parent_layer,
+                flavor = flavor,
+                flavor_config_override = flavor_config_override,
+                container_opts = container_opts,
+                bind_repo_ro = bind_repo_ro,
+                boot = boot,
+                **image_layer_kwargs
+            )
+        )
+        return
+
     flavor = flavor_to_struct(flavor)
     container_opts = normalize_container_opts(container_opts)
 
