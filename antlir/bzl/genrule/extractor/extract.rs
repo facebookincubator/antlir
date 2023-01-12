@@ -106,6 +106,13 @@ fn ensure_usr<P: AsRef<Path>>(path: P) -> PathBuf {
 
 impl Binary {
     pub fn new(root: PathBuf, src: PathBuf, dst: PathBuf) -> Result<Self> {
+        // Set a default interpreter to use when looking at things that do not
+        // have an interpreter, like libraries.
+        #[cfg(target_arch = "x86_64")]
+        let interp = "/usr/lib64/ld-linux-x86-64.so.2";
+        #[cfg(target_arch = "aarch64")]
+        let interp = "/lib/ld-linux-aarch64.so.1";
+
         let bytes =
             std::fs::read(&src).with_context(|| format!("failed to load binary '{:?}'", &src))?;
 
@@ -117,8 +124,11 @@ impl Binary {
                 // interpreter. However, this may be omitted (as is the case in
                 // some of the libraries we explicitly extract), in which case
                 // we can just use a sensible default.
-                warn!(LOGGER, "no interpreter found for {:?}, using default '/usr/lib64/ld-linux-x86-64.so.2'", &src);
-                "/usr/lib64/ld-linux-x86-64.so.2"
+                warn!(
+                    LOGGER,
+                    "no interpreter found for {:?}, using default '{:?}'", &src, &interp
+                );
+                interp
             })
             .into();
 
