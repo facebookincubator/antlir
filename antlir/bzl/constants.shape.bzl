@@ -38,6 +38,11 @@ flavor_config_t = shape.shape(
     unsafe_bypass_flavor_check = shape.field(bool, default = False),
 )
 
+buck2_early_adoption_t = shape.shape(
+    include = shape.list(str),
+    exclude = shape.list(str),
+)
+
 #
 # These are repo-specific configuration keys, which can be overridden via
 # the Buck CLI for debugging / development purposes.
@@ -89,5 +94,5 @@ repo_config_t = shape.shape(
     rc_targets = shape.list(str),
     buck1_tgts_to_flavors = shape.dict(str, str),
     flavor_alias = shape.field(str, optional = True),
-    buck2_early_adopter_packages = shape.list(str),
+    buck2_early_adoption = buck2_early_adoption_t,
 )

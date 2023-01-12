@@ -13,9 +13,14 @@ def _is_early_adopter():
     if not is_buck2():
         return False
     current_package = native.package_name()
-    if current_package in REPO_CFG.buck2_early_adopter_packages:
+    if current_package in REPO_CFG.buck2_early_adoption.exclude:
+        return False
+    for package in REPO_CFG.buck2_early_adoption.exclude:
+        if current_package.startswith(package + "/"):
+            return False
+    if current_package in REPO_CFG.buck2_early_adoption.include:
         return True
-    for package in REPO_CFG.buck2_early_adopter_packages:
+    for package in REPO_CFG.buck2_early_adoption.include:
         if current_package.startswith(package + "/"):
             return True
     return False
