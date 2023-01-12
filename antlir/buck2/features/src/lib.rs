@@ -11,6 +11,7 @@ use serde::Serialize;
 
 pub mod clone;
 pub mod ensure_dirs_exist;
+pub mod genrule;
 pub mod install;
 pub mod meta_kv;
 pub mod mount;
@@ -42,7 +43,11 @@ pub struct Feature<'a> {
 )]
 pub enum Data<'a> {
     Clone(clone::Clone<'a>),
+    EnsureDirSymlink(symlink::Symlink),
     EnsureDirsExist(ensure_dirs_exist::EnsureDirsExist),
+    EnsureFileSymlink(symlink::Symlink),
+    Genrule(genrule::Genrule),
+    Group(usergroup::Group),
     Install(install::Install),
     Meta(meta_kv::Meta),
     Mount(mount::Mount<'a>),
@@ -51,9 +56,6 @@ pub enum Data<'a> {
     Remove(remove::Remove),
     Requires(requires::Requires),
     Rpm(rpms::Rpm),
-    EnsureFileSymlink(symlink::Symlink),
-    EnsureDirSymlink(symlink::Symlink),
     Tarball(tarball::Tarball),
     User(usergroup::User),
-    Group(usergroup::Group),
 }
