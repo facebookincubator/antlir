@@ -1,14 +1,16 @@
-# @generated SignedSource<<38c9836735b00cac5b5d4e4886312ced>>
+# @generated SignedSource<<e939a91ec88d2ed913191b691fbcbf6b>>
 extension_rust_targets = [
     "//antlir:artifacts_dir_rs-rust",
     "//antlir:find_built_subvol_rs-rust",
     "//antlir:fs_utils_rs-rust",
     "//antlir:signed_source-rust",
+    "//antlir/buck/buck_label:buck_label_py-rust",
     "//antlir/buck/targets_and_outputs:targets_and_outputs_py-rust",
     "//antlir/compiler/rust:compiler-rust",
 ]
 extension_modules = {
     "artifacts_dir_rs": "antlir.artifacts_dir_rs",
+    "buck_label_py": "antlir.buck.buck_label.buck_label_py",
     "compiler": "antlir.compiler.rust.compiler",
     "find_built_subvol_rs": "antlir.find_built_subvol_rs",
     "fs_utils_rs": "antlir.fs_utils_rs",

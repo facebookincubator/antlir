@@ -150,6 +150,16 @@ impl<'a> Label<'a> {
             config: None,
         }
     }
+
+    pub fn to_owned(&self) -> Label<'static> {
+        Label {
+            full: Cow::Owned(self.full.to_string()),
+            cell: self.cell.clone(),
+            package: self.package.clone(),
+            name: self.name.clone(),
+            config: self.config.as_deref().map(|b| Box::new(b.to_owned())),
+        }
+    }
 }
 
 impl<'a, 'b> PartialEq<Label<'b>> for Label<'a> {

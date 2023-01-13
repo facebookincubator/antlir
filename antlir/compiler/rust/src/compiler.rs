@@ -148,8 +148,8 @@ impl Args {
     }
 
     #[getter]
-    fn child_layer_target(&self) -> String {
-        self.layer.child_layer_target.to_string()
+    fn child_layer_target(&self) -> buck_label_py::Label {
+        buck_label_py::Label::new(self.layer.child_layer_target.to_owned())
     }
 
     #[getter]
@@ -170,7 +170,7 @@ impl Args {
     }
 
     #[getter]
-    fn flavor_config<'p>(&self, py: Python<'p>) -> Option<&constants::flavor_config_t> {
+    fn flavor_config<'p>(&self) -> Option<&constants::flavor_config_t> {
         self.layer.flavor_config.as_ref()
     }
 
@@ -198,11 +198,12 @@ impl Args {
     }
 
     #[getter]
-    fn allowed_host_mount_target(&self) -> Vec<String> {
+    fn allowed_host_mount_target(&self) -> Vec<buck_label_py::Label> {
         self.build_settings
             .allowed_host_mount_target
             .iter()
-            .map(Label::to_string)
+            .map(Label::to_owned)
+            .map(buck_label_py::Label::new)
             .collect()
     }
 
