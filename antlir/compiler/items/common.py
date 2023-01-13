@@ -16,11 +16,10 @@ top of `provides.py`.
 """
 import dataclasses
 import enum
-import hashlib
 import inspect
 import os
 import socket
-from typing import AnyStr, FrozenSet, Mapping, NamedTuple, Optional, Set, Tuple
+from typing import AnyStr, FrozenSet, Mapping, NamedTuple, Optional, Set
 
 from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
@@ -340,15 +339,6 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
         subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
 
 
-def _hash_path(path: str, algorithm: str) -> str:
-    "Returns the hex digest"
-    algo = hashlib.new(algorithm)
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            algo.update(chunk)
-    return algo.hexdigest()
-
-
 def _image_source_path(
     layer_opts: LayerOpts,
     *,
@@ -393,19 +383,8 @@ def _make_image_source_item(
 
     assert 1 == (+bool(source.get("source")) + bool(source.get("layer"))), source
 
-    # pyre-fixme[16]: `Mapping` has no attribute `pop`.
-    algo_and_hash = source.pop("content_hash", None)
     # pyre-fixme[6]: Expected `Subvol` for 2nd param but got `str`.
     source_path = _image_source_path(layer_opts, **source)
-    if algo_and_hash:
-        algorithm, expected_hash = algo_and_hash.split(":")
-        # pyre-fixme[6]: Expected `str` for 1st param but got `Path`.
-        actual_hash = _hash_path(source_path, algorithm)
-        if actual_hash != expected_hash:
-            raise AssertionError(
-                f"{item_cls} {kwargs} failed hash validation, got {actual_hash}"
-            )
-
     return item_cls(**kwargs, source=source_path)
 
 

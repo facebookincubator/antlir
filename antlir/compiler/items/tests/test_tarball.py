@@ -11,7 +11,7 @@ import sys
 import tarfile
 import tempfile
 
-from antlir.compiler.items.common import _hash_path, image_source_item
+from antlir.compiler.items.common import image_source_item
 from antlir.compiler.items.tarball import TarballItem
 from antlir.compiler.items.tests.common import (
     BaseItemTestCase,
@@ -39,7 +39,6 @@ def _tarball_item(
         into_dir=into_dir,
         source={
             "source": tarball,
-            "content_hash": "sha256:" + _hash_path(tarball, "sha256"),
         },
         force_root_ownership=force_root_ownership,
     )
@@ -78,18 +77,6 @@ class TarballItemTestCase(BaseItemTestCase):
                     _tarball_item(path, "y"),
                     temp_filesystem_provides("y"),
                     {RequireDirectory(path=Path("y"))},
-                )
-
-            # Test a hash validation failure, follows the item above
-            with self.assertRaisesRegex(AssertionError, "failed hash vali"):
-                image_source_item(TarballItem, layer_opts=DUMMY_LAYER_OPTS)(
-                    from_target="t",
-                    into_dir="y",
-                    source={
-                        "source": tar_path,
-                        "content_hash": "sha256:deadbeef",
-                    },
-                    force_root_ownership=False,
                 )
 
     def test_tarball_command(self):
