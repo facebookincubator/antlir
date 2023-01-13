@@ -286,9 +286,8 @@ fn main() -> Result<()> {
                         "omit_outer_dir": false,
                         "pre_existing_dest": false,
                         "source": {
-                            "content_hash": null,
                             "layer": {
-                                    "__BUCK_LAYER_TARGET": target
+                                "__BUCK_LAYER_TARGET": target
                             },
                             "path": src,
                             "source": null

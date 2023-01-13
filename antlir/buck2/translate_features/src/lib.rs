@@ -66,7 +66,6 @@ impl FromNew<Layer<'_>> for target_tagged_image_source_t {
         Self {
             layer: Some(new.into_shape()),
             source: None,
-            content_hash: None,
             path: None,
         }
     }
@@ -90,7 +89,6 @@ impl FromNew<(Layer<'_>, PathInLayer)> for target_tagged_image_source_t {
         Self {
             layer: Some(layer_label.into_shape()),
             source: None,
-            content_hash: None,
             path: Some(path.into_shape()),
         }
     }
@@ -101,7 +99,6 @@ impl FromNew<BuckOutSource> for target_tagged_image_source_t {
         Self {
             layer: None,
             source: None,
-            content_hash: None,
             path: Some(
                 new.path()
                     .to_str()

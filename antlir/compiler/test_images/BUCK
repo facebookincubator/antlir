@@ -46,12 +46,6 @@ defs.export_file(
     src = "prebuilt_hello_world.tar",
 )
 
-# The rule `hello_world.tar` must be deterministic to be used in images.
-hello_tar_hash = (
-    "sha256:" +
-    "dd83365abc69fe39990096a9396d9d2d6fbf75f849ab1640a10fdf9614d8d03d"
-)
-
 # This layer is currently just a rename of the default build appliance for the
 # purpose of testing the nspawn runtime.  We use the build appliance
 # because we know that it has the necessary tools and doesn't require us
@@ -437,11 +431,7 @@ feature.new(
             flavors = ["antlir_test"],
         ),
         feature.tarball(
-            image.source(
-                # Check hash validation
-                ":hello_world.tar",
-                content_hash = hello_tar_hash,
-            ),
+            ":hello_world.tar",
             "foo/borf",
         ),
         feature.tarball(
@@ -820,10 +810,7 @@ image.layer(
     name = "hello_world_base",
     features = [
         feature.tarball(
-            image.source(
-                content_hash = hello_tar_hash,
-                source = ":hello_world.tar",
-            ),
+            ":hello_world.tar",
             "//",  # Double-slash tests path normalization
         ),
     ],

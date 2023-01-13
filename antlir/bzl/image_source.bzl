@@ -22,7 +22,7 @@ def _image_source_impl(
         # does not contain `:` or `../`.  In that case, an internal
         # `export_file` target will automatically be created and used.
         #
-        # Can be combined with `path` and `content_hash`.
+        # Can be combined with `path`.
         #
         # Internal note: If `source` is a struct, it is interpreted as an
         # already-constructed `image.source`.  Implementers of rules that
@@ -30,19 +30,15 @@ def _image_source_impl(
         # to get easy input validation, and to accept `"//target:path"` to
         # mean `image.source("//target:path")`.
         source = None,
-        # `image.layer` target, conflicts w/ `source`. Combines with `path`
-        # and `content_hash`.
+        # `image.layer` target, conflicts w/ `source`. Can be combined with
+        # `path`.
         layer = None,
         # Relative path within `source` or `layer`.  Ideally the source would
         # only have the one thing that is needed, but we allow `path` to extract
         # an individual output since it's plausible that other parts of those
         # targets' output get used elsewhere.
-        path = None,
-        # A string of the form `<python hashlib algo>:<hex digest>`, which is
-        # asserted to be the hash of the content of the source file.
-        content_hash = None):
+        path = None):
     return image_source_t(
-        content_hash = content_hash,
         layer = layer,
         path = path,
         source = maybe_export_file(source),

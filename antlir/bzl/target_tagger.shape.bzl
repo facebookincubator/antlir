@@ -9,5 +9,4 @@ target_tagged_image_source_t = shape.shape(
     source = shape.field(shape.dict(str, str), optional = True),
     layer = shape.field(shape.dict(str, str), optional = True),
     path = shape.field(str, optional = True),
-    content_hash = shape.field(str, optional = True),
 )
