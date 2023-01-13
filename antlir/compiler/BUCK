@@ -61,6 +61,7 @@ python_library(
         "//antlir:config",
         "//antlir:errors",
         "//antlir:fs_utils",
+        "//antlir/buck/buck_label:buck_label_py",
         "//antlir/bzl:constants.shape-python",
     ],
 )

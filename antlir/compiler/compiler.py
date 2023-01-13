@@ -25,6 +25,7 @@ from contextlib import nullcontext
 from subprocess import CalledProcessError
 from typing import List, Optional
 
+from antlir.buck.buck_label.buck_label_py import Label
 from antlir.bzl.constants import flavor_config_t
 from antlir.cli import normalize_buck_path
 from antlir.compiler.helpers import compile_items_to_subvol, get_compiler_nspawn_opts
@@ -50,9 +51,11 @@ def get_parent_layer_flavor_config(parent_layer: Path) -> flavor_config_t:
     return repo_config().flavor_to_config[flavor]
 
 
-def construct_profile_filename(layer_target: str, is_nested: bool = True) -> Path:
+def construct_profile_filename(layer_target: Label, is_nested: bool = True) -> Path:
     return Path(
-        layer_target.replace("/", "_") + ("_outer" if not is_nested else "") + ".pstat"
+        str(layer_target).replace("/", "_")
+        + ("_outer" if not is_nested else "")
+        + ".pstat"
     )
 
 

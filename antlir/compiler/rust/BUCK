@@ -10,6 +10,7 @@ antlir_rust_extension(
         "serde_json",
         "//antlir:fs_utils_rs-rust",
         "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck/buck_label:buck_label_py-rust",
         "//antlir/buck/targets_and_outputs:targets_and_outputs_py-rust",
         "//antlir/bzl:constants.shape-rust",
         "//antlir/filesystem/absolute_path:absolute_path",

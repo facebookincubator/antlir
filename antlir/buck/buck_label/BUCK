@@ -1,4 +1,5 @@
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_library")
+load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
 rust_library(
     name = "buck_label",
@@ -13,5 +14,25 @@ rust_library(
         "regex",
         "serde",
         "thiserror",
+    ],
+)
+
+antlir_rust_extension(
+    name = "buck_label_py",
+    srcs = ["py.rs"],
+    crate_root = "py.rs",
+    rust_visibility = ["//antlir/..."],
+    typestub = "buck_label.pyi",
+    deps = [
+        ":buck_label",
+        "//antlir/rust/py_utils:py_utils",
+    ],
+)
+
+python_unittest(
+    name = "test-buck_label_py",
+    srcs = ["test.py"],
+    deps = [
+        ":buck_label_py",
     ],
 )
