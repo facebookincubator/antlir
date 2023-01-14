@@ -15,6 +15,7 @@ import os
 from dataclasses import dataclass
 from typing import Iterator, Mapping, NamedTuple, Optional, Union
 
+from antlir.buck.buck_label.buck_label_py import Label
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.common import (
     assert_running_inside_ba,
@@ -110,16 +111,20 @@ class MountItem(ImageItem):
         kwargs["is_directory"] = cfg.pop("is_directory")
 
         kwargs["build_source"] = BuildSource(**cfg.pop("build_source"))
-        if kwargs["build_source"].type == "host" and not (
-            kwargs["from_target"] in layer_opts.allowed_host_mount_targets
-            or kwargs["from_target"].startswith(antlir_dep("compiler/test"))
-        ):
-            raise AssertionError(
-                "Host mounts cause containers to be non-hermetic and "
-                "fragile, so they must be located under one of "
-                f"{layer_opts.allowed_host_mount_targets} "
-                "to enable close review by the owners of `antlir`."
-            )
+        if kwargs["build_source"].type == "host":
+            label = Label(kwargs["from_target"])
+            if (
+                label not in layer_opts.allowed_host_mount_targets
+                and label.unconfigured not in layer_opts.allowed_host_mount_targets
+                and not kwargs["from_target"].startswith(antlir_dep("compiler/test"))
+            ):
+                raise AssertionError(
+                    "Host mounts cause containers to be non-hermetic and "
+                    "fragile, so they must be sourced directly from one of "
+                    f"{set(layer_opts.allowed_host_mount_targets)} "
+                    "to enable close review by the owners of `antlir`. "
+                    f"Offending feature label: {label}"
+                )
 
         # This is supposed to be the run-time equivalent of `build_source`,
         # but for us it's just an opaque JSON blob that the runtime wants.

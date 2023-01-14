@@ -42,7 +42,7 @@ from antlir.tests.subvol_helpers import get_meta_dir_contents
 def _mount_item_new(from_target: str, mount_config: Dict[str, Any]) -> MountItem:
     return MountItem(
         layer_opts=DUMMY_LAYER_OPTS._replace(
-            allowed_host_mount_targets=["//dummy/host_mounts:t"]
+            allowed_host_mount_targets=["foo//dummy/host_mounts:t"]
         ),
         from_target=from_target,
         mountpoint="/lala",
@@ -59,15 +59,15 @@ class MountItemTestCase(BaseItemTestCase):
             "build_source": {"type": "host", "source": "/dev/null"},
         }
 
-        with self.assertRaisesRegex(AssertionError, "must be located under"):
-            _mount_item_new("t", mount_config)
+        with self.assertRaisesRegex(AssertionError, "must be sourced directly"):
+            _mount_item_new("foo//bar:baz", mount_config)
 
         bad_mount_config = mount_config.copy()
         bad_mount_config["runtime_source"] = bad_mount_config["build_source"]
         with self.assertRaisesRegex(AssertionError, "Only `build_source` may "):
-            _mount_item_new("//dummy/host_mounts:t", bad_mount_config)
+            _mount_item_new("foo//dummy/host_mounts:t", bad_mount_config)
 
-        mount_item = _mount_item_new("//dummy/host_mounts:t", mount_config)
+        mount_item = _mount_item_new("foo//dummy/host_mounts:t", mount_config)
 
         with TempSubvolumes() as temp_subvolumes:
             subvol = temp_subvolumes.create("mounter")
