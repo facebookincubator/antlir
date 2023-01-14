@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/buck2/bzl/feature:parent_layer.bzl", parent_layer_feature = "parent_layer")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:query.bzl", "query")
@@ -145,6 +146,7 @@ def _impl(ctx: "context") -> ["provider"]:
                     "--flavor-config={}".format(shell.quote(shape.do_not_cache_me_json(flavor_config))),
                     cmd_args(buck1_targets_and_outputs_json, format = "--targets-and-outputs={}"),
                     cmd_args(ensure_single_output(ctx.attrs.parent_layer), format = "--parent-layer={}") if ctx.attrs.parent_layer else "",
+                    cmd_args(REPO_CFG.host_mounts_allowed_in_targets, prepend = "--allowed-host-mount-target"),
                     '> "$layer_json"',
                 ],
                 delimiter = " \\\n  ",
