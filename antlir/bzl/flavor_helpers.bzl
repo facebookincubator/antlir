@@ -8,6 +8,7 @@ This provides helpers useful for working with flavors. For more
 information check out [the flavor docs](/docs/concepts/rpms/overview).
 """
 
+load("@fbcode_macros//build_defs/lib:arch_utils.bzl", "arch_utils")
 load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "REPO_CFG", "new_flavor_config")
@@ -74,6 +75,8 @@ def _get_flavor_default():
 def _get_antlir_linux_flavor():
     # See the comment above in _get_flavor_default().
     if buck2_early_adoption.is_early_adopter():
+        if arch_utils.default_target_arch() == "aarch64":
+            return "//antlir/facebook/flavor:centos9-aarch64"
         return "//antlir/facebook/flavor:centos8"
     return alias_flavor(REPO_CFG.antlir_linux_flavor)
 
