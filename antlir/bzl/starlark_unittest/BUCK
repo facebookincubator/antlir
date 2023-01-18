@@ -9,7 +9,6 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "gazebo",
         "hex",
         "regex",
         "serde_json",
