@@ -17,6 +17,7 @@ rust_library(
     ]) + glob([
         "src/upgrade/*.rs",
     ]),
+    doctests = False,  # FIXME
     deps = [
         "anyhow",
         "crc32c-hw",

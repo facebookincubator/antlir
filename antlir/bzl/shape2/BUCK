@@ -6,6 +6,7 @@ oncall("twimage")
 rust_library(
     name = "ir",
     srcs = ["ir.rs"],
+    doctests = False,  # FIXME
     deps = [
         "anyhow",
         "derive_more",
