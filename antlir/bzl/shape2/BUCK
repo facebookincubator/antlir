@@ -25,7 +25,6 @@ antlir_tool(
         "allocative",
         "anyhow",
         "derive_more",
-        "gazebo",
         "serde",
         "serde_json",
         "slotmap",
