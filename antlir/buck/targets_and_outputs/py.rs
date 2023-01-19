@@ -20,6 +20,8 @@ use pyo3::exceptions::PyOSError;
 use pyo3::exceptions::PyTypeError;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use pyo3::types::PyDict;
+use pyo3::types::PyString;
 use pyo3::types::PyTuple;
 use serde::Deserialize;
 use serde::Serialize;
@@ -155,6 +157,14 @@ impl TargetsAndOutputs {
             .iter()
             .map(|(label, relpath)| (label.to_string(), self.buck_cell_root.join(relpath).into()))
             .collect()
+    }
+
+    fn __repr__<'p>(&self, py: Python<'p>) -> PyResult<&'p PyString> {
+        let d = PyDict::new(py);
+        for (label, relpath) in self.inner.iter() {
+            d.set_item(label.to_string(), relpath)?;
+        }
+        d.repr()
     }
 
     // Pickling, fun!
