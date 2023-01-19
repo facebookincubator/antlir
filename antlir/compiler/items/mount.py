@@ -90,8 +90,8 @@ class MountItem(ImageItem):
     @classmethod
     def customize_fields(cls, kwargs) -> None:
         layer_opts = kwargs.pop("layer_opts", None)
-        target = kwargs.pop("target")
-        cfg = kwargs.pop("mount_config")
+        target = kwargs.pop("target", None)
+        cfg = kwargs.pop("mount_config", None)
         assert (target is None) ^ (
             cfg is None
         ), f"Exactly one of `target` or `mount_config` must be set in {kwargs}"

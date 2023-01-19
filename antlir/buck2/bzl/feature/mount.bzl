@@ -37,6 +37,7 @@ def host_mount(
             "mountpoint": mountpoint,
             "source_kind": "host",
         },
+        deps = {},
     )
 
 host_file_mount = partial(host_mount, is_directory = False)
@@ -52,12 +53,14 @@ def mount_to_json(
         deps: {str.type: "dependency"}) -> {str.type: ""}:
     if source_kind == "layer":
         source = deps.pop("source")
-        default_mountpoint = source[LayerInfo].default_mountpoint
-        if not default_mountpoint and not mountpoint:
-            fail("mountpoint is required if source does not have a default mountpoint")
+        if not mountpoint:
+            default_mountpoint = source[LayerInfo].default_mountpoint
+            if not default_mountpoint:
+                fail("mountpoint is required if source does not have a default mountpoint")
+            mountpoint = default_mountpoint
         return {
             "layer": {
-                "mountpoint": mountpoint or default_mountpoint,
+                "mountpoint": mountpoint,
                 "src": source.label.raw_target(),
             },
         }

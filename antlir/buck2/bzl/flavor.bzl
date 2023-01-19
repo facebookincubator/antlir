@@ -40,7 +40,7 @@ flavor = rule(
             # load(":build_appliance.bzl", "BuildApplianceInfo")
             # BuildApplianceInfo
         ]), default = None),
-        "distro": attrs.dep(providers = [DistroInfo]),
+        "distro": attrs.option(attrs.dep(providers = [DistroInfo])),
     },
 )
 
@@ -51,3 +51,8 @@ def flavor_to_config(flavor: ["dependency", str.type]) -> types.shape(flavor_con
     if ":" in flavor:
         _, flavor = flavor.rsplit(":")
     return flavor_helpers.get_flavor_config(flavor, flavor_config_override = None)
+
+def coerce_to_flavor_label(flavor: str.type) -> str.type:
+    if ":" not in flavor:
+        return "//antlir/facebook/flavor:" + flavor
+    return flavor

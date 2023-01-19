@@ -78,6 +78,12 @@ pub struct User {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct UserMod {
+    pub username: UserName,
+    pub add_supplementary_groups: Vec<GroupName>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Group {
     pub name: GroupName,
     pub gid: Option<Gid>,

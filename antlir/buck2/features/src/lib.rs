@@ -58,4 +58,5 @@ pub enum Data<'a> {
     Rpm(rpms::Rpm),
     Tarball(tarball::Tarball),
     User(usergroup::User),
+    UserMod(usergroup::UserMod),
 }

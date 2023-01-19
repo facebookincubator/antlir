@@ -9,6 +9,7 @@ load(
     "//antlir/buck2/bzl/feature:usergroup.bzl?v2_only",
     buck2_group_add = "group_add",
     buck2_user_add = "user_add",
+    buck2_usermod = "usermod",
 )
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load("//antlir/bzl:types.bzl", "types")
@@ -108,6 +109,11 @@ def feature_group_add(groupname, gid = None):
     )
 
 def feature_usermod(username: types.str, add_supplementary_groups: types.list(types.str) = []):
+    if buck2_early_adoption.is_early_adopter():
+        return buck2_usermod(
+            username = username,
+            add_supplementary_groups = add_supplementary_groups,
+        )
     usermod = usermod_t(
         username = username,
         add_supplementary_groups = add_supplementary_groups,

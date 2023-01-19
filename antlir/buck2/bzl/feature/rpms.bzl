@@ -46,7 +46,7 @@ def _build_rpm_rules(action, rpmlist, flavors):
         flavors_specified = len(flavors) > 0
     else:
         flavors_specified = False
-        flavors = REPO_CFG.flavor_to_config.keys()
+        flavors = REPO_CFG.flavor_available
     flavors = [flavor_to_config(f) for f in flavors]
     rpms = []
     needs_version_set = (action == "install")
@@ -68,6 +68,13 @@ def _build_rpm_rules(action, rpmlist, flavors):
                 flavor_to_version_set[flavor.name] = vs_target
             else:
                 flavor_to_version_set[flavor.name] = BZL_CONST.version_set_allow_all_versions
+
+            # Antlir creates a number of rpms like 'rpm-test-*' available in a
+            # temporary repository for testing, so remove the version set dep
+            # for those rpms that will never exist
+            if vs_name and vs_name.startswith("rpm-test-"):
+                flavor_to_version_set[flavor.name] = BZL_CONST.version_set_allow_all_versions
+
         rpms.append(
             _rpms(
                 action = action,
