@@ -35,6 +35,7 @@ pub enum Action {
 pub enum Source {
     Path(BuckOutSource),
     Name(String),
+    Source(BuckOutSource),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]

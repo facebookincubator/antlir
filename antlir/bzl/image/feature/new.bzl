@@ -50,6 +50,7 @@ Read that target's docblock for more info, but in essence, that will:
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
+load("//antlir/buck2/bzl:flavor.bzl?v2_only", "coerce_to_flavor_label")
 load(
     "//antlir/buck2/bzl/feature:feature.bzl?v2_only",
     buck2_feature = "feature",
@@ -364,6 +365,8 @@ def feature_new(
         # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None):
     if buck2_early_adoption.is_early_adopter():
+        if flavors:
+            flavors = [coerce_to_flavor_label(f) for f in flavors]
         buck2_feature(
             **buck2_early_adoption.massage_kwargs(
                 name = name,

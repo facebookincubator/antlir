@@ -51,6 +51,7 @@ added to the `_feature_to_json` map in this file.
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/buck2/bzl:flavor.bzl", "FlavorInfo")
+load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
 load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
@@ -104,7 +105,7 @@ _feature_to_json = {
     "rpm": rpms_to_json,
     "tarball": tarball_to_json,
     "user": user_to_json,
-    "usermod": usermod_to_json,
+    "user_mod": usermod_to_json,
 }
 
 def _impl(ctx: "context") -> ["provider"]:
@@ -225,6 +226,13 @@ def feature(
             inline_features_deps[feature_key] = feat.deps
             inline_features_sources[feature_key] = feat.sources
             inline_features[feature_key] = json.encode(feat)
+
+    # TODO(T139523690)
+    native.alias(
+        name = name + BZL_CONST.PRIVATE_feature_suffix,
+        actual = ":" + name + "[buck1/features.json]",
+        visibility = visibility,
+    )
 
     return _feature(
         name = name,

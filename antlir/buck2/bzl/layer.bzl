@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/buck2/bzl/feature:parent_layer.bzl", parent_layer_feature = "parent_layer")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:query.bzl", "query")
@@ -270,6 +270,13 @@ def layer(
         features = features,
     )
     feature_target = ":" + feature_target
+
+    # TODO(T139523690)
+    native.alias(
+        name = name + BZL_CONST.layer_feature_suffix + BZL_CONST.PRIVATE_feature_suffix,
+        actual = feature_target,
+        visibility = kwargs.get("visibility"),
+    )
 
     # TODO(T139523690) when fully on buck2, everything will be a provider and we
     # won't need to query shit like this

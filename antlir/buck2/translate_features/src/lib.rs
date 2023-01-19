@@ -148,6 +148,7 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::EnsureDirSymlink(_) => "symlinks_to_dirs",
             features::Data::Tarball(_) => "tarballs",
             features::Data::User(_) => "users",
+            features::Data::UserMod(_) => "usermod",
             features::Data::Group(_) => "groups",
         };
         let data: serde_json::Value = match new.data {
@@ -188,6 +189,7 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             }
             features::Data::Tarball(x) => serde_json::to_value(tarball::tarball_t::from_new(x)),
             features::Data::User(x) => serde_json::to_value(usergroup::user_t::from_new(x)),
+            features::Data::UserMod(x) => serde_json::to_value(usergroup::usermod_t::from_new(x)),
             features::Data::Group(x) => serde_json::to_value(usergroup::group_t::from_new(x)),
         }
         .expect("json conversion will not fail");
@@ -356,11 +358,13 @@ impl FromNew<features::rpms::Rpm> for rpms::rpm_action_item_t {
     fn from_new(new: features::rpms::Rpm) -> Self {
         Self {
             name: match &new.source {
-                features::rpms::Source::Path(_) => None,
                 features::rpms::Source::Name(name) => Some(name.clone()),
+                _ => None,
             },
             source: match new.source {
-                features::rpms::Source::Path(p) => Some(p.into_shape()),
+                features::rpms::Source::Path(p) | features::rpms::Source::Source(p) => {
+                    Some(p.into_shape())
+                }
                 features::rpms::Source::Name(_) => None,
             },
             action: new.action.into_shape(),
@@ -406,6 +410,19 @@ impl FromNew<features::usergroup::User> for usergroup::user_t {
             shell: new.shell.into_shape(),
             home_dir: new.home_dir.into_shape(),
             comment: new.comment,
+        }
+    }
+}
+
+impl FromNew<features::usergroup::UserMod> for usergroup::usermod_t {
+    fn from_new(new: features::usergroup::UserMod) -> Self {
+        Self {
+            username: new.username.into_shape(),
+            add_supplementary_groups: new
+                .add_supplementary_groups
+                .into_iter()
+                .map(|g| g.into_shape())
+                .collect(),
         }
     }
 }
