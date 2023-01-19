@@ -161,3 +161,27 @@ class Test(unittest.TestCase):
         tao = object.__new__(TargetsAndOutputs)
         self.assertIsInstance(tao, TargetsAndOutputs)
         self.assertEquals(0, len(tao))
+
+    def test_repr(self) -> None:
+        """
+        Repr should show a readable representation instead of the useless
+        default pointer address.
+        """
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            (tmpdir / ".buckconfig").touch()
+            tao = TargetsAndOutputs.from_json_str(
+                json.dumps(
+                    {
+                        "metadata": {
+                            "buck_version": 2,
+                            "default_cell": "foo",
+                        },
+                        "targets_and_outputs": {
+                            "foo//path/to:target": "etc/hostname",
+                        },
+                    }
+                ),
+                path_in_repo=tmpdir,
+            )
+            self.assertEqual(repr(tao), "{'foo//path/to:target': 'etc/hostname'}")
