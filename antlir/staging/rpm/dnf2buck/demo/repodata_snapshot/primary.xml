@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xmlns="http://linux.duke.edu/metadata/common" xmlns:rpm="http://linux.duke.edu/metadata/rpm" packages="3">
+<package type="rpm">
+  <name>rpm-test-cheese</name>
+  <arch>x86_64</arch>
+  <version epoch="0" ver="1" rel="1"/>
+  <checksum type="sha256" pkgid="YES">7b4b6b30d786b196f581c81e7a3ff6c074b94a7e9ea83402ce74f7943cfd125f</checksum>
+  <summary>The "cheese" package.</summary>
+  <description></description>
+  <packager></packager>
+  <url></url>
+  <time file="1587085281" build="1587085281"/>
+  <size package="6412" installed="42" archive="428"/>
+  <location href="Packages/7b4b6b30d786b196f581c81e7a3ff6c074b94a7e9ea83402ce74f7943cfd125f/rpm-test-cheese-0:1-1.x86_64.rpm"/>
+  <format>
+    <rpm:license>MIT</rpm:license>
+    <rpm:vendor></rpm:vendor>
+    <rpm:group>Facebook/script</rpm:group>
+    <rpm:buildhost>devbig203.ftw3.facebook.com</rpm:buildhost>
+    <rpm:sourcerpm>rpm-test-cheese-1-1.src.rpm</rpm:sourcerpm>
+    <rpm:header-range start="4504" end="6188"/>
+    <rpm:provides>
+      <rpm:entry name="rpm-test-cheese" flags="EQ" epoch="0" ver="1" rel="1"/>
+      <rpm:entry name="rpm-test-cheese(x86-64)" flags="EQ" epoch="0" ver="1" rel="1"/>
+    </rpm:provides>
+  </format>
+</package>
+<package type="rpm">
+  <name>rpm-test-cheese</name>
+  <arch>x86_64</arch>
+  <version epoch="0" ver="2" rel="1"/>
+  <checksum type="sha256" pkgid="YES">701054221fc91f4d76ab92aeb7613400906e31c6fb4302b0d007c0bda41b35e6</checksum>
+  <summary>The "cheese" package.</summary>
+  <description></description>
+  <packager></packager>
+  <url></url>
+  <time file="1587085326" build="1587085326"/>
+  <size package="6412" installed="45" archive="432"/>
+  <location href="Packages/701054221fc91f4d76ab92aeb7613400906e31c6fb4302b0d007c0bda41b35e6/rpm-test-cheese-0:2-1.x86_64.rpm"/>
+  <format>
+    <rpm:license>MIT</rpm:license>
+    <rpm:vendor></rpm:vendor>
+    <rpm:group>Facebook/script</rpm:group>
+    <rpm:buildhost>devbig203.ftw3.facebook.com</rpm:buildhost>
+    <rpm:sourcerpm>rpm-test-cheese-2-1.src.rpm</rpm:sourcerpm>
+    <rpm:header-range start="4504" end="6188"/>
+    <rpm:provides>
+      <rpm:entry name="rpm-test-cheese" flags="EQ" epoch="0" ver="2" rel="1"/>
+      <rpm:entry name="rpm-test-cheese(x86-64)" flags="EQ" epoch="0" ver="2" rel="1"/>
+    </rpm:provides>
+  </format>
+</package>
+<package type="rpm">
+  <name>rpm-test-cheese</name>
+  <arch>x86_64</arch>
+  <version epoch="0" ver="3" rel="1"/>
+  <checksum type="sha256" pkgid="YES">f15659152f44ca77072c6757d5c8d408eee55921f8e31de6aa57bfb8f60a1594</checksum>
+  <summary>The "cheese" package.</summary>
+  <description></description>
+  <packager></packager>
+  <url></url>
+  <time file="1587085336" build="1587085336"/>
+  <size package="6404" installed="36" archive="420"/>
+  <location href="Packages/f15659152f44ca77072c6757d5c8d408eee55921f8e31de6aa57bfb8f60a1594/rpm-test-cheese-0:3-1.x86_64.rpm"/>
+  <format>
+    <rpm:license>MIT</rpm:license>
+    <rpm:vendor></rpm:vendor>
+    <rpm:group>Facebook/script</rpm:group>
+    <rpm:buildhost>devbig203.ftw3.facebook.com</rpm:buildhost>
+    <rpm:sourcerpm>rpm-test-cheese-3-1.src.rpm</rpm:sourcerpm>
+    <rpm:header-range start="4504" end="6188"/>
+    <rpm:provides>
+      <rpm:entry name="rpm-test-cheese" flags="EQ" epoch="0" ver="3" rel="1"/>
+      <rpm:entry name="rpm-test-cheese(x86-64)" flags="EQ" epoch="0" ver="3" rel="1"/>
+    </rpm:provides>
+  </format>
+</package>
+</metadata>

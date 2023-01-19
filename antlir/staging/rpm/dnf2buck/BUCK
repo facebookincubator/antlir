@@ -1,0 +1,34 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# @noautodeps
+
+load("//antlir/bzl:build_defs.bzl", "python_binary", "third_party")
+
+python_binary(
+    name = "makechunk",
+    srcs = ["makechunk.py"],
+    main_module = "antlir.staging.rpm.dnf2buck.makechunk",
+    deps = third_party.libraries(
+        [
+            "click",
+            "createrepo-c",
+        ],
+        platform = "pypi",
+    ),
+)
+
+python_binary(
+    name = "makerepo",
+    srcs = ["makerepo.py"],
+    main_module = "antlir.staging.rpm.dnf2buck.makerepo",
+    deps = third_party.libraries(
+        [
+            "click",
+            "createrepo-c",
+        ],
+        platform = "pypi",
+    ),
+)

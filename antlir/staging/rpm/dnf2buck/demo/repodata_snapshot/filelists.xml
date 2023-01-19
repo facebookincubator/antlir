@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<filelists xmlns="http://linux.duke.edu/metadata/filelists" packages="3">
+<package pkgid="7b4b6b30d786b196f581c81e7a3ff6c074b94a7e9ea83402ce74f7943cfd125f" name="rpm-test-cheese" arch="x86_64">
+  <version epoch="0" ver="1" rel="1"/>
+  <file type="dir">/rpm_test</file>
+  <file>/rpm_test/cheese1.txt</file>
+</package>
+<package pkgid="701054221fc91f4d76ab92aeb7613400906e31c6fb4302b0d007c0bda41b35e6" name="rpm-test-cheese" arch="x86_64">
+  <version epoch="0" ver="2" rel="1"/>
+  <file type="dir">/rpm_test</file>
+  <file>/rpm_test/cheese2.txt</file>
+</package>
+<package pkgid="f15659152f44ca77072c6757d5c8d408eee55921f8e31de6aa57bfb8f60a1594" name="rpm-test-cheese" arch="x86_64">
+  <version epoch="0" ver="3" rel="1"/>
+  <file type="dir">/rpm_test</file>
+  <file>/rpm_test/cheese3.txt</file>
+</package>
+</filelists>
