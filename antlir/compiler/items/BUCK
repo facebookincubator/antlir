@@ -120,6 +120,7 @@ python_library(
         "//antlir:bzl_const",
         "//antlir:find_built_subvol",
         "//antlir:subvol_utils",
+        "//antlir/buck/buck_label:buck_label_py",
         "//antlir/compiler:requires_provides",
     ],
 )
