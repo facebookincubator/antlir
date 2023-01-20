@@ -176,7 +176,6 @@ def snapshot_repos(
             # This is done outside of the repo snapshot as we only want to
             # perform it upon successful snapshot. It's also a quick operation
             # and thus doesn't benefit from the added complexity of threading
-            # pyre-fixme[16]: `Path` has no attribute `__enter__`.
             with populate_temp_dir_and_rename(
                 dest / "repos" / repo.name, overwrite=True
             ) as td:
@@ -267,7 +266,6 @@ def snapshot_repos_from_args(
     else:  # pragma: no cover
         raise AssertionError(args)
 
-    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(args.snapshot_dir, overwrite=True) as td:
         snapshot_repos(
             dest=td,

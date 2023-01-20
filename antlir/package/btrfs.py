@@ -581,6 +581,8 @@ class BtrfsImage:
                         f"Receiving {subvol.path()} -> " f"{receive_dir}{subvol_name}"
                     )
                     recv_ret = loop_vol.receive(
+                        # pyre-fixme[6]: For 1st param expected `int` but got
+                        #  `_TemporaryFileWrapper[bytes]`.
                         send=sendstream_f,
                         receive_dir=receive_dir,
                     )

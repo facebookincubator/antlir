@@ -411,8 +411,6 @@ def make_repo_steps(
                 prev_path = rpm_to_path.get(rpm)
                 if prev_path and avoid_symlinks:
                     shutil.copy(
-                        # pyre-fixme[6]: Expected `Union[os.PathLike[str], str]`
-                        # 1st param but got `Path`.
                         out_dir / prev_path,
                         package_dir / prev_path.basename(),
                     )

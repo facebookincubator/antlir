@@ -255,7 +255,8 @@ if __name__ == "__main__":  # pragma: no cover
     if args.profile_dir:
         assert pr is not None
         filename = construct_profile_filename(
-            args.child_layer_target, is_nested=args.is_nested
+            args.child_layer_target,
+            is_nested=args.is_nested,
         )
         os.makedirs(args.profile_dir, exist_ok=True)
         pr.dump_stats(args.profile_dir / filename)

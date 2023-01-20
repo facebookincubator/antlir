@@ -58,7 +58,7 @@ def compile_items_to_subvol(
     """
     dep_graph = DependencyGraph(
         iter_items=iter_items,
-        layer_target=layer_opts.layer_target,
+        layer_target=str(layer_opts.layer_target),
     )
     # Creating all the builders up-front lets phases validate their input
     for builder in [
