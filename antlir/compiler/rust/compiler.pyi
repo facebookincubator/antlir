@@ -6,8 +6,8 @@
 
 from typing import Final, List, Mapping, Optional
 
+from antlir.buck.buck_label.buck_label_py import Label
 from antlir.bzl.constants import flavor_config_t
-
 from antlir.fs_utils import Path
 
 class Args:
@@ -15,7 +15,7 @@ class Args:
     profile_dir: Final[Optional[Path]]
     subvolumes_dir: Path
     subvolume_rel_path: Path
-    child_layer_target: str
+    child_layer_target: Label
     child_feature_json: List[Path]
     parent_layer: Final[Optional[Path]]
     flavor_config: Final[Optional[flavor_config_t]]

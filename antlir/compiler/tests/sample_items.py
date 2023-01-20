@@ -6,6 +6,7 @@
 
 import os
 
+from antlir.buck.buck_label.buck_label_py import Label
 from antlir.bzl_const import BZL_CONST
 from antlir.compiler.items.common import LayerOpts
 from antlir.compiler.items.ensure_dirs_exist import EnsureDirsExistItem
@@ -129,7 +130,7 @@ def mangle(feature_target):
 # Shamelessly copied from `compiler/items/tests/common.py` to avoid
 # dependencies.
 DUMMY_LAYER_OPTS = LayerOpts(
-    layer_target="fake target",  # Only used by error messages
+    layer_target=Label("fbcode//path/to/fake:target"),  # Only used by error messages
     build_appliance=None,
     # For a handful of tests, this must be a boolean value so the layer
     # emits it it into /.meta, but the value is not important.

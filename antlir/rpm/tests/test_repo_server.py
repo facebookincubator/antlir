@@ -34,9 +34,9 @@ _FAKE_RPM = Rpm(
     release="not null",
     arch="not null",
     build_timestamp=456,
-    checksum="not null",
-    canonical_checksum="not null",
-    location=None,  # _replaced later
+    checksum=Checksum("un", "used"),
+    canonical_checksum=Checksum("not", "used"),
+    location="to_be_replaced",  # _replaced later
     size=789,
     source_rpm="not null",
 )
@@ -109,6 +109,8 @@ class RepoServerTestCase(unittest.TestCase):
     def _write(self, content: bytes) -> Tuple[str, bytes]:
         with self.storage.writer() as out:
             out.write(content)
+            # pyre-fixme[7]: Expected `Tuple[str, bytes]` but got `Tuple[bytes,
+            #  typing.Any]`.
             return content, out.commit()
 
     def _prep_bad_blob(self, actual_size, expected_size, checksummed_size):

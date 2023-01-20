@@ -165,7 +165,6 @@ def _with_generated_header(contents, how_to_generate) -> str:
 
 
 def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str) -> None:
-    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(path, overwrite=True) as td:
         for package, tag_to_info in db.items():
             os.mkdir(td / package)

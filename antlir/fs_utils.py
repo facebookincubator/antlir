@@ -545,7 +545,9 @@ def create_ro(path, mode):
 
 
 @contextmanager
-def populate_temp_dir_and_rename(dest_path, *, overwrite: bool = False) -> Path:
+def populate_temp_dir_and_rename(
+    dest_path, *, overwrite: bool = False
+) -> Iterator[Path]:
     """
     Returns a Path to a temporary directory. The context block may populate
     this directory, which will then be renamed to `dest_path`, optionally
@@ -565,7 +567,6 @@ def populate_temp_dir_and_rename(dest_path, *, overwrite: bool = False) -> Path:
     base_dir = os.path.dirname(dest_path)
     td = tempfile.mkdtemp(dir=base_dir)
     try:
-        # pyre-fixme[7]: Expected `Path` but got `Generator[Path, None, None]`.
         yield Path(td)
 
         # Delete+rename is racy, but EdenFS lacks RENAME_EXCHANGE (t34057927)

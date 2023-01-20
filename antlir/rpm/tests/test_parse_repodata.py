@@ -69,9 +69,7 @@ class ParseRepodataTestCase(unittest.TestCase):
     def tearDownClass(cls):
         cls.temp_repos_ctx.__exit__(None, None, None)
 
-    def _xml_and_sqlite_primaries(
-        self, repomd: RepoMetadata
-    ) -> Tuple[Repodata, Repodata]:
+    def _xml_and_sqlite_primaries(self, repomd: RepoMetadata) -> Iterator[Repodata]:
         primaries = [
             (rd.is_primary_sqlite(), rd.is_primary_xml(), rd)
             for rd in repomd.repodatas

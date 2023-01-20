@@ -21,9 +21,9 @@ import os
 import socket
 from typing import AnyStr, FrozenSet, Mapping, NamedTuple, Optional, Set
 
+from antlir.buck.buck_label.buck_label_py import Label
 from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
-
 from antlir.compiler.items.mount_utils import mountpoints_from_subvol_meta
 from antlir.config import repo_config
 from antlir.fs_utils import META_BUILD_DIR, META_DIR, META_FLAVOR_FILE, Path
@@ -111,7 +111,7 @@ class PhaseOrder(enum.Enum):
 class LayerOpts(NamedTuple):
     artifacts_may_require_repo: bool
     build_appliance: Optional[Subvol]
-    layer_target: str
+    layer_target: Label
     flavor: str
     # For images installing RPMs, both are required, and set by the flavor.
     rpm_installer: Optional[YumDnf]

@@ -101,6 +101,7 @@ def extract_rpm_manifest(argv) -> None:
     for db_path_src in potential_rpm_db_paths:
         if os.path.exists(db_path_src):
             break
+    # pyre-fixme [61]: Local variable `db_path_src` is undefined, or not always defined
     if not os.path.exists(db_path_src):
         raise ValueError(f"RPM DB paths {potential_rpm_db_paths} do not exist")
     db_path_dst = generate_work_dir()
@@ -115,6 +116,8 @@ def extract_rpm_manifest(argv) -> None:
                 "--xml",
             ],
             layer=ba_layer,
+            # pyre-fixme [61]: Local variable `db_path_src` is undefined, or not always
+            # defined
             bindmount_ro=[(db_path_src, db_path_dst)],
         ),
         PopenArgs(stdout=subprocess.PIPE),

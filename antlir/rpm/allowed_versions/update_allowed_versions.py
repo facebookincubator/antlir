@@ -114,7 +114,6 @@ class _PluginDriver:
         if hasattr(plugin.plugin, "snapshot"):
             plugin_dir = plugin.dir(self._snapshot_root)
             os.makedirs(plugin_dir.dirname(), exist_ok=True)
-            # pyre-fixme[16]: `Path` has no attribute `__enter__`.
             with populate_temp_dir_and_rename(plugin_dir, overwrite=True) as td:
                 await plugin.plugin.snapshot(td)
 
@@ -497,7 +496,6 @@ def update_allowed_versions(args: argparse.Namespace) -> None:
             version_sets,
         )
     log.info(f"XXXvsets {vset_to_vpgroups}")
-    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(args.version_sets_dir, overwrite=True) as td:
         for vset, vpgroups in vset_to_vpgroups.items():
             _save_allowed_versions(

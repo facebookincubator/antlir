@@ -12,8 +12,8 @@ import unittest
 from contextlib import contextmanager
 from unittest import mock
 
+from antlir.buck.buck_label.buck_label_py import Label
 from antlir.compiler.items.common import assert_running_inside_ba, LayerOpts
-
 from antlir.compiler.requires_provides import (
     ProvidesDirectory,
     ProvidesFile,
@@ -33,7 +33,7 @@ render_subvol = render_subvol
 
 DEFAULT_STAT_OPTS = ["--user=root", "--group=root", "--mode=0755"]
 DUMMY_LAYER_OPTS = LayerOpts(
-    layer_target="fake target",  # Only used by error messages
+    layer_target=Label("fbcode//path/to/fake:target"),  # Only used by error messages
     build_appliance=None,
     # For a handful of tests, this must be a boolean value so the layer
     # emits it it into /.meta, but the value is not important.

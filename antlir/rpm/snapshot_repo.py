@@ -65,7 +65,6 @@ def snapshot_repo(argv) -> None:
 
     init_logging(debug=args.debug)
 
-    # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     with populate_temp_dir_and_rename(
         args.snapshot_dir,
         overwrite=True

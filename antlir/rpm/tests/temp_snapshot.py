@@ -46,7 +46,7 @@ def _make_test_yum_dnf_conf(yum_dnf: str, repos_path: Path, gpg_key_path: Path) 
 
 def make_temp_snapshot(
     repos, out_dir, gpg_signing_key, gpg_key_path, gpg_key_allowlist_dir
-) -> Path:
+) -> None:
     "Generates temporary RPM repo snapshots for tests to use as inputs."
     snapshot_dir = out_dir / "temp_snapshot_dir"
     os.mkdir(snapshot_dir)
