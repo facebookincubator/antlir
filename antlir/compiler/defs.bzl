@@ -46,6 +46,7 @@ def image_feature_python_unittest(
         str(int(REPO_CFG.artifacts_require_repo))
 
     deps = (deps or []) + [":sample_items"]
+    kwargs.setdefault("labels", []).append("no_pyre")
 
     # For now cpp_deps is raw buck deps for python_ targets
     cpp_deps = [

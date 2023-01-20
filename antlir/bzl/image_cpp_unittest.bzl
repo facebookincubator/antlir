@@ -48,6 +48,7 @@ def image_cpp_unittest(
         par_style = "zip",
         visibility = visibility,
         antlir_rule = "user-internal",
+        labels = ["no_pyre"],
     )
 
     env = wrapper_props.outer_test_kwargs.pop("env", {})

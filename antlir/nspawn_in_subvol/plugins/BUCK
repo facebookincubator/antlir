@@ -17,6 +17,8 @@ python_library(
 python_library(
     name = "testlib_rpm_base",
     srcs = ["tests/rpm_base.py"],
+    # Important as we're taking a dep on a layer
+    labels = ["no_pyre"],
     resources = {
         layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance",
     },

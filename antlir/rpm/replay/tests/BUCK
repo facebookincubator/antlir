@@ -152,6 +152,7 @@ python_unittest(
         ("non-custom", "//antlir/rpm/replay/tests:non-custom"),
         ("non-custom-remove-paths", "//antlir/rpm/replay/tests:non-custom-remove-paths"),
     ]),
+    labels = ["no_pyre"],
     needed_coverage = [
         (100, "//antlir/rpm/replay:extract_nested_features"),
     ],
