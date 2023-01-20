@@ -13,6 +13,7 @@ import click
 import createrepo_c as cr
 
 
+# pyre-fixme[5]: Global expression must be annotated.
 _COMPRESSION_MODES = {
     "none": ("", cr.NO_COMPRESSION),
     "gzip": (".gz", cr.GZ_COMPRESSION),
@@ -47,6 +48,8 @@ _COMPRESSION_MODES = {
 )
 @click.option(
     "--compress",
+    # pyre-fixme[6]: For 1st param expected `Sequence[str]` but got `dict_keys[str,
+    #  typing.Any]`.
     type=click.Choice(_COMPRESSION_MODES.keys()),
     default="gzip",
 )
@@ -78,22 +81,35 @@ def main(
     }
     for (name, inputdir) in inputdirs.items():
         xml_paths = sorted(inputdir.iterdir())
+        # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,
+        #  OtherXmlFile, PrimaryXmlFile]` has no attribute `set_num_of_pkgs`.
         files[name].set_num_of_pkgs(len(xml_paths))
         for path in xml_paths:
             with open(path) as f:
+                # pyre-fixme[16]: Item `FilelistsXmlFile` of
+                #  `Union[FilelistsXmlFile, OtherXmlFile, PrimaryXmlFile]` has no
+                #  attribute `add_chunk`.
                 files[name].add_chunk(f.read())
 
     for file in files.values():
+        # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,
+        #  OtherXmlFile, PrimaryXmlFile]` has no attribute `close`.
         file.close()
 
     repomd = cr.Repomd()
     for (name, path) in paths.items():
         record = cr.RepomdRecord(name, str(path))
+        # pyre-fixme[16]: `RepomdRecord` has no attribute `set_timestamp`.
         record.set_timestamp(timestamp)
+        # pyre-fixme[16]: `RepomdRecord` has no attribute `fill`.
+        # pyre-fixme[16]: Module `createrepo_c` has no attribute `SHA256`.
         record.fill(cr.SHA256)
+        # pyre-fixme[16]: `Repomd` has no attribute `set_record`.
         repomd.set_record(record)
+    # pyre-fixme[16]: `Repomd` has no attribute `set_revision`.
     repomd.set_revision(str(timestamp))
     with open(out / "repomd.xml", "w") as f:
+        # pyre-fixme[16]: `Repomd` has no attribute `xml_dump`.
         f.write(repomd.xml_dump())
     return 0
 
