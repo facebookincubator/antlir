@@ -66,6 +66,6 @@ repo = rule(
         "compress": attrs.enum(["none", "gzip"], default = "gzip"),
         "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makerepo")),
         "rpms": attrs.list(attrs.dep(providers = [RpmInfo])),
-        "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision")),
+        "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision"), default = None),
     },
 )
