@@ -39,9 +39,9 @@ def clone_to_json(
         pre_existing_dest: bool.type,
         deps: {str.type: "dependency"}) -> {str.type: ""}:
     return {
-        "dest": dst_path,
+        "dst_path": dst_path,
         "omit_outer_dir": omit_outer_dir,
         "pre_existing_dest": pre_existing_dest,
-        "source_layer": deps.pop("src_layer").label.raw_target(),
+        "src_layer": deps.pop("src_layer").label.raw_target(),
         "src_path": src_path,
     }

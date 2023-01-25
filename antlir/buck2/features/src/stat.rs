@@ -22,3 +22,9 @@ use serde::Serialize;
 #[serde(transparent)]
 #[repr(transparent)]
 pub struct Mode(pub u32);
+
+impl From<u32> for Mode {
+    fn from(u: u32) -> Self {
+        Self(u)
+    }
+}

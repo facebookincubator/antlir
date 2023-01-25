@@ -29,7 +29,8 @@ pub enum Format {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct ReceiveSendstream {
-    pub src: BuckOutSource,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct ReceiveSendstream<'a> {
+    pub src: BuckOutSource<'a>,
     pub format: Format,
 }

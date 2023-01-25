@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::path::Path;
 
@@ -40,13 +41,13 @@ impl FromNew<&Path> for ShapePath {
     }
 }
 
-impl FromNew<PathInLayer> for ShapePath {
+impl FromNew<PathInLayer<'_>> for ShapePath {
     fn from_new(new: PathInLayer) -> Self {
         new.path().into_shape()
     }
 }
 
-impl FromNew<PathInLayer> for String {
+impl FromNew<PathInLayer<'_>> for String {
     fn from_new(new: PathInLayer) -> Self {
         new.path()
             .to_str()
@@ -55,7 +56,7 @@ impl FromNew<PathInLayer> for String {
     }
 }
 
-impl FromNew<BuckOutSource> for ShapePath {
+impl FromNew<BuckOutSource<'_>> for ShapePath {
     fn from_new(new: BuckOutSource) -> Self {
         new.path().into_shape()
     }
@@ -83,7 +84,7 @@ impl FromNew<Label<'_>> for BTreeMap<String, String> {
     }
 }
 
-impl FromNew<(Layer<'_>, PathInLayer)> for target_tagged_image_source_t {
+impl FromNew<(Layer<'_>, PathInLayer<'_>)> for target_tagged_image_source_t {
     fn from_new(new: (Layer, PathInLayer)) -> Self {
         let (layer_label, path) = new;
         Self {
@@ -94,7 +95,7 @@ impl FromNew<(Layer<'_>, PathInLayer)> for target_tagged_image_source_t {
     }
 }
 
-impl FromNew<BuckOutSource> for target_tagged_image_source_t {
+impl FromNew<BuckOutSource<'_>> for target_tagged_image_source_t {
     fn from_new(new: BuckOutSource) -> Self {
         Self {
             layer: None,
@@ -109,13 +110,13 @@ impl FromNew<BuckOutSource> for target_tagged_image_source_t {
     }
 }
 
-impl FromNew<UserName> for String {
+impl FromNew<UserName<'_>> for String {
     fn from_new(new: UserName) -> Self {
         new.name().to_owned()
     }
 }
 
-impl FromNew<GroupName> for String {
+impl FromNew<GroupName<'_>> for String {
     fn from_new(new: GroupName) -> Self {
         new.name().to_owned()
     }
@@ -201,7 +202,7 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
 impl FromNew<features::clone::Clone<'_>> for clone::clone_t {
     fn from_new(new: features::clone::Clone) -> Self {
         Self {
-            dest: new.dst.into_shape(),
+            dest: new.dst_path.into_shape(),
             omit_outer_dir: new.omit_outer_dir,
             pre_existing_dest: new.pre_existing_dest,
             source: (new.src_layer.clone(), new.src_path).into_shape(),
@@ -210,7 +211,7 @@ impl FromNew<features::clone::Clone<'_>> for clone::clone_t {
     }
 }
 
-impl FromNew<features::ensure_dirs_exist::EnsureDirsExist>
+impl FromNew<features::ensure_dirs_exist::EnsureDirsExist<'_>>
     for ensure_subdirs_exist::ensure_subdirs_exist_t
 {
     fn from_new(new: features::ensure_dirs_exist::EnsureDirsExist) -> Self {
@@ -224,11 +225,11 @@ impl FromNew<features::ensure_dirs_exist::EnsureDirsExist>
     }
 }
 
-impl FromNew<features::genrule::Genrule> for genrule_layer::genrule_layer_t {
+impl FromNew<features::genrule::Genrule<'_>> for genrule_layer::genrule_layer_t {
     fn from_new(new: features::genrule::Genrule) -> Self {
         Self {
-            cmd: new.cmd,
-            user: new.user,
+            cmd: new.cmd.into_iter().map(Cow::into_owned).collect(),
+            user: new.user.into_shape(),
             container_opts: new.container_opts,
             bind_repo_ro: new.bind_repo_ro,
             boot: new.boot,
@@ -236,7 +237,7 @@ impl FromNew<features::genrule::Genrule> for genrule_layer::genrule_layer_t {
     }
 }
 
-impl FromNew<features::install::Install> for install::install_files_t {
+impl FromNew<features::install::Install<'_>> for install::install_files_t {
     fn from_new(new: features::install::Install) -> Self {
         Self {
             dest: new.dst.into_shape(),
@@ -248,26 +249,28 @@ impl FromNew<features::install::Install> for install::install_files_t {
     }
 }
 
-impl FromNew<features::meta_kv::Store> for meta_key_value_store::meta_key_value_store_item_t {
+impl FromNew<features::meta_kv::Store<'_>> for meta_key_value_store::meta_key_value_store_item_t {
     fn from_new(new: features::meta_kv::Store) -> Self {
         Self {
-            key: new.key,
-            value: new.value,
-            require_keys: new.require_keys.into_iter().collect(),
+            key: new.key.into_owned(),
+            value: new.value.into_owned(),
+            require_keys: new.require_keys.into_iter().map(Cow::into_owned).collect(),
             store_if_not_exists: new.store_if_not_exists,
         }
     }
 }
 
-impl FromNew<features::meta_kv::Remove>
+impl FromNew<features::meta_kv::Remove<'_>>
     for meta_key_value_store::remove_meta_key_value_store_item_t
 {
     fn from_new(new: features::meta_kv::Remove) -> Self {
-        Self { key: new.key }
+        Self {
+            key: new.key.into_owned(),
+        }
     }
 }
 
-impl FromNew<features::mount::HostMount> for serde_json::Value {
+impl FromNew<features::mount::HostMount<'_>> for serde_json::Value {
     fn from_new(new: features::mount::HostMount) -> Self {
         serde_json::json!({
             "mount_config": {
@@ -300,7 +303,7 @@ impl FromNew<features::parent_layer::ParentLayer<'_>> for serde_json::Value {
     }
 }
 
-impl FromNew<features::receive_sendstream::ReceiveSendstream>
+impl FromNew<features::receive_sendstream::ReceiveSendstream<'_>>
     for from_package::layer_from_package_t
 {
     fn from_new(new: features::receive_sendstream::ReceiveSendstream) -> Self {
@@ -315,7 +318,7 @@ impl FromNew<features::receive_sendstream::ReceiveSendstream>
     }
 }
 
-impl FromNew<features::remove::Remove> for remove::remove_paths_t {
+impl FromNew<features::remove::Remove<'_>> for remove::remove_paths_t {
     fn from_new(new: features::remove::Remove) -> Self {
         Self {
             path: new.path.into_shape(),
@@ -324,7 +327,7 @@ impl FromNew<features::remove::Remove> for remove::remove_paths_t {
     }
 }
 
-impl FromNew<features::requires::Requires> for requires::requires_t {
+impl FromNew<features::requires::Requires<'_>> for requires::requires_t {
     fn from_new(new: features::requires::Requires) -> Self {
         Self {
             files: Some(new.files.into_iter().map(IntoShape::into_shape).collect()),
@@ -343,42 +346,44 @@ impl FromNew<features::rpms::Action> for rpms::action_t {
     }
 }
 
-impl FromNew<features::rpms::VersionSet> for rpms::version_set_t {
+impl FromNew<features::rpms::VersionSet<'_>> for rpms::version_set_t {
     fn from_new(new: features::rpms::VersionSet) -> Self {
         match new {
             features::rpms::VersionSet::Path(l) => {
                 Self::String(l.to_str().expect("valid utf8").to_owned())
             }
-            features::rpms::VersionSet::Source(m) => Self::Dict_String_To_String(m),
+            features::rpms::VersionSet::Source(m) => Self::Dict_String_To_String(
+                m.into_iter()
+                    .map(|(k, v)| (k.into_owned(), v.into_owned()))
+                    .collect(),
+            ),
         }
     }
 }
 
-impl FromNew<features::rpms::Rpm> for rpms::rpm_action_item_t {
+impl FromNew<features::rpms::Rpm<'_>> for rpms::rpm_action_item_t {
     fn from_new(new: features::rpms::Rpm) -> Self {
         Self {
             name: match &new.source {
-                features::rpms::Source::Name(name) => Some(name.clone()),
+                features::rpms::Source::Name(name) => Some(name.clone().into_owned()),
                 _ => None,
             },
             source: match new.source {
-                features::rpms::Source::Path(p) | features::rpms::Source::Source(p) => {
-                    Some(p.into_shape())
-                }
+                features::rpms::Source::Source(p) => Some(p.into_shape()),
                 features::rpms::Source::Name(_) => None,
             },
             action: new.action.into_shape(),
             flavor_to_version_set: new
                 .flavor_to_version_set
                 .into_iter()
-                .map(|(k, v)| (k, v.into_shape()))
+                .map(|(k, v)| (k.into_owned(), v.into_shape()))
                 .collect(),
         }
     }
 }
 
-impl FromNew<features::symlink::Symlink> for symlink::symlink_t {
-    fn from_new(new: features::symlink::Symlink) -> Self {
+impl FromNew<features::symlink::Symlink<'_>> for symlink::symlink_t {
+    fn from_new(new: features::symlink::Symlink<'_>) -> Self {
         Self {
             dest: new.link.into_shape(),
             source: new.target.into_shape(),
@@ -386,7 +391,7 @@ impl FromNew<features::symlink::Symlink> for symlink::symlink_t {
     }
 }
 
-impl FromNew<features::tarball::Tarball> for tarball::tarball_t {
+impl FromNew<features::tarball::Tarball<'_>> for tarball::tarball_t {
     fn from_new(new: features::tarball::Tarball) -> Self {
         Self {
             into_dir: new.into_dir.into_shape(),
@@ -396,7 +401,7 @@ impl FromNew<features::tarball::Tarball> for tarball::tarball_t {
     }
 }
 
-impl FromNew<features::usergroup::User> for usergroup::user_t {
+impl FromNew<features::usergroup::User<'_>> for usergroup::user_t {
     fn from_new(new: features::usergroup::User) -> Self {
         Self {
             name: new.name.into_shape(),
@@ -409,12 +414,12 @@ impl FromNew<features::usergroup::User> for usergroup::user_t {
                 .collect(),
             shell: new.shell.into_shape(),
             home_dir: new.home_dir.into_shape(),
-            comment: new.comment,
+            comment: new.comment.map(|c| c.into_owned()),
         }
     }
 }
 
-impl FromNew<features::usergroup::UserMod> for usergroup::usermod_t {
+impl FromNew<features::usergroup::UserMod<'_>> for usergroup::usermod_t {
     fn from_new(new: features::usergroup::UserMod) -> Self {
         Self {
             username: new.username.into_shape(),
@@ -427,7 +432,7 @@ impl FromNew<features::usergroup::UserMod> for usergroup::usermod_t {
     }
 }
 
-impl FromNew<features::usergroup::Group> for usergroup::group_t {
+impl FromNew<features::usergroup::Group<'_>> for usergroup::group_t {
     fn from_new(new: features::usergroup::Group) -> Self {
         Self {
             name: new.name.into_shape(),

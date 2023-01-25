@@ -11,7 +11,8 @@ use serde::Serialize;
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Remove {
-    pub path: PathInLayer,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Remove<'a> {
+    pub path: PathInLayer<'a>,
     pub must_exist: bool,
 }

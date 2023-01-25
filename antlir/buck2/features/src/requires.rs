@@ -13,11 +13,12 @@ use crate::usergroup::GroupName;
 use crate::usergroup::UserName;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Requires {
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Requires<'a> {
     #[serde(default)]
-    pub files: Vec<PathInLayer>,
+    pub files: Vec<PathInLayer<'a>>,
     #[serde(default)]
-    pub users: Vec<UserName>,
+    pub users: Vec<UserName<'a>>,
     #[serde(default)]
-    pub groups: Vec<GroupName>,
+    pub groups: Vec<GroupName<'a>>,
 }
