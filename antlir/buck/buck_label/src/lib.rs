@@ -26,7 +26,7 @@ use thiserror::Error;
 static ALLOWED_NAME_CHARSET: &str = r"[a-zA-Z0-9,.=\-/~@!+$_]";
 static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
     format!(
-        r"(.+?)//({}*?):({}+)",
+        r"(.+?)//({}*?):({}*)",
         ALLOWED_NAME_CHARSET, ALLOWED_NAME_CHARSET,
     )
 });
