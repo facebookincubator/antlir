@@ -12,8 +12,9 @@ use crate::types::BuckOutSource;
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Tarball {
-    pub src: BuckOutSource,
-    pub into_dir: PathInLayer,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Tarball<'a> {
+    pub src: BuckOutSource<'a>,
+    pub into_dir: PathInLayer<'a>,
     pub force_root_ownership: bool,
 }

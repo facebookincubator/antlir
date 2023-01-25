@@ -15,10 +15,11 @@ use crate::usergroup::GroupName;
 use crate::usergroup::UserName;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Install {
-    pub dst: PathInLayer,
-    pub group: GroupName,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Install<'a> {
+    pub dst: PathInLayer<'a>,
+    pub group: GroupName<'a>,
     pub mode: Option<Mode>,
-    pub src: BuckOutSource,
-    pub user: UserName,
+    pub src: BuckOutSource<'a>,
+    pub user: UserName<'a>,
 }

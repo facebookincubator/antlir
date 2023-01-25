@@ -14,24 +14,23 @@ use crate::types::Layer;
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub enum Mount<'a> {
-    Host(HostMount),
-    #[serde(borrow)]
+    Host(HostMount<'a>),
     Layer(LayerMount<'a>),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct HostMount {
-    pub mountpoint: PathInLayer,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct HostMount<'a> {
+    pub mountpoint: PathInLayer<'a>,
     pub is_directory: bool,
     pub src: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub struct LayerMount<'a> {
-    pub mountpoint: PathInLayer,
-    #[serde(borrow)]
+    pub mountpoint: PathInLayer<'a>,
     pub src: Layer<'a>,
 }

@@ -5,26 +5,46 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
+
 use serde::Deserialize;
 use serde::Serialize;
 
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct UserName(String);
+pub struct UserName<'a>(Cow<'a, str>);
 
-impl UserName {
+impl<'a> UserName<'a> {
     pub fn name(&self) -> &str {
         &self.0
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct GroupName(String);
+impl<'a, S> From<S> for UserName<'a>
+where
+    S: Into<Cow<'a, str>>,
+{
+    fn from(s: S) -> Self {
+        Self(s.into())
+    }
+}
 
-impl GroupName {
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct GroupName<'a>(Cow<'a, str>);
+
+impl<'a> GroupName<'a> {
     pub fn name(&self) -> &str {
         &self.0
+    }
+}
+
+impl<'a, S> From<S> for GroupName<'a>
+where
+    S: Into<Cow<'a, str>>,
+{
+    fn from(s: S) -> Self {
+        Self(s.into())
     }
 }
 
@@ -67,24 +87,27 @@ impl Gid {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct User {
-    pub name: UserName,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct User<'a> {
+    pub name: UserName<'a>,
     pub uid: Option<Uid>,
-    pub primary_group: GroupName,
-    pub supplementary_groups: Vec<GroupName>,
-    pub home_dir: PathInLayer,
-    pub shell: PathInLayer,
-    pub comment: Option<String>,
+    pub primary_group: GroupName<'a>,
+    pub supplementary_groups: Vec<GroupName<'a>>,
+    pub home_dir: PathInLayer<'a>,
+    pub shell: PathInLayer<'a>,
+    pub comment: Option<Cow<'a, str>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct UserMod {
-    pub username: UserName,
-    pub add_supplementary_groups: Vec<GroupName>,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct UserMod<'a> {
+    pub username: UserName<'a>,
+    pub add_supplementary_groups: Vec<GroupName<'a>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Group {
-    pub name: GroupName,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Group<'a> {
+    pub name: GroupName<'a>,
     pub gid: Option<Gid>,
 }

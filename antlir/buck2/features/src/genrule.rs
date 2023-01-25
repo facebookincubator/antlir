@@ -5,15 +5,20 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
+
 use derivative::Derivative;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::usergroup::UserName;
+
 #[derive(Debug, Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
 #[derivative(PartialOrd, Ord)]
-pub struct Genrule {
-    pub cmd: Vec<String>,
-    pub user: String,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Genrule<'a> {
+    pub cmd: Vec<Cow<'a, str>>,
+    pub user: UserName<'a>,
     pub bind_repo_ro: bool,
     pub boot: bool,
     #[derivative(PartialOrd = "ignore", Ord = "ignore")]

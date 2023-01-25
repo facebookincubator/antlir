@@ -12,11 +12,11 @@ use crate::types::Layer;
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
 pub struct Clone<'a> {
-    #[serde(borrow)]
     pub src_layer: Layer<'a>,
     pub omit_outer_dir: bool,
     pub pre_existing_dest: bool,
-    pub src_path: PathInLayer,
-    pub dst: PathInLayer,
+    pub src_path: PathInLayer<'a>,
+    pub dst_path: PathInLayer<'a>,
 }

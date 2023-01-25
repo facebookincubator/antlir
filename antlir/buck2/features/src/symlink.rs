@@ -11,8 +11,9 @@ use serde::Serialize;
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Symlink {
-    pub link: PathInLayer,
-    pub target: PathInLayer,
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Symlink<'a> {
+    pub link: PathInLayer<'a>,
+    pub target: PathInLayer<'a>,
     pub is_directory: bool,
 }

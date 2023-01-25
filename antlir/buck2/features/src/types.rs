@@ -5,8 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
 use std::path::Path;
-use std::path::PathBuf;
 
 use buck_label::Label;
 use serde::Deserialize;
@@ -23,11 +23,17 @@ impl<'a> Layer<'a> {
     }
 }
 
+impl<'a> From<Label<'a>> for Layer<'a> {
+    fn from(label: Label<'a>) -> Self {
+        Self(label)
+    }
+}
+
 /// A path on the host, populated by Buck
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct BuckOutSource(PathBuf);
+pub struct BuckOutSource<'a>(Cow<'a, Path>);
 
-impl BuckOutSource {
+impl<'a> BuckOutSource<'a> {
     pub fn path(&self) -> &Path {
         &self.0
     }
@@ -35,10 +41,19 @@ impl BuckOutSource {
 
 /// A path inside an image layer
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct PathInLayer(PathBuf);
+pub struct PathInLayer<'a>(#[serde(borrow)] Cow<'a, Path>);
 
-impl PathInLayer {
+impl<'a> PathInLayer<'a> {
     pub fn path(&self) -> &Path {
         &self.0
+    }
+}
+
+impl<'a, P> From<P> for PathInLayer<'a>
+where
+    P: Into<Cow<'a, Path>>,
+{
+    fn from(p: P) -> Self {
+        Self(p.into())
     }
 }
