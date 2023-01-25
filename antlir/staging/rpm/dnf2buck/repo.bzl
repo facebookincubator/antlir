@@ -71,6 +71,11 @@ repo_attrs = {
     ),
     "bucket": attrs.option(attrs.string(doc = "manifold bucket")),
     "compress": attrs.enum(["none", "gzip"], default = "gzip"),
+    "deleted_base_key": attrs.option(
+        attrs.string(),
+        doc = "base key for recently-deleted packages in manifold",
+        default = None,
+    ),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makerepo")),
     "rpms": attrs.list(
         attrs.dep(providers = [RpmInfo]),
