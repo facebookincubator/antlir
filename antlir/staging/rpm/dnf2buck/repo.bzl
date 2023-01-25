@@ -6,6 +6,7 @@
 load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
 RepoInfo = provider(fields = {
+    "base_url": "Optional upstream URL that was used to populate this target",
     "names": "Names of all contained RPMs",
     "offline": "Complete offline archive of repodata and all RPMs",
     "repodata": "Populated repodata/ directory",
@@ -57,15 +58,33 @@ def _impl(ctx: "context") -> ["provider"]:
             names = [r.nevra.name for r in rpm_infos],
             repodata = repodata,
             offline = offline,
+            base_url = ctx.attrs.base_url,
         ),
     ]
 
+repo_attrs = {
+    "api_key": attrs.option(attrs.string(doc = "manifold api key")),
+    "base_url": attrs.option(
+        attrs.string(),
+        doc = "baseurl where this repo was snapshotted from",
+        default = None,
+    ),
+    "bucket": attrs.option(attrs.string(doc = "manifold bucket")),
+    "compress": attrs.enum(["none", "gzip"], default = "gzip"),
+    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makerepo")),
+    "rpms": attrs.list(
+        attrs.dep(providers = [RpmInfo]),
+        doc = "All RPMs that should be included in this repo",
+    ),
+    "source_base_key": attrs.option(
+        attrs.string(),
+        doc = "base key in manifold",
+        default = None,
+    ),
+    "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision")),
+}
+
 repo = rule(
     impl = _impl,
-    attrs = {
-        "compress": attrs.enum(["none", "gzip"], default = "gzip"),
-        "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makerepo")),
-        "rpms": attrs.list(attrs.dep(providers = [RpmInfo])),
-        "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision"), default = None),
-    },
+    attrs = repo_attrs,
 )
