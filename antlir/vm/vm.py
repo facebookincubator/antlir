@@ -436,6 +436,7 @@ async def vm(
                     " audit=0"
                     " selinux=0"
                     " systemd.hostname=vmtest "
+                    " net.ifnames=0 "
                     f" macaddress={tapdev.guest_mac} "
                     f" root=LABEL={opts.root_label} "
                     + " ".join(root_disk.kernel_args)
