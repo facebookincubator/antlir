@@ -54,7 +54,7 @@ def rpm_repo_snapshot(
         src,
         storage,
         rpm_installers,
-        repo_server_ports = (28889, 28890),
+        repo_server_ports = None,
         visibility = None):
     '''
     Takes a bare in-repo snapshot, enriches it with `storage.sql3` from
@@ -96,6 +96,8 @@ def rpm_repo_snapshot(
         the normalized target name (akin to `mangle_target`), so that they
         wouldn't avoid collision by default.
     '''
+    if repo_server_ports == None:
+        repo_server_ports = (28889, 28890)
     if not rpm_installers or not all([
         # CAREFUL: Below we assume that installer names need no shell-quoting.
         (p in ["yum", "dnf"])
