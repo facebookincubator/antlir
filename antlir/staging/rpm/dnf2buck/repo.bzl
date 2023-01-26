@@ -63,13 +63,13 @@ def _impl(ctx: "context") -> ["provider"]:
     ]
 
 repo_attrs = {
-    "api_key": attrs.option(attrs.string(doc = "manifold api key")),
+    "api_key": attrs.option(attrs.string(doc = "manifold api key"), default = None),
     "base_url": attrs.option(
         attrs.string(),
         doc = "baseurl where this repo was snapshotted from",
         default = None,
     ),
-    "bucket": attrs.option(attrs.string(doc = "manifold bucket")),
+    "bucket": attrs.option(attrs.string(doc = "manifold bucket"), default = None),
     "compress": attrs.enum(["none", "gzip"], default = "gzip"),
     "deleted_base_key": attrs.option(
         attrs.string(),
@@ -86,7 +86,7 @@ repo_attrs = {
         doc = "base key in manifold",
         default = None,
     ),
-    "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision")),
+    "timestamp": attrs.option(attrs.int(doc = "repomd.xml revision"), default = None),
 }
 
 repo = rule(
