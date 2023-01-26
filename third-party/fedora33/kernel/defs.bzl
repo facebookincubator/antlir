@@ -2,6 +2,7 @@ load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
 load("//antlir/vm/bzl:build_kernel_artifacts.bzl", "build_kernel_artifacts")
 
 def fedora_kernel(
+        arch,
         kernel,
         fedora_release,
         core_sha256,
@@ -10,26 +11,26 @@ def fedora_kernel(
         headers_version = None):
     if not headers_version:
         headers_version = kernel
-    url_f = "https://mirrors.kernel.org/fedora/releases/{}/Everything/x86_64/os/Packages/k/kernel-{}-{}.rpm"
+    url_f = "https://archives.fedoraproject.org/pub/archive/fedora/linux/releases/{}/Everything/{}/os/Packages/k/kernel-{}-{}.rpm"
     http_file(
         name = kernel + "-core.rpm",
         sha256 = core_sha256,
         urls = [
-            url_f.format(fedora_release, "core", kernel),
+            url_f.format(arch, fedora_release, "core", kernel),
         ],
     )
     http_file(
         name = kernel + "-headers.rpm",
         sha256 = headers_sha256,
         urls = [
-            url_f.format(fedora_release, "headers", headers_version),
+            url_f.format(arch, fedora_release, "headers", headers_version),
         ],
     )
     http_file(
         name = kernel + "-devel.rpm",
         sha256 = devel_sha256,
         urls = [
-            url_f.format(fedora_release, "devel", kernel),
+            url_f.format(arch, fedora_release, "devel", kernel),
         ],
     )
 
