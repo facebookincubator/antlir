@@ -123,7 +123,7 @@ def _flatten_nested_lists(lst):
             flat_lst.append(v)
     return flat_lst
 
-def _normalize_feature_and_get_deps(feature, flavors):
+def _normalize_feature_and_get_deps(feature, flavors, human_readable_target):
     "Returns a ready-to-serialize feature dictionary and its direct deps."
     target_tagger = new_target_tagger()
 
@@ -181,6 +181,12 @@ def _normalize_feature_and_get_deps(feature, flavors):
                 flavor_to_version_set[flavor] = version_set
             elif version_set != BZL_CONST.version_set_allow_all_versions:
                 target = extract_tagged_target(version_set)
+                if target not in deps:
+                    fail(
+                        "Antlir internal error: missing deps for: {}".format(
+                            human_readable_target,
+                        ),
+                    )
                 deps.pop(target)
 
         if not flavor_to_version_set and rpm_item["name"] != RPM_INSTALL_INFO_DUMMY_ACTION_ITEM and rpm_item["action"] == "install":
@@ -221,6 +227,7 @@ def normalize_features(
             feature_dict, more_deps = _normalize_feature_and_get_deps(
                 feature = f,
                 flavors = flavors,
+                human_readable_target = human_readable_target,
             )
 
             valid_rpms = []
