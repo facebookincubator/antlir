@@ -6,6 +6,7 @@ antlir_toolchain(
     artifacts_dir = "//antlir:artifacts-dir",
     builder = "//antlir/builder:builder",
     compiler = "//antlir:compiler",
+    find_built_subvol = "//antlir:find-built-subvol",
     layer_mount_config = "//antlir:layer-mount-config",
     subvolume_garbage_collector = "//antlir:subvolume-garbage-collector",
     subvolume_version = "//antlir:subvolume-version",

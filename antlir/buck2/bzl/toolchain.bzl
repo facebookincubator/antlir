@@ -7,6 +7,7 @@ _tools = [
     "artifacts_dir",
     "builder",
     "compiler",
+    "find_built_subvol",
     "layer_mount_config",
     "subvolume_garbage_collector",
     "subvolume_version",

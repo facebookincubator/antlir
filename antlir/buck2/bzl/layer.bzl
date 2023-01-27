@@ -201,10 +201,39 @@ def _impl(ctx: "context") -> ["provider"]:
         local_only = True,
     )
 
+    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+    subvol_symlink_script = ctx.actions.write(
+        "symlink.sh",
+        cmd_args(
+            cmd_args(
+                'location="$(',
+                toolchain.find_built_subvol,
+                layer_out_dir,
+                ')"',
+                delimiter = " ",
+            ),
+            cmd_args(subvol_symlink.as_output(), format = 'ln -sf "$location" {}'),
+            delimiter = "\n",
+        ),
+        is_executable = True,
+    )
+    ctx.actions.run(
+        cmd_args(
+            ["/bin/bash", "-e", subvol_symlink_script],
+        ).hidden(
+            toolchain.find_built_subvol,
+            layer_out_dir,
+            subvol_symlink.as_output(),
+        ),
+        category = "antlir_subvol_symlink",
+        local_only = True,
+    )
+
     sub_targets = {
         "build.sh": [DefaultInfo(
             default_outputs = [build_script],
         )],
+        "subvol": [DefaultInfo(default_outputs = [subvol_symlink])],
     }
     sub_targets.update(
         layer_runnable_subtargets(
@@ -220,6 +249,7 @@ def _impl(ctx: "context") -> ["provider"]:
             features = ctx.attrs.features,
             parent_layer = ctx.attrs.parent_layer,
             flavor = flavor,
+            subvol_symlink = subvol_symlink,
         ),
         DefaultInfo(
             default_outputs = [layer_out_dir],
