@@ -11,4 +11,5 @@ LayerInfo = provider(fields = {
     "features": "Features that get applied to build this image from the `parent_layer`",
     "flavor": "Flavor that configures how this image was built (build appliance, repo snapshot, etc)",
     "parent_layer": "Starting point for this layer before adding new features",
+    "subvol_symlink": "Symlink to the subvolume in buck-image-out/",
 })
