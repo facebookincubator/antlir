@@ -196,12 +196,7 @@ impl<'a> std::str::FromStr for Label<'a> {
 
 impl<'a> std::fmt::Debug for Label<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.debug_struct("Label")
-            .field("cell", &self.cell())
-            .field("package", &self.package())
-            .field("name", &self.name())
-            .field("config", &self.config())
-            .finish()
+        f.debug_tuple("Label").field(&self.to_string()).finish()
     }
 }
 
