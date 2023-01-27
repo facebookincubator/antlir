@@ -15,7 +15,9 @@ rust_library(
         "tokio-stream",
         "tokio-util",
         "tracing",
+        "url",
         "warp",
+        "//antlir/staging/rpm/dnf_conf:dnf_conf",
     ],
 )
 

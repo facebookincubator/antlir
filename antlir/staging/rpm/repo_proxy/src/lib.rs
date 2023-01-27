@@ -11,6 +11,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
+use dnf_conf::DnfConf;
 use http::StatusCode;
 use hyper::body::Body;
 use hyper::Response;
@@ -20,6 +21,7 @@ use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::FramedRead;
+use warp::host::Authority;
 use warp::reject::Reject;
 use warp::Filter;
 use warp::Rejection;
@@ -124,6 +126,7 @@ pub async fn serve(cfg: Config) -> Result<()> {
         hyper::Client::builder().build::<_, hyper::Body>(hyper_tls::HttpsConnector::new()),
     );
 
+    let rpm_repos2 = rpm_repos.clone();
     let package_blob = warp::get()
         .and(warp::path("yum"))
         .and(warp::path::param())
@@ -132,7 +135,7 @@ pub async fn serve(cfg: Config) -> Result<()> {
         .and(warp::path::param())
         .and(warp::path::end())
         .and_then(move |repo_id: String, id: String, name: String| {
-            let rpm_repos = rpm_repos.clone();
+            let rpm_repos = rpm_repos2.clone();
             let http_client = http_client.clone();
             async move {
                 let repo_id = percent_encoding::percent_decode_str(&repo_id)
@@ -183,9 +186,32 @@ pub async fn serve(cfg: Config) -> Result<()> {
             }
         });
 
+    let dnf_conf = warp::get()
+        .and(warp::path!("yum" / "dnf.conf"))
+        .and(warp::host::optional())
+        .map(move |authority: Option<Authority>| {
+            let authority = authority.unwrap_or_else(|| Authority::from_static("localhost"));
+            let mut builder = DnfConf::builder();
+            for (id, _) in rpm_repos.iter() {
+                let uri = Uri::builder()
+                    .scheme("http")
+                    .authority(authority.clone())
+                    .path_and_query(format!("/yum/{}", id))
+                    .build()
+                    .expect("all parts have already been validated");
+                builder.add_repo(
+                    id.clone(),
+                    url::Url::parse(&uri.to_string())
+                        .expect("inefficient conversion, but it will always work"),
+                );
+            }
+            builder.build().to_string()
+        });
+
     let routes = alive
         .or(repodata)
         .or(package_blob)
+        .or(dnf_conf)
         .with(warp::trace::request());
 
     let listener = UnixListener::bind(&cfg.bind).context("while binding unix socket")?;
