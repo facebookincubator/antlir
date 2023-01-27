@@ -1,0 +1,34 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+
+rust_library(
+    name = "repo_proxy",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "futures",
+        "http",
+        "hyper",
+        "hyper-tls",
+        "percent-encoding",
+        "serde",
+        "tokio",
+        "tokio-stream",
+        "tokio-util",
+        "tracing",
+        "warp",
+    ],
+)
+
+rust_binary(
+    name = "repo-proxy",
+    srcs = ["bin/main.rs"],
+    deps = [
+        "anyhow",
+        "clap",
+        "serde_json",
+        "tokio",
+        "tracing-glog",
+        "tracing-subscriber",
+        ":repo_proxy",
+    ],
+)

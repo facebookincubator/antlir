@@ -7,9 +7,9 @@ load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
 RepoInfo = provider(fields = {
     "base_url": "Optional upstream URL that was used to populate this target",
-    "names": "Names of all contained RPMs",
     "offline": "Complete offline archive of repodata and all RPMs",
     "repodata": "Populated repodata/ directory",
+    "rpm_names": "Names of all contained RPMs",
 })
 
 def _impl(ctx: "context") -> ["provider"]:
@@ -49,13 +49,38 @@ def _impl(ctx: "context") -> ["provider"]:
         offline_map[package_href(rpm.nevra, rpm.sha256)] = rpm.rpm
     ctx.actions.symlinked_dir(offline, offline_map)
 
+    # repos that are not backed by manifold must use the "offline" urlgen
+    # setting as well as setting the offline directory as a dependency of the
+    # `[serve]` sub-target
+    offline_only_repo = not ctx.attrs.bucket
+    urlgen_config = {
+        "Manifold": {
+            "api_key": ctx.attrs.api_key,
+            "bucket": ctx.attrs.bucket,
+            "snapshot_base": "flat/",
+        },
+    } if not offline_only_repo else {"Offline": None}
+    proxy_config = ctx.actions.write_json("proxy_config.json", {
+        ctx.label.name: {
+            "offline_dir": offline,
+            "repodata_dir": repodata,
+            "urlgen": urlgen_config,
+        },
+    })
+
     return [
         DefaultInfo(default_outputs = [repodata], sub_targets = {
             "offline": [DefaultInfo(default_outputs = [offline])],
+            "proxy_config": [DefaultInfo(default_outputs = [proxy_config])],
             "repodata": [DefaultInfo(default_outputs = [repodata])],
+            "serve": [DefaultInfo(), RunInfo(
+                args = cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", proxy_config)
+                    .hidden(repodata)
+                    .hidden([offline] if offline_only_repo else []),
+            )],
         }),
         RepoInfo(
-            names = [r.nevra.name for r in rpm_infos],
+            rpm_names = [r.nevra.name for r in rpm_infos],
             repodata = repodata,
             offline = offline,
             base_url = ctx.attrs.base_url,
@@ -77,6 +102,7 @@ repo_attrs = {
         default = None,
     ),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makerepo")),
+    "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/repo_proxy:repo-proxy")),
     "rpms": attrs.list(
         attrs.dep(providers = [RpmInfo]),
         doc = "All RPMs that should be included in this repo",

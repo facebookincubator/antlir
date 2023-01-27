@@ -179,6 +179,7 @@ def _rust_common(rule, **kwargs):
     if not kwargs.pop("allow_unused_crate_dependencies", False):
         rustc_flags.append("--forbid=unused_crate_dependencies")
     rustc_flags.append("--warn=clippy::unwrap_used")
+    # @oss-disable
 
     # always handled by the antlir macros themselves
     if rule != shim.rust_unittest and rule != shim.rust_python_extension and rule != shim.rust_bindgen_library:
