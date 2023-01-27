@@ -102,7 +102,7 @@ def new_flavor_config(
         rpm_repo_snapshot = None,
         rpm_version_set_overrides = None,
         version_set_path = BZL_CONST.version_set_allow_all_versions,
-        unsafe_bypass_flavor_check = False):
+        **kwargs):
     """
     Arguments
 
@@ -122,7 +122,6 @@ def new_flavor_config(
     - `rpm_version_set_overrides`: List of `nevra` objects
     (see antlir/bzl/constants.bzl for definition). If rpm with given name to
     be installed, the `nevra` defines its version.
-    - `unsafe_bypass_flavor_check`: Do NOT use.
     """
     if build_appliance == None:
         fail(
@@ -158,7 +157,7 @@ def new_flavor_config(
         rpm_repo_snapshot = rpm_repo_snapshot,
         rpm_version_set_overrides = rpm_version_set_overrides,
         version_set_path = version_set_path,
-        unsafe_bypass_flavor_check = unsafe_bypass_flavor_check,
+        **kwargs
     )
 
 def _get_flavor_to_config():

@@ -33,9 +33,21 @@ flavor_config_t = shape.shape(
     build_appliance = shape.field(str, optional = True),
     rpm_installer = shape.field(str, optional = True),
     rpm_repo_snapshot = shape.field(str, optional = True),
+    gen_rpm_repo_snapshot = shape.field(bool, default = True),
     version_set_path = shape.field(str, optional = True),
+    ba_bootstrap_flavor = shape.field(str, optional = True),
+    # @oss-disable
+    ba_shortname = shape.field(str, optional = True),
+    # @oss-disable
+    shortname = shape.field(str, optional = True),
+    snapshot_bootstrap_flavor = shape.field(str, optional = True),
+    arch = shape.field(str, optional = True),
     rpm_version_set_overrides = shape.field(shape.list(nevra_t), optional = True),
     unsafe_bypass_flavor_check = shape.field(bool, default = False),
+    dnf_conf = shape.field(str, optional = True),
+    dnf_snapshot = shape.field(str, optional = True),
+    yum_snapshot = shape.field(str, optional = True),
+    tags = shape.field(shape.list(str), optional = True),
 )
 
 buck2_early_adoption_t = shape.shape(
