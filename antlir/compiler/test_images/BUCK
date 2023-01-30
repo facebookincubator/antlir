@@ -1274,3 +1274,50 @@ image.layer(
     parent_layer = ":meta_store_layer",
     visibility = ["//antlir/..."],
 )
+
+defs.cpp_binary(
+    name = "test-cpp-binary",
+    srcs = ["main.c"],
+)
+
+defs.python_binary(
+    name = "test-xar",
+    srcs = ["main.py"],
+    main_module = "antlir.compiler.test_images.main",
+    deps = [
+        # huge dep to intentionally bloat this binary
+        # @oss-disable
+    ],
+)
+
+image.layer(
+    name = "with-stripped-binary",
+    features = [
+        # Not install_buck_runnable since it actually needs to be an elf file
+        feature.install(
+            ":test-cpp-binary",
+            "/usr/bin/test-cpp-binary",
+            mode = "a+rx",
+            separate_debug_symbols = True,
+        ),
+        feature.install(
+            ":test-cpp-binary",
+            "/usr/bin/test-cpp-binary.full",
+            mode = "a+rx",
+            separate_debug_symbols = False,
+        ),
+        feature.install(
+            ":test-xar",
+            "/usr/bin/test-xar",
+            mode = "a+rx",
+            separate_debug_symbols = True,
+        ),
+        feature.install(
+            ":test-xar",
+            "/usr/bin/test-xar.full",
+            mode = "a+rx",
+            separate_debug_symbols = False,
+        ),
+    ],
+    parent_layer = flavor_helpers.get_build_appliance("antlir_test"),
+)

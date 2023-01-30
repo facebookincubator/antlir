@@ -13,7 +13,8 @@ def install(
         dst: str.type,
         mode: [int.type, str.type, None] = None,
         user: str.type = "root",
-        group: str.type = "root") -> InlineFeatureInfo.type:
+        group: str.type = "root",
+        separate_debug_symbols = False) -> InlineFeatureInfo.type:
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
     mode = stat.mode(mode) if mode else None
@@ -32,6 +33,7 @@ def install(
             "dst": dst,
             "group": group,
             "mode": mode,
+            "separate_debug_symbols": separate_debug_symbols,
             "user": user,
         },
     )
@@ -41,6 +43,7 @@ def install_to_json(
         group: str.type,
         mode: [int.type, None],
         user: str.type,
+        separate_debug_symbols: bool.type,
         sources: {str.type: "artifact"} = {},
         deps: {str.type: "dependency"} = {}) -> {str.type: ""}:
     if "src" in deps:
@@ -61,6 +64,7 @@ def install_to_json(
         "dst": dst,
         "group": group,
         "mode": mode,
+        "separate_debug_symbols": separate_debug_symbols,
         "src": src,
         "user": user,
     }

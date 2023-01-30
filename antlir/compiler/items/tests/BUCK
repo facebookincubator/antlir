@@ -301,6 +301,13 @@ image_python_unittest(
     ],
 )
 
+image_python_unittest(
+    name = "test-install-file-strip",
+    srcs = ["test_install_file_strip.py"],
+    layer = "//antlir/compiler/test_images:with-stripped-binary",
+    deps = ["//antlir:config"],
+)
+
 image.layer(
     name = "test_mount_layer",
     features = [
