@@ -245,6 +245,7 @@ impl FromNew<features::install::Install<'_>> for install::install_files_t {
             mode: new.mode.map(|m| m.0.into()),
             user: new.user.into_shape(),
             group: new.group.into_shape(),
+            separate_debug_symbols: new.separate_debug_symbols,
         }
     }
 }

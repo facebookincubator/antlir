@@ -7,6 +7,8 @@
 import os
 import shutil
 import stat
+import subprocess
+import tempfile
 from typing import Iterable, NamedTuple, Union
 
 from antlir.bzl.image.feature.install import install_files_t
@@ -85,6 +87,7 @@ def _recurse_into_source(
 class InstallFileItem(install_files_t, ImageItem):
 
     source: Path
+    separate_debug_symbols: bool = False
 
     _paths: Iterable[_InstallablePath] = PrivateAttr()
 
@@ -151,7 +154,94 @@ class InstallFileItem(install_files_t, ImageItem):
                 copy_function=lambda src, dst: copy_file(Path(src), Path(dst)),
             )
         else:
-            copy_file(self.source, dest)
+            with open(self.source, mode="rb") as src_f:
+                first_4 = src_f.read(4)
+                is_elf = first_4 == b"\x7fELF"
+            # covered by image build '//antlir/compiler/test_images:with-stripped-binary'
+            if is_elf and self.separate_debug_symbols:  # pragma: no cover
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    tmpdir = Path(tmpdir)
+                    tmp_src = tmpdir / self.dest.basename()
+                    tmp_src_dbg = Path(tmp_src + b".debug")
+                    copy_file(self.source, tmp_src)
+                    # save (only) debug symbols to a separate file
+                    subprocess.run(
+                        [
+                            "objcopy",
+                            "--only-keep-debug",
+                            self.source,
+                            tmp_src_dbg,
+                        ],
+                        check=True,
+                    )
+                    # remove debug symbols from the "primary" binary file
+                    subprocess.run(
+                        [
+                            "objcopy",
+                            "--strip-debug",
+                            "--remove-section=.pseudo_probe",
+                            "--remove-section=.pseudo_probe_desc",
+                            tmp_src,
+                        ],
+                        check=True,
+                    )
+                    # Find the BuildID of the binary. This determines where it
+                    # should go for gdb to look it up under /usr/lib/debug
+                    # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+                    build_id = subprocess.run(
+                        [
+                            "objcopy",
+                            "--dump-section",
+                            ".note.gnu.build-id=/dev/stdout",
+                            tmp_src,
+                        ],
+                        capture_output=True,
+                        check=True,
+                    ).stdout
+                    dbg_dst_by_path = Path("/usr/lib/debug") / (
+                        self.dest.strip_leading_slashes() + b".debug"
+                    )
+                    os.makedirs(subvol.path(dbg_dst_by_path.dirname()), exist_ok=True)
+                    # Prefer to install the debug info by BuildID since it does
+                    # not require another objcopy invocation and is more
+                    # standard
+                    if build_id:
+                        build_id = build_id[len(build_id) - 20 :].hex()
+                        dbg_dst = (
+                            Path("/usr/lib/debug/.build-id")
+                            / build_id[:2]
+                            / (build_id[2:] + ".debug")
+                        )
+                        os.makedirs(subvol.path(dbg_dst.dirname()), exist_ok=True)
+                        # install the debug symbols file into /usr/lib/debug
+                        copy_file(tmp_src_dbg, subvol.path(dbg_dst))
+                        # be nice and symlink to it from the path in case anyone
+                        # goes looking for it by hand
+                        os.symlink(
+                            dbg_dst.relpath(dbg_dst_by_path.dirname()),
+                            subvol.path(dbg_dst_by_path),
+                        )
+                    # We might not be able to get the BuildID if this is a
+                    # dev-mode binary, so fallback to installing the debug file
+                    # by filename
+                    else:
+                        subprocess.run(
+                            [
+                                "objcopy",
+                                "--add-gnu-debuglink",
+                                dbg_dst_by_path.basename(),
+                                tmp_src,
+                            ],
+                            cwd=tmpdir,
+                            check=True,
+                        )
+                        # install the debug symbols file into /usr/lib/debug
+                        copy_file(tmp_src_dbg, subvol.path(dbg_dst_by_path))
+
+                    # Finally, install the binary without debug symbols to the chosen location
+                    copy_file(tmp_src, dest)
+            else:
+                copy_file(self.source, dest)
 
         build_stat_options(
             self,

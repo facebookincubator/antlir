@@ -81,13 +81,14 @@ def _forbid_layer_source(source_dict):
             "actions: {}".format(source_dict),
         )
 
-def _generate_shape(source_dict, dest, mode, user, group):
+def _generate_shape(source_dict, dest, mode, user, group, separate_debug_symbols):
     return install_files_t(
         dest = dest,
         source = target_tagged_image_source_t(**source_dict),
         mode = stat.mode(mode) if mode else None,
         user = user,
         group = group,
+        separate_debug_symbols = separate_debug_symbols,
     )
 
 def _install_target_tagger(
@@ -112,6 +113,7 @@ def feature_install_buck_runnable(
         mode = None,
         user = "root",
         group = "root",
+        separate_debug_symbols = False,
         runs_in_build_steps_causes_slow_rebuilds = False):
     """
 `feature.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
@@ -152,7 +154,7 @@ defaults to `False` to speed up incremental rebuilds.
     _forbid_layer_source(tagged_source)
 
     unwrapped_target = extract_tagged_target(tagged_source["source"])
-    unwrapped_shape = _generate_shape(tagged_source, dest, mode, user, group)
+    unwrapped_shape = _generate_shape(tagged_source, dest, mode, user, group, separate_debug_symbols)
 
     # NB: We don't have to wrap executables because they already come from a
     # layer, which would have wrapped them if needed.
@@ -176,7 +178,7 @@ defaults to `False` to speed up incremental rebuilds.
             tagged_source["path"] = None
 
     wrapped_target = extract_tagged_target(tagged_source["source"])
-    wrapped_shape = _generate_shape(tagged_source, dest, mode, user, group)
+    wrapped_shape = _generate_shape(tagged_source, dest, mode, user, group, separate_debug_symbols)
 
     return _install_target_tagger(
         dest,
@@ -193,6 +195,7 @@ def feature_install(
         mode = None,
         user = "root",
         group = "root",
+        separate_debug_symbols = False,
         # @lint-ignore BUILDIFIERLINT
         wrap_as_buck_runnable = False):
     """
@@ -243,7 +246,7 @@ integrate with that logic. It can be ignored.
     _forbid_layer_source(source_dict)
 
     unwrapped_target = extract_tagged_target(source_dict["source"])
-    unwrapped_shape = _generate_shape(source_dict, dest, mode, user, group)
+    unwrapped_shape = _generate_shape(source_dict, dest, mode, user, group, separate_debug_symbols)
 
     wrapped_target = dummy_rule(
         wrap_target(unwrapped_target, _BUCK_RUNNABLE_WRAP_SUFFIX + (source_dict.get("path") or ""))[1],

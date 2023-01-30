@@ -22,4 +22,5 @@ pub struct Install<'a> {
     pub mode: Option<Mode>,
     pub src: BuckOutSource<'a>,
     pub user: UserName<'a>,
+    pub separate_debug_symbols: bool,
 }

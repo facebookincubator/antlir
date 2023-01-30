@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # IMPORTANT: Add an ANTLIR_RULE_TEST shim below for any new loads.
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "cpp_binary", "export_file", "python_binary")
 
 #
 # Why do we need these shims?
@@ -40,6 +40,9 @@ def _export_file(*args, **kwargs):
 def _python_binary(*args, **kwargs):
     python_binary(antlir_rule = ANTLIR_RULE_TEST, *args, **kwargs)
 
+def _cpp_binary(*args, **kwargs):
+    cpp_binary(antlir_rule = ANTLIR_RULE_TEST, *args, **kwargs)
+
 # Create a signed copy of the test RPM file passed in. It is signed with
 # the key from //antlir/rpm:gpg-test-keypair.
 #
@@ -70,5 +73,6 @@ defs = struct(
     buck_sh_binary = _buck_sh_binary,
     export_file = _export_file,
     python_binary = _python_binary,
+    cpp_binary = _cpp_binary,
     sign_rpm_test_file = _sign_rpm_test_file,
 )
