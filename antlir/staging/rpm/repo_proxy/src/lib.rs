@@ -16,6 +16,8 @@ use http::StatusCode;
 use hyper::body::Body;
 use hyper::Response;
 use hyper::Uri;
+use percent_encoding::percent_encode;
+use percent_encoding::NON_ALPHANUMERIC;
 use serde::Deserialize;
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
@@ -64,7 +66,8 @@ impl UrlGen {
                     .authority("manifold.facebook.net").
                     path_and_query(&format!(
                         "/v0/read/{snapshot_base}/{rel_key}?bucketName={bucket}&apiKey={apikey}&timeoutMsec={timeout_ms}&withPayload=1",
-                        snapshot_base = snapshot_base,
+                        snapshot_base = snapshot_base.trim_matches('/'),
+                        rel_key = rel_key.trim_matches('/'),
                         bucket = bucket,
                         apikey = api_key,
                         timeout_ms = 30_000,
@@ -115,10 +118,23 @@ pub async fn serve(cfg: Config) -> Result<()> {
         .and(warp::path::param())
         .and(warp::path::end())
         .and_then(move |repo_id: String, artifact: String| {
-            futures::future::ready(match rpm_repos2.get(&repo_id) {
-                Some(repo) => Ok(repo.repodata_dir.join(artifact)),
-                None => Err(warp::reject::not_found()),
-            })
+            let rpm_repos = rpm_repos2.clone();
+            async move {
+                let repo_id = percent_encoding::percent_decode_str(&repo_id)
+                    .decode_utf8()
+                    .context("invalid url-encoded repo_id")
+                    .map_err(|e| warp::reject::custom(AnyhowRejection(e)))?;
+                match rpm_repos.get(repo_id.as_ref()) {
+                    Some(repo) => Ok(repo.repodata_dir.join(artifact)),
+                    None => {
+                        tracing::warn!(
+                            repo_id = repo_id.to_string(),
+                            "request for non-existent repo"
+                        );
+                        Err(warp::reject::not_found())
+                    }
+                }
+            }
         })
         .and_then(serve_small_static_file);
 
@@ -149,7 +165,13 @@ pub async fn serve(cfg: Config) -> Result<()> {
                     .map_err(|e| warp::reject::custom(AnyhowRejection(e)))?;
                 let repo = match repo {
                     Some(r) => r,
-                    None => return Err(warp::reject::not_found()),
+                    None => {
+                        tracing::warn!(
+                            repo_id = repo_id.to_string(),
+                            "request for non-existent repo"
+                        );
+                        return Err(warp::reject::not_found());
+                    }
                 };
                 if let Some(offline_dir) = &repo.offline_dir {
                     let offline_path = offline_dir.join("Packages").join(&id).join(name.as_ref());
@@ -176,8 +198,17 @@ pub async fn serve(cfg: Config) -> Result<()> {
                 let rel_key = format!("antlir_fast_snapshot_{id}.rpm");
                 let url = repo.urlgen.urlgen(&rel_key);
                 tracing::trace!("{repo_id}/{rel_key}/{name} -> {url}");
-                match http_client.get(url).await {
-                    Ok(resp) => Ok::<_, warp::reject::Rejection>(resp),
+                match http_client.get(url.clone()).await {
+                    Ok(resp) => {
+                        if !resp.status().is_success() {
+                            tracing::error!(
+                                url = url.to_string(),
+                                status = resp.status().to_string(),
+                                "upstream failed"
+                            );
+                        }
+                        Ok::<_, warp::reject::Rejection>(resp)
+                    }
                     Err(e) => Ok(Response::builder()
                         .status(StatusCode::BAD_GATEWAY)
                         .body(Body::from(e.to_string()))
@@ -196,7 +227,10 @@ pub async fn serve(cfg: Config) -> Result<()> {
                 let uri = Uri::builder()
                     .scheme("http")
                     .authority(authority.clone())
-                    .path_and_query(format!("/yum/{}", id))
+                    .path_and_query(format!(
+                        "/yum/{}",
+                        percent_encode(id.as_bytes(), NON_ALPHANUMERIC)
+                    ))
                     .build()
                     .expect("all parts have already been validated");
                 builder.add_repo(

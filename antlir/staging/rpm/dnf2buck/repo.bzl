@@ -7,6 +7,7 @@ load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
 RepoInfo = provider(fields = {
     "base_url": "Optional upstream URL that was used to populate this target",
+    "id": "Repo name",
     "offline": "Complete offline archive of repodata and all RPMs",
     "repodata": "Populated repodata/ directory",
 })
@@ -79,6 +80,7 @@ def _impl(ctx: "context") -> ["provider"]:
             )],
         }),
         RepoInfo(
+            id = ctx.label.name,
             repodata = repodata,
             offline = offline,
             base_url = ctx.attrs.base_url,
