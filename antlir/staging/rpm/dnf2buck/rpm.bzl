@@ -62,11 +62,11 @@ def _impl(ctx: "context") -> ["provider"]:
         ctx.actions.download_file(rpm_file, ctx.attrs.url, sha256 = ctx.attrs.sha256)
 
     pkg_nevra = nevra(
-        name = ctx.attrs.nevra_name,
-        epoch = ctx.attrs.nevra_epoch,
-        version = ctx.attrs.nevra_version,
-        release = ctx.attrs.nevra_release,
-        arch = ctx.attrs.nevra_arch,
+        name = ctx.attrs.rpm_name,
+        epoch = ctx.attrs.epoch,
+        version = ctx.attrs.version,
+        release = ctx.attrs.release,
+        arch = ctx.attrs.arch,
     )
     href = package_href(pkg_nevra, ctx.attrs.sha256)
 
@@ -105,15 +105,15 @@ def _impl(ctx: "context") -> ["provider"]:
 rpm = rule(
     impl = _impl,
     attrs = {
+        "arch": attrs.string(),
+        "epoch": attrs.int(),
         "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makechunk")),
-        "nevra_arch": attrs.string(),
-        "nevra_epoch": attrs.int(),
-        "nevra_name": attrs.string(),
-        "nevra_release": attrs.string(),
-        "nevra_version": attrs.string(),
+        "release": attrs.string(),
         "rpm": attrs.option(attrs.source(), default = None),
+        "rpm_name": attrs.string(),
         "sha256": attrs.string(),
         "url": attrs.option(attrs.string(), default = None),
+        "version": attrs.string(),
         "xml_filelists": attrs.option(attrs.source(doc = "filelists.xml chunk"), default = None),
         "xml_other": attrs.option(attrs.source(doc = "other.xml chunk"), default = None),
         "xml_primary": attrs.option(attrs.source(doc = "primary.xml chunk"), default = None),
