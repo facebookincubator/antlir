@@ -5,7 +5,6 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "anyhow",
-        "futures",
         "http",
         "hyper",
         "hyper-tls",

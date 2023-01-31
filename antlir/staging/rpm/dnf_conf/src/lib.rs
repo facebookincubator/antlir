@@ -40,7 +40,7 @@ impl Display for DnfConf {
         let mut config = Ini::new();
         for (id, repo) in repos {
             config.set(
-                id,
+                &id.replace('/', "-"),
                 "baseurl",
                 Some(
                     repo.base_urls
