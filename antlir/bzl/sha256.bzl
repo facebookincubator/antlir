@@ -39,3 +39,7 @@ def hex_to_base64(x):
 def sha256_b64(s):
     # @lint-ignore BUCKLINT
     return hex_to_base64(native.sha256(s))
+
+def sha256_hex(s):
+    # @lint-ignore BUCKLINT
+    return native.sha256(s)

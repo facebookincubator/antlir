@@ -9,7 +9,6 @@ RepoInfo = provider(fields = {
     "base_url": "Optional upstream URL that was used to populate this target",
     "offline": "Complete offline archive of repodata and all RPMs",
     "repodata": "Populated repodata/ directory",
-    "rpm_names": "Names of all contained RPMs",
 })
 
 def _impl(ctx: "context") -> ["provider"]:
@@ -80,7 +79,6 @@ def _impl(ctx: "context") -> ["provider"]:
             )],
         }),
         RepoInfo(
-            rpm_names = [r.nevra.name for r in rpm_infos],
             repodata = repodata,
             offline = offline,
             base_url = ctx.attrs.base_url,
