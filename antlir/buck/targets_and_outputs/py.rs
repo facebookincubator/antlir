@@ -111,7 +111,7 @@ impl TargetsAndOutputs {
     }
 
     /// Get an absolute path to the output of a buck rule.
-    fn get(&self, key: &str) -> Result<Option<AntlirPath>, Error> {
+    pub fn get(&self, key: &str) -> Result<Option<AntlirPath>, Error> {
         let label = Label::new(key)?;
         Ok(self
             .inner
