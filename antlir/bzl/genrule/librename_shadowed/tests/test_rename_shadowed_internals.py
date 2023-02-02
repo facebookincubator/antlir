@@ -39,6 +39,8 @@ def _capture_fd(fd: int, *, inheritable: bool = True):
 # Note: we gleefully leak the returned pointers here. #ramischeap
 class TestRenameShadowedInternals(unittest.TestCase):
     @classmethod
+    # pyre-fixme[14]: `addClassCleanup` overrides method defined in `TestCase`
+    #  inconsistently.
     def addClassCleanup(cls, func, *args, **kwargs) -> None:
         cls._fakeClassCleanup = []
         # If we're not on 3.8, use our own, leakier cleanup strategy.  Test

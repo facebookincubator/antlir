@@ -193,6 +193,8 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
         self.location_to_memoized_err[location] = error.to_dict()
 
     # The default logging implementation does not flush. Gross.
+    # pyre-fixme[14]: `log_message` overrides method defined in
+    #  `BaseHTTPRequestHandler` inconsistently.
     def log_message(self, format: str, *args, _antlir_logger=log.debug) -> None:
         _antlir_logger(
             "%s - - [%s] %s\n"

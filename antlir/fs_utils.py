@@ -432,6 +432,7 @@ class Path(bytes):
         # pyre-fixme[7]: Expected `str` but got `None`.
         return json.dump(*args, **kwargs, cls=_PathJSONEncoder)
 
+    # pyre-fixme[14]: `__format__` overrides method defined in `object` inconsistently.
     def __format__(self, spec: str) -> str:
         "Allow usage of `Path` in f-strings."
         return self.decode(errors="surrogateescape").__format__(spec)

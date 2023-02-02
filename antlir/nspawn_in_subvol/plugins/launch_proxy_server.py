@@ -42,6 +42,7 @@ class ProxyServer(ServerLauncher):
             raise RuntimeError("proxy-server file could not be found.")
         super().__init__(port=PROXY_SERVER_PORT, sock=sock, bin_path=bin_path)
 
+    # pyre-fixme[14]: `__format__` overrides method defined in `object` inconsistently.
     def __format__(self, format_spec: str) -> str:
         return f"ProxyServer(port={self.port})"
 
