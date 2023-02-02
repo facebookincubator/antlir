@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use std::fmt::Display;
 
 use configparser::ini::Ini;
+use http::Uri;
 use itertools::Itertools;
-use url::Url;
 
 #[derive(Debug, Clone, Default)]
 pub struct DnfConf {
@@ -73,21 +73,21 @@ impl DnfConfBuilder {
 
 #[derive(Debug, Clone)]
 pub struct RepoConf {
-    base_urls: Vec<Url>,
+    base_urls: Vec<Uri>,
     name: Option<String>,
 }
 
-impl From<Vec<Url>> for RepoConf {
-    fn from(urls: Vec<Url>) -> Self {
+impl From<Vec<Uri>> for RepoConf {
+    fn from(uris: Vec<Uri>) -> Self {
         Self {
-            base_urls: urls,
+            base_urls: uris,
             name: None,
         }
     }
 }
 
-impl From<Url> for RepoConf {
-    fn from(u: Url) -> Self {
+impl From<Uri> for RepoConf {
+    fn from(u: Uri) -> Self {
         vec![u].into()
     }
 }
@@ -102,8 +102,10 @@ mod tests {
             .add_repo(
                 "foo".into(),
                 vec![
-                    Url::parse("https://repo.repo/yum/my/repo").expect("valid url"),
-                    Url::parse("https://mirror.repo/yum/my/repo").expect("valid url"),
+                    "https://repo.repo/yum/my/repo".parse().expect("valid Uri"),
+                    "https://mirror.repo/yum/my/repo"
+                        .parse()
+                        .expect("valid Uri"),
                 ],
             )
             .build();
