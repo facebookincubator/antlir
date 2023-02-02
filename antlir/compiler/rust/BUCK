@@ -2,7 +2,7 @@ load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
 antlir_rust_extension(
     name = "compiler",
-    srcs = glob(["**/*.rs"]),
+    srcs = glob(["src/*rs"]),
     typestub = "compiler.pyi",
     deps = [
         "anyhow",
@@ -15,5 +15,25 @@ antlir_rust_extension(
         "//antlir/bzl:constants.shape-rust",
         "//antlir/filesystem/absolute_path:absolute_path",
         "//antlir/rust/py_utils:py_utils",
+    ],
+)
+
+antlir_rust_extension(
+    name = "mount",
+    srcs = ["src/items/mount.rs"],
+    rust_visibility = [
+        "//antlir/...",
+        "//fbpkg/caf/...",
+    ],
+    typestub = "mount.pyi",
+    deps = [
+        "serde",
+        "serde_json",
+        "thiserror",
+        "walkdir",
+        "//antlir:find_built_subvol_rust_lib",
+        "//antlir:fs_utils_rs-rust",
+        "//antlir/buck/targets_and_outputs:targets_and_outputs_py-rust",
+        "//antlir/filesystem/absolute_path:absolute_path",
     ],
 )
