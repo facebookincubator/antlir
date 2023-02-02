@@ -6,27 +6,37 @@
  */
 
 use std::collections::HashMap;
+use std::convert::Infallible;
+use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
 use dnf_conf::DnfConf;
+use http::header::HOST;
+use http::uri::Scheme;
+use http::Method;
 use http::StatusCode;
+use http::Uri;
 use hyper::body::Body;
+use hyper::service::make_service_fn;
+use hyper::service::service_fn;
+use hyper::Client;
+use hyper::Request;
 use hyper::Response;
-use hyper::Uri;
-use percent_encoding::percent_encode;
-use percent_encoding::NON_ALPHANUMERIC;
+use hyper::Server;
+use hyper_tls::HttpsConnector;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::Deserialize;
 use tokio::net::UnixListener;
-use tokio_stream::wrappers::UnixListenerStream;
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::FramedRead;
-use warp::host::Authority;
-use warp::reject::Reject;
-use warp::Filter;
-use warp::Rejection;
+use tracing::span;
+use tracing::Level;
+
+mod unix;
 
 #[derive(Debug)]
 pub struct Config {
@@ -85,116 +95,135 @@ pub struct RpmRepo {
     urlgen: UrlGen,
 }
 
-async fn serve_small_static_file(path: PathBuf) -> std::result::Result<Vec<u8>, Rejection> {
-    match tokio::fs::read(&path).await {
-        Ok(bytes) => Ok(bytes),
+static REPO_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"^/yum/(?P<repo>.*)(?P<resource>/(repodata|Packages).*)$"#)
+        .expect("will definitely compile")
+});
+static REPODATA_RE: Lazy<Regex> =
+    Lazy::new(|| Regex::new(r#"^/repodata/(?P<artifact>.*)$"#).expect("will definitely compile"));
+static PACKAGES_RE: Lazy<Regex> = Lazy::new(|| {
+    Regex::new(r#"^/Packages/(?P<id>[a-f0-9]{64})/(?P<name>.*\.rpm)$"#)
+        .expect("will definitely compile")
+});
+
+#[derive(Debug, thiserror::Error)]
+#[error("{status}: {msg}")]
+struct ReplyError {
+    status: StatusCode,
+    msg: String,
+}
+
+impl ReplyError {
+    fn new(status: StatusCode, msg: impl std::fmt::Display) -> Self {
+        Self {
+            status,
+            msg: msg.to_string(),
+        }
+    }
+
+    fn not_found(msg: impl std::fmt::Display) -> Self {
+        Self::new(StatusCode::NOT_FOUND, msg)
+    }
+}
+
+impl From<ReplyError> for Response<Body> {
+    fn from(mut re: ReplyError) -> Self {
+        re.msg.push('\n');
+        Response::builder()
+            .status(re.status)
+            .body(re.msg.into())
+            .expect("infallible")
+    }
+}
+
+#[tracing::instrument(skip_all, fields(path=req.uri().path()))]
+async fn service_request<C>(
+    req: Request<Body>,
+    rpm_repos: Arc<HashMap<String, RpmRepo>>,
+    http_client: Arc<Client<C>>,
+) -> Result<Response<Body>, Infallible>
+where
+    C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
+{
+    let span = span!(Level::TRACE, "reply", path = req.uri().path());
+    let _guard = span.enter();
+    match reply(req, rpm_repos, http_client).await {
+        Ok(resp) => Ok(resp),
+        Err(err) => {
+            tracing::error!(status = err.status.to_string(), "{}", err.msg);
+            Ok(err.into())
+        }
+    }
+}
+
+async fn serve_static_file(path: &Path) -> Result<Response<Body>, ReplyError> {
+    match tokio::fs::File::open(&path).await {
+        Ok(f) => {
+            let stream = FramedRead::new(f, BytesCodec::new());
+            Ok(Response::builder()
+                .body(Body::wrap_stream(stream))
+                .expect("infallible"))
+        }
         Err(e) => match e.kind() {
-            std::io::ErrorKind::NotFound => Err(warp::reject::not_found()),
-            _ => Err(warp::reject::custom(AnyhowRejection(e.into()))),
+            std::io::ErrorKind::NotFound => Err(ReplyError::not_found(format!(
+                "'{}' not found",
+                path.display()
+            ))),
+            _ => Err(ReplyError::new(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                format!("'{}': {e}", path.display()),
+            )),
         },
     }
 }
 
-#[derive(Debug)]
-struct AnyhowRejection(anyhow::Error);
+async fn reply<C>(
+    req: Request<Body>,
+    rpm_repos: Arc<HashMap<String, RpmRepo>>,
+    http_client: Arc<Client<C>>,
+) -> Result<Response<Body>, ReplyError>
+where
+    C: hyper::client::connect::Connect + Clone + Send + Sync + 'static,
+{
+    if req.method() != Method::GET {
+        return Err(ReplyError {
+            status: StatusCode::METHOD_NOT_ALLOWED,
+            msg: format!("'{}' is not allowed", req.method()),
+        });
+    }
 
-impl Reject for AnyhowRejection {}
-
-#[tracing::instrument(ret, err)]
-pub async fn serve(cfg: Config) -> Result<()> {
-    let rpm_repos: Arc<HashMap<_, _>> = Arc::new(
-        cfg.rpm_repos
-            .into_iter()
-            .map(|(id, repo)| (id, Arc::new(repo)))
-            .collect(),
-    );
-
-    let alive = warp::path("_alive").map(|| "OK\n");
-    let rpm_repos2 = rpm_repos.clone();
-    let repodata = warp::get()
-        .and(warp::path("yum"))
-        .and(warp::path::param())
-        .and(warp::path("repodata"))
-        .and(warp::path::param())
-        .and(warp::path::end())
-        .and_then(move |repo_id: String, artifact: String| {
-            let rpm_repos = rpm_repos2.clone();
-            async move {
-                let repo_id = percent_encoding::percent_decode_str(&repo_id)
-                    .decode_utf8()
-                    .context("invalid url-encoded repo_id")
-                    .map_err(|e| warp::reject::custom(AnyhowRejection(e)))?;
-                match rpm_repos.get(repo_id.as_ref()) {
-                    Some(repo) => Ok(repo.repodata_dir.join(artifact)),
-                    None => {
-                        tracing::warn!(
-                            repo_id = repo_id.to_string(),
-                            "request for non-existent repo"
-                        );
-                        Err(warp::reject::not_found())
-                    }
-                }
+    let path = req.uri().path();
+    if let Some(cap) = REPO_RE.captures(path) {
+        let repo_id = cap.name("repo").expect("'repo' must exist").as_str();
+        let repo = match rpm_repos.get(repo_id) {
+            Some(repo) => repo,
+            None => {
+                return Err(ReplyError::not_found(format!(
+                    "repo '{repo_id} does not exist"
+                )));
             }
-        })
-        .and_then(serve_small_static_file);
-
-    let http_client = Arc::new(
-        hyper::Client::builder().build::<_, hyper::Body>(hyper_tls::HttpsConnector::new()),
-    );
-
-    let rpm_repos2 = rpm_repos.clone();
-    let package_blob = warp::get()
-        .and(warp::path("yum"))
-        .and(warp::path::param())
-        .and(warp::path("Packages"))
-        .and(warp::path::param())
-        .and(warp::path::param())
-        .and(warp::path::end())
-        .and_then(move |repo_id: String, id: String, name: String| {
-            let rpm_repos = rpm_repos2.clone();
-            let http_client = http_client.clone();
-            async move {
-                let repo_id = percent_encoding::percent_decode_str(&repo_id)
-                    .decode_utf8()
-                    .context("invalid url-encoded repo_id")
-                    .map_err(|e| warp::reject::custom(AnyhowRejection(e)))?;
-                let repo = rpm_repos.get(repo_id.as_ref()).cloned();
-                let name = percent_encoding::percent_decode_str(&name)
-                    .decode_utf8()
-                    .context("invalid url-encoded name")
-                    .map_err(|e| warp::reject::custom(AnyhowRejection(e)))?;
-                let repo = match repo {
-                    Some(r) => r,
-                    None => {
-                        tracing::warn!(
-                            repo_id = repo_id.to_string(),
-                            "request for non-existent repo"
-                        );
-                        return Err(warp::reject::not_found());
-                    }
-                };
-                if let Some(offline_dir) = &repo.offline_dir {
-                    let offline_path = offline_dir.join("Packages").join(&id).join(name.as_ref());
-                    match tokio::fs::File::open(&offline_path).await {
-                        Ok(file) => {
-                            tracing::trace!("{} exists, serving from disk", offline_path.display());
-                            let stream = FramedRead::new(file, BytesCodec::new());
-                            return Ok(Response::builder()
-                                .status(StatusCode::OK)
-                                .body(Body::wrap_stream(stream))
-                                .expect("always valid"));
-                        }
-                        Err(e) => match e.kind() {
-                            std::io::ErrorKind::NotFound => {
-                                tracing::trace!(
-                                    "{} does not exist, trying remote",
-                                    offline_path.display()
-                                );
-                            }
-                            _ => return Err(warp::reject::custom(AnyhowRejection(e.into()))),
-                        },
-                    }
-                }
+        };
+        let resource = cap
+            .name("resource")
+            .expect("'resource' must exist")
+            .as_str();
+        if let Some(cap) = REPODATA_RE.captures(resource) {
+            let path = repo.repodata_dir.join(
+                cap.name("artifact")
+                    .expect("'artifact' must exist")
+                    .as_str(),
+            );
+            serve_static_file(&path).await
+        } else if let Some(cap) = PACKAGES_RE.captures(resource) {
+            let id = cap.name("id").expect("'id' must exist").as_str();
+            let name = cap.name("name").expect("'name' must exist").as_str();
+            if let Some(offline_dir) = repo
+                .offline_dir
+                .as_deref()
+                .and_then(|path| if path.exists() { Some(path) } else { None })
+            {
+                serve_static_file(&offline_dir.join("Packages").join(id).join(name)).await
+            } else {
                 let rel_key = format!("antlir_fast_snapshot_{id}.rpm");
                 let url = repo.urlgen.urlgen(&rel_key);
                 tracing::trace!("{repo_id}/{rel_key}/{name} -> {url}");
@@ -207,58 +236,81 @@ pub async fn serve(cfg: Config) -> Result<()> {
                                 "upstream failed"
                             );
                         }
-                        Ok::<_, warp::reject::Rejection>(resp)
+                        Ok(resp)
                     }
-                    Err(e) => Ok(Response::builder()
-                        .status(StatusCode::BAD_GATEWAY)
-                        .body(Body::from(e.to_string()))
-                        .expect("always valid")),
+                    Err(e) => Err(ReplyError::new(StatusCode::BAD_GATEWAY, e)),
                 }
             }
-        });
+        } else {
+            Err(ReplyError::not_found(format!(
+                "repo {repo_id} exists but '{resource}' does not match any known resources"
+            )))
+        }
+    } else if path == "/yum/dnf.conf" {
+        // find the hostname that this was called with so we can put the right
+        // thing in the dnf.conf for absolute urls
+        let authority = req
+            .headers()
+            .get(HOST)
+            .expect("HOST header is always present")
+            .to_str()
+            .expect("HOST header must be valid string");
 
-    let dnf_conf = warp::get()
-        .and(warp::path!("yum" / "dnf.conf"))
-        .and(warp::host::optional())
-        .map(move |authority: Option<Authority>| {
-            let authority = authority.unwrap_or_else(|| Authority::from_static("localhost"));
-            let mut builder = DnfConf::builder();
-            for (id, _) in rpm_repos.iter() {
-                let uri = Uri::builder()
-                    .scheme("http")
-                    .authority(authority.clone())
-                    .path_and_query(format!(
-                        "/yum/{}",
-                        percent_encode(id.as_bytes(), NON_ALPHANUMERIC)
-                    ))
-                    .build()
-                    .expect("all parts have already been validated");
-                builder.add_repo(
-                    id.clone(),
-                    url::Url::parse(&uri.to_string())
-                        .expect("inefficient conversion, but it will always work"),
-                );
-            }
-            builder.build().to_string()
-        });
+        let mut builder = DnfConf::builder();
+        for (id, _) in rpm_repos.iter() {
+            let uri = Uri::builder()
+                .scheme(
+                    req.uri()
+                        .scheme()
+                        .cloned()
+                        .unwrap_or_else(|| Scheme::HTTP.clone()),
+                )
+                .authority(authority)
+                .path_and_query(format!("/yum/{}", id,))
+                .build()
+                .expect("all parts have already been validated");
+            builder.add_repo(id.clone(), uri);
+        }
+        Ok(Response::builder()
+            .body(builder.build().to_string().into())
+            .expect("infallible"))
+    } else {
+        Err(ReplyError::not_found("does not match any routes"))
+    }
+}
 
-    let routes = alive
-        .or(repodata)
-        .or(package_blob)
-        .or(dnf_conf)
-        .with(warp::trace::request());
+#[tracing::instrument(ret, err)]
+pub async fn serve(cfg: Config) -> Result<()> {
+    let rpm_repos: Arc<HashMap<_, _>> = Arc::new(
+        cfg.rpm_repos
+            .into_iter()
+            .map(|(id, repo)| (id, repo))
+            .collect(),
+    );
 
     let listener = UnixListener::bind(&cfg.bind).context("while binding unix socket")?;
-    let incoming = UnixListenerStream::new(listener);
+    let incoming = crate::unix::UnixIncoming(listener);
     tracing::info!("bound to {:?}", &cfg.bind);
 
-    warp::serve(routes)
-        .serve_incoming_with_graceful_shutdown(incoming, async move {
+    let make_svc = make_service_fn(move |_conn| {
+        let rpm_repos = rpm_repos.clone();
+        let http_client = Arc::new(Client::builder().build::<_, Body>(HttpsConnector::new()));
+        async {
+            Ok::<_, Infallible>(service_fn(move |req| {
+                service_request(req, rpm_repos.clone(), http_client.clone())
+            }))
+        }
+    });
+
+    let server = Server::builder(incoming)
+        .serve(make_svc)
+        .with_graceful_shutdown(async move {
             tokio::signal::ctrl_c()
                 .await
                 .expect("failed to listen to shutdown signal");
-        })
-        .await;
+        });
+    let result = server.await;
+
     std::fs::remove_file(&cfg.bind).context("while removing socket")?;
-    Ok(())
+    result.context("while serving HTTP")
 }
