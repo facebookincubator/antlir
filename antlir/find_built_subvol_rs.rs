@@ -47,7 +47,7 @@ pub fn find_built_subvol_rs(py: Python<'_>, m: &PyModule) -> PyResult<()> {
             None => None,
         };
 
-        let path_in_repo = {
+        let buck_cell_root = {
             if subvolumes_dir.is_some() {
                 None
             } else {
@@ -62,7 +62,8 @@ pub fn find_built_subvol_rs(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         match find_built_subvol_rust_lib::find_built_subvol(
             layer_output,
             subvolumes_dir,
-            path_in_repo,
+            buck_cell_root,
+            None,
         ) {
             Ok(path) => Ok(path.into()),
             Err(e) => Err(SubvolNotFound::new_err(e.to_string())),

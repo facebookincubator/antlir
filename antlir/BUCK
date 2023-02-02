@@ -958,8 +958,8 @@ antlir_rust_extension(
     deps = [
         ":artifacts_dir_rs-rust",
         ":find_built_subvol_rust_lib",
+        ":find_root",
         ":fs_utils_rs-rust",
-        "//antlir:find_root",
         "//antlir/filesystem/absolute_path:absolute_path",
     ],
 )
