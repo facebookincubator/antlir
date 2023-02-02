@@ -50,6 +50,7 @@ class TestInstallFileStrip(unittest.TestCase):
         self.assertAlmostEqual(
             stripped_size + symbols_size,
             full_size,
+            # pyre-fixme[6]: For 3rd argument expected `None` but got `float`.
             delta=full_size * 0.05,
             msg="Expected stripped+symbols size to be within 5% of the full binary size, something smells off...",
         )
