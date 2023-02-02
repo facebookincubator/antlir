@@ -85,6 +85,7 @@ class MountItemTestCase(BaseItemTestCase):
                             "MOUNT": [
                                 "(Dir)",
                                 {
+                                    "mount_config.json": ["(File d134)"],
                                     "is_directory": ["(File d2)"],
                                     "build_source": [
                                         "(Dir)",
@@ -204,6 +205,7 @@ class MountItemTestCase(BaseItemTestCase):
                         "MOUNT": [
                             "(Dir)",
                             {
+                                "mount_config.json": ["(File d194)"],
                                 "is_directory": ["(File d2)"],
                                 "build_source": [
                                     "(Dir)",
@@ -214,13 +216,7 @@ class MountItemTestCase(BaseItemTestCase):
                                 ],
                                 "runtime_source": [
                                     "(Dir)",
-                                    {
-                                        "so": ["(File d3)"],
-                                        "arbitrary": [
-                                            "(Dir)",
-                                            {"j": ["(File d4)"]},
-                                        ],
-                                    },
+                                    {"type": ["(File d7)"]},
                                 ],
                             },
                         ]
@@ -247,8 +243,7 @@ class MountItemTestCase(BaseItemTestCase):
             ("is_directory", "1\n"),
             ("build_source/type", "layer\n"),
             ("build_source/source", "//fake:path\n"),
-            ("runtime_source/so", "me\n"),
-            ("runtime_source/arbitrary/j", "son\n"),
+            ("runtime_source/type", "unused\n"),
         ):
             self.assertEqual(
                 contents,
@@ -270,7 +265,7 @@ class MountItemTestCase(BaseItemTestCase):
     @with_mocked_temp_volume_dir
     def test_mount_item(self) -> None:
         with TempSubvolumes() as temp_subvolumes, tempfile.TemporaryDirectory() as source_dir:  # noqa: E501
-            runtime_source = {"so": "me", "arbitrary": {"j": "son"}}
+            runtime_source = {"type": "unused"}
             mount_config = {
                 "is_directory": True,
                 "build_source": {"type": "layer", "source": "//fake:path"},

@@ -10,6 +10,7 @@ NB: Surprisingly, we don't need any special cleanup for the `mount` operations
     deletion, as performed by `subvolume_garbage_collector.py`, implicitly
     lazy-unmounts any mounts therein.
 """
+import dataclasses
 import json
 import os
 from dataclasses import dataclass
@@ -156,14 +157,32 @@ class MountItem(ImageItem):
 
     def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
         mount_dir = META_MOUNTS_DIR / self.mountpoint / MOUNT_MARKER
+        runtime_source_kwargs = json.loads(self.runtime_source)
+        layer_publisher_kwargs = json.loads(self.layer_publisher)
+        mount_obj = Mount(
+            mountpoint=self.mountpoint,
+            build_source=self.build_source,
+            is_directory=self.is_directory,
+            runtime_source=RuntimeSource(**runtime_source_kwargs)
+            if runtime_source_kwargs
+            else None,
+            layer_publisher=LayerPublisher(**layer_publisher_kwargs)
+            if layer_publisher_kwargs
+            else None,
+        )
         for name, data in (
             # NB: Not exporting self.mountpoint since it's implicit in the path.
-            ("is_directory", self.is_directory),
-            ("build_source", self.build_source._asdict()),
-            ("runtime_source", json.loads(self.runtime_source)),
-            ("layer_publisher", json.loads(self.layer_publisher)),
+            ("is_directory", mount_obj.is_directory),
+            ("build_source", mount_obj.build_source._asdict()),
+            ("runtime_source", runtime_source_kwargs),
+            ("layer_publisher", layer_publisher_kwargs),
         ):
             procfs_serde.serialize(data, subvol, Path(mount_dir / name).decode())
+
+        # Along with procfs representation of the mount, write a JSON config for easier
+        # deserialization by Rust libraries.
+        with open(subvol.path(mount_dir / "mount_config.json"), "w") as f:
+            f.write(f"{json.dumps(dataclasses.asdict(mount_obj))}\n")
 
         source_path = self.build_source.to_path(
             target_to_path=layer_opts.target_to_path,

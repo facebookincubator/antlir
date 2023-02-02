@@ -193,6 +193,9 @@ def deserialize_untyped(path: Path, path_with_ext: str) -> Any:
         return {
             k: deserialize_untyped(path, os.path.join(path_with_ext, k))
             for k in os.listdir(path.normalized_subpath(path_with_ext).decode())
+            # Skip deserializing JSON config file which is currently only read by Antlir
+            # Rust libraries
+            if k != "mount_config.json"
         }
     elif os.path.isfile(path.normalized_subpath(path_with_ext)):
         with open(path.normalized_subpath(path_with_ext), "rb") as f:
