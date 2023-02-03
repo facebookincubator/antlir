@@ -13,7 +13,7 @@ load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":build_appliance.bzl", "BuildApplianceInfo")
 load(":ensure_single_output.bzl", "ensure_single_output")
-load(":flavor.bzl", "FlavorInfo")
+load(":flavor.bzl", "FlavorInfo", "coerce_to_flavor_label")
 load(":layer_info.bzl", "LayerInfo")
 load(":layer_runnable_subtargets.bzl", "layer_runnable_subtargets", "layer_runtime_attr", "make_alias_with_equals_suffix")
 load(":toolchain.bzl", "AntlirToolchainInfo")
@@ -280,11 +280,11 @@ _layer = rule(
 def layer(
         *,
         name: str.type,
+        flavor: str.type,
         # Features does not have a direct type hint, but it is still validated
         # by a type hint inside feature.bzl. Feature targets or
         # InlineFeatureInfo providers are accepted, at any level of nesting
         features = [],
-        flavor: [str.type, None] = None,
         runtime: [str.type] = ["container"],
         **kwargs):
     parent_layer = kwargs.get("parent_layer")
@@ -298,6 +298,7 @@ def layer(
         name = feature_target,
         visibility = [":" + name],
         features = features,
+        flavors = [flavor],
     )
     feature_target = ":" + feature_target
 
@@ -322,7 +323,7 @@ def layer(
         features = feature_target,
         buck1_features_json = feature_target + "[buck1/features.json]",
         buck1_features_deps = deps_query,
-        flavor = flavor,
+        flavor = coerce_to_flavor_label(flavor),
         runtime = runtime,
         **kwargs
     )

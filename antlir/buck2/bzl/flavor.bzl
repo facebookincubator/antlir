@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:constants.shape.bzl", "flavor_config_t")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:types.bzl", "types")
@@ -54,5 +55,7 @@ def flavor_to_config(flavor: ["dependency", str.type]) -> types.shape(flavor_con
 
 def coerce_to_flavor_label(flavor: str.type) -> str.type:
     if ":" not in flavor:
-        return "//antlir/facebook/flavor:" + flavor
+        return REPO_CFG.antlir_cell_name + "//antlir/facebook/flavor:" + flavor
+    if flavor.startswith("//"):
+        return REPO_CFG.antlir_cell_name + flavor
     return flavor

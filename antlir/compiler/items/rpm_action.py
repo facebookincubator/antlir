@@ -31,7 +31,6 @@ from antlir.compiler.items.common import (
     PhaseOrder,
     protected_path_set,
 )
-from antlir.config import repo_config
 from antlir.fs_utils import generate_work_dir, Path
 from antlir.nspawn_in_subvol.args import (
     _new_nspawn_debug_only_not_for_prod_opts,
@@ -296,7 +295,6 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     # `rpm_action_item_t` inconsistently.
     action: RpmAction
     flavor_to_version_set: Dict[str, Union[str, Dict[str, str]]]
-    flavors_specified: bool = False
     name: Optional[str] = None
     source: Optional[Path] = None
 

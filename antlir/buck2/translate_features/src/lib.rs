@@ -377,7 +377,7 @@ impl FromNew<features::rpms::Rpm<'_>> for rpms::rpm_action_item_t {
             flavor_to_version_set: new
                 .flavor_to_version_set
                 .into_iter()
-                .map(|(k, v)| (k.into_owned(), v.into_shape()))
+                .map(|(k, v)| (k.name().to_owned(), v.into_shape()))
                 .collect(),
         }
     }
