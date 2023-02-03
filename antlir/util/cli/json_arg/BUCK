@@ -1,0 +1,25 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+rust_library(
+    name = "json_arg",
+    srcs = glob(["src/*.rs"]),
+    autocargo = {
+        "cargo_toml_config": {
+            "package": {
+                "description": "Easily parse JSON CLI args",
+                "license": "MIT",
+                "repository": "https://github.com/facebookincubator/antlir/tree/main/antlir/util/cli/json_arg",
+                "version": "0.1.1",
+            },
+        },
+    },
+    test_deps = [
+        "clap",
+        "similar-asserts",
+        "tempfile",
+    ],
+    deps = [
+        "serde",
+        "serde_json",
+    ],
+)

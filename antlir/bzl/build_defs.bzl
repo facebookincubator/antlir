@@ -219,6 +219,7 @@ def _rust_implicit_test(kwargs, test_kwargs):
     if kwargs.pop("unittests", True):
         test_kwargs["name"] = kwargs["name"] + "-unittest"
         test_kwargs["crate"] = kwargs.get("crate") or kwargs["name"].replace("-", "_")
+        test_kwargs.pop("autocargo", None)
         test_kwargs.pop("doctests", None)
         test_kwargs.pop("link_style", None)
         test_kwargs.pop("linker_flags", None)
