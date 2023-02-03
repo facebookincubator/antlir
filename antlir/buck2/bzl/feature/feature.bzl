@@ -50,8 +50,8 @@ added to the `_feature_to_json` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/buck2/bzl:flavor.bzl", "FlavorInfo")
-load("//antlir/bzl:constants.bzl", "BZL_CONST")
+load("//antlir/buck2/bzl:flavor.bzl", "FlavorInfo", "coerce_to_flavor_label")
+load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
 load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
@@ -218,6 +218,8 @@ def feature(
     feature_targets = []
     inline_features_deps = {}
     inline_features_sources = {}
+    flavors = flavors or REPO_CFG.flavor_available
+    flavors = [coerce_to_flavor_label(f) for f in flavors]
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -225,6 +227,13 @@ def feature(
             feature_key = _hash_key(feat.kwargs)
             inline_features_deps[feature_key] = feat.deps
             inline_features_sources[feature_key] = feat.sources
+
+            if feat.flavor_specific_sources:
+                for flavor in flavors:
+                    if flavor not in feat.flavor_specific_sources:
+                        fail("feature '{}' has flavor_specific_sources but does not include a key for '{}'".format(feat, flavor))
+                    inline_features_sources[feature_key].update(feat.flavor_specific_sources[flavor])
+
             inline_features[feature_key] = json.encode(feat)
 
     # TODO(T139523690)

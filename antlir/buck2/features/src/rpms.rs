@@ -9,6 +9,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::path::Path;
 
+use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -52,5 +53,5 @@ pub enum VersionSet<'a> {
 pub struct Rpm<'a> {
     pub action: Action,
     pub source: Source<'a>,
-    pub flavor_to_version_set: BTreeMap<Cow<'a, str>, VersionSet<'a>>,
+    pub flavor_to_version_set: BTreeMap<Label<'a>, VersionSet<'a>>,
 }
