@@ -14,7 +14,7 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use anyhow::Context as _;
 use anyhow::Result;
-use clap::arg_enum;
+use clap::ArgEnum;
 use clap::Parser;
 use derive_more::AsRef;
 use derive_more::Deref;
@@ -36,20 +36,19 @@ use itertools::Itertools;
 use serde::Serialize;
 use serde_json::Value;
 
-arg_enum! {
-    #[derive(Debug)]
-    enum RenderFormat {
-        // classic style shapes with very limited type safety
-        Pydantic,
-        // plain rust structs with serde
-        Rust,
-    }
+#[derive(Debug, Clone, ArgEnum)]
+enum RenderFormat {
+    // classic style shapes with very limited type safety
+    Pydantic,
+    // plain rust structs with serde
+    Rust,
 }
 
 #[derive(Parser)]
 struct Opts {
     #[clap(long)]
     templates: PathBuf,
+    #[clap(value_enum)]
     format: RenderFormat,
     // path to json-serialized IR
     ir: PathBuf,
@@ -67,7 +66,7 @@ impl TemplatesDir {
 }
 
 pub fn main() -> Result<()> {
-    let opts = Opts::from_args();
+    let opts = Opts::parse();
     let f =
         File::open(&opts.ir).with_context(|| format!("failed to open {}", opts.ir.display()))?;
     let ir: Module = serde_json::from_reader(f)
