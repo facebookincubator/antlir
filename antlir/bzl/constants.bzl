@@ -10,7 +10,7 @@
 # could easily move everything into the struct.
 #
 load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
-load("//antlir/bzl:flavor_alias.bzl", "alias_flavor")
+load("//antlir/bzl:flavor_alias.bzl", "alias_flavor", "flavor_aliasing_enabled")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load(":constants.shape.bzl", "buck2_early_adoption_t", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
@@ -182,9 +182,24 @@ def _get_flavor_to_config():
     return flavor_to_config
 
 def use_rc_target(*, target, exact_match = False):
+    target = normalize_target(target)
     if not exact_match and REPO_CFG.rc_targets == ["all"]:
         return True
-    return normalize_target(target) in REPO_CFG.rc_targets
+
+    # If flavor aliases are in use, always use rc targets (since the
+    # cached targets likely weren't built with the same flavor alias
+    # overrides). But don't bother applying this logic to BA and
+    # snapshot targets since flavor aliasing is explicitly disabled for
+    # them. (This latter optimization improves performance and is not
+    # required for correctness.)
+    if not exact_match and flavor_aliasing_enabled():
+        if not any([
+            target.startswith(prefix)
+            for prefix in REPO_CFG.unaliased_flavor_target_prefixes
+        ]):
+            return True
+
+    return target in REPO_CFG.rc_targets
 
 def _get_buck2_early_adoption():
     include = []
@@ -242,4 +257,5 @@ REPO_CFG = repo_config_t(
     flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
     buck1_tgts_to_flavors = _get_buck1_tgts_to_flavors(),
     buck2_early_adoption = _get_buck2_early_adoption(),
+    unaliased_flavor_target_prefixes = _get_str_list_cfg("unaliased_flavor_target_prefixes"),
 )

@@ -52,4 +52,5 @@ do_not_use_repo_cfg = {
     #   https://github.com/stevegrubb/libcap-ng/issues/20
     #
     # "libcap_ng_compiler_flags": "-DCAPNG_SUPPORTS_AMBIENT=1",
+    "unaliased_flavor_target_prefixes": [],
 }

@@ -22,6 +22,9 @@ def aliased_flavor_targets():
     alias = _get_flavor_alias()
     return [alias[0]] if alias != None else []
 
+def flavor_aliasing_enabled():
+    return False if _get_flavor_alias() == None else True
+
 def _fail_if_flavor_aliasing_disabled():
     if native.read_config("antlir", "fail-on-flavor-aliasing"):
         #
