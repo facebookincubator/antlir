@@ -107,4 +107,5 @@ repo_config_t = shape.shape(
     buck1_tgts_to_flavors = shape.dict(str, str),
     flavor_alias = shape.field(str, optional = True),
     buck2_early_adoption = buck2_early_adoption_t,
+    unaliased_flavor_target_prefixes = shape.list(shape.path),
 )
