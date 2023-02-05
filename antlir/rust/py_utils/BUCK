@@ -3,7 +3,4 @@ load("//antlir/bzl:build_defs.bzl", "rust_library")
 rust_library(
     name = "py_utils",
     srcs = glob(["src/**/*.rs"]),
-    deps = [
-        "pyo3",
-    ],
 )
