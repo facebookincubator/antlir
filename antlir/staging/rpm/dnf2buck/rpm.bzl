@@ -20,18 +20,18 @@ def nevra_to_string(nevra: nevra.type) -> str.type:
         nevra.arch,
     )
 
-def package_href(nevra: nevra.type, sha256: str.type) -> str.type:
+def package_href(nevra: nevra.type, id: str.type) -> str.type:
     """
-    Make the location encode the sha256. The last path component is the package
+    Make the location encode the pkgid. The last path component is the package
     nevra so that dnf logs look nice, but the repo proxy only looks at the
-    middle path component that includes the sha256.
+    middle path component that includes the pkgid.
     """
-    return "Packages/{sha256}/{nevra}.rpm".format(sha256 = sha256, nevra = nevra_to_string(nevra))
+    return "Packages/{id}/{nevra}.rpm".format(id = id, nevra = nevra_to_string(nevra))
 
 RpmInfo = provider(fields = {
     "nevra": "RPM NEVRA",
+    "pkgid": "checksum (sha256 or sha1, usually sha256)",
     "rpm": ".rpm file artifact",
-    "sha256": ".rpm sha256 (also used as pkgid)",
     "xml_filelists": "filelists.xml chunk artifact",
     "xml_other": "other.xml chunk artifact",
     "xml_primary": "primary.xml chunk artifact",
@@ -53,13 +53,16 @@ def _make_chunk(ctx: "context", rpm: "artifact", which: str.type, href: str.type
     return out
 
 def _impl(ctx: "context") -> ["provider"]:
+    if (int(bool(ctx.attrs.sha256)) + int(bool(ctx.attrs.sha1))) != 1:
+        fail("exactly one of {sha256,sha1} must be set")
+
     if ctx.attrs.rpm:
         rpm_file = ctx.attrs.rpm
     else:
         if not ctx.attrs.url:
             fail("'rpm' or 'url' required")
         rpm_file = ctx.actions.declare_output("rpm")
-        ctx.actions.download_file(rpm_file, ctx.attrs.url, sha256 = ctx.attrs.sha256)
+        ctx.actions.download_file(rpm_file, ctx.attrs.url, sha256 = ctx.attrs.sha256, sha1 = ctx.attrs.sha1)
 
     pkg_nevra = nevra(
         name = ctx.attrs.rpm_name,
@@ -95,7 +98,7 @@ def _impl(ctx: "context") -> ["provider"]:
         RpmInfo(
             nevra = pkg_nevra,
             rpm = rpm_file,
-            sha256 = ctx.attrs.sha256,
+            pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
             xml_primary = xml_primary,
             xml_filelists = xml_filelists,
             xml_other = xml_other,
@@ -111,7 +114,8 @@ rpm = rule(
         "release": attrs.string(),
         "rpm": attrs.option(attrs.source(), default = None),
         "rpm_name": attrs.string(),
-        "sha256": attrs.string(),
+        "sha1": attrs.option(attrs.string(), default = None),
+        "sha256": attrs.option(attrs.string(), default = None),
         "url": attrs.option(attrs.string(), default = None),
         "version": attrs.string(),
         "xml_filelists": attrs.option(attrs.source(doc = "filelists.xml chunk"), default = None),

@@ -46,7 +46,7 @@ def _impl(ctx: "context") -> ["provider"]:
         "repodata": repodata,
     }
     for rpm in rpm_infos:
-        offline_map[package_href(rpm.nevra, rpm.sha256)] = rpm.rpm
+        offline_map[package_href(rpm.nevra, rpm.pkgid)] = rpm.rpm
     ctx.actions.symlinked_dir(offline, offline_map)
 
     # repos that are not backed by manifold must use the "offline" urlgen
