@@ -33,10 +33,18 @@ class RpmMetadata(NamedTuple):
     def from_subvol(
         cls, subvol: Subvol, ba_subvol: Subvol, package_name: str
     ) -> "RpmMetadata":
-        db_path_src = subvol.path("var/lib/rpm")
-        if not os.path.exists(db_path_src):
+        db_path_src: Optional[Path] = None
+        db_paths = [
+            subvol.path("var/lib/rpm"),
+            subvol.path("/usr/lib/sysimage/rpm"),
+        ]
+        for i in db_paths:
+            if os.path.exists(i):
+                db_path_src = i
+                break
+        if not db_path_src:
             # If we didn't check for this, `bindmount_ro` would fail.
-            raise ValueError(f"RPM DB path {db_path_src} does not exist")
+            raise ValueError(f"RPM DB paths {db_paths} do not exist")
         # Rpm query will write to and update rpm database files if it can.
         # We must use the BA here because using the host `rpm` can cause the
         # image RPM to become unreadable to the `rpm` from the BA.
