@@ -58,7 +58,7 @@ class RpmMetadataTestCase(unittest.TestCase):
         # subvol with no RPM DB
         layer_path = os.path.join(os.path.dirname(__file__), "hello-layer")
         hello_subvol = find_built_subvol(layer_path)
-        with self.assertRaisesRegex(ValueError, " does not exist$"):
+        with self.assertRaisesRegex(ValueError, " do not exist$"):
             a = RpmMetadata.from_subvol(hello_subvol, ba_subvol, "rpm-test-mice")
 
     def test_rpm_metadata_from_file(self):
