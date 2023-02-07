@@ -12,6 +12,7 @@ install_files_t = shape.shape(
     mode = shape.field(int, optional = True),
     user = shape.field(str, default = "root"),
     group = shape.field(str, default = "root"),
-    # If this is a binary, strip debug symbols and dump them in /usr/lib/debug/
-    separate_debug_symbols = shape.field(bool, default = False),
+    # If this is a binary, strip debug symbols and dump them in /usr/lib/debug/.
+    # Does nothing if source is not an ELF binary
+    separate_debug_symbols = shape.field(bool, default = True),
 )

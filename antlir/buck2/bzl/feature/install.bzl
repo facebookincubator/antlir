@@ -14,7 +14,7 @@ def install(
         mode: [int.type, str.type, None] = None,
         user: str.type = "root",
         group: str.type = "root",
-        separate_debug_symbols = False) -> InlineFeatureInfo.type:
+        separate_debug_symbols = True) -> InlineFeatureInfo.type:
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
     mode = stat.mode(mode) if mode else None

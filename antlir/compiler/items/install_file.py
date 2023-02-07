@@ -87,7 +87,7 @@ def _recurse_into_source(
 class InstallFileItem(install_files_t, ImageItem):
 
     source: Path
-    separate_debug_symbols: bool = False
+    separate_debug_symbols: bool = True
 
     _paths: Iterable[_InstallablePath] = PrivateAttr()
 
