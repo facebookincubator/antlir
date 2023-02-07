@@ -74,8 +74,6 @@ class SQLiteRpmParser(AbstractContextManager):
         self._tmp_db = self._tmp_db_ctx.__enter__()
         return self
 
-    # pyre-fixme[14]: `__exit__` overrides method defined in `ContextManager`
-    #  inconsistently.
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         # Clean up before maybe raising our own exception
         # pyre-fixme[16]: `SQLiteRpmParser` has no attribute `_tmp_db_ctx`.
@@ -192,8 +190,6 @@ class XMLRpmParser(AbstractContextManager):
         self._package = {}
 
     # This context manager does not suppress exceptions.
-    # pyre-fixme[14]: `__exit__` overrides method defined in `ContextManager`
-    #  inconsistently.
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         # Closing the parser detects incomplete XML files. It also breaks
         # some circular refs to speed up GC.
