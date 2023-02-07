@@ -180,8 +180,6 @@ class _CommitCallback(AbstractContextManager):
 
         return self.id
 
-    # pyre-fixme[14]: `__exit__` overrides method defined in `ContextManager`
-    #  inconsistently.
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         # The end user never called `commit`, so they did not get an ID, and
         # we should try to clean up.

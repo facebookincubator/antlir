@@ -77,26 +77,21 @@ class PhaseOrder(enum.Enum):
 
     # This phase creates the subvolume, so it must precede all others.
     # There can only ever be one item in this phase.
-    # pyre-fixme[20]: Argument `value` expected.
     MAKE_SUBVOL = enum.auto()
     # Genrule layers cannot be combined with any item besides a single
     # `MAKE_SUBVOL`, so the ordering with respect to other items is
     # unimportant.
-    # pyre-fixme[20]: Argument `value` expected.
     GENRULE_LAYER = enum.auto()
     # Precedes REMOVE_PATHS because RPM removes **might** be conditional on
     # the presence or absence of files, and we don't want that extra entropy
     # -- whereas file removes fail or succeed predictably.  Precedes
     # RPM_INSTALL somewhat arbitrarily, since _gen_multi_rpm_actions
     # prevents install-remove conflicts between features.
-    # pyre-fixme[20]: Argument `value` expected.
     RPM_REMOVE = enum.auto()
-    # pyre-fixme[20]: Argument `value` expected.
     RPM_INSTALL = enum.auto()
 
     # Phase order for Facebook-only items. In this future this should be
     # removed in favor of enforcing custom layers for those features.
-    # pyre-fixme[20]: Argument `value` expected.
     FACEBOOK = enum.auto()
     # This MUST be a separate phase that comes after all the regular items
     # because the dependency sorter has no provisions for eliminating
@@ -107,11 +102,9 @@ class PhaseOrder(enum.Enum):
     # that e.g.  cleaning up yum log & caches can be done as a
     # `feature` instead of being code.  We might also use this to
     # remove e.g.  unnecessary parts of excessively monolithic RPMs.
-    # pyre-fixme[20]: Argument `value` expected.
     REMOVE_PATHS = enum.auto()
     # Phase order for key value store removal items. This ensures that
     # we remove after all values are stored.
-    # pyre-fixme[20]: Argument `value` expected.
     REMOVE_META_KEY_VALUE_STORE = enum.auto()
 
 

@@ -46,15 +46,10 @@ log = get_logger()
 
 
 class LogOp(Enum):
-    # pyre-fixme[20]: Argument `value` expected.
     RPM_DOWNLOAD = auto()
-    # pyre-fixme[20]: Argument `value` expected.
     DETECT_MUTABLE_RPMS = auto()
-    # pyre-fixme[20]: Argument `value` expected.
     REPO_DB_WRITE = auto()
-    # pyre-fixme[20]: Argument `value` expected.
     RPM_QUERY = auto()
-    # pyre-fixme[20]: Argument `value` expected.
     REPO_DOWNLOAD = auto()
 
     def __str__(self) -> str:
