@@ -34,6 +34,7 @@ flavor_config_t = shape.shape(
     rpm_installer = shape.field(str, optional = True),
     rpm_repo_snapshot = shape.field(str, optional = True),
     gen_rpm_repo_snapshot = shape.field(bool, default = True),
+    has_rpm_repo_snapshot = shape.field(bool, default = True),
     version_set_path = shape.field(str, optional = True),
     ba_bootstrap_flavor = shape.field(str, optional = True),
     # @oss-disable
