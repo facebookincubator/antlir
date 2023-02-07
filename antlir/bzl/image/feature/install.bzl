@@ -113,7 +113,7 @@ def feature_install_buck_runnable(
         mode = None,
         user = "root",
         group = "root",
-        separate_debug_symbols = False,
+        separate_debug_symbols = True,
         runs_in_build_steps_causes_slow_rebuilds = False):
     """
 `feature.install_buck_runnable("//path/fs:exe", "dir/foo")` copies
@@ -195,7 +195,7 @@ def feature_install(
         mode = None,
         user = "root",
         group = "root",
-        separate_debug_symbols = False,
+        separate_debug_symbols = True,
         # @lint-ignore BUILDIFIERLINT
         wrap_as_buck_runnable = False):
     """
