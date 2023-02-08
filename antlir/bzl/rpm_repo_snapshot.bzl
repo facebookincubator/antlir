@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:collections.bzl", "collections")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("@fbsource//tools/build_defs:lazy.bzl", "lazy")
 load("//antlir/bzl/genrule/yum_dnf_cache:yum_dnf_cache.bzl", "image_yum_dnf_make_snapshot_cache")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":build_defs.bzl", "buck_genrule", "get_visibility")
@@ -98,18 +99,18 @@ def rpm_repo_snapshot(
     '''
     if repo_server_ports == None:
         repo_server_ports = (28889, 28890)
-    if not rpm_installers or not all([
+    if not rpm_installers or not lazy.is_all(
         # CAREFUL: Below we assume that installer names need no shell-quoting.
-        (p in ["yum", "dnf"])
-        for p in rpm_installers
-    ]):
+        lambda p: (p in ["yum", "dnf"]),
+        rpm_installers,
+    ):
         fail(
             'Must contain >= 1 of "yum" / "dnf", got {}'.format(rpm_installers),
             "rpm_installers",
         )
 
     # For tests, we want relative `base_dir` to point into the snapshot dir.
-    cli_storage = dict(**storage)
+    cli_storage = dict(storage)
     if cli_storage["kind"] == "filesystem" and \
        not cli_storage["base_dir"].startswith("/"):
         cli_storage["base_dir"] = "$(location {})/{}".format(

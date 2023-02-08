@@ -9,6 +9,7 @@
 # Note that there's no deep reason for this struct / non-struct split, so we
 # could easily move everything into the struct.
 #
+load("@fbsource//tools/build_defs:lazy.bzl", "lazy")
 load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
 load("//antlir/bzl:flavor_alias.bzl", "alias_flavor", "flavor_aliasing_enabled")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
@@ -193,10 +194,7 @@ def use_rc_target(*, target, exact_match = False):
     # them. (This latter optimization improves performance and is not
     # required for correctness.)
     if not exact_match and flavor_aliasing_enabled():
-        if not any([
-            target.startswith(prefix)
-            for prefix in REPO_CFG.unaliased_flavor_target_prefixes
-        ]):
+        if not lazy.is_any(lambda prefix: target.startswith(prefix), REPO_CFG.unaliased_flavor_target_prefixes):
             return True
 
     return target in REPO_CFG.rc_targets
