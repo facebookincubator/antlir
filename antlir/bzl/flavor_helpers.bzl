@@ -20,7 +20,7 @@ load(":target_helpers.bzl", "normalize_target")
 
 def _get_flavor_config(
         flavor,
-        flavor_config_override,
+        flavor_config_override = None,
         # TODO(T139523690) when flavors are always targets, this check will be
         # completely unnecessary
         assume_flavor_exists = False):
