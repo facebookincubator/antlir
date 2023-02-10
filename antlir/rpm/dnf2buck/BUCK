@@ -10,7 +10,7 @@ load("//antlir/bzl:build_defs.bzl", "python_binary", "third_party")
 python_binary(
     name = "makechunk",
     srcs = ["makechunk.py"],
-    main_module = "antlir.staging.rpm.dnf2buck.makechunk",
+    main_module = "antlir.rpm.dnf2buck.makechunk",
     deps = third_party.libraries(
         [
             "click",
@@ -23,7 +23,7 @@ python_binary(
 python_binary(
     name = "makerepo",
     srcs = ["makerepo.py"],
-    main_module = "antlir.staging.rpm.dnf2buck.makerepo",
+    main_module = "antlir.rpm.dnf2buck.makerepo",
     deps = third_party.libraries(
         [
             "click",

@@ -101,8 +101,8 @@ repo_attrs = {
         doc = "base key for recently-deleted packages in manifold",
         default = None,
     ),
-    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makerepo")),
-    "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/repo_proxy:repo-proxy")),
+    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makerepo")),
+    "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
     "rpms": attrs.list(
         attrs.dep(providers = [RpmInfo]),
         doc = "All RPMs that should be included in this repo",
