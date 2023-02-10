@@ -15,7 +15,7 @@ rust_library(
         "tokio",
         "tokio-util",
         "tracing",
-        "//antlir/staging/rpm/dnf_conf:dnf_conf",
+        "//antlir/rpm/dnf_conf:dnf_conf",
     ],
 )
 

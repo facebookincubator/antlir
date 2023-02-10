@@ -110,7 +110,7 @@ rpm = rule(
     attrs = {
         "arch": attrs.string(),
         "epoch": attrs.int(),
-        "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/rpm/dnf2buck:makechunk")),
+        "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makechunk")),
         "release": attrs.string(),
         "rpm": attrs.option(attrs.source(), default = None),
         "rpm_name": attrs.string(),
