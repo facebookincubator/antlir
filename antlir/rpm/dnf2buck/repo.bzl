@@ -119,3 +119,19 @@ repo = rule(
     impl = _impl,
     attrs = repo_attrs,
 )
+
+RepoSetInfo = provider(fields = ["repo_infos"])
+
+def _repo_set_impl(ctx: "context") -> ["provider"]:
+    return [
+        RepoSetInfo(repo_infos = [dep[RepoInfo] for dep in ctx.attrs.repos]),
+        DefaultInfo(),
+    ]
+
+repo_set = rule(
+    impl = _repo_set_impl,
+    attrs = {
+        "repos": attrs.list(attrs.dep(providers = [RepoInfo])),
+    },
+    doc = "Collect a set of repos into a single easy-to-use rule",
+)
