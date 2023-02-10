@@ -18,11 +18,11 @@ def _impl(ctx: "context") -> ["provider"]:
     # Construct repodata XML blobs from each individual RPM
     repodata = ctx.actions.declare_output("repodata", dir = True)
     primary_dir = ctx.actions.declare_output("primary", dir = True)
-    ctx.actions.symlinked_dir(primary_dir, {nevra_to_string(rpm.nevra): rpm.xml_primary for rpm in rpm_infos})
+    ctx.actions.copied_dir(primary_dir, {nevra_to_string(rpm.nevra): rpm.xml_primary for rpm in rpm_infos})
     filelists_dir = ctx.actions.declare_output("filelists", dir = True)
-    ctx.actions.symlinked_dir(filelists_dir, {nevra_to_string(rpm.nevra): rpm.xml_filelists for rpm in rpm_infos})
+    ctx.actions.copied_dir(filelists_dir, {nevra_to_string(rpm.nevra): rpm.xml_filelists for rpm in rpm_infos})
     other_dir = ctx.actions.declare_output("other", dir = True)
-    ctx.actions.symlinked_dir(other_dir, {nevra_to_string(rpm.nevra): rpm.xml_other for rpm in rpm_infos})
+    ctx.actions.copied_dir(other_dir, {nevra_to_string(rpm.nevra): rpm.xml_other for rpm in rpm_infos})
     optional_args = []
     if ctx.attrs.timestamp != None:
         optional_args += ["--timestamp={}".format(ctx.attrs.timestamp)]
@@ -47,7 +47,7 @@ def _impl(ctx: "context") -> ["provider"]:
     }
     for rpm in rpm_infos:
         offline_map[package_href(rpm.nevra, rpm.pkgid)] = rpm.rpm
-    ctx.actions.symlinked_dir(offline, offline_map)
+    ctx.actions.copied_dir(offline, offline_map)
 
     # repos that are not backed by manifold must use the "offline" urlgen
     # setting as well as setting the offline directory as a dependency of the
