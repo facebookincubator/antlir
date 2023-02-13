@@ -8,7 +8,7 @@ rust_binary(
     unittests = False,
     deps = [
         "anyhow",
-        "clap",
+        "clap-3",
         "hex",
         "regex",
         "serde_json",

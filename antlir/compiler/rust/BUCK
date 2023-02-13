@@ -6,7 +6,7 @@ antlir_rust_extension(
     typestub = "compiler.pyi",
     deps = [
         "anyhow",
-        "clap",
+        "clap-3",
         "serde_json",
         "//antlir:fs_utils_rs-rust",
         "//antlir/buck/buck_label:buck_label",

@@ -33,7 +33,7 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
-        "clap",
+        "clap-3",
         "serde",
         "serde_json",
         ":translate_features",
