@@ -1,0 +1,14 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "antlir2",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "thiserror",
+        "tracing",
+        "tracing-glog",
+        "tracing-subscriber",
+    ],
+)
