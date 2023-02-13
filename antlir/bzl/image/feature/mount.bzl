@@ -51,19 +51,22 @@ load(
     buck2_host_file_mount = "host_file_mount",
     buck2_layer_mount = "layer_mount",
 )
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_required_target_key", "target_tagger_to_feature")
+load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
+load(":mount.shape.bzl", "build_source_t", "mount_config_t", "mount_spec_t")
 
 def _feature_host_mount(source, mountpoint, is_directory):
-    return {
-        "mount_config": {
-            "build_source": {"source": source, "type": "host"},
-            # For `host` mounts, `runtime_source` is required to be empty.
-            "default_mountpoint": source if mountpoint == None else mountpoint,
-            "is_directory": is_directory,
-        },
-        "mountpoint": None,
-        "target": None,
-    }
+    return mount_spec_t(
+        mount_config = mount_config_t(
+            build_source = build_source_t(
+                source = source,
+                type = "host",
+            ),
+            default_mountpoint = source if mountpoint == None else mountpoint,
+            is_directory = is_directory,
+        ),
+        mountpoint = None,
+        target = None,
+    )
 
 def feature_host_dir_mount(source, mountpoint = None):
     """
@@ -118,9 +121,13 @@ then you can pass an explicit `mountpoint` argument.
             source = source,
             mountpoint = mountpoint,
         )
+
     target_tagger = new_target_tagger()
-    mount_spec = {"mount_config": None, "mountpoint": mountpoint, "target": source}
-    tag_required_target_key(target_tagger, mount_spec, "target")
+    mount_spec = mount_spec_t(
+        mount_config = None,
+        mountpoint = mountpoint,
+        target = tag_target(target_tagger, source),
+    )
 
     return target_tagger_to_feature(
         target_tagger = target_tagger,
