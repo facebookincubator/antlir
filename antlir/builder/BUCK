@@ -8,7 +8,7 @@ rust_binary(
     deps = [
         "anyhow",
         "chrono",
-        "clap",
+        "clap-3",
         "fs2",
         "slog",
         "slog_glog_fmt",

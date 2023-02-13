@@ -17,7 +17,7 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
-        "clap",
+        "clap-3",
         "itertools",
         "serde_json",
         ":targets_and_outputs",

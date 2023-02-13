@@ -5,7 +5,7 @@ rust_library(
     srcs = ["src/lib.rs"],
     test_deps = ["serde_json"],
     deps = [
-        "clap",
+        "clap-3",
         "serde",
         "thiserror",
     ],

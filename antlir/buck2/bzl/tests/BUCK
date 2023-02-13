@@ -4,7 +4,7 @@ rust_binary(
     name = "query-test",
     srcs = ["query_test.rs"],
     deps = [
-        "clap",
+        "clap-3",
         "//antlir/buck/buck_label:buck_label",
     ],
 )

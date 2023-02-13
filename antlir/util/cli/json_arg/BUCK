@@ -14,7 +14,7 @@ rust_library(
         },
     },
     test_deps = [
-        "clap",
+        "clap-3",
         "similar-asserts",
         "tempfile",
     ],
