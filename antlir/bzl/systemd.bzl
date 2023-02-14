@@ -273,6 +273,27 @@ def _install_dropin(
         features.append(feature.remove(dst_path, must_exist = False))
     return features
 
+def _remove_dropin(
+        # The unit that this dropin should affect.
+        unit,
+        # The config name. This should only be a single filename, not a full path.
+        dest,
+        # The dir to install the dropin into. In most cases this doesn't need
+        # to be changed.
+        install_root = PROVIDER_ROOT):
+    _assert_unit_suffix(unit)
+
+    # a user must give the right name
+    if not dest.endswith(".conf"):
+        fail("dropin files must have the suffix '.conf'")
+
+    _fail_if_path(dest, "Remove Dropin Dest")
+
+    dst_path = paths.join(install_root, unit + ".d", dest)
+    return [
+        feature.remove(dst_path, must_exist = False),
+    ]
+
 def _set_default_target(
         # An existing systemd target to be set as the default
         target,
@@ -371,23 +392,32 @@ def _mount_unit_file(name, mount):
         template = "//antlir/bzl/linux/systemd:mount",
     )
 
+def _skip_unit(unit, force = False):
+    return _install_dropin("//antlir/bzl:99-skip-unit.conf", unit, force = force)
+
+def _unskip_unit(unit):
+    return _remove_dropin(unit, "99-skip-unit.conf", unit)
+
 systemd = struct(
     alias = _alias,
     enable_unit = _enable_unit,
     enable_user_unit = _enable_user_unit,
+    escape = _escape,
+    install_dropin = _install_dropin,
     install_unit = _install_unit,
     install_user_unit = _install_user_unit,
-    install_dropin = _install_dropin,
     mask_tmpfiles = _mask_tmpfiles,
     mask_units = _mask_units,
+    remove_dropin = _remove_dropin,
     set_default_target = _set_default_target,
-    unmask_units = _unmask_units,
-    escape = _escape,
+    skip_unit = _skip_unit,
     units = struct(
-        unit = unit_t,
         mount = mount_t,
         mount_file = _mount_unit_file,
+        unit = unit_t,
     ),
+    unmask_units = _unmask_units,
+    unskip_unit = _unskip_unit,
 )
 
 # verified with `systemd-escape`

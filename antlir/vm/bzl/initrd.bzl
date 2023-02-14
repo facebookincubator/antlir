@@ -12,7 +12,6 @@ load("//antlir/bzl:types.bzl", "types")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//metalos/kernel:kernel.shape.bzl", "kernel_t")
-load("//metalos/os/tests:defs.bzl", "skip_unit")
 
 types.lint_noop(kernel_t)
 
@@ -50,7 +49,7 @@ def initrd(
             systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "default.target"),
             systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "metalos-init.service"),
             # vm has no network
-            skip_unit("systemd-networkd-wait-online.service"),
+            systemd.skip_unit("systemd-networkd-wait-online.service"),
         ] + (features or []),
     )
 
