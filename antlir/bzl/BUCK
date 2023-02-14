@@ -33,6 +33,12 @@ export_file(name = "stat.bzl")
 
 export_file(name = "sha256.bzl")
 
+export_file(
+    name = "99-skip-unit.conf",
+    src = "files/99-skip-unit.conf",
+    visibility = ["PUBLIC"],
+)
+
 python_binary(
     name = "fail-with-message",
     srcs = ["fail_with_message.py"],
