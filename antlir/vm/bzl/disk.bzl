@@ -12,6 +12,15 @@ load(":kernel.bzl", "normalize_kernel")
 def _host_config(kernel_version):
     return {
         "boot_config": {
+            "bootloader": {
+                "cmdline": "console=ttyS0,57600 systemd.unified_cgroup_hierarchy=1 selinux=0 cgroup_no_v1=all root=LABEL=/ macaddress=00:00:00:00:00:01",
+                "pkg": {
+                    "format": 2,
+                    "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
+                    "kind": 8,
+                    "name": "metalos.bootloader",
+                },
+            },
             "deployment_specific": {"metalos": {}},
             "initrd": {
                 "format": 2,
