@@ -1,18 +1,14 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 rust_binary(
-    name = "antlir2",
+    name = "test-depgraph",
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "anyhow",
         "clap",
         "serde",
         "serde_json",
-        "thiserror",
-        "tracing",
-        "tracing-glog",
-        "tracing-subscriber",
-        "//antlir/buck/buck_label:buck_label",
+        "similar-asserts",
         "//antlir/buck2/features:features",
         "//antlir/filesystem/stdio_path:stdio_path",
         "//antlir/staging/antlir2/antlir2_depgraph:antlir2_depgraph",

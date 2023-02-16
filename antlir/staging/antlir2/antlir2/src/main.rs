@@ -9,8 +9,13 @@ use clap::Parser;
 use thiserror::Error;
 use tracing_subscriber::prelude::*;
 
+mod cmd;
+use cmd::Subcommand as _;
+
 #[derive(Debug, Error)]
 pub enum Error {
+    #[error(transparent)]
+    Depgraph(#[from] antlir2_depgraph::Error<'static>),
     #[error(transparent)]
     Uncategorized(#[from] anyhow::Error),
 }
@@ -24,7 +29,9 @@ struct Args {
 }
 
 #[derive(Parser, Debug)]
-enum Subcommand {}
+enum Subcommand {
+    Depgraph(cmd::Depgraph),
+}
 
 fn main() {
     let args = Args::parse();
@@ -42,5 +49,12 @@ fn main() {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
-    tracing::debug!("{args:?}");
+    let result = match args.subcommand {
+        Subcommand::Depgraph(p) => p.run(),
+    };
+    if let Err(e) = result {
+        tracing::error!("{e}");
+        eprintln!("{e:#?}");
+        std::process::exit(1);
+    }
 }

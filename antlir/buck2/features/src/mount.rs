@@ -34,3 +34,19 @@ pub struct LayerMount<'a> {
     pub mountpoint: PathInLayer<'a>,
     pub src: Layer<'a>,
 }
+
+impl<'a> Mount<'a> {
+    pub fn mountpoint(&self) -> &PathInLayer {
+        match self {
+            Self::Host(h) => &h.mountpoint,
+            Self::Layer(l) => &l.mountpoint,
+        }
+    }
+
+    pub fn is_directory(&self) -> bool {
+        match self {
+            Self::Layer(_) => true,
+            Self::Host(h) => h.is_directory,
+        }
+    }
+}
