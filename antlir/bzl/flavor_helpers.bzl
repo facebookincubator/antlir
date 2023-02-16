@@ -13,7 +13,7 @@ load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "REPO_CFG", "new_flavor_config")
 load(":flavor_alias.bzl", "alias_flavor")
-load(":flavor_impl.bzl", "flavor_to_struct")
+load(":flavor_impl.bzl", "flavor_to_struct", "get_unaliased_flavor")
 load(":shape.bzl", "shape")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target")
@@ -117,12 +117,19 @@ def _maybe_get_tgt_flavor(tgt):
         REPO_CFG.buck1_tgts_to_flavors.get(tgt, None),
     )
 
+def _get_shortname(flavor):
+    # Flavor shornames are commonly used in target and fbpkg names,
+    # where we generally don't want flavor aliasing to be used.
+    flavor = get_unaliased_flavor(flavor)
+    return REPO_CFG.flavor_to_config[flavor.name].shortname
+
 flavor_helpers = struct(
     get_build_appliance = _get_build_appliance,
     get_flavor_from_build_appliance = _get_flavor_from_build_appliance,
     get_flavor_default = _get_flavor_default,
     get_antlir_linux_flavor = _get_antlir_linux_flavor,
     get_flavor_config = _get_flavor_config,
+    get_shortname = _get_shortname,
     get_rpm_installer = _get_rpm_installer,
     get_rpm_installers_supported = _get_rpm_installers_supported,
     maybe_get_tgt_flavor = _maybe_get_tgt_flavor,
