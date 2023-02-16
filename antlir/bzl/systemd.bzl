@@ -396,7 +396,7 @@ def _skip_unit(unit, force = False):
     return _install_dropin("//antlir/bzl:99-skip-unit.conf", unit, force = force)
 
 def _unskip_unit(unit):
-    return _remove_dropin(unit, "99-skip-unit.conf", unit)
+    return _remove_dropin(unit, "99-skip-unit.conf")
 
 systemd = struct(
     alias = _alias,
