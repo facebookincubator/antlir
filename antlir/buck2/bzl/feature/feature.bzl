@@ -130,7 +130,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
         feature_json = _feature_to_json[inline.feature_type](**to_json_kwargs)
         feature_json["__feature_type"] = inline.feature_type
-        feature_json["__label"] = ctx.label
+        feature_json["__label"] = ctx.label.raw_target()
         inline_features.append(feature_json)
     json_out = ctx.actions.write_json("features.json", inline_features)
 
@@ -224,7 +224,8 @@ def feature(
         if types.is_string(feat):
             feature_targets.append(feat)
         else:
-            feature_key = _hash_key(feat.kwargs)
+            feature_key = _hash_key({"deps": feat.deps, "kwargs": feat.kwargs, "sources": feat.sources})
+            inline_features[feature_key] = json.encode(feat)
             inline_features_deps[feature_key] = feat.deps
             inline_features_sources[feature_key] = feat.sources
 
@@ -233,8 +234,6 @@ def feature(
                     if flavor not in feat.flavor_specific_sources:
                         fail("feature '{}' has flavor_specific_sources but does not include a key for '{}'".format(feat, flavor))
                     inline_features_sources[feature_key].update(feat.flavor_specific_sources[flavor])
-
-            inline_features[feature_key] = json.encode(feat)
 
     # TODO(T139523690)
     native.alias(
@@ -259,3 +258,7 @@ def feature(
 # just unique for a single evaluation of the target graph.
 def _hash_key(kwargs) -> str.type:
     return sha256(json.encode(kwargs))
+
+# Real, proper buck2 code can use this instead of the macro that shims some
+# shitty buck1 conventions
+feature_rule = _feature
