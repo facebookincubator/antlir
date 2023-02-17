@@ -293,6 +293,8 @@ def layer(
 
     features = flatten.flatten(features, item_type = ["InlineFeatureInfo", str.type])
 
+    flavor = coerce_to_flavor_label(flavor)
+
     feature_target = name + "--features"
     feature(
         name = feature_target,
@@ -323,7 +325,7 @@ def layer(
         features = feature_target,
         buck1_features_json = feature_target + "[buck1/features.json]",
         buck1_features_deps = deps_query,
-        flavor = coerce_to_flavor_label(flavor),
+        flavor = flavor,
         runtime = runtime,
         **kwargs
     )
