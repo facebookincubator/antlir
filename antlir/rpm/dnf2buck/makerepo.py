@@ -6,6 +6,7 @@
 
 # pyre-strict
 
+import json
 import time
 from pathlib import Path
 
@@ -22,17 +23,7 @@ _COMPRESSION_MODES = {
 
 @click.command()
 @click.option(
-    "--primary-dir",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
-    required=True,
-)
-@click.option(
-    "--filelists-dir",
-    type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
-    required=True,
-)
-@click.option(
-    "--other-dir",
+    "--xml-dir",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
     required=True,
 )
@@ -54,9 +45,7 @@ _COMPRESSION_MODES = {
     default="gzip",
 )
 def main(
-    primary_dir: Path,
-    filelists_dir: Path,
-    other_dir: Path,
+    xml_dir: Path,
     out: Path,
     timestamp: int,
     compress: str,
@@ -74,22 +63,25 @@ def main(
         "filelists": cr.FilelistsXmlFile(str(paths["filelists"]), compress),
         "other": cr.OtherXmlFile(str(paths["other"]), compress),
     }
-    inputdirs = {
-        "primary": primary_dir,
-        "filelists": filelists_dir,
-        "other": other_dir,
-    }
-    for (name, inputdir) in inputdirs.items():
-        xml_paths = sorted(inputdir.iterdir())
-        # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,
-        #  OtherXmlFile, PrimaryXmlFile]` has no attribute `set_num_of_pkgs`.
-        files[name].set_num_of_pkgs(len(xml_paths))
-        for path in xml_paths:
-            with open(path) as f:
+
+    xml_paths = list(xml_dir.iterdir())
+    # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,
+    #  OtherXmlFile, PrimaryXmlFile]` has no attribute `set_num_of_pkgs`.
+    files["primary"].set_num_of_pkgs(len(xml_paths))
+    # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,
+    #  OtherXmlFile, PrimaryXmlFile]` has no attribute `set_num_of_pkgs`.
+    files["filelists"].set_num_of_pkgs(len(xml_paths))
+    # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,
+    #  OtherXmlFile, PrimaryXmlFile]` has no attribute `set_num_of_pkgs`.
+    files["other"].set_num_of_pkgs(len(xml_paths))
+    for path in xml_paths:
+        with open(path) as f:
+            chunks = json.load(f)
+            for name, chunk in chunks.items():
                 # pyre-fixme[16]: Item `FilelistsXmlFile` of
                 #  `Union[FilelistsXmlFile, OtherXmlFile, PrimaryXmlFile]` has no
                 #  attribute `add_chunk`.
-                files[name].add_chunk(f.read())
+                files[name].add_chunk(chunk)
 
     for file in files.values():
         # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,

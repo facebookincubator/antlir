@@ -17,21 +17,15 @@ def _impl(ctx: "context") -> ["provider"]:
 
     # Construct repodata XML blobs from each individual RPM
     repodata = ctx.actions.declare_output("repodata", dir = True)
-    primary_dir = ctx.actions.declare_output("primary", dir = True)
-    ctx.actions.copied_dir(primary_dir, {nevra_to_string(rpm.nevra): rpm.xml_primary for rpm in rpm_infos})
-    filelists_dir = ctx.actions.declare_output("filelists", dir = True)
-    ctx.actions.copied_dir(filelists_dir, {nevra_to_string(rpm.nevra): rpm.xml_filelists for rpm in rpm_infos})
-    other_dir = ctx.actions.declare_output("other", dir = True)
-    ctx.actions.copied_dir(other_dir, {nevra_to_string(rpm.nevra): rpm.xml_other for rpm in rpm_infos})
+    xml_dir = ctx.actions.declare_output("xml", dir = True)
+    ctx.actions.copied_dir(xml_dir, {nevra_to_string(rpm.nevra): rpm.xml for rpm in rpm_infos})
     optional_args = []
     if ctx.attrs.timestamp != None:
         optional_args += ["--timestamp={}".format(ctx.attrs.timestamp)]
     ctx.actions.run(
         cmd_args(
             ctx.attrs.makerepo[RunInfo],
-            cmd_args(primary_dir, format = "--primary-dir={}"),
-            cmd_args(filelists_dir, format = "--filelists-dir={}"),
-            cmd_args(other_dir, format = "--other-dir={}"),
+            cmd_args(xml_dir, format = "--xml-dir={}"),
             cmd_args(repodata.as_output(), format = "--out={}"),
             "--compress={}".format(ctx.attrs.compress),
             optional_args,
@@ -123,9 +117,11 @@ repo = rule(
 RepoSetInfo = provider(fields = ["repo_infos"])
 
 def _repo_set_impl(ctx: "context") -> ["provider"]:
+    combined_repodatas = ctx.actions.declare_output("repodatas")
+    ctx.actions.copied_dir(combined_repodatas, {repo[RepoInfo].id: repo[RepoInfo].repodata for repo in ctx.attrs.repos})
     return [
         RepoSetInfo(repo_infos = [dep[RepoInfo] for dep in ctx.attrs.repos]),
-        DefaultInfo(),
+        DefaultInfo(default_outputs = [combined_repodatas]),
     ]
 
 repo_set = rule(
