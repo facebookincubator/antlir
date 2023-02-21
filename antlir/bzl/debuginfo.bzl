@@ -16,6 +16,7 @@ def _split(
         layer: types.label,
         stripped_name: types.optional(types.str) = None,
         debuginfo_name: types.optional(types.str) = None,
+        flavor: types.optional(types.str) = None,
         visibility: types.optional(types.visibility) = None) -> types.struct:
     """
     Given an OS-like image layer, split it into two images, one of which
@@ -29,10 +30,9 @@ def _split(
         name = stripped_name,
         features = [
             feature.remove("/usr/lib/debug"),
-            # recreate it so the debuginfo image could be mounted here
-            feature.ensure_subdirs_exist("/usr/lib", "debug"),
         ],
         parent_layer = layer,
+        flavor = flavor,
         visibility = visibility,
     )
     image.layer(
