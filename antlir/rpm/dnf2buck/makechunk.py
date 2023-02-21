@@ -7,6 +7,7 @@
 # pyre-strict
 
 import enum
+import json
 from pathlib import Path
 
 import click
@@ -24,14 +25,9 @@ class ChunkType(enum.Enum):
     "--rpm", type=click.Path(exists=True, dir_okay=False, path_type=Path), required=True
 )
 @click.option("--out", type=click.File("w"), required=True)
-@click.option(
-    "--chunk",
-    type=click.Choice(ChunkType.__members__, case_sensitive=False),
-    required=True,
-)
 @click.option("--href", required=True)
 # pyre-fixme[2]: Parameter must be annotated.
-def main(rpm: Path, out, chunk: str, href: str) -> int:
+def main(rpm: Path, out, href: str) -> int:
     pkg = cr.package_from_rpm(str(rpm))
     # We would never care about the time it was materialized on disk, just when
     # it was built. The sha256 is encoded at build time, so the package can't
@@ -39,14 +35,14 @@ def main(rpm: Path, out, chunk: str, href: str) -> int:
     pkg.time_file = pkg.time_build
     pkg.location_href = href
 
-    # pyre-fixme[9]: chunk has type `str`; used as `ChunkType`.
-    chunk = ChunkType[chunk.upper()]
-    if chunk == ChunkType.PRIMARY:
-        out.write(cr.xml_dump_primary(pkg))
-    elif chunk == ChunkType.FILELISTS:
-        out.write(cr.xml_dump_filelists(pkg))
-    elif chunk == ChunkType.OTHER:
-        out.write(cr.xml_dump_other(pkg))
+    json.dump(
+        {
+            "primary": cr.xml_dump_primary(pkg),
+            "filelists": cr.xml_dump_filelists(pkg),
+            "other": cr.xml_dump_other(pkg),
+        },
+        out,
+    )
     return 0
 
 

@@ -32,23 +32,19 @@ RpmInfo = provider(fields = {
     "nevra": "RPM NEVRA",
     "pkgid": "checksum (sha256 or sha1, usually sha256)",
     "rpm": ".rpm file artifact",
-    "xml_filelists": "filelists.xml chunk artifact",
-    "xml_other": "other.xml chunk artifact",
-    "xml_primary": "primary.xml chunk artifact",
+    "xml": "combined xml chunks",
 })
 
-def _make_chunk(ctx: "context", rpm: "artifact", which: str.type, href: str.type) -> "artifact":
-    out = ctx.actions.declare_output(which + ".xml")
+def _make_xml(ctx: "context", rpm: "artifact", href: str.type) -> "artifact":
+    out = ctx.actions.declare_output("xml.json")
     ctx.actions.run(
         cmd_args(
             ctx.attrs.makechunk[RunInfo],
             cmd_args(rpm, format = "--rpm={}"),
             cmd_args(out.as_output(), format = "--out={}"),
-            "--chunk={}".format(which),
             "--href={}".format(href),
         ),
-        category = "makechunk",
-        identifier = which,
+        category = "makexml",
     )
     return out
 
@@ -73,35 +69,17 @@ def _impl(ctx: "context") -> ["provider"]:
     )
     href = package_href(pkg_nevra, ctx.attrs.sha256)
 
-    if ctx.attrs.xml_primary:
-        xml_primary = ctx.attrs.xml_primary
-    else:
-        xml_primary = _make_chunk(ctx, rpm_file, "primary", href)
-    if ctx.attrs.xml_filelists:
-        xml_filelists = ctx.attrs.xml_filelists
-    else:
-        xml_filelists = _make_chunk(ctx, rpm_file, "filelists", href)
-    if ctx.attrs.xml_primary:
-        xml_other = ctx.attrs.xml_other
-    else:
-        xml_other = _make_chunk(ctx, rpm_file, "other", href)
+    xml = ctx.attrs.xml or _make_xml(ctx, rpm_file, href)
 
     return [
         DefaultInfo(default_outputs = [], sub_targets = {
-            name: [DefaultInfo(default_outputs = [artifact])]
-            for name, artifact in {
-                "filelists.xml": xml_filelists,
-                "other.xml": xml_other,
-                "primary.xml": xml_primary,
-            }.items()
+            "xml": [DefaultInfo(xml)],
         }),
         RpmInfo(
             nevra = pkg_nevra,
             rpm = rpm_file,
             pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
-            xml_primary = xml_primary,
-            xml_filelists = xml_filelists,
-            xml_other = xml_other,
+            xml = xml,
         ),
     ]
 
@@ -118,8 +96,6 @@ rpm = rule(
         "sha256": attrs.option(attrs.string(), default = None),
         "url": attrs.option(attrs.string(), default = None),
         "version": attrs.string(),
-        "xml_filelists": attrs.option(attrs.source(doc = "filelists.xml chunk"), default = None),
-        "xml_other": attrs.option(attrs.source(doc = "other.xml chunk"), default = None),
-        "xml_primary": attrs.option(attrs.source(doc = "primary.xml chunk"), default = None),
+        "xml": attrs.option(attrs.source(doc = "all xml chunks"), default = None),
     },
 )
