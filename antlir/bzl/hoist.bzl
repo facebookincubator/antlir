@@ -15,6 +15,7 @@ def hoist(
         out = "out",
         executable = False,
         visibility = None,
+        ignore_missing = False,
         **kwargs):
     """
     Creates a rule to lift an artifact out of the image it was built in.
@@ -55,6 +56,9 @@ def hoist(
             path = path,
             selector = " ".join(selector),
         ) + " | xargs -0 -I% cp -r --reflink=auto --no-clobber \"%\" \"$OUT\""
+
+    if ignore_missing:
+        cp = "({}) || true".format(cp)
 
     if force_dir:
         out = "."
