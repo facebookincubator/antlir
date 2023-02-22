@@ -3,6 +3,8 @@ op = 'added'
 
 ["dir/symlink-to-file".diff]
 mode = 'u+rwx,g+rwx,o+rwx'
+uid = 0
+gid = 0
 file-type = "symlink"
 text = '/target'
 
@@ -11,5 +13,7 @@ op = 'added'
 
 [symlink-to-dir.diff]
 mode = 'u+rwx,g+rwx,o+rwx'
+uid = 0
+gid = 0
 file-type = "symlink"
 text = '/dir'
