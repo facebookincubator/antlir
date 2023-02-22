@@ -7,7 +7,7 @@ load("//antlir/buck2/bzl:layer_info.bzl", Antlir1LayerInfo = "LayerInfo")
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
-load("//antlir/rpm/repo_proxy:repo_proxy.bzl", "repo_proxy_config")
+load(":antlir2_dnf.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 
 LayerInfo = provider(fields = {
     "depgraph": "JSON-serialized depgraph",
@@ -19,13 +19,13 @@ def _map_image(
         ctx: "context",
         cmd: "cmd_args",
         identifier: str.type,
-        out: "artifact",
-        parent: ["artifact", None]) -> "cmd_args":
+        parent: ["artifact", None]) -> ("cmd_args", "artifact"):
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
     produce a new image.
     In other words, this is a mapping function of 'image A -> A1'
     """
+    out = ctx.actions.declare_output("subvol-" + identifier)
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
         ctx.attrs.antlir2[RunInfo],
@@ -50,78 +50,108 @@ def _map_image(
             "RUST_LOG": "antlir2=trace",
         },
     )
-    return cmd
+    return cmd, out
 
 def _impl(ctx: "context") -> ["provider"]:
     if ctx.attrs.parent_layer and Antlir1LayerInfo in ctx.attrs.parent_layer:
         fail("parent_layer cannot be a re-exported antlir1 layer")
 
-    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     depgraph_input = _build_depgraph(ctx, "json", None)
 
-    rpm_proxy_config = repo_proxy_config(ctx, {
-        repo_info.id.replace("/", "_"): repo_info
-        for repo_info in (ctx.attrs.available_rpm_repos[RepoSetInfo].repo_infos if ctx.attrs.available_rpm_repos else [])
-    })
+    available_rpm_repos = ctx.attrs.available_rpm_repos[RepoSetInfo] if ctx.attrs.available_rpm_repos else None
+    dnf_repodatas = repodata_only_local_repos(ctx, available_rpm_repos)
 
-    compile_cmd = _map_image(
+    plan = ctx.actions.declare_output("plan")
+    plan_cmd, _ = _map_image(
         ctx = ctx,
         cmd = cmd_args(
-            cmd_args(rpm_proxy_config, format = "--rpm-proxy-config={}").hidden([ri.repodata for ri in ctx.attrs.available_rpm_repos[RepoSetInfo].repo_infos] if ctx.attrs.available_rpm_repos else []),
+            cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
+            "plan",
+            cmd_args(depgraph_input, format = "--depgraph-json={}"),
+            cmd_args(plan.as_output(), format = "--plan={}"),
+        ),
+        identifier = "plan",
+        parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
+    )
+
+    # Part of the compiler plan is any possible dnf transaction resolution,
+    # which lets us know what rpms we will need. We can have buck download them
+    # and mount in a pre-built directory of all repositories for
+    # completely-offline dnf installation (which is MUCH faster and more
+    # reliable)
+    # TODO: this is basically a no-op if there are no features that require
+    # pre-planning, but it does still invoke antlir2 inside of the container so
+    # takes ~1-2s even if it does nothing. The performance benefit for the
+    # extremely common use case of installing rpms absolutely dwarfs this cost,
+    # but it would be nice to only run this if there are relevant features
+    dnf_repos_dir = compiler_plan_to_local_repos(ctx, available_rpm_repos, plan)
+
+    compile_cmd, final_subvol = _map_image(
+        ctx = ctx,
+        cmd = cmd_args(
+            cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
             "compile",
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
         ),
         identifier = "compile",
-        out = subvol_symlink,
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
     )
 
+    tree_txt = ctx.actions.declare_output("tree.txt")
+    ctx.actions.run(
+        cmd_args(ctx.attrs.antlir2_print_tree[RunInfo], final_subvol, "--out", tree_txt.as_output()),
+        local_only = True,
+        category = "antlir2_print_tree",
+    )
+
+    depgraph_output = _build_depgraph(ctx, "json", final_subvol)
+
+    # This script is provided solely for developer convenience. It would
+    # actually be a large regression to run this to produce the final image
+    # during normal buck operation, as it would prevent buck from caching
+    # individual actions when possible (for example, if rpm features do not
+    # change, the transaction plan might be cached)
+    debug_sequence = [plan_cmd, compile_cmd]
     build_script = ctx.actions.write(
         "build.sh",
         cmd_args(
             "#!/bin/bash -e",
             "export RUST_LOG=warn,antlir2=trace",
-            cmd_args(
-                compile_cmd,
+            [cmd_args(
+                c,
                 delimiter = " \\\n  ",
                 quote = "shell",
-            ),
+            ) for c in debug_sequence],
             "\n",
         ),
         is_executable = True,
     )
 
-    tree_txt = ctx.actions.declare_output("tree.txt")
-    ctx.actions.run(
-        cmd_args(ctx.attrs.antlir2_print_tree[RunInfo], subvol_symlink, "--out", tree_txt.as_output()),
-        local_only = True,
-        category = "antlir2_print_tree",
-    )
-
-    depgraph_output = _build_depgraph(ctx, "json", subvol_symlink)
-
     return [
         LayerInfo(
             depgraph = depgraph_output,
-            subvol_symlink = subvol_symlink,
+            subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
         ),
         DefaultInfo(
-            default_outputs = [subvol_symlink],
+            default_outputs = [final_subvol],
             sub_targets = {
                 "build.sh": [
                     DefaultInfo(build_script),
-                    RunInfo(args = cmd_args("/bin/bash", "-e", build_script)),
+                    RunInfo(args = cmd_args("/bin/bash", "-e", build_script).hidden(debug_sequence)),
                 ],
                 "depgraph": [DefaultInfo(
                     default_outputs = [],
                     sub_targets = {
                         "input.dot": [DefaultInfo(default_outputs = [_build_depgraph(ctx, "dot", None)])],
                         "input.json": [DefaultInfo(default_outputs = [depgraph_input])],
-                        "output.dot": [DefaultInfo(default_outputs = [_build_depgraph(ctx, "dot", subvol_symlink)])],
+                        "output.dot": [DefaultInfo(default_outputs = [_build_depgraph(ctx, "dot", final_subvol)])],
                         "output.json": [DefaultInfo(default_outputs = [depgraph_output])],
                     },
                 )],
+                "plan": [
+                    DefaultInfo(default_outputs = [plan]),
+                ],
                 "tree.txt": [DefaultInfo(
                     default_outputs = [tree_txt],
                 )],

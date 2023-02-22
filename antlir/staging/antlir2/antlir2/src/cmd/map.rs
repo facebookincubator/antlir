@@ -7,7 +7,6 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -20,12 +19,12 @@ use btrfs::SnapshotFlags;
 use btrfs::Subvolume;
 use buck_label::Label;
 use clap::Parser;
-use json_arg::JsonFile;
-use tokio::sync::oneshot;
 use tracing::debug;
 
-use super::compile::Compile;
-use super::compile::PublicCompileArgs;
+use super::plan::Plan;
+use super::plan::PlanExternal;
+use super::Compileish;
+use super::CompileishExternal;
 use crate::Result;
 
 #[derive(Parser, Debug)]
@@ -59,18 +58,43 @@ struct SetupArgs {
     /// a single [Label].
     #[clap(long)]
     identifier: String,
-
-    #[clap(long)]
-    rpm_proxy_config: JsonFile<HashMap<String, repo_proxy::RpmRepo>>,
-
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
+    #[clap(long)]
+    /// Directory where all available dnf repos can be found
+    dnf_repos: PathBuf,
 }
 
 #[derive(Parser, Debug)]
 enum Subcommand {
-    Compile(PublicCompileArgs),
+    Compile(CompileishExternal),
+    Plan {
+        #[clap(flatten)]
+        compileish: CompileishExternal,
+        #[clap(flatten)]
+        external: PlanExternal,
+    },
+}
+
+impl Subcommand {
+    fn writable_outputs(&self) -> Result<BTreeSet<&Path>> {
+        match self {
+            Self::Plan {
+                compileish: _,
+                external,
+            } => {
+                std::fs::File::create(&external.plan).with_context(|| {
+                    format!(
+                        "while creating plan output file '{}'",
+                        external.plan.display()
+                    )
+                })?;
+                Ok(BTreeSet::from([external.plan.as_path()]))
+            }
+            _ => Ok(BTreeSet::new()),
+        }
+    }
 }
 
 impl Map {
@@ -121,27 +145,9 @@ impl Map {
         Ok(subvol)
     }
 
-    pub(crate) async fn run(self) -> Result<()> {
+    #[tracing::instrument(name = "map", skip(self))]
+    pub(crate) fn run(self) -> Result<()> {
         let mut subvol = self.create_new_subvol()?;
-
-        let (tx, rx) = oneshot::channel();
-        tokio::spawn(async move {
-            let result = repo_proxy::serve(repo_proxy::Config::new(
-                self.setup.rpm_proxy_config.into_inner(),
-                repo_proxy::Bind::Dynamic(tx),
-                // we don't actually care about gracefully shutting down the
-                // repo_proxy, it's desirable to just have it die whenever this
-                // process exits
-                Some(Box::pin(std::future::pending())),
-            ))
-            .await;
-            panic!("repo_proxy should never stop: {result:?}");
-        });
-        let proxy_socket = rx.await.context("while waiting for proxy socket path")?;
-        tracing::debug!(
-            path = proxy_socket.display().to_string(),
-            "proxy socket ready"
-        );
 
         let repo = find_root::find_repo_root(
             &absolute_path::AbsolutePathBuf::canonicalize(
@@ -165,7 +171,7 @@ impl Map {
                 // image builds all require the repo for at least the
                 // feature json paths coming from buck
                 repo.as_ref(),
-                &proxy_socket,
+                self.setup.dnf_repos.as_path(),
             ]),
             working_directory: Some(&std::env::current_dir().context("while getting cwd")?),
             // TODO(vmagro): there are currently no tracing args, but
@@ -175,16 +181,36 @@ impl Map {
                 .map(|log| BTreeMap::from([("RUST_LOG", log.into())]))
                 .unwrap_or_default(),
             root: subvol.path(),
+            writable_outputs: self
+                .subcommand
+                .writable_outputs()
+                .context("while preparing writable outputs")?,
         });
         isol.command
             .arg(std::env::current_exe().context("while getting argv[0]")?);
         match self.subcommand {
-            Subcommand::Compile(public) => {
+            Subcommand::Compile(external) => {
                 isol.command.arg("compile").args(
-                    Compile {
+                    Compileish {
                         root: isol.root.clone(),
-                        public,
-                        proxy_socket,
+                        external,
+                        dnf_repos: self.setup.dnf_repos,
+                    }
+                    .to_args(),
+                );
+            }
+            Subcommand::Plan {
+                compileish,
+                external,
+            } => {
+                isol.command.arg("plan").args(
+                    Plan {
+                        compileish: Compileish {
+                            root: isol.root.clone(),
+                            external: compileish,
+                            dnf_repos: self.setup.dnf_repos,
+                        },
+                        external,
                     }
                     .to_args(),
                 );
@@ -200,10 +226,15 @@ impl Map {
         if !res.success() {
             return Err(anyhow::anyhow!("isolated command failed: {res}").into());
         } else {
-            debug!("map finished, making subvol readonly");
+            debug!("map finished, making subvol {subvol:?} readonly");
             subvol
                 .set_readonly(true)
                 .context("while making subvol r/o")?;
+            debug!(
+                "linking {} -> {}",
+                self.setup.output.display(),
+                subvol.path().display(),
+            );
             let _ = std::fs::remove_file(&self.setup.output);
             std::os::unix::fs::symlink(subvol.path(), &self.setup.output)
                 .context("while making symlink")?;

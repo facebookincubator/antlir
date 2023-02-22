@@ -47,6 +47,9 @@ pub struct IsolationContext<'a> {
     pub image_sources: BTreeSet<&'a Path>,
     /// Root directory (as seen from the host) of the image being built.
     pub root: &'a Path,
+    /// Set of paths that should be writable from within the isolated
+    /// environment (for functions that require writing output files).
+    pub writable_outputs: BTreeSet<&'a Path>,
 }
 
 impl Default for IsolationContext<'static> {
@@ -58,6 +61,7 @@ impl Default for IsolationContext<'static> {
             setenv: Default::default(),
             image_sources: Default::default(),
             root: Path::new("/tmp/out"),
+            writable_outputs: Default::default(),
         }
     }
 }

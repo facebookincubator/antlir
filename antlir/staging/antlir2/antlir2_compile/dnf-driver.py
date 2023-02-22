@@ -16,6 +16,7 @@ import json
 import sys
 import threading
 from collections import defaultdict
+from pathlib import Path
 
 import dnf
 
@@ -39,6 +40,16 @@ _DL_STATUS_TO_EVENT = {
     dnf.callback.STATUS_FAILED: "err",
     dnf.callback.STATUS_MIRROR: "err",
 }
+
+
+def package_struct(pkg):
+    return {
+        "name": pkg.name,
+        "epoch": pkg.epoch,
+        "version": pkg.version,
+        "release": pkg.release,
+        "arch": pkg.arch,
+    }
 
 
 class DownloadProgress(dnf.callback.DownloadProgress):
@@ -65,11 +76,7 @@ class DownloadProgress(dnf.callback.DownloadProgress):
             json.dump(
                 {
                     "package_downloaded": {
-                        "package": {
-                            "name": payload.pkg.name,
-                            "evr": payload.pkg.evr,
-                            "arch": payload.pkg.arch,
-                        },
+                        "package": package_struct(payload.pkg),
                         "status": {_DL_STATUS_TO_EVENT[status]: msg},
                     }
                 },
@@ -109,6 +116,8 @@ class TransactionProgress(dnf.callback.TransactionProgress):
             out.write("\n")
 
     def progress(self, package, action, ti_done, ti_total, ts_done, ts_total):
+        if action in self._sent[package]:
+            return
         with self.out as out:
             if (
                 action == dnf.callback.TRANS_POST
@@ -119,11 +128,7 @@ class TransactionProgress(dnf.callback.TransactionProgress):
             json.dump(
                 {
                     "tx_item": {
-                        "package": {
-                            "name": package.name,
-                            "evr": package.evr,
-                            "arch": package.arch,
-                        },
+                        "package": package_struct(package),
                         "operation": _TX_ACTION_TO_JSON[action],
                     }
                 },
@@ -136,10 +141,17 @@ class TransactionProgress(dnf.callback.TransactionProgress):
 def main():
     out = LockedOutput(sys.stdout)
     spec = json.loads(sys.argv[1])
+    mode = spec["mode"]
     base = dnf.Base()
     base.conf.installroot = spec["install_root"]
-    for id, urls in spec["repos"].items():
-        base.repos.add_new_repo(id, dnf.conf.Conf(), urls)
+
+    repos = {}
+    for repomd in Path(spec["repos"]).glob("**/*/repodata/repomd.xml"):
+        baseurl = repomd.parent.parent.resolve().as_uri()
+        key = str(repomd.parent.parent.relative_to(spec["repos"]))
+        id = key.replace("/", "-")
+        repos[id] = key
+        base.repos.add_new_repo(id, dnf.conf.Conf(), [baseurl])
 
     # read: download repodata
     base.fill_sack()
@@ -162,21 +174,26 @@ def main():
             {
                 "transaction_resolved": {
                     "install": [
-                        {"name": p.name, "evr": p.evr, "arch": p.arch}
+                        {
+                            "package": package_struct(p),
+                            "repo": repos[p.repo.id],
+                        }
                         for p in base.transaction.install_set
                     ],
-                    "remove": [
-                        {"name": p.name, "evr": p.evr, "arch": p.arch}
-                        for p in base.transaction.remove_set
-                    ],
+                    "remove": [package_struct(p) for p in base.transaction.remove_set],
                 }
             },
             o,
         )
         o.write("\n")
 
-    base.download_packages(base.transaction.install_set, DownloadProgress(out))
-    base.do_transaction(TransactionProgress(out))
+    if mode == "resolve-only":
+        return
+    elif mode == "run":
+        base.download_packages(base.transaction.install_set, DownloadProgress(out))
+        base.do_transaction(TransactionProgress(out))
+    else:
+        raise RuntimeError(f"unknown mode '{mode}'")
 
 
 if __name__ == "__main__":

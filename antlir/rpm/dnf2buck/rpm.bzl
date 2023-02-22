@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:types.bzl", "types")
+
 nevra = record(
     name = str.type,
     epoch = int.type,
@@ -20,13 +22,15 @@ def nevra_to_string(nevra: nevra.type) -> str.type:
         nevra.arch,
     )
 
-def package_href(nevra: nevra.type, id: str.type) -> str.type:
+def package_href(nevra: [nevra.type, str.type], id: str.type) -> str.type:
     """
     Make the location encode the pkgid. The last path component is the package
     nevra so that dnf logs look nice, but the repo proxy only looks at the
     middle path component that includes the pkgid.
     """
-    return "Packages/{id}/{nevra}.rpm".format(id = id, nevra = nevra_to_string(nevra))
+    if not types.is_string(nevra):
+        nevra = nevra_to_string(nevra)
+    return "Packages/{id}/{nevra}.rpm".format(id = id, nevra = nevra)
 
 RpmInfo = provider(fields = {
     "nevra": "RPM NEVRA",
