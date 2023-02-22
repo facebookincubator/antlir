@@ -9,6 +9,7 @@ load("//antlir/bzl:flatten.bzl", "flatten")
 
 LayerInfo = provider(fields = {
     "depgraph": "JSON-serialized depgraph",
+    "parent": "LayerInfo from parent_layer, if any",
     "subvol_symlink": "symlink pointing to the built subvol",
 })
 
@@ -95,6 +96,7 @@ def _impl(ctx: "context") -> ["provider"]:
         LayerInfo(
             depgraph = depgraph_output,
             subvol_symlink = subvol_symlink,
+            parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
         ),
         DefaultInfo(
             default_outputs = [subvol_symlink],
