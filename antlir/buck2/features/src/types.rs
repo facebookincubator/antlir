@@ -6,6 +6,7 @@
  */
 
 use std::borrow::Cow;
+use std::ops::Deref;
 use std::path::Path;
 
 use buck_label::Label;
@@ -29,31 +30,45 @@ impl<'a> From<Label<'a>> for Layer<'a> {
     }
 }
 
-/// A path on the host, populated by Buck
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct BuckOutSource<'a>(Cow<'a, Path>);
+macro_rules! path_wrapper {
+    ($i:ident, $doc:literal) => {
+        #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+        #[doc = $doc]
+        pub struct $i<'a>(Cow<'a, Path>);
 
-impl<'a> BuckOutSource<'a> {
-    pub fn path(&self) -> &Path {
-        &self.0
-    }
+        impl<'a> $i<'a> {
+            #[inline]
+            pub fn path(&self) -> &Path {
+                self
+            }
+        }
+
+        impl<'a> AsRef<Path> for $i<'a> {
+            #[inline]
+            fn as_ref(&self) -> &Path {
+                &self.0
+            }
+        }
+
+        impl<'a> Deref for $i<'a> {
+            type Target = Path;
+
+            #[inline]
+            fn deref(&self) -> &Path {
+                &self.0
+            }
+        }
+
+        impl<'a, P> From<P> for $i<'a>
+        where
+            P: Into<Cow<'a, Path>>,
+        {
+            fn from(p: P) -> Self {
+                Self(p.into())
+            }
+        }
+    };
 }
 
-/// A path inside an image layer
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct PathInLayer<'a>(#[serde(borrow)] Cow<'a, Path>);
-
-impl<'a> PathInLayer<'a> {
-    pub fn path(&self) -> &Path {
-        &self.0
-    }
-}
-
-impl<'a, P> From<P> for PathInLayer<'a>
-where
-    P: Into<Cow<'a, Path>>,
-{
-    fn from(p: P) -> Self {
-        Self(p.into())
-    }
-}
+path_wrapper!(BuckOutSource, "A path on the host, populated by Buck");
+path_wrapper!(PathInLayer, "A path inside an image layer");

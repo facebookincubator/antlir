@@ -1,0 +1,7 @@
+├─  [lrwxrwxrwx root:root]
+│  ├─ TARGETS.v2.simple [-r--r--r-- antlir2:root]
+│  ├─ TARGETS.v2.simple2 [-r--r--r-- antlir3:root]
+│  ├─ etc [drwxr-xr-x root:root]
+│  │  ├─ group [-r-xr-xr-x root:root]
+│  │  ├─ passwd [-r-xr-xr-x root:root]
+│  ├─ fakeshell [-r-xr-xr-x root:root]

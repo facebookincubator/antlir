@@ -101,6 +101,18 @@ impl<'a> EtcPasswd<'a> {
         self.records.is_empty()
     }
 
+    /// Find the next usable [UserId] that can safely be assigned to a new user
+    pub fn next_available_uid(&self) -> UserId {
+        UserId::from_raw(
+            self.records
+                .iter()
+                .map(|r| r.uid.as_raw())
+                .max()
+                .unwrap_or_default()
+                + 1,
+        )
+    }
+
     pub fn get_user_by_name(&self, name: &str) -> Option<&UserRecord<'a>> {
         self.records.iter().find(|r| r.name == name)
     }

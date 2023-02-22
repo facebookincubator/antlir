@@ -8,10 +8,12 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::types::BuckOutSource;
 use crate::types::Layer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
 pub struct ParentLayer<'a> {
-    #[serde(borrow)]
     pub layer: Layer<'a>,
+    pub subvol: BuckOutSource<'a>,
 }

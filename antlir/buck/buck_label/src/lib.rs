@@ -120,9 +120,9 @@ impl<'a> Label<'a> {
 
     /// Escape the Label to be used in a filename. This flattens the label space
     /// so that a directory hierarchy does not need to be created to match the
-    /// repo structure (in other words, '/' gets replaced).
+    /// repo structure (in other words, '/' and ' ' get replaced with '-').
     pub fn flat_filename(&self) -> String {
-        self.to_string().replace('/', "-")
+        self.to_string().replace(['/', ' '], "-")
     }
 
     pub fn cell(&self) -> &str {
