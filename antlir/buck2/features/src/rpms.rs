@@ -55,3 +55,21 @@ pub struct Rpm<'a> {
     pub source: Source<'a>,
     pub flavor_to_version_set: BTreeMap<Label<'a>, VersionSet<'a>>,
 }
+
+/// A new definition of the Rpm feature for antlir2. This is currently a
+/// "virtual" feature in that it is not expressed in the buck2 target graph, but
+/// is constructed from multiple [Rpm] feature objects while building up the
+/// depgraph for an antlir2 build.
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Rpm2<'a> {
+    pub items: Vec<Rpm2Item<'a>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Rpm2Item<'a> {
+    pub action: Action,
+    pub source: Source<'a>,
+    pub label: Label<'a>,
+}

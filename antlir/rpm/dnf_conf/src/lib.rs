@@ -11,8 +11,12 @@ use std::fmt::Display;
 use configparser::ini::Ini;
 use http::Uri;
 use itertools::Itertools;
+use serde::Deserialize;
+use serde::Serialize;
+use serde_with::serde_as;
+use serde_with::DisplayFromStr;
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct DnfConf {
     repos: HashMap<String, RepoConf>,
 }
@@ -30,6 +34,10 @@ impl DnfConf {
 
     pub fn add_repo(&mut self, id: String, repo_cfg: RepoConf) {
         self.repos.insert(id, repo_cfg);
+    }
+
+    pub fn repos(&self) -> &HashMap<String, RepoConf> {
+        &self.repos
     }
 }
 
@@ -70,11 +78,22 @@ impl DnfConfBuilder {
         self.0.clone()
     }
 }
-
-#[derive(Debug, Clone)]
+#[serde_as]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RepoConf {
+    #[serde_as(as = "Vec<DisplayFromStr>")]
     base_urls: Vec<Uri>,
     name: Option<String>,
+}
+
+impl RepoConf {
+    pub fn base_urls(&self) -> &[Uri] {
+        &self.base_urls
+    }
+
+    pub fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
 }
 
 impl From<Vec<Uri>> for RepoConf {

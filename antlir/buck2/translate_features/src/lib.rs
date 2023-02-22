@@ -145,6 +145,9 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::Remove(_) => "remove_paths",
             features::Data::Requires(_) => "requires",
             features::Data::Rpm(_) => "rpms",
+            features::Data::Rpm2(_) => {
+                unimplemented!("this feature does not exist in the target graph")
+            }
             features::Data::EnsureFileSymlink(_) => "symlinks_to_files",
             features::Data::EnsureDirSymlink(_) => "symlinks_to_dirs",
             features::Data::Tarball(_) => "tarballs",
@@ -182,6 +185,9 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::Remove(x) => serde_json::to_value(remove::remove_paths_t::from_new(x)),
             features::Data::Requires(x) => serde_json::to_value(requires::requires_t::from_new(x)),
             features::Data::Rpm(x) => serde_json::to_value(rpms::rpm_action_item_t::from_new(x)),
+            features::Data::Rpm2(_) => {
+                unimplemented!("this feature does not exist in the target graph")
+            }
             features::Data::EnsureFileSymlink(x) => {
                 serde_json::to_value(symlink::symlink_t::from_new(x))
             }

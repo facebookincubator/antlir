@@ -2,11 +2,22 @@ load("//antlir/bzl:build_defs.bzl", "rust_library")
 
 rust_library(
     name = "antlir2_compile",
-    srcs = glob(["src/**/*.rs"]),
+    srcs = glob(["src/**/*.rs"]) + ["dnf-driver.py"],
     deps = [
+        "anyhow",
+        "derivative",
+        "http",
+        "hyper",
+        "hyperlocal",
+        "reqwest",
+        "serde",
+        "serde_json",
+        "serde_with",
         "thiserror",
+        "tokio",
         "tracing",
         "//antlir/buck2/features:features",
+        "//antlir/rpm/dnf_conf:dnf_conf",
         "//antlir/staging/antlir2/antlir2_users:antlir2_users",
     ],
 )

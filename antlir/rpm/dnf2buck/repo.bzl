@@ -10,6 +10,7 @@ RepoInfo = provider(fields = {
     "id": "Repo name",
     "offline": "Complete offline archive of repodata and all RPMs",
     "repodata": "Populated repodata/ directory",
+    "urlgen": "URL generator for repo_proxy::RpmRepo",
 })
 
 def _impl(ctx: "context") -> ["provider"]:
@@ -78,6 +79,7 @@ def _impl(ctx: "context") -> ["provider"]:
             repodata = repodata,
             offline = offline,
             base_url = ctx.attrs.base_url,
+            urlgen = urlgen_config,
         ),
     ]
 

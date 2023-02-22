@@ -20,7 +20,7 @@ use crate::Error;
 use crate::Result;
 
 impl<'a> CompileFeature for User<'a> {
-    #[tracing::instrument(skip(ctx), ret, err)]
+    #[tracing::instrument(name = "user", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         let mut user_db = ctx.user_db()?;
         let uid = user_db.next_available_uid();

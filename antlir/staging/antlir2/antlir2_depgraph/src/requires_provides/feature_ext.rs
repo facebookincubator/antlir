@@ -47,6 +47,7 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::ReceiveSendstream(_) => vec![],
             Data::Remove(x) => x.provides(),
             Data::Rpm(x) => x.provides(),
+            Data::Rpm2(x) => x.provides(),
             Data::Requires(x) => x.provides(),
             Data::User(x) => x.provides(),
             Data::UserMod(x) => x.provides(),
@@ -68,6 +69,7 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::ReceiveSendstream(_) => vec![],
             Data::Remove(x) => x.requires(),
             Data::Rpm(x) => x.requires(),
+            Data::Rpm2(x) => x.requires(),
             Data::Requires(x) => x.requires(),
             Data::User(x) => x.requires(),
             Data::UserMod(x) => x.requires(),
@@ -239,6 +241,7 @@ impl<'f> FeatureExt<'f> for features::requires::Requires<'f> {
 }
 
 impl<'f> FeatureExt<'f> for features::rpms::Rpm<'f> {}
+impl<'f> FeatureExt<'f> for features::rpms::Rpm2<'f> {}
 
 impl<'f> FeatureExt<'f> for features::symlink::Symlink<'f> {
     fn provides(&self) -> Vec<Item<'f>> {

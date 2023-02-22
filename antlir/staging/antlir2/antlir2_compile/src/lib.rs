@@ -19,6 +19,8 @@ use features::Feature;
 mod ensure_dirs_exist;
 mod install;
 mod remove;
+mod rpms;
+mod tcp_proxy;
 mod usergroup;
 
 #[derive(Debug, thiserror::Error)]
@@ -31,6 +33,8 @@ pub enum Error {
     LoadUsers(#[from] antlir2_users::Error),
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -39,6 +43,10 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub struct CompilerContext {
     /// Path to the root of the image being built
     root: PathBuf,
+    /// Unix socket that provides access to the wider network for specific use
+    /// cases. Currently used only for dnf, but will also be used for fbpkgs in
+    /// the future.
+    proxy_socket: PathBuf,
 }
 
 fn parse_file<T, E>(path: &Path) -> Option<Result<T>>
@@ -56,13 +64,17 @@ where
 }
 
 impl CompilerContext {
-    pub fn new(root: PathBuf) -> Result<Self> {
-        Ok(Self { root })
+    pub fn new(root: PathBuf, proxy_socket: PathBuf) -> Result<Self> {
+        Ok(Self { root, proxy_socket })
     }
 
     /// Root directory for the image being built
     pub fn root(&self) -> &Path {
         &self.root
+    }
+
+    pub(crate) fn proxy_socket(&self) -> &Path {
+        &self.proxy_socket
     }
 
     /// Join a (possibly absolute) path with the root directory of the image
@@ -115,6 +127,7 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::Group(x) => x.compile(ctx),
             Data::Install(x) => x.compile(ctx),
             Data::Remove(x) => x.compile(ctx),
+            Data::Rpm2(x) => x.compile(ctx),
             Data::User(x) => x.compile(ctx),
             Data::UserMod(x) => x.compile(ctx),
             other => {

@@ -6,6 +6,8 @@
 load("//antlir/buck2/bzl:layer_info.bzl", Antlir1LayerInfo = "LayerInfo")
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
+load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
+load("//antlir/rpm/repo_proxy:repo_proxy.bzl", "repo_proxy_config")
 
 LayerInfo = provider(fields = {
     "depgraph": "JSON-serialized depgraph",
@@ -57,9 +59,15 @@ def _impl(ctx: "context") -> ["provider"]:
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     depgraph_input = _build_depgraph(ctx, "json", None)
 
+    rpm_proxy_config = repo_proxy_config(ctx, {
+        repo_info.id.replace("/", "_"): repo_info
+        for repo_info in (ctx.attrs.available_rpm_repos[RepoSetInfo].repo_infos if ctx.attrs.available_rpm_repos else [])
+    })
+
     compile_cmd = _map_image(
         ctx = ctx,
         cmd = cmd_args(
+            cmd_args(rpm_proxy_config, format = "--rpm-proxy-config={}").hidden([ri.repodata for ri in ctx.attrs.available_rpm_repos[RepoSetInfo].repo_infos] if ctx.attrs.available_rpm_repos else []),
             "compile",
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
         ),
@@ -102,9 +110,7 @@ def _impl(ctx: "context") -> ["provider"]:
             default_outputs = [subvol_symlink],
             sub_targets = {
                 "build.sh": [
-                    DefaultInfo(
-                        default_outputs = [build_script],
-                    ),
+                    DefaultInfo(build_script),
                     RunInfo(args = cmd_args("/bin/bash", "-e", build_script)),
                 ],
                 "depgraph": [DefaultInfo(
@@ -131,6 +137,7 @@ def _build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None]
             "sudo" if subvol else cmd_args(),
             ctx.attrs.antlir2[RunInfo],
             "depgraph",
+            cmd_args(str(ctx.label), format = "--label={}"),
             format,
             ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json"),
             cmd_args(
@@ -151,9 +158,11 @@ _antlir2_layer = rule(
     attrs = {
         "antlir2": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2:antlir2")),
         "antlir2_print_tree": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2_print_tree:antlir2_print_tree")),
+        "available_rpm_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
         "build_appliance": attrs.dep(providers = [LayerInfo], default = "//antlir/staging/antlir2:build-appliance"),
         "features": attrs.dep(providers = [FeatureInfo]),
         "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+        "rpm_repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
     },
 )
 

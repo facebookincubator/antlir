@@ -14,7 +14,7 @@ use crate::Error;
 use crate::Result;
 
 impl<'a> CompileFeature for Remove<'a> {
-    #[tracing::instrument(skip(ctx), ret, err)]
+    #[tracing::instrument(name = "remove", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         let path = ctx.dst_path(&self.path);
         match std::fs::remove_file(&path) {

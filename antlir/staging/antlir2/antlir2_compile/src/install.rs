@@ -18,7 +18,7 @@ use crate::CompilerContext;
 use crate::Result;
 
 impl<'a> CompileFeature for Install<'a> {
-    #[tracing::instrument(skip(ctx), ret, err)]
+    #[tracing::instrument(name = "install", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         let dst = ctx.dst_path(&self.dst);
         std::fs::copy(&self.src, &dst)?;
