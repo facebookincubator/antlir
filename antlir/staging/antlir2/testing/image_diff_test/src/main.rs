@@ -58,25 +58,24 @@ fn main() -> Result<()> {
             .strip_prefix(layer)
             .expect("this must be relative");
         let parent_path = args.parent.join(relpath);
-        if !fs_entry.file_type().is_file() {
-            continue;
-        }
-        let entry = Entry::new(fs_entry.path())
-            .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
-        if !parent_path.exists() {
-            entries.insert(relpath.to_path_buf(), Diff::Added(entry));
-        } else {
-            let parent_entry = Entry::new(&parent_path).with_context(|| {
-                format!(
-                    "while building Entry for parent version of '{}",
-                    relpath.display(),
-                )
-            })?;
-            if parent_entry != entry {
-                entries.insert(
-                    relpath.to_path_buf(),
-                    Diff::Diff(EntryDiff::new(&parent_entry, &entry)),
-                );
+        if fs_entry.file_type().is_file() || fs_entry.file_type().is_symlink() {
+            let entry = Entry::new(fs_entry.path())
+                .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
+            if !parent_path.exists() {
+                entries.insert(relpath.to_path_buf(), Diff::Added(entry));
+            } else {
+                let parent_entry = Entry::new(&parent_path).with_context(|| {
+                    format!(
+                        "while building Entry for parent version of '{}",
+                        relpath.display(),
+                    )
+                })?;
+                if parent_entry != entry {
+                    entries.insert(
+                        relpath.to_path_buf(),
+                        Diff::Diff(EntryDiff::new(&parent_entry, &entry)),
+                    );
+                }
             }
         }
     }
