@@ -10,6 +10,7 @@ use std::ffi::OsString;
 use std::fmt::Display;
 use std::hash::Hasher;
 use std::os::unix::fs::FileTypeExt;
+use std::os::unix::prelude::MetadataExt;
 use std::path::Path;
 use std::str::FromStr;
 
@@ -30,6 +31,8 @@ pub(crate) struct Entry {
     pub(crate) mode: Mode,
     #[serde_as(as = "DisplayFromStr")]
     pub(crate) file_type: FileType,
+    pub(crate) uid: u32,
+    pub(crate) gid: u32,
     #[serde(default)]
     pub(crate) text: Option<String>,
     #[serde(default)]
@@ -49,6 +52,8 @@ impl Entry {
             return Ok(Self {
                 mode,
                 file_type: FileType::from(meta.file_type()),
+                uid: meta.uid(),
+                gid: meta.gid(),
                 text: Some(
                     target
                         .to_str()
@@ -75,6 +80,8 @@ impl Entry {
             .collect::<Result<_>>()?;
         Ok(Self {
             mode,
+            uid: meta.uid(),
+            gid: meta.gid(),
             file_type: FileType::from(meta.file_type()),
             xattrs,
             content_hash: if text.is_none() {
