@@ -1,0 +1,11 @@
+[cloned-file]
+op = 'added'
+
+[cloned-file.diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+uid = 1
+gid = 1
+text = '''
+This file will be cloned!
+'''

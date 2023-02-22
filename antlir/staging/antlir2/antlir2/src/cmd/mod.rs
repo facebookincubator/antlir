@@ -50,24 +50,35 @@ pub(self) struct CompileishExternal {
     #[clap(long = "depgraph-json")]
     /// Path to input depgraph json file with features to include in this image
     pub(crate) depgraph: JsonFile<Graph<'static>>,
+    #[clap(long = "image-dependency")]
+    pub(crate) image_dependencies: Vec<PathBuf>,
 }
 
 impl Compileish {
     #[deny(unused_variables)]
-    pub(self) fn to_args(&self) -> [&OsStr; 6] {
+    pub(self) fn to_args(&self) -> Vec<&OsStr> {
         let Self {
-            external: CompileishExternal { depgraph },
+            external:
+                CompileishExternal {
+                    depgraph,
+                    image_dependencies,
+                },
             root,
             dnf_repos,
         } = self;
-        [
+        let mut v = vec![
             OsStr::new("--depgraph-json"),
             depgraph.path().as_os_str(),
             OsStr::new("--root"),
             root.as_os_str(),
             OsStr::new("--dnf-repos"),
             dnf_repos.as_os_str(),
-        ]
+        ];
+        for dep in image_dependencies {
+            v.push(OsStr::new("--image-dependency"));
+            v.push(dep.as_os_str());
+        }
+        v
     }
 
     pub(super) fn compiler_context(&self) -> Result<CompilerContext> {

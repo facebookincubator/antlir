@@ -188,6 +188,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     features_deps = list(ctx.attrs.features[FeatureInfo].deps.traverse())
     all_features_deps = features_deps + targets_and_outputs.values()
+    all_features_deps = [ensure_single_output(d) if type(d) == "dependency" else d for d in flatten.flatten(all_features_deps)]
 
     ctx.actions.run(
         cmd_args(

@@ -6,37 +6,56 @@
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
+load("//antlir/bzl:flatten.bzl", "flatten")
+load("//antlir/staging/antlir2:antlir2_layer_info.bzl", "LayerInfo")
 
-DepgraphInfo = provider(fields = ["json"])
+def _make_test_cmd(ctx: "context", expect) -> "cmd_args":
+    # traverse the features to find dependencies this image build has on other
+    # image layers
+    dependency_layers = []
+    for dep in flatten.flatten(ctx.attrs.features[FeatureInfo].deps.traverse()):
+        if type(dep) == "dependency" and LayerInfo in dep:
+            dependency_layers.append(dep[LayerInfo])
 
-def _make_test_cmd(ctx: "context", expect, other_args = []) -> "cmd_args":
     return cmd_args(
         ctx.attrs.test_depgraph[RunInfo],
         cmd_args(str(ctx.label), format = "--label={}"),
         ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json"),
+        cmd_args(
+            [li.depgraph for li in dependency_layers],
+            format = "--image-dependency={}",
+        ),
         "--expect",
         json.encode(expect),
-        cmd_args(ctx.attrs.parent[DepgraphInfo].json, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
-        *other_args
+        cmd_args(ctx.attrs.parent[LayerInfo].depgraph, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
     )
 
 def _bad_impl(ctx: "context") -> ["provider"]:
-    cmd = _make_test_cmd(ctx, {"err": ctx.attrs.error})
+    if ctx.attrs.error:
+        expect = {"err": ctx.attrs.error}
+    elif ctx.attrs.error_regex:
+        expect = {"error_regex": ctx.attrs.error_regex}
+    else:
+        fail("one of {error, error_regex} must be set")
+
+    cmd = _make_test_cmd(ctx, expect)
     return [
         DefaultInfo(),
         RunInfo(args = cmd),
         ExternalRunnerTestInfo(
             command = [cmd],
             type = "custom",
+            run_from_project_root = True,
         ),
     ]
 
 _bad_depgraph = rule(
     impl = _bad_impl,
     attrs = {
-        "error": attrs.any(),
+        "error": attrs.option(attrs.any(), default = None),
+        "error_regex": attrs.option(attrs.string(), default = None),
         "features": attrs.dep(providers = [FeatureInfo]),
-        "parent": attrs.option(attrs.dep(providers = [DepgraphInfo]), default = None),
+        "parent": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "test_depgraph": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2_depgraph/tests/test_depgraph:test-depgraph")),
     },
 )
@@ -44,8 +63,7 @@ _bad_depgraph = rule(
 def bad_depgraph(
         name: str.type,
         features,
-        error,
-        parent: [str.type, None] = None):
+        **kwargs):
     feature(
         name = name + "--features",
         features = features,
@@ -54,46 +72,5 @@ def bad_depgraph(
     _bad_depgraph(
         name = name,
         features = ":" + name + "--features",
-        error = error,
-        parent = parent,
-    )
-
-def _good_impl(ctx: "context") -> ["provider"]:
-    out = ctx.actions.declare_output("depgraph.json")
-    cmd = _make_test_cmd(ctx, {"ok": None}, [
-        cmd_args(out.as_output(), format = "--out={}"),
-    ])
-    ctx.actions.run(cmd, category = "antlir2_depgraph")
-    return [
-        DefaultInfo(),
-        DepgraphInfo(json = out),
-        RunInfo(args = cmd),
-        ExternalRunnerTestInfo(
-            command = [cmd],
-            type = "custom",
-        ),
-    ]
-
-_good_depgraph = rule(
-    impl = _good_impl,
-    attrs = {
-        "features": attrs.dep(providers = [FeatureInfo]),
-        "parent": attrs.option(attrs.dep(providers = [DepgraphInfo]), default = None),
-        "test_depgraph": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2_depgraph/tests/test_depgraph:test-depgraph")),
-    },
-)
-
-def good_depgraph(
-        name: str.type,
-        features,
-        parent: [str.type, None] = None):
-    feature(
-        name = name + "--features",
-        features = features,
-        visibility = [":" + name],
-    )
-    _good_depgraph(
-        name = name,
-        features = ":" + name + "--features",
-        parent = parent,
+        **kwargs
     )

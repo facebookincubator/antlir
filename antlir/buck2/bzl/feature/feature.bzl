@@ -120,7 +120,7 @@ def _impl(ctx: "context") -> ["provider"]:
             inline_deps.extend(feature_sources.values())
         if feature_deps:
             for dep in feature_deps.values():
-                inline_deps.extend(dep[DefaultInfo].default_outputs)
+                inline_deps.append(dep)
 
         to_json_kwargs = inline.kwargs
         if feature_sources != None:

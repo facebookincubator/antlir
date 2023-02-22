@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/staging/antlir2:antlir2_layer_info.bzl", "LayerInfo")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def clone(
@@ -38,10 +39,16 @@ def clone_to_json(
         omit_outer_dir: bool.type,
         pre_existing_dest: bool.type,
         deps: {str.type: "dependency"}) -> {str.type: ""}:
+    src_layer = deps.pop("src_layer")
+
+    # TODO(T132415597) one glorious day we will actually have providers
+    # everywhere
+    src_layer_info = src_layer[LayerInfo] if LayerInfo in src_layer else None
     return {
         "dst_path": dst_path,
         "omit_outer_dir": omit_outer_dir,
         "pre_existing_dest": pre_existing_dest,
-        "src_layer": deps.pop("src_layer").label.raw_target(),
+        "src_layer": src_layer.label,
+        "src_layer_info": src_layer_info,
         "src_path": src_path,
     }

@@ -9,12 +9,14 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::types::Layer;
+use crate::types::LayerInfo;
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
 pub struct Clone<'a> {
     pub src_layer: Layer<'a>,
+    pub src_layer_info: Option<LayerInfo<'a>>,
     pub omit_outer_dir: bool,
     pub pre_existing_dest: bool,
     pub src_path: PathInLayer<'a>,

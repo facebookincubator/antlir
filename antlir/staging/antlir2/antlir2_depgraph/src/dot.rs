@@ -14,7 +14,7 @@ use crate::Edge;
 use crate::Node;
 
 /// Better-looking dot rendering
-pub struct Dot<'a, 'b>(pub(crate) &'b DiGraph<Node<'a>, Edge>);
+pub struct Dot<'a, 'b>(pub(crate) &'b DiGraph<Node<'a>, Edge<'a>>);
 
 fn node_color(node: &Node) -> &'static str {
     match node {

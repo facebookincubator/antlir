@@ -15,13 +15,14 @@ use crate::item::FileType;
 use crate::item::Item;
 use crate::item::ItemKey;
 use crate::item::Path;
+use crate::Node;
 
 mod feature_ext;
 pub(crate) use feature_ext::FeatureExt;
 
-pub(crate) struct Requirement<'f> {
-    pub(crate) key: ItemKey<'f>,
-    pub(crate) validator: Validator,
+pub(crate) struct Requirement<'a> {
+    pub(crate) key: ItemKey<'a>,
+    pub(crate) validator: Validator<'a>,
 }
 
 /// Requirements are matched by [ItemKey](crate::item::ItemKey) but that does
@@ -32,8 +33,8 @@ pub(crate) struct Requirement<'f> {
 /// instead [Validator]s can be added in a Requires edge and checked when
 /// finalizing the graph.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Validator {
+#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
+pub enum Validator<'a> {
     /// Always succeeds. Existence of the provider edge is validated when
     /// finalizing the graph.
     Exists,
@@ -42,14 +43,19 @@ pub enum Validator {
     /// requirement is a [crate::Node::MissingItem].
     DoesNotExist,
     /// ANDs all of the contained [Validator]s.
-    All(Vec<Validator>),
+    All(Vec<Validator<'a>>),
     /// Assert an [Item] is of a certain [FileType].
     FileType(FileType),
     /// Asserts an [Item] is an executable file.
     Executable,
+    /// Assert that an [ItemKey] within another layer matches some [Validator]
+    ItemInLayer {
+        key: ItemKey<'a>,
+        validator: Box<Validator<'a>>,
+    },
 }
 
-impl Validator {
+impl<'a> Validator<'a> {
     pub(crate) fn satisfies(&self, item: &Item<'_>) -> bool {
         match self {
             Self::Exists => true,
@@ -69,6 +75,16 @@ impl Validator {
                     (e.file_type == FileType::File)
                         && (mode.intersects(Mode::S_IXUSR | Mode::S_IXGRP | Mode::S_IXOTH))
                 }
+                _ => false,
+            },
+            Self::ItemInLayer { key, validator } => match item {
+                Item::Layer(layer) => match layer.graph.items.get(key) {
+                    Some(item_in_layer_nx) => match &layer.graph.g[*item_in_layer_nx] {
+                        Node::Item(item_in_layer) => validator.satisfies(item_in_layer),
+                        _ => false,
+                    },
+                    None => &Self::DoesNotExist == validator.as_ref(),
+                },
                 _ => false,
             },
         }
