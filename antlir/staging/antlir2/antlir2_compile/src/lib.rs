@@ -18,9 +18,9 @@ use features::Feature;
 
 mod ensure_dirs_exist;
 mod install;
+pub mod plan;
 mod remove;
 mod rpms;
-mod tcp_proxy;
 mod usergroup;
 
 #[derive(Debug, thiserror::Error)]
@@ -43,10 +43,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 pub struct CompilerContext {
     /// Path to the root of the image being built
     root: PathBuf,
-    /// Unix socket that provides access to the wider network for specific use
-    /// cases. Currently used only for dnf, but will also be used for fbpkgs in
-    /// the future.
-    proxy_socket: PathBuf,
+    /// Root directory where dnf repos are mounted
+    dnf_repos: PathBuf,
 }
 
 fn parse_file<T, E>(path: &Path) -> Option<Result<T>>
@@ -64,8 +62,8 @@ where
 }
 
 impl CompilerContext {
-    pub fn new(root: PathBuf, proxy_socket: PathBuf) -> Result<Self> {
-        Ok(Self { root, proxy_socket })
+    pub fn new(root: PathBuf, dnf_repos: PathBuf) -> Result<Self> {
+        Ok(Self { root, dnf_repos })
     }
 
     /// Root directory for the image being built
@@ -73,8 +71,8 @@ impl CompilerContext {
         &self.root
     }
 
-    pub(crate) fn proxy_socket(&self) -> &Path {
-        &self.proxy_socket
+    pub(crate) fn dnf_repos(&self) -> &Path {
+        &self.dnf_repos
     }
 
     /// Join a (possibly absolute) path with the root directory of the image
@@ -118,6 +116,11 @@ impl CompilerContext {
 
 pub trait CompileFeature {
     fn compile(&self, ctx: &CompilerContext) -> Result<()>;
+
+    /// Add details about this [Feature] to the compiler [plan::Plan].
+    fn plan(&self, _ctx: &CompilerContext) -> Result<plan::Item> {
+        Ok(plan::Item::None)
+    }
 }
 
 impl<'a> CompileFeature for Feature<'a> {
@@ -133,6 +136,13 @@ impl<'a> CompileFeature for Feature<'a> {
             other => {
                 todo!("{other:?}");
             }
+        }
+    }
+
+    fn plan(&self, ctx: &CompilerContext) -> Result<plan::Item> {
+        match &self.data {
+            Data::Rpm2(x) => x.plan(ctx),
+            _ => Ok(plan::Item::None),
         }
     }
 }

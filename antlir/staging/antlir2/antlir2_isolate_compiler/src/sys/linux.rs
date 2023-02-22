@@ -72,7 +72,10 @@ pub fn nspawn_compiler(ctx: &IsolationContext) -> IsolatedCompilerContext {
         cmd.arg("--bind-ro")
             .arg(escape_bind(try_canonicalize(src).as_os_str()));
     }
-    // only the image being built should be bound rw
+    for out in &ctx.writable_outputs {
+        cmd.arg("--bind")
+            .arg(escape_bind(try_canonicalize(out).as_os_str()));
+    }
     let mut out_arg = escape_bind(try_canonicalize(ctx.root).as_os_str()).to_os_string();
     out_arg.push(":/out");
     cmd.arg("--bind").arg(out_arg);

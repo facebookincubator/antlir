@@ -40,11 +40,11 @@ enum Subcommand {
     Compile(cmd::Compile),
     Depgraph(cmd::Depgraph),
     Map(cmd::Map),
+    Plan(cmd::Plan),
     Shell(cmd::Shell),
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args = Args::parse();
 
     tracing_subscriber::registry()
@@ -63,7 +63,8 @@ async fn main() {
     let result = match args.subcommand {
         Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(p) => p.run(),
-        Subcommand::Map(x) => x.run().await,
+        Subcommand::Map(x) => x.run(),
+        Subcommand::Plan(x) => x.run(),
         Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {
