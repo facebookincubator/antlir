@@ -10,6 +10,7 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::fmt::Display;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
@@ -59,14 +60,15 @@ pub enum Node<'a> {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub enum Edge {
+#[serde(bound(deserialize = "'de: 'a"))]
+pub enum Edge<'a> {
     /// This feature is part of a phase
     PartOf,
     /// This feature provides an item
     Provides,
     /// This feature requires a provided item, and requires additional
     /// validation
-    Requires(Validator),
+    Requires(Validator<'a>),
     /// Simple ordering edge that does not require any additional checks
     After,
 }
@@ -99,15 +101,17 @@ pub enum Error<'a> {
     #[error("{item:?} does not satisfy the validation rules: {validator:?}")]
     Unsatisfied {
         item: Item<'a>,
-        validator: Validator,
+        validator: Validator<'a>,
     },
+    #[error("failure determining 'provides': {0}")]
+    Provides(String),
 }
 
 pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
 
 #[derive(Debug)]
 pub struct GraphBuilder<'a> {
-    g: DiGraph<Node<'a>, Edge, DefaultIx>,
+    g: DiGraph<Node<'a>, Edge<'a>, DefaultIx>,
     root: NodeIndex<DefaultIx>,
     pending_features: Vec<NodeIndex<DefaultIx>>,
     items: HashMap<ItemKey<'a>, NodeIndex<DefaultIx>>,
@@ -218,14 +222,15 @@ impl<'a> GraphBuilder<'a> {
         }
     }
 
-    pub fn add_layer_dependency(&mut self, label: Label<'a>, graph: Graph<'a>) -> &mut Self {
-        self.add_item(Item::Layer(item::Layer { label, graph }));
+    pub fn add_layer_dependency(&mut self, graph: Graph<'a>) -> &mut Self {
+        self.add_item(Item::Layer(item::Layer {
+            label: graph.label().clone(),
+            graph,
+        }));
         self
     }
 
     pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
-        let provides = feature.provides();
-
         let (phase, feature_nx) = if let features::Data::Rpm(rpm) = feature.data {
             if let Some(nx) = self.rpm2_feature {
                 match &mut self.g[nx] {
@@ -268,11 +273,6 @@ impl<'a> GraphBuilder<'a> {
         self.g
             .update_edge(feature_nx, self.phases[&phase].1, Edge::After);
 
-        for prov in provides {
-            let prov_nx = self.add_item(prov);
-            self.g.update_edge(feature_nx, prov_nx, Edge::Provides);
-        }
-
         self
     }
 
@@ -281,6 +281,19 @@ impl<'a> GraphBuilder<'a> {
     }
 
     pub fn build(mut self) -> Result<'a, Graph<'a>> {
+        // Add all the nodes provided by our pending features
+        for feature_nx in self.pending_features.clone() {
+            if let Node::PendingFeature(f) = &self.g[feature_nx] {
+                let provides = f.provides().map_err(Error::Provides)?;
+                for prov in provides {
+                    let prov_nx = self.add_item(prov);
+                    self.g.update_edge(feature_nx, prov_nx, Edge::Provides);
+                }
+            } else {
+                unreachable!()
+            }
+        }
+
         // Add all the requirements edges after all provided items are added so
         // that we know if a required item is missing or just not encountered
         // yet
@@ -390,6 +403,7 @@ impl<'a> GraphBuilder<'a> {
         }
 
         Ok(Graph {
+            label: self.label,
             g: self.g,
             root: self.root,
             items: self.items,
@@ -403,7 +417,9 @@ impl<'a> GraphBuilder<'a> {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Graph<'a> {
     #[serde(borrow)]
-    g: DiGraph<Node<'a>, Edge>,
+    label: Label<'a>,
+    #[serde(borrow)]
+    g: DiGraph<Node<'a>, Edge<'a>>,
     root: NodeIndex<DefaultIx>,
     #[serde_as(as = "Vec<(_, _)>")]
     items: HashMap<ItemKey<'a>, NodeIndex<DefaultIx>>,
@@ -414,6 +430,10 @@ pub struct Graph<'a> {
 impl<'a> Graph<'a> {
     pub fn builder(label: Label<'a>, parent: Option<Self>) -> GraphBuilder<'a> {
         GraphBuilder::new(label, parent)
+    }
+
+    pub fn label(&self) -> &Label<'a> {
+        &self.label
     }
 
     pub fn to_dot<'b>(&'b self) -> dot::Dot<'a, 'b> {
@@ -427,6 +447,16 @@ impl<'a> Graph<'a> {
             Node::PendingFeature(f) => Some(f),
             _ => None,
         })
+    }
+
+    pub(crate) fn get_item(&self, key: &ItemKey<'_>) -> Option<&Item<'a>> {
+        match self.items.get(key) {
+            Some(nx) => match self.g.node_weight(*nx) {
+                Some(Node::Item(i)) => Some(i),
+                _ => None,
+            },
+            None => None,
+        }
     }
 
     /// There are many image features that produce items that we cannot

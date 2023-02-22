@@ -172,6 +172,8 @@ impl Map {
                 // feature json paths coming from buck
                 repo.as_ref(),
                 self.setup.dnf_repos.as_path(),
+                // layer dependencies require the working volume
+                self.setup.working_dir.as_path(),
             ]),
             working_directory: Some(&std::env::current_dir().context("while getting cwd")?),
             // TODO(vmagro): there are currently no tracing args, but

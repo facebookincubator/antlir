@@ -9,6 +9,8 @@ rust_library(
         "serde_json",
         "thiserror",
         "tracing",
+        "walkdir",
+        "xattr",
         "//antlir/buck2/features:features",
         "//antlir/staging/antlir2/antlir2_users:antlir2_users",
     ],

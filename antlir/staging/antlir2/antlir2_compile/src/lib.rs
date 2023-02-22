@@ -16,6 +16,7 @@ use std::str::FromStr;
 use features::Data;
 use features::Feature;
 
+mod clone;
 mod ensure_dirs_exist;
 mod install;
 pub mod plan;
@@ -127,7 +128,7 @@ pub trait CompileFeature {
 impl<'a> CompileFeature for Feature<'a> {
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         match &self.data {
-            Data::Clone(x) => todo!("{x:?}"),
+            Data::Clone(x) => x.compile(ctx),
             Data::EnsureDirSymlink(x) => x.compile(ctx),
             Data::EnsureDirsExist(x) => x.compile(ctx),
             Data::EnsureFileSymlink(x) => x.compile(ctx),

@@ -1,0 +1,25 @@
+# Note that in this image, the pre-existing directory '/clone/into/existing'
+# ends up having 'dir' as a top level directory, since the dst path is
+# '/clone/into/existing/' with a trailing '/'
+
+["clone/into/existing/dir/cloned-symlink"]
+op = 'added'
+
+["clone/into/existing/dir/cloned-symlink".diff]
+mode = 'u+rwx,g+rwx,o+rwx'
+file-type = 'symlink'
+uid = 0
+gid = 0
+text = '/f'
+
+["clone/into/existing/dir/deeper/nesting/foo"]
+op = 'added'
+
+["clone/into/existing/dir/deeper/nesting/foo".diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+uid = 0
+gid = 0
+text = '''
+This file will be cloned!
+'''

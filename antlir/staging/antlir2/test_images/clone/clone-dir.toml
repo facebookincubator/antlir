@@ -1,0 +1,27 @@
+# This reproduces the cloned directory into a new location
+# It produces the same result for both of the layers that use this as the
+# expected diff assertion:
+# 1) simply cloning the '/path/to/clone/dir' directory to '/cloned'
+# 2) pre-creating '/cloned' and cloning '/path/to/clone/dir/' into '/cloned/'
+
+["cloned/cloned-symlink"]
+op = 'added'
+
+["cloned/cloned-symlink".diff]
+mode = 'u+rwx,g+rwx,o+rwx'
+file-type = 'symlink'
+uid = 0
+gid = 0
+text = '/f'
+
+["cloned/deeper/nesting/foo"]
+op = 'added'
+
+["cloned/deeper/nesting/foo".diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+uid = 0
+gid = 0
+text = '''
+This file will be cloned!
+'''

@@ -72,3 +72,11 @@ macro_rules! path_wrapper {
 
 path_wrapper!(BuckOutSource, "A path on the host, populated by Buck");
 path_wrapper!(PathInLayer, "A path inside an image layer");
+
+/// Serialized buck2 LayerInfo provider
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct LayerInfo<'a> {
+    pub subvol_symlink: Cow<'a, Path>,
+    // antlir2 only
+    pub depgraph: Option<Cow<'a, Path>>,
+}

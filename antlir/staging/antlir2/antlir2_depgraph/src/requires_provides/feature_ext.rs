@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
+
 use features::Data;
 use features::Feature;
 
@@ -17,12 +19,13 @@ use crate::item::Group;
 use crate::item::Item;
 use crate::item::Path;
 use crate::item::User;
+use crate::Graph;
 
 pub(crate) trait FeatureExt<'f> {
     /// List of what [Item]s this [Feature] provides. Added to the graph before
     /// any [Requirement]s so that edges work.
-    fn provides(&self) -> Vec<Item<'f>> {
-        Default::default()
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        Ok(Default::default())
     }
 
     /// List of what [Item]s this [Feature] requires to be provided by other
@@ -33,18 +36,18 @@ pub(crate) trait FeatureExt<'f> {
 }
 
 impl<'f> FeatureExt<'f> for Feature<'f> {
-    fn provides(&self) -> Vec<Item<'f>> {
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         match &self.data {
             Data::Clone(x) => x.provides(),
             Data::EnsureDirSymlink(x) => x.provides(),
             Data::EnsureDirsExist(x) => x.provides(),
             Data::EnsureFileSymlink(x) => x.provides(),
-            Data::Genrule(_) => vec![],
+            Data::Genrule(_) => Ok(vec![]),
             Data::Group(x) => x.provides(),
             Data::Install(x) => x.provides(),
             Data::Mount(x) => x.provides(),
-            Data::ParentLayer(_) => vec![],
-            Data::ReceiveSendstream(_) => vec![],
+            Data::ParentLayer(_) => Ok(vec![]),
+            Data::ReceiveSendstream(_) => Ok(vec![]),
             Data::Remove(x) => x.provides(),
             Data::Rpm(x) => x.provides(),
             Data::Rpm2(x) => x.provides(),
@@ -82,7 +85,16 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         let mut v = vec![Requirement {
             key: ItemKey::Layer(self.src_layer.label().to_owned()),
-            validator: Validator::Exists,
+            validator: Validator::ItemInLayer {
+                key: ItemKey::Path(self.src_path.path().to_owned().into()),
+                validator: Box::new(if self.omit_outer_dir {
+                    Validator::FileType(FileType::Directory)
+                } else {
+                    // If 'omit_outer_dir' is false, it doesn't matter if
+                    // src_path is a file or directory, just that it exists
+                    Validator::Exists
+                }),
+            },
         }];
         if self.pre_existing_dest {
             v.push(Requirement {
@@ -104,11 +116,88 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
         }
         v
     }
+
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        let src_layer_depgraph_path = &self
+            .src_layer_info
+            .as_ref()
+            .expect("src_layer_info always set in antlir2")
+            .depgraph
+            .as_ref()
+            .expect("src_layer_info.depgraph always set in antlir2");
+        let src_layer = std::fs::read(src_layer_depgraph_path).map_err(|e| {
+            format!(
+                "could not read src_layer depgraph '{}': {e}",
+                src_layer_depgraph_path.display()
+            )
+        })?;
+        let src_depgraph: Graph<'_> = serde_json::from_slice(&src_layer)
+            .map_err(|e| format!("could not deserialize src_layer depgraph: {e}"))?;
+        let mut v = Vec::new();
+        // if this is creating the top-level dest, we need to produce that now
+        if !self.pre_existing_dest {
+            match src_depgraph.get_item(&ItemKey::Path(self.src_path.path().to_owned().into())) {
+                Some(Item::Path(Path::Entry(entry))) => {
+                    eprintln!("clone will provide as root {:?}", self.dst_path.path());
+                    v.push(Item::Path(Path::Entry(FsEntry {
+                        path: self.dst_path.path().to_owned().into(),
+                        file_type: entry.file_type,
+                        mode: entry.mode,
+                    })));
+                }
+                // If we couldn't find it in the src_layer (or if it wasn't a
+                // path entry), don't do anything. The error message produced by
+                // the unsatisfied validator will be much clearer to the user
+                _ => {}
+            }
+        }
+        // find any files or directories that appear underneath the clone source
+        for key in src_depgraph.items.keys() {
+            if let ItemKey::Path(p) = key {
+                if self.omit_outer_dir && p == self.src_path.path() {
+                    continue;
+                }
+
+                if let Ok(relpath) = p.strip_prefix(self.src_path.path()) {
+                    // If we are cloning a directory without a trailing / into a
+                    // directory with a trailing /, we need to prepend the name of the
+                    // directory to the relpath of each entry in that src directory, so
+                    // that a clone like:
+                    //   clone(src=path/to/src, dst=/into/dir/)
+                    // produces files like /into/dir/src/foo
+                    // instead of /into/dir/foo
+                    let relpath: Cow<'_, std::path::Path> =
+                        if self.pre_existing_dest && !self.omit_outer_dir {
+                            Cow::Owned(
+                                std::path::Path::new(
+                                    self.src_path.file_name().expect("must have file_name"),
+                                )
+                                .join(relpath),
+                            )
+                        } else {
+                            Cow::Borrowed(relpath)
+                        };
+                    let dst_path = self.dst_path.join(&relpath);
+                    eprintln!("clone will provide {dst_path:?} ({relpath:?})");
+                    if let Some(Item::Path(Path::Entry(entry))) = src_depgraph.get_item(key) {
+                        v.push(Item::Path(Path::Entry(FsEntry {
+                            path: dst_path.into(),
+                            file_type: entry.file_type,
+                            mode: entry.mode,
+                        })));
+                    }
+                }
+            }
+        }
+
+        Ok(v)
+    }
 }
 
 impl<'f> FeatureExt<'f> for features::ensure_dirs_exist::EnsureDirsExist<'f> {
-    fn provides(&self) -> Vec<Item<'f>> {
-        self.subdirs_to_create
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        Ok(self
+            .subdirs_to_create
             .path()
             .ancestors()
             .filter(|p| *p != std::path::Path::new("/"))
@@ -121,7 +210,7 @@ impl<'f> FeatureExt<'f> for features::ensure_dirs_exist::EnsureDirsExist<'f> {
                     mode: self.mode.0,
                 }))
             })
-            .collect()
+            .collect())
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
@@ -143,8 +232,8 @@ impl<'f> FeatureExt<'f> for features::ensure_dirs_exist::EnsureDirsExist<'f> {
 }
 
 impl<'f> FeatureExt<'f> for features::install::Install<'f> {
-    fn provides(&self) -> Vec<Item<'f>> {
-        vec![Item::Path(Path::Entry(FsEntry {
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        Ok(vec![Item::Path(Path::Entry(FsEntry {
             path: self.dst.path().to_owned().into(),
             // TODO: technically this can be a directory sometimes too, but I
             // need to make that piped through the buck graph instead of
@@ -154,7 +243,7 @@ impl<'f> FeatureExt<'f> for features::install::Install<'f> {
                 .mode
                 .expect("TODO: ensure this is always set in buck")
                 .0,
-        }))]
+        }))])
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
@@ -203,10 +292,10 @@ impl<'f> FeatureExt<'f> for features::mount::Mount<'f> {
 }
 
 impl<'f> FeatureExt<'f> for features::remove::Remove<'f> {
-    fn provides(&self) -> Vec<Item<'f>> {
-        vec![Item::Path(Path::Removed(
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        Ok(vec![Item::Path(Path::Removed(
             self.path.path().to_owned().into(),
-        ))]
+        ))])
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
@@ -244,8 +333,8 @@ impl<'f> FeatureExt<'f> for features::rpms::Rpm<'f> {}
 impl<'f> FeatureExt<'f> for features::rpms::Rpm2<'f> {}
 
 impl<'f> FeatureExt<'f> for features::symlink::Symlink<'f> {
-    fn provides(&self) -> Vec<Item<'f>> {
-        vec![Item::Path(Path::Entry(FsEntry {
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        Ok(vec![Item::Path(Path::Entry(FsEntry {
             path: self.link.path().to_owned().into(),
             file_type: match self.is_directory {
                 true => FileType::Directory,
@@ -253,7 +342,7 @@ impl<'f> FeatureExt<'f> for features::symlink::Symlink<'f> {
             },
             // symlink mode does not matter
             mode: 0o777,
-        }))]
+        }))])
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
@@ -281,10 +370,10 @@ impl<'f> FeatureExt<'f> for features::symlink::Symlink<'f> {
 }
 
 impl<'f> FeatureExt<'f> for features::usergroup::Group<'f> {
-    fn provides(&self) -> Vec<Item<'f>> {
-        vec![Item::Group(Group {
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        Ok(vec![Item::Group(Group {
             name: self.name.name().to_owned().into(),
-        })]
+        })])
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
@@ -296,10 +385,10 @@ impl<'f> FeatureExt<'f> for features::usergroup::Group<'f> {
 }
 
 impl<'f> FeatureExt<'f> for features::usergroup::User<'f> {
-    fn provides(&self) -> Vec<Item<'f>> {
-        vec![Item::User(User {
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        Ok(vec![Item::User(User {
             name: self.name.name().to_owned().into(),
-        })]
+        })])
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
