@@ -21,11 +21,13 @@ mod depgraph;
 mod map;
 mod plan;
 mod shell;
+mod test;
 pub(crate) use compile::Compile;
 pub(crate) use depgraph::Depgraph;
 pub(crate) use map::Map;
 pub(crate) use plan::Plan;
 pub(crate) use shell::Shell;
+pub(crate) use test::Test;
 
 /// Args that are common to "compileish" commands (for now, 'compile' and
 /// 'plan', but maybe others in the future)
