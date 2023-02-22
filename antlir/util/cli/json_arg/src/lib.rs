@@ -5,17 +5,21 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-//! CLIs (especially those designed to be called by automation) often take JSON
-//! data as inputs. This ends up creating a ton of boilerplate where a CLI arg
-//! is declared as a [PathBuf] and then is quickly opened, read from and
-//! deserialized with [serde_json].
-//! This crate provides two newtype wrappers ([Json] and [JsonFile]) that can
-//! deserialize JSON arguments with no extra effort.
+//! CLIs (especially those designed to be called by automation) often take
+//! structured data as inputs. This ends up creating a ton of boilerplate where
+//! a CLI arg is declared as a [PathBuf] and then is quickly opened, read from
+//! and deserialized with some [serde] format crate.
+//! This crate provides two newtype wrappers ([Serde] and [SerdeFile]) that can
+//! deserialize any Serde-compatible arguments with no extra effort.
 
 use std::cmp::Ordering;
+use std::fmt::Debug;
+use std::fmt::Display;
 use std::hash::Hash;
 use std::hash::Hasher;
 use std::io::Cursor;
+use std::io::Read;
+use std::marker::PhantomData;
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::path::Path;
@@ -24,25 +28,65 @@ use std::str::FromStr;
 
 use serde::Deserialize;
 
-/// Inline JSON string. The argument provided by the caller is the raw JSON
-/// string (and the caller must consequently deal with shell quoting
-/// ahead-of-time).
-#[derive(Debug, Clone)]
-pub struct Json<T>(T);
+pub trait DeserializeReader<T> {
+    type Error;
 
-impl<'de, T> FromStr for Json<T>
+    fn deserialize<R: Read>(reader: R) -> Result<T, Self::Error>;
+}
+
+/// Deserialize the argument as JSON
+pub struct JsonFormat;
+
+impl<'de, T> DeserializeReader<T> for JsonFormat
 where
     T: Deserialize<'de>,
 {
-    type Err = serde_json::Error;
+    type Error = serde_json::Error;
 
-    fn from_str(s: &str) -> serde_json::Result<Self> {
-        let mut deser = serde_json::Deserializer::from_reader(Cursor::new(s));
-        T::deserialize(&mut deser).map(Self)
+    fn deserialize<R: Read>(reader: R) -> Result<T, Self::Error> {
+        let mut deser = serde_json::Deserializer::from_reader(reader);
+        T::deserialize(&mut deser)
     }
 }
 
-impl<T> Deref for Json<T> {
+/// Deserialize the argument as TOML
+pub struct TomlFormat;
+
+impl<T> DeserializeReader<T> for TomlFormat
+where
+    T: for<'de> Deserialize<'de>,
+{
+    type Error = std::io::Error;
+
+    fn deserialize<R: Read>(reader: R) -> Result<T, Self::Error> {
+        // [toml] has no way to deserialize from a reader :(
+        let str = std::io::read_to_string(reader)?;
+        toml::from_str(&str)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
+    }
+}
+
+/// Inline JSON string. The argument provided by the caller is the raw JSON
+/// string (and the caller must consequently deal with shell quoting
+/// ahead-of-time).
+pub struct Serde<T, D>(T, PhantomData<D>);
+
+pub type Json<T> = Serde<T, JsonFormat>;
+pub type Toml<T> = Serde<T, TomlFormat>;
+
+impl<'de, T, D> FromStr for Serde<T, D>
+where
+    T: Deserialize<'de>,
+    D: DeserializeReader<T>,
+{
+    type Err = D::Error;
+
+    fn from_str(s: &str) -> Result<Self, D::Error> {
+        D::deserialize(Cursor::new(s)).map(|v| Self(v, PhantomData))
+    }
+}
+
+impl<T, D> Deref for Serde<T, D> {
     type Target = T;
 
     #[inline]
@@ -51,14 +95,32 @@ impl<T> Deref for Json<T> {
     }
 }
 
-impl<T> DerefMut for Json<T> {
+impl<T, D> DerefMut for Serde<T, D> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }
 }
 
-impl<T> Json<T> {
+impl<T, D> Debug for Serde<T, D>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        Debug::fmt(&self.0, f)
+    }
+}
+
+impl<T, D> Clone for Serde<T, D>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self(self.0.clone(), PhantomData)
+    }
+}
+
+impl<T, D> Serde<T, D> {
     #[inline]
     pub fn into_inner(self) -> T {
         self.0
@@ -70,34 +132,39 @@ impl<T> Json<T> {
     }
 }
 
-/// Argument that represents a JSON file. The argument provided by the caller is
-/// the path to the JSON file that is deserialized immediately on load.
-/// The original path is preserved and accessible with [JsonFile::path]
-#[derive(Debug, Clone)]
-pub struct JsonFile<T> {
+/// Argument that represents a serialized file. The argument provided by the
+/// caller is the path to the file that is deserialized immediately on load.
+/// The original path is preserved and accessible with [SerdeFile::path]
+pub struct SerdeFile<T, D> {
     value: T,
     path: PathBuf,
+    deser: PhantomData<D>,
 }
 
-impl<'de, T> FromStr for JsonFile<T>
+pub type JsonFile<T> = SerdeFile<T, JsonFormat>;
+pub type TomlFile<T> = SerdeFile<T, TomlFormat>;
+
+impl<'de, T, D> FromStr for SerdeFile<T, D>
 where
     T: Deserialize<'de>,
+    D: DeserializeReader<T>,
+    D::Error: Display,
 {
     type Err = std::io::Error;
 
     fn from_str(path: &str) -> std::io::Result<Self> {
         let f = std::fs::File::open(path)?;
-        let mut deser = serde_json::Deserializer::from_reader(f);
-        T::deserialize(&mut deser)
+        D::deserialize(f)
             .map(|value| Self {
                 path: path.into(),
                 value,
+                deser: PhantomData,
             })
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, e.to_string()))
     }
 }
 
-impl<T> Deref for JsonFile<T> {
+impl<T, D> Deref for SerdeFile<T, D> {
     type Target = T;
 
     #[inline]
@@ -106,14 +173,39 @@ impl<T> Deref for JsonFile<T> {
     }
 }
 
-impl<T> DerefMut for JsonFile<T> {
+impl<T, D> DerefMut for SerdeFile<T, D> {
     #[inline]
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.value
     }
 }
 
-impl<T> JsonFile<T> {
+impl<T, D> Debug for SerdeFile<T, D>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("SerdeFile")
+            .field("path", &self.path)
+            .field("value", &self.value)
+            .finish()
+    }
+}
+
+impl<T, D> Clone for SerdeFile<T, D>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            path: self.path.clone(),
+            value: self.value.clone(),
+            deser: PhantomData,
+        }
+    }
+}
+
+impl<T, D> SerdeFile<T, D> {
     #[inline]
     pub fn path(&self) -> &Path {
         &self.path
@@ -132,14 +224,14 @@ impl<T> JsonFile<T> {
 
 macro_rules! common_impl {
     ($i:ident) => {
-        impl<T> AsRef<T> for $i<T> {
+        impl<T, D> AsRef<T> for $i<T, D> {
             #[inline]
             fn as_ref(&self) -> &T {
                 self
             }
         }
 
-        impl<T> PartialEq for $i<T>
+        impl<T, D> PartialEq for $i<T, D>
         where
             T: PartialEq,
         {
@@ -148,7 +240,7 @@ macro_rules! common_impl {
             }
         }
 
-        impl<T> PartialEq<T> for $i<T>
+        impl<T, D> PartialEq<T> for $i<T, D>
         where
             T: PartialEq,
         {
@@ -157,9 +249,9 @@ macro_rules! common_impl {
             }
         }
 
-        impl<T> Eq for $i<T> where T: Eq {}
+        impl<T, D> Eq for $i<T, D> where T: Eq {}
 
-        impl<T> PartialOrd for $i<T>
+        impl<T, D> PartialOrd for $i<T, D>
         where
             T: PartialOrd,
         {
@@ -168,7 +260,7 @@ macro_rules! common_impl {
             }
         }
 
-        impl<T> PartialOrd<T> for $i<T>
+        impl<T, D> PartialOrd<T> for $i<T, D>
         where
             T: PartialOrd,
         {
@@ -177,7 +269,7 @@ macro_rules! common_impl {
             }
         }
 
-        impl<T> Ord for $i<T>
+        impl<T, D> Ord for $i<T, D>
         where
             T: Ord,
         {
@@ -186,7 +278,7 @@ macro_rules! common_impl {
             }
         }
 
-        impl<T> Hash for $i<T>
+        impl<T, D> Hash for $i<T, D>
         where
             T: Hash,
         {
@@ -200,8 +292,8 @@ macro_rules! common_impl {
     };
 }
 
-common_impl!(Json);
-common_impl!(JsonFile);
+common_impl!(Serde);
+common_impl!(SerdeFile);
 
 #[cfg(test)]
 mod tests {
