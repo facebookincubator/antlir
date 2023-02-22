@@ -6,7 +6,9 @@
 
 # pyre-strict
 
+import importlib.resources
 import json
+import subprocess
 import time
 from pathlib import Path
 
@@ -22,6 +24,11 @@ _COMPRESSION_MODES = {
 
 
 @click.command()
+@click.option(
+    "--repo-id",
+    type=str,
+    required=True,
+)
 @click.option(
     "--xml-dir",
     type=click.Path(exists=True, file_okay=False, dir_okay=True, path_type=Path),
@@ -39,16 +46,22 @@ _COMPRESSION_MODES = {
 )
 @click.option(
     "--compress",
-    # pyre-fixme[6]: For 1st param expected `Sequence[str]` but got `dict_keys[str,
-    #  typing.Any]`.
-    type=click.Choice(_COMPRESSION_MODES.keys()),
+    type=click.Choice(list(_COMPRESSION_MODES.keys())),
     default="gzip",
 )
+@click.option(
+    "--solv",
+    help="pre-build dnf .solv files",
+    type=click.Choice(["no", "yes", "try"]),
+    default="yes",
+)
 def main(
+    repo_id: str,
     xml_dir: Path,
     out: Path,
     timestamp: int,
     compress: str,
+    solv: str,
 ) -> int:
     out.mkdir()
     ext = _COMPRESSION_MODES[compress][0]
@@ -103,6 +116,9 @@ def main(
     with open(out / "repomd.xml", "w") as f:
         # pyre-fixme[16]: `Repomd` has no attribute `xml_dump`.
         f.write(repomd.xml_dump())
+    if solv in {"yes", "try"}:
+        with importlib.resources.path(__package__, "build-solv.py") as build_solv:
+            subprocess.run([build_solv, repo_id, out], check=solv == "yes")
     return 0
 
 

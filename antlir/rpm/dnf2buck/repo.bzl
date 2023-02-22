@@ -17,6 +17,8 @@ RepoInfo = provider(fields = {
 def _impl(ctx: "context") -> ["provider"]:
     rpm_infos = [rpm[RpmInfo] for rpm in ctx.attrs.rpms]
 
+    repo_id = ctx.label.name.replace("/", "_")
+
     # Construct repodata XML blobs from each individual RPM
     repodata = ctx.actions.declare_output("repodata", dir = True)
     xml_dir = ctx.actions.declare_output("xml", dir = True)
@@ -27,12 +29,17 @@ def _impl(ctx: "context") -> ["provider"]:
     ctx.actions.run(
         cmd_args(
             ctx.attrs.makerepo[RunInfo],
+            cmd_args(repo_id, format = "--repo-id={}"),
             cmd_args(xml_dir, format = "--xml-dir={}"),
             cmd_args(repodata.as_output(), format = "--out={}"),
             "--compress={}".format(ctx.attrs.compress),
+            # @oss-disable
+            # @oss-enable "--solve=try",
             optional_args,
         ),
         category = "makerepo",
+        # Invokes a binary using system python3
+        local_only = True,
     )
 
     # Create an artifact that is the _entire_ repository for completely offline
@@ -76,7 +83,7 @@ def _impl(ctx: "context") -> ["provider"]:
             )],
         }),
         RepoInfo(
-            id = ctx.label.name,
+            id = repo_id,
             repodata = repodata,
             offline = offline,
             base_url = ctx.attrs.base_url,

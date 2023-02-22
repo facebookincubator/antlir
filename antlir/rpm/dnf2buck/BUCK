@@ -24,6 +24,9 @@ python_binary(
     name = "makerepo",
     srcs = ["makerepo.py"],
     main_module = "antlir.rpm.dnf2buck.makerepo",
+    resources = {
+        "build-solv.py": "build-solv.py",
+    },
     deps = third_party.libraries(
         [
             "click",
