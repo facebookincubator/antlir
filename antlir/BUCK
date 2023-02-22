@@ -46,6 +46,7 @@ python_library(
         "//tupperware/cm/...",
         "//tupperware/image/scripts/...",
         "//tupperware/scripts/...",
+        "//virt/processvm/agent/...",
     ],
 )
 
