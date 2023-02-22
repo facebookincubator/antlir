@@ -20,6 +20,7 @@ use serde::Deserialize;
 use crate::Result;
 
 #[derive(Parser, Debug)]
+/// Process an image's dependency graph without building it
 pub(crate) struct Depgraph {
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<features::Feature<'static>>>>,

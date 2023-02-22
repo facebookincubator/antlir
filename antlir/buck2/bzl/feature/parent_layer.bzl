@@ -23,4 +23,5 @@ def parent_layer_to_json(
         fail("'{}' is not an image layer".format(deps["layer"].label))
     return {
         "layer": deps["layer"].label,
+        "subvol": deps["layer"][LayerInfo].subvol_symlink,
     }

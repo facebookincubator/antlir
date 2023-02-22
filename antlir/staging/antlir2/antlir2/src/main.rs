@@ -15,6 +15,8 @@ use cmd::Subcommand as _;
 #[derive(Debug, Error)]
 pub enum Error {
     #[error(transparent)]
+    Compile(#[from] antlir2_compile::Error),
+    #[error(transparent)]
     Depgraph(#[from] antlir2_depgraph::Error<'static>),
     #[error(transparent)]
     Uncategorized(#[from] anyhow::Error),
@@ -30,7 +32,10 @@ struct Args {
 
 #[derive(Parser, Debug)]
 enum Subcommand {
+    Compile(cmd::Compile),
     Depgraph(cmd::Depgraph),
+    Map(cmd::Map),
+    Shell(cmd::Shell),
 }
 
 fn main() {
@@ -50,7 +55,10 @@ fn main() {
         .init();
 
     let result = match args.subcommand {
+        Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(p) => p.run(),
+        Subcommand::Map(x) => x.run(),
+        Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {
         tracing::error!("{e}");
