@@ -59,6 +59,8 @@ pub(crate) struct EntryDiff {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     mode: Option<FieldDiff<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    file_type: Option<FieldDiff<String>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     content_hash: Option<FieldDiff<u64>>,
     #[serde(default, skip_serializing_if = "XattrDiff::is_empty")]
     xattrs: XattrDiff,
@@ -69,6 +71,7 @@ impl EntryDiff {
     pub(crate) fn new(parent: &Entry, child: &Entry) -> Self {
         let Entry {
             mode,
+            file_type,
             text,
             content_hash,
             xattrs,
@@ -94,6 +97,7 @@ impl EntryDiff {
         };
         Self {
             mode: FieldDiff::new(mode.to_string(), child.mode.to_string()),
+            file_type: FieldDiff::new(file_type.to_string(), child.file_type.to_string()),
             content_hash: if text.is_some() {
                 None
             } else {

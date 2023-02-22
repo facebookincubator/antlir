@@ -21,6 +21,7 @@ mod install;
 pub mod plan;
 mod remove;
 mod rpms;
+mod symlink;
 mod usergroup;
 
 #[derive(Debug, thiserror::Error)]
@@ -126,15 +127,30 @@ pub trait CompileFeature {
 impl<'a> CompileFeature for Feature<'a> {
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         match &self.data {
+            Data::Clone(x) => todo!("{x:?}"),
+            Data::EnsureDirSymlink(x) => x.compile(ctx),
             Data::EnsureDirsExist(x) => x.compile(ctx),
+            Data::EnsureFileSymlink(x) => x.compile(ctx),
+            Data::Genrule(x) => todo!("{x:?}"),
             Data::Group(x) => x.compile(ctx),
             Data::Install(x) => x.compile(ctx),
+            Data::Meta(x) => todo!("{x:?}"),
+            Data::Mount(x) => todo!("{x:?}"),
             Data::Remove(x) => x.compile(ctx),
             Data::Rpm2(x) => x.compile(ctx),
+            Data::Tarball(x) => todo!("{x:?}"),
             Data::User(x) => x.compile(ctx),
             Data::UserMod(x) => x.compile(ctx),
-            other => {
-                todo!("{other:?}");
+            Data::Rpm(_) => unreachable!("depgraph consolidates this into rpm2"),
+            // depgraph does this before the compiler, no-op
+            Data::Requires(_) => Ok(()),
+            // this is its own buck rule
+            Data::ReceiveSendstream(_) => {
+                unreachable!("this should never make it to antlir2_compile at all")
+            }
+            // done before invoking the compiler
+            Data::ParentLayer(_) => {
+                unreachable!("this should never make it to antlir2_compile at all")
             }
         }
     }

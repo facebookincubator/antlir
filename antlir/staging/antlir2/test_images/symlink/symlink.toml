@@ -1,0 +1,15 @@
+["dir/symlink-to-file"]
+op = 'added'
+
+["dir/symlink-to-file".diff]
+mode = 'u+rwx,g+rwx,o+rwx'
+file-type = "symlink"
+text = '/target'
+
+[symlink-to-dir]
+op = 'added'
+
+[symlink-to-dir.diff]
+mode = 'u+rwx,g+rwx,o+rwx'
+file-type = "symlink"
+text = '/dir'
