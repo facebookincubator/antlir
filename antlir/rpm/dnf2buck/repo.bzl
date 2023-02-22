@@ -125,20 +125,37 @@ repo = rule(
     attrs = repo_attrs,
 )
 
-RepoSetInfo = provider(fields = ["repo_infos"])
+RepoSetInfo = provider(fields = ["repo_infos", "repos"])
 
 def _repo_set_impl(ctx: "context") -> ["provider"]:
     combined_repodatas = ctx.actions.declare_output("repodatas")
-    ctx.actions.copied_dir(combined_repodatas, {repo[RepoInfo].id: repo[RepoInfo].repodata for repo in ctx.attrs.repos})
+    all_repos = {}
+    for repo in ctx.attrs.repos:
+        if repo[RepoInfo].id in all_repos:
+            if repo.label != all_repos[repo[RepoInfo].id].label:
+                fail("repo id '{}' found twice".format(repo[RepoInfo].id))
+        all_repos[repo[RepoInfo].id] = repo
+    for set in ctx.attrs.repo_sets:
+        for repo in set[RepoSetInfo].repos:
+            if repo[RepoInfo].id in all_repos:
+                if repo.label != all_repos[repo[RepoInfo].id].label:
+                    fail("repo id '{}' found twice".format(repo[RepoInfo].id))
+            all_repos[repo[RepoInfo].id] = repo
+
+    ctx.actions.copied_dir(combined_repodatas, {id: repo[RepoInfo].repodata for id, repo in all_repos.items()})
     return [
-        RepoSetInfo(repo_infos = [dep[RepoInfo] for dep in ctx.attrs.repos]),
+        RepoSetInfo(
+            repo_infos = [dep[RepoInfo] for dep in all_repos.values()],
+            repos = all_repos.values(),
+        ),
         DefaultInfo(default_outputs = [combined_repodatas]),
     ]
 
 repo_set = rule(
     impl = _repo_set_impl,
     attrs = {
-        "repos": attrs.list(attrs.dep(providers = [RepoInfo])),
+        "repo_sets": attrs.list(attrs.dep(providers = [RepoSetInfo]), default = []),
+        "repos": attrs.list(attrs.dep(providers = [RepoInfo]), default = []),
     },
     doc = "Collect a set of repos into a single easy-to-use rule",
 )
