@@ -11,6 +11,7 @@ use antlir2_depgraph::Graph;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Result;
+use buck_label::Label;
 use clap::Parser;
 use features::Feature;
 use json_arg::Json;
@@ -19,6 +20,8 @@ use serde::Deserialize;
 
 #[derive(Debug, Parser)]
 struct Args {
+    #[clap(long)]
+    label: Label<'static>,
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<Feature<'static>>>>,
     #[clap(long)]
@@ -38,7 +41,7 @@ enum Expect<'a> {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let mut builder = Graph::builder(args.parent.map(JsonFile::into_inner));
+    let mut builder = Graph::builder(args.label, args.parent.map(JsonFile::into_inner));
     for feature in args.features.into_iter().flat_map(JsonFile::into_inner) {
         eprintln!("adding feature {feature:?}");
         builder.add_feature(feature);

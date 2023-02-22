@@ -12,6 +12,7 @@ DepgraphInfo = provider(fields = ["json"])
 def _make_test_cmd(ctx: "context", expect, other_args = []) -> "cmd_args":
     return cmd_args(
         ctx.attrs.test_depgraph[RunInfo],
+        cmd_args(str(ctx.label), format = "--label={}"),
         ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json"),
         "--expect",
         json.encode(expect),

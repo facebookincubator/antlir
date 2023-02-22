@@ -22,6 +22,8 @@ use crate::Result;
 #[derive(Parser, Debug)]
 /// Process an image's dependency graph without building it
 pub(crate) struct Depgraph {
+    #[clap(long)]
+    label: Label<'static>,
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<features::Feature<'static>>>>,
     #[clap(long = "parent")]
@@ -65,13 +67,14 @@ enum Output {
     Json,
 }
 
-impl super::Subcommand for Depgraph {
-    fn run(self) -> Result<()> {
+impl Depgraph {
+    #[tracing::instrument(name = "depgraph", skip(self))]
+    pub(crate) fn run(self) -> Result<()> {
         let parent = match self.parent {
             Some(a) => Some(a.load_graph()?),
             None => None,
         };
-        let mut depgraph = Graph::builder(parent);
+        let mut depgraph = Graph::builder(self.label, parent);
         for features in self.features {
             for f in features.into_inner() {
                 depgraph.add_feature(f);

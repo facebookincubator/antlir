@@ -112,10 +112,12 @@ pub struct GraphBuilder<'a> {
     pending_features: Vec<NodeIndex<DefaultIx>>,
     items: HashMap<ItemKey<'a>, NodeIndex<DefaultIx>>,
     phases: BTreeMap<Phase, (NodeIndex<DefaultIx>, NodeIndex<DefaultIx>)>,
+    rpm2_feature: Option<NodeIndex<DefaultIx>>,
+    label: Label<'a>,
 }
 
-impl<'a> Default for GraphBuilder<'a> {
-    fn default() -> Self {
+impl<'a> GraphBuilder<'a> {
+    pub fn new(label: Label<'a>, parent: Option<Graph<'a>>) -> Self {
         let mut g = DiGraph::new();
         let mut items = HashMap::new();
 
@@ -161,19 +163,16 @@ impl<'a> Default for GraphBuilder<'a> {
             items.insert(key, nx);
         }
 
-        Self {
+        let mut s = Self {
             g,
             root,
             pending_features: Vec::new(),
             items,
             phases,
-        }
-    }
-}
+            label,
+            rpm2_feature: None,
+        };
 
-impl<'a> GraphBuilder<'a> {
-    pub fn new(parent: Option<Graph<'a>>) -> Self {
-        let mut s = Self::default();
         if let Some(parent) = parent {
             let mut new_nodes = HashMap::new();
             for nx in parent.g.node_indices() {
@@ -227,9 +226,40 @@ impl<'a> GraphBuilder<'a> {
     pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
         let provides = feature.provides();
 
-        let phase = Phase::for_feature(&feature);
+        let (phase, feature_nx) = if let features::Data::Rpm(rpm) = feature.data {
+            if let Some(nx) = self.rpm2_feature {
+                match &mut self.g[nx] {
+                    Node::PendingFeature(Feature {
+                        label: _,
+                        data: features::Data::Rpm2(rpm2),
+                    }) => rpm2.items.push(features::rpms::Rpm2Item {
+                        action: rpm.action,
+                        source: rpm.source,
+                        label: feature.label,
+                    }),
+                    _ => unreachable!("rpm2_feature node is always an Rpm2 feature"),
+                }
+                return self;
+            } else {
+                let feature_nx = self.g.add_node(Node::PendingFeature(Feature {
+                    label: self.label.clone(),
+                    data: features::Data::Rpm2(features::rpms::Rpm2 {
+                        items: vec![features::rpms::Rpm2Item {
+                            action: rpm.action,
+                            source: rpm.source,
+                            label: feature.label,
+                        }],
+                    }),
+                }));
+                self.rpm2_feature = Some(feature_nx);
+                (Phase::OsPackage, feature_nx)
+            }
+        } else {
+            let phase = Phase::for_feature(&feature);
+            let feature_nx = self.g.add_node(Node::PendingFeature(feature));
+            (phase, feature_nx)
+        };
 
-        let feature_nx = self.g.add_node(Node::PendingFeature(feature));
         self.pending_features.push(feature_nx);
 
         // Insert edges so that features are in the right part of the graph wrt phases
@@ -382,14 +412,16 @@ pub struct Graph<'a> {
 }
 
 impl<'a> Graph<'a> {
-    pub fn builder(parent: Option<Self>) -> GraphBuilder<'a> {
-        GraphBuilder::new(parent)
+    pub fn builder(label: Label<'a>, parent: Option<Self>) -> GraphBuilder<'a> {
+        GraphBuilder::new(label, parent)
     }
 
     pub fn to_dot<'b>(&'b self) -> dot::Dot<'a, 'b> {
         dot::Dot(&self.g)
     }
 
+    /// Iterate over features in topographical order (dependencies sorted before the
+    /// features that require them).
     pub fn pending_features(&self) -> impl Iterator<Item = &Feature<'a>> {
         self.topo.iter().filter_map(|nx| match &self.g[*nx] {
             Node::PendingFeature(f) => Some(f),

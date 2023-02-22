@@ -24,6 +24,9 @@ pub(crate) struct Compile {
     /// Root directory of under-construction image. Must already exist (either
     /// empty or as a snapshot of a parent layer)
     pub(crate) root: PathBuf,
+    #[clap(long)]
+    /// Path to outside-world proxy UNIX socket
+    pub(crate) proxy_socket: PathBuf,
     #[clap(flatten)]
     pub(crate) public: PublicCompileArgs,
 }
@@ -40,28 +43,32 @@ pub(crate) struct PublicCompileArgs {
 
 impl Compile {
     #[deny(unused_variables)]
-    pub(crate) fn to_args(&self) -> [&OsStr; 4] {
+    pub(crate) fn to_args(&self) -> [&OsStr; 6] {
         let Self {
             public: PublicCompileArgs { depgraph },
             root,
+            proxy_socket,
         } = self;
         [
-            OsStr::new("--root"),
-            root.as_os_str(),
             OsStr::new("--depgraph-json"),
             depgraph.path().as_os_str(),
+            OsStr::new("--root"),
+            root.as_os_str(),
+            OsStr::new("--proxy-socket"),
+            proxy_socket.as_os_str(),
         ]
     }
 }
 
-impl super::Subcommand for Compile {
-    fn run(self) -> Result<()> {
-        let ctx = CompilerContext::new(self.root).context("while preparing CompilerContext")?;
+impl Compile {
+    #[tracing::instrument(name = "compile", skip(self))]
+    pub(crate) fn run(self) -> Result<()> {
+        let ctx = CompilerContext::new(self.root, self.proxy_socket)
+            .context("while preparing CompilerContext")?;
 
         for feature in self.public.depgraph.pending_features() {
             feature.compile(&ctx)?;
         }
-
         Ok(())
     }
 }

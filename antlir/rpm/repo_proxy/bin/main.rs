@@ -49,5 +49,10 @@ async fn main() -> Result<()> {
     let rpm_repos = serde_json::from_slice(&config_bytes)
         .with_context(|| format!("while parsing {}", args.repos_json.display()))?;
 
-    repo_proxy::serve(repo_proxy::Config::new(rpm_repos, args.bind)).await
+    repo_proxy::serve(repo_proxy::Config::new(
+        rpm_repos,
+        repo_proxy::Bind::Path(args.bind),
+        None,
+    ))
+    .await
 }

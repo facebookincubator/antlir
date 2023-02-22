@@ -9,6 +9,7 @@ rust_binary(
         "serde",
         "serde_json",
         "similar-asserts",
+        "//antlir/buck/buck_label:buck_label",
         "//antlir/buck2/features:features",
         "//antlir/filesystem/stdio_path:stdio_path",
         "//antlir/staging/antlir2/antlir2_depgraph:antlir2_depgraph",

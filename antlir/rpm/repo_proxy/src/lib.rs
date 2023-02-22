@@ -7,13 +7,19 @@
 
 use std::collections::HashMap;
 use std::convert::Infallible;
+use std::fmt::Debug;
+use std::future::Future;
 use std::path::Path;
 use std::path::PathBuf;
+use std::pin::Pin;
 use std::sync::Arc;
 
 use anyhow::Context;
 use anyhow::Result;
+use derivative::Derivative;
 use dnf_conf::DnfConf;
+use http::header::HeaderValue;
+use http::header::ACCEPT;
 use http::header::HOST;
 use http::uri::Scheme;
 use http::Method;
@@ -31,22 +37,57 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use tokio::net::UnixListener;
+use tokio::sync::oneshot;
 use tokio_util::codec::BytesCodec;
 use tokio_util::codec::FramedRead;
 use tracing::span;
 use tracing::Level;
+use uuid::Uuid;
 
 mod unix;
 
-#[derive(Debug)]
+#[derive(Derivative)]
+#[derivative(Debug)]
 pub struct Config {
     rpm_repos: HashMap<String, RpmRepo>,
-    bind: PathBuf,
+    bind: Bind,
+    #[derivative(Debug = "ignore")]
+    graceful_shutdown: Pin<Box<dyn Future<Output = ()> + Sync + Send>>,
 }
 
 impl Config {
-    pub fn new(rpm_repos: HashMap<String, RpmRepo>, bind: PathBuf) -> Self {
-        Self { rpm_repos, bind }
+    pub fn new(
+        rpm_repos: HashMap<String, RpmRepo>,
+        bind: Bind,
+        graceful_shutdown: Option<Pin<Box<dyn Future<Output = ()> + Sync + Send>>>,
+    ) -> Self {
+        Self {
+            rpm_repos,
+            bind,
+            graceful_shutdown: graceful_shutdown.unwrap_or_else(|| {
+                Box::pin(async move {
+                    tokio::signal::ctrl_c()
+                        .await
+                        .expect("failed to listen to shutdown signal");
+                })
+            }),
+        }
+    }
+}
+
+pub enum Bind {
+    /// Bind to a pre-known path
+    Path(PathBuf),
+    /// Bind to a temporary file and send it on this channel once bound
+    Dynamic(oneshot::Sender<PathBuf>),
+}
+
+impl Debug for Bind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Path(p) => f.debug_tuple("Path").field(&p).finish(),
+            Self::Dynamic(_) => f.debug_tuple("Dynamic").finish(),
+        }
     }
 }
 
@@ -177,6 +218,8 @@ async fn serve_static_file(path: &Path) -> Result<Response<Body>, ReplyError> {
     }
 }
 
+static JSON_MIME: HeaderValue = HeaderValue::from_static("application/json");
+
 async fn reply<C>(
     req: Request<Body>,
     rpm_repos: Arc<HashMap<String, RpmRepo>>,
@@ -271,9 +314,22 @@ where
                 .expect("all parts have already been validated");
             builder.add_repo(id.clone(), uri);
         }
-        Ok(Response::builder()
-            .body(builder.build().to_string().into())
-            .expect("infallible"))
+
+        let dnf_conf = builder.build();
+
+        if req.headers().get(ACCEPT).map_or(false, |v| v == JSON_MIME) {
+            Ok(Response::builder()
+                .body(
+                    serde_json::to_vec(&dnf_conf)
+                        .expect("this is valid json")
+                        .into(),
+                )
+                .expect("infallible"))
+        } else {
+            Ok(Response::builder()
+                .body(dnf_conf.to_string().into())
+                .expect("infallible"))
+        }
     } else {
         Err(ReplyError::not_found("does not match any routes"))
     }
@@ -288,9 +344,19 @@ pub async fn serve(cfg: Config) -> Result<()> {
             .collect(),
     );
 
-    let listener = UnixListener::bind(&cfg.bind).context("while binding unix socket")?;
+    let path = match &cfg.bind {
+        Bind::Path(p) => p.to_path_buf(),
+        Bind::Dynamic(_) => Path::new("/tmp").join(format!("antlir_{}", Uuid::new_v4())),
+    };
+
+    let listener = UnixListener::bind(&path).context("while binding unix socket")?;
     let incoming = crate::unix::UnixIncoming(listener);
     tracing::info!("bound to {:?}", &cfg.bind);
+    if let Bind::Dynamic(tx) = cfg.bind {
+        tracing::debug!(path = path.display().to_string(), "bound to dynamic path");
+        tx.send(path.clone())
+            .map_err(|_| anyhow::Error::msg("dynamic socket receiver is closed"))?;
+    }
 
     let make_svc = make_service_fn(move |_conn| {
         let rpm_repos = rpm_repos.clone();
@@ -304,13 +370,10 @@ pub async fn serve(cfg: Config) -> Result<()> {
 
     let server = Server::builder(incoming)
         .serve(make_svc)
-        .with_graceful_shutdown(async move {
-            tokio::signal::ctrl_c()
-                .await
-                .expect("failed to listen to shutdown signal");
-        });
+        .with_graceful_shutdown(cfg.graceful_shutdown);
     let result = server.await;
 
-    std::fs::remove_file(&cfg.bind).context("while removing socket")?;
+    tracing::debug!("unlinking socket");
+    std::fs::remove_file(&path).context("while removing socket")?;
     result.context("while serving HTTP")
 }

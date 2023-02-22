@@ -13,7 +13,3 @@ pub(crate) use compile::Compile;
 pub(crate) use depgraph::Depgraph;
 pub(crate) use map::Map;
 pub(crate) use shell::Shell;
-
-pub(crate) trait Subcommand {
-    fn run(self) -> crate::Result<()>;
-}

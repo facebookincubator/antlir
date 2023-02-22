@@ -7,6 +7,7 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
@@ -19,6 +20,8 @@ use btrfs::SnapshotFlags;
 use btrfs::Subvolume;
 use buck_label::Label;
 use clap::Parser;
+use json_arg::JsonFile;
+use tokio::sync::oneshot;
 use tracing::debug;
 
 use super::compile::Compile;
@@ -56,6 +59,10 @@ struct SetupArgs {
     /// a single [Label].
     #[clap(long)]
     identifier: String,
+
+    #[clap(long)]
+    rpm_proxy_config: JsonFile<HashMap<String, repo_proxy::RpmRepo>>,
+
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
@@ -113,11 +120,28 @@ impl Map {
         debug!("produced r/w subvol '{subvol:?}'");
         Ok(subvol)
     }
-}
 
-impl super::Subcommand for Map {
-    fn run(self) -> Result<()> {
+    pub(crate) async fn run(self) -> Result<()> {
         let mut subvol = self.create_new_subvol()?;
+
+        let (tx, rx) = oneshot::channel();
+        tokio::spawn(async move {
+            let result = repo_proxy::serve(repo_proxy::Config::new(
+                self.setup.rpm_proxy_config.into_inner(),
+                repo_proxy::Bind::Dynamic(tx),
+                // we don't actually care about gracefully shutting down the
+                // repo_proxy, it's desirable to just have it die whenever this
+                // process exits
+                Some(Box::pin(std::future::pending())),
+            ))
+            .await;
+            panic!("repo_proxy should never stop: {result:?}");
+        });
+        let proxy_socket = rx.await.context("while waiting for proxy socket path")?;
+        tracing::debug!(
+            path = proxy_socket.display().to_string(),
+            "proxy socket ready"
+        );
 
         let repo = find_root::find_repo_root(
             &absolute_path::AbsolutePathBuf::canonicalize(
@@ -141,6 +165,7 @@ impl super::Subcommand for Map {
                 // image builds all require the repo for at least the
                 // feature json paths coming from buck
                 repo.as_ref(),
+                &proxy_socket,
             ]),
             working_directory: Some(&std::env::current_dir().context("while getting cwd")?),
             // TODO(vmagro): there are currently no tracing args, but
@@ -159,6 +184,7 @@ impl super::Subcommand for Map {
                     Compile {
                         root: isol.root.clone(),
                         public,
+                        proxy_socket,
                     }
                     .to_args(),
                 );

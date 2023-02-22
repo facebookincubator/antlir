@@ -5,12 +5,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(iter_intersperse)]
+
+use std::process::ExitStatus;
+
 use clap::Parser;
 use thiserror::Error;
 use tracing_subscriber::prelude::*;
 
 mod cmd;
-use cmd::Subcommand as _;
 
 #[derive(Debug, Error)]
 pub enum Error {
@@ -18,6 +21,8 @@ pub enum Error {
     Compile(#[from] antlir2_compile::Error),
     #[error(transparent)]
     Depgraph(#[from] antlir2_depgraph::Error<'static>),
+    #[error("subprocess exited with {0}")]
+    Subprocess(ExitStatus),
     #[error(transparent)]
     Uncategorized(#[from] anyhow::Error),
 }
@@ -38,7 +43,8 @@ enum Subcommand {
     Shell(cmd::Shell),
 }
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
 
     tracing_subscriber::registry()
@@ -57,12 +63,12 @@ fn main() {
     let result = match args.subcommand {
         Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(p) => p.run(),
-        Subcommand::Map(x) => x.run(),
+        Subcommand::Map(x) => x.run().await,
         Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {
         tracing::error!("{e}");
-        eprintln!("{e:#?}");
+        eprintln!("{e:?}");
         std::process::exit(1);
     }
 }

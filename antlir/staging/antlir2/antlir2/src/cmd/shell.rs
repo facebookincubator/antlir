@@ -22,8 +22,9 @@ use crate::Result;
 /// to a shell.
 pub(crate) struct Shell {}
 
-impl super::Subcommand for Shell {
-    fn run(self) -> Result<()> {
+impl Shell {
+    #[tracing::instrument(name = "shell", skip(self))]
+    pub fn run(self) -> Result<()> {
         Err(Error::from(Command::new("/bin/sh").exec())
             .context("while execing isolated compiler")
             .into())

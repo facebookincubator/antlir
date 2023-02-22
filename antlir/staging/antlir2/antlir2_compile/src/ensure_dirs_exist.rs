@@ -17,7 +17,7 @@ use crate::CompilerContext;
 use crate::Result;
 
 impl<'a> CompileFeature for EnsureDirsExist<'a> {
-    #[tracing::instrument(skip(ctx), ret, err)]
+    #[tracing::instrument(name = "ensure_dirs_exist", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         let ancestors: Vec<_> = self
             .subdirs_to_create

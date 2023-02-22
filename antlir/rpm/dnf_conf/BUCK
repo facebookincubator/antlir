@@ -7,5 +7,7 @@ rust_library(
         "configparser",
         "http",
         "itertools",
+        "serde",
+        "serde_with",
     ],
 )
