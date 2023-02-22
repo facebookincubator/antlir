@@ -1,0 +1,19 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "image-diff-test",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "serde",
+        "serde_with",
+        "similar",
+        "toml",
+        "twox-hash",
+        "walkdir",
+        "xattr",
+        "//antlir/staging/antlir2/antlir2_mode:antlir2_mode",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)

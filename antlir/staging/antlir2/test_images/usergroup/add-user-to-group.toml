@@ -1,0 +1,12 @@
+["etc/group"]
+op = 'diff'
+
+["etc/group".diff]
+text-patch = '''
+--- parent
++++ child
+@@ -1,2 +1,2 @@
+-root:x:0:
++root:x:0:antlir
+ antlir:x:1:antlir
+'''
