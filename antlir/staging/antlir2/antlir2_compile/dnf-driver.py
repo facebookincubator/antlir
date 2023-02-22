@@ -13,6 +13,8 @@
 # NOTE: this must be run with system python, so cannot be a PAR file
 
 import json
+import os
+import shutil
 import sys
 import threading
 from collections import defaultdict
@@ -144,16 +146,28 @@ def main():
     mode = spec["mode"]
     base = dnf.Base()
     base.conf.installroot = spec["install_root"]
+    os.makedirs("/antlir/dnf-cache", exist_ok=True)
+    base.conf.cachedir = "/antlir/dnf-cache"
 
-    repos = {}
     for repomd in Path(spec["repos"]).glob("**/*/repodata/repomd.xml"):
-        baseurl = repomd.parent.parent.resolve().as_uri()
-        key = str(repomd.parent.parent.relative_to(spec["repos"]))
-        id = key.replace("/", "-")
-        repos[id] = key
-        base.repos.add_new_repo(id, dnf.conf.Conf(), [baseurl])
+        basedir = repomd.parent.parent.resolve()
+        id = str(repomd.parent.parent.relative_to(spec["repos"]))
+        base.repos.add_new_repo(id, dnf.conf.Conf(), [basedir.as_uri()])
+        shutil.copyfile(
+            basedir / "repodata" / f"{id}.solv", f"/antlir/dnf-cache/{id}.solv"
+        )
+        shutil.copyfile(
+            basedir / "repodata" / f"{id}-filenames.solvx",
+            f"/antlir/dnf-cache/{id}-filenames.solvx",
+        )
 
-    # read: download repodata
+    # Load .solv files to determine available repos and rpms. This will re-parse
+    # repomd.xml, but does not require re-loading all the other large xml blobs,
+    # since the .solv{x} files are copied into the cache dir immediately before
+    # this. Ideally we could use `fill_sack_from_repos_in_cache`, but that
+    # requires knowing the dnf cache key (like /antlir/dnf-cache/repo-HEXSTRING)
+    # which is based on the base url. We don't have a persistent baseurl, but
+    # this is incredibly fast anyway.
     base.fill_sack()
 
     for item in spec["items"]:
@@ -176,7 +190,7 @@ def main():
                     "install": [
                         {
                             "package": package_struct(p),
-                            "repo": repos[p.repo.id],
+                            "repo": p.repo.id,
                         }
                         for p in base.transaction.install_set
                     ],
