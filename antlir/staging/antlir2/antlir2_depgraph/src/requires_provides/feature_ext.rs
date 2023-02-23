@@ -42,19 +42,21 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::EnsureDirSymlink(x) => x.provides(),
             Data::EnsureDirsExist(x) => x.provides(),
             Data::EnsureFileSymlink(x) => x.provides(),
+            Data::Extract(x) => x.provides(),
             Data::Genrule(_) => Ok(vec![]),
             Data::Group(x) => x.provides(),
             Data::Install(x) => x.provides(),
+            Data::Meta(_) => todo!(),
             Data::Mount(x) => x.provides(),
             Data::ParentLayer(_) => Ok(vec![]),
             Data::ReceiveSendstream(_) => Ok(vec![]),
             Data::Remove(x) => x.provides(),
+            Data::Requires(x) => x.provides(),
             Data::Rpm(x) => x.provides(),
             Data::Rpm2(x) => x.provides(),
-            Data::Requires(x) => x.provides(),
+            Data::Tarball(_) => todo!(),
             Data::User(x) => x.provides(),
             Data::UserMod(x) => x.provides(),
-            _ => todo!("{:?}", self.data),
         }
     }
 
@@ -64,19 +66,21 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::EnsureDirSymlink(x) => x.requires(),
             Data::EnsureDirsExist(x) => x.requires(),
             Data::EnsureFileSymlink(x) => x.requires(),
+            Data::Extract(x) => x.requires(),
             Data::Genrule(_) => vec![],
             Data::Group(x) => x.requires(),
             Data::Install(x) => x.requires(),
+            Data::Meta(_) => todo!(),
             Data::Mount(x) => x.requires(),
             Data::ParentLayer(_) => vec![],
             Data::ReceiveSendstream(_) => vec![],
             Data::Remove(x) => x.requires(),
+            Data::Requires(x) => x.requires(),
             Data::Rpm(x) => x.requires(),
             Data::Rpm2(x) => x.requires(),
-            Data::Requires(x) => x.requires(),
+            Data::Tarball(_) => todo!(),
             Data::User(x) => x.requires(),
             Data::UserMod(x) => x.requires(),
-            _ => todo!("{:?}", self.data),
         }
     }
 }
@@ -123,8 +127,7 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
             .as_ref()
             .expect("src_layer_info always set in antlir2")
             .depgraph
-            .as_ref()
-            .expect("src_layer_info.depgraph always set in antlir2");
+            .as_ref();
         let src_layer = std::fs::read(src_layer_depgraph_path).map_err(|e| {
             format!(
                 "could not read src_layer depgraph '{}': {e}",
@@ -228,6 +231,77 @@ impl<'f> FeatureExt<'f> for features::ensure_dirs_exist::EnsureDirsExist<'f> {
                 validator: Validator::Exists,
             },
         ]
+    }
+}
+
+impl<'f> FeatureExt<'f> for features::extract::Extract<'f> {
+    fn requires(&self) -> Vec<Requirement<'f>> {
+        match self {
+            Self::Layer(l) => l
+                .binaries
+                .iter()
+                .flat_map(|path| {
+                    vec![
+                        Requirement {
+                            key: ItemKey::Layer(l.layer.label.to_owned()),
+                            validator: Validator::ItemInLayer {
+                                key: ItemKey::Path(path.path().to_owned().into()),
+                                validator: Box::new(Validator::Executable),
+                            },
+                        },
+                        Requirement {
+                            key: ItemKey::Path(
+                                path.path()
+                                    .parent()
+                                    .expect("dst always has parent")
+                                    .to_owned()
+                                    .into(),
+                            ),
+                            validator: Validator::FileType(FileType::Directory),
+                        },
+                    ]
+                })
+                .collect(),
+            Self::Buck(b) => vec![Requirement {
+                key: ItemKey::Path(
+                    b.dst
+                        .path()
+                        .parent()
+                        .expect("dst always has parent")
+                        .to_owned()
+                        .into(),
+                ),
+                validator: Validator::FileType(FileType::Directory),
+            }],
+        }
+    }
+
+    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
+        // Intentionally provide only the direct files the user asked for,
+        // because we don't want to produce conflicts with all the transitive
+        // dependencies. However, we will check that any duplicated items are in
+        // fact identical, to prevent insane mismatches like this
+        // https://fb.workplace.com/groups/btrmeup/posts/5913570682055882
+        Ok(match self {
+            Self::Layer(l) => l
+                .binaries
+                .iter()
+                .map(|path| {
+                    Item::Path(Path::Entry(FsEntry {
+                        path: path.path().to_owned().into(),
+                        file_type: FileType::File,
+                        mode: 0o555,
+                    }))
+                })
+                .collect(),
+            Self::Buck(b) => {
+                vec![Item::Path(Path::Entry(FsEntry {
+                    path: b.dst.path().to_owned().into(),
+                    file_type: FileType::File,
+                    mode: 0o555,
+                }))]
+            }
+        })
     }
 }
 

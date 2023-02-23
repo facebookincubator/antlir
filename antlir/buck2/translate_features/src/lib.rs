@@ -154,6 +154,7 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::User(_) => "users",
             features::Data::UserMod(_) => "usermod",
             features::Data::Group(_) => "groups",
+            features::Data::Extract(_) => unimplemented!("antlir2 only"),
         };
         let data: serde_json::Value = match new.data {
             features::Data::Clone(x) => serde_json::to_value(clone::clone_t::from_new(x)),
@@ -198,6 +199,7 @@ impl FromNew<features::Feature<'_>> for serde_json::Value {
             features::Data::User(x) => serde_json::to_value(usergroup::user_t::from_new(x)),
             features::Data::UserMod(x) => serde_json::to_value(usergroup::usermod_t::from_new(x)),
             features::Data::Group(x) => serde_json::to_value(usergroup::group_t::from_new(x)),
+            features::Data::Extract(_) => unimplemented!("antlir2 only"),
         }
         .expect("json conversion will not fail");
         obj.insert(key.to_owned(), vec![data].into());

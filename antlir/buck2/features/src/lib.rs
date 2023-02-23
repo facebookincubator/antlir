@@ -11,6 +11,7 @@ use serde::Serialize;
 
 pub mod clone;
 pub mod ensure_dirs_exist;
+pub mod extract;
 pub mod genrule;
 pub mod install;
 pub mod meta_kv;
@@ -46,6 +47,7 @@ pub enum Data<'a> {
     EnsureDirSymlink(symlink::Symlink<'a>),
     EnsureDirsExist(ensure_dirs_exist::EnsureDirsExist<'a>),
     EnsureFileSymlink(symlink::Symlink<'a>),
+    Extract(extract::Extract<'a>),
     Genrule(genrule::Genrule<'a>),
     Group(usergroup::Group<'a>),
     Install(install::Install<'a>),

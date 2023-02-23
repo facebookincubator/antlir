@@ -75,8 +75,10 @@ path_wrapper!(PathInLayer, "A path inside an image layer");
 
 /// Serialized buck2 LayerInfo provider
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
 pub struct LayerInfo<'a> {
+    pub label: Label<'a>,
     pub subvol_symlink: Cow<'a, Path>,
     // antlir2 only
-    pub depgraph: Option<Cow<'a, Path>>,
+    pub depgraph: Cow<'a, Path>,
 }

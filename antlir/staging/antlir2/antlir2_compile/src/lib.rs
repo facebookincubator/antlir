@@ -18,12 +18,14 @@ use features::Feature;
 
 mod clone;
 mod ensure_dirs_exist;
+mod extract;
 mod install;
 pub mod plan;
 mod remove;
 mod rpms;
 mod symlink;
 mod usergroup;
+pub(crate) mod util;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -35,6 +37,8 @@ pub enum Error {
     LoadUsers(#[from] antlir2_users::Error),
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error("extract has conflict: want to install a different version of {0:?}")]
+    ExtractConflict(PathBuf),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -132,6 +136,7 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::EnsureDirSymlink(x) => x.compile(ctx),
             Data::EnsureDirsExist(x) => x.compile(ctx),
             Data::EnsureFileSymlink(x) => x.compile(ctx),
+            Data::Extract(x) => x.compile(ctx),
             Data::Genrule(x) => todo!("{x:?}"),
             Data::Group(x) => x.compile(ctx),
             Data::Install(x) => x.compile(ctx),

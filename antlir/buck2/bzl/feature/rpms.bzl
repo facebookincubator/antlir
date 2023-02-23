@@ -61,17 +61,9 @@ def _build_rpm_rules(action, rpmlist):
             # We just add the version set for user given flavors, even
             # if they are invalid. They will be added as dependencies of the
             # image layer that uses this feature.
-            if vs_path_prefix != BZL_CONST.version_set_allow_all_versions and vs_name:
+            if vs_path_prefix != BZL_CONST.version_set_allow_all_versions and vs_name and not vs_name.startswith("rpm-test-"):
                 vs_target = vs_path_prefix + "/rpm:" + vs_name
                 flavor_to_version_set[flavor] = vs_target
-            else:
-                flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
-
-            # Antlir creates a number of rpms like 'rpm-test-*' available in a
-            # temporary repository for testing, so remove the version set dep
-            # for those rpms that will never exist
-            if vs_name and vs_name.startswith("rpm-test-"):
-                flavor_to_version_set[flavor] = BZL_CONST.version_set_allow_all_versions
 
         rpms.append(
             _rpms(
