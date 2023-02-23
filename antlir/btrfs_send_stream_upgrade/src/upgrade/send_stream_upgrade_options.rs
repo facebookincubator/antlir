@@ -164,3 +164,24 @@ pub struct SendStreamUpgradeOptions {
     #[structopt(short, long, default_value = "8192")]
     pub write_buffer_size: usize,
 }
+
+impl Default for SendStreamUpgradeOptions {
+    fn default() -> Self {
+        Self {
+            avoid_crcing_input: false,
+            bytes_to_log: 0,
+            compression_level: 3,
+            extra_buffer_cache_backlog: 1073741824,
+            maximum_batched_extent_size: 131072,
+            input: None,
+            output: None,
+            pad_with_dummy_commands: false,
+            quiet: false,
+            read_buffer_size: 1048576,
+            serde_checks: false,
+            thread_count: 0,
+            verbose: 0,
+            write_buffer_size: 8192,
+        }
+    }
+}
