@@ -12,6 +12,8 @@ use serde::Serialize;
 pub mod clone;
 pub mod ensure_dirs_exist;
 pub mod extract;
+#[cfg(facebook)]
+pub mod facebook;
 pub mod genrule;
 pub mod install;
 pub mod meta_kv;
@@ -62,4 +64,7 @@ pub enum Data<'a> {
     Tarball(tarball::Tarball<'a>),
     User(usergroup::User<'a>),
     UserMod(usergroup::UserMod<'a>),
+    #[cfg(facebook)]
+    #[serde(rename = "facebook/chef_solo")]
+    ChefSolo(facebook::ChefSolo<'a>),
 }

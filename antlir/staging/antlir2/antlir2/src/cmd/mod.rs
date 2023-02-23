@@ -5,11 +5,13 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph::Graph;
+use buck_label::Label;
 use clap::Parser;
 use json_arg::JsonFile;
 
@@ -33,6 +35,9 @@ pub(crate) use test::Test;
 /// 'plan', but maybe others in the future)
 #[derive(Parser, Debug)]
 pub(self) struct Compileish {
+    #[clap(long)]
+    /// Buck label of the image being built
+    pub(crate) label: Label<'static>,
     #[clap(long)]
     /// Root directory of under-construction image. Must already exist (either
     /// empty or as a snapshot of a parent layer)
@@ -58,32 +63,40 @@ pub(self) struct CompileishExternal {
 
 impl Compileish {
     #[deny(unused_variables)]
-    pub(self) fn to_args(&self) -> Vec<&OsStr> {
+    pub(self) fn to_args<'a>(&'a self) -> Vec<Cow<'a, OsStr>> {
         let Self {
             external:
                 CompileishExternal {
                     depgraph,
                     image_dependencies,
                 },
+            label,
             root,
             dnf_repos,
         } = self;
         let mut v = vec![
-            OsStr::new("--depgraph-json"),
-            depgraph.path().as_os_str(),
-            OsStr::new("--root"),
-            root.as_os_str(),
-            OsStr::new("--dnf-repos"),
-            dnf_repos.as_os_str(),
+            Cow::Borrowed(OsStr::new("--depgraph-json")),
+            Cow::Borrowed(depgraph.path().as_os_str()),
+            Cow::Borrowed(OsStr::new("--label")),
+            Cow::Owned(label.to_string().into()),
+            Cow::Borrowed(OsStr::new("--root")),
+            Cow::Borrowed(root.as_os_str()),
+            Cow::Borrowed(OsStr::new("--dnf-repos")),
+            Cow::Borrowed(dnf_repos.as_os_str()),
         ];
         for dep in image_dependencies {
-            v.push(OsStr::new("--image-dependency"));
-            v.push(dep.as_os_str());
+            v.push(Cow::Borrowed(OsStr::new("--image-dependency")));
+            v.push(Cow::Borrowed(dep.as_os_str()));
         }
         v
     }
 
     pub(super) fn compiler_context(&self) -> Result<CompilerContext> {
-        CompilerContext::new(self.root.clone(), self.dnf_repos.clone()).map_err(Error::Compile)
+        CompilerContext::new(
+            self.label.clone(),
+            self.root.clone(),
+            self.dnf_repos.clone(),
+        )
+        .map_err(Error::Compile)
     }
 }

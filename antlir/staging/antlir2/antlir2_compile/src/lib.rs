@@ -13,12 +13,15 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use buck_label::Label;
 use features::Data;
 use features::Feature;
 
 mod clone;
 mod ensure_dirs_exist;
 mod extract;
+#[cfg(facebook)]
+mod facebook;
 mod install;
 pub mod plan;
 mod remove;
@@ -47,6 +50,8 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
 pub struct CompilerContext {
+    /// Buck label of the image being built
+    label: Label<'static>,
     /// Path to the root of the image being built
     root: PathBuf,
     /// Root directory where dnf repos are mounted
@@ -68,8 +73,16 @@ where
 }
 
 impl CompilerContext {
-    pub fn new(root: PathBuf, dnf_repos: PathBuf) -> Result<Self> {
-        Ok(Self { root, dnf_repos })
+    pub fn new(label: Label<'static>, root: PathBuf, dnf_repos: PathBuf) -> Result<Self> {
+        Ok(Self {
+            label,
+            root,
+            dnf_repos,
+        })
+    }
+
+    pub fn label(&self) -> &Label {
+        &self.label
     }
 
     /// Root directory for the image being built
@@ -158,12 +171,16 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::ParentLayer(_) => {
                 unreachable!("this should never make it to antlir2_compile at all")
             }
+            #[cfg(facebook)]
+            Data::ChefSolo(x) => x.compile(ctx),
         }
     }
 
     fn plan(&self, ctx: &CompilerContext) -> Result<plan::Item> {
         match &self.data {
             Data::Rpm2(x) => x.plan(ctx),
+            #[cfg(facebook)]
+            Data::ChefSolo(x) => x.plan(ctx),
             _ => Ok(plan::Item::None),
         }
     }

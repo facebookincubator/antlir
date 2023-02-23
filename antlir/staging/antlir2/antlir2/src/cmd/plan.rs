@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 
@@ -44,7 +45,7 @@ pub(super) struct PlanExternal {
 
 impl Plan {
     #[deny(unused_variables)]
-    pub(super) fn to_args(&self) -> Vec<&OsStr> {
+    pub(super) fn to_args<'a>(&'a self) -> Vec<Cow<'a, OsStr>> {
         let Self {
             compileish,
             external: PlanExternal { plan },
@@ -52,7 +53,10 @@ impl Plan {
         compileish
             .to_args()
             .into_iter()
-            .chain([OsStr::new("--plan"), plan.as_os_str()])
+            .chain([
+                Cow::Borrowed(OsStr::new("--plan")),
+                Cow::Borrowed(plan.as_os_str()),
+            ])
             .collect()
     }
 }

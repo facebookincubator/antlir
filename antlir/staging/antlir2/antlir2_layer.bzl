@@ -233,6 +233,7 @@ def antlir2_layer(
         visibility = [":" + name],
         features = features,
         antlir1_translation = False,
+        flavors = [],
     )
     feature_target = ":" + feature_target
 
