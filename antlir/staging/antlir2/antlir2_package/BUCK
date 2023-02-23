@@ -1,0 +1,17 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "antlir2-package",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "serde",
+        "tempfile",
+        "tracing",
+        "tracing-glog",
+        "tracing-subscriber",
+        "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade_lib",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)
