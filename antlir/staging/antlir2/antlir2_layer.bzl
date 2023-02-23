@@ -70,7 +70,7 @@ def _impl(ctx: "context") -> ["provider"]:
         if type(dep) == "artifact":
             feature_hidden_deps.append(dep)
 
-    depgraph_input = _build_depgraph(ctx, "json", None, dependency_layers)
+    depgraph_input = build_depgraph(ctx, "json", None, dependency_layers)
 
     available_rpm_repos = ctx.attrs.available_rpm_repos[RepoSetInfo] if ctx.attrs.available_rpm_repos else None
     dnf_repodatas = repodata_only_local_repos(ctx, available_rpm_repos)
@@ -120,7 +120,7 @@ def _impl(ctx: "context") -> ["provider"]:
         category = "antlir2_print_tree",
     )
 
-    depgraph_output = _build_depgraph(ctx, "json", final_subvol, dependency_layers)
+    depgraph_output = build_depgraph(ctx, "json", final_subvol, dependency_layers)
 
     # This script is provided solely for developer convenience. It would
     # actually be a large regression to run this to produce the final image
@@ -160,9 +160,9 @@ def _impl(ctx: "context") -> ["provider"]:
                 "depgraph": [DefaultInfo(
                     default_outputs = [],
                     sub_targets = {
-                        "input.dot": [DefaultInfo(default_outputs = [_build_depgraph(ctx, "dot", None, dependency_layers)])],
+                        "input.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", None, dependency_layers)])],
                         "input.json": [DefaultInfo(default_outputs = [depgraph_input])],
-                        "output.dot": [DefaultInfo(default_outputs = [_build_depgraph(ctx, "dot", final_subvol, dependency_layers)])],
+                        "output.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", final_subvol, dependency_layers)])],
                         "output.json": [DefaultInfo(default_outputs = [depgraph_output])],
                     },
                 )],
@@ -176,7 +176,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ),
     ]
 
-def _build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None], dependency_layers: ["LayerInfo"]) -> "artifact":
+def build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None], dependency_layers: ["LayerInfo"]) -> "artifact":
     output = ctx.actions.declare_output("depgraph." + format + (".pre" if not subvol else ""))
     ctx.actions.run(
         cmd_args(
@@ -186,11 +186,11 @@ def _build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None]
             "depgraph",
             cmd_args(str(ctx.label), format = "--label={}"),
             format,
-            ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json"),
+            ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json") if hasattr(ctx.attrs, "features") else cmd_args(),
             cmd_args(
                 ctx.attrs.parent_layer[LayerInfo].depgraph,
                 format = "--parent={}",
-            ) if ctx.attrs.parent_layer else cmd_args(),
+            ) if hasattr(ctx.attrs, "parent_layer") and ctx.attrs.parent_layer else cmd_args(),
             cmd_args(
                 [li.depgraph for li in dependency_layers],
                 format = "--image-dependency={}",
