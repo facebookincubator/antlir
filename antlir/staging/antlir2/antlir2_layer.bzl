@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/buck2/bzl:layer_info.bzl", Antlir1LayerInfo = "LayerInfo")
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
@@ -54,9 +55,20 @@ def _impl(ctx: "context") -> ["provider"]:
     # traverse the features to find dependencies this image build has on other
     # image layers
     dependency_layers = []
+    feature_hidden_deps = []
     for dep in flatten.flatten(ctx.attrs.features[FeatureInfo].deps.traverse()):
         if type(dep) == "dependency" and LayerInfo in dep:
             dependency_layers.append(dep[LayerInfo])
+        elif type(dep) == "dependency":
+            feature_hidden_deps.append(ensure_single_output(dep))
+
+            # TODO(vmagro): features should be able to provide better dep info
+            # instead of doing things like this...
+            if RunInfo in dep:
+                feature_hidden_deps.append(dep[RunInfo])
+
+        if type(dep) == "artifact":
+            feature_hidden_deps.append(dep)
 
     depgraph_input = _build_depgraph(ctx, "json", None, dependency_layers)
 
@@ -72,7 +84,7 @@ def _impl(ctx: "context") -> ["provider"]:
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
             cmd_args([li.subvol_symlink for li in dependency_layers], format = "--image-dependency={}"),
             cmd_args(plan.as_output(), format = "--plan={}"),
-        ),
+        ).hidden(feature_hidden_deps),
         identifier = "plan",
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
     )
@@ -96,7 +108,7 @@ def _impl(ctx: "context") -> ["provider"]:
             "compile",
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
             cmd_args([li.subvol_symlink for li in dependency_layers], format = "--image-dependency={}"),
-        ),
+        ).hidden(feature_hidden_deps),
         identifier = "compile",
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
     )
@@ -133,6 +145,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     return [
         LayerInfo(
+            label = ctx.label,
             depgraph = depgraph_output,
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
@@ -219,6 +232,7 @@ def antlir2_layer(
         name = feature_target,
         visibility = [":" + name],
         features = features,
+        antlir1_translation = False,
     )
     feature_target = ":" + feature_target
 

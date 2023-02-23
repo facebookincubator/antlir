@@ -55,6 +55,7 @@ load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
 load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
+load(":extract.bzl", "extract_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
 load(":genrule.bzl", "genrule_to_json")
 load(":install.bzl", "install_to_json")
@@ -92,6 +93,7 @@ _feature_to_json = {
     "ensure_dir_symlink": symlink_to_json,
     "ensure_dirs_exist": ensure_dirs_exist_to_json,
     "ensure_file_symlink": symlink_to_json,
+    "extract": extract_to_json,
     "genrule": genrule_to_json,
     "group": group_to_json,
     "install": install_to_json,
@@ -119,8 +121,7 @@ def _impl(ctx: "context") -> ["provider"]:
         if feature_sources:
             inline_deps.extend(feature_sources.values())
         if feature_deps:
-            for dep in feature_deps.values():
-                inline_deps.append(dep)
+            inline_deps.extend(feature_deps.values())
 
         to_json_kwargs = inline.kwargs
         if feature_sources != None:
@@ -205,6 +206,7 @@ def feature(
         # No type hint here, but it is validated by flatten_features
         features,
         flavors = None,
+        antlir1_translation = True,
         visibility = None):
     """
     Create a target representing a collection of one or more image features.
@@ -236,11 +238,12 @@ def feature(
                     inline_features_sources[feature_key].update(feat.flavor_specific_sources[flavor])
 
     # TODO(T139523690)
-    native.alias(
-        name = name + BZL_CONST.PRIVATE_feature_suffix,
-        actual = ":" + name + "[buck1/features.json]",
-        visibility = visibility,
-    )
+    if antlir1_translation:
+        native.alias(
+            name = name + BZL_CONST.PRIVATE_feature_suffix,
+            actual = ":" + name + "[buck1/features.json]",
+            visibility = visibility,
+        )
 
     return _feature(
         name = name,
