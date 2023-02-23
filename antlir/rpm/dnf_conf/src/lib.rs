@@ -9,12 +9,12 @@ use std::collections::HashMap;
 use std::fmt::Display;
 
 use configparser::ini::Ini;
-use http::Uri;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
+use url::Url;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct DnfConf {
@@ -82,12 +82,12 @@ impl DnfConfBuilder {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct RepoConf {
     #[serde_as(as = "Vec<DisplayFromStr>")]
-    base_urls: Vec<Uri>,
+    base_urls: Vec<Url>,
     name: Option<String>,
 }
 
 impl RepoConf {
-    pub fn base_urls(&self) -> &[Uri] {
+    pub fn base_urls(&self) -> &[Url] {
         &self.base_urls
     }
 
@@ -96,17 +96,35 @@ impl RepoConf {
     }
 }
 
-impl From<Vec<Uri>> for RepoConf {
-    fn from(uris: Vec<Uri>) -> Self {
+impl From<Vec<Url>> for RepoConf {
+    fn from(urls: Vec<Url>) -> Self {
         Self {
-            base_urls: uris,
+            base_urls: urls,
             name: None,
         }
     }
 }
 
-impl From<Uri> for RepoConf {
-    fn from(u: Uri) -> Self {
+impl From<Url> for RepoConf {
+    fn from(u: Url) -> Self {
+        vec![u].into()
+    }
+}
+
+impl From<Vec<http::Uri>> for RepoConf {
+    fn from(uris: Vec<http::Uri>) -> Self {
+        Self {
+            base_urls: uris
+                .into_iter()
+                .map(|u| u.to_string().parse().expect("definitely valid url"))
+                .collect(),
+            name: None,
+        }
+    }
+}
+
+impl From<http::Uri> for RepoConf {
+    fn from(u: http::Uri) -> Self {
         vec![u].into()
     }
 }
@@ -121,10 +139,8 @@ mod tests {
             .add_repo(
                 "foo".into(),
                 vec![
-                    "https://repo.repo/yum/my/repo".parse().expect("valid Uri"),
-                    "https://mirror.repo/yum/my/repo"
-                        .parse()
-                        .expect("valid Uri"),
+                    Url::parse("https://repo.repo/yum/my/repo").expect("valid url"),
+                    Url::parse("https://mirror.repo/yum/my/repo").expect("valid Uri"),
                 ],
             )
             .build();

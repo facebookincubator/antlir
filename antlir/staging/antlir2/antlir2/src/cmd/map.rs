@@ -194,6 +194,7 @@ impl Map {
             Subcommand::Compile(external) => {
                 isol.command.arg("compile").args(
                     Compileish {
+                        label: self.label,
                         root: isol.root.clone(),
                         external,
                         dnf_repos: self.setup.dnf_repos,
@@ -208,6 +209,7 @@ impl Map {
                 isol.command.arg("plan").args(
                     Plan {
                         compileish: Compileish {
+                            label: self.label,
                             root: isol.root.clone(),
                             external: compileish,
                             dnf_repos: self.setup.dnf_repos,

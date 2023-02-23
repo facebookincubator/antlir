@@ -57,6 +57,8 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Tarball(_) => todo!(),
             Data::User(x) => x.provides(),
             Data::UserMod(x) => x.provides(),
+            #[cfg(facebook)]
+            Data::ChefSolo(_) => Ok(Vec::new()),
         }
     }
 
@@ -81,6 +83,8 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Tarball(_) => todo!(),
             Data::User(x) => x.requires(),
             Data::UserMod(x) => x.requires(),
+            #[cfg(facebook)]
+            Data::ChefSolo(_) => Vec::new(),
         }
     }
 }

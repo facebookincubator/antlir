@@ -51,6 +51,7 @@ added to the `_feature_to_json` map in this file.
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/buck2/bzl:flavor.bzl", "FlavorInfo", "coerce_to_flavor_label")
+# @oss-disable
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
@@ -94,6 +95,7 @@ _feature_to_json = {
     "ensure_dirs_exist": ensure_dirs_exist_to_json,
     "ensure_file_symlink": symlink_to_json,
     "extract": extract_to_json,
+    # @oss-disable
     "genrule": genrule_to_json,
     "group": group_to_json,
     "install": install_to_json,
@@ -220,7 +222,8 @@ def feature(
     feature_targets = []
     inline_features_deps = {}
     inline_features_sources = {}
-    flavors = flavors or REPO_CFG.flavor_available
+    if flavors == None:
+        flavors = REPO_CFG.flavor_available
     flavors = [coerce_to_flavor_label(f) for f in flavors]
     for feat in features:
         if types.is_string(feat):

@@ -47,6 +47,8 @@ impl Phase {
             Data::ParentLayer(_) => Self::Init,
             Data::ReceiveSendstream(_) => Self::Init,
             Data::Rpm(_) => Self::OsPackage,
+            #[cfg(facebook)]
+            Data::ChefSolo(_) => Self::OsPackage,
             Data::Requires(_) => Self::Validate,
             _ => Self::Install,
         }
