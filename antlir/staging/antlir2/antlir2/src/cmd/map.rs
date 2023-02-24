@@ -13,6 +13,7 @@ use std::time::SystemTime;
 
 use antlir2_isolate_compiler::isolate_compiler;
 use antlir2_isolate_compiler::IsolationContext;
+use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use btrfs::DeleteFlags;
 use btrfs::SnapshotFlags;
@@ -101,15 +102,8 @@ impl Map {
     /// Create a new mutable subvolume based on the [SetupArgs].
     #[tracing::instrument(skip(self), ret, err)]
     fn create_new_subvol(&self) -> Result<Subvolume> {
-        if !self.setup.working_dir.exists() {
-            debug!(
-                "creating empy working dir '{}'",
-                self.setup.working_dir.display()
-            );
-            std::fs::create_dir_all(&self.setup.working_dir).with_context(|| {
-                format!("while creating '{}'", self.setup.working_dir.display())
-            })?;
-        }
+        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
+            .context("while setting up WorkingVolume")?;
         if self.setup.output.exists() {
             let subvol =
                 Subvolume::get(&self.setup.output).context("while opening existing subvol")?;
@@ -123,7 +117,7 @@ impl Map {
         // point to the same path, so downstream artifacts will not get rebuilt
         // since it appears to be identical, even though the thing behind the
         // symlink has been changed.
-        let dst = self.setup.working_dir.join(format!(
+        let dst = working_volume.join(format!(
             "{}-{}-{}",
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)

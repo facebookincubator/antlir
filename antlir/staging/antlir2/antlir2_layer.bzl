@@ -26,7 +26,7 @@ def _map_image(
         "sudo",  # this requires privileged btrfs operations
         ctx.attrs.antlir2[RunInfo],
         "map",
-        "--working-dir=buck-image-out/volume/antlir2",
+        "--working-dir=antlir2-out",
         cmd_args(ctx.attrs.build_appliance[LayerInfo].subvol_symlink, format = "--build-appliance={}"),
         cmd_args(str(ctx.label), format = "--label={}"),
         cmd_args(identifier, format = "--identifier={}"),
@@ -36,7 +36,7 @@ def _map_image(
     )
     ctx.actions.run(
         cmd,
-        category = "antlir2_isolate",
+        category = "antlir2_map",
         identifier = identifier,
         # needs local subvolumes
         local_only = True,

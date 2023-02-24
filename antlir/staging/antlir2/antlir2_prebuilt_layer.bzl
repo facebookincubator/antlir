@@ -17,7 +17,7 @@ def _impl(ctx: "context") -> ["provider"]:
         cmd_args(
             "sudo",  # this requires privileged btrfs operations
             ctx.attrs.antlir2_receive[RunInfo],
-            "--working-dir=buck-image-out/volume/antlir2",
+            "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
             cmd_args(ctx.attrs.format, format = "--format={}"),
             cmd_args(ctx.attrs.src, format = "--source={}"),

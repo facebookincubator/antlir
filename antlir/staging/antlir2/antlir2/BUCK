@@ -19,6 +19,7 @@ rust_binary(
         "//antlir/staging/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/staging/antlir2/antlir2_depgraph:antlir2_depgraph",
         "//antlir/staging/antlir2/antlir2_isolate_compiler:antlir2_isolate_compiler",
+        "//antlir/staging/antlir2/antlir2_working_volume:antlir2_working_volume",
         "//antlir/util/cli/json_arg:json_arg",
         "//metalos/lib/btrfs:btrfs",
     ],
