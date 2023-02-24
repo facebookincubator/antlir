@@ -210,7 +210,7 @@ _antlir2_layer = rule(
         "antlir2": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2:antlir2")),
         "antlir2_print_tree": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2_print_tree:antlir2_print_tree")),
         "available_rpm_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
-        "build_appliance": attrs.dep(providers = [LayerInfo], default = "//antlir/staging/antlir2:build-appliance"),
+        "build_appliance": attrs.dep(providers = [LayerInfo], default = "//antlir/staging/antlir2/facebook/images/build_appliance:build-appliance.c9"),
         "features": attrs.dep(providers = [FeatureInfo]),
         "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "rpm_repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
@@ -242,18 +242,3 @@ def antlir2_layer(
         features = feature_target,
         **kwargs
     )
-
-def _antlir2_re_export(ctx: "context") -> ["provider"]:
-    subvol_symlink = ctx.attrs.antlir1_layer[Antlir1LayerInfo].subvol_symlink
-    return [
-        LayerInfo(subvol_symlink = subvol_symlink),
-        ctx.attrs.antlir1_layer[Antlir1LayerInfo],
-        DefaultInfo(default_outputs = [subvol_symlink]),
-    ]
-
-antlir2_re_export_layer = rule(
-    impl = _antlir2_re_export,
-    attrs = {
-        "antlir1_layer": attrs.dep(providers = [Antlir1LayerInfo]),
-    },
-)
