@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
 
+use antlir2_working_volume::WorkingVolume;
 use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
@@ -18,7 +19,6 @@ use btrfs::Subvolume;
 use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;
-use tracing::debug;
 use tracing::trace;
 use tracing_subscriber::prelude::*;
 
@@ -59,15 +59,8 @@ impl Receive {
     /// version of the subvolume that we're receiving.
     #[tracing::instrument(skip(self), ret, err)]
     fn prepare_dst(&self) -> Result<PathBuf> {
-        if !self.setup.working_dir.exists() {
-            debug!(
-                "creating empy working dir '{}'",
-                self.setup.working_dir.display()
-            );
-            std::fs::create_dir_all(&self.setup.working_dir).with_context(|| {
-                format!("while creating '{}'", self.setup.working_dir.display())
-            })?;
-        }
+        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
+            .context("while setting up WorkingVolume")?;
         if self.output.exists() {
             let subvol = Subvolume::get(&self.output).context("while opening existing subvol")?;
             subvol
@@ -80,7 +73,7 @@ impl Receive {
         // point to the same path, so downstream artifacts will not get rebuilt
         // since it appears to be identical, even though the thing behind the
         // symlink has been changed.
-        let dst = self.setup.working_dir.join(format!(
+        let dst = working_volume.join(format!(
             "{}-{}-received",
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
