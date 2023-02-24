@@ -4,17 +4,18 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/buck2/bzl:layer_info.bzl", Antlir1LayerInfo = "LayerInfo")
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load(":antlir2_dnf.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
+load(":antlir2_flavor.bzl", "FlavorInfo")
 load(":antlir2_layer_info.bzl", "LayerInfo")
 
 def _map_image(
         ctx: "context",
         cmd: "cmd_args",
         identifier: str.type,
+        flavor_info: FlavorInfo.type,
         parent: ["artifact", None]) -> ("cmd_args", "artifact"):
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
@@ -22,12 +23,13 @@ def _map_image(
     In other words, this is a mapping function of 'image A -> A1'
     """
     out = ctx.actions.declare_output("subvol-" + identifier)
+    build_appliance = ctx.attrs.build_appliance[LayerInfo] if ctx.attrs.build_appliance else flavor_info.default_build_appliance
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
         ctx.attrs.antlir2[RunInfo],
         "map",
         "--working-dir=antlir2-out",
-        cmd_args(ctx.attrs.build_appliance[LayerInfo].subvol_symlink, format = "--build-appliance={}"),
+        cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
         cmd_args(str(ctx.label), format = "--label={}"),
         cmd_args(identifier, format = "--identifier={}"),
         cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
@@ -49,8 +51,10 @@ def _map_image(
     return cmd, out
 
 def _impl(ctx: "context") -> ["provider"]:
-    if ctx.attrs.parent_layer and Antlir1LayerInfo in ctx.attrs.parent_layer:
-        fail("parent_layer cannot be a re-exported antlir1 layer")
+    if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
+        fail("'flavor' must be set if there is no 'parent_layer'")
+
+    flavor_info = ctx.attrs.flavor[FlavorInfo] if ctx.attrs.flavor else ctx.attrs.parent_layer[LayerInfo].flavor_info
 
     # traverse the features to find dependencies this image build has on other
     # image layers
@@ -72,7 +76,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     depgraph_input = build_depgraph(ctx, "json", None, dependency_layers)
 
-    available_rpm_repos = ctx.attrs.available_rpm_repos[RepoSetInfo] if ctx.attrs.available_rpm_repos else None
+    available_rpm_repos = ctx.attrs.available_rpm_repos[RepoSetInfo] if ctx.attrs.available_rpm_repos else flavor_info.default_rpm_repo_set
     dnf_repodatas = repodata_only_local_repos(ctx, available_rpm_repos)
 
     plan = ctx.actions.declare_output("plan")
@@ -88,6 +92,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ).hidden(feature_hidden_deps),
         identifier = "plan",
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
+        flavor_info = flavor_info,
     )
 
     # Part of the compiler plan is any possible dnf transaction resolution,
@@ -113,6 +118,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ).hidden(feature_hidden_deps),
         identifier = "compile",
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
+        flavor_info = flavor_info,
     )
 
     tree_txt = ctx.actions.declare_output("tree.txt")
@@ -148,6 +154,7 @@ def _impl(ctx: "context") -> ["provider"]:
     return [
         LayerInfo(
             label = ctx.label,
+            flavor_info = flavor_info,
             depgraph = depgraph_output,
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
@@ -212,10 +219,10 @@ _antlir2_layer = rule(
         "antlir2": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2:antlir2")),
         "antlir2_print_tree": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2_print_tree:antlir2_print_tree")),
         "available_rpm_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
-        "build_appliance": attrs.dep(providers = [LayerInfo], default = "//antlir/staging/antlir2/facebook/images/build_appliance:build-appliance.c9"),
+        "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "features": attrs.dep(providers = [FeatureInfo]),
+        "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "rpm_repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
         # TODO: this can (and should) be be attrs.default_only once antlir2 is
         # fully self hosting (almost done)
         "target_arch": attrs.default_only(attrs.string(

@@ -125,28 +125,26 @@ repo = rule(
     attrs = repo_attrs,
 )
 
-RepoSetInfo = provider(fields = ["repo_infos", "repos"])
+RepoSetInfo = provider(fields = ["repo_infos"])
 
 def _repo_set_impl(ctx: "context") -> ["provider"]:
     combined_repodatas = ctx.actions.declare_output("repodatas")
     all_repos = {}
     for repo in ctx.attrs.repos:
-        if repo[RepoInfo].id in all_repos:
-            if repo.label != all_repos[repo[RepoInfo].id].label:
-                fail("repo id '{}' found twice".format(repo[RepoInfo].id))
-        all_repos[repo[RepoInfo].id] = repo
+        repo_info = repo[RepoInfo]
+        if repo_info.id in all_repos:
+            fail("repo id '{}' found twice".format(repo_info.id))
+        all_repos[repo_info.id] = repo_info
     for set in ctx.attrs.repo_sets:
-        for repo in set[RepoSetInfo].repos:
-            if repo[RepoInfo].id in all_repos:
-                if repo.label != all_repos[repo[RepoInfo].id].label:
-                    fail("repo id '{}' found twice".format(repo[RepoInfo].id))
-            all_repos[repo[RepoInfo].id] = repo
+        for repo_info in set[RepoSetInfo].repo_infos:
+            if repo_info.id in all_repos:
+                fail("repo id '{}' found twice".format(repo_info.id))
+            all_repos[repo_info.id] = repo_info
 
-    ctx.actions.copied_dir(combined_repodatas, {id: repo[RepoInfo].repodata for id, repo in all_repos.items()})
+    ctx.actions.copied_dir(combined_repodatas, {id: repo_info.repodata for id, repo_info in all_repos.items()})
     return [
         RepoSetInfo(
-            repo_infos = [dep[RepoInfo] for dep in all_repos.values()],
-            repos = all_repos.values(),
+            repo_infos = all_repos.values(),
         ),
         DefaultInfo(default_outputs = [combined_repodatas]),
     ]
