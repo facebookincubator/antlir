@@ -9,6 +9,7 @@
 #![feature(io_error_more)]
 #![feature(unix_chown)]
 
+use std::fmt::Display;
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -16,6 +17,8 @@ use std::str::FromStr;
 use buck_label::Label;
 use features::Data;
 use features::Feature;
+use serde::Deserialize;
+use serde::Serialize;
 
 mod clone;
 mod ensure_dirs_exist;
@@ -48,10 +51,41 @@ pub enum Error {
 
 pub type Result<T> = std::result::Result<T, Error>;
 
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Arch {
+    Aarch64,
+    X86_64,
+}
+
+impl FromStr for Arch {
+    type Err = String;
+
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "aarch64" => Ok(Self::Aarch64),
+            "x86_64" => Ok(Self::X86_64),
+            _ => Err(s.to_owned()),
+        }
+    }
+}
+
+impl Display for Arch {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Aarch64 => "aarch64",
+            Self::X86_64 => "x86_64",
+        })
+    }
+}
+
 #[derive(Debug)]
 pub struct CompilerContext {
     /// Buck label of the image being built
     label: Label<'static>,
+    /// Architecture of the image being built (may not be the same as the host
+    /// architecture)
+    target_arch: Arch,
     /// Path to the root of the image being built
     root: PathBuf,
     /// Root directory where dnf repos are mounted
@@ -73,9 +107,15 @@ where
 }
 
 impl CompilerContext {
-    pub fn new(label: Label<'static>, root: PathBuf, dnf_repos: PathBuf) -> Result<Self> {
+    pub fn new(
+        label: Label<'static>,
+        target_arch: Arch,
+        root: PathBuf,
+        dnf_repos: PathBuf,
+    ) -> Result<Self> {
         Ok(Self {
             label,
+            target_arch,
             root,
             dnf_repos,
         })
@@ -83,6 +123,10 @@ impl CompilerContext {
 
     pub fn label(&self) -> &Label {
         &self.label
+    }
+
+    pub fn target_arch(&self) -> Arch {
+        self.target_arch
     }
 
     /// Root directory for the image being built

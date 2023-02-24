@@ -148,6 +148,8 @@ def main():
     base.conf.installroot = spec["install_root"]
     os.makedirs("/antlir/dnf-cache", exist_ok=True)
     base.conf.cachedir = "/antlir/dnf-cache"
+    base.conf.ignorearch = True
+    base.conf.arch = spec["arch"]
 
     for repomd in Path(spec["repos"]).glob("**/*/repodata/repomd.xml"):
         basedir = repomd.parent.parent.resolve()

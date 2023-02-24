@@ -81,6 +81,7 @@ def _impl(ctx: "context") -> ["provider"]:
         cmd = cmd_args(
             cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
             "plan",
+            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
             cmd_args([li.subvol_symlink for li in dependency_layers], format = "--image-dependency={}"),
             cmd_args(plan.as_output(), format = "--plan={}"),
@@ -106,6 +107,7 @@ def _impl(ctx: "context") -> ["provider"]:
         cmd = cmd_args(
             cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
             "compile",
+            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
             cmd_args([li.subvol_symlink for li in dependency_layers], format = "--image-dependency={}"),
         ).hidden(feature_hidden_deps),
@@ -214,6 +216,15 @@ _antlir2_layer = rule(
         "features": attrs.dep(providers = [FeatureInfo]),
         "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "rpm_repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
+        # TODO: this can (and should) be be attrs.default_only once antlir2 is
+        # fully self hosting (almost done)
+        "target_arch": attrs.default_only(attrs.string(
+            default =
+                select({
+                    "ovr_config//cpu:arm64": "aarch64",
+                    "ovr_config//cpu:x86_64": "x86_64",
+                }),
+        )),
     },
 )
 
