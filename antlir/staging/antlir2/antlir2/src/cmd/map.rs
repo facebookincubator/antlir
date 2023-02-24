@@ -33,7 +33,7 @@ use crate::Result;
 /// environment.
 pub(crate) struct Map {
     #[clap(long)]
-    /// Label of the image being build
+    /// Label of the image being built
     label: Label<'static>,
     #[clap(flatten)]
     setup: SetupArgs,

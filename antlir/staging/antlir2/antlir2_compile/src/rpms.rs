@@ -24,6 +24,7 @@ use tracing::trace;
 
 use crate::plan::DnfTransaction;
 use crate::plan::Item;
+use crate::Arch;
 use crate::CompileFeature;
 use crate::CompilerContext;
 use crate::Result;
@@ -34,6 +35,7 @@ struct DriverSpec<'a> {
     repos: &'a Path,
     items: &'a [Rpm2Item<'a>],
     mode: DriverMode,
+    arch: Arch,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -170,6 +172,7 @@ fn run_dnf_driver(
         repos: ctx.dnf_repos(),
         items,
         mode,
+        arch: ctx.target_arch(),
     })
     .context("while serializing dnf-driver input")?;
 
