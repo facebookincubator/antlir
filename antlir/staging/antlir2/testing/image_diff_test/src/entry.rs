@@ -15,6 +15,8 @@ use std::path::Path;
 use std::str::FromStr;
 
 use antlir2_mode::Mode;
+use antlir2_users::group::EtcGroup;
+use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
@@ -31,8 +33,8 @@ pub(crate) struct Entry {
     pub(crate) mode: Mode,
     #[serde_as(as = "DisplayFromStr")]
     pub(crate) file_type: FileType,
-    pub(crate) uid: u32,
-    pub(crate) gid: u32,
+    pub(crate) user: String,
+    pub(crate) group: String,
     #[serde(default)]
     pub(crate) text: Option<String>,
     #[serde(default)]
@@ -42,7 +44,7 @@ pub(crate) struct Entry {
 }
 
 impl Entry {
-    pub fn new(path: &Path) -> Result<Self> {
+    pub fn new(path: &Path, users: &EtcPasswd, groups: &EtcGroup) -> Result<Self> {
         let meta = std::fs::symlink_metadata(path).context("while statting file")?;
         let mode = Mode::from(meta.permissions());
         if meta.is_symlink() {
@@ -52,8 +54,16 @@ impl Entry {
             return Ok(Self {
                 mode,
                 file_type: FileType::from(meta.file_type()),
-                uid: meta.uid(),
-                gid: meta.gid(),
+                user: users
+                    .get_user_by_id(meta.uid().into())
+                    .with_context(|| format!("no such uid {}", meta.uid()))?
+                    .name
+                    .to_string(),
+                group: groups
+                    .get_group_by_id(meta.gid().into())
+                    .with_context(|| format!("no such gid {}", meta.gid()))?
+                    .name
+                    .to_string(),
                 text: Some(
                     target
                         .to_str()
@@ -64,11 +74,14 @@ impl Entry {
                 xattrs: Default::default(),
             });
         }
-        let contents = std::fs::read(path).context("while reading file")?;
-        let mut hasher = XxHash64::with_seed(0);
-        hasher.write(&contents);
-        let content_hash = hasher.finish();
-        let text = String::from_utf8(contents).ok();
+        let (text, content_hash) = if meta.is_file() {
+            let contents = std::fs::read(path).context("while reading file")?;
+            let mut hasher = XxHash64::with_seed(0);
+            hasher.write(&contents);
+            (String::from_utf8(contents).ok(), hasher.finish())
+        } else {
+            (None, 0)
+        };
         let xattrs = xattr::list(path)
             .context("while listing xattrs")?
             .filter_map(|name| {
@@ -80,8 +93,16 @@ impl Entry {
             .collect::<Result<_>>()?;
         Ok(Self {
             mode,
-            uid: meta.uid(),
-            gid: meta.gid(),
+            user: users
+                .get_user_by_id(meta.uid().into())
+                .with_context(|| format!("no such uid {}", meta.uid()))?
+                .name
+                .to_string(),
+            group: groups
+                .get_group_by_id(meta.gid().into())
+                .with_context(|| format!("no such gid {}", meta.gid()))?
+                .name
+                .to_string(),
             file_type: FileType::from(meta.file_type()),
             xattrs,
             content_hash: if text.is_none() {

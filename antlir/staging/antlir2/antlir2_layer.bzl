@@ -121,13 +121,6 @@ def _impl(ctx: "context") -> ["provider"]:
         flavor_info = flavor_info,
     )
 
-    tree_txt = ctx.actions.declare_output("tree.txt")
-    ctx.actions.run(
-        cmd_args(ctx.attrs.antlir2_print_tree[RunInfo], final_subvol, "--out", tree_txt.as_output()),
-        local_only = True,
-        category = "antlir2_print_tree",
-    )
-
     depgraph_output = build_depgraph(ctx, "json", final_subvol, dependency_layers)
 
     # This script is provided solely for developer convenience. It would
@@ -178,9 +171,6 @@ def _impl(ctx: "context") -> ["provider"]:
                 "plan": [
                     DefaultInfo(default_outputs = [plan]),
                 ],
-                "tree.txt": [DefaultInfo(
-                    default_outputs = [tree_txt],
-                )],
             },
         ),
     ]
@@ -217,7 +207,6 @@ _antlir2_layer = rule(
     impl = _impl,
     attrs = {
         "antlir2": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2:antlir2")),
-        "antlir2_print_tree": attrs.default_only(attrs.exec_dep(default = "//antlir/staging/antlir2/antlir2_print_tree:antlir2_print_tree")),
         "available_rpm_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "features": attrs.dep(providers = [FeatureInfo]),

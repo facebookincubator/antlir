@@ -1,6 +1,42 @@
-# Note that in this image, the pre-existing directory '/clone/into/existing'
-# ends up having 'dir' as a top level directory, since the dst path is
-# '/clone/into/existing/' with a trailing '/'
+[clone]
+op = 'added'
+
+[clone.diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "root"
+group = "root"
+content-hash = 0
+
+["clone/into"]
+op = 'added'
+
+["clone/into".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "root"
+group = "root"
+content-hash = 0
+
+["clone/into/existing"]
+op = 'added'
+
+["clone/into/existing".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "root"
+group = "root"
+content-hash = 0
+
+["clone/into/existing/dir"]
+op = 'added'
+
+["clone/into/existing/dir".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "root"
+group = "root"
+content-hash = 0
 
 ["clone/into/existing/dir/cloned-symlink"]
 op = 'added'
@@ -8,9 +44,29 @@ op = 'added'
 ["clone/into/existing/dir/cloned-symlink".diff]
 mode = 'u+rwx,g+rwx,o+rwx'
 file-type = 'symlink'
-uid = 0
-gid = 0
+user = "root"
+group = "root"
 text = '/f'
+
+["clone/into/existing/dir/deeper"]
+op = 'added'
+
+["clone/into/existing/dir/deeper".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "antlir"
+group = "antlir"
+content-hash = 0
+
+["clone/into/existing/dir/deeper/nesting"]
+op = 'added'
+
+["clone/into/existing/dir/deeper/nesting".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "antlir"
+group = "antlir"
+content-hash = 0
 
 ["clone/into/existing/dir/deeper/nesting/foo"]
 op = 'added'
@@ -18,8 +74,8 @@ op = 'added'
 ["clone/into/existing/dir/deeper/nesting/foo".diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
-uid = 0
-gid = 0
+user = "root"
+group = "root"
 text = '''
 This file will be cloned!
 '''

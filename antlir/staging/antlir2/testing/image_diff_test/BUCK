@@ -14,6 +14,7 @@ rust_binary(
         "walkdir",
         "xattr",
         "//antlir/staging/antlir2/antlir2_mode:antlir2_mode",
+        "//antlir/staging/antlir2/antlir2_users:antlir2_users",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )

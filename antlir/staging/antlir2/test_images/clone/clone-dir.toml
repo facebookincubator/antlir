@@ -4,15 +4,45 @@
 # 1) simply cloning the '/path/to/clone/dir' directory to '/cloned'
 # 2) pre-creating '/cloned' and cloning '/path/to/clone/dir/' into '/cloned/'
 
+[cloned]
+op = 'added'
+
+[cloned.diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "root"
+group = "root"
+content-hash = 0
+
 ["cloned/cloned-symlink"]
 op = 'added'
 
 ["cloned/cloned-symlink".diff]
 mode = 'u+rwx,g+rwx,o+rwx'
 file-type = 'symlink'
-uid = 0
-gid = 0
+user = "root"
+group = "root"
 text = '/f'
+
+["cloned/deeper"]
+op = 'added'
+
+["cloned/deeper".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "antlir"
+group = "antlir"
+content-hash = 0
+
+["cloned/deeper/nesting"]
+op = 'added'
+
+["cloned/deeper/nesting".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "antlir"
+group = "antlir"
+content-hash = 0
 
 ["cloned/deeper/nesting/foo"]
 op = 'added'
@@ -20,8 +50,8 @@ op = 'added'
 ["cloned/deeper/nesting/foo".diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
-uid = 0
-gid = 0
+user = "root"
+group = "root"
 text = '''
 This file will be cloned!
 '''
