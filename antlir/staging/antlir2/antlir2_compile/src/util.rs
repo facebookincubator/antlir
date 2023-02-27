@@ -44,13 +44,10 @@ pub(crate) fn copy_with_metadata(src: &Path, dst: &Path) -> Result<()> {
     let f = std::fs::File::open(dst)?;
     trace!("setting permissions");
     f.set_permissions(metadata.permissions())?;
-    // TODO(T145931158): this is actually dangerous if the file is not owned by
-    // root:root, because there is no guarantee that uid X maps to the same
-    // username Y in two different images (even if X and Y both exist in both
-    // images!). However, antlir1 appears to completely ignore this, and we can
-    // reasonably assume that existing use cases for non-root-owned cloned files
-    // are for well-known uids that will match in each image, so let's punt for
-    // now and solve it later.
+    // There are cases where we might have to re-set the {ug}id to a corrected
+    // value if the name differs between two layers, but it's reasonably sane to
+    // default to using the same uid/gid instead of root:root as would result
+    // otherwise if we just copied without chowning
     trace!("setting owner to {}:{}", metadata.uid(), metadata.gid());
     fchown(&f, Some(metadata.uid()), Some(metadata.gid()))?;
     let times = FileTimes::new()

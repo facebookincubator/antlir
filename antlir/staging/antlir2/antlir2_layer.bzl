@@ -200,7 +200,7 @@ def build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None],
         ),
         category = "antlir2_depgraph",
         identifier = format + ("/pre" if not subvol else ""),
-        local_only = bool(subvol),
+        local_only = bool(subvol) or bool(dependency_layers),
     )
     return output
 

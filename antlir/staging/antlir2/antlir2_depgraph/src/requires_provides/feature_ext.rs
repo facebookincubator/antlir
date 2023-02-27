@@ -6,9 +6,14 @@
  */
 
 use std::borrow::Cow;
+use std::collections::HashSet;
+use std::os::unix::prelude::MetadataExt;
 
+use antlir2_users::group::EtcGroup;
+use antlir2_users::passwd::EtcPasswd;
 use features::Data;
 use features::Feature;
+use walkdir::WalkDir;
 
 use super::ItemKey;
 use super::Requirement;
@@ -122,6 +127,71 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
                 validator: Validator::FileType(FileType::Directory),
             });
         }
+        // Files we clone will usually be owned by root:root, but not always! To
+        // be safe we have to make sure that all discovered users and groups
+        // exist in this destination layer
+        let mut uids = HashSet::new();
+        let mut gids = HashSet::new();
+        for entry in WalkDir::new(
+            self.src_layer_info
+                .as_ref()
+                .expect("always exists on antlir2")
+                .subvol_symlink
+                .join(
+                    self.src_path
+                        .strip_prefix("/")
+                        .unwrap_or(self.src_path.path()),
+                ),
+        ) {
+            // ignore any errors, they'll surface again later at a more
+            // appropriate place than this user/group id collection process
+            if let Ok(metadata) = entry.and_then(|e| e.metadata()) {
+                uids.insert(metadata.uid());
+                gids.insert(metadata.gid());
+            }
+        }
+        let users: EtcPasswd = std::fs::read_to_string(
+            self.src_layer_info
+                .as_ref()
+                .expect("always exists on antlir2")
+                .subvol_symlink
+                .join("etc/passwd"),
+        )
+        .and_then(|s| s.parse().map_err(std::io::Error::other))
+        .unwrap_or_else(|_| Default::default());
+        let groups: EtcGroup = std::fs::read_to_string(
+            self.src_layer_info
+                .as_ref()
+                .expect("always exists on antlir2")
+                .subvol_symlink
+                .join("etc/group"),
+        )
+        .and_then(|s| s.parse().map_err(std::io::Error::other))
+        .unwrap_or_else(|_| Default::default());
+        for uid in uids {
+            v.push(Requirement {
+                key: ItemKey::User(
+                    users
+                        .get_user_by_id(uid.into())
+                        .expect("this layer could not have been built if this uid is missing")
+                        .name
+                        .clone(),
+                ),
+                validator: Validator::Exists,
+            });
+        }
+        for gid in gids {
+            v.push(Requirement {
+                key: ItemKey::Group(
+                    groups
+                        .get_group_by_id(gid.into())
+                        .expect("this layer could not have been built if this gid is missing")
+                        .name
+                        .clone(),
+                ),
+                validator: Validator::Exists,
+            });
+        }
         v
     }
 
@@ -145,7 +215,6 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
         if !self.pre_existing_dest {
             match src_depgraph.get_item(&ItemKey::Path(self.src_path.path().to_owned().into())) {
                 Some(Item::Path(Path::Entry(entry))) => {
-                    eprintln!("clone will provide as root {:?}", self.dst_path.path());
                     v.push(Item::Path(Path::Entry(FsEntry {
                         path: self.dst_path.path().to_owned().into(),
                         file_type: entry.file_type,
@@ -185,7 +254,6 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
                             Cow::Borrowed(relpath)
                         };
                     let dst_path = self.dst_path.join(&relpath);
-                    eprintln!("clone will provide {dst_path:?} ({relpath:?})");
                     if let Some(Item::Path(Path::Entry(entry))) = src_depgraph.get_item(key) {
                         v.push(Item::Path(Path::Entry(FsEntry {
                             path: dst_path.into(),
