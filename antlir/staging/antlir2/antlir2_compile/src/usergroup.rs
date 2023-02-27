@@ -23,8 +23,14 @@ impl<'a> CompileFeature for User<'a> {
     #[tracing::instrument(name = "user", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         let mut user_db = ctx.user_db()?;
-        let uid = user_db.next_available_uid();
-        tracing::trace!("next available uid = {uid}");
+        let uid = match self.uid {
+            Some(uid) => uid.id().into(),
+            None => {
+                let uid = user_db.next_available_uid();
+                tracing::trace!("next available uid = {uid}");
+                uid
+            }
+        };
         let record = UserRecord {
             name: self.name.name().into(),
             password: Password::Shadow,
@@ -73,8 +79,14 @@ impl<'a> CompileFeature for Group<'a> {
     #[tracing::instrument(skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         let mut groups_db = ctx.groups_db()?;
-        let gid = groups_db.next_available_gid();
-        tracing::trace!("next available gid = {gid}");
+        let gid = match self.gid {
+            Some(gid) => gid.id().into(),
+            None => {
+                let gid = groups_db.next_available_gid();
+                tracing::trace!("next available gid = {gid}");
+                gid
+            }
+        };
         let record = GroupRecord {
             name: self.name.name().into(),
             password: Password::Shadow,

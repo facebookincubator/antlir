@@ -6,8 +6,12 @@
  */
 
 use std::borrow::Cow;
+use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
+use antlir2_users::group::EtcGroup;
+use antlir2_users::passwd::EtcPasswd;
+use anyhow::Context;
 use features::clone::Clone;
 use walkdir::WalkDir;
 
@@ -55,10 +59,49 @@ impl<'a> CompileFeature for Clone<'a> {
                 Cow::Borrowed(relpath)
             };
 
-            copy_with_metadata(
-                entry.path(),
-                &ctx.dst_path(self.dst_path.path().join(relpath.as_ref())),
+            let dst_path = ctx.dst_path(self.dst_path.path().join(relpath.as_ref()));
+            copy_with_metadata(entry.path(), &dst_path)?;
+
+            // {ug}ids might not map to the same names in both images, so make
+            // sure that we look up the src ids and copy the _names_ instead of
+            // just the ids
+
+            let src_userdb: EtcPasswd = std::fs::read_to_string(
+                self.src_layer_info
+                    .as_ref()
+                    .expect("always set on antlir2")
+                    .subvol_symlink
+                    .join("etc/passwd"),
+            )
+            .and_then(|s| s.parse().map_err(std::io::Error::other))
+            .unwrap_or_else(|_| Default::default());
+            let src_groupdb: EtcGroup = std::fs::read_to_string(
+                self.src_layer_info
+                    .as_ref()
+                    .expect("always set on antlir2")
+                    .subvol_symlink
+                    .join("etc/group"),
+            )
+            .and_then(|s| s.parse().map_err(std::io::Error::other))
+            .unwrap_or_else(|_| Default::default());
+
+            let meta = entry.metadata().map_err(std::io::Error::from)?;
+
+            let new_uid = ctx.uid(
+                &src_userdb
+                    .get_user_by_id(meta.uid().into())
+                    .with_context(|| format!("src_layer missing passwd entry for {}", meta.uid()))?
+                    .name,
             )?;
+            let new_gid = ctx.gid(
+                &src_groupdb
+                    .get_group_by_id(meta.gid().into())
+                    .with_context(|| format!("src_layer missing group entry for {}", meta.gid()))?
+                    .name,
+            )?;
+
+            tracing::trace!("lchown {}:{} {}", new_uid, new_gid, dst_path.display());
+            std::os::unix::fs::lchown(&dst_path, Some(new_uid.into()), Some(new_gid.into()))?;
         }
         Ok(())
     }
