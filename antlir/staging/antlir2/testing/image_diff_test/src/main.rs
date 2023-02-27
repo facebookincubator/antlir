@@ -5,9 +5,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(io_error_other)]
+
 use std::collections::BTreeMap;
+use std::collections::HashSet;
+use std::io::Error;
 use std::path::PathBuf;
 
+use antlir2_users::group::EtcGroup;
+use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -47,36 +53,65 @@ enum Subcommand {
 fn main() -> Result<()> {
     let args = Args::parse();
     let mut entries = BTreeMap::new();
-    let layer = &args
-        .layer
-        .canonicalize()
-        .context("while looking up realpath of layer")?;
-    for fs_entry in WalkDir::new(layer) {
+    let mut paths_that_exist_in_layer = HashSet::new();
+
+    let layer_userdb: EtcPasswd = std::fs::read_to_string(args.layer.join("etc/passwd"))
+        .and_then(|s| s.parse().map_err(Error::other))
+        .unwrap_or_else(|_| Default::default());
+    let layer_groupdb: EtcGroup = std::fs::read_to_string(args.layer.join("etc/group"))
+        .and_then(|s| s.parse().map_err(Error::other))
+        .unwrap_or_else(|_| Default::default());
+    let parent_userdb: EtcPasswd = std::fs::read_to_string(args.parent.join("etc/passwd"))
+        .and_then(|s| s.parse().map_err(Error::other))
+        .unwrap_or_else(|_| Default::default());
+    let parent_groupdb: EtcGroup = std::fs::read_to_string(args.parent.join("etc/group"))
+        .and_then(|s| s.parse().map_err(Error::other))
+        .unwrap_or_else(|_| Default::default());
+
+    for fs_entry in WalkDir::new(&args.layer) {
         let fs_entry = fs_entry?;
+        if fs_entry.path() == args.layer {
+            continue;
+        }
         let relpath = fs_entry
             .path()
-            .strip_prefix(layer)
+            .strip_prefix(&args.layer)
             .expect("this must be relative");
         let parent_path = args.parent.join(relpath);
-        if fs_entry.file_type().is_file() || fs_entry.file_type().is_symlink() {
-            let entry = Entry::new(fs_entry.path())
-                .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
-            if !parent_path.exists() {
-                entries.insert(relpath.to_path_buf(), Diff::Added(entry));
-            } else {
-                let parent_entry = Entry::new(&parent_path).with_context(|| {
+        let entry = Entry::new(fs_entry.path(), &layer_userdb, &layer_groupdb)
+            .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
+        paths_that_exist_in_layer.insert(relpath.to_path_buf());
+        if !parent_path.exists() {
+            entries.insert(relpath.to_path_buf(), Diff::Added(entry));
+        } else {
+            let parent_entry = Entry::new(&parent_path, &parent_userdb, &parent_groupdb)
+                .with_context(|| {
                     format!(
                         "while building Entry for parent version of '{}",
                         relpath.display(),
                     )
                 })?;
-                if parent_entry != entry {
-                    entries.insert(
-                        relpath.to_path_buf(),
-                        Diff::Diff(EntryDiff::new(&parent_entry, &entry)),
-                    );
-                }
+            if parent_entry != entry {
+                entries.insert(
+                    relpath.to_path_buf(),
+                    Diff::Diff(EntryDiff::new(&parent_entry, &entry)),
+                );
             }
+        }
+    }
+    for fs_entry in WalkDir::new(&args.parent) {
+        let fs_entry = fs_entry?;
+        if fs_entry.path() == args.parent {
+            continue;
+        }
+        let relpath = fs_entry
+            .path()
+            .strip_prefix(&args.parent)
+            .expect("this must be relative");
+        if !paths_that_exist_in_layer.contains(relpath) {
+            let entry = Entry::new(fs_entry.path(), &parent_userdb, &parent_groupdb)
+                .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
+            entries.insert(relpath.to_path_buf(), Diff::Removed(entry));
         }
     }
     let diff = LayerDiff(entries);

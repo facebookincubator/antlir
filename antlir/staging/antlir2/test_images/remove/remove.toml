@@ -1,0 +1,29 @@
+[a]
+op = 'removed'
+
+[a.diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+user = "root"
+group = "root"
+text = ''
+
+[b]
+op = 'removed'
+
+[b.diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = "root"
+group = "root"
+content-hash = 0
+
+["b/c"]
+op = 'removed'
+
+["b/c".diff]
+mode = 'u+rx,g+rx,o+rx'
+file-type = 'regular-file'
+user = "root"
+group = "root"
+text = ''
