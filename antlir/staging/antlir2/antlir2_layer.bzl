@@ -7,6 +7,7 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
+load("//antlir/bzl/build_defs.bzl", "config")
 load(":antlir2_dnf.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load(":antlir2_flavor.bzl", "FlavorInfo")
 load(":antlir2_layer_info.bzl", "LayerInfo")
@@ -243,6 +244,8 @@ def antlir2_layer(
         flavors = [],
     )
     feature_target = ":" + feature_target
+
+    kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
     return _antlir2_layer(
         name = name,
