@@ -15,8 +15,8 @@ use std::fmt::Display;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
+use antlir2_features::Feature;
 use buck_label::Label;
-use features::Feature;
 use itertools::Itertools;
 use petgraph::graph::DefaultIx;
 use petgraph::graph::DiGraph;
@@ -231,15 +231,15 @@ impl<'a> GraphBuilder<'a> {
     }
 
     pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
-        let (phase, feature_nx) = if let features::Data::Rpm(rpm) = feature.data {
+        let (phase, feature_nx) = if let antlir2_features::Data::Rpm(rpm) = feature.data {
             if let Some(nx) = self.rpm2_feature {
                 match &mut self.g[nx] {
                     Node::PendingFeature(Feature {
                         label: _,
-                        data: features::Data::Rpm2(rpm2),
-                    }) => rpm2.items.push(features::rpms::Rpm2Item {
+                        data: antlir2_features::Data::Rpm2(rpm2),
+                    }) => rpm2.items.push(antlir2_features::rpms::Rpm2Item {
                         action: rpm.action,
-                        source: rpm.source,
+                        rpms: rpm.rpms,
                         label: feature.label,
                     }),
                     _ => unreachable!("rpm2_feature node is always an Rpm2 feature"),
@@ -248,10 +248,10 @@ impl<'a> GraphBuilder<'a> {
             } else {
                 let feature_nx = self.g.add_node(Node::PendingFeature(Feature {
                     label: self.label.clone(),
-                    data: features::Data::Rpm2(features::rpms::Rpm2 {
-                        items: vec![features::rpms::Rpm2Item {
+                    data: antlir2_features::Data::Rpm2(antlir2_features::rpms::Rpm2 {
+                        items: vec![antlir2_features::rpms::Rpm2Item {
                             action: rpm.action,
-                            source: rpm.source,
+                            rpms: rpm.rpms,
                             label: feature.label,
                         }],
                     }),

@@ -6,7 +6,7 @@
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
-load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
+load("//antlir/antlir2/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
 
 def _make_test_cmd(ctx: "context", expect) -> "cmd_args":

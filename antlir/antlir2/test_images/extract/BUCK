@@ -1,10 +1,10 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/feature:clone.bzl", "clone")
+load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
+load("//antlir/antlir2/feature:extract.bzl", "extract_buck_binary", "extract_from_layer")
+load("//antlir/antlir2/feature:install.bzl", "install")
+load("//antlir/antlir2/feature:rpms.bzl", "rpms_install")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/buck2/bzl/feature:clone.bzl", "clone")
-load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
-load("//antlir/buck2/bzl/feature:extract.bzl", "extract_buck_binary", "extract_from_layer")
-load("//antlir/buck2/bzl/feature:install.bzl", "install")
-load("//antlir/buck2/bzl/feature:rpms.bzl", "rpms_install")
 
 antlir2_layer(
     name = "base",

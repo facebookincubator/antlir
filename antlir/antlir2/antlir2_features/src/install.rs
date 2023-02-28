@@ -8,12 +8,19 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::stat::Mode;
 use crate::types::BuckOutSource;
-use crate::types::Layer;
+use crate::types::PathInLayer;
+use crate::usergroup::GroupName;
+use crate::usergroup::UserName;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
-pub struct ParentLayer<'a> {
-    pub layer: Layer<'a>,
-    pub subvol: BuckOutSource<'a>,
+pub struct Install<'a> {
+    pub dst: PathInLayer<'a>,
+    pub group: GroupName<'a>,
+    pub mode: Mode,
+    pub src: BuckOutSource<'a>,
+    pub user: UserName<'a>,
+    pub separate_debug_symbols: bool,
 }

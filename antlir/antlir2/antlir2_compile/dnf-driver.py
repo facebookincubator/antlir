@@ -174,15 +174,15 @@ def main():
 
     for item in spec["items"]:
         action = item["action"]
-        source = item["source"]
-        source = source["name"] if "name" in source else source["source"]
-        if action == "install":
-            base.install_specs([source], strict=True)
-        elif action == "remove_if_exists":
-            # cannot remove by file path, so let's do this to be extra safe
-            base.remove(item["source"]["name"])
-        else:
-            raise RuntimeError(f"unknown action '{action}'")
+        for rpm in item["rpms"]:
+            source = rpm["name"] if "name" in rpm else rpm["source"]
+            if action == "install":
+                base.install_specs([source], strict=True)
+            elif action == "remove_if_exists":
+                # cannot remove by file path, so let's do this to be extra safe
+                base.remove(rpm["name"])
+            else:
+                raise RuntimeError(f"unknown action '{action}'")
 
     base.resolve()
     with out as o:

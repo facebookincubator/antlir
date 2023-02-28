@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use features::symlink::Symlink;
+use antlir2_features::symlink::Symlink;
 
 use crate::CompileFeature;
 use crate::CompilerContext;

@@ -20,9 +20,9 @@ rust_library(
         "url",
         "walkdir",
         "xattr",
+        "//antlir/antlir2/antlir2_features:antlir2_features",
         "//antlir/antlir2/antlir2_users:antlir2_users",
         "//antlir/buck/buck_label:buck_label",
-        "//antlir/buck2/features:features",
         "//antlir/rpm/dnf_conf:dnf_conf",
     ],
 )

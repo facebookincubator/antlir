@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use features::remove::Remove;
+use antlir2_features::remove::Remove;
 use tracing::trace;
 
 use crate::CompileFeature;

@@ -5,8 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use features::Data;
-use features::Feature;
+use antlir2_features::Data;
+use antlir2_features::Feature;
 use serde::Deserialize;
 use serde::Serialize;
 use strum_macros::Display;
@@ -44,8 +44,6 @@ pub enum Phase {
 impl Phase {
     pub fn for_feature(feature: &Feature) -> Self {
         match &feature.data {
-            Data::ParentLayer(_) => Self::Init,
-            Data::ReceiveSendstream(_) => Self::Init,
             Data::Rpm(_) => Self::OsPackage,
             #[cfg(facebook)]
             Data::ChefSolo(_) => Self::OsPackage,

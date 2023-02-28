@@ -4,13 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
-load(
-    "//antlir/buck2/bzl/feature:usergroup.bzl?v2_only",
-    buck2_group_add = "group_add",
-    buck2_user_add = "user_add",
-    buck2_usermod = "usermod",
-)
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load("//antlir/bzl:types.bzl", "types")
 load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
@@ -59,16 +52,6 @@ def feature_user_add(
     - `home_dir` should exist, but this item does not ensure/depend on it to avoid
     a circular dependency on directory's owner user.
     """
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_user_add(
-            username = username,
-            primary_group = primary_group,
-            home_dir = home_dir,
-            shell = shell,
-            uid = uid,
-            supplementary_groups = supplementary_groups or [],
-        )
-
     user = user_t(
         name = username,
         id = uid,
@@ -95,12 +78,6 @@ def feature_group_add(groupname, gid = None):
     It is also recommended to always reference groupnames and not GIDs; since GIDs
     are auto-assigned, they may change if underlying layers add/remove groups.
     """
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_group_add(
-            groupname = groupname,
-            gid = gid,
-        )
-
     group = group_t(name = groupname, id = gid)
 
     return target_tagger_to_feature(
@@ -109,11 +86,6 @@ def feature_group_add(groupname, gid = None):
     )
 
 def feature_usermod(username: types.str, add_supplementary_groups: types.list(types.str) = []):
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_usermod(
-            username = username,
-            add_supplementary_groups = add_supplementary_groups,
-        )
     usermod = usermod_t(
         username = username,
         add_supplementary_groups = add_supplementary_groups,

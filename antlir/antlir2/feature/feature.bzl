@@ -50,9 +50,7 @@ added to the `_feature_to_json` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/buck2/bzl:flavor.bzl", "FlavorInfo", "coerce_to_flavor_label")
 # @oss-disable
-load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
 load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
@@ -62,8 +60,6 @@ load(":genrule.bzl", "genrule_to_json")
 load(":install.bzl", "install_to_json")
 load(":meta_kv.bzl", "meta_remove_to_json", "meta_store_to_json")
 load(":mount.bzl", "mount_to_json")
-load(":parent_layer.bzl", "parent_layer_to_json")
-load(":receive_sendstream.bzl", "receive_sendstream_to_json")
 load(":remove.bzl", "remove_to_json")
 load(":requires.bzl", "requires_to_json")
 load(":rpms.bzl", "rpms_to_json")
@@ -102,8 +98,6 @@ _feature_to_json = {
     "meta_key_value_remove": meta_remove_to_json,
     "meta_key_value_store": meta_store_to_json,
     "mount": mount_to_json,
-    "parent_layer": parent_layer_to_json,
-    "receive_sendstream": receive_sendstream_to_json,
     "remove": remove_to_json,
     "requires": requires_to_json,
     "rpm": rpms_to_json,
@@ -154,25 +148,12 @@ def _impl(ctx: "context") -> ["provider"]:
         children = [f[FeatureInfo].deps for f in ctx.attrs.feature_targets],
     )
 
-    buck1_features_json = ctx.actions.declare_output("buck1/features.json")
-    ctx.actions.run(
-        cmd_args(
-            ctx.attrs.translate_features[RunInfo],
-            "--label=" + str(ctx.label),
-            json_files.project_as_args("feature_json"),
-            "--output",
-            buck1_features_json.as_output(),
-        ),
-        category = "translate_features_to_buck1",
-    )
     return [
         FeatureInfo(
             json_files = json_files,
             deps = deps,
         ),
-        DefaultInfo(default_outputs = [json_out], sub_targets = {
-            "buck1/features.json": [DefaultInfo(default_outputs = [buck1_features_json])],
-        }),
+        DefaultInfo(json_out),
     ]
 
 _feature = rule(
@@ -183,9 +164,6 @@ _feature = rule(
         "feature_targets": attrs.list(
             attrs.dep(providers = [FeatureInfo]),
         ),
-        "flavors": attrs.option(attrs.list(
-            attrs.dep(providers = [FlavorInfo]),
-        ), doc = "Restrict this feature to only layers that have one of these flavors", default = None),
         # inline features are direct instances of the FeatureInfo provider
         "inline_features": attrs.dict(
             # Unique key for this feature (see _hash_key below)
@@ -199,7 +177,6 @@ _feature = rule(
         "inline_features_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.dep()))),
         # Map "feature key" -> "feature sources"
         "inline_features_sources": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.source()))),
-        "translate_features": attrs.default_only(attrs.exec_dep(default = "//antlir/buck2/translate_features:translate-features")),
     },
 )
 
@@ -207,8 +184,6 @@ def feature(
         name: str.type,
         # No type hint here, but it is validated by flatten_features
         features,
-        flavors = None,
-        antlir1_translation = True,
         visibility = None):
     """
     Create a target representing a collection of one or more image features.
@@ -222,9 +197,6 @@ def feature(
     feature_targets = []
     inline_features_deps = {}
     inline_features_sources = {}
-    if flavors == None:
-        flavors = REPO_CFG.flavor_available
-    flavors = [coerce_to_flavor_label(f) for f in flavors]
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -234,23 +206,8 @@ def feature(
             inline_features_deps[feature_key] = feat.deps
             inline_features_sources[feature_key] = feat.sources
 
-            if feat.flavor_specific_sources:
-                for flavor in flavors:
-                    if flavor not in feat.flavor_specific_sources:
-                        fail("feature '{}' has flavor_specific_sources but does not include a key for '{}'".format(feat, flavor))
-                    inline_features_sources[feature_key].update(feat.flavor_specific_sources[flavor])
-
-    # TODO(T139523690)
-    if antlir1_translation:
-        native.alias(
-            name = name + BZL_CONST.PRIVATE_feature_suffix,
-            actual = ":" + name + "[buck1/features.json]",
-            visibility = visibility,
-        )
-
     return _feature(
         name = name,
-        flavors = flavors,
         feature_targets = feature_targets,
         inline_features = inline_features,
         inline_features_deps = inline_features_deps,

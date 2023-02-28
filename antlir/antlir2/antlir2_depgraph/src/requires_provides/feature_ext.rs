@@ -9,10 +9,10 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::os::unix::prelude::MetadataExt;
 
+use antlir2_features::Data;
+use antlir2_features::Feature;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
-use features::Data;
-use features::Feature;
 use walkdir::WalkDir;
 
 use super::ItemKey;
@@ -53,8 +53,6 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Install(x) => x.provides(),
             Data::Meta(_) => todo!(),
             Data::Mount(x) => x.provides(),
-            Data::ParentLayer(_) => Ok(vec![]),
-            Data::ReceiveSendstream(_) => Ok(vec![]),
             Data::Remove(x) => x.provides(),
             Data::Requires(x) => x.provides(),
             Data::Rpm(x) => x.provides(),
@@ -79,8 +77,6 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Install(x) => x.requires(),
             Data::Meta(_) => todo!(),
             Data::Mount(x) => x.requires(),
-            Data::ParentLayer(_) => vec![],
-            Data::ReceiveSendstream(_) => vec![],
             Data::Remove(x) => x.requires(),
             Data::Requires(x) => x.requires(),
             Data::Rpm(x) => x.requires(),
@@ -94,10 +90,10 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::clone::Clone<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         let mut v = vec![Requirement {
-            key: ItemKey::Layer(self.src_layer.label().to_owned()),
+            key: ItemKey::Layer(self.src_layer.label.to_owned()),
             validator: Validator::ItemInLayer {
                 key: ItemKey::Path(self.src_path.path().to_owned().into()),
                 validator: Box::new(if self.omit_outer_dir {
@@ -133,15 +129,11 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
         let mut uids = HashSet::new();
         let mut gids = HashSet::new();
         for entry in WalkDir::new(
-            self.src_layer_info
-                .as_ref()
-                .expect("always exists on antlir2")
-                .subvol_symlink
-                .join(
-                    self.src_path
-                        .strip_prefix("/")
-                        .unwrap_or(self.src_path.path()),
-                ),
+            self.src_layer.subvol_symlink.join(
+                self.src_path
+                    .strip_prefix("/")
+                    .unwrap_or(self.src_path.path()),
+            ),
         ) {
             // ignore any errors, they'll surface again later at a more
             // appropriate place than this user/group id collection process
@@ -150,24 +142,14 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
                 gids.insert(metadata.gid());
             }
         }
-        let users: EtcPasswd = std::fs::read_to_string(
-            self.src_layer_info
-                .as_ref()
-                .expect("always exists on antlir2")
-                .subvol_symlink
-                .join("etc/passwd"),
-        )
-        .and_then(|s| s.parse().map_err(std::io::Error::other))
-        .unwrap_or_else(|_| Default::default());
-        let groups: EtcGroup = std::fs::read_to_string(
-            self.src_layer_info
-                .as_ref()
-                .expect("always exists on antlir2")
-                .subvol_symlink
-                .join("etc/group"),
-        )
-        .and_then(|s| s.parse().map_err(std::io::Error::other))
-        .unwrap_or_else(|_| Default::default());
+        let users: EtcPasswd =
+            std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/passwd"))
+                .and_then(|s| s.parse().map_err(std::io::Error::other))
+                .unwrap_or_else(|_| Default::default());
+        let groups: EtcGroup =
+            std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/group"))
+                .and_then(|s| s.parse().map_err(std::io::Error::other))
+                .unwrap_or_else(|_| Default::default());
         for uid in uids {
             v.push(Requirement {
                 key: ItemKey::User(
@@ -196,12 +178,7 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
     }
 
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
-        let src_layer_depgraph_path = &self
-            .src_layer_info
-            .as_ref()
-            .expect("src_layer_info always set in antlir2")
-            .depgraph
-            .as_ref();
+        let src_layer_depgraph_path = &self.src_layer.depgraph.as_ref();
         let src_layer = std::fs::read(src_layer_depgraph_path).map_err(|e| {
             format!(
                 "could not read src_layer depgraph '{}': {e}",
@@ -269,7 +246,7 @@ impl<'f> FeatureExt<'f> for features::clone::Clone<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::ensure_dirs_exist::EnsureDirsExist<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::ensure_dirs_exist::EnsureDirsExist<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         Ok(self
             .subdirs_to_create
@@ -306,7 +283,7 @@ impl<'f> FeatureExt<'f> for features::ensure_dirs_exist::EnsureDirsExist<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::extract::Extract<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::extract::Extract<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         match self {
             Self::Layer(l) => l
@@ -377,7 +354,7 @@ impl<'f> FeatureExt<'f> for features::extract::Extract<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::install::Install<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::install::Install<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         Ok(vec![Item::Path(Path::Entry(FsEntry {
             path: self.dst.path().to_owned().into(),
@@ -385,10 +362,7 @@ impl<'f> FeatureExt<'f> for features::install::Install<'f> {
             // need to make that piped through the buck graph instead of
             // something only discoverable at runtime
             file_type: FileType::File,
-            mode: self
-                .mode
-                .expect("TODO: ensure this is always set in buck")
-                .0,
+            mode: self.mode.as_raw(),
         }))])
     }
 
@@ -417,7 +391,7 @@ impl<'f> FeatureExt<'f> for features::install::Install<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::mount::Mount<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::mount::Mount<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         let mut v = vec![Requirement {
             key: ItemKey::Path(self.mountpoint().path().to_owned().into()),
@@ -428,7 +402,7 @@ impl<'f> FeatureExt<'f> for features::mount::Mount<'f> {
         }];
         match self {
             Self::Layer(l) => v.push(Requirement {
-                key: ItemKey::Layer(l.src.label().to_owned()),
+                key: ItemKey::Layer(l.src.label.to_owned()),
                 validator: Validator::Exists,
             }),
             Self::Host(_) => (),
@@ -437,7 +411,7 @@ impl<'f> FeatureExt<'f> for features::mount::Mount<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::remove::Remove<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::remove::Remove<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         Ok(vec![Item::Path(Path::Removed(
             self.path.path().to_owned().into(),
@@ -455,7 +429,7 @@ impl<'f> FeatureExt<'f> for features::remove::Remove<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::requires::Requires<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::requires::Requires<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         self.files
             .iter()
@@ -475,10 +449,10 @@ impl<'f> FeatureExt<'f> for features::requires::Requires<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::rpms::Rpm<'f> {}
-impl<'f> FeatureExt<'f> for features::rpms::Rpm2<'f> {}
+impl<'f> FeatureExt<'f> for antlir2_features::rpms::Rpm<'f> {}
+impl<'f> FeatureExt<'f> for antlir2_features::rpms::Rpm2<'f> {}
 
-impl<'f> FeatureExt<'f> for features::symlink::Symlink<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         Ok(vec![Item::Path(Path::Entry(FsEntry {
             path: self.link.path().to_owned().into(),
@@ -515,7 +489,7 @@ impl<'f> FeatureExt<'f> for features::symlink::Symlink<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::usergroup::Group<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::usergroup::Group<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         Ok(vec![Item::Group(Group {
             name: self.name.name().to_owned().into(),
@@ -530,7 +504,7 @@ impl<'f> FeatureExt<'f> for features::usergroup::Group<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::usergroup::User<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::usergroup::User<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         Ok(vec![Item::User(User {
             name: self.name.name().to_owned().into(),
@@ -569,7 +543,7 @@ impl<'f> FeatureExt<'f> for features::usergroup::User<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for features::usergroup::UserMod<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::usergroup::UserMod<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         let mut v = vec![Requirement {
             key: ItemKey::User(self.username.name().to_owned().into()),

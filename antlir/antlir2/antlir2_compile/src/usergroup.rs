@@ -7,12 +7,12 @@
 
 use std::borrow::Cow;
 
+use antlir2_features::usergroup::Group;
+use antlir2_features::usergroup::User;
+use antlir2_features::usergroup::UserMod;
 use antlir2_users::group::GroupRecord;
 use antlir2_users::passwd::UserRecord;
 use antlir2_users::Password;
-use features::usergroup::Group;
-use features::usergroup::User;
-use features::usergroup::UserMod;
 
 use crate::CompileFeature;
 use crate::CompilerContext;

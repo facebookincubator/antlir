@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
-load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl?v2_only", buck2_ensure_subdirs_exist = "ensure_subdirs_exist")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
@@ -50,17 +48,6 @@ def feature_ensure_subdirs_exist(
   symbolic strings. In the latter case, the passwd/group database from the host
   (not from the image) is used.
     """
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_ensure_subdirs_exist(
-            **buck2_early_adoption.massage_kwargs(
-                into_dir = into_dir,
-                subdirs_to_create = subdirs_to_create,
-                mode = mode,
-                user = user,
-                group = group,
-            )
-        )
-
     ensure_subdirs_exist = ensure_subdirs_exist_t(
         into_dir = into_dir,
         subdirs_to_create = subdirs_to_create,

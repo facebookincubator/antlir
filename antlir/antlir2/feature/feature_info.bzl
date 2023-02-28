@@ -13,9 +13,6 @@ InlineFeatureInfo = provider(fields = [
     "key",
     "feature_type",
     "sources",
-    # Map of flavor -> sources dict. Will be merged into 'sources' when given to
-    # the feature's 'to_json' function
-    "flavor_specific_sources",
     "deps",
     "kwargs",
 ])

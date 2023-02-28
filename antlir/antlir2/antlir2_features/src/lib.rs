@@ -18,8 +18,6 @@ pub mod genrule;
 pub mod install;
 pub mod meta_kv;
 pub mod mount;
-pub mod parent_layer;
-pub mod receive_sendstream;
 pub mod remove;
 pub mod requires;
 pub mod rpms;
@@ -55,8 +53,6 @@ pub enum Data<'a> {
     Install(install::Install<'a>),
     Meta(meta_kv::Meta<'a>),
     Mount(mount::Mount<'a>),
-    ParentLayer(parent_layer::ParentLayer<'a>),
-    ReceiveSendstream(receive_sendstream::ReceiveSendstream<'a>),
     Remove(remove::Remove<'a>),
     Requires(requires::Requires<'a>),
     Rpm(rpms::Rpm<'a>),

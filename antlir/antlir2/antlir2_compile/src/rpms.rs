@@ -13,10 +13,10 @@ use std::path::Path;
 use std::process::Command;
 use std::process::Stdio;
 
+use antlir2_features::rpms::Rpm2;
+use antlir2_features::rpms::Rpm2Item;
 use anyhow::Context;
 use anyhow::Error;
-use features::rpms::Rpm2;
-use features::rpms::Rpm2Item;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_json::Deserializer;

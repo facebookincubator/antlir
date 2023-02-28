@@ -15,9 +15,9 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use antlir2_features::Data;
+use antlir2_features::Feature;
 use buck_label::Label;
-use features::Data;
-use features::Feature;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -209,13 +209,6 @@ impl<'a> CompileFeature for Feature<'a> {
             // depgraph does this before the compiler, no-op
             Data::Requires(_) => Ok(()),
             // this is its own buck rule
-            Data::ReceiveSendstream(_) => {
-                unreachable!("this should never make it to antlir2_compile at all")
-            }
-            // done before invoking the compiler
-            Data::ParentLayer(_) => {
-                unreachable!("this should never make it to antlir2_compile at all")
-            }
             #[cfg(facebook)]
             Data::ChefSolo(x) => x.compile(ctx),
         }

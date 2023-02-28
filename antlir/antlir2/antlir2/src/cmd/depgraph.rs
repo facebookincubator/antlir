@@ -23,7 +23,7 @@ pub(crate) struct Depgraph {
     #[clap(long)]
     label: Label<'static>,
     #[clap(long = "feature-json")]
-    features: Vec<JsonFile<Vec<features::Feature<'static>>>>,
+    features: Vec<JsonFile<Vec<antlir2_features::Feature<'static>>>>,
     #[clap(long = "parent")]
     /// Path to depgraph for the parent layer
     parent: Option<JsonFile<Graph<'static>>>,

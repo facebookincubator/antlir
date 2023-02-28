@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
-load("//antlir/buck2/bzl:layer_from_package.bzl?v2_only", buck2_layer_from_package = "layer_from_package")
 load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load(":compile_image_features.bzl", "compile_image_features")
@@ -100,19 +98,6 @@ def image_layer_from_package(
     (we'll support incremental sendstreams eventually) and
     `features` (make your changes in a child layer).
     """
-    if buck2_early_adoption.is_early_adopter():
-        buck2_layer_from_package(
-            **buck2_early_adoption.massage_kwargs(
-                name = name,
-                format = format,
-                src = source,
-                flavor = flavor,
-                flavor_config_override = flavor_config_override,
-                **image_layer_kwargs
-            )
-        )
-        return
-
     if rc_layer == "__unset__":
         fail("rc_layer must be specified or explicitly set to None")
     flavor = flavor_to_struct(flavor)

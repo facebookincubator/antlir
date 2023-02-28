@@ -10,7 +10,7 @@ use std::path::PathBuf;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::types::Layer;
+use crate::types::LayerInfo;
 use crate::types::PathInLayer;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
@@ -32,7 +32,7 @@ pub struct HostMount<'a> {
 #[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub struct LayerMount<'a> {
     pub mountpoint: PathInLayer<'a>,
-    pub src: Layer<'a>,
+    pub src: LayerInfo<'a>,
 }
 
 impl<'a> Mount<'a> {
