@@ -23,6 +23,7 @@ antlir2_layer(
                 # dependencies of the test
                 "bash",
                 "rpm",
+                "dracut-squash",  # random package that depends on another 'dracut'
             ],
         ),
     ],
@@ -39,7 +40,10 @@ antlir2_layer(
     name = "remove",
     available_rpm_repos = ":test-repo-set",
     features = [
-        rpms_remove_if_exists(rpms = ["rpm-test-cheese"]),
+        rpms_remove_if_exists(rpms = [
+            "rpm-test-cheese",
+            "dracut",
+        ]),
     ],
     parent_layer = ":simple",
 )
