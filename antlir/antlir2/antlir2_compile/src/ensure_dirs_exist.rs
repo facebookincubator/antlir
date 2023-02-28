@@ -10,7 +10,7 @@ use std::os::unix::fs::chown;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 
-use features::ensure_dirs_exist::EnsureDirsExist;
+use antlir2_features::ensure_dirs_exist::EnsureDirsExist;
 
 use crate::CompileFeature;
 use crate::CompilerContext;

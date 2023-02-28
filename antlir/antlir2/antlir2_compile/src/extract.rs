@@ -14,8 +14,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use antlir2_features::extract::Extract;
 use anyhow::Context;
-use features::extract::Extract;
 use goblin::elf::Elf;
 use once_cell::sync::Lazy;
 use regex::Regex;

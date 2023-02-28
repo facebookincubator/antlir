@@ -6,11 +6,11 @@
  */
 
 use antlir2_depgraph::Graph;
+use antlir2_features::Feature;
 use anyhow::anyhow;
 use anyhow::Result;
 use buck_label::Label;
 use clap::Parser;
-use features::Feature;
 use json_arg::Json;
 use json_arg::JsonFile;
 use regex::Regex;

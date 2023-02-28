@@ -13,23 +13,6 @@ use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;
 
-/// A buck-built layer target. Currently identified only with the target label,
-/// but the location info will be added in a stacked diff.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct Layer<'a>(#[serde(borrow)] Label<'a>);
-
-impl<'a> Layer<'a> {
-    pub fn label(&self) -> &Label {
-        &self.0
-    }
-}
-
-impl<'a> From<Label<'a>> for Layer<'a> {
-    fn from(label: Label<'a>) -> Self {
-        Self(label)
-    }
-}
-
 macro_rules! path_wrapper {
     ($i:ident, $doc:literal) => {
         #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]

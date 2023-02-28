@@ -1,9 +1,9 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/buck2/bzl/feature:clone.bzl", "clone")
-load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
-load("//antlir/buck2/bzl/feature:install.bzl", "install")
-load("//antlir/buck2/bzl/feature:remove.bzl", "remove")
-load("//antlir/buck2/bzl/feature:usergroup.bzl", "group_add", "user_add")
+load("//antlir/antlir2/feature:clone.bzl", "clone")
+load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
+load("//antlir/antlir2/feature:install.bzl", "install")
+load("//antlir/antlir2/feature:remove.bzl", "remove")
+load("//antlir/antlir2/feature:usergroup.bzl", "group_add", "user_add")
 load(":defs.bzl", "bad_depgraph")
 
 bad_depgraph(

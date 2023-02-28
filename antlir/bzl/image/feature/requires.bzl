@@ -3,11 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
-load(
-    "//antlir/buck2/bzl/feature:requires.bzl?v2_only",
-    buck2_requires = "requires",
-)
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":requires.shape.bzl", "requires_t")
 
@@ -28,13 +23,6 @@ that generates systemd units that run as a specific user, where
 `feature.requires` can be used for additional compile-time safety that the user,
 groups or files do indeed exist.
 """
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_requires(
-            users = users or [],
-            groups = groups or [],
-            files = files or [],
-        )
-
     req = requires_t(
         users = users,
         groups = groups,

@@ -28,3 +28,9 @@ impl From<u32> for Mode {
         Self(u)
     }
 }
+
+impl Mode {
+    pub fn as_raw(&self) -> u32 {
+        self.0
+    }
+}

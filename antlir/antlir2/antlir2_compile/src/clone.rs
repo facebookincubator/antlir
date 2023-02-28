@@ -9,10 +9,10 @@ use std::borrow::Cow;
 use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
+use antlir2_features::clone::Clone;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
-use features::clone::Clone;
 use walkdir::WalkDir;
 
 use crate::util::copy_with_metadata;
@@ -26,9 +26,7 @@ impl<'a> CompileFeature for Clone<'a> {
         // antlir2_depgraph has already done all the safety validation, so we
         // can just go ahead and blindly copy everything here
         let src_root = self
-            .src_layer_info
-            .as_ref()
-            .expect("this is always set on antlir2+buck2")
+            .src_layer
             .subvol_symlink
             .join(self.src_path.strip_prefix("/").unwrap_or(&self.src_path))
             .canonicalize()?;
@@ -66,24 +64,14 @@ impl<'a> CompileFeature for Clone<'a> {
             // sure that we look up the src ids and copy the _names_ instead of
             // just the ids
 
-            let src_userdb: EtcPasswd = std::fs::read_to_string(
-                self.src_layer_info
-                    .as_ref()
-                    .expect("always set on antlir2")
-                    .subvol_symlink
-                    .join("etc/passwd"),
-            )
-            .and_then(|s| s.parse().map_err(std::io::Error::other))
-            .unwrap_or_else(|_| Default::default());
-            let src_groupdb: EtcGroup = std::fs::read_to_string(
-                self.src_layer_info
-                    .as_ref()
-                    .expect("always set on antlir2")
-                    .subvol_symlink
-                    .join("etc/group"),
-            )
-            .and_then(|s| s.parse().map_err(std::io::Error::other))
-            .unwrap_or_else(|_| Default::default());
+            let src_userdb: EtcPasswd =
+                std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/passwd"))
+                    .and_then(|s| s.parse().map_err(std::io::Error::other))
+                    .unwrap_or_else(|_| Default::default());
+            let src_groupdb: EtcGroup =
+                std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/group"))
+                    .and_then(|s| s.parse().map_err(std::io::Error::other))
+                    .unwrap_or_else(|_| Default::default());
 
             let meta = entry.metadata().map_err(std::io::Error::from)?;
 

@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/buck2/bzl/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config")
@@ -240,8 +240,6 @@ def antlir2_layer(
         name = feature_target,
         visibility = [":" + name],
         features = features,
-        antlir1_translation = False,
-        flavors = [],
     )
     feature_target = ":" + feature_target
 

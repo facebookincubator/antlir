@@ -11,7 +11,7 @@ use std::fs::Permissions;
 use std::os::unix::fs::fchown;
 use std::os::unix::fs::PermissionsExt;
 
-use features::install::Install;
+use antlir2_features::install::Install;
 
 use crate::CompileFeature;
 use crate::CompilerContext;
@@ -27,9 +27,7 @@ impl<'a> CompileFeature for Install<'a> {
 
         let dst_file = File::options().write(true).open(&dst)?;
         fchown(&dst_file, Some(uid.into()), Some(gid.into())).map_err(std::io::Error::from)?;
-        dst_file.set_permissions(Permissions::from_mode(
-            self.mode.expect("must be set in antlir2").0,
-        ))?;
+        dst_file.set_permissions(Permissions::from_mode(self.mode.as_raw()))?;
 
         // Sync the file times with the source. This is not strictly necessary
         // but does lead to some better reproducibility of image builds as it's

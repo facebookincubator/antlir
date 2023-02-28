@@ -44,13 +44,6 @@ Future: we may need another feature for removing mounts provided by parent
 layers.
 """
 
-load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
-load(
-    "//antlir/buck2/bzl/feature:mount.bzl?v2_only",
-    buck2_host_dir_mount = "host_dir_mount",
-    buck2_host_file_mount = "host_file_mount",
-    buck2_layer_mount = "layer_mount",
-)
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load(":mount.shape.bzl", "build_source_t", "mount_config_t", "mount_spec_t")
 
@@ -74,11 +67,6 @@ def feature_host_dir_mount(source, mountpoint = None):
 `/path/foo` into the container at `/path/foo`. Another image item must
 provide the parent `/path`, but this item will create the mount-point.
     """
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_host_dir_mount(
-            source = source,
-            mountpoint = mountpoint,
-        )
     mount_spec = _feature_host_mount(
         source,
         mountpoint,
@@ -94,11 +82,6 @@ def feature_host_file_mount(source, mountpoint = None):
 `feature.host_file_mount("/path/bar", "/baz")` bind-mounts the file `/path/bar`
 into the container at `/baz`.
     """
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_host_file_mount(
-            source = source,
-            mountpoint = mountpoint,
-        )
     mount_spec = _feature_host_mount(
         source,
         mountpoint,
@@ -116,12 +99,6 @@ inside the container available at the "default_mountpoint" provided by the
 layer in its config. That fails if the layer lacks a default mountpoint, but
 then you can pass an explicit `mountpoint` argument.
     """
-    if buck2_early_adoption.is_early_adopter():
-        return buck2_layer_mount(
-            source = source,
-            mountpoint = mountpoint,
-        )
-
     target_tagger = new_target_tagger()
     mount_spec = mount_spec_t(
         mount_config = None,

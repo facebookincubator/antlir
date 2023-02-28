@@ -1,6 +1,6 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
-load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
 
 antlir2_layer(
     name = "base",

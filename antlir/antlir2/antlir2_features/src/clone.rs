@@ -8,19 +8,15 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::stat::Mode;
-use crate::types::BuckOutSource;
+use crate::types::LayerInfo;
 use crate::types::PathInLayer;
-use crate::usergroup::GroupName;
-use crate::usergroup::UserName;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
-pub struct Install<'a> {
-    pub dst: PathInLayer<'a>,
-    pub group: GroupName<'a>,
-    pub mode: Option<Mode>,
-    pub src: BuckOutSource<'a>,
-    pub user: UserName<'a>,
-    pub separate_debug_symbols: bool,
+pub struct Clone<'a> {
+    pub src_layer: LayerInfo<'a>,
+    pub omit_outer_dir: bool,
+    pub pre_existing_dest: bool,
+    pub src_path: PathInLayer<'a>,
+    pub dst_path: PathInLayer<'a>,
 }

@@ -56,6 +56,11 @@ def install_to_json(
             # in buck2, since we put a dep on the binary directly onto the layer
             # itself, which forces a rebuild when appropriate.
             mode = 0o555
+        if not mode:
+            # We can't tell if a source is a file or directory, so we need to
+            # force the user to specify it
+            # https://fb.workplace.com/groups/buck2users/posts/3346711265585231
+            fail("unable to automatically determine 'mode'\nplease specify it like 'mode=\"a+rx\"'")
     elif "src" in sources:
         src = sources["src"]
     else:

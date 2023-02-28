@@ -6,8 +6,6 @@
  */
 
 use std::borrow::Cow;
-use std::collections::BTreeMap;
-use std::path::Path;
 
 use buck_label::Label;
 use serde::Deserialize;
@@ -39,21 +37,13 @@ pub enum Source<'a> {
     Source(BuckOutSource<'a>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(untagged, bound(deserialize = "'de: 'a"))]
-pub enum VersionSet<'a> {
-    Path(Cow<'a, Path>),
-    Source(BTreeMap<Cow<'a, str>, Cow<'a, str>>),
-}
-
 /// The RPM action format is pretty hairy, clean this up at some point to have a
 /// nicer, more Rusty/safe structure
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
 pub struct Rpm<'a> {
     pub action: Action,
-    pub source: Source<'a>,
-    pub flavor_to_version_set: BTreeMap<Label<'a>, VersionSet<'a>>,
+    pub rpms: Vec<Source<'a>>,
 }
 
 /// A new definition of the Rpm feature for antlir2. This is currently a
@@ -70,6 +60,6 @@ pub struct Rpm2<'a> {
 #[serde(bound(deserialize = "'de: 'a"))]
 pub struct Rpm2Item<'a> {
     pub action: Action,
-    pub source: Source<'a>,
+    pub rpms: Vec<Source<'a>>,
     pub label: Label<'a>,
 }

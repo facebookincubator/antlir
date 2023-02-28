@@ -1,6 +1,6 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/feature:rpms.bzl", "rpms_install", "rpms_remove_if_exists")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/buck2/bzl/feature:rpms.bzl", "rpms_install", "rpms_remove_if_exists")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 
 repo_set(

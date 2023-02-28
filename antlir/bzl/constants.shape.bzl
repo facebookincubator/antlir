@@ -51,11 +51,6 @@ flavor_config_t = shape.shape(
     tags = shape.field(shape.list(str), optional = True),
 )
 
-buck2_early_adoption_t = shape.shape(
-    include = shape.list(str),
-    exclude = shape.list(str),
-)
-
 #
 # These are repo-specific configuration keys, which can be overridden via
 # the Buck CLI for debugging / development purposes.
@@ -107,6 +102,5 @@ repo_config_t = shape.shape(
     rc_targets = shape.list(str),
     buck1_tgts_to_flavors = shape.dict(str, str),
     flavor_alias = shape.field(str, optional = True),
-    buck2_early_adoption = buck2_early_adoption_t,
     unaliased_flavor_target_prefixes = shape.list(shape.path),
 )

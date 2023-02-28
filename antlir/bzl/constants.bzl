@@ -13,7 +13,7 @@ load("@fbsource//tools/build_defs:lazy.bzl", "lazy")
 load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
 load("//antlir/bzl:flavor_alias.bzl", "alias_flavor", "flavor_aliasing_enabled")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load(":constants.shape.bzl", "buck2_early_adoption_t", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
+load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
 load(":target_helpers.bzl", "normalize_target")
 
@@ -199,19 +199,6 @@ def use_rc_target(*, target, exact_match = False):
 
     return target in REPO_CFG.rc_targets
 
-def _get_buck2_early_adoption():
-    include = []
-    exclude = []
-    for s in _get_str_list_cfg("buck2_early_adoption"):
-        mode, package = s.split(":", 1)
-        if mode == "include":
-            include.append(package)
-        elif mode == "exclude":
-            exclude.append(package)
-        else:
-            fail(mode)
-    return buck2_early_adoption_t(include = include, exclude = exclude)
-
 REPO_CFG = repo_config_t(
     artifacts_require_repo = (
         (native.read_config("defaults.cxx_library", "type") == "shared") or
@@ -254,6 +241,5 @@ REPO_CFG = repo_config_t(
     ],
     flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
     buck1_tgts_to_flavors = _get_buck1_tgts_to_flavors(),
-    buck2_early_adoption = _get_buck2_early_adoption(),
     unaliased_flavor_target_prefixes = _get_str_list_cfg("unaliased_flavor_target_prefixes"),
 )

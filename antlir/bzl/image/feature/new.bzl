@@ -49,12 +49,6 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/buck2/bzl:buck2_early_adoption.bzl", "buck2_early_adoption")
-load("//antlir/buck2/bzl:flavor.bzl?v2_only", "coerce_to_flavor_label")
-load(
-    "//antlir/buck2/bzl/feature:feature.bzl?v2_only",
-    buck2_feature = "feature",
-)
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_names", "flavors_to_structs")
@@ -371,18 +365,6 @@ def feature_new(
         # that is not available for all flavors in REPO_CFG.flavor_to_config.
         # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None):
-    if buck2_early_adoption.is_early_adopter():
-        if flavors:
-            flavors = [coerce_to_flavor_label(f) for f in flavors]
-        buck2_feature(
-            **buck2_early_adoption.massage_kwargs(
-                name = name,
-                features = features,
-                flavors = flavors,
-                visibility = visibility,
-            )
-        )
-        return
     private_feature_new(
         name,
         features,

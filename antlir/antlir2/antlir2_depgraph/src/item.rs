@@ -24,7 +24,7 @@ pub enum Item<'a> {
     Group(Group<'a>),
     /// A complete graph from a dependent layer. Note that items from the chain
     /// of parent layers will appear in this graph, and this is for things like
-    /// [features::Clone] that have dependencies on (potentially) completely
+    /// [antlir2_features::Clone] that have dependencies on (potentially) completely
     /// disconnected layers.
     #[serde(borrow)]
     Layer(Layer<'a>),

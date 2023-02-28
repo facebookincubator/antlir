@@ -3,7 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/buck2/bzl:layer_info.bzl", "LayerInfo")
+load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
+load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def layer_mount(
@@ -44,6 +45,7 @@ host_file_mount = partial(host_mount, is_directory = False)
 host_dir_mount = partial(host_mount, is_directory = True)
 
 _source_kind = enum("layer", "host")
+types.lint_noop(_source_kind)
 
 def mount_to_json(
         mountpoint: [str.type, None],
@@ -61,7 +63,7 @@ def mount_to_json(
         return {
             "layer": {
                 "mountpoint": mountpoint,
-                "src": source.label.raw_target(),
+                "src": source[LayerInfo],
             },
         }
     elif source_kind == "host":

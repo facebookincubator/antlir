@@ -39,16 +39,11 @@ def clone_to_json(
         omit_outer_dir: bool.type,
         pre_existing_dest: bool.type,
         deps: {str.type: "dependency"}) -> {str.type: ""}:
-    src_layer = deps.pop("src_layer")
-
-    # TODO(T132415597) one glorious day we will actually have providers
-    # everywhere
-    src_layer_info = src_layer[LayerInfo] if LayerInfo in src_layer else None
+    src_layer_info = deps["src_layer"][LayerInfo]
     return {
         "dst_path": dst_path,
         "omit_outer_dir": omit_outer_dir,
         "pre_existing_dest": pre_existing_dest,
-        "src_layer": src_layer.label,
-        "src_layer_info": src_layer_info,
+        "src_layer": src_layer_info,
         "src_path": src_path,
     }
