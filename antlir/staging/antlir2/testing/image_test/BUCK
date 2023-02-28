@@ -1,0 +1,16 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "image-test",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "tempfile",
+        "tracing",
+        "tracing-glog",
+        "tracing-subscriber",
+        "//antlir:find_root",
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ],
+)
