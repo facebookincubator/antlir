@@ -7,6 +7,7 @@
 
 use std::path::PathBuf;
 use std::process::Command;
+use std::process::Stdio;
 
 use anyhow::ensure;
 use anyhow::Context;
@@ -39,6 +40,8 @@ pub(crate) struct PackageArgs {
 enum Spec {
     #[serde(rename = "sendstream.v2")]
     SendstreamV2 { compression_level: i32 },
+    #[serde(rename = "sendstream.zst")]
+    SendstreamZst { compression_level: i32 },
 }
 
 fn main() -> Result<()> {
@@ -82,6 +85,25 @@ fn main() -> Result<()> {
             })
             .context("while creating sendstream upgrader")?;
             stream.upgrade().context("while upgrading sendstream")
+        }
+        Spec::SendstreamZst { compression_level } => {
+            trace!("sending v1 sendstream to zstd");
+            let mut btrfs_send = Command::new("sudo")
+                .arg("btrfs")
+                .arg("send")
+                .arg(&args.layer)
+                .stdout(Stdio::piped())
+                .spawn()?;
+            let mut zstd = Command::new("zstd")
+                .arg("--compress")
+                .arg(format!("-{compression_level}"))
+                .arg("-o")
+                .arg(args.out)
+                .stdin(btrfs_send.stdout.take().expect("is a pipe"))
+                .spawn()?;
+            ensure!(zstd.wait()?.success(), "zstd failed");
+            ensure!(btrfs_send.wait()?.success(), "btrfs-send failed");
+            Ok(())
         }
     }
 }
