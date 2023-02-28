@@ -180,11 +180,18 @@ def main():
                 base.install_specs([source], strict=True)
             elif action == "remove_if_exists":
                 # cannot remove by file path, so let's do this to be extra safe
-                base.remove(rpm["name"])
+                try:
+                    base.remove(rpm["name"])
+                except dnf.exceptions.PackagesNotInstalledError:
+                    # The action is 'remove_if_exists'...
+                    # We should probably have a 'remove' version as well to
+                    # force users to clean up features that are no longer doing
+                    # anything
+                    pass
             else:
                 raise RuntimeError(f"unknown action '{action}'")
 
-    base.resolve()
+    base.resolve(allow_erasing=True)
     with out as o:
         json.dump(
             {
