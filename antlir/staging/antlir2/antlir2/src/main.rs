@@ -42,7 +42,6 @@ enum Subcommand {
     Map(cmd::Map),
     Plan(cmd::Plan),
     Shell(cmd::Shell),
-    Test(cmd::Test),
 }
 
 fn main() {
@@ -67,7 +66,6 @@ fn main() {
         Subcommand::Map(x) => x.run(),
         Subcommand::Plan(x) => x.run(),
         Subcommand::Shell(x) => x.run(),
-        Subcommand::Test(x) => x.run(),
     };
     if let Err(e) = result {
         tracing::error!("{e}");
