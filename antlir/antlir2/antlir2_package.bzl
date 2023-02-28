@@ -6,7 +6,7 @@
 load(":antlir2_layer_info.bzl", "LayerInfo")
 
 def _impl(ctx: "context") -> ["provider"]:
-    extension = {"sendstream.v2": ".sendstream.v2"}[ctx.attrs.format]
+    extension = {"sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst"}[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
     spec = ctx.actions.write_json("spec.json", {ctx.attrs.format: ctx.attrs.opts})
     ctx.actions.run(
@@ -25,7 +25,7 @@ antlir2_package = rule(
     impl = _impl,
     attrs = {
         "antlir2_package": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package:antlir2-package")),
-        "format": attrs.enum(["sendstream.v2"]),
+        "format": attrs.enum(["sendstream.v2", "sendstream.zst"]),
         "layer": attrs.dep(providers = [LayerInfo]),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
     },
