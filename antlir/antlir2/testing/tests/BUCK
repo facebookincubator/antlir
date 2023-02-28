@@ -1,0 +1,62 @@
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
+load("//antlir/buck2/bzl/feature:rpms.bzl", "rpms_install")
+
+antlir2_layer(
+    name = "base",
+    features = [
+        rpms_install(rpms = ["systemd"]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+[
+    [
+        image_cpp_test(
+            name = "test-cpp" + ("-booted" if boot else ""),
+            srcs = ["test.cpp"],
+            boot = boot,
+            env = {
+                "ANTLIR2_TEST": "1",
+                "BOOT": str(boot),
+            },
+            layer = ":base",
+        ),
+        image_python_test(
+            name = "test-py" + ("-booted" if boot else ""),
+            srcs = ["test.py"],
+            boot = boot,
+            env = {
+                "ANTLIR2_TEST": "1",
+                "BOOT": str(boot),
+            },
+            layer = ":base",
+        ),
+        image_rust_test(
+            name = "test-rs" + ("-booted" if boot else ""),
+            srcs = ["test.rs"],
+            boot = boot,
+            crate = "test_rs",
+            crate_root = "test.rs",
+            env = {
+                "ANTLIR2_TEST": "1",
+                "BOOT": str(boot),
+            },
+            layer = ":base",
+        ),
+        image_sh_test(
+            name = "test-sh" + ("-booted" if boot else ""),
+            boot = boot,
+            env = {
+                "ANTLIR2_TEST": "1",
+                "BOOT": str(boot),
+            },
+            layer = ":base",
+            test = "test.sh",
+        ),
+    ]
+    for boot in [
+        False,
+        True,
+    ]
+]

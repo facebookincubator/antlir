@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/staging/antlir2:antlir2_layer_info.bzl", "LayerInfo")
+load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def clone(

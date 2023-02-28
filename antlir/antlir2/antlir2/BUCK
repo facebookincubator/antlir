@@ -1,0 +1,26 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "antlir2",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "serde_json",
+        "thiserror",
+        "tracing",
+        "tracing-glog",
+        "tracing-subscriber",
+        "//antlir:find_root",
+        "//antlir/antlir2/antlir2_compile:antlir2_compile",
+        "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
+        "//antlir/antlir2/antlir2_isolate_compiler:antlir2_isolate_compiler",
+        "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
+        "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck2/features:features",
+        "//antlir/filesystem/absolute_path:absolute_path",
+        "//antlir/filesystem/stdio_path:stdio_path",
+        "//antlir/util/cli/json_arg:json_arg",
+        "//metalos/lib/btrfs:btrfs",
+    ],
+)

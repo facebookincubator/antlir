@@ -1,0 +1,41 @@
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
+load("//antlir/buck2/bzl/feature:install.bzl", "install")
+load("//antlir/buck2/bzl/feature:symlink.bzl", "ensure_dir_symlink", "ensure_file_symlink")
+
+antlir2_layer(
+    name = "base",
+    features = [
+        ensure_dirs_exist(
+            dirs = "/dir",
+        ),
+        install(
+            src = "//antlir:empty",
+            dst = "/target",
+            mode = "a+rx",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+antlir2_layer(
+    name = "symlink",
+    features = [
+        ensure_dir_symlink(
+            link = "/symlink-to-dir",
+            target = "/dir",
+        ),
+        ensure_file_symlink(
+            link = "/dir/symlink-to-file",
+            target = "/target",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "symlink-test",
+    diff = "symlink.toml",
+    layer = ":symlink",
+)

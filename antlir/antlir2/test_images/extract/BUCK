@@ -1,0 +1,87 @@
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/buck2/bzl/feature:clone.bzl", "clone")
+load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
+load("//antlir/buck2/bzl/feature:extract.bzl", "extract_buck_binary", "extract_from_layer")
+load("//antlir/buck2/bzl/feature:install.bzl", "install")
+load("//antlir/buck2/bzl/feature:rpms.bzl", "rpms_install")
+
+antlir2_layer(
+    name = "base",
+    features = [
+        # dependencies of the test
+        rpms_install(rpms = [
+            "bash",
+            "util-linux",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+antlir2_layer(
+    name = "extract-buck",
+    features = [
+        ensure_dirs_exist(dirs = "/usr/bin"),
+        extract_buck_binary(
+            src = "//antlir/antlir2/antlir2:antlir2",
+            dst = "/usr/bin/antlir2",
+        ),
+        install(
+            src = "//antlir/antlir2/antlir2:antlir2",
+            dst = "/antlir2-simply-installed",
+            mode = "a+rx",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_sh_test(
+    name = "extract-buck-test",
+    layer = ":extract-buck",
+    test = "test-extract-buck.sh",
+)
+
+antlir2_layer(
+    name = "binaries-clone-src",
+    features = [
+        rpms_install(rpms = ["systemd"]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+antlir2_layer(
+    name = "binary-clone",
+    features = [
+        ensure_dirs_exist(dirs = "/usr/bin"),
+        clone(
+            dst_path = "/usr/bin/systemctl",
+            src_layer = ":binaries-clone-src",
+            src_path = "/usr/bin/systemctl",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_sh_test(
+    name = "binary-clone-fails",
+    layer = ":binary-clone",
+    test = "test-binary-clone-fails.sh",
+)
+
+antlir2_layer(
+    name = "extract-layer",
+    features = [
+        ensure_dirs_exist(dirs = "/usr/bin"),
+        extract_from_layer(
+            binaries = ["/usr/bin/systemctl"],
+            layer = ":binaries-clone-src",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_sh_test(
+    name = "extract-layer-test",
+    layer = ":extract-layer",
+    test = "test-extract-layer.sh",
+)

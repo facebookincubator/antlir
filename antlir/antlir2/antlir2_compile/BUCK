@@ -1,0 +1,28 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+rust_library(
+    name = "antlir2_compile",
+    srcs = glob(["src/**/*.rs"]) + [
+        "dnf-driver.py",
+        "dnf-recorder.py",
+    ],
+    deps = [
+        "anyhow",
+        "goblin",
+        "once_cell",
+        "regex",
+        "serde",
+        "serde_json",
+        "tempfile",
+        "thiserror",
+        "tracing",
+        "twox-hash",
+        "url",
+        "walkdir",
+        "xattr",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+        "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck2/features:features",
+        "//antlir/rpm/dnf_conf:dnf_conf",
+    ],
+)
