@@ -1,0 +1,18 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "test-depgraph",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "regex",
+        "serde",
+        "serde_with",
+        "similar-asserts",
+        "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
+        "//antlir/buck/buck_label:buck_label",
+        "//antlir/buck2/features:features",
+        "//antlir/util/cli/json_arg:json_arg",
+    ],
+)

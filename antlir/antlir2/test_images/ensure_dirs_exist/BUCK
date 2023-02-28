@@ -1,0 +1,29 @@
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
+
+antlir2_layer(
+    name = "base",
+    features = [
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+antlir2_layer(
+    name = "ensure_dirs_exist",
+    features = [
+        ensure_dirs_exist(dirs = "/a"),
+        ensure_dirs_exist(dirs = "/foo/bar"),
+        ensure_subdirs_exist(
+            into_dir = "/foo/bar",
+            subdirs_to_create = "baz/qux",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "ensure-dirs_exist-test",
+    diff = "ensure_dirs_exist.toml",
+    layer = ":ensure_dirs_exist",
+)

@@ -1,0 +1,40 @@
+load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
+load("//antlir/buck2/bzl/feature:remove.bzl", "remove")
+load("//antlir/buck2/bzl/feature:rpms.bzl", "rpms_install")
+load(":antlir2_layer.bzl", "antlir2_layer")
+load(":antlir2_package.bzl", "antlir2_sendstream_v2")
+
+antlir2_layer(
+    name = "build-appliance.rpms",
+    features = [
+        rpms_install(rpms = [
+            "chef",
+            "dnf",
+            "fb-chef-solo-tools",
+            "python3-dnf-plugin-cow",
+            "socat",
+            "strace",
+            "systemd-container",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/facebook/flavor:centos9",
+    visibility = [":build-appliance"],
+)
+
+# This is a separate layer because the depgraph does not yet understand files
+# that come from rpms. I will address that shortly and re-combine this into one
+# layer target
+antlir2_layer(
+    name = "build-appliance",
+    features = [
+        remove(path = "/etc/yum.repos.d"),
+        remove(path = "/etc/dnf/dnf.conf"),
+        ensure_dirs_exist(dirs = "/antlir"),
+    ],
+    parent_layer = ":build-appliance.rpms",
+)
+
+antlir2_sendstream_v2(
+    name = "build-appliance.sendstream.v2",
+    layer = ":build-appliance",
+)

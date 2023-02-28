@@ -21,7 +21,7 @@ This new-and-improved version of extract is capable of extracting buck-built
 binaries without first installing them into a layer.
 """
 
-load("//antlir/staging/antlir2:antlir2_layer_info.bzl", "LayerInfo")
+load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def extract_from_layer(

@@ -1,0 +1,69 @@
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/buck2/bzl/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
+load("//antlir/buck2/bzl/feature:install.bzl", "install")
+load("//antlir/buck2/bzl/feature:usergroup.bzl", "group_add", "user_add", "usermod")
+
+antlir2_layer(
+    name = "base",
+    features = [
+        ensure_dirs_exist(
+            dirs = "/etc",
+        ),
+        install(
+            src = "//antlir/antlir2/test_images:passwd",
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+        ),
+        install(
+            src = "//antlir/antlir2/test_images:group",
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+        ),
+        install(
+            src = "//antlir:empty",
+            dst = "/fakeshell",
+            mode = "a+rx",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+antlir2_layer(
+    name = "add-user-and-group",
+    features = [
+        user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            username = "antlir",
+        ),
+        group_add(
+            groupname = "antlir",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "add-user-and-group-test",
+    diff = "add-user-and-group.toml",
+    layer = ":add-user-and-group",
+)
+
+antlir2_layer(
+    name = "add-user-to-group",
+    features = [
+        usermod(
+            add_supplementary_groups = ["root"],
+            username = "antlir",
+        ),
+    ],
+    parent_layer = ":add-user-and-group",
+)
+
+image_diff_test(
+    name = "add-user-to-group-test",
+    diff = "add-user-to-group.toml",
+    layer = ":add-user-to-group",
+)

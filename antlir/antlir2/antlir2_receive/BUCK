@@ -1,0 +1,17 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "antlir2-receive",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "tempfile",
+        "tracing",
+        "tracing-glog",
+        "tracing-subscriber",
+        "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
+        "//antlir/buck/buck_label:buck_label",
+        "//metalos/lib/btrfs:btrfs",
+    ],
+)

@@ -1,0 +1,14 @@
+load("//antlir/bzl:build_defs.bzl", "alias", "export_file")
+
+alias(
+    name = "test-image-flavor",
+    actual = "//antlir/antlir2/facebook/flavor:centos9",
+)
+
+export_file(
+    name = "passwd",
+)
+
+export_file(
+    name = "group",
+)
