@@ -11,6 +11,7 @@ rust_binary(
     visibility = [
         "//antlir/...",
         "//holograms/mesher_mstereo_sandbox/...",
+        "//infra_asic_fpga/simulation/...",
         "//metalos/...",
         "//ti/platform/edgeos/...",
     ],
