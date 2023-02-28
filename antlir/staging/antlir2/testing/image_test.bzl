@@ -7,20 +7,35 @@
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/staging/antlir2:antlir2_layer_info.bzl", "LayerInfo")
 
+_HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
+
 def _impl(ctx: "context") -> ["provider"]:
     test_cmd = cmd_args(
         ctx.attrs.image_test[RunInfo],
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
         "--boot" if ctx.attrs.boot else cmd_args(),
-        "--",
+        cmd_args(ctx.attrs.test[ExternalRunnerTestInfo].env.keys(), format = "--preserve-env={}"),
+        ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
     )
+
+    # Copy the labels from the inner test since there is tons of behavior
+    # controlled by labels and we don't want to have to duplicate logic that
+    # other people are already writing in the standard *_unittest macros.
+    # This wrapper should be as invisible as possible.
+    inner_labels = list(ctx.attrs.test[ExternalRunnerTestInfo].labels)
+    for label in _HIDE_TEST_LABELS:
+        inner_labels.remove(label)
     return [
         ExternalRunnerTestInfo(
             command = [test_cmd],
             type = ctx.attrs.test[ExternalRunnerTestInfo].test_type,
-            labels = ctx.attrs.labels,
+            labels = ctx.attrs.labels + inner_labels,
+            contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
+            env = ctx.attrs.test[ExternalRunnerTestInfo].env,
+            run_from_project_root = ctx.attrs.test[ExternalRunnerTestInfo].run_from_project_root,
+            use_project_relative_paths = ctx.attrs.test[ExternalRunnerTestInfo].use_project_relative_paths,
         ),
         RunInfo(test_cmd),
         DefaultInfo(),
@@ -53,7 +68,7 @@ def _implicit_image_test(
     test_rule(
         name = name + "_image_test_inner",
         antlir_rule = "user-internal",
-        labels = ["disabled", "test_is_invisible_to_testpilot"],
+        labels = _HIDE_TEST_LABELS,
         **kwargs
     )
     labels = list(labels) if labels else []
