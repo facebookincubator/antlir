@@ -6,6 +6,7 @@
  */
 
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::io::Seek;
@@ -60,7 +61,7 @@ fn bind_arg<S: AsRef<Path>, D: AsRef<Path>>(src: S, dst: D, ro: bool) -> OsStrin
 
 #[derive(Parser, Debug)]
 /// Run a unit test inside an image layer.
-pub(crate) struct Args {
+struct Args {
     #[clap(long)]
     /// Path to layer to run the test in
     layer: PathBuf,
@@ -70,8 +71,118 @@ pub(crate) struct Args {
     #[clap(long)]
     /// Boot the container with /init as pid1 before running the test
     boot: bool,
-    /// Test command
-    test_cmd: Vec<OsString>,
+    #[clap(long)]
+    /// Pass these env vars into the test environment
+    preserve_env: Vec<String>,
+    #[clap(subcommand)]
+    test: Test,
+}
+
+#[derive(Parser, Debug)]
+enum Test {
+    Custom {
+        test_cmd: Vec<OsString>,
+    },
+    Gtest {
+        #[clap(long, env = "GTEST_OUTPUT")]
+        output: Option<String>,
+        #[clap(allow_hyphen_values = true)]
+        test_cmd: Vec<OsString>,
+    },
+    Pyunit {
+        #[clap(long)]
+        list_tests: Option<PathBuf>,
+        #[clap(long)]
+        output: Option<PathBuf>,
+        #[clap(long)]
+        test_filter: Vec<OsString>,
+        test_cmd: Vec<OsString>,
+    },
+    Rust {
+        #[clap(allow_hyphen_values = true)]
+        test_cmd: Vec<OsString>,
+    },
+}
+
+impl Test {
+    /// Some tests need to write to output paths on the host. Instead of a
+    /// complicated fd-passing dance in the name of isolation purity, we just
+    /// mount the parent directories of the output files so that the inner test
+    /// can do writes just as tpx expects.
+    fn bind_mounts(&self) -> HashSet<PathBuf> {
+        match self {
+            Self::Custom { .. } => HashSet::new(),
+            Self::Gtest { output, .. } => match output {
+                Some(output) => {
+                    let path = Path::new(match output.split_once(':') {
+                        Some((_format, path)) => path,
+                        None => output.as_str(),
+                    });
+                    HashSet::from([path
+                        .parent()
+                        .expect("output file always has parent")
+                        .to_owned()])
+                }
+                None => HashSet::new(),
+            },
+            Self::Rust { .. } => HashSet::new(),
+            Self::Pyunit {
+                list_tests, output, ..
+            } => {
+                let mut paths = HashSet::new();
+                if let Some(p) = list_tests {
+                    paths.insert(
+                        p.parent()
+                            .expect("output file always has parent")
+                            .to_owned(),
+                    );
+                }
+                if let Some(p) = output {
+                    paths.insert(
+                        p.parent()
+                            .expect("output file always has parent")
+                            .to_owned(),
+                    );
+                }
+                paths
+            }
+        }
+    }
+    fn into_inner_cmd(self) -> Vec<OsString> {
+        match self {
+            Self::Custom { test_cmd } => test_cmd,
+            Self::Gtest {
+                mut test_cmd,
+                output,
+            } => {
+                if let Some(out) = output {
+                    test_cmd.push(format!("--gtest_output={out}").into());
+                }
+                test_cmd
+            }
+            Self::Rust { test_cmd } => test_cmd,
+            Self::Pyunit {
+                mut test_cmd,
+                list_tests,
+                test_filter,
+                output,
+            } => {
+                if let Some(list) = list_tests {
+                    test_cmd.push("--list-tests".into());
+                    test_cmd.push(list.into());
+                }
+                if let Some(out) = output {
+                    test_cmd.push("--output".into());
+                    test_cmd.push(out.into());
+                }
+                for filter in test_filter {
+                    test_cmd.push("--test-filter".into());
+                    test_cmd.push(filter);
+                }
+                test_cmd
+            }
+        }
+    }
 }
 
 fn main() -> Result<()> {
@@ -122,12 +233,24 @@ fn main() -> Result<()> {
         cmd.arg("--bind-ro").arg("/usr/local/fbcode");
         cmd.arg("--bind-ro").arg("/mnt/gvfs");
     }
+    for env in &args.preserve_env {
+        cmd.arg("--setenv").arg(env);
+    }
+    // forward test runner env vars to the inner test
+    for (key, val) in std::env::vars() {
+        if key.starts_with("TEST_PILOT") {
+            cmd.arg(format!("--setenv={key}={val}"));
+        }
+    }
+    for path in args.test.bind_mounts() {
+        cmd.arg("--bind").arg(path);
+    }
     if args.boot {
         // see 'man 8 systemd-run-generator', tl;dr this will:
         // - propagate the exit code to this process
         // - shut down the container as soon as the test binary finishes
         let mut systemd_run_arg = OsString::from("systemd.run=\"");
-        let mut iter = args.test_cmd.into_iter().peekable();
+        let mut iter = args.test.into_inner_cmd().into_iter().peekable();
         while let Some(arg) = iter.next() {
             systemd_run_arg.push(arg);
             if iter.peek().is_some() {
@@ -138,10 +261,20 @@ fn main() -> Result<()> {
         let (container_stdout, _container_stderr) = make_log_files("container")?;
         let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
         let mut dropin = NamedTempFile::new()?;
-        write!(
+        writeln!(
             dropin,
-            "[Service]\nStandardOutput=truncate:/run/test.out\nStandardError=truncate:/run/test.err\n"
+            "[Service]\nStandardOutput=truncate:/run/test.out\nStandardError=truncate:/run/test.err"
         )?;
+        for key in &args.preserve_env {
+            let val = std::env::var(key).with_context(|| format!("env var '{key}' is not set"))?;
+            writeln!(dropin, "Environment=\"{key}={val}\"")?;
+        }
+        // forward test runner env vars to the inner test
+        for (key, val) in std::env::vars() {
+            if key.starts_with("TEST_PILOT") {
+                writeln!(dropin, "Environment=\"{key}={val}\"")?;
+            }
+        }
         cmd.arg("--boot")
             // bind this process's stdout and stderr into the container so
             // that the test will write directly there
@@ -169,12 +302,13 @@ fn main() -> Result<()> {
         if !res.success() {
             std::process::exit(res.code().unwrap_or(255))
         } else {
-            debug!("test succeeded");
             Ok(())
         }
     } else {
+        cmd.arg("--as-pid2")
+            .arg("--")
+            .args(args.test.into_inner_cmd());
         debug!("executing test in isolated container: {cmd:?}");
-        cmd.arg("--as-pid2").arg("--").args(args.test_cmd);
         return Err(anyhow::anyhow!("failed to exec test: {:?}", cmd.exec()));
     }
 }
