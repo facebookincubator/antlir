@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
+load(":dependency_layer_info.bzl", "layer_dep_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def clone(
@@ -39,11 +39,10 @@ def clone_to_json(
         omit_outer_dir: bool.type,
         pre_existing_dest: bool.type,
         deps: {str.type: "dependency"}) -> {str.type: ""}:
-    src_layer_info = deps["src_layer"][LayerInfo]
     return {
         "dst_path": dst_path,
         "omit_outer_dir": omit_outer_dir,
         "pre_existing_dest": pre_existing_dest,
-        "src_layer": src_layer_info,
+        "src_layer": layer_dep_to_json(deps["src_layer"]),
         "src_path": src_path,
     }

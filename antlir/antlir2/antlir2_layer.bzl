@@ -24,7 +24,7 @@ def _map_image(
     In other words, this is a mapping function of 'image A -> A1'
     """
     out = ctx.actions.declare_output("subvol-" + identifier)
-    build_appliance = ctx.attrs.build_appliance[LayerInfo] if ctx.attrs.build_appliance else flavor_info.default_build_appliance
+    build_appliance = (ctx.attrs.build_appliance or flavor_info.default_build_appliance)[LayerInfo]
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
         ctx.attrs.antlir2[RunInfo],
@@ -77,7 +77,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     depgraph_input = build_depgraph(ctx, "json", None, dependency_layers)
 
-    available_rpm_repos = ctx.attrs.available_rpm_repos[RepoSetInfo] if ctx.attrs.available_rpm_repos else flavor_info.default_rpm_repo_set
+    available_rpm_repos = (ctx.attrs.available_rpm_repos or flavor_info.default_rpm_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, available_rpm_repos)
 
     plan = ctx.actions.declare_output("plan")
