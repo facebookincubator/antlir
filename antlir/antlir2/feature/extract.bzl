@@ -21,7 +21,7 @@ This new-and-improved version of extract is capable of extracting buck-built
 binaries without first installing them into a layer.
 """
 
-load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
+load(":dependency_layer_info.bzl", "layer_dep_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def extract_from_layer(
@@ -63,7 +63,7 @@ def extract_to_json(
     if source == "layer":
         return {
             "binaries": binaries,
-            "layer": deps["layer"][LayerInfo],
+            "layer": layer_dep_to_json(deps["layer"]),
             "source": "layer",
         }
     elif source == "buck":

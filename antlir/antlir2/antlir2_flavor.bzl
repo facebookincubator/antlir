@@ -17,8 +17,8 @@ def _impl(ctx: "context") -> ["provider"]:
     return [
         FlavorInfo(
             label = ctx.label,
-            default_build_appliance = ctx.attrs.default_build_appliance[LayerInfo],
-            default_rpm_repo_set = ctx.attrs.default_rpm_repo_set[RepoSetInfo],
+            default_build_appliance = ctx.attrs.default_build_appliance,
+            default_rpm_repo_set = ctx.attrs.default_rpm_repo_set,
         ),
         DefaultInfo(),
     ]
