@@ -86,14 +86,7 @@ bad_depgraph(
 
 bad_depgraph(
     name = "bad-validator",
-    error = {"unsatisfied": {
-        "item": {"path": {"entry": {
-            "file_type": "file",
-            "mode": 0o444,
-            "path": "/fakeshell",
-        }}},
-        "validator": "executable",
-    }},
+    error_regex = "^.*/fakeshell.*\\sdoes not satisfy the validation rules: Executable\\s.*",
     features = [
         install(
             src = "//antlir:empty",

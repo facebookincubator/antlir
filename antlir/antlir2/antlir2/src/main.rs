@@ -10,6 +10,7 @@
 use std::process::ExitStatus;
 
 use clap::Parser;
+use colored::Colorize;
 use thiserror::Error;
 use tracing_subscriber::prelude::*;
 
@@ -68,8 +69,7 @@ fn main() {
         Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {
-        tracing::error!("{e}");
-        eprintln!("{e:?}");
+        eprintln!("{}", e.to_string().red());
         std::process::exit(1);
     }
 }
