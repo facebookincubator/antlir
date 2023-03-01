@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:collections.bzl", "collections")
 load("//antlir/antlir2/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:flatten.bzl", "flatten")
@@ -88,7 +89,7 @@ def _impl(ctx: "context") -> ["provider"]:
             "plan",
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
-            cmd_args([li.subvol_symlink for li in dependency_layers], format = "--image-dependency={}"),
+            cmd_args(collections.uniq([li.subvol_symlink for li in dependency_layers]), format = "--image-dependency={}"),
             cmd_args(plan.as_output(), format = "--plan={}"),
         ).hidden(feature_hidden_deps),
         identifier = "plan",
@@ -115,7 +116,7 @@ def _impl(ctx: "context") -> ["provider"]:
             "compile",
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
-            cmd_args([li.subvol_symlink for li in dependency_layers], format = "--image-dependency={}"),
+            cmd_args(collections.uniq([li.subvol_symlink for li in dependency_layers]), format = "--image-dependency={}"),
         ).hidden(feature_hidden_deps),
         identifier = "compile",
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
@@ -191,10 +192,7 @@ def build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None],
                 ctx.attrs.parent_layer[LayerInfo].depgraph,
                 format = "--parent={}",
             ) if hasattr(ctx.attrs, "parent_layer") and ctx.attrs.parent_layer else cmd_args(),
-            cmd_args(
-                [li.depgraph for li in dependency_layers],
-                format = "--image-dependency={}",
-            ),
+            cmd_args(collections.uniq([li.depgraph for li in dependency_layers]), format = "--image-dependency={}"),
             cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
             cmd_args(output.as_output(), format = "--out={}"),
         ),
