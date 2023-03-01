@@ -1,16 +1,14 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
-load("//antlir/antlir2/feature:install.bzl", "install")
-load("//antlir/antlir2/feature:symlink.bzl", "ensure_dir_symlink", "ensure_file_symlink")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 
 antlir2_layer(
     name = "base",
     features = [
-        ensure_dirs_exist(
+        feature.ensure_dirs_exist(
             dirs = "/dir",
         ),
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/target",
             mode = "a+rx",
@@ -22,11 +20,11 @@ antlir2_layer(
 antlir2_layer(
     name = "symlink",
     features = [
-        ensure_dir_symlink(
+        feature.ensure_dir_symlink(
             link = "/symlink-to-dir",
             target = "/dir",
         ),
-        ensure_file_symlink(
+        feature.ensure_file_symlink(
             link = "/dir/symlink-to-file",
             target = "/target",
         ),
