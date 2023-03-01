@@ -105,8 +105,11 @@ pub enum Error<'a> {
         item: Item<'a>,
         features: BTreeSet<Feature<'a>>,
     },
-    #[error("{key:?} is required but was never provided")]
-    MissingItem { key: ItemKey<'a> },
+    #[error("{key:?} is required by {required_by:#?} but was never provided")]
+    MissingItem {
+        key: ItemKey<'a>,
+        required_by: Feature<'a>,
+    },
     #[error(
         "{item:?} does not satisfy the validation rules: {validator:?} as required by {required_by:#?}"
     )]
@@ -401,14 +404,20 @@ impl<'a> GraphBuilder<'a> {
                                     validator: validator.clone(),
                                     required_by: self.g[feature]
                                         .as_feature()
-                                        .expect("this is always a Feature")
+                                        .expect("endpoint is always feature")
                                         .clone(),
                                 });
                             }
                         }
                         Node::MissingItem(key) => {
                             if *validator != Validator::DoesNotExist {
-                                return Err(Error::MissingItem { key: key.clone() });
+                                return Err(Error::MissingItem {
+                                    key: key.clone(),
+                                    required_by: self.g[feature]
+                                        .as_feature()
+                                        .expect("endpoint is always feature")
+                                        .clone(),
+                                });
                             }
                         }
                         _ => unreachable!("Requires edges cannot exist on anything but Items"),

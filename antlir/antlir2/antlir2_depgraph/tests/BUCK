@@ -75,7 +75,15 @@ antlir2_layer(
 
 bad_depgraph(
     name = "missing-dep",
-    error = {"missing_item": {"key": {"path": "/foo"}}},
+    error = {"missing_item": {
+        "key": {"path": "/foo"},
+        "required_by": {
+            "must_exist": True,
+            "path": "/foo",
+            "__feature_type": "remove",
+            "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:missing-dep--features",
+        },
+    }},
     features = [
         remove(
             must_exist = True,
@@ -295,7 +303,7 @@ bad_depgraph(
 
 bad_depgraph(
     name = "clone-with-missing-user",
-    error_regex = "^User\\(\"antlir\"\\) is required but was never provided$",
+    error_regex = "^User\\(\"antlir\"\\) is required ",
     features = [
         clone(
             dst_path = "/dst",
