@@ -201,11 +201,10 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::Meta(x) => todo!("{x:?}"),
             Data::Mount(x) => todo!("{x:?}"),
             Data::Remove(x) => x.compile(ctx),
-            Data::Rpm2(x) => x.compile(ctx),
+            Data::Rpm(x) => x.compile(ctx),
             Data::Tarball(x) => todo!("{x:?}"),
             Data::User(x) => x.compile(ctx),
             Data::UserMod(x) => x.compile(ctx),
-            Data::Rpm(_) => unreachable!("depgraph consolidates this into rpm2"),
             // depgraph does this before the compiler, no-op
             Data::Requires(_) => Ok(()),
             // this is its own buck rule
@@ -216,7 +215,7 @@ impl<'a> CompileFeature for Feature<'a> {
 
     fn plan(&self, ctx: &CompilerContext) -> Result<plan::Item> {
         match &self.data {
-            Data::Rpm2(x) => x.plan(ctx),
+            Data::Rpm(x) => x.plan(ctx),
             #[cfg(facebook)]
             Data::ChefSolo(x) => x.plan(ctx),
             _ => Ok(plan::Item::None),

@@ -131,7 +131,7 @@ pub struct GraphBuilder<'a> {
     pending_features: Vec<NodeIndex<DefaultIx>>,
     items: HashMap<ItemKey<'a>, NodeIndex<DefaultIx>>,
     phases: BTreeMap<Phase, (NodeIndex<DefaultIx>, NodeIndex<DefaultIx>)>,
-    rpm2_feature: Option<NodeIndex<DefaultIx>>,
+    rpm_feature: Option<NodeIndex<DefaultIx>>,
     label: Label<'a>,
 }
 
@@ -189,7 +189,7 @@ impl<'a> GraphBuilder<'a> {
             items,
             phases,
             label,
-            rpm2_feature: None,
+            rpm_feature: None,
         };
 
         if let Some(parent) = parent {
@@ -246,32 +246,23 @@ impl<'a> GraphBuilder<'a> {
     }
 
     pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
+        // rpm features get merged into a single node so that the transaction management is easier
         let (phase, feature_nx) = if let antlir2_features::Data::Rpm(rpm) = feature.data {
-            if let Some(nx) = self.rpm2_feature {
+            if let Some(nx) = self.rpm_feature {
                 match &mut self.g[nx] {
                     Node::PendingFeature(Feature {
                         label: _,
-                        data: antlir2_features::Data::Rpm2(rpm2),
-                    }) => rpm2.items.push(antlir2_features::rpms::Rpm2Item {
-                        action: rpm.action,
-                        rpms: rpm.rpms,
-                        label: feature.label,
-                    }),
-                    _ => unreachable!("rpm2_feature node is always an Rpm2 feature"),
+                        data: antlir2_features::Data::Rpm(existing_feature),
+                    }) => existing_feature.items.extend(rpm.items),
+                    _ => unreachable!("rpm_feature node is always an Rpm feature"),
                 }
                 return self;
             } else {
                 let feature_nx = self.g.add_node(Node::PendingFeature(Feature {
-                    label: self.label.clone(),
-                    data: antlir2_features::Data::Rpm2(antlir2_features::rpms::Rpm2 {
-                        items: vec![antlir2_features::rpms::Rpm2Item {
-                            action: rpm.action,
-                            rpms: rpm.rpms,
-                            label: feature.label,
-                        }],
-                    }),
+                    data: antlir2_features::Data::Rpm(rpm),
+                    label: feature.label,
                 }));
-                self.rpm2_feature = Some(feature_nx);
+                self.rpm_feature = Some(feature_nx);
                 (Phase::OsPackage, feature_nx)
             }
         } else {

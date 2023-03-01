@@ -39,6 +39,11 @@ def rpms_to_json(
         rpms.append({"source": rpm})
 
     return {
-        "action": action,
-        "rpms": rpms,
+        "items": [
+            {
+                "action": action,
+                "rpm": rpm,
+            }
+            for rpm in rpms
+        ],
     }

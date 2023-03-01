@@ -13,8 +13,8 @@ use std::path::Path;
 use std::process::Command;
 use std::process::Stdio;
 
-use antlir2_features::rpms::Rpm2;
-use antlir2_features::rpms::Rpm2Item;
+use antlir2_features::rpms::Item as RpmItem;
+use antlir2_features::rpms::Rpm;
 use anyhow::Context;
 use anyhow::Error;
 use serde::Deserialize;
@@ -33,7 +33,7 @@ use crate::Result;
 struct DriverSpec<'a> {
     install_root: &'a Path,
     repos: &'a Path,
-    items: &'a [Rpm2Item<'a>],
+    items: &'a [RpmItem<'a>],
     mode: DriverMode,
     arch: Arch,
 }
@@ -133,7 +133,7 @@ enum DriverEvent {
 
 /// Relatively simple implementation of rpm features. This does not yet respect
 /// version locks.
-impl<'a> CompileFeature for Rpm2<'a> {
+impl<'a> CompileFeature for Rpm<'a> {
     #[tracing::instrument(name = "rpms", skip(self, ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         run_dnf_driver(ctx, &self.items, DriverMode::Run).map(|_| ())
@@ -164,7 +164,7 @@ impl<'a> CompileFeature for Rpm2<'a> {
 
 fn run_dnf_driver(
     ctx: &CompilerContext,
-    items: &[Rpm2Item<'_>],
+    items: &[RpmItem<'_>],
     mode: DriverMode,
 ) -> Result<Vec<DriverEvent>> {
     let input = serde_json::to_string(&DriverSpec {
