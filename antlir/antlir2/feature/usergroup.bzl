@@ -17,6 +17,35 @@ def user_add(
         uid: [int.type, None] = None,
         supplementary_groups: [str.type] = [],
         comment: [str.type, None] = None) -> InlineFeatureInfo.type:
+    """
+    Add a user entry to /etc/passwd.
+
+    Example usage:
+
+    ```
+    feature.group_add("myuser")
+    feature.user_add(
+        "myuser",
+        primary_group = "myuser",
+        home_dir = "/home/myuser",
+    )
+    feature.ensure_dirs_exist(
+        "/home/myuser",
+        mode = 0o755,
+        user = "myuser",
+        group = "myuser",
+    )
+    ```
+
+    Unlike shadow-utils `useradd`, this item does not automatically create the new
+    user's initial login group or home directory.
+
+    - If `username` or `uid` conflicts with existing entries, image build will
+        fail. It is recommended to avoid specifying UID unless absolutely
+        necessary.
+    - `primary_group` and `supplementary_groups` are specified as groupnames.
+    - `home_dir` must exist
+    """
     return InlineFeatureInfo(
         feature_type = "user",
         kwargs = {
@@ -34,6 +63,13 @@ def group_add(
         *,
         groupname: str.type,
         gid: [int.type, None] = None) -> InlineFeatureInfo.type:
+    """
+    Add a group entry to /etc/group
+
+    Group add semantics generally follow `groupadd`. If groupname or GID
+    conflicts with existing entries, image build will fail. It is recommended to
+    avoid specifying GID unless absolutely necessary.
+    """
     return InlineFeatureInfo(
         feature_type = "group",
         kwargs = {
@@ -46,6 +82,9 @@ def usermod(
         *,
         username: str.type,
         add_supplementary_groups: [[str.type], None] = None) -> InlineFeatureInfo.type:
+    """
+    Modify an existing entry in the /etc/passwd and /etc/group databases
+    """
     return InlineFeatureInfo(
         feature_type = "user_mod",
         kwargs = {

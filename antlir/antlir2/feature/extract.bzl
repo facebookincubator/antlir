@@ -27,6 +27,14 @@ load(":feature_info.bzl", "InlineFeatureInfo")
 def extract_from_layer(
         layer: str.type,
         binaries: [str.type]) -> InlineFeatureInfo.type:
+    """
+    Extract binaries that are installed into `layer`, most commonly by RPMs.
+
+    This copies the binary as well as any `.so` dependencies that `ld.so --list`
+    reports. All the dependencies are copied from within `layer`. Any conflicts
+    (same path, different file hash) caused by the extractor will result in a
+    build error.
+    """
     return InlineFeatureInfo(
         feature_type = "extract",
         deps = {
@@ -41,6 +49,12 @@ def extract_from_layer(
 def extract_buck_binary(
         src: str.type,
         dst: str.type) -> InlineFeatureInfo.type:
+    """
+    Extract a binary built by buck into the target layer.
+
+    The `.so` dependencies in this case will be copied from the host filesystem,
+    but the same conflict detection method as `extract_from_layer` is employed.
+    """
     return InlineFeatureInfo(
         feature_type = "extract",
         # include in deps so we can look at the providers

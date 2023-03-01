@@ -231,6 +231,11 @@ def antlir2_layer(
         # InlineFeatureInfo providers are accepted, at any level of nesting
         features = [],
         **kwargs):
+    """
+    Create a new image layer
+
+    Build a new image layer from the given `features` and `parent_layer`.
+    """
     features = flatten.flatten(features, item_type = ["InlineFeatureInfo", str.type])
 
     feature_target = name + "--features"

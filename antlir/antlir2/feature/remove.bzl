@@ -9,6 +9,15 @@ def remove(
         *,
         path: str.type,
         must_exist: bool.type = True) -> InlineFeatureInfo.type:
+    """
+    Recursivel remove a file or directory
+
+    These are allowed to remove paths inherited from the parent layer, or those
+    installed in this layer.
+
+    By default, it is an error if the specified path is missing from the image,
+    though this can be avoided by setting `must_exist=False`.
+    """
     return InlineFeatureInfo(
         feature_type = "remove",
         kwargs = {

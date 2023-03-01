@@ -19,8 +19,21 @@ def _symlink_feature(
         },
     )
 
-ensure_file_symlink = partial(_symlink_feature, feature_type = "ensure_file_symlink")
-ensure_dir_symlink = partial(_symlink_feature, feature_type = "ensure_dir_symlink")
+def ensure_file_symlink(*, link: str.type, target: str.type) -> InlineFeatureInfo.type:
+    """
+    Create a symlink to a file.
+
+    Trailing '/'s are not allowed, unlike `ln` where it is significant.
+    """
+    return _symlink_feature(feature_type = "ensure_file_symlink", link = link, target = target)
+
+def ensure_dir_symlink(*, link: str.type, target: str.type) -> InlineFeatureInfo.type:
+    """
+    Create a symlink to a directory.
+
+    Trailing '/'s are not allowed, unlike `ln` where it is significant.
+    """
+    return _symlink_feature(feature_type = "ensure_dir_symlink", link = link, target = target)
 
 def symlink_to_json(
         link: str.type,
