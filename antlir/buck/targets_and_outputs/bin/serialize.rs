@@ -63,12 +63,14 @@ fn serialize<'a>(args: Args, map: &'a str) -> Result<TargetsAndOutputs<'a>> {
         let label = Label::new(label)?;
         map.insert(label, Path::new(output).into());
     }
-    let remaining = iter.into_buffer();
-    ensure!(
-        remaining.is_empty(),
-        "there were elements left over after splitting: {:?}",
-        remaining,
-    );
+    let mut remaining = iter.into_buffer();
+    if !remaining.is_empty() {
+        let next = remaining.next().expect("definitely exists");
+        ensure!(
+            next.is_empty() && remaining.is_empty(),
+            "there were elements left over after splitting: {next} {remaining:?}",
+        );
+    }
     Ok(TargetsAndOutputs::new(
         Metadata::new(args.buck_version, args.default_cell),
         map,
