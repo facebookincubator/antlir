@@ -78,6 +78,7 @@ id_type!(GroupId, nix::unistd::Gid);
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Password {
     Shadow,
+    Locked,
 }
 
 impl Password {
@@ -85,9 +86,21 @@ impl Password {
     where
         E: nom::error::ParseError<&'a str> + nom::error::ContextError<&'a str>,
     {
-        let (input, _) =
-            nom::error::context("shadow-password", nom::character::complete::char('x'))(input)?;
-        Ok((input, Self::Shadow))
+        let (input, char) = nom::error::context(
+            "password",
+            nom::branch::alt((
+                nom::character::complete::char('x'),
+                nom::character::complete::char('!'),
+            )),
+        )(input)?;
+        Ok((
+            input,
+            match char {
+                'x' => Self::Shadow,
+                '!' => Self::Locked,
+                _ => unreachable!("parser would have failed"),
+            },
+        ))
     }
 }
 
@@ -95,6 +108,7 @@ impl Display for Password {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         match self {
             Self::Shadow => write!(f, "x"),
+            Self::Locked => write!(f, "!"),
         }
     }
 }
