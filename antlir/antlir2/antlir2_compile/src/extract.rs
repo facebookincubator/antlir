@@ -61,8 +61,14 @@ fn so_dependencies<S: AsRef<OsStr>>(
     sysroot: Option<&Path>,
 ) -> anyhow::Result<Vec<PathBuf>> {
     let binary = Path::new(binary.as_ref());
-    let buf =
-        std::fs::read(binary).with_context(|| format!("while reading {}", binary.display()))?;
+    let binary_as_seen_from_here = match sysroot {
+        Some(sysroot) => {
+            Cow::Owned(sysroot.join(Path::new(binary).strip_prefix("/").unwrap_or(binary)))
+        }
+        None => Cow::Borrowed(binary),
+    };
+    let buf = std::fs::read(&binary_as_seen_from_here)
+        .with_context(|| format!("while reading {}", binary_as_seen_from_here.display()))?;
     let elf =
         Elf::parse(&buf).with_context(|| format!("while parsing ELF {}", binary.display()))?;
     let interpreter = Path::new(elf.interpreter.unwrap_or(DEFAULT_LD_SO));

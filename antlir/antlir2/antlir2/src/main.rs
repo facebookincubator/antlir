@@ -23,7 +23,7 @@ pub enum Error {
     Depgraph(#[from] antlir2_depgraph::Error<'static>),
     #[error("subprocess exited with {0}")]
     Subprocess(ExitStatus),
-    #[error(transparent)]
+    #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
 }
 
