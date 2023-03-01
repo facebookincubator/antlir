@@ -1,0 +1,19 @@
+# buck1-only TARGETS file that shows we can expose a buck2-built antlir2 layer
+# to buck1+antlir1
+
+load("//antlir/bzl:build_defs.bzl", "export_file")
+load(":common.bzl", "expand_common_targets")
+
+expand_common_targets()
+
+# Dummy exports so that buck2 td allows buck1 to build this target. The actual
+# implementation of 'antlir1-layer' will call into 'buck2 build' directly
+export_file(
+    name = "antlir2-layer",
+    src = "//antlir:empty",
+)
+
+export_file(
+    name = "antlir2-layer--features",
+    src = "//antlir:empty",
+)
