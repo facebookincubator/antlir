@@ -4,7 +4,7 @@ Release:  1
 Summary:  The "cheese" package.
 
 Group:    Facebook/script
-BuildArch: x86_64
+BuildArch: x86_64, aarch64
 License:  MIT
 
 BuildRequires:  coreutils

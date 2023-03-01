@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<otherdata xmlns="http://linux.duke.edu/metadata/other" packages="3">
+<package pkgid="17be19b545c4dbcfd2176bb745841ed2c79bcb0bbacc1061ff3bbbf61b4be816" name="rpm-test-cheese" arch="aarch64">
+  <version epoch="0" ver="1" rel="1"/>
+</package>
+<package pkgid="b7b870c2e6b4ced9057b3ed6a79737c4a96ea871e8358416b1f9229552797db7" name="rpm-test-cheese" arch="aarch64">
+  <version epoch="0" ver="2" rel="1"/>
+</package>
+<package pkgid="67eee9f33c9349299cd489c1d826f8c35eebaf241e129faa5c08359c8cc37958" name="rpm-test-cheese" arch="aarch64">
+  <version epoch="0" ver="3" rel="1"/>
+</package>
+</otherdata>

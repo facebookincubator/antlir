@@ -1,0 +1,58 @@
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo")
+load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
+load("//antlir/util/testing/snapshot_test:snapshot_test.bzl", "dir_snapshot_test")
+
+rpm(
+    name = "rpm-test-cheese-1-1.aarch64.rpm",
+    arch = "aarch64",
+    epoch = 0,
+    release = "1",
+    rpm = "rpm-test-cheese-1-1.aarch64.rpm",
+    rpm_name = "rpm-test-cheese",
+    sha256 = "17be19b545c4dbcfd2176bb745841ed2c79bcb0bbacc1061ff3bbbf61b4be816",
+    version = "1",
+)
+
+rpm(
+    name = "rpm-test-cheese-2-1.aarch64.rpm",
+    arch = "aarch64",
+    epoch = 0,
+    release = "1",
+    rpm = "rpm-test-cheese-2-1.aarch64.rpm",
+    rpm_name = "rpm-test-cheese",
+    sha256 = "b7b870c2e6b4ced9057b3ed6a79737c4a96ea871e8358416b1f9229552797db7",
+    version = "2",
+)
+
+rpm(
+    name = "rpm-test-cheese-3-1.aarch64.rpm",
+    arch = "aarch64",
+    epoch = 0,
+    release = "1",
+    rpm = "rpm-test-cheese-3-1.aarch64.rpm",
+    rpm_name = "rpm-test-cheese",
+    sha256 = "67eee9f33c9349299cd489c1d826f8c35eebaf241e129faa5c08359c8cc37958",
+    version = "3",
+)
+
+repo(
+    name = "test-repo",
+    compress = "none",
+    rpms = [
+        ":rpm-test-cheese-1-1.aarch64.rpm",
+        ":rpm-test-cheese-2-1.aarch64.rpm",
+        ":rpm-test-cheese-3-1.aarch64.rpm",
+    ],
+    timestamp = 0,
+    visibility = [
+        "//antlir/antlir2/test_images/...",
+        "//antlir/rpm/dnf2buck/...",
+    ],
+)
+
+dir_snapshot_test(
+    name = "test-built-repodata",
+    actual = ":test-repo[repodata]",
+    file_modes = False,
+    snapshot = glob(["repodata/*"]),
+)
