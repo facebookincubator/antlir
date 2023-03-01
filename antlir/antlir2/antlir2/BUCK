@@ -6,6 +6,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "colored",
         "serde_json",
         "thiserror",
         "tracing",

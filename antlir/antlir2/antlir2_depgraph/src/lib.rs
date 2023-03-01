@@ -59,6 +59,15 @@ pub enum Node<'a> {
     PhaseEnd(Phase),
 }
 
+impl<'a> Node<'a> {
+    fn as_feature(&self) -> Option<&Feature<'a>> {
+        match &self {
+            Self::PendingFeature(f) | Self::ParentFeature(f) => Some(f),
+            _ => None,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
 pub enum Edge<'a> {
@@ -98,10 +107,13 @@ pub enum Error<'a> {
     },
     #[error("{key:?} is required but was never provided")]
     MissingItem { key: ItemKey<'a> },
-    #[error("{item:?} does not satisfy the validation rules: {validator:?}")]
+    #[error(
+        "{item:?} does not satisfy the validation rules: {validator:?} as required by {required_by:#?}"
+    )]
     Unsatisfied {
         item: Item<'a>,
         validator: Validator<'a>,
+        required_by: Feature<'a>,
     },
     #[error("failure determining 'provides': {0}")]
     Provides(String),
@@ -380,13 +392,17 @@ impl<'a> GraphBuilder<'a> {
         for edge in self.g.edge_indices() {
             match self.g.edge_weight(edge).expect("definitely exists") {
                 Edge::Requires(validator) => {
-                    let (item, _feature) = self.g.edge_endpoints(edge).expect("definitely exists");
+                    let (item, feature) = self.g.edge_endpoints(edge).expect("definitely exists");
                     match &self.g[item] {
                         Node::Item(item) => {
                             if !validator.satisfies(item) {
                                 return Err(Error::Unsatisfied {
                                     item: item.clone(),
                                     validator: validator.clone(),
+                                    required_by: self.g[feature]
+                                        .as_feature()
+                                        .expect("this is always a Feature")
+                                        .clone(),
                                 });
                             }
                         }
