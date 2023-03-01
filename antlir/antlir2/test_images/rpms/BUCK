@@ -5,12 +5,22 @@ load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 
 repo_set(
     name = "test-repo-set",
-    repo_sets = [
-        "//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9",
-    ],
-    repos = [
-        "//antlir/rpm/dnf2buck/demo:test-repo",
-    ],
+    repo_sets = select({
+        "ovr_config//cpu:arm64": [
+            "//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9-aarch64",
+        ],
+        "ovr_config//cpu:x86_64": [
+            "//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9",
+        ],
+    }),
+    repos = select({
+        "ovr_config//cpu:arm64": [
+            "//antlir/rpm/dnf2buck/demo/aarch64:test-repo",
+        ],
+        "ovr_config//cpu:x86_64": [
+            "//antlir/rpm/dnf2buck/demo/x86_64:test-repo",
+        ],
+    }),
 )
 
 antlir2_layer(
