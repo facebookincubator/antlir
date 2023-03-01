@@ -21,6 +21,4 @@ pub struct Genrule<'a> {
     pub user: UserName<'a>,
     pub bind_repo_ro: bool,
     pub boot: bool,
-    #[derivative(PartialOrd = "ignore", Ord = "ignore")]
-    pub container_opts: container_opts::container_opts_t,
 }
