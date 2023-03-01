@@ -7,6 +7,12 @@ load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def rpms_install(*, rpms: [str.type]):
+    """
+    Install RPMs by identifier or .rpm src
+
+    Elements in `rpms` can be an rpm name like 'systemd', a NEVR like
+    'systemd-251.4-1.2.hs+fb.el8' or a buck target that produces a .rpm artifact.
+    """
     return InlineFeatureInfo(
         feature_type = "rpm",
         sources = {"rpm_" + str(i): r for i, r in enumerate(rpms) if ":" in r},
@@ -17,6 +23,15 @@ def rpms_install(*, rpms: [str.type]):
     )
 
 def rpms_remove_if_exists(*, rpms: [str.type]):
+    """
+    Remove RPMs if they are installed
+
+    Elements in `rpms` can be any rpm specifier (name, NEVR, etc). If the rpm is
+    not installed, this feature is a no-op.
+    Note that dependencies of these rpms can also be removed, but only if no
+    explicitly-installed RPM depends on them (in this case, the goal cannot be
+    solved and the image build will fail unless you remove those rpms as well).
+    """
     return InlineFeatureInfo(
         feature_type = "rpm",
         kwargs = {

@@ -15,6 +15,22 @@ def install(
         user: str.type = "root",
         group: str.type = "root",
         separate_debug_symbols = True) -> InlineFeatureInfo.type:
+    """
+    `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
+    `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
+    fails.
+
+    `src` is either a regular file or a directory. If it is a directory, it must
+    contain only regular files and directories (recursively).
+
+    `mode` can be automatically determined if `src` is a buck binary, but in all
+    other cases is required to be explicitly set by the user.
+
+    See `stat.bzl` for information about how `mode` is interpreted.
+
+    The arguments `user` and `group` change file owner and group of `dst`
+    """
+
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
     mode = stat.mode(mode) if mode else None
