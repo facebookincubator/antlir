@@ -96,7 +96,10 @@ module.exports = {
       label: 'Contributing',
       collapsed: true,
       items: [
-        ...fbInternalOnly(['contributing/fb/contributing-docs']),
+        ...fbInternalOnly([
+          'contributing/fb/contributing-docs',
+          'contributing/fb/creating_a_flavor',
+        ]),
         {
           'Coding Conventions': [
             'contributing/coding-conventions/bzl-and-targets',
