@@ -56,7 +56,6 @@ pub enum Data<'a> {
     Remove(remove::Remove<'a>),
     Requires(requires::Requires<'a>),
     Rpm(rpms::Rpm<'a>),
-    Rpm2(rpms::Rpm2<'a>),
     Tarball(tarball::Tarball<'a>),
     User(usergroup::User<'a>),
     UserMod(usergroup::UserMod<'a>),

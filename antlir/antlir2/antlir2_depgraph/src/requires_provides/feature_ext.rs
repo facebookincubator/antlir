@@ -56,7 +56,6 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Remove(x) => x.provides(),
             Data::Requires(x) => x.provides(),
             Data::Rpm(x) => x.provides(),
-            Data::Rpm2(x) => x.provides(),
             Data::Tarball(_) => todo!(),
             Data::User(x) => x.provides(),
             Data::UserMod(x) => x.provides(),
@@ -80,7 +79,6 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Remove(x) => x.requires(),
             Data::Requires(x) => x.requires(),
             Data::Rpm(x) => x.requires(),
-            Data::Rpm2(x) => x.requires(),
             Data::Tarball(_) => todo!(),
             Data::User(x) => x.requires(),
             Data::UserMod(x) => x.requires(),
@@ -450,7 +448,6 @@ impl<'f> FeatureExt<'f> for antlir2_features::requires::Requires<'f> {
 }
 
 impl<'f> FeatureExt<'f> for antlir2_features::rpms::Rpm<'f> {}
-impl<'f> FeatureExt<'f> for antlir2_features::rpms::Rpm2<'f> {}
 
 impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
