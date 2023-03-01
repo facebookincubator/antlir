@@ -1,5 +1,5 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 
 antlir2_layer(
@@ -12,9 +12,9 @@ antlir2_layer(
 antlir2_layer(
     name = "ensure_dirs_exist",
     features = [
-        ensure_dirs_exist(dirs = "/a"),
-        ensure_dirs_exist(dirs = "/foo/bar"),
-        ensure_subdirs_exist(
+        feature.ensure_dirs_exist(dirs = "/a"),
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+        feature.ensure_subdirs_exist(
             into_dir = "/foo/bar",
             subdirs_to_create = "baz/qux",
         ),

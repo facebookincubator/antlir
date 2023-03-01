@@ -1,16 +1,12 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:clone.bzl", "clone")
-load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
-load("//antlir/antlir2/feature:extract.bzl", "extract_buck_binary", "extract_from_layer")
-load("//antlir/antlir2/feature:install.bzl", "install")
-load("//antlir/antlir2/feature:rpms.bzl", "rpms_install")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
 antlir2_layer(
     name = "base",
     features = [
         # dependencies of the test
-        rpms_install(rpms = [
+        feature.rpms_install(rpms = [
             "bash",
             "util-linux",
         ]),
@@ -21,12 +17,12 @@ antlir2_layer(
 antlir2_layer(
     name = "extract-buck",
     features = [
-        ensure_dirs_exist(dirs = "/usr/bin"),
-        extract_buck_binary(
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.extract_buck_binary(
             src = "//antlir/antlir2/antlir2:antlir2",
             dst = "/usr/bin/antlir2",
         ),
-        install(
+        feature.install(
             src = "//antlir/antlir2/antlir2:antlir2",
             dst = "/antlir2-simply-installed",
             mode = "a+rx",
@@ -44,7 +40,7 @@ image_sh_test(
 antlir2_layer(
     name = "binaries-clone-src",
     features = [
-        rpms_install(rpms = ["systemd"]),
+        feature.rpms_install(rpms = ["systemd"]),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -52,8 +48,8 @@ antlir2_layer(
 antlir2_layer(
     name = "binary-clone",
     features = [
-        ensure_dirs_exist(dirs = "/usr/bin"),
-        clone(
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.clone(
             dst_path = "/usr/bin/systemctl",
             src_layer = ":binaries-clone-src",
             src_path = "/usr/bin/systemctl",
@@ -71,8 +67,8 @@ image_sh_test(
 antlir2_layer(
     name = "extract-layer",
     features = [
-        ensure_dirs_exist(dirs = "/usr/bin"),
-        extract_from_layer(
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.extract_from_layer(
             binaries = ["/usr/bin/systemctl"],
             layer = ":binaries-clone-src",
         ),

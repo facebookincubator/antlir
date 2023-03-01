@@ -1,5 +1,5 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:rpms.bzl", "rpms_install", "rpms_remove_if_exists")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 
@@ -27,7 +27,7 @@ antlir2_layer(
     name = "simple",
     available_rpm_repos = ":test-repo-set",
     features = [
-        rpms_install(
+        feature.rpms_install(
             rpms = [
                 "rpm-test-cheese",  # the thing I am checking
                 # dependencies of the test
@@ -50,7 +50,7 @@ antlir2_layer(
     name = "remove",
     available_rpm_repos = ":test-repo-set",
     features = [
-        rpms_remove_if_exists(rpms = [
+        feature.rpms_remove_if_exists(rpms = [
             "rpm-test-cheese",
             "dracut",
         ]),

@@ -1,39 +1,35 @@
 load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:clone.bzl", "clone")
-load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
-load("//antlir/antlir2/feature:install.bzl", "install")
-load("//antlir/antlir2/feature:symlink.bzl", "ensure_file_symlink")
-load("//antlir/antlir2/feature:usergroup.bzl", "group_add", "user_add")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 
 antlir2_layer(
     name = "base",
     features = [
-        ensure_dirs_exist(
+        feature.ensure_dirs_exist(
             dirs = "/etc",
         ),
-        install(
+        feature.install(
             src = "//antlir/antlir2/test_images:passwd",
             dst = "/etc/passwd",
             mode = "a+r,u+w",
         ),
-        install(
+        feature.install(
             src = "//antlir/antlir2/test_images:group",
             dst = "/etc/group",
             mode = "a+r,u+w",
         ),
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/fakeshell",
             mode = "a+rx",
         ),
-        user_add(
+        feature.user_add(
             home_dir = "/",
             primary_group = "antlir",
             shell = "/fakeshell",
             username = "antlir",
         ),
-        group_add(
+        feature.group_add(
             groupname = "antlir",
         ),
     ],
@@ -43,28 +39,28 @@ antlir2_layer(
 antlir2_layer(
     name = "clone-src",
     features = [
-        install(
+        feature.install(
             src = "file-to-clone",
             dst = "/f",
             group = "antlir",
             mode = "a+r",
             user = "antlir",
         ),
-        ensure_dirs_exist(
+        feature.ensure_dirs_exist(
             dirs = "/path/to/clone/dir",
         ),
-        ensure_subdirs_exist(
+        feature.ensure_subdirs_exist(
             group = "antlir",
             into_dir = "/path/to/clone/dir",
             subdirs_to_create = "deeper/nesting",
             user = "antlir",
         ),
-        install(
+        feature.install(
             src = "file-to-clone",
             dst = "/path/to/clone/dir/deeper/nesting/foo",
             mode = "a+r",
         ),
-        ensure_file_symlink(
+        feature.ensure_file_symlink(
             link = "/path/to/clone/dir/cloned-symlink",
             target = "/f",
         ),
@@ -75,7 +71,7 @@ antlir2_layer(
 antlir2_layer(
     name = "clone-file",
     features = [
-        clone(
+        feature.clone(
             dst_path = "/cloned-file",
             src_layer = ":clone-src",
             src_path = "/f",
@@ -93,7 +89,7 @@ image_diff_test(
 antlir2_layer(
     name = "clone-dir",
     features = [
-        clone(
+        feature.clone(
             dst_path = "/cloned",
             src_layer = ":clone-src",
             src_path = "/path/to/clone/dir",
@@ -111,8 +107,8 @@ image_diff_test(
 antlir2_layer(
     name = "clone-dir-omit-outer",
     features = [
-        ensure_dirs_exist(dirs = "/cloned"),
-        clone(
+        feature.ensure_dirs_exist(dirs = "/cloned"),
+        feature.clone(
             dst_path = "/cloned/",
             src_layer = ":clone-src",
             src_path = "/path/to/clone/dir/",
@@ -132,8 +128,8 @@ image_diff_test(
 antlir2_layer(
     name = "clone-dir-pre-existing",
     features = [
-        ensure_dirs_exist(dirs = "/clone/into/existing"),
-        clone(
+        feature.ensure_dirs_exist(dirs = "/clone/into/existing"),
+        feature.clone(
             dst_path = "/clone/into/existing/",
             src_layer = ":clone-src",
             src_path = "/path/to/clone/dir",
@@ -151,32 +147,32 @@ image_diff_test(
 antlir2_layer(
     name = "base-ids-remap",
     features = [
-        ensure_dirs_exist(
+        feature.ensure_dirs_exist(
             dirs = "/etc",
         ),
-        install(
+        feature.install(
             src = "//antlir/antlir2/test_images:passwd",
             dst = "/etc/passwd",
             mode = "a+r,u+w",
         ),
-        install(
+        feature.install(
             src = "//antlir/antlir2/test_images:group",
             dst = "/etc/group",
             mode = "a+r,u+w",
         ),
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/fakeshell",
             mode = "a+rx",
         ),
-        user_add(
+        feature.user_add(
             home_dir = "/",
             primary_group = "antlir",
             shell = "/fakeshell",
             uid = 10,
             username = "antlir",
         ),
-        group_add(
+        feature.group_add(
             gid = 10,
             groupname = "antlir",
         ),
@@ -187,7 +183,7 @@ antlir2_layer(
 antlir2_layer(
     name = "clone-file-remap-ids",
     features = [
-        clone(
+        feature.clone(
             dst_path = "/cloned-file",
             src_layer = ":clone-src",
             src_path = "/f",
