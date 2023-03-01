@@ -7,6 +7,5 @@ rust_library(
         "derivative",
         "serde",
         "//antlir/buck/buck_label:buck_label",
-        "//antlir/bzl:container_opts.shape-rust",
     ],
 )
