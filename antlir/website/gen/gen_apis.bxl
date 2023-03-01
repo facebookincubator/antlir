@@ -17,7 +17,7 @@ def _internal_rustdoc_url(target: "target_node") -> str.type:
 def _impl(ctx):
     targets = target_set()
     for set in ctx.cli_args.set:
-        targets += ctx.cquery().kind("^rust_library$", set)
+        targets += ctx.cquery_legacy().kind("^rust_library$", set)
     ctx.output.print("---\nid: apis\ntitle: Rustdoc\n---")
     ctx.output.print("<FbInternalOnly>")
     for target in targets:
