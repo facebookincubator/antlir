@@ -88,6 +88,12 @@ fn so_dependencies<S: AsRef<OsStr>>(
     let output = cmd
         .arg("--list")
         .arg(binary)
+        // There's a memory allocation bug under qemu-aarch64 when asking the linker to --list
+        // an elf binary.  This configures qemu-aarch64 to pre-allocate enough virtual address
+        // space to not exploded in this case.  This env var has no effect when running on the
+        // native host (x86_64 or aarch64).
+        // TODO: Remove this after the issue is found and fixed with qemu-aarch64.
+        .env("QEMU_RESERVED_VA", "0x40000000")
         .output()
         .with_context(|| format!("while listing libraries for {:?}", binary))?;
     anyhow::ensure!(
