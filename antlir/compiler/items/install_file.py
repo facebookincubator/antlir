@@ -159,7 +159,7 @@ class InstallFileItem(install_files_t, ImageItem):
                 is_elf = first_4 == b"\x7fELF"
             # covered by image build '//antlir/compiler/test_images:with-stripped-binary'
             if is_elf and self.separate_debug_symbols:  # pragma: no cover
-                with tempfile.TemporaryDirectory() as tmpdir:
+                with tempfile.TemporaryDirectory(dir=subvol.path()) as tmpdir:
                     tmpdir = Path(tmpdir)
                     tmp_src = tmpdir / self.dest.basename()
                     tmp_src_dbg = Path(tmp_src + b".debug")
