@@ -6,9 +6,15 @@
 # targets common to the buck1 and buck2 setup
 
 load("//antlir/antlir2/antlir1_compat:antlir1_compat.bzl", "export_for_antlir1")
+load("//antlir/bzl:build_defs.bzl", "config")
 load("//antlir/bzl:image.bzl", "image")
 
 def expand_common_targets():
+    # Don't try and cross-compile these antlir1 compat layers on an x86_64 machine because antlir1
+    # doesn't cross-compile
+    if host_info().arch.is_x86_64 and config.get_platform_for_current_buildfile().target_arch != "x86_64":
+        return
+
     export_for_antlir1(
         name = "antlir1-layer",
         layer = ":antlir2-layer",  # this is from TARGETS.v2
