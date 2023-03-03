@@ -5,19 +5,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::collections::HashSet;
-use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::io::Seek;
 use std::io::Write;
 use std::os::unix::ffi::OsStrExt;
-use std::os::unix::ffi::OsStringExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
 
+use antlir2_isolate::isolate;
+use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -27,36 +26,6 @@ use tracing_subscriber::prelude::*;
 
 fn make_log_files(_base: &str) -> Result<(NamedTempFile, NamedTempFile)> {
     Ok((NamedTempFile::new()?, NamedTempFile::new()?))
-}
-
-fn escape_bind_path<'a>(s: &'a OsStr) -> Cow<'a, OsStr> {
-    if s.as_bytes().contains(&b':') {
-        let mut v = s.as_bytes().to_vec();
-        let colons: Vec<_> = v
-            .iter()
-            .enumerate()
-            .filter_map(|(idx, byte)| if *byte == b':' { Some(idx) } else { None })
-            .rev()
-            .collect();
-        for idx in colons {
-            v.splice(idx..idx + 1, b"\\:".to_vec());
-        }
-        Cow::Owned(OsString::from_vec(v))
-    } else {
-        Cow::Borrowed(s)
-    }
-}
-
-fn bind_arg<S: AsRef<Path>, D: AsRef<Path>>(src: S, dst: D, ro: bool) -> OsString {
-    let mut arg = OsString::from("--bind");
-    if ro {
-        arg.push("-ro");
-    }
-    arg.push("=");
-    arg.push(escape_bind_path(src.as_ref().as_os_str()));
-    arg.push(":");
-    arg.push(escape_bind_path(dst.as_ref().as_os_str()));
-    arg
 }
 
 #[derive(Parser, Debug)]
@@ -208,43 +177,40 @@ fn main() -> Result<()> {
         .context("argv[0] not absolute")?,
     )
     .context("while looking for repo root")?;
-    // Running a test is a pretty orthogonal use case to running the
-    // compiler, even though they both go through similar isolation
-    // mechanisms. It is intentional that 'antlir2 test' DOES NOT use
-    // 'antlir2_isolate', to avoid polluting the compiler isolation
-    // with details related only to running tests, and vice versa.
-    let mut cmd = Command::new("sudo");
-    cmd.arg("systemd-nspawn")
-        .arg("--quiet")
-        .arg("--directory")
-        .arg(std::fs::canonicalize(&args.layer).context("while canonicalizing subvol path")?)
-        .arg("--ephemeral")
-        .arg("--register=no")
-        .arg("--keep-unit")
-        .arg("--private-network")
-        .arg("--chdir")
-        .arg(std::env::current_dir().context("while getting cwd")?)
-        .arg("--bind-ro")
-        .arg(repo.as_ref())
-        .arg("--user")
-        .arg(&args.user);
-    #[cfg(facebook)]
-    {
-        cmd.arg("--bind-ro").arg("/usr/local/fbcode");
-        cmd.arg("--bind-ro").arg("/mnt/gvfs");
-    }
-    for env in &args.preserve_env {
-        cmd.arg("--setenv").arg(env);
-    }
+
+    let mut setenv: BTreeMap<_, _> = args
+        .preserve_env
+        .into_iter()
+        .filter_map(|key| std::env::var_os(&key).map(|val| (key, val)))
+        .collect();
     // forward test runner env vars to the inner test
     for (key, val) in std::env::vars() {
         if key.starts_with("TEST_PILOT") {
-            cmd.arg(format!("--setenv={key}={val}"));
+            setenv.insert(key, val.into());
         }
     }
-    for path in args.test.bind_mounts() {
-        cmd.arg("--bind").arg(path);
-    }
+
+    let working_directory = std::env::current_dir().context("while getting cwd")?;
+
+    let mut ctx = IsolationContext::builder(&args.layer);
+    ctx.platform([
+        // test is built out of the repo, so it needs the
+        // repo to be available
+        repo.as_ref(),
+        #[cfg(facebook)]
+        Path::new("/usr/local/fbcode"),
+        #[cfg(facebook)]
+        Path::new("/mnt/gvfs"),
+    ])
+    .inputs([
+        // tests often read resource files from the repo
+        repo.as_ref(),
+    ])
+    .working_directory(&working_directory)
+    .setenv(setenv.clone())
+    .outputs(args.test.bind_mounts())
+    .boot(args.boot);
+
     if args.boot {
         // see 'man 8 systemd-run-generator', tl;dr this will:
         // - propagate the exit code to this process
@@ -261,13 +227,16 @@ fn main() -> Result<()> {
         let (container_stdout, _container_stderr) = make_log_files("container")?;
         let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
         let mut dropin = NamedTempFile::new()?;
-        writeln!(
-            dropin,
-            "[Service]\nStandardOutput=truncate:/run/test.out\nStandardError=truncate:/run/test.err"
-        )?;
-        for key in &args.preserve_env {
-            let val = std::env::var(key).with_context(|| format!("env var '{key}' is not set"))?;
-            writeln!(dropin, "Environment=\"{key}={val}\"")?;
+        write!(dropin, "[Service]\nStandardOutput=truncate:")?;
+        dropin.write_all(test_stdout.path().as_os_str().as_bytes())?;
+        dropin.write_all(b"\n")?;
+        write!(dropin, "StandardError=")?;
+        dropin.write_all(test_stderr.path().as_os_str().as_bytes())?;
+        dropin.write_all(b"\n")?;
+        for (key, val) in &setenv {
+            write!(dropin, "Environment=\"{key}=")?;
+            dropin.write_all(val.as_bytes())?;
+            writeln!(dropin, "\"")?;
         }
         // forward test runner env vars to the inner test
         for (key, val) in std::env::vars() {
@@ -275,24 +244,24 @@ fn main() -> Result<()> {
                 writeln!(dropin, "Environment=\"{key}={val}\"")?;
             }
         }
-        cmd.arg("--boot")
-            // bind this process's stdout and stderr into the container so
-            // that the test will write directly there
-            .arg(bind_arg(&test_stdout, "/run/test.out", false))
-            .arg(bind_arg(&test_stderr, "/run/test.err", false))
-            .arg(bind_arg(
-                &dropin,
-                "/run/systemd/system/kernel-command-line.service.d/test-out.conf",
-                true,
-            ))
+        ctx.outputs(test_stdout.path());
+        ctx.outputs(test_stderr.path());
+        ctx.inputs((
+            Path::new("/run/systemd/system/kernel-command-line.service.d/test-out.conf"),
+            dropin.path(),
+        ));
+
+        let mut isol = isolate(ctx.build());
+        isol.command.arg(systemd_run_arg);
+        debug!("executing test in booted isolated container: {isol:?}");
+        let mut child = isol
+            .command
             // the stdout/err of the systemd inside the container is a pipe
             // so that we can print it IFF the test fails
             .stdout(container_stdout.as_file().try_clone()?)
             .stderr(container_stdout.as_file().try_clone()?)
-            .arg("--")
-            .arg(systemd_run_arg);
-        debug!("executing test in booted isolated container: {cmd:?}");
-        let mut child = cmd.spawn().context("while spawning systemd-nspawn")?;
+            .spawn()
+            .context("while spawning systemd-nspawn")?;
         let res = child.wait().context("while waiting for systemd-nspawn")?;
         report(container_stdout)?;
 
@@ -305,11 +274,13 @@ fn main() -> Result<()> {
             Ok(())
         }
     } else {
-        cmd.arg("--as-pid2")
-            .arg("--")
-            .args(args.test.into_inner_cmd());
-        debug!("executing test in isolated container: {cmd:?}");
-        return Err(anyhow::anyhow!("failed to exec test: {:?}", cmd.exec()));
+        let mut isol = isolate(ctx.build());
+        isol.command.args(args.test.into_inner_cmd());
+        debug!("executing test in isolated container: {isol:?}");
+        return Err(anyhow::anyhow!(
+            "failed to exec test: {:?}",
+            isol.command.exec()
+        ));
     }
 }
 

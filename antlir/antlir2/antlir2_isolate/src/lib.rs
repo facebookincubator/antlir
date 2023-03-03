@@ -17,6 +17,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::Path;
@@ -39,6 +40,8 @@ pub struct IsolationContext<'a> {
     inputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
     /// See [IsolationContextBuilder::outputs]
     outputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
+    /// See [IsolationContextBuilder::boot]
+    boot: bool,
 }
 
 impl<'a> IsolationContext<'a> {
@@ -57,6 +60,7 @@ impl<'a> IsolationContext<'a> {
                 setenv: Default::default(),
                 inputs: Default::default(),
                 outputs: Default::default(),
+                boot: false,
             },
         }
     }
@@ -106,6 +110,12 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Directory in which to invoke the provided command.
     pub fn working_directory<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
         self.ctx.working_directory = Some(path.into());
+        self
+    }
+
+    /// Run /init from inside the layer as PID 1
+    pub fn boot(&mut self, boot: bool) -> &mut Self {
+        self.ctx.boot = boot;
         self
     }
 
@@ -163,6 +173,22 @@ impl<'a> IntoBinds<'a> for BTreeSet<&'a Path> {
     }
 }
 
+impl<'a> IntoBinds<'a> for HashSet<&'a Path> {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.into_iter()
+            .map(|path| (Cow::Borrowed(path), Cow::Borrowed(path)))
+            .collect()
+    }
+}
+
+impl<'a> IntoBinds<'a> for HashSet<PathBuf> {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.into_iter()
+            .map(|path| (Cow::Owned(path.clone()), Cow::Owned(path)))
+            .collect()
+    }
+}
+
 /// Anything that can be turned into a set of env variables
 pub trait IntoEnv<'a> {
     fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>>;
@@ -177,6 +203,20 @@ impl<'a> IntoEnv<'a> for (&'a OsStr, &'a OsStr) {
 impl<'a> IntoEnv<'a> for (&'a str, OsString) {
     fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>> {
         HashMap::from([(Cow::Borrowed(OsStr::new(self.0)), Cow::Owned(self.1))])
+    }
+}
+
+impl<'a> IntoEnv<'a> for (String, OsString) {
+    fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>> {
+        HashMap::from([(Cow::Owned(OsString::from(self.0)), Cow::Owned(self.1))])
+    }
+}
+
+impl<'a> IntoEnv<'a> for BTreeMap<String, OsString> {
+    fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>> {
+        self.into_iter()
+            .map(|(k, v)| (OsString::from(k).into(), v.into()))
+            .collect()
     }
 }
 

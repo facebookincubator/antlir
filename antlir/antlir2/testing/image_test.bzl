@@ -27,6 +27,13 @@ def _impl(ctx: "context") -> ["provider"]:
     inner_labels = list(ctx.attrs.test[ExternalRunnerTestInfo].labels)
     for label in _HIDE_TEST_LABELS:
         inner_labels.remove(label)
+
+    script, _ = ctx.actions.write(
+        "test.sh",
+        cmd_args("#!/bin/bash", cmd_args(test_cmd, delimiter = " \\\n  ")),
+        is_executable = True,
+        allow_args = True,
+    )
     return [
         ExternalRunnerTestInfo(
             command = [test_cmd],
@@ -38,7 +45,7 @@ def _impl(ctx: "context") -> ["provider"]:
             use_project_relative_paths = ctx.attrs.test[ExternalRunnerTestInfo].use_project_relative_paths,
         ),
         RunInfo(test_cmd),
-        DefaultInfo(),
+        DefaultInfo(script),
     ]
 
 image_test = rule(
