@@ -33,12 +33,10 @@ def requires(
         },
     )
 
-def requires_to_json(
-        files: [str.type],
-        users: [str.type],
-        groups: [str.type]) -> {str.type: ""}:
-    return {
-        "files": files,
-        "groups": groups,
-        "users": users,
-    }
+requires_record = record(
+    files = [str.type],
+    users = [str.type],
+    groups = [str.type],
+)
+
+requires_to_json = requires_record

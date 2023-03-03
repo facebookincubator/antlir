@@ -21,12 +21,18 @@ def tarball(
         },
     )
 
+tarball_record = record(
+    source = "artifact",
+    into_dir = str.type,
+    force_root_ownership = bool.type,
+)
+
 def tarball_to_json(
         into_dir: str.type,
         force_root_ownership: bool.type,
-        sources: {str.type: "artifact"}) -> {str.type: ""}:
-    return {
-        "force_root_ownership": force_root_ownership,
-        "into_dir": into_dir,
-        "source": sources["source"],
-    }
+        sources: {str.type: "artifact"}) -> tarball_record.type:
+    return tarball_record(
+        force_root_ownership = force_root_ownership,
+        into_dir = into_dir,
+        source = sources["source"],
+    )

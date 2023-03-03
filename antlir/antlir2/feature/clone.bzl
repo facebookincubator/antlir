@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":dependency_layer_info.bzl", "layer_dep_to_json")
+load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def clone(
@@ -76,16 +76,24 @@ def clone(
         },
     )
 
+clone_record = record(
+    src_layer = layer_dep.type,
+    src_path = str.type,
+    dst_path = str.type,
+    omit_outer_dir = bool.type,
+    pre_existing_dest = bool.type,
+)
+
 def clone_to_json(
         src_path: str.type,
         dst_path: str.type,
         omit_outer_dir: bool.type,
         pre_existing_dest: bool.type,
-        deps: {str.type: "dependency"}) -> {str.type: ""}:
-    return {
-        "dst_path": dst_path,
-        "omit_outer_dir": omit_outer_dir,
-        "pre_existing_dest": pre_existing_dest,
-        "src_layer": layer_dep_to_json(deps["src_layer"]),
-        "src_path": src_path,
-    }
+        deps: {str.type: "dependency"}) -> clone_record.type:
+    return clone_record(
+        src_layer = layer_dep_to_json(deps["src_layer"]),
+        src_path = src_path,
+        dst_path = dst_path,
+        omit_outer_dir = omit_outer_dir,
+        pre_existing_dest = pre_existing_dest,
+    )

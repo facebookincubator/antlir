@@ -21,7 +21,7 @@ This new-and-improved version of extract is capable of extracting buck-built
 binaries without first installing them into a layer.
 """
 
-load(":dependency_layer_info.bzl", "layer_dep_to_json")
+load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
 def extract_from_layer(
@@ -67,27 +67,46 @@ def extract_buck_binary(
         },
     )
 
+extract_buck_record = record(
+    src = "artifact",
+    dst = str.type,
+)
+
+extract_layer_record = record(
+    layer = layer_dep.type,
+    binaries = [str.type],
+)
+
+extract_record = record(
+    buck = [extract_buck_record.type, None],
+    layer = [extract_layer_record.type, None],
+)
+
 def extract_to_json(
         source: str.type,
         deps: {str.type: "dependency"},
         sources: [{str.type: "artifact"}, None] = None,
         binaries: [[str.type], None] = None,
         src: [str.type, None] = None,
-        dst: [str.type, None] = None) -> {str.type: ""}:
+        dst: [str.type, None] = None) -> extract_record.type:
     if source == "layer":
-        return {
-            "binaries": binaries,
-            "layer": layer_dep_to_json(deps["layer"]),
-            "source": "layer",
-        }
+        return extract_record(
+            layer = extract_layer_record(
+                layer = layer_dep_to_json(deps["layer"]),
+                binaries = binaries,
+            ),
+            buck = None,
+        )
     elif source == "buck":
         src = deps["src"]
         if RunInfo not in src:
             fail("'{}' does not appear to be a binary".format(src))
-        return {
-            "dst": dst,
-            "source": "buck",
-            "src": sources["src"],
-        }
+        return extract_record(
+            buck = extract_buck_record(
+                src = sources["src"],
+                dst = dst,
+            ),
+            layer = None,
+        )
     else:
         fail("invalid extract source '{}'".format(source))

@@ -3,8 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "InlineFeatureInfo")
+
+action_enum = enum("install", "remove_if_exists")
 
 def rpms_install(*, rpms: [str.type]):
     """
@@ -17,7 +18,7 @@ def rpms_install(*, rpms: [str.type]):
         feature_type = "rpm",
         sources = {"rpm_" + str(i): r for i, r in enumerate(rpms) if ":" in r},
         kwargs = {
-            "action": "install",
+            "action": action_enum("install"),
             "rpm_names": [r for r in rpms if ":" not in r],
         },
     )
@@ -35,30 +36,41 @@ def rpms_remove_if_exists(*, rpms: [str.type]):
     return InlineFeatureInfo(
         feature_type = "rpm",
         kwargs = {
-            "action": "remove_if_exists",
+            "action": action_enum("remove_if_exists"),
             "rpm_names": rpms,
         },
     )
 
-_action_enum = enum("install", "remove_if_exists")
-types.lint_noop(_action_enum)
+rpm_source_record = record(
+    name = [str.type, None],
+    source = ["artifact", None],
+)
+
+rpm_item_record = record(
+    action = action_enum.type,
+    rpm = rpm_source_record.type,
+)
+
+rpms_record = record(
+    items = [rpm_item_record.type],
+)
 
 def rpms_to_json(
-        action: _action_enum.type,
+        action: str.type,
         rpm_names: [str.type],
-        sources: {str.type: "artifact"} = {}) -> {str.type: ""}:
+        sources: {str.type: "artifact"} = {}) -> rpms_record.type:
     rpms = []
     for rpm in rpm_names:
-        rpms.append({"name": rpm})
+        rpms.append(rpm_source_record(name = rpm, source = None))
     for rpm in sources.values():
-        rpms.append({"source": rpm})
+        rpms.append(rpm_source_record(source = rpm, name = None))
 
-    return {
-        "items": [
-            {
-                "action": action,
-                "rpm": rpm,
-            }
+    return rpms_record(
+        items = [
+            rpm_item_record(
+                action = action_enum(action),
+                rpm = rpm,
+            )
             for rpm in rpms
         ],
-    }
+    )

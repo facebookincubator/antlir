@@ -31,19 +31,17 @@ def meta_remove(
         },
     )
 
-def meta_store_to_json(
-        key: str.type,
-        value: str.type,
-        require_keys: [str.type],
-        store_if_not_exists: bool.type) -> {str.type: ""}:
-    return {
-        "key": key,
-        "require_keys": require_keys,
-        "store_if_not_exists": store_if_not_exists,
-        "value": value,
-    }
+meta_store_record = record(
+    key = str.type,
+    value = str.type,
+    require_keys = [str.type],
+    store_if_not_exists = bool.type,
+)
 
-def meta_remove_to_json(key: str.type) -> {str.type: ""}:
-    return {
-        "key": key,
-    }
+meta_store_to_json = meta_store_record
+
+meta_remove_record = record(
+    key = str.type,
+)
+
+meta_remove_to_json = meta_remove_record

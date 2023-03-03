@@ -15,4 +15,5 @@ InlineFeatureInfo = provider(fields = [
     "sources",
     "deps",
     "kwargs",
+    "to_json",
 ])

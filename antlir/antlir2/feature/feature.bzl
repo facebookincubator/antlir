@@ -126,6 +126,11 @@ def _impl(ctx: "context") -> ["provider"]:
             to_json_kwargs["deps"] = feature_deps
 
         feature_json = _feature_to_json[inline.feature_type](**to_json_kwargs)
+        if type(feature_json) == "record":
+            feature_json = {
+                k: getattr(feature_json, k)
+                for k in dir(feature_json)
+            }
         feature_json["__feature_type"] = inline.feature_type
         feature_json["__label"] = ctx.label.raw_target()
         inline_features.append(feature_json)

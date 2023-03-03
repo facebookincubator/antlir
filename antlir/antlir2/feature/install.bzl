@@ -54,6 +54,15 @@ def install(
         },
     )
 
+install_record = record(
+    src = "artifact",
+    dst = str.type,
+    mode = int.type,
+    user = str.type,
+    group = str.type,
+    separate_debug_symbols = bool.type,
+)
+
 def install_to_json(
         dst: str.type,
         group: str.type,
@@ -61,7 +70,7 @@ def install_to_json(
         user: str.type,
         separate_debug_symbols: bool.type,
         sources: {str.type: "artifact"} = {},
-        deps: {str.type: "dependency"} = {}) -> {str.type: ""}:
+        deps: {str.type: "dependency"} = {}) -> install_record.type:
     if "src" in deps:
         src = ensure_single_output(deps["src"])
 
@@ -81,11 +90,11 @@ def install_to_json(
         src = sources["src"]
     else:
         fail("source was missing from both 'deps' and 'sources', this should be impossible")
-    return {
-        "dst": dst,
-        "group": group,
-        "mode": mode,
-        "separate_debug_symbols": separate_debug_symbols,
-        "src": src,
-        "user": user,
-    }
+    return install_record(
+        src = src,
+        dst = dst,
+        mode = mode,
+        user = user,
+        group = group,
+        separate_debug_symbols = separate_debug_symbols,
+    )

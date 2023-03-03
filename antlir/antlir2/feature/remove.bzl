@@ -26,10 +26,9 @@ def remove(
         },
     )
 
-def remove_to_json(
-        path: str.type,
-        must_exist: bool.type) -> {str.type: ""}:
-    return {
-        "must_exist": must_exist,
-        "path": path,
-    }
+remove_record = record(
+    path = str.type,
+    must_exist = bool.type,
+)
+
+remove_to_json = remove_record
