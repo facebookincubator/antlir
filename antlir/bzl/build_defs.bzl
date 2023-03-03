@@ -268,3 +268,4 @@ third_party = struct(
     libraries = _third_party_libraries,
 )
 thrift_library = shim.thrift_library
+use_antlir2 = shim.use_antlir2

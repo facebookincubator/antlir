@@ -55,6 +55,8 @@ directory output by a Buck-runnable target, then you should use
 `install`, even though the underlying rule is executable.
 """
 
+load("//antlir/antlir2/feature:install.bzl?v2_only", antlir2_install = "install")
+load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:stat.bzl", "stat")
@@ -136,6 +138,14 @@ build-time error requesting it.  This flag allows the target being wrapped
 to be executed in an Antlir container as part of a Buck build step.  It
 defaults to `False` to speed up incremental rebuilds.
     """
+    if use_antlir2():
+        return antlir2_install(
+            src = source,
+            dst = dest,
+            mode = mode or 0o555,
+            user = user,
+            group = group,
+        )
     target_tagger = new_target_tagger()
 
     # Normalize to the `image.source` interface
@@ -218,6 +228,14 @@ The argument `wrap_as_buck_runnable` is only present because the Buck2
 implementation uses that argument, and adding it here makes it easier to
 integrate with that logic. It can be ignored.
     """
+    if use_antlir2():
+        return antlir2_install(
+            src = source,
+            dst = dest,
+            mode = mode or 0o444,
+            user = user,
+            group = group,
+        )
     target_tagger = new_target_tagger()
     source_dict = image_source_as_target_tagged_dict(
         target_tagger,

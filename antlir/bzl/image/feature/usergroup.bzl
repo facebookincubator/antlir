@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/antlir2/feature:usergroup.bzl?v2_only", antlir2_group_add = "group_add", antlir2_user_add = "user_add")
+load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load("//antlir/bzl:types.bzl", "types")
 load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
@@ -52,6 +54,16 @@ def feature_user_add(
     - `home_dir` should exist, but this item does not ensure/depend on it to avoid
     a circular dependency on directory's owner user.
     """
+    if use_antlir2():
+        return antlir2_user_add(
+            username = username,
+            uid = uid,
+            primary_group = primary_group,
+            supplementary_groups = supplementary_groups or [],
+            shell = shell,
+            home_dir = home_dir,
+            comment = comment,
+        )
     user = user_t(
         name = username,
         id = uid,
@@ -78,6 +90,11 @@ def feature_group_add(groupname, gid = None):
     It is also recommended to always reference groupnames and not GIDs; since GIDs
     are auto-assigned, they may change if underlying layers add/remove groups.
     """
+    if use_antlir2():
+        return antlir2_group_add(
+            groupname = groupname,
+            gid = gid,
+        )
     group = group_t(name = groupname, id = gid)
 
     return target_tagger_to_feature(
