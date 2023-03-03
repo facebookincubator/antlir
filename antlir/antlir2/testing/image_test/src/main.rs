@@ -211,7 +211,7 @@ fn main() -> Result<()> {
     // Running a test is a pretty orthogonal use case to running the
     // compiler, even though they both go through similar isolation
     // mechanisms. It is intentional that 'antlir2 test' DOES NOT use
-    // 'antlir2_isolate_compiler', to avoid polluting the compiler isolation
+    // 'antlir2_isolate', to avoid polluting the compiler isolation
     // with details related only to running tests, and vice versa.
     let mut cmd = Command::new("sudo");
     cmd.arg("systemd-nspawn")

@@ -14,7 +14,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use crate::IsolatedCompilerContext;
+use crate::IsolatedContext;
 use crate::IsolationContext;
 
 fn try_canonicalize<P: AsRef<Path>>(path: P) -> PathBuf {
@@ -43,12 +43,14 @@ fn escape_bind<'a>(s: &'a OsStr) -> Cow<'a, OsStr> {
 }
 
 /// Isolate the compiler process using `systemd-nspawn`.
-pub fn nspawn_compiler(ctx: &IsolationContext) -> IsolatedCompilerContext {
+pub fn nspawn(ctx: &IsolationContext) -> IsolatedContext {
     let mut cmd = Command::new("sudo");
     cmd.arg("systemd-nspawn")
         .arg("--quiet")
         .arg("--directory")
-        .arg(ctx.build_appliance)
+        .arg(ctx.layer)
+        // TODO(vmagro): running in a read-only copy of the BA would allow us to
+        // skip this snapshot, but that's easier said than done
         .arg("--ephemeral")
         // TODO(vmagro): we might actually want to implement real pid1 semantics
         // in the compiler process for better control, but for now let's not
@@ -64,7 +66,7 @@ pub fn nspawn_compiler(ctx: &IsolationContext) -> IsolatedCompilerContext {
         arg.push(val);
         cmd.arg("--setenv").arg(arg);
     }
-    for platform in &ctx.compiler_platform {
+    for platform in &ctx.platform {
         cmd.arg("--bind-ro")
             .arg(escape_bind(try_canonicalize(platform).as_os_str()));
     }
@@ -76,15 +78,9 @@ pub fn nspawn_compiler(ctx: &IsolationContext) -> IsolatedCompilerContext {
         cmd.arg("--bind")
             .arg(escape_bind(try_canonicalize(out).as_os_str()));
     }
-    let mut out_arg = escape_bind(try_canonicalize(ctx.root).as_os_str()).to_os_string();
-    out_arg.push(":/out");
-    cmd.arg("--bind").arg(out_arg);
 
     // caller will add the compiler path as the first argument
     cmd.arg("--");
 
-    IsolatedCompilerContext {
-        root: "/out".into(),
-        command: cmd,
-    }
+    IsolatedContext { command: cmd }
 }
