@@ -62,15 +62,11 @@ def ensure_dirs_exist(
         group = group,
     )
 
-def ensure_dir_exists_to_json(
-        *,
-        dir: str.type,
-        mode: int.type,
-        user: str.type,
-        group: str.type) -> {str.type: ""}:
-    return {
-        "dir": dir,
-        "group": group,
-        "mode": mode,
-        "user": user,
-    }
+ensure_dir_exists_record = record(
+    dir = str.type,
+    mode = int.type,
+    user = str.type,
+    group = str.type,
+)
+
+ensure_dir_exists_to_json = ensure_dir_exists_record

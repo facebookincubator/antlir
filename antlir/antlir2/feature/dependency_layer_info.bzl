@@ -5,14 +5,20 @@
 
 load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
 
-def layer_dep_to_json(layer: "dependency") -> {str.type: ""}:
+layer_dep = record(
+    depgraph = "artifact",
+    label = "label",
+    subvol_symlink = "artifact",
+)
+
+def layer_dep_to_json(layer: "dependency") -> layer_dep.type:
     """
     Serialize a Layer dependency to a subset of LayerInfo that can be serialized
     and passed to antlir2
     """
     info = layer[LayerInfo]
-    return {
-        "depgraph": info.depgraph,
-        "label": layer.label,
-        "subvol_symlink": info.subvol_symlink,
-    }
+    return layer_dep(
+        depgraph = info.depgraph,
+        label = layer.label,
+        subvol_symlink = info.subvol_symlink,
+    )

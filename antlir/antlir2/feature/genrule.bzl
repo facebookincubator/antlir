@@ -21,14 +21,11 @@ def genrule(
         },
     )
 
-def genrule_to_json(
-        cmd: [str.type],
-        user: str.type,
-        bind_repo_ro: bool.type = False,
-        boot: bool.type = False) -> {str.type: ""}:
-    return {
-        "bind_repo_ro": bind_repo_ro,
-        "boot": boot,
-        "cmd": cmd,
-        "user": user,
-    }
+genrule_record = record(
+    cmd = [str.type],
+    user = str.type,
+    bind_repo_ro = bool.type,
+    boot = bool.type,
+)
+
+genrule_to_json = genrule_record

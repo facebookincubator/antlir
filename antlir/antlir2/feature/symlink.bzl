@@ -35,12 +35,10 @@ def ensure_dir_symlink(*, link: str.type, target: str.type) -> InlineFeatureInfo
     """
     return _symlink_feature(feature_type = "ensure_dir_symlink", link = link, target = target)
 
-def symlink_to_json(
-        link: str.type,
-        target: str.type,
-        is_directory: bool.type) -> {str.type: ""}:
-    return {
-        "is_directory": is_directory,
-        "link": link,
-        "target": target,
-    }
+symlink_record = record(
+    link = str.type,
+    target = str.type,
+    is_directory = bool.type,
+)
+
+symlink_to_json = symlink_record

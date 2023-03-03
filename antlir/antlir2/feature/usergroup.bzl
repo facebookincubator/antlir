@@ -51,11 +51,11 @@ def user_add(
         kwargs = {
             "comment": comment,
             "home_dir": home_dir,
+            "name": username,
             "primary_group": primary_group,
             "shell": shell,
             "supplementary_groups": supplementary_groups,
             "uid": uid,
-            "username": username,
         },
     )
 
@@ -74,7 +74,7 @@ def group_add(
         feature_type = "group",
         kwargs = {
             "gid": gid,
-            "groupname": groupname,
+            "name": groupname,
         },
     )
 
@@ -93,36 +93,28 @@ def usermod(
         },
     )
 
-def user_to_json(
-        username: str.type,
-        uid: [int.type, None],
-        home_dir: str.type,
-        primary_group: str.type,
-        supplementary_groups: [str.type],
-        shell: str.type,
-        comment: [str.type, None]) -> {str.type: ""}:
-    return {
-        "comment": comment,
-        "home_dir": home_dir,
-        "name": username,
-        "primary_group": primary_group,
-        "shell": shell,
-        "supplementary_groups": supplementary_groups,
-        "uid": uid,
-    }
+user_record = record(
+    name = str.type,
+    uid = [int.type, None],
+    home_dir = str.type,
+    shell = str.type,
+    primary_group = str.type,
+    supplementary_groups = [str.type],
+    comment = [str.type, None],
+)
 
-def group_to_json(
-        groupname: str.type,
-        gid: [int.type, None]) -> {str.type: ""}:
-    return {
-        "gid": gid,
-        "name": groupname,
-    }
+user_to_json = user_record
 
-def usermod_to_json(
-        username: str.type,
-        add_supplementary_groups: [str.type]) -> {str.type: ""}:
-    return {
-        "add_supplementary_groups": add_supplementary_groups,
-        "username": username,
-    }
+group_record = record(
+    name = str.type,
+    gid = [int.type, None],
+)
+
+group_to_json = group_record
+
+usermod_record = record(
+    username = str.type,
+    add_supplementary_groups = [str.type],
+)
+
+usermod_to_json = usermod_record
