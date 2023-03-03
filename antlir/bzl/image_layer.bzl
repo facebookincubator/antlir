@@ -89,6 +89,8 @@ The consequences of this information hiding are:
         that metadata during compilation.
 """
 
+load("//antlir/antlir2:antlir2_layer.bzl?v2_only", "antlir2_layer")
+load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":flavor.shape.bzl", "flavor_t")
 load(":flavor_helpers.bzl", "flavor_helpers")
@@ -129,6 +131,15 @@ def image_layer(
     [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
     possible helpers, their respective behaviours, and how to invoke them.
     """
+    if use_antlir2():
+        antlir2_layer(
+            name = name,
+            parent_layer = parent_layer,
+            flavor = flavor,
+            features = features,
+            implicit_antlir2 = True,
+        )
+        return
     flavor = flavor_to_struct(flavor)
     if not flavor and parent_layer:
         flavor = flavor_helpers.maybe_get_tgt_flavor(parent_layer)

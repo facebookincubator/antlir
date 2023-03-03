@@ -25,7 +25,7 @@ antlir2_package = rule(
     impl = _impl,
     attrs = {
         "antlir2_package": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package:antlir2-package")),
-        "format": attrs.enum(["sendstream.v2", "sendstream.zst"]),
+        "format": attrs.enum(["sendstream.v2", "sendstream.zst", "cpio.gz"]),
         "layer": attrs.dep(providers = [LayerInfo]),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
     },

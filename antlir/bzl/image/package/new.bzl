@@ -9,8 +9,9 @@ files, as described by the specified `format`.
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/antlir2:antlir2_package.bzl?v2_only", "antlir2_package")
 load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "use_antlir2")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:query.bzl", "layer_deps_query")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -38,6 +39,17 @@ def package_new(
         loopback_opts = None,
         subvol_name = None,
         ba_tgt = None):
+    if use_antlir2():
+        antlir2_package(
+            name = name,
+            layer = layer,
+            format = format,
+            opts = {
+                "compression_level": 3,
+            } if format in ("sendstream.v2", "sendstream.zst") else None,
+        )
+        return
+
     visibility = visibility or []
 
     if not format:

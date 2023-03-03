@@ -8,6 +8,7 @@ This provides helpers useful for working with flavors. For more
 information check out [the flavor docs](/docs/concepts/rpms/overview).
 """
 
+load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load(":check_flavor_exists.bzl", "check_flavor_exists")
 load(":constants.bzl", "REPO_CFG", "new_flavor_config")
 load(":flavor_alias.bzl", "alias_flavor")
@@ -71,6 +72,9 @@ def _get_flavor_default():
     return alias_flavor(REPO_CFG.flavor_default)
 
 def _get_antlir_linux_flavor():
+    if use_antlir2():
+        return "//antlir/antlir2/facebook/flavor:centos9"
+
     # See the comment above in _get_flavor_default().
     return alias_flavor(REPO_CFG.antlir_linux_flavor)
 

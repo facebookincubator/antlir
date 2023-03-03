@@ -7,8 +7,9 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("//antlir/antlir2/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:flatten.bzl", "flatten")
+load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
-load("//antlir/bzl/build_defs.bzl", "config")
+load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":antlir2_dnf.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load(":antlir2_flavor.bzl", "FlavorInfo")
 load(":antlir2_layer_info.bzl", "LayerInfo")
@@ -230,6 +231,10 @@ def antlir2_layer(
         # by a type hint inside feature.bzl. Feature targets or
         # InlineFeatureInfo providers are accepted, at any level of nesting
         features = [],
+        # We'll implicitly forward some users to antlir2, so any hacks for them
+        # should be confined behind this flag
+        implicit_antlir2: bool.type = False,
+        visibility: [[str.type], None] = None,
         **kwargs):
     """
     Create a new image layer
@@ -237,6 +242,15 @@ def antlir2_layer(
     Build a new image layer from the given `features` and `parent_layer`.
     """
     features = flatten.flatten(features, item_type = ["InlineFeatureInfo", str.type])
+
+    if implicit_antlir2:
+        flavor = kwargs.pop("flavor", None)
+        if flavor:
+            if not types.is_string(flavor):
+                flavor = flavor.unaliased_name
+            if ":" not in flavor:
+                flavor = "//antlir/antlir2/facebook/flavor:" + flavor
+        kwargs["flavor"] = flavor
 
     feature_target = name + "--features"
     feature(
@@ -251,5 +265,6 @@ def antlir2_layer(
     return _antlir2_layer(
         name = name,
         features = feature_target,
+        visibility = get_visibility(visibility),
         **kwargs
     )

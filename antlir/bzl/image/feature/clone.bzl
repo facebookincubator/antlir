@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/feature:clone.bzl?v2_only", antlir2_clone = "clone")
+load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:image_source.bzl", "image_source")
 load(
     "//antlir/bzl:target_tagger.bzl",
@@ -56,6 +58,12 @@ If you're trying to copy the output of a regular Buck target, instead use
 metadata to a deterministic state, while the state of the on-disk metadata in
 `buck-out` is undefined.
     """
+    if use_antlir2():
+        return antlir2_clone(
+            src_layer = src_layer,
+            src_path = src_path,
+            dst_path = dest_path,
+        )
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dest_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:
