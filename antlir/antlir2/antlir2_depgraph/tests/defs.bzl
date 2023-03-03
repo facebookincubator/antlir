@@ -5,6 +5,7 @@
 
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
 load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
 load("//antlir/antlir2/feature:feature.bzl", "FeatureInfo", "feature")
 load("//antlir/bzl:flatten.bzl", "flatten")
@@ -73,4 +74,29 @@ def bad_depgraph(
         name = name,
         features = ":" + name + "--features",
         **kwargs
+    )
+
+def _good_impl(ctx: "context") -> ["provider"]:
+    return [
+        DefaultInfo(),
+        ExternalRunnerTestInfo(
+            # force the layer to be built for the test to be considered a
+            # success
+            command = [cmd_args("true").hidden([ctx.attrs.layer[LayerInfo].subvol_symlink])],
+            type = "custom",
+        ),
+    ]
+
+_good_depgraph = rule(
+    impl = _good_impl,
+    attrs = {
+        "layer": attrs.dep(providers = [LayerInfo]),
+    },
+)
+
+def good_depgraph(name, **kwargs):
+    antlir2_layer(name = name, **kwargs)
+    _good_depgraph(
+        name = name + "-test",
+        layer = ":" + name,
     )
