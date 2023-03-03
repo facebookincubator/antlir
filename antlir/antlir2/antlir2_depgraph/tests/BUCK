@@ -1,10 +1,9 @@
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
 load("//antlir/antlir2/feature:clone.bzl", "clone")
 load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
 load("//antlir/antlir2/feature:install.bzl", "install")
 load("//antlir/antlir2/feature:remove.bzl", "remove")
 load("//antlir/antlir2/feature:usergroup.bzl", "group_add", "user_add")
-load(":defs.bzl", "bad_depgraph")
+load(":defs.bzl", "bad_depgraph", "good_depgraph")
 
 bad_depgraph(
     name = "cycle",
@@ -57,7 +56,7 @@ bad_depgraph(
     ],
 )
 
-antlir2_layer(
+good_depgraph(
     name = "install-then-remove",
     features = [
         install(
@@ -158,7 +157,7 @@ bad_depgraph(
     ],
 )
 
-antlir2_layer(
+good_depgraph(
     name = "simple-install",
     features = [
         install(
@@ -200,7 +199,7 @@ antlir2_layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-antlir2_layer(
+good_depgraph(
     name = "dep-in-parent",
     features = [
         remove(
@@ -265,7 +264,7 @@ bad_depgraph(
     ],
 )
 
-antlir2_layer(
+good_depgraph(
     name = "clone-dir-src",
     features = [
         ensure_dirs_exist(dirs = "/clone/src/dir"),
