@@ -11,8 +11,8 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::time::SystemTime;
 
-use antlir2_isolate_compiler::isolate_compiler;
-use antlir2_isolate_compiler::IsolationContext;
+use antlir2_isolate::isolate;
+use antlir2_isolate::IsolationContext;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use btrfs::DeleteFlags;
@@ -101,9 +101,7 @@ impl Subcommand {
 impl Map {
     /// Create a new mutable subvolume based on the [SetupArgs].
     #[tracing::instrument(skip(self), ret, err)]
-    fn create_new_subvol(&self) -> Result<Subvolume> {
-        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
-            .context("while setting up WorkingVolume")?;
+    fn create_new_subvol(&self, working_volume: &WorkingVolume) -> Result<Subvolume> {
         if self.setup.output.exists() {
             let subvol =
                 Subvolume::get(&self.setup.output).context("while opening existing subvol")?;
@@ -141,7 +139,9 @@ impl Map {
 
     #[tracing::instrument(name = "map", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
-        let mut subvol = self.create_new_subvol()?;
+        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
+            .context("while setting up WorkingVolume")?;
+        let mut subvol = self.create_new_subvol(&working_volume)?;
 
         let repo = find_root::find_repo_root(
             &absolute_path::AbsolutePathBuf::canonicalize(
@@ -150,9 +150,16 @@ impl Map {
             .context("argv[0] not absolute")?,
         )
         .context("while looking for repo root")?;
-        let mut isol = isolate_compiler(&IsolationContext {
-            build_appliance: &self.build_appliance,
-            compiler_platform: BTreeSet::from([
+
+        let mut writable_outputs = self
+            .subcommand
+            .writable_outputs()
+            .context("while preparing writable outputs")?;
+        writable_outputs.insert(working_volume.path());
+
+        let mut isol = isolate(&IsolationContext {
+            layer: &self.build_appliance,
+            platform: BTreeSet::from([
                 // compiler is built out of the repo, so it needs the
                 // repo to be available
                 repo.as_ref(),
@@ -176,11 +183,7 @@ impl Map {
             setenv: std::env::var_os("RUST_LOG")
                 .map(|log| BTreeMap::from([("RUST_LOG", log.into())]))
                 .unwrap_or_default(),
-            root: subvol.path(),
-            writable_outputs: self
-                .subcommand
-                .writable_outputs()
-                .context("while preparing writable outputs")?,
+            writable_outputs,
         });
         isol.command
             .arg(std::env::current_exe().context("while getting argv[0]")?);
@@ -189,7 +192,7 @@ impl Map {
                 isol.command.arg("compile").args(
                     Compileish {
                         label: self.label,
-                        root: isol.root.clone(),
+                        root: subvol.path().to_owned(),
                         external,
                         dnf_repos: self.setup.dnf_repos,
                     }
@@ -204,7 +207,7 @@ impl Map {
                     Plan {
                         compileish: Compileish {
                             label: self.label,
-                            root: isol.root.clone(),
+                            root: subvol.path().to_owned(),
                             external: compileish,
                             dnf_repos: self.setup.dnf_repos,
                         },

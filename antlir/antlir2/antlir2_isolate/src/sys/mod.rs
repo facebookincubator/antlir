@@ -9,7 +9,7 @@
 mod linux;
 
 #[cfg(target_os = "linux")]
-pub use linux::nspawn_compiler as isolate_compiler;
+pub use linux::nspawn as isolate;
 
 #[cfg(not(target_os = "linux"))]
 compile_error!("only supported on linux");
