@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 pub mod clone;
-pub mod ensure_dirs_exist;
+pub mod ensure_dir_exists;
 pub mod extract;
 #[cfg(facebook)]
 pub mod facebook;
@@ -45,7 +45,7 @@ pub struct Feature<'a> {
 pub enum Data<'a> {
     Clone(clone::Clone<'a>),
     EnsureDirSymlink(symlink::Symlink<'a>),
-    EnsureDirsExist(ensure_dirs_exist::EnsureDirsExist<'a>),
+    EnsureDirExists(ensure_dir_exists::EnsureDirExists<'a>),
     EnsureFileSymlink(symlink::Symlink<'a>),
     Extract(extract::Extract<'a>),
     Genrule(genrule::Genrule<'a>),

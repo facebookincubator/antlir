@@ -45,7 +45,7 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
         match &self.data {
             Data::Clone(x) => x.provides(),
             Data::EnsureDirSymlink(x) => x.provides(),
-            Data::EnsureDirsExist(x) => x.provides(),
+            Data::EnsureDirExists(x) => x.provides(),
             Data::EnsureFileSymlink(x) => x.provides(),
             Data::Extract(x) => x.provides(),
             Data::Genrule(_) => Ok(vec![]),
@@ -68,7 +68,7 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
         match &self.data {
             Data::Clone(x) => x.requires(),
             Data::EnsureDirSymlink(x) => x.requires(),
-            Data::EnsureDirsExist(x) => x.requires(),
+            Data::EnsureDirExists(x) => x.requires(),
             Data::EnsureFileSymlink(x) => x.requires(),
             Data::Extract(x) => x.requires(),
             Data::Genrule(_) => vec![],
@@ -244,31 +244,17 @@ impl<'f> FeatureExt<'f> for antlir2_features::clone::Clone<'f> {
     }
 }
 
-impl<'f> FeatureExt<'f> for antlir2_features::ensure_dirs_exist::EnsureDirsExist<'f> {
+impl<'f> FeatureExt<'f> for antlir2_features::ensure_dir_exists::EnsureDirExists<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
-        Ok(self
-            .subdirs_to_create
-            .path()
-            .ancestors()
-            .filter(|p| *p != std::path::Path::new("/"))
-            .filter(|p| *p != std::path::Path::new(""))
-            .map(|p| self.into_dir.path().join(p))
-            .map(|p| {
-                Item::Path(Path::Entry(FsEntry {
-                    path: p.into(),
-                    file_type: FileType::Directory,
-                    mode: self.mode.0,
-                }))
-            })
-            .collect())
+        Ok(vec![Item::Path(Path::Entry(FsEntry {
+            path: self.dir.path().to_owned().into(),
+            file_type: FileType::Directory,
+            mode: self.mode.0,
+        }))])
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
-        vec![
-            Requirement {
-                key: ItemKey::Path(self.into_dir.path().to_owned().into()),
-                validator: Validator::FileType(FileType::Directory),
-            },
+        let mut v = vec![
             Requirement {
                 key: ItemKey::User(self.user.name().to_owned().into()),
                 validator: Validator::Exists,
@@ -277,7 +263,14 @@ impl<'f> FeatureExt<'f> for antlir2_features::ensure_dirs_exist::EnsureDirsExist
                 key: ItemKey::Group(self.group.name().to_owned().into()),
                 validator: Validator::Exists,
             },
-        ]
+        ];
+        if let Some(parent) = self.dir.parent() {
+            v.push(Requirement {
+                key: ItemKey::Path(parent.to_owned().into()),
+                validator: Validator::FileType(FileType::Directory),
+            });
+        }
+        v
     }
 }
 

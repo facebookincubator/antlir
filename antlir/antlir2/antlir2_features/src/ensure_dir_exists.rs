@@ -15,10 +15,9 @@ use crate::usergroup::UserName;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
-pub struct EnsureDirsExist<'a> {
+pub struct EnsureDirExists<'a> {
     pub group: GroupName<'a>,
-    pub into_dir: PathInLayer<'a>,
+    pub dir: PathInLayer<'a>,
     pub mode: Mode,
-    pub subdirs_to_create: PathInLayer<'a>,
     pub user: UserName<'a>,
 }
