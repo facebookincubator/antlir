@@ -1,4 +1,5 @@
 load("//antlir/antlir2/feature:clone.bzl", "clone")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
 load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
 load("//antlir/antlir2/feature:install.bzl", "install")
 load("//antlir/antlir2/feature:remove.bzl", "remove")
@@ -227,7 +228,7 @@ bad_depgraph(
             {
                 "dst": "/foo",
                 "group": "root",
-                "mode": 0o444,
+                "mode": 0o400,
                 "separate_debug_symbols": True,
                 "src": "fbcode/antlir/empty",
                 "user": "root",
@@ -245,7 +246,7 @@ bad_depgraph(
         install(
             src = "//antlir:empty",
             dst = "/foo",
-            mode = "a+r",
+            mode = "u+r",
         ),
     ],
     parent = ":simple-install",
@@ -309,5 +310,21 @@ bad_depgraph(
             src_layer = ":simple-install",
             src_path = "/owned-by-antlir",
         ),
+    ],
+)
+
+good_depgraph(
+    name = "overlapping-ensure-dirs-exist",
+    features = [
+        ensure_dirs_exist(dirs = "/foo/bar/baz"),
+        ":external-feature-overlapping-dirs",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+feature.new(
+    name = "external-feature-overlapping-dirs",
+    features = [
+        ensure_dirs_exist(dirs = "/foo/bar/baz/qux"),
     ],
 )

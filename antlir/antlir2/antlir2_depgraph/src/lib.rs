@@ -329,7 +329,16 @@ impl<'a> GraphBuilder<'a> {
                             _ => None,
                         })
                         .collect();
-                    if features_that_provide.len() > 1 {
+                    // Feature's with equivalent Data are allowed (we should
+                    // prune it from the graph before passing it off to
+                    // antlir2_compile, but that's an optimization for later).
+                    // Anything that is not completely equivalent is considered
+                    // a conflict and will cause a build failure.
+                    if features_that_provide.len() > 1
+                        && features_that_provide
+                            .iter()
+                            .any(|f| f.data != features_that_provide[0].data)
+                    {
                         return Err(Error::Conflict {
                             item: item.clone(),
                             features: features_that_provide.into_iter().cloned().collect(),
