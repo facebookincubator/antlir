@@ -37,36 +37,9 @@ pub use phase::Phase;
 mod requires_provides;
 use requires_provides::FeatureExt as _;
 use requires_provides::Validator;
-
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub enum Node<'a> {
-    /// A Feature that is to be compiled in this layer.
-    PendingFeature(Feature<'a>),
-    /// An item provided by the parent layer or a feature in this layer.
-    Item(Item<'a>),
-    /// An item that is required by a feature, but does not exist in the graph.
-    /// Distinct from a [Node::Item] without any [Edge::Provides] edges because
-    /// not enough information is known about missing dependencies to construct
-    /// the full [Item].
-    MissingItem(ItemKey<'a>),
-    /// A Feature that was provided by a layer in the parent chain.
-    ParentFeature(Feature<'a>),
-    /// Start of a distinct phase of the image build process.
-    PhaseStart(Phase),
-    /// End of a distinct phase of the image build process. All features that
-    /// are part of that phase will have an edge pointing to the end.
-    PhaseEnd(Phase),
-}
-
-impl<'a> Node<'a> {
-    fn as_feature(&self) -> Option<&Feature<'a>> {
-        match &self {
-            Self::PendingFeature(f) | Self::ParentFeature(f) => Some(f),
-            _ => None,
-        }
-    }
-}
+mod node;
+use node::GraphExt;
+pub use node::Node;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
@@ -127,11 +100,11 @@ pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
 #[derive(Debug)]
 pub struct GraphBuilder<'a> {
     g: DiGraph<Node<'a>, Edge<'a>, DefaultIx>,
-    root: NodeIndex<DefaultIx>,
-    pending_features: Vec<NodeIndex<DefaultIx>>,
-    items: HashMap<ItemKey<'a>, NodeIndex<DefaultIx>>,
-    phases: BTreeMap<Phase, (NodeIndex<DefaultIx>, NodeIndex<DefaultIx>)>,
-    rpm_feature: Option<NodeIndex<DefaultIx>>,
+    root: node::PhaseStartNodeIndex,
+    pending_features: Vec<node::PendingFeatureNodeIndex<'a>>,
+    items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
+    phases: BTreeMap<Phase, (node::PhaseStartNodeIndex, node::PhaseEndNodeIndex)>,
+    rpm_feature: Option<node::PendingFeatureNodeIndex<'a>>,
     label: Label<'a>,
 }
 
@@ -141,24 +114,16 @@ impl<'a> GraphBuilder<'a> {
         let mut items = HashMap::new();
 
         let phases: BTreeMap<_, _> = Phase::iter()
-            .map(|p| {
-                (
-                    p,
-                    (
-                        g.add_node(Node::PhaseStart(p)),
-                        g.add_node(Node::PhaseEnd(p)),
-                    ),
-                )
-            })
+            .map(|p| (p, (g.add_node_typed(p), g.add_node_typed(p))))
             .collect();
 
         let root = phases[&Phase::Init].0;
 
         // Set up ordering for phases
         for ((a_start, a_end), (b_start, b_end)) in phases.values().tuple_windows() {
-            g.update_edge(*a_start, *a_end, Edge::After);
-            g.update_edge(*a_end, *b_start, Edge::After);
-            g.update_edge(*b_start, *b_end, Edge::After);
+            g.update_edge(**a_start, **a_end, Edge::After);
+            g.update_edge(**a_end, **b_start, Edge::After);
+            g.update_edge(**b_start, **b_end, Edge::After);
         }
 
         // Some items are always available, since they are a property of the
@@ -178,7 +143,7 @@ impl<'a> GraphBuilder<'a> {
             })),
         ] {
             let key = item.key();
-            let nx = g.add_node(Node::Item(item));
+            let nx = g.add_node_typed(item);
             items.insert(key, nx);
         }
 
@@ -196,7 +161,7 @@ impl<'a> GraphBuilder<'a> {
             let mut new_nodes = HashMap::new();
             for nx in parent.g.node_indices() {
                 let new_nx = match &parent.g[nx] {
-                    Node::Item(i) => Some(s.add_item(i.clone())),
+                    Node::Item(i) => Some(s.add_item(i.clone()).into_untyped()),
                     Node::PendingFeature(f) | Node::ParentFeature(f) => {
                         Some(s.g.add_node(Node::ParentFeature(f.clone())))
                     }
@@ -217,23 +182,23 @@ impl<'a> GraphBuilder<'a> {
         s
     }
 
-    fn add_item(&mut self, item: Item<'a>) -> NodeIndex<DefaultIx> {
+    fn add_item(&mut self, item: Item<'a>) -> node::ItemNodeIndex<'a> {
         let key = item.key();
         // If this Item undos another, it needs to be added to the graph on its
         // own. The previous Item will be left in the graph, but will be
         // overwritten in the items tracker map to this new node which is the
         // most recent version of that item
         if self.items.contains_key(&key) && item.is_undo() {
-            let nx = self.g.add_node(Node::Item(item));
+            let nx = self.g.add_node_typed(item);
             self.g
-                .add_edge(self.items[&key], nx, Edge::Requires(Validator::Exists));
+                .add_edge(*self.items[&key], *nx, Edge::Requires(Validator::Exists));
             self.items.insert(key, nx);
             nx
         } else {
             *self
                 .items
                 .entry(key)
-                .or_insert_with(|| self.g.add_node(Node::Item(item)))
+                .or_insert_with(|| self.g.add_node_typed(item))
         }
     }
 
@@ -250,24 +215,24 @@ impl<'a> GraphBuilder<'a> {
         let (phase, feature_nx) = if let antlir2_features::Data::Rpm(rpm) = feature.data {
             if let Some(nx) = self.rpm_feature {
                 match &mut self.g[nx] {
-                    Node::PendingFeature(Feature {
+                    Feature {
                         label: _,
                         data: antlir2_features::Data::Rpm(existing_feature),
-                    }) => existing_feature.items.extend(rpm.items),
+                    } => existing_feature.items.extend(rpm.items),
                     _ => unreachable!("rpm_feature node is always an Rpm feature"),
                 }
                 return self;
             } else {
-                let feature_nx = self.g.add_node(Node::PendingFeature(Feature {
+                let feature_nx = self.g.add_node_typed(Feature {
                     data: antlir2_features::Data::Rpm(rpm),
                     label: feature.label,
-                }));
+                });
                 self.rpm_feature = Some(feature_nx);
                 (Phase::OsPackage, feature_nx)
             }
         } else {
             let phase = Phase::for_feature(&feature);
-            let feature_nx = self.g.add_node(Node::PendingFeature(feature));
+            let feature_nx = self.g.add_node_typed(feature);
             (phase, feature_nx)
         };
 
@@ -275,9 +240,9 @@ impl<'a> GraphBuilder<'a> {
 
         // Insert edges so that features are in the right part of the graph wrt phases
         self.g
-            .update_edge(self.phases[&phase].0, feature_nx, Edge::PartOf);
+            .update_edge(*self.phases[&phase].0, *feature_nx, Edge::PartOf);
         self.g
-            .update_edge(feature_nx, self.phases[&phase].1, Edge::After);
+            .update_edge(*feature_nx, *self.phases[&phase].1, Edge::After);
 
         self
     }
@@ -289,14 +254,11 @@ impl<'a> GraphBuilder<'a> {
     pub fn build(mut self) -> Result<'a, Graph<'a>> {
         // Add all the nodes provided by our pending features
         for feature_nx in self.pending_features.clone() {
-            if let Node::PendingFeature(f) = &self.g[feature_nx] {
-                let provides = f.provides().map_err(Error::Provides)?;
-                for prov in provides {
-                    let prov_nx = self.add_item(prov);
-                    self.g.update_edge(feature_nx, prov_nx, Edge::Provides);
-                }
-            } else {
-                unreachable!()
+            let f = &self.g[feature_nx];
+            let provides = f.provides().map_err(Error::Provides)?;
+            for prov in provides {
+                let prov_nx = self.add_item(prov);
+                self.g.update_edge(*feature_nx, *prov_nx, Edge::Provides);
             }
         }
 
@@ -304,21 +266,17 @@ impl<'a> GraphBuilder<'a> {
         // that we know if a required item is missing or just not encountered
         // yet
         for feature_nx in &self.pending_features {
-            if let Node::PendingFeature(f) = &self.g[*feature_nx] {
-                for req in f.requires() {
-                    let req_nx = match self.items.get(&req.key) {
-                        Some(nx) => *nx,
-                        None => {
-                            let nx = self.g.add_node(Node::MissingItem(req.key.clone()));
-                            self.items.insert(req.key, nx);
-                            nx
-                        }
-                    };
-                    self.g
-                        .update_edge(req_nx, *feature_nx, Edge::Requires(req.validator));
-                }
-            } else {
-                unreachable!()
+            let f = &self.g[*feature_nx];
+            for req in f.requires() {
+                let req_nx = match self.items.get(&req.key) {
+                    Some(nx) => nx.into_untyped(),
+                    None => {
+                        let nx = self.g.add_node(Node::MissingItem(req.key.clone()));
+                        nx
+                    }
+                };
+                self.g
+                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator));
             }
         }
 
@@ -436,11 +394,11 @@ pub struct Graph<'a> {
     label: Label<'a>,
     #[serde(borrow)]
     g: DiGraph<Node<'a>, Edge<'a>>,
-    root: NodeIndex<DefaultIx>,
+    root: node::PhaseStartNodeIndex,
     #[serde_as(as = "Vec<(_, _)>")]
-    items: HashMap<ItemKey<'a>, NodeIndex<DefaultIx>>,
+    items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
     topo: Vec<NodeIndex<DefaultIx>>,
-    end: (NodeIndex<DefaultIx>, NodeIndex<DefaultIx>),
+    end: (node::PhaseStartNodeIndex, node::PhaseEndNodeIndex),
 }
 
 impl<'a> Graph<'a> {
@@ -467,10 +425,7 @@ impl<'a> Graph<'a> {
 
     pub(crate) fn get_item(&self, key: &ItemKey<'_>) -> Option<&Item<'a>> {
         match self.items.get(key) {
-            Some(nx) => match self.g.node_weight(*nx) {
-                Some(Node::Item(i)) => Some(i),
-                _ => None,
-            },
+            Some(nx) => Some(&self.g[*nx]),
             None => None,
         }
     }
@@ -488,16 +443,16 @@ impl<'a> Graph<'a> {
             let key = ItemKey::Path(path.clone().into());
             if let std::collections::hash_map::Entry::Vacant(e) = self.items.entry(key) {
                 let meta = entry.metadata()?;
-                let nx =
-                    self.g
-                        .add_node(Node::Item(Item::Path(item::Path::Entry(item::FsEntry {
-                            path: path.into(),
-                            mode: meta.mode(),
-                            file_type: meta.file_type().into(),
-                        }))));
+                let nx = self
+                    .g
+                    .add_node_typed(Item::Path(item::Path::Entry(item::FsEntry {
+                        path: path.into(),
+                        mode: meta.mode(),
+                        file_type: meta.file_type().into(),
+                    })));
                 e.insert(nx);
-                self.g.update_edge(self.end.0, nx, Edge::PartOf);
-                self.g.update_edge(nx, self.end.1, Edge::After);
+                self.g.update_edge(*self.end.0, *nx, Edge::PartOf);
+                self.g.update_edge(*nx, *self.end.1, Edge::After);
             }
         }
         let passwd_path = root.join("etc/passwd");
@@ -514,10 +469,10 @@ impl<'a> Graph<'a> {
             {
                 let nx = self
                     .g
-                    .add_node(Node::Item(Item::User(item::User { name: user.name })));
+                    .add_node_typed(Item::User(item::User { name: user.name }));
                 e.insert(nx);
-                self.g.update_edge(self.end.0, nx, Edge::PartOf);
-                self.g.update_edge(nx, self.end.1, Edge::After);
+                self.g.update_edge(*self.end.0, *nx, Edge::PartOf);
+                self.g.update_edge(*nx, *self.end.1, Edge::After);
             }
         }
         let group_path = root.join("etc/group");
@@ -534,10 +489,10 @@ impl<'a> Graph<'a> {
             {
                 let nx = self
                     .g
-                    .add_node(Node::Item(Item::Group(item::Group { name: group.name })));
+                    .add_node_typed(Item::Group(item::Group { name: group.name }));
                 e.insert(nx);
-                self.g.update_edge(self.end.0, nx, Edge::PartOf);
-                self.g.update_edge(nx, self.end.1, Edge::After);
+                self.g.update_edge(*self.end.0, *nx, Edge::PartOf);
+                self.g.update_edge(*nx, *self.end.1, Edge::After);
             }
         }
         Ok(())
