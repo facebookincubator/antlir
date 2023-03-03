@@ -11,14 +11,13 @@ use std::ffi::OsString;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
-use std::path::PathBuf;
 use std::process::Command;
 
 use crate::IsolatedContext;
 use crate::IsolationContext;
 
-fn try_canonicalize<P: AsRef<Path>>(path: P) -> PathBuf {
-    std::fs::canonicalize(path.as_ref()).unwrap_or_else(|_| path.as_ref().to_owned())
+fn try_canonicalize<'a>(path: &'a Path) -> Cow<'a, Path> {
+    std::fs::canonicalize(path).map_or(Cow::Borrowed(path), Cow::Owned)
 }
 
 /// 'systemd-nspawn' accepts ':' as a special delimiter in args to '--bind[-ro]'
@@ -42,13 +41,33 @@ fn escape_bind<'a>(s: &'a OsStr) -> Cow<'a, OsStr> {
     }
 }
 
+fn bind_arg<'a>(dst: &'a Path, src: &'a Path) -> Cow<'a, OsStr> {
+    if dst == src {
+        Cow::Owned(escape_bind(try_canonicalize(dst).as_os_str()).into_owned())
+    } else {
+        let mut arg = escape_bind(src.as_os_str()).into_owned();
+        arg.push(":");
+        arg.push(escape_bind(dst.as_os_str()));
+        Cow::Owned(arg)
+    }
+}
+
 /// Isolate the compiler process using `systemd-nspawn`.
-pub fn nspawn(ctx: &IsolationContext) -> IsolatedContext {
+#[deny(unused_variables)]
+pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
+    let IsolationContext {
+        layer,
+        working_directory,
+        setenv,
+        platform,
+        inputs,
+        outputs,
+    } = ctx;
     let mut cmd = Command::new("sudo");
     cmd.arg("systemd-nspawn")
         .arg("--quiet")
         .arg("--directory")
-        .arg(ctx.layer)
+        .arg(layer.as_ref())
         // TODO(vmagro): running in a read-only copy of the BA would allow us to
         // skip this snapshot, but that's easier said than done
         .arg("--ephemeral")
@@ -57,26 +76,23 @@ pub fn nspawn(ctx: &IsolationContext) -> IsolatedContext {
         .arg("--as-pid2")
         .arg("--register=no")
         .arg("--private-network");
-    if let Some(wd) = &ctx.working_directory {
-        cmd.arg("--chdir").arg(wd);
+    if let Some(wd) = &working_directory {
+        cmd.arg("--chdir").arg(wd.as_ref());
     }
-    for (key, val) in &ctx.setenv {
+    for (key, val) in &setenv {
         let mut arg = OsString::from(key);
         arg.push("=");
         arg.push(val);
         cmd.arg("--setenv").arg(arg);
     }
-    for platform in &ctx.platform {
-        cmd.arg("--bind-ro")
-            .arg(escape_bind(try_canonicalize(platform).as_os_str()));
+    for (dst, src) in &platform {
+        cmd.arg("--bind-ro").arg(bind_arg(dst, src));
     }
-    for src in &ctx.image_sources {
-        cmd.arg("--bind-ro")
-            .arg(escape_bind(try_canonicalize(src).as_os_str()));
+    for (dst, src) in &inputs {
+        cmd.arg("--bind-ro").arg(bind_arg(dst, src));
     }
-    for out in &ctx.writable_outputs {
-        cmd.arg("--bind")
-            .arg(escape_bind(try_canonicalize(out).as_os_str()));
+    for (dst, out) in &outputs {
+        cmd.arg("--bind").arg(bind_arg(dst, out));
     }
 
     // caller will add the compiler path as the first argument

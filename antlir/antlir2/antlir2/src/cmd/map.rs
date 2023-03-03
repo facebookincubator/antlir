@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::path::PathBuf;
@@ -157,34 +156,33 @@ impl Map {
             .context("while preparing writable outputs")?;
         writable_outputs.insert(working_volume.path());
 
-        let mut isol = isolate(&IsolationContext {
-            layer: &self.build_appliance,
-            platform: BTreeSet::from([
-                // compiler is built out of the repo, so it needs the
-                // repo to be available
-                repo.as_ref(),
-                #[cfg(facebook)]
-                Path::new("/usr/local/fbcode"),
-                #[cfg(facebook)]
-                Path::new("/mnt/gvfs"),
-            ]),
-            image_sources: BTreeSet::from([
-                // image builds all require the repo for at least the
-                // feature json paths coming from buck
-                repo.as_ref(),
-                self.setup.dnf_repos.as_path(),
-                // layer dependencies require the working volume
-                self.setup.working_dir.as_path(),
-            ]),
-            working_directory: Some(&std::env::current_dir().context("while getting cwd")?),
-            // TODO(vmagro): there are currently no tracing args, but
-            // there probably should be instead of relying on
-            // environment variables...
-            setenv: std::env::var_os("RUST_LOG")
-                .map(|log| BTreeMap::from([("RUST_LOG", log.into())]))
-                .unwrap_or_default(),
-            writable_outputs,
-        });
+        let mut isol = isolate(
+            IsolationContext::builder(&self.build_appliance)
+                .platform([
+                    // compiler is built out of the repo, so it needs the
+                    // repo to be available
+                    repo.as_ref(),
+                    #[cfg(facebook)]
+                    Path::new("/usr/local/fbcode"),
+                    #[cfg(facebook)]
+                    Path::new("/mnt/gvfs"),
+                ])
+                .inputs([
+                    // image builds all require the repo for at least the
+                    // feature json paths coming from buck
+                    repo.as_ref(),
+                    self.setup.dnf_repos.as_path(),
+                    // layer dependencies require the working volume
+                    self.setup.working_dir.as_path(),
+                ])
+                .working_directory(std::env::current_dir().context("while getting cwd")?)
+                // TODO(vmagro): there are currently no tracing args, but
+                // there probably should be instead of relying on
+                // environment variables...
+                .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
+                .outputs(writable_outputs)
+                .build(),
+        );
         isol.command
             .arg(std::env::current_exe().context("while getting argv[0]")?);
         match self.subcommand {
