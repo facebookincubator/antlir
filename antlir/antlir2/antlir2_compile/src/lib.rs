@@ -22,7 +22,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 mod clone;
-mod ensure_dirs_exist;
+mod ensure_dir_exists;
 mod extract;
 #[cfg(facebook)]
 mod facebook;
@@ -192,7 +192,7 @@ impl<'a> CompileFeature for Feature<'a> {
         match &self.data {
             Data::Clone(x) => x.compile(ctx),
             Data::EnsureDirSymlink(x) => x.compile(ctx),
-            Data::EnsureDirsExist(x) => x.compile(ctx),
+            Data::EnsureDirExists(x) => x.compile(ctx),
             Data::EnsureFileSymlink(x) => x.compile(ctx),
             Data::Extract(x) => x.compile(ctx),
             Data::Genrule(x) => todo!("{x:?}"),

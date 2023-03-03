@@ -53,7 +53,7 @@ load("@bazel_skylib//lib:types.bzl", "types")
 # @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
-load(":ensure_dirs_exist.bzl", "ensure_dirs_exist_to_json")
+load(":ensure_dirs_exist.bzl", "ensure_dir_exists_to_json")
 load(":extract.bzl", "extract_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")
 load(":genrule.bzl", "genrule_to_json")
@@ -87,8 +87,8 @@ FeatureInfo = provider(fields = [
 
 _feature_to_json = {
     "clone": clone_to_json,
+    "ensure_dir_exists": ensure_dir_exists_to_json,
     "ensure_dir_symlink": symlink_to_json,
-    "ensure_dirs_exist": ensure_dirs_exist_to_json,
     "ensure_file_symlink": symlink_to_json,
     "extract": extract_to_json,
     # @oss-disable

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:stat.bzl", "stat")
 load(":feature_info.bzl", "InlineFeatureInfo")
 
@@ -12,7 +13,7 @@ def ensure_subdirs_exist(
         subdirs_to_create: str.type,
         mode: [int.type, str.type] = 0o755,
         user: str.type = "root",
-        group: str.type = "root") -> InlineFeatureInfo.type:
+        group: str.type = "root") -> [InlineFeatureInfo.type]:
     """
     `ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y` and
     `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already been
@@ -29,23 +30,29 @@ def ensure_subdirs_exist(
     directories in `subdirs_to_create`.
     """
     mode = stat.mode(mode) if mode else None
-    return InlineFeatureInfo(
-        feature_type = "ensure_dirs_exist",
-        kwargs = {
-            "group": group,
-            "into_dir": into_dir,
-            "mode": mode,
-            "subdirs_to_create": subdirs_to_create,
-            "user": user,
-        },
-    )
+    features = []
+    dir = into_dir
+    for component in subdirs_to_create.split("/"):
+        if not component:
+            continue
+        dir = paths.join(dir, component)
+        features.append(InlineFeatureInfo(
+            feature_type = "ensure_dir_exists",
+            kwargs = {
+                "dir": dir,
+                "group": group,
+                "mode": mode,
+                "user": user,
+            },
+        ))
+    return features
 
 def ensure_dirs_exist(
         *,
         dirs: str.type,
         mode: [int.type, str.type] = 0o755,
         user: str.type = "root",
-        group: str.type = "root") -> InlineFeatureInfo.type:
+        group: str.type = "root") -> [InlineFeatureInfo.type]:
     """Equivalent to `ensure_subdirs_exist("/", dirs, ...)`."""
     return ensure_subdirs_exist(
         into_dir = "/",
@@ -55,17 +62,15 @@ def ensure_dirs_exist(
         group = group,
     )
 
-def ensure_dirs_exist_to_json(
+def ensure_dir_exists_to_json(
         *,
-        into_dir: str.type,
-        subdirs_to_create: str.type,
+        dir: str.type,
         mode: int.type,
         user: str.type,
         group: str.type) -> {str.type: ""}:
     return {
+        "dir": dir,
         "group": group,
-        "into_dir": into_dir,
         "mode": mode,
-        "subdirs_to_create": subdirs_to_create,
         "user": user,
     }
