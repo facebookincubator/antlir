@@ -15,7 +15,6 @@ use crate::item::FileType;
 use crate::item::Item;
 use crate::item::ItemKey;
 use crate::item::Path;
-use crate::Node;
 
 mod feature_ext;
 pub(crate) use feature_ext::FeatureExt;
@@ -79,10 +78,9 @@ impl<'a> Validator<'a> {
             },
             Self::ItemInLayer { key, validator } => match item {
                 Item::Layer(layer) => match layer.graph.items.get(key) {
-                    Some(item_in_layer_nx) => match &layer.graph.g[*item_in_layer_nx] {
-                        Node::Item(item_in_layer) => validator.satisfies(item_in_layer),
-                        _ => false,
-                    },
+                    Some(item_in_layer_nx) => {
+                        validator.satisfies(&layer.graph.g[*item_in_layer_nx])
+                    }
                     None => &Self::DoesNotExist == validator.as_ref(),
                 },
                 _ => false,
