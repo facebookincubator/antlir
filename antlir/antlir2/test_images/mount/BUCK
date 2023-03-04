@@ -1,0 +1,50 @@
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+
+antlir2_layer(
+    name = "src",
+    features = [
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/empty",
+            mode = "a+rx",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+antlir2_layer(
+    name = "parent",
+    features = [
+        feature.rpms_install(rpms = [
+            "bash",
+            "coreutils",
+            "util-linux",
+        ]),
+        feature.ensure_dirs_exist(dirs = "/mount/in/parent"),
+        feature.layer_mount(
+            mountpoint = "/mount/in/parent",
+            source = ":src",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+antlir2_layer(
+    name = "mount",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/mount/in/child"),
+        feature.layer_mount(
+            mountpoint = "/mount/in/child",
+            source = ":parent",
+        ),
+    ],
+    parent_layer = ":parent",
+)
+
+image_sh_test(
+    name = "mount-test",
+    layer = ":mount",
+    test = "test-mount.sh",
+)
