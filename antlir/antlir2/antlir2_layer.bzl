@@ -82,6 +82,15 @@ def _impl(ctx: "context") -> ["provider"]:
     available_rpm_repos = (ctx.attrs.available_rpm_repos or flavor_info.default_rpm_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, available_rpm_repos)
 
+    mounts = ctx.actions.declare_output("mounts.json")
+    ctx.actions.run(cmd_args(
+        ctx.attrs.antlir2[RunInfo],
+        "serialize-mounts",
+        ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json"),
+        cmd_args(ctx.attrs.parent_layer[LayerInfo].mounts, format = "--parent={}") if ctx.attrs.parent_layer else cmd_args(),
+        cmd_args(mounts.as_output(), format = "--out={}"),
+    ).hidden([dep.mounts for dep in dependency_layers]), category = "antlir2", identifier = "serialize_mounts")
+
     plan = ctx.actions.declare_output("plan")
     plan_cmd, _ = _map_image(
         ctx = ctx,
@@ -154,6 +163,7 @@ def _impl(ctx: "context") -> ["provider"]:
             depgraph = depgraph_output,
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+            mounts = mounts,
         ),
         DefaultInfo(
             default_outputs = [final_subvol],

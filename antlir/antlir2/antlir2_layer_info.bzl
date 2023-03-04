@@ -7,6 +7,7 @@ LayerInfo = provider(fields = {
     "depgraph": "JSON-serialized depgraph",
     "flavor_info": "The FlavorInfo this layer was built with",
     "label": "Label that originally created this layer",
+    "mounts": "JSON artifact describing mounts",
     "parent": "LayerInfo from parent_layer, if any",
     "subvol_symlink": "symlink pointing to the built subvol",
 })

@@ -8,6 +8,7 @@
 use std::borrow::Cow;
 use std::ops::Deref;
 use std::path::Path;
+use std::path::PathBuf;
 
 use buck_label::Label;
 use serde::Deserialize;
@@ -23,6 +24,11 @@ macro_rules! path_wrapper {
             #[inline]
             pub fn path(&self) -> &Path {
                 self
+            }
+
+            #[inline]
+            pub fn into_owned(self) -> PathBuf {
+                self.0.into_owned()
             }
         }
 
@@ -62,6 +68,6 @@ path_wrapper!(PathInLayer, "A path inside an image layer");
 pub struct LayerInfo<'a> {
     pub label: Label<'a>,
     pub subvol_symlink: Cow<'a, Path>,
-    // antlir2 only
     pub depgraph: Cow<'a, Path>,
+    pub mounts: BuckOutSource<'a>,
 }

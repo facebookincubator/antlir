@@ -9,6 +9,7 @@ layer_dep = record(
     depgraph = "artifact",
     label = "label",
     subvol_symlink = "artifact",
+    mounts = "artifact",
 )
 
 def layer_dep_to_json(layer: "dependency") -> layer_dep.type:
@@ -21,4 +22,5 @@ def layer_dep_to_json(layer: "dependency") -> layer_dep.type:
         depgraph = info.depgraph,
         label = layer.label,
         subvol_symlink = info.subvol_symlink,
+        mounts = info.mounts,
     )

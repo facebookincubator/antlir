@@ -189,6 +189,14 @@ impl<'a> IntoBinds<'a> for HashSet<PathBuf> {
     }
 }
 
+impl<'a> IntoBinds<'a> for HashMap<PathBuf, PathBuf> {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.into_iter()
+            .map(|(dst, src)| (Cow::Owned(dst), Cow::Owned(src)))
+            .collect()
+    }
+}
+
 /// Anything that can be turned into a set of env variables
 pub trait IntoEnv<'a> {
     fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>>;

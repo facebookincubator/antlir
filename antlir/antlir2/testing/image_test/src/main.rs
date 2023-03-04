@@ -6,6 +6,8 @@
  */
 
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::OsString;
 use std::io::Seek;
@@ -15,11 +17,13 @@ use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
 
+use antlir2_features::mount::Mount;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use json_arg::JsonFile;
 use tempfile::NamedTempFile;
 use tracing::debug;
 use tracing_subscriber::prelude::*;
@@ -43,6 +47,9 @@ struct Args {
     #[clap(long)]
     /// Pass these env vars into the test environment
     preserve_env: Vec<String>,
+    #[clap(long)]
+    /// Mounts required by the layer-under-test
+    mounts: JsonFile<BTreeSet<Mount<'static>>>,
     #[clap(subcommand)]
     test: Test,
 }
@@ -210,6 +217,16 @@ fn main() -> Result<()> {
     .setenv(setenv.clone())
     .outputs(args.test.bind_mounts())
     .boot(args.boot);
+    ctx.inputs(
+        args.mounts
+            .into_inner()
+            .into_iter()
+            .map(|mount| match mount {
+                Mount::Host(m) => (m.mountpoint.into_owned(), m.src),
+                Mount::Layer(m) => (m.mountpoint.into_owned(), m.src.subvol_symlink.into_owned()),
+            })
+            .collect::<HashMap<_, _>>(),
+    );
 
     if args.boot {
         // see 'man 8 systemd-run-generator', tl;dr this will:

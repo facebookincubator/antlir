@@ -16,6 +16,7 @@ def _impl(ctx: "context") -> ["provider"]:
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
         "--boot" if ctx.attrs.boot else cmd_args(),
         cmd_args(ctx.attrs.test[ExternalRunnerTestInfo].env.keys(), format = "--preserve-env={}"),
+        cmd_args(ctx.attrs.layer[LayerInfo].mounts, format = "--mounts={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
     )
@@ -41,8 +42,7 @@ def _impl(ctx: "context") -> ["provider"]:
             labels = ctx.attrs.labels + inner_labels,
             contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
             env = ctx.attrs.test[ExternalRunnerTestInfo].env,
-            run_from_project_root = ctx.attrs.test[ExternalRunnerTestInfo].run_from_project_root,
-            use_project_relative_paths = ctx.attrs.test[ExternalRunnerTestInfo].use_project_relative_paths,
+            run_from_project_root = True,
         ),
         RunInfo(test_cmd),
         DefaultInfo(script),
