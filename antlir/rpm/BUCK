@@ -94,6 +94,8 @@ python_library(
 python_library(
     name = "temp_repos",
     srcs = ["tests/temp_repos.py"],
+    # Because we're taking a layer dep
+    labels = ["no_pyre"],
     resources = {
         third_party.library("busybox", "bin/busybox"): "tests/busybox",
         layer_resource(flavor_helpers.get_build_appliance()): "tests/build-appliance",
@@ -111,6 +113,8 @@ python_library(
 python_unittest(
     name = "test-repo-objects",
     srcs = ["tests/test_repo_objects.py"],
+    # Because :temp_repos has a layer dep
+    labels = ["no_pyre"],
     needed_coverage = [
         (100, ":repo_objects"),
     ],
@@ -153,6 +157,8 @@ python_library(
 python_unittest(
     name = "test-parse-repodata",
     srcs = ["tests/test_parse_repodata.py"],
+    # Because :temp_repos has a layer dep
+    labels = ["no_pyre"],
     needed_coverage = [
         (100, ":parse_repodata"),
     ],
@@ -231,6 +237,8 @@ python_unittest(
     # @autodeps-skip
     name = "test-repo-server",
     srcs = ["tests/test_repo_server.py"],
+    # Because :temp_repos has a layer dep
+    labels = ["no_pyre"],
     needed_coverage = [
         (100, ":repo_server"),
     ],
@@ -310,6 +318,8 @@ python_binary(
 python_unittest(
     name = "test-snapshot-repo",
     srcs = ["tests/test_snapshot_repo.py"],
+    # Because :temp_repos has a layer dep
+    labels = ["no_pyre"],
     needed_coverage = [
         (100, ":common_args"),
         (100, ":snapshot_repo"),
@@ -374,6 +384,8 @@ python_binary(
 python_binary(
     name = "temp-snapshot",
     srcs = ["tests/temp_snapshot.py"],
+    # Because :temp_repos has a layer dep
+    labels = ["no_pyre"],
     main_module = "antlir.rpm.tests.temp_snapshot",
     deps = [
         ":common",
@@ -490,6 +502,8 @@ python_binary(
 python_unittest(
     name = "test-snapshot-repos",
     srcs = ["tests/test_snapshot_repos.py"],
+    # Because :temp_repos has a layer dep
+    labels = ["no_pyre"],
     needed_coverage = [
         (100, ":common_args"),
         (100, ":snapshot_repos"),
