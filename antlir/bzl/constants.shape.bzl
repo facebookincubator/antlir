@@ -37,6 +37,7 @@ flavor_config_t = shape.shape(
     has_rpm_repo_snapshot = shape.field(bool, default = True),
     version_set_path = shape.field(str, optional = True),
     ba_bootstrap_flavor = shape.field(str, optional = True),
+    ba_bundle_snapshot = shape.field(bool, default = True),
     # @oss-disable
     ba_shortname = shape.field(str, optional = True),
     # @oss-disable
