@@ -19,6 +19,8 @@ log = get_logger()
 # See _match_or_child to understand how these are matched with paths
 _PATH_PATTERNS_EXPECTED_TO_DIFFER = set()
 for p in [
+    # introduced in CentOS 9, tracked in https://github.com/rpm-software-management/rpm/issues/2219
+    "usr/lib/sysimage/rpm/rpmdb.sqlite*",
     "etc/shadow",  # FIXME: Only "days since pwd change may differ"
     "etc/ld.so.cache",
     "etc/dnf/modules.d",
