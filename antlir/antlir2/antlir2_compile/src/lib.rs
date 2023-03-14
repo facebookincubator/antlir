@@ -200,7 +200,7 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::Install(x) => x.compile(ctx),
             Data::Meta(x) => todo!("{x:?}"),
             // handled in buck rule and depgraph, nothing to do here
-            Data::Mount(x) => Ok(()),
+            Data::Mount(_) => Ok(()),
             Data::Remove(x) => x.compile(ctx),
             Data::Rpm(x) => x.compile(ctx),
             Data::Tarball(x) => todo!("{x:?}"),
