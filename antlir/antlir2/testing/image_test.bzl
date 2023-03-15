@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable
-load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 
 _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]

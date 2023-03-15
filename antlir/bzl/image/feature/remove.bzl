@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/feature:remove.bzl?v2_only", antlir2_remove = "remove")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":remove.shape.bzl", "remove_paths_t")
@@ -22,7 +22,7 @@ By default, it is an error if the specified path is missing from the image,
 though this can be avoided by setting `must_exist` to `False`.
     """
     if use_antlir2():
-        return antlir2_remove(
+        return antlir2.remove(
             path = dest,
             must_exist = must_exist,
         )

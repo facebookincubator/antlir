@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/feature:ensure_dirs_exist.bzl?v2_only", antlir2_ensure_subdirs_exist = "ensure_subdirs_exist")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
@@ -51,7 +51,7 @@ def feature_ensure_subdirs_exist(
   (not from the image) is used.
     """
     if use_antlir2():
-        return antlir2_ensure_subdirs_exist(
+        return antlir2.ensure_subdirs_exist(
             into_dir = into_dir,
             subdirs_to_create = subdirs_to_create,
             mode = mode if mode != shape.DEFAULT_VALUE else 0o755,

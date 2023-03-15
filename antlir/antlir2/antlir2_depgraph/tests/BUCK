@@ -1,9 +1,4 @@
-load("//antlir/antlir2/feature:clone.bzl", "clone")
-load("//antlir/antlir2/feature:defs.bzl", "feature")
-load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
-load("//antlir/antlir2/feature:install.bzl", "install")
-load("//antlir/antlir2/feature:remove.bzl", "remove")
-load("//antlir/antlir2/feature:usergroup.bzl", "group_add", "user_add")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load(":defs.bzl", "bad_depgraph", "good_depgraph")
 
 bad_depgraph(
@@ -33,14 +28,14 @@ bad_depgraph(
     ]},
     features = [
         # user_add has a dep on an executable shell file (is is not part of the cycle)
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/fakeshell",
             mode = "a+rx",
         ),
-        ensure_dirs_exist(dirs = "/etc"),
+        feature.ensure_dirs_exist(dirs = "/etc"),
         # create a new user, this will add a requirement on /etc/passwd
-        user_add(
+        feature.user_add(
             home_dir = "/",
             primary_group = "root",
             shell = "/fakeshell",
@@ -48,7 +43,7 @@ bad_depgraph(
         ),
         # install /etc/passwd to be owned by 'antlir' which creates the circular
         # dependency
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/etc/passwd",
             mode = "a+r",
@@ -60,12 +55,12 @@ bad_depgraph(
 good_depgraph(
     name = "install-then-remove",
     features = [
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/foo",
             mode = "a+r",
         ),
-        remove(
+        feature.remove(
             must_exist = True,
             path = "/foo",
         ),
@@ -85,7 +80,7 @@ bad_depgraph(
         },
     }},
     features = [
-        remove(
+        feature.remove(
             must_exist = True,
             path = "/foo",
         ),
@@ -96,12 +91,12 @@ bad_depgraph(
     name = "bad-validator",
     error_regex = "^.*/fakeshell.*\\sdoes not satisfy the validation rules: Executable\\s.*",
     features = [
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/fakeshell",
             mode = "a+r",
         ),
-        user_add(
+        feature.user_add(
             home_dir = "/",
             primary_group = "root",
             # this will cause a validation error because /fakeshell is not executable
@@ -143,14 +138,14 @@ bad_depgraph(
         }}},
     }},
     features = [
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/foo",
             mode = "a+r",
         ),
         # change the src so that two exactly-identical features don't get
         # deduped
-        install(
+        feature.install(
             src = "TARGETS.v2",
             dst = "/foo",
             mode = "a+r",
@@ -161,35 +156,35 @@ bad_depgraph(
 good_depgraph(
     name = "simple-install",
     features = [
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/foo",
             mode = "a+r",
         ),
-        ensure_dirs_exist(dirs = "/etc"),
-        install(
+        feature.ensure_dirs_exist(dirs = "/etc"),
+        feature.install(
             src = "//antlir/antlir2/test_images:passwd",
             dst = "/etc/passwd",
             mode = "a+r",
         ),
-        install(
+        feature.install(
             src = "//antlir/antlir2/test_images:group",
             dst = "/etc/group",
             mode = "a+r",
         ),
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/fakeshell",
             mode = "a+rx",
         ),
-        user_add(
+        feature.user_add(
             home_dir = "/",
             primary_group = "antlir",
             shell = "/fakeshell",
             username = "antlir",
         ),
-        group_add(groupname = "antlir"),
-        install(
+        feature.group_add(groupname = "antlir"),
+        feature.install(
             src = "//antlir:empty",
             dst = "/owned-by-antlir",
             group = "antlir",
@@ -203,7 +198,7 @@ good_depgraph(
 good_depgraph(
     name = "dep-in-parent",
     features = [
-        remove(
+        feature.remove(
             must_exist = True,
             path = "/foo",
         ),
@@ -243,7 +238,7 @@ bad_depgraph(
         }}},
     }},
     features = [
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/foo",
             mode = "u+r",
@@ -256,8 +251,8 @@ bad_depgraph(
     name = "clone-with-missing-src",
     error_regex = "does not satisfy the validation rules: ItemInLayer \\{ key: Path\\(\"/bar\"\\), validator: Exists \\}",
     features = [
-        ensure_dirs_exist(dirs = "/cloned"),
-        clone(
+        feature.ensure_dirs_exist(dirs = "/cloned"),
+        feature.clone(
             dst_path = "/cloned/bar",
             src_layer = ":simple-install",
             src_path = "/bar",
@@ -268,8 +263,8 @@ bad_depgraph(
 good_depgraph(
     name = "clone-dir-src",
     features = [
-        ensure_dirs_exist(dirs = "/clone/src/dir"),
-        install(
+        feature.ensure_dirs_exist(dirs = "/clone/src/dir"),
+        feature.install(
             src = "//antlir:empty",
             dst = "/clone/src/dir/foo",
             mode = "a+r",
@@ -282,18 +277,18 @@ bad_depgraph(
     name = "clone-conflict-inside-dir",
     error_regex = "^Path\\(Entry\\(FsEntry \\{ path: \"/cloned/foo\", file_type: File, mode: 292 \\}\\)\\) is provided by multiple features",
     features = [
-        ensure_dirs_exist(dirs = "/cloned"),
-        clone(
+        feature.ensure_dirs_exist(dirs = "/cloned"),
+        feature.clone(
             dst_path = "/cloned/",
             src_layer = ":clone-dir-src",
             src_path = "/clone/src/dir/",
         ),
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/cloned/bar",
             mode = "a+r",
         ),
-        install(
+        feature.install(
             src = "//antlir:empty",
             dst = "/cloned/foo",
             mode = "a+r",
@@ -305,7 +300,7 @@ bad_depgraph(
     name = "clone-with-missing-user",
     error_regex = "^User\\(\"antlir\"\\) is required ",
     features = [
-        clone(
+        feature.clone(
             dst_path = "/dst",
             src_layer = ":simple-install",
             src_path = "/owned-by-antlir",
@@ -316,7 +311,7 @@ bad_depgraph(
 good_depgraph(
     name = "overlapping-ensure-dirs-exist",
     features = [
-        ensure_dirs_exist(dirs = "/foo/bar/baz"),
+        feature.ensure_dirs_exist(dirs = "/foo/bar/baz"),
         ":external-feature-overlapping-dirs",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
@@ -325,6 +320,6 @@ good_depgraph(
 feature.new(
     name = "external-feature-overlapping-dirs",
     features = [
-        ensure_dirs_exist(dirs = "/foo/bar/baz/qux"),
+        feature.ensure_dirs_exist(dirs = "/foo/bar/baz/qux"),
     ],
 )

@@ -1,5 +1,5 @@
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 
@@ -23,7 +23,7 @@ repo_set(
     }),
 )
 
-antlir2_layer(
+image.layer(
     name = "simple",
     available_rpm_repos = ":test-repo-set",
     features = [
@@ -46,7 +46,7 @@ image_sh_test(
     test = "test.sh",
 )
 
-antlir2_layer(
+image.layer(
     name = "remove",
     available_rpm_repos = ":test-repo-set",
     features = [

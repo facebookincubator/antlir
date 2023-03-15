@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
 load(":feature_info.bzl", "InlineFeatureInfo")

@@ -3,15 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load("//antlir/bzl:build_defs.bzl", "config")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
-load(":antlir2_layer_info.bzl", "LayerInfo")
-
-FlavorInfo = provider(fields = {
-    "default_build_appliance": "The default build_appliance to use on images of this flavor",
-    "default_rpm_repo_set": "The default set of rpm repos available to images of this flavor",
-    "label": "The buck label for this flavor",
-})
 
 def _impl(ctx: "context") -> ["provider"]:
     return [
@@ -23,7 +17,7 @@ def _impl(ctx: "context") -> ["provider"]:
         DefaultInfo(),
     ]
 
-_antlir2_flavor = rule(
+_flavor = rule(
     impl = _impl,
     attrs = {
         "default_build_appliance": attrs.dep(providers = [LayerInfo]),
@@ -31,6 +25,6 @@ _antlir2_flavor = rule(
     },
 )
 
-def antlir2_flavor(**kwargs):
+def flavor(**kwargs):
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
-    return _antlir2_flavor(**kwargs)
+    return _flavor(**kwargs)

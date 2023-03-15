@@ -4,15 +4,15 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:collections.bzl", "collections")
-load("//antlir/antlir2/feature:feature.bzl", "FeatureInfo", "feature")
+load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
+load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
-load(":antlir2_dnf.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
-load(":antlir2_flavor.bzl", "FlavorInfo")
-load(":antlir2_layer_info.bzl", "LayerInfo")
+load(":depgraph.bzl", "build_depgraph")
 
 def _map_image(
         ctx: "context",
@@ -188,32 +188,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ),
     ]
 
-def build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None], dependency_layers: ["LayerInfo"]) -> "artifact":
-    output = ctx.actions.declare_output("depgraph." + format + (".pre" if not subvol else ""))
-    ctx.actions.run(
-        cmd_args(
-            # Inspecting already-built images often requires root privileges
-            "sudo" if subvol else cmd_args(),
-            ctx.attrs.antlir2[RunInfo],
-            "depgraph",
-            cmd_args(str(ctx.label), format = "--label={}"),
-            format,
-            ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json") if hasattr(ctx.attrs, "features") else cmd_args(),
-            cmd_args(
-                ctx.attrs.parent_layer[LayerInfo].depgraph,
-                format = "--parent={}",
-            ) if hasattr(ctx.attrs, "parent_layer") and ctx.attrs.parent_layer else cmd_args(),
-            cmd_args(collections.uniq([li.depgraph for li in dependency_layers]), format = "--image-dependency={}"),
-            cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
-            cmd_args(output.as_output(), format = "--out={}"),
-        ),
-        category = "antlir2_depgraph",
-        identifier = format + ("/pre" if not subvol else ""),
-        local_only = bool(subvol) or bool(dependency_layers),
-    )
-    return output
-
-_antlir2_layer = rule(
+_layer = rule(
     impl = _impl,
     attrs = {
         "antlir2": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2")),
@@ -234,7 +209,7 @@ _antlir2_layer = rule(
     },
 )
 
-def antlir2_layer(
+def layer(
         *,
         name: str.type,
         # Features does not have a direct type hint, but it is still validated
@@ -263,7 +238,7 @@ def antlir2_layer(
         kwargs["flavor"] = flavor
 
     feature_target = name + "--features"
-    feature(
+    feature.new(
         name = feature_target,
         visibility = [":" + name],
         features = features,
@@ -272,7 +247,7 @@ def antlir2_layer(
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
-    return _antlir2_layer(
+    return _layer(
         name = name,
         features = feature_target,
         visibility = get_visibility(visibility),

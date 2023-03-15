@@ -1,8 +1,8 @@
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 
-antlir2_layer(
+image.layer(
     name = "base",
     features = [
         feature.ensure_dirs_exist(
@@ -36,7 +36,7 @@ antlir2_layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-antlir2_layer(
+image.layer(
     name = "clone-src",
     features = [
         feature.install(
@@ -68,7 +68,7 @@ antlir2_layer(
     parent_layer = ":base",
 )
 
-antlir2_layer(
+image.layer(
     name = "clone-file",
     features = [
         feature.clone(
@@ -86,7 +86,7 @@ image_diff_test(
     layer = ":clone-file",
 )
 
-antlir2_layer(
+image.layer(
     name = "clone-dir",
     features = [
         feature.clone(
@@ -104,7 +104,7 @@ image_diff_test(
     layer = ":clone-dir",
 )
 
-antlir2_layer(
+image.layer(
     name = "clone-dir-omit-outer",
     features = [
         feature.ensure_dirs_exist(dirs = "/cloned"),
@@ -125,7 +125,7 @@ image_diff_test(
     layer = ":clone-dir-omit-outer",
 )
 
-antlir2_layer(
+image.layer(
     name = "clone-dir-pre-existing",
     features = [
         feature.ensure_dirs_exist(dirs = "/clone/into/existing"),
@@ -144,7 +144,7 @@ image_diff_test(
     layer = ":clone-dir-pre-existing",
 )
 
-antlir2_layer(
+image.layer(
     name = "base-ids-remap",
     features = [
         feature.ensure_dirs_exist(
@@ -180,7 +180,7 @@ antlir2_layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-antlir2_layer(
+image.layer(
     name = "clone-file-remap-ids",
     features = [
         feature.clone(

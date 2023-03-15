@@ -50,6 +50,7 @@ added to the `_feature_to_json` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
@@ -72,18 +73,6 @@ def _project_as_feature_json(value: ["artifact"]):
 
 Features = transitive_set(args_projections = {"feature_json": _project_as_feature_json})
 FeatureDeps = transitive_set()
-
-FeatureInfo = provider(fields = [
-    # FeatureDeps transitive set
-    # All the targets that must be materialized on disk for the compiler to be
-    # able to build this feature
-    "deps",
-    # Features transitive set
-    # List of output files that contain lists of features deserializable by
-    # Antlir tools. Files include inline features in this rule, as well as all
-    # the features this one brings in via deps
-    "json_files",
-])
 
 _feature_to_json = {
     "clone": clone_to_json,

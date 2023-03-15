@@ -1,13 +1,11 @@
-load("//antlir/antlir2/feature:ensure_dirs_exist.bzl", "ensure_dirs_exist")
-load("//antlir/antlir2/feature:remove.bzl", "remove")
-load("//antlir/antlir2/feature:rpms.bzl", "rpms_install")
-load(":antlir2_layer.bzl", "antlir2_layer")
-load(":antlir2_package.bzl", "antlir2_sendstream_v2")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 
-antlir2_layer(
+image.layer(
     name = "build-appliance.rpms",
     features = [
-        rpms_install(rpms = [
+        feature.rpms_install(rpms = [
             "chef",
             "dnf",
             "dosfstools",
@@ -26,17 +24,18 @@ antlir2_layer(
 # This is a separate layer because the depgraph does not yet understand files
 # that come from rpms. I will address that shortly and re-combine this into one
 # layer target
-antlir2_layer(
+image.layer(
     name = "build-appliance",
     features = [
-        remove(path = "/etc/yum.repos.d"),
-        remove(path = "/etc/dnf/dnf.conf"),
-        ensure_dirs_exist(dirs = "/antlir"),
+        feature.remove(path = "/etc/yum.repos.d"),
+        feature.remove(path = "/etc/dnf/dnf.conf"),
+        feature.ensure_dirs_exist(dirs = "/antlir"),
     ],
     parent_layer = ":build-appliance.rpms",
 )
 
-antlir2_sendstream_v2(
+package.new(
     name = "build-appliance.sendstream.v2",
+    format = "sendstream.v2",
     layer = ":build-appliance",
 )

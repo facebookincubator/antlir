@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":antlir2_layer.bzl", "build_depgraph")
-load(":antlir2_layer_info.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load(":depgraph.bzl", "build_depgraph")
 
 PrebuiltImageInfo = provider(fields = {
     "format": "format of the image file",
@@ -42,7 +42,7 @@ def _impl(ctx: "context") -> ["provider"]:
         DefaultInfo(subvol_symlink),
     ]
 
-antlir2_prebuilt_layer = rule(
+prebuilt = rule(
     impl = _impl,
     attrs = {
         # It's still worth splitting out antlir2 and antlir2_receive since only

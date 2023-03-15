@@ -1,8 +1,8 @@
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 
-antlir2_layer(
+image.layer(
     name = "base",
     features = [
         feature.ensure_dirs_exist(
@@ -27,7 +27,7 @@ antlir2_layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-antlir2_layer(
+image.layer(
     name = "add-user-and-group",
     features = [
         feature.user_add(
@@ -49,7 +49,7 @@ image_diff_test(
     layer = ":add-user-and-group",
 )
 
-antlir2_layer(
+image.layer(
     name = "add-user-to-group",
     features = [
         feature.usermod(
