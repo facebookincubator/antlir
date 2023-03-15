@@ -25,11 +25,13 @@ from antlir.buck.buck_label.buck_label_py import Label
 from antlir.bzl_const import hostname_for_compiler_in_ba
 from antlir.compiler import procfs_serde
 from antlir.compiler.items.mount_utils import mountpoints_from_subvol_meta
-from antlir.config import repo_config
+from antlir.config import repo_config, repo_config_t
 from antlir.fs_utils import META_BUILD_DIR, META_DIR, META_FLAVOR_FILE, Path
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
 from pydantic import validator
+
+REPO_CFG: repo_config_t = repo_config()
 
 
 @enum.unique
@@ -302,17 +304,17 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
 
     subvol.overwrite_path_as_root(
         META_BUILD_DIR / "revision",
-        f"{repo_config().vcs_revision}\n",
+        f"{REPO_CFG.vcs_revision}\n",
     )
 
     subvol.overwrite_path_as_root(
         META_BUILD_DIR / "revision_timestamp",
-        f"{repo_config().revision_timestamp}\n",
+        f"{REPO_CFG.revision_timestamp}\n",
     )
 
     subvol.overwrite_path_as_root(
         META_BUILD_DIR / "revision_time_iso8601",
-        f"{repo_config().revision_time_iso8601}\n",
+        f"{REPO_CFG.revision_time_iso8601}\n",
     )
 
     if layer_opts.unsafe_bypass_flavor_check:
@@ -329,13 +331,23 @@ def setup_meta_dir(subvol: Subvol, layer_opts: LayerOpts):
             "build appliance`."
         )
 
+    subvol_flavor = None
     if subvol.path(META_FLAVOR_FILE).exists():
         subvol_flavor = subvol.read_path_text(META_FLAVOR_FILE)
+
+    if subvol_flavor is not None and REPO_CFG.flavor_alias is not None:
+        tgt, src = REPO_CFG.flavor_alias.split("=")
+        if subvol_flavor == tgt and flavor == src:
+            # Clear the subvol flavor so we update it below.
+            subvol_flavor = None
+
+    if subvol_flavor is not None:
         assert flavor == subvol_flavor, (
             f"The flavor `{flavor}` given differs from the "
             f"flavor `{subvol_flavor}` already written in the subvol`."
         )
-    else:
+
+    if subvol_flavor is None:
         subvol.overwrite_path_as_root(META_FLAVOR_FILE, flavor)
 
 

@@ -3,15 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# This combines configurable build-time constants (documented on REPO_CFG
-# below), and non-configurable constants that are currently not namespaced.
-#
-# Note that there's no deep reason for this struct / non-struct split, so we
-# could easily move everything into the struct.
-#
-load("@fbsource//tools/build_defs:lazy.bzl", "lazy")
 load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
-load("//antlir/bzl:flavor_alias.bzl", "alias_flavor", "flavor_aliasing_enabled")
+load("//antlir/bzl:flavor_alias.bzl", "alias_flavor")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":snapshot_install_dir.bzl", "RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR", "snapshot_install_dir")
@@ -187,16 +180,6 @@ def use_rc_target(*, target, exact_match = False):
     if not exact_match and REPO_CFG.rc_targets == ["all"]:
         return True
 
-    # If flavor aliases are in use, always use rc targets (since the
-    # cached targets likely weren't built with the same flavor alias
-    # overrides). But don't bother applying this logic to BA and
-    # snapshot targets since flavor aliasing is explicitly disabled for
-    # them. (This latter optimization improves performance and is not
-    # required for correctness.)
-    if not exact_match and flavor_aliasing_enabled():
-        if not lazy.is_any(lambda prefix: target.startswith(prefix), REPO_CFG.unaliased_flavor_target_prefixes):
-            return True
-
     return target in REPO_CFG.rc_targets
 
 REPO_CFG = repo_config_t(
@@ -241,5 +224,4 @@ REPO_CFG = repo_config_t(
     ],
     flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
     buck1_tgts_to_flavors = _get_buck1_tgts_to_flavors(),
-    unaliased_flavor_target_prefixes = _get_str_list_cfg("unaliased_flavor_target_prefixes"),
 )

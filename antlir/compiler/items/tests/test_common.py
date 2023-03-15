@@ -6,7 +6,9 @@
 
 from dataclasses import dataclass, field
 from typing import List
+from unittest import mock
 
+import antlir.compiler.items.common
 from antlir.compiler.items.common import (
     image_source_item,
     ImageItem,
@@ -211,9 +213,27 @@ class ItemsCommonTestCase(BaseItemTestCase):
         self.assertEqual("antlir_test", subvol.read_path_text(META_FLAVOR_FILE))
 
     @with_temp_subvols
+    def test_flavor_file_exists_flavor_alias(self, temp_subvols):
+        subvol = self._setup_flavor_test_subvol(temp_subvols, flavor="antlir_test")
+        # repo_config is immutable so replace it (rather than update it).
+        rcfg = mock.MagicMock()
+        rcfg.flavor_alias = "antlir_test=right"
+        with mock.patch.object(antlir.compiler.items.common, "REPO_CFG", rcfg):
+            setup_meta_dir(
+                subvol,
+                self._get_layer_opts(flavor="right"),
+            )
+        self.assertEqual("right", subvol.read_path_text(META_FLAVOR_FILE))
+
+    @with_temp_subvols
     def test_flavor_file_exists_mismatch_error(self, temp_subvols):
         subvol = self._setup_flavor_test_subvol(temp_subvols, flavor="wrong")
-        with self.assertRaisesRegex(AssertionError, "given differs"):
+        # repo_config is immutable so replace it (rather than update it).
+        rcfg = mock.MagicMock()
+        rcfg.flavor_alias = "antlir_test=wrong"
+        with mock.patch.object(
+            antlir.compiler.items.common, "REPO_CFG", rcfg
+        ), self.assertRaisesRegex(AssertionError, "given differs"):
             setup_meta_dir(
                 subvol,
                 self._get_layer_opts(),
