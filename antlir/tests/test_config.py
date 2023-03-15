@@ -51,7 +51,6 @@ class RepoConfigTestCase(unittest.TestCase):
             "host_mounts_allowed_in_targets": [],
             "host_mounts_for_repo_artifacts": [],
             "buck1_tgts_to_flavors": [],
-            "unaliased_flavor_target_prefixes": [],
         }
         defaults.update(kwargs)
         return base_repo_config_t(**defaults).dict()

@@ -103,5 +103,4 @@ repo_config_t = shape.shape(
     rc_targets = shape.list(str),
     buck1_tgts_to_flavors = shape.dict(str, str),
     flavor_alias = shape.field(str, optional = True),
-    unaliased_flavor_target_prefixes = shape.list(shape.path),
 )
