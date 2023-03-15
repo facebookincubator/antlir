@@ -291,6 +291,8 @@ async def vm(
             subvol=disk.subvol,
             stack=stack,
             serial=disk.serial,
+            physical_block_size=disk.physical_block_size,
+            logical_block_size=disk.logical_block_size,
         )
         for disk in opts.disks
     ]
