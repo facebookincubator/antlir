@@ -233,6 +233,8 @@ class QCow2Disk(Share):
     qemu_img: Path
     stack: AsyncExitStack
     interface: disk_interface_t
+    physical_block_size: int
+    logical_block_size: int
     subvol: Optional[str] = "volume"
     additional_scratch_mb: Optional[int] = None
     cow_disk: Optional[Path] = None
@@ -261,7 +263,15 @@ class QCow2Disk(Share):
                 f"file.driver=file,file.filename={self.cow_disk!s},"
             ),
             "--device",
-            f"{self.interface.value},drive={self.dev},serial={serial}",
+            ",".join(
+                [
+                    self.interface.value,
+                    f"drive={self.dev}",
+                    f"serial={serial}",
+                    f"physical_block_size={self.physical_block_size}",
+                    f"logical_block_size={self.logical_block_size}",
+                ]
+            ),
         )
 
     @property

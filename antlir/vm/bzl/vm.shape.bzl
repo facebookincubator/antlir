@@ -36,6 +36,8 @@ disk_t = shape.shape(
     # that is to ensure it matches the kernel we're trying to boot the vm with
     contains_kernel = shape.field(kernel_t, optional = True),
     serial = shape.field(str, optional = True),
+    physical_block_size = shape.field(int, default = 512),
+    logical_block_size = shape.field(int, default = 512),
 )
 
 connection_t = shape.shape(
