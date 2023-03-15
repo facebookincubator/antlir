@@ -349,10 +349,10 @@ impl<'f> FeatureExt<'f> for antlir2_features::install::Install<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
         Ok(vec![Item::Path(Path::Entry(FsEntry {
             path: self.dst.path().to_owned().into(),
-            // TODO: technically this can be a directory sometimes too, but I
-            // need to make that piped through the buck graph instead of
-            // something only discoverable at runtime
-            file_type: FileType::File,
+            file_type: match self.src.is_dir() {
+                true => FileType::Directory,
+                false => FileType::File,
+            },
             mode: self.mode.as_raw(),
         }))])
     }

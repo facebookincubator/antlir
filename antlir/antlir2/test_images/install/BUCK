@@ -1,0 +1,57 @@
+load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
+load("//antlir/antlir2/feature:defs.bzl", "feature")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
+
+antlir2_layer(
+    name = "base",
+    features = [
+        feature.rpms_install(
+            rpms = ["bash"],
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+buck_genrule(
+    name = "genrule-dir",
+    out = "out",
+    cmd = """
+      mkdir $OUT
+      mkdir $OUT/foo
+      touch $OUT/foo/bar
+    """,
+)
+
+antlir2_layer(
+    name = "install-dir",
+    features = [
+        feature.install(
+            src = ":genrule-dir",
+            dst = "/installed-dir",
+            mode = "a+rw,u+w",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+antlir2_layer(
+    name = "child-image-install-dir",
+    features = [
+        # Create a subdir underneath a dir that exists
+        # at least one level below the top of `:genrule-dir`.
+        # This verifies that the dep graph is aware of sub-dirs
+        # coming in implicitly.
+        feature.ensure_subdirs_exist(
+            into_dir = "/installed-dir/foo",
+            subdirs_to_create = "child",
+        ),
+    ],
+    parent_layer = ":install-dir",
+)
+
+image_sh_test(
+    name = "test-installed-dir",
+    layer = ":child-image-install-dir",
+    test = "test_installed_dir.sh",
+)

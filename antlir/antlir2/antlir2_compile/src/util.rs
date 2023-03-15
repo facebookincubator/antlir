@@ -19,13 +19,21 @@ use xattr::FileExt;
 use crate::Result;
 
 #[tracing::instrument(ret, err)]
-pub(crate) fn copy_with_metadata(src: &Path, dst: &Path) -> Result<()> {
+pub(crate) fn copy_with_metadata(
+    src: &Path,
+    dst: &Path,
+    uid: Option<u32>,
+    gid: Option<u32>,
+) -> Result<()> {
     let metadata = std::fs::symlink_metadata(src)?;
+    let uid = uid.unwrap_or(metadata.uid());
+    let gid = gid.unwrap_or(metadata.gid());
+
     trace!("read metadata: {metadata:?}");
     if metadata.is_symlink() {
         let target = std::fs::read_link(src)?;
         std::os::unix::fs::symlink(target, dst)?;
-        std::os::unix::fs::lchown(dst, Some(metadata.uid()), Some(metadata.gid()))?;
+        std::os::unix::fs::lchown(dst, Some(uid), Some(gid))?;
         return Ok(());
     } else if metadata.is_file() {
         trace!("copying simple file");
@@ -48,8 +56,8 @@ pub(crate) fn copy_with_metadata(src: &Path, dst: &Path) -> Result<()> {
     // value if the name differs between two layers, but it's reasonably sane to
     // default to using the same uid/gid instead of root:root as would result
     // otherwise if we just copied without chowning
-    trace!("setting owner to {}:{}", metadata.uid(), metadata.gid());
-    fchown(&f, Some(metadata.uid()), Some(metadata.gid()))?;
+    trace!("setting owner to {}:{}", uid, gid);
+    fchown(&f, Some(uid), Some(gid))?;
     let times = FileTimes::new()
         .set_accessed(metadata.accessed()?)
         .set_modified(metadata.modified()?);
