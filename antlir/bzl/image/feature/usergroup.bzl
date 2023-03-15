@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/antlir2/feature:usergroup.bzl?v2_only", antlir2_group_add = "group_add", antlir2_user_add = "user_add")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load("//antlir/bzl:types.bzl", "types")
@@ -55,7 +55,7 @@ def feature_user_add(
     a circular dependency on directory's owner user.
     """
     if use_antlir2():
-        return antlir2_user_add(
+        return antlir2.user_add(
             username = username,
             uid = uid,
             primary_group = primary_group,
@@ -91,7 +91,7 @@ def feature_group_add(groupname, gid = None):
     are auto-assigned, they may change if underlying layers add/remove groups.
     """
     if use_antlir2():
-        return antlir2_group_add(
+        return antlir2.group_add(
             groupname = groupname,
             gid = gid,
         )

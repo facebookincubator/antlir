@@ -1,11 +1,11 @@
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:rpms.bzl", "rpms_install")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
 
-antlir2_layer(
+image.layer(
     name = "base",
     features = [
-        rpms_install(rpms = ["systemd"]),
+        feature.rpms_install(rpms = ["systemd"]),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )

@@ -1,15 +1,15 @@
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 
-antlir2_layer(
+image.layer(
     name = "base",
     features = [
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-antlir2_layer(
+image.layer(
     name = "ensure_dirs_exist",
     features = [
         feature.ensure_dirs_exist(dirs = "/a"),

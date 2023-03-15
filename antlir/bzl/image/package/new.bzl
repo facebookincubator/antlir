@@ -9,7 +9,7 @@ files, as described by the specified `format`.
 """
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/antlir2:antlir2_package.bzl?v2_only", "antlir2_package")
+load("//antlir/antlir2/bzl/package:defs.bzl?v2_only", antlir2_package = "package")
 load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "use_antlir2")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
@@ -40,7 +40,7 @@ def package_new(
         subvol_name = None,
         ba_tgt = None):
     if use_antlir2():
-        antlir2_package(
+        antlir2_package.new(
             name = name,
             layer = layer,
             format = format,

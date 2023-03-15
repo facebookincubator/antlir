@@ -5,9 +5,9 @@
 
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2:antlir2_layer_info.bzl", "LayerInfo")
-load("//antlir/antlir2/feature:feature.bzl", "FeatureInfo", "feature")
+load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:flatten.bzl", "flatten")
 
 def _make_test_cmd(ctx: "context", expect) -> "cmd_args":
@@ -65,7 +65,7 @@ def bad_depgraph(
         name: str.type,
         features,
         **kwargs):
-    feature(
+    feature.new(
         name = name + "--features",
         features = features,
         visibility = [":" + name],
@@ -95,7 +95,7 @@ _good_depgraph = rule(
 )
 
 def good_depgraph(name, **kwargs):
-    antlir2_layer(name = name, **kwargs)
+    image.layer(name = name, **kwargs)
     _good_depgraph(
         name = name + "-test",
         layer = ":" + name,

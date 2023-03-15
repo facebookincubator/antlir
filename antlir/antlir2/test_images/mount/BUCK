@@ -1,8 +1,8 @@
-load("//antlir/antlir2:antlir2_layer.bzl", "antlir2_layer")
-load("//antlir/antlir2/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
-antlir2_layer(
+image.layer(
     name = "src",
     features = [
         feature.install(
@@ -14,7 +14,7 @@ antlir2_layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-antlir2_layer(
+image.layer(
     name = "parent",
     features = [
         feature.rpms_install(rpms = [
@@ -31,7 +31,7 @@ antlir2_layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-antlir2_layer(
+image.layer(
     name = "mount",
     features = [
         feature.ensure_dirs_exist(dirs = "/mount/in/child"),

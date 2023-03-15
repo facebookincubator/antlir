@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/feature:symlink.bzl?v2_only", antlir2_ensure_dir_symlink = "ensure_dir_symlink", antlir2_ensure_file_symlink = "ensure_file_symlink")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":symlink.shape.bzl", "symlink_t")
@@ -50,7 +50,7 @@ This item is indempotent: it is a no-op if a symlink already exists that
 matches the spec.
     """
     if use_antlir2():
-        return antlir2_ensure_dir_symlink(
+        return antlir2.ensure_dir_symlink(
             link = link_name,
             target = link_target,
         )
@@ -88,7 +88,7 @@ This item is indempotent: it is a no-op if a symlink already exists that
 matches the spec.
     """
     if use_antlir2():
-        return antlir2_ensure_file_symlink(
+        return antlir2.ensure_file_symlink(
             link = link_name,
             target = link_target,
         )

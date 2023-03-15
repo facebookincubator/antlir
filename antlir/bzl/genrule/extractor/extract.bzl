@@ -60,7 +60,7 @@ exported by a parent layer which also includes an extract.extract feature.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/antlir2/feature:extract.bzl?v2_only", antlir2_extract_from_layer = "extract_from_layer")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
@@ -85,7 +85,7 @@ def _extract(
     if use_antlir2():
         if dest != "/":
             fail("not allowed on antlir2")
-        return antlir2_extract_from_layer(
+        return antlir2.extract(
             layer = source,
             binaries = binaries,
         )

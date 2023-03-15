@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":antlir2_layer_info.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
 def _impl(ctx: "context") -> ["provider"]:
     extension = {"sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst"}[ctx.attrs.format]
@@ -21,7 +21,7 @@ def _impl(ctx: "context") -> ["provider"]:
     )
     return [DefaultInfo(package)]
 
-antlir2_package = rule(
+_package = rule(
     impl = _impl,
     attrs = {
         "antlir2_package": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package:antlir2-package")),
@@ -31,13 +31,22 @@ antlir2_package = rule(
     },
 )
 
-def antlir2_sendstream_v2(
+def _new_package(
         name: str.type,
         layer: str.type,
-        compression_level: int.type = 3):
-    antlir2_package(
+        format: str.type,
+        compression_level: int.type = 3,
+        **kwargs):
+    _package(
         name = name,
         layer = layer,
-        format = "sendstream.v2",
-        opts = {"compression_level": compression_level},
+        format = format,
+        opts = {
+            "compression_level": compression_level,
+        },
+        **kwargs
     )
+
+package = struct(
+    new = _new_package,
+)

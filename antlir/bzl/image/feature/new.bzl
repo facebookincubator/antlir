@@ -49,7 +49,7 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/antlir2/feature:feature.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "use_antlir2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_names", "flavors_to_structs")
@@ -367,7 +367,7 @@ def feature_new(
         # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None):
     if use_antlir2():
-        antlir2_feature(
+        antlir2.new(
             name = name,
             features = features,
             visibility = visibility,

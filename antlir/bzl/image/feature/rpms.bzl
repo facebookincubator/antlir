@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/antlir2/feature:rpms.bzl?v2_only", antlir2_rpms_install = "rpms_install", antlir2_rpms_remove_if_exists = "rpms_remove_if_exists")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs", "get_unaliased_flavors")
@@ -160,7 +160,7 @@ be aggravated by the lack of error handling in the script making the RPM install
 operation successful even if the binary fails.
     """
     if use_antlir2():
-        return antlir2_rpms_install(rpms = rpmlist)
+        return antlir2.rpms_install(rpms = rpmlist)
     return _build_rpm_feature(rpmlist, "install", needs_version_set = True, flavors = flavors)
 
 def feature_rpms_remove_if_exists(rpmlist, flavors = None):
@@ -172,7 +172,7 @@ current layer includes features both removing and installing the same
 package, this will cause a build failure.
     """
     if use_antlir2():
-        return antlir2_rpms_remove_if_exists(rpms = rpmlist)
+        return antlir2.rpms_remove_if_exists(rpms = rpmlist)
     return _build_rpm_feature(
         rpmlist,
         "remove_if_exists",
