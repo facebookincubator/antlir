@@ -23,7 +23,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use thiserror::Error;
 
-static ALLOWED_NAME_CHARSET: &str = r"[a-zA-Z0-9,.=\-/~@!+$_]";
+static ALLOWED_NAME_CHARSET: &str = r"[a-zA-Z0-9,.=\-/~@!+$_#]";
 static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
     format!(
         r"(.+?)//({}*?):({}*)",
@@ -40,8 +40,8 @@ static LABEL_WITH_CONFIG_RE: Lazy<Regex> = Lazy::new(|| {
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum Error {
-    #[error("label '{0}' does not match the regex")]
-    NoMatch(String),
+    #[error("label '{0}' does not match the regex: '{1}")]
+    NoMatch(String, String),
     #[error("label config was not a valid label: '{0}'")]
     InvalidConfig(Box<Error>),
 }
@@ -105,7 +105,10 @@ impl<'a> Label<'a> {
                     config,
                 })
             }
-            None => Err(Error::NoMatch(full.to_string())),
+            None => Err(Error::NoMatch(
+                full.to_string(),
+                LABEL_WITH_CONFIG_RE.to_string(),
+            )),
         }
     }
 
@@ -315,7 +318,7 @@ mod tests {
     #[case::double_colon("abc//path/to/target::label")]
     fn bad_labels(#[case] s: &str) {
         assert_eq!(
-            Err(Error::NoMatch(s.into())),
+            Err(Error::NoMatch(s.into(), LABEL_WITH_CONFIG_RE.to_string())),
             Label::new(s),
             "'{}' should not have parsed",
             s
