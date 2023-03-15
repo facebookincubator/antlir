@@ -169,7 +169,7 @@ fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
             return Err(Error::ExtractConflict(dst.to_path_buf()));
         }
     } else {
-        copy_with_metadata(&dep, dst)?;
+        copy_with_metadata(&dep, dst, None, None)?;
     }
     Ok(())
 }
@@ -225,7 +225,7 @@ impl<'a> CompileFeature for Extract<'a> {
                     );
                     let src =
                         src_layer.join(binary.path().strip_prefix("/").unwrap_or(binary.path()));
-                    copy_with_metadata(&src, &dst)?;
+                    copy_with_metadata(&src, &dst, None, None)?;
                 }
                 for dep in all_deps {
                     copy_dep(

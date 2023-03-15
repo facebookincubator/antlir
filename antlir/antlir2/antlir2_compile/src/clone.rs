@@ -58,7 +58,7 @@ impl<'a> CompileFeature for Clone<'a> {
             };
 
             let dst_path = ctx.dst_path(self.dst_path.path().join(relpath.as_ref()));
-            copy_with_metadata(entry.path(), &dst_path)?;
+            copy_with_metadata(entry.path(), &dst_path, None, None)?;
 
             // {ug}ids might not map to the same names in both images, so make
             // sure that we look up the src ids and copy the _names_ instead of
