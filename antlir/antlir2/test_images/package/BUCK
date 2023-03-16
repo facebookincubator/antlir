@@ -25,3 +25,9 @@ package.new(
         "size_mb": 32,
     },
 )
+
+package.new(
+    name = "vfat-layer.cpio.gz",
+    format = "cpio.gz",
+    layer = ":vfat-layer",
+)

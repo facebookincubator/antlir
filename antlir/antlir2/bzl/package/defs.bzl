@@ -9,7 +9,7 @@ def _impl(ctx: "context") -> ["provider"]:
     flavor_info = ctx.attrs.layer[LayerInfo].flavor_info
     build_appliance = (ctx.attrs.build_appliance or flavor_info.default_build_appliance)[LayerInfo]
 
-    extension = {"sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
+    extension = {"cpio.gz": ".cpio.gz", "sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
     spec = ctx.actions.write_json("spec.json", {ctx.attrs.format: ctx.attrs.opts})
     ctx.actions.run(

@@ -58,6 +58,8 @@ enum Spec {
         label: Option<String>,
         size_mb: u64,
     },
+    #[serde(rename = "cpio.gz")]
+    CpioGZ { compression_level: i32 },
 }
 
 fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
@@ -111,6 +113,7 @@ fn main() -> Result<()> {
             .context("while creating sendstream upgrader")?;
             stream.upgrade().context("while upgrading sendstream")
         }
+
         Spec::SendstreamZst { compression_level } => {
             trace!("sending v1 sendstream to zstd");
             let mut btrfs_send = Command::new("sudo")
@@ -130,6 +133,7 @@ fn main() -> Result<()> {
             ensure!(btrfs_send.wait()?.success(), "btrfs-send failed");
             Ok(())
         }
+
         Spec::Vfat {
             fat_size,
             label,
@@ -147,17 +151,20 @@ fn main() -> Result<()> {
             let input = args
                 .layer
                 .canonicalize()
-                .context("failed to build absolute path to layer")?;
+                .context("failed to build abs path to layer")?;
+
             let output = args
                 .out
                 .canonicalize()
-                .context("failed to build absolute path to output")?;
+                .context("failed to build abs path to output")?;
+
             let isol_context = IsolationContext::builder(&args.build_appliance)
                 .inputs(input.as_path())
                 .outputs(output.as_path())
                 .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
                 .build();
 
+            // Build the vfat disk file first
             let mut mkfs_iso = isolate(isol_context.clone());
             let mkfs = mkfs_iso.command.arg("/usr/sbin/mkfs.vfat");
             if let Some(fat_size) = fat_size {
@@ -169,8 +176,8 @@ fn main() -> Result<()> {
 
             run_cmd(mkfs.arg(&output).stdout(Stdio::piped())).context("failed to mkfs.vfat")?;
 
+            // mcopy all the files from the input layer directly into the vfat image.
             let paths = std::fs::read_dir(&input).context("Failed to list input directory")?;
-
             let mut sources = Vec::new();
             for path in paths {
                 sources.push(path.context("failed to read next input path")?.path());
@@ -189,6 +196,48 @@ fn main() -> Result<()> {
                     .stdout(Stdio::piped()),
             )
             .context("Failed to mcopy layer into new fs")?;
+
+            Ok(())
+        }
+
+        Spec::CpioGZ { compression_level } => {
+            File::create(&args.out).context("failed to create output file")?;
+
+            let layer_abs_path = args
+                .layer
+                .canonicalize()
+                .context("failed to build absolute path to layer")?;
+
+            let output_abs_path = args
+                .out
+                .canonicalize()
+                .context("failed to build abs path to output")?;
+
+            let isol_context = IsolationContext::builder(&args.build_appliance)
+                .inputs([layer_abs_path.as_path()])
+                .outputs([output_abs_path.as_path()])
+                .working_directory(std::env::current_dir().context("while getting cwd")?)
+                .build();
+
+            let cpio_script = format!(
+                "set -ue -o pipefail; \
+                /usr/bin/find . -mindepth 1 ! -type s | \
+                LANG=C /usr/bin/sort | \
+                LANG=C /usr/bin/cpio -o -H newc | \
+                /usr/bin/gzip -{} --stdout > {}",
+                compression_level,
+                output_abs_path.as_path().display()
+            );
+
+            run_cmd(
+                isolate(isol_context)
+                    .command
+                    .arg("/bin/bash")
+                    .arg("-c")
+                    .arg(cpio_script)
+                    .stdout(Stdio::piped()),
+            )
+            .context("Failed to build cpio archive")?;
 
             Ok(())
         }
