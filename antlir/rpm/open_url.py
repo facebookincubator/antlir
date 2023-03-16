@@ -6,12 +6,19 @@
 
 from contextlib import contextmanager
 from io import BytesIO
-from typing import Iterator
+from typing import Final, Iterator, List, Type
 
 import requests
+from libfb.py.decorators import retryable
+
+RETRYABLE_EXCEPTIONS: Final[List[Type]] = [
+    requests.exceptions.Timeout,
+    requests.exceptions.ConnectionError,
+]
 
 
 @contextmanager
+@retryable(num_tries=3, sleep_time=1.0, retryable_exs=RETRYABLE_EXCEPTIONS)
 def open_url(url: str) -> Iterator[BytesIO]:
     # pyre-fixme[16]: Module `utils` has no attribute `urlparse`.
     parsed_url = requests.utils.urlparse(url)
