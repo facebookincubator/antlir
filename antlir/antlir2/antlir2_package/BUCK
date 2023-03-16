@@ -12,6 +12,7 @@ rust_binary(
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade_lib",
         "//antlir/util/cli/json_arg:json_arg",
     ],

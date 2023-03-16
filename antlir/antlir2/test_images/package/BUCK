@@ -1,0 +1,27 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+
+image.layer(
+    name = "vfat-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/EFI/BOOT"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/EFI/BOOT/test",
+            mode = "a+rx",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+package.new(
+    name = "vfat-layer.vfat",
+    format = "vfat",
+    layer = ":vfat-layer",
+    opts = {
+        "fat_size": 16,
+        "label": "NONE",
+        "size_mb": 32,
+    },
+)
