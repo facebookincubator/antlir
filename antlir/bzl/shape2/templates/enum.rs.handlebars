@@ -46,6 +46,6 @@ where P: ::fbthrift::protocol::ProtocolReader
 {
     fn read(p: &mut P) -> ::anyhow::Result<Self>
     where Self: Sized {
-        p.read_string::<String>()?.parse()
+        p.read_string()?.parse()
     }
 }
