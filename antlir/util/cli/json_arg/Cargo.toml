@@ -23,4 +23,4 @@ toml = "=0.5.8"
 [dev-dependencies]
 clap = { version = "3.2.23", features = ["derive", "env", "regex", "unicode", "wrap_help"] }
 similar-asserts = "1.4.2"
-tempfile = "3.3"
+tempfile = "3.4"
