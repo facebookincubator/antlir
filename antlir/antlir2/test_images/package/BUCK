@@ -15,19 +15,15 @@ image.layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-package.new(
+package.vfat(
     name = "vfat-layer.vfat",
-    format = "vfat",
+    fat_size = 16,
+    label = "NONE",
     layer = ":vfat-layer",
-    opts = {
-        "fat_size": 16,
-        "label": "NONE",
-        "size_mb": 32,
-    },
+    size_mb = 32,
 )
 
-package.new(
+package.cpio_gz(
     name = "vfat-layer.cpio.gz",
-    format = "cpio.gz",
     layer = ":vfat-layer",
 )
