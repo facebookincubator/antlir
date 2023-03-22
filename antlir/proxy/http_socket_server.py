@@ -20,6 +20,9 @@ class HTTPSocketServer(BaseServer):
         process on our behalf.
         """
         # No server address since nothing actually needs to know it.
+        # pyre-fixme[6]: For 1st argument expected `Union[array[typing.Any],
+        #  bytearray, bytes, _CData, memoryview, mmap, PickleBuffer, str,
+        #  typing.Tuple[typing.Any, ...]]` but got `None`.
         super().__init__(None, RequestHandlerClass)
         self.socket = sock
 
