@@ -179,8 +179,8 @@ impl TestModule {
                 },
                 testfn: TestFn::DynTestFn(Box::new(move || {
                     let module = Module::new();
-                    let mut evaluator = Evaluator::new(&module);
                     let fail_store = FailStore(RefCell::new(None));
+                    let mut evaluator = Evaluator::new(&module);
                     evaluator.extra = Some(&fail_store);
                     evaluator
                         .eval_function(starlark_func.value(), &[], &[])
@@ -250,9 +250,11 @@ impl<'a> FileLoader for Loader<'a> {
         let ast = AstModule::parse(&path, src, &Dialect::Extended)?;
 
         let module = Module::new();
-        let mut eval = Evaluator::new(&module);
-        eval.set_loader(self);
-        eval.eval_module(ast, &globals())?;
+        {
+            let mut eval = Evaluator::new(&module);
+            eval.set_loader(self);
+            eval.eval_module(ast, &globals())?;
+        }
         module.freeze()
     }
 }
