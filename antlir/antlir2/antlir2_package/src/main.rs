@@ -32,9 +32,6 @@ use tracing_subscriber::prelude::*;
 /// Package an image layer into a file
 pub(crate) struct PackageArgs {
     #[clap(long)]
-    /// Path to image layer
-    layer: PathBuf,
-    #[clap(long)]
     /// Path to mounted build appliance image
     build_appliance: PathBuf,
     #[clap(long)]
@@ -49,17 +46,27 @@ pub(crate) struct PackageArgs {
 #[serde(rename_all = "snake_case")]
 enum Spec {
     #[serde(rename = "sendstream.v2")]
-    SendstreamV2 { compression_level: i32 },
+    SendstreamV2 {
+        layer: PathBuf,
+        compression_level: i32,
+    },
     #[serde(rename = "sendstream.zst")]
-    SendstreamZst { compression_level: i32 },
+    SendstreamZst {
+        layer: PathBuf,
+        compression_level: i32,
+    },
     #[serde(rename = "vfat")]
     Vfat {
+        layer: PathBuf,
         fat_size: Option<u16>,
         label: Option<String>,
         size_mb: u64,
     },
     #[serde(rename = "cpio.gz")]
-    CpioGZ { compression_level: i32 },
+    CpioGZ {
+        layer: PathBuf,
+        compression_level: i32,
+    },
 }
 
 fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
@@ -88,14 +95,17 @@ fn main() -> Result<()> {
         .init();
 
     match args.spec.into_inner() {
-        Spec::SendstreamV2 { compression_level } => {
+        Spec::SendstreamV2 {
+            layer,
+            compression_level,
+        } => {
             let v1file = NamedTempFile::new()?;
             trace!("sending v1 sendstream to {}", v1file.path().display());
             ensure!(
                 Command::new("sudo")
                     .arg("btrfs")
                     .arg("send")
-                    .arg(&args.layer)
+                    .arg(&layer)
                     .arg("-f")
                     .arg(v1file.path())
                     .spawn()?
@@ -113,13 +123,15 @@ fn main() -> Result<()> {
             .context("while creating sendstream upgrader")?;
             stream.upgrade().context("while upgrading sendstream")
         }
-
-        Spec::SendstreamZst { compression_level } => {
+        Spec::SendstreamZst {
+            layer,
+            compression_level,
+        } => {
             trace!("sending v1 sendstream to zstd");
             let mut btrfs_send = Command::new("sudo")
                 .arg("btrfs")
                 .arg("send")
-                .arg(&args.layer)
+                .arg(&layer)
                 .stdout(Stdio::piped())
                 .spawn()?;
             let mut zstd = Command::new("zstd")
@@ -135,6 +147,7 @@ fn main() -> Result<()> {
         }
 
         Spec::Vfat {
+            layer,
             fat_size,
             label,
             size_mb,
@@ -148,8 +161,7 @@ fn main() -> Result<()> {
                 .context("Failed to sync output file to disk")?;
             drop(file);
 
-            let input = args
-                .layer
+            let input = layer
                 .canonicalize()
                 .context("failed to build abs path to layer")?;
 
@@ -200,11 +212,13 @@ fn main() -> Result<()> {
             Ok(())
         }
 
-        Spec::CpioGZ { compression_level } => {
+        Spec::CpioGZ {
+            layer,
+            compression_level,
+        } => {
             File::create(&args.out).context("failed to create output file")?;
 
-            let layer_abs_path = args
-                .layer
+            let layer_abs_path = layer
                 .canonicalize()
                 .context("failed to build absolute path to layer")?;
 
