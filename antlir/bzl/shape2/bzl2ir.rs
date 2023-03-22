@@ -57,16 +57,18 @@ fn eval_and_freeze_module(
 ) -> Result<(FrozenModule, SlotMap<TypeId, Arc<ir::Type>>)> {
     let module = Module::new();
     let globals = Globals::extended();
-    let mut evaluator: Evaluator = Evaluator::new(&module);
-    evaluator.set_loader(deps);
-    // Disable the gc so that Value identity is stable. Our modules are
-    // very small and we throw away the Starlark internals as soon as we
-    // convert to the IR, so this is fine.
-    evaluator.disable_gc();
     let registry = TypeRegistryRefCell::default();
-    evaluator.extra = Some(&registry);
+    {
+        let mut evaluator: Evaluator = Evaluator::new(&module);
+        evaluator.set_loader(deps);
+        // Disable the gc so that Value identity is stable. Our modules are
+        // very small and we throw away the Starlark internals as soon as we
+        // convert to the IR, so this is fine.
+        evaluator.disable_gc();
+        evaluator.extra = Some(&registry);
 
-    evaluator.eval_module(ast, &globals)?;
+        evaluator.eval_module(ast, &globals)?;
+    }
     Ok((
         module.freeze().context("while freezing module")?,
         registry.0.into_inner().0,
@@ -363,11 +365,13 @@ impl FileLoader for Dependencies {
         if load == "//antlir/bzl:shape.bzl" {
             let ast = AstModule::parse("", "shape = shape_impl".to_string(), &Dialect::Standard)?;
             let module = Module::new();
-            let mut evaluator: Evaluator = Evaluator::new(&module);
-            let globals = GlobalsBuilder::extended()
-                .with_struct("shape_impl", shape)
-                .build();
-            evaluator.eval_module(ast, &globals)?;
+            {
+                let mut evaluator: Evaluator = Evaluator::new(&module);
+                let globals = GlobalsBuilder::extended()
+                    .with_struct("shape_impl", shape)
+                    .build();
+                evaluator.eval_module(ast, &globals)?;
+            }
             return module.freeze();
         }
         let load: ir::Target = load
