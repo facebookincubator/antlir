@@ -180,5 +180,7 @@ if __name__ == "__main__":  # pragma: no cover
                 )
             )
     except UserFacingError as e:
+        # pyre-fixme[6]: For 1st argument expected `Union[None, int, str]` but got
+        #  `UserFacingError`.
         sys.exit(e)
     sys.exit(ret.returncode)
