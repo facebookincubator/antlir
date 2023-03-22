@@ -36,24 +36,89 @@ _package = rule(
     },
 )
 
-def _new_package(
+def check_kwargs(kwargs):
+    if "opts" in kwargs:
+        fail("opts is not allowed to be provided as kwargs")
+
+def _cpio_gz(
         name: str.type,
         layer: str.type,
-        format: str.type,
         compression_level: int.type = 3,
         **kwargs):
-    opts = kwargs.pop("opts", {})
-
-    opts["compression_level"] = compression_level
-
-    _package(
+    check_kwargs(kwargs)
+    return _package(
         name = name,
         layer = layer,
-        format = format,
+        format = "cpio.gz",
+        opts = {
+            "compression_level": compression_level,
+        },
+        **kwargs
+    )
+
+def _sendstream_v2(
+        name: str.type,
+        layer: str.type,
+        compression_level: int.type = 3,
+        **kwargs):
+    check_kwargs(kwargs)
+    return _package(
+        name = name,
+        layer = layer,
+        format = "sendstream.v2",
+        opts = {
+            "compression_level": compression_level,
+        },
+        **kwargs
+    )
+
+def _sendstream_zst(
+        name: str.type,
+        layer: str.type,
+        compression_level: int.type = 3,
+        **kwargs):
+    check_kwargs(kwargs)
+    return _package(
+        name = name,
+        layer = layer,
+        format = "sendstream.zst",
+        opts = {
+            "compression_level": compression_level,
+        },
+        **kwargs
+    )
+
+def _vfat(
+        name: str.type,
+        layer: str.type,
+        fat_size: [int.type, None] = None,
+        label: [str.type, None] = None,
+        size_mb: [int.type, None] = None,
+        **kwargs):
+    check_kwargs(kwargs)
+
+    opts = {}
+    if fat_size != None:
+        opts["fat_size"] = fat_size
+
+    if label != None:
+        opts["label"] = label
+
+    if size_mb != None:
+        opts["size_mb"] = size_mb
+
+    return _package(
+        name = name,
+        layer = layer,
+        format = "vfat",
         opts = opts,
         **kwargs
     )
 
 package = struct(
-    new = _new_package,
+    backward_compatible_new = _package,
+    cpio_gz = _cpio_gz,
+    sendstream_v2 = _sendstream_v2,
+    sendstream_zst = _sendstream_zst,
+    vfat = _vfat,
 )

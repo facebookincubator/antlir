@@ -40,7 +40,7 @@ def package_new(
         subvol_name = None,
         ba_tgt = None):
     if use_antlir2():
-        antlir2_package.new(
+        antlir2_package.backward_compatible_new(
             name = name,
             layer = layer,
             format = format,

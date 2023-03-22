@@ -35,8 +35,7 @@ image.layer(
     parent_layer = ":build-appliance.rpms",
 )
 
-package.new(
+package.sendstream_v2(
     name = "build-appliance.sendstream.v2",
-    format = "sendstream.v2",
     layer = ":build-appliance",
 )
