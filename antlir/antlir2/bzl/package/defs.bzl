@@ -11,11 +11,17 @@ def _impl(ctx: "context") -> ["provider"]:
 
     extension = {"cpio.gz": ".cpio.gz", "sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
-    spec = ctx.actions.write_json("spec.json", {ctx.attrs.format: ctx.attrs.opts})
+
+    spec_opts = {}
+    spec_opts.update(ctx.attrs.opts)
+    if "layer" in spec_opts:
+        fail("Layer must not be provided in attrs.opts")
+    spec_opts["layer"] = ctx.attrs.layer[LayerInfo].subvol_symlink
+
+    spec = ctx.actions.write_json("spec.json", {ctx.attrs.format: spec_opts}, with_inputs = True)
     ctx.actions.run(
         cmd_args(
             ctx.attrs.antlir2_package[RunInfo],
-            cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
             cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
             cmd_args(spec, format = "--spec={}"),
             cmd_args(package.as_output(), format = "--out={}"),
