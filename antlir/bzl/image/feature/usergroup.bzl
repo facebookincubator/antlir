@@ -136,6 +136,6 @@ def feature_setup_standard_user(user, group, homedir = None, shell = SHELL_BASH,
             homedir_basename,
             user = user,
             group = group,
-            mode = 0o0770,
+            mode = 0o0750,
         ),
     ]
