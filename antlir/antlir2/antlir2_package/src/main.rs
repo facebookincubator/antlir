@@ -67,6 +67,11 @@ enum Spec {
         layer: PathBuf,
         compression_level: i32,
     },
+    #[serde(rename = "cpio.zst")]
+    CpioZst {
+        layer: PathBuf,
+        compression_level: i32,
+    },
 }
 
 fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
@@ -239,6 +244,50 @@ fn main() -> Result<()> {
                 LANG=C /usr/bin/sort | \
                 LANG=C /usr/bin/cpio -o -H newc | \
                 /usr/bin/gzip -{} --stdout > {}",
+                compression_level,
+                output_abs_path.as_path().display()
+            );
+
+            run_cmd(
+                isolate(isol_context)
+                    .command
+                    .arg("/bin/bash")
+                    .arg("-c")
+                    .arg(cpio_script)
+                    .stdout(Stdio::piped()),
+            )
+            .context("Failed to build cpio archive")?;
+
+            Ok(())
+        }
+
+        Spec::CpioZst {
+            layer,
+            compression_level,
+        } => {
+            File::create(&args.out).context("failed to create output file")?;
+
+            let layer_abs_path = layer
+                .canonicalize()
+                .context("failed to build absolute path to layer")?;
+
+            let output_abs_path = args
+                .out
+                .canonicalize()
+                .context("failed to build abs path to output")?;
+
+            let isol_context = IsolationContext::builder(&args.build_appliance)
+                .inputs([layer_abs_path.as_path()])
+                .outputs([output_abs_path.as_path()])
+                .working_directory(std::env::current_dir().context("while getting cwd")?)
+                .build();
+
+            let cpio_script = format!(
+                "set -ue -o pipefail; \
+                /usr/bin/find . -mindepth 1 ! -type s | \
+                LANG=C /usr/bin/sort | \
+                LANG=C /usr/bin/cpio -o -H newc | \
+                /usr/bin/zstd --compress -{} -T0 -f -o {}",
                 compression_level,
                 output_abs_path.as_path().display()
             );

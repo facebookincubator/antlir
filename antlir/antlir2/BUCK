@@ -16,6 +16,7 @@ image.layer(
             "socat",
             "strace",
             "systemd-container",
+            "zstd",
         ]),
     ],
     flavor = "//antlir/antlir2/facebook/flavor:centos9",

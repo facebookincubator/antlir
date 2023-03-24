@@ -27,3 +27,8 @@ package.cpio_gz(
     name = "vfat-layer.cpio.gz",
     layer = ":vfat-layer",
 )
+
+package.cpio_zst(
+    name = "vfat-layer.cpio.zst",
+    layer = ":vfat-layer",
+)
