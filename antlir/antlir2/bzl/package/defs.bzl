@@ -9,7 +9,7 @@ def _impl(ctx: "context") -> ["provider"]:
     flavor_info = ctx.attrs.layer[LayerInfo].flavor_info
     build_appliance = (ctx.attrs.build_appliance or flavor_info.default_build_appliance)[LayerInfo]
 
-    extension = {"cpio.gz": ".cpio.gz", "sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
+    extension = {"cpio.gz": ".cpio.gz", "cpio.zst": ".cpio.zst", "sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
 
     spec_opts = {}
@@ -36,7 +36,7 @@ _package = rule(
     attrs = {
         "antlir2_package": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package:antlir2-package")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "format": attrs.enum(["sendstream.v2", "sendstream.zst", "cpio.gz", "vfat"]),
+        "format": attrs.enum(["sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat"]),
         "layer": attrs.dep(providers = [LayerInfo]),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
     },
@@ -56,6 +56,22 @@ def _cpio_gz(
         name = name,
         layer = layer,
         format = "cpio.gz",
+        opts = {
+            "compression_level": compression_level,
+        },
+        **kwargs
+    )
+
+def _cpio_zst(
+        name: str.type,
+        layer: str.type,
+        compression_level: int.type = 15,
+        **kwargs):
+    check_kwargs(kwargs)
+    return _package(
+        name = name,
+        layer = layer,
+        format = "cpio.zst",
         opts = {
             "compression_level": compression_level,
         },
@@ -124,6 +140,7 @@ def _vfat(
 package = struct(
     backward_compatible_new = _package,
     cpio_gz = _cpio_gz,
+    cpio_zst = _cpio_zst,
     sendstream_v2 = _sendstream_v2,
     sendstream_zst = _sendstream_zst,
     vfat = _vfat,
