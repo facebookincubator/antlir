@@ -277,6 +277,24 @@ vm.python_unittest(
     ],
 )
 
+vm.python_unittest(
+    name = "test-many-disks",
+    srcs = ["test_many_disks.py"],
+    vm_opts = vm.types.opts.new(
+        disks = [
+            vm.types.disk.root(),
+        ] + [
+            vm.types.disk.scratch(
+                size_mb = 16,
+            ),
+        ] * 16,
+    ),
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir:testlib_common",
+    ],
+)
+
 rust_binary(
     name = "sidecar",
     srcs = ["sidecar.rs"],

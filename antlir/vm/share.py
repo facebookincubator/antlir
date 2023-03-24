@@ -35,7 +35,12 @@ def _next_drive() -> str:
     global __next_drive_index
     idx = __next_drive_index
     __next_drive_index += 1
-    return "vd" + chr(idx + ord("a"))
+    res = ""
+    while idx >= 0:
+        div, mod = divmod(idx, 26)
+        res = chr(ord("a") + mod) + res
+        idx = div - 1
+    return "vd" + res
 
 
 class Share(ABC):
