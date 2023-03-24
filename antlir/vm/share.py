@@ -227,6 +227,16 @@ def _tmp_qcow2_disk(
 
 
 @dataclass(frozen=True)
+class PCIBridge(Share):
+    id: str
+    chassis_nr: int
+
+    @property
+    def qemu_args(self) -> Iterable[str]:
+        return ("--device", f"pci-bridge,id={self.id},chassis_nr={self.chassis_nr}")
+
+
+@dataclass(frozen=True)
 class QCow2Disk(Share):
     """
     Share a btrfs filesystem to a Qemu instance as a
@@ -244,6 +254,7 @@ class QCow2Disk(Share):
     additional_scratch_mb: Optional[int] = None
     cow_disk: Optional[Path] = None
     dev: str = field(default_factory=_next_drive)
+    bus: Optional[str] = None
     serial: Optional[str] = None
 
     def __post_init__(self) -> None:
@@ -271,6 +282,7 @@ class QCow2Disk(Share):
             ",".join(
                 [
                     self.interface.value,
+                    f"bus={self.bus}",
                     f"drive={self.dev}",
                     f"serial={serial}",
                     f"physical_block_size={self.physical_block_size}",

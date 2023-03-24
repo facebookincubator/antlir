@@ -287,7 +287,7 @@ vm.python_unittest(
             vm.types.disk.scratch(
                 size_mb = 16,
             ),
-        ] * 16,
+        ] * 36,
     ),
     deps = [
         "//antlir:fs_utils",

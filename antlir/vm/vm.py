@@ -27,7 +27,7 @@ from antlir.unshare import Namespace, Unshare
 from antlir.vm.bzl.vm import vm_opts_t
 from antlir.vm.common import create_sidecar_subprocess, insertstack, SidecarProcess
 from antlir.vm.guest_ssh import GuestSSHConnection
-from antlir.vm.share import Plan9Export, QCow2Disk, Share
+from antlir.vm.share import PCIBridge, Plan9Export, QCow2Disk, Share
 from antlir.vm.tap import VmTap
 from antlir.vm.tpm import TPMError, VmTPM
 
@@ -282,6 +282,13 @@ async def vm(
     # in-repo testing.
     repo_cfg = repo_config()
 
+    # Storage devices are attached to PCI bridges, 32 devices on each bridge.
+    bridges = [
+        PCIBridge(id=f"pci{i}", chassis_nr=i + 1)
+        for i in range((len(opts.disks) - 1) // 32 + 1)
+    ]
+    shares.extend(bridges)
+
     disks = [
         QCow2Disk(
             path=disk.package.path,
@@ -293,14 +300,12 @@ async def vm(
             serial=disk.serial,
             physical_block_size=disk.physical_block_size,
             logical_block_size=disk.logical_block_size,
+            bus=bridges[i // 32].id,
         )
-        for disk in opts.disks
+        for i, disk in enumerate(opts.disks)
     ]
-
-    # Root disk is always first
     root_disk = disks[0]
-    shares.insert(0, root_disk)
-    shares.extend(disks[1:])
+    shares.extend(disks)
 
     if bind_repo_ro or repo_cfg.artifacts_require_repo:
         # Mount the code repository root at the same mount point from the host
