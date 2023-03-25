@@ -342,7 +342,12 @@ def _parse_update_args(creates: UpdateArgs, replaces: UpdateArgs) -> ExplicitUpd
                 raise RuntimeError(
                     f"Invalid options specified for action {action}: " f"{opts_json}"
                 )
-            opts = json.loads(opts_json[0]) if opts_json else {}
+            try:
+                opts = json.loads(opts_json[0]) if opts_json else {}
+            except json.decoder.JSONDecodeError:  # pragma: no cover
+                raise RuntimeError(
+                    f"Options specified for action {action} is not valid json: {opts_json[0]}"
+                )
             if tag in pkg_updates.setdefault(package, {}):
                 existing_up = pkg_updates[package][tag]
                 raise RuntimeError(
