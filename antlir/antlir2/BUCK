@@ -9,6 +9,7 @@ image.layer(
             "chef",
             "cpio",
             "dnf",
+            "btrfs-progs",
             "dosfstools",
             "mtools",
             "fb-chef-solo-tools",
