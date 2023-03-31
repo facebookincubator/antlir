@@ -132,10 +132,8 @@ class Unshare:
                 # Without switching to the parent's euid, the parent would
                 # not be able to open the keepalive's namespaces below.
                 "nsenter",
-                "--setuid",
-                f"{os.geteuid()}",
-                "--setgid",
-                f"{os.getegid()}",
+                f"--setuid={os.geteuid()}",
+                f"--setgid={os.getegid()}",
                 "bash",
                 "-euc",
                 "exec 3< /proc/self/status ; grep ^NSpid <&3 ; exec cat 1>&2",
@@ -284,10 +282,8 @@ class Unshare:
             "nsenter",
             *self._nsenter_args(),
             # Pretend we did not `sudo` (see the note in the class docstring)
-            "--setuid",
-            str(os.geteuid()),
-            "--setgid",
-            str(os.getegid()),
+            f"--setuid={os.geteuid()}",
+            f"--setgid={os.getegid()}",
             *cmd,
         ]
 
