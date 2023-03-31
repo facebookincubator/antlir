@@ -1,0 +1,17 @@
+load("//metalos:defs.bzl", "rust_library")
+
+oncall("metalos")
+
+rust_library(
+    name = "antlir_mount",
+    srcs = ["src/lib.rs"],
+    visibility = ["PUBLIC"],
+    deps = [
+        "mockall",
+        "nix",
+        "proc-mounts",
+        "slog",
+        "thiserror",
+        "//metalos/antlir_image/antlir_image:antlir_image",
+    ],
+)
