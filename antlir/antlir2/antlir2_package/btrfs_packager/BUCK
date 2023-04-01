@@ -1,20 +1,22 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 rust_binary(
-    name = "antlir2-packager",
-    srcs = glob(["src/**/*.rs"]),
+    name = "btrfs-packager",
+    srcs = ["src/main.rs"],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "bytesize",
         "clap",
-        "serde_json",
+        "loopdev",
+        "nix",
+        "slog_glog_fmt",
         "tempfile",
-        "tracing",
         "tracing-glog",
         "tracing-subscriber",
-        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_mount:antlir_mount",
         "//antlir/antlir2/antlir2_package/antlir2_package_lib:antlir2-package-lib",
-        "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade_lib",
         "//antlir/util/cli/json_arg:json_arg",
+        "//metalos/lib/btrfs:btrfs",
     ],
 )
