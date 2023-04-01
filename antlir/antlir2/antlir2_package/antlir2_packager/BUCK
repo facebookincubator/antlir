@@ -1,7 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 rust_binary(
-    name = "antlir2-package",
+    name = "antlir2-packager",
     srcs = glob(["src/**/*.rs"]),
     visibility = ["PUBLIC"],
     deps = [
