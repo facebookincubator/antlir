@@ -34,7 +34,7 @@ def _impl(ctx: "context") -> ["provider"]:
 _package = rule(
     impl = _impl,
     attrs = {
-        "antlir2_package": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package:antlir2-package")),
+        "antlir2_package": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "format": attrs.enum(["sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat"]),
         "layer": attrs.dep(providers = [LayerInfo]),
