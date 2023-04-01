@@ -15,7 +15,8 @@ use std::process::Stdio;
 
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
-use anyhow::anyhow;
+use antlir2_package_lib::run_cmd;
+use antlir2_package_lib::Spec;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
@@ -23,7 +24,6 @@ use btrfs_send_stream_upgrade_lib::upgrade::send_stream::SendStream;
 use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use clap::Parser;
 use json_arg::JsonFile;
-use serde::Deserialize;
 use tempfile::NamedTempFile;
 use tracing::trace;
 use tracing_subscriber::prelude::*;
@@ -40,47 +40,6 @@ pub(crate) struct PackageArgs {
     #[clap(long)]
     /// Path to output the image
     out: PathBuf,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "snake_case")]
-enum Spec {
-    #[serde(rename = "sendstream.v2")]
-    SendstreamV2 {
-        layer: PathBuf,
-        compression_level: i32,
-    },
-    #[serde(rename = "sendstream.zst")]
-    SendstreamZst {
-        layer: PathBuf,
-        compression_level: i32,
-    },
-    #[serde(rename = "vfat")]
-    Vfat {
-        layer: PathBuf,
-        fat_size: Option<u16>,
-        label: Option<String>,
-        size_mb: u64,
-    },
-    #[serde(rename = "cpio.gz")]
-    CpioGZ {
-        layer: PathBuf,
-        compression_level: i32,
-    },
-    #[serde(rename = "cpio.zst")]
-    CpioZst {
-        layer: PathBuf,
-        compression_level: i32,
-    },
-}
-
-fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
-    let output = command.output().context("Failed to run command")?;
-
-    match output.status.success() {
-        true => Ok(output),
-        false => Err(anyhow!("failed to run command {:?}: {:?}", command, output)),
-    }
 }
 
 fn main() -> Result<()> {
