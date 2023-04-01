@@ -1,6 +1,31 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/bzl/package:defs.bzl", "BtrfsSubvol", "package")
+
+image.layer(
+    name = "btrfs-test-1",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/btrfs_test_1"),
+        feature.ensure_dirs_exist(dirs = "/btrfs_test_2_mnt"),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "btrfs-test-2",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/btrfs_test_2"),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "btrfs-test-3",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/btrfs_test_3"),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
 
 image.layer(
     name = "vfat-layer",
@@ -31,4 +56,25 @@ package.cpio_gz(
 package.cpio_zst(
     name = "vfat-layer.cpio.zst",
     layer = ":vfat-layer",
+)
+
+package.btrfs(
+    name = "btrfs-layer-test.btrfs",
+    compression_level = 2,
+    default_subvol = "/",
+    free_mb = 10,
+    label = "test-btrfs",
+    subvols = {
+        "/test_1": BtrfsSubvol(
+            layer = ":btrfs-test-1",
+        ),
+        "/test_1/btrfs_test_2_mnt": BtrfsSubvol(
+            layer = ":btrfs-test-2",
+            writable = True,
+        ),
+        "/test_3": BtrfsSubvol(
+            layer = ":btrfs-test-3",
+            writable = False,
+        ),
+    },
 )

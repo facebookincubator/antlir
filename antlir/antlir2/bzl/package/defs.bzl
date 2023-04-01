@@ -5,24 +5,54 @@
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
-def _impl(ctx: "context") -> ["provider"]:
-    flavor_info = ctx.attrs.layer[LayerInfo].flavor_info
-    build_appliance = (ctx.attrs.build_appliance or flavor_info.default_build_appliance)[LayerInfo]
+def _detect_build_appliance(layer, build_appliance):
+    if build_appliance != None:
+        return build_appliance[LayerInfo]
 
-    extension = {"cpio.gz": ".cpio.gz", "cpio.zst": ".cpio.zst", "sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
+    flavor_info = layer[LayerInfo].flavor_info
+    return flavor_info.default_build_appliance[LayerInfo]
+
+def _impl(ctx: "context") -> ["provider"]:
+    extension = {"btrfs": ".btrfs", "cpio.gz": ".cpio.gz", "cpio.zst": ".cpio.zst", "sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
 
-    spec_opts = {}
-    spec_opts.update(ctx.attrs.opts)
-    if "layer" in spec_opts:
+    if "layer" in ctx.attrs.opts:
         fail("Layer must not be provided in attrs.opts")
-    spec_opts["layer"] = ctx.attrs.layer[LayerInfo].subvol_symlink
+    if "subvols" in ctx.attrs.opts:
+        fail("Subvols must not be provided in attrs.opts")
+
+    spec_opts = {}
+    if ctx.attrs.format == "btrfs":
+        spec_opts["btrfs_packager_path"] = ctx.attrs.btrfs_packager[RunInfo]
+        spec_opts["spec"] = {}
+        spec_opts["spec"].update(ctx.attrs.opts)
+        if ctx.attrs.subvols == None:
+            fail("subvols must be provided for all non-btrfs formats")
+
+        subvols = {}
+        for path, subvol in ctx.attrs.subvols.items():
+            subvols[path] = {
+                "layer": subvol["layer"][LayerInfo].subvol_symlink,
+                "writable": subvol.get("writable"),
+            }
+        spec_opts["spec"]["subvols"] = subvols
+    else:
+        spec_opts.update(ctx.attrs.opts)
+        if ctx.attrs.layer == None:
+            fail("layer must be provided for all non-btrfs formats")
+
+        spec_opts["build_appliance"] = _detect_build_appliance(
+            layer = ctx.attrs.layer,
+            build_appliance = ctx.attrs.build_appliance,
+        ).subvol_symlink
+
+        spec_opts["layer"] = ctx.attrs.layer[LayerInfo].subvol_symlink
 
     spec = ctx.actions.write_json("spec.json", {ctx.attrs.format: spec_opts}, with_inputs = True)
     ctx.actions.run(
         cmd_args(
-            ctx.attrs.antlir2_package[RunInfo],
-            cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
+            ctx.attrs.antlir2_packager[RunInfo],
+            cmd_args(ctx.attrs.build_appliance[LayerInfo].subvol_symlink, format = "--build-appliance={}") if ctx.attrs.build_appliance else cmd_args(),
             cmd_args(spec, format = "--spec={}"),
             cmd_args(package.as_output(), format = "--out={}"),
         ),
@@ -34,13 +64,37 @@ def _impl(ctx: "context") -> ["provider"]:
 _package = rule(
     impl = _impl,
     attrs = {
-        "antlir2_package": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
+        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
+        "btrfs_packager": attrs.default_only(attrs.dep(providers = [RunInfo], default = "//antlir/antlir2/antlir2_package/btrfs_packager:btrfs-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "format": attrs.enum(["sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat"]),
-        "layer": attrs.dep(providers = [LayerInfo]),
+        "format": attrs.enum(["btrfs", "sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat"]),
+        "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
+        "subvols": attrs.option(
+            attrs.dict(
+                attrs.string(),
+                attrs.dict(
+                    attrs.string(),
+                    attrs.option(
+                        attrs.one_of(
+                            attrs.dep(providers = [LayerInfo]),
+                            attrs.bool(),
+                        ),
+                    ),
+                ),
+            ),
+            default = None,
+        ),
     },
 )
+
+def BtrfsSubvol(
+        layer: str.type,
+        writable: [bool.type, None] = None):
+    return {
+        "layer": layer,
+        "writable": writable,
+    }
 
 def check_kwargs(kwargs):
     if "opts" in kwargs:
@@ -56,6 +110,7 @@ def _cpio_gz(
         name = name,
         layer = layer,
         format = "cpio.gz",
+        subvols = None,
         opts = {
             "compression_level": compression_level,
         },
@@ -78,6 +133,28 @@ def _cpio_zst(
         **kwargs
     )
 
+def _btrfs(
+        name: str.type,
+        subvols: dict.type,
+        default_subvol: str.type,
+        free_mb: [int.type, None] = None,
+        compression_level: int.type = 3,
+        label: [str.type, None] = None,
+        **kwargs):
+    check_kwargs(kwargs)
+    return _package(
+        name = name,
+        format = "btrfs",
+        subvols = subvols,
+        opts = {
+            "compression_level": compression_level,
+            "default_subvol": default_subvol,
+            "free_mb": free_mb,
+            "label": label,
+        },
+        **kwargs
+    )
+
 def _sendstream_v2(
         name: str.type,
         layer: str.type,
@@ -88,6 +165,7 @@ def _sendstream_v2(
         name = name,
         layer = layer,
         format = "sendstream.v2",
+        subvols = None,
         opts = {
             "compression_level": compression_level,
         },
@@ -104,6 +182,7 @@ def _sendstream_zst(
         name = name,
         layer = layer,
         format = "sendstream.zst",
+        subvols = None,
         opts = {
             "compression_level": compression_level,
         },
@@ -133,6 +212,7 @@ def _vfat(
         name = name,
         layer = layer,
         format = "vfat",
+        subvols = None,
         opts = opts,
         **kwargs
     )
@@ -141,6 +221,7 @@ package = struct(
     backward_compatible_new = _package,
     cpio_gz = _cpio_gz,
     cpio_zst = _cpio_zst,
+    btrfs = _btrfs,
     sendstream_v2 = _sendstream_v2,
     sendstream_zst = _sendstream_zst,
     vfat = _vfat,

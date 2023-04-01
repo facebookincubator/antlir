@@ -17,6 +17,7 @@ use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
 use antlir2_package_lib::run_cmd;
 use antlir2_package_lib::Spec;
+use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
@@ -31,9 +32,6 @@ use tracing_subscriber::prelude::*;
 #[derive(Parser, Debug)]
 /// Package an image layer into a file
 pub(crate) struct PackageArgs {
-    #[clap(long)]
-    /// Path to mounted build appliance image
-    build_appliance: PathBuf,
     #[clap(long)]
     /// Specifications for the packaging
     spec: JsonFile<Spec>,
@@ -59,6 +57,72 @@ fn main() -> Result<()> {
         .init();
 
     match args.spec.into_inner() {
+        Spec::Btrfs {
+            btrfs_packager_path,
+            spec,
+        } => {
+            let btrfs_packager_path = btrfs_packager_path
+                .into_iter()
+                .next()
+                .context("Expected exactly one arg to btrfs_packager_path")?;
+
+            // The output path must exist before we can make an absolute path for it.
+            let output_file = File::create(&args.out).context("failed to create output file")?;
+            output_file
+                .sync_all()
+                .context("Failed to sync output file to disk")?;
+            drop(output_file);
+
+            // Write just our sub-spec for btrfs to a file for the packager
+            let btrfs_spec_file =
+                NamedTempFile::new().context("failed to create tempfile for spec json")?;
+
+            serde_json::to_writer(btrfs_spec_file.as_file(), &spec)
+                .context("failed to write json to tempfile")?;
+
+            btrfs_spec_file
+                .as_file()
+                .sync_all()
+                .context("failed to sync json tempfile content")?;
+
+            let btrfs_spec_file_abs = btrfs_spec_file
+                .path()
+                .canonicalize()
+                .context("Failed to build abs path for spec tempfile")?;
+
+            let mut btrfs_package_cmd = Command::new("sudo");
+            btrfs_package_cmd
+                .arg("unshare")
+                .arg("--mount")
+                .arg("--pid")
+                .arg("--fork")
+                .arg(btrfs_packager_path)
+                .arg("--spec")
+                .arg(btrfs_spec_file_abs)
+                .arg("--out")
+                .arg(&args.out);
+
+            let output = btrfs_package_cmd
+                .output()
+                .context("failed to spawn isolated btrfs-packager")?;
+
+            println!(
+                "btrfs-packager stdout:\n{}\nbtrfs-packager stderr\n{}",
+                std::str::from_utf8(&output.stdout)
+                    .context("failed to render btrfs-packager stdout")?,
+                std::str::from_utf8(&output.stderr)
+                    .context("failed to render btrfs-packager stderr")?,
+            );
+
+            match output.status.success() {
+                true => Ok(()),
+                false => Err(anyhow!(
+                    "failed to run command {:?}: {:?}",
+                    btrfs_package_cmd,
+                    output
+                )),
+            }
+        }
         Spec::SendstreamV2 {
             layer,
             compression_level,
@@ -111,6 +175,7 @@ fn main() -> Result<()> {
         }
 
         Spec::Vfat {
+            build_appliance,
             layer,
             fat_size,
             label,
@@ -134,7 +199,7 @@ fn main() -> Result<()> {
                 .canonicalize()
                 .context("failed to build abs path to output")?;
 
-            let isol_context = IsolationContext::builder(&args.build_appliance)
+            let isol_context = IsolationContext::builder(&build_appliance)
                 .inputs(input.as_path())
                 .outputs(output.as_path())
                 .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
@@ -177,6 +242,7 @@ fn main() -> Result<()> {
         }
 
         Spec::CpioGZ {
+            build_appliance,
             layer,
             compression_level,
         } => {
@@ -191,7 +257,7 @@ fn main() -> Result<()> {
                 .canonicalize()
                 .context("failed to build abs path to output")?;
 
-            let isol_context = IsolationContext::builder(&args.build_appliance)
+            let isol_context = IsolationContext::builder(&build_appliance)
                 .inputs([layer_abs_path.as_path()])
                 .outputs([output_abs_path.as_path()])
                 .working_directory(std::env::current_dir().context("while getting cwd")?)
@@ -221,6 +287,7 @@ fn main() -> Result<()> {
         }
 
         Spec::CpioZst {
+            build_appliance,
             layer,
             compression_level,
         } => {
@@ -235,7 +302,7 @@ fn main() -> Result<()> {
                 .canonicalize()
                 .context("failed to build abs path to output")?;
 
-            let isol_context = IsolationContext::builder(&args.build_appliance)
+            let isol_context = IsolationContext::builder(&build_appliance)
                 .inputs([layer_abs_path.as_path()])
                 .outputs([output_abs_path.as_path()])
                 .working_directory(std::env::current_dir().context("while getting cwd")?)
