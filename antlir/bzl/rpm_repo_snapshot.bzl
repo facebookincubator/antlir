@@ -267,7 +267,7 @@ def add_rpm_repo_snapshots_layer(
         parent_layer,
         dnf_snapshot = None,  # install, make default for `dnf`, make cache
         yum_snapshot = None,  # install, make default for `yum`, make cache
-        make_caches_for_other_snapshot_installers = None,  # install, make cache
+        extra_snapshot_installers = None,  # install, make cache
         remove_existing_snapshot = False,
         **image_layer_kwargs):
     """
@@ -281,8 +281,7 @@ def add_rpm_repo_snapshots_layer(
     A careful reader will note that we could automatically build caches for
     all installers supported by a snapshot, but we currently do not do this
     because building caches is fairly slow, whereas a supported installer is
-    not necessarily going to get used.  If we change our position on this,
-    the `make_caches_for_other_snapshot_installers` argument can be removed.
+    not necessarily going to get used.
     """
 
     if remove_existing_snapshot:
@@ -308,7 +307,7 @@ def add_rpm_repo_snapshots_layer(
 
     make_cache_for_s_i_pairs = {}
     for s_i in (
-        default_s_i_pairs + (make_caches_for_other_snapshot_installers or [])
+        default_s_i_pairs + (extra_snapshot_installers or [])
     ):
         if s_i not in make_cache_for_s_i_pairs:
             make_cache_for_s_i_pairs[s_i] = True

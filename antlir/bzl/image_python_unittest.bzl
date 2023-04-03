@@ -4,7 +4,11 @@
 # LICENSE file in the root directory of this source tree.
 
 load(":build_defs.bzl", "add_test_framework_label", "python_unittest")
+load(":flavor.shape.bzl", "flavor_t")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
+load(":types.bzl", "types")
+
+types.lint_noop(flavor_t)
 
 # This exists to hack around a complex FB-internal migration. *sigh*
 # It should be removable when this is done:  https://fburl.com/nxc3u5mk
@@ -20,6 +24,7 @@ def image_python_unittest(
         hostname = None,
         container_opts = None,
         flavor = None,
+        flavor_config_override: types.optional(types.struct) = None,
         **python_unittest_kwargs):
     visibility = visibility or []
 
@@ -37,6 +42,7 @@ def image_python_unittest(
         hostname = hostname,
         container_opts = container_opts,
         flavor = flavor,
+        flavor_config_override = flavor_config_override,
     )
 
     wrapper_props.outer_test_kwargs["tags"] = \

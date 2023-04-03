@@ -1054,6 +1054,13 @@ package.new(
 add_rpm_repo_snapshots_layer(
     name = "build_appliance_testing",
     dnf_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "dnf" in flavor_helpers.get_rpm_installers_supported() else None,
+    extra_snapshot_installers = [
+        ("//antlir/rpm:non-default-repo-snapshot-for-tests", installer)
+        for installer in flavor_helpers.get_rpm_installers_supported()
+    ] + [
+        ("//antlir/rpm:rpm-replay-repo-snapshot-for-tests", installer)
+        for installer in flavor_helpers.get_rpm_installers_supported()
+    ],
     # HERE BE DRAGONS: We need this BA to have flavor `antlir_test`, since
     # its default RPM snapshots are specific to these tests. At the same
     # time, it has to derive from a real, working, production BA, whose
@@ -1067,13 +1074,6 @@ add_rpm_repo_snapshots_layer(
         # `parent_layer`'s flavor does not match ours, and this is OK here.
         unsafe_bypass_flavor_check = True,
     ),
-    make_caches_for_other_snapshot_installers = [
-        ("//antlir/rpm:non-default-repo-snapshot-for-tests", installer)
-        for installer in flavor_helpers.get_rpm_installers_supported()
-    ] + [
-        ("//antlir/rpm:rpm-replay-repo-snapshot-for-tests", installer)
-        for installer in flavor_helpers.get_rpm_installers_supported()
-    ],
     parent_layer = flavor_helpers.get_build_appliance("centos7"),
     visibility = [
         "//antlir/...",
