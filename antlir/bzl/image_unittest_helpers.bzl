@@ -8,12 +8,16 @@ load("//antlir/bzl:build_defs.bzl", "buck_command_alias")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":build_defs.bzl", "buck_genrule", "python_library")
 load(":container_opts.bzl", "normalize_container_opts")
+load(":flavor.shape.bzl", "flavor_t")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_runtime.bzl", "container_target_name", "systemd_target_name")
 load(":query.bzl", "layer_deps_query")
 load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target", "targets_and_outputs_arg_list")
+load(":types.bzl", "types")
+
+types.lint_noop(flavor_t)
 
 def _hidden_test_name(name, test_type = None):
     # This is the test binary that is supposed to run inside the image.
@@ -67,7 +71,8 @@ def _nspawn_wrapper_properties(
         # If you want to install packages, you will usually want to
         # set `shadow_proxied_binaries`.
         container_opts,
-        flavor = None):
+        flavor = None,
+        flavor_config_override: types.optional(types.struct) = None):
     container_opts = normalize_container_opts(container_opts)
 
     # Fail early, so the user doesn't have to wait for the test to build.
@@ -146,6 +151,7 @@ def _nspawn_wrapper_properties(
         visibility = visibility,
         runtime = ["systemd"] if boot else [],
         flavor = flavor,
+        flavor_config_override = flavor_config_override,
     )
 
     # For ergonomics, export the debug targets from the test's layer on the test
