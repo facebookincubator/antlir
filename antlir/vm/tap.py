@@ -142,7 +142,7 @@ class VmTap(object):
     def qemu_args(self) -> Iterable[str]:
         return (
             "-netdev",
-            f"tap,id=net0,ifname={self.tapdev},script=no,downscript=no",
+            f"tap,id=net{self.index},ifname={self.tapdev},script=no,downscript=no",
             "-device",
-            f"virtio-net-pci,netdev=net0,mac={self.guest_mac}",
+            f"virtio-net-pci,netdev=net{self.index},mac={self.guest_mac}",
         )
