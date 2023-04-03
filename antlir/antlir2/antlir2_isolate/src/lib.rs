@@ -42,6 +42,8 @@ pub struct IsolationContext<'a> {
     outputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
     /// See [IsolationContextBuilder::boot]
     boot: bool,
+    /// See [IsolationContextBuilder::name]
+    name: Option<String>,
 }
 
 impl<'a> IsolationContext<'a> {
@@ -61,6 +63,7 @@ impl<'a> IsolationContext<'a> {
                 inputs: Default::default(),
                 outputs: Default::default(),
                 boot: false,
+                name: None,
             },
         }
     }
@@ -116,6 +119,13 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Run /init from inside the layer as PID 1
     pub fn boot(&mut self, boot: bool) -> &mut Self {
         self.ctx.boot = boot;
+        self
+    }
+
+    /// Give the isolated environment a name. This is useful for running more than
+    /// one command once the isolated environment is up.
+    pub fn name(&mut self, name: String) -> &mut Self {
+        self.ctx.name = Some(name);
         self
     }
 
@@ -235,6 +245,9 @@ pub struct IsolatedContext {
     /// Isolation command to which the compiler path and args should be
     /// appended.
     pub command: Command,
+    /// Name of the isolated environment that can be used to run additional
+    /// commands inside isolated environment.
+    pub name: Option<String>,
 }
 
 /// Set up an isolated environment to run a compilation process.

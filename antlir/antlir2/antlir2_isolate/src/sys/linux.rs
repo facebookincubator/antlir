@@ -63,6 +63,7 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         inputs,
         outputs,
         boot,
+        name,
     } = ctx;
     let mut cmd = Command::new("sudo");
     cmd.arg("systemd-nspawn")
@@ -72,7 +73,6 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         // TODO(vmagro): running in a read-only copy of the BA would allow us to
         // skip this snapshot, but that's easier said than done
         .arg("--ephemeral")
-        .arg("--register=no")
         .arg("--private-network");
     if !boot {
         // TODO(vmagro): we might actually want to implement real pid1 semantics
@@ -80,6 +80,11 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         cmd.arg("--as-pid2");
     } else {
         cmd.arg("--boot");
+    }
+    if let Some(ref machine) = name {
+        cmd.arg(format!("--machine={machine}"));
+    } else {
+        cmd.arg("--register=no");
     }
     if let Some(wd) = &working_directory {
         cmd.arg("--chdir").arg(wd.as_ref());
@@ -103,5 +108,5 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
     // caller will add the compiler path as the first argument
     cmd.arg("--");
 
-    IsolatedContext { command: cmd }
+    IsolatedContext { command: cmd, name }
 }
