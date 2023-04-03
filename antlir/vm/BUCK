@@ -153,3 +153,16 @@ vm.run(
         kernel = kernels.default,
     ),
 )
+
+vm.run(
+    name = "multinics",
+    vm_opts = vm.types.opts.new(
+        disk = vm.types.disk.root(),
+        disks = [vm.types.disk.scratch(
+            interface = "nvme",
+            size_mb = 1024,
+        )],
+        kernel = kernels.default,
+        nics = 4,
+    ),
+)
