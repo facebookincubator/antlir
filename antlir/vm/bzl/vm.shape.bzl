@@ -88,4 +88,6 @@ vm_opts_t = shape.shape(
         str,
         default = "/",
     ),
+    # Add ability to create multiple Network Input/Output Cards
+    nics = shape.field(int, default = 1),
 )

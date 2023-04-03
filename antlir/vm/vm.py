@@ -335,7 +335,9 @@ async def vm(
 
     # tap device must be created before sidecars, which may require an interface
     # to already exist and have an IP address
-    tapdev = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
+    tapdevs = []
+    for i in range(opts.nics):
+        tapdevs.append(VmTap(netns=ns, uid=os.getuid(), gid=os.getgid(), index=i))
     sidecar_procs: List[SidecarProcess] = []
 
     logger.debug(
@@ -390,7 +392,8 @@ async def vm(
         "-device",
         "virtserialport,chardev=notify,name=notify-host",
     ]
-    args.extend(tapdev.qemu_args)
+    for tapdev in tapdevs:
+        args.extend(tapdev.qemu_args)
 
     if opts.runtime.tpm:
         tpmdev, tpm_sidecar = await _create_tpm(
@@ -522,7 +525,7 @@ async def vm(
         elif shell == ShellMode.ssh:  # pragma: no cover
             logger.debug("Using ShellMode == ShellMode.ssh")
             with GuestSSHConnection(
-                tapdev=tapdev,
+                tapdev=tapdevs[0],
                 options=opts.runtime.connection.options,
             ) as ssh:
                 ssh_cmd = ssh.ssh_cmd(timeout_ms=timeout_ms)
@@ -541,7 +544,7 @@ async def vm(
 
         else:
             with GuestSSHConnection(
-                tapdev=tapdev,
+                tapdev=tapdevs[0],
                 options=opts.runtime.connection.options,
             ) as ssh:
                 yield (ssh, boot_elapsed_ms, timeout_ms)

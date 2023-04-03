@@ -137,6 +137,7 @@ def _new_vm_opts(
         disks = (),
         runtime = None,
         boot_from_disk = False,
+        nics = 1,
         **kwargs):
     if boot_from_disk and initrd != None:
         fail("Can't specify `initrd` when `boot_from_disk` is True")
@@ -170,6 +171,10 @@ def _new_vm_opts(
 
     runtime = runtime or _new_vm_runtime()
 
+    # Sanity check NICs
+    if nics < 1 or nics > 69:
+        fail("NIC count must be >= 1 <= 69")
+
     return vm_opts_t(
         cpus = cpus,
         initrd = initrd,
@@ -177,6 +182,7 @@ def _new_vm_opts(
         disks = disks,
         runtime = runtime,
         boot_from_disk = boot_from_disk,
+        nics = nics,
         **kwargs
     )
 

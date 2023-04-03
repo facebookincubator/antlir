@@ -10,7 +10,7 @@ from typing import Set
 
 from antlir.tests.common import AntlirTestCase
 from antlir.unshare import Namespace, Unshare
-from antlir.vm.tap import TAPDEV, VmTap
+from antlir.vm.tap import VmTap
 
 
 class TestTap(AntlirTestCase):
@@ -28,14 +28,15 @@ class TestTap(AntlirTestCase):
         return {l.split(" ")[1].rstrip(":") for l in links}
 
     def test_create(self) -> None:
+        tapdev = "vm0"
         with Unshare([Namespace.NETWORK]) as ns:
             before = self.get_links(ns)
-            self.assertNotIn(TAPDEV, before)
+            self.assertNotIn(tapdev, before)
 
-            VmTap(netns=ns, uid=os.getuid(), gid=os.getgid())
+            VmTap(netns=ns, uid=os.getuid(), gid=os.getgid(), index=0)
 
             after = self.get_links(ns)
-            self.assertIn(TAPDEV, after)
+            self.assertIn(tapdev, after)
             self.assertEqual(len(after), len(before) + 1)
 
     def test_create_dev_net_tun(self) -> None:
