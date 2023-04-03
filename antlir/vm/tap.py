@@ -15,16 +15,6 @@ from antlir.unshare import Unshare
 logger = logging.getLogger(__name__)
 
 
-# The tap devices are created inside a network namespace, so it's fine for them
-# all to have the same name.
-TAPDEV = "vm0"
-
-# MAC address for use in virtual machines.  Each VM is in its own network
-# namespace, so this value is constant for all VMs.  Keep this in sync with
-# bzl/constants.bzl.
-VM_GUEST_MAC_ADDRESS = "00:00:00:00:00:01"
-
-
 class TapError(Exception):
     pass
 
@@ -49,10 +39,11 @@ class VmTap(object):
     netns: Unshare
     uid: int
     gid: int
+    index: int
 
     def __post_init__(self):
         self._ensure_dev_net_tun()
-        logger.debug(f"creating tap device {TAPDEV} in namespace")
+        logger.debug(f"creating tap device {self.tapdev} in namespace")
         try:
             subprocess.run(
                 self.netns.nsenter_as_root(
@@ -60,7 +51,7 @@ class VmTap(object):
                     "tuntap",
                     "add",
                     "dev",
-                    TAPDEV,
+                    self.tapdev,
                     "mode",
                     "tap",
                     "user",
@@ -74,7 +65,7 @@ class VmTap(object):
                 stdin=subprocess.DEVNULL,
             )
             subprocess.run(
-                self.netns.nsenter_as_root("ip", "link", "set", TAPDEV, "up"),
+                self.netns.nsenter_as_root("ip", "link", "set", self.tapdev, "up"),
                 check=True,
                 capture_output=True,
                 text=True,
@@ -82,7 +73,7 @@ class VmTap(object):
             )
             subprocess.run(
                 self.netns.nsenter_as_root(
-                    "ip", "addr", "add", self.host_ipv6, "dev", TAPDEV
+                    "ip", "addr", "add", self.host_ipv6, "dev", self.tapdev
                 ),
                 check=True,
                 capture_output=True,
@@ -115,6 +106,12 @@ class VmTap(object):
             raise TapError(f"Failed to mknod /dev/net/tun: {e.stderr}")
 
     @property
+    def tapdev(self) -> str:
+        # The tap devices are created inside a network namespace, so it's fine for them
+        # all to have the same name.
+        return f"vm{self.index}"
+
+    @property
     def guest_mac(self) -> str:
         """
         Each vm is in its own network namespace, so the mac addresses for
@@ -122,15 +119,20 @@ class VmTap(object):
         deterministic (compared to allowing qemu to create a random one), so
         that the corresponding IPv6 link-local address is deterministic.
         """
-        return VM_GUEST_MAC_ADDRESS
+        # MAC address for use in virtual machines.  Each VM is in its own network
+        # namespace, so this value is constant for all VMs.  Keep this in sync with
+        # bzl/constants.bzl.
+        return "00:00:00:00:00:{0:02d}".format(self.index + 1)
 
     @property
     def guest_ipv6_ll(self) -> str:
-        return f"fe80::200:0ff:fe00:1%{TAPDEV}"
+        # + 1 so we start at 1
+        return f"fe80::200:0ff:fe00:{self.index + 1}%{self.tapdev}"
 
     @property
     def guest_ipv6(self) -> str:
-        return "fd00::2"
+        # Start at 2 so 0 (first) VM gets same addressing before multi NIC support
+        return f"fd00::{2+self.index}"
 
     @property
     def host_ipv6(self) -> str:
@@ -140,7 +142,7 @@ class VmTap(object):
     def qemu_args(self) -> Iterable[str]:
         return (
             "-netdev",
-            f"tap,id=net0,ifname={TAPDEV},script=no,downscript=no",
+            f"tap,id=net0,ifname={self.tapdev},script=no,downscript=no",
             "-device",
             f"virtio-net-pci,netdev=net0,mac={self.guest_mac}",
         )
