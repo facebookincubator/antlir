@@ -38,7 +38,8 @@ def package_new(
         # Opts are required when format == ext3 | vfat | btrfs
         loopback_opts = None,
         subvol_name = None,
-        ba_tgt = None):
+        ba_tgt = None,
+        zstd_compression_level = None):
     if use_antlir2():
         antlir2_package.backward_compatible_new(
             name = name,
@@ -91,6 +92,7 @@ def package_new(
               {maybe_loopback_opts} \
               {maybe_subvol_name} \
               {maybe_ba_tgt} \
+              {maybe_zstd_compression_level} \
             '''.format(
                 format = format,
                 layer = layer,
@@ -112,6 +114,9 @@ def package_new(
                 maybe_ba_tgt = "--ba-tgt {}".format(
                     shell.quote(ba_tgt),
                 ) if ba_tgt else "",
+                maybe_zstd_compression_level = "--zstd-compression-level {}".format(
+                    zstd_compression_level,
+                ) if zstd_compression_level else "",
                 # Future: When adding support for incremental outputs,
                 # use something like this to obtain all the ancestors,
                 # so that the packager can verify that the specified
