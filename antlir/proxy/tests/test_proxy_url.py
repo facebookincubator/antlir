@@ -60,7 +60,7 @@ class TestProxyURL(TestCase):
         cls.ssl_context.load_verify_locations(cafile=cls.path_to_cert)
 
         server_thread = Thread(target=cls.server.serve_forever)
-        server_thread.setDaemon(True)
+        server_thread.daemon = True
         server_thread.start()
 
     @classmethod
