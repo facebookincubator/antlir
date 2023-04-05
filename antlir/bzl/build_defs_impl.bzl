@@ -400,6 +400,7 @@ def _impl_python_unittest(
         tags = None,
         resources = None,
         srcs = None,
+        supports_static_listing = None,  # @unused
         **kwargs):
     native.python_test(
         deps = _normalize_deps(deps),
