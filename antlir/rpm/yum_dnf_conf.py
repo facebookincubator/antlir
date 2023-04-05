@@ -226,6 +226,10 @@ class YumDnfConfIsolator:
             main_sec["skip_missing_names_on_install"] = "0"
             main_sec["skip_missing_names_on_update"] = "0"
 
+        # Disable weak/recommended deps. If you want it, explicitly install it.
+        if self._yum_dnf == YumDnf.dnf:
+            main_sec["install_weak_deps"] = "0"
+
         self._isolated_main = True
         return self
 

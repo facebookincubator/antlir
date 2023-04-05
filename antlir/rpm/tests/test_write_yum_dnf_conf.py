@@ -84,16 +84,24 @@ class WriteYumDnfConfTestImpl:
         install_dir = "/INSTALL/DIR"
         # pyre-fixme[16]: `WriteYumDnfConfTestImpl` has no attribute `_YUM_DNF`.
         prog_name = self._YUM_DNF.value
-        expected_out = _CONF_OUT.format(
-            prog_name=prog_name,
-            extra_directives=textwrap.dedent(
+        if self._YUM_DNF == YumDnf.yum:
+            extra_directives = textwrap.dedent(
                 """\
                 skip_missing_names_on_install = 0
                 skip_missing_names_on_update = 0
             """
             )
-            if self._YUM_DNF == YumDnf.yum
-            else "",
+        elif self._YUM_DNF == YumDnf.dnf:
+            extra_directives = textwrap.dedent(
+                """\
+                install_weak_deps = 0
+            """
+            )
+        else:
+            raise AssertionError
+        expected_out = _CONF_OUT.format(
+            prog_name=prog_name,
+            extra_directives=extra_directives,
         )
         with temp_dir() as td:
             with create_ro(td / "in", "w") as outf:
