@@ -112,6 +112,12 @@ class YumDnfConfTestCaseImpl:
                 skip_missing_names_on_update = 0
             """
             )
+        if self._YUM_DNF == YumDnf.dnf:
+            extra_directives = textwrap.dedent(
+                """\
+                install_weak_deps = 0
+            """
+            )
 
         # pyre-fixme[16]: `YumDnfConfTestCaseImpl` has no attribute `assertEqual`.
         self.assertEqual(
