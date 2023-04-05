@@ -78,5 +78,6 @@ def hoist(
         ),
         visibility = visibility,
         executable = executable,
+        antlir_rule = "user-internal",
         **kwargs
     )
