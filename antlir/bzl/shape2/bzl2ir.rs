@@ -23,7 +23,6 @@ use serde::Deserialize;
 use slotmap::SlotMap;
 use starlark::any::ProvidesStaticType;
 use starlark::collections::SmallMap;
-use starlark::docs::DocItem;
 use starlark::environment::FrozenModule;
 use starlark::environment::Globals;
 use starlark::environment::GlobalsBuilder;
@@ -451,10 +450,6 @@ fn starlark_to_ir(
         types: named_types,
         docstring: f
             .documentation()
-            .and_then(|d| match d {
-                DocItem::Module(m) => m.docs,
-                _ => unreachable!(),
-            })
             .map(|ds| format!("{}\n{}", ds.summary, ds.details.unwrap_or_else(String::new)))
             .map(|s| s.into()),
     })
