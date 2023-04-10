@@ -15,7 +15,7 @@ def _internal_rustdoc_url(target: "target_node") -> str.type:
     )
 
 def _impl(ctx):
-    targets = target_set()
+    targets = ctarget_set()
     for set in ctx.cli_args.set:
         targets += ctx.cquery().kind("^rust_library$", set)
     ctx.output.print("---\nid: apis\ntitle: Rustdoc\n---")
