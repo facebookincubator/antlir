@@ -10,6 +10,7 @@ rust_binary(
     link_style = "static",
     visibility = [
         "//antlir/...",
+        "//fbenclave/amd_sev/...",
         "//holograms/mesher_mstereo_sandbox/...",
         "//infra_asic_fpga/simulation/...",
         "//metalos/...",
