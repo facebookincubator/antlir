@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
 # @oss-disable
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
@@ -79,6 +80,10 @@ def _implicit_image_test(
         **kwargs
     )
     labels = list(labels) if labels else []
+
+    if fully_qualified_test_name_rollout.use_fully_qualified_name():
+        labels = labels + [NAMING_ROLLOUT_LABEL]
+
     image_test(
         name = name,
         layer = layer,

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
 
 def _dir_snapshot_test_impl(ctx: "context") -> ["provider"]:
     inputs = ctx.actions.declare_output("inputs", dir = True)
@@ -25,23 +26,39 @@ def _dir_snapshot_test_impl(ctx: "context") -> ["provider"]:
         cmd_args(inputs, format = "{}/snapshot"),
         cmd_args(inputs, format = "{}/actual"),
     ).hidden(inputs)
+
     return [
         DefaultInfo(default_outputs = [inputs]),
         ExternalRunnerTestInfo(
             command = [cmd],
             type = "custom",
+            labels = ctx.attrs.labels,
         ),
     ]
 
-dir_snapshot_test = rule(
+_dir_snapshot_test = rule(
     impl = _dir_snapshot_test_impl,
     attrs = {
         "actual": attrs.source(doc = "freshly-built directory"),
         "file_modes": attrs.bool(doc = "compare file modes in addition to contents", default = True),
+        "labels": attrs.list(attrs.string(), default = []),
         "snapshot": attrs.list(attrs.source(doc = "expected directory contents")),
     },
     doc = "Simple unit test to ensure that a built directory has exactly some known contents",
 )
+
+def dir_snapshot_test(**kwargs):
+    labels = kwargs.get("labels", [])
+    if fully_qualified_test_name_rollout.use_fully_qualified_name():
+        labels = labels + [NAMING_ROLLOUT_LABEL]
+
+    return _dir_snapshot_test(
+        name = kwargs.get("name"),
+        actual = kwargs.get("actual"),
+        file_modes = kwargs.get("file_modes"),
+        labels = labels,
+        snapshot = kwargs.get("snapshot"),
+    )
 
 def _file_snapshot_test_impl(ctx: "context") -> ["provider"]:
     inputs = ctx.actions.declare_output("inputs", dir = True)
