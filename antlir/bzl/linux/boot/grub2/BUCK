@@ -12,7 +12,7 @@ image.layer(
             "grub2-efi-x64-modules",
         ]),
     ],
-    parent_layer = "//metalos/os:metalos",
+    parent_layer = "//metalos/os:metalos.c8",
 )
 
 grub2_modules = [

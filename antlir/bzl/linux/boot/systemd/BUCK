@@ -18,12 +18,12 @@ image.layer(
         feature.ensure_subdirs_exist("/", "loader"),
         feature.ensure_subdirs_exist("/loader", "entries"),
         feature.clone(
-            REPO_CFG.artifact["metalos.layer.base"],
+            REPO_CFG.artifact["metalos.layer.base.c8"],
             "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
             "/EFI/systemd/systemd-bootx64.efi",
         ),
         feature.clone(
-            REPO_CFG.artifact["metalos.layer.base"],
+            REPO_CFG.artifact["metalos.layer.base.c8"],
             "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
             "/EFI/BOOT/BOOTX64.efi",
         ),
