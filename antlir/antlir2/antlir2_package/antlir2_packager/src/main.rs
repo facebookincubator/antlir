@@ -206,8 +206,8 @@ fn main() -> Result<()> {
                 .build();
 
             // Build the vfat disk file first
-            let mut mkfs_iso = isolate(isol_context.clone());
-            let mkfs = mkfs_iso.command.arg("/usr/sbin/mkfs.vfat");
+            let mut mkfs_iso = isolate(isol_context.clone()).into_command();
+            let mkfs = mkfs_iso.arg("/usr/sbin/mkfs.vfat");
             if let Some(fat_size) = fat_size {
                 mkfs.arg(format!("-F{}", fat_size));
             }
@@ -226,7 +226,7 @@ fn main() -> Result<()> {
 
             run_cmd(
                 isolate(isol_context)
-                    .command
+                    .into_command()
                     .arg("/usr/bin/mcopy")
                     .arg("-v")
                     .arg("-i")
@@ -275,7 +275,7 @@ fn main() -> Result<()> {
 
             run_cmd(
                 isolate(isol_context)
-                    .command
+                    .into_command()
                     .arg("/bin/bash")
                     .arg("-c")
                     .arg(cpio_script)
@@ -320,7 +320,7 @@ fn main() -> Result<()> {
 
             run_cmd(
                 isolate(isol_context)
-                    .command
+                    .into_command()
                     .arg("/bin/bash")
                     .arg("-c")
                     .arg(cpio_script)

@@ -182,12 +182,12 @@ impl Map {
                 .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
                 .outputs(writable_outputs)
                 .build(),
-        );
-        isol.command
-            .arg(std::env::current_exe().context("while getting argv[0]")?);
+        )
+        .into_command();
+        isol.arg(std::env::current_exe().context("while getting argv[0]")?);
         match self.subcommand {
             Subcommand::Compile(external) => {
-                isol.command.arg("compile").args(
+                isol.arg("compile").args(
                     Compileish {
                         label: self.label,
                         root: subvol.path().to_owned(),
@@ -201,7 +201,7 @@ impl Map {
                 compileish,
                 external,
             } => {
-                isol.command.arg("plan").args(
+                isol.arg("plan").args(
                     Plan {
                         compileish: Compileish {
                             label: self.label,
@@ -215,9 +215,8 @@ impl Map {
                 );
             }
         }
-        debug!("isolating: {:?}", isol);
+        debug!("isolated command: {:?}", isol);
         let res = isol
-            .command
             .spawn()
             .context("while spawning isolated process")?
             .wait()
