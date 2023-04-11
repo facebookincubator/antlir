@@ -268,11 +268,10 @@ fn main() -> Result<()> {
             dropin.path(),
         ));
 
-        let mut isol = isolate(ctx.build());
-        isol.command.arg(systemd_run_arg);
+        let mut isol = isolate(ctx.build()).into_command();
+        isol.arg(systemd_run_arg);
         debug!("executing test in booted isolated container: {isol:?}");
         let mut child = isol
-            .command
             // the stdout/err of the systemd inside the container is a pipe
             // so that we can print it IFF the test fails
             .stdout(container_stdout.as_file().try_clone()?)
@@ -291,13 +290,10 @@ fn main() -> Result<()> {
             Ok(())
         }
     } else {
-        let mut isol = isolate(ctx.build());
-        isol.command.args(args.test.into_inner_cmd());
+        let mut isol = isolate(ctx.build()).into_command();
+        isol.args(args.test.into_inner_cmd());
         debug!("executing test in isolated container: {isol:?}");
-        return Err(anyhow::anyhow!(
-            "failed to exec test: {:?}",
-            isol.command.exec()
-        ));
+        Err(anyhow::anyhow!("failed to exec test: {:?}", isol.exec()))
     }
 }
 
