@@ -25,6 +25,7 @@ class RepoServer(ServerLauncher):
         super().__init__(**kwargs)
         self.rpm_repo_snapshot = rpm_repo_snapshot
 
+    # pyre-fixme[14]: `__format__` overrides method defined in `object` inconsistently.
     def __format__(self, format_spec: str) -> str:
         return f"RepoServer({self.rpm_repo_snapshot}, port={self.port})"
 
