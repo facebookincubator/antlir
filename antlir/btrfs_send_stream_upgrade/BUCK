@@ -40,7 +40,6 @@ rust_binary(
     srcs = ["src/main.rs"],
     visibility = [
         "//antlir/...",
-        "//tupperware/image/imgtool/...",
     ],
     deps = [
         "anyhow",
