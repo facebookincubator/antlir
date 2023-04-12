@@ -172,12 +172,27 @@ def main():
     # this is incredibly fast anyway.
     base.fill_sack()
 
+    # local rpm files must be added before anything is added to the transaction goal
+    local_rpms = {}
+    for item in spec["items"]:
+        rpm = item["rpm"]
+        if "source" in rpm:
+            packages = base.add_remote_rpms([os.path.realpath(rpm["source"])])
+            local_rpms[rpm["source"]] = packages[0]
+
     for item in spec["items"]:
         action = item["action"]
         rpm = item["rpm"]
-        source = rpm["name"] if "name" in rpm else rpm["source"]
+        if "name" in rpm:
+            source = rpm["name"]
+        else:
+            source = local_rpms[rpm["source"]]
+
         if action == "install":
-            base.install_specs([source], strict=True)
+            if isinstance(source, dnf.package.Package):
+                base.package_install(source, strict=True)
+            else:
+                base.install_specs([source], strict=True)
         elif action == "remove_if_exists":
             # cannot remove by file path, so let's do this to be extra safe
             try:
@@ -202,6 +217,11 @@ def main():
                             "repo": p.repo.id,
                         }
                         for p in base.transaction.install_set
+                        # local rpm files get this "repo" which doesn't actually
+                        # exist, and it's a local file so we don't need to push
+                        # it back up into buck2 since it's already available as
+                        # a dep on this feature
+                        if p.reponame != "@commandline"
                     ],
                     "remove": [package_struct(p) for p in base.transaction.remove_set],
                 }

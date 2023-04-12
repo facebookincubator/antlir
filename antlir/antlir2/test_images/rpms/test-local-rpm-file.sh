@@ -7,9 +7,4 @@
 set -e
 
 # Ensure that this test rpm is installed
-rpm -q rpm-test-cheese-3-1
-# This older version of it should not be installed
-if rpm -q rpm-test-cheese-2-1 ; then
-    echo "rpm-test-cheese-2-1 should not have been installed"
-    exit 2
-fi
+rpm -q rpm-test-cheese-2-1

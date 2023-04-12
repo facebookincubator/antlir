@@ -76,7 +76,7 @@ def _impl(ctx: "context") -> ["provider"]:
     xml = ctx.attrs.xml or _make_xml(ctx, rpm_file, href)
 
     return [
-        DefaultInfo(default_outputs = [], sub_targets = {
+        DefaultInfo(default_outputs = [rpm_file], sub_targets = {
             "xml": [DefaultInfo(xml)],
         }),
         RpmInfo(
