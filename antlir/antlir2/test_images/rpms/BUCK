@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 
 repo_set(
@@ -62,4 +63,31 @@ image_sh_test(
     name = "remove-test",
     layer = ":remove",
     test = "test-remove.sh",
+)
+
+# select() basically doesn't work anywhere in the antlir2 api for now, so
+# instead we can use an alias to select the right rpm to install which is
+# sufficient for this use case of doing the same thing, just with a different
+# underlying file
+alias(
+    name = "rpm-test-cheese-2-1.rpm",
+    actual = select({
+        "ovr_config//cpu:arm64": "//antlir/rpm/dnf2buck/demo/aarch64:rpm-test-cheese-2-1.aarch64.rpm",
+        "ovr_config//cpu:x86_64": "//antlir/rpm/dnf2buck/demo/x86_64:rpm-test-cheese-2-1.x86_64.rpm",
+    }),
+)
+
+image.layer(
+    name = "local-rpm-file",
+    features = [
+        feature.rpms_install(rpms = [":rpm-test-cheese-2-1.rpm"]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+    parent_layer = ":simple",
+)
+
+image_sh_test(
+    name = "local-rpm-file-test",
+    layer = ":local-rpm-file",
+    test = "test-local-rpm-file.sh",
 )

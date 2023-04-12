@@ -22,6 +22,7 @@ rpm(
     rpm_name = "rpm-test-cheese",
     sha256 = "b7b870c2e6b4ced9057b3ed6a79737c4a96ea871e8358416b1f9229552797db7",
     version = "2",
+    visibility = ["//antlir/antlir2/test_images/rpms/..."],
 )
 
 rpm(
