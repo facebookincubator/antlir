@@ -61,6 +61,8 @@ class SQLiteConnectionContext(DBConnectionContext, plugin_kind="sqlite"):
         return self._conn
 
     # Does not suppress exceptions
+    # pyre-fixme[14]: `__exit__` overrides method defined in
+    #  `AbstractContextManager` inconsistently.
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         # We must act equivalently to the MySQL context in rolling back
         # uncommitted changes on context exit.
