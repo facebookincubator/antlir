@@ -73,7 +73,7 @@ def _abbrev_name(name, min_abbrev):
 #
 # Makes a deterministic and unique "nonce" from a target path, which can
 # itself be used as part of a target name.  Its form is:
-#   <original target name prefix>...<original target name suffix>__<hash>
+#   $original target name prefix...$original target name suffix__$hash
 #
 # DO NOT RELY ON THE DETAILS OF THIS MANGLING -- they are subject to change.
 #
@@ -172,9 +172,9 @@ def antlir_dep(target):
     targets defined outside of the Antlir directory, e.g. user-defined layers in
     external build files.
 
-    For example, if you want to refer to <cell>//antlir:compiler, the dependency
+    For example, if you want to refer to $cell//antlir:compiler, the dependency
     should be expressed as `antlir_dep(":compiler")`. Similarly, if you want to
-    refer to <cell>//antlir/nspawn_in_subvol:run, the dependency should be
+    refer to $cell//antlir/nspawn_in_subvol:run, the dependency should be
     expressed as `antlir_dep("nspawn_in_subvol:run")`.
 
     Specifically, this will add the Antlir cell name, and the "antlir" prefix
@@ -184,7 +184,7 @@ def antlir_dep(target):
     if "//" in target or target.startswith("/"):
         fail(
             "Antlir deps should be expressed as a target relative to the " +
-            "root Antlir directory, e.g. instead of `<cell>//antlir/foo:bar` " +
+            "root Antlir directory, e.g. instead of `$cell//antlir/foo:bar` " +
             "the dep should be expressed as `foo:bar`.",
         )
 
