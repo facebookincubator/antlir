@@ -61,7 +61,7 @@ def _impl(ctx: "context") -> ["provider"]:
     else:
         if not ctx.attrs.url:
             fail("'rpm' or 'url' required")
-        rpm_file = ctx.actions.declare_output("rpm")
+        rpm_file = ctx.actions.declare_output("rpm.rpm")
         ctx.actions.download_file(rpm_file, ctx.attrs.url, sha256 = ctx.attrs.sha256, sha1 = ctx.attrs.sha1)
 
     pkg_nevra = nevra(
