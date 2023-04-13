@@ -449,7 +449,7 @@ fn starlark_to_ir(
         target,
         types: named_types,
         docstring: f
-            .module_documentation()
+            .documentation()
             .docs
             .map(|ds| format!("{}\n{}", ds.summary, ds.details.unwrap_or_else(String::new)))
             .map(|s| s.into()),
