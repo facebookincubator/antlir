@@ -39,4 +39,12 @@ def mangle_target(normalized_target: str, min_abbrev: int = 15) -> str:
 
 # KEEP IN SYNC with its copy in `bzl/snapshot_install_dir.bzl`
 def snapshot_install_dir(snapshot: str):
+    if ":" in snapshot:
+        # remove various suffixes from the snapshot target
+        path, tgt = snapshot.split(":")
+        if ".rc" in tgt:
+            tgt = tgt.split(".rc")[0]
+        if tgt.endswith(".layer"):
+            tgt = tgt[: -len(".layer")]
+        snapshot = path + ":" + tgt
     return RPM_SNAPSHOT_BASE_DIR / mangle_target(snapshot)

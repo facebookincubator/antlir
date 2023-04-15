@@ -86,6 +86,7 @@ add_rpm_repo_snapshots_layer(
     dnf_snapshot = "//snapshot:fedora33",
     flavor = "fedora33",
     flavor_config_override = stable_fedora_opts,
+    make_caches = True,
     parent_layer = ":rc-build-appliance.no-snapshot.bootstrap",
     visibility = [],
 )
@@ -102,6 +103,7 @@ add_rpm_repo_snapshots_layer(
     dnf_snapshot = "//snapshot:fedora33",
     flavor = "fedora33",
     flavor_config_override = rc_opts,
+    make_caches = True,
     parent_layer = ":rc-build-appliance.no-snapshot",
     visibility = ["PUBLIC"],
 )

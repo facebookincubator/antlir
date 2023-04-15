@@ -245,7 +245,13 @@ def install_rpm_repo_snapshot(snapshot):
     caches are properly populated.  Otherwise, RPM installs will be slow.
     """
 
-    return _set_up_rpm_repo_snapshots() + [feature.install(snapshot, snapshot_install_dir(snapshot))]
+    snapshot_dir = snapshot_install_dir(snapshot)
+    if snapshot.endswith(".layer"):
+        features = [feature.clone(snapshot, "", snapshot_dir)]
+    else:
+        features = [feature.install(snapshot, snapshot_dir)]
+
+    return _set_up_rpm_repo_snapshots() + features
 
 def default_rpm_repo_snapshot_for(prog, snapshot):
     """
@@ -268,6 +274,7 @@ def add_rpm_repo_snapshots_layer(
         dnf_snapshot = None,  # install, make default for `dnf`, make cache
         yum_snapshot = None,  # install, make default for `yum`, make cache
         extra_snapshot_installers = None,  # install, make cache
+        make_caches = False,
         remove_existing_snapshot = False,
         **image_layer_kwargs):
     """
@@ -315,11 +322,14 @@ def add_rpm_repo_snapshots_layer(
 
     name_without_caches = name + "__precursor-without-caches-to-" + name
     image_layer(
-        name = name_without_caches,
+        name = name_without_caches if make_caches else name,
         parent_layer = parent_layer,
         features = features,
         **image_layer_kwargs
     )
+
+    if not make_caches:
+        return
 
     snapshot_to_installers = {}
     for snapshot, installer in make_cache_for_s_i_pairs.keys():
