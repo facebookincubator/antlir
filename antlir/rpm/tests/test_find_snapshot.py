@@ -25,3 +25,15 @@ class TestCommon(unittest.TestCase):
             b"/__antlir__/rpm/repo-snapshot/chicken__DPPfV4lnzLJ-mvxxFHHM",
             snapshot_install_dir("//well/fed:chicken"),
         )
+        self.assertEqual(
+            b"/__antlir__/rpm/repo-snapshot/chicken__DPPfV4lnzLJ-mvxxFHHM",
+            snapshot_install_dir("//well/fed:chicken.rc"),
+        )
+        self.assertEqual(
+            b"/__antlir__/rpm/repo-snapshot/chicken__DPPfV4lnzLJ-mvxxFHHM",
+            snapshot_install_dir("//well/fed:chicken.rc.layer"),
+        )
+        self.assertEqual(
+            b"/__antlir__/rpm/repo-snapshot/chicken__DPPfV4lnzLJ-mvxxFHHM",
+            snapshot_install_dir("//well/fed:chicken.layer"),
+        )

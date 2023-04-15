@@ -29,6 +29,13 @@ RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR = "/__antlir__/rpm/default-snapshot-for-i
 # KEEP THE `mangle_target` PART IN SYNC with its copy in `rpm/find_snapshot.py`
 def snapshot_install_dir(snapshot):
     if ":" in snapshot:
+        # remove various suffixes from the snapshot target
+        path, tgt = snapshot.split(":")
+        if ".rc" in tgt:
+            tgt = tgt.split(".rc")[0]
+        if tgt.endswith(".layer"):
+            tgt = tgt[:-len(".layer")]
+        snapshot = path + ":" + tgt
         return paths.join(RPM_SNAPSHOT_BASE_DIR, mangle_target(snapshot))
     if snapshot.startswith("/__antlir__/rpm/"):
         return snapshot

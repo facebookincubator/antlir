@@ -1074,6 +1074,7 @@ add_rpm_repo_snapshots_layer(
         # `parent_layer`'s flavor does not match ours, and this is OK here.
         unsafe_bypass_flavor_check = True,
     ),
+    make_caches = True,
     parent_layer = flavor_helpers.get_build_appliance("centos7"),
     visibility = [
         "//antlir/...",
