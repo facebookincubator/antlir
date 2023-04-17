@@ -83,6 +83,7 @@ python_unittest(
     resources = {
         "//antlir/vm:mount-generator": "mount-generator",
     },
+    supports_static_listing = True,
     deps = [
         "//antlir:fs_utils",
         "//antlir:testlib_common",
@@ -121,6 +122,7 @@ python_unittest(
     resources = {
         ":create-kernel-panic=vmtest": "create-kernel-panic",
     },
+    supports_static_listing = True,
     deps = [
         ":create-kernel-panic",
         "//antlir:fs_utils",

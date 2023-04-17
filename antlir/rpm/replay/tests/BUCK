@@ -16,6 +16,7 @@ python_unittest(
         100,
         "//antlir/rpm/replay:fake_pty",
     )],
+    supports_static_listing = True,
     deps = [
         "//antlir:fs_utils",
         "//antlir/rpm/replay:fake_pty",
@@ -38,6 +39,7 @@ python_unittest(
     needed_coverage = [
         (100, "//antlir/rpm/replay:subvol_diff"),
     ],
+    supports_static_listing = True,
     deps = [
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
@@ -156,6 +158,7 @@ python_unittest(
     needed_coverage = [
         (100, "//antlir/rpm/replay:extract_nested_features"),
     ],
+    supports_static_listing = True,
     deps = [
         ":test_utils",
         "//antlir/rpm/replay:extract_nested_features",
@@ -205,6 +208,7 @@ python_unittest(
         layer_resource("//antlir/compiler/test_images:build_appliance_testing"): "ba_subvol",
         layer_resource(":test-subvol-rpm-compare-leaf"): "leaf_subvol",
     },
+    supports_static_listing = True,
     deps = [
         "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
@@ -228,6 +232,7 @@ python_unittest(
         layer_resource("//antlir/compiler/test_images:build_appliance_testing"): "ba_subvol",
         layer_resource(":leaf"): "leaf_subvol",
     },
+    supports_static_listing = True,
     deps = [
         ":test_utils",
         "//antlir:config",
