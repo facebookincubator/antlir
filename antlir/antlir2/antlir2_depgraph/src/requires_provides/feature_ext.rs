@@ -444,15 +444,10 @@ impl<'f> FeatureExt<'f> for antlir2_features::rpms::Rpm<'f> {}
 
 impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
-        Ok(vec![Item::Path(Path::Entry(FsEntry {
-            path: self.link.path().to_owned().into(),
-            file_type: match self.is_directory {
-                true => FileType::Directory,
-                false => FileType::File,
-            },
-            // symlink mode does not matter
-            mode: 0o777,
-        }))])
+        Ok(vec![Item::Path(Path::Symlink {
+            link: self.link.path().to_owned().into(),
+            target: self.target.path().to_owned().into(),
+        })])
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {

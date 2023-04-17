@@ -7,6 +7,7 @@
 
 #![feature(io_error_other)]
 
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
@@ -182,13 +183,38 @@ impl<'a> GraphBuilder<'a> {
         s
     }
 
+    fn item(&self, key: &ItemKey<'_>) -> Option<node::ItemNodeIndex<'a>> {
+        match self.items.get(key) {
+            Some(i) => Some(*i),
+            None => {
+                if let ItemKey::Path(path) = key {
+                    // if any of the ancestor directory paths are actually
+                    // symlinks, resolve them
+                    for ancestor in path.ancestors().skip(1) {
+                        if let Some(nx) = self.items.get(&ItemKey::Path(Cow::Borrowed(ancestor))) {
+                            if let Item::Path(item::Path::Symlink { target, .. }) = &self.g[*nx] {
+                                let new_path = target.join(path.strip_prefix(ancestor).expect(
+                                    "ancestor path can definitely be stripped as a prefix",
+                                ));
+                                return self.item(&ItemKey::Path(new_path.into()));
+                            }
+                        };
+                    }
+                    None
+                } else {
+                    None
+                }
+            }
+        }
+    }
+
     fn add_item(&mut self, item: Item<'a>) -> node::ItemNodeIndex<'a> {
         let key = item.key();
         // If this Item undos another, it needs to be added to the graph on its
         // own. The previous Item will be left in the graph, but will be
         // overwritten in the items tracker map to this new node which is the
         // most recent version of that item
-        if self.items.contains_key(&key) && item.is_undo() {
+        if self.item(&key).is_some() && item.is_undo() {
             let nx = self.g.add_node_typed(item);
             self.g
                 .add_edge(*self.items[&key], *nx, Edge::Requires(Validator::Exists));
@@ -268,7 +294,7 @@ impl<'a> GraphBuilder<'a> {
         for feature_nx in &self.pending_features {
             let f = &self.g[*feature_nx];
             for req in f.requires() {
-                let req_nx = match self.items.get(&req.key) {
+                let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
                     None => {
                         let nx = self.g.add_node(Node::MissingItem(req.key.clone()));
