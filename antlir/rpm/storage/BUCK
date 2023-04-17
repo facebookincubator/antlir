@@ -69,6 +69,7 @@ python_unittest(
         (100, ":base_storage"),
         (100, ":filesystem_storage"),
     ],
+    supports_static_listing = True,
     deps = [":testlib_storage_base_test"],
 )
 
@@ -80,6 +81,7 @@ python_unittest(
         (100, ":base_storage"),
         (100, ":s3_storage"),
     ],
+    supports_static_listing = True,
     deps = [
         ":testlib_cli_object_storage_base_test",
     ],
@@ -101,5 +103,6 @@ python_unittest(
     name = "test-cli",
     srcs = ["tests/test_cli.py"],
     needed_coverage = [(100, ":cli-library")],
+    supports_static_listing = True,
     deps = [":cli-library"],
 )
