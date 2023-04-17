@@ -47,6 +47,7 @@ impl<'a> Item<'a> {
             Self::Path(p) => match p {
                 Path::Entry(e) => ItemKey::Path(e.path.clone()),
                 Path::Removed(p) => ItemKey::RemovedPath(p.clone()),
+                Path::Symlink { link, .. } => ItemKey::Path(link.clone()),
             },
             Self::User(u) => ItemKey::User(u.name.clone()),
             Self::Group(g) => ItemKey::Group(g.name.clone()),
@@ -67,6 +68,10 @@ impl<'a> Item<'a> {
 #[serde(rename_all = "snake_case")]
 pub enum Path<'a> {
     Entry(FsEntry<'a>),
+    Symlink {
+        link: Cow<'a, std::path::Path>,
+        target: Cow<'a, std::path::Path>,
+    },
     Removed(Cow<'a, std::path::Path>),
 }
 

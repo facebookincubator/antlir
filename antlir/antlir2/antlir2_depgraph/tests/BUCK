@@ -323,3 +323,38 @@ feature.new(
         feature.ensure_dirs_exist(dirs = "/foo/bar/baz/qux"),
     ],
 )
+
+good_depgraph(
+    name = "validation-follows-symlinks",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.ensure_dir_symlink(
+            link = "/bin",
+            target = "/usr/bin",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/usr/bin/bash",
+            mode = "a+rx",
+        ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "root",
+            # /bin/bash is behind a symlink
+            shell = "/bin/bash",
+            username = "antlir",
+        ),
+        feature.ensure_dirs_exist(dirs = "/etc"),
+        feature.install(
+            src = "//antlir/antlir2/test_images:passwd",
+            dst = "/etc/passwd",
+            mode = "a+r",
+        ),
+        feature.install(
+            src = "//antlir/antlir2/test_images:group",
+            dst = "/etc/group",
+            mode = "a+r",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
