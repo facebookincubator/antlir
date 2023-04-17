@@ -30,6 +30,7 @@ python_unittest(
     srcs = [
         "tests/test_common.py",
     ],
+    supports_static_listing = True,
     deps = [
         ":common",
     ],
@@ -118,12 +119,14 @@ python_unittest(
         ":fs_utils",
     )],
     resources = {":test-helper-binary": "tests/helper-binary"},
+    supports_static_listing = True,
     deps = [":fs_utils"],
 )
 
 python_unittest(
     name = "test-fs_utils_rs",
     srcs = ["tests/test_fs_utils_rs.py"],
+    supports_static_listing = True,
     deps = [
         ":fs_utils",
         "//antlir:fs_utils_rs",
@@ -210,6 +213,7 @@ python_unittest(
         100,
         ":unshare",
     )],
+    supports_static_listing = True,
     deps = [
         ":unshare",
     ],
@@ -257,6 +261,7 @@ python_unittest(
         100,
         ":btrfsutil",
     )],
+    supports_static_listing = True,
     deps = [
         ":artifacts_dir",
         ":btrfsutil",
@@ -308,6 +313,7 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
         TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello_world_base",
     },
+    supports_static_listing = True,
     deps = [
         ":artifacts_dir",
         ":subvol_utils",
@@ -350,6 +356,7 @@ python_unittest(
         100,
         ":volume_for_repo",
     )],
+    supports_static_listing = True,
     deps = [
         ":volume_for_repo",
         "//antlir:artifacts_dir",
@@ -400,6 +407,7 @@ rust_library(
 python_unittest(
     name = "test-artifacts-dir",
     srcs = ["tests/test_artifacts_dir.py"],
+    supports_static_listing = True,
     deps = [
         ":artifacts_dir",
     ],
@@ -442,6 +450,7 @@ python_unittest(
     resources = {
         TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello_world_base",
     },
+    supports_static_listing = True,
     deps = [":find_built_subvol"],
 )
 
@@ -456,6 +465,7 @@ python_unittest(
     name = "test-layer-mount-config",
     srcs = ["tests/test_layer_mount_config.py"],
     needed_coverage = [(100, ":layer-mount-config-library")],
+    supports_static_listing = True,
     deps = [
         ":layer-mount-config-library",
     ],
@@ -468,6 +478,7 @@ python_unittest(
         100,
         ":subvolume_garbage_collector",
     )],
+    supports_static_listing = True,
     deps = [
         ":subvolume_garbage_collector",
     ],
@@ -507,6 +518,7 @@ python_unittest(
     name = "test-send-fds-and-run",
     srcs = ["tests/test_send_fds_and_run.py"],
     needed_coverage = [(100, ":send_fds_and_run")],
+    supports_static_listing = True,
     deps = [":send_fds_and_run"],
 )
 
@@ -572,6 +584,7 @@ python_unittest(
     name = "test-update-package-db",
     srcs = ["tests/test_update_package_db.py"],
     needed_coverage = [(100, ":update_package_db")],
+    supports_static_listing = True,
     deps = [":update_package_db"],
 )
 
@@ -630,6 +643,7 @@ python_unittest(
     },
     needed_coverage = [(100, ":package-image-library")],
     resources = TEST_PACKAGE_RESOURCES,
+    supports_static_listing = True,
     deps = [
         ":find_built_subvol",
         ":fs_utils",
@@ -687,6 +701,7 @@ python_unittest(
         TEST_IMAGE_PREFIX + "gpt_test": "tests/gpt_test",
         layer_resource(REPO_CFG.artifact["build_appliance.newest"]): "tests/build-appliance",
     },
+    supports_static_listing = True,
     deps = [
         ":gpt-library",
         ":testlib_image_package_testbase",
@@ -707,6 +722,7 @@ python_unittest(
     needed_coverage = [
         (100, ":unionfind"),
     ],
+    supports_static_listing = True,
     deps = [":unionfind"],
 )
 
@@ -786,6 +802,7 @@ python_unittest(
     needed_coverage = [
         (100, ":config"),
     ],
+    supports_static_listing = True,
     deps = [
         ":artifacts_dir",
         ":config",
@@ -896,12 +913,14 @@ python_binary(
 python_unittest(
     name = "test-vcs",
     srcs = ["tests/test_vcs.py"],
+    supports_static_listing = True,
     deps = [":vcs-library"],
 )
 
 python_unittest(
     name = "test-signed-source",
     srcs = ["tests/test_signed_source.py"],
+    supports_static_listing = True,
     deps = [
         ":signed_source",
         ":testlib_common",
