@@ -14,6 +14,7 @@ python_unittest(
         100,
         ":coroutine_utils",
     )],
+    supports_static_listing = True,
     deps = [":coroutine_utils"],
 )
 
@@ -29,6 +30,7 @@ python_unittest(
         100,
         ":extent",
     )],
+    supports_static_listing = True,
     deps = [
         ":extent",
         "//antlir:testlib_common",
@@ -47,6 +49,7 @@ python_unittest(
         100,
         ":freeze",
     )],
+    supports_static_listing = True,
     deps = [":freeze"],
 )
 
@@ -72,6 +75,7 @@ python_unittest(
         100,
         ":inode_id",
     )],
+    supports_static_listing = True,
     deps = [
         ":deepcopy_test",
         ":freeze",
@@ -95,6 +99,7 @@ python_unittest(
         100,
         ":inode",
     )],
+    supports_static_listing = True,
     deps = [
         ":extent",
         ":extents_to_chunks",
@@ -122,6 +127,7 @@ python_unittest(
         100,
         ":incomplete_inode",
     )],
+    supports_static_listing = True,
     deps = [
         ":incomplete_inode",
         ":inode",
@@ -146,6 +152,7 @@ python_unittest(
         100,
         ":extents_to_chunks",
     )],
+    supports_static_listing = True,
     deps = [
         ":extent",
         ":extents_to_chunks",
@@ -205,6 +212,7 @@ python_unittest(
         100,
         ":parse_send_stream",
     )],
+    supports_static_listing = True,
     deps = [
         ":parse_send_stream",
         ":testlib_demo_sendstreams",
@@ -245,6 +253,7 @@ python_unittest(
         100,
         ":subvolume",
     )],
+    supports_static_listing = True,
     deps = [
         ":coroutine_utils",
         ":deepcopy_test",
@@ -278,6 +287,7 @@ python_unittest(
         100,
         ":subvolume_set",
     )],
+    supports_static_listing = True,
     deps = [
         ":freeze",
         ":parse_send_stream",
@@ -319,6 +329,7 @@ python_unittest(
         100,
         ":inode_utils",
     )],
+    supports_static_listing = True,
     deps = [
         ":freeze",
         ":subvolume",

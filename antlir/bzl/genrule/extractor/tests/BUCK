@@ -67,6 +67,7 @@ python_unittest(
         layer_resource(":extracted"): "layer",
         layer_resource(":source"): "source",
     },
+    supports_static_listing = True,
     deps = [
         "//antlir:fs_utils",
         "//antlir:testlib_layer_resource",
