@@ -140,6 +140,7 @@ python_unittest(
             template = ":example-template",
         ): "template.txt",
     },
+    supports_static_listing = True,
     deps = [
         ":test.shape-python",
         shape.python_data(
@@ -198,6 +199,7 @@ python_unittest(
     needed_coverage = [
         (100, ":shape_bzl"),
     ],
+    supports_static_listing = True,
     deps = [
         ":shape_bzl",
     ],

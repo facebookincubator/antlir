@@ -107,6 +107,7 @@ python_unittest(
     } if is_buck2() else {
         "kitteh": "meow",
     },
+    supports_static_listing = True,
 )
 
 image.rust_unittest(
@@ -236,6 +237,7 @@ python_unittest(
         (100, "//antlir/bzl:fail-with-message-library"),
     ],
     resources = {"//antlir/bzl:fail-with-message": "fail-with-message"},
+    supports_static_listing = True,
     deps = [
         "//antlir/bzl:fail-with-message-library",
     ],
@@ -250,6 +252,7 @@ python_unittest(
     name = "test-basic-rpm-manifest",
     srcs = ["test_basic_rpm_manifest.py"],
     resources = {"//antlir/bzl/tests:test-rpm-manifest-json": "rpm-manifest.json"},
+    supports_static_listing = True,
     deps = ["//antlir:fs_utils"],
 )
 
