@@ -29,6 +29,7 @@ python_unittest(
     name = "test-common",
     srcs = ["tests/test_common.py"],
     env = {"antlir_test_snapshot": "$(location :repo-snapshot-for-tests)"},
+    labels = ["no_pyre"],
     needed_coverage = [(100, ":common")],
     supports_static_listing = True,
     deps = [
