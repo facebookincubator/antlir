@@ -192,7 +192,7 @@ def main():
             if isinstance(source, dnf.package.Package):
                 base.package_install(source, strict=True)
             else:
-                base.install_specs([source], strict=True)
+                base.install(source, strict=True)
         elif action == "remove_if_exists":
             # cannot remove by file path, so let's do this to be extra safe
             try:

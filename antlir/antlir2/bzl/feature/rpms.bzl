@@ -7,6 +7,15 @@ load(":feature_info.bzl", "InlineFeatureInfo")
 
 action_enum = enum("install", "remove_if_exists")
 
+# a fully qualified rpm nevra with epoch will contain a ':' so we have to be a
+# little more particular than just checking "if ':' in s"
+def _looks_like_label(s: str.type) -> bool.type:
+    if s.startswith(":"):
+        return True
+    if ":" in s and "//" in s:
+        return True
+    return False
+
 def rpms_install(*, rpms: [str.type]):
     """
     Install RPMs by identifier or .rpm src
@@ -16,10 +25,10 @@ def rpms_install(*, rpms: [str.type]):
     """
     return InlineFeatureInfo(
         feature_type = "rpm",
-        sources = {"rpm_" + str(i): r for i, r in enumerate(rpms) if ":" in r},
+        sources = {"rpm_" + str(i): r for i, r in enumerate(rpms) if _looks_like_label(r)},
         kwargs = {
             "action": action_enum("install"),
-            "rpm_names": [r for r in rpms if ":" not in r],
+            "rpm_names": [r for r in rpms if not _looks_like_label(r)],
         },
     )
 

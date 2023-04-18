@@ -52,6 +52,7 @@ added to the `_feature_to_json` map in this file.
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
+# @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load(":clone.bzl", "clone_to_json")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_to_json")
@@ -90,6 +91,7 @@ _feature_to_json = {
     "remove": remove_to_json,
     "requires": requires_to_json,
     "rpm": rpms_to_json,
+    # @oss-disable
     "tarball": tarball_to_json,
     "user": user_to_json,
     "user_mod": usermod_to_json,
@@ -120,7 +122,8 @@ def _impl(ctx: "context") -> ["provider"]:
                 k: getattr(feature_json, k)
                 for k in dir(feature_json)
             }
-        feature_json["__feature_type"] = inline.feature_type
+        if "__feature_type" not in feature_json:
+            feature_json["__feature_type"] = inline.feature_type
         feature_json["__label"] = ctx.label.raw_target()
         inline_features.append(feature_json)
     json_out = ctx.actions.write_json("features.json", inline_features)
