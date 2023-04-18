@@ -49,6 +49,7 @@ antlir_rust_extension(
 python_unittest(
     name = "test-targets_and_outputs",
     srcs = ["test.py"],
+    supports_static_listing = True,
     deps = [
         "//antlir:fs_utils",
         "//antlir/buck/targets_and_outputs:targets_and_outputs_py",

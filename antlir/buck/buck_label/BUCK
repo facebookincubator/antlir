@@ -32,6 +32,7 @@ antlir_rust_extension(
 python_unittest(
     name = "test-buck_label_py",
     srcs = ["test.py"],
+    supports_static_listing = True,
     deps = [
         ":buck_label_py",
     ],
