@@ -43,6 +43,10 @@ FeatureAnalysis = record(
     required_run_infos = field(["RunInfo"], default = []),
     # Other image layers that are required to build this feature.
     required_layers = field(["LayerInfo"], default = []),
+    # This feature requires running 'antlir2' binaries to inform buck of dynamic
+    # dependencies. If no feature requires planning, the entire step can be
+    # skipped and save a few seconds of build time
+    requires_planning = field(bool.type, default = False),
 )
 
 def data_only_feature_analysis_fn(record_type):

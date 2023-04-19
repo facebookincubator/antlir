@@ -99,4 +99,5 @@ def rpms_analyze(
             ],
         ),
         required_artifacts = artifacts,
+        requires_planning = True,
     )

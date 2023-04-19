@@ -79,33 +79,33 @@ def _impl(ctx: "context") -> ["provider"]:
         cmd_args(mounts.as_output(), format = "--out={}"),
     ).hidden([dep.mounts for dep in dependency_layers]), category = "antlir2", identifier = "serialize_mounts")
 
-    plan = ctx.actions.declare_output("plan")
-    plan_cmd, _ = _map_image(
-        ctx = ctx,
-        cmd = cmd_args(
-            cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
-            "plan",
-            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
-            cmd_args(depgraph_input, format = "--depgraph-json={}"),
-            cmd_args(collections.uniq([li.subvol_symlink for li in dependency_layers]), format = "--image-dependency={}"),
-            cmd_args(plan.as_output(), format = "--plan={}"),
-        ).hidden(feature_hidden_deps),
-        identifier = "plan",
-        parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
-        flavor_info = flavor_info,
-    )
+    if ctx.attrs.features[FeatureInfo].features.reduce("requires_planning"):
+        plan = ctx.actions.declare_output("plan")
+        plan_cmd, _ = _map_image(
+            ctx = ctx,
+            cmd = cmd_args(
+                cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
+                "plan",
+                cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+                cmd_args(depgraph_input, format = "--depgraph-json={}"),
+                cmd_args(collections.uniq([li.subvol_symlink for li in dependency_layers]), format = "--image-dependency={}"),
+                cmd_args(plan.as_output(), format = "--plan={}"),
+            ).hidden(feature_hidden_deps),
+            identifier = "plan",
+            parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
+            flavor_info = flavor_info,
+        )
 
-    # Part of the compiler plan is any possible dnf transaction resolution,
-    # which lets us know what rpms we will need. We can have buck download them
-    # and mount in a pre-built directory of all repositories for
-    # completely-offline dnf installation (which is MUCH faster and more
-    # reliable)
-    # TODO: this is basically a no-op if there are no features that require
-    # pre-planning, but it does still invoke antlir2 inside of the container so
-    # takes ~1-2s even if it does nothing. The performance benefit for the
-    # extremely common use case of installing rpms absolutely dwarfs this cost,
-    # but it would be nice to only run this if there are relevant features
-    dnf_repos_dir = compiler_plan_to_local_repos(ctx, available_rpm_repos, plan)
+        # Part of the compiler plan is any possible dnf transaction resolution,
+        # which lets us know what rpms we will need. We can have buck download them
+        # and mount in a pre-built directory of all repositories for
+        # completely-offline dnf installation (which is MUCH faster and more
+        # reliable)
+        dnf_repos_dir = compiler_plan_to_local_repos(ctx, available_rpm_repos, plan)
+    else:
+        plan_cmd = None
+        plan = None
+        dnf_repos_dir = ctx.actions.symlinked_dir("empty-dnf-repos", {})
 
     compile_cmd, final_subvol = _map_image(
         ctx = ctx,
@@ -128,7 +128,10 @@ def _impl(ctx: "context") -> ["provider"]:
     # during normal buck operation, as it would prevent buck from caching
     # individual actions when possible (for example, if rpm features do not
     # change, the transaction plan might be cached)
-    debug_sequence = [plan_cmd, compile_cmd]
+    debug_sequence = []
+    if plan_cmd:
+        debug_sequence += [plan_cmd]
+    debug_sequence += [compile_cmd]
     build_script = ctx.actions.write(
         "build.sh",
         cmd_args(
@@ -144,6 +147,26 @@ def _impl(ctx: "context") -> ["provider"]:
         is_executable = True,
     )
 
+    sub_targets = {
+        "build.sh": [
+            DefaultInfo(build_script),
+            RunInfo(args = cmd_args("/bin/bash", "-e", build_script).hidden(debug_sequence)),
+        ],
+        "depgraph": [DefaultInfo(
+            default_outputs = [],
+            sub_targets = {
+                "input.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", None, dependency_layers)])],
+                "input.json": [DefaultInfo(default_outputs = [depgraph_input])],
+                "output.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", final_subvol, dependency_layers)])],
+                "output.json": [DefaultInfo(default_outputs = [depgraph_output])],
+            },
+        )],
+    }
+    if plan:
+        sub_targets["plan"] = [
+            DefaultInfo(default_outputs = [plan]),
+        ]
+
     return [
         LayerInfo(
             label = ctx.label,
@@ -155,24 +178,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ),
         DefaultInfo(
             default_outputs = [final_subvol],
-            sub_targets = {
-                "build.sh": [
-                    DefaultInfo(build_script),
-                    RunInfo(args = cmd_args("/bin/bash", "-e", build_script).hidden(debug_sequence)),
-                ],
-                "depgraph": [DefaultInfo(
-                    default_outputs = [],
-                    sub_targets = {
-                        "input.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", None, dependency_layers)])],
-                        "input.json": [DefaultInfo(default_outputs = [depgraph_input])],
-                        "output.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", final_subvol, dependency_layers)])],
-                        "output.json": [DefaultInfo(default_outputs = [depgraph_output])],
-                    },
-                )],
-                "plan": [
-                    DefaultInfo(default_outputs = [plan]),
-                ],
-            },
+            sub_targets = sub_targets,
         ),
     ]
 
