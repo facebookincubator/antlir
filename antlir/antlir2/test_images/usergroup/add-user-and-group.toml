@@ -21,3 +21,15 @@ text-patch = '''
  root:x:0:0:root:/root:/bin/bash
 +antlir:x:1:1::/:/fakeshell
 '''
+
+["etc/shadow"]
+op = 'added'
+
+["etc/shadow".diff]
+mode = ''
+file-type = 'regular-file'
+user = 'root'
+group = 'root'
+text = '''
+antlir:!!:::::::
+'''

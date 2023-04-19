@@ -157,6 +157,10 @@ impl CompilerContext {
         parse_file(&self.dst_path("/etc/passwd")).unwrap_or_else(|| Ok(Default::default()))
     }
 
+    pub(crate) fn shadow_db(&self) -> Result<antlir2_users::shadow::EtcShadow> {
+        parse_file(&self.dst_path("/etc/shadow")).unwrap_or_else(|| Ok(Default::default()))
+    }
+
     pub(crate) fn groups_db(&self) -> Result<antlir2_users::group::EtcGroup> {
         parse_file(&self.dst_path("/etc/group")).unwrap_or_else(|| Ok(Default::default()))
     }
