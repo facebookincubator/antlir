@@ -3,12 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "InlineFeatureInfo")
+load(":feature_info.bzl", "ParseTimeFeature")
 
 def remove(
         *,
         path: str.type,
-        must_exist: bool.type = True) -> InlineFeatureInfo.type:
+        must_exist: bool.type = True) -> ParseTimeFeature.type:
     """
     Recursivel remove a file or directory
 
@@ -18,7 +18,7 @@ def remove(
     By default, it is an error if the specified path is missing from the image,
     though this can be avoided by setting `must_exist=False`.
     """
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "remove",
         kwargs = {
             "must_exist": must_exist,

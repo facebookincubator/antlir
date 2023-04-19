@@ -3,13 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "InlineFeatureInfo")
+load(":feature_info.bzl", "ParseTimeFeature")
 
 def requires(
         *,
         files: [str.type] = [],
         groups: [str.type] = [],
-        users: [str.type] = []) -> InlineFeatureInfo.type:
+        users: [str.type] = []) -> ParseTimeFeature.type:
     """
     Add rule-level requirements on image layers.
 
@@ -24,7 +24,7 @@ def requires(
     `requires` can be used for additional compile-time safety that the user,
     groups or files do indeed exist.
     """
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "requires",
         kwargs = {
             "files": files,

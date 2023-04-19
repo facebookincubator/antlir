@@ -6,16 +6,18 @@
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
-load(":feature_info.bzl", "InlineFeatureInfo")
+load(":feature_info.bzl", "ParseTimeDependency", "ParseTimeFeature")
+
+types.lint_noop()
 
 def layer_mount(
         *,
-        source: str.type,
-        mountpoint: [str.type, None] = None) -> InlineFeatureInfo.type:
-    return InlineFeatureInfo(
+        source: types.or_selector(str.type),
+        mountpoint: [str.type, None] = None) -> ParseTimeFeature.type:
+    return ParseTimeFeature(
         feature_type = "mount",
         deps = {
-            "source": source,
+            "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
         },
         kwargs = {
             "host_source": None,
@@ -29,9 +31,9 @@ def host_mount(
         *,
         source: str.type,
         is_directory: bool.type,
-        mountpoint: [str.type, None] = None) -> InlineFeatureInfo.type:
+        mountpoint: [str.type, None] = None) -> ParseTimeFeature.type:
     mountpoint = mountpoint or source
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "mount",
         kwargs = {
             "host_source": source,

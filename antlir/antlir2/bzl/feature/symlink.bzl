@@ -3,14 +3,17 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "InlineFeatureInfo")
+load("//antlir/bzl:types.bzl", "types")
+load(":feature_info.bzl", "ParseTimeFeature")
+
+types.lint_noop()
 
 def _symlink_feature(
         *,
-        link: str.type,
-        target: str.type,
-        feature_type: str.type) -> InlineFeatureInfo.type:
-    return InlineFeatureInfo(
+        link: types.or_selector(str.type),
+        target: types.or_selector(str.type),
+        feature_type: types.or_selector(str.type)) -> ParseTimeFeature.type:
+    return ParseTimeFeature(
         feature_type = feature_type,
         kwargs = {
             "is_directory": feature_type == "ensure_dir_symlink",
@@ -19,7 +22,7 @@ def _symlink_feature(
         },
     )
 
-def ensure_file_symlink(*, link: str.type, target: str.type) -> InlineFeatureInfo.type:
+def ensure_file_symlink(*, link: str.type, target: str.type) -> ParseTimeFeature.type:
     """
     Create a symlink to a file.
 
@@ -27,7 +30,7 @@ def ensure_file_symlink(*, link: str.type, target: str.type) -> InlineFeatureInf
     """
     return _symlink_feature(feature_type = "ensure_file_symlink", link = link, target = target)
 
-def ensure_dir_symlink(*, link: str.type, target: str.type) -> InlineFeatureInfo.type:
+def ensure_dir_symlink(*, link: str.type, target: str.type) -> ParseTimeFeature.type:
     """
     Create a symlink to a directory.
 

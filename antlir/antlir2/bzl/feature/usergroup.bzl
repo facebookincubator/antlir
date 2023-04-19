@@ -3,20 +3,23 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "InlineFeatureInfo")
+load("//antlir/bzl:types.bzl", "types")
+load(":feature_info.bzl", "ParseTimeFeature")
+
+types.lint_noop()
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
 
 def user_add(
         *,
-        username: str.type,
-        primary_group: str.type,
-        home_dir: str.type,
-        shell: str.type = SHELL_NOLOGIN,
-        uid: [int.type, None] = None,
-        supplementary_groups: [str.type] = [],
-        comment: [str.type, None] = None) -> InlineFeatureInfo.type:
+        username: types.or_selector(str.type),
+        primary_group: types.or_selector(str.type),
+        home_dir: types.or_selector(str.type),
+        shell: types.or_selector(str.type) = SHELL_NOLOGIN,
+        uid: types.optional(types.or_selector(int.type)) = None,
+        supplementary_groups: types.or_selector([str.type]) = [],
+        comment: [str.type, None] = None) -> ParseTimeFeature.type:
     """
     Add a user entry to /etc/passwd.
 
@@ -46,7 +49,7 @@ def user_add(
     - `primary_group` and `supplementary_groups` are specified as groupnames.
     - `home_dir` must exist
     """
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "user",
         kwargs = {
             "comment": comment,
@@ -61,8 +64,8 @@ def user_add(
 
 def group_add(
         *,
-        groupname: str.type,
-        gid: [int.type, None] = None) -> InlineFeatureInfo.type:
+        groupname: types.or_selector(str.type),
+        gid: types.optional(types.or_selector(int.type)) = None) -> ParseTimeFeature.type:
     """
     Add a group entry to /etc/group
 
@@ -70,7 +73,7 @@ def group_add(
     conflicts with existing entries, image build will fail. It is recommended to
     avoid specifying GID unless absolutely necessary.
     """
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "group",
         kwargs = {
             "gid": gid,
@@ -80,12 +83,12 @@ def group_add(
 
 def usermod(
         *,
-        username: str.type,
-        add_supplementary_groups: [[str.type], None] = None) -> InlineFeatureInfo.type:
+        username: types.or_selector(str.type),
+        add_supplementary_groups: types.optional(types.or_selector([str.type])) = None) -> ParseTimeFeature.type:
     """
     Modify an existing entry in the /etc/passwd and /etc/group databases
     """
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "user_mod",
         kwargs = {
             "add_supplementary_groups": add_supplementary_groups or [],

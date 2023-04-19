@@ -198,7 +198,6 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::Genrule(x) => todo!("{x:?}"),
             Data::Group(x) => x.compile(ctx),
             Data::Install(x) => x.compile(ctx),
-            Data::Meta(x) => todo!("{x:?}"),
             // handled in buck rule and depgraph, nothing to do here
             Data::Mount(_) => Ok(()),
             Data::Remove(x) => x.compile(ctx),

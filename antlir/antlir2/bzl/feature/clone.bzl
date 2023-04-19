@@ -3,14 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
-load(":feature_info.bzl", "InlineFeatureInfo")
+load(":feature_info.bzl", "ParseTimeDependency", "ParseTimeFeature")
+
+types.lint_noop()
 
 def clone(
         *,
-        src_layer: str.type,
-        src_path: str.type,
-        dst_path: str.type) -> InlineFeatureInfo.type:
+        src_layer: types.or_selector(str.type),
+        src_path: types.or_selector(str.type),
+        dst_path: types.or_selector(str.type)) -> ParseTimeFeature.type:
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
@@ -54,24 +58,16 @@ def clone(
     deterministic state, while the state of the on-disk metadata in `buck-out`
     is undefined.
     """
-    omit_outer_dir = src_path.endswith("/")
-    pre_existing_dest = dst_path.endswith("/")
-    if omit_outer_dir and not pre_existing_dest:
-        fail(
-            "Your `src_path` {} ends in /, which means only the contents " +
-            "of the directory will be cloned. Therefore, you must also add a " +
-            "trailing / to `dst_path` to signal that clone will write " +
-            "inside that pre-existing directory dst_path".format(src_path),
-        )
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "clone",
         deps = {
-            "src_layer": src_layer,
+            "src_layer": ParseTimeDependency(
+                dep = src_layer,
+                providers = [LayerInfo],
+            ),
         },
         kwargs = {
             "dst_path": dst_path,
-            "omit_outer_dir": omit_outer_dir,
-            "pre_existing_dest": pre_existing_dest,
             "src_path": src_path,
         },
     )
@@ -87,9 +83,17 @@ clone_record = record(
 def clone_to_json(
         src_path: str.type,
         dst_path: str.type,
-        omit_outer_dir: bool.type,
-        pre_existing_dest: bool.type,
         deps: {str.type: "dependency"}) -> clone_record.type:
+    omit_outer_dir = src_path.endswith("/")
+    pre_existing_dest = dst_path.endswith("/")
+    if omit_outer_dir and not pre_existing_dest:
+        fail(
+            "Your `src_path` {} ends in /, which means only the contents " +
+            "of the directory will be cloned. Therefore, you must also add a " +
+            "trailing / to `dst_path` to signal that clone will write " +
+            "inside that pre-existing directory dst_path".format(src_path),
+        )
+
     return clone_record(
         src_layer = layer_dep_to_json(deps["src_layer"]),
         src_path = src_path,

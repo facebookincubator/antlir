@@ -5,16 +5,19 @@
 
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:stat.bzl", "stat")
-load(":feature_info.bzl", "InlineFeatureInfo")
+load("//antlir/bzl:types.bzl", "types")
+load(":feature_info.bzl", "ParseTimeFeature")
+
+types.lint_noop()
 
 def install(
         *,
-        src: str.type,
-        dst: str.type,
-        mode: [int.type, str.type, None] = None,
-        user: str.type = "root",
-        group: str.type = "root",
-        separate_debug_symbols = True) -> InlineFeatureInfo.type:
+        src: types.or_selector(str.type),
+        dst: types.or_selector(str.type),
+        mode: [int.type, str.type, "selector", None] = None,
+        user: types.or_selector(str.type) = "root",
+        group: types.or_selector(str.type) = "root",
+        separate_debug_symbols: types.or_selector(bool.type) = True) -> ParseTimeFeature.type:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -35,16 +38,9 @@ def install(
     # installed is a binary or not
     mode = stat.mode(mode) if mode else None
 
-    # This may be a dep or a direct source file, if it has a ':' in it, put it
-    # into the 'deps' dict, otherwise it goes in 'sources'
-    # Technically we could get by with only setting this in `sources`, but then
-    # we'd lose the ability to automatically determine the mode for executables
-    src_dict = {"src": src}
-
-    return InlineFeatureInfo(
+    return ParseTimeFeature(
         feature_type = "install",
-        deps = src_dict if ":" in src else None,
-        sources = src_dict if ":" not in src else None,
+        deps_or_sources = {"src": src},
         kwargs = {
             "dst": dst,
             "group": group,
@@ -69,27 +65,23 @@ def install_to_json(
         mode: [int.type, None],
         user: str.type,
         separate_debug_symbols: bool.type,
-        sources: {str.type: "artifact"} = {},
-        deps: {str.type: "dependency"} = {}) -> install_record.type:
-    if "src" in deps:
-        src = ensure_single_output(deps["src"])
-
+        deps_or_sources: {str.type: ["artifact", "dependency"]}) -> install_record.type:
+    src = deps_or_sources["src"]
+    if type(src) == "dependency":
         # Unfortunately we can only determine `mode` automatically if the dep is
         # an executable, since a plain source might be a directory
-        if not mode and RunInfo in deps["src"]:
+        if not mode and RunInfo in src:
             # There is no need for the old buck1 `install_buck_runnable` stuff
             # in buck2, since we put a dep on the binary directly onto the layer
             # itself, which forces a rebuild when appropriate.
             mode = 0o555
-        if not mode:
-            # We can't tell if a source is a file or directory, so we need to
-            # force the user to specify it
-            # https://fb.workplace.com/groups/buck2users/posts/3346711265585231
-            fail("unable to automatically determine 'mode'\nplease specify it like 'mode=\"a+rx\"'")
-    elif "src" in sources:
-        src = sources["src"]
-    else:
-        fail("source was missing from both 'deps' and 'sources', this should be impossible")
+
+        src = ensure_single_output(src)
+    if not mode:
+        # We can't tell if a source is a file or directory, so we need to
+        # force the user to specify it
+        # https://fb.workplace.com/groups/buck2users/posts/3346711265585231
+        fail("Unable to automatically determine 'mode'. Please specify it with something like 'mode=\"a+r\"'")
     return install_record(
         src = src,
         dst = dst,

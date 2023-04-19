@@ -70,6 +70,14 @@ def _record(**kwargs):
     else:
         return _record_ctor
 
+# This is really for human-readability, since we can't guarantee that the result
+# of the `select` will be of the correct inner type until analysis time, but
+# code that's using this should have a function with the concrete resolved type
+# for later type checking after this frontend interface allows either the
+# concrete type or a (possibly incorrect) selector
+def _or_selector(ty):
+    return [ty, "selector"]
+
 # In the next diff, this gets changed to strong typing for individual shapes by
 # using `record`
 def _shape(_shape_type):
@@ -119,6 +127,7 @@ types = struct(
     list = _list,
     optional = _optional,
     union = _union,
+    or_selector = _or_selector,
     # other stuff
     lint_noop = _lint_noop,
     **structs.to_dict(_skylib_reexport)
