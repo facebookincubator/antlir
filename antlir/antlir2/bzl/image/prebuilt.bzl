@@ -32,7 +32,14 @@ def _impl(ctx: "context") -> ["provider"]:
             "RUST_LOG": "antlir2=trace",
         },
     )
-    depgraph_output = build_depgraph(ctx, "json", subvol_symlink, [])
+    depgraph_output = build_depgraph(
+        ctx = ctx,
+        features = None,
+        features_json = None,
+        format = "json",
+        subvol = subvol_symlink,
+        dependency_layers = [],
+    )
     return [
         LayerInfo(
             label = ctx.label,
