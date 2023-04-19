@@ -48,7 +48,7 @@ rule is able to coerce those labels to concrete artifacts.
 
 Image features must also provide a function to convert the kwargs, sources and
 deps into a JSON struct readable by the compiler. This function must then be
-added to the `_feature_to_json` map in this file.
+added to the `_analyze_feature` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -56,74 +56,78 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
-load(":clone.bzl", "clone_to_json")
-load(":ensure_dirs_exist.bzl", "ensure_dir_exists_to_json")
-load(":extract.bzl", "extract_to_json")
-load(":genrule.bzl", "genrule_to_json")
-load(":install.bzl", "install_to_json")
-load(":mount.bzl", "mount_to_json")
-load(":remove.bzl", "remove_to_json")
-load(":requires.bzl", "requires_to_json")
-load(":rpms.bzl", "rpms_to_json")
-load(":symlink.bzl", "symlink_to_json")
-load(":tarball.bzl", "tarball_to_json")
-load(":usergroup.bzl", "group_to_json", "user_to_json", "usermod_to_json")
+load(":clone.bzl", "clone_analyze")
+load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
+load(":extract.bzl", "extract_analyze")
+load(":genrule.bzl", "genrule_analyze")
+load(":install.bzl", "install_analyze")
+load(":mount.bzl", "mount_analyze")
+load(":remove.bzl", "remove_analyze")
+load(":requires.bzl", "requires_analyze")
+load(":rpms.bzl", "rpms_analyze")
+load(":symlink.bzl", "symlink_analyze")
+load(":tarball.bzl", "tarball_analyze")
+load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
 
 def _project_as_feature_json(value: ["artifact"]):
     return cmd_args(value, format = "--feature-json={}")
 
-Features = transitive_set(args_projections = {"feature_json": _project_as_feature_json})
+Features = transitive_set()
+FeatureJsonFiles = transitive_set(args_projections = {"feature_json": _project_as_feature_json})
 FeatureDeps = transitive_set()
 
-_feature_to_json = {
-    "clone": clone_to_json,
-    "ensure_dir_exists": ensure_dir_exists_to_json,
-    "ensure_dir_symlink": symlink_to_json,
-    "ensure_file_symlink": symlink_to_json,
-    "extract": extract_to_json,
+_analyze_feature = {
+    "clone": clone_analyze,
+    "ensure_dir_exists": ensure_dir_exists_analyze,
+    "ensure_dir_symlink": symlink_analyze,
+    "ensure_file_symlink": symlink_analyze,
+    "extract": extract_analyze,
     # @oss-disable
     # @oss-disable
-    "genrule": genrule_to_json,
-    "group": group_to_json,
-    "install": install_to_json,
-    "mount": mount_to_json,
-    "remove": remove_to_json,
-    "requires": requires_to_json,
-    "rpm": rpms_to_json,
-    "tarball": tarball_to_json,
-    "user": user_to_json,
-    "user_mod": usermod_to_json,
+    "genrule": genrule_analyze,
+    "group": group_analyze,
+    "install": install_analyze,
+    "mount": mount_analyze,
+    "remove": remove_analyze,
+    "requires": requires_analyze,
+    "rpm": rpms_analyze,
+    "tarball": tarball_analyze,
+    "user": user_analyze,
+    "user_mod": usermod_analyze,
 }
+
+feature_record = record(
+    feature_type = str.type,
+    label = "target_label",
+    data = "",
+)
 
 def _impl(ctx: "context") -> ["provider"]:
     # Merge inline features into a single JSON file
     inline_features = []
-    inline_deps = []
+    inline_artifacts = []
+    inline_run_infos = []
+    inline_layer_deps = []
     for key, inline in ctx.attrs.inline_features.items():
         feature_deps = ctx.attrs.inline_features_deps.get(key, None)
         feature_deps_or_sources = ctx.attrs.inline_features_deps_or_sources.get(key, None)
-        if feature_deps:
-            inline_deps.extend(feature_deps.values())
-        if feature_deps_or_sources:
-            inline_deps.extend(feature_deps_or_sources.values())
-
-        to_json_kwargs = inline["kwargs"]
+        analyze_kwargs = inline["kwargs"]
         if feature_deps != None:
-            to_json_kwargs["deps"] = feature_deps
+            analyze_kwargs["deps"] = feature_deps
         if feature_deps_or_sources != None:
-            to_json_kwargs["deps_or_sources"] = feature_deps_or_sources
+            analyze_kwargs["deps_or_sources"] = feature_deps_or_sources
 
-        feature_json = _feature_to_json[inline["feature_type"]](**to_json_kwargs)
-        if type(feature_json) == "record":
-            feature_json = {
-                k: getattr(feature_json, k)
-                for k in dir(feature_json)
-            }
-        if "__feature_type" not in feature_json:
-            feature_json["__feature_type"] = inline["feature_type"]
-        feature_json["__label"] = ctx.label.raw_target()
-        inline_features.append(feature_json)
-    json_out = ctx.actions.write_json("features.json", inline_features)
+        analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
+        inline_artifacts.extend(analysis.required_artifacts)
+        inline_run_infos.extend(analysis.required_run_infos)
+        inline_layer_deps.extend(analysis.required_layers)
+
+        feat = feature_record(
+            feature_type = analysis.feature_type or inline["feature_type"],
+            label = ctx.label.raw_target(),
+            data = analysis.data,
+        )
+        inline_features.append(feat)
 
     # Track the JSON outputs and deps of other feature targets with transitive
     # sets. Note that we cannot produce a single JSON file with all the
@@ -131,23 +135,43 @@ def _impl(ctx: "context") -> ["provider"]:
     # command outside of buck can be used to produce much more dynamic feature
     # JSON (for example, extract.bzl requires Rust logic to produce its feature
     # output)
-    json_files = ctx.actions.tset(
+    features = ctx.actions.tset(
         Features,
-        value = [json_out],
-        children = [f[FeatureInfo].json_files for f in ctx.attrs.feature_targets],
+        value = inline_features,
+        children = [f[FeatureInfo].features for f in ctx.attrs.feature_targets],
     )
-    deps = ctx.actions.tset(
+    required_artifacts = ctx.actions.tset(
         FeatureDeps,
-        value = inline_deps,
-        children = [f[FeatureInfo].deps for f in ctx.attrs.feature_targets],
+        value = inline_artifacts,
+        children = [f[FeatureInfo].required_artifacts for f in ctx.attrs.feature_targets],
+    )
+    required_run_infos = ctx.actions.tset(
+        FeatureDeps,
+        value = inline_run_infos,
+        children = [f[FeatureInfo].required_run_infos for f in ctx.attrs.feature_targets],
+    )
+    required_layers = ctx.actions.tset(
+        FeatureDeps,
+        value = inline_layer_deps,
+        children = [f[FeatureInfo].required_layers for f in ctx.attrs.feature_targets],
+    )
+
+    json_file = ctx.actions.write_json("features.json", inline_features)
+    json_files = ctx.actions.tset(
+        FeatureJsonFiles,
+        value = [json_file],
+        children = [f[FeatureInfo].json_files for f in ctx.attrs.feature_targets],
     )
 
     return [
         FeatureInfo(
+            features = features,
             json_files = json_files,
-            deps = deps,
+            required_artifacts = required_artifacts,
+            required_run_infos = required_run_infos,
+            required_layers = required_layers,
         ),
-        DefaultInfo(json_out),
+        DefaultInfo(),
     ]
 
 _feature = rule(

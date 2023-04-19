@@ -29,7 +29,7 @@ pub mod usergroup;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 pub struct Feature<'a> {
-    #[serde(borrow, rename = "__label")]
+    #[serde(borrow)]
     pub label: Label<'a>,
     #[serde(flatten)]
     pub data: Data<'a>,
@@ -38,7 +38,8 @@ pub struct Feature<'a> {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(
     rename_all = "snake_case",
-    tag = "__feature_type",
+    tag = "feature_type",
+    content = "data",
     bound(deserialize = "'de: 'a")
 )]
 pub enum Data<'a> {

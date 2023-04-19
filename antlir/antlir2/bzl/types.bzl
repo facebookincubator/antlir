@@ -5,13 +5,18 @@
 
 FeatureInfo = provider(fields = [
     # FeatureDeps transitive set
-    # All the targets that must be materialized on disk for the compiler to be
-    # able to build this feature
-    "deps",
-    # Features transitive set
-    # List of output files that contain lists of features deserializable by
-    # Antlir tools. Files include inline features in this rule, as well as all
-    # the features this one brings in via deps
+    # Transitive set of the artifacts that must be materialized on disk for the
+    # compiler to be able to build this feature
+    "required_artifacts",
+    # Runnable binaries required to build this feature.
+    "required_run_infos",
+    # Transitive set of the image layers that are required to be already-build
+    # before building this feature
+    "required_layers",
+    # Transitive set of feature records deserializable by Antlir tools
+    "features",
+    # Transitive set of JSON files that contains the same contents as
+    # `features_json`
     "json_files",
 ])
 

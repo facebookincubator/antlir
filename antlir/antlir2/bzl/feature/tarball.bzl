@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:types.bzl", "types")
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 types.lint_noop()
 
@@ -30,12 +30,15 @@ tarball_record = record(
     force_root_ownership = bool.type,
 )
 
-def tarball_to_json(
+def tarball_analyze(
         into_dir: str.type,
         force_root_ownership: bool.type,
-        sources: {str.type: "artifact"}) -> tarball_record.type:
-    return tarball_record(
-        force_root_ownership = force_root_ownership,
-        into_dir = into_dir,
-        source = sources["source"],
+        sources: {str.type: "artifact"}) -> FeatureAnalysis.type:
+    return FeatureAnalysis(
+        data = tarball_record(
+            force_root_ownership = force_root_ownership,
+            into_dir = into_dir,
+            source = sources["source"],
+        ),
+        required_artifacts = sources["source"],
     )

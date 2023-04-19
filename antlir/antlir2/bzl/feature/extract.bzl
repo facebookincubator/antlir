@@ -24,8 +24,8 @@ binaries without first installing them into a layer.
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:types.bzl", "types")
-load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
-load(":feature_info.bzl", "ParseTimeDependency", "ParseTimeFeature")
+load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
 types.lint_noop()
 
@@ -85,30 +85,37 @@ extract_record = record(
     layer = [extract_layer_record.type, None],
 )
 
-def extract_to_json(
+def extract_analyze(
         source: str.type,
         deps: {str.type: "dependency"},
         binaries: [[str.type], None] = None,
         src: [str.type, None] = None,
-        dst: [str.type, None] = None) -> extract_record.type:
+        dst: [str.type, None] = None) -> FeatureAnalysis.type:
     if source == "layer":
-        return extract_record(
-            layer = extract_layer_record(
-                layer = layer_dep_to_json(deps["layer"]),
-                binaries = binaries,
+        return FeatureAnalysis(
+            data = extract_record(
+                layer = extract_layer_record(
+                    layer = layer_dep_analyze(deps["layer"]),
+                    binaries = binaries,
+                ),
+                buck = None,
             ),
-            buck = None,
+            required_layers = [deps["layer"][LayerInfo]],
         )
     elif source == "buck":
         src = deps["src"]
         if RunInfo not in src:
             fail("'{}' does not appear to be a binary".format(src))
-        return extract_record(
-            buck = extract_buck_record(
-                src = ensure_single_output(src),
-                dst = dst,
+        return FeatureAnalysis(
+            data = extract_record(
+                buck = extract_buck_record(
+                    src = ensure_single_output(src),
+                    dst = dst,
+                ),
+                layer = None,
             ),
-            layer = None,
+            required_artifacts = [ensure_single_output(src)],
+            required_run_infos = [src[RunInfo]],
         )
     else:
         fail("invalid extract source '{}'".format(source))

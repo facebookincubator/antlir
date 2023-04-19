@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:types.bzl", "types")
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 types.lint_noop()
 
@@ -72,4 +72,4 @@ ensure_dir_exists_record = record(
     group = str.type,
 )
 
-ensure_dir_exists_to_json = ensure_dir_exists_record
+ensure_dir_exists_analyze = data_only_feature_analysis_fn(ensure_dir_exists_record)

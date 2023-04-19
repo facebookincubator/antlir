@@ -13,10 +13,7 @@ load("//antlir/bzl:flatten.bzl", "flatten")
 def _make_test_cmd(ctx: "context", expect) -> "cmd_args":
     # traverse the features to find dependencies this image build has on other
     # image layers
-    dependency_layers = []
-    for dep in flatten.flatten(ctx.attrs.features[FeatureInfo].deps.traverse()):
-        if type(dep) == "dependency" and LayerInfo in dep:
-            dependency_layers.append(dep[LayerInfo])
+    dependency_layers = flatten.flatten(list(ctx.attrs.features[FeatureInfo].required_layers.traverse()))
 
     return cmd_args(
         ctx.attrs.test_depgraph[RunInfo],

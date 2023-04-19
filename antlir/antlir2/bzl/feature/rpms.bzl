@@ -5,7 +5,7 @@
 
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:types.bzl", "types")
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 types.lint_noop()
 
@@ -73,24 +73,30 @@ rpms_record = record(
     items = [rpm_item_record.type],
 )
 
-def rpms_to_json(
+def rpms_analyze(
         action: str.type,
         rpm_names: [str.type],
-        deps_or_sources: {str.type: ["dependency", "artifact"]} = {}) -> rpms_record.type:
+        deps_or_sources: {str.type: ["dependency", "artifact"]} = {}) -> FeatureAnalysis.type:
     rpms = []
     for rpm in rpm_names:
         rpms.append(rpm_source_record(name = rpm, source = None))
+
+    artifacts = []
     for rpm in deps_or_sources.values():
         if type(rpm) == "dependency":
             rpm = ensure_single_output(rpm)
         rpms.append(rpm_source_record(source = rpm, name = None))
+        artifacts.append(rpm)
 
-    return rpms_record(
-        items = [
-            rpm_item_record(
-                action = action_enum(action),
-                rpm = rpm,
-            )
-            for rpm in rpms
-        ],
+    return FeatureAnalysis(
+        data = rpms_record(
+            items = [
+                rpm_item_record(
+                    action = action_enum(action),
+                    rpm = rpm,
+                )
+                for rpm in rpms
+            ],
+        ),
+        required_artifacts = artifacts,
     )

@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:types.bzl", "types")
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 types.lint_noop()
 
@@ -106,18 +106,18 @@ user_record = record(
     comment = [str.type, None],
 )
 
-user_to_json = user_record
+user_analyze = data_only_feature_analysis_fn(user_record)
 
 group_record = record(
     name = str.type,
     gid = [int.type, None],
 )
 
-group_to_json = group_record
+group_analyze = data_only_feature_analysis_fn(group_record)
 
 usermod_record = record(
     username = str.type,
     add_supplementary_groups = [str.type],
 )
 
-usermod_to_json = usermod_record
+usermod_analyze = data_only_feature_analysis_fn(usermod_record)

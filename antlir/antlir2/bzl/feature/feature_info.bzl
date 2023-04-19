@@ -25,3 +25,29 @@ ParseTimeFeature = record(
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = {str.type: ""},
 )
+
+# Produced by the feature implementation, this tells the rule how to build it
+FeatureAnalysis = record(
+    # Arbitrary feature record type (the antlir2 compiler must be able to
+    # deserialize this)
+    data = "record",
+    # Allow analysis implementation to override the feature_type returned in
+    # its ParseTimeFeature
+    feature_type = field([str.type, None], default = None),
+    # Artifacts that are needed to build this feature. Antlir does not
+    # automatically attach any dependencies to features based on the input,
+    # feature implementations must always specify it exactly (this prevents
+    # building things unnecessarily)
+    required_artifacts = field(["artifact"], default = []),
+    # Runnable binaries required to build this feature.
+    required_run_infos = field(["RunInfo"], default = []),
+    # Other image layers that are required to build this feature.
+    required_layers = field(["LayerInfo"], default = []),
+)
+
+def data_only_feature_analysis_fn(record_type):
+    # @lint-ignore BUCKRESTRICTEDSYNTAX
+    def inner(**kwargs) -> FeatureAnalysis.type:
+        return FeatureAnalysis(data = record_type(**kwargs))
+
+    return inner

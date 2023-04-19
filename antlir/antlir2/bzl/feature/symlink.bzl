@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:types.bzl", "types")
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 types.lint_noop()
 
@@ -44,4 +44,4 @@ symlink_record = record(
     is_directory = bool.type,
 )
 
-symlink_to_json = symlink_record
+symlink_analyze = data_only_feature_analysis_fn(symlink_record)

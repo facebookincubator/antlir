@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def remove(
         *,
@@ -31,4 +31,4 @@ remove_record = record(
     must_exist = bool.type,
 )
 
-remove_to_json = remove_record
+remove_analyze = data_only_feature_analysis_fn(remove_record)
