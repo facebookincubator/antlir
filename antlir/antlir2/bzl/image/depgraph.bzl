@@ -3,10 +3,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
-load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
-def build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None], dependency_layers: ["LayerInfo"]) -> "artifact":
+def build_depgraph(
+        *,
+        ctx: "context",
+        features: ["FeatureInfo", None],
+        features_json: ["write_json_cli_args", None],
+        format: str.type,
+        subvol: ["artifact", None],
+        dependency_layers: ["LayerInfo"]) -> "artifact":
     output = ctx.actions.declare_output("depgraph." + format + (".pre" if not subvol else ""))
     ctx.actions.run(
         cmd_args(
@@ -16,12 +22,12 @@ def build_depgraph(ctx: "context", format: str.type, subvol: ["artifact", None],
             "depgraph",
             cmd_args(str(ctx.label), format = "--label={}"),
             format,
-            ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json") if hasattr(ctx.attrs, "features") else cmd_args(),
+            cmd_args(features_json, format = "--feature-json={}") if features_json else cmd_args(),
             cmd_args(
                 ctx.attrs.parent_layer[LayerInfo].depgraph,
                 format = "--parent={}",
             ) if hasattr(ctx.attrs, "parent_layer") and ctx.attrs.parent_layer else cmd_args(),
-            cmd_args(collections.uniq([li.depgraph for li in dependency_layers]), format = "--image-dependency={}"),
+            features.features.project_as_args("layer_dependencies") if features else cmd_args(),
             cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
             cmd_args(output.as_output(), format = "--out={}"),
         ),

@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
@@ -58,14 +57,25 @@ def _impl(ctx: "context") -> ["provider"]:
 
     flavor_info = ctx.attrs.flavor[FlavorInfo] if ctx.attrs.flavor else ctx.attrs.parent_layer[LayerInfo].flavor_info
 
+    features = ctx.attrs.features[FeatureInfo]
+    features_json = features.features.project_as_json("features_json")
+    features_json = ctx.actions.write_json("features.json", features_json, with_inputs = True)
+
     # traverse the features to find dependencies this image build has on other
     # image layers
     dependency_layers = flatten.flatten(list(ctx.attrs.features[FeatureInfo].required_layers.traverse()))
-    feature_hidden_deps = list(ctx.attrs.features[FeatureInfo].required_artifacts.traverse()) + \
+    feature_hidden_deps = list(features.required_artifacts.traverse()) + \
                           [[dl.depgraph, dl.mounts, dl.subvol_symlink] for dl in dependency_layers] + \
-                          list(ctx.attrs.features[FeatureInfo].required_run_infos.traverse())
+                          list(features.required_run_infos.traverse())
 
-    depgraph_input = build_depgraph(ctx, "json", None, dependency_layers)
+    depgraph_input = build_depgraph(
+        ctx = ctx,
+        features = features,
+        features_json = features_json,
+        format = "json",
+        subvol = None,
+        dependency_layers = dependency_layers,
+    )
 
     available_rpm_repos = (ctx.attrs.available_rpm_repos or flavor_info.default_rpm_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, available_rpm_repos)
@@ -74,12 +84,12 @@ def _impl(ctx: "context") -> ["provider"]:
     ctx.actions.run(cmd_args(
         ctx.attrs.antlir2[RunInfo],
         "serialize-mounts",
-        ctx.attrs.features[FeatureInfo].json_files.project_as_args("feature_json"),
+        cmd_args(features_json, format = "--feature-json={}"),
         cmd_args(ctx.attrs.parent_layer[LayerInfo].mounts, format = "--parent={}") if ctx.attrs.parent_layer else cmd_args(),
         cmd_args(mounts.as_output(), format = "--out={}"),
     ).hidden([dep.mounts for dep in dependency_layers]), category = "antlir2", identifier = "serialize_mounts")
 
-    if ctx.attrs.features[FeatureInfo].features.reduce("requires_planning"):
+    if features.features.reduce("requires_planning"):
         plan = ctx.actions.declare_output("plan")
         plan_cmd, _ = _map_image(
             ctx = ctx,
@@ -88,7 +98,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 "plan",
                 cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
                 cmd_args(depgraph_input, format = "--depgraph-json={}"),
-                cmd_args(collections.uniq([li.subvol_symlink for li in dependency_layers]), format = "--image-dependency={}"),
+                features.features.project_as_args("layer_dependencies"),
                 cmd_args(plan.as_output(), format = "--plan={}"),
             ).hidden(feature_hidden_deps),
             identifier = "plan",
@@ -114,14 +124,21 @@ def _impl(ctx: "context") -> ["provider"]:
             "compile",
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
-            cmd_args(collections.uniq([li.subvol_symlink for li in dependency_layers]), format = "--image-dependency={}"),
+            features.features.project_as_args("layer_dependencies"),
         ).hidden(feature_hidden_deps),
         identifier = "compile",
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
         flavor_info = flavor_info,
     )
 
-    depgraph_output = build_depgraph(ctx, "json", final_subvol, dependency_layers)
+    depgraph_output = build_depgraph(
+        ctx = ctx,
+        features = features,
+        features_json = features_json,
+        format = "json",
+        subvol = final_subvol,
+        dependency_layers = dependency_layers,
+    )
 
     # This script is provided solely for developer convenience. It would
     # actually be a large regression to run this to produce the final image
@@ -155,9 +172,23 @@ def _impl(ctx: "context") -> ["provider"]:
         "depgraph": [DefaultInfo(
             default_outputs = [],
             sub_targets = {
-                "input.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", None, dependency_layers)])],
+                "input.dot": [DefaultInfo(default_outputs = [build_depgraph(
+                    ctx = ctx,
+                    features = features,
+                    features_json = features_json,
+                    format = "dot",
+                    subvol = None,
+                    dependency_layers = dependency_layers,
+                )])],
                 "input.json": [DefaultInfo(default_outputs = [depgraph_input])],
-                "output.dot": [DefaultInfo(default_outputs = [build_depgraph(ctx, "dot", final_subvol, dependency_layers)])],
+                "output.dot": [DefaultInfo(default_outputs = [build_depgraph(
+                    ctx = ctx,
+                    features = features,
+                    features_json = features_json,
+                    format = "dot",
+                    subvol = final_subvol,
+                    dependency_layers = dependency_layers,
+                )])],
                 "output.json": [DefaultInfo(default_outputs = [depgraph_output])],
             },
         )],

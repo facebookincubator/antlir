@@ -15,9 +15,6 @@ FeatureInfo = provider(fields = [
     "required_layers",
     # Transitive set of feature records deserializable by Antlir tools
     "features",
-    # Transitive set of JSON files that contains the same contents as
-    # `features_json`
-    "json_files",
 ])
 
 FlavorInfo = provider(fields = {

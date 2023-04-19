@@ -74,21 +74,44 @@ feature_record = record(
     label = "target_label",
     data = "",
     requires_planning = bool.type,
+    required_artifacts = ["artifact"],
+    required_layers = ["LayerInfo"],
 )
 
-def _features_require_planning(children: [bool.type], features: [feature_record.type]) -> bool.type:
-    for feat in features:
-        if feat.requires_planning:
-            return True
+def _features_require_planning(children: [bool.type], feat: [feature_record.type, None]) -> bool.type:
+    if feat and feat.requires_planning:
+        return True
 
     return any(children)
 
-Features = transitive_set(reductions = {"requires_planning": _features_require_planning})
+def _feature_as_json(feat: feature_record.type) -> "struct":
+    return struct(
+        feature_type = feat.feature_type,
+        label = feat.label,
+        data = feat.data,
+    )
 
-def _project_as_feature_json(value: ["artifact"]):
-    return cmd_args(value, format = "--feature-json={}")
+def _project_as_hidden_artifacts(feat: feature_record.type) -> "cmd_args":
+    return cmd_args().hidden([
+        feat.required_artifacts,
+        [[li.depgraph, li.mounts, li.subvol_symlink] for li in feat.required_layers],
+    ])
 
-FeatureJsonFiles = transitive_set(args_projections = {"feature_json": _project_as_feature_json})
+def _project_as_layer_dependency_args(feat: feature_record.type) -> "cmd_args":
+    return cmd_args([
+        li.depgraph
+        for li in feat.required_layers
+    ], format = "--image-dependency={}")
+
+Features = transitive_set(
+    reductions = {"requires_planning": _features_require_planning},
+    json_projections = {"features_json": _feature_as_json},
+    args_projections = {
+        "hidden_artifacts": _project_as_hidden_artifacts,
+        "layer_dependencies": _project_as_layer_dependency_args,
+    },
+)
+
 FeatureDeps = transitive_set()
 
 _analyze_feature = {
@@ -136,6 +159,8 @@ def _impl(ctx: "context") -> ["provider"]:
             label = ctx.label.raw_target(),
             data = analysis.data,
             requires_planning = analysis.requires_planning,
+            required_artifacts = analysis.required_artifacts,
+            required_layers = analysis.required_layers,
         )
         inline_features.append(feat)
 
@@ -147,8 +172,8 @@ def _impl(ctx: "context") -> ["provider"]:
     # output)
     features = ctx.actions.tset(
         Features,
-        value = inline_features,
-        children = [f[FeatureInfo].features for f in ctx.attrs.feature_targets],
+        children = [ctx.actions.tset(Features, value = feat) for feat in inline_features] +
+                   [f[FeatureInfo].features for f in ctx.attrs.feature_targets],
     )
     required_artifacts = ctx.actions.tset(
         FeatureDeps,
@@ -166,22 +191,17 @@ def _impl(ctx: "context") -> ["provider"]:
         children = [f[FeatureInfo].required_layers for f in ctx.attrs.feature_targets],
     )
 
-    json_file = ctx.actions.write_json("features.json", inline_features)
-    json_files = ctx.actions.tset(
-        FeatureJsonFiles,
-        value = [json_file],
-        children = [f[FeatureInfo].json_files for f in ctx.attrs.feature_targets],
-    )
+    features_json = features.project_as_json("features_json")
+    json_file = ctx.actions.write_json("features.json", features_json)
 
     return [
         FeatureInfo(
             features = features,
-            json_files = json_files,
             required_artifacts = required_artifacts,
             required_run_infos = required_run_infos,
             required_layers = required_layers,
         ),
-        DefaultInfo(),
+        DefaultInfo(json_file),
     ]
 
 _feature = rule(
