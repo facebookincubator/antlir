@@ -69,10 +69,25 @@ load(":symlink.bzl", "symlink_analyze")
 load(":tarball.bzl", "tarball_analyze")
 load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
 
+feature_record = record(
+    feature_type = str.type,
+    label = "target_label",
+    data = "",
+    requires_planning = bool.type,
+)
+
+def _features_require_planning(children: [bool.type], features: [feature_record.type]) -> bool.type:
+    for feat in features:
+        if feat.requires_planning:
+            return True
+
+    return any(children)
+
+Features = transitive_set(reductions = {"requires_planning": _features_require_planning})
+
 def _project_as_feature_json(value: ["artifact"]):
     return cmd_args(value, format = "--feature-json={}")
 
-Features = transitive_set()
 FeatureJsonFiles = transitive_set(args_projections = {"feature_json": _project_as_feature_json})
 FeatureDeps = transitive_set()
 
@@ -95,12 +110,6 @@ _analyze_feature = {
     "user": user_analyze,
     "user_mod": usermod_analyze,
 }
-
-feature_record = record(
-    feature_type = str.type,
-    label = "target_label",
-    data = "",
-)
 
 def _impl(ctx: "context") -> ["provider"]:
     # Merge inline features into a single JSON file
@@ -126,6 +135,7 @@ def _impl(ctx: "context") -> ["provider"]:
             feature_type = analysis.feature_type or inline["feature_type"],
             label = ctx.label.raw_target(),
             data = analysis.data,
+            requires_planning = analysis.requires_planning,
         )
         inline_features.append(feat)
 
