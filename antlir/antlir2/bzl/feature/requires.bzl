@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def requires(
         *,
@@ -39,4 +39,4 @@ requires_record = record(
     groups = [str.type],
 )
 
-requires_to_json = requires_record
+requires_analyze = data_only_feature_analysis_fn(requires_record)

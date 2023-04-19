@@ -5,25 +5,29 @@ bad_depgraph(
     name = "cycle",
     error = {"cycle": [
         {
-            "dst": "/etc/passwd",
-            "group": "root",
-            "mode": 0o444,
-            "separate_debug_symbols": True,
-            "src": "fbcode/antlir/empty",
-            "user": "antlir",
-            "__feature_type": "install",
-            "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:cycle--features",
+            "data": {
+                "dst": "/etc/passwd",
+                "group": "root",
+                "mode": 0o444,
+                "separate_debug_symbols": True,
+                "src": "fbcode/antlir/empty",
+                "user": "antlir",
+            },
+            "feature_type": "install",
+            "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:cycle--features",
         },
         {
-            "comment": None,
-            "home_dir": "/",
-            "name": "antlir",
-            "primary_group": "root",
-            "shell": "/fakeshell",
-            "supplementary_groups": [],
-            "uid": None,
-            "__feature_type": "user",
-            "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:cycle--features",
+            "data": {
+                "comment": None,
+                "home_dir": "/",
+                "name": "antlir",
+                "primary_group": "root",
+                "shell": "/fakeshell",
+                "supplementary_groups": [],
+                "uid": None,
+            },
+            "feature_type": "user",
+            "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:cycle--features",
         },
     ]},
     features = [
@@ -73,10 +77,12 @@ bad_depgraph(
     error = {"missing_item": {
         "key": {"path": "/foo"},
         "required_by": {
-            "must_exist": True,
-            "path": "/foo",
-            "__feature_type": "remove",
-            "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:missing-dep--features",
+            "data": {
+                "must_exist": True,
+                "path": "/foo",
+            },
+            "feature_type": "remove",
+            "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:missing-dep--features",
         },
     }},
     features = [
@@ -111,24 +117,28 @@ bad_depgraph(
     error = {"conflict": {
         "features": [
             {
-                "dst": "/foo",
-                "group": "root",
-                "mode": 0o444,
-                "separate_debug_symbols": True,
-                "src": "fbcode/antlir/empty",
-                "user": "root",
-                "__feature_type": "install",
-                "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-in-same-layer--features",
+                "data": {
+                    "dst": "/foo",
+                    "group": "root",
+                    "mode": 0o444,
+                    "separate_debug_symbols": True,
+                    "src": "fbcode/antlir/empty",
+                    "user": "root",
+                },
+                "feature_type": "install",
+                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-in-same-layer--features",
             },
             {
-                "dst": "/foo",
-                "group": "root",
-                "mode": 0o444,
-                "separate_debug_symbols": True,
-                "src": "fbcode/antlir/antlir2/antlir2_depgraph/tests/TARGETS.v2",
-                "user": "root",
-                "__feature_type": "install",
-                "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-in-same-layer--features",
+                "data": {
+                    "dst": "/foo",
+                    "group": "root",
+                    "mode": 0o444,
+                    "separate_debug_symbols": True,
+                    "src": "fbcode/antlir/antlir2/antlir2_depgraph/tests/TARGETS",
+                    "user": "root",
+                },
+                "feature_type": "install",
+                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-in-same-layer--features",
             },
         ],
         "item": {"path": {"entry": {
@@ -146,7 +156,7 @@ bad_depgraph(
         # change the src so that two exactly-identical features don't get
         # deduped
         feature.install(
-            src = "TARGETS.v2",
+            src = "TARGETS",
             dst = "/foo",
             mode = "a+r",
         ),
@@ -211,24 +221,28 @@ bad_depgraph(
     error = {"conflict": {
         "features": [
             {
-                "dst": "/foo",
-                "group": "root",
-                "mode": 0o444,
-                "separate_debug_symbols": True,
-                "src": "fbcode/antlir/empty",
-                "user": "root",
-                "__feature_type": "install",
-                "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:simple-install--features",
+                "data": {
+                    "dst": "/foo",
+                    "group": "root",
+                    "mode": 0o444,
+                    "separate_debug_symbols": True,
+                    "src": "fbcode/antlir/empty",
+                    "user": "root",
+                },
+                "feature_type": "install",
+                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:simple-install--features",
             },
             {
-                "dst": "/foo",
-                "group": "root",
-                "mode": 0o400,
-                "separate_debug_symbols": True,
-                "src": "fbcode/antlir/empty",
-                "user": "root",
-                "__feature_type": "install",
-                "__label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-with-parent--features",
+                "data": {
+                    "dst": "/foo",
+                    "group": "root",
+                    "mode": 0o400,
+                    "separate_debug_symbols": True,
+                    "src": "fbcode/antlir/empty",
+                    "user": "root",
+                },
+                "feature_type": "install",
+                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-with-parent--features",
             },
         ],
         "item": {"path": {"entry": {

@@ -12,7 +12,7 @@ layer_dep = record(
     mounts = "artifact",
 )
 
-def layer_dep_to_json(layer: "dependency") -> layer_dep.type:
+def layer_dep_analyze(layer: "dependency") -> layer_dep.type:
     """
     Serialize a Layer dependency to a subset of LayerInfo that can be serialized
     and passed to antlir2

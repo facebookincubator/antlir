@@ -5,8 +5,8 @@
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:types.bzl", "types")
-load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
-load(":feature_info.bzl", "ParseTimeDependency", "ParseTimeFeature")
+load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
 types.lint_noop()
 
@@ -66,12 +66,12 @@ mount_record = record(
     host = [host_mount_record.type, None],
 )
 
-def mount_to_json(
+def mount_analyze(
         mountpoint: [str.type, None],
         source_kind: _source_kind.type,
         is_directory: [bool.type, None],
         host_source: [str.type, None],
-        deps: {str.type: "dependency"}) -> mount_record.type:
+        deps: {str.type: "dependency"}) -> FeatureAnalysis.type:
     if source_kind == "layer":
         source = deps.pop("source")
         if not mountpoint:
@@ -79,21 +79,26 @@ def mount_to_json(
             if not default_mountpoint:
                 fail("mountpoint is required if source does not have a default mountpoint")
             mountpoint = default_mountpoint
-        return mount_record(
-            layer = layer_mount_record(
-                src = layer_dep_to_json(source),
-                mountpoint = mountpoint,
+        return FeatureAnalysis(
+            data = mount_record(
+                layer = layer_mount_record(
+                    src = layer_dep_analyze(source),
+                    mountpoint = mountpoint,
+                ),
+                host = None,
             ),
-            host = None,
+            required_layers = [source[LayerInfo]],
         )
     elif source_kind == "host":
-        return mount_record(
-            host = host_mount_record(
-                src = host_source,
-                mountpoint = mountpoint,
-                is_directory = is_directory,
+        return FeatureAnalysis(
+            data = mount_record(
+                host = host_mount_record(
+                    src = host_source,
+                    mountpoint = mountpoint,
+                    is_directory = is_directory,
+                ),
+                layer = None,
             ),
-            layer = None,
         )
     else:
         fail("invalid source_kind '{}'".format(source_kind))

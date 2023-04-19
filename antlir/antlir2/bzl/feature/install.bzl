@@ -6,7 +6,7 @@
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:types.bzl", "types")
-load(":feature_info.bzl", "ParseTimeFeature")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 types.lint_noop()
 
@@ -59,13 +59,13 @@ install_record = record(
     separate_debug_symbols = bool.type,
 )
 
-def install_to_json(
+def install_analyze(
         dst: str.type,
         group: str.type,
         mode: [int.type, None],
         user: str.type,
         separate_debug_symbols: bool.type,
-        deps_or_sources: {str.type: ["artifact", "dependency"]}) -> install_record.type:
+        deps_or_sources: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
     src = deps_or_sources["src"]
     if type(src) == "dependency":
         # Unfortunately we can only determine `mode` automatically if the dep is
@@ -82,11 +82,14 @@ def install_to_json(
         # force the user to specify it
         # https://fb.workplace.com/groups/buck2users/posts/3346711265585231
         fail("Unable to automatically determine 'mode'. Please specify it with something like 'mode=\"a+r\"'")
-    return install_record(
-        src = src,
-        dst = dst,
-        mode = mode,
-        user = user,
-        group = group,
-        separate_debug_symbols = separate_debug_symbols,
+    return FeatureAnalysis(
+        data = install_record(
+            src = src,
+            dst = dst,
+            mode = mode,
+            user = user,
+            group = group,
+            separate_debug_symbols = separate_debug_symbols,
+        ),
+        required_artifacts = [src],
     )

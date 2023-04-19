@@ -5,8 +5,8 @@
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:types.bzl", "types")
-load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_to_json")
-load(":feature_info.bzl", "ParseTimeDependency", "ParseTimeFeature")
+load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
 types.lint_noop()
 
@@ -80,10 +80,10 @@ clone_record = record(
     pre_existing_dest = bool.type,
 )
 
-def clone_to_json(
+def clone_analyze(
         src_path: str.type,
         dst_path: str.type,
-        deps: {str.type: "dependency"}) -> clone_record.type:
+        deps: {str.type: "dependency"}) -> FeatureAnalysis.type:
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:
@@ -94,10 +94,13 @@ def clone_to_json(
             "inside that pre-existing directory dst_path".format(src_path),
         )
 
-    return clone_record(
-        src_layer = layer_dep_to_json(deps["src_layer"]),
-        src_path = src_path,
-        dst_path = dst_path,
-        omit_outer_dir = omit_outer_dir,
-        pre_existing_dest = pre_existing_dest,
+    return FeatureAnalysis(
+        data = clone_record(
+            src_layer = layer_dep_analyze(deps["src_layer"]),
+            src_path = src_path,
+            dst_path = dst_path,
+            omit_outer_dir = omit_outer_dir,
+            pre_existing_dest = pre_existing_dest,
+        ),
+        required_layers = [deps["src_layer"][LayerInfo]],
     )

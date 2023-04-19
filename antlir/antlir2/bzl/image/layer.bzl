@@ -7,7 +7,6 @@ load("@bazel_skylib//lib:collections.bzl", "collections")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
@@ -61,21 +60,10 @@ def _impl(ctx: "context") -> ["provider"]:
 
     # traverse the features to find dependencies this image build has on other
     # image layers
-    dependency_layers = []
-    feature_hidden_deps = []
-    for dep in flatten.flatten(ctx.attrs.features[FeatureInfo].deps.traverse()):
-        if type(dep) == "dependency" and LayerInfo in dep:
-            dependency_layers.append(dep[LayerInfo])
-        elif type(dep) == "dependency":
-            feature_hidden_deps.append(ensure_single_output(dep))
-
-            # TODO(vmagro): features should be able to provide better dep info
-            # instead of doing things like this...
-            if RunInfo in dep:
-                feature_hidden_deps.append(dep[RunInfo])
-
-        if type(dep) == "artifact":
-            feature_hidden_deps.append(dep)
+    dependency_layers = flatten.flatten(list(ctx.attrs.features[FeatureInfo].required_layers.traverse()))
+    feature_hidden_deps = list(ctx.attrs.features[FeatureInfo].required_artifacts.traverse()) + \
+                          [[dl.depgraph, dl.mounts, dl.subvol_symlink] for dl in dependency_layers] + \
+                          list(ctx.attrs.features[FeatureInfo].required_run_infos.traverse())
 
     depgraph_input = build_depgraph(ctx, "json", None, dependency_layers)
 
