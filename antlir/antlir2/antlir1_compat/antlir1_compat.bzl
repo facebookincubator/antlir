@@ -25,7 +25,6 @@ def _make_cmd(location, force_flavor):
     return """
         set -ex
         location={location}
-        mkdir "$subvolume_wrapper_dir"
         dst_rel="$subvolume_wrapper_dir/volume"
         dst_abs="$SUBVOLUMES_DIR/$dst_rel"
         sudo btrfs subvolume snapshot "$location" "$dst_abs"
