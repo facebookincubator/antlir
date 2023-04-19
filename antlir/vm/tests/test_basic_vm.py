@@ -47,3 +47,6 @@ class BasicVMTest(AntlirTestCase):
         modules_path = Path("/usr/lib/modules") / platform.uname().release
         self.assertTrue(modules_path.exists())
         self.assertTrue(os.path.ismount(modules_path))
+
+    def test_eth0_exists(self) -> None:
+        self.assertTrue(Path("/sys/class/net/eth0/address").exists())

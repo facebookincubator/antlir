@@ -237,6 +237,29 @@ vm.python_unittest(
     ],
 )
 
+vm.python_unittest(
+    name = "python-multinics",
+    srcs = [
+        "test_multinics_vm.py",
+    ],
+    env = test_env_vars,
+    resources = {
+        ":resource.txt": "resource",
+    },
+    vm_opts = vm.types.opts.new(
+        cpus = 1,
+        disk = vm.types.disk.root(
+            layer = ":vmtest-custom-layer",
+        ),
+        nics = 4,
+    ),
+    deps = [
+        ":resource.txt",
+        "//antlir:fs_utils",
+        "//antlir:testlib_common",
+    ],
+)
+
 vm.cpp_unittest(
     name = "cpp",
     srcs = ["CppTest.cpp"],
