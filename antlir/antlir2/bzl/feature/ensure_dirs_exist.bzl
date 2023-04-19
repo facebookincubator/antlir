@@ -5,15 +5,18 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:stat.bzl", "stat")
-load(":feature_info.bzl", "InlineFeatureInfo")
+load("//antlir/bzl:types.bzl", "types")
+load(":feature_info.bzl", "ParseTimeFeature")
+
+types.lint_noop()
 
 def ensure_subdirs_exist(
         *,
-        into_dir: str.type,
-        subdirs_to_create: str.type,
-        mode: [int.type, str.type] = 0o755,
-        user: str.type = "root",
-        group: str.type = "root") -> [InlineFeatureInfo.type]:
+        into_dir: types.or_selector(str.type),
+        subdirs_to_create: types.or_selector(str.type),
+        mode: types.or_selector([int.type, str.type]) = 0o755,
+        user: types.or_selector(str.type) = "root",
+        group: types.or_selector(str.type) = "root") -> [ParseTimeFeature.type]:
     """
     `ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y` and
     `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already been
@@ -36,7 +39,7 @@ def ensure_subdirs_exist(
         if not component:
             continue
         dir = paths.join(dir, component)
-        features.append(InlineFeatureInfo(
+        features.append(ParseTimeFeature(
             feature_type = "ensure_dir_exists",
             kwargs = {
                 "dir": dir,
@@ -52,7 +55,7 @@ def ensure_dirs_exist(
         dirs: str.type,
         mode: [int.type, str.type] = 0o755,
         user: str.type = "root",
-        group: str.type = "root") -> [InlineFeatureInfo.type]:
+        group: str.type = "root") -> [ParseTimeFeature.type]:
     """Equivalent to `ensure_subdirs_exist("/", dirs, ...)`."""
     return ensure_subdirs_exist(
         into_dir = "/",

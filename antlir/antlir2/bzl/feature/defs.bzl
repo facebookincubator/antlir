@@ -9,7 +9,6 @@ load("//antlir/antlir2/bzl/feature/extract.bzl", "extract_buck_binary", "extract
 load("//antlir/antlir2/bzl/feature/feature.bzl", feature_new = "feature")
 load("//antlir/antlir2/bzl/feature/genrule.bzl", "genrule")
 load("//antlir/antlir2/bzl/feature/install.bzl", "install")
-load("//antlir/antlir2/bzl/feature/meta_kv.bzl", "meta_remove", "meta_store")
 load("//antlir/antlir2/bzl/feature/mount.bzl", "host_mount", "layer_mount")
 load("//antlir/antlir2/bzl/feature/remove.bzl", "remove")
 load("//antlir/antlir2/bzl/feature/rpms.bzl", "rpms_install", "rpms_remove_if_exists")
@@ -26,8 +25,6 @@ feature = struct(
     new = feature_new,
     genrule = genrule,
     install = install,
-    meta_store = meta_store,
-    meta_remove = meta_remove,
     layer_mount = layer_mount,
     host_mount = host_mount,
     remove = remove,

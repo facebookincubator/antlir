@@ -1,0 +1,11 @@
+[arch]
+op = 'added'
+
+[arch.diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+user = 'root'
+group = 'root'
+text = '''
+Hello, I'm x86!
+'''

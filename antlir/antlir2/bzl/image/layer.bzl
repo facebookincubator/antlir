@@ -197,8 +197,6 @@ _layer = rule(
         "features": attrs.dep(providers = [FeatureInfo]),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        # TODO: this can (and should) be be attrs.default_only once antlir2 is
-        # fully self hosting (almost done)
         "target_arch": attrs.default_only(attrs.string(
             default =
                 select({
@@ -226,8 +224,6 @@ def layer(
 
     Build a new image layer from the given `features` and `parent_layer`.
     """
-    features = flatten.flatten(features, item_type = ["InlineFeatureInfo", str.type])
-
     if implicit_antlir2:
         flavor = kwargs.pop("flavor", None)
         if flavor:

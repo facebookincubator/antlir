@@ -3,15 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "InlineFeatureInfo")
+load("//antlir/bzl:types.bzl", "types")
+load(":feature_info.bzl", "ParseTimeFeature")
+
+types.lint_noop()
 
 def genrule(
         *,
-        cmd: [str.type],
-        user: str.type,
-        bind_repo_ro: bool.type = False,
-        boot: bool.type = False) -> InlineFeatureInfo.type:
-    return InlineFeatureInfo(
+        cmd: types.or_selector([str.type]),
+        user: types.or_selector(str.type),
+        bind_repo_ro: types.or_selector(bool.type) = False,
+        boot: types.or_selector(bool.type) = False) -> ParseTimeFeature.type:
+    return ParseTimeFeature(
         feature_type = "genrule",
         kwargs = {
             "bind_repo_ro": bind_repo_ro,

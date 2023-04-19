@@ -3,16 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":feature_info.bzl", "InlineFeatureInfo")
+load("//antlir/bzl:types.bzl", "types")
+load(":feature_info.bzl", "ParseTimeFeature")
+
+types.lint_noop()
 
 def tarball(
         *,
         src: str.type,
         into_dir: str.type,
-        force_root_ownership: bool.type = False) -> InlineFeatureInfo.type:
-    return InlineFeatureInfo(
+        force_root_ownership: bool.type = False) -> ParseTimeFeature.type:
+    return ParseTimeFeature(
         feature_type = "tarball",
-        sources = {
+        deps_or_sources = {
             "source": src,
         },
         kwargs = {

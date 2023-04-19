@@ -16,7 +16,6 @@ pub mod extract;
 pub mod facebook;
 pub mod genrule;
 pub mod install;
-pub mod meta_kv;
 pub mod mount;
 pub mod remove;
 pub mod requires;
@@ -51,7 +50,6 @@ pub enum Data<'a> {
     Genrule(genrule::Genrule<'a>),
     Group(usergroup::Group<'a>),
     Install(install::Install<'a>),
-    Meta(meta_kv::Meta<'a>),
     Mount(mount::Mount<'a>),
     Remove(remove::Remove<'a>),
     Requires(requires::Requires<'a>),
