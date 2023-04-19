@@ -10,6 +10,7 @@ def _impl(ctx: "context") -> ["provider"]:
     if not ctx.attrs.layer[LayerInfo].parent:
         fail("image_diff_test only works for layers with parents")
     base_cmd = cmd_args(
+        "sudo",  # this needs to read files that are only readable by root (eg /etc/shadow)
         ctx.attrs.image_diff_test[RunInfo],
         cmd_args(ctx.attrs.layer[LayerInfo].parent.subvol_symlink, format = "--parent={}"),
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),

@@ -30,6 +30,7 @@ use nom::sequence::tuple;
 use nom::Finish;
 use nom::IResult;
 
+use crate::shadow;
 use crate::Error;
 use crate::GroupId;
 use crate::Id;
@@ -206,6 +207,24 @@ impl<'a> UserRecord<'a> {
             comment: Cow::Owned(self.comment.into_owned()),
             homedir: Cow::Owned(self.homedir.into_owned()),
             shell: Cow::Owned(self.shell.into_owned()),
+        }
+    }
+
+    /// Create a new, default shadow record for this user.
+    pub fn new_shadow_record(&self) -> shadow::ShadowRecord<'a> {
+        shadow::ShadowRecord {
+            name: self.name.clone(),
+            encrypted_password: Cow::Borrowed(match self.password {
+                Password::Shadow => "!!",
+                Password::Locked => "!!",
+            }),
+            last_password_change: None,
+            minimum_password_age: None,
+            maximum_password_age: None,
+            password_warning_period: None,
+            password_inactivity_period: None,
+            account_expiration_date: None,
+            reserved: Cow::Borrowed(""),
         }
     }
 }

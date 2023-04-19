@@ -10,6 +10,7 @@ use std::fmt::Formatter;
 
 pub mod group;
 pub mod passwd;
+pub mod shadow;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

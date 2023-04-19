@@ -6,6 +6,7 @@
  */
 
 use std::borrow::Cow;
+use std::os::unix::fs::PermissionsExt;
 
 use antlir2_features::usergroup::Group;
 use antlir2_features::usergroup::User;
@@ -40,8 +41,16 @@ impl<'a> CompileFeature for User<'a> {
             homedir: self.home_dir.path().to_owned().into(),
             shell: self.shell.path().to_owned().into(),
         };
+        let mut shadow_db = ctx.shadow_db()?;
+        shadow_db.push(record.new_shadow_record());
         user_db.push(record);
         std::fs::write(ctx.dst_path("/etc/passwd"), user_db.to_string())?;
+        std::fs::write(ctx.dst_path("/etc/shadow"), shadow_db.to_string())?;
+        std::fs::set_permissions(
+            ctx.dst_path("/etc/shadow"),
+            std::fs::Permissions::from_mode(0o000),
+        )?;
+
         let mut groups_db = ctx.groups_db()?;
         for group in self
             .supplementary_groups
