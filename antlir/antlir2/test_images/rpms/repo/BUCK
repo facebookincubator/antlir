@@ -1,0 +1,26 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+
+image.layer(
+    name = "cheese-1-2",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/bar/baz",
+            mode = "a+r",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+package.rpm(
+    name = "cheese-1-2.rpm",
+    arch = "noarch",
+    layer = ":cheese-1-2",
+    license = "MIT",
+    release = "2",
+    rpm_name = "rpm-test-cheese",
+    version = "1",
+)

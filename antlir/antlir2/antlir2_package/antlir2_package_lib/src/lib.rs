@@ -76,6 +76,19 @@ pub enum Spec {
         layer: PathBuf,
         compression_level: i32,
     },
+    #[serde(rename = "rpm")]
+    Rpm {
+        build_appliance: PathBuf,
+        layer: PathBuf,
+        name: String,
+        epoch: i32,
+        version: String,
+        release: String,
+        arch: String,
+        license: String,
+        summary: String,
+        requires: Vec<String>,
+    },
 }
 
 pub fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
