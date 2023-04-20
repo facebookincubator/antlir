@@ -126,6 +126,7 @@ python_unittest(
     resources = {
         layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
     },
+    supports_static_listing = True,
     deps = [
         ":testlib_rpm_base",
         "//antlir:testlib_flavor_helpers",
