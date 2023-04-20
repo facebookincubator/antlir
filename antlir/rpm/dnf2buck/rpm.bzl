@@ -71,7 +71,8 @@ def _impl(ctx: "context") -> ["provider"]:
         release = ctx.attrs.release,
         arch = ctx.attrs.arch,
     )
-    href = package_href(pkg_nevra, ctx.attrs.sha256)
+    pkgid = ctx.attrs.sha256 or ctx.attrs.sha1
+    href = package_href(pkg_nevra, pkgid)
 
     xml = ctx.attrs.xml or _make_xml(ctx, rpm_file, href)
 
