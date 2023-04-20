@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
@@ -23,11 +24,12 @@ def _map_image(
     produce a new image.
     In other words, this is a mapping function of 'image A -> A1'
     """
+    toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo]
     out = ctx.actions.declare_output("subvol-" + identifier)
     build_appliance = (ctx.attrs.build_appliance or flavor_info.default_build_appliance)[LayerInfo]
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
-        ctx.attrs.antlir2[RunInfo],
+        toolchain.antlir2[RunInfo],
         "map",
         "--working-dir=antlir2-out",
         cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
@@ -54,6 +56,8 @@ def _map_image(
 def _impl(ctx: "context") -> ["provider"]:
     if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
         fail("'flavor' must be set if there is no 'parent_layer'")
+
+    toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo]
 
     flavor_info = ctx.attrs.flavor[FlavorInfo] if ctx.attrs.flavor else ctx.attrs.parent_layer[LayerInfo].flavor_info
 
@@ -82,7 +86,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     mounts = ctx.actions.declare_output("mounts.json")
     ctx.actions.run(cmd_args(
-        ctx.attrs.antlir2[RunInfo],
+        toolchain.antlir2[RunInfo],
         "serialize-mounts",
         cmd_args(features_json, format = "--feature-json={}"),
         cmd_args(ctx.attrs.parent_layer[LayerInfo].mounts, format = "--parent={}") if ctx.attrs.parent_layer else cmd_args(),
@@ -216,7 +220,6 @@ def _impl(ctx: "context") -> ["provider"]:
 _layer = rule(
     impl = _impl,
     attrs = {
-        "antlir2": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2")),
         "available_rpm_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "features": attrs.dep(providers = [FeatureInfo]),
@@ -229,6 +232,10 @@ _layer = rule(
                     "ovr_config//cpu:x86_64": "x86_64",
                 }),
         )),
+        "toolchain": attrs.toolchain_dep(
+            providers = [Antlir2ToolchainInfo],
+            default = "//antlir/antlir2:toolchain",
+        ),
     },
 )
 
