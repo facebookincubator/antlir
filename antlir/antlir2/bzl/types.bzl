@@ -19,8 +19,12 @@ FeatureInfo = provider(fields = [
 
 FlavorInfo = provider(fields = {
     "default_build_appliance": "The default build_appliance to use on images of this flavor",
-    "default_rpm_repo_set": "The default set of rpm repos available to images of this flavor",
+    "dnf_info": "FlavorDnfInfo provider for dnf-based distros",
     "label": "The buck label for this flavor",
+})
+
+FlavorDnfInfo = provider(fields = {
+    "default_repo_set": "The default set of dnf repos available to images of this flavor",
 })
 
 LayerInfo = provider(fields = {

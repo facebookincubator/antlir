@@ -26,7 +26,7 @@ repo_set(
 
 image.layer(
     name = "simple",
-    available_rpm_repos = ":test-repo-set",
+    dnf_available_repos = ":test-repo-set",
     features = [
         feature.rpms_install(
             rpms = [
@@ -49,7 +49,7 @@ image_sh_test(
 
 image.layer(
     name = "remove",
-    available_rpm_repos = ":test-repo-set",
+    dnf_available_repos = ":test-repo-set",
     features = [
         feature.rpms_remove_if_exists(rpms = [
             "rpm-test-cheese",
