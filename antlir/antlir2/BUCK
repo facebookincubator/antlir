@@ -7,18 +7,19 @@ image.layer(
     name = "build-appliance.rpms",
     features = [
         feature.rpms_install(rpms = [
-            "chef",
+            "btrfs-progs",
             "cpio",
             "dnf",
-            "btrfs-progs",
             "dosfstools",
             "mtools",
-            "fb-chef-solo-tools",
             "python3-dnf-plugin-cow",
+            "rpm-build",
             "socat",
             "strace",
             "systemd-container",
             "zstd",
+            # @oss-disable
+            # @oss-disable
         ]),
     ],
     flavor = "//antlir/antlir2/facebook/flavor:centos9",

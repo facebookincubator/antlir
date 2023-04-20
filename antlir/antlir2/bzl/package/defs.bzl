@@ -13,7 +13,15 @@ def _detect_build_appliance(layer, build_appliance):
     return flavor_info.default_build_appliance[LayerInfo]
 
 def _impl(ctx: "context") -> ["provider"]:
-    extension = {"btrfs": ".btrfs", "cpio.gz": ".cpio.gz", "cpio.zst": ".cpio.zst", "sendstream.v2": ".sendstream.v2", "sendstream.zst": ".sendstream.zst", "vfat": ".vfat"}[ctx.attrs.format]
+    extension = {
+        "btrfs": ".btrfs",
+        "cpio.gz": ".cpio.gz",
+        "cpio.zst": ".cpio.zst",
+        "rpm": ".rpm",
+        "sendstream.v2": ".sendstream.v2",
+        "sendstream.zst": ".sendstream.zst",
+        "vfat": ".vfat",
+    }[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
 
     if "layer" in ctx.attrs.opts:
@@ -52,7 +60,6 @@ def _impl(ctx: "context") -> ["provider"]:
     ctx.actions.run(
         cmd_args(
             ctx.attrs.antlir2_packager[RunInfo],
-            cmd_args(ctx.attrs.build_appliance[LayerInfo].subvol_symlink, format = "--build-appliance={}") if ctx.attrs.build_appliance else cmd_args(),
             cmd_args(spec, format = "--spec={}"),
             cmd_args(package.as_output(), format = "--out={}"),
         ),
@@ -67,7 +74,7 @@ _package = rule(
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
         "btrfs_packager": attrs.default_only(attrs.dep(providers = [RunInfo], default = "//antlir/antlir2/antlir2_package/btrfs_packager:btrfs-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "format": attrs.enum(["btrfs", "sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat"]),
+        "format": attrs.enum(["btrfs", "sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat", "rpm"]),
         "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
         "subvols": attrs.option(
@@ -155,6 +162,40 @@ def _btrfs(
         **kwargs
     )
 
+def _rpm(
+        name: str.type,
+        layer: str.type,
+        rpm_name: str.type,
+        version: str.type,
+        release: str.type,
+        arch: str.type,
+        license: str.type,
+        epoch: int.type = 0,
+        summary: [str.type, None] = None,
+        requires: [str.type] = [],
+        **kwargs):
+    check_kwargs(kwargs)
+
+    opts = {
+        "arch": arch,
+        "epoch": epoch,
+        "license": license,
+        "name": rpm_name,
+        "release": release,
+        "requires": requires,
+        "summary": summary or rpm_name,
+        "version": version,
+    }
+
+    return _package(
+        name = name,
+        layer = layer,
+        format = "rpm",
+        subvols = None,
+        opts = opts,
+        **kwargs
+    )
+
 def _sendstream_v2(
         name: str.type,
         layer: str.type,
@@ -222,6 +263,7 @@ package = struct(
     cpio_gz = _cpio_gz,
     cpio_zst = _cpio_zst,
     btrfs = _btrfs,
+    rpm = _rpm,
     sendstream_v2 = _sendstream_v2,
     sendstream_zst = _sendstream_zst,
     vfat = _vfat,

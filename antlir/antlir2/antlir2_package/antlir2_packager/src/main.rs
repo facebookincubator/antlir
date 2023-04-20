@@ -9,6 +9,7 @@ use std::fs::File;
 use std::io::Seek;
 use std::io::SeekFrom;
 use std::io::Write;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 use std::process::Stdio;
@@ -24,6 +25,7 @@ use anyhow::Result;
 use btrfs_send_stream_upgrade_lib::upgrade::send_stream::SendStream;
 use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use clap::Parser;
+use itertools::Itertools;
 use json_arg::JsonFile;
 use tempfile::NamedTempFile;
 use tracing::trace;
@@ -327,6 +329,118 @@ fn main() -> Result<()> {
                     .stdout(Stdio::piped()),
             )
             .context("Failed to build cpio archive")?;
+
+            Ok(())
+        }
+
+        Spec::Rpm {
+            build_appliance,
+            layer,
+            name,
+            epoch,
+            version,
+            release,
+            arch,
+            summary,
+            license,
+            requires,
+        } => {
+            let layer_abspath = layer
+                .canonicalize()
+                .context("failed to build absolute path to layer")?;
+
+            let requires = requires
+                .into_iter()
+                .map(|req| format!("Requires: {req}"))
+                .join("\n");
+
+            let mut spec = format!(
+                r#"Name: {name}
+Epoch: {epoch}
+Version: {version}
+Release: {release}
+BuildArch: {arch}
+
+Summary: {summary}
+License: {license}
+
+{requires}
+
+%description
+
+%install
+cp -rp "{layer}"/* %{{buildroot}}/
+
+%files
+"#,
+                layer = layer_abspath.display(),
+                requires = requires,
+            );
+            for entry in walkdir::WalkDir::new(&layer) {
+                let entry = entry.context("while walking layer")?;
+                let relpath = Path::new("/").join(
+                    entry
+                        .path()
+                        .strip_prefix(&layer)
+                        .expect("must be under layer"),
+                );
+                if relpath == Path::new("/") {
+                    continue;
+                }
+                spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
+                spec.push('\n');
+            }
+            let mut rpm_spec_file =
+                NamedTempFile::new().context("failed to create tempfile for rpm spec")?;
+            rpm_spec_file
+                .write(spec.as_bytes())
+                .context("while writing rpm spec file")?;
+
+            let output_dir =
+                tempfile::tempdir().context("while creating temp dir for rpm output")?;
+
+            // create the arch-specific output dir explicitly so that it'll be
+            // owned by the build user on the host, not root
+            std::fs::create_dir(output_dir.path().join(&arch))
+                .context("while creating output dir")?;
+
+            let isol_context = IsolationContext::builder(&build_appliance)
+                .inputs([rpm_spec_file.path(), layer.as_path()])
+                .outputs([output_dir.path()])
+                .working_directory(std::env::current_dir().context("while getting cwd")?)
+                .build();
+
+            run_cmd(
+                isolate(isol_context)
+                    .into_command()
+                    .arg("/bin/rpmbuild")
+                    .arg("-bb")
+                    .arg("--define")
+                    .arg(format!("_rpmdir {}", output_dir.path().display()))
+                    .arg(rpm_spec_file.path())
+                    .stdout(Stdio::piped()),
+            )
+            .context("Failed to build rpm")?;
+
+            let outputs: Vec<_> = output_dir
+                .path()
+                .join(arch)
+                .read_dir()
+                .context("while reading rpm output dir")?
+                .filter_map(Result::ok)
+                .collect();
+
+            ensure!(outputs.len() == 1, "expected exactly one output rpm file");
+
+            std::fs::copy(outputs[0].path(), args.out)
+                .context("while moving output to correct location")?;
+
+            // fail loudly if there was a permissions error removing the
+            // temporary output directory, otherwise a later buck build will
+            // fail with permissions errors - spooky action at a distance
+            output_dir
+                .close()
+                .context("while cleaning up output tmpdir")?;
 
             Ok(())
         }
