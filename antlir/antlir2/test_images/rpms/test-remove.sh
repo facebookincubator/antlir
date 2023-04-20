@@ -6,12 +6,17 @@
 
 set -e
 
-if rpm -q rpm-test-cheese ; then
-    echo "rpm-test-cheese should have been removed"
+if rpm -q foo; then
+    echo "foo should have been removed"
     exit 2
 fi
 
-if rpm -q dracut-squash ; then
-    echo "dracut-squash should have been removed when we removed dracut"
+if rpm -q foobar; then
+    echo "foobar should have been removed"
+    exit 2
+fi
+
+if rpm -q foobarbaz; then
+    echo "foobarbaz should have been removed when we removed foobar"
     exit 2
 fi

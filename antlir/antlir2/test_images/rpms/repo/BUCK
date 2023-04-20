@@ -1,9 +1,27 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo")
+load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
 
 image.layer(
-    name = "cheese-1-2",
+    name = "foo.layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo"),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "foobar.layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+    ],
+    parent_layer = ":foo.layer",
+)
+
+image.layer(
+    name = "foobarbaz.layer",
     features = [
         feature.ensure_dirs_exist(dirs = "/foo/bar"),
         feature.install(
@@ -12,15 +30,85 @@ image.layer(
             mode = "a+r",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+    parent_layer = ":foobar.layer",
 )
 
-package.rpm(
-    name = "cheese-1-2.rpm",
-    arch = "noarch",
-    layer = ":cheese-1-2",
-    license = "MIT",
-    release = "2",
-    rpm_name = "rpm-test-cheese",
-    version = "1",
+[
+    [
+        [
+            package.rpm(
+                name = "{}-{}.rpm.package".format(
+                    pkg["name"],
+                    version,
+                ),
+                arch = "noarch",
+                layer = ":{}.layer".format(pkg["name"]),
+                license = "NONE",
+                release = "1",
+                requires = pkg["requires"],
+                rpm_name = pkg["name"],
+                version = str(version),
+            ),
+            rpm(
+                name = "{}-{}.rpm".format(
+                    pkg["name"],
+                    version,
+                ),
+                arch = "noarch",
+                epoch = 0,
+                release = "1",
+                rpm = ":{}-{}.rpm.package".format(
+                    pkg["name"],
+                    version,
+                ),
+                rpm_name = pkg["name"],
+                sha1 = "deadbeef",
+                version = str(version),
+                visibility = [
+                    "//antlir/antlir2/test_images/rpms/...",
+                ],
+            ),
+        ]
+        for version in [
+            1,
+            2,
+            3,
+        ]
+    ]
+    for pkg in [
+        {
+            "name": "foo",
+            "requires": [],
+        },
+        {
+            "name": "foobar",
+            "requires": ["foo"],
+        },
+        {
+            "name": "foobarbaz",
+            "requires": [
+                "foobar",
+            ],
+        },
+    ]
+]
+
+repo(
+    name = "test-repo",
+    compress = "none",
+    rpms = [
+        ":foo-1.rpm",
+        ":foo-2.rpm",
+        ":foo-3.rpm",
+        ":foobar-1.rpm",
+        ":foobar-2.rpm",
+        ":foobar-3.rpm",
+        ":foobarbaz-1.rpm",
+        ":foobarbaz-2.rpm",
+        ":foobarbaz-3.rpm",
+    ],
+    timestamp = 0,
+    visibility = [
+        "//antlir/antlir2/test_images/rpms/...",
+    ],
 )

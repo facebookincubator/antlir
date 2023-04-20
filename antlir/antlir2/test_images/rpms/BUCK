@@ -1,8 +1,9 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "alias")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_binary")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
+load(":defs.bzl", "test_foo_version_installed")
 
 repo_set(
     name = "test-repo-set",
@@ -14,14 +15,7 @@ repo_set(
             "//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9",
         ],
     }),
-    repos = select({
-        "ovr_config//cpu:arm64": [
-            "//antlir/rpm/dnf2buck/demo/aarch64:test-repo",
-        ],
-        "ovr_config//cpu:x86_64": [
-            "//antlir/rpm/dnf2buck/demo/x86_64:test-repo",
-        ],
-    }),
+    repos = ["//antlir/antlir2/test_images/rpms/repo:test-repo"],
 )
 
 image.layer(
@@ -30,21 +24,28 @@ image.layer(
     features = [
         feature.rpms_install(
             rpms = [
-                "rpm-test-cheese",  # the thing I am checking
+                # the main rpm I am checking
+                "foo",
+                # this depends on 'foobar' and 'foobarbaz' should be removed when 'foobar' is
+                "foobarbaz",
                 # dependencies of the test
                 "bash",
                 "rpm",
-                "dracut-squash",  # random package that depends on another 'dracut'
             ],
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-image_sh_test(
+buck_sh_binary(
+    name = "test-foo-version.sh",
+    main = "test-foo-version.sh",
+)
+
+test_foo_version_installed(
     name = "simple-test",
     layer = ":simple",
-    test = "test.sh",
+    version = "3-1",
 )
 
 image.layer(
@@ -52,8 +53,8 @@ image.layer(
     dnf_available_repos = ":test-repo-set",
     features = [
         feature.rpms_remove_if_exists(rpms = [
-            "rpm-test-cheese",
-            "dracut",
+            "foo",
+            "foobar",
         ]),
     ],
     parent_layer = ":simple",
@@ -65,29 +66,17 @@ image_sh_test(
     test = "test-remove.sh",
 )
 
-# select() basically doesn't work anywhere in the antlir2 api for now, so
-# instead we can use an alias to select the right rpm to install which is
-# sufficient for this use case of doing the same thing, just with a different
-# underlying file
-alias(
-    name = "rpm-test-cheese-2-1.rpm",
-    actual = select({
-        "ovr_config//cpu:arm64": "//antlir/rpm/dnf2buck/demo/aarch64:rpm-test-cheese-2-1.aarch64.rpm",
-        "ovr_config//cpu:x86_64": "//antlir/rpm/dnf2buck/demo/x86_64:rpm-test-cheese-2-1.x86_64.rpm",
-    }),
-)
-
 image.layer(
     name = "local-rpm-file",
     features = [
-        feature.rpms_install(rpms = [":rpm-test-cheese-2-1.rpm"]),
+        feature.rpms_install(rpms = ["//antlir/antlir2/test_images/rpms/repo:foo-2.rpm"]),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
     parent_layer = ":simple",
 )
 
-image_sh_test(
+test_foo_version_installed(
     name = "local-rpm-file-test",
     layer = ":local-rpm-file",
-    test = "test-local-rpm-file.sh",
+    version = "2-1",
 )
