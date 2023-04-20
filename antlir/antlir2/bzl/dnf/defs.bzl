@@ -9,7 +9,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/rpm/dnf2buck:rpm.bzl", "nevra_to_string", "package_href")
 
-def repodata_only_local_repos(ctx: "context", available_rpm_repos: ["RepoSetInfo", None]) -> "artifact":
+def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo", None]) -> "artifact":
     """
     Produce a directory that contains a local copy of the available RPM repo's
     repodata directories.
@@ -20,7 +20,7 @@ def repodata_only_local_repos(ctx: "context", available_rpm_repos: ["RepoSetInfo
 
     tree = {
         paths.join(repo_info.id, "repodata"): repo_info.repodata
-        for repo_info in (available_rpm_repos.repo_infos if available_rpm_repos else [])
+        for repo_info in (dnf_available_repos.repo_infos if dnf_available_repos else [])
     }
 
     # copied_dir instead of symlink_dir so that this can be directly bind
@@ -30,7 +30,7 @@ def repodata_only_local_repos(ctx: "context", available_rpm_repos: ["RepoSetInfo
 
 def compiler_plan_to_local_repos(
         ctx: "context",
-        available_rpm_repos: ["RepoSetInfo", None],
+        dnf_available_repos: ["RepoSetInfo", None],
         compiler_plan: "artifact") -> "artifact":
     """
     Use the compiler plan to build a directory of all the RPM repodata and RPM
@@ -40,7 +40,7 @@ def compiler_plan_to_local_repos(
 
     # collect all rpms keyed by repo, then nevra
     by_repo = {}
-    for repo_info in (available_rpm_repos.repo_infos if available_rpm_repos else []):
+    for repo_info in (dnf_available_repos.repo_infos if dnf_available_repos else []):
         by_repo[repo_info.id] = {"nevras": {}, "repo_info": repo_info}
         for rpm_info in repo_info.all_rpms:
             by_repo[repo_info.id]["nevras"][nevra_to_string(rpm_info.nevra)] = rpm_info

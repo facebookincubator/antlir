@@ -81,8 +81,8 @@ def _impl(ctx: "context") -> ["provider"]:
         dependency_layers = dependency_layers,
     )
 
-    available_rpm_repos = (ctx.attrs.available_rpm_repos or flavor_info.default_rpm_repo_set)[RepoSetInfo]
-    dnf_repodatas = repodata_only_local_repos(ctx, available_rpm_repos)
+    dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
+    dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
 
     mounts = ctx.actions.declare_output("mounts.json")
     ctx.actions.run(cmd_args(
@@ -115,7 +115,7 @@ def _impl(ctx: "context") -> ["provider"]:
         # and mount in a pre-built directory of all repositories for
         # completely-offline dnf installation (which is MUCH faster and more
         # reliable)
-        dnf_repos_dir = compiler_plan_to_local_repos(ctx, available_rpm_repos, plan)
+        dnf_repos_dir = compiler_plan_to_local_repos(ctx, dnf_available_repos, plan)
     else:
         plan_cmd = None
         plan = None
@@ -220,8 +220,8 @@ def _impl(ctx: "context") -> ["provider"]:
 _layer = rule(
     impl = _impl,
     attrs = {
-        "available_rpm_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+        "dnf_available_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
         "features": attrs.dep(providers = [FeatureInfo]),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
