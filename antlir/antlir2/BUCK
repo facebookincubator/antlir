@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:toolchain.bzl", "antlir2_toolchain")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
@@ -40,4 +41,11 @@ image.layer(
 package.sendstream_v2(
     name = "build-appliance.sendstream.v2",
     layer = ":build-appliance",
+)
+
+antlir2_toolchain(
+    name = "toolchain",
+    # yo dawg, i heard you liked antlir2...
+    antlir2 = "//antlir/antlir2/antlir2:antlir2",
+    visibility = ["PUBLIC"],
 )
