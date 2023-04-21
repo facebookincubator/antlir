@@ -6,11 +6,13 @@
  */
 
 use std::borrow::Cow;
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 
 use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
+use antlir2_compile::DnfContext;
 use antlir2_depgraph::Graph;
 use buck_label::Label;
 use clap::Parser;
@@ -45,9 +47,18 @@ pub(self) struct Compileish {
     pub(crate) root: PathBuf,
     #[clap(flatten)]
     pub(crate) external: CompileishExternal,
-    #[clap(long)]
+    #[clap(flatten)]
+    pub(crate) dnf: DnfCompileishArgs,
+}
+
+#[derive(Parser, Debug)]
+pub(self) struct DnfCompileishArgs {
+    #[clap(long = "dnf-repos")]
     /// Path to available dnf repositories
-    pub(crate) dnf_repos: PathBuf,
+    pub(crate) repos: PathBuf,
+    #[clap(long = "dnf-versionlock")]
+    /// Path to dnf versionlock json file
+    pub(crate) versionlock: Option<JsonFile<BTreeMap<String, String>>>,
 }
 
 #[derive(Parser, Debug)]
@@ -77,7 +88,11 @@ impl Compileish {
                 },
             label,
             root,
-            dnf_repos,
+            dnf:
+                DnfCompileishArgs {
+                    repos: dnf_repos,
+                    versionlock: dnf_versionlock,
+                },
         } = self;
         let mut v = vec![
             Cow::Borrowed(OsStr::new("--label")),
@@ -91,6 +106,10 @@ impl Compileish {
             Cow::Borrowed(OsStr::new("--dnf-repos")),
             Cow::Borrowed(dnf_repos.as_os_str()),
         ];
+        if let Some(versionlock) = dnf_versionlock {
+            v.push(Cow::Borrowed(OsStr::new("--dnf-versionlock")));
+            v.push(Cow::Borrowed(versionlock.path().as_os_str()));
+        }
         for dep in image_dependencies {
             v.push(Cow::Borrowed(OsStr::new("--image-dependency")));
             v.push(Cow::Borrowed(dep.as_os_str()));
@@ -103,7 +122,14 @@ impl Compileish {
             self.label.clone(),
             self.external.target_arch,
             self.root.clone(),
-            self.dnf_repos.clone(),
+            DnfContext::new(
+                self.dnf.repos.clone(),
+                self.dnf
+                    .versionlock
+                    .as_ref()
+                    .map(JsonFile::as_inner)
+                    .cloned(),
+            ),
         )
         .map_err(Error::Compile)
     }

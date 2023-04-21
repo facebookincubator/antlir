@@ -25,6 +25,7 @@ FlavorInfo = provider(fields = {
 
 FlavorDnfInfo = provider(fields = {
     "default_repo_set": "The default set of dnf repos available to images of this flavor",
+    "default_versionlock": "JSON file mapping package name -> EVRA",
 })
 
 LayerInfo = provider(fields = {
