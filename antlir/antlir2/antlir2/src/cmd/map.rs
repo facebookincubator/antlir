@@ -61,9 +61,8 @@ struct SetupArgs {
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
-    #[clap(long)]
-    /// Directory where all available dnf repos can be found
-    dnf_repos: PathBuf,
+    #[clap(flatten)]
+    dnf: super::DnfCompileishArgs,
 }
 
 #[derive(Parser, Debug)]
@@ -171,7 +170,7 @@ impl Map {
                     // image builds all require the repo for at least the
                     // feature json paths coming from buck
                     repo.as_ref(),
-                    self.setup.dnf_repos.as_path(),
+                    self.setup.dnf.repos.as_path(),
                     // layer dependencies require the working volume
                     self.setup.working_dir.as_path(),
                 ])
@@ -192,7 +191,7 @@ impl Map {
                         label: self.label,
                         root: subvol.path().to_owned(),
                         external,
-                        dnf_repos: self.setup.dnf_repos,
+                        dnf: self.setup.dnf,
                     }
                     .to_args(),
                 );
@@ -207,7 +206,7 @@ impl Map {
                             label: self.label,
                             root: subvol.path().to_owned(),
                             external: compileish,
-                            dnf_repos: self.setup.dnf_repos,
+                            dnf: self.setup.dnf,
                         },
                         external,
                     }

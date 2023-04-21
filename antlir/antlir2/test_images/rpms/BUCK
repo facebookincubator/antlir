@@ -80,3 +80,70 @@ test_foo_version_installed(
     layer = ":local-rpm-file",
     version = "2-1",
 )
+
+image.layer(
+    name = "versionlock",
+    dnf_available_repos = ":test-repo-set",
+    dnf_versionlock = "versionlock.json",
+    features = [
+        feature.rpms_install(rpms = [
+            "foo",  # test rpm
+            # dependencies to run test script
+            "bash",
+            "rpm",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_foo_version_installed(
+    name = "versionlock-test",
+    layer = ":versionlock",
+    version = "2-1",
+)
+
+image.layer(
+    name = "versionlocked-dependency",
+    dnf_available_repos = ":test-repo-set",
+    dnf_versionlock = "versionlock.json",
+    features = [
+        feature.rpms_install(rpms = [
+            # Only explicitly install 'foobar', which depends on 'foo'.
+            # Without versionlock (or if versionlock only worked on
+            # explicitly-requested packages), this would pull in 'foo-3-1', but
+            # when versionlock is applied to dependencies 'foo-2-1' will end up
+            # being installed.
+            "foobar",
+            # dependencies to run test script
+            "bash",
+            "rpm",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_foo_version_installed(
+    name = "versionlocked-dependency-test",
+    layer = ":versionlocked-dependency",
+    version = "2-1",
+)
+
+image.layer(
+    name = "nevra-overrides-versionlock",
+    dnf_available_repos = ":test-repo-set",
+    dnf_versionlock = "versionlock.json",
+    features = [
+        feature.rpms_install(rpms = [
+            "bash",
+            "rpm",
+            "foo-3-1",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_foo_version_installed(
+    name = "nevra-overrides-versionlock-test",
+    layer = ":nevra-overrides-versionlock",
+    version = "3-1",
+)

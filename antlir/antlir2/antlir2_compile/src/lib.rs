@@ -10,6 +10,7 @@
 #![feature(io_error_other)]
 #![feature(unix_chown)]
 
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::path::Path;
 use std::path::PathBuf;
@@ -89,8 +90,29 @@ pub struct CompilerContext {
     target_arch: Arch,
     /// Path to the root of the image being built
     root: PathBuf,
+    /// Seutp information for dnf repos
+    dnf: DnfContext,
+}
+
+#[derive(Debug)]
+pub struct DnfContext {
     /// Root directory where dnf repos are mounted
-    dnf_repos: PathBuf,
+    repos: PathBuf,
+    /// Versionlock of package name -> EVRA
+    versionlock: Option<BTreeMap<String, String>>,
+}
+
+impl DnfContext {
+    pub fn new(repos: PathBuf, versionlock: Option<BTreeMap<String, String>>) -> Self {
+        Self { repos, versionlock }
+    }
+    pub(crate) fn repos(&self) -> &Path {
+        &self.repos
+    }
+
+    pub(crate) fn versionlock(&self) -> Option<&BTreeMap<String, String>> {
+        self.versionlock.as_ref()
+    }
 }
 
 fn parse_file<T, E>(path: &Path) -> Option<Result<T>>
@@ -112,13 +134,13 @@ impl CompilerContext {
         label: Label<'static>,
         target_arch: Arch,
         root: PathBuf,
-        dnf_repos: PathBuf,
+        dnf: DnfContext,
     ) -> Result<Self> {
         Ok(Self {
             label,
             target_arch,
             root,
-            dnf_repos,
+            dnf,
         })
     }
 
@@ -135,8 +157,8 @@ impl CompilerContext {
         &self.root
     }
 
-    pub(crate) fn dnf_repos(&self) -> &Path {
-        &self.dnf_repos
+    pub(crate) fn dnf(&self) -> &DnfContext {
+        &self.dnf
     }
 
     /// Join a (possibly absolute) path with the root directory of the image

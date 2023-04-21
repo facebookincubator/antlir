@@ -83,6 +83,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
+    dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
 
     mounts = ctx.actions.declare_output("mounts.json")
     ctx.actions.run(cmd_args(
@@ -99,6 +100,7 @@ def _impl(ctx: "context") -> ["provider"]:
             ctx = ctx,
             cmd = cmd_args(
                 cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
+                cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
                 "plan",
                 cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
                 cmd_args(depgraph_input, format = "--depgraph-json={}"),
@@ -125,6 +127,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ctx = ctx,
         cmd = cmd_args(
             cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
+            cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
             "compile",
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
@@ -222,6 +225,7 @@ _layer = rule(
     attrs = {
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "dnf_available_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
+        "dnf_versionlock": attrs.option(attrs.source(), default = None),
         "features": attrs.dep(providers = [FeatureInfo]),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),

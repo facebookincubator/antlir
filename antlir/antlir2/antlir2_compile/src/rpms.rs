@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -36,6 +37,7 @@ struct DriverSpec<'a> {
     items: &'a [RpmItem<'a>],
     mode: DriverMode,
     arch: Arch,
+    versionlock: Option<&'a BTreeMap<String, String>>,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -169,10 +171,11 @@ fn run_dnf_driver(
 ) -> Result<Vec<DriverEvent>> {
     let input = serde_json::to_string(&DriverSpec {
         install_root: ctx.root(),
-        repos: ctx.dnf_repos(),
+        repos: ctx.dnf().repos(),
         items,
         mode,
         arch: ctx.target_arch(),
+        versionlock: ctx.dnf.versionlock(),
     })
     .context("while serializing dnf-driver input")?;
 
