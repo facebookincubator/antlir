@@ -241,9 +241,8 @@ fn shape(builder: &mut GlobalsBuilder) {
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let options = args
-            .iterate_collect(eval.heap())
+            .iterate(eval.heap())
             .context("while collecting enum variants")?
-            .into_iter()
             .map(|v| String::unpack_param(v).map(|s| s.into()))
             .collect::<Result<_>>()?;
         let enm = ir::Enum {
@@ -314,8 +313,7 @@ fn shape(builder: &mut GlobalsBuilder) {
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let types: Vec<_> = args
-            .iterate_collect(eval.heap())?
-            .into_iter()
+            .iterate(eval.heap())?
             .enumerate()
             .map(|(i, v)| {
                 v.try_to_type(&reg)
