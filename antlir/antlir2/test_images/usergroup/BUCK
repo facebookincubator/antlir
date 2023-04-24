@@ -65,3 +65,37 @@ image_diff_test(
     diff = "add-user-to-group.toml",
     layer = ":add-user-to-group",
 )
+
+image.layer(
+    name = "base-with-shadow",
+    features = [
+        feature.install(
+            src = "shadow",
+            dst = "/etc/shadow",
+            mode = "a+",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image.layer(
+    name = "add-user-and-group-existing-shadow",
+    features = [
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            username = "antlir",
+        ),
+        feature.group_add(
+            groupname = "antlir",
+        ),
+    ],
+    parent_layer = ":base-with-shadow",
+)
+
+image_diff_test(
+    name = "add-user-and-group-existing-shadow-test",
+    diff = "add-user-and-group-existing-shadow.toml",
+    layer = ":add-user-and-group-existing-shadow",
+)

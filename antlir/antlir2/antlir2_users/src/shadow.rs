@@ -211,7 +211,17 @@ impl<'a> ShadowRecord<'a> {
     }
 
     pub fn into_owned(self) -> ShadowRecord<'static> {
-        todo!()
+        ShadowRecord {
+            name: Cow::Owned(self.name.into_owned()),
+            encrypted_password: Cow::Owned(self.encrypted_password.into_owned()),
+            last_password_change: self.last_password_change.clone(),
+            minimum_password_age: self.minimum_password_age.clone(),
+            maximum_password_age: self.maximum_password_age.clone(),
+            password_warning_period: self.password_warning_period.clone(),
+            password_inactivity_period: self.password_inactivity_period.clone(),
+            account_expiration_date: self.account_expiration_date.clone(),
+            reserved: Cow::Owned(self.reserved.into_owned()),
+        }
     }
 }
 
