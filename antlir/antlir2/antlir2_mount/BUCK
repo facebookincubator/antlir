@@ -10,8 +10,8 @@ rust_library(
         "mockall",
         "nix",
         "proc-mounts",
-        "slog",
         "thiserror",
+        "tracing",
         "//metalos/antlir_image/antlir_image:antlir_image",
     ],
 )

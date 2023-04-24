@@ -16,8 +16,7 @@ use antlir_image::subvolume::AntlirSubvolumes;
 use nix::mount::MntFlags;
 use nix::mount::MsFlags;
 use proc_mounts::MountIter;
-use slog::info;
-use slog::Logger;
+use tracing::info;
 
 #[derive(thiserror::Error, Debug)]
 pub enum MountError {
@@ -65,9 +64,8 @@ pub trait SafeMounter {
     fn umount(&self, mountpoint: &Path, force: bool) -> Result<(), nix::errno::Errno>;
 }
 
-pub struct RealSafeMounter {
-    pub log: Logger,
-}
+pub struct RealSafeMounter;
+
 impl SafeMounter for RealSafeMounter {
     fn mount_btrfs<'a, S, L, F>(
         &'a self,
@@ -95,10 +93,7 @@ impl SafeMounter for RealSafeMounter {
             }
         );
 
-        RealMounter {
-            log: self.log.clone(),
-        }
-        .mount(
+        RealMounter {}.mount(
             source.path.path(),
             target.path(),
             Some("btrfs"),
@@ -109,10 +104,7 @@ impl SafeMounter for RealSafeMounter {
     }
 
     fn umount(&self, mountpoint: &Path, force: bool) -> Result<(), nix::errno::Errno> {
-        RealMounter {
-            log: self.log.clone(),
-        }
-        .umount(mountpoint, force)
+        RealMounter {}.umount(mountpoint, force)
     }
 }
 
@@ -131,9 +123,7 @@ pub trait Mounter: Sized {
 }
 
 // RealMounter is an implementation of the Mounter trait that calls nix::mount::mount for real.
-pub struct RealMounter {
-    pub log: Logger,
-}
+pub struct RealMounter;
 
 impl Mounter for RealMounter {
     fn mount<'a, 'b>(
@@ -145,7 +135,6 @@ impl Mounter for RealMounter {
         data: Option<&'b str>,
     ) -> Result<MountHandle<'a, Self>, MountError> {
         info!(
-            self.log,
             "Mounting {} to {} with fstype {:?}, flags {:?} and options {:?}",
             source.display(),
             target.display(),
@@ -171,12 +160,7 @@ impl Mounter for RealMounter {
         if force {
             flags.insert(MntFlags::MNT_FORCE);
         }
-        info!(
-            self.log,
-            "Unmounting {} with flags {:?}",
-            mountpoint.display(),
-            flags
-        );
+        info!("Unmounting {} with flags {:?}", mountpoint.display(), flags);
         nix::mount::umount2(mountpoint, flags)
     }
 }
