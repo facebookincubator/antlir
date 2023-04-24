@@ -22,6 +22,10 @@ ParseTimeFeature = record(
     # These items must be `deps` and will be validated early in analysis time to
     # contain the required providers
     deps = field([{str.type: ParseTimeDependency.type}, None], default = None),
+    # Sources/deps that do not require named tracking between the parse and
+    # analysis phases. Useful to support `select` in features that accept lists
+    # of dependencies.
+    unnamed_deps_or_sources = field([[[str.type, "selector"]], None], default = None),
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = {str.type: ""},
 )

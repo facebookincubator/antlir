@@ -18,28 +18,51 @@ def _looks_like_label(s: str.type) -> bool.type:
         return True
     return False
 
-def rpms_install(*, rpms: types.or_selector([types.or_selector(str.type)])) -> ParseTimeFeature.type:
+def rpms_install(
+        *,
+        rpms: [str.type] = [],
+        rpm_names: types.or_selector([types.or_selector(str.type)]) = [],
+        rpm_deps: types.or_selector([types.or_selector(str.type)]) = []) -> ParseTimeFeature.type:
     """
     Install RPMs by identifier or .rpm src
 
     Elements in `rpms` can be an rpm name like 'systemd', a NEVR like
-    'systemd-251.4-1.2.hs+fb.el8' or a buck target that produces a .rpm artifact.
+    'systemd-251.4-1.2.hs+fb.el8' (or anything that resolves as a DNF subject -
+    see
+    https://dnf.readthedocs.io/en/latest/command_ref.html#specifying-packages-label)
+    or a buck target that produces a .rpm artifact.
+
+    To ergonomically use `select`, callers must disambiguate between rpm names (or, more accurately, dnf subjects)
     """
+    if rpms and (rpm_names or rpm_deps):
+        fail("'rpms' cannot be mixed with 'rpm_names' or 'rpm_deps', it causes api ambiguity")
+
+    # make a writable copy if we might need to add to it
+    if type(rpm_names) == "list":
+        rpm_names = list(rpm_names)
+    unnamed_deps_or_sources = None
+    for rpm in rpms:
+        if _looks_like_label(rpm):
+            if not unnamed_deps_or_sources:
+                unnamed_deps_or_sources = []
+            unnamed_deps_or_sources.append(rpm)
+        else:
+            rpm_names.append(rpm)
+    if unnamed_deps_or_sources and rpm_deps:
+        fail("impossible, 'unnamed_deps_or_sources' cannot be populated if 'rpms' is empty")
+    if not unnamed_deps_or_sources:
+        unnamed_deps_or_sources = rpm_deps
 
     return ParseTimeFeature(
         feature_type = "rpm",
-        # TODO: this means that rpm installation from buck deps will not work
-        # with selects inside of a list of `rpms`, however, one can put the
-        # entire list behind a `select` and use a separate rpms_install feature,
-        # so this is not preventing anything, it's just a little less convenient
-        deps_or_sources = {"rpm_" + str(i): r for i, r in enumerate(rpms) if (types.is_string(r) and _looks_like_label(r))},
+        unnamed_deps_or_sources = unnamed_deps_or_sources,
         kwargs = {
             "action": "install",
-            "rpm_names": [r for r in rpms if not _looks_like_label(r)],
+            "rpm_names": rpm_names,
         },
     )
 
-def rpms_remove_if_exists(*, rpms: [str.type]) -> ParseTimeFeature.type:
+def rpms_remove_if_exists(*, rpms: types.or_selector([types.or_selector(str.type)])) -> ParseTimeFeature.type:
     """
     Remove RPMs if they are installed
 
@@ -76,13 +99,13 @@ rpms_record = record(
 def rpms_analyze(
         action: str.type,
         rpm_names: [str.type],
-        deps_or_sources: {str.type: ["dependency", "artifact"]} = {}) -> FeatureAnalysis.type:
+        unnamed_deps_or_sources: [["dependency", "artifact"]] = []) -> FeatureAnalysis.type:
     rpms = []
     for rpm in rpm_names:
         rpms.append(rpm_source_record(name = rpm, source = None))
 
     artifacts = []
-    for rpm in deps_or_sources.values():
+    for rpm in unnamed_deps_or_sources:
         if type(rpm) == "dependency":
             rpm = ensure_single_output(rpm)
         rpms.append(rpm_source_record(source = rpm, name = None))
