@@ -20,7 +20,7 @@ def layer_dep_analyze(layer: "dependency") -> layer_dep.type:
     info = layer[LayerInfo]
     return layer_dep(
         depgraph = info.depgraph,
-        label = layer.label,
+        label = info.label,
         subvol_symlink = info.subvol_symlink,
         mounts = info.mounts,
     )
