@@ -36,7 +36,7 @@ def install(
 
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
-    mode = stat.mode(mode) if mode else None
+    mode = stat.mode(mode) if mode != None else None
 
     return ParseTimeFeature(
         feature_type = "install",
@@ -77,7 +77,7 @@ def install_analyze(
             mode = 0o555
 
         src = ensure_single_output(src)
-    if not mode:
+    if mode == None:
         # We can't tell if a source is a file or directory, so we need to
         # force the user to specify it
         # https://fb.workplace.com/groups/buck2users/posts/3346711265585231
