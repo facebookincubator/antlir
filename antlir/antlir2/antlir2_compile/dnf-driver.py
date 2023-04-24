@@ -147,6 +147,9 @@ def main():
     mode = spec["mode"]
     base = dnf.Base()
     base.conf.installroot = spec["install_root"]
+    base.conf.persistdir = os.path.join(
+        spec["install_root"], base.conf.persistdir.lstrip("/")
+    )
     os.makedirs("/antlir/dnf-cache", exist_ok=True)
     base.conf.cachedir = "/antlir/dnf-cache"
     base.conf.ignorearch = True
