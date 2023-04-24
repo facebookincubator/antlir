@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/bzl:build_defs.bzl", "alias")
 
 image.layer(
     name = "base",
@@ -84,6 +85,29 @@ image_diff_test(
     name = "clone-file-test",
     diff = "clone-file.toml",
     layer = ":clone-file",
+)
+
+alias(
+    name = "clone-src-alias",
+    actual = ":clone-src",
+)
+
+image.layer(
+    name = "clone-file-from-aliased-layer",
+    features = [
+        feature.clone(
+            dst_path = "/cloned-file",
+            src_layer = ":clone-src-alias",
+            src_path = "/f",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "clone-file-from-aliased-layer-test",
+    diff = "clone-file.toml",
+    layer = ":clone-file-from-aliased-layer",
 )
 
 image.layer(
