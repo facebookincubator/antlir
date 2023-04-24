@@ -56,6 +56,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
+load("//antlir/bzl/build_defs.bzl", "config")
 load(":clone.bzl", "clone_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
@@ -143,11 +144,14 @@ def _impl(ctx: "context") -> ["provider"]:
     for key, inline in ctx.attrs.inline_features.items():
         feature_deps = ctx.attrs.inline_features_deps.get(key, None)
         feature_deps_or_sources = ctx.attrs.inline_features_deps_or_sources.get(key, None)
+        feature_unnamed_deps_or_sources = ctx.attrs.inline_features_unnamed_deps_or_sources.get(key, None)
         analyze_kwargs = inline["kwargs"]
         if feature_deps != None:
             analyze_kwargs["deps"] = feature_deps
         if feature_deps_or_sources != None:
             analyze_kwargs["deps_or_sources"] = feature_deps_or_sources
+        if feature_unnamed_deps_or_sources != None:
+            analyze_kwargs["unnamed_deps_or_sources"] = feature_unnamed_deps_or_sources
 
         analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
         inline_artifacts.extend(analysis.required_artifacts)
@@ -204,6 +208,28 @@ def _impl(ctx: "context") -> ["provider"]:
         DefaultInfo(json_file),
     ]
 
+# This horrible set of pseudo-exhaustive `one_of` calls is because there
+# currently is nothing like `attrs.json()` that will force things like `select`
+# to be coerced to real concrete values.
+# This nesting _can_ be extended if features grow more complicated kwargs, but
+# that's unlikely, so I'm stopping here for now
+# https://fb.workplace.com/groups/347532827186692/posts/632399858699986
+_primitive = attrs.option(attrs.one_of(attrs.string(), attrs.int(), attrs.bool()))
+_value = attrs.one_of(
+    _primitive,
+    attrs.dict(_primitive, _primitive),
+    attrs.list(_primitive),
+)
+_nestable_value = attrs.one_of(
+    _value,
+    attrs.dict(_primitive, _value),
+    attrs.dict(_primitive, attrs.dict(_primitive, _value)),
+    attrs.dict(_primitive, attrs.list(_value)),
+    attrs.list(_value),
+    attrs.list(attrs.dict(_primitive, _value)),
+    attrs.list(attrs.list(_value)),
+)
+
 _feature = rule(
     impl = _impl,
     attrs = {
@@ -218,8 +244,9 @@ _feature = rule(
             # Unique key for this feature (see _hash_key below)
             attrs.string(),
             attrs.dict(
-                attrs.string(),
-                attrs.any(),
+                # top level kwargs
+                attrs.string(),  # kwarg name
+                _nestable_value,
             ),
         ),
         # Features need a way to coerce strings to sources or dependencies.
@@ -230,6 +257,13 @@ _feature = rule(
             attrs.string(),
             attrs.dict(
                 attrs.string(),
+                attrs.one_of(attrs.dep(), attrs.source()),
+            ),
+        ),
+        # Map "feature key" -> "feature dep/source"
+        "inline_features_unnamed_deps_or_sources": attrs.dict(
+            attrs.string(),
+            attrs.list(
                 attrs.one_of(attrs.dep(), attrs.source()),
             ),
         ),
@@ -253,6 +287,7 @@ def feature(
     feature_targets = []
     inline_features_deps = {}
     inline_features_deps_or_sources = {}
+    inline_features_unnamed_deps_or_sources = {}
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -270,6 +305,8 @@ def feature(
                 inline_features_deps[feature_key] = {k: d.dep for k, d in feat.deps.items()}
             if feat.deps_or_sources:
                 inline_features_deps_or_sources[feature_key] = feat.deps_or_sources
+            if feat.unnamed_deps_or_sources:
+                inline_features_unnamed_deps_or_sources[feature_key] = feat.unnamed_deps_or_sources
 
     return _feature(
         name = name,
@@ -277,7 +314,9 @@ def feature(
         inline_features = inline_features,
         inline_features_deps = inline_features_deps,
         inline_features_deps_or_sources = inline_features_deps_or_sources,
+        inline_features_unnamed_deps_or_sources = inline_features_unnamed_deps_or_sources,
         visibility = visibility,
+        default_target_platform = config.get_platform_for_current_buildfile().target_platform,
     )
 
 # We need a way to disambiguate inline features so that deps/sources can be
