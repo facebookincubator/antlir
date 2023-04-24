@@ -385,10 +385,7 @@ fn main() -> Result<()> {
     let spec = args.spec.into_inner();
 
     make_btrfs_package(
-        RealMounter {
-            log: slog_glog_fmt::logger_that_can_work_in_tests()
-                .expect("logger construction should not fail"),
-        },
+        RealMounter {},
         &args.out,
         spec.subvols,
         spec.default_subvol,
