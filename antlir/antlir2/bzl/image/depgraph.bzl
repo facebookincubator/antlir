@@ -28,7 +28,7 @@ def build_depgraph(
                 ctx.attrs.parent_layer[LayerInfo].depgraph,
                 format = "--parent={}",
             ) if hasattr(ctx.attrs, "parent_layer") and ctx.attrs.parent_layer else cmd_args(),
-            features.features.project_as_args("layer_dependencies") if features else cmd_args(),
+            cmd_args([li.depgraph for li in features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
             cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
             cmd_args(output.as_output(), format = "--out={}"),
         ),

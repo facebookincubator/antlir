@@ -68,9 +68,10 @@ def _impl(ctx: "context") -> ["provider"]:
     # traverse the features to find dependencies this image build has on other
     # image layers
     dependency_layers = flatten.flatten(list(ctx.attrs.features[FeatureInfo].required_layers.traverse()))
-    feature_hidden_deps = list(features.required_artifacts.traverse()) + \
-                          [[dl.depgraph, dl.mounts, dl.subvol_symlink] for dl in dependency_layers] + \
-                          list(features.required_run_infos.traverse())
+    feature_hidden_deps = [
+        features.required_artifacts.project_as_args("hidden_artifacts"),
+        features.required_run_infos.project_as_args("hidden_run_infos"),
+    ]
 
     depgraph_input = build_depgraph(
         ctx = ctx,
@@ -104,7 +105,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 "plan",
                 cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
                 cmd_args(depgraph_input, format = "--depgraph-json={}"),
-                features.features.project_as_args("layer_dependencies"),
+                cmd_args([li.depgraph for li in features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
                 cmd_args(plan.as_output(), format = "--plan={}"),
             ).hidden(feature_hidden_deps),
             identifier = "plan",
@@ -131,7 +132,7 @@ def _impl(ctx: "context") -> ["provider"]:
             "compile",
             cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
-            features.features.project_as_args("layer_dependencies"),
+            cmd_args([li.depgraph for li in features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
         ).hidden(feature_hidden_deps),
         identifier = "compile",
         parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
