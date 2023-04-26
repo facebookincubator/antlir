@@ -114,11 +114,14 @@ impl Map {
         // since it appears to be identical, even though the thing behind the
         // symlink has been changed.
         let dst = working_volume.join(format!(
-            "{}-{}-{}",
+            "{}-{}-{}-{}",
             SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .expect("time travelers shouldn't be building images")
                 .as_secs(),
+            // add a uuid so we will never accidentally end up with the same
+            // subvolume name
+            uuid::Uuid::new_v4().as_simple(),
             self.label.flat_filename(),
             self.setup.identifier,
         ));

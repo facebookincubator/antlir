@@ -14,6 +14,7 @@ rust_binary(
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
+        "uuid",
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
