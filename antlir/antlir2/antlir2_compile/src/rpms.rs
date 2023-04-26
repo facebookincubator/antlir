@@ -49,14 +49,6 @@ enum DriverMode {
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]
-enum DownloadStatus {
-    Ok,
-    Err(String),
-    AlreadyExists,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "snake_case")]
 enum TransactionOperation {
     /// Package cleanup is being performed.
     Cleanup,
@@ -114,14 +106,6 @@ struct InstallPackage {
 #[serde(rename_all = "snake_case")]
 #[allow(dead_code)] // I want to log structured data
 enum DriverEvent {
-    DownloadStarted {
-        total_files: usize,
-        total_bytes: usize,
-    },
-    PackageDownloaded {
-        package: Package,
-        status: DownloadStatus,
-    },
     TransactionResolved {
         install: BTreeSet<InstallPackage>,
         remove: BTreeSet<Package>,
