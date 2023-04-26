@@ -55,39 +55,6 @@ def package_struct(pkg):
     }
 
 
-class DownloadProgress(dnf.callback.DownloadProgress):
-    def __init__(self, out):
-        self.out = out
-
-    def start(self, total_files, total_size, total_drpms=0):
-        with self.out as out:
-            json.dump(
-                {
-                    "download_started": {
-                        "total_files": total_files,
-                        "total_bytes": total_size,
-                    }
-                },
-                out,
-            )
-            out.write("\n")
-
-    def end(self, payload, status, msg):
-        if status == dnf.callback.STATUS_ALREADY_EXISTS:
-            msg = None
-        with self.out as out:
-            json.dump(
-                {
-                    "package_downloaded": {
-                        "package": package_struct(payload.pkg),
-                        "status": {_DL_STATUS_TO_EVENT[status]: msg},
-                    }
-                },
-                out,
-            )
-            out.write("\n")
-
-
 _TX_ACTION_TO_JSON = {
     dnf.callback.PKG_DOWNGRADE: "downgrade",
     dnf.callback.PKG_DOWNGRADED: "downgraded",
@@ -278,7 +245,6 @@ def main():
     if mode == "resolve-only":
         return
     elif mode == "run":
-        base.download_packages(base.transaction.install_set, DownloadProgress(out))
         base.do_transaction(TransactionProgress(out))
     else:
         raise RuntimeError(f"unknown mode '{mode}'")
