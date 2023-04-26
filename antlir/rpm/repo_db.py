@@ -388,8 +388,6 @@ class RepoDBContext(AbstractContextManager):
         self._conn = self._conn_ctx.__enter__()
         return self
 
-    # pyre-fixme[14]: `__exit__` overrides method defined in
-    #  `AbstractContextManager` inconsistently.
     def __exit__(self, exc_type, exc_val, exc_tb) -> bool:
         self._conn = None
         # pyre-fixme[7]: Expected `bool` but got `Optional[bool]`.
