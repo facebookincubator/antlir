@@ -44,7 +44,10 @@ python_binary(
 
 test_rpms(
     name = "simple-test",
-    expected = expected_t(installed = ["foo-3-1"]),
+    expected = expected_t(
+        installed = ["foo-3-1"],
+        not_installed = ["foo-recommends-me"],
+    ),
     layer = ":simple",
 )
 

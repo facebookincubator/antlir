@@ -16,8 +16,9 @@ use serde_with::serde_as;
 use serde_with::DisplayFromStr;
 use url::Url;
 
-#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct DnfConf {
+    install_weak_deps: Option<bool>,
     repos: HashMap<String, RepoConf>,
 }
 
@@ -27,9 +28,7 @@ impl DnfConf {
     }
 
     pub fn new() -> Self {
-        Self {
-            repos: HashMap::new(),
-        }
+        Self::default()
     }
 
     pub fn add_repo(&mut self, id: String, repo_cfg: RepoConf) {
@@ -44,8 +43,18 @@ impl DnfConf {
 impl Display for DnfConf {
     #[deny(unused_variables)]
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let Self { repos } = self;
+        let Self {
+            install_weak_deps,
+            repos,
+        } = self;
         let mut config = Ini::new();
+        if let Some(install_weak_deps) = install_weak_deps {
+            config.set(
+                "main",
+                "install_weak_deps",
+                Some(install_weak_deps.to_string()),
+            );
+        }
         for (id, repo) in repos {
             config.set(
                 &id.replace('/', "-"),
@@ -69,6 +78,11 @@ impl Display for DnfConf {
 pub struct DnfConfBuilder(DnfConf);
 
 impl DnfConfBuilder {
+    pub fn install_weak_deps(&mut self, install_weak_deps: bool) -> &mut Self {
+        self.0.install_weak_deps = Some(install_weak_deps);
+        self
+    }
+
     pub fn add_repo(&mut self, id: String, cfg: impl Into<RepoConf>) -> &mut Self {
         self.0.add_repo(id, cfg.into());
         self

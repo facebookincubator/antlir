@@ -173,6 +173,7 @@ def _rpm(
         epoch: int.type = 0,
         summary: [str.type, None] = None,
         requires: [str.type] = [],
+        recommends: [str.type] = [],
         **kwargs):
     check_kwargs(kwargs)
 
@@ -181,6 +182,7 @@ def _rpm(
         "epoch": epoch,
         "license": license,
         "name": rpm_name,
+        "recommends": recommends,
         "release": release,
         "requires": requires,
         "summary": summary or rpm_name,

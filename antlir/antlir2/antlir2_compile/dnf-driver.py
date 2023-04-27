@@ -121,6 +121,10 @@ def main():
     base.conf.cachedir = "/antlir/dnf-cache"
     base.conf.ignorearch = True
     base.conf.arch = spec["arch"]
+    # Image authors should be explicit about what packages they want to install,
+    # and we will not bloat their image with weak dependencies that they didn't
+    # ask for
+    base.conf.install_weak_deps = False
     versionlock = spec["versionlock"] or {}
 
     for repomd in Path(spec["repos"]).glob("**/*/repodata/repomd.xml"):
