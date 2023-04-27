@@ -17,18 +17,19 @@ from tempfile import TemporaryDirectory
 import dnf
 
 
-def main(id: str, repodata: Path):
+def main(id: str, repodata: Path, repodata_out: Path):
     with TemporaryDirectory() as tmpdir:
         with dnf.Base() as base:
             base.conf.cachedir = tmpdir
             base.repos.add_new_repo(id, base.conf, [str(repodata.parent)])
             base.fill_sack(load_system_repo=False)
         tmpdir = Path(tmpdir)
-        shutil.copyfile(tmpdir / (id + ".solv"), repodata / (id + ".solv"))
+        shutil.copytree(repodata, repodata_out)
+        shutil.copyfile(tmpdir / (id + ".solv"), repodata_out / (id + ".solv"))
         shutil.copyfile(
-            tmpdir / (id + "-filenames.solvx"), repodata / (id + "-filenames.solvx")
+            tmpdir / (id + "-filenames.solvx"), repodata_out / (id + "-filenames.solvx")
         )
 
 
 if __name__ == "__main__":
-    main(sys.argv[1], Path(sys.argv[2]))
+    main(sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]))

@@ -6,9 +6,7 @@
 
 # pyre-strict
 
-import importlib.resources
 import json
-import subprocess
 import time
 from pathlib import Path
 
@@ -49,19 +47,12 @@ _COMPRESSION_MODES = {
     type=click.Choice(list(_COMPRESSION_MODES.keys())),
     default="gzip",
 )
-@click.option(
-    "--solv",
-    help="pre-build dnf .solv files",
-    type=click.Choice(["no", "yes", "try"]),
-    default="yes",
-)
 def main(
     repo_id: str,
     xml_dir: Path,
     out: Path,
     timestamp: int,
     compress: str,
-    solv: str,
 ) -> int:
     out.mkdir()
     ext = _COMPRESSION_MODES[compress][0]
@@ -77,7 +68,7 @@ def main(
         "other": cr.OtherXmlFile(str(paths["other"]), compress),
     }
 
-    xml_paths = list(xml_dir.iterdir())
+    xml_paths = sorted(xml_dir.iterdir())
     # pyre-fixme[16]: Item `FilelistsXmlFile` of `Union[FilelistsXmlFile,
     #  OtherXmlFile, PrimaryXmlFile]` has no attribute `set_num_of_pkgs`.
     files["primary"].set_num_of_pkgs(len(xml_paths))
@@ -116,9 +107,6 @@ def main(
     with open(out / "repomd.xml", "w") as f:
         # pyre-fixme[16]: `Repomd` has no attribute `xml_dump`.
         f.write(repomd.xml_dump())
-    if solv in {"yes", "try"}:
-        with importlib.resources.path(__package__, "build-solv.py") as build_solv:
-            subprocess.run([build_solv, repo_id, out], check=solv == "yes")
     return 0
 
 
