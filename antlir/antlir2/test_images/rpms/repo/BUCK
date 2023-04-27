@@ -1,8 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo")
-load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
+load(":defs.bzl", "test_rpm")
 
 image.layer(
     name = "foo.layer",
@@ -33,80 +32,48 @@ image.layer(
     parent_layer = ":foobar.layer",
 )
 
-[
-    [
-        [
-            package.rpm(
-                name = "{}-{}.rpm.package".format(
-                    pkg["name"],
-                    version,
-                ),
-                arch = "noarch",
-                layer = ":{}.layer".format(pkg["name"]),
-                license = "NONE",
-                release = "1",
-                requires = pkg["requires"],
-                rpm_name = pkg["name"],
-                version = str(version),
-            ),
-            rpm(
-                name = "{}-{}.rpm".format(
-                    pkg["name"],
-                    version,
-                ),
-                arch = "noarch",
-                epoch = 0,
-                release = "1",
-                rpm = ":{}-{}.rpm.package".format(
-                    pkg["name"],
-                    version,
-                ),
-                rpm_name = pkg["name"],
-                sha1 = "deadbeef",
-                version = str(version),
-                visibility = [
-                    "//antlir/antlir2/test_images/rpms/...",
-                ],
-            ),
-        ]
-        for version in [
-            1,
-            2,
-            3,
-        ]
-    ]
-    for pkg in [
-        {
-            "name": "foo",
-            "requires": [],
-        },
-        {
-            "name": "foobar",
-            "requires": ["foo"],
-        },
-        {
-            "name": "foobarbaz",
-            "requires": [
-                "foobar",
-            ],
-        },
-    ]
+_GEN_VERSIONS = [
+    1,
+    2,
+    3,
 ]
+
+all_rpms = [
+    test_rpm(
+        name = "foo",
+        parent_layer = ":foo.layer",
+        release = "1",
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+]
+
+all_rpms.extend([
+    test_rpm(
+        name = "foobar",
+        parent_layer = ":foobar.layer",
+        release = "1",
+        requires = ["foo"],
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
+
+all_rpms.extend([
+    test_rpm(
+        name = "foobarbaz",
+        parent_layer = ":foobarbaz.layer",
+        release = "1",
+        requires = ["foobar"],
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
 
 repo(
     name = "test-repo",
     compress = "none",
-    rpms = [
-        ":foo-1.rpm",
-        ":foo-2.rpm",
-        ":foo-3.rpm",
-        ":foobar-1.rpm",
-        ":foobar-2.rpm",
-        ":foobar-3.rpm",
-        ":foobarbaz-1.rpm",
-        ":foobarbaz-2.rpm",
-        ":foobarbaz-3.rpm",
-    ],
+    rpms = all_rpms,
     timestamp = 0,
     visibility = [
         "//antlir/antlir2/test_images/rpms/...",

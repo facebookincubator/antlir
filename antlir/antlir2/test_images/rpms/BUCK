@@ -74,7 +74,7 @@ test_rpms(
 image.layer(
     name = "local-rpm-file",
     features = [
-        feature.rpms_install(rpms = ["//antlir/antlir2/test_images/rpms/repo:foo-2.rpm"]),
+        feature.rpms_install(rpms = ["//antlir/antlir2/test_images/rpms/repo:foo-2-1.noarch"]),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
     parent_layer = ":simple",
