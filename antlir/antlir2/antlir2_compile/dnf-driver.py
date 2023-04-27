@@ -161,6 +161,7 @@ def main():
             local_rpms[rpm["source"]] = packages[0]
 
     explicitly_installed_package_names = set()
+    explicitly_removed_package_names = set()
 
     for item in spec["items"]:
         action = item["action"]
@@ -200,6 +201,7 @@ def main():
                 # force users to clean up features that are no longer doing
                 # anything
                 pass
+            explicitly_removed_package_names.add(rpm["name"])
         else:
             raise RuntimeError(f"unknown action '{action}'")
 
@@ -249,6 +251,52 @@ def main():
             o,
         )
         o.write("\n")
+
+    # We never want to remove an rpm that an image author explicitly installed
+    # with a `feature.rpms_install`, unless the author explicitly removes it
+    # with `feature.rpms_remove(_if_exists)`. Transaction resolution can
+    # potentially end up wanting to remove one of these
+    # explicitly-user-installed packages if the user does request the removal of
+    # a package that that depends on. If this is the case, we should refuse to
+    # perform the transaction.
+
+    # First, find the packages that the user explicitly installed, excluding any
+    # dependencies of those packages
+    user_installed_packages = {
+        pkg for pkg in base.sack.query().installed() if pkg.reason == "user"
+    }
+
+    all_removed_packages = set()
+    for tx_item in base.transaction:
+        # Only track packages that are being _removed_, not upgraded or
+        # downgraded
+        if tx_item.action == dnf.transaction.PKG_REMOVE:
+            all_removed_packages.add(tx_item.pkg)
+    # As a safety check, make sure that we were able to discover at least one
+    # user-installed package. If not, the guarantees about not silently removing
+    # user-installed rpms obviously cannot be ensured.
+    if all_removed_packages and not user_installed_packages:
+        raise RuntimeError(
+            "Did not find any user packages but packages are being removed, something seems wrong"
+        )
+    # Second, find the packages being implicitly removed in this transaction
+    implicitly_removed = {
+        pkg
+        for pkg in all_removed_packages
+        if pkg.name not in explicitly_removed_package_names
+    }
+
+    # Lastly, if any of these implicitly removed packages were originally
+    # installed by explicit user intention, fail the transaction
+    implicitly_removed_user_packages = implicitly_removed & user_installed_packages
+    if implicitly_removed_user_packages:
+        # TODO(vmagro): propagate this error up to Rust so that it can be better
+        # reported. Low-pri since it's already pretty readable.
+        raise RuntimeError(
+            "This transaction would remove some explicitly installed packages. "
+            + "Modify the image features to explicitly remove these packages: "
+            + ", ".join(p.name for p in implicitly_removed_user_packages)
+        )
 
     if mode == "resolve-only":
         return

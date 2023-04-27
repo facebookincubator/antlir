@@ -24,7 +24,7 @@ image.layer(
         feature.rpms_install(
             rpms = [
                 # the main rpm I am checking
-                "foo",
+                "foo-2",
                 # this depends on 'foobar' and 'foobarbaz' should be removed when 'foobar' is
                 "foobarbaz",
                 # dependencies of the test
@@ -45,7 +45,11 @@ python_binary(
 test_rpms(
     name = "simple-test",
     expected = expected_t(
-        installed = ["foo-3-1"],
+        installed = [
+            "foo-2-1",
+            "foobar-2-1",
+            "foobarbaz-2-1",
+        ],
         not_installed = ["foo-recommends-me"],
     ),
     layer = ":simple",
@@ -57,7 +61,7 @@ image.layer(
     features = [
         feature.rpms_remove_if_exists(rpms = [
             "foo",
-            "foobar",
+            "foobarbaz",
         ]),
     ],
     parent_layer = ":simple",
@@ -75,12 +79,50 @@ test_rpms(
 )
 
 image.layer(
+    name = "upgrade",
+    dnf_available_repos = ":test-repo-set",
+    features = [
+        feature.rpms_install(rpms = ["foo-3"]),
+    ],
+    parent_layer = ":simple",
+)
+
+test_rpms(
+    name = "upgrade-test",
+    expected = expected_t(
+        installed = ["foo-3"],
+        not_installed = ["foo-2"],
+    ),
+    layer = ":upgrade",
+)
+
+image.layer(
+    name = "downgrade",
+    dnf_available_repos = ":test-repo-set",
+    features = [
+        feature.rpms_install(rpms = ["foo-1"]),
+    ],
+    parent_layer = ":simple",
+)
+
+test_rpms(
+    name = "downgrade-test",
+    expected = expected_t(
+        installed = ["foo-1"],
+        not_installed = ["foo-2"],
+    ),
+    layer = ":downgrade",
+)
+
+image.layer(
     name = "local-rpm-file",
     features = [
-        feature.rpms_install(rpms = ["//antlir/antlir2/test_images/rpms/repo:foo-2-1.noarch"]),
+        feature.rpms_install(rpms = [
+            "//antlir/antlir2/test_images/rpms/repo:foo-2-1.noarch",
+            "rpm",
+        ]),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
-    parent_layer = ":simple",
 )
 
 test_rpms(
