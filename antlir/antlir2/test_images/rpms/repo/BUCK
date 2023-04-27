@@ -42,7 +42,7 @@ all_rpms = [
     test_rpm(
         name = "foo",
         parent_layer = ":foo.layer",
-        recommends = ["foo-recommends-me"],
+        recommends = ["foo-recommends-me == " + str(version)],
         release = "1",
         version = str(version),
     )
@@ -54,7 +54,7 @@ all_rpms.extend([
         name = "foobar",
         parent_layer = ":foobar.layer",
         release = "1",
-        requires = ["foo"],
+        requires = ["foo == " + str(version)],
         version = str(version),
     )
     for version in _GEN_VERSIONS
@@ -65,7 +65,7 @@ all_rpms.extend([
         name = "foobarbaz",
         parent_layer = ":foobarbaz.layer",
         release = "1",
-        requires = ["foobar"],
+        requires = ["foobar == " + str(version)],
         version = str(version),
     )
     for version in _GEN_VERSIONS
