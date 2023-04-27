@@ -17,6 +17,7 @@ def test_rpm(
         arch: str.type = "noarch",
         license: str.type = "NONE",
         requires: [str.type] = [],
+        recommends: [str.type] = [],
         features: [types.antlir_feature] = [],
         parent_layer: [str.type, None] = None) -> str.type:
     target_name = name + "-" + version + "-" + release + "." + arch
@@ -36,6 +37,7 @@ def test_rpm(
         rpm_name = name,
         license = license,
         requires = requires,
+        recommends = recommends,
         visibility = [":" + target_name],
     )
     rpm(

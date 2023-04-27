@@ -344,6 +344,7 @@ fn main() -> Result<()> {
             summary,
             license,
             requires,
+            recommends,
         } => {
             let layer_abspath = layer
                 .canonicalize()
@@ -352,6 +353,11 @@ fn main() -> Result<()> {
             let requires = requires
                 .into_iter()
                 .map(|req| format!("Requires: {req}"))
+                .join("\n");
+
+            let recommends = recommends
+                .into_iter()
+                .map(|req| format!("Recommends: {req}"))
                 .join("\n");
 
             let mut spec = format!(
@@ -365,6 +371,7 @@ Summary: {summary}
 License: {license}
 
 {requires}
+{recommends}
 
 %description
 

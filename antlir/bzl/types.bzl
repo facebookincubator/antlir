@@ -116,7 +116,7 @@ types = struct(
     enum = _enum,
     # TODO: can antlir features be better typed with records and unions?
     # Now a feature can be either a struct or target label
-    antlir_feature = [_struct, _str, "InlineFeatureInfo"],
+    antlir_feature = [_struct, _str, "InlineFeatureInfo", "record"],
     antlir_rule = _enum("antlir-private", "user-facing", "user-internal"),
     # TODO: when we're all buck2, this can enforce the presence of providers.
     # For now it's just a human-readable hint that only enforces on a string.

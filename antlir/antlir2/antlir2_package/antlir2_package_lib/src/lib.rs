@@ -88,6 +88,7 @@ pub enum Spec {
         license: String,
         summary: String,
         requires: Vec<String>,
+        recommends: Vec<String>,
     },
 }
 
