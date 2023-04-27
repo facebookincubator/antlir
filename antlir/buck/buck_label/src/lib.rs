@@ -26,8 +26,7 @@ use thiserror::Error;
 static ALLOWED_NAME_CHARSET: &str = r"[a-zA-Z0-9,.=\-/~@!+$_#]";
 static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
     format!(
-        r"(.+?)//({}*?):({}*)",
-        ALLOWED_NAME_CHARSET, ALLOWED_NAME_CHARSET,
+        r"(.+?)//({ALLOWED_NAME_CHARSET}*?):({ALLOWED_NAME_CHARSET}*(?:\[{ALLOWED_NAME_CHARSET}+\])?)",
     )
 });
 static LABEL_WITH_CONFIG_RE: Lazy<Regex> = Lazy::new(|| {
@@ -307,6 +306,17 @@ mod tests {
                 })),
             },
             Label::new("abc//path/to/target:label (config//path/to:config)")
+                .expect("valid label")
+                .parts(),
+        );
+        assert_eq!(
+            Parts {
+                cell: "abc",
+                package: "path/to/target",
+                name: "label[subtarget]",
+                config: None,
+            },
+            Label::new("abc//path/to/target:label[subtarget]")
                 .expect("valid label")
                 .parts(),
         );
