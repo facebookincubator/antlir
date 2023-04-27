@@ -6,21 +6,19 @@
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "buck_command_alias")
 
-def test_foo_version_installed_script(version: str.type) -> str.type:
-    name = "test-foo-installed-" + version
-    if native.rule_exists(name):
-        return ":" + name
+expected_t = record(
+    installed = field([str.type], default = []),
+    not_installed = field([str.type], default = []),
+)
 
+def test_rpms(name: str.type, layer: str.type, expected: expected_t.type):
     buck_command_alias(
-        name = name,
-        args = [version],
-        exe = ":test-foo-version.sh",
+        name = name + "--script",
+        exe = ":test-installed-rpms",
+        args = [json.encode(expected)],
     )
-    return ":" + name
-
-def test_foo_version_installed(name: str.type, layer: str.type, version: str.type):
     image_sh_test(
         name = name,
         layer = layer,
-        test = test_foo_version_installed_script(version),
+        test = ":{}--script".format(name),
     )
