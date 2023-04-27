@@ -121,6 +121,10 @@ def main():
     base.conf.cachedir = "/antlir/dnf-cache"
     base.conf.ignorearch = True
     base.conf.arch = spec["arch"]
+    # Transactions might not resolve to the newest version of every package.
+    # That is fine and normal, allow the depsolver to do its thing. This is the
+    # default behavior of dnf already, but let's be explicit.
+    base.conf.best = False
     # Image authors should be explicit about what packages they want to install,
     # and we will not bloat their image with weak dependencies that they didn't
     # ask for
