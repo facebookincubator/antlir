@@ -20,26 +20,42 @@ def _impl(ctx: "context") -> ["provider"]:
     repo_id = ctx.label.name.replace("/", "_")
 
     # Construct repodata XML blobs from each individual RPM
-    repodata = ctx.actions.declare_output("repodata", dir = True)
     xml_dir = ctx.actions.declare_output("xml", dir = True)
     ctx.actions.copied_dir(xml_dir, {nevra_to_string(rpm.nevra): rpm.xml for rpm in rpm_infos})
     optional_args = []
     if ctx.attrs.timestamp != None:
         optional_args += ["--timestamp={}".format(ctx.attrs.timestamp)]
+
+    # First build a repodata directory that just contains repodata (this would
+    # be suitable as a baseurl for dnf)
+    plain_repodata = ctx.actions.declare_output("repodata", dir = True)
     ctx.actions.run(
         cmd_args(
             ctx.attrs.makerepo[RunInfo],
             cmd_args(repo_id, format = "--repo-id={}"),
             cmd_args(xml_dir, format = "--xml-dir={}"),
-            cmd_args(repodata.as_output(), format = "--out={}"),
+            cmd_args(plain_repodata.as_output(), format = "--out={}"),
             "--compress={}".format(ctx.attrs.compress),
-            # @oss-disable
-            # @oss-enable "--solve=try",
             optional_args,
         ),
-        category = "makerepo",
+        category = "repodata",
+    )
+
+    # On the local host (because we need system python3 with dnf), pre-build
+    # .solv(x) files so that dnf installation is substantially faster
+    repodata = ctx.actions.declare_output("repodata_with_solv", dir = True)
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs.build_solv[RunInfo],
+            repo_id,
+            plain_repodata,
+            repodata.as_output(),
+        ),
+        category = "solv",
         # Invokes a binary using system python3
         local_only = True,
+        # This has to build locally, but the results are cacheable
+        allow_cache_upload = True,
     )
 
     # Create an artifact that is the _entire_ repository for completely offline
@@ -100,6 +116,7 @@ repo_attrs = {
         default = None,
     ),
     "bucket": attrs.option(attrs.string(doc = "manifold bucket"), default = None),
+    "build_solv": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:build-solv")),
     "compress": attrs.enum(["none", "gzip"], default = "gzip"),
     "deleted_base_key": attrs.option(
         attrs.string(),

@@ -5,7 +5,7 @@
 
 # @noautodeps
 
-load("//antlir/bzl:build_defs.bzl", "python_binary", "third_party")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "python_binary", "third_party")
 
 python_binary(
     name = "makechunk",
@@ -24,9 +24,6 @@ python_binary(
     name = "makerepo",
     srcs = ["makerepo.py"],
     main_module = "antlir.rpm.dnf2buck.makerepo",
-    resources = {
-        "build-solv.py": "build-solv.py",
-    },
     deps = third_party.libraries(
         [
             "click",
@@ -34,4 +31,9 @@ python_binary(
         ],
         platform = "pypi",
     ),
+)
+
+buck_sh_binary(
+    name = "build-solv",
+    main = "build-solv.py",
 )
