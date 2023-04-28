@@ -54,7 +54,7 @@ def image_rpmbuild(
         # the RPM in place.  Used to sign the RPM(s) built.
         # Signers should not modify anything except the signatures on the RPMs.
         # This is verified after each call to sign an RPM.
-        signer: types.exe,
+        signer: types.optional(types.exe) = None,
         # An `image.layer` target, on top of which the current layer will
         # build the RPM.  This should have `rpm-build`, optionally macro
         # packages like `redhat-rpm-config`, and any of the spec file's
@@ -198,6 +198,29 @@ def private_image_rpmbuild_impl(
         **image_layer_kwargs
     )
 
+    sign_rpms = "" if not signer else '''
+        # call the signer binary to sign the RPMs
+        signer_binary_path=( $(exe {signer_target}) )
+        for rpm in $OUT/*.rpm; do
+            "${{signer_binary_path[@]}}" "$rpm"
+
+        rpm_basename=\\$( basename "$rpm")
+            orig_rpm="$sv_path/rpmbuild/RPMS/$rpm_basename"
+
+            # verify that the contents match
+            # Future: we can probably use --queryformat to print the content
+            # hashes and avoid comparing contents directly if we dig around
+            # and find a checksum stronger than MD5.
+            diff <(rpm2cpio "$orig_rpm") <(rpm2cpio "$rpm")
+
+            # diff the rest of the metadata, ignoring the signature line
+            # --nosignature passed to `rpm` silences warning about unrecognized keys
+            diff -I "^Signature" <(rpm --scripts --nosignature -qilp "$orig_rpm") <(rpm --scripts --nosignature -qilp "$rpm")
+        done
+    '''.format(
+        signer_target = signer,
+    )
+
     buck_genrule(
         name = name,
         bash = '''
@@ -210,27 +233,10 @@ def private_image_rpmbuild_impl(
             sv_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
             find "$sv_path/rpmbuild/RPMS/" -name '*.rpm' -print0 | xargs -0 cp --no-clobber --target-directory "$OUT"
 
-            # call the signer binary to sign the RPMs
-            signer_binary_path=( $(exe {signer_target}) )
-            for rpm in $OUT/*.rpm; do
-                "${{signer_binary_path[@]}}" "$rpm"
-
-                rpm_basename=\\$( basename "$rpm")
-                orig_rpm="$sv_path/rpmbuild/RPMS/$rpm_basename"
-
-                # verify that the contents match
-                # Future: we can probably use --queryformat to print the content
-                # hashes and avoid comparing contents directly if we dig around
-                # and find a checksum stronger than MD5.
-                diff <(rpm2cpio "$orig_rpm") <(rpm2cpio "$rpm")
-
-                # diff the rest of the metadata, ignoring the signature line
-                # --nosignature passed to `rpm` silences warning about unrecognized keys
-                diff -I "^Signature" <(rpm --scripts --nosignature -qilp "$orig_rpm") <(rpm --scripts --nosignature -qilp "$rpm")
-            done
+            {sign_rpms}
         '''.format(
             rpmbuild_layer = ":" + build_layer,
-            signer_target = signer,
+            sign_rpms = sign_rpms,
         ),
         antlir_rule = "user-facing",
         visibility = visibility,
