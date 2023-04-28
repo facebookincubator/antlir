@@ -1,4 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load(":defs.bzl", "bad_depgraph", "good_depgraph")
 
 bad_depgraph(
@@ -68,6 +69,42 @@ good_depgraph(
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+buck_genrule(
+    name = "dir",
+    out = ".",
+    cmd = "touch $OUT/foo $OUT/bar",
+)
+
+good_depgraph(
+    name = "install-into-installed-dir",
+    features = [
+        feature.install(
+            src = ":dir",
+            dst = "/foo/",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/baz",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+bad_depgraph(
+    name = "conflict-with-installed-dir",
+    error_regex = "\"\\/foo\\/bar\".*is provided by multiple features.*",
+    features = [
+        feature.install(
+            src = ":dir",
+            dst = "/foo/",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/bar",
+        ),
+    ],
 )
 
 bad_depgraph(
