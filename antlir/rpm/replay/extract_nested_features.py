@@ -193,9 +193,11 @@ def extract_nested_features(
             )
         # pyre-fixme[16]: `Optional` has no attribute `append`.
         extracted_features.features_to_replay.append((feature_key, target, config))
-    assert (
-        extracted_features.packaged_root
-    ), f"Root not set on extracted features {layer_features_out}"
+    if not extracted_features.packaged_root:  # pragma: no cover
+        raise RuntimeError(
+            "Missing root packaged layer; did you create an image layer without having "
+            "it transitively inherit from the TW base image?"
+        )
     # Since extract_nested_features works on the pre-compiler, the items
     # are not ordered correctly. So we manually remove the directories
     for path_to_remove in extracted_features.paths_to_remove:
