@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::os::unix::ffi::OsStrExt;
+
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -23,4 +25,10 @@ pub struct Install<'a> {
     pub src: BuckOutSource<'a>,
     pub user: UserName<'a>,
     pub separate_debug_symbols: bool,
+}
+
+impl<'a> Install<'a> {
+    pub fn is_dir(&self) -> bool {
+        self.dst.as_os_str().as_bytes().last().copied() == Some(b'/')
+    }
 }

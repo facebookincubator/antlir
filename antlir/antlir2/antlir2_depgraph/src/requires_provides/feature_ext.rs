@@ -345,14 +345,52 @@ impl<'f> FeatureExt<'f> for antlir2_features::extract::Extract<'f> {
 
 impl<'f> FeatureExt<'f> for antlir2_features::install::Install<'f> {
     fn provides(&self) -> Result<Vec<Item<'f>>, String> {
-        Ok(vec![Item::Path(Path::Entry(FsEntry {
-            path: self.dst.path().to_owned().into(),
-            file_type: match self.src.is_dir() {
-                true => FileType::Directory,
-                false => FileType::File,
-            },
-            mode: self.mode.as_raw(),
-        }))])
+        if self.is_dir() {
+            let mut v = vec![Item::Path(Path::Entry(FsEntry {
+                path: self.dst.path().to_owned().into(),
+                file_type: FileType::Directory,
+                mode: self.mode.as_raw(),
+            }))];
+            for entry in WalkDir::new(&self.src) {
+                let entry = entry
+                    .map_err(|e| format!("could not walk src dir {}: {e}", self.src.display()))?;
+                let relpath = entry
+                    .path()
+                    .strip_prefix(&self.src)
+                    .expect("this has to be under src");
+                if relpath == std::path::Path::new("") {
+                    continue;
+                }
+                if entry.file_type().is_file() {
+                    v.push(Item::Path(Path::Entry(FsEntry {
+                        path: self.dst.join(relpath).into(),
+                        file_type: FileType::File,
+                        mode: 0o444,
+                    })))
+                } else if entry.file_type().is_dir() {
+                    v.push(Item::Path(Path::Entry(FsEntry {
+                        path: self.dst.join(relpath).into(),
+                        file_type: FileType::Directory,
+                        mode: 0o555,
+                    })))
+                } else if entry.file_type().is_symlink() {
+                    let target = std::fs::read_link(entry.path()).map_err(|_e| {
+                        format!("could not get link target of {}", entry.path().display())
+                    })?;
+                    v.push(Item::Path(Path::Symlink {
+                        link: self.dst.join(relpath).into(),
+                        target: target.into(),
+                    }));
+                }
+            }
+            Ok(v)
+        } else {
+            Ok(vec![Item::Path(Path::Entry(FsEntry {
+                path: self.dst.path().to_owned().into(),
+                file_type: FileType::File,
+                mode: self.mode.as_raw(),
+            }))])
+        }
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {

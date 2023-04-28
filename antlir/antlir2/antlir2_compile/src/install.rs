@@ -8,7 +8,6 @@
 use std::fs::File;
 use std::fs::FileTimes;
 use std::fs::Permissions;
-use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::fchown;
 use std::os::unix::fs::PermissionsExt;
 
@@ -27,7 +26,7 @@ impl<'a> CompileFeature for Install<'a> {
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         if self.src.is_dir() {
             debug!("{:?} is a dir", self.src);
-            if self.dst.as_os_str().as_bytes().last().copied() != Some(b'/') {
+            if !self.is_dir() {
                 return Err(Error::InstallSrcIsDirectoryButNotDst(
                     self.src.to_path_buf(),
                     self.dst.to_path_buf(),
