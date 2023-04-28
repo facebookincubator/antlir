@@ -228,6 +228,14 @@ fn main() -> Result<()> {
             .collect::<HashMap<_, _>>(),
     );
 
+    // XARs need /dev/fuse to run. Ideally we could just have this created
+    // inside the container. Until
+    // https://github.com/systemd/systemd/issues/17607 is resolved, we need to
+    // rw bind-mount /dev/fuse in
+    if Path::new("/dev/fuse").exists() {
+        ctx.outputs([Path::new("/dev/fuse")]);
+    }
+
     if args.boot {
         // see 'man 8 systemd-run-generator', tl;dr this will:
         // - propagate the exit code to this process

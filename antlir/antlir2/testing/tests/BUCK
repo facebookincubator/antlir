@@ -5,7 +5,10 @@ load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_
 image.layer(
     name = "base",
     features = [
-        feature.rpms_install(rpms = ["systemd"]),
+        feature.rpms_install(rpms = [
+            "systemd",
+            # @oss-disable
+        ]),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
