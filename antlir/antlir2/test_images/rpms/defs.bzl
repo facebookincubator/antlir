@@ -12,6 +12,8 @@ types.lint_noop()
 
 expected_t = record(
     installed = field([str.type], default = []),
+    userinstalled = field([str.type], default = []),
+    installed_not_userinstalled = field([str.type], default = []),
     not_installed = field([str.type], default = []),
 )
 

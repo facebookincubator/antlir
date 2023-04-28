@@ -17,6 +17,7 @@ repo_set(
 )
 
 _RPM_DEPS_OF_TEST = [
+    "dnf",
     "rpm",
     # @oss-disable
 ]
@@ -29,6 +30,7 @@ simple = test_rpms(
             "foobar-2-1",
             "foobarbaz-2-1",
         ],
+        installed_not_userinstalled = ["foobar"],
         not_installed = ["foo-recommends-me"],
     ),
     features = [
@@ -107,6 +109,25 @@ test_rpms(
     ),
     features = [
         feature.rpms_install(rpms = ["foo-1"]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "reinstalled-package-userinstalled",
+    expected = expected_t(
+        userinstalled = ["foobar"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                # This is already installed, but will not show as user-installed
+                # since it came from a dependency.
+                # If we install it now explicitly, dnf will no-op, but it should
+                # mark it as user-installed for later safety.
+                "foobar",
+            ],
+        ),
     ],
     parent_layer = simple,
 )

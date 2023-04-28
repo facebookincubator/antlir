@@ -22,6 +22,7 @@ from pathlib import Path
 
 import dnf
 import hawkey
+import libdnf
 
 
 class LockedOutput(object):
@@ -108,10 +109,7 @@ class TransactionProgress(dnf.callback.TransactionProgress):
         self._sent[package].add(action)
 
 
-def main():
-    out = LockedOutput(sys.stdout)
-    spec = json.loads(sys.argv[1])
-    mode = spec["mode"]
+def dnf_base(spec) -> dnf.Base:
     base = dnf.Base()
     base.conf.installroot = spec["install_root"]
     base.conf.persistdir = os.path.join(
@@ -129,7 +127,16 @@ def main():
     # and we will not bloat their image with weak dependencies that they didn't
     # ask for
     base.conf.install_weak_deps = False
+    return base
+
+
+def main():
+    out = LockedOutput(sys.stdout)
+    spec = json.loads(sys.argv[1])
+    mode = spec["mode"]
     versionlock = spec["versionlock"] or {}
+
+    base = dnf_base(spec)
 
     for repomd in Path(spec["repos"]).glob("**/*/repodata/repomd.xml"):
         basedir = repomd.parent.parent.resolve()
@@ -275,10 +282,10 @@ def main():
     # As a safety check, make sure that we were able to discover at least one
     # user-installed package. If not, the guarantees about not silently removing
     # user-installed rpms obviously cannot be ensured.
-    if all_removed_packages and not user_installed_packages:
-        raise RuntimeError(
-            "Did not find any user packages but packages are being removed, something seems wrong"
-        )
+    if all_removed_packages:
+        assert (
+            user_installed_packages
+        ), "did not find any user-installed packages, refusing to continue"
     # Second, find the packages being implicitly removed in this transaction
     implicitly_removed = {
         pkg
@@ -301,7 +308,32 @@ def main():
     if mode == "resolve-only":
         return
     elif mode == "run":
+        # dnf go brrr
         base.do_transaction(TransactionProgress(out))
+        base.close()
+
+        # After doing the transaction, go through and (re)mark all the
+        # explicitly packages as explicitly installed. Otherwise a reinstall of
+        # a package that had previously been brought in as a dependency will not
+        # be recorded with "user' as the install reason
+        base = dnf_base(spec)
+        base.fill_sack()
+        explicitly_installed_packages = list(
+            base.sack.query()
+            .installed()
+            .filter(name__eq=explicitly_installed_package_names)
+        )
+        if explicitly_installed_package_names:
+            assert (
+                explicitly_installed_package_names
+            ), "installing packages, but they were not found"
+
+        for pkg in explicitly_installed_packages:
+            base.history.set_reason(pkg, libdnf.transaction.TransactionItemReason_USER)
+        # commit that change to the db
+        rpmdb_version = base.history.last().end_rpmdb_version
+        base.history.beg(rpmdb_version, [], [])
+        base.history.end(rpmdb_version)
     else:
         raise RuntimeError(f"unknown mode '{mode}'")
 
