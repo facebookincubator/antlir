@@ -50,7 +50,6 @@ bad_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/etc/passwd",
-            mode = "a+r",
             user = "antlir",
         ),
     ],
@@ -62,7 +61,6 @@ good_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/foo",
-            mode = "a+r",
         ),
         feature.remove(
             must_exist = True,
@@ -100,7 +98,6 @@ bad_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/fakeshell",
-            mode = "a+r",
         ),
         feature.user_add(
             home_dir = "/",
@@ -151,14 +148,12 @@ bad_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/foo",
-            mode = "a+r",
         ),
         # change the src so that two exactly-identical features don't get
         # deduped
         feature.install(
             src = "TARGETS",
             dst = "/foo",
-            mode = "a+r",
         ),
     ],
 )
@@ -169,18 +164,15 @@ good_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/foo",
-            mode = "a+r",
         ),
         feature.ensure_dirs_exist(dirs = "/etc"),
         feature.install(
             src = "//antlir/antlir2/test_images:passwd",
             dst = "/etc/passwd",
-            mode = "a+r",
         ),
         feature.install(
             src = "//antlir/antlir2/test_images:group",
             dst = "/etc/group",
-            mode = "a+r",
         ),
         feature.install(
             src = "//antlir:empty",
@@ -198,7 +190,6 @@ good_depgraph(
             src = "//antlir:empty",
             dst = "/owned-by-antlir",
             group = "antlir",
-            mode = "a+r",
             user = "antlir",
         ),
     ],
@@ -281,7 +272,6 @@ good_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/clone/src/dir/foo",
-            mode = "a+r",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
@@ -300,12 +290,10 @@ bad_depgraph(
         feature.install(
             src = "//antlir:empty",
             dst = "/cloned/bar",
-            mode = "a+r",
         ),
         feature.install(
             src = "//antlir:empty",
             dst = "/cloned/foo",
-            mode = "a+r",
         ),
     ],
 )
@@ -362,12 +350,10 @@ good_depgraph(
         feature.install(
             src = "//antlir/antlir2/test_images:passwd",
             dst = "/etc/passwd",
-            mode = "a+r",
         ),
         feature.install(
             src = "//antlir/antlir2/test_images:group",
             dst = "/etc/group",
-            mode = "a+r",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",

@@ -68,20 +68,27 @@ def install_analyze(
         deps_or_sources: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
     src = deps_or_sources["src"]
     if type(src) == "dependency":
-        # Unfortunately we can only determine `mode` automatically if the dep is
-        # an executable, since a plain source might be a directory
-        if not mode and RunInfo in src:
-            # There is no need for the old buck1 `install_buck_runnable` stuff
-            # in buck2, since we put a dep on the binary directly onto the layer
-            # itself, which forces a rebuild when appropriate.
-            mode = 0o555
+        if mode == None:
+            if RunInfo in src:
+                # There is no need for the old buck1 `install_buck_runnable` stuff
+                # in buck2, since we put a dep on the binary directly onto the layer
+                # itself, which forces a rebuild when appropriate.
+                mode = 0o555
+            elif dst.endswith("/"):
+                # If the user is installing a directory, we require they include
+                # a trailing '/' in `dst`
+                mode = 0o555
+            else:
+                mode = 0o444
 
         src = ensure_single_output(src)
-    if mode == None:
-        # We can't tell if a source is a file or directory, so we need to
-        # force the user to specify it
-        # https://fb.workplace.com/groups/buck2users/posts/3346711265585231
-        fail("Unable to automatically determine 'mode'. Please specify it with something like 'mode=\"a+r\"'")
+    elif type(src) == "artifact":
+        # If the source is an artifact, that means it was given as an
+        # `attrs.source()`, and is thus not a dependency.
+        # Buck2 does not allow a user to pass a raw directory as an
+        # `attrs.source()`, then we can default the mode to 444
+        if mode == None:
+            mode = 0o444
     return FeatureAnalysis(
         data = install_record(
             src = src,
