@@ -47,6 +47,8 @@ pub enum Error {
     IO(#[from] std::io::Error),
     #[error("extract has conflict: want to install a different version of {0:?}")]
     ExtractConflict(PathBuf),
+    #[error("install src {0:?} is a directory, but {0:?} is missing trailing /")]
+    InstallSrcIsDirectoryButNotDst(PathBuf, PathBuf),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }

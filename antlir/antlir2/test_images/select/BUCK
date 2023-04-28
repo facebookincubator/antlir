@@ -18,7 +18,6 @@ image.layer(
                 "ovr_config//cpu:x86_64": "src.x86_64",
             }),
             dst = "/arch",
-            mode = "a+r",
         ),
     ],
     parent_layer = ":base",
@@ -39,7 +38,6 @@ feature.new(
         feature.install(
             src = "src.aarch64",
             dst = "/arch",
-            mode = "a+r",
         ),
     ],
 )
@@ -50,7 +48,6 @@ feature.new(
         feature.install(
             src = "src.x86_64",
             dst = "/arch",
-            mode = "a+r",
         ),
     ],
 )

@@ -28,7 +28,7 @@ image.layer(
     features = [
         feature.install(
             src = ":genrule-dir",
-            dst = "/installed-dir",
+            dst = "/installed-dir/",
             mode = "a+rw,u+w",
         ),
     ],

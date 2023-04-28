@@ -8,6 +8,7 @@
 use std::fs::File;
 use std::fs::FileTimes;
 use std::fs::Permissions;
+use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::fchown;
 use std::os::unix::fs::PermissionsExt;
 
@@ -18,6 +19,7 @@ use walkdir::WalkDir;
 use crate::util::copy_with_metadata;
 use crate::CompileFeature;
 use crate::CompilerContext;
+use crate::Error;
 use crate::Result;
 
 impl<'a> CompileFeature for Install<'a> {
@@ -25,6 +27,12 @@ impl<'a> CompileFeature for Install<'a> {
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         if self.src.is_dir() {
             debug!("{:?} is a dir", self.src);
+            if self.dst.as_os_str().as_bytes().last().copied() != Some(b'/') {
+                return Err(Error::InstallSrcIsDirectoryButNotDst(
+                    self.src.to_path_buf(),
+                    self.dst.to_path_buf(),
+                ));
+            }
             for entry in WalkDir::new(&self.src) {
                 let entry = entry.map_err(std::io::Error::from)?;
                 let relpath = entry

@@ -44,7 +44,6 @@ image.layer(
             src = "file-to-clone",
             dst = "/f",
             group = "antlir",
-            mode = "a+r",
             user = "antlir",
         ),
         feature.ensure_dirs_exist(
@@ -59,7 +58,6 @@ image.layer(
         feature.install(
             src = "file-to-clone",
             dst = "/path/to/clone/dir/deeper/nesting/foo",
-            mode = "a+r",
         ),
         feature.ensure_file_symlink(
             link = "/path/to/clone/dir/cloned-symlink",

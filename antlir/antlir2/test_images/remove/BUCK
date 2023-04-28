@@ -8,7 +8,6 @@ image.layer(
         feature.install(
             src = "//antlir:empty",
             dst = "/a",
-            mode = "a+r",
         ),
         feature.ensure_dirs_exist(
             dirs = "/b",
