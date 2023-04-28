@@ -85,7 +85,7 @@ def _extract(
     if use_antlir2():
         if dest != "/":
             fail("not allowed on antlir2")
-        return antlir2.extract(
+        return antlir2.extract_from_layer(
             layer = source,
             binaries = binaries,
         )
