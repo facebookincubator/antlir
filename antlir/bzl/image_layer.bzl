@@ -132,7 +132,7 @@ def image_layer(
     possible helpers, their respective behaviours, and how to invoke them.
     """
     if use_antlir2():
-        antlir2_image(
+        antlir2_image.layer(
             name = name,
             parent_layer = parent_layer,
             flavor = flavor,
