@@ -28,6 +28,34 @@ for spec in expected["installed"]:
             print(rpm)
         sys.exit(1)
 
+for spec in expected["userinstalled"]:
+    installed_spec = subprocess.run(
+        ["rpm", "-q", spec], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    userinstalled_spec = subprocess.run(
+        ["dnf", "repoquery", "--userinstalled", spec],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    if not userinstalled_spec or userinstalled_spec == installed_spec:
+        print(f"'{spec}' is installed ({installed_spec}) but is not userinstalled")
+        sys.exit(1)
+
+for spec in expected["installed_not_userinstalled"]:
+    installed_spec = subprocess.run(
+        ["rpm", "-q", spec], capture_output=True, text=True, check=True
+    ).stdout.strip()
+    userinstalled_spec = subprocess.run(
+        ["dnf", "repoquery", "--userinstalled", spec],
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+    if userinstalled_spec:
+        print(f"'{spec}' is installed and userinstalled ({userinstalled_spec})")
+        sys.exit(1)
+
 for spec in expected["not_installed"]:
     proc = subprocess.run(["rpm", "-q", spec], capture_output=True, text=True)
     if proc.returncode == 0:
