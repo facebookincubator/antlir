@@ -42,6 +42,8 @@ pub struct IsolationContext<'a> {
     outputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
     /// See [IsolationContextBuilder::boot]
     boot: bool,
+    /// See [IsolationContextBuilder::register]
+    register: bool,
 }
 
 impl<'a> IsolationContext<'a> {
@@ -61,6 +63,7 @@ impl<'a> IsolationContext<'a> {
                 inputs: Default::default(),
                 outputs: Default::default(),
                 boot: false,
+                register: false,
             },
         }
     }
@@ -116,6 +119,13 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Run /init from inside the layer as PID 1
     pub fn boot(&mut self, boot: bool) -> &mut Self {
         self.ctx.boot = boot;
+        self
+    }
+
+    /// Register the isolated environment with a random name. The name can be
+    /// printed out from the provided command for debugging purpose.
+    pub fn register(&mut self, register: bool) -> &mut Self {
+        self.ctx.register = register;
         self
     }
 
