@@ -9,7 +9,6 @@ load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
@@ -62,17 +61,10 @@ def _impl(ctx: "context") -> ["provider"]:
 
     flavor_info = ctx.attrs.flavor[FlavorInfo] if ctx.attrs.flavor else ctx.attrs.parent_layer[LayerInfo].flavor_info
 
-    all_features = ctx.attrs.features[FeatureInfo]
-    all_features_list = list(ctx.attrs.features[FeatureInfo].features.traverse())
-
-    # traverse the features to find dependencies this image build has on other
-    # image layers
-    # TODO(vmagro): these should be broken out by build_phase as well
-    dependency_layers = flatten.flatten(list(ctx.attrs.features[FeatureInfo].required_layers.traverse()))
-    feature_hidden_deps = [
-        all_features.required_artifacts.project_as_args("hidden_artifacts"),
-        all_features.required_run_infos.project_as_args("hidden_run_infos"),
-    ]
+    # Yeah this is against the spirit of Transitive Sets, but we can save an
+    # insane amount of actual image building work if we do the "wrong thing" and
+    # expect it in starlark instead of a cli/json projection.
+    all_features = list(ctx.attrs.features[FeatureInfo].features.traverse())
 
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
@@ -104,7 +96,7 @@ def _impl(ctx: "context") -> ["provider"]:
         identifier_prefix = phase.value + "_" if phase.value else ""
         features = [
             feat
-            for feat in all_features.features.traverse()
+            for feat in all_features
             if feat.analysis.build_phase == phase
         ]
 
@@ -115,20 +107,41 @@ def _impl(ctx: "context") -> ["provider"]:
         if not features and not (phase == BuildPhase(None) and parent_layer == None):
             continue
 
+        # JSON file for only the features that are part of this BuildPhase
         features_json = ctx.actions.write_json(
             identifier_prefix + "features.json",
             [struct(feature_type = f.feature_type, label = f.label, data = f.analysis.data) for f in features],
             with_inputs = True,
         )
+
+        # Features in this phase may depend on other image layers, or may
+        # require artifacts to be materialized on disk.
+        # Layers are deduped because it can accidentaly trigger some expensive
+        # work if the same layer is passed many times as cli args
+        dependency_layers = []
+        for feat in features:
+            for layer in feat.analysis.required_layers:
+                if layer not in dependency_layers:
+                    dependency_layers.append(layer)
+        feature_hidden_deps = [
+            [feat.analysis.required_artifacts for feat in features],
+            [feat.analysis.required_run_infos for feat in features],
+        ]
+
         depgraph_input = build_depgraph(
             ctx = ctx,
             parent_depgraph = parent_depgraph,
-            features = all_features,
             features_json = features_json,
             format = "json",
             subvol = None,
             dependency_layers = dependency_layers,
             identifier_prefix = identifier_prefix,
+        )
+
+        compileish_args = cmd_args(
+            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+            cmd_args(depgraph_input, format = "--depgraph-json={}"),
+            cmd_args([li.depgraph for li in dependency_layers], format = "--image-dependency={}"),
         )
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
@@ -139,9 +152,7 @@ def _impl(ctx: "context") -> ["provider"]:
                     cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
                     cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
                     "plan",
-                    cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
-                    cmd_args(depgraph_input, format = "--depgraph-json={}"),
-                    cmd_args([li.depgraph for li in all_features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
+                    compileish_args,
                     cmd_args(plan.as_output(), format = "--plan={}"),
                 ).hidden(feature_hidden_deps),
                 identifier = identifier_prefix + "plan",
@@ -165,9 +176,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
                 cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
                 "compile",
-                cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
-                cmd_args(depgraph_input, format = "--depgraph-json={}"),
-                cmd_args([li.depgraph for li in all_features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
+                compileish_args,
             ).hidden(feature_hidden_deps),
             identifier = identifier_prefix + "compile",
             parent = parent_layer,
@@ -182,7 +191,6 @@ def _impl(ctx: "context") -> ["provider"]:
             final_depgraph = build_depgraph(
                 ctx = ctx,
                 parent_depgraph = parent_depgraph,
-                features = all_features,
                 features_json = features_json,
                 format = "json",
                 subvol = final_subvol,
@@ -211,7 +219,7 @@ def _impl(ctx: "context") -> ["provider"]:
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
             mounts = all_mounts(
-                features = all_features_list,
+                features = all_features,
                 parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
             ),
         ),

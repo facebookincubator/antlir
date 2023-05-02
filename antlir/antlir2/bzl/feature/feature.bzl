@@ -87,46 +87,6 @@ Features = transitive_set(
     json_projections = {"features_json": _feature_as_json},
 )
 
-def _project_as_hidden_artifact(hidden: "artifact") -> "cmd_args":
-    return cmd_args().hidden(hidden)
-
-# Values of this tset are a single "artifact", with possible children tsets also
-# containing single "artifact"s as their values
-FeatureArtifacts = transitive_set(
-    args_projections = {
-        "hidden_artifacts": _project_as_hidden_artifact,
-    },
-)
-
-def _project_as_hidden_run_info(hidden: "RunInfo") -> "cmd_args":
-    return cmd_args().hidden(hidden)
-
-# Values of this tset are a single "RunInfo", with possible children tsets also
-# containing single "RunInfo"s as their values
-FeatureRunInfos = transitive_set(
-    args_projections = {
-        "hidden_run_infos": _project_as_hidden_run_info,
-    },
-)
-
-# Transitive Set projections do not really operate as sets, so we could end up
-# with the same layer passed many times into cmd_args, which will often trigger
-# very wasteful behavior.
-def _reduce_to_unique_layer_deps(children: [["LayerInfo"]], info: ["LayerInfo", None]):
-    unique = []
-    for child in flatten.flatten(children):
-        if child not in unique:
-            unique.append(child)
-    if info and info not in unique:
-        unique.append(info)
-    return unique
-
-LayerDependencies = transitive_set(
-    reductions = {
-        "unique": _reduce_to_unique_layer_deps,
-    },
-)
-
 _analyze_feature = {
     "clone": clone_analyze,
     "ensure_dir_exists": ensure_dir_exists_analyze,
@@ -188,27 +148,6 @@ def _impl(ctx: "context") -> ["provider"]:
         children = [ctx.actions.tset(Features, value = feat) for feat in inline_features] +
                    [f[FeatureInfo].features for f in ctx.attrs.feature_targets],
     )
-    required_artifacts = ctx.actions.tset(
-        FeatureArtifacts,
-        children = [
-            ctx.actions.tset(FeatureArtifacts, value = artifact)
-            for artifact in inline_artifacts
-        ] + [f[FeatureInfo].required_artifacts for f in ctx.attrs.feature_targets],
-    )
-    required_run_infos = ctx.actions.tset(
-        FeatureRunInfos,
-        children = [
-            ctx.actions.tset(FeatureRunInfos, value = run_info)
-            for run_info in inline_run_infos
-        ] + [f[FeatureInfo].required_run_infos for f in ctx.attrs.feature_targets],
-    )
-    required_layers = ctx.actions.tset(
-        LayerDependencies,
-        children = [
-            ctx.actions.tset(LayerDependencies, value = dep)
-            for dep in inline_layer_deps
-        ] + [f[FeatureInfo].required_layers for f in ctx.attrs.feature_targets],
-    )
 
     features_json = features.project_as_json("features_json")
     json_file = ctx.actions.write_json("features.json", features_json)
@@ -216,9 +155,6 @@ def _impl(ctx: "context") -> ["provider"]:
     return [
         FeatureInfo(
             features = features,
-            required_artifacts = required_artifacts,
-            required_run_infos = required_run_infos,
-            required_layers = required_layers,
         ),
         DefaultInfo(json_file),
     ]

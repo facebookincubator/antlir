@@ -8,16 +8,22 @@
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:flatten.bzl", "flatten")
 
 def _make_test_cmd(ctx: "context", expect) -> "cmd_args":
     features = ctx.attrs.features[FeatureInfo]
-    features_json = features.features.project_as_json("features_json")
-    features_json = ctx.actions.write_json("features.json", features_json, with_inputs = True)
+    features_json = ctx.actions.write_json(
+        "features.json",
+        features.features.project_as_json("features_json"),
+        with_inputs = True,
+    )
 
     # traverse the features to find dependencies this image build has on other
     # image layers
-    dependency_layers = flatten.flatten(list(features.required_layers.traverse()))
+    dependency_layers = []
+    for feat in features.features.traverse():
+        for layer in feat.analysis.required_layers:
+            if layer not in dependency_layers:
+                dependency_layers.append(layer)
 
     return cmd_args(
         ctx.attrs.test_depgraph[RunInfo],
