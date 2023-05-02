@@ -8,7 +8,6 @@ rust_binary(
         "anyhow",
         "clap",
         "colored",
-        "serde",
         "serde_json",
         "thiserror",
         "tracing",

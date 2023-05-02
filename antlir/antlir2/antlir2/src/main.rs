@@ -42,7 +42,6 @@ enum Subcommand {
     Depgraph(cmd::Depgraph),
     Map(cmd::Map),
     Plan(cmd::Plan),
-    SerializeMounts(cmd::SerializeMounts),
     Shell(cmd::Shell),
 }
 
@@ -67,7 +66,6 @@ fn main() {
         Subcommand::Depgraph(p) => p.run(),
         Subcommand::Map(x) => x.run(),
         Subcommand::Plan(x) => x.run(),
-        Subcommand::SerializeMounts(x) => x.run(),
         Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {

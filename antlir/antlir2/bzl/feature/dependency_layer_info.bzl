@@ -9,7 +9,7 @@ layer_dep = record(
     depgraph = "artifact",
     label = "label",
     subvol_symlink = "artifact",
-    mounts = "artifact",
+    mounts = ["mount_record"],
 )
 
 def layer_dep_analyze(layer: "dependency") -> layer_dep.type:
