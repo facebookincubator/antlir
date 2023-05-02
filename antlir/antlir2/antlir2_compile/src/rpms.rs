@@ -115,6 +115,10 @@ enum DriverEvent {
         operation: TransactionOperation,
     },
     TxError(String),
+    GpgError {
+        package: Package,
+        error: String,
+    },
 }
 
 /// Relatively simple implementation of rpm features. This does not yet respect
