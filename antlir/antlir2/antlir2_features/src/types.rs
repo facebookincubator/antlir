@@ -69,5 +69,4 @@ pub struct LayerInfo<'a> {
     pub label: Label<'a>,
     pub subvol_symlink: Cow<'a, Path>,
     pub depgraph: Cow<'a, Path>,
-    pub mounts: BuckOutSource<'a>,
 }

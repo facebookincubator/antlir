@@ -47,6 +47,7 @@ def _impl(ctx: "context") -> ["provider"]:
             label = ctx.label,
             depgraph = depgraph_output,
             subvol_symlink = subvol_symlink,
+            mounts = [],
         ),
         DefaultInfo(subvol_symlink),
     ]

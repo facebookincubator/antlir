@@ -14,6 +14,7 @@ load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":depgraph.bzl", "build_depgraph")
+load(":mounts.bzl", "all_mounts")
 
 def _map_image(
         ctx: "context",
@@ -59,12 +60,10 @@ def _impl(ctx: "context") -> ["provider"]:
     if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
         fail("'flavor' must be set if there is no 'parent_layer'")
 
-    toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo]
-
     flavor_info = ctx.attrs.flavor[FlavorInfo] if ctx.attrs.flavor else ctx.attrs.parent_layer[LayerInfo].flavor_info
 
     all_features = ctx.attrs.features[FeatureInfo]
-    all_features_json = ctx.actions.write_json("all_features.json", all_features.features.project_as_json("features_json"), with_inputs = True)
+    all_features_list = list(ctx.attrs.features[FeatureInfo].features.traverse())
 
     # traverse the features to find dependencies this image build has on other
     # image layers
@@ -74,15 +73,6 @@ def _impl(ctx: "context") -> ["provider"]:
         all_features.required_artifacts.project_as_args("hidden_artifacts"),
         all_features.required_run_infos.project_as_args("hidden_run_infos"),
     ]
-
-    mounts = ctx.actions.declare_output("mounts.json")
-    ctx.actions.run(cmd_args(
-        toolchain.antlir2[RunInfo],
-        "serialize-mounts",
-        cmd_args(all_features_json, format = "--feature-json={}"),
-        cmd_args(ctx.attrs.parent_layer[LayerInfo].mounts, format = "--parent={}") if ctx.attrs.parent_layer else cmd_args(),
-        cmd_args(mounts.as_output(), format = "--out={}"),
-    ).hidden([dep.mounts for dep in dependency_layers]), category = "antlir2", identifier = "serialize_mounts")
 
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
@@ -220,7 +210,10 @@ def _impl(ctx: "context") -> ["provider"]:
             depgraph = final_depgraph,
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
-            mounts = mounts,
+            mounts = all_mounts(
+                features = all_features_list,
+                parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+            ),
         ),
         DefaultInfo(final_subvol),
     ]

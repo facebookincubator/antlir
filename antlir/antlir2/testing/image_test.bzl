@@ -11,13 +11,14 @@ load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unit
 _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
 def _impl(ctx: "context") -> ["provider"]:
+    mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
     test_cmd = cmd_args(
         ctx.attrs.image_test[RunInfo],
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
         "--boot" if ctx.attrs.boot else cmd_args(),
         cmd_args(ctx.attrs.test[ExternalRunnerTestInfo].env.keys(), format = "--preserve-env={}"),
-        cmd_args(ctx.attrs.layer[LayerInfo].mounts, format = "--mounts={}"),
+        cmd_args(mounts, format = "--mounts={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
     )

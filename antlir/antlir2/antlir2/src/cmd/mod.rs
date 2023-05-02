@@ -25,13 +25,11 @@ mod compile;
 mod depgraph;
 mod map;
 mod plan;
-mod serialize_mounts;
 mod shell;
 pub(crate) use compile::Compile;
 pub(crate) use depgraph::Depgraph;
 pub(crate) use map::Map;
 pub(crate) use plan::Plan;
-pub(crate) use serialize_mounts::SerializeMounts;
 pub(crate) use shell::Shell;
 
 /// Args that are common to "compileish" commands (for now, 'compile' and
