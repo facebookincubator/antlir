@@ -8,6 +8,7 @@ load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 RepoInfo = provider(fields = {
     "all_rpms": "All RpmInfos contained in this repo",
     "base_url": "Optional upstream URL that was used to populate this target",
+    "gpg_keys": "Optional artifact against which signatures will be checked",
     "id": "Repo name",
     "offline": "Complete offline archive of repodata and all RPMs",
     "repodata": "Populated repodata/ directory",
@@ -81,6 +82,7 @@ def _impl(ctx: "context") -> ["provider"]:
     } if not offline_only_repo else {"Offline": None}
     proxy_config = ctx.actions.write_json("proxy_config.json", {
         ctx.label.name: {
+            "gpg_keys": ctx.attrs.gpg_keys,
             "offline_dir": offline,
             "repodata_dir": repodata,
             "urlgen": urlgen_config,
@@ -101,6 +103,7 @@ def _impl(ctx: "context") -> ["provider"]:
         RepoInfo(
             id = repo_id,
             repodata = repodata,
+            gpg_keys = ctx.attrs.gpg_keys,
             offline = offline,
             base_url = ctx.attrs.base_url,
             urlgen = urlgen_config,
@@ -123,6 +126,7 @@ repo_attrs = {
         doc = "base key for recently-deleted packages in manifold",
         default = None,
     ),
+    "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makerepo")),
     "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
     "rpms": attrs.list(
