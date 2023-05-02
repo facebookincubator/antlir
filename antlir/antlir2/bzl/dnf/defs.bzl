@@ -18,10 +18,11 @@ def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo
     """
     dir = ctx.actions.declare_output("dnf_repodatas", dir = True)
 
-    tree = {
-        paths.join(repo_info.id, "repodata"): repo_info.repodata
-        for repo_info in (dnf_available_repos.repo_infos if dnf_available_repos else [])
-    }
+    tree = {}
+    for repo_info in (dnf_available_repos.repo_infos if dnf_available_repos else []):
+        tree[paths.join(repo_info.id, "repodata")] = repo_info.repodata
+        for key in repo_info.gpg_keys:
+            tree[paths.join(repo_info.id, "gpg-keys", key.basename)] = key
 
     # copied_dir instead of symlink_dir so that this can be directly bind
     # mounted into the container
@@ -59,6 +60,8 @@ def compiler_plan_to_local_repos(
             repo_i = by_repo[install["repo"]]["repo_info"]
             rpm_i = by_repo[install["repo"]]["nevras"][install["nevra"]]
             tree[paths.join(repo_i.id, "repodata")] = repo_i.repodata
+            for key in repo_i.gpg_keys:
+                tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
             tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = rpm_i.rpm
 
         # copied_dir instead of symlink_dir so that this can be directly bind
