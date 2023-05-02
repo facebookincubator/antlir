@@ -62,10 +62,7 @@ struct IsolateArgs {
 }
 
 fn respawn(args: &IsolateArgs) -> Result<()> {
-    let isolated = isolated(
-        PathBuf::from(&args.image),
-        &args.envs.clone().unwrap_or_default(),
-    )?;
+    let isolated = isolated(PathBuf::from(&args.image), args.envs.as_deref())?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     log_command(
         isolated
