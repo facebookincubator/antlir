@@ -14,6 +14,7 @@ rust_binary(
         "//holograms/mesher_mstereo_sandbox/...",
         "//infra_asic_fpga/simulation/...",
         "//metalos/...",
+        "//provisioning/images/grasstile/...",
         "//security/hsm/experimental/amd_tee/...",
         "//ti/platform/edgeos/...",
     ],
