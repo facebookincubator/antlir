@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+
 # A dependency of a feature that is not yet resolved. This is of very limited
 # use at parse time, but allows the feature definition to inform the rule what
 # providers must be found on the dependency before making it to feature
@@ -51,6 +53,11 @@ FeatureAnalysis = record(
     # dependencies. If no feature requires planning, the entire step can be
     # skipped and save a few seconds of build time
     requires_planning = field(bool.type, default = False),
+    # Some features do mutations to the image filesystem that cannot be
+    # discovered in the depgraph, so those features are grouped together in
+    # hidden internal layer(s) that acts as the parent layer(s) for the final
+    # image.
+    build_phase = field(BuildPhase.type, default = BuildPhase(None)),
 )
 
 def data_only_feature_analysis_fn(record_type):
