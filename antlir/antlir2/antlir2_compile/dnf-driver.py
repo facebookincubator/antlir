@@ -127,6 +127,9 @@ def dnf_base(spec) -> dnf.Base:
     # and we will not bloat their image with weak dependencies that they didn't
     # ask for
     base.conf.install_weak_deps = False
+    base.conf.gpgcheck = True
+    base.conf.localpkg_gpgcheck = True
+    base.conf.assumeyes = True
     return base
 
 
@@ -141,7 +144,17 @@ def main():
     for repomd in Path(spec["repos"]).glob("**/*/repodata/repomd.xml"):
         basedir = repomd.parent.parent.resolve()
         id = str(repomd.parent.parent.relative_to(spec["repos"]))
-        base.repos.add_new_repo(id, dnf.conf.Conf(), [basedir.as_uri()])
+        conf = dnf.conf.RepoConf(base.conf)
+        conf.cacheonly = False
+        conf.substitutions = {}
+        conf.check_config_file_age = True
+        if (basedir / "gpg-keys").exists():
+            conf.set_or_append_opt_value("gpgcheck", "1")
+            uris = []
+            for key in (basedir / "gpg-keys").iterdir():
+                uris.append(key.as_uri())
+            conf.set_or_append_opt_value("gpgkey", "\n".join(uris))
+        base.repos.add_new_repo(id, conf, [basedir.as_uri()])
         shutil.copyfile(
             basedir / "repodata" / f"{id}.solv", f"/antlir/dnf-cache/{id}.solv"
         )
@@ -297,45 +310,83 @@ def main():
     # installed by explicit user intention, fail the transaction
     implicitly_removed_user_packages = implicitly_removed & user_installed_packages
     if implicitly_removed_user_packages:
-        # TODO(vmagro): propagate this error up to Rust so that it can be better
-        # reported. Low-pri since it's already pretty readable.
-        raise RuntimeError(
-            "This transaction would remove some explicitly installed packages. "
-            + "Modify the image features to explicitly remove these packages: "
-            + ", ".join(p.name for p in implicitly_removed_user_packages)
-        )
+        with out as out:
+            json.dump(
+                {
+                    "tx_error": "This transaction would remove some explicitly installed packages. "
+                    + "Modify the image features to explicitly remove these packages: "
+                    + ", ".join(p.name for p in implicitly_removed_user_packages)
+                },
+                out,
+            )
+            out.write("\n")
+        sys.exit(1)
 
     if mode == "resolve-only":
         return
-    elif mode == "run":
-        # dnf go brrr
-        base.do_transaction(TransactionProgress(out))
-        base.close()
 
-        # After doing the transaction, go through and (re)mark all the
-        # explicitly packages as explicitly installed. Otherwise a reinstall of
-        # a package that had previously been brought in as a dependency will not
-        # be recorded with "user' as the install reason
-        base = dnf_base(spec)
-        base.fill_sack()
-        explicitly_installed_packages = list(
-            base.sack.query()
-            .installed()
-            .filter(name__eq=explicitly_installed_package_names)
-        )
-        if explicitly_installed_package_names:
-            assert (
-                explicitly_installed_package_names
-            ), "installing packages, but they were not found"
+    assert mode == "run"
 
-        for pkg in explicitly_installed_packages:
-            base.history.set_reason(pkg, libdnf.transaction.TransactionItemReason_USER)
-        # commit that change to the db
-        rpmdb_version = base.history.last().end_rpmdb_version
-        base.history.beg(rpmdb_version, [], [])
-        base.history.end(rpmdb_version)
-    else:
-        raise RuntimeError(f"unknown mode '{mode}'")
+    # Check the GPG signatures for all the to-be-installed packages before doing
+    # the transaction
+    gpg_errors = {}
+    for pkg in base.transaction.install_set:
+        # If the package comes from a repo without a GPG key, don't bother
+        # checking its signature. If the repo is @commandline (aka, a local
+        # file), skip gpg checking (the author is assumed to know what they're
+        # doing).
+        if pkg.reponame == hawkey.CMDLINE_REPO_NAME or not pkg.repo.gpgkey:
+            continue
+
+        code, error = base.package_signature_check(pkg)
+        if code == 0:
+            continue  # gpg check is ok!
+        elif code == 1:
+            # If the key(s) for the repo aren't installed, install them now,
+            # which also checks the signature on this package
+            try:
+                base.package_import_key(pkg)
+            except Exception as e:
+                gpg_errors[pkg] = str(e)
+        else:
+            gpg_errors[pkg] = error
+
+    if gpg_errors:
+        with out as out:
+            for pkg, error in gpg_errors.items():
+                json.dump(
+                    {"gpg_error": {"package": package_struct(pkg), "error": error}},
+                    out,
+                )
+                out.write("\n")
+        sys.exit(1)
+
+    # dnf go brrr
+    base.do_transaction(TransactionProgress(out))
+    base.close()
+
+    # After doing the transaction, go through and (re)mark all the
+    # explicitly packages as explicitly installed. Otherwise a reinstall of
+    # a package that had previously been brought in as a dependency will not
+    # be recorded with "user' as the install reason
+    base = dnf_base(spec)
+    base.fill_sack()
+    explicitly_installed_packages = list(
+        base.sack.query()
+        .installed()
+        .filter(name__eq=explicitly_installed_package_names)
+    )
+    if explicitly_installed_package_names:
+        assert (
+            explicitly_installed_package_names
+        ), "installing packages, but they were not found"
+
+    for pkg in explicitly_installed_packages:
+        base.history.set_reason(pkg, libdnf.transaction.TransactionItemReason_USER)
+    # commit that change to the db
+    rpmdb_version = base.history.last().end_rpmdb_version
+    base.history.beg(rpmdb_version, [], [])
+    base.history.end(rpmdb_version)
 
 
 if __name__ == "__main__":
