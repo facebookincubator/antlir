@@ -92,6 +92,7 @@ export_file(
         "//antlir/vm/tests/...",
         "//images/...",
         "//metalos/...",
+        "//provisioning/images/grasstile/...",
         "//ti/platform/edgeos/...",
     ],
 )
