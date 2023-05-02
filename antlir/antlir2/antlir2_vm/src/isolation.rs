@@ -53,6 +53,7 @@ impl Platform {
         .map_err(|e| IsolationError::RepoRootError(e.to_string()))?;
         Ok(PathBuf::from(repo))
     }
+
     /// Query the environment and set PLATFORM. Should be called exactly once
     /// before `get` is invoked.
     pub(crate) fn set() -> Result<()> {
@@ -84,11 +85,24 @@ impl Platform {
 /// If these env exist, pass them into the container too.
 const PASSTHROUGH_ENVS: &[&str] = &["RUST_LOG", "ANTLIR_BUCK"];
 
+/// Concatenate PASSTHROUGH_ENVS and `envs` to create a list of env names that
+/// should be passed through
+fn env_filter(envs: Option<&[String]>) -> Vec<&str> {
+    match envs {
+        Some(envs) => envs
+            .iter()
+            .map(|x| x.as_str())
+            .chain(PASSTHROUGH_ENVS.iter().copied())
+            .collect(),
+        None => PASSTHROUGH_ENVS.to_vec(),
+    }
+}
+
 /// Return IsolatedContext ready for executing a command inside isolation
 /// # Arguments
 /// * `image` - container image that would be used to run the VM
 /// * `envs` - Additional envs to set inside container.
-pub(crate) fn isolated(image: PathBuf, envs: &[String]) -> Result<IsolatedContext> {
+pub(crate) fn isolated(image: PathBuf, envs: Option<&[String]>) -> Result<IsolatedContext> {
     let mut builder = IsolationContext::builder(image);
     builder
         .register(true)
@@ -98,10 +112,9 @@ pub(crate) fn isolated(image: PathBuf, envs: &[String]) -> Result<IsolatedContex
             // TODO: Linux-specific
             Path::new("/dev/kvm"),
         ]);
-    let passthrough: Vec<String> = PASSTHROUGH_ENVS.iter().map(|x| x.to_string()).collect();
-    let filter: Vec<&String> = envs.iter().chain(passthrough.iter()).collect();
+    let filter = env_filter(envs);
     env::vars()
-        .filter(|(k, _)| filter.contains(&k))
+        .filter(|(k, _)| filter.contains(&k.as_str()))
         .for_each(|(k, v)| {
             builder.setenv::<(String, OsString)>((k, v.into()));
         });
@@ -116,4 +129,33 @@ pub(crate) fn is_isolated() -> Result<bool> {
     let virt = std::str::from_utf8(&output)?.trim();
     debug!("systemd-detect-virt returned: {}", virt);
     Ok(virt == "systemd-nspawn")
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_env_filter() {
+        let all_envs = [("HELLO", "a"), ("WORLD", "b"), ("RUST_LOG", "c")];
+
+        let filter = env_filter(None);
+        assert_eq!(
+            all_envs
+                .into_iter()
+                .filter(|(k, _)| filter.contains(k))
+                .collect::<Vec<_>>(),
+            vec![("RUST_LOG", "c")],
+        );
+
+        let envs = ["HELLO".to_string()];
+        let filter = env_filter(Some(&envs));
+        assert_eq!(
+            all_envs
+                .into_iter()
+                .filter(|(k, _)| filter.contains(k))
+                .collect::<Vec<_>>(),
+            vec![("HELLO", "a"), ("RUST_LOG", "c")],
+        );
+    }
 }
