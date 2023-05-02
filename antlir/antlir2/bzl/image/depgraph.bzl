@@ -9,7 +9,6 @@ def build_depgraph(
         *,
         ctx: "context",
         parent_depgraph: ["artifact", None],
-        features: ["FeatureInfo", None],
         features_json: ["write_json_cli_args", None],
         format: str.type,
         subvol: ["artifact", None],
@@ -26,12 +25,12 @@ def build_depgraph(
             format,
             cmd_args(features_json, format = "--feature-json={}") if features_json else cmd_args(),
             cmd_args(parent_depgraph, format = "--parent={}") if parent_depgraph else cmd_args(),
-            cmd_args([li.depgraph for li in features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
+            cmd_args([li.depgraph for li in dependency_layers], format = "--image-dependency={}"),
             cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
             cmd_args(output.as_output(), format = "--out={}"),
         ),
         category = "antlir2_depgraph",
         identifier = identifier_prefix + format + ("/pre" if not subvol else ""),
-        local_only = bool(subvol) or bool(dependency_layers),
+        local_only = bool(subvol),
     )
     return output
