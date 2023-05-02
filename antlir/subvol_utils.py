@@ -651,10 +651,7 @@ class TempSubvolumes:
         super().__init__()
         # The 'tmp' subdirectory simplifies cleanup of leaked temp subvolumes
         volume_tmp_dir = _tmp_volume_dir(path_in_repo)
-        try:
-            os.mkdir(volume_tmp_dir)
-        except FileExistsError:
-            pass
+        os.makedirs(volume_tmp_dir, exist_ok=True)
         self._stack = ExitStack()
         self._temp_dir_ctx = temp_dir(
             dir=volume_tmp_dir.decode(), prefix=self.__class__.__name__ + "_"
