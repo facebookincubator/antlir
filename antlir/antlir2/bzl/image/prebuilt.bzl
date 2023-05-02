@@ -35,6 +35,7 @@ def _impl(ctx: "context") -> ["provider"]:
     )
     depgraph_output = build_depgraph(
         ctx = ctx,
+        parent_depgraph = None,
         features = None,
         features_json = None,
         format = "json",

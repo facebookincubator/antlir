@@ -144,6 +144,21 @@ test_rpms(
 )
 
 test_rpms(
+    name = "remove-file-from-rpm",
+    expected = expected_t(installed = ["foo"]),
+    features = [
+        feature.rpms_install(
+            rpms = ["foo"] + _RPM_DEPS_OF_TEST,
+        ),
+        feature.remove(
+            must_exist = True,
+            path = "/foo",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
     name = "versionlock",
     dnf_versionlock = "versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),

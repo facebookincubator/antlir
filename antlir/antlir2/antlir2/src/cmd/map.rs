@@ -8,7 +8,6 @@
 use std::collections::BTreeSet;
 use std::path::Path;
 use std::path::PathBuf;
-use std::time::SystemTime;
 
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
@@ -108,23 +107,7 @@ impl Map {
                 .context("while deleting existing subvol")?;
             std::fs::remove_file(&self.setup.output).context("while deleting existing symlink")?;
         }
-        // Encode the current time into the subvol name so that the symlink's
-        // cache key changes if the underlying image changes, otherwise it will
-        // point to the same path, so downstream artifacts will not get rebuilt
-        // since it appears to be identical, even though the thing behind the
-        // symlink has been changed.
-        let dst = working_volume.join(format!(
-            "{}-{}-{}-{}",
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .expect("time travelers shouldn't be building images")
-                .as_secs(),
-            // add a uuid so we will never accidentally end up with the same
-            // subvolume name
-            uuid::Uuid::new_v4().as_simple(),
-            self.label.flat_filename(),
-            self.setup.identifier,
-        ));
+        let dst = working_volume.join(uuid::Uuid::new_v4().as_simple().to_string());
         let subvol = match &self.setup.parent {
             Some(parent) => {
                 let parent = Subvolume::get(parent).context("while opening parent subvol")?;

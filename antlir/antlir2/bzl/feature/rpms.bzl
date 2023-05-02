@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
@@ -123,4 +124,5 @@ def rpms_analyze(
         ),
         required_artifacts = artifacts,
         requires_planning = True,
+        build_phase = BuildPhase("package_manager"),
     )

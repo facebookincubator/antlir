@@ -4,7 +4,7 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 
 image.layer(
-    name = "build-appliance.rpms",
+    name = "build-appliance",
     features = [
         feature.rpms_install(rpms = [
             "btrfs-progs",
@@ -21,22 +21,13 @@ image.layer(
             # @oss-disable
             # @oss-disable
         ]),
-    ],
-    flavor = "//antlir/antlir2/facebook/flavor:centos9",
-    visibility = [":build-appliance"],
-)
-
-# This is a separate layer because the depgraph does not yet understand files
-# that come from rpms. I will address that shortly and re-combine this into one
-# layer target
-image.layer(
-    name = "build-appliance",
-    features = [
+        # Ensure that we don't end up with upstream dnf repos that might
+        # interfere with the snapshot
         feature.remove(path = "/etc/yum.repos.d"),
         feature.remove(path = "/etc/dnf/dnf.conf"),
         feature.ensure_dirs_exist(dirs = "/antlir"),
     ],
-    parent_layer = ":build-appliance.rpms",
+    flavor = "//antlir/antlir2/facebook/flavor:centos9",
 )
 
 package.sendstream_v2(

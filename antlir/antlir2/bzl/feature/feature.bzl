@@ -73,27 +73,17 @@ load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
 feature_record = record(
     feature_type = str.type,
     label = "target_label",
-    data = "",
-    requires_planning = bool.type,
-    required_artifacts = ["artifact"],
-    required_layers = ["LayerInfo"],
+    analysis = "FeatureAnalysis",
 )
-
-def _features_require_planning(children: [bool.type], feat: [feature_record.type, None]) -> bool.type:
-    if feat and feat.requires_planning:
-        return True
-
-    return any(children)
 
 def _feature_as_json(feat: feature_record.type) -> "struct":
     return struct(
         feature_type = feat.feature_type,
         label = feat.label,
-        data = feat.data,
+        data = feat.analysis.data,
     )
 
 Features = transitive_set(
-    reductions = {"requires_planning": _features_require_planning},
     json_projections = {"features_json": _feature_as_json},
 )
 
@@ -183,10 +173,7 @@ def _impl(ctx: "context") -> ["provider"]:
         feat = feature_record(
             feature_type = analysis.feature_type or inline["feature_type"],
             label = ctx.label.raw_target(),
-            data = analysis.data,
-            requires_planning = analysis.requires_planning,
-            required_artifacts = analysis.required_artifacts,
-            required_layers = analysis.required_layers,
+            analysis = analysis,
         )
         inline_features.append(feat)
 

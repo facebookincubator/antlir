@@ -89,6 +89,7 @@ repo(
     rpms = all_rpms,
     timestamp = 0,
     visibility = [
+        "//antlir/antlir2/antlir2_depgraph/tests/...",
         "//antlir/antlir2/test_images/rpms/...",
     ],
 )

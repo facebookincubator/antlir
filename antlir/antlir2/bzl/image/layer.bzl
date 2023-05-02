@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "build_phase")
+load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
@@ -61,164 +63,166 @@ def _impl(ctx: "context") -> ["provider"]:
 
     flavor_info = ctx.attrs.flavor[FlavorInfo] if ctx.attrs.flavor else ctx.attrs.parent_layer[LayerInfo].flavor_info
 
-    features = ctx.attrs.features[FeatureInfo]
-    features_json = features.features.project_as_json("features_json")
-    features_json = ctx.actions.write_json("features.json", features_json, with_inputs = True)
+    all_features = ctx.attrs.features[FeatureInfo]
+    all_features_json = ctx.actions.write_json("all_features.json", all_features.features.project_as_json("features_json"), with_inputs = True)
 
     # traverse the features to find dependencies this image build has on other
     # image layers
+    # TODO(vmagro): these should be broken out by build_phase as well
     dependency_layers = flatten.flatten(list(ctx.attrs.features[FeatureInfo].required_layers.traverse()))
     feature_hidden_deps = [
-        features.required_artifacts.project_as_args("hidden_artifacts"),
-        features.required_run_infos.project_as_args("hidden_run_infos"),
+        all_features.required_artifacts.project_as_args("hidden_artifacts"),
+        all_features.required_run_infos.project_as_args("hidden_run_infos"),
     ]
-
-    depgraph_input = build_depgraph(
-        ctx = ctx,
-        features = features,
-        features_json = features_json,
-        format = "json",
-        subvol = None,
-        dependency_layers = dependency_layers,
-    )
-
-    dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
-    dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
-    dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
 
     mounts = ctx.actions.declare_output("mounts.json")
     ctx.actions.run(cmd_args(
         toolchain.antlir2[RunInfo],
         "serialize-mounts",
-        cmd_args(features_json, format = "--feature-json={}"),
+        cmd_args(all_features_json, format = "--feature-json={}"),
         cmd_args(ctx.attrs.parent_layer[LayerInfo].mounts, format = "--parent={}") if ctx.attrs.parent_layer else cmd_args(),
         cmd_args(mounts.as_output(), format = "--out={}"),
     ).hidden([dep.mounts for dep in dependency_layers]), category = "antlir2", identifier = "serialize_mounts")
 
-    if features.features.reduce("requires_planning"):
-        plan = ctx.actions.declare_output("plan")
-        plan_cmd, _ = _map_image(
+    dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
+    dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
+    dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
+
+    # The image build is split into phases based on features' `build_phase`
+    # property.
+    # This gets us some caching benefits (for example, if a feature in a layer
+    # changed but does not change the rpm installations, that intermediate layer
+    # can still be cached and not have to re-install rpms).
+    #
+    # Equally importantly, this enables more correctness in the dependency
+    # graph, since the depgraph will immediately recognize any rpm-installed
+    # files in the layer, users created by package installation, etc.
+    #
+    # Effectively, this is the same as if image authors separated their layer
+    # rules into a layer that installs rpms, then an immediate child layer that
+    # contains all the other features. In practice that's really hard and
+    # inconvenient for image authors, but is incredibly useful for everyone
+    # involved, so we can do it for them implicitly.
+
+    parent_layer = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None
+    parent_depgraph = ctx.attrs.parent_layer[LayerInfo].depgraph if ctx.attrs.parent_layer else None
+    final_subvol = None
+    final_depgraph = None
+
+    for phase in BuildPhase.values():
+        phase = BuildPhase(phase)
+        identifier_prefix = phase.value + "_" if phase.value else ""
+        features = [
+            feat
+            for feat in all_features.features.traverse()
+            if feat.analysis.build_phase == phase
+        ]
+
+        # Build phase can be skipped if it doesn't contain any features, but if
+        # this is the final phase and nothing has been built yet, we need to
+        # fall through and produce an empty subvolume so it can still be used as
+        # a parent_layer and/or snapshot its own parent's contents
+        if not features and not (phase == BuildPhase(None) and parent_layer == None):
+            continue
+
+        features_json = ctx.actions.write_json(
+            identifier_prefix + "features.json",
+            [struct(feature_type = f.feature_type, label = f.label, data = f.analysis.data) for f in features],
+            with_inputs = True,
+        )
+        depgraph_input = build_depgraph(
+            ctx = ctx,
+            parent_depgraph = parent_depgraph,
+            features = all_features,
+            features_json = features_json,
+            format = "json",
+            subvol = None,
+            dependency_layers = dependency_layers,
+            identifier_prefix = identifier_prefix,
+        )
+
+        if lazy.any(lambda feat: feat.analysis.requires_planning, features):
+            plan = ctx.actions.declare_output("plan")
+            _map_image(
+                ctx = ctx,
+                cmd = cmd_args(
+                    cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
+                    cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
+                    "plan",
+                    cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+                    cmd_args(depgraph_input, format = "--depgraph-json={}"),
+                    cmd_args([li.depgraph for li in all_features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
+                    cmd_args(plan.as_output(), format = "--plan={}"),
+                ).hidden(feature_hidden_deps),
+                identifier = identifier_prefix + "plan",
+                parent = parent_layer,
+                flavor_info = flavor_info,
+            )
+
+            # Part of the compiler plan is any possible dnf transaction resolution,
+            # which lets us know what rpms we will need. We can have buck download them
+            # and mount in a pre-built directory of all repositories for
+            # completely-offline dnf installation (which is MUCH faster and more
+            # reliable)
+            dnf_repos_dir = compiler_plan_to_local_repos(ctx, dnf_available_repos, plan)
+        else:
+            plan = None
+            dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
+
+        _, final_subvol = _map_image(
             ctx = ctx,
             cmd = cmd_args(
-                cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
+                cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
                 cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
-                "plan",
+                "compile",
                 cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
                 cmd_args(depgraph_input, format = "--depgraph-json={}"),
-                cmd_args([li.depgraph for li in features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
-                cmd_args(plan.as_output(), format = "--plan={}"),
+                cmd_args([li.depgraph for li in all_features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
             ).hidden(feature_hidden_deps),
-            identifier = "plan",
-            parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
+            identifier = identifier_prefix + "compile",
+            parent = parent_layer,
             flavor_info = flavor_info,
         )
 
-        # Part of the compiler plan is any possible dnf transaction resolution,
-        # which lets us know what rpms we will need. We can have buck download them
-        # and mount in a pre-built directory of all repositories for
-        # completely-offline dnf installation (which is MUCH faster and more
-        # reliable)
-        dnf_repos_dir = compiler_plan_to_local_repos(ctx, dnf_available_repos, plan)
-    else:
-        plan_cmd = None
-        plan = None
-        dnf_repos_dir = ctx.actions.symlinked_dir("empty-dnf-repos", {})
+        if build_phase.is_predictable(phase):
+            final_depgraph = depgraph_input
+        else:
+            # If this phase was not predictable, we need to walk the fs to make
+            # sure we're not missing any files/users/groups/whatever
+            final_depgraph = build_depgraph(
+                ctx = ctx,
+                parent_depgraph = parent_depgraph,
+                features = all_features,
+                features_json = features_json,
+                format = "json",
+                subvol = final_subvol,
+                dependency_layers = dependency_layers,
+                identifier_prefix = identifier_prefix,
+            )
 
-    compile_cmd, final_subvol = _map_image(
-        ctx = ctx,
-        cmd = cmd_args(
-            cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
-            cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
-            "compile",
-            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
-            cmd_args(depgraph_input, format = "--depgraph-json={}"),
-            cmd_args([li.depgraph for li in features.required_layers.reduce("unique")], format = "--image-dependency={}") if features else cmd_args(),
-        ).hidden(feature_hidden_deps),
-        identifier = "compile",
-        parent = ctx.attrs.parent_layer[LayerInfo].subvol_symlink if ctx.attrs.parent_layer else None,
-        flavor_info = flavor_info,
-    )
+        parent_layer = final_subvol
+        parent_depgraph = final_depgraph
 
-    depgraph_output = build_depgraph(
-        ctx = ctx,
-        features = features,
-        features_json = features_json,
-        format = "json",
-        subvol = final_subvol,
-        dependency_layers = dependency_layers,
-    )
-
-    # This script is provided solely for developer convenience. It would
-    # actually be a large regression to run this to produce the final image
-    # during normal buck operation, as it would prevent buck from caching
-    # individual actions when possible (for example, if rpm features do not
-    # change, the transaction plan might be cached)
-    debug_sequence = []
-    if plan_cmd:
-        debug_sequence += [plan_cmd]
-    debug_sequence += [compile_cmd]
-    build_script = ctx.actions.write(
-        "build.sh",
-        cmd_args(
-            "#!/bin/bash -e",
-            "export RUST_LOG=warn,antlir2=trace",
-            [cmd_args(
-                c,
-                delimiter = " \\\n  ",
-                quote = "shell",
-            ) for c in debug_sequence],
-            "\n",
-        ),
-        is_executable = True,
-    )
-
-    sub_targets = {
-        "build.sh": [
-            DefaultInfo(build_script),
-            RunInfo(args = cmd_args("/bin/bash", "-e", build_script).hidden(debug_sequence)),
-        ],
-        "depgraph": [DefaultInfo(
-            default_outputs = [],
-            sub_targets = {
-                "input.dot": [DefaultInfo(default_outputs = [build_depgraph(
-                    ctx = ctx,
-                    features = features,
-                    features_json = features_json,
-                    format = "dot",
-                    subvol = None,
-                    dependency_layers = dependency_layers,
-                )])],
-                "input.json": [DefaultInfo(default_outputs = [depgraph_input])],
-                "output.dot": [DefaultInfo(default_outputs = [build_depgraph(
-                    ctx = ctx,
-                    features = features,
-                    features_json = features_json,
-                    format = "dot",
-                    subvol = final_subvol,
-                    dependency_layers = dependency_layers,
-                )])],
-                "output.json": [DefaultInfo(default_outputs = [depgraph_output])],
-            },
-        )],
-    }
-    if plan:
-        sub_targets["plan"] = [
-            DefaultInfo(default_outputs = [plan]),
+    # If final_subvol was not produced, that means that this layer is devoid of
+    # features, so just present the parent artifacts as our own. This is a weird
+    # use case, but sometimes creating layers with no features makes life easier
+    # for macro authors, so antlir2 should allow it.
+    if not final_subvol:
+        return [
+            ctx.attrs.parent_layer[LayerInfo],
+            DefaultInfo(ctx.attrs.parent_layer[LayerInfo].subvol_symlink),
         ]
 
     return [
         LayerInfo(
             label = ctx.label,
             flavor_info = flavor_info,
-            depgraph = depgraph_output,
+            depgraph = final_depgraph,
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
             mounts = mounts,
         ),
-        DefaultInfo(
-            default_outputs = [final_subvol],
-            sub_targets = sub_targets,
-        ),
+        DefaultInfo(final_subvol),
     ]
 
 _layer = rule(
