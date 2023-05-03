@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/libexec/platform-python
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
@@ -11,6 +11,8 @@
 # that don't exist)
 
 # NOTE: this must be run with system python, so cannot be a PAR file
+# /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
+# ensure that we're using the same python that dnf itself is using
 
 import json
 import os
@@ -149,11 +151,15 @@ def main():
         conf.substitutions = {}
         conf.check_config_file_age = True
         if (basedir / "gpg-keys").exists():
-            conf.set_or_append_opt_value("gpgcheck", "1")
             uris = []
             for key in (basedir / "gpg-keys").iterdir():
                 uris.append(key.as_uri())
-            conf.set_or_append_opt_value("gpgkey", "\n".join(uris))
+            if hasattr(conf, "set_or_append_opt_value"):
+                conf.set_or_append_opt_value("gpgcheck", "1")
+                conf.set_or_append_opt_value("gpgkey", "\n".join(uris))
+            else:
+                conf._set_value("gpgcheck", "1")
+                conf._set_value("gpgkey", "\n".join(uris))
         base.repos.add_new_repo(id, conf, [basedir.as_uri()])
         shutil.copyfile(
             basedir / "repodata" / f"{id}.solv", f"/antlir/dnf-cache/{id}.solv"

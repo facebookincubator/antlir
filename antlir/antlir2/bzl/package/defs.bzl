@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
 def _detect_build_appliance(layer, build_appliance):
@@ -95,6 +96,8 @@ _package = rule(
     },
 )
 
+_package_macro = rule_with_default_target_platform(_package)
+
 def BtrfsSubvol(
         layer: str.type,
         writable: [bool.type, None] = None):
@@ -113,7 +116,7 @@ def _cpio_gz(
         compression_level: int.type = 3,
         **kwargs):
     check_kwargs(kwargs)
-    return _package(
+    return _package_macro(
         name = name,
         layer = layer,
         format = "cpio.gz",
@@ -130,7 +133,7 @@ def _cpio_zst(
         compression_level: int.type = 15,
         **kwargs):
     check_kwargs(kwargs)
-    return _package(
+    return _package_macro(
         name = name,
         layer = layer,
         format = "cpio.zst",
@@ -149,7 +152,7 @@ def _btrfs(
         label: [str.type, None] = None,
         **kwargs):
     check_kwargs(kwargs)
-    return _package(
+    return _package_macro(
         name = name,
         format = "btrfs",
         subvols = subvols,
@@ -189,7 +192,7 @@ def _rpm(
         "version": version,
     }
 
-    return _package(
+    return _package_macro(
         name = name,
         layer = layer,
         format = "rpm",
@@ -204,7 +207,7 @@ def _sendstream_v2(
         compression_level: int.type = 3,
         **kwargs):
     check_kwargs(kwargs)
-    return _package(
+    return _package_macro(
         name = name,
         layer = layer,
         format = "sendstream.v2",
@@ -221,7 +224,7 @@ def _sendstream_zst(
         compression_level: int.type = 3,
         **kwargs):
     check_kwargs(kwargs)
-    return _package(
+    return _package_macro(
         name = name,
         layer = layer,
         format = "sendstream.zst",
@@ -251,7 +254,7 @@ def _vfat(
     if size_mb != None:
         opts["size_mb"] = size_mb
 
-    return _package(
+    return _package_macro(
         name = name,
         layer = layer,
         format = "vfat",

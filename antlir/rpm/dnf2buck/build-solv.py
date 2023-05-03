@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/libexec/platform-python
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
@@ -7,7 +7,10 @@
 # Use the DNF api to pre-build .solv{x} files so that subsequent DNF runs don't
 # need to re-parse and process the (giant) xml blobs every single time the repo
 # is being used
+
 # NOTE: this must be run with system python, so cannot be a PAR file
+# /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
+# ensure that we're using the same python that dnf itself is using
 
 import shutil
 import sys
