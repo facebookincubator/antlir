@@ -280,6 +280,7 @@ def layer(
         name = feature_target,
         visibility = [":" + name],
         features = features,
+        compatible_with = kwargs.get("compatible_with"),
     )
     feature_target = ":" + feature_target
 

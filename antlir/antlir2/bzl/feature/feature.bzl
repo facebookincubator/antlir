@@ -225,7 +225,8 @@ def feature(
         name: str.type,
         # No type hint here, but it is validated by flatten_features
         features,
-        visibility = None):
+        visibility = None,
+        **kwargs):
     """
     Create a target representing a collection of one or more image features.
 
@@ -259,6 +260,8 @@ def feature(
             if feat.unnamed_deps_or_sources:
                 inline_features_unnamed_deps_or_sources[feature_key] = feat.unnamed_deps_or_sources
 
+    kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
+
     return _feature(
         name = name,
         feature_targets = feature_targets,
@@ -267,7 +270,7 @@ def feature(
         inline_features_deps_or_sources = inline_features_deps_or_sources,
         inline_features_unnamed_deps_or_sources = inline_features_unnamed_deps_or_sources,
         visibility = visibility,
-        default_target_platform = config.get_platform_for_current_buildfile().target_platform,
+        **kwargs
     )
 
 # We need a way to disambiguate inline features so that deps/sources can be
