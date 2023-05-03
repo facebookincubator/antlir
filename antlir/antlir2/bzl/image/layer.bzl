@@ -19,7 +19,7 @@ def _map_image(
         ctx: "context",
         cmd: "cmd_args",
         identifier: str.type,
-        flavor_info: FlavorInfo.type,
+        build_appliance: LayerInfo.type,
         parent: ["artifact", None]) -> ("cmd_args", "artifact"):
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
@@ -28,7 +28,6 @@ def _map_image(
     """
     toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo]
     out = ctx.actions.declare_output("subvol-" + identifier)
-    build_appliance = (ctx.attrs.build_appliance or flavor_info.default_build_appliance)[LayerInfo]
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
         toolchain.antlir2[RunInfo],
@@ -59,7 +58,9 @@ def _impl(ctx: "context") -> ["provider"]:
     if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
         fail("'flavor' must be set if there is no 'parent_layer'")
 
-    flavor_info = ctx.attrs.flavor[FlavorInfo] if ctx.attrs.flavor else ctx.attrs.parent_layer[LayerInfo].flavor_info
+    flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
+    flavor_info = flavor[FlavorInfo]
+    build_appliance = ctx.attrs.build_appliance or flavor_info.default_build_appliance
 
     # Yeah this is against the spirit of Transitive Sets, but we can save an
     # insane amount of actual image building work if we do the "wrong thing" and
@@ -157,7 +158,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 ).hidden(feature_hidden_deps),
                 identifier = identifier_prefix + "plan",
                 parent = parent_layer,
-                flavor_info = flavor_info,
+                build_appliance = build_appliance[LayerInfo],
             )
 
             # Part of the compiler plan is any possible dnf transaction resolution,
@@ -180,7 +181,7 @@ def _impl(ctx: "context") -> ["provider"]:
             ).hidden(feature_hidden_deps),
             identifier = identifier_prefix + "compile",
             parent = parent_layer,
-            flavor_info = flavor_info,
+            build_appliance = build_appliance[LayerInfo],
         )
 
         if build_phase.is_predictable(phase):
@@ -211,10 +212,18 @@ def _impl(ctx: "context") -> ["provider"]:
             DefaultInfo(ctx.attrs.parent_layer[LayerInfo].subvol_symlink),
         ]
 
+    sub_targets = {}
+
+    # Expose the build appliance as a subtarget so that it can be used by test
+    # macros like image_rpms_test. Generally this should be accessed by the
+    # provider, but that is unavailable at macro parse time.
+    if build_appliance:
+        sub_targets["build_appliance"] = build_appliance.providers
+    sub_targets["flavor"] = flavor.providers
+
     return [
         LayerInfo(
             label = ctx.label,
-            flavor_info = flavor_info,
             depgraph = final_depgraph,
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
@@ -222,8 +231,11 @@ def _impl(ctx: "context") -> ["provider"]:
                 features = all_features,
                 parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
             ),
+            build_appliance = build_appliance,
+            flavor = flavor,
+            flavor_info = flavor_info,
         ),
-        DefaultInfo(final_subvol),
+        DefaultInfo(final_subvol, sub_targets = sub_targets),
     ]
 
 _layer = rule(
