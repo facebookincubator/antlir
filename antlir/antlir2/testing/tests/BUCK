@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
 
 image.layer(
@@ -63,3 +64,18 @@ image.layer(
         True,
     ]
 ]
+
+image.layer(
+    name = "foo-rpms",
+    dnf_available_repos = "//antlir/antlir2/test_images/rpms:test-repo-set",
+    features = [
+        feature.rpms_install(rpms = ["foobarbaz"]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image_test_rpm_names(
+    name = "test-foo-rpm-names",
+    src = "foo-rpms.txt",
+    layer = ":foo-rpms",
+)
