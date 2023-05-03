@@ -13,7 +13,7 @@ load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":depgraph.bzl", "build_depgraph")
-load(":mounts.bzl", "all_mounts")
+load(":mounts.bzl", "all_mounts", "nspawn_mount_args")
 
 def _map_image(
         ctx: "context",
@@ -219,7 +219,24 @@ def _impl(ctx: "context") -> ["provider"]:
     # provider, but that is unavailable at macro parse time.
     if build_appliance:
         sub_targets["build_appliance"] = build_appliance.providers
+
     sub_targets["flavor"] = flavor.providers
+
+    mounts = all_mounts(
+        features = all_features,
+        parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+    )
+    sub_targets["nspawn"] = [
+        DefaultInfo(),
+        RunInfo(cmd_args(
+            "sudo",
+            "systemd-nspawn",
+            "--ephemeral",
+            "--directory",
+            final_subvol,
+            cmd_args([nspawn_mount_args(mount) for mount in mounts]),
+        )),
+    ]
 
     return [
         LayerInfo(
@@ -227,10 +244,7 @@ def _impl(ctx: "context") -> ["provider"]:
             depgraph = final_depgraph,
             subvol_symlink = final_subvol,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
-            mounts = all_mounts(
-                features = all_features,
-                parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
-            ),
+            mounts = mounts,
             build_appliance = build_appliance,
             flavor = flavor,
             flavor_info = flavor_info,
