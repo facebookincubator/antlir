@@ -1,0 +1,41 @@
+[empty]
+op = 'removed'
+
+[empty.diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+user = 'root'
+group = 'root'
+text = ''
+
+[foo]
+op = 'added'
+
+[foo.diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = 'root'
+group = 'root'
+content-hash = 0
+
+["foo/bar"]
+op = 'added'
+
+["foo/bar".diff]
+mode = 'u+rwx,g+rx,o+rx'
+file-type = 'directory'
+user = 'root'
+group = 'root'
+content-hash = 0
+
+["foo/bar/baz"]
+op = 'added'
+
+["foo/bar/baz".diff]
+mode = 'u+rw,g+r,o+r'
+file-type = 'regular-file'
+user = 'root'
+group = 'root'
+text = '''
+qux
+'''

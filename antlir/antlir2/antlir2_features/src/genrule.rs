@@ -19,6 +19,6 @@ use crate::usergroup::UserName;
 pub struct Genrule<'a> {
     pub cmd: Vec<Cow<'a, str>>,
     pub user: UserName<'a>,
-    pub bind_repo_ro: bool,
     pub boot: bool,
+    pub bind_repo_ro: bool,
 }

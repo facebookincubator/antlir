@@ -44,6 +44,10 @@ pub struct IsolationContext<'a> {
     boot: bool,
     /// See [IsolationContextBuilder::register]
     register: bool,
+    /// See [IsolationContextBuilder::user]
+    user: Cow<'a, str>,
+    /// See [IsolationContextBuilder::ephemeral]
+    ephemeral: bool,
 }
 
 impl<'a> IsolationContext<'a> {
@@ -64,6 +68,8 @@ impl<'a> IsolationContext<'a> {
                 outputs: Default::default(),
                 boot: false,
                 register: false,
+                user: Cow::Borrowed("root"),
+                ephemeral: true,
             },
         }
     }
@@ -126,6 +132,19 @@ impl<'a> IsolationContextBuilder<'a> {
     /// printed out from the provided command for debugging purpose.
     pub fn register(&mut self, register: bool) -> &mut Self {
         self.ctx.register = register;
+        self
+    }
+
+    /// Run the isolated command as a specific user.
+    pub fn user<S: Into<Cow<'a, str>>>(&mut self, user: S) -> &mut Self {
+        self.ctx.user = user.into();
+        self
+    }
+
+    /// Set up the isolated environment to be thrown away after running. When
+    /// false, the root layer will be mutable.
+    pub fn ephemeral(&mut self, ephemeral: bool) -> &mut Self {
+        self.ctx.ephemeral = ephemeral;
         self
     }
 

@@ -81,7 +81,13 @@ fn main() -> Result<()> {
         let entry = Entry::new(fs_entry.path(), &layer_userdb, &layer_groupdb)
             .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
         paths_that_exist_in_layer.insert(relpath.to_path_buf());
-        if !parent_path.exists() {
+        // broken symlinks are allowed
+        let parent_exists = if fs_entry.path_is_symlink() {
+            std::fs::read_link(&parent_path).is_ok()
+        } else {
+            parent_path.exists()
+        };
+        if !parent_exists {
             entries.insert(relpath.to_path_buf(), Diff::Added(entry));
         } else {
             let parent_entry = Entry::new(&parent_path, &parent_userdb, &parent_groupdb)

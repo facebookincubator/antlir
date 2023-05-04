@@ -4,6 +4,7 @@ rust_library(
     name = "antlir2_isolate",
     srcs = glob(["src/**/*.rs"]),
     deps = [
+        "nix",
         "uuid",
     ],
 )

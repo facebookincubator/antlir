@@ -5,6 +5,9 @@
 
 "See the docs in antlir/website/docs/genrule-layer.md"
 
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
+load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -105,6 +108,23 @@ Optional arguments:
     - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
         for supported, but less commonly used, kwargs.
     """
+    if use_antlir2():
+        if boot or container_opts:
+            fail("not yet supported")
+        antlir2_image.layer(
+            name = name,
+            parent_layer = parent_layer,
+            flavor = flavor,
+            features = [
+                antlir2_feature.genrule(
+                    cmd = cmd,
+                    user = user,
+                ),
+            ],
+            implicit_antlir2 = True,
+        )
+        return
+
     flavor = flavor_to_struct(flavor)
     container_opts = normalize_container_opts(container_opts)
 

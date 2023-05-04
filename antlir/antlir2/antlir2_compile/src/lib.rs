@@ -27,6 +27,7 @@ mod ensure_dir_exists;
 mod extract;
 #[cfg(facebook)]
 mod facebook;
+mod genrule;
 mod install;
 pub mod plan;
 mod remove;
@@ -223,7 +224,7 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::EnsureDirExists(x) => x.compile(ctx),
             Data::EnsureFileSymlink(x) => x.compile(ctx),
             Data::Extract(x) => x.compile(ctx),
-            Data::Genrule(x) => todo!("{x:?}"),
+            Data::Genrule(x) => x.compile(ctx),
             Data::Group(x) => x.compile(ctx),
             Data::Install(x) => x.compile(ctx),
             // handled in buck rule and depgraph, nothing to do here
