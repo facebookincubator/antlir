@@ -13,6 +13,7 @@ use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 use std::process::Command;
 
+use nix::unistd::Uid;
 use uuid::Uuid;
 
 use crate::IsolatedContext;
@@ -66,16 +67,26 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         outputs,
         boot,
         register,
+        user,
+        ephemeral,
     } = ctx;
-    let mut cmd = Command::new("sudo");
-    cmd.arg("systemd-nspawn")
-        .arg("--quiet")
+    let mut cmd = match Uid::effective().is_root() {
+        true => Command::new("systemd-nspawn"),
+        false => {
+            let mut cmd = Command::new("sudo");
+            cmd.arg("systemd-nspawn");
+            cmd
+        }
+    };
+    cmd.arg("--quiet")
         .arg("--directory")
         .arg(layer.as_ref())
-        // TODO(vmagro): running in a read-only copy of the BA would allow us to
-        // skip this snapshot, but that's easier said than done
-        .arg("--ephemeral")
-        .arg("--private-network");
+        .arg("--private-network")
+        .arg("--user")
+        .arg(user.as_ref());
+    if ephemeral {
+        cmd.arg("--ephemeral");
+    }
     if !boot {
         // TODO(vmagro): we might actually want to implement real pid1 semantics
         // in the compiler process for better control, but for now let's not
@@ -87,6 +98,7 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         cmd.arg(format!("--machine={}", Uuid::new_v4()));
     } else {
         cmd.arg("--register=no");
+        cmd.arg("--keep-unit");
     }
     if let Some(wd) = &working_directory {
         cmd.arg("--chdir").arg(wd.as_ref());

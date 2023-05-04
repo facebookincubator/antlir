@@ -11,11 +11,15 @@ BuildPhase = enum(
     # unpredictable side effects (file creation/deletion, {user,group}
     # creation/deletion, etc)
     "package_manager",
+    # We have no idea what this is going to do, but ordering it after
+    # 'package_manager' will allow the user to install dependencies in the same
+    # layer.
+    "genrule",
     None,
 )
 
 # Quick self-test to ensure that order is correct
-if list(BuildPhase.values()) != ["package_manager", None]:
+if list(BuildPhase.values()) != ["package_manager", "genrule", None]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
 
 def _is_predictable(phase: BuildPhase.type) -> bool.type:
@@ -29,6 +33,7 @@ def _is_predictable(phase: BuildPhase.type) -> bool.type:
     cannot be determined in advance without actually building them.
     """
     return {
+        "genrule": False,
         "package_manager": False,
         None: True,
     }[phase.value]

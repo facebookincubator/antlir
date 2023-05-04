@@ -60,9 +60,12 @@ FeatureAnalysis = record(
     build_phase = field(BuildPhase.type, default = BuildPhase(None)),
 )
 
-def data_only_feature_analysis_fn(record_type):
+def data_only_feature_analysis_fn(record_type, build_phase: BuildPhase.type = BuildPhase(None)):
     # @lint-ignore BUCKRESTRICTEDSYNTAX
     def inner(**kwargs) -> FeatureAnalysis.type:
-        return FeatureAnalysis(data = record_type(**kwargs))
+        return FeatureAnalysis(
+            data = record_type(**kwargs),
+            build_phase = build_phase,
+        )
 
     return inner

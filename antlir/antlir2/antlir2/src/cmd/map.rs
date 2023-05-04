@@ -143,6 +143,10 @@ impl Map {
 
         let mut isol = isolate(
             IsolationContext::builder(&self.build_appliance)
+                // TODO(vmagro): running in a read-only copy of the BA would
+                // allow us to skip this snapshot, but that's easier said than
+                // done...
+                .ephemeral(true)
                 .platform([
                     // compiler is built out of the repo, so it needs the
                     // repo to be available
