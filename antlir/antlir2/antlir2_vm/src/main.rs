@@ -6,6 +6,8 @@
  */
 
 mod isolation;
+mod runtime;
+mod types;
 mod utils;
 
 use std::env;
@@ -17,10 +19,14 @@ use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
 use tracing::debug;
+use tracing::info;
 
 use crate::isolation::is_isolated;
 use crate::isolation::isolated;
 use crate::isolation::Platform;
+use crate::runtime::set_runtime;
+use crate::types::parse_opts;
+use crate::types::VMOpts;
 use crate::utils::log_command;
 
 type Result<T> = std::result::Result<T, anyhow::Error>;
@@ -82,8 +88,15 @@ fn run(args: &RunArgs) -> Result<()> {
     if !is_isolated()? {
         return Err(anyhow!("run must be called from inside container"));
     }
-    // TODO: call vm run in next patch
-    println!("Run command with args: {:?}", args);
+
+    let runtime = parse_opts(&args.runtime).context(format!("Failed to parse {}", args.runtime))?;
+    debug!("RuntimeOpts: {:?}", runtime);
+    set_runtime(runtime).map_err(|_| anyhow!("Failed to set runtime"))?;
+
+    let vm_opts =
+        parse_opts::<VMOpts>(&args.vm_spec).context(format!("Failed to parse {}", args.vm_spec))?;
+    info!("VMOpts: {:?}", vm_opts);
+
     Ok(())
 }
 
