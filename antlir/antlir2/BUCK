@@ -15,6 +15,7 @@ image.layer(
             "python3-dnf-plugin-cow",
             "rpm-build",
             "socat",
+            "squashfs-tools",
             "strace",
             "systemd-container",
             "zstd",
