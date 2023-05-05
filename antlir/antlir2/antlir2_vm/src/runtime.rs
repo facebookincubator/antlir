@@ -12,7 +12,6 @@ use crate::types::RuntimeOpts;
 static RUNTIME: OnceCell<RuntimeOpts> = OnceCell::new();
 
 /// Get runtime struct. Should only be called after `set_runtime`
-#[allow(dead_code)]
 pub(crate) fn get_runtime() -> &'static RuntimeOpts {
     RUNTIME
         .get()
