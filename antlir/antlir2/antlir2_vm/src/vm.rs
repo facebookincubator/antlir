@@ -127,6 +127,7 @@ impl VM {
     /// to the notify socket.
     fn spawn_vm(&self) -> Result<Child> {
         let mut args = self.common_qemu_args()?;
+        args.extend(self.non_disk_boot_qemu_args());
         args.extend(self.disk_qemu_args());
         log_command(Command::new(&get_runtime().qemu_system).args(&args))
             .spawn()
@@ -258,12 +259,46 @@ impl VM {
     fn disk_qemu_args(&self) -> Vec<String> {
         self.disks.iter().flat_map(|x| x.qemu_args()).collect()
     }
+
+    fn non_disk_boot_qemu_args(&self) -> Vec<String> {
+        match &self.opts.non_disk_boot_opts {
+            Some(opts) => [
+                "-initrd",
+                &opts.initrd,
+                // kernel
+                "-kernel",
+                &opts.kernel,
+                "-append",
+                &[
+                    "console=ttyS0,115200",
+                    "panic=-1",
+                    "audit=0",
+                    "selinux=0",
+                    "systemd.hostname=vmtest",
+                    "net.ifnames=1",
+                    "root=LABEL=/",
+                    // kernel args
+                    "rootflags=subvol=volume",
+                    "rootfstype=btrfs",
+                    &opts.append,
+                ]
+                .join(" "),
+            ]
+            .iter()
+            .map(|x| x.to_string())
+            .collect(),
+            None => vec![],
+        }
+    }
 }
 
 #[cfg(test)]
 mod test {
+    use regex::Regex;
+
     use super::*;
     use crate::runtime::set_runtime;
+    use crate::types::NonDiskBootOpts;
     use crate::types::RuntimeOpts;
     use crate::types::VMArgs;
 
@@ -272,6 +307,7 @@ mod test {
             cpus: 1,
             mem_mib: 1024,
             disks: vec![],
+            non_disk_boot_opts: None,
             args: VMArgs { timeout_s: None },
         };
         VM {
@@ -330,5 +366,22 @@ mod test {
         vm.opts.args.timeout_s = Some(1);
         thread::sleep(Duration::from_secs(1));
         assert!(vm.time_left(start_ts).is_err());
+    }
+
+    #[test]
+    fn test_non_boot_qemu_args() {
+        let mut vm = get_vm_no_disk();
+        assert_eq!(vm.non_disk_boot_qemu_args(), Vec::<String>::new());
+
+        vm.opts.non_disk_boot_opts = Some(NonDiskBootOpts {
+            initrd: "initrd".to_string(),
+            kernel: "kernel".to_string(),
+            append: "whatever".to_string(),
+        });
+        let args = vm.non_disk_boot_qemu_args().join(" ");
+        assert!(args.contains("-initrd initrd"));
+        assert!(args.contains("-kernel kernel"));
+        let re = Regex::new("-append .* whatever").expect("Failed to get regex");
+        assert!(re.is_match(&args));
     }
 }

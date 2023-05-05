@@ -32,6 +32,18 @@ pub(crate) struct QCow2DiskOpts {
     pub(crate) logical_block_size: usize,
 }
 
+/// Required data if not booting from disk
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct NonDiskBootOpts {
+    /// Path to initrd
+    pub(crate) initrd: String,
+    /// Path to kernel
+    pub(crate) kernel: String,
+    /// Additional kernel parameters to append
+    #[serde(default)]
+    pub(crate) append: String,
+}
+
 /// Operational specific parameters for VM but not related to VM configuration itself
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct VMArgs {
@@ -50,6 +62,8 @@ pub(crate) struct VMOpts {
     /// List of writable disks. We expect at least one disk and the first one
     /// would be the root disk.
     pub(crate) disks: Vec<QCow2DiskOpts>,
+    /// initrd and data if not booting from disk
+    pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
     /// Operational specific parameters
     pub(crate) args: VMArgs,
 }
