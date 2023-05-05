@@ -19,8 +19,10 @@ def _impl(ctx: "context") -> ["provider"]:
         "cpio.gz": ".cpio.gz",
         "cpio.zst": ".cpio.zst",
         "rpm": ".rpm",
+        "sendstream": ".sendstream",
         "sendstream.v2": ".sendstream.v2",
         "sendstream.zst": ".sendstream.zst",
+        "squashfs": ".squashfs",
         "vfat": ".vfat",
     }[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
@@ -75,7 +77,7 @@ _package = rule(
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
         "btrfs_packager": attrs.default_only(attrs.dep(providers = [RunInfo], default = "//antlir/antlir2/antlir2_package/btrfs_packager:btrfs-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "format": attrs.enum(["btrfs", "sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat", "rpm"]),
+        "format": attrs.enum(["btrfs", "sendstream", "sendstream.v2", "sendstream.zst", "cpio.gz", "cpio.zst", "vfat", "rpm", "squashfs"]),
         "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
         "subvols": attrs.option(
@@ -201,6 +203,19 @@ def _rpm(
         **kwargs
     )
 
+def _sendstream(
+        name: str.type,
+        layer: str.type,
+        **kwargs):
+    check_kwargs(kwargs)
+    return _package_macro(
+        name = name,
+        layer = layer,
+        format = "sendstream",
+        subvols = None,
+        **kwargs
+    )
+
 def _sendstream_v2(
         name: str.type,
         layer: str.type,
@@ -263,13 +278,27 @@ def _vfat(
         **kwargs
     )
 
+def _squashfs(
+        name: str.type,
+        layer: str.type,
+        **kwargs):
+    check_kwargs(kwargs)
+    return _package_macro(
+        name = name,
+        layer = layer,
+        format = "squashfs",
+        **kwargs
+    )
+
 package = struct(
     backward_compatible_new = _package,
     cpio_gz = _cpio_gz,
     cpio_zst = _cpio_zst,
     btrfs = _btrfs,
     rpm = _rpm,
+    sendstream = _sendstream,
     sendstream_v2 = _sendstream_v2,
     sendstream_zst = _sendstream_zst,
+    squashfs = _squashfs,
     vfat = _vfat,
 )

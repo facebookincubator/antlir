@@ -58,6 +58,26 @@ package.cpio_zst(
     layer = ":vfat-layer",
 )
 
+package.sendstream_v2(
+    name = "btrfs-test-3.sendstream.v2",
+    layer = ":btrfs-test-3",
+)
+
+package.sendstream_zst(
+    name = "btrfs-test-3.sendstream.zst",
+    layer = ":btrfs-test-3",
+)
+
+package.sendstream(
+    name = "btrfs-test-3.sendstream",
+    layer = ":btrfs-test-3",
+)
+
+package.squashfs(
+    name = "vfat-layer.squashfs",
+    layer = ":vfat-layer",
+)
+
 package.btrfs(
     name = "btrfs-layer-test.btrfs",
     compression_level = 2,

@@ -56,6 +56,9 @@ pub enum Spec {
         layer: PathBuf,
         compression_level: i32,
     },
+    #[serde(rename = "sendstream")]
+    Sendstream { layer: PathBuf },
+
     #[serde(rename = "vfat")]
     Vfat {
         build_appliance: PathBuf,
@@ -89,6 +92,11 @@ pub enum Spec {
         summary: String,
         requires: Vec<String>,
         recommends: Vec<String>,
+    },
+    #[serde(rename = "squashfs")]
+    SquashFs {
+        build_appliance: PathBuf,
+        layer: PathBuf,
     },
 }
 
