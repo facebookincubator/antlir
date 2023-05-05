@@ -3,6 +3,9 @@ load("//antlir/bzl:build_defs.bzl", "rust_binary")
 rust_binary(
     name = "antlir2_vm",
     srcs = glob(["src/**/*.rs"]),
+    test_deps = [
+        "regex",
+    ],
     deps = [
         "anyhow",
         "clap",
