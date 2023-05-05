@@ -50,6 +50,7 @@ flavor_config_t = shape.shape(
     dnf_snapshot = shape.field(str, optional = True),
     yum_snapshot = shape.field(str, optional = True),
     tags = shape.field(shape.list(str), optional = True),
+    # @oss-disable
 )
 
 #
