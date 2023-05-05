@@ -6,6 +6,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "derive_builder",
         "once_cell",
         "serde",
         "serde_json",

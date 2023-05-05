@@ -8,7 +8,6 @@
 //! This file contains data structure that mirrors what described in vm bzl files
 //! so that we can directly deserialize a json into Rust structs.
 
-#![allow(dead_code)]
 use std::fs;
 use std::path::Path;
 

@@ -5,10 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+mod disk;
 mod isolation;
 mod runtime;
 mod types;
 mod utils;
+mod vm;
 
 use std::env;
 use std::path::PathBuf;
@@ -28,6 +30,7 @@ use crate::runtime::set_runtime;
 use crate::types::parse_opts;
 use crate::types::VMOpts;
 use crate::utils::log_command;
+use crate::vm::VM;
 
 type Result<T> = std::result::Result<T, anyhow::Error>;
 
@@ -97,7 +100,7 @@ fn run(args: &RunArgs) -> Result<()> {
         parse_opts::<VMOpts>(&args.vm_spec).context(format!("Failed to parse {}", args.vm_spec))?;
     info!("VMOpts: {:?}", vm_opts);
 
-    Ok(())
+    Ok(VM::new(vm_opts)?.run()?)
 }
 
 fn main() -> Result<()> {
