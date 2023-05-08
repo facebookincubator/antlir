@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
+# @oss-disable
 # @oss-disable
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
@@ -12,11 +12,13 @@ _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
 def _impl(ctx: "context") -> ["provider"]:
     mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
+
     test_cmd = cmd_args(
         ctx.attrs.image_test[RunInfo],
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
-        "--boot" if ctx.attrs.boot else cmd_args(),
+        cmd_args("--boot") if ctx.attrs.boot else cmd_args(),
+        cmd_args(ctx.attrs.boot_requires_units, format = "--requires-unit={}"),
         cmd_args(ctx.attrs.test[ExternalRunnerTestInfo].env.keys(), format = "--preserve-env={}"),
         cmd_args(mounts, format = "--mounts={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
@@ -53,7 +55,15 @@ def _impl(ctx: "context") -> ["provider"]:
 image_test = rule(
     impl = _impl,
     attrs = {
-        "boot": attrs.bool(default = False, doc = "boot the container with /init as pid1 before running the test"),
+        "boot": attrs.bool(
+            default = False,
+            doc = "boot the container with /init as pid1 before running the test",
+        ),
+        "boot_requires_units": attrs.list(
+            attrs.string(),
+            default = [],
+            doc = "delay running the test until all of the given systemd units have started successfully",
+        ),
         "image_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_test:image-test")),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
@@ -73,6 +83,7 @@ def _implicit_image_test(
         run_as_user: [str.type, None] = None,
         labels: [[str.type], None] = None,
         boot: bool.type = False,
+        boot_requires_units: [str.type] = [],
         **kwargs):
     test_rule(
         name = name + "_image_test_inner",
@@ -82,8 +93,8 @@ def _implicit_image_test(
     )
     labels = list(labels) if labels else []
 
-    if fully_qualified_test_name_rollout.use_fully_qualified_name():
-        labels = labels + [NAMING_ROLLOUT_LABEL]
+    # @oss-disable
+        # @oss-disable
 
     image_test(
         name = name,
@@ -92,6 +103,7 @@ def _implicit_image_test(
         test = ":" + name + "_image_test_inner",
         labels = labels + [special_tags.enable_artifact_reporting],
         boot = boot,
+        boot_requires_units = boot_requires_units,
     )
 
 image_cpp_test = partial(_implicit_image_test, cpp_unittest)

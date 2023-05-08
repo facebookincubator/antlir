@@ -2,6 +2,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
+load("//antlir/bzl:systemd.bzl", "systemd")
 
 image.layer(
     name = "base",
@@ -10,6 +11,11 @@ image.layer(
             "systemd",
             # @oss-disable
         ]),
+        systemd.install_unit("slow-unit.service"),
+        systemd.enable_unit(
+            "slow-unit.service",
+            target = "multi-user.target",
+        ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -17,9 +23,10 @@ image.layer(
 [
     [
         image_cpp_test(
-            name = "test-cpp" + ("-booted" if boot else ""),
+            name = "test-cpp" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-multi-user" else ""),
             srcs = ["test.cpp"],
-            boot = boot,
+            boot = bool(boot),
+            boot_requires_units = ["multi-user.target"] if boot == "wait-multi-user" else [],
             env = {
                 "ANTLIR2_TEST": "1",
                 "BOOT": str(boot),
@@ -27,9 +34,10 @@ image.layer(
             layer = ":base",
         ),
         image_python_test(
-            name = "test-py" + ("-booted" if boot else ""),
+            name = "test-py" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-multi-user" else ""),
             srcs = ["test.py"],
-            boot = boot,
+            boot = bool(boot),
+            boot_requires_units = ["multi-user.target"] if boot == "wait-multi-user" else [],
             env = {
                 "ANTLIR2_TEST": "1",
                 "BOOT": str(boot),
@@ -37,9 +45,10 @@ image.layer(
             layer = ":base",
         ),
         image_rust_test(
-            name = "test-rs" + ("-booted" if boot else ""),
+            name = "test-rs" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-multi-user" else ""),
             srcs = ["test.rs"],
-            boot = boot,
+            boot = bool(boot),
+            boot_requires_units = ["multi-user.target"] if boot == "wait-multi-user" else [],
             crate = "test_rs",
             crate_root = "test.rs",
             env = {
@@ -49,8 +58,9 @@ image.layer(
             layer = ":base",
         ),
         image_sh_test(
-            name = "test-sh" + ("-booted" if boot else ""),
-            boot = boot,
+            name = "test-sh" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-multi-user" else ""),
+            boot = bool(boot),
+            boot_requires_units = ["multi-user.target"] if boot == "wait-multi-user" else [],
             env = {
                 "ANTLIR2_TEST": "1",
                 "BOOT": str(boot),
@@ -62,6 +72,7 @@ image.layer(
     for boot in [
         False,
         True,
+        "wait-multi-user",
     ]
 ]
 
