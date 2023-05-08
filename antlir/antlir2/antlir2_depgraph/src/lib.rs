@@ -288,12 +288,12 @@ impl<'a> GraphBuilder<'a> {
             }
         }
 
-        // Add all the requirements edges after all provided items are added so
-        // that we know if a required item is missing or just not encountered
-        // yet
+        // Add all the ordered requirements edges after all provided items are
+        // added so that we know if a required item is missing or just not
+        // encountered yet.
         for feature_nx in &self.pending_features {
             let f = &self.g[*feature_nx];
-            for req in f.requires() {
+            for req in f.requires().into_iter().filter(|r| r.ordered) {
                 let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
                     None => {
@@ -342,6 +342,28 @@ impl<'a> GraphBuilder<'a> {
                 unreachable!()
             }
         };
+
+        // Now add unordered requirements. It's still useful to have an edge
+        // between features when there are unordered requirements (eg:
+        // validators take the same path), but we need to do it after the
+        // topological sort to avoid any cycles. If this proves to be a bad idea
+        // (unlikely, since we don't really care if it's truly a DAG after
+        // toposort) we can come up with some other way to represent "weak"
+        // edges like these.
+        for feature_nx in &self.pending_features {
+            let f = &self.g[*feature_nx];
+            for req in f.requires().into_iter().filter(|r| !r.ordered) {
+                let req_nx = match self.item(&req.key) {
+                    Some(nx) => nx.into_untyped(),
+                    None => {
+                        let nx = self.g.add_node(Node::MissingItem(req.key.clone()));
+                        nx
+                    }
+                };
+                self.g
+                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator));
+            }
+        }
 
         for nx in self.g.node_indices() {
             match &self.g[nx] {

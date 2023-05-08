@@ -88,9 +88,9 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
 
 impl<'f> FeatureExt<'f> for antlir2_features::clone::Clone<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
-        let mut v = vec![Requirement {
-            key: ItemKey::Layer(self.src_layer.label.to_owned()),
-            validator: Validator::ItemInLayer {
+        let mut v = vec![Requirement::ordered(
+            ItemKey::Layer(self.src_layer.label.to_owned()),
+            Validator::ItemInLayer {
                 key: ItemKey::Path(self.src_path.path().to_owned().into()),
                 validator: Box::new(if self.omit_outer_dir {
                     Validator::FileType(FileType::Directory)
@@ -100,15 +100,15 @@ impl<'f> FeatureExt<'f> for antlir2_features::clone::Clone<'f> {
                     Validator::Exists
                 }),
             },
-        }];
+        )];
         if self.pre_existing_dest {
-            v.push(Requirement {
-                key: ItemKey::Path(self.dst_path.path().to_owned().into()),
-                validator: Validator::FileType(FileType::Directory),
-            });
+            v.push(Requirement::ordered(
+                ItemKey::Path(self.dst_path.path().to_owned().into()),
+                Validator::FileType(FileType::Directory),
+            ));
         } else {
-            v.push(Requirement {
-                key: ItemKey::Path(
+            v.push(Requirement::ordered(
+                ItemKey::Path(
                     self.dst_path
                         .path()
                         .parent()
@@ -116,8 +116,8 @@ impl<'f> FeatureExt<'f> for antlir2_features::clone::Clone<'f> {
                         .to_owned()
                         .into(),
                 ),
-                validator: Validator::FileType(FileType::Directory),
-            });
+                Validator::FileType(FileType::Directory),
+            ));
         }
         // Files we clone will usually be owned by root:root, but not always! To
         // be safe we have to make sure that all discovered users and groups
@@ -147,28 +147,28 @@ impl<'f> FeatureExt<'f> for antlir2_features::clone::Clone<'f> {
                 .and_then(|s| s.parse().map_err(std::io::Error::other))
                 .unwrap_or_else(|_| Default::default());
         for uid in uids {
-            v.push(Requirement {
-                key: ItemKey::User(
+            v.push(Requirement::ordered(
+                ItemKey::User(
                     users
                         .get_user_by_id(uid.into())
                         .expect("this layer could not have been built if this uid is missing")
                         .name
                         .clone(),
                 ),
-                validator: Validator::Exists,
-            });
+                Validator::Exists,
+            ));
         }
         for gid in gids {
-            v.push(Requirement {
-                key: ItemKey::Group(
+            v.push(Requirement::ordered(
+                ItemKey::Group(
                     groups
                         .get_group_by_id(gid.into())
                         .expect("this layer could not have been built if this gid is missing")
                         .name
                         .clone(),
                 ),
-                validator: Validator::Exists,
-            });
+                Validator::Exists,
+            ));
         }
         v
     }
@@ -253,20 +253,20 @@ impl<'f> FeatureExt<'f> for antlir2_features::ensure_dir_exists::EnsureDirExists
 
     fn requires(&self) -> Vec<Requirement<'f>> {
         let mut v = vec![
-            Requirement {
-                key: ItemKey::User(self.user.name().to_owned().into()),
-                validator: Validator::Exists,
-            },
-            Requirement {
-                key: ItemKey::Group(self.group.name().to_owned().into()),
-                validator: Validator::Exists,
-            },
+            Requirement::ordered(
+                ItemKey::User(self.user.name().to_owned().into()),
+                Validator::Exists,
+            ),
+            Requirement::ordered(
+                ItemKey::Group(self.group.name().to_owned().into()),
+                Validator::Exists,
+            ),
         ];
         if let Some(parent) = self.dir.parent() {
-            v.push(Requirement {
-                key: ItemKey::Path(parent.to_owned().into()),
-                validator: Validator::FileType(FileType::Directory),
-            });
+            v.push(Requirement::ordered(
+                ItemKey::Path(parent.to_owned().into()),
+                Validator::FileType(FileType::Directory),
+            ));
         }
         v
     }
@@ -280,28 +280,28 @@ impl<'f> FeatureExt<'f> for antlir2_features::extract::Extract<'f> {
                 .iter()
                 .flat_map(|path| {
                     vec![
-                        Requirement {
-                            key: ItemKey::Layer(l.layer.label.to_owned()),
-                            validator: Validator::ItemInLayer {
+                        Requirement::ordered(
+                            ItemKey::Layer(l.layer.label.to_owned()),
+                            Validator::ItemInLayer {
                                 key: ItemKey::Path(path.path().to_owned().into()),
                                 validator: Box::new(Validator::Executable),
                             },
-                        },
-                        Requirement {
-                            key: ItemKey::Path(
+                        ),
+                        Requirement::ordered(
+                            ItemKey::Path(
                                 path.path()
                                     .parent()
                                     .expect("dst always has parent")
                                     .to_owned()
                                     .into(),
                             ),
-                            validator: Validator::FileType(FileType::Directory),
-                        },
+                            Validator::FileType(FileType::Directory),
+                        ),
                     ]
                 })
                 .collect(),
-            Self::Buck(b) => vec![Requirement {
-                key: ItemKey::Path(
+            Self::Buck(b) => vec![Requirement::ordered(
+                ItemKey::Path(
                     b.dst
                         .path()
                         .parent()
@@ -309,8 +309,8 @@ impl<'f> FeatureExt<'f> for antlir2_features::extract::Extract<'f> {
                         .to_owned()
                         .into(),
                 ),
-                validator: Validator::FileType(FileType::Directory),
-            }],
+                Validator::FileType(FileType::Directory),
+            )],
         }
     }
 
@@ -395,16 +395,16 @@ impl<'f> FeatureExt<'f> for antlir2_features::install::Install<'f> {
 
     fn requires(&self) -> Vec<Requirement<'f>> {
         vec![
-            Requirement {
-                key: ItemKey::User(self.user.name().to_owned().into()),
-                validator: Validator::Exists,
-            },
-            Requirement {
-                key: ItemKey::Group(self.group.name().to_owned().into()),
-                validator: Validator::Exists,
-            },
-            Requirement {
-                key: ItemKey::Path(
+            Requirement::ordered(
+                ItemKey::User(self.user.name().to_owned().into()),
+                Validator::Exists,
+            ),
+            Requirement::ordered(
+                ItemKey::Group(self.group.name().to_owned().into()),
+                Validator::Exists,
+            ),
+            Requirement::ordered(
+                ItemKey::Path(
                     self.dst
                         .path()
                         .parent()
@@ -412,26 +412,26 @@ impl<'f> FeatureExt<'f> for antlir2_features::install::Install<'f> {
                         .to_owned()
                         .into(),
                 ),
-                validator: Validator::FileType(FileType::Directory),
-            },
+                Validator::FileType(FileType::Directory),
+            ),
         ]
     }
 }
 
 impl<'f> FeatureExt<'f> for antlir2_features::mount::Mount<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
-        let mut v = vec![Requirement {
-            key: ItemKey::Path(self.mountpoint().path().to_owned().into()),
-            validator: Validator::FileType(match self.is_directory() {
+        let mut v = vec![Requirement::ordered(
+            ItemKey::Path(self.mountpoint().path().to_owned().into()),
+            Validator::FileType(match self.is_directory() {
                 true => FileType::Directory,
                 false => FileType::File,
             }),
-        }];
+        )];
         match self {
-            Self::Layer(l) => v.push(Requirement {
-                key: ItemKey::Layer(l.src.label.to_owned()),
-                validator: Validator::Exists,
-            }),
+            Self::Layer(l) => v.push(Requirement::ordered(
+                ItemKey::Layer(l.src.label.to_owned()),
+                Validator::Exists,
+            )),
             Self::Host(_) => (),
         }
         v
@@ -448,10 +448,10 @@ impl<'f> FeatureExt<'f> for antlir2_features::remove::Remove<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         match self.must_exist {
             false => vec![],
-            true => vec![Requirement {
-                key: ItemKey::Path(self.path.path().to_owned().into()),
-                validator: Validator::Exists,
-            }],
+            true => vec![Requirement::ordered(
+                ItemKey::Path(self.path.path().to_owned().into()),
+                Validator::Exists,
+            )],
         }
     }
 }
@@ -460,17 +460,20 @@ impl<'f> FeatureExt<'f> for antlir2_features::requires::Requires<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
         self.files
             .iter()
-            .map(|p| Requirement {
-                key: ItemKey::Path(p.path().to_owned().into()),
-                validator: Validator::FileType(FileType::File),
+            .map(|p| {
+                Requirement::ordered(
+                    ItemKey::Path(p.path().to_owned().into()),
+                    Validator::FileType(FileType::File),
+                )
             })
-            .chain(self.users.iter().map(|u| Requirement {
-                key: ItemKey::User(u.name().to_owned().into()),
-                validator: Validator::Exists,
+            .chain(self.users.iter().map(|u| {
+                Requirement::ordered(ItemKey::User(u.name().to_owned().into()), Validator::Exists)
             }))
-            .chain(self.groups.iter().map(|g| Requirement {
-                key: ItemKey::Group(g.name().to_owned().into()),
-                validator: Validator::Exists,
+            .chain(self.groups.iter().map(|g| {
+                Requirement::ordered(
+                    ItemKey::Group(g.name().to_owned().into()),
+                    Validator::Exists,
+                )
             }))
             .collect()
     }
@@ -488,15 +491,15 @@ impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
 
     fn requires(&self) -> Vec<Requirement<'f>> {
         vec![
-            Requirement {
-                key: ItemKey::Path(self.target.path().to_owned().into()),
-                validator: Validator::FileType(match self.is_directory {
+            Requirement::ordered(
+                ItemKey::Path(self.target.path().to_owned().into()),
+                Validator::FileType(match self.is_directory {
                     true => FileType::Directory,
                     false => FileType::File,
                 }),
-            },
-            Requirement {
-                key: ItemKey::Path(
+            ),
+            Requirement::ordered(
+                ItemKey::Path(
                     self.link
                         .path()
                         .parent()
@@ -504,8 +507,8 @@ impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
                         .to_owned()
                         .into(),
                 ),
-                validator: Validator::FileType(FileType::Directory),
-            },
+                Validator::FileType(FileType::Directory),
+            ),
         ]
     }
 }
@@ -518,10 +521,10 @@ impl<'f> FeatureExt<'f> for antlir2_features::usergroup::Group<'f> {
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
-        vec![Requirement {
-            key: ItemKey::Path(std::path::Path::new("/etc/group").into()),
-            validator: Validator::Exists,
-        }]
+        vec![Requirement::ordered(
+            ItemKey::Path(std::path::Path::new("/etc/group").into()),
+            Validator::Exists,
+        )]
     }
 }
 
@@ -534,30 +537,32 @@ impl<'f> FeatureExt<'f> for antlir2_features::usergroup::User<'f> {
 
     fn requires(&self) -> Vec<Requirement<'f>> {
         let mut v = vec![
-            Requirement {
-                key: ItemKey::Path(self.home_dir.path().to_owned().into()),
-                validator: Validator::FileType(FileType::Directory),
-            },
-            Requirement {
-                key: ItemKey::Path(self.shell.path().to_owned().into()),
-                validator: Validator::Executable,
-            },
-            Requirement {
-                key: ItemKey::Path(std::path::Path::new("/etc/passwd").into()),
-                validator: Validator::Exists,
-            },
-            Requirement {
-                key: ItemKey::Path(std::path::Path::new("/etc/group").into()),
-                validator: Validator::Exists,
-            },
+            Requirement::unordered(
+                ItemKey::Path(self.home_dir.path().to_owned().into()),
+                Validator::FileType(FileType::Directory),
+            ),
+            Requirement::unordered(
+                ItemKey::Path(self.shell.path().to_owned().into()),
+                Validator::Executable,
+            ),
+            Requirement::ordered(
+                ItemKey::Path(std::path::Path::new("/etc/passwd").into()),
+                Validator::Exists,
+            ),
+            Requirement::ordered(
+                ItemKey::Path(std::path::Path::new("/etc/group").into()),
+                Validator::Exists,
+            ),
         ];
         v.extend(
             self.supplementary_groups
                 .iter()
                 .chain(vec![&self.primary_group])
-                .map(|g| Requirement {
-                    key: ItemKey::Group(g.name().to_owned().into()),
-                    validator: Validator::Exists,
+                .map(|g| {
+                    Requirement::ordered(
+                        ItemKey::Group(g.name().to_owned().into()),
+                        Validator::Exists,
+                    )
                 }),
         );
         v
@@ -566,13 +571,15 @@ impl<'f> FeatureExt<'f> for antlir2_features::usergroup::User<'f> {
 
 impl<'f> FeatureExt<'f> for antlir2_features::usergroup::UserMod<'f> {
     fn requires(&self) -> Vec<Requirement<'f>> {
-        let mut v = vec![Requirement {
-            key: ItemKey::User(self.username.name().to_owned().into()),
-            validator: Validator::Exists,
-        }];
-        v.extend(self.add_supplementary_groups.iter().map(|g| Requirement {
-            key: ItemKey::Group(g.name().to_owned().into()),
-            validator: Validator::Exists,
+        let mut v = vec![Requirement::ordered(
+            ItemKey::User(self.username.name().to_owned().into()),
+            Validator::Exists,
+        )];
+        v.extend(self.add_supplementary_groups.iter().map(|g| {
+            Requirement::ordered(
+                ItemKey::Group(g.name().to_owned().into()),
+                Validator::Exists,
+            )
         }));
         v
     }

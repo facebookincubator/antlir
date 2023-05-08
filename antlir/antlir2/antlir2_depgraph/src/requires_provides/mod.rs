@@ -22,6 +22,37 @@ pub(crate) use feature_ext::FeatureExt;
 pub(crate) struct Requirement<'a> {
     pub(crate) key: ItemKey<'a>,
     pub(crate) validator: Validator<'a>,
+    /// This [Requirement] necessitates ordered running of the features
+    /// involved. If false, the compiler is free to run the features in any
+    /// order.
+    pub(crate) ordered: bool,
+}
+
+impl<'a> Requirement<'a> {
+    /// Hard build dependencies (eg: parent dir exists before install) should
+    /// use this function. The compiler will not attempt to build the feature
+    /// that has this [Requirement] until the feature that provides it has been
+    /// built.
+    pub(crate) fn ordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
+        Self {
+            key,
+            validator,
+            ordered: true,
+        }
+    }
+
+    /// Logical requirements (eg user's home directory exists) should use this
+    /// function. The compiler is free to build the feature that has this
+    /// [Requirement] before the feature that provides it, which is useful for
+    /// avoiding ordering cycles for purely logical "this has to happen by the
+    /// time the layer is done" requirements.
+    pub(crate) fn unordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
+        Self {
+            key,
+            validator,
+            ordered: false,
+        }
+    }
 }
 
 /// Requirements are matched by [ItemKey](crate::item::ItemKey) but that does

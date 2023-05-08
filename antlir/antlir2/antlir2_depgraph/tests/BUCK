@@ -132,6 +132,15 @@ bad_depgraph(
     name = "bad-validator",
     error_regex = "^.*/fakeshell.*\\sdoes not satisfy the validation rules: Executable\\s.*",
     features = [
+        feature.ensure_dirs_exist(dirs = "/etc"),
+        feature.install(
+            src = "//antlir/antlir2/test_images:passwd",
+            dst = "/etc/passwd",
+        ),
+        feature.install(
+            src = "//antlir/antlir2/test_images:group",
+            dst = "/etc/group",
+        ),
         feature.install(
             src = "//antlir:empty",
             dst = "/fakeshell",
@@ -391,6 +400,44 @@ good_depgraph(
         feature.install(
             src = "//antlir/antlir2/test_images:group",
             dst = "/etc/group",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+good_depgraph(
+    name = "unordered-requirements",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/sbin"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/usr/sbin/nologin",
+            mode = "a+rx",
+        ),
+        feature.ensure_dirs_exist(dirs = "/etc"),
+        feature.install(
+            src = "//antlir/antlir2/test_images:passwd",
+            dst = "/etc/passwd",
+        ),
+        feature.install(
+            src = "//antlir/antlir2/test_images:group",
+            dst = "/etc/group",
+        ),
+        feature.ensure_dirs_exist(dirs = "/home"),
+        feature.ensure_subdirs_exist(
+            group = "antlir",
+            into_dir = "/home",
+            subdirs_to_create = "antlir",
+            user = "antlir",
+        ),
+        feature.user_add(
+            home_dir = "/home/antlir",
+            primary_group = "antlir",
+            shell = "/usr/sbin/nologin",
+            username = "antlir",
+        ),
+        feature.group_add(
+            groupname = "antlir",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
