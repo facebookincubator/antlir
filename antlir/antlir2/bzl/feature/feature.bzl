@@ -238,7 +238,17 @@ def feature(
         - inline (aka unnamed) features created with macros like `install()`
         - labels referring to other `feature` targets
     """
+    features = flatten.flatten(features)
+
+    # Some antlir1 features may have crept in here because it's hard to refactor
+    # tons of bzl at once, so if it has a .antlir2_feature attribute, we'll be
+    # nice and allow it
+    features = [f.antlir2_feature if hasattr(f, "antlir2_feature") else f for f in features]
+
+    # This is already flat but this will enforce the type checking again after
+    # the antlir1-compat-promotion above
     features = flatten.flatten(features, item_type = ["ParseTimeFeature", str.type, "selector"])
+
     inline_features = {}
     feature_targets = []
     inline_features_deps = {}
