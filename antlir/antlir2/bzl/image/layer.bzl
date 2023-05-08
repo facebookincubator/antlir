@@ -298,7 +298,10 @@ def layer(
             if not types.is_string(flavor):
                 flavor = flavor.unaliased_name
             if ":" not in flavor:
-                flavor = "//antlir/antlir2/facebook/flavor:" + flavor
+                if flavor == "centos8":
+                    flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8"
+                else:
+                    flavor = "//antlir/antlir2/facebook/flavor:" + flavor
         kwargs["flavor"] = flavor
 
     feature_target = name + "--features"
