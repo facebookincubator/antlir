@@ -17,12 +17,8 @@ class Test(unittest.TestCase):
         self.assertEqual("1", os.getenv("ANTLIR2_TEST"))
 
     def test_boot(self) -> None:
-        if os.getenv("BOOT") != "False":
-            subprocess.run(
-                ["systemctl", "is-active", "-q", "sysinit.target"],
-                check=True,
-            )
-        else:
+        boot = os.getenv("BOOT")
+        if boot == "False":
             self.assertNotEqual(
                 0,
                 subprocess.run(
@@ -31,4 +27,26 @@ class Test(unittest.TestCase):
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
                 ).returncode,
+            )
+        elif boot == "True":
+            res = subprocess.run(
+                ["systemctl", "is-active", "multi-user.target"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(
+                res.returncode, 0, f"multi-user.target status: {res.stdout.strip()}"
+            )
+        elif boot == "wait-multi-user":
+            res = subprocess.run(
+                ["systemctl", "is-active", "multi-user.target"],
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(
+                res.returncode, 0, f"multi-user.target status: {res.stdout.strip()}"
+            )
+        else:
+            self.fail(
+                f"unrecognized boot mode '{boot}', update this test for any new behavior"
             )

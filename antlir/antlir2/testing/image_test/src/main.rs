@@ -44,6 +44,9 @@ struct Args {
     #[clap(long)]
     /// Boot the container with /init as pid1 before running the test
     boot: bool,
+    #[clap(long = "requires-unit", requires = "boot")]
+    /// Add Requires= and After= dependencies on these units
+    requires_units: Vec<String>,
     #[clap(long)]
     /// Pass these env vars into the test environment
     preserve_env: Vec<String>,
@@ -252,7 +255,13 @@ fn main() -> Result<()> {
         let (container_stdout, _container_stderr) = make_log_files("container")?;
         let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
         let mut dropin = NamedTempFile::new()?;
-        write!(dropin, "[Service]\nStandardOutput=truncate:")?;
+        writeln!(dropin, "[Unit]")?;
+        for unit in &args.requires_units {
+            writeln!(dropin, "After={unit}")?;
+            writeln!(dropin, "Requires={unit}")?;
+        }
+        writeln!(dropin, "[Service]")?;
+        write!(dropin, "StandardOutput=truncate:")?;
         dropin.write_all(test_stdout.path().as_os_str().as_bytes())?;
         dropin.write_all(b"\n")?;
         write!(dropin, "StandardError=")?;
