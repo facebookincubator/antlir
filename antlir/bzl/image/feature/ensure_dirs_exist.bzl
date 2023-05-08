@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "use_antlir2")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
@@ -50,14 +50,6 @@ def feature_ensure_subdirs_exist(
   symbolic strings. In the latter case, the passwd/group database from the host
   (not from the image) is used.
     """
-    if use_antlir2():
-        return antlir2.ensure_subdirs_exist(
-            into_dir = into_dir,
-            subdirs_to_create = subdirs_to_create,
-            mode = mode if mode != shape.DEFAULT_VALUE else 0o755,
-            user = user if user != shape.DEFAULT_VALUE else "root",
-            group = group if group != shape.DEFAULT_VALUE else "root",
-        )
     ensure_subdirs_exist = ensure_subdirs_exist_t(
         into_dir = into_dir,
         subdirs_to_create = subdirs_to_create,
@@ -68,4 +60,11 @@ def feature_ensure_subdirs_exist(
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(ensure_subdirs_exist = [ensure_subdirs_exist]),
+        antlir2_feature = antlir2.ensure_subdirs_exist(
+            into_dir = into_dir,
+            subdirs_to_create = subdirs_to_create,
+            mode = mode if mode != shape.DEFAULT_VALUE else 0o755,
+            user = user if user != shape.DEFAULT_VALUE else "root",
+            group = group if group != shape.DEFAULT_VALUE else "root",
+        ) if is_buck2() else None,
     )

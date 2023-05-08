@@ -56,8 +56,9 @@ directory output by a Buck-runnable target, then you should use
 """
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "use_antlir2")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
+load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
@@ -97,10 +98,12 @@ def _install_target_tagger(
         unwrapped_target,
         unwrapped_shape,
         wrapped_target,
-        wrapped_shape):
+        wrapped_shape,
+        antlir2_feature):
     return target_tagger_to_feature(
         target_tagger,
         items = struct(install_files = [wrapped_shape if wrapped_shape else unwrapped_shape]),
+        antlir2_feature = antlir2_feature,
     )
 
 # KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
@@ -138,14 +141,6 @@ build-time error requesting it.  This flag allows the target being wrapped
 to be executed in an Antlir container as part of a Buck build step.  It
 defaults to `False` to speed up incremental rebuilds.
     """
-    if use_antlir2():
-        return antlir2.install(
-            src = source,
-            dst = dest,
-            mode = mode or 0o555,
-            user = user,
-            group = group,
-        )
     target_tagger = new_target_tagger()
 
     # Normalize to the `image.source` interface
@@ -179,6 +174,8 @@ defaults to `False` to speed up incremental rebuilds.
     wrapped_target = extract_tagged_target(tagged_source["source"])
     wrapped_shape = _generate_shape(tagged_source, dest, mode, user, group, separate_debug_symbols)
 
+    buck2_src = image_source_to_buck2_src(source)
+
     return _install_target_tagger(
         dest,
         target_tagger,
@@ -186,6 +183,13 @@ defaults to `False` to speed up incremental rebuilds.
         unwrapped_shape,
         wrapped_target,
         wrapped_shape,
+        antlir2.install(
+            src = buck2_src,
+            dst = dest,
+            mode = mode or 0o555,
+            user = user,
+            group = group,
+        ) if is_buck2() else None,
     )
 
 def feature_install(
@@ -228,14 +232,6 @@ The argument `wrap_as_buck_runnable` is only present because the Buck2
 implementation uses that argument, and adding it here makes it easier to
 integrate with that logic. It can be ignored.
     """
-    if use_antlir2():
-        return antlir2.install(
-            src = source,
-            dst = dest,
-            mode = mode or 0o444,
-            user = user,
-            group = group,
-        )
     target_tagger = new_target_tagger()
     source_dict = image_source_as_target_tagged_dict(
         target_tagger,
@@ -254,6 +250,8 @@ integrate with that logic. It can be ignored.
         ],
     )
 
+    buck2_src = image_source_to_buck2_src(source)
+
     # Future: We might use a Buck macro that enforces that the target is
     # non-executable, as I suggested on Q15839. This should probably go in
     # `tag_required_target_key` to ensure that we avoid "unwrapped executable"
@@ -267,4 +265,11 @@ integrate with that logic. It can be ignored.
         unwrapped_shape,
         wrapped_target,
         None,
+        antlir2.install(
+            src = buck2_src,
+            dst = dest,
+            mode = mode or 0o444,
+            user = user,
+            group = group,
+        ) if is_buck2() else None,
     )

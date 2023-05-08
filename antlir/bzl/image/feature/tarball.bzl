@@ -4,6 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
+load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
 load(
     "//antlir/bzl:target_tagger.bzl",
@@ -36,7 +39,14 @@ def feature_tarball(source, dest, force_root_ownership = False):
 
     target = source if types.is_string(source) else source.source if source.source else source.generator
 
+    buck2_src = image_source_to_buck2_src(source)
+
     return target_tagger_to_feature(
         target_tagger,
         items = struct(tarballs = [tarball]),
+        antlir2_feature = antlir2.tarball(
+            src = buck2_src,
+            into_dir = dest,
+            force_root_ownership = force_root_ownership,
+        ) if is_buck2() else None,
     )

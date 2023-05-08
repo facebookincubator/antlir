@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load(":build_defs.bzl", "is_buck2")
 load(":target_helpers.bzl", "normalize_target")
 
 _TargetTaggerInfo = provider(fields = ["targets"])
@@ -25,7 +26,9 @@ def _tag_required_target_key(tagger, d, target_key, is_layer = False):
         )
     d[target_key] = _tag_target(tagger, target = d[target_key], is_layer = is_layer)
 
-def _target_tagger_to_feature(target_tagger, items, extra_deps = None):
+def _target_tagger_to_feature(target_tagger, items, extra_deps = None, antlir2_feature = None):
+    if antlir2_feature == None and is_buck2():  # pragma: no cover
+        fail("antlir2_feature must be set")
     return struct(
         items = items,
         # We need to tell Buck that we depend on these targets, so
@@ -40,6 +43,7 @@ def _target_tagger_to_feature(target_tagger, items, extra_deps = None):
         # Future: Talk with the Buck team to see if we can eliminate
         # this inefficiency.
         deps = list(target_tagger.targets.keys()) + (extra_deps or []),
+        antlir2_feature = antlir2_feature,
     )
 
 target_tagger_helper = struct(

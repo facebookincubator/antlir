@@ -79,13 +79,15 @@ Now you can refer to a stable version of a package, represented as an
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility")
+load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "is_buck2")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer.bzl", "image_layer")
 load(":structs.bzl", "structs")
-load(":target_helpers.bzl", "normalize_target")
+load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
 _PackageFetcherInfo = provider(fields = [
     # This executable target downloads the package to $1 and
@@ -234,6 +236,19 @@ def _fetched_package_layer(
         ),
         visibility = visibility,
     )
+    if is_buck2():
+        antlir2_feature.new(
+            name = package_feature,
+            features = [antlir1_no_equivalent(description = "fetched-package-feature", label = normalize_target(":" + package_feature))],
+            visibility = ["PUBLIC"],
+        )
+    else:
+        # export a target of the same name to make td happy
+        export_file(
+            name = package_feature,
+            src = antlir_dep(":empty"),
+            antlir_rule = "user-internal",
+        )
 
     mount_config = name + "-fetched-package-mount-config"
     buck_genrule(

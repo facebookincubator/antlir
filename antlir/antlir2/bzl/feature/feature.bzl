@@ -57,11 +57,13 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl/build_defs.bzl", "config")
+load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":clone.bzl", "clone_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
 load(":genrule.bzl", "genrule_analyze")
 load(":install.bzl", "install_analyze")
+load(":metakv.bzl", "metakv_analyze")
 load(":mount.bzl", "mount_analyze")
 load(":remove.bzl", "remove_analyze")
 load(":requires.bzl", "requires_analyze")
@@ -88,6 +90,7 @@ Features = transitive_set(
 )
 
 _analyze_feature = {
+    "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
     "clone": clone_analyze,
     "ensure_dir_exists": ensure_dir_exists_analyze,
     "ensure_dir_symlink": symlink_analyze,
@@ -98,6 +101,7 @@ _analyze_feature = {
     "genrule": genrule_analyze,
     "group": group_analyze,
     "install": install_analyze,
+    "metakv": metakv_analyze,
     "mount": mount_analyze,
     "remove": remove_analyze,
     "requires": requires_analyze,

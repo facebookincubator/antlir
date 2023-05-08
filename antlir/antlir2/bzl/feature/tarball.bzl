@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
@@ -33,12 +34,15 @@ tarball_record = record(
 def tarball_analyze(
         into_dir: str.type,
         force_root_ownership: bool.type,
-        sources: {str.type: "artifact"}) -> FeatureAnalysis.type:
+        deps_or_sources: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
+    src = deps_or_sources["source"]
+    if type(src) == "dependency":
+        src = ensure_single_output(src)
     return FeatureAnalysis(
         data = tarball_record(
             force_root_ownership = force_root_ownership,
             into_dir = into_dir,
-            source = sources["source"],
+            source = src,
         ),
-        required_artifacts = sources["source"],
+        required_artifacts = [src],
     )

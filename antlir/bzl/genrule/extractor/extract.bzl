@@ -60,12 +60,12 @@ exported by a parent layer which also includes an extract.extract feature.
 """
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "use_antlir2")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/bzl:build_defs.bzl", "export_file", "is_buck2")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
 
@@ -82,20 +82,14 @@ def _extract(
         # The root destination path to clone the extracted
         # files into.
         dest = "/"):
-    if use_antlir2():
-        if dest != "/":
-            fail("not allowed on antlir2")
-        return antlir2.extract_from_layer(
-            layer = source,
-            binaries = binaries,
-        )
+    if dest != "/":
+        fail("extract(dest='/') is no longer allowed")
     binaries = binaries or []
     normalized_source = normalize_target(source)
     name = sha256_b64(normalized_source + " ".join(binaries) + dest)
     base_extract_layer = "image-extract-setup--{}".format(name)
     image.layer(
         name = base_extract_layer,
-        parent_layer = source,
         features = [
             feature.ensure_dirs_exist("/output"),
             feature.install_buck_runnable(
@@ -104,6 +98,7 @@ def _extract(
                 runs_in_build_steps_causes_slow_rebuilds = True,
             ),
         ],
+        parent_layer = source,
         visibility = [],
     )
     extract_parent_layer = ":" + base_extract_layer
@@ -119,9 +114,7 @@ def _extract(
     output_dir = "/output"
     image.genrule_layer(
         name = work_layer,
-        rule_type = "extract",
-        parent_layer = extract_parent_layer,
-        user = "root",
+        antlir_rule = "user-internal",
         cmd = [
             "/extract",
             "--src-dir",
@@ -133,12 +126,13 @@ def _extract(
             "--target",
             normalized_source,
         ] + binaries_args,
-        antlir_rule = "user-internal",
+        parent_layer = extract_parent_layer,
+        rule_type = "extract",
+        user = "root",
     )
 
     private_do_not_use_feature_json_genrule(
         name = name,
-        deps = ["//antlir/bzl/genrule/extractor:extract"],
         output_feature_cmd = """
 # locate source layer path
 binary_path=( $(exe //antlir:find-built-subvol) )
@@ -146,11 +140,32 @@ layer_loc="$(location {work_layer})"
 source_layer_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
 cp "${{source_layer_path}}{output_dir}/feature.json" "$OUT"
         """.format(
-            work_layer = ":" + work_layer,
             output_dir = output_dir,
+            work_layer = ":" + work_layer,
         ),
         visibility = [],
+        deps = ["//antlir/bzl/genrule/extractor:extract"],
     )
+
+    if is_buck2():
+        antlir2_feature.new(
+            name = name,
+            features = [
+                antlir2_feature.extract_from_layer(
+                    _implicit_from_antlir1 = True,
+                    binaries = binaries,
+                    layer = source,
+                ),
+            ],
+            visibility = [],
+        )
+    else:
+        # export a target of the same name to make td happy
+        export_file(
+            name = name,
+            src = antlir_dep(":empty"),
+            antlir_rule = "user-internal",
+        )
 
     return normalize_target(":" + name)
 

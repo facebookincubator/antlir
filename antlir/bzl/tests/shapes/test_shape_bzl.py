@@ -455,7 +455,7 @@ class TestShapeBzl(unittest.TestCase):
                 items=["item"],
                 extra_deps=["extra_deps"],
             ),
-            struct(items=["item"], deps=["extra_deps"]),
+            struct(items=["item"], deps=["extra_deps"], antlir2_feature=None),
         )
 
     def test_default_value_sentinel(self) -> None:

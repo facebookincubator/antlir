@@ -49,13 +49,15 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "use_antlir2")
+load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "is_buck2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
+load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_names", "flavors_to_structs")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl:target_helpers.bzl", "normalize_target")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "extract_tagged_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 
@@ -254,9 +256,9 @@ def normalize_features(
         fail("Missing `rpms_install` for flavors `{}`. Expected `{}`".format(missing_flavors, flavor_names))
 
     return struct(
-        targets = targets,
-        inline_features = inline_features,
         direct_deps = direct_deps,
+        inline_features = inline_features,
+        targets = targets,
     )
 
 def private_do_not_use_feature_json_genrule(
@@ -267,7 +269,7 @@ def private_do_not_use_feature_json_genrule(
     name = PRIVATE_DO_NOT_USE_feature_target_name(name)
     buck_genrule(
         name = name,
-        type = "image_feature",  # For queries
+        antlir_rule = "user-internal",
         # Future: It'd be nice to refactor `bash.bzl` and to use the
         # log-on-error wrapper here (for `fetched_package_layer`).
         bash = """
@@ -275,14 +277,14 @@ def private_do_not_use_feature_json_genrule(
         set -ue -o pipefail
         {output_feature_cmd}
         """.format(
+            output_feature_cmd = output_feature_cmd,
             deps = " ".join([
                 "$(location {})".format(t)
                 for t in sorted(deps)
             ]),
-            output_feature_cmd = output_feature_cmd,
         ),
+        type = "image_feature",  # For queries
         visibility = visibility,
-        antlir_rule = "user-internal",
     )
 
 def private_feature_new(
@@ -323,14 +325,18 @@ def private_feature_new(
 
     feature = target_tagger_to_feature(
         target_tagger,
+        antlir2_feature = antlir1_no_equivalent(
+            description = "feature dep collection",
+            label = normalize_target(":" + name),
+        ) if is_buck2() else None,
+        extra_deps = normalized_features.direct_deps,
         items = struct(
-            target = human_readable_target,
             features = [
                 tag_target(target_tagger, t)
                 for t in normalized_features.targets
             ] + normalized_features.inline_features,
+            target = human_readable_target,
         ),
-        extra_deps = normalized_features.direct_deps,
     )
 
     # to mirror dependency on parent layer feature in buck2 logic
@@ -351,11 +357,11 @@ def private_feature_new(
 
     private_do_not_use_feature_json_genrule(
         name = name,
-        deps = feature.deps,
         output_feature_cmd = 'echo {out} > "$OUT"'.format(
             out = shell.quote(structs.as_json(feature.items)),
         ),
         visibility = visibility,
+        deps = feature.deps,
     )
 
 def feature_new(
@@ -366,16 +372,26 @@ def feature_new(
         # that is not available for all flavors in REPO_CFG.flavor_to_config.
         # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None):
-    if use_antlir2():
-        antlir2.new(
-            name = name,
-            features = features,
-            visibility = visibility,
-        )
-        return
     private_feature_new(
         name,
         features,
         visibility,
         flavors,
     )
+
+    # If we're on buck2, instantiate an antlir2 feature rule. This does not
+    # conflict with the feature above, since antlir1 adds a "private" suffix to
+    # all feature targets
+    if is_buck2():
+        antlir2_feature.new(
+            name,
+            features = [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
+            visibility = get_visibility(visibility),
+        )
+    else:
+        # export a target of the same name to make td happy
+        export_file(
+            name = name,
+            src = antlir_dep(":empty"),
+            antlir_rule = "user-internal",
+        )

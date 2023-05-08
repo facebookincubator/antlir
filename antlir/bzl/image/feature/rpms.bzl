@@ -5,9 +5,10 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "use_antlir2")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs", "get_unaliased_flavors")
+load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 load(":rpms.shape.bzl", "rpm_action_item_t")
@@ -24,7 +25,7 @@ def _rpm_name_or_source(name_source):
 # names at this point, since we'd need the repo snapshot to decide
 # whether the names are valid, and whether they contain a
 # version or release number.  That'll happen later in the build.
-def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
+def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feature):
     flavors = flavors_to_structs(flavors)
 
     target_tagger = new_target_tagger()
@@ -91,6 +92,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors = None):
     return target_tagger_to_feature(
         target_tagger = target_tagger,
         items = struct(rpms = res_rpms),
+        antlir2_feature = antlir2_feature,
     )
 
 def feature_rpms_install(rpmlist, flavors = None):
@@ -159,9 +161,20 @@ from the RPM installation on the host where the binary succeeds. The issue may
 be aggravated by the lack of error handling in the script making the RPM install
 operation successful even if the binary fails.
     """
-    if use_antlir2():
-        return antlir2.rpms_install(rpms = rpmlist)
-    return _build_rpm_feature(rpmlist, "install", needs_version_set = True, flavors = flavors)
+
+    # this has to happen outside of the is_buck2 conditional or td will break
+    antlir2_rpms = [
+        r if types.is_string(r) else image_source_to_buck2_src(r)
+        for r in rpmlist
+    ]
+
+    return _build_rpm_feature(
+        rpmlist,
+        "install",
+        needs_version_set = True,
+        flavors = flavors,
+        antlir2_feature = antlir2.rpms_install(rpms = antlir2_rpms) if is_buck2() else None,
+    )
 
 def feature_rpms_remove_if_exists(rpmlist, flavors = None):
     """
@@ -171,11 +184,10 @@ Note that removals may only be applied against the parent layer -- if your
 current layer includes features both removing and installing the same
 package, this will cause a build failure.
     """
-    if use_antlir2():
-        return antlir2.rpms_remove_if_exists(rpms = rpmlist)
     return _build_rpm_feature(
         rpmlist,
         "remove_if_exists",
         needs_version_set = False,
         flavors = flavors,
+        antlir2_feature = antlir2.rpms_remove_if_exists(rpms = rpmlist) if is_buck2() else None,
     )

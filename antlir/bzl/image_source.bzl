@@ -5,11 +5,14 @@
 
 # TODO(T139523690) remove this entirely on buck2
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":image_source.shape.bzl", "image_source_t")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":structs.bzl", "structs")
+load(":target_helpers.bzl", "normalize_target")
 
 # Note to users: all callsites accepting `image.source` objects also accept
 # plain strings, which are interpreted as `image.source(<the string>)`.
@@ -57,3 +60,24 @@ def image_source_shape(source = None, **kwargs):
 
 def image_source(source = None, **kwargs):
     return image_source_shape(source, **kwargs)
+
+def image_source_to_buck2_src(source):
+    if types.is_string(source):
+        return source
+    if source.layer:
+        fail("'layer' is a misfeature, use `hoist` instead")
+    if not source.path:
+        return source.source
+    else:
+        name = "export-src-{}/{}".format(
+            source.source.replace(":", "").replace("/", "_"),
+            source.path.replace(":", "").replace("/", "_"),
+        )
+        if not native.rule_exists(name):
+            buck_genrule(
+                name = name,
+                out = paths.basename(source.path),
+                cmd = "cp --reflink=auto $(location {})/{} $OUT".format(source.source, source.path),
+                antlir_rule = "user-internal",
+            )
+        return normalize_target(":" + name)

@@ -44,6 +44,8 @@ Future: we may need another feature for removing mounts provided by parent
 layers.
 """
 
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load(":mount.shape.bzl", "build_source_t", "mount_config_t", "mount_spec_t")
 
@@ -75,6 +77,11 @@ provide the parent `/path`, but this item will create the mount-point.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(mounts = [mount_spec]),
+        antlir2_feature = antlir2_feature.host_mount(
+            source = source,
+            mountpoint = mountpoint,
+            is_directory = True,
+        ) if is_buck2() else None,
     )
 
 def feature_host_file_mount(source, mountpoint = None):
@@ -90,6 +97,11 @@ into the container at `/baz`.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(mounts = [mount_spec]),
+        antlir2_feature = antlir2_feature.host_mount(
+            source = source,
+            mountpoint = mountpoint,
+            is_directory = False,
+        ) if is_buck2() else None,
     )
 
 def feature_layer_mount(source, mountpoint = None):
@@ -109,4 +121,9 @@ then you can pass an explicit `mountpoint` argument.
     return target_tagger_to_feature(
         target_tagger = target_tagger,
         items = struct(mounts = [mount_spec]),
+        antlir2_feature = antlir2_feature.layer_mount(
+            source = source,
+            mountpoint = mountpoint,
+            _implicit_from_antlir1 = True,
+        ) if is_buck2() else None,
     )
