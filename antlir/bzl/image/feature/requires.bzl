@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":requires.shape.bzl", "requires_t")
 
@@ -31,4 +33,9 @@ groups or files do indeed exist.
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(requires = [req]),
+        antlir2_feature = antlir2.requires(
+            users = users or [],
+            groups = groups or [],
+            files = files or [],
+        ) if is_buck2() else None,
     )

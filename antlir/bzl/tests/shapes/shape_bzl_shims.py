@@ -104,3 +104,7 @@ class collections(object):
     @staticmethod
     def uniq(it):
         return list(set(it))
+
+
+def is_buck2():
+    return False

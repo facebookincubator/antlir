@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load(":meta_key_value_store.shape.bzl", "meta_key_value_store_item_t", "remove_meta_key_value_store_item_t")
 
@@ -37,6 +39,12 @@ def feature_meta_store(key, value, require_keys = None, store_if_not_exists = Fa
     return target_tagger_to_feature(
         new_target_tagger(),
         items = struct(meta_key_value_store = [item]),
+        antlir2_feature = antlir2.metakv_store(
+            key = key,
+            value = value,
+            require_keys = require_keys,
+            store_if_not_exists = store_if_not_exists,
+        ) if is_buck2() else None,
     )
 
 def feature_remove_meta_store(key):
@@ -54,4 +62,5 @@ def feature_remove_meta_store(key):
                 key = key,
             ),
         ]),
+        antlir2_feature = antlir2.metakv_remove(key = key) if is_buck2() else None,
     )

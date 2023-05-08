@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load(":compile_image_features.bzl", "compile_image_features")
@@ -120,6 +122,7 @@ def image_layer_from_package(
         struct(
             layer_from_package = [feature_shape],
         ),
+        antlir2_feature = antlir1_no_equivalent(label = normalize_target(":" + name), description = "image_layer_from_package") if is_buck2() else None,
     )]
 
     image_layer_from_package_helper(

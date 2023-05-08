@@ -13,7 +13,8 @@ types.lint_noop()
 def layer_mount(
         *,
         source: types.or_selector(str.type),
-        mountpoint: [str.type, None] = None) -> ParseTimeFeature.type:
+        mountpoint: [str.type, None] = None,
+        _implicit_from_antlir1: bool.type = False) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "mount",
         deps = {
@@ -24,6 +25,7 @@ def layer_mount(
             "is_directory": None,
             "mountpoint": mountpoint,
             "source_kind": "layer",
+            "_implicit_from_antlir1": _implicit_from_antlir1,
         },
     )
 
@@ -40,6 +42,7 @@ def host_mount(
             "is_directory": is_directory,
             "mountpoint": mountpoint,
             "source_kind": "host",
+            "_implicit_from_antlir1": False,
         },
         deps = {},
     )
@@ -51,13 +54,15 @@ _source_kind = enum("layer", "host")
 types.lint_noop(_source_kind)
 
 layer_mount_record = record(
-    mountpoint = str.type,
+    # TODO: this is only nullable because implicit conversions from antlir1
+    # don't correctly set this in many cases
+    mountpoint = [str.type, None],
     src = layer_dep.type,
 )
 
 host_mount_record = record(
     mountpoint = str.type,
-    src = layer_dep.type,
+    src = str.type,
     is_directory = bool.type,
 )
 
@@ -71,23 +76,35 @@ def mount_analyze(
         source_kind: _source_kind.type,
         is_directory: [bool.type, None],
         host_source: [str.type, None],
-        deps: {str.type: "dependency"}) -> FeatureAnalysis.type:
+        _implicit_from_antlir1: bool.type,
+        deps: {str.type: "dependency"} = {}) -> FeatureAnalysis.type:
     if source_kind == "layer":
         source = deps.pop("source")
+        if _implicit_from_antlir1 and LayerInfo not in source:
+            required_layers = []
+        else:
+            required_layers = [source[LayerInfo]]
+
         if not mountpoint:
-            default_mountpoint = source[LayerInfo].default_mountpoint
-            if not default_mountpoint:
+            if _implicit_from_antlir1 and LayerInfo in source:
+                default_mountpoint = source[LayerInfo].default_mountpoint
+            else:
+                default_mountpoint = None
+            if not default_mountpoint and not _implicit_from_antlir1:
                 fail("mountpoint is required if source does not have a default mountpoint")
             mountpoint = default_mountpoint
         return FeatureAnalysis(
             data = mount_record(
                 layer = layer_mount_record(
-                    src = layer_dep_analyze(source),
+                    src = layer_dep_analyze(
+                        source,
+                        _implicit_from_antlir1 = _implicit_from_antlir1,
+                    ),
                     mountpoint = mountpoint,
                 ),
                 host = None,
             ),
-            required_layers = [source[LayerInfo]],
+            required_layers = required_layers,
         )
     elif source_kind == "host":
         return FeatureAnalysis(

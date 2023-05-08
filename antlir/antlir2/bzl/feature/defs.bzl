@@ -9,8 +9,10 @@ load("//antlir/antlir2/bzl/feature/extract.bzl", "extract_buck_binary", "extract
 load("//antlir/antlir2/bzl/feature/feature.bzl", feature_new = "feature")
 load("//antlir/antlir2/bzl/feature/genrule.bzl", "genrule")
 load("//antlir/antlir2/bzl/feature/install.bzl", "install")
+load("//antlir/antlir2/bzl/feature/metakv.bzl", "metakv_remove", "metakv_store")
 load("//antlir/antlir2/bzl/feature/mount.bzl", "host_mount", "layer_mount")
 load("//antlir/antlir2/bzl/feature/remove.bzl", "remove")
+load("//antlir/antlir2/bzl/feature/requires.bzl", "requires")
 load("//antlir/antlir2/bzl/feature/rpms.bzl", "rpms_install", "rpms_remove_if_exists")
 load("//antlir/antlir2/bzl/feature/symlink.bzl", "ensure_dir_symlink", "ensure_file_symlink")
 load("//antlir/antlir2/bzl/feature/tarball.bzl", "tarball")
@@ -26,8 +28,11 @@ feature = struct(
     genrule = genrule,
     install = install,
     layer_mount = layer_mount,
+    metakv_store = metakv_store,
+    metakv_remove = metakv_remove,
     host_mount = host_mount,
     remove = remove,
+    requires = requires,
     rpms_install = rpms_install,
     rpms_remove_if_exists = rpms_remove_if_exists,
     ensure_file_symlink = ensure_file_symlink,

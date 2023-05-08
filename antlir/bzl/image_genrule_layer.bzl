@@ -7,7 +7,7 @@
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
-load("//antlir/bzl:build_defs.bzl", "use_antlir2")
+load("//antlir/bzl:build_defs.bzl", "is_buck2", "use_antlir2")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "normalize_container_opts")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -144,6 +144,10 @@ Optional arguments:
                 ),
             ),
         ]),
+        antlir2_feature = antlir2_feature.genrule(
+            cmd = cmd,
+            user = user,
+        ) if is_buck2() else None,
     )]
 
     image_genrule_layer_helper(
