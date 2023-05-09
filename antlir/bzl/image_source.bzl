@@ -77,7 +77,7 @@ def image_source_to_buck2_src(source):
             buck_genrule(
                 name = name,
                 out = paths.basename(source.path),
-                cmd = "cp --reflink=auto $(location {})/{} $OUT".format(source.source, source.path),
+                cmd = "cp -r --reflink=auto $(location {})/{} $OUT".format(source.source, source.path),
                 antlir_rule = "user-internal",
             )
         return normalize_target(":" + name)
