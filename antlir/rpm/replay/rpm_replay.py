@@ -141,6 +141,9 @@ def replay_rpms_and_compiler_items(
                     pickle.dumps(compile_items_to_subvol_args, 0),
                 ],
                 build_appliance=not_none(layer_opts.build_appliance),
+                ro_bindmounts=[
+                    (compile_items_to_subvol_bin_path, compile_items_to_subvol_bin_path)
+                ],
             ),
             PopenArgs(),
         )

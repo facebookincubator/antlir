@@ -23,6 +23,7 @@ def get_compiler_nspawn_opts(
     *,
     cmd: Iterable[MehStr],
     build_appliance: Subvol,
+    ro_bindmounts: Iterable[Tuple[AnyStr, AnyStr]] = (),
     rw_bindmounts: Iterable[Tuple[AnyStr, AnyStr]] = (),
 ):
     """
@@ -40,6 +41,7 @@ def get_compiler_nspawn_opts(
         bind_repo_ro=True,
         bind_artifacts_dir_rw=True,
         hostname=hostname_for_compiler_in_ba(),
+        bindmount_ro=ro_bindmounts,
         bindmount_rw=rw_bindmounts,
     )
 

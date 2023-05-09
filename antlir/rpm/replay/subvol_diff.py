@@ -50,7 +50,9 @@ for p in [
     "var/log/dnf.librepo.log",
     "var/log/dnf.log",
     "var/log/dnf.rpm.log",
-    ".meta/build/target",
+    # We don't care about build meta as we may be using a cached CM binary
+    ".meta/build/",
+    ".meta/private/opts/artifacts_may_require_repo",
     ".meta/key_value_store",
 ]:
     assert not p.startswith("/"), p
