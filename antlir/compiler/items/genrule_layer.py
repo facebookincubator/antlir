@@ -15,6 +15,7 @@ from antlir.compiler.subvolume_on_disk import SubvolumeOnDisk
 from antlir.config import repo_config
 from antlir.fs_utils import Path
 from antlir.nspawn_in_subvol.args import (
+    _new_nspawn_debug_only_not_for_prod_opts,
     AttachAntlirDirMode,
     new_nspawn_opts,
     NspawnPluginArgs,
@@ -76,6 +77,9 @@ class GenruleLayerItem(genrule_layer_t):
                 )
                 if c_opts.attach_antlir_dir
                 else None,
+                debug_only_opts=_new_nspawn_debug_only_not_for_prod_opts(
+                    debug=layer_opts.debug
+                ),
             )
 
             run_nspawn(  # NB: stdout redirects to stderr by default
