@@ -9,6 +9,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:shape.bzl", "shape")
+load(":hoist.bzl", "hoist")
 load(":image_source.shape.bzl", "image_source_t")
 load(":maybe_export_file.bzl", "maybe_export_file")
 load(":structs.bzl", "structs")
@@ -65,7 +66,16 @@ def image_source_to_buck2_src(source):
     if types.is_string(source):
         return source
     if source.layer:
-        fail("'layer' is a misfeature, use `hoist` instead")
+        name = "hoist-src-{}/{}".format(
+            source.layer.replace(":", "").replace("/", "_"),
+            source.path.replace(":", "").replace("/", "_"),
+        )
+        hoist(
+            name = name,
+            layer = source.layer,
+            path = source.path,
+        )
+        return normalize_target(":" + name)
     if not source.path:
         return source.source
     else:
