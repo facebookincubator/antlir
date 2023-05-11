@@ -188,13 +188,30 @@ image.layer(
 
 # Only test-subvol-rpm-compare supports rpm removal
 image.layer(
-    name = "test-subvol-rpm-compare-leaf",
-    features = test_rpms.remove(["rpm-test-milk"]) + test_rpms.add(["rpm-test-mice"]),
+    name = "test-subvol-rpm-compare-leaf-rm",
+    features = test_rpms.remove([
+        "rpm-test-milk",
+        "rpm-test-mice",
+    ]),
     flavor = "antlir_test",
     flavor_config_override = image.opts(
         rpm_repo_snapshot = "//antlir/rpm:rpm-replay-repo-snapshot-for-tests",
     ),
     parent_layer = ":leaf",
+)
+
+# Unlike yum, `dnf install foo` won't upgrade `foo` if it's already
+# installed. We expect this leaf image to have a newer version of
+# `rpm-test-mice` so we remove it in the previous layer and re-add it
+# here so that we get the latest version.
+image.layer(
+    name = "test-subvol-rpm-compare-leaf",
+    features = test_rpms.add(["rpm-test-mice"]),
+    flavor = "antlir_test",
+    flavor_config_override = image.opts(
+        rpm_repo_snapshot = "//antlir/rpm:rpm-replay-repo-snapshot-for-tests",
+    ),
+    parent_layer = ":test-subvol-rpm-compare-leaf-rm",
 )
 
 python_unittest(

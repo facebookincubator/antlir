@@ -110,20 +110,23 @@ def _gen_nevras_from_installer_output(
             continue
 
         pkg_spec = m.group(2)
+        nevra = None
         if ":" not in pkg_spec:  # Both `yum` and `dnf` omit epoch if 0
             m = nvra_re.match(pkg_spec)
             assert m, f"Could not parse {rpm_installer} output: {line}"
             nevra = NEVRA(m.group(1), "0", m.group(2), m.group(3), m.group(4))
-        elif rpm_installer == YumDnf.dnf:  # NEVRA
-            m = nevra_re.match(pkg_spec)
+        else:
+            # Parse rpm installer output opportunisticly
+            for exp, order in [
+                (nevra_re, range(1, 6)),
+                (envra_re, [2, 1, 3, 4, 5]),
+            ]:
+                m = exp.match(pkg_spec)
+                if m:
+                    nevra = NEVRA(*[m.group(i) for i in order])
+                    break
             assert m, f"Could not parse {rpm_installer} output: {line}"
-            nevra = NEVRA(*m.groups())
-        elif rpm_installer == YumDnf.yum:  # ENVRA
-            m = envra_re.match(pkg_spec)
-            assert m, f"Could not parse {rpm_installer} output: {line}"
-            nevra = NEVRA(m.group(2), m.group(1), m.group(3), m.group(4), m.group(5))
-        else:  # pragma: no cover
-            raise NotImplementedError(rpm_installer)
+        assert nevra is not None
 
         # The installer can print multiple "Installing" lines per NEVRA
         if nevra == just_yielded:
