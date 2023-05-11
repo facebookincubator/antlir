@@ -21,6 +21,11 @@ impl<'a> CompileFeature for Symlink<'a> {
         // installed somewhere and used as a rootfs, and doing things "inside"
         // the image without actually doing some form of chroot is super broken
         // anyway.
+        if std::fs::symlink_metadata(ctx.dst_path(self.link.path())).is_ok() {
+            // the depgraph already ensured that it points to the right location
+            tracing::debug!("symlink already exists");
+            return Ok(());
+        }
         std::os::unix::fs::symlink(self.target.path(), ctx.dst_path(self.link.path()))?;
         Ok(())
     }
