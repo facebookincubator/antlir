@@ -400,7 +400,7 @@ class Subvol(DoNotFreeze):
     def mark_readonly_and_write_sendstream_to_file(
         self,
         outfile,
-        _retries=3,
+        _retries=10,
         **kwargs,
     ) -> None:
         def _maybe_retry():  # pragma: no cover
