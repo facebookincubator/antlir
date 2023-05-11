@@ -490,6 +490,17 @@ impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
+        let mut requires = vec![Requirement::ordered(
+            ItemKey::Path(
+                self.link
+                    .path()
+                    .parent()
+                    .unwrap_or_else(|| std::path::Path::new("/"))
+                    .to_owned()
+                    .into(),
+            ),
+            Validator::FileType(FileType::Directory),
+        )];
         // target may be a relative path, in which
         // case we need to resolve it relative to
         // the link
@@ -502,26 +513,20 @@ impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
                 .expect("the link cannot itself be /")
                 .join(self.target.path()),
         };
-        vec![
-            Requirement::ordered(
+        // Allow an image author to create a symlink to /run without verifying
+        // that it exists (since this a tmpfs at runtime we can't know what's
+        // going to be there, but trust that the author knows what they're
+        // doing)
+        if !absolute_target.starts_with("/run") {
+            requires.push(Requirement::unordered(
                 ItemKey::Path(absolute_target.into()),
                 Validator::FileType(match self.is_directory {
                     true => FileType::Directory,
                     false => FileType::File,
                 }),
-            ),
-            Requirement::ordered(
-                ItemKey::Path(
-                    self.link
-                        .path()
-                        .parent()
-                        .unwrap_or_else(|| std::path::Path::new("/"))
-                        .to_owned()
-                        .into(),
-                ),
-                Validator::FileType(FileType::Directory),
-            ),
-        ]
+            ));
+        }
+        requires
     }
 }
 
