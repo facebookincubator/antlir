@@ -16,7 +16,17 @@ use serde::Serialize;
 
 /// An item that may or may not be provided by a feature in this layer or any of
 /// its parents. Used for dependency ordering and conflict checking.
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deserialize,
+    Serialize
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Item<'a> {
     Path(Path<'a>),
@@ -30,7 +40,17 @@ pub enum Item<'a> {
     Layer(Layer<'a>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deserialize,
+    Serialize
+)]
 #[serde(rename_all = "snake_case")]
 pub enum ItemKey<'a> {
     Path(Cow<'a, std::path::Path>),
@@ -64,7 +84,17 @@ impl<'a> Item<'a> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deserialize,
+    Serialize
+)]
 #[serde(rename_all = "snake_case")]
 pub enum Path<'a> {
     Entry(FsEntry<'a>),
@@ -75,14 +105,35 @@ pub enum Path<'a> {
     Removed(Cow<'a, std::path::Path>),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deserialize,
+    Serialize
+)]
 pub struct FsEntry<'a> {
     pub(crate) path: Cow<'a, std::path::Path>,
     pub(crate) file_type: FileType,
     pub(crate) mode: u32,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    Hash,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
 #[serde(rename_all = "snake_case")]
 pub enum FileType {
     File,
@@ -121,14 +172,34 @@ impl From<std::fs::FileType> for FileType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deserialize,
+    Serialize
+)]
 pub struct User<'a> {
     pub(crate) name: Cow<'a, str>,
     // there is more information available about users, but it's not necessary
     // for the depgraph
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deserialize,
+    Serialize
+)]
 pub struct Group<'a> {
     pub(crate) name: Cow<'a, str>,
 }
@@ -153,5 +224,17 @@ impl<'a> Eq for Layer<'a> {}
 impl<'a> Hash for Layer<'a> {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.label.hash(state)
+    }
+}
+
+impl<'a> PartialOrd for Layer<'a> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.label.partial_cmp(&other.label)
+    }
+}
+
+impl<'a> Ord for Layer<'a> {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.label.cmp(&other.label)
     }
 }
