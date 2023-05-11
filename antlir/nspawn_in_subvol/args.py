@@ -416,8 +416,6 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         #  - use use the uid/gid for the /logs tmpfs mount,
         #  - execute the command as the right user,
         #  - set HOME properly.
-        # Future: Don't assume that the image password DB is compatible with
-        # the host's, and look there instead.
         "--user",
         default=defaults["user"],
         type=pwd.getpwnam,
@@ -674,6 +672,11 @@ def _parse_cli_args(argv, *, allow_debug_only_opts) -> _NspawnOpts:
     del args.layer_path
     args.layer = find_built_subvol(layer_path)
     args.subvolume_on_disk = find_subvolume_on_disk(layer_path)
+
+    # Don't assume that the image password DB (if one exists) is compatible
+    # with the host's.
+    sv_user = args.subvolume_on_disk.getpwnam(args.user.pw_name)
+    args.user = sv_user if sv_user else args.user
 
     proxy_server_config = (
         proxy_server_config_t(

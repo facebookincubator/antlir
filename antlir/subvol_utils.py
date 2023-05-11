@@ -12,7 +12,7 @@ import subprocess
 import sys
 import time
 from contextlib import contextmanager, ExitStack
-from typing import AnyStr, BinaryIO, Iterator, Optional, TypeVar
+from typing import AnyStr, BinaryIO, Iterator, Optional, TypeVar, Union
 
 import antlir.btrfsutil as btrfsutil
 from antlir.artifacts_dir import find_artifacts_dir
@@ -711,7 +711,7 @@ def get_subvolumes_dir(
 
 
 def find_subvolume_on_disk(
-    layer_output: str,
+    layer_output: Union[str, Path],
     # pyre-fixme[9]: path_in_repo has type `Path`; used as `None`.
     path_in_repo: Path = None,
     # pyre-fixme[9]: subvolumes_dir has type `Path`; used as `None`.

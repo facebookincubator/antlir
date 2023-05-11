@@ -9,6 +9,7 @@ import json
 import logging
 import socket
 from collections import namedtuple
+from pwd import struct_passwd
 from typing import Optional
 from uuid import UUID
 
@@ -187,3 +188,18 @@ class SubvolumeOnDisk(
 
     def to_json_file(self, outfile) -> None:
         outfile.write(json.dumps(self.to_serializable_dict()))
+
+    def getpwnam(self, user: str) -> Optional[struct_passwd]:
+        passwd_path = self.subvolume_path() / "etc/passwd"
+        if not passwd_path.exists():
+            return None
+        with open(passwd_path) as f:
+            pw_db = {
+                line[0]: line
+                for line in f.readlines()
+                for line in [line.strip().split(":")]
+                if len(line) == 7
+            }
+            if user not in pw_db:
+                return None
+            return struct_passwd([(int(i) if i.isdigit() else i) for i in pw_db[user]])
