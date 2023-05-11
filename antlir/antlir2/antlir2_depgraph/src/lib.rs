@@ -317,10 +317,26 @@ impl<'a> GraphBuilder<'a> {
             }
         }
 
-        let topo = match petgraph::algo::toposort(&self.g, None) {
+        // topo sort should not include edges within any parent features,
+        // otherwise (un)ordered requirements could cause a cycle
+        let mut topo_sortable_g = self.g.clone();
+        topo_sortable_g.retain_edges(|g, ex| {
+            if let Some((a, b)) = g.edge_endpoints(ex) {
+                if let Node::ParentFeature(_) = &self.g[a] {
+                    false
+                } else if let Node::ParentFeature(_) = &self.g[b] {
+                    false
+                } else {
+                    true
+                }
+            } else {
+                true
+            }
+        });
+
+        let topo = match petgraph::algo::toposort(&topo_sortable_g, None) {
             Ok(topo) => topo,
             Err(node_in_cycle) => {
-                tracing::error!("cycle detected: dot: {:#?}", self.to_dot());
                 // there might be multiple cycles, we really only need to find
                 // one though
                 let mut cycle = vec![node_in_cycle.node_id()];
@@ -328,11 +344,17 @@ impl<'a> GraphBuilder<'a> {
                 while let Some(nx) = dfs.next(&self.g) {
                     cycle.push(nx);
                     if self.g.neighbors(nx).contains(&node_in_cycle.node_id()) {
+                        // create a graph that just has the cycle so we can print a nice dot of it
+                        let mut new_g = self.g.clone();
+                        new_g.retain_nodes(|_, nx| cycle.contains(&nx));
+                        tracing::error!(
+                            "cycle detected: dot: {:#?}",
+                            petgraph::dot::Dot::new(&new_g)
+                        );
                         let mut cycle: Vec<_> = cycle
                             .into_iter()
-                            // only include the features so that it doesn't
-                            // overwhelm the user
                             .filter_map(|nx| match &self.g[nx] {
+                                // only include pending features so that the user is not overwhelmed
                                 Node::PendingFeature(f) => Some(f.clone()),
                                 _ => None,
                             })
@@ -340,13 +362,14 @@ impl<'a> GraphBuilder<'a> {
                         // Rotate the cycle so that the "minimum value" feature
                         // is first. This is semantically meaningless but does
                         // guarantee that cycle error messages are deterministic
-                        let min_index = cycle
+                        if let Some(min_idx) = cycle
                             .iter()
                             .enumerate()
                             .min_by(|(_, a), (_, b)| a.cmp(b))
-                            .expect("there is always at least one element")
-                            .0;
-                        cycle.rotate_left(min_index);
+                            .map(|(idx, _)| idx)
+                        {
+                            cycle.rotate_left(min_idx);
+                        }
                         return Err(Error::Cycle(Cycle(cycle)));
                     }
                 }

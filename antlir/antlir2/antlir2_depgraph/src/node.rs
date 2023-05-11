@@ -23,8 +23,8 @@ use crate::item::ItemKey;
 use crate::phase::Phase;
 use crate::Edge;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub enum Node<'a> {
     /// A Feature that is to be compiled in this layer.
     PendingFeature(Feature<'a>),
@@ -172,12 +172,14 @@ macro_rules! node_mapper {
 
 macro_rules! typed_node_index {
     (a, $name:ident, $mapper:ident, $variant:ident, $inner:ty) => {
+        #[allow(dead_code)]
         pub(crate) type $name<'a> = TypedNodeIndex<'a, $mapper>;
 
         node_mapper!($mapper, $variant, $inner);
     };
 
     ($name:ident, $mapper:ident, $variant:ident, $inner:ty) => {
+        #[allow(dead_code)]
         pub(crate) type $name = TypedNodeIndex<'static, $mapper>;
 
         node_mapper!($mapper, $variant, $inner);
