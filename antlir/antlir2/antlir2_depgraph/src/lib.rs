@@ -192,7 +192,18 @@ impl<'a> GraphBuilder<'a> {
                     // symlinks, resolve them
                     for ancestor in path.ancestors().skip(1) {
                         if let Some(nx) = self.items.get(&ItemKey::Path(Cow::Borrowed(ancestor))) {
-                            if let Item::Path(item::Path::Symlink { target, .. }) = &self.g[*nx] {
+                            if let Item::Path(item::Path::Symlink { target, link }) = &self.g[*nx] {
+                                // target may be a relative path, in which
+                                // case we need to resolve it relative to
+                                // the link
+                                let target = match target.is_absolute() {
+                                    true => target.clone(),
+                                    false => link
+                                        .parent()
+                                        .expect("the link cannot itself be /")
+                                        .join(target)
+                                        .into(),
+                                };
                                 let new_path = target.join(path.strip_prefix(ancestor).expect(
                                     "ancestor path can definitely be stripped as a prefix",
                                 ));
@@ -404,6 +415,29 @@ impl<'a> GraphBuilder<'a> {
                     let (item, feature) = self.g.edge_endpoints(edge).expect("definitely exists");
                     match &self.g[item] {
                         Node::Item(item) => {
+                            let item = match item {
+                                // if the item is a symlink (and we can find it
+                                // in the graph), check validators against the
+                                // target path, not the symlink itself
+                                Item::Path(item::Path::Symlink { target, link }) => {
+                                    // target may be a relative path, in which
+                                    // case we need to resolve it relative to
+                                    // the link
+                                    let target = match target.is_absolute() {
+                                        true => target.clone(),
+                                        false => link
+                                            .parent()
+                                            .expect("the link cannot itself be /")
+                                            .join(target)
+                                            .into(),
+                                    };
+                                    match self.item(&ItemKey::Path(target)) {
+                                        Some(target_item_nx) => &self.g[target_item_nx],
+                                        None => item,
+                                    }
+                                }
+                                _ => item,
+                            };
                             if !validator.satisfies(item) {
                                 return Err(Error::Unsatisfied {
                                     item: item.clone(),
@@ -500,13 +534,20 @@ impl<'a> Graph<'a> {
             let key = ItemKey::Path(path.clone().into());
             if let std::collections::hash_map::Entry::Vacant(e) = self.items.entry(key) {
                 let meta = entry.metadata()?;
-                let nx = self
-                    .g
-                    .add_node_typed(Item::Path(item::Path::Entry(item::FsEntry {
+                let path_item = if entry.path_is_symlink() {
+                    let target = std::fs::read_link(entry.path())?;
+                    item::Path::Symlink {
+                        target: target.into(),
+                        link: path.into(),
+                    }
+                } else {
+                    item::Path::Entry(item::FsEntry {
                         path: path.into(),
                         mode: meta.mode(),
                         file_type: meta.file_type().into(),
-                    })));
+                    })
+                };
+                let nx = self.g.add_node_typed(Item::Path(path_item));
                 e.insert(nx);
                 self.g.update_edge(*self.end.0, *nx, Edge::PartOf);
                 self.g.update_edge(*nx, *self.end.1, Edge::After);
