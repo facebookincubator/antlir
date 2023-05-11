@@ -516,7 +516,7 @@ async def vm(
         logger.debug(
             f"VM boot time: {boot_elapsed_ms}ms, " f"timeout_ms is now: {timeout_ms}ms"
         )
-        logger.debug(f"VM ipv6: {tapdev.guest_ipv6_ll}")
+        logger.debug(f"VM ipv6: {tapdev.guest_ipv6}")
 
         if shell == ShellMode.console:  # pragma: no cover
             logger.debug("Waiting for VM console to terminate")
