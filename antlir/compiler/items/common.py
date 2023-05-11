@@ -161,25 +161,36 @@ class ImageItem:
         """
         self.__class__.customize_fields(kwargs)
 
+        fields = [
+            f
+            for f in dataclasses.fields(self)
+            if f._field_type in (dataclasses._FIELD, dataclasses._FIELD_INITVAR)
+        ]
+
+        init_fn_args = inspect.getfullargspec(dataclasses._init_fn).args
+
         # We reproduce the logic from the constructor created by dataclasses.
         # Since we're pulling an internal function from the dataclasses module,
         # we need to cope with the API change introduced to that function in
         # Python 3.9, adding a new `globals` argument. We use `inspect` to
         # detect that case.
+        # Updated for 3.10. but really *we* should use a factory or class methods
+        # if one want to customize dataclasses init like this
         dataclasses._init_fn(
-            fields=[
-                f
-                for f in dataclasses.fields(self)
-                if f._field_type in (dataclasses._FIELD, dataclasses._FIELD_INITVAR)
-            ],
+            fields=fields,
             frozen=True,
             has_post_init=False,
             self_name="self",
-            **(
-                {"globals": {}}
-                if "globals" in inspect.getfullargspec(dataclasses._init_fn).args
-                else {}
-            ),
+            **{
+                k: v
+                for k, v in {
+                    "globals": {},
+                    "slots": False,
+                    "kw_only_fields": fields,
+                    "std_fields": (),
+                }.items()
+                if k in init_fn_args
+            },
         )(self, **kwargs)
 
 
