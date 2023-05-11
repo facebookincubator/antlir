@@ -125,11 +125,6 @@ class VmTap(object):
         return "00:00:00:00:00:{0:02d}".format(self.index + 1)
 
     @property
-    def guest_ipv6_ll(self) -> str:
-        # + 1 so we start at 1
-        return f"fe80::200:0ff:fe00:{self.index + 1}%{self.tapdev}"
-
-    @property
     def guest_ipv6(self) -> str:
         # Start at 2 so 0 (first) VM gets same addressing before multi NIC support
         return f"fd00::{2+self.index}"

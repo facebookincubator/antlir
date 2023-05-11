@@ -79,7 +79,7 @@ class GuestSSHConnection:
             *maybe_forward,
             "-i",
             str(self.privkey),
-            f"root@{self.tapdev.guest_ipv6_ll}",
+            f"root@{self.tapdev.guest_ipv6}",
         )
 
     async def run(
@@ -118,7 +118,7 @@ class GuestSSHConnection:
             *cmd,
         ]
 
-        logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6_ll}")
+        logger.debug(f"Running {cmd} in vm at {self.tapdev.guest_ipv6}")
         logger.debug(f"{' '.join([str(c) for c in cmd])}")
         proc = await asyncio.create_subprocess_exec(
             *cmd,
