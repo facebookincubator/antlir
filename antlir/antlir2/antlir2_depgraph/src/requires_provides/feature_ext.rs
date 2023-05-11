@@ -490,9 +490,21 @@ impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
     }
 
     fn requires(&self) -> Vec<Requirement<'f>> {
+        // target may be a relative path, in which
+        // case we need to resolve it relative to
+        // the link
+        let absolute_target = match self.target.path().is_absolute() {
+            true => self.target.path().to_owned(),
+            false => self
+                .link
+                .path()
+                .parent()
+                .expect("the link cannot itself be /")
+                .join(self.target.path()),
+        };
         vec![
             Requirement::ordered(
-                ItemKey::Path(self.target.path().to_owned().into()),
+                ItemKey::Path(absolute_target.into()),
                 Validator::FileType(match self.is_directory {
                     true => FileType::Directory,
                     false => FileType::File,

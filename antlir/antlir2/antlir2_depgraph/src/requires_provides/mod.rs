@@ -74,6 +74,8 @@ pub enum Validator<'a> {
     DoesNotExist,
     /// ANDs all of the contained [Validator]s.
     All(Vec<Validator<'a>>),
+    /// ORs all of the contained [Validator]s.
+    Any(Vec<Validator<'a>>),
     /// Assert an [Item] is of a certain [FileType].
     FileType(FileType),
     /// Asserts an [Item] is an executable file.
@@ -95,6 +97,7 @@ impl<'a> Validator<'a> {
                 _ => false,
             },
             Self::All(v) => v.iter().all(|v| v.satisfies(item)),
+            Self::Any(v) => v.iter().any(|v| v.satisfies(item)),
             Self::FileType(f) => match item {
                 Item::Path(Path::Entry(e)) => e.file_type == *f,
                 _ => false,
