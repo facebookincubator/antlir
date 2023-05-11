@@ -14,7 +14,8 @@ from antlir.btrfsutil import subvolume_info
 
 from antlir.compiler import subvolume_on_disk
 from antlir.fs_utils import Path
-from antlir.subvol_utils import with_temp_subvols
+from antlir.subvol_utils import find_subvolume_on_disk, with_temp_subvols
+from antlir.tests.layer_resource import layer_resource
 
 _MY_HOST = "my_host"
 
@@ -171,6 +172,20 @@ class SubvolumeOnDiskTestCase(unittest.TestCase):
                 subvol_path=subvol_path,
                 subvolumes_dir=subvols / "bad",
             )
+
+    def test_getpwnam(self) -> None:
+        # Verify an empty subvol doesn't have a "root" user.
+        sv = find_subvolume_on_disk(
+            layer_resource(__package__, "empty-layer"),
+        )
+        self.assertEqual(sv.getpwnam("root"), None)
+
+        # Verify the BA has a "root" user and no "foobar" user.
+        sv = find_subvolume_on_disk(
+            layer_resource(__package__, "build-appliance"),
+        )
+        self.assertEqual(sv.getpwnam("root").pw_name, "root")
+        self.assertEqual(sv.getpwnam("foobar"), None)
 
 
 if __name__ == "__main__":

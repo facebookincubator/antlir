@@ -15,7 +15,7 @@ from antlir.common import pipe
 from antlir.config import _unmemoized_repo_config, antlir_dep, repo_config
 from antlir.find_built_subvol import find_built_subvol
 from antlir.fs_utils import Path, temp_dir
-from antlir.nspawn_in_subvol.args import _NOBODY_USER, _parse_cli_args
+from antlir.nspawn_in_subvol.args import _parse_cli_args
 from antlir.nspawn_in_subvol.cmd import _colon_quote_path, _extra_nspawn_args_and_env
 from antlir.nspawn_in_subvol.common import DEFAULT_PATH_ENV
 from antlir.nspawn_in_subvol.nspawn import NspawnError
@@ -359,8 +359,9 @@ class NspawnTestCase(NspawnTestBase):
 
     def test_logs_directory(self):
         # The log directory is created if we ask for it.
+        pkg_resource = (__package__, "test-layer")
         ret = self._nspawn_in(
-            (__package__, "test-layer"),
+            pkg_resource,
             [
                 "--logs-tmpfs",
                 "--",
@@ -372,7 +373,7 @@ class NspawnTestCase(NspawnTestBase):
         )
         self.assertEqual(0, ret.returncode)
         self.assertEqual(
-            f"{_NOBODY_USER.pw_uid} {_NOBODY_USER.pw_gid} 755\n".encode()
+            f"{self._nobody(pkg_resource).pw_uid} {self._nobody(pkg_resource).pw_gid} 755\n".encode()
             + self.maybe_extra_ending,
             ret.stdout,
         )
@@ -654,8 +655,9 @@ class NspawnTestCase(NspawnTestBase):
             self.assertEqual(b"hellogoodbye\n", tf.read())
 
     def test_boot_unprivileged_user(self):
+        pkg_resource = (__package__, "bootable-systemd-os")
         ret = self._nspawn_in(
-            (__package__, "bootable-systemd-os"),
+            pkg_resource,
             ["--boot", "--", "/bin/id"],
             stdout=subprocess.PIPE,
             check=True,
@@ -667,9 +669,9 @@ class NspawnTestCase(NspawnTestBase):
         # the fedora appliance image it is 65543:65543
         self.assertRegex(
             ret.stdout.decode(),
-            rf"uid={_NOBODY_USER.pw_uid}(\(nobody\))? "
-            rf"gid={_NOBODY_USER.pw_gid}(\(nobody\))? "
-            rf"groups={_NOBODY_USER.pw_gid}(\(nobody\))?\n",
+            rf"uid={self._nobody(pkg_resource).pw_uid}(\(nobody\))? "
+            rf"gid={self._nobody(pkg_resource).pw_gid}(\(nobody\))? "
+            rf"groups={self._nobody(pkg_resource).pw_gid}(\(nobody\))?\n",
         )
         self.assertEqual(b"", ret.stderr)
 

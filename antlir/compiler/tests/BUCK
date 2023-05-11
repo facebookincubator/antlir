@@ -19,9 +19,14 @@ python_unittest(
         100,
         "//antlir/compiler:subvolume_on_disk",
     )],
+    resources = {
+        layer_resource(flavor_helpers.get_build_appliance()): "build-appliance",
+        layer_resource(TEST_IMAGE_PREFIX + "empty.layer"): "empty-layer",
+    },
     supports_static_listing = True,
     deps = [
         "//antlir:subvol_utils",
+        "//antlir:testlib_layer_resource",
         "//antlir/compiler:subvolume_on_disk",
     ],
 )

@@ -6,12 +6,14 @@
 
 from contextlib import contextmanager
 from pwd import struct_passwd
+from typing import AnyStr, Tuple
 from unittest import mock, TestCase
 
-from antlir.nspawn_in_subvol.args import _parse_cli_args, PopenArgs
+from antlir.nspawn_in_subvol.args import _NOBODY_USER, _parse_cli_args, PopenArgs
 from antlir.nspawn_in_subvol.cmd import _extra_nspawn_args_and_env
 from antlir.nspawn_in_subvol.common import nspawn_version
 from antlir.nspawn_in_subvol.run import _set_up_run_cli
+from antlir.subvol_utils import find_subvolume_on_disk
 
 from antlir.tests.layer_resource import layer_resource
 
@@ -75,3 +77,8 @@ class NspawnTestBase(TestCase):
             # pyre-fixme[16]: `_NspawnOpts` has no attribute `opts`.
             args, _env = _extra_nspawn_args_and_env(args.opts)
             return args
+
+    def _nobody(self, rsrc_pair: Tuple[AnyStr, AnyStr]) -> struct_passwd:
+        sv = find_subvolume_on_disk(layer_resource(*rsrc_pair))
+        nobody = sv.getpwnam("nobody")
+        return nobody if nobody else _NOBODY_USER
