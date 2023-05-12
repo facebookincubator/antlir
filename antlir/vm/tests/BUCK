@@ -53,6 +53,7 @@ python_unittest(
                 disk = vm.types.disk.root(
                     # to cover the additional_scratch_mb branch in antlir/vm/share.py
                     disk_free_mb = 2048,
+                    interface = "virtio-blk",
                     layer = ":vmtest-custom-layer",
                 ),
                 runtime = vm.types.runtime.new(
@@ -64,6 +65,22 @@ python_unittest(
                         },
                     ),
                     tpm = True,
+                ),
+            ),
+        ),
+        "test-vm-nvme-json": shape.do_not_cache_me_json(
+            vm.types.opts.new(
+                disk = vm.types.disk.root(
+                    interface = "nvme",
+                    layer = ":vmtest-custom-layer",
+                ),
+            ),
+        ),
+        "test-vm-sata-json": shape.do_not_cache_me_json(
+            vm.types.opts.new(
+                disk = vm.types.disk.root(
+                    interface = "ide-hd",
+                    layer = ":vmtest-custom-layer",
                 ),
             ),
         ),

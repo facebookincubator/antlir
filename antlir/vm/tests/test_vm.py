@@ -315,3 +315,51 @@ class TestAntlirVM(AntlirTestCase):
             with Unshare([Namespace.NETWORK, Namespace.PID]) as ns:
                 with self.assertRaises(VMBootError):
                     await _create_tpm(stack, ns, "/bin/ls", timeout)
+
+    async def test_disk_interface_virtio(self):
+        opts = vm_opts_t.from_env("test-vm-json")
+
+        async with vm(
+            opts=opts,
+            console=2,
+        ) as (instance, boottime_ms, timeout_ms):
+            proc = await instance.run(
+                cmd=["/bin/ls", "/dev/vda"],
+                timeout_ms=timeout_ms,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            stdout, _ = await proc.communicate()
+            self.assertEqual(proc.returncode, 0)
+
+    async def test_disk_interface_nvme(self):
+        opts = vm_opts_t.from_env("test-vm-nvme-json")
+
+        async with vm(
+            opts=opts,
+            console=2,
+        ) as (instance, boottime_ms, timeout_ms):
+            proc = await instance.run(
+                cmd=["/bin/ls", "/dev/nvme0n1"],
+                timeout_ms=timeout_ms,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            stdout, _ = await proc.communicate()
+            self.assertEqual(proc.returncode, 0)
+
+    async def test_disk_interface_sata(self):
+        opts = vm_opts_t.from_env("test-vm-sata-json")
+
+        async with vm(
+            opts=opts,
+            console=2,
+        ) as (instance, boottime_ms, timeout_ms):
+            proc = await instance.run(
+                cmd=["/bin/ls", "/dev/sda"],
+                timeout_ms=timeout_ms,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            stdout, _ = await proc.communicate()
+            self.assertEqual(proc.returncode, 0)
