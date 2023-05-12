@@ -73,8 +73,23 @@ def _new_vm_root_disk(
         serial = serial,
     )
 
-def _new_vm_scratch_disk(size_mb, interface = "virtio-blk", physical_block_size = 512, logical_block_size = 512):
-    return disk_t(package = "//antlir:empty", additional_scratch_mb = size_mb, interface = interface, subvol = None, physical_block_size = physical_block_size, logical_block_size = logical_block_size)
+def _new_vm_scratch_disk(
+        size_mb,
+        interface = "virtio-blk",
+        physical_block_size = 512,
+        logical_block_size = 512,
+        contains_kernel = None,
+        serial = None):
+    return disk_t(
+        package = "//antlir:empty",
+        additional_scratch_mb = size_mb,
+        interface = interface,
+        subvol = None,
+        physical_block_size = physical_block_size,
+        logical_block_size = logical_block_size,
+        contains_kernel = contains_kernel,
+        serial = serial,
+    )
 
 def _new_vm_disk_from_package(
         package,
