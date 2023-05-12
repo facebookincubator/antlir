@@ -272,24 +272,35 @@ class QCow2Disk(Share):
     @property
     def qemu_args(self) -> Iterable[str]:
         serial = self.serial or self.dev
-        return (
+        args = [
             "--blockdev",
             (
                 f"driver=qcow2,node-name={self.dev},"
                 f"file.driver=file,file.filename={self.cow_disk!s},"
             ),
+        ]
+        device_bus = self.bus
+        if self.interface.value == "ide-hd":
+            # Create AHCI controller for this drive.
+            args += [
+                "--device",
+                f"ahci,id=ahci-{self.dev},bus={self.bus}",
+            ]
+            device_bus = f"ahci-{self.dev}.0"
+        args += [
             "--device",
             ",".join(
                 [
                     self.interface.value,
-                    f"bus={self.bus}",
+                    f"bus={device_bus}",
                     f"drive={self.dev}",
                     f"serial={serial}",
                     f"physical_block_size={self.physical_block_size}",
                     f"logical_block_size={self.logical_block_size}",
                 ]
             ),
-        )
+        ]
+        return args
 
     @property
     def kernel_args(self) -> Iterable[str]:

@@ -20,7 +20,7 @@ emulator_t = shape.shape(
     tpm_binary = shape.field(target_t, optional = True),
 )
 
-disk_interface_t = shape.enum("virtio-blk", "nvme")
+disk_interface_t = shape.enum("virtio-blk", "nvme", "ide-hd")
 
 # A disk device type.  The `package` attribute of this shape must be an existing
 # `package.new` target.
