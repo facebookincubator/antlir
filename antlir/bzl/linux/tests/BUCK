@@ -12,15 +12,12 @@ oncall("twimage")
 # the default Build Appliance and the other built from a
 # `third_party.library` target.
 image.layer(
-    name = "busybox-src-from-ba",
+    name = "busybox-src-from-img",
     features = [
-        feature.clone(
-            flavor_helpers.get_build_appliance(),
-            "/usr/sbin/busybox",
-            "/busybox",
-        ),
+        feature.rpms_install(["busybox"]),
     ],
-    flavor = "antlir_test",
+    # TODO: change back to antlir_test when it's no longer c7: D45719236
+    flavor = "centos9",
 )
 
 image.layer(
@@ -41,12 +38,12 @@ image.layer(
 # Now use the respective busybox source layers to construct
 # test linux layers.
 image.layer(
-    name = "test-linux-busybox-from-ba",
+    name = "test-linux-busybox-from-img",
     features = [
         linux.filesystem.install(),
         linux.busybox.install(
-            src = ":busybox-src-from-ba",
-            src_path = "/busybox",
+            src = ":busybox-src-from-img",
+            src_path = "/usr/sbin/busybox",
         ),
     ],
     flavor = "antlir_test",
