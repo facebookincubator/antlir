@@ -13,6 +13,29 @@ PrebuiltImageInfo = provider(fields = {
 })
 
 def _impl(ctx: "context") -> ["provider"]:
+    format = ctx.attrs.format
+    src = ctx.attrs.src
+    if format == "sendstream.zst":
+        format = "sendstream"
+    if format == "sendstream":
+        if ctx.attrs.src.basename.endswith("zst"):
+            src = ctx.actions.declare_output("uncompressed")
+            ctx.actions.run(
+                cmd_args(
+                    "zstd",
+                    "-d",
+                    "-o",
+                    src.as_output(),
+                    ctx.attrs.src,
+                ),
+                category = "decompress",
+            )
+    elif format == "sendstream.v2":
+        # antlir2-receive treats them the same
+        format = "sendstream"
+    else:
+        fail("unrecognized format='{}'".format(format))
+
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     ctx.actions.run(
         cmd_args(
@@ -20,8 +43,8 @@ def _impl(ctx: "context") -> ["provider"]:
             ctx.attrs.antlir2_receive[RunInfo],
             "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
-            cmd_args(ctx.attrs.format, format = "--format={}"),
-            cmd_args(ctx.attrs.src, format = "--source={}"),
+            cmd_args(format, format = "--format={}"),
+            cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
         ),
         category = "antlir2_prebuilt_layer",
@@ -58,7 +81,7 @@ prebuilt = rule(
         # only the post-processed depgraph will be invalidated if the toolchain
         # changes, not the cached layer itself
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_receive:antlir2-receive")),
-        "format": attrs.enum(["sendstream.v2"]),
+        "format": attrs.enum(["sendstream.v2", "sendstream", "sendstream.zst"]),
         "src": attrs.source(doc = "source file of the image"),
         "toolchain": attrs.toolchain_dep(
             providers = [Antlir2ToolchainInfo],
