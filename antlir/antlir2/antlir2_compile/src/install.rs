@@ -43,6 +43,17 @@ impl<'a> CompileFeature for Install<'a> {
 
                 let dst_path = ctx.dst_path(self.dst.path().join(relpath));
                 debug!("dst path is {dst_path:?}");
+
+                // the depgraph already ensured that there are no conflicts, so if
+                // this exists then it must have the correct contents
+                if dst_path.exists() {
+                    tracing::debug!(
+                        dst_path = dst_path.display().to_string(),
+                        "install destination already exists"
+                    );
+                    continue;
+                }
+
                 // For installing directories, we chown all the copied files as root.
                 // Otherwise the files would be owned by the build user, which is
                 // most certainly not what was intended.  Until we have a better
