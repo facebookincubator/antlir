@@ -43,8 +43,8 @@ pub(crate) struct Receive {
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Format {
-    #[clap(name = "sendstream.v2")]
-    SendstreamV2,
+    #[clap(name = "sendstream")]
+    Sendstream,
 }
 
 #[derive(Parser, Debug)]
