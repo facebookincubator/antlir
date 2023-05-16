@@ -46,3 +46,15 @@ class TestTap(AntlirTestCase):
         self.assertFalse(os.path.exists("/dev/net/tun"))
         self.assertFalse(os.path.exists("/dev/net"))
         self.test_create()
+
+    def test_mac_and_ip(self) -> None:
+        with Unshare([Namespace.NETWORK]) as ns:
+            eth0 = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid(), index=0)
+            self.assertEqual(eth0.guest_mac, "00:00:00:00:00:01")
+            self.assertEqual(eth0.host_ipv6, "fd00::1/64")
+            self.assertEqual(eth0.guest_ipv6, "fd00::2")
+
+            eth3 = VmTap(netns=ns, uid=os.getuid(), gid=os.getgid(), index=3)
+            self.assertEqual(eth3.guest_mac, "00:00:00:00:00:04")
+            self.assertEqual(eth3.host_ipv6, "fd00:3::1/64")
+            self.assertEqual(eth3.guest_ipv6, "fd00:3::2")

@@ -75,14 +75,14 @@ def _host_config(kernel_version):
                     },
                     "interfaces": [
                         {
-                            "addrs": ["fd00:{0}::{1}".format(i, (i + 1))],
+                            "addrs": ["fd00:{0}::2".format(i)],
                             "essential": True if i == 0 else False,
                             "interface_type": 0,
                             "mac": "00:00:00:00:00:0{0}".format(i + 1),
                             "name": "eth{0}".format(i),
                             "structured_addrs": [
                                 {
-                                    "addr": "fd00:{0}::{1}".format(i, (2 + i)),
+                                    "addr": "fd00:{0}::2".format(i),
                                     "mode": 0,
                                     "prefix_length": 64,
                                 },

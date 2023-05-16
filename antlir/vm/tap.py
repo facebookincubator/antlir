@@ -7,6 +7,7 @@
 import logging
 import subprocess
 from dataclasses import dataclass
+from ipaddress import IPv6Address
 from typing import Iterable
 
 from antlir.unshare import Unshare
@@ -131,12 +132,11 @@ class VmTap(object):
 
     @property
     def guest_ipv6(self) -> str:
-        # Start at 2 so 0 (first) VM gets same addressing before multi NIC support
-        return f"fd00::{2+self.index}"
+        return IPv6Address(f"fd00:{self.index}::2").compressed
 
     @property
     def host_ipv6(self) -> str:
-        return "fd00::1/64"
+        return "{}/64".format(IPv6Address(f"fd00:{self.index}::1").compressed)
 
     @property
     def qemu_args(self) -> Iterable[str]:
