@@ -29,6 +29,10 @@ def _impl(ctx: "context") -> ["provider"]:
                     ctx.attrs.src,
                 ),
                 category = "decompress",
+                # we absolutely need the end result locally to `btrfs receive`
+                # it, and these images are often huge and spend a ton of time
+                # uploading and downloading giant blobs to/from RE
+                local_only = True,
             )
     elif format == "sendstream.v2":
         # antlir2-receive treats them the same
