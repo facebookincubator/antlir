@@ -1,7 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library", "rust_library")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load(":test_hoist.bzl", "test_hoist")
 
 oncall("twimage")
 
@@ -48,10 +47,6 @@ python_binary(
         "//antlir:cli",
         "//antlir:common",
     ],
-)
-
-test_hoist(
-    name = "test-hoist",
 )
 
 ####
