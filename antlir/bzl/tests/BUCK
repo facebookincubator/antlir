@@ -6,6 +6,7 @@ load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/starlark_unittest:defs.bzl", "starlark_unittest")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load(":test_hoist.bzl", "test_hoist")
 
 oncall("twimage")
 
@@ -271,4 +272,8 @@ starlark_unittest(
         "//antlir/bzl:stat.bzl",
         "@bazel_skylib//lib:types.bzl",
     ],
+)
+
+test_hoist(
+    name = "test-hoist",
 )

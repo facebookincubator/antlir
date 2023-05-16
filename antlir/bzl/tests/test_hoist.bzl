@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
+load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
+load("//antlir/bzl:hoist.bzl", "hoist")
+load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load(":build_defs.bzl", "python_unittest")
-load(":flavor_helpers.bzl", "flavor_helpers")
-load(":hoist.bzl", "hoist")
-load(":image.bzl", "image")
 
 def test_hoist(name):
     image.layer(
