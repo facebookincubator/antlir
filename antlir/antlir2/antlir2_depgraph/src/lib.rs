@@ -572,8 +572,8 @@ impl<'a> Graph<'a> {
                 };
                 let nx = self.g.add_node_typed(Item::Path(path_item));
                 e.insert(nx);
-                self.g.update_edge(*self.end.0, *nx, Edge::PartOf);
-                self.g.update_edge(*nx, *self.end.1, Edge::After);
+                self.g.add_edge(*self.end.0, *nx, Edge::PartOf);
+                self.g.add_edge(*nx, *self.end.1, Edge::After);
             }
         }
         let passwd_path = root.join("etc/passwd");
@@ -592,8 +592,8 @@ impl<'a> Graph<'a> {
                     .g
                     .add_node_typed(Item::User(item::User { name: user.name }));
                 e.insert(nx);
-                self.g.update_edge(*self.end.0, *nx, Edge::PartOf);
-                self.g.update_edge(*nx, *self.end.1, Edge::After);
+                self.g.add_edge(*self.end.0, *nx, Edge::PartOf);
+                self.g.add_edge(*nx, *self.end.1, Edge::After);
             }
         }
         let group_path = root.join("etc/group");
@@ -612,8 +612,8 @@ impl<'a> Graph<'a> {
                     .g
                     .add_node_typed(Item::Group(item::Group { name: group.name }));
                 e.insert(nx);
-                self.g.update_edge(*self.end.0, *nx, Edge::PartOf);
-                self.g.update_edge(*nx, *self.end.1, Edge::After);
+                self.g.add_edge(*self.end.0, *nx, Edge::PartOf);
+                self.g.add_edge(*nx, *self.end.1, Edge::After);
             }
         }
         Ok(())
