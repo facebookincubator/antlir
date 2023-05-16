@@ -153,7 +153,7 @@ where
     type Err = std::io::Error;
 
     fn from_str(path: &str) -> std::io::Result<Self> {
-        let f = std::fs::File::open(path)?;
+        let f = std::io::BufReader::new(std::fs::File::open(path)?);
         D::deserialize(f)
             .map(|value| Self {
                 path: path.into(),
