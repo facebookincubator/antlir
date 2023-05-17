@@ -54,7 +54,6 @@ pub enum Item<'a> {
 #[serde(rename_all = "snake_case")]
 pub enum ItemKey<'a> {
     Path(Cow<'a, std::path::Path>),
-    RemovedPath(Cow<'a, std::path::Path>),
     User(Cow<'a, str>),
     Group(Cow<'a, str>),
     #[serde(borrow)]
@@ -66,20 +65,11 @@ impl<'a> Item<'a> {
         match self {
             Self::Path(p) => match p {
                 Path::Entry(e) => ItemKey::Path(e.path.clone()),
-                Path::Removed(p) => ItemKey::RemovedPath(p.clone()),
                 Path::Symlink { link, .. } => ItemKey::Path(link.clone()),
             },
             Self::User(u) => ItemKey::User(u.name.clone()),
             Self::Group(g) => ItemKey::Group(g.name.clone()),
             Self::Layer(l) => ItemKey::Layer(l.label.clone()),
-        }
-    }
-
-    /// If this item is an undo of a previous action, it can be overridden in the graph
-    pub(crate) fn is_undo(&self) -> bool {
-        match self {
-            Self::Path(Path::Removed(_)) => true,
-            _ => false,
         }
     }
 }
@@ -102,7 +92,6 @@ pub enum Path<'a> {
         link: Cow<'a, std::path::Path>,
         target: Cow<'a, std::path::Path>,
     },
-    Removed(Cow<'a, std::path::Path>),
 }
 
 #[derive(

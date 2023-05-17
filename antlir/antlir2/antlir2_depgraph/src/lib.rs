@@ -11,6 +11,7 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::os::unix::fs::MetadataExt;
@@ -221,22 +222,10 @@ impl<'a> GraphBuilder<'a> {
 
     fn add_item(&mut self, item: Item<'a>) -> node::ItemNodeIndex<'a> {
         let key = item.key();
-        // If this Item undos another, it needs to be added to the graph on its
-        // own. The previous Item will be left in the graph, but will be
-        // overwritten in the items tracker map to this new node which is the
-        // most recent version of that item
-        if self.item(&key).is_some() && item.is_undo() {
-            let nx = self.g.add_node_typed(item);
-            self.g
-                .add_edge(*self.items[&key], *nx, Edge::Requires(Validator::Exists));
-            self.items.insert(key, nx);
-            nx
-        } else {
-            *self
-                .items
-                .entry(key)
-                .or_insert_with(|| self.g.add_node_typed(item))
-        }
+        *self
+            .items
+            .entry(key)
+            .or_insert_with(|| self.g.add_node_typed(item))
     }
 
     pub fn add_layer_dependency(&mut self, graph: Graph<'a>) -> &mut Self {
@@ -550,10 +539,12 @@ impl<'a> Graph<'a> {
     /// filesystem and add it to the end of the graph since we don't know where
     /// it came from.
     pub fn populate_dynamic_items(&mut self, root: &Path) -> std::io::Result<()> {
+        let mut seen_paths = HashSet::new();
         for entry in walkdir::WalkDir::new(root) {
             let entry = entry?;
             let path =
                 Path::new("/").join(entry.path().strip_prefix(root).expect("this must succeed"));
+            seen_paths.insert(path.clone());
             let key = ItemKey::Path(path.clone().into());
             if let std::collections::hash_map::Entry::Vacant(e) = self.items.entry(key) {
                 let meta = entry.metadata()?;
@@ -576,6 +567,20 @@ impl<'a> Graph<'a> {
                 self.g.add_edge(*nx, *self.end.1, Edge::After);
             }
         }
+        // remove any items from the depgraph if they refer to paths that are no
+        // longer in the actual filesystem
+        for (key, nx) in self.items.iter() {
+            if let ItemKey::Path(p) = key {
+                if !seen_paths.contains(p.as_ref()) {
+                    self.g.remove_node(**nx);
+                }
+            }
+        }
+        self.items.retain(|key, _val| match key {
+            ItemKey::Path(p) => seen_paths.contains(p.as_ref()),
+            _ => true,
+        });
+
         let passwd_path = root.join("etc/passwd");
         let passwd = if passwd_path.exists() {
             antlir2_users::passwd::EtcPasswd::parse(&std::fs::read_to_string(passwd_path)?)

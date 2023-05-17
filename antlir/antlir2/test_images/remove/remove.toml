@@ -22,7 +22,7 @@ content-hash = 0
 op = 'removed'
 
 ["b/c".diff]
-mode = 'u+rx,g+rx,o+rx'
+mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = "root"
 group = "root"

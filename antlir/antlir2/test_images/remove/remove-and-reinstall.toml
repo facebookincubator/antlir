@@ -1,0 +1,19 @@
+["b/c"]
+op = 'removed'
+
+["b/c".diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+user = "root"
+group = "root"
+text = ''
+
+["b/d"]
+op = 'added'
+
+["b/d".diff]
+mode = 'u+r,g+r,o+r'
+file-type = 'regular-file'
+user = 'root'
+group = 'root'
+text = ''
