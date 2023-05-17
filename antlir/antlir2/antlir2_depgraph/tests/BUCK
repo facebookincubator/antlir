@@ -57,18 +57,46 @@ bad_depgraph(
 )
 
 good_depgraph(
-    name = "install-then-remove",
+    name = "install-foo",
     features = [
         feature.install(
             src = "//antlir:empty",
             dst = "/foo",
         ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+# `feature.remove` and `feature.install` cannot be composed within the same
+# layer. It's a poorly designed layer if it's removing things that it's
+# explicitly installing with another antlir feature (other than rpm installation
+# or unpredictable genrules)
+good_depgraph(
+    name = "remove-foo",
+    features = [
         feature.remove(
             must_exist = True,
             path = "/foo",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+    parent_layer = ":install-foo",
+)
+
+# `feature.remove` and `feature.install` _can_ be combined into a single layer
+# if the `remove` is targetting a file in the parent layer.
+good_depgraph(
+    name = "reinstall-foo",
+    features = [
+        feature.remove(
+            must_exist = True,
+            path = "/foo",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo",
+        ),
+    ],
+    parent_layer = ":install-foo",
 )
 
 buck_genrule(

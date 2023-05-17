@@ -92,7 +92,6 @@ impl<'a> Validator<'a> {
         match self {
             Self::Exists => true,
             Self::DoesNotExist => match item {
-                Item::Path(Path::Removed(_)) => true,
                 Item::Path(_) => false,
                 _ => false,
             },

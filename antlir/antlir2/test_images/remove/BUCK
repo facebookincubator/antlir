@@ -15,7 +15,6 @@ image.layer(
         feature.install(
             src = "//antlir:empty",
             dst = "/b/c",
-            mode = "a+rx",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
@@ -34,4 +33,28 @@ image_diff_test(
     name = "remove-test",
     diff = "remove.toml",
     layer = ":remove",
+)
+
+image.layer(
+    name = "remove-and-reinstall",
+    features = [
+        feature.remove(path = "/a"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/a",
+        ),
+        feature.remove(path = "/b"),
+        feature.ensure_dirs_exist(dirs = "/b"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/b/d",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "remove-and-reinstall-test",
+    diff = "remove-and-reinstall.toml",
+    layer = ":remove-and-reinstall",
 )

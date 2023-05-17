@@ -439,12 +439,6 @@ impl<'f> FeatureExt<'f> for antlir2_features::mount::Mount<'f> {
 }
 
 impl<'f> FeatureExt<'f> for antlir2_features::remove::Remove<'f> {
-    fn provides(&self) -> Result<Vec<Item<'f>>, String> {
-        Ok(vec![Item::Path(Path::Removed(
-            self.path.path().to_owned().into(),
-        ))])
-    }
-
     fn requires(&self) -> Vec<Requirement<'f>> {
         match self.must_exist {
             false => vec![],
