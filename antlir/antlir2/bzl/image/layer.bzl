@@ -146,7 +146,7 @@ def _impl(ctx: "context") -> ["provider"]:
         )
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
-            plan = ctx.actions.declare_output("plan")
+            plan = ctx.actions.declare_output(identifier_prefix + "plan")
             _map_image(
                 ctx = ctx,
                 cmd = cmd_args(
@@ -166,7 +166,7 @@ def _impl(ctx: "context") -> ["provider"]:
             # and mount in a pre-built directory of all repositories for
             # completely-offline dnf installation (which is MUCH faster and more
             # reliable)
-            dnf_repos_dir = compiler_plan_to_local_repos(ctx, dnf_available_repos, plan)
+            dnf_repos_dir = compiler_plan_to_local_repos(ctx, identifier_prefix, dnf_available_repos, plan)
         else:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
