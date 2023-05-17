@@ -11,6 +11,10 @@ BuildPhase = enum(
     # unpredictable side effects (file creation/deletion, {user,group}
     # creation/deletion, etc)
     "package_manager",
+    # Chef could really be part of "genrule", but breaking it out into its own
+    # phase lets us more explicitly order it, while also clearly attributing
+    # slowness to the user in the buck logs
+    "chef",
     # We have no idea what this is going to do, but ordering it after
     # 'package_manager' will allow the user to install dependencies in the same
     # layer.
@@ -26,7 +30,7 @@ BuildPhase = enum(
 )
 
 # Quick self-test to ensure that order is correct
-if list(BuildPhase.values()) != ["package_manager", "genrule", "remove", None]:
+if list(BuildPhase.values()) != ["package_manager", "chef", "genrule", "remove", None]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
 
 def _is_predictable(phase: BuildPhase.type) -> bool.type:
@@ -40,6 +44,7 @@ def _is_predictable(phase: BuildPhase.type) -> bool.type:
     cannot be determined in advance without actually building them.
     """
     return {
+        "chef": False,
         "genrule": False,
         "package_manager": False,
         "remove": False,  # for directories, ensure that all the children are removed

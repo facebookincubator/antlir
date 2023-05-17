@@ -31,13 +31,14 @@ def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo
 
 def compiler_plan_to_local_repos(
         ctx: "context",
+        identifier_prefix: str.type,
         dnf_available_repos: ["RepoSetInfo", None],
         compiler_plan: "artifact") -> "artifact":
     """
     Use the compiler plan to build a directory of all the RPM repodata and RPM
     blobs we need to perform the dnf installations in the image.
     """
-    dir = ctx.actions.declare_output("dnf_repos", dir = True)
+    dir = ctx.actions.declare_output(identifier_prefix + "dnf_repos", dir = True)
 
     # collect all rpms keyed by repo, then nevra
     by_repo = {}
