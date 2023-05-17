@@ -12,6 +12,7 @@ load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third-party-build"
 SRC_TGZ = paths.join(PREFIX, "source.tar.gz")
+PATCHES_DIR = paths.join(PREFIX, "patches")
 SRC_DIR = paths.join(PREFIX, "src")
 DEPS_DIR = paths.join(PREFIX, "deps")
 OUTPUT_DIR = "/output"
@@ -55,6 +56,11 @@ mkdir -p "{deps_dir}/pkgconfig"
 cd "{src_dir}"
 tar xzf {src} --strip-components=1
 
+# Patch sources
+for p in \\$(ls -A {patches_dir}); do
+    patch < {patches_dir}/$p;
+done
+
 export OUTPUT="{output_dir}/"
 export PKG_CONFIG_PATH="{deps_dir}/pkgconfig"
 export MAKEFLAGS=-j
@@ -68,10 +74,11 @@ chmod +x $OUT
         """).format(
             src = SRC_TGZ,
             prepare_deps = prepare_deps,
-            prepare = script.prepare,
+            prepare = script.prepare if script.prepare else "",
             build = script.build,
             install = script.install,
             deps_dir = DEPS_DIR,
+            patches_dir = PATCHES_DIR,
             src_dir = SRC_DIR,
             output_dir = OUTPUT_DIR,
         ),
@@ -81,9 +88,10 @@ chmod +x $OUT
     image.layer(
         name = name + "__setup_layer",
         parent_layer = flavor_helpers.get_build_appliance(),
-        features = [
+        features = features + [
             feature.ensure_dirs_exist(DEPS_DIR),
             feature.ensure_dirs_exist(OUTPUT_DIR),
+            feature.ensure_dirs_exist(PATCHES_DIR),
             feature.ensure_dirs_exist(SRC_DIR),
             feature.install(
                 src,
@@ -97,13 +105,16 @@ chmod +x $OUT
             feature.rpms_install([
                 "tar",
             ]),
-        ] + features + [
+        ] + [
             feature.layer_mount(
                 dep.source,
                 paths.join(DEPS_DIR, dep.name),
             )
             for dep in deps
-        ],
+        ] + ([
+            feature.install(i, paths.join(PATCHES_DIR, i.split(":")[1]))
+            for i in script.patches
+        ] if script.patches else []),
         flavor = flavor_helpers.get_flavor_from_build_appliance(
             flavor_helpers.get_build_appliance(),
         ),
@@ -134,12 +145,8 @@ chmod +x $OUT
         **kwargs
     )
 
-def _new_script(build, install, prepare = ""):
-    return script_t(
-        prepare = prepare,
-        build = build,
-        install = install,
-    )
+def _new_script(**kwargs):
+    return script_t(**kwargs)
 
 def _library(name, *, lib_path = "lib"):
     return dep_t(
