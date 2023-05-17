@@ -1,0 +1,43 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+load("@fbcode_macros//build_defs:export_files.bzl", "export_files")
+load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule")
+load(":defs.bzl", "hello_world_build_test")
+
+oncall("twimage")
+
+export_files(files = [
+    "hello_world.c",
+    "00_patch",
+    "01_patch",
+])
+
+buck_genrule(
+    name = "hello_world.tgz",
+    out = "hello_world.tgz",
+    cmd = """
+        OUT_DIR=\\$(dirname $OUT)
+        mkdir -p "$OUT_DIR/hello_world"
+        cp "$(location {})" "$OUT_DIR/hello_world/"
+        cd "$OUT_DIR"
+        tar -czf "$OUT" hello_world/hello_world.c
+        rm -rf hello_world/
+    """.format(":hello_world.c"),
+)
+
+hello_world_build_test(
+    msg = "Hello World!",
+    ver = "default",
+)
+
+hello_world_build_test(
+    msg = "Check Your Head!",
+    patches = [
+        ":00_patch",
+        ":01_patch",
+    ],
+    ver = "patched",
+)

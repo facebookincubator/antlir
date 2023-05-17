@@ -7,9 +7,10 @@ load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target.shape.bzl", "target_t")
 
 script_t = shape.shape(
-    prepare = str,
+    prepare = shape.field(str, optional = True),
     build = str,
     install = str,
+    patches = shape.list(str, optional = True),
 )
 
 dep_t = shape.shape(

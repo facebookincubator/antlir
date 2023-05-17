@@ -1,0 +1,9 @@
+--- hello_world.c	2023-05-16 13:36:48.121770468 -0700
++++ hello_world.c	2023-05-16 13:38:12.582198604 -0700
+@@ -2,5 +2,5 @@
+ #include <unistd.h>
+ 
+ int main(int argc, char *argv[]) {
+-    printf("Goodbye Cruel World!\n");
++    printf("Check Your Head!\n");
+ }
