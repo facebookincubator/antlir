@@ -507,11 +507,15 @@ impl<'f> FeatureExt<'f> for antlir2_features::symlink::Symlink<'f> {
                 .expect("the link cannot itself be /")
                 .join(self.target.path()),
         };
-        // Allow an image author to create a symlink to /run without verifying
-        // that it exists (since this a tmpfs at runtime we can't know what's
-        // going to be there, but trust that the author knows what they're
-        // doing)
-        if !absolute_target.starts_with("/run") {
+        // Allow an image author to create a symlink to certain files without verifying
+        // that they exist, when the target indicates that the author knows what
+        // they're doing.
+        // /dev/null will reasonably always exist
+        // /run will almost certainly be a tmpfs at runtime (but
+        // TODO(T152984868) to ensure that)
+        if absolute_target != std::path::Path::new("/dev/null")
+            && !absolute_target.starts_with("/run")
+        {
             requires.push(Requirement::unordered(
                 ItemKey::Path(absolute_target.into()),
                 Validator::FileType(match self.is_directory {
