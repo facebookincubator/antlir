@@ -44,8 +44,8 @@ def initrd(
         features = [
             feature.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
             feature.install("//antlir/vm/initrd:modules.conf", "/usr/lib/modules-load.d/vm.conf"),
-            feature.ensure_subdirs_exist("/usr/lib", paths.join("modules", kernel.uname)),
-            feature.install(kernel.derived_targets.disk_boot_modules, paths.join("/usr/lib/modules", kernel.uname)),
+            feature.ensure_subdirs_exist("/usr/lib", "modules"),
+            feature.install(kernel.derived_targets.disk_boot_modules, paths.join("/usr/lib/modules", kernel.uname) + "/"),
             systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "default.target"),
             systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "metalos-init.service"),
             # vm has no network
