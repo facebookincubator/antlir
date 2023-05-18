@@ -21,6 +21,6 @@ rust_library(
     deps = [
         "serde",
         "serde_json",
-        "toml-5",
+        "toml",
     ],
 )
