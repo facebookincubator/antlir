@@ -81,6 +81,7 @@ provide the parent `/path`, but this item will create the mount-point.
             source = source,
             mountpoint = mountpoint,
             is_directory = True,
+            _implicit_from_antlir1 = True,
         ) if is_buck2() else None,
     )
 
@@ -101,6 +102,7 @@ into the container at `/baz`.
             source = source,
             mountpoint = mountpoint,
             is_directory = False,
+            _implicit_from_antlir1 = True,
         ) if is_buck2() else None,
     )
 
