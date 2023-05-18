@@ -284,7 +284,11 @@ impl<'f> FeatureExt<'f> for antlir2_features::extract::Extract<'f> {
                             ItemKey::Layer(l.layer.label.to_owned()),
                             Validator::ItemInLayer {
                                 key: ItemKey::Path(path.path().to_owned().into()),
-                                validator: Box::new(Validator::Executable),
+                                // TODO(T153458901): for correctness, this
+                                // should be Validator::Executable, but some
+                                // depgraph validation is currently buggy and
+                                // produces false negatives
+                                validator: Box::new(Validator::Exists),
                             },
                         ),
                         Requirement::ordered(

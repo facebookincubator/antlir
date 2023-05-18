@@ -110,10 +110,8 @@ impl<'a> Validator<'a> {
                 _ => false,
             },
             Self::ItemInLayer { key, validator } => match item {
-                Item::Layer(layer) => match layer.graph.items.get(key) {
-                    Some(item_in_layer_nx) => {
-                        validator.satisfies(&layer.graph.g[*item_in_layer_nx])
-                    }
+                Item::Layer(layer) => match layer.graph.get_item(key) {
+                    Some(item_in_layer) => validator.satisfies(item_in_layer),
                     None => &Self::DoesNotExist == validator.as_ref(),
                 },
                 _ => false,
