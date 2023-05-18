@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
 
 PrebuiltImageInfo = provider(fields = {
@@ -68,12 +68,15 @@ def _impl(ctx: "context") -> ["provider"]:
         subvol = subvol_symlink,
         dependency_layers = [],
     )
+    if not ctx.attrs.antlir_internal_build_appliance and not ctx.attrs.flavor:
+        fail("only build appliance images are allowed to be flavorless")
     return [
         LayerInfo(
             label = ctx.label,
             depgraph = depgraph_output,
             subvol_symlink = subvol_symlink,
             mounts = [],
+            flavor = ctx.attrs.flavor,
         ),
         DefaultInfo(subvol_symlink),
     ]
@@ -85,6 +88,8 @@ prebuilt = rule(
         # only the post-processed depgraph will be invalidated if the toolchain
         # changes, not the cached layer itself
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_receive:antlir2-receive")),
+        "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
+        "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "format": attrs.enum(["sendstream.v2", "sendstream", "sendstream.zst"]),
         "src": attrs.source(doc = "source file of the image"),
         "toolchain": attrs.toolchain_dep(

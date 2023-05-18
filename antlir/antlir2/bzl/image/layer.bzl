@@ -4,12 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "build_phase")
+load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":depgraph.bzl", "build_depgraph")
@@ -59,6 +59,8 @@ def _impl(ctx: "context") -> ["provider"]:
         fail("'flavor' must be set if there is no 'parent_layer'")
 
     flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
+    if not flavor:
+        fail("flavor= was not set, and {} does not have a flavor".format(ctx.attrs.parent_layer.label))
     flavor_info = flavor[FlavorInfo]
     build_appliance = ctx.attrs.build_appliance or flavor_info.default_build_appliance
 
@@ -207,10 +209,7 @@ def _impl(ctx: "context") -> ["provider"]:
     # use case, but sometimes creating layers with no features makes life easier
     # for macro authors, so antlir2 should allow it.
     if not final_subvol:
-        return [
-            ctx.attrs.parent_layer[LayerInfo],
-            DefaultInfo(ctx.attrs.parent_layer[LayerInfo].subvol_symlink),
-        ]
+        final_subvol = parent_layer
 
     sub_targets = {}
 
@@ -294,15 +293,7 @@ def layer(
     """
     if implicit_antlir2:
         flavor = kwargs.pop("flavor", None)
-        if flavor:
-            if not types.is_string(flavor):
-                flavor = flavor.unaliased_name
-            if ":" not in flavor:
-                if flavor == "centos8":
-                    flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8"
-                else:
-                    flavor = "//antlir/antlir2/facebook/flavor:" + flavor
-        kwargs["flavor"] = flavor
+        kwargs["flavor"] = compat.from_antlir1_flavor(flavor) if flavor else None
 
     feature_target = name + "--features"
     feature.new(
