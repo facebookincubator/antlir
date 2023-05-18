@@ -3,10 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
+load(":ensure_dirs_exist.bzl", "ensure_subdirs_exist")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
+load(":install.bzl", "install")
 
 types.lint_noop()
 
@@ -14,28 +18,41 @@ def layer_mount(
         *,
         source: types.or_selector(str.type),
         mountpoint: [str.type, None] = None,
-        _implicit_from_antlir1: bool.type = False) -> ParseTimeFeature.type:
-    return ParseTimeFeature(
-        feature_type = "mount",
-        deps = {
-            "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
-        },
-        kwargs = {
-            "host_source": None,
-            "is_directory": None,
-            "mountpoint": mountpoint,
-            "source_kind": "layer",
-            "_implicit_from_antlir1": _implicit_from_antlir1,
-        },
-    )
+        _implicit_from_antlir1: bool.type = False) -> [ParseTimeFeature.type]:
+    features = [
+        ParseTimeFeature(
+            feature_type = "mount",
+            deps = {
+                "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
+            },
+            kwargs = {
+                "host_source": None,
+                "is_directory": None,
+                "mountpoint": mountpoint,
+                "source_kind": "layer",
+                "_implicit_from_antlir1": _implicit_from_antlir1,
+            },
+        ),
+    ]
+
+    # TODO(T153572212): antlir2 requires the image author to pre-create the mountpoint
+    if _implicit_from_antlir1 and mountpoint:
+        features.extend(
+            ensure_subdirs_exist(
+                into_dir = paths.dirname(mountpoint),
+                subdirs_to_create = paths.basename(mountpoint),
+            ),
+        )
+    return features
 
 def host_mount(
         *,
         source: str.type,
         is_directory: bool.type,
-        mountpoint: [str.type, None] = None) -> ParseTimeFeature.type:
+        mountpoint: [str.type, None] = None,
+        _implicit_from_antlir1: bool.type = False) -> [ParseTimeFeature.type]:
     mountpoint = mountpoint or source
-    return ParseTimeFeature(
+    features = [ParseTimeFeature(
         feature_type = "mount",
         kwargs = {
             "host_source": source,
@@ -45,7 +62,25 @@ def host_mount(
             "_implicit_from_antlir1": False,
         },
         deps = {},
-    )
+    )]
+
+    # TODO(T153572212): antlir2 requires the image author to pre-create the mountpoint
+    if _implicit_from_antlir1 and mountpoint:
+        if is_directory:
+            features.extend(
+                ensure_subdirs_exist(
+                    into_dir = paths.dirname(mountpoint),
+                    subdirs_to_create = paths.basename(mountpoint),
+                ),
+            )
+        else:
+            features.append(
+                install(
+                    src = antlir_dep(":empty"),
+                    dst = mountpoint,
+                ),
+            )
+    return features
 
 host_file_mount = partial(host_mount, is_directory = False)
 host_dir_mount = partial(host_mount, is_directory = True)
