@@ -21,6 +21,6 @@ serde_json = { version = "1.0.79", features = ["float_roundtrip", "unbounded_dep
 toml = "0.7.3"
 
 [dev-dependencies]
-clap = { version = "3.2.23", features = ["derive", "env", "regex", "unicode", "wrap_help"] }
+clap = { version = "3.2.25", features = ["derive", "env", "regex", "unicode", "wrap_help"] }
 similar-asserts = "1.4.2"
 tempfile = "3.5"
