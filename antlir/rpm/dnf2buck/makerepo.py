@@ -7,8 +7,10 @@
 # pyre-strict
 
 import json
+import shutil
 import time
 from pathlib import Path
+from typing import Optional
 
 import click
 import createrepo_c as cr
@@ -33,6 +35,11 @@ _COMPRESSION_MODES = {
     required=True,
 )
 @click.option(
+    "--module-md",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, path_type=Path),
+    required=False,
+)
+@click.option(
     "--out",
     type=click.Path(exists=False, file_okay=False, dir_okay=True, path_type=Path),
     required=True,
@@ -50,6 +57,7 @@ _COMPRESSION_MODES = {
 def main(
     repo_id: str,
     xml_dir: Path,
+    module_md: Optional[Path],
     out: Path,
     timestamp: int,
     compress: str,
@@ -102,6 +110,14 @@ def main(
         record.fill(cr.SHA256)
         # pyre-fixme[16]: `Repomd` has no attribute `set_record`.
         repomd.set_record(record)
+    if module_md:
+        shutil.copy(module_md, out / module_md.name)
+        record = cr.RepomdRecord("modules", str(out / module_md.name))
+        record.set_timestamp(timestamp)
+        # pyre-fixme[16]: Module `createrepo_c` has no attribute `SHA256`.
+        record.fill(cr.SHA256)
+        repomd.set_record(record)
+
     # pyre-fixme[16]: `Repomd` has no attribute `set_revision`.
     repomd.set_revision(str(timestamp))
     with open(out / "repomd.xml", "w") as f:

@@ -35,6 +35,7 @@ def _impl(ctx: "context") -> ["provider"]:
             ctx.attrs.makerepo[RunInfo],
             cmd_args(repo_id, format = "--repo-id={}"),
             cmd_args(xml_dir, format = "--xml-dir={}"),
+            cmd_args(ctx.attrs.module_md, format = "--module-md={}") if ctx.attrs.module_md else cmd_args(),
             cmd_args(plain_repodata.as_output(), format = "--out={}"),
             "--compress={}".format(ctx.attrs.compress),
             optional_args,
@@ -128,6 +129,7 @@ repo_attrs = {
     ),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makerepo")),
+    "module_md": attrs.option(attrs.source(), default = None),
     "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
     "rpms": attrs.list(
         attrs.dep(providers = [RpmInfo]),
