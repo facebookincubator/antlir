@@ -257,6 +257,14 @@ impl<'a> IntoEnv<'a> for BTreeMap<String, OsString> {
     }
 }
 
+impl<'a> IntoEnv<'a> for BTreeMap<String, String> {
+    fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>> {
+        self.into_iter()
+            .map(|(k, v)| (OsString::from(k).into(), OsString::from(v).into()))
+            .collect()
+    }
+}
+
 /// Dynamic information about the isolated environment that might be necessary
 /// for the image build.
 #[derive(Debug)]
