@@ -15,6 +15,7 @@ expected_t = record(
     userinstalled = field([str.type], default = []),
     installed_not_userinstalled = field([str.type], default = []),
     not_installed = field([str.type], default = []),
+    installed_module = field([str.type], default = []),
 )
 
 def test_rpms(
@@ -23,10 +24,11 @@ def test_rpms(
         features: [types.antlir_feature],
         parent_layer: [str.type, None] = None,
         flavor: [str.type, None] = None,
+        dnf_available_repos: str.type = "//antlir/antlir2/test_images/rpms:test-repo-set",
         dnf_versionlock: [str.type, None] = None):
     buck_command_alias(
         name = name + "--script",
-        exe = ":test-installed-rpms",
+        exe = "//antlir/antlir2/test_images/rpms:test-installed-rpms",
         args = [json.encode(expected)],
     )
     image.layer(
@@ -34,7 +36,7 @@ def test_rpms(
         parent_layer = parent_layer,
         flavor = flavor,
         features = features,
-        dnf_available_repos = ":test-repo-set",
+        dnf_available_repos = dnf_available_repos,
         dnf_versionlock = dnf_versionlock,
     )
     image_sh_test(

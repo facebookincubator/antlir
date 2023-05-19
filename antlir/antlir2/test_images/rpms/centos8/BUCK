@@ -1,0 +1,31 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/test_images/rpms:defs.bzl", "expected_t", "test_rpms")
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
+
+repo_set(
+    name = "test-repo-set",
+    repo_sets = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos8"],
+    repos = ["//antlir/antlir2/test_images/rpms/repo:test-repo"],
+)
+
+_RPM_DEPS_OF_TEST = [
+    "dnf",
+    "rpm",
+    # @oss-disable
+]
+
+test_rpms(
+    name = "install-modular-rpm",
+    dnf_available_repos = ":test-repo-set",
+    expected = expected_t(
+        installed_module = ["nodejs"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "nodejs",
+            ] + _RPM_DEPS_OF_TEST,
+        ),
+    ],
+    flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8",
+)
