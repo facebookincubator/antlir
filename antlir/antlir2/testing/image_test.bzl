@@ -19,7 +19,7 @@ def _impl(ctx: "context") -> ["provider"]:
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
         cmd_args("--boot") if ctx.attrs.boot else cmd_args(),
         cmd_args(ctx.attrs.boot_requires_units, format = "--requires-unit={}"),
-        cmd_args(ctx.attrs.test[ExternalRunnerTestInfo].env.keys(), format = "--preserve-env={}"),
+        cmd_args(["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()], format = "--setenv={}"),
         cmd_args(mounts, format = "--mounts={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,

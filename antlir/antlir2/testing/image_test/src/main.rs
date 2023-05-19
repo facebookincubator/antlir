@@ -16,11 +16,14 @@ use std::os::unix::ffi::OsStrExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use antlir2_features::mount::Mount;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
+use anyhow::anyhow;
 use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use clap::Parser;
 use json_arg::JsonFile;
@@ -48,8 +51,8 @@ struct Args {
     /// Add Requires= and After= dependencies on these units
     requires_units: Vec<String>,
     #[clap(long)]
-    /// Pass these env vars into the test environment
-    preserve_env: Vec<String>,
+    /// Set these env vars in the test environment
+    setenv: Vec<KvPair>,
     #[clap(long)]
     /// Mounts required by the layer-under-test
     mounts: JsonFile<BTreeSet<Mount<'static>>>,
@@ -164,6 +167,20 @@ impl Test {
     }
 }
 
+#[derive(Debug, Clone)]
+struct KvPair(String, String);
+
+impl FromStr for KvPair {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<Self> {
+        match s.split_once('=') {
+            Some((key, value)) => Ok(Self(key.to_owned(), value.trim_matches('"').to_owned())),
+            None => Err(anyhow!("expected = separated kv pair, got '{s}'")),
+        }
+    }
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -189,9 +206,9 @@ fn main() -> Result<()> {
     .context("while looking for repo root")?;
 
     let mut setenv: BTreeMap<_, _> = args
-        .preserve_env
+        .setenv
         .into_iter()
-        .filter_map(|key| std::env::var_os(&key).map(|val| (key, val)))
+        .map(|pair| (pair.0, pair.1))
         .collect();
     // forward test runner env vars to the inner test
     for (key, val) in std::env::vars() {
@@ -240,49 +257,81 @@ fn main() -> Result<()> {
     }
 
     if args.boot {
-        // see 'man 8 systemd-run-generator', tl;dr this will:
-        // - propagate the exit code to this process
-        // - shut down the container as soon as the test binary finishes
-        let mut systemd_run_arg = OsString::from("systemd.run=\"");
-        let mut iter = args.test.into_inner_cmd().into_iter().peekable();
-        while let Some(arg) = iter.next() {
-            systemd_run_arg.push(arg);
-            if iter.peek().is_some() {
-                systemd_run_arg.push(" ");
-            }
-        }
-        systemd_run_arg.push("\"");
-        let (container_stdout, _container_stderr) = make_log_files("container")?;
-        let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
+        // Mark the kernel-command-line.service unit as being Type=simple so
+        // that the boot graph is considered complete as soon as it starts the
+        // test.
         let mut dropin = NamedTempFile::new()?;
         writeln!(dropin, "[Unit]")?;
-        for unit in &args.requires_units {
-            writeln!(dropin, "After={unit}")?;
-            writeln!(dropin, "Requires={unit}")?;
-        }
+        // do not exit the container until the test itself is done
+        writeln!(dropin, "SuccessAction=none")?;
+        // if, however, kernel-command-line.service fails to even start the
+        // test, exit immediately
+        writeln!(dropin, "FailureAction=exit")?;
         writeln!(dropin, "[Service]")?;
-        write!(dropin, "StandardOutput=truncate:")?;
-        dropin.write_all(test_stdout.path().as_os_str().as_bytes())?;
-        dropin.write_all(b"\n")?;
-        write!(dropin, "StandardError=")?;
-        dropin.write_all(test_stderr.path().as_os_str().as_bytes())?;
-        dropin.write_all(b"\n")?;
+        writeln!(dropin, "Type=simple")?;
+        // kernel-command-line.service will just start the
+        // antlir2_image_test.service unit that is created below. That unit has {Failure,Success}Action
+        let systemd_run_arg = "systemd.run=\"systemctl start antlir2_image_test.service\"";
+        ctx.inputs((
+            Path::new("/run/systemd/system/kernel-command-line.service.d/antlir2.conf"),
+            dropin.path(),
+        ));
+
+        let (container_stdout, _container_stderr) = make_log_files("container")?;
+        let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
+
+        let mut test_unit = NamedTempFile::new()?;
+        writeln!(test_unit, "[Unit]")?;
+        // exit the container as soon as this test is done, using the exit code
+        // of the process
+        writeln!(test_unit, "SuccessAction=exit")?;
+        writeln!(test_unit, "FailureAction=exit")?;
+        for unit in &args.requires_units {
+            writeln!(test_unit, "After={unit}")?;
+            writeln!(test_unit, "Requires={unit}")?;
+        }
+
+        writeln!(test_unit, "[Service]")?;
+        // Having Type=simple will not cause a test that waits for `systemctl
+        // is-system-running` to stall until the test itself is done (which
+        // would never happen). {Failure,Success}Action are still respected when
+        // the test process exits either way.
+        writeln!(test_unit, "Type=simple")?;
+
+        write!(test_unit, "ExecStart=")?;
+        let mut iter = args.test.into_inner_cmd().into_iter().peekable();
+        while let Some(arg) = iter.next() {
+            test_unit.write_all(arg.as_os_str().as_bytes())?;
+            if iter.peek().is_some() {
+                test_unit.write_all(b" ")?;
+            }
+        }
+        test_unit.write_all(b"\n")?;
+
+        // wire the test output to the parent process's std{out,err}
+        write!(test_unit, "StandardOutput=truncate:")?;
+        test_unit.write_all(test_stdout.path().as_os_str().as_bytes())?;
+        test_unit.write_all(b"\n")?;
+        write!(test_unit, "StandardError=truncate:")?;
+        test_unit.write_all(test_stderr.path().as_os_str().as_bytes())?;
+        test_unit.write_all(b"\n")?;
+
         for (key, val) in &setenv {
-            write!(dropin, "Environment=\"{key}=")?;
-            dropin.write_all(val.as_bytes())?;
-            writeln!(dropin, "\"")?;
+            write!(test_unit, "Environment=\"{key}=")?;
+            test_unit.write_all(val.as_bytes())?;
+            writeln!(test_unit, "\"")?;
         }
         // forward test runner env vars to the inner test
         for (key, val) in std::env::vars() {
             if key.starts_with("TEST_PILOT") {
-                writeln!(dropin, "Environment=\"{key}={val}\"")?;
+                writeln!(test_unit, "Environment=\"{key}={val}\"")?;
             }
         }
         ctx.outputs(test_stdout.path());
         ctx.outputs(test_stderr.path());
         ctx.inputs((
-            Path::new("/run/systemd/system/kernel-command-line.service.d/test-out.conf"),
-            dropin.path(),
+            Path::new("/run/systemd/system/antlir2_image_test.service"),
+            test_unit.path(),
         ));
 
         let mut isol = isolate(ctx.build()).into_command();
@@ -336,6 +385,7 @@ fn report(mut container_stdout: NamedTempFile) -> Result<()> {
     }
     // otherwise, print it out on stderr
     else {
+        container_stdout.rewind()?;
         std::io::copy(&mut container_stdout, &mut std::io::stderr())?;
     }
     Ok(())
