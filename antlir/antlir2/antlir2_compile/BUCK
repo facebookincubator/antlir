@@ -2,9 +2,11 @@ load("//antlir/bzl:build_defs.bzl", "rust_library")
 
 rust_library(
     name = "antlir2_compile",
-    srcs = glob(["src/**/*.rs"]) + [
+    srcs = glob([
+        "src/**/*.rs",
+        # @oss-disable
+    ]) + [
         "dnf-driver.py",
-        "dnf-recorder.py",
     ],
     deps = [
         "anyhow",
