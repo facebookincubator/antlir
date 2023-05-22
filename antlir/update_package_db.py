@@ -189,6 +189,8 @@ def _read_generated_header(infile) -> None:
 def _read_json_dir_db(path: Path) -> PackageTagDb:
     db = {}
     for package in path.listdir():
+        if package == b".buck":  # pragma: no cover
+            continue
         tag_to_info = db.setdefault(package.decode(), {})
         for tag_json in (path / package).listdir():
             tag_json = tag_json.decode()
