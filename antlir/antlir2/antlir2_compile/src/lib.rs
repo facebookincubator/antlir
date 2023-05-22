@@ -231,7 +231,6 @@ impl<'a> CompileFeature for Feature<'a> {
             Data::Mount(_) => Ok(()),
             Data::Remove(x) => x.compile(ctx),
             Data::Rpm(x) => x.compile(ctx),
-            Data::Tarball(x) => todo!("{x:?}"),
             Data::User(x) => x.compile(ctx),
             Data::UserMod(x) => x.compile(ctx),
             // depgraph does this before the compiler, no-op

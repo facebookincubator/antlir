@@ -55,7 +55,6 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Remove(x) => x.provides(),
             Data::Requires(x) => x.provides(),
             Data::Rpm(x) => x.provides(),
-            Data::Tarball(_) => todo!(),
             Data::User(x) => x.provides(),
             Data::UserMod(x) => x.provides(),
             #[cfg(facebook)]
@@ -77,7 +76,6 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::Remove(x) => x.requires(),
             Data::Requires(x) => x.requires(),
             Data::Rpm(x) => x.requires(),
-            Data::Tarball(_) => todo!(),
             Data::User(x) => x.requires(),
             Data::UserMod(x) => x.requires(),
             #[cfg(facebook)]

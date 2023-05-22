@@ -47,6 +47,5 @@ def feature_tarball(source, dest, force_root_ownership = False):
         antlir2_feature = antlir2.tarball(
             src = buck2_src,
             into_dir = dest,
-            force_root_ownership = force_root_ownership,
         ) if is_buck2() else None,
     )
