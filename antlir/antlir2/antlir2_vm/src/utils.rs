@@ -7,23 +7,27 @@
 
 use std::process::Command;
 
-use tracing::debug;
 use tracing::trace;
 
-/// Log the command being executed, unless it can't be decoded.
-pub(crate) fn log_command(command: &mut Command) -> &mut Command {
+/// Format the Command for printing
+pub(crate) fn format_command(command: &Command) -> String {
+    const CANNOT_PRINT: &str = "The command is not valid Unicode";
     let program = match command.get_program().to_str() {
         Some(s) => s,
         None => {
-            debug!("The command is not valid Unicode. Skip logging.");
-            return command;
+            return CANNOT_PRINT.to_string();
         }
     };
     let args: Option<Vec<&str>> = command.get_args().map(|x| x.to_str()).collect();
     match args {
-        Some(args) => trace!("Executing command: {} {}", program, args.join(" ")),
-        None => debug!("The command is not valid Unicode. Skip logging."),
-    };
+        Some(args) => format!("{} {}", program, args.join(" ")),
+        None => CANNOT_PRINT.to_string(),
+    }
+}
+
+/// Log the command being executed, unless it can't be decoded.
+pub(crate) fn log_command(command: &mut Command) -> &mut Command {
+    trace!("Executing command: {}", format_command(command));
     command
 }
 
@@ -55,10 +59,19 @@ mod test {
     use super::*;
 
     #[test]
-    fn basic() {
+    fn test_node_name_counter() {
         let mut test = NodeNameCounter::new("vd");
         assert_eq!(test.next(), "vd0");
         assert_eq!(test.next(), "vd1");
         assert_eq!(test.next(), "vd2");
+    }
+
+    #[test]
+    fn test_format_command() {
+        assert_eq!(format_command(&Command::new("hello")), "hello ".to_string());
+        assert_eq!(
+            format_command(Command::new("hello").arg("world")),
+            "hello world".to_string(),
+        );
     }
 }

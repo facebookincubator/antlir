@@ -7,6 +7,7 @@
 
 mod disk;
 mod isolation;
+mod net;
 mod runtime;
 mod share;
 mod types;

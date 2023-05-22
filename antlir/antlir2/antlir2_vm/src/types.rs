@@ -62,6 +62,8 @@ pub(crate) struct VMOpts {
     /// List of writable disks. We expect at least one disk and the first one
     /// would be the root disk.
     pub(crate) disks: Vec<QCow2DiskOpts>,
+    /// Number of NICs for the VM.
+    pub(crate) num_nics: usize,
     /// initrd and data if not booting from disk
     pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
     /// Operational specific parameters
