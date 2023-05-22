@@ -141,16 +141,14 @@ class RpmActionItemTestBase:
                     subvol.path("bin/sh"),
                 ]
             )
-            # pyre-fixme[16]: `RpmActionItemTestBase` has no attribute `_YUM_DNF`.
-            if self._YUM_DNF == YumDnf.dnf:
-                subvol.run_as_root(
-                    [
-                        "rmdir",
-                        subvol.path("etc/dnf/modules.d"),
-                        subvol.path("etc/dnf"),
-                        subvol.path("etc"),
-                    ]
-                )
+            subvol.run_as_root(
+                [
+                    "rmdir",
+                    subvol.path("etc/dnf/modules.d"),
+                    subvol.path("etc/dnf"),
+                    subvol.path("etc"),
+                ]
+            )
             subvol.run_as_root(
                 [
                     "rmdir",

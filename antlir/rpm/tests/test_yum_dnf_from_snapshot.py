@@ -104,11 +104,10 @@ class YumDnfFromSnapshotTestImpl:
             # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
             #  `assertTrue`.
             self.assertTrue(os.path.isdir(remove[-1]), remove[-1])
-        remove.append(install_root / f"var/log/{prog_name}.log")
+        remove.append(install_root / "var/log/dnf.log")
         self.assertTrue(os.path.exists(remove[-1]))
-        if self._YUM_DNF == YumDnf.dnf:  # `dnf` loves log files
-            for logfile in ["dnf.librepo.log", "dnf.rpm.log", "hawkey.log"]:
-                remove.append(install_root / "var/log" / logfile)
+        for logfile in ["dnf.librepo.log", "dnf.rpm.log", "hawkey.log"]:
+            remove.append(install_root / "var/log" / logfile)
 
         # Check that the above list of paths is complete.
         for path in remove:
@@ -129,11 +128,9 @@ class YumDnfFromSnapshotTestImpl:
                 "var/tmp",
                 "var",
                 "bin",
-                *(
-                    ["etc/dnf/modules.d", "etc/dnf", "etc"]
-                    if self._YUM_DNF == YumDnf.dnf
-                    else []
-                ),
+                "etc/dnf/modules.d",
+                "etc/dnf",
+                "etc",
             ],
             check=True,
             cwd=install_root,
@@ -169,22 +166,13 @@ class YumDnfFromSnapshotTestImpl:
             )
 
         # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute `_YUM_DNF`.
-        if self._YUM_DNF == YumDnf.yum:
-            # pyre-fixme[16]: `YumDnfFromSnapshotTestImpl` has no attribute
-            #  `assertRaises`.
-            with self.assertRaises(subprocess.CalledProcessError):
-                with _install_by_provides():
-                    pass
-        elif self._YUM_DNF == YumDnf.dnf:
-            # DNF allows `install-n` to install by a "Provides:" name. We don't
-            # particularly like the inconsistency with the behavior of yum, but
-            # since we have a test for it, let's assert it here.
-            with _install_by_provides() as install_root:
-                self._check_installed_content(
-                    install_root, {**milk, "carrot.txt": "carrot 2 rc0\n"}
-                )
-        else:
-            raise NotImplementedError(self._YUM_DNF)
+        # DNF allows `install-n` to install by a "Provides:" name. We don't
+        # particularly like the inconsistency with the behavior of yum, but
+        # since we have a test for it, let's assert it here.
+        with _install_by_provides() as install_root:
+            self._check_installed_content(
+                install_root, {**milk, "carrot.txt": "carrot 2 rc0\n"}
+            )
 
     def test_fail_to_write_to_protected_path(self) -> None:
         # Nothing fails with no specified protection, or with META_DIR
@@ -346,9 +334,7 @@ class YumDnfFromSnapshotTestImpl:
                 ["(Dir)", {f"macros.test-{prog}": ["(File d18)"]}],
                 pop_path(r, "etc/rpm"),
             )
-            if self._YUM_DNF == YumDnf.yum:
-                self.assertEqual(["(Dir)", {}], pop_path(r, "etc"))
-            check_common_rpm_render(self, r, prog, no_meta=True, subvol=sv)
+            check_common_rpm_render(self, r, no_meta=True, subvol=sv)
 
     def test_makecache(self) -> None:
         # The preceding tests implicitly assert that we leak no cache in
@@ -387,9 +373,7 @@ class YumDnfFromSnapshotTestImpl:
                 pop_path(snap_r, f"{snap_name}/{prog}"),
             )
             self.assertEqual(["(Dir)", {snap_name: ["(Dir)", {}]}], snap_r)
-            check_common_rpm_render(
-                self, r, prog, no_meta=True, is_makecache=True, subvol=sv
-            )
+            check_common_rpm_render(self, r, no_meta=True, is_makecache=True, subvol=sv)
 
     def test_error_repr(self):
         self.assertEqual(
@@ -409,13 +393,15 @@ class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
         with _temp_subvol("test_yum_builddep") as sv, Path.resource(
             __package__, "needs-carrot.spec", exe=False
         ) as spec_path:
+            with create_ro("needs-carrot.spec", "w") as outfile:
+                outfile.write(spec_path.read_text())
             self._yum_dnf_from_snapshot(
                 protected_paths=[],
                 yum_dnf_args=[
                     "builddep",  # our implementation needs this to be argv[1]
                     f"--installroot={sv.path()}",
                     "--assumeyes",
-                    spec_path.decode(),
+                    "needs-carrot.spec",
                 ],
             )
             r = render_subvol(sv)
@@ -423,9 +409,7 @@ class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
                 ["(Dir)", {"carrot.txt": ["(File d13)"]}],
                 pop_path(r, "rpm_test"),
             )
-            check_common_rpm_render(
-                self, r, self._YUM_DNF.value, no_meta=True, subvol=sv
-            )
+            check_common_rpm_render(self, r, no_meta=True, subvol=sv)
             self.assertEqual(
                 "carrot 2 rc0\n", sv.path("rpm_test/carrot.txt").read_text()
             )

@@ -275,6 +275,7 @@ def add_rpm_repo_snapshots_layer(
         yum_snapshot = None,  # install, make default for `yum`, make cache
         extra_snapshot_installers = None,  # install, make cache
         make_caches = False,
+        yum_is_dnf = False,
         remove_existing_snapshot = False,
         **image_layer_kwargs):
     """
@@ -339,5 +340,6 @@ def add_rpm_repo_snapshots_layer(
         name = name,
         parent_layer = ":" + name_without_caches,
         snapshot_to_installers = snapshot_to_installers,
+        yum_is_dnf = yum_is_dnf,
         **image_layer_kwargs
     )

@@ -32,11 +32,11 @@ It is normal to have many different config files in production.
 
  - Two such files may use the same name to refer to completely **different**
    repos.  For example, the repo name "os" may refer to the universe
-   "centos7" or "centos8".  Having the extra column allows us to store
+   "centos9" or "centos8".  Having the extra column allows us to store
    distinct `repomd.xml` files for these configs.
 
  - Conversely, the same "release-agnostic" repo may occur in two different
-   config files, alongside with "centos7" and "centos8" repos mentioned
+   config files, alongside with "centos9" and "centos8" repos mentioned
    above. We might put this repo in the "generic" universe.
 
 From the above, you can see that the "universe" concept gives us the

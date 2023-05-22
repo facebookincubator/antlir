@@ -7,7 +7,7 @@ title: Overview
 
 A flavor is a string identifier that controls build configurations. Options contained in a flavor can include `build_appliance` as well as `rpm_installer`.
 
-This allows us to specify compability between different images. For example, we can make sure that `centos7` images do not depend on `centos8` images, which is a breaking version.
+This allows us to specify compability between different images. For example, we can make sure that `centos9` images do not depend on `centos8` images, which is a breaking version.
 
 It also allows to reuse common build opts throughout the codebase with less duplication.
 

@@ -31,6 +31,7 @@ def image_yum_dnf_make_snapshot_cache(
         name,
         parent_layer,
         snapshot_to_installers,
+        yum_is_dnf = False,
         **image_layer_kwargs):
     cmds = []
     for snapshot, installers in snapshot_to_installers.items():
@@ -41,7 +42,7 @@ def image_yum_dnf_make_snapshot_cache(
                 ),
                 # Plain `yum makecache` produces HUMONGOUS caches for no
                 # obvious performance benefit.
-                maybe_fast = "fast" if prog == "yum" else "",
+                maybe_fast = "fast" if (prog == "yum" and not yum_is_dnf) else "",
             ))
     image.genrule_layer(
         name = name,

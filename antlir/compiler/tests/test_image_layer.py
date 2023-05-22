@@ -243,7 +243,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 pop_path(r, "shadow_me"),
             )
 
-            check_common_rpm_render(self, r, yum_dnf, subvol=sv)
+            check_common_rpm_render(self, r, subvol=sv)
 
     @unittest.skipUnless(
         "dnf" in get_rpm_installers_supported(),
@@ -366,12 +366,7 @@ class ImageLayerTestCase(unittest.TestCase):
                 pop_path(r, "rpm_test"),
             )
 
-            check_common_rpm_render(
-                self,
-                r,
-                REPO_CFG.flavor_to_config["centos7"].rpm_installer,
-                subvol=sv,
-            )
+            check_common_rpm_render(self, r, subvol=sv)
 
     def _check_installed_files_bar(self, r, clones_re=""):
         # We don't know the exact sizes because these may be wrapped

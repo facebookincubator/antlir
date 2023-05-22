@@ -346,15 +346,6 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
             )
 
 
-class YumRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
-    _YUM_DNF = YumDnf.yum
-
-    @with_mocked_temp_volume_dir
-    def test_rpm_action_item_install_local_yum(self) -> None:
-        with self._test_rpm_action_item_install_local_setup() as (r, subvol):
-            check_common_rpm_render(self, r, "yum", subvol=subvol)
-
-
 class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
     _YUM_DNF = YumDnf.dnf
 
@@ -363,4 +354,4 @@ class DnfRpmActionItemTestCase(RpmActionItemTestImpl, BaseItemTestCase):
         with self._test_rpm_action_item_install_local_setup() as (r, subvol):
             pop_path(r, "var/lib/yum", None)
             pop_path(r, "var/log/yum.log", None)
-            check_common_rpm_render(self, r, "dnf", subvol=subvol)
+            check_common_rpm_render(self, r, subvol=subvol)

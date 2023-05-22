@@ -29,7 +29,7 @@ def with_mock_plugins(method):
         with unittest.mock.patch.object(
             repo_plugins,
             "YumDnfVersionlock",
-            side_effect=lambda x, y: ("fake_version_lock", x, y),
+            side_effect=lambda x, y, **kwargs: ("fake_version_lock", x, y),
         ) as _, unittest.mock.patch.object(
             repo_plugins,
             "RepoServers",
