@@ -8,6 +8,7 @@
 mod disk;
 mod isolation;
 mod runtime;
+mod share;
 mod types;
 mod utils;
 mod vm;

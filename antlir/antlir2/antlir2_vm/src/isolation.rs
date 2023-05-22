@@ -103,6 +103,7 @@ fn env_filter(envs: Option<&[String]>) -> Vec<&str> {
 /// * `image` - container image that would be used to run the VM
 /// * `envs` - Additional envs to set inside container.
 pub(crate) fn isolated(image: PathBuf, envs: Option<&[String]>) -> Result<IsolatedContext> {
+    let repo = Platform::repo_root()?;
     let mut builder = IsolationContext::builder(image);
     builder
         .register(true)
@@ -111,6 +112,8 @@ pub(crate) fn isolated(image: PathBuf, envs: Option<&[String]>) -> Result<Isolat
             // Carry over virtualizations support
             // TODO: Linux-specific
             Path::new("/dev/kvm"),
+            // virtiofsd uses relative path to binary for local state
+            repo.as_path(),
         ]);
     let filter = env_filter(envs);
     env::vars()

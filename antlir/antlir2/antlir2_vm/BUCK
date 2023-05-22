@@ -5,6 +5,7 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     test_deps = [
         "regex",
+        "tempfile",
     ],
     deps = [
         "anyhow",

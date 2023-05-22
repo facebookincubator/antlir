@@ -25,7 +25,12 @@ use tracing::info;
 use crate::disk::QCow2Disk;
 use crate::disk::QCow2DiskBuilder;
 use crate::disk::QCow2DiskError;
+use crate::isolation::Platform;
 use crate::runtime::get_runtime;
+use crate::share::ShareError;
+use crate::share::ShareOpts;
+use crate::share::Shares;
+use crate::share::VirtiofsShare;
 use crate::types::VMOpts;
 use crate::utils::log_command;
 use crate::utils::NodeNameCounter;
@@ -37,6 +42,8 @@ pub(crate) struct VM {
     /// List of writable drives created for the VM. We need to hold the ownership
     /// to prevent the temporary disks from getting cleaned up prematuresly.
     disks: Vec<QCow2Disk>,
+    /// All directories to be shared into the VM
+    shares: Shares,
     /// Directory to keep all ephemeral states
     state_dir: PathBuf,
 }
@@ -47,6 +54,8 @@ pub(crate) enum VMError {
     StateDirError(std::io::Error),
     #[error(transparent)]
     DiskInitError(#[from] QCow2DiskError),
+    #[error(transparent)]
+    ShareInitError(#[from] ShareError),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
     #[error("Failed to boot VM: `{0}`")]
@@ -63,10 +72,12 @@ impl VM {
     pub(crate) fn new(opts: VMOpts) -> Result<Self> {
         let state_dir = Self::create_state_dir()?;
         let disks = Self::create_disks(&opts, &state_dir)?;
+        let shares = Self::create_shares(&state_dir, opts.mem_mib)?;
 
         Ok(VM {
             opts,
             disks,
+            shares,
             state_dir,
         })
     }
@@ -92,6 +103,29 @@ impl VM {
                     .build()?)
             })
             .collect()
+    }
+
+    /// Create all shares for the platform and generate all necessary unit files
+    fn create_shares(state_dir: &Path, mem_mb: usize) -> Result<Shares> {
+        let platform_shares: Result<Vec<_>> = Platform::get()
+            .iter()
+            .enumerate()
+            .map(|(i, d)| -> Result<VirtiofsShare> {
+                let opts = ShareOpts {
+                    path: d.to_str().expect("Invalid share path").to_string(),
+                    read_only: true,
+                    mount_tag: None,
+                };
+                let share = VirtiofsShare::new(opts, i, state_dir.to_path_buf());
+                share.start_virtiofsd()?;
+                Ok(share)
+            })
+            .collect();
+        let unit_files_dir = state_dir.join("mount_units");
+        fs::create_dir(&unit_files_dir).map_err(VMError::StateDirError)?;
+        let shares = Shares::new(platform_shares?, mem_mb, unit_files_dir)?;
+        shares.generate_unit_files()?;
+        Ok(shares)
     }
 
     pub(crate) fn run(&mut self) -> Result<()> {
@@ -129,6 +163,7 @@ impl VM {
         let mut args = self.common_qemu_args()?;
         args.extend(self.non_disk_boot_qemu_args());
         args.extend(self.disk_qemu_args());
+        args.extend(self.share_qemu_args());
         log_command(Command::new(&get_runtime().qemu_system).args(&args))
             .spawn()
             .map_err(VMError::QemuProcessError)
@@ -290,6 +325,10 @@ impl VM {
             None => vec![],
         }
     }
+
+    fn share_qemu_args(&self) -> Vec<String> {
+        self.shares.qemu_args()
+    }
 }
 
 #[cfg(test)]
@@ -310,9 +349,17 @@ mod test {
             non_disk_boot_opts: None,
             args: VMArgs { timeout_s: None },
         };
+        let share_opts = ShareOpts {
+            path: "/path".to_string(),
+            read_only: true,
+            mount_tag: None,
+        };
+        let share = VirtiofsShare::new(share_opts, 1, PathBuf::from("/state"));
         VM {
             opts,
             disks: vec![],
+            shares: Shares::new(vec![share], 1024, PathBuf::from("/state/units"))
+                .expect("Failed to create Shares"),
             state_dir: PathBuf::from("/test/path"),
         }
     }
@@ -323,6 +370,7 @@ mod test {
             qemu_img: "qemu-img".to_string(),
             firmware: "edk2-x86_64-code.fd".to_string(),
             roms_dir: "roms".to_string(),
+            virtiofsd: "virtiofsd".to_string(),
         })
         .expect("Failed to set fake runtime");
     }
