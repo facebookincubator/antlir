@@ -26,6 +26,8 @@ use crate::disk::QCow2Disk;
 use crate::disk::QCow2DiskBuilder;
 use crate::disk::QCow2DiskError;
 use crate::isolation::Platform;
+use crate::net::VirtualNIC;
+use crate::net::VirtualNICError;
 use crate::runtime::get_runtime;
 use crate::share::ShareError;
 use crate::share::ShareOpts;
@@ -44,6 +46,8 @@ pub(crate) struct VM {
     disks: Vec<QCow2Disk>,
     /// All directories to be shared into the VM
     shares: Shares,
+    /// Virtual NICs to create and attach
+    nics: Vec<VirtualNIC>,
     /// Directory to keep all ephemeral states
     state_dir: PathBuf,
 }
@@ -56,6 +60,8 @@ pub(crate) enum VMError {
     DiskInitError(#[from] QCow2DiskError),
     #[error(transparent)]
     ShareInitError(#[from] ShareError),
+    #[error(transparent)]
+    NICInitError(#[from] VirtualNICError),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
     #[error("Failed to boot VM: `{0}`")]
@@ -69,17 +75,27 @@ pub(crate) enum VMError {
 type Result<T> = std::result::Result<T, VMError>;
 
 impl VM {
+    /// Create a new VM along with its virtual resources
     pub(crate) fn new(opts: VMOpts) -> Result<Self> {
         let state_dir = Self::create_state_dir()?;
         let disks = Self::create_disks(&opts, &state_dir)?;
         let shares = Self::create_shares(&state_dir, opts.mem_mib)?;
+        let nics = Self::create_nics(opts.num_nics)?;
 
         Ok(VM {
             opts,
             disks,
             shares,
+            nics,
             state_dir,
         })
+    }
+
+    /// Run the VM and wait for it to finish
+    pub(crate) fn run(&mut self) -> Result<()> {
+        self.spawn_vm()?;
+        self.wait_for_vm()?;
+        Ok(())
     }
 
     /// Create a directory to store VM state. We rely on container for clean
@@ -128,10 +144,15 @@ impl VM {
         Ok(shares)
     }
 
-    pub(crate) fn run(&mut self) -> Result<()> {
-        self.spawn_vm()?;
-        self.wait_for_vm()?;
-        Ok(())
+    /// Create all virtual NICs
+    fn create_nics(count: usize) -> Result<Vec<VirtualNIC>> {
+        (0..count)
+            .map(|x| -> Result<VirtualNIC> {
+                let nic = VirtualNIC::new(x);
+                nic.create_dev()?;
+                Ok(nic)
+            })
+            .collect()
     }
 
     /// If timeout is specified, returns time until timeout, or TimeOutError
@@ -164,6 +185,7 @@ impl VM {
         args.extend(self.non_disk_boot_qemu_args());
         args.extend(self.disk_qemu_args());
         args.extend(self.share_qemu_args());
+        args.extend(self.nic_qemu_args());
         log_command(Command::new(&get_runtime().qemu_system).args(&args))
             .spawn()
             .map_err(VMError::QemuProcessError)
@@ -329,6 +351,10 @@ impl VM {
     fn share_qemu_args(&self) -> Vec<String> {
         self.shares.qemu_args()
     }
+
+    fn nic_qemu_args(&self) -> Vec<String> {
+        self.nics.iter().flat_map(|x| x.qemu_args()).collect()
+    }
 }
 
 #[cfg(test)]
@@ -346,6 +372,7 @@ mod test {
             cpus: 1,
             mem_mib: 1024,
             disks: vec![],
+            num_nics: 1,
             non_disk_boot_opts: None,
             args: VMArgs { timeout_s: None },
         };
@@ -360,6 +387,7 @@ mod test {
             disks: vec![],
             shares: Shares::new(vec![share], 1024, PathBuf::from("/state/units"))
                 .expect("Failed to create Shares"),
+            nics: vec![VirtualNIC::new(0)],
             state_dir: PathBuf::from("/test/path"),
         }
     }
