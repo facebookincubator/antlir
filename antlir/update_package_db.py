@@ -167,7 +167,7 @@ def _with_generated_header(contents, how_to_generate) -> str:
 def _write_json_dir_db(db: PackageTagDb, path: Path, how_to_generate: str) -> None:
     with populate_temp_dir_and_rename(path, overwrite=True) as td:
         for package, tag_to_info in db.items():
-            os.mkdir(td / package)
+            os.makedirs(td / package, exist_ok=True)
             for tag, info in tag_to_info.items():
                 with open(td / package / (tag + _JSON), "w") as outf:
                     outf.write(
@@ -192,7 +192,6 @@ def _read_json_dir_db(path: Path) -> PackageTagDb:
         tag_to_info = db.setdefault(package.decode(), {})
         for tag_json in (path / package).listdir():
             tag_json = tag_json.decode()
-            assert tag_json.endswith(_JSON), (path, package, tag_json)
             with open(path / package / tag_json) as infile:
                 _read_generated_header(infile)
                 tag_to_info[tag_json[: -len(_JSON)]] = json.load(infile)
@@ -306,19 +305,21 @@ async def update_package_db(
     update_all: bool = True,
     pkg_updates: Optional[ExplicitUpdates] = None,
     is_exception_skippable: Optional[Callable[[Exception], bool]] = None,
-) -> None:
+) -> Tuple[Path, PackageTagDb]:
     async with get_db_info_factory as get_db_info:
-        _write_json_dir_db(
-            db=await _get_updated_db(
-                existing_db=_read_json_dir_db(db_path),
-                get_db_info_fn=get_db_info,
-                update_all=update_all,
-                pkg_updates=pkg_updates or {},
-                is_exception_skippable=is_exception_skippable,
-            ),
-            path=out_db_path or db_path,
-            how_to_generate=how_to_generate,
+        db = await _get_updated_db(
+            existing_db=_read_json_dir_db(db_path),
+            get_db_info_fn=get_db_info,
+            update_all=update_all,
+            pkg_updates=pkg_updates or {},
+            is_exception_skippable=is_exception_skippable,
         )
+    _write_json_dir_db(
+        db=db,
+        path=out_db_path or db_path,
+        how_to_generate=how_to_generate,
+    )
+    return db_path, db
 
 
 UpdateArgs = List[Tuple[Package, Tag, str]]
@@ -436,7 +437,7 @@ async def main_cli(
     options_doc: str,
     defaults: Optional[Dict[str, Any]] = None,
     show_oss_overview_doc: bool = True,
-) -> None:
+) -> Tuple[Path, PackageTagDb]:
     """
     Implements the "update DB" CLI using your custom logic for obtaining
     `DbInfo` objects for package:tag pairs.
@@ -478,7 +479,7 @@ async def main_cli(
             "work to be done."
         )
     init_logging(debug=args.debug)
-    await update_package_db(
+    return await update_package_db(
         db_path=args.db,
         how_to_generate=how_to_generate,
         get_db_info_factory=get_db_info_factory,
