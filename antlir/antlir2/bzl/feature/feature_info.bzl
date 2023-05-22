@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 
 # A dependency of a feature that is not yet resolved. This is of very limited
 # use at parse time, but allows the feature definition to inform the rule what
@@ -30,6 +31,7 @@ ParseTimeFeature = record(
     unnamed_deps_or_sources = field([[[str.type, "selector"]], None], default = None),
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = {str.type: ""},
+    analyze_uses_context = field(bool.type, default = False),
 )
 
 # Produced by the feature implementation, this tells the rule how to build it
@@ -58,6 +60,12 @@ FeatureAnalysis = record(
     # hidden internal layer(s) that acts as the parent layer(s) for the final
     # image.
     build_phase = field(BuildPhase.type, default = BuildPhase(None)),
+)
+
+AnalyzeFeatureContext = record(
+    toolchain = Antlir2ToolchainInfo.type,
+    unique_action_identifier = str.type,
+    actions = "actions",
 )
 
 def data_only_feature_analysis_fn(record_type, build_phase: BuildPhase.type = BuildPhase(None)):

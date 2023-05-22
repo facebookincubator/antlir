@@ -298,8 +298,9 @@ def layer(
     feature_target = name + "--features"
     feature.new(
         name = feature_target,
-        visibility = [":" + name],
         features = features,
+        toolchain = kwargs.get("toolchain"),
+        visibility = [":" + name],
         compatible_with = kwargs.get("compatible_with"),
     )
     feature_target = ":" + feature_target

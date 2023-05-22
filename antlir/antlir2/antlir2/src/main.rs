@@ -40,6 +40,7 @@ struct Args {
 enum Subcommand {
     Compile(cmd::Compile),
     Depgraph(cmd::Depgraph),
+    ExtractTarball(cmd::ExtractTarball),
     Map(cmd::Map),
     Plan(cmd::Plan),
     Shell(cmd::Shell),
@@ -64,6 +65,7 @@ fn main() {
     let result = match args.subcommand {
         Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(p) => p.run(),
+        Subcommand::ExtractTarball(x) => x.run(),
         Subcommand::Map(x) => x.run(),
         Subcommand::Plan(x) => x.run(),
         Subcommand::Shell(x) => x.run(),

@@ -22,7 +22,6 @@ pub mod requires;
 pub mod rpms;
 pub mod stat;
 pub mod symlink;
-pub mod tarball;
 pub mod types;
 pub mod usergroup;
 
@@ -55,7 +54,6 @@ pub enum Data<'a> {
     Remove(remove::Remove<'a>),
     Requires(requires::Requires<'a>),
     Rpm(rpms::Rpm<'a>),
-    Tarball(tarball::Tarball<'a>),
     User(usergroup::User<'a>),
     UserMod(usergroup::UserMod<'a>),
     #[cfg(facebook)]

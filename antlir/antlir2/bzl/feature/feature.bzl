@@ -52,6 +52,7 @@ added to the `_analyze_feature` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
@@ -61,6 +62,7 @@ load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":clone.bzl", "clone_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
+load(":feature_info.bzl", "AnalyzeFeatureContext")
 load(":genrule.bzl", "genrule_analyze")
 load(":install.bzl", "install_analyze")
 load(":metakv.bzl", "metakv_analyze")
@@ -128,6 +130,12 @@ def _impl(ctx: "context") -> ["provider"]:
             analyze_kwargs["deps_or_sources"] = feature_deps_or_sources
         if feature_unnamed_deps_or_sources != None:
             analyze_kwargs["unnamed_deps_or_sources"] = feature_unnamed_deps_or_sources
+        if inline.get("analyze_uses_context"):
+            analyze_kwargs["ctx"] = AnalyzeFeatureContext(
+                toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo],
+                unique_action_identifier = key,
+                actions = ctx.actions,
+            )
 
         analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
         inline_artifacts.extend(analysis.required_artifacts)
@@ -222,6 +230,10 @@ _feature = rule(
                 attrs.one_of(attrs.dep(), attrs.source()),
             ),
         ),
+        "toolchain": attrs.toolchain_dep(
+            default = "//antlir/antlir2:toolchain",
+            providers = [Antlir2ToolchainInfo],
+        ),
     },
 )
 
@@ -264,7 +276,11 @@ def feature(
             # type(feat) will show 'record' but we can assume its a ParseTimeFeature
             feature_key = _hash_key(feat)
 
-            inline_features[feature_key] = {"feature_type": feat.feature_type, "kwargs": feat.kwargs}
+            inline_features[feature_key] = {
+                "analyze_uses_context": feat.analyze_uses_context,
+                "feature_type": feat.feature_type,
+                "kwargs": feat.kwargs,
+            }
 
             if feat.deps:
                 # TODO: record providers for later checking

@@ -1,0 +1,72 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
+
+image.layer(
+    name = "base",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/dir",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/target",
+            mode = "a+rx",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+buck_genrule(
+    name = "tar",
+    out = "archive.tar",
+    cmd = """
+        mkdir $TMP/foo
+        echo "I am bar" > $TMP/foo/bar
+        mkdir $TMP/foo/baz
+        echo "I am qux" > $TMP/foo/baz/qux
+        tar -cf $OUT -C $TMP foo
+    """,
+)
+
+buck_genrule(
+    name = "tar.gz",
+    out = "archive.tar.gz",
+    cmd = """
+        gzip -c $(location :tar) > $OUT
+    """,
+)
+
+buck_genrule(
+    name = "tar.zst",
+    out = "archive.tar.zst",
+    cmd = """
+        zstd $(location :tar) -o $OUT
+    """,
+)
+
+image.layer(
+    name = "tarball",
+    features = [
+        feature.tarball(
+            src = ":tar",
+            into_dir = "/tar",
+        ),
+        feature.tarball(
+            src = ":tar.gz",
+            into_dir = "/tar.gz",
+        ),
+        feature.tarball(
+            src = ":tar.zst",
+            into_dir = "/tar.zst",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "tarball-test",
+    diff = "tarball.toml",
+    layer = ":tarball",
+)
