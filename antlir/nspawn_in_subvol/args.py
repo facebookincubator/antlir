@@ -498,6 +498,7 @@ class NspawnPluginArgs(NamedTuple):
     snapshots_and_versionlocks: Iterable[Tuple[Path, Path]] = ()
     attach_antlir_dir: AttachAntlirDirMode = AttachAntlirDirMode.OFF
     proxy_server_config: Optional[proxy_server_config_t] = None
+    versionlock_format: Optional[str] = None
 
 
 def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
@@ -561,6 +562,13 @@ def _parser_add_plugin_args(parser: argparse.ArgumentParser) -> None:
         "RPM versions, one per line, in the following TAB-separated "
         "format: N\\tE\\tV\\tR\\tA. Snapshot is a container path, while "
         "versionlock is a host path.",
+    )
+    parser.add_argument(
+        "--versionlock-format",
+        dest="versionlock_format",
+        choices=["dnf", "yum"],
+        default=None,
+        help="Force the use of the yum or dnf versionlock file format.",
     )
     parser.add_argument(
         "--attach-antlir-dir-mode",

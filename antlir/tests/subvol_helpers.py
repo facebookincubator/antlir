@@ -49,7 +49,6 @@ def pop_path(render, path, *default):
 def check_common_rpm_render(
     test,
     rendered_subvol,
-    yum_dnf: str,
     subvol: Subvol,
     *,
     no_meta: bool = False,
@@ -59,32 +58,23 @@ def check_common_rpm_render(
 
     # Ignore a bunch of yum / dnf / rpm spam
 
-    if yum_dnf == "yum":
-        (ino,) = pop_path(r, "var/log/yum.log")
-        test.assertRegex(
-            ino,
-            r"^\(File m600\)$" if is_makecache else r"^\(File m600 d[0-9]+\)$",
+    if not is_makecache:
+        test.assertEqual(
+            ["(Dir)", {"dnf": ["(Dir)", {"modules.d": ["(Dir)", {}]}]}],
+            pop_path(r, "etc"),
         )
-        ino, _ = pop_path(r, "var/lib/yum")
+        ino, _ = pop_path(r, "var/lib/dnf", ("(Dir)", None))
         test.assertEqual("(Dir)", ino)
-    elif yum_dnf == "dnf":
-        if not is_makecache:
-            test.assertEqual(
-                ["(Dir)", {"dnf": ["(Dir)", {"modules.d": ["(Dir)", {}]}]}],
-                pop_path(r, "etc"),
-            )
-            ino, _ = pop_path(r, "var/lib/dnf")
-            test.assertEqual("(Dir)", ino)
-        for logname in [
-            "dnf.log",
-            "dnf.librepo.log",
-            "dnf.rpm.log",
-            "hawkey.log",
-        ]:
-            (ino,) = pop_path(r, f"var/log/{logname}")
-            test.assertRegex(ino, r"^\(File d[0-9]+\)$", logname)
-    else:
-        raise AssertionError(yum_dnf)
+        ino, _ = pop_path(r, "var/lib/yum", ("(Dir)", None))
+        test.assertEqual("(Dir)", ino)
+    for logname in [
+        "dnf.log",
+        "dnf.librepo.log",
+        "dnf.rpm.log",
+        "hawkey.log",
+    ]:
+        (ino,) = pop_path(r, f"var/log/{logname}")
+        test.assertRegex(ino, r"^\(File d[0-9]+\)$", logname)
 
     ino, _ = pop_path(r, "var/lib/rpm")
     test.assertEqual("(Dir)", ino)

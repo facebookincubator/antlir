@@ -1050,6 +1050,39 @@ package.new(
     visibility = ["//antlir/..."],
 )
 
+image.layer(
+    name = "build_appliance_testing_base1",
+    features = [
+        feature.rpms_install([
+            "gdb",
+            "yum",
+            "python38",
+        ]),
+        feature.ensure_subdirs_exist("/var/lib", "yum"),
+    ],
+    parent_layer = flavor_helpers.get_build_appliance(),
+    visibility = [],
+)
+
+image.genrule_layer(
+    name = "build_appliance_testing_base2",
+    antlir_rule = "user-internal",
+    # Gross hack alert. We want to test both yum and dnf with the
+    # antlir_test BA. But in centos8, yum is just a symlink to dnf. This
+    # breaks antlir shadow mounts for these commands (since they both
+    # end up resolving to dnf). To work around this replace the yum
+    # symlink with a copy of dnf.
+    cmd = [
+        "/bin/bash",
+        "-c",
+        "rm /usr/bin/yum && cp /usr/bin/dnf /usr/bin/yum",
+    ],
+    parent_layer = ":build_appliance_testing_base1",
+    rule_type = "test_genrule_layer",
+    user = "root",
+    visibility = [],
+)
+
 # This is referenced by many images in this project via "flavor_to_config"
 add_rpm_repo_snapshots_layer(
     name = "build_appliance_testing",
@@ -1066,22 +1099,22 @@ add_rpm_repo_snapshots_layer(
     # time, it has to derive from a real, working, production BA, whose
     # flavor is surely different.
     flavor = "antlir_test",
-    # We have to use "centos7" as a build appliance as long as we have to support yum
     flavor_config_override = image.opts(
         # We must set `build_appliance` since the default would cause
         # a circular dependency -- this very target **IS** the flavor's BA.
-        build_appliance = flavor_helpers.get_build_appliance("centos7"),
+        build_appliance = flavor_helpers.get_build_appliance(),
         # `parent_layer`'s flavor does not match ours, and this is OK here.
         unsafe_bypass_flavor_check = True,
     ),
     make_caches = True,
-    parent_layer = flavor_helpers.get_build_appliance("centos7"),
+    parent_layer = ":build_appliance_testing_base2",
     visibility = [
         "//antlir/...",
         "//hermetic_infra/reproducible_builds/integration/...",
         "//metalos/os/whatchanged/...",
         "//tupperware/cm/antlir/tests/...",
     ],
+    yum_is_dnf = True,
     yum_snapshot = "//antlir/rpm:repo-snapshot-for-tests" if "yum" in flavor_helpers.get_rpm_installers_supported() else None,
 )
 

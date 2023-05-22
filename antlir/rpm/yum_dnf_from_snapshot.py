@@ -654,22 +654,6 @@ def yum_dnf_from_snapshot(
     #
     # For `image_yum_dnf_make_snapshot_cache` only.
     is_makecache = yum_dnf_args[:1] == ["makecache"]
-    # For `rpmbuild.bzl` only:
-    if yum_dnf_args[:1] == ["builddep"]:
-        if yum_dnf == YumDnf.yum:
-            # In `yum`, this is not a verb but a separate command.  But our
-            # wrapper makes it work like it does in `dnf`.  One motivation is a
-            # more uniform implementation of `rpmbuild.bzl`, but a more
-            # important one is that need the ephemeral cache behavior provided
-            # by `_set_up_yum_dnf_cache`, since `/__antlir__` is read-only in
-            # genrule layers. Calling `yum-builddep` directly would not fail
-            # with "Read-only filesystem", but a confusing:
-            #     Error: No Package found for <RPM name>
-            #
-            # pyre-fixme[9]: yum_dnf_binary has type `Optional[Path]`; used as
-            # `str`.
-            yum_dnf_binary = "yum-builddep"
-            yum_dnf_args = yum_dnf_args[1:]
 
     # pyre-fixme[16]: `Path` has no attribute `__enter__`.
     # pyre-fixme[16]: `Mapping` has no attribute `__enter__`.
@@ -726,13 +710,7 @@ def yum_dnf_from_snapshot(
             # `flunk_dependent_remove` will fail dnf remove operations that
             # would otherwise silently remove dependent rpms.
             #    buck run :x=container -- --user=root -- dnf download ...
-            "--enableplugin=versionlock,download,flunk_dependent_remove"
-            + (
-                # `dnf builddep` powers `rpmbuild`.
-                ",builddep"
-                if yum_dnf == YumDnf.dnf
-                else ""
-            ),
+            "--enableplugin=versionlock,download,flunk_dependent_remove,builddep",
             # Config options get isolated by our `YumDnfConfIsolator`
             # when `write-yum-dnf-conf` builds this file.  Note that
             # `yum` doesn't work if the config path is relative.
@@ -827,7 +805,7 @@ if __name__ == "__main__":  # pragma: no cover
             log.exception(f"While running {what_ran}:")
         else:
             # Dumping a long stack trace obscures the actual yum/dnf error.
-            log.error(
+            log.exception(
                 f"""{repr(ex)} while running {what_ran}. """
                 f"For more logs, run your container and `{args.yum_dnf.value}` "
                 "command with `ANTLIR_DEBUG=1`."

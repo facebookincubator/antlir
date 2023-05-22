@@ -32,6 +32,12 @@ class TestImpl:
                 self._PROG,
                 "rpm-test-carrot",
                 extra_args=(
+                    # Gross Hack. Yum and dnf have different versionlock
+                    # formats. But since we're testing yum in centos8 where
+                    # yum is really just a command alias for dnf, we have to
+                    # force usage of the dnf versionlock file format.
+                    "--versionlock-format",
+                    "dnf",
                     "--snapshot-to-versionlock",
                     self._SNAPSHOT_DIR,
                     vl,
@@ -61,6 +67,12 @@ class TestImpl:
                 self._PROG,
                 "rpm-test-carrot",
                 extra_args=(
+                    # Gross Hack. Yum and dnf have different versionlock
+                    # formats. But since we're testing yum in centos8 where
+                    # yum is really just a command alias for dnf, we have to
+                    # force usage of the dnf versionlock file format.
+                    "--versionlock-format",
+                    "dnf",
                     "--snapshot-to-versionlock",
                     self._SNAPSHOT_DIR,
                     vl,

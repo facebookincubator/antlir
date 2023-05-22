@@ -127,11 +127,6 @@ class ImagePackageTestCaseBase(AntlirTestCase):
             # lost+found is an ext3 thing
             original_render[1]["lost+found"] = ["(Dir m700)", {}]
 
-            # mkfs.ext3 on CentOS 7 is broken and changes directories with m500
-            # perms to m700.  If we discover this case, we will just allow it.
-            if original_render[1]["dir_perms_0500"] == ["(Dir m500)", {}]:
-                original_render[1]["dir_perms_0500"] = ["(Dir m700)", {}]
-
             self._assert_meta_valid_and_sendstreams_equal(
                 original_render,
                 self._render_sendstream_path(Path(temp_sendstream.name)),

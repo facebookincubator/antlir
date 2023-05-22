@@ -29,7 +29,7 @@ class TestInstallFileStrip(unittest.TestCase):
         ).stdout
         if repo_config().artifacts_require_repo:
             self.assertIn(
-                "Reading symbols from /usr/bin/test-cpp-binary...Reading symbols from /usr/lib/debug/usr/bin/test-cpp-binary.debug",
+                "Reading symbols from /usr/bin/test-cpp-binary...Reading symbols from /usr/lib/debug//usr/bin/test-cpp-binary.debug",
                 stdout,
             )
         else:

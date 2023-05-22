@@ -143,6 +143,7 @@ def repo_nspawn_plugins(
                         YumDnfVersionlock(
                             plugin_args.snapshots_and_versionlocks,
                             serve_rpm_snapshots,
+                            versionlock_format=plugin_args.versionlock_format,
                         )
                     ]
                     if plugin_args.snapshots_and_versionlocks

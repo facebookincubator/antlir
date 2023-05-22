@@ -20,7 +20,7 @@ cadence than we change repo snapshots.
 """
 from contextlib import contextmanager, ExitStack
 from types import MappingProxyType
-from typing import Dict, Iterable, Set, Tuple
+from typing import Dict, Iterable, Optional, Set, Tuple
 
 from antlir.common import get_logger, set_new_key
 from antlir.fs_utils import create_ro, Path, temp_dir
@@ -36,7 +36,10 @@ log = get_logger()
 
 @contextmanager
 def _prepare_versionlock_lists(
-    subvol: Subvol, snapshot_dir: Path, list_path: Path
+    subvol: Subvol,
+    snapshot_dir: Path,
+    list_path: Path,
+    versionlock_format: Optional[str],
 ) -> Dict[str, Tuple[str, Set[Tuple[str, ...]]]]:
     """
     Returns a map of "in-snapshot path" -> "tempfile with its contents",
@@ -53,7 +56,7 @@ def _prepare_versionlock_lists(
         for prog in {f"{p}" for p in (subvol.path(snapshot_dir)).listdir()} & set(
             templates.keys()
         ):
-            template = templates[prog]
+            template = templates[versionlock_format or prog]
             src = d / (prog + "-versionlock.list")
             with create_ro(src, "w") as wf:
                 for e, n, v, r, a in envra_set:
@@ -75,9 +78,11 @@ class YumDnfVersionlock(NspawnPlugin):
         self,
         snapshots_and_versionlocks: Iterable[Tuple[Path, Path]],
         serve_rpm_snapshots: Iterable[Path],
+        versionlock_format: Optional[str] = None,
     ) -> None:
         self._snapshots_and_versionlocks = snapshots_and_versionlocks
         self._serve_rpm_snapshots = serve_rpm_snapshots
+        self._versionlock_format = versionlock_format
 
     @contextmanager
     def wrap_setup(
@@ -115,6 +120,7 @@ class YumDnfVersionlock(NspawnPlugin):
                         subvol,
                         snapshot,
                         versionlock,
+                        self._versionlock_format,
                     )
                 ).items():
                     log.info(f"Locking {len(vl)} RPM versions via {dest}: {vl}")
