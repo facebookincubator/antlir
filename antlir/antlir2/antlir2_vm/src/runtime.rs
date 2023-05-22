@@ -34,6 +34,7 @@ mod test {
             qemu_img: "qemu_img".into(),
             firmware: "firmware".into(),
             roms_dir: "roms_dir".into(),
+            virtiofsd: "virtiofsd".into(),
         };
 
         set_runtime(test.clone()).expect("Failed to set runtime");
