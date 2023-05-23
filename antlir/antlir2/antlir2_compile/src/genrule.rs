@@ -6,6 +6,7 @@
  */
 
 use std::ffi::OsStr;
+use std::path::Path;
 
 use antlir2_features::genrule::Genrule;
 use antlir2_isolate::isolate;
@@ -30,6 +31,12 @@ impl<'a> CompileFeature for Genrule<'a> {
             IsolationContext::builder(ctx.root())
                 .user(self.user.name())
                 .ephemeral(false)
+                .platform([
+                    #[cfg(facebook)]
+                    Path::new("/usr/local/fbcode"),
+                    #[cfg(facebook)]
+                    Path::new("/mnt/gvfs"),
+                ])
                 .boot(self.boot)
                 .build(),
         )
