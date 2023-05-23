@@ -102,7 +102,10 @@ good_depgraph(
 buck_genrule(
     name = "dir",
     out = ".",
-    cmd = "touch $OUT/foo $OUT/bar",
+    cmd = """
+        touch $OUT/foo $OUT/bar
+        mkdir $OUT/qux
+    """,
 )
 
 good_depgraph(
@@ -133,6 +136,21 @@ bad_depgraph(
             dst = "/foo/bar",
         ),
     ],
+)
+
+good_depgraph(
+    name = "install-dir-and-ensure-dirs-exist",
+    features = [
+        feature.install(
+            src = ":dir",
+            dst = "/foo/bar/",
+        ),
+        # already created as top-level of installed `/foo/bar`
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+        # already created as subdirectory of installed `/foo/bar`
+        feature.ensure_dirs_exist(dirs = "/foo/bar/qux"),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 bad_depgraph(

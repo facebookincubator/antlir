@@ -281,6 +281,7 @@ impl<'a> GraphBuilder<'a> {
         // Add all the nodes provided by our pending features
         for feature_nx in self.pending_features.clone() {
             let f = &self.g[feature_nx];
+            tracing::trace!("adding provides from {f:?}");
             let provides = f.provides().map_err(Error::Provides)?;
             for prov in provides {
                 let prov_nx = self.add_item(prov);
@@ -396,24 +397,81 @@ impl<'a> GraphBuilder<'a> {
                         .g
                         .neighbors_directed(nx, Direction::Incoming)
                         .filter_map(|nx| match &self.g[nx] {
-                            Node::PendingFeature(f) | Node::ParentFeature(f) => Some(f),
+                            Node::PendingFeature(f) => Some((true, f)),
+                            Node::ParentFeature(f) => Some((false, f)),
                             _ => None,
                         })
                         .collect();
-                    // Feature's with equivalent Data are allowed (we should
-                    // prune it from the graph before passing it off to
-                    // antlir2_compile, but that's an optimization for later).
-                    // Anything that is not completely equivalent is considered
-                    // a conflict and will cause a build failure.
-                    if features_that_provide.len() > 1
-                        && features_that_provide
-                            .iter()
-                            .any(|f| f.data != features_that_provide[0].data)
-                    {
-                        return Err(Error::Conflict {
-                            item: item.clone(),
-                            features: features_that_provide.into_iter().cloned().collect(),
-                        });
+
+                    if features_that_provide.len() > 1 {
+                        // [Item::Path] fully describes a directory, so if all the
+                        // provided [Item]s are identical, it's not a conflict
+                        if matches!(
+                            item,
+                            Item::Path(item::Path::Entry(item::FsEntry {
+                                file_type: item::FileType::Directory,
+                                ..
+                            }))
+                        ) {
+                            tracing::trace!(
+                                "directory item is provided by multiple features: {features_that_provide:?}"
+                            );
+                            let mut feature_items = HashSet::new();
+                            for feat in features_that_provide
+                                .iter()
+                                // Only pending features need to be checked.
+                                // Parent features have already been checked for
+                                // conflicts in the layer they were defined in.
+                                // It is impossible to re-analyze the
+                                // ParentFeature at this point, because the
+                                // input artifacts are not materialized when
+                                // analyzing this layer
+                                .filter_map(|(pending, feature)| match pending {
+                                    true => Some(feature),
+                                    false => None,
+                                })
+                            {
+                                feature_items.extend(
+                                    feat.provides()
+                                        .map_err(Error::Provides)?
+                                        .into_iter()
+                                        .filter(|fi| fi.key() == item.key()),
+                                );
+                            }
+                            if feature_items.len() > 1 {
+                                tracing::error!(
+                                    "diretory items are not identical: {feature_items:?}"
+                                );
+                                return Err(Error::Conflict {
+                                    item: item.clone(),
+                                    features: features_that_provide
+                                        .into_iter()
+                                        .map(|(_, feature)| feature)
+                                        .cloned()
+                                        .collect(),
+                                });
+                            }
+                        } else {
+                            // Any other features with equivalent Data are allowed (we
+                            // should prune it from the graph before passing it off to
+                            // antlir2_compile, but that's an optimization for later).
+                            // Anything that is not completely equivalent is considered
+                            // a conflict and will cause a build failure.
+                            if features_that_provide
+                                .iter()
+                                .map(|(_, feature)| feature)
+                                .any(|f| f.data != features_that_provide[0].1.data)
+                            {
+                                return Err(Error::Conflict {
+                                    item: item.clone(),
+                                    features: features_that_provide
+                                        .into_iter()
+                                        .map(|(_, feature)| feature)
+                                        .cloned()
+                                        .collect(),
+                                });
+                            }
+                        }
                     }
                 }
                 _ => (),

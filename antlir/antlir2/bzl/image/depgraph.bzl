@@ -32,5 +32,8 @@ def build_depgraph(
         category = "antlir2_depgraph",
         identifier = identifier_prefix + format + ("/pre" if not subvol else ""),
         local_only = bool(subvol),
+        env = {
+            "RUST_LOG": "antlir2=trace",
+        },
     )
     return output

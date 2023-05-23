@@ -186,7 +186,7 @@ defaults to `False` to speed up incremental rebuilds.
         antlir2.install(
             src = buck2_src,
             dst = dest,
-            mode = mode or 0o555,
+            mode = mode,
             user = user,
             group = group,
         ) if is_buck2() else None,
@@ -268,7 +268,7 @@ integrate with that logic. It can be ignored.
         antlir2.install(
             src = buck2_src,
             dst = dest,
-            mode = mode or 0o444,
+            mode = mode,
             user = user,
             group = group,
         ) if is_buck2() else None,
