@@ -373,7 +373,7 @@ impl<'f> FeatureExt<'f> for antlir2_features::install::Install<'f> {
                     v.push(Item::Path(Path::Entry(FsEntry {
                         path: self.dst.join(relpath).into(),
                         file_type: FileType::Directory,
-                        mode: 0o555,
+                        mode: 0o755,
                     })))
                 } else if entry.file_type().is_symlink() {
                     let target = std::fs::read_link(entry.path()).map_err(|_e| {

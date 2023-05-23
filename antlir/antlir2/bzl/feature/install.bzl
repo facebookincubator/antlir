@@ -77,7 +77,7 @@ def install_analyze(
             elif dst.endswith("/"):
                 # If the user is installing a directory, we require they include
                 # a trailing '/' in `dst`
-                mode = 0o555
+                mode = 0o755
             else:
                 mode = 0o444
 

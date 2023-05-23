@@ -67,6 +67,8 @@ def _parse_symbolic(symbolic):
 
 def _mode(mode):
     if types.is_string(mode):
+        if mode == "":
+            return 0
         return _parse_symbolic(mode)
     elif types.is_int(mode):
         return mode
