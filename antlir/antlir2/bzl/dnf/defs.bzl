@@ -58,12 +58,18 @@ def compiler_plan_to_local_repos(
                 # anyway
                 fail("'{}' is not in {}".format(install["nevra"], install["repo"]))
 
-            repo_i = by_repo[install["repo"]]["repo_info"]
-            rpm_i = by_repo[install["repo"]]["nevras"][install["nevra"]]
-            tree[paths.join(repo_i.id, "repodata")] = repo_i.repodata
-            for key in repo_i.gpg_keys:
-                tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
-            tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = rpm_i.rpm
+            # The same exact NEVRA may appear in multiple repositories, and then
+            # we have no guarantee that dnf will resolve the transaction the
+            # same way, so we must look in every repo in addition to the one
+            # that was initially recorded
+            for repo in by_repo.values():
+                if install["nevra"] in repo["nevras"]:
+                    repo_i = repo["repo_info"]
+                    rpm_i = repo["nevras"][install["nevra"]]
+                    tree[paths.join(repo_i.id, "repodata")] = repo_i.repodata
+                    for key in repo_i.gpg_keys:
+                        tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
+                    tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = rpm_i.rpm
 
         # copied_dir instead of symlink_dir so that this can be directly bind
         # mounted into the container
