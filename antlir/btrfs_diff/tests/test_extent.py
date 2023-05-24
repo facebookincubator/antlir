@@ -49,6 +49,7 @@ class ExtentTestCase(AntlirTestCase):
         # 3-byte hole, 4-byte data, 5-byte hole, 6-byte data
         four = Extent.empty().write(offset=3, length=4).write(offset=12, length=6)
         self.assertEqual("h3d4h5d6", repr(four))
+        # pyre-fixme[23]: Unable to unpack single value, 4 were expected.
         _, _, (a, b, c, d) = zip(*four.gen_trimmed_leaves())
         # The "Control run" below will check that we preserved object identity.
         self.assertEqual(
@@ -69,6 +70,7 @@ class ExtentTestCase(AntlirTestCase):
         # should not matter for the result, it just affects the leaves.
         clone = Extent.empty().write(offset=7, length=5).write(offset=5, length=4)
         self.assertEqual("h5d7", repr(clone))  # repr merged two DATA leaves
+        # pyre-fixme[23]: Unable to unpack single value, 3 were expected.
         _, _, (ca, cb, cc) = zip(*clone.gen_trimmed_leaves())
         self.assertEqual(
             [

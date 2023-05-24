@@ -486,6 +486,7 @@ class ExtentsToChunksTestCase(AntlirTestCase):
         )
 
         # Besides verifying `b`'s content, this gives us a way to refer to it.
+        # pyre-fixme[23]: Unable to unpack single value, 4 were expected.
         _, _, (b_trunc, a_hole, a_wr, b_wr) = zip(*b.gen_trimmed_leaves())
         self.assertEqual(b_trunc, Extent(Extent.Kind.HOLE, 0, 10))
         self.assertEqual(a_hole, Extent(Extent.Kind.HOLE, 0, 3))
