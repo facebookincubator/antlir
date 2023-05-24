@@ -94,4 +94,5 @@ def test_hoist(name):
             ":{}-simple-selector".format(name): "test_simple_selector",
             ":{}-selector-flat".format(name): "test_selector_flat",
         },
+        supports_static_listing = False,
     )
