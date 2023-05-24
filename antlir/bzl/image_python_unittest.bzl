@@ -88,6 +88,7 @@ def image_python_unittest(
         par_style = par_style,
         visibility = visibility,
         antlir_rule = "user-internal",
+        supports_static_listing = False,
         **wrapper_props.inner_test_kwargs
     )
 
@@ -126,5 +127,6 @@ def image_python_unittest(
         deps = [wrapper_props.impl_python_library],
         visibility = visibility,
         antlir_rule = "user-facing",  # This runs in customer TARGETS files
+        supports_static_listing = False,
         **wrapper_props.outer_test_kwargs
     )
