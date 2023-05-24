@@ -231,6 +231,7 @@ def _vm_python_unittest(
         name,
         python_unittest,
         vm_opts = vm_opts,
+        supports_static_listing = False,
         **kwargs
     )
 
