@@ -15,6 +15,8 @@ def _from_antlir1_flavor(flavor: [str.type, ""]) -> str.type:
             flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8"
         elif flavor == "antlir_test":
             flavor = "//antlir/antlir2/test_images:test-image-flavor"
+        elif flavor == "eln":
+            flavor = "//antlir/antlir2/facebook/flavor/eln:eln"
         else:
             flavor = "//antlir/antlir2/facebook/flavor:" + flavor
 
