@@ -49,6 +49,8 @@ antlir2_setting = native.enum(
     "chef",  # disable antlir2 because chef is natively supported
     "debuginfo",  # antlir2 does not yet support this TODO(T153698233)
     "rpmbuild",  # antlir2 does not allow rpm installation during a genrule
+    # user wants to explicitly alias a built layer instead of downloading it from fbpkg
+    "skip-fbpkg-indirection",
 ) if is_buck2() else _antlir2_setting_buck1
 
 def _antlir2_or_default(antlir2: [
