@@ -51,13 +51,14 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "is_buck2")
+load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "is_buck2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:flavor_impl.bzl", "flavors_to_names", "flavors_to_structs")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:target_tagger.bzl", "extract_tagged_target", "new_target_tagger", "tag_target", "target_tagger_to_feature")
 load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
 
@@ -371,7 +372,8 @@ def feature_new(
         # This is used when a user wants to declare a feature
         # that is not available for all flavors in REPO_CFG.flavor_to_config.
         # An example of this is the internal feature in `image_layer.bzl`.
-        flavors = None):
+        flavors = None,
+        antlir2 = None):
     private_feature_new(
         name,
         features,
@@ -382,16 +384,12 @@ def feature_new(
     # If we're on buck2, instantiate an antlir2 feature rule. This does not
     # conflict with the feature above, since antlir1 adds a "private" suffix to
     # all feature targets
-    if is_buck2():
-        antlir2_feature.new(
-            name,
-            features = [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
-            visibility = get_visibility(visibility),
-        )
-    else:
-        # export a target of the same name to make td happy
-        export_file(
-            name = name,
-            src = antlir_dep(":empty"),
-            antlir_rule = "user-internal",
-        )
+    if antlir2_shim.should_make_parallel_layer(antlir2):
+        if is_buck2():
+            antlir2_feature.new(
+                name,
+                features = [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
+                visibility = get_visibility(visibility),
+            )
+        else:
+            antlir2_shim.fake_buck1_feature(name)

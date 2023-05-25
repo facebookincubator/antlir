@@ -61,11 +61,12 @@ exported by a parent layer which also includes an extract.extract feature.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl:build_defs.bzl", "export_file", "is_buck2")
+load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
 
@@ -81,7 +82,8 @@ def _extract(
         binaries,
         # The root destination path to clone the extracted
         # files into.
-        dest = "/"):
+        dest = "/",
+        antlir2 = None):
     if dest != "/":
         fail("extract(dest='/') is no longer allowed")
     binaries = binaries or []
@@ -147,25 +149,20 @@ cp "${{source_layer_path}}{output_dir}/feature.json" "$OUT"
         deps = ["//antlir/bzl/genrule/extractor:extract"],
     )
 
-    if is_buck2():
-        antlir2_feature.new(
-            name = name,
-            features = [
-                antlir2_feature.extract_from_layer(
-                    _implicit_from_antlir1 = True,
-                    binaries = binaries,
-                    layer = source,
-                ),
-            ],
-            visibility = [],
-        )
-    else:
-        # export a target of the same name to make td happy
-        export_file(
-            name = name,
-            src = antlir_dep(":empty"),
-            antlir_rule = "user-internal",
-        )
+    if antlir2_shim.should_make_parallel_feature(antlir2):
+        if is_buck2():
+            antlir2_feature.new(
+                name = name,
+                features = [
+                    antlir2_feature.extract_from_layer(
+                        binaries = binaries,
+                        layer = source + ".antlir2",
+                    ),
+                ],
+                visibility = [],
+            )
+        else:
+            antlir2_shim.fake_buck1_feature(name)
 
     return normalize_target(":" + name)
 

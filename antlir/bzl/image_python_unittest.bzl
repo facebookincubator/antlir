@@ -25,6 +25,7 @@ def image_python_unittest(
         container_opts = None,
         flavor = None,
         flavor_config_override: types.optional(types.struct) = None,
+        antlir2 = None,
         **python_unittest_kwargs):
     visibility = visibility or []
 
@@ -43,6 +44,7 @@ def image_python_unittest(
         container_opts = container_opts,
         flavor = flavor,
         flavor_config_override = flavor_config_override,
+        antlir2 = antlir2,
     )
 
     wrapper_props.outer_test_kwargs["tags"] = \
