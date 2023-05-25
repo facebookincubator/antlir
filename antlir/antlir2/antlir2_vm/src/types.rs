@@ -10,6 +10,7 @@
 
 use std::fs;
 use std::path::Path;
+use std::path::PathBuf;
 
 use serde::de::DeserializeOwned;
 use serde::Deserialize;
@@ -19,7 +20,7 @@ use thiserror::Error;
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct QCow2DiskOpts {
     /// Path to the base image file
-    pub(crate) base_image: Option<String>,
+    pub(crate) base_image: Option<PathBuf>,
     /// Resize the disk to provide additional space. This will also be size of entire
     /// disk if `base_image` was not given.
     pub(crate) additional_mib: Option<usize>,

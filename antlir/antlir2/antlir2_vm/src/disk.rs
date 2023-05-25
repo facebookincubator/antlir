@@ -12,6 +12,8 @@ use derive_builder::Builder;
 use thiserror::Error;
 use tracing::debug;
 
+use crate::isolation::IsolationError;
+use crate::isolation::Platform;
 use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
 use crate::utils::log_command;
@@ -34,15 +36,19 @@ pub(crate) struct QCow2Disk {
 pub(crate) enum QCow2DiskError {
     #[error(transparent)]
     BuilderError(#[from] QCow2DiskBuilderError),
+    #[error(transparent)]
+    RepoRootError(#[from] IsolationError),
     #[error("qemu-img failed to create the disk: {0}")]
-    DiskCreationError(std::io::Error),
+    DiskCreationError(String),
     #[error("qemu-img failed to upsize the disk: {0}")]
-    DiskUpsizeError(std::io::Error),
+    DiskUpsizeError(String),
 }
+
+type Result<T> = std::result::Result<T, QCow2DiskError>;
 
 impl QCow2DiskBuilder {
     // Create and track the temp disk before expose QCow2Disk for use
-    pub(crate) fn build(&self) -> Result<QCow2Disk, QCow2DiskError> {
+    pub(crate) fn build(&self) -> Result<QCow2Disk> {
         let mut disk = self.build_internal()?;
         disk.create_temp_disk()?;
         Ok(disk)
@@ -51,7 +57,7 @@ impl QCow2DiskBuilder {
 
 impl QCow2Disk {
     /// Create a temporary disk with qemu-img inside state directory.
-    fn create_temp_disk(&mut self) -> Result<(), QCow2DiskError> {
+    fn create_temp_disk(&mut self) -> Result<()> {
         let mut cmd = Command::new(&get_runtime().qemu_img);
         cmd.arg("create")
             .arg("-f")
@@ -60,11 +66,16 @@ impl QCow2Disk {
             .arg("-F")
             .arg("raw");
         if let Some(image) = &self.opts.base_image {
-            cmd.arg("-b").arg(image);
+            cmd.arg("-b").arg(self.format_image_path(image)?);
         }
         log_command(&mut cmd)
             .status()
-            .map_err(QCow2DiskError::DiskCreationError)?;
+            .map_err(|e| QCow2DiskError::DiskCreationError(e.to_string()))?
+            .success()
+            .then_some(())
+            .ok_or(QCow2DiskError::DiskCreationError(
+                "qemu-img failed".to_string(),
+            ))?;
 
         if let Some(size) = self.opts.additional_mib {
             log_command(
@@ -74,7 +85,12 @@ impl QCow2Disk {
                     .arg(&format!("+{}M", size)),
             )
             .status()
-            .map_err(QCow2DiskError::DiskUpsizeError)?;
+            .map_err(|e| QCow2DiskError::DiskUpsizeError(e.to_string()))?
+            .success()
+            .then_some(())
+            .ok_or(QCow2DiskError::DiskUpsizeError(
+                "qemu-img failed".to_string(),
+            ))?;
         }
 
         debug!(
@@ -87,6 +103,19 @@ impl QCow2Disk {
 
     fn disk_file_name(&self) -> PathBuf {
         self.state_dir.join(format!("{}.qcow2", self.name))
+    }
+
+    /// qemu-img has this unfortunate feature that if a relative path is given
+    /// for -b, it will be looked up relative to the directory containing the
+    /// resulting image file. Override relative path to be absolute with our
+    /// repo root, because all base images should be build artifacts relative
+    /// to the repo root.
+    fn format_image_path(&self, path: &PathBuf) -> Result<PathBuf> {
+        if path.is_relative() {
+            Ok(Platform::repo_root()?.join(path))
+        } else {
+            Ok(path.clone())
+        }
     }
 
     pub(crate) fn qemu_args(&self) -> Vec<String> {
