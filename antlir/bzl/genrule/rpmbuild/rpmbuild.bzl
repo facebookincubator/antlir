@@ -150,7 +150,6 @@ def private_image_rpmbuild_impl(
         name = install_deps_layer,
         rule_type = "rpmbuild_install_deps_layer",
         parent_layer = ":" + setup_layer,
-        flavor = flavor,
         # Auto-installing RPM dependencies requires `root`.
         user = "root",
         cmd = [
@@ -181,7 +180,6 @@ def private_image_rpmbuild_impl(
         name = build_layer,
         rule_type = "rpmbuild_build_layer",
         parent_layer = ":" + install_deps_layer,
-        flavor = flavor,
         # While it's possible to want to support unprivileged builds, the
         # typical case will want to auto-install dependencies, which
         # requires `root`.

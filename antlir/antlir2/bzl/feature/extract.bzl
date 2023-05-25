@@ -31,7 +31,8 @@ types.lint_noop()
 
 def extract_from_layer(
         layer: types.or_selector(str.type),
-        binaries: types.or_selector([types.or_selector(str.type)])) -> ParseTimeFeature.type:
+        binaries: types.or_selector([types.or_selector(str.type)]),
+        _implicit_from_antlir1: bool.type = False) -> ParseTimeFeature.type:
     """
     Extract binaries that are installed into `layer`, most commonly by RPMs.
 
@@ -48,6 +49,7 @@ def extract_from_layer(
         kwargs = {
             "binaries": binaries,
             "source": "layer",
+            "_implicit_from_antlir1": _implicit_from_antlir1,
         },
     )
 
@@ -90,18 +92,27 @@ def extract_analyze(
         deps: {str.type: "dependency"},
         binaries: [[str.type], None] = None,
         src: [str.type, None] = None,
-        dst: [str.type, None] = None) -> FeatureAnalysis.type:
+        dst: [str.type, None] = None,
+        _implicit_from_antlir1: bool.type = False) -> FeatureAnalysis.type:
     if source == "layer":
-        layer = deps["layer"]
+        # see comment in dependency_layer_info.bzl for why this is the way it is
+        if _implicit_from_antlir1 and LayerInfo not in deps["layer"]:
+            required_layers = []
+        else:
+            required_layers = [deps["layer"][LayerInfo]]
+
         return FeatureAnalysis(
             data = extract_record(
                 layer = extract_layer_record(
-                    layer = layer_dep_analyze(layer),
+                    layer = layer_dep_analyze(
+                        deps["layer"],
+                        _implicit_from_antlir1 = _implicit_from_antlir1,
+                    ),
                     binaries = binaries,
                 ),
                 buck = None,
             ),
-            required_layers = [layer[LayerInfo]],
+            required_layers = required_layers,
         )
     elif source == "buck":
         src = deps["src"]

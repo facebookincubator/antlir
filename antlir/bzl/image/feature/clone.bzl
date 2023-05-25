@@ -88,8 +88,9 @@ metadata to a deterministic state, while the state of the on-disk metadata in
         target_tagger,
         items = struct(clone = [clone]),
         antlir2_feature = antlir2.clone(
-            src_layer = src_layer + ".antlir2",
+            src_layer = src_layer,
             src_path = src_path,
             dst_path = dest_path,
+            _implicit_from_antlir1 = True,
         ) if is_buck2() else None,
     )
