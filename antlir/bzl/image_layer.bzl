@@ -90,8 +90,7 @@ The consequences of this information hiding are:
 """
 
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
-load(":antlir2_shim.bzl", "antlir2_shim")
-load(":build_defs.bzl", "get_visibility", "is_buck2")
+load("//antlir/bzl:build_defs.bzl", "use_antlir2")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":flavor.shape.bzl", "flavor_t")
 load(":flavor_helpers.bzl", "flavor_helpers")
@@ -132,19 +131,15 @@ def image_layer(
     [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
     possible helpers, their respective behaviours, and how to invoke them.
     """
-    if antlir2_shim.should_make_parallel_layer(image_layer_kwargs.pop("antlir2", None), flavor = flavor):
-        if is_buck2():
-            antlir2_image.layer(
-                name = name + ".antlir2",
-                parent_layer = parent_layer + ".antlir2" if parent_layer else None,
-                flavor = flavor,
-                features = features or [],
-                implicit_antlir2 = True,
-                visibility = get_visibility(image_layer_kwargs.get("visibility")),
-            )
-        else:
-            antlir2_shim.fake_buck1_layer(name = name)
-
+    if use_antlir2():
+        antlir2_image.layer(
+            name = name,
+            parent_layer = parent_layer,
+            flavor = flavor,
+            features = features,
+            implicit_antlir2 = True,
+        )
+        return
     flavor = flavor_to_struct(flavor)
     if not flavor and parent_layer:
         flavor = flavor_helpers.maybe_get_tgt_flavor(parent_layer)

@@ -29,7 +29,7 @@ def _split(
     image.layer(
         name = stripped_name,
         features = [
-            feature.remove("/usr/lib/debug", must_exist = False),
+            feature.remove("/usr/lib/debug"),
         ],
         parent_layer = layer,
         flavor = flavor,
@@ -42,7 +42,6 @@ def _split(
         ],
         flavor = flavor_helpers.get_antlir_linux_flavor(),
         visibility = visibility,
-        antlir2 = "debuginfo",
     )
     return struct(
         stripped = normalize_target(":" + stripped_name),
