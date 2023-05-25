@@ -14,6 +14,7 @@ def image_rust_unittest(
         hostname = None,
         container_opts = None,
         visibility = None,
+        antlir2 = None,
         **rust_unittest_kwargs):
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,
@@ -26,6 +27,7 @@ def image_rust_unittest(
         visibility = [],
         hostname = hostname,
         container_opts = container_opts,
+        antlir2 = antlir2,
     )
 
     rust_unittest(

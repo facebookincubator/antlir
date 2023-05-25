@@ -124,7 +124,7 @@ then you can pass an explicit `mountpoint` argument.
         target_tagger = target_tagger,
         items = struct(mounts = [mount_spec]),
         antlir2_feature = antlir2_feature.layer_mount(
-            source = source,
+            source = source + ".antlir2",
             mountpoint = mountpoint,
             _implicit_from_antlir1 = True,
         ) if is_buck2() else None,

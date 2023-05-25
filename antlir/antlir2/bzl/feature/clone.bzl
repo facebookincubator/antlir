@@ -14,8 +14,7 @@ def clone(
         *,
         src_layer: types.or_selector(str.type),
         src_path: types.or_selector(str.type),
-        dst_path: types.or_selector(str.type),
-        _implicit_from_antlir1: bool.type = False) -> ParseTimeFeature.type:
+        dst_path: types.or_selector(str.type)) -> ParseTimeFeature.type:
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
@@ -70,7 +69,6 @@ def clone(
         kwargs = {
             "dst_path": dst_path,
             "src_path": src_path,
-            "_implicit_from_antlir1": _implicit_from_antlir1,
         },
     )
 
@@ -85,7 +83,6 @@ clone_record = record(
 def clone_analyze(
         src_path: str.type,
         dst_path: str.type,
-        _implicit_from_antlir1: bool.type,
         deps: {str.type: "dependency"}) -> FeatureAnalysis.type:
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dst_path.endswith("/")
@@ -99,19 +96,13 @@ def clone_analyze(
 
     src_layer = deps["src_layer"]
 
-    # see comment in dependency_layer_info.bzl for why this is the way it is
-    if _implicit_from_antlir1 and LayerInfo not in src_layer:
-        required_layers = []
-    else:
-        required_layers = [src_layer[LayerInfo]]
-
     return FeatureAnalysis(
         data = clone_record(
-            src_layer = layer_dep_analyze(src_layer, _implicit_from_antlir1 = _implicit_from_antlir1),
+            src_layer = layer_dep_analyze(src_layer),
             src_path = src_path,
             dst_path = dst_path,
             omit_outer_dir = omit_outer_dir,
             pre_existing_dest = pre_existing_dest,
         ),
-        required_layers = required_layers,
+        required_layers = [src_layer[LayerInfo]],
     )

@@ -113,6 +113,7 @@ defs.python_binary(
 
 feature.new(
     name = "systemd_buck_runnables",
+    antlir2 = True,
     features = [
         # This generator makes a unit for `:fake-service`, and
         # `nspawn_in_subvol:test-run` ensures that the unit starts.
