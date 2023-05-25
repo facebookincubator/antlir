@@ -13,6 +13,7 @@ oncall("twimage")
 #    the considerable space savings justifies the loss of debuggability.
 feature.new(
     name = "rpm_cleanup",
+    antlir2 = True,
     features = [
         feature.remove(
             "/var/cache/yum",
@@ -33,6 +34,7 @@ feature.new(
 # be useful for assimilating genrule-built images.
 feature.new(
     name = "build_artifact_cleanup",
+    antlir2 = True,
     # Since we generally build images for containers, we should make sure
     # that they do contain an empty machine-id. The system manager (PID 1)
     # will populate the file with a generated machine-id as the container

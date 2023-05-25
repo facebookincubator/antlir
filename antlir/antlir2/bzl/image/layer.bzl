@@ -10,6 +10,7 @@ load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":depgraph.bzl", "build_depgraph")
@@ -20,7 +21,10 @@ def _map_image(
         cmd: "cmd_args",
         identifier: str.type,
         build_appliance: LayerInfo.type,
-        parent: ["artifact", None]) -> ("cmd_args", "artifact"):
+        parent: [
+            "artifact",
+            None,
+        ]) -> ("cmd_args", "artifact"):
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
     produce a new image.
@@ -43,14 +47,14 @@ def _map_image(
     ctx.actions.run(
         cmd,
         category = "antlir2_map",
+        env = {
+            "RUST_LOG": "antlir2=trace",
+        },
         identifier = identifier,
         # needs local subvolumes
         local_only = True,
         # 'antlir2 isolate' will clean up an old image if it exists
         no_outputs_cleanup = True,
-        env = {
-            "RUST_LOG": "antlir2=trace",
-        },
     )
     return cmd, out
 
@@ -113,7 +117,7 @@ def _impl(ctx: "context") -> ["provider"]:
         # JSON file for only the features that are part of this BuildPhase
         features_json = ctx.actions.write_json(
             identifier_prefix + "features.json",
-            [struct(feature_type = f.feature_type, label = f.label, data = f.analysis.data) for f in features],
+            [{"data": f.analysis.data, "feature_type": f.feature_type, "label": f.label} for f in features],
             with_inputs = True,
         )
 
@@ -133,12 +137,12 @@ def _impl(ctx: "context") -> ["provider"]:
 
         depgraph_input = build_depgraph(
             ctx = ctx,
-            parent_depgraph = parent_depgraph,
+            dependency_layers = dependency_layers,
             features_json = features_json,
             format = "json",
-            subvol = None,
-            dependency_layers = dependency_layers,
             identifier_prefix = identifier_prefix,
+            parent_depgraph = parent_depgraph,
+            subvol = None,
         )
 
         compileish_args = cmd_args(
@@ -150,7 +154,7 @@ def _impl(ctx: "context") -> ["provider"]:
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
             plan = ctx.actions.declare_output(identifier_prefix + "plan")
             _map_image(
-                ctx = ctx,
+                build_appliance = build_appliance[LayerInfo],
                 cmd = cmd_args(
                     cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
                     cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
@@ -158,9 +162,9 @@ def _impl(ctx: "context") -> ["provider"]:
                     compileish_args,
                     cmd_args(plan.as_output(), format = "--plan={}"),
                 ).hidden(feature_hidden_deps),
+                ctx = ctx,
                 identifier = identifier_prefix + "plan",
                 parent = parent_layer,
-                build_appliance = build_appliance[LayerInfo],
             )
 
             # Part of the compiler plan is any possible dnf transaction resolution,
@@ -174,16 +178,16 @@ def _impl(ctx: "context") -> ["provider"]:
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
 
         _, final_subvol = _map_image(
-            ctx = ctx,
+            build_appliance = build_appliance[LayerInfo],
             cmd = cmd_args(
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
                 cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
                 "compile",
                 compileish_args,
             ).hidden(feature_hidden_deps),
+            ctx = ctx,
             identifier = identifier_prefix + "compile",
             parent = parent_layer,
-            build_appliance = build_appliance[LayerInfo],
         )
 
         if build_phase.is_predictable(phase):
@@ -193,12 +197,12 @@ def _impl(ctx: "context") -> ["provider"]:
             # sure we're not missing any files/users/groups/whatever
             final_depgraph = build_depgraph(
                 ctx = ctx,
-                parent_depgraph = parent_depgraph,
+                dependency_layers = dependency_layers,
                 features_json = features_json,
                 format = "json",
-                subvol = final_subvol,
-                dependency_layers = dependency_layers,
                 identifier_prefix = identifier_prefix,
+                parent_depgraph = parent_depgraph,
+                subvol = final_subvol,
             )
 
         parent_layer = final_subvol
@@ -239,14 +243,14 @@ def _impl(ctx: "context") -> ["provider"]:
 
     return [
         LayerInfo(
-            label = ctx.label,
-            depgraph = final_depgraph,
-            subvol_symlink = final_subvol,
-            parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
-            mounts = mounts,
             build_appliance = build_appliance,
+            depgraph = final_depgraph,
             flavor = flavor,
             flavor_info = flavor_info,
+            label = ctx.label,
+            mounts = mounts,
+            parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+            subvol_symlink = final_subvol,
         ),
         DefaultInfo(final_subvol, sub_targets = sub_targets),
     ]
@@ -254,12 +258,27 @@ def _impl(ctx: "context") -> ["provider"]:
 _layer = rule(
     impl = _impl,
     attrs = {
-        "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "dnf_available_repos": attrs.option(attrs.dep(providers = [RepoSetInfo]), default = None),
-        "dnf_versionlock": attrs.option(attrs.source(), default = None),
+        "build_appliance": attrs.option(
+            attrs.dep(providers = [LayerInfo]),
+            default = None,
+        ),
+        "dnf_available_repos": attrs.option(
+            attrs.dep(providers = [RepoSetInfo]),
+            default = None,
+        ),
+        "dnf_versionlock": attrs.option(
+            attrs.source(),
+            default = None,
+        ),
         "features": attrs.dep(providers = [FeatureInfo]),
-        "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
-        "parent_layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+        "flavor": attrs.option(
+            attrs.dep(providers = [FlavorInfo]),
+            default = None,
+        ),
+        "parent_layer": attrs.option(
+            attrs.dep(providers = [LayerInfo]),
+            default = None,
+        ),
         "target_arch": attrs.default_only(attrs.string(
             default =
                 select({
@@ -268,8 +287,8 @@ _layer = rule(
                 }),
         )),
         "toolchain": attrs.toolchain_dep(
-            providers = [Antlir2ToolchainInfo],
             default = "//antlir/antlir2:toolchain",
+            providers = [Antlir2ToolchainInfo],
         ),
     },
 )
@@ -284,7 +303,10 @@ def layer(
         # We'll implicitly forward some users to antlir2, so any hacks for them
         # should be confined behind this flag
         implicit_antlir2: bool.type = False,
-        visibility: [[str.type], None] = None,
+        visibility: [
+            [str.type],
+            None,
+        ] = None,
         **kwargs):
     """
     Create a new image layer
@@ -306,6 +328,17 @@ def layer(
     feature_target = ":" + feature_target
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
+
+    # TODO(vmagro): remove this when antlir1 compat is no longer needed
+    # This exists only because the implicit antlir2 conversion rules append a
+    # '.antlir2' suffix wherever a layer is involved. When the source layer is
+    # antlir2, this suffixed layer will not exist so just make it an alias
+    alias(
+        name = name + ".antlir2",
+        actual = ":" + name,
+        antlir_rule = "user-internal",
+        visibility = get_visibility(visibility),
+    )
 
     return _layer(
         name = name,
