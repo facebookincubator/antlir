@@ -115,31 +115,17 @@ def mount_analyze(
         deps: {str.type: "dependency"} = {}) -> FeatureAnalysis.type:
     if source_kind == "layer":
         source = deps.pop("source")
-        if _implicit_from_antlir1 and LayerInfo not in source:
-            required_layers = []
-        else:
-            required_layers = [source[LayerInfo]]
-
         if not mountpoint:
-            if _implicit_from_antlir1 and LayerInfo in source:
-                default_mountpoint = source[LayerInfo].default_mountpoint
-            else:
-                default_mountpoint = None
-            if not default_mountpoint and not _implicit_from_antlir1:
-                fail("mountpoint is required if source does not have a default mountpoint")
-            mountpoint = default_mountpoint
+            mountpoint = source[LayerInfo].default_mountpoint
         return FeatureAnalysis(
             data = mount_record(
                 layer = layer_mount_record(
-                    src = layer_dep_analyze(
-                        source,
-                        _implicit_from_antlir1 = _implicit_from_antlir1,
-                    ),
+                    src = layer_dep_analyze(source),
                     mountpoint = mountpoint,
                 ),
                 host = None,
             ),
-            required_layers = required_layers,
+            required_layers = [source[LayerInfo]],
         )
     elif source_kind == "host":
         return FeatureAnalysis(

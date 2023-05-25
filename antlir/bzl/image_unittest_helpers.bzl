@@ -72,7 +72,8 @@ def _nspawn_wrapper_properties(
         # set `shadow_proxied_binaries`.
         container_opts,
         flavor = None,
-        flavor_config_override: types.optional(types.struct) = None):
+        flavor_config_override: types.optional(types.struct) = None,
+        antlir2 = None):
     container_opts = normalize_container_opts(container_opts)
 
     # Fail early, so the user doesn't have to wait for the test to build.
@@ -152,6 +153,7 @@ def _nspawn_wrapper_properties(
         runtime = ["systemd"] if boot else [],
         flavor = flavor,
         flavor_config_override = flavor_config_override,
+        antlir2 = antlir2,
     )
 
     # For ergonomics, export the debug targets from the test's layer on the test

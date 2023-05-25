@@ -3,10 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:compat.bzl?v2_only", antlir2_compat = "compat")
 load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
+load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
+load("//antlir/bzl:build_defs.bzl", "alias", "get_visibility", "is_buck2")
 load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
+load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
+load(":antlir2_shim.bzl", "antlir2_shim")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "use_rc_target")
 load(":flavor_impl.bzl", "flavor_to_struct")
@@ -25,9 +29,11 @@ def image_layer_from_package_helper(
         rc_layer,
         features,
         compile_image_features_fn,
-        image_layer_kwargs):
+        image_layer_kwargs,
+        antlir2_src):
     flavor = flavor_to_struct(flavor)
     target = normalize_target(":" + name)
+    antlir2 = antlir2_shim.should_make_parallel_layer(image_layer_kwargs.pop("antlir2", None), flavor = flavor)
 
     # Do argument validation
     for bad_kwarg in ["parent_layer", "features"]:
@@ -41,9 +47,10 @@ def image_layer_from_package_helper(
         # building with "-c antlir.rc_targets=XXX" won't fail.
         image_layer_alias(
             name = PRIVATE_DO_NOT_USE_feature_target_name(name),
+            antlir2 = False,
             layer = rc_layer,
         )
-    if use_rc_target(target = target, exact_match = True) and rc_layer == None:
+    if use_rc_target(exact_match = True, target = target) and rc_layer == None:
         fail("{}'s rc build was requested but `rc_layer` is unset!".format(target))
 
     if use_rc_target(target = target) and rc_layer != None:
@@ -51,16 +58,34 @@ def image_layer_from_package_helper(
             name = name,
             layer = rc_layer,
         )
+        if antlir2:
+            alias(
+                name = name + ".antlir2",
+                antlir_rule = "user-internal",
+                layer = rc_layer + ".antlir2",
+                visibility = get_visibility(image_layer_kwargs.get("visibility")),
+            )
     else:
         _make_subvol_cmd, _deps_query = compile_image_features_fn(
             name = name,
             current_target = normalize_target(":" + name),
-            parent_layer = None,
             features = features,
             flavor = flavor,
             flavor_config_override = flavor_config_override,
+            parent_layer = None,
         )
 
+        if antlir2:
+            if is_buck2():
+                antlir2_image.prebuilt(
+                    name = name + ".antlir2",
+                    src = antlir2_src,
+                    flavor = antlir2_compat.from_antlir1_flavor(flavor),
+                    format = format,
+                    visibility = get_visibility(image_layer_kwargs.get("visibility")),
+                )
+            else:
+                antlir2_shim.fake_buck1_target(name + ".antlir2")
         image_layer_utils.image_layer_impl(
             _rule_type = "image_layer_from_package",
             _layer_name = name,
@@ -122,8 +147,10 @@ def image_layer_from_package(
         struct(
             layer_from_package = [feature_shape],
         ),
-        antlir2_feature = antlir1_no_equivalent(label = normalize_target(":" + name), description = "image_layer_from_package") if is_buck2() else None,
+        antlir2_feature = antlir1_no_equivalent(description = "image_layer_from_package", label = normalize_target(":" + name)) if is_buck2() else None,
     )]
+
+    buck2_src = image_source_to_buck2_src(source)
 
     image_layer_from_package_helper(
         name,
@@ -135,4 +162,5 @@ def image_layer_from_package(
         features,
         compile_image_features,
         image_layer_kwargs,
+        antlir2_src = buck2_src,
     )

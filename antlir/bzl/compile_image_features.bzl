@@ -6,9 +6,7 @@
 # Implementation detail for `image/layer/layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "is_buck2")
-load("//antlir/bzl:flatten.bzl", "flatten")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "normalize_features", "private_feature_new")
@@ -162,20 +160,6 @@ def compile_image_features(
         internal_only_is_genrule_layer = False):
     # Keep in sync with `bzl_const.py`.
     features_for_layer = name + BZL_CONST.layer_feature_suffix
-
-    if is_buck2():
-        antlir2_feature.new(
-            name = features_for_layer,
-            features = [f.antlir2_feature if hasattr(f, "antlir2_feature") else f for f in flatten.flatten(features or [])],
-            visibility = ["PUBLIC"],
-        )
-    else:
-        # export a target of the same name to make td happy
-        export_file(
-            name = features_for_layer,
-            src = antlir_dep(":empty"),
-            antlir_rule = "user-internal",
-        )
 
     flavor = flavor_to_struct(flavor)
     parent_layer = get_flavor_aliased_layer(parent_layer, flavor)
