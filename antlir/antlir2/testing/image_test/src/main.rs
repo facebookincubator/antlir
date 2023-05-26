@@ -266,7 +266,7 @@ fn main() -> Result<()> {
         writeln!(dropin, "SuccessAction=none")?;
         // if, however, kernel-command-line.service fails to even start the
         // test, exit immediately
-        writeln!(dropin, "FailureAction=exit")?;
+        writeln!(dropin, "FailureAction=exit-force")?;
         writeln!(dropin, "[Service]")?;
         writeln!(dropin, "Type=simple")?;
         // kernel-command-line.service will just start the
@@ -284,8 +284,8 @@ fn main() -> Result<()> {
         writeln!(test_unit, "[Unit]")?;
         // exit the container as soon as this test is done, using the exit code
         // of the process
-        writeln!(test_unit, "SuccessAction=exit")?;
-        writeln!(test_unit, "FailureAction=exit")?;
+        writeln!(test_unit, "SuccessAction=exit-force")?;
+        writeln!(test_unit, "FailureAction=exit-force")?;
         for unit in &args.requires_units {
             writeln!(test_unit, "After={unit}")?;
             writeln!(test_unit, "Requires={unit}")?;
