@@ -1,0 +1,106 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# @oss-disable
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+
+_HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
+
+def _impl(ctx: "context") -> ["provider"]:
+    test_cmd = cmd_args(
+        ctx.attrs.test_that_should_fail[RunInfo],
+        cmd_args(ctx.attrs.stdout_re, format = "--stdout-re={}") if ctx.attrs.stdout_re else cmd_args(),
+        cmd_args(ctx.attrs.stderr_re, format = "--stderr-re={}") if ctx.attrs.stderr_re else cmd_args(),
+        "--",
+        ctx.attrs.test[ExternalRunnerTestInfo].command,
+    )
+
+    # Copy the labels from the inner test since there is tons of behavior
+    # controlled by labels and we don't want to have to duplicate logic that
+    # other people are already writing in the standard *_unittest macros.
+    # This wrapper should be as invisible as possible.
+    inner_labels = list(ctx.attrs.test[ExternalRunnerTestInfo].labels)
+    for label in _HIDE_TEST_LABELS:
+        inner_labels.remove(label)
+
+    script, _ = ctx.actions.write(
+        "test.sh",
+        cmd_args("#!/bin/bash", cmd_args(test_cmd, delimiter = " \\\n  ")),
+        is_executable = True,
+        allow_args = True,
+    )
+    return [
+        ExternalRunnerTestInfo(
+            command = [test_cmd],
+            type = "custom",
+            labels = ctx.attrs.labels + inner_labels,
+            contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
+            env = ctx.attrs.test[ExternalRunnerTestInfo].env,
+            run_from_project_root = ctx.attrs.test[ExternalRunnerTestInfo].run_from_project_root,
+        ),
+        RunInfo(test_cmd),
+        DefaultInfo(script),
+    ]
+
+_test_that_should_fail = rule(
+    impl = _impl,
+    attrs = {
+        "labels": attrs.list(attrs.string(), default = []),
+        "stderr_re": attrs.option(attrs.string(doc = "regex to match on test output"), default = None),
+        "stdout_re": attrs.option(attrs.string(doc = "regex to match on test output"), default = None),
+        "test": attrs.dep(providers = [ExternalRunnerTestInfo]),
+        "test_that_should_fail": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/test_that_should_fail:test-that-should-fail")),
+    },
+    doc = "Run another test that is supposed to fail and ensure it fails for the reason expected",
+)
+
+# Collection of helpers to create the inner test implicitly, and hide it from
+# TestPilot
+
+def test_that_should_fail(
+        test_rule,
+        name: str.type,
+        stdout_re: [str.type, None] = None,
+        stderr_re: [str.type, None] = None,
+        labels: [[str.type], None] = None,
+        **kwargs):
+    test_rule(
+        name = name + "_failing_inner_test",
+        labels = _HIDE_TEST_LABELS,
+        **kwargs
+    )
+    labels = list(labels) if labels else []
+
+    # @oss-disable
+        # @oss-disable
+
+    _test_that_should_fail(
+        name = name,
+        test = ":" + name + "_failing_inner_test",
+        labels = labels,
+        stdout_re = stdout_re,
+        stderr_re = stderr_re,
+    )
+
+cpp_test_that_should_fail = partial(
+    test_that_should_fail,
+    cpp_unittest,
+    antlir_rule = "user-internal",
+)
+python_test_that_should_fail = partial(
+    test_that_should_fail,
+    python_unittest,
+    antlir_rule = "user-internal",
+)
+rust_test_that_should_fail = partial(
+    test_that_should_fail,
+    rust_unittest,
+    antlir_rule = "user-internal",
+)
+sh_test_that_should_fail = partial(
+    test_that_should_fail,
+    buck_sh_test,
+    antlir_rule = "user-internal",
+)

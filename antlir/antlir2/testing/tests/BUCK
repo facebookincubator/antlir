@@ -2,6 +2,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
+load("//antlir/antlir2/testing:test_that_should_fail.bzl", "sh_test_that_should_fail")
 load("//antlir/bzl:systemd.bzl", "systemd")
 
 image.layer(
@@ -89,4 +90,11 @@ image_test_rpm_names(
     name = "test-foo-rpm-names",
     src = "foo-rpms.txt",
     layer = ":foo-rpms",
+)
+
+sh_test_that_should_fail(
+    name = "test-that-should-fail",
+    stderr_re = "^this is some stderr of a test that is expected to fail\n$",
+    stdout_re = "^this is some stdout of a test that is expected to fail\n$",
+    test = "failing_test.sh",
 )
