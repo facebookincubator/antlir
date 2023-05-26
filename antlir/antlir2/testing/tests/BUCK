@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_names")
+load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_integrity", "image_test_rpm_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
 load("//antlir/antlir2/testing:test_that_should_fail.bzl", "sh_test_that_should_fail", "test_that_should_fail")
 load("//antlir/bzl:systemd.bzl", "systemd")
@@ -90,6 +90,26 @@ image_test_rpm_names(
     name = "test-foo-rpm-names",
     src = "foo-rpms.txt",
     layer = ":foo-rpms",
+)
+
+image_test_rpm_integrity(
+    name = "test-foo-rpm-integrity",
+    layer = ":foo-rpms",
+)
+
+image.layer(
+    name = "foo-rpms-integrity-violated",
+    features = [
+        feature.remove(path = "/foo/bar/baz"),
+    ],
+    parent_layer = ":foo-rpms",
+)
+
+test_that_should_fail(
+    name = "test-foo-rpm-integrity-removed-file",
+    layer = ":foo-rpms-integrity-violated",
+    stdout_re = "(?s)FileIntegrity.*\"\\/foo\\/bar\\/baz\".*Missing",
+    test_rule = image_test_rpm_integrity,
 )
 
 sh_test_that_should_fail(
