@@ -58,6 +58,19 @@ def _map_image(
     )
     return cmd, out
 
+def _nspawn_sub_target(subvol: "artifact", mounts: ["mount_record"]) -> ["provider"]:
+    return [
+        DefaultInfo(),
+        RunInfo(cmd_args(
+            "sudo",
+            "systemd-nspawn",
+            "--ephemeral",
+            "--directory",
+            subvol,
+            cmd_args([nspawn_mount_args(mount) for mount in mounts]),
+        )),
+    ]
+
 def _impl(ctx: "context") -> ["provider"]:
     if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
         fail("'flavor' must be set if there is no 'parent_layer'")
@@ -97,9 +110,11 @@ def _impl(ctx: "context") -> ["provider"]:
     parent_depgraph = ctx.attrs.parent_layer[LayerInfo].depgraph if ctx.attrs.parent_layer else None
     final_subvol = None
     final_depgraph = None
+    phased_subvols = {}
 
     for phase in BuildPhase.values():
         phase = BuildPhase(phase)
+
         identifier_prefix = phase.value + "_" if phase.value else ""
         features = [
             feat
@@ -190,6 +205,9 @@ def _impl(ctx: "context") -> ["provider"]:
             parent = parent_layer,
         )
 
+        if phase.value:
+            phased_subvols[phase.value] = final_subvol
+
         if build_phase.is_predictable(phase):
             final_depgraph = depgraph_input
         else:
@@ -216,6 +234,7 @@ def _impl(ctx: "context") -> ["provider"]:
         final_subvol = parent_layer
 
     sub_targets = {}
+    debug_sub_targets = {}
 
     # Expose the build appliance as a subtarget so that it can be used by test
     # macros like image_rpms_test. Generally this should be accessed by the
@@ -229,17 +248,17 @@ def _impl(ctx: "context") -> ["provider"]:
         features = all_features,
         parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
     )
-    sub_targets["nspawn"] = [
-        DefaultInfo(),
-        RunInfo(cmd_args(
-            "sudo",
-            "systemd-nspawn",
-            "--ephemeral",
-            "--directory",
-            final_subvol,
-            cmd_args([nspawn_mount_args(mount) for mount in mounts]),
-        )),
-    ]
+
+    for phase, subvol in phased_subvols.items():
+        debug_sub_targets[phase] = [
+            DefaultInfo(subvol, sub_targets = {
+                "nspawn": _nspawn_sub_target(subvol, mounts),
+            }),
+        ]
+
+    sub_targets["nspawn"] = _nspawn_sub_target(final_subvol, mounts)
+    if debug_sub_targets:
+        sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
     return [
         LayerInfo(
