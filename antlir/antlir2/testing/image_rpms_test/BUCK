@@ -8,6 +8,8 @@ rust_binary(
         "anyhow",
         "clap",
         "itertools",
+        "once_cell",
+        "regex",
         "similar-asserts",
         "size",
     ],
