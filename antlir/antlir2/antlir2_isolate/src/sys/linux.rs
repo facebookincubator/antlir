@@ -79,6 +79,7 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         }
     };
     cmd.arg("--quiet")
+        .arg("--pipe")
         .arg("--directory")
         .arg(layer.as_ref())
         .arg("--private-network")
