@@ -49,7 +49,10 @@ def _impl(ctx: "context") -> ["provider"]:
             run_from_project_root = True,
         ),
         RunInfo(test_cmd),
-        DefaultInfo(script),
+        DefaultInfo(
+            script,
+            sub_targets = {"layer": ctx.attrs.layer.providers},
+        ),
     ]
 
 image_test = rule(
