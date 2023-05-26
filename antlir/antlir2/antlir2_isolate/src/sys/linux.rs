@@ -84,7 +84,14 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         .arg(layer.as_ref())
         .arg("--private-network")
         .arg("--user")
-        .arg(user.as_ref());
+        .arg(user.as_ref())
+        // keep whatever timezone was in the image, not on the host
+        .arg("--timezone=off")
+        // Don't pollute the host's /var/log/journal
+        .arg("--link-journal=no")
+        // Explicitly do not look for any settings for our ephemeral machine
+        // on the host.
+        .arg("--settings=no");
     if ephemeral {
         cmd.arg("--ephemeral");
     }
