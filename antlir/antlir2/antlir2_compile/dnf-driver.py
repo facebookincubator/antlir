@@ -253,6 +253,7 @@ def main():
         reponame__neq=hawkey.SYSTEM_REPO_NAME
     )
     base.sack.add_excludes(disallowed_versions)
+    base.sack.add_excludes(base.sack.query().filter(name=spec.get("excluded_rpms")))
 
     base.resolve(allow_erasing=True)
     with out as o:

@@ -38,6 +38,7 @@ struct DriverSpec<'a> {
     mode: DriverMode,
     arch: Arch,
     versionlock: Option<&'a BTreeMap<String, String>>,
+    excluded_rpms: &'a BTreeSet<String>,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -164,6 +165,7 @@ fn run_dnf_driver(
         mode,
         arch: ctx.target_arch(),
         versionlock: ctx.dnf.versionlock(),
+        excluded_rpms: ctx.dnf.excluded_rpms(),
     })
     .context("while serializing dnf-driver input")?;
 

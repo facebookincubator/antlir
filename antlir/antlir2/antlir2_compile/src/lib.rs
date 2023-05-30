@@ -11,6 +11,7 @@
 #![feature(unix_chown)]
 
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::fmt::Display;
 use std::path::Path;
 use std::path::PathBuf;
@@ -103,11 +104,21 @@ pub struct DnfContext {
     repos: PathBuf,
     /// Versionlock of package name -> EVRA
     versionlock: Option<BTreeMap<String, String>>,
+    /// Rpms to exclude from all operations
+    excluded_rpms: BTreeSet<String>,
 }
 
 impl DnfContext {
-    pub fn new(repos: PathBuf, versionlock: Option<BTreeMap<String, String>>) -> Self {
-        Self { repos, versionlock }
+    pub fn new(
+        repos: PathBuf,
+        versionlock: Option<BTreeMap<String, String>>,
+        excluded_rpms: BTreeSet<String>,
+    ) -> Self {
+        Self {
+            repos,
+            versionlock,
+            excluded_rpms,
+        }
     }
     pub(crate) fn repos(&self) -> &Path {
         &self.repos
@@ -115,6 +126,10 @@ impl DnfContext {
 
     pub(crate) fn versionlock(&self) -> Option<&BTreeMap<String, String>> {
         self.versionlock.as_ref()
+    }
+
+    pub(crate) fn excluded_rpms(&self) -> &BTreeSet<String> {
+        &self.excluded_rpms
     }
 }
 

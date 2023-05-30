@@ -89,6 +89,11 @@ def _impl(ctx: "context") -> ["provider"]:
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
+    dnf_excluded_rpms = ctx.attrs.dnf_excluded_rpms or flavor_info.dnf_info.default_excluded_rpms
+    if dnf_excluded_rpms:
+        dnf_excluded_rpms = ctx.actions.write_json("excluded_rpms.json", dnf_excluded_rpms)
+    else:
+        dnf_excluded_rpms = None
 
     # The image build is split into phases based on features' `build_phase`
     # property.
@@ -173,6 +178,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 cmd = cmd_args(
                     cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
                     cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
+                    cmd_args(dnf_excluded_rpms, format = "--dnf-excluded-rpms={}") if dnf_excluded_rpms else cmd_args(),
                     "plan",
                     compileish_args,
                     cmd_args(plan.as_output(), format = "--plan={}"),
@@ -283,6 +289,10 @@ _layer = rule(
         ),
         "dnf_available_repos": attrs.option(
             attrs.dep(providers = [RepoSetInfo]),
+            default = None,
+        ),
+        "dnf_excluded_rpms": attrs.option(
+            attrs.list(attrs.string()),
             default = None,
         ),
         "dnf_versionlock": attrs.option(
