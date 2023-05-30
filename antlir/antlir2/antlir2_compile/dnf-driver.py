@@ -25,6 +25,7 @@ from pathlib import Path
 import dnf
 import hawkey
 import libdnf
+from dnf.i18n import ucd
 
 
 class LockedOutput(object):
@@ -79,6 +80,19 @@ class TransactionProgress(dnf.callback.TransactionProgress):
     def __init__(self, out):
         self.out = out
         self._sent = defaultdict(set)
+
+    def scriptout(self, msgs):
+        """Hook for reporting an rpm scriptlet output.
+
+        :param msgs: the scriptlet output
+        """
+        if msgs:
+            with self.out as out:
+                json.dump(
+                    {"scriptlet_output": ucd(msgs)},
+                    out,
+                )
+                out.write("\n")
 
     def error(self, message):
         with self.out as out:
