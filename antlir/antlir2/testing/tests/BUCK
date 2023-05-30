@@ -44,6 +44,7 @@ image.layer(
                 "BOOT": str(boot),
             },
             layer = ":base",
+            supports_static_listing = False,  #TODO: disable static listing for underlying test in antlir2 macro
         ),
         image_rust_test(
             name = "test-rs" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
