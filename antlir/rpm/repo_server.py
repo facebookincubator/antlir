@@ -320,7 +320,15 @@ class RepoSnapshotHTTPRequestHandler(BaseHTTPRequestHandler):
             ("storage_id" not in obj and "content_bytes" not in obj)
             # `error` is not currently populated simultaneously with
             # `storage_id`, but memoized errors can be.
-            or obj_error
+            or (
+                obj_error
+                and
+                # We no longer care about mutable_rpm errors in antlir. We're
+                # not in the business of making sure our upstream repos never
+                # change a given NEVRA, we just want to make sure that a given
+                # SCM rev always gives a user the same rpm
+                obj_error.get("error", None) != "mutable_rpm"
+            )
         ):
             self.send_error(
                 # pyre-fixme[16]: Module `server` has no attribute `HTTPStatus`.
