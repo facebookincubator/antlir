@@ -7,6 +7,7 @@
 
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::collections::BTreeSet;
 use std::ffi::OsStr;
 use std::path::PathBuf;
 
@@ -59,6 +60,9 @@ pub(self) struct DnfCompileishArgs {
     #[clap(long = "dnf-versionlock")]
     /// Path to dnf versionlock json file
     pub(crate) versionlock: Option<JsonFile<BTreeMap<String, String>>>,
+    #[clap(long = "dnf-excluded-rpms")]
+    /// Path to json file with list of rpms to exclude from dnf operations
+    pub(crate) excluded_rpms: Option<JsonFile<BTreeSet<String>>>,
 }
 
 #[derive(Parser, Debug)]
@@ -92,6 +96,7 @@ impl Compileish {
                 DnfCompileishArgs {
                     repos: dnf_repos,
                     versionlock: dnf_versionlock,
+                    excluded_rpms: dnf_excluded_rpms,
                 },
         } = self;
         let mut v = vec![
@@ -109,6 +114,10 @@ impl Compileish {
         if let Some(versionlock) = dnf_versionlock {
             v.push(Cow::Borrowed(OsStr::new("--dnf-versionlock")));
             v.push(Cow::Borrowed(versionlock.path().as_os_str()));
+        }
+        if let Some(excluded_rpms) = dnf_excluded_rpms {
+            v.push(Cow::Borrowed(OsStr::new("--dnf-excluded-rpms")));
+            v.push(Cow::Borrowed(excluded_rpms.path().as_os_str()));
         }
         for dep in image_dependencies {
             v.push(Cow::Borrowed(OsStr::new("--image-dependency")));
@@ -129,6 +138,12 @@ impl Compileish {
                     .as_ref()
                     .map(JsonFile::as_inner)
                     .cloned(),
+                self.dnf
+                    .excluded_rpms
+                    .as_ref()
+                    .map(JsonFile::as_inner)
+                    .cloned()
+                    .unwrap_or_default(),
             ),
         )
         .map_err(Error::Compile)

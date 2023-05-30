@@ -15,6 +15,7 @@ def _impl(ctx: "context") -> ["provider"]:
             dnf_info = FlavorDnfInfo(
                 default_repo_set = ctx.attrs.default_dnf_repo_set,
                 default_versionlock = ctx.attrs.default_dnf_versionlock,
+                default_excluded_rpms = ctx.attrs.default_dnf_excluded_rpms,
             ),
         ),
         DefaultInfo(),
@@ -24,6 +25,7 @@ _flavor = rule(
     impl = _impl,
     attrs = {
         "default_build_appliance": attrs.dep(providers = [LayerInfo]),
+        "default_dnf_excluded_rpms": attrs.list(attrs.string(), default = []),
         "default_dnf_repo_set": attrs.dep(providers = [RepoSetInfo]),
         "default_dnf_versionlock": attrs.option(attrs.source(), default = None),
     },

@@ -24,6 +24,7 @@ FlavorInfo = provider(fields = {
 })
 
 FlavorDnfInfo = provider(fields = {
+    "default_excluded_rpms": "The default set of rpms to exclude from all operations",
     "default_repo_set": "The default set of dnf repos available to images of this flavor",
     "default_versionlock": "JSON file mapping package name -> EVRA",
 })
