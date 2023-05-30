@@ -120,6 +120,7 @@ enum DriverEvent {
         package: Package,
         error: String,
     },
+    ScriptletOutput(String),
 }
 
 /// Relatively simple implementation of rpm features. This does not yet respect
@@ -190,7 +191,7 @@ fn run_dnf_driver(
     let deser = Deserializer::from_reader(child.stdout.take().expect("this is a pipe"));
     let mut events = Vec::new();
     for event in deser.into_iter::<DriverEvent>() {
-        let event = event.context("while deserializing even from dnf-driver.py")?;
+        let event = event.context("while deserializing event from dnf-driver.py")?;
         trace!("dnf-driver: {event:?}");
         events.push(event);
     }
@@ -198,6 +199,19 @@ fn run_dnf_driver(
     if !result.success() {
         Err(Error::msg("dnf-driver.py failed").into())
     } else {
+        // make sure there weren't any error events, if there was -> fail
+        let errors: Vec<_> = events
+            .iter()
+            .filter_map(|ev| match ev {
+                DriverEvent::TxError(error) => Some(error.as_str()),
+                _ => None,
+            })
+            .collect();
+        if !errors.is_empty() {
+            return Err(
+                anyhow::anyhow!("there were one or more transaction errors: {errors:?}").into(),
+            );
+        }
         Ok(events)
     }
 }
