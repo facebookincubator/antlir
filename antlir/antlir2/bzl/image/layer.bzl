@@ -265,6 +265,8 @@ def _impl(ctx: "context") -> ["provider"]:
     sub_targets["nspawn"] = _nspawn_sub_target(final_subvol, mounts)
     if debug_sub_targets:
         sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
+    if ctx.attrs.parent_layer:
+        sub_targets["parent_layer"] = ctx.attrs.parent_layer.providers
 
     return [
         LayerInfo(
