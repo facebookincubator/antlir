@@ -64,23 +64,39 @@ impl<'a> CompileFeature for Install<'a> {
             }
         } else {
             let dst = ctx.dst_path(&self.dst);
-            std::fs::copy(&self.src, &dst)?;
-            let uid = ctx.uid(self.user.name())?;
-            let gid = ctx.gid(self.group.name())?;
+            if self.dev_mode {
+                // If we are installing a buck-built binary in @mode/dev, it must be
+                // executed from the exact same path so that it can find relatively
+                // located .so libraries. There are two ways to do this:
+                // 1) make a symlink to the binary
+                // 2) install a shell script that `exec`s the real binary at the right
+                // path
+                //
+                // Antlir2 chooses option 1, since it's substantially simpler and does
+                // not require any assumptions about the layer (like /bin/sh even
+                // existing).
+                let src_abspath = std::fs::canonicalize(&self.src)?;
+                std::os::unix::fs::symlink(src_abspath, &dst)?;
+            } else {
+                std::fs::copy(&self.src, &dst)?;
+                let uid = ctx.uid(self.user.name())?;
+                let gid = ctx.gid(self.group.name())?;
 
-            let dst_file = File::options().write(true).open(&dst)?;
-            fchown(&dst_file, Some(uid.into()), Some(gid.into())).map_err(std::io::Error::from)?;
-            dst_file.set_permissions(Permissions::from_mode(self.mode.as_raw()))?;
+                let dst_file = File::options().write(true).open(&dst)?;
+                fchown(&dst_file, Some(uid.into()), Some(gid.into()))
+                    .map_err(std::io::Error::from)?;
+                dst_file.set_permissions(Permissions::from_mode(self.mode.as_raw()))?;
 
-            // Sync the file times with the source. This is not strictly necessary
-            // but does lead to some better reproducibility of image builds as it's
-            // one less entropic thing to change between runs when the input did not
-            // change
-            let src_meta = std::fs::metadata(&self.src)?;
-            let times = FileTimes::new()
-                .set_accessed(src_meta.accessed()?)
-                .set_modified(src_meta.modified()?);
-            dst_file.set_times(times)?;
+                // Sync the file times with the source. This is not strictly necessary
+                // but does lead to some better reproducibility of image builds as it's
+                // one less entropic thing to change between runs when the input did not
+                // change
+                let src_meta = std::fs::metadata(&self.src)?;
+                let times = FileTimes::new()
+                    .set_accessed(src_meta.accessed()?)
+                    .set_modified(src_meta.modified()?);
+                dst_file.set_times(times)?;
+            }
         }
         Ok(())
     }

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
@@ -57,6 +58,7 @@ install_record = record(
     user = str.type,
     group = str.type,
     separate_debug_symbols = bool.type,
+    dev_mode = bool.type,
 )
 
 def install_analyze(
@@ -67,6 +69,8 @@ def install_analyze(
         separate_debug_symbols: bool.type,
         deps_or_sources: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
     src = deps_or_sources["src"]
+    dev_mode = False
+    required_run_infos = []
     if type(src) == "dependency":
         if mode == None:
             if RunInfo in src:
@@ -80,6 +84,14 @@ def install_analyze(
                 mode = 0o755
             else:
                 mode = 0o444
+
+        if RunInfo in src:
+            # depending on the RunInfo ensures that all the dynamic library
+            # dependencies of this binary are made available on the local
+            # machine
+            required_run_infos.append(src[RunInfo])
+            if REPO_CFG.artifacts_require_repo:
+                dev_mode = True
 
         src = ensure_single_output(src)
     elif type(src) == "artifact":
@@ -97,6 +109,8 @@ def install_analyze(
             user = user,
             group = group,
             separate_debug_symbols = separate_debug_symbols,
+            dev_mode = dev_mode,
         ),
         required_artifacts = [src],
+        required_run_infos = required_run_infos,
     )

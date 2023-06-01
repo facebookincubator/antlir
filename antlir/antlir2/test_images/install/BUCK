@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_binary", "rust_binary")
 
 image.layer(
     name = "base",
@@ -54,4 +54,46 @@ image_sh_test(
     name = "test-installed-dir",
     layer = ":child-image-install-dir",
     test = "test_installed_dir.sh",
+)
+
+# use a fresh binaries that we know will not have already been materialized for
+# some other use case
+rust_binary(
+    name = "true-rs",
+    srcs = ["true.rs"],
+    crate_root = "true.rs",
+    unittests = False,
+)
+
+python_binary(
+    name = "true-py",
+    srcs = ["true.py"],
+    main_module = "antlir.antlir2.test_images.install.true",
+)
+
+image.layer(
+    name = "installed-binary",
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "coreutils",
+            ],
+        ),
+        feature.install(
+            src = ":true-rs",
+            dst = "/true-rs",
+        ),
+        feature.install(
+            src = ":true-py",
+            dst = "/true-py",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image_sh_test(
+    name = "test-installed-binary-runs",
+    layer = ":installed-binary",
+    test = "test_installed_binary_runs.sh",
 )

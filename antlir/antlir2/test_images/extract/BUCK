@@ -72,6 +72,10 @@ image.layer(
             binaries = ["/usr/bin/systemctl"],
             layer = ":binaries-clone-src",
         ),
+        feature.extract_from_layer(
+            binaries = ["/antlir2-simply-installed"],
+            layer = ":extract-buck",
+        ),
     ],
     parent_layer = ":base",
 )

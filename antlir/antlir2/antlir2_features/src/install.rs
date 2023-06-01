@@ -25,6 +25,7 @@ pub struct Install<'a> {
     pub src: BuckOutSource<'a>,
     pub user: UserName<'a>,
     pub separate_debug_symbols: bool,
+    pub dev_mode: bool,
 }
 
 impl<'a> Install<'a> {
