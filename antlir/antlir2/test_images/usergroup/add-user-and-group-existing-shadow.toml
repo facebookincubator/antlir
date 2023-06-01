@@ -7,7 +7,7 @@ text-patch = '''
 +++ child
 @@ -1 +1,2 @@
  root:x:0:
-+antlir:x:1:antlir
++antlir:x:1000:antlir
 '''
 
 ["etc/passwd"]
@@ -19,7 +19,7 @@ text-patch = '''
 +++ child
 @@ -1 +1,2 @@
  root:x:0:0:root:/root:/bin/bash
-+antlir:x:1:1::/:/fakeshell
++antlir:x:1000:1000::/:/fakeshell
 '''
 
 ["etc/shadow"]

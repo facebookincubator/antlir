@@ -99,18 +99,6 @@ impl<'a> EtcGroup<'a> {
         self.records.is_empty()
     }
 
-    /// Find the next usable [GroupId] that can safely be assigned to a new group
-    pub fn next_available_gid(&self) -> GroupId {
-        GroupId::from_raw(
-            self.records
-                .iter()
-                .map(|r| r.gid.as_raw())
-                .max()
-                .unwrap_or_default()
-                + 1,
-        )
-    }
-
     pub fn get_group_by_name(&self, name: &str) -> Option<&GroupRecord<'a>> {
         self.records.iter().find(|r| r.name == name)
     }

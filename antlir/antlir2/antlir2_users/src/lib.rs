@@ -26,6 +26,7 @@ pub trait Id: Copy + std::fmt::Debug {
         Self: Sized;
 
     fn as_raw(&self) -> u32;
+    fn into_raw(self) -> u32;
 }
 
 macro_rules! id_type {
@@ -55,6 +56,11 @@ macro_rules! id_type {
 
             #[inline]
             fn as_raw(&self) -> u32 {
+                self.0
+            }
+
+            #[inline]
+            fn into_raw(self) -> u32 {
                 self.0
             }
         }
