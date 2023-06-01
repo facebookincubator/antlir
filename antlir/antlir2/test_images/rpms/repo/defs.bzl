@@ -47,7 +47,7 @@ def test_rpm(
         release = release,
         rpm = ":{}--package".format(target_name),
         rpm_name = name,
-        sha1 = "deadbeef",
+        sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
         version = version,
         visibility = [
             "//antlir/antlir2/test_images/rpms/...",
