@@ -1,3 +1,5 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 rust_binary(
@@ -21,4 +23,20 @@ rust_binary(
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/filesystem/absolute_path:absolute_path",
     ],
+)
+
+# We isolate VM inside systemd-nspawn container. This is the image layer
+# for the container with tools we need for VM tests.
+image.layer(
+    name = "container-image",
+    features = [
+        feature.rpms_install(rpms = [
+            "glib2",  # for virtiofsd
+            "iproute",  # for NIC configuration
+            "openssh-clients",  # for ssh shell
+            "systemd-container",  # for systemd-detect-virt
+        ]),
+        feature.ensure_dirs_exist(dirs = "/antlir"),
+    ],
+    flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
 )
