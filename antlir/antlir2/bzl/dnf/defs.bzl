@@ -63,10 +63,15 @@ def compiler_plan_to_local_repos(
             # same way, so we must look in every repo in addition to the one
             # that was initially recorded
             for repo in by_repo.values():
+                # all repodata is made available even if there are no rpms being
+                # installed from that repository, because of certain things
+                # *cough* chef *cough* that directly query dnf to make runtime
+                # decisions, and having only the necessary set of repositories
+                # cause it to make different, stupid, decisions
+                repo_i = repo["repo_info"]
+                tree[paths.join(repo_i.id, "repodata")] = repo_i.repodata
                 if install["nevra"] in repo["nevras"]:
-                    repo_i = repo["repo_info"]
                     rpm_i = repo["nevras"][install["nevra"]]
-                    tree[paths.join(repo_i.id, "repodata")] = repo_i.repodata
                     for key in repo_i.gpg_keys:
                         tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
                     tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = rpm_i.rpm

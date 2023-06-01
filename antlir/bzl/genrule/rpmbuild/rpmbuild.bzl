@@ -74,6 +74,7 @@ def image_rpmbuild(
         signer,
         parent_layer,
         flavor = flavor,
+        antlir2 = "rpmbuild",
         **image_layer_kwargs
     )
 

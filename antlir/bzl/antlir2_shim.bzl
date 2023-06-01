@@ -33,9 +33,9 @@ _DEFAULT_DISABLED_PACKAGES = [
     "tupperware/cm/antlir/tests",
     "tupperware/cm/tests",
     "tupperware/image/slimos",
-    # This has some really huge chef recipes that are currently giving us
-    # trouble. Exclude until we can get taht resolved soon
-    "os_foundation/images/impl",
+    # this is just different enough from centos that I don't want to spend a ton
+    # of time figuring out right now
+    "os_foundation/images/impl/eln",
 ]
 
 def _antlir2_setting_buck1(x):
