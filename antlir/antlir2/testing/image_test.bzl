@@ -35,7 +35,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     script, _ = ctx.actions.write(
         "test.sh",
-        cmd_args("#!/bin/bash", cmd_args(test_cmd, delimiter = " \\\n  ")),
+        cmd_args("#!/bin/bash", cmd_args(test_cmd, delimiter = " \\\n  "), "\n"),
         is_executable = True,
         allow_args = True,
     )
