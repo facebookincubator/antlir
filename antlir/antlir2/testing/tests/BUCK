@@ -109,7 +109,7 @@ image.layer(
 test_that_should_fail(
     name = "test-foo-rpm-integrity-removed-file",
     layer = ":foo-rpms-integrity-violated",
-    stdout_re = "(?s)FileIntegrity.*\"\\/foo\\/bar\\/baz\".*Missing",
+    stderr_re = "(?s)FileIntegrity.*\"\\/foo\\/bar\\/baz\".*Missing",
     test_rule = image_test_rpm_integrity,
 )
 
