@@ -168,14 +168,14 @@ impl Test {
 }
 
 #[derive(Debug, Clone)]
-struct KvPair(String, String);
+struct KvPair(String, OsString);
 
 impl FromStr for KvPair {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self> {
         match s.split_once('=') {
-            Some((key, value)) => Ok(Self(key.to_owned(), value.trim_matches('"').to_owned())),
+            Some((key, value)) => Ok(Self(key.to_owned(), value.trim_matches('"').into())),
             None => Err(anyhow!("expected = separated kv pair, got '{s}'")),
         }
     }
@@ -215,6 +215,9 @@ fn main() -> Result<()> {
         if key.starts_with("TEST_PILOT") {
             setenv.insert(key, val.into());
         }
+    }
+    if let Some(rust_log) = std::env::var_os("RUST_LOG") {
+        setenv.insert("RUST_LOG".into(), rust_log);
     }
 
     let working_directory = std::env::current_dir().context("while getting cwd")?;

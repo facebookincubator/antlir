@@ -12,5 +12,8 @@ rust_binary(
         "regex",
         "similar-asserts",
         "size",
+        "tracing",
+        "tracing-glog",
+        "tracing-subscriber",
     ],
 )

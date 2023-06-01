@@ -109,8 +109,20 @@ image.layer(
 test_that_should_fail(
     name = "test-foo-rpm-integrity-removed-file",
     layer = ":foo-rpms-integrity-violated",
-    stderr_re = "(?s)FileIntegrity.*\"\\/foo\\/bar\\/baz\".*Missing",
+    stderr_re = "\\/foo\\/bar\\/baz owned by \\{\"foobarbaz\"\\}: \\{Missing\\}",
     test_rule = image_test_rpm_integrity,
+)
+
+image_test_rpm_integrity(
+    name = "test-foo-rpm-integrity-violated-but-ignored-file",
+    ignored_files = ["/foo/bar/baz"],
+    layer = ":foo-rpms",
+)
+
+image_test_rpm_integrity(
+    name = "test-foo-rpm-integrity-violated-but-ignored-rpm",
+    ignored_rpms = ["foobarbaz"],
+    layer = ":foo-rpms",
 )
 
 sh_test_that_should_fail(
