@@ -121,6 +121,13 @@ impl Integrity {
             .arg(&self.layer)
             .arg("--verify")
             .arg("--all")
+            // config files are pretty much expected to change
+            // TODO(vmagro): really we should probably check that they are
+            // "noreplace" config files (rpm will create .rpmnew files on any
+            // changes, instead of moving changes to .rpmsave). In practice
+            // though, every config file we are going to care about are
+            // "noreplace", so don't complicate things
+            .arg("--noconfig")
             .output()
             .context("failed to execute rpm")?;
         let ignored_files: HashSet<_> = self.ignored_files.into_iter().collect();
