@@ -1,0 +1,45 @@
+load("//antlir/antlir2/bzl:json_file.bzl", "json_file")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
+
+feature.new(
+    name = "features",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/cache"),
+        feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/repos"),
+        feature.ensure_dirs_exist(dirs = "/__antlir2__/dnf/plugins"),
+        feature.install(
+            src = "dnf.antlir.conf",
+            dst = "/__antlir2__/dnf/dnf.conf",
+        ),
+        feature.ensure_file_symlink(
+            link = "/etc/dnf/dnf.conf",
+            target = "/__antlir2__/dnf/dnf.conf",
+        ),
+        feature.install(
+            src = "driver.py",
+            dst = "/__antlir2__/dnf/driver",
+            mode = "a+rx",
+        ),
+        feature.install(
+            src = "base.py",
+            dst = "/__antlir2__/dnf/base.py",
+        ),
+        feature.install(
+            src = "plugin.py",
+            dst = "/__antlir2__/dnf/plugins/antlir.py",
+        ),
+    ],
+    visibility = ["//antlir/antlir2/build_appliance:features"],
+)
+
+repo_set(
+    name = "empty-dnf-reposet",
+    visibility = ["//antlir/antlir2/..."],
+)
+
+json_file(
+    name = "empty-dnf-versionlock.json",
+    obj = {},
+    visibility = ["//antlir/antlir2/..."],
+)

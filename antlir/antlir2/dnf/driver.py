@@ -14,18 +14,28 @@
 # /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
 # ensure that we're using the same python that dnf itself is using
 
+import argparse
+import importlib.util
 import json
 import os
-import shutil
 import sys
 import threading
 from collections import defaultdict
-from pathlib import Path
 
 import dnf
 import hawkey
 import libdnf
 from dnf.i18n import ucd
+
+spec = importlib.util.spec_from_file_location(
+    "antlir2_dnf_base", "/__antlir2__/dnf/base.py"
+)
+antlir2_dnf_base = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(antlir2_dnf_base)
+
+
+class AntlirError(Exception):
+    pass
 
 
 class LockedOutput(object):
@@ -127,61 +137,19 @@ class TransactionProgress(dnf.callback.TransactionProgress):
 
 def dnf_base(spec) -> dnf.Base:
     base = dnf.Base()
-    base.conf.installroot = spec["install_root"]
-    base.conf.persistdir = os.path.join(
-        spec["install_root"], base.conf.persistdir.lstrip("/")
+    antlir2_dnf_base.configure_base(
+        base=base, install_root=spec["install_root"], arch=spec["arch"]
     )
-    os.makedirs("/antlir/dnf-cache", exist_ok=True)
-    base.conf.cachedir = "/antlir/dnf-cache"
-    base.conf.ignorearch = True
-    base.conf.arch = spec["arch"]
-    # Transactions might not resolve to the newest version of every package.
-    # That is fine and normal, allow the depsolver to do its thing. This is the
-    # default behavior of dnf already, but let's be explicit.
-    base.conf.best = False
-    # Image authors should be explicit about what packages they want to install,
-    # and we will not bloat their image with weak dependencies that they didn't
-    # ask for
-    base.conf.install_weak_deps = False
-    base.conf.gpgcheck = True
-    base.conf.localpkg_gpgcheck = True
-    base.conf.assumeyes = True
     return base
 
 
-def main():
+def driver(spec) -> None:
     out = LockedOutput(sys.stdout)
-    spec = json.loads(sys.argv[1])
     mode = spec["mode"]
     versionlock = spec["versionlock"] or {}
 
     base = dnf_base(spec)
-
-    for repomd in Path(spec["repos"]).glob("**/*/repodata/repomd.xml"):
-        basedir = repomd.parent.parent.resolve()
-        id = str(repomd.parent.parent.relative_to(spec["repos"]))
-        conf = dnf.conf.RepoConf(base.conf)
-        conf.cacheonly = False
-        conf.substitutions = {}
-        conf.check_config_file_age = True
-        if (basedir / "gpg-keys").exists():
-            uris = []
-            for key in (basedir / "gpg-keys").iterdir():
-                uris.append(key.as_uri())
-            if hasattr(conf, "set_or_append_opt_value"):
-                conf.set_or_append_opt_value("gpgcheck", "1")
-                conf.set_or_append_opt_value("gpgkey", "\n".join(uris))
-            else:
-                conf._set_value("gpgcheck", "1")
-                conf._set_value("gpgkey", "\n".join(uris))
-        base.repos.add_new_repo(id, conf, [basedir.as_uri()])
-        shutil.copyfile(
-            basedir / "repodata" / f"{id}.solv", f"/antlir/dnf-cache/{id}.solv"
-        )
-        shutil.copyfile(
-            basedir / "repodata" / f"{id}-filenames.solvx",
-            f"/antlir/dnf-cache/{id}-filenames.solvx",
-        )
+    antlir2_dnf_base.add_repos(base=base, repos_dir=spec["repos"])
 
     # Load .solv files to determine available repos and rpms. This will re-parse
     # repomd.xml, but does not require re-loading all the other large xml blobs,
@@ -245,29 +213,12 @@ def main():
         else:
             raise RuntimeError(f"unknown action '{action}'")
 
-    # Explicitly installed package names are excluded from version lock queries.
-    # Note that this is not the same as saying they are excluded from version
-    # locking, since the version lock will have happened already. These packages
-    # are excluded from the queries so that an image owner is able to specify an
-    # exact NEVRA and be sure to get that installed, without this query being
-    # able to interfere.
-    locked_query = base.sack.query().filter(empty=True)
-    for name, version in versionlock.items():
-        pattern = name + "-" + version
-        possible_nevras = dnf.subject.Subject(pattern).get_nevra_possibilities()
-        for nevra in possible_nevras:
-            locked_query = locked_query.union(nevra.to_query(base.sack))
-    # locked_query now has the exact versions of all the packages that should be
-    # locked, excluding packages that have been explicitly installed
-    locked_names = set(versionlock.keys()) - explicitly_installed_package_names
-    all_versions = base.sack.query().filter(name__glob=list(locked_names))
-    disallowed_versions = all_versions.difference(locked_query)
-    # ignore already-installed packages
-    disallowed_versions = disallowed_versions.filterm(
-        reponame__neq=hawkey.SYSTEM_REPO_NAME
+    antlir2_dnf_base.versionlock_sack(
+        sack=base.sack,
+        versionlock=versionlock,
+        explicitly_installed_package_names=explicitly_installed_package_names,
+        excluded_rpms=spec.get("excluded_rpms", []),
     )
-    base.sack.add_excludes(disallowed_versions)
-    base.sack.add_excludes(base.sack.query().filter(name=spec.get("excluded_rpms")))
 
     base.resolve(allow_erasing=True)
     with out as o:
@@ -293,55 +244,14 @@ def main():
         )
         o.write("\n")
 
-    # We never want to remove an rpm that an image author explicitly installed
-    # with a `feature.rpms_install`, unless the author explicitly removes it
-    # with `feature.rpms_remove(_if_exists)`. Transaction resolution can
-    # potentially end up wanting to remove one of these
-    # explicitly-user-installed packages if the user does request the removal of
-    # a package that that depends on. If this is the case, we should refuse to
-    # perform the transaction.
-
-    # First, find the packages that the user explicitly installed, excluding any
-    # dependencies of those packages
-    user_installed_packages = {
-        pkg for pkg in base.sack.query().installed() if pkg.reason == "user"
-    }
-
-    all_removed_packages = set()
-    for tx_item in base.transaction:
-        # Only track packages that are being _removed_, not upgraded or
-        # downgraded
-        if tx_item.action == dnf.transaction.PKG_REMOVE:
-            all_removed_packages.add(tx_item.pkg)
-    # As a safety check, make sure that we were able to discover at least one
-    # user-installed package. If not, the guarantees about not silently removing
-    # user-installed rpms obviously cannot be ensured.
-    if all_removed_packages:
-        assert (
-            user_installed_packages
-        ), "did not find any user-installed packages, refusing to continue"
-    # Second, find the packages being implicitly removed in this transaction
-    implicitly_removed = {
-        pkg
-        for pkg in all_removed_packages
-        if pkg.name not in explicitly_removed_package_names
-    }
-
-    # Lastly, if any of these implicitly removed packages were originally
-    # installed by explicit user intention, fail the transaction
-    implicitly_removed_user_packages = implicitly_removed & user_installed_packages
-    if implicitly_removed_user_packages:
-        with out as out:
-            json.dump(
-                {
-                    "tx_error": "This transaction would remove some explicitly installed packages. "
-                    + "Modify the image features to explicitly remove these packages: "
-                    + ", ".join(p.name for p in implicitly_removed_user_packages)
-                },
-                out,
-            )
-            out.write("\n")
-        sys.exit(1)
+    try:
+        antlir2_dnf_base.ensure_no_implicit_removes(
+            base=base,
+            explicitly_removed_package_names=explicitly_removed_package_names,
+        )
+    except Exception as e:
+        with out as o:
+            json.dump({"tx_error": str(e)})
 
     if mode == "resolve-only":
         return
@@ -408,6 +318,14 @@ def main():
     rpmdb_version = base.history.last().end_rpmdb_version
     base.history.beg(rpmdb_version, [], [])
     base.history.end(rpmdb_version)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("spec", type=json.loads)
+
+    args = parser.parse_args()
+    driver(args.spec)
 
 
 if __name__ == "__main__":
