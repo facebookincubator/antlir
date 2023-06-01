@@ -1,0 +1,37 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:build_defs.bzl", "export_file")
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
+
+feature.new(
+    name = "features",
+    features = [
+        # Ensure that we don't end up with upstream dnf repos that might
+        # interfere with the snapshot
+        feature.remove(
+            must_exist = False,
+            path = "/etc/yum.repos.d",
+        ),
+        feature.remove(
+            must_exist = False,
+            path = "/etc/dnf/dnf.conf",
+        ),
+        feature.ensure_dirs_exist(dirs = "/__antlir__"),
+        feature.ensure_dirs_exist(dirs = "/__antlir__/dnf/cache"),
+        feature.install(
+            src = "//antlir/antlir2/antlir2_compile:dnf-driver.py",
+            dst = "/__antlir__/dnf/driver",
+            mode = "a+rx",
+        ),
+    ],
+    visibility = ["//antlir/antlir2/..."],
+)
+
+repo_set(
+    name = "empty-dnf-reposet",
+    visibility = ["//antlir/antlir2/..."],
+)
+
+export_file(
+    name = "empty-dnf-versionlock.json",
+    visibility = ["//antlir/antlir2/..."],
+)

@@ -8,17 +8,16 @@ load("//antlir/bzl:types.bzl", "types")
 def _from_antlir1_flavor(flavor: [str.type, ""]) -> str.type:
     if not types.is_string(flavor):
         flavor = flavor.unaliased_name
-    if flavor.startswith("//antlir/facebook/flavor:"):
-        flavor = flavor[len("//antlir/facebook/flavor:"):]
+
     if ":" not in flavor:
-        if flavor == "centos8":
-            flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8"
-        elif flavor == "antlir_test":
+        # antlir2 does not have suffixes like -untested or -rou-preparation
+        # because it does not need them
+        flavor = flavor.split("-", 1)
+        flavor = flavor[0]
+        if flavor == "antlir_test":
             flavor = "//antlir/antlir2/test_images:test-image-flavor"
-        elif flavor == "eln":
-            flavor = "//antlir/antlir2/facebook/flavor/eln:eln"
         else:
-            flavor = "//antlir/antlir2/facebook/flavor:" + flavor
+            flavor = "//antlir/antlir2/facebook/flavor/{flavor}:{flavor}".format(flavor = flavor)
 
     return flavor
 
