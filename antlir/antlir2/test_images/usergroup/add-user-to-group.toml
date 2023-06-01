@@ -8,5 +8,5 @@ text-patch = '''
 @@ -1,2 +1,2 @@
 -root:x:0:
 +root:x:0:antlir
- antlir:x:1:antlir
+ antlir:x:1000:antlir
 '''
