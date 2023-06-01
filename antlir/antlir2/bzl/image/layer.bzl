@@ -56,6 +56,7 @@ def _map_image(
         # 'antlir2 isolate' will clean up an old image if it exists
         no_outputs_cleanup = True,
     )
+
     return cmd, out
 
 def _nspawn_sub_target(subvol: "artifact", mounts: ["mount_record"]) -> ["provider"]:
@@ -119,6 +120,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
     for phase in BuildPhase.values():
         phase = BuildPhase(phase)
+        creator = []
 
         identifier_prefix = phase.value + "_" if phase.value else ""
         features = [
@@ -173,7 +175,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
             plan = ctx.actions.declare_output(identifier_prefix + "plan")
-            _map_image(
+            cmd, _ = _map_image(
                 build_appliance = build_appliance[LayerInfo],
                 cmd = cmd_args(
                     cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
@@ -194,11 +196,12 @@ def _impl(ctx: "context") -> ["provider"]:
             # completely-offline dnf installation (which is MUCH faster and more
             # reliable)
             dnf_repos_dir = compiler_plan_to_local_repos(ctx, identifier_prefix, dnf_available_repos, plan)
+            creator.append(cmd)
         else:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
 
-        _, final_subvol = _map_image(
+        cmd, final_subvol = _map_image(
             build_appliance = build_appliance[LayerInfo],
             cmd = cmd_args(
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
@@ -210,9 +213,10 @@ def _impl(ctx: "context") -> ["provider"]:
             identifier = identifier_prefix + "compile",
             parent = parent_layer,
         )
+        creator.append(cmd)
 
         if phase.value:
-            phased_subvols[phase.value] = final_subvol
+            phased_subvols[phase.value] = {"creator": creator, "subvol": final_subvol}
 
         if build_phase.is_predictable(phase):
             final_depgraph = depgraph_input
@@ -256,10 +260,21 @@ def _impl(ctx: "context") -> ["provider"]:
         parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
     )
 
-    for phase, subvol in phased_subvols.items():
+    for phase, phase_info in phased_subvols.items():
+        debug_script = [[cmd_args(cmd, delimiter = " \\\n  ", quote = "shell"), "\n"] for cmd in phase_info["creator"]]
+        debug_cmd = cmd_args("bash", "-c", "-e", debug_script)
+
+        creator_sh, _ = ctx.actions.write(
+            "create_{}.sh".format(phase),
+            cmd_args("#!/bin/bash -e\nexport RUST_LOG=\"antlir2=trace\"\n", debug_script),
+            is_executable = True,
+            allow_args = True,
+        )
+
         debug_sub_targets[phase] = [
-            DefaultInfo(subvol, sub_targets = {
-                "nspawn": _nspawn_sub_target(subvol, mounts),
+            RunInfo(debug_cmd),
+            DefaultInfo(creator_sh, sub_targets = {
+                "nspawn": _nspawn_sub_target(phase_info["subvol"], mounts),
             }),
         ]
 
