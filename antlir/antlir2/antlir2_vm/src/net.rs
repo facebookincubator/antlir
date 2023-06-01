@@ -101,12 +101,6 @@ impl VirtualNIC {
         Ipv6Addr::from(ip)
     }
 
-    #[allow(dead_code)]
-    /// IP address inside guest VM. It's host IP + 1.
-    fn guest_ipv6_addr(&self) -> Ipv6Addr {
-        Ipv6Addr::from(u128::from(self.host_ipv6_addr()) + 1)
-    }
-
     /// We always use /64
     fn ipv6_net(&self, addr: &Ipv6Addr) -> String {
         format!("{}/64", addr)
@@ -138,16 +132,12 @@ mod test {
     fn test_ipv6_addr() {
         let nic = VirtualNIC::new(0);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00::1/64");
-        assert_eq!(nic.ipv6_net(&nic.guest_ipv6_addr()), "fd00::2/64");
         let nic = VirtualNIC::new(1);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00:1::1/64");
-        assert_eq!(nic.ipv6_net(&nic.guest_ipv6_addr()), "fd00:1::2/64");
         let nic = VirtualNIC::new(10);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00:a::1/64");
-        assert_eq!(nic.ipv6_net(&nic.guest_ipv6_addr()), "fd00:a::2/64");
         let nic = VirtualNIC::new(100);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00:64::1/64");
-        assert_eq!(nic.ipv6_net(&nic.guest_ipv6_addr()), "fd00:64::2/64");
     }
 
     #[test]

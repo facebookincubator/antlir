@@ -36,6 +36,11 @@ image.layer(
             "openssh-clients",  # for ssh shell
             "systemd-container",  # for systemd-detect-virt
         ]),
+        feature.install(
+            src = "//antlir/linux/vm/ssh:privkey",
+            dst = "/antlir/.privkey",
+            mode = "u+r",
+        ),
         feature.ensure_dirs_exist(dirs = "/antlir"),
     ],
     flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
