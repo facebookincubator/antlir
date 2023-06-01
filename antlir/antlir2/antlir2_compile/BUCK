@@ -1,13 +1,11 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_library")
 
 rust_library(
     name = "antlir2_compile",
     srcs = glob([
         "src/**/*.rs",
         # @oss-disable
-    ]) + [
-        "dnf-driver.py",
-    ],
+    ]),
     deps = [
         "anyhow",
         "goblin",
@@ -19,17 +17,11 @@ rust_library(
         "thiserror",
         "tracing",
         "twox-hash",
-        "url",
         "walkdir",
         "xattr",
         "//antlir/antlir2/antlir2_features:antlir2_features",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_users:antlir2_users",
         "//antlir/buck/buck_label:buck_label",
-        "//antlir/rpm/dnf_conf:dnf_conf",
     ],
-)
-
-export_file(
-    name = "dnf-driver.py",
 )

@@ -29,13 +29,13 @@ use crate::Result;
 
 #[derive(Debug, Serialize)]
 struct DriverSpec<'a> {
+    repos: Option<&'a Path>,
     install_root: &'a Path,
-    repos: &'a Path,
     items: &'a [RpmItem<'a>],
     mode: DriverMode,
     arch: Arch,
     versionlock: Option<&'a BTreeMap<String, String>>,
-    excluded_rpms: &'a BTreeSet<String>,
+    excluded_rpms: Option<&'a BTreeSet<String>>,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -157,17 +157,17 @@ fn run_dnf_driver(
     mode: DriverMode,
 ) -> Result<Vec<DriverEvent>> {
     let input = serde_json::to_string(&DriverSpec {
+        repos: Some(ctx.dnf.repos()),
         install_root: ctx.root(),
-        repos: ctx.dnf().repos(),
         items,
         mode,
         arch: ctx.target_arch(),
         versionlock: ctx.dnf.versionlock(),
-        excluded_rpms: ctx.dnf.excluded_rpms(),
+        excluded_rpms: Some(ctx.dnf.excluded_rpms()),
     })
     .context("while serializing dnf-driver input")?;
 
-    let mut child = Command::new("/__antlir__/dnf/driver")
+    let mut child = Command::new("/__antlir2__/dnf/driver")
         .arg(&input)
         .stdout(Stdio::piped())
         .spawn()
