@@ -76,9 +76,9 @@ def _impl(ctx: "context") -> ["provider"]:
         fail("'flavor' must be set if there is no 'parent_layer'")
 
     flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
-    if not flavor:
+    if not ctx.attrs.antlir_internal_build_appliance and not flavor:
         fail("flavor= was not set, and {} does not have a flavor".format(ctx.attrs.parent_layer.label))
-    flavor_info = flavor[FlavorInfo]
+    flavor_info = flavor[FlavorInfo] if flavor else None
     build_appliance = ctx.attrs.build_appliance or flavor_info.default_build_appliance
 
     # Yeah this is against the spirit of Transitive Sets, but we can save an
@@ -89,7 +89,7 @@ def _impl(ctx: "context") -> ["provider"]:
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
-    dnf_excluded_rpms = ctx.attrs.dnf_excluded_rpms or flavor_info.dnf_info.default_excluded_rpms
+    dnf_excluded_rpms = ctx.attrs.dnf_excluded_rpms if ctx.attrs.dnf_excluded_rpms != None else flavor_info.dnf_info.default_excluded_rpms
     if dnf_excluded_rpms:
         dnf_excluded_rpms = ctx.actions.write_json("excluded_rpms.json", dnf_excluded_rpms)
     else:
@@ -248,7 +248,8 @@ def _impl(ctx: "context") -> ["provider"]:
     if build_appliance:
         sub_targets["build_appliance"] = build_appliance.providers
 
-    sub_targets["flavor"] = flavor.providers
+    if flavor:
+        sub_targets["flavor"] = flavor.providers
 
     mounts = all_mounts(
         features = all_features,
@@ -285,6 +286,7 @@ def _impl(ctx: "context") -> ["provider"]:
 _layer = rule(
     impl = _impl,
     attrs = {
+        "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
         "build_appliance": attrs.option(
             attrs.dep(providers = [LayerInfo]),
             default = None,

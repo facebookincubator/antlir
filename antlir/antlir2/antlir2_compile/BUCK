@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "export_file", "rust_library")
 
 rust_library(
     name = "antlir2_compile",
@@ -28,4 +28,8 @@ rust_library(
         "//antlir/buck/buck_label:buck_label",
         "//antlir/rpm/dnf_conf:dnf_conf",
     ],
+)
+
+export_file(
+    name = "dnf-driver.py",
 )

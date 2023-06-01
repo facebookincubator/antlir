@@ -7,9 +7,6 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::fs::OpenOptions;
-use std::io::Write;
-use std::os::unix::fs::OpenOptionsExt;
 use std::path::Path;
 use std::process::Command;
 use std::process::Stdio;
@@ -170,34 +167,22 @@ fn run_dnf_driver(
     })
     .context("while serializing dnf-driver input")?;
 
-    {
-        let mut f = OpenOptions::new()
-            .create(true)
-            .write(true)
-            .truncate(true)
-            .mode(0o555)
-            .open("/antlir/dnf-driver.py")
-            .context("while opening /antlir/dnf-driver.py")?;
-        f.write_all(include_bytes!("../dnf-driver.py"))
-            .context("while writing out /antlir/dnf-driver.py")?;
-    }
-
-    let mut child = Command::new("/antlir/dnf-driver.py")
+    let mut child = Command::new("/__antlir__/dnf/driver")
         .arg(&input)
         .stdout(Stdio::piped())
         .spawn()
-        .context("while spawning dnf-driver.py")?;
+        .context("while spawning dnf-driver")?;
 
     let deser = Deserializer::from_reader(child.stdout.take().expect("this is a pipe"));
     let mut events = Vec::new();
     for event in deser.into_iter::<DriverEvent>() {
-        let event = event.context("while deserializing event from dnf-driver.py")?;
+        let event = event.context("while deserializing event from dnf-driver")?;
         trace!("dnf-driver: {event:?}");
         events.push(event);
     }
-    let result = child.wait().context("while waiting for dnf-driver.py")?;
+    let result = child.wait().context("while waiting for dnf-driver")?;
     if !result.success() {
-        Err(Error::msg("dnf-driver.py failed").into())
+        Err(Error::msg("dnf-driver failed").into())
     } else {
         // make sure there weren't any error events, if there was -> fail
         let errors: Vec<_> = events
