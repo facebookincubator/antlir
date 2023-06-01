@@ -11,6 +11,7 @@ RepoInfo = provider(fields = {
     "gpg_keys": "Optional artifact against which signatures will be checked",
     "id": "Repo name",
     "offline": "Complete offline archive of repodata and all RPMs",
+    "proxy_config": "proxy config for this repo",
     "repodata": "Populated repodata/ directory",
     "urlgen": "URL generator for repo_proxy::RpmRepo",
 })
@@ -81,22 +82,23 @@ def _impl(ctx: "context") -> ["provider"]:
             "snapshot_base": "flat/",
         },
     } if not offline_only_repo else {"Offline": None}
-    proxy_config = ctx.actions.write_json("proxy_config.json", {
-        ctx.label.name: {
-            "gpg_keys": ctx.attrs.gpg_keys,
-            "offline_dir": offline,
-            "repodata_dir": repodata,
-            "urlgen": urlgen_config,
-        },
+    proxy_config = {
+        "gpg_keys": ctx.attrs.gpg_keys,
+        "offline_dir": offline,
+        "offline_only": offline_only_repo,
+        "repodata_dir": repodata,
+        "urlgen": urlgen_config,
+    }
+    combined_proxy_config = ctx.actions.write_json("proxy_config.json", {
+        ctx.label.name: proxy_config,
     })
 
     return [
         DefaultInfo(default_outputs = [repodata], sub_targets = {
             "offline": [DefaultInfo(default_outputs = [offline])],
-            "proxy_config": [DefaultInfo(default_outputs = [proxy_config])],
             "repodata": [DefaultInfo(default_outputs = [repodata])],
             "serve": [DefaultInfo(), RunInfo(
-                args = cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", proxy_config)
+                args = cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", combined_proxy_config)
                     .hidden(repodata)
                     .hidden([offline] if offline_only_repo else []),
             )],
@@ -109,6 +111,7 @@ def _impl(ctx: "context") -> ["provider"]:
             base_url = ctx.attrs.base_url,
             urlgen = urlgen_config,
             all_rpms = rpm_infos,
+            proxy_config = proxy_config,
         ),
     ]
 
@@ -148,7 +151,7 @@ repo = rule(
     attrs = repo_attrs,
 )
 
-RepoSetInfo = provider(fields = ["repo_infos"])
+RepoSetInfo = provider(fields = ["repo_infos", "proxy_cmd"])
 
 def _repo_set_impl(ctx: "context") -> ["provider"]:
     combined_repodatas = ctx.actions.declare_output("repodatas")
@@ -165,16 +168,48 @@ def _repo_set_impl(ctx: "context") -> ["provider"]:
             all_repos[repo_info.id] = repo_info
 
     ctx.actions.copied_dir(combined_repodatas, {id: repo_info.repodata for id, repo_info in all_repos.items()})
+
+    proxy_config = ctx.actions.write_json(
+        "proxy_config.json",
+        {
+            id: repo_info.proxy_config
+            for id, repo_info in all_repos.items()
+        },
+    )
+
+    proxy_cmd = (
+        cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", proxy_config)
+            .hidden([repo_info.repodata for repo_info in all_repos.values()])
+            .hidden(
+            # repos that are offline_only (not backed by a remote store &
+            # urlgen) must be materialized locally before serving this repo_set
+            [repo_info.offline for repo_info in all_repos.values() if repo_info.proxy_config["offline_only"]],
+        )
+    )
+    # .hidden([offline] if offline_only_repo else []),
+
     return [
         RepoSetInfo(
             repo_infos = all_repos.values(),
+            proxy_cmd = proxy_cmd,
         ),
-        DefaultInfo(default_outputs = [combined_repodatas]),
+        DefaultInfo(
+            combined_repodatas,
+            sub_targets = {
+                "proxy": [
+                    DefaultInfo(),
+                    RunInfo(
+                        args = proxy_cmd,
+                    ),
+                ],
+            },
+        ),
     ]
 
 repo_set = rule(
     impl = _repo_set_impl,
     attrs = {
+        "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
         "repo_sets": attrs.list(attrs.dep(providers = [RepoSetInfo]), default = []),
         "repos": attrs.list(attrs.dep(providers = [RepoInfo]), default = []),
     },

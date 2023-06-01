@@ -143,7 +143,7 @@ static REPO_RE: Lazy<Regex> = Lazy::new(|| {
 static REPODATA_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r#"^/repodata/(?P<artifact>.*)$"#).expect("will definitely compile"));
 static PACKAGES_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(r#"^/Packages/(?P<id>[a-f0-9]{64})/(?P<name>.*\.rpm)$"#)
+    Regex::new(r#"^/Packages/(?P<id>[a-f0-9]+)/(?P<name>.*\.rpm)$"#)
         .expect("will definitely compile")
 });
 
