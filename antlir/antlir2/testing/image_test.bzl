@@ -6,7 +6,7 @@
 # @oss-disable
 # @oss-disable
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 
 _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
@@ -91,7 +91,7 @@ def _implicit_image_test(
     test_rule(
         name = name + "_image_test_inner",
         antlir_rule = "user-internal",
-        labels = _HIDE_TEST_LABELS,
+        labels = add_test_framework_label(_HIDE_TEST_LABELS, "test-framework=7:antlir_image_test"),
         **kwargs
     )
     labels = list(labels) if labels else []
@@ -110,6 +110,6 @@ def _implicit_image_test(
     )
 
 image_cpp_test = partial(_implicit_image_test, cpp_unittest)
-image_python_test = partial(_implicit_image_test, python_unittest)
+image_python_test = partial(_implicit_image_test, python_unittest, supports_static_listing = False)
 image_rust_test = partial(_implicit_image_test, rust_unittest)
 image_sh_test = partial(_implicit_image_test, buck_sh_test)
