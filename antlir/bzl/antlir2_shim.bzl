@@ -104,21 +104,13 @@ def _should_make_parallel(
 
 def _fake_buck1_layer(name):
     # export a target of the same name to make td happy
-    export_file(
-        name = name + ".antlir2",
-        src = antlir_dep(":empty"),
-        antlir_rule = "user-internal",
-    )
-    export_file(
-        name = name + ".antlir2.antlir2",
-        src = antlir_dep(":empty"),
-        antlir_rule = "user-internal",
-    )
-    export_file(
-        name = name + ".antlir2--features",
-        src = antlir_dep(":empty"),
-        antlir_rule = "user-internal",
-    )
+    _fake_buck1_target(name = name + ".antlir2")
+    _fake_buck1_target(name = name + ".antlir2.antlir2")
+    _fake_buck1_target(name = name + ".antlir2--features")
+
+def _fake_buck1_test(name):
+    _fake_buck1_target(name = name)
+    _fake_buck1_target(name = name + "_image_test_inner")
 
 def _fake_buck1_target(name):
     # export a target of the same name to make td happy
@@ -132,6 +124,7 @@ antlir2_shim = struct(
     fake_buck1_layer = _fake_buck1_layer,
     fake_buck1_feature = _fake_buck1_target,
     fake_buck1_target = _fake_buck1_target,
+    fake_buck1_test = _fake_buck1_test,
     should_make_parallel_feature = _should_make_parallel,
     should_make_parallel_layer = _should_make_parallel,
 )
