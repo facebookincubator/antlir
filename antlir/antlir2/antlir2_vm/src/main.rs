@@ -10,6 +10,7 @@ mod isolation;
 mod net;
 mod runtime;
 mod share;
+mod ssh;
 mod types;
 mod utils;
 mod vm;
