@@ -19,6 +19,8 @@ use once_cell::sync::OnceCell;
 use thiserror::Error;
 use tracing::debug;
 
+use crate::utils::log_command;
+
 #[derive(Error, Debug)]
 pub(crate) enum IsolationError {
     #[error("Failed to find repo root: `{0}`")]
@@ -128,7 +130,8 @@ pub(crate) fn isolated(image: PathBuf, envs: Option<&[String]>) -> Result<Isolat
 /// Basic check if current environment is isolated
 /// TODO: Linux specific
 pub(crate) fn is_isolated() -> Result<bool> {
-    let output = Command::new("systemd-detect-virt").output()?.stdout;
+    let mut command = Command::new("systemd-detect-virt");
+    let output = log_command(&mut command).output()?.stdout;
     let virt = std::str::from_utf8(&output)?.trim();
     debug!("systemd-detect-virt returned: {}", virt);
     Ok(virt == "systemd-nspawn")
