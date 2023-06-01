@@ -7,6 +7,7 @@ bad_depgraph(
     error = {"cycle": [
         {
             "data": {
+                "dev_mode": False,
                 "dst": "/etc/passwd",
                 "group": "root",
                 "mode": 0o444,
@@ -207,6 +208,7 @@ bad_depgraph(
         "features": [
             {
                 "data": {
+                    "dev_mode": False,
                     "dst": "/foo",
                     "group": "root",
                     "mode": 0o444,
@@ -219,6 +221,7 @@ bad_depgraph(
             },
             {
                 "data": {
+                    "dev_mode": False,
                     "dst": "/foo",
                     "group": "root",
                     "mode": 0o444,
@@ -305,6 +308,7 @@ bad_depgraph(
         "features": [
             {
                 "data": {
+                    "dev_mode": False,
                     "dst": "/foo",
                     "group": "root",
                     "mode": 0o444,
@@ -317,6 +321,7 @@ bad_depgraph(
             },
             {
                 "data": {
+                    "dev_mode": False,
                     "dst": "/foo",
                     "group": "root",
                     "mode": 0o400,

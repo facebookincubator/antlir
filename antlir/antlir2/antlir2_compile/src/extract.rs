@@ -9,12 +9,13 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::hash::Hasher;
-use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_features::extract::Extract;
+use antlir2_isolate::isolate;
+use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use goblin::elf::Elf;
 use once_cell::sync::Lazy;
@@ -62,9 +63,7 @@ fn so_dependencies<S: AsRef<OsStr>>(
 ) -> anyhow::Result<Vec<PathBuf>> {
     let binary = Path::new(binary.as_ref());
     let binary_as_seen_from_here = match sysroot {
-        Some(sysroot) => {
-            Cow::Owned(sysroot.join(Path::new(binary).strip_prefix("/").unwrap_or(binary)))
-        }
+        Some(sysroot) => Cow::Owned(sysroot.join(binary.strip_prefix("/").unwrap_or(binary))),
         None => Cow::Borrowed(binary),
     };
     let buf = std::fs::read(&binary_as_seen_from_here)
@@ -73,21 +72,40 @@ fn so_dependencies<S: AsRef<OsStr>>(
         Elf::parse(&buf).with_context(|| format!("while parsing ELF {}", binary.display()))?;
     let interpreter = Path::new(elf.interpreter.unwrap_or(DEFAULT_LD_SO));
     tracing::debug!("using interpreter {}", interpreter.display());
+
     let mut cmd = Command::new(interpreter);
     if let Some(sysroot) = sysroot {
-        let sysroot = sysroot.to_path_buf();
-        unsafe {
-            cmd.pre_exec(move || {
-                std::os::unix::fs::chroot(&sysroot)?;
-                std::env::set_current_dir("/")?;
-                Ok(())
-            });
-        }
+        let cwd = std::env::current_dir()?;
+        cmd = isolate(
+            IsolationContext::builder(sysroot)
+                .ephemeral(true)
+                .platform([
+                    cwd.as_path(),
+                    #[cfg(facebook)]
+                    Path::new("/usr/local/fbcode"),
+                    #[cfg(facebook)]
+                    Path::new("/mnt/gvfs"),
+                ])
+                .working_directory(&cwd)
+                .build(),
+        )
+        .into_command();
+        cmd.arg(interpreter);
     }
+
+    // Canonicalize the binary path before dealing with ld.so, because that does
+    // not correctly handle relative rpaths coming via symlinks (which we will
+    // see in @mode/dev binaries).
+    let binary = binary_as_seen_from_here.canonicalize().with_context(|| {
+        format!(
+            "while getting abspath of binary '{}'",
+            binary_as_seen_from_here.display()
+        )
+    })?;
 
     let output = cmd
         .arg("--list")
-        .arg(binary)
+        .arg(&binary)
         // There's a memory allocation bug under qemu-aarch64 when asking the linker to --list
         // an elf binary.  This configures qemu-aarch64 to pre-allocate enough virtual address
         // space to not exploded in this case.  This env var has no effect when running on the
@@ -227,11 +245,32 @@ impl<'a> CompileFeature for Extract<'a> {
                         src_layer.join(binary.path().strip_prefix("/").unwrap_or(binary.path()));
                     copy_with_metadata(&src, &dst, None, None)?;
                 }
+                let cwd = std::env::current_dir()?;
                 for dep in all_deps {
-                    copy_dep(
-                        &src_layer.join(dep.strip_prefix("/").unwrap_or(&dep)),
-                        &ctx.dst_path(&dep),
-                    )?;
+                    let path_in_src_layer = src_layer.join(dep.strip_prefix("/").unwrap_or(&dep));
+                    // If the dep path within the container is under the current
+                    // cwd (aka, the repo), we need to get the file out of the
+                    // host instead of the container.
+                    let dep_copy_path = if dep.starts_with(&cwd) {
+                        // As a good safety check, we also ensure that the file
+                        // does not exist inside the container, to prevent any
+                        // unintended extractions from the build host's
+                        // non-deterministic environment. This check should
+                        // never pass unless something about the build
+                        // environment setup wildly changes, so we should return
+                        // an error immediately in case it does.
+                        if path_in_src_layer.exists() {
+                            return Err(anyhow::anyhow!(
+                                "'{}' exists but it seems like we should get it from the host",
+                                path_in_src_layer.display()
+                            )
+                            .into());
+                        }
+                        dep.clone()
+                    } else {
+                        path_in_src_layer
+                    };
+                    copy_dep(&dep_copy_path, &ctx.dst_path(&dep))?;
                 }
                 Ok(())
             }

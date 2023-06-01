@@ -27,16 +27,19 @@ impl<'a> CompileFeature for Genrule<'a> {
         if self.bind_repo_ro {
             unimplemented!("bind_repo_ro is not yet implemented");
         }
+        let cwd = std::env::current_dir()?;
         let mut cmd = isolate(
             IsolationContext::builder(ctx.root())
                 .user(self.user.name())
                 .ephemeral(false)
                 .platform([
+                    cwd.as_path(),
                     #[cfg(facebook)]
                     Path::new("/usr/local/fbcode"),
                     #[cfg(facebook)]
                     Path::new("/mnt/gvfs"),
                 ])
+                .working_directory(&cwd)
                 .boot(self.boot)
                 .build(),
         )
