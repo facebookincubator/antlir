@@ -94,7 +94,7 @@ python_unittest(
     resources = {
         layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
     },
-    supports_static_listing = False,
+    supports_static_listing = True,
     deps = [
         ":launch_repo_servers",
         ":server_launcher",
