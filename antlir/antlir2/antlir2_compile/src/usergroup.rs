@@ -6,6 +6,7 @@
  */
 
 use std::borrow::Cow;
+use std::collections::HashSet;
 use std::os::unix::fs::PermissionsExt;
 
 use antlir2_features::usergroup::Group;
@@ -29,20 +30,15 @@ trait NextAvailableExt {
     fn used_ids(&self) -> Self::UsedIds;
 
     fn next_available_id(&self) -> Option<Self::Id> {
-        let candidate = self
-            .used_ids()
-            .map(Self::Id::into_raw)
-            // this numbers is semi-magical, but matches the defaults in
-            // /etc/login.defs for choosing new ids
-            .filter(|&id| id >= 1000 && id <= 60000)
-            .max()
-            .unwrap_or(999)
-            + 1;
-        if candidate > 6000 {
-            None
-        } else {
-            Some(Self::Id::from_raw(candidate))
+        let used: HashSet<_> = self.used_ids().map(Self::Id::into_raw).collect();
+        // these numbers is semi-magical, but matches the defaults in
+        // /etc/login.defs for choosing new ids
+        for candidate in 1000..60000 {
+            if !used.contains(&candidate) {
+                return Some(Self::Id::from_raw(candidate));
+            }
         }
+        None
     }
 }
 
