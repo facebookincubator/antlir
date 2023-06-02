@@ -51,6 +51,9 @@ pub(crate) struct VMArgs {
     /// Timeout before VM will be terminated. None disables the timeout, which
     /// should only be used for interactive shells for development.
     pub(crate) timeout_s: Option<u32>,
+    /// By default, we suppress the spammy console output and show a prompt through
+    /// ssh after VM boots. Pass in this flag to redirect console output to stdout.
+    pub(crate) console: bool,
 }
 
 /// Everything we need to create and run the VM

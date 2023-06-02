@@ -14,6 +14,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Child;
 use std::process::Command;
+use std::process::Stdio;
 use std::thread;
 use std::time::Duration;
 use std::time::Instant;
@@ -33,6 +34,8 @@ use crate::share::ShareError;
 use crate::share::ShareOpts;
 use crate::share::Shares;
 use crate::share::VirtiofsShare;
+use crate::ssh::GuestSSHCommand;
+use crate::ssh::GuestSSHError;
 use crate::types::VMOpts;
 use crate::utils::log_command;
 use crate::utils::NodeNameCounter;
@@ -62,6 +65,8 @@ pub(crate) enum VMError {
     ShareInitError(#[from] ShareError),
     #[error(transparent)]
     NICInitError(#[from] VirtualNICError),
+    #[error(transparent)]
+    SSHCommandError(#[from] GuestSSHError),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
     #[error("Failed to boot VM: `{0}`")]
@@ -186,9 +191,45 @@ impl VM {
         args.extend(self.disk_qemu_args());
         args.extend(self.share_qemu_args());
         args.extend(self.nic_qemu_args());
-        log_command(Command::new(&get_runtime().qemu_system).args(&args))
+        let mut command = Command::new(&get_runtime().qemu_system);
+        let command = command.args(&args);
+        if !self.opts.args.console {
+            command.stdin(Stdio::null());
+            command.stdout(Stdio::null());
+            command.stderr(Stdio::null());
+        }
+        log_command(command)
             .spawn()
             .map_err(VMError::QemuProcessError)
+    }
+
+    /// Closing the notify socket will result in VM's termination. If VM
+    /// terminates on its own, the socket will be closed. So we poll the notify
+    /// socket until timeout.
+    fn wait_for_timeout(&self, socket: &mut UnixStream, start_ts: Instant) -> Result<()> {
+        if self.opts.args.timeout_s.is_some() {
+            // Poll until either socket close or timeout. The buffer size is arbitrary,
+            // because we don't expect any data.
+            let mut buf = [0; 8];
+            socket.set_nonblocking(true).map_err(|e| {
+                VMError::BootError(format!("Failed to set non-blocking socket option: {e}"))
+            })?;
+            while !self.time_left(start_ts)?.is_zero() {
+                match socket.read(&mut buf) {
+                    Ok(0) => {
+                        debug!("Notify socket closed. VM exited");
+                        break;
+                    }
+                    Ok(_) => debug!("Received unexpected data from VM notify socket"),
+                    Err(_) => thread::sleep(Duration::from_secs(1)),
+                }
+            }
+        } else {
+            // Block until socket close without timeout
+            let mut buf = Vec::new();
+            socket.read_to_end(&mut buf).map_err(VMError::RunError)?;
+        }
+        Ok(())
     }
 
     /// Connect to the notify socket, wait for boot ready message and wait for the VM
@@ -234,31 +275,20 @@ impl VM {
             start_ts.elapsed().as_secs_f32()
         );
 
-        // VM booted. Closing the notify socket will result in its termination. If VM
-        // terminates on its own, the socket will be closed. So we poll the notify
-        // socket until timeout even though there won't be data coming.
-        let mut buf = Vec::new();
-        let mut socket = f.into_inner();
-        match self.opts.args.timeout_s {
-            Some(_) => {
-                socket.set_nonblocking(true).map_err(|e| {
-                    VMError::BootError(format!("Failed to set non-blocking socket option: {e}"))
-                })?;
-                while !self.time_left(start_ts)?.is_zero() {
-                    match socket.read(&mut buf) {
-                        Ok(0) => {
-                            debug!("Notify socket closed. VM exited");
-                            break;
-                        }
-                        Ok(_) => debug!("Received unexpected data"),
-                        Err(_) => thread::sleep(Duration::from_secs(1)),
-                    }
-                }
-            }
-            None => socket
-                .read_to_end(&mut buf)
-                .map(|_| ())
-                .map_err(VMError::RunError)?,
+        // VM booted
+        if !self.opts.args.console {
+            // If we want a shell, open it now and don't timeout. We don't care about return
+            // status of the ssh command in this case.
+            let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd(None, None);
+            log_command(&mut ssh_cmd)
+                .status()
+                .map_err(|e| VMError::BootError(format!("Failed to open SSH shell: {}", e)))?;
+        } else {
+            // Otherwise, we are running some command or tests. We spawn the command and
+            // wait for its completion or timeout.
+            // TODO: tests are not implemented yet.
+            let mut socket = f.into_inner();
+            self.wait_for_timeout(&mut socket, start_ts)?;
         }
 
         info!("VM executed for {} seconds", start_ts.elapsed().as_secs());
@@ -359,6 +389,9 @@ impl VM {
 
 #[cfg(test)]
 mod test {
+    use std::net::Shutdown;
+    use std::thread;
+
     use regex::Regex;
 
     use super::*;
@@ -374,7 +407,10 @@ mod test {
             disks: vec![],
             num_nics: 1,
             non_disk_boot_opts: None,
-            args: VMArgs { timeout_s: None },
+            args: VMArgs {
+                timeout_s: None,
+                console: false,
+            },
         };
         let share_opts = ShareOpts {
             path: "/path".to_string(),
@@ -459,5 +495,55 @@ mod test {
         assert!(args.contains("-kernel kernel"));
         let re = Regex::new("-append .* whatever").expect("Failed to get regex");
         assert!(re.is_match(&args));
+    }
+
+    #[test]
+    fn test_wait_for_timeout() {
+        // Terminate after timeout
+        let mut vm = get_vm_no_disk();
+        vm.opts.args.timeout_s = Some(3);
+        let (_send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let start_ts = Instant::now();
+        let handle = thread::spawn(move || {
+            assert!(vm.wait_for_timeout(&mut recv, start_ts).is_err());
+        });
+        thread::sleep(Duration::from_secs(1));
+        assert!(!handle.is_finished());
+        handle.join().expect("Test thread panic'ed");
+        let elapsed = Instant::now()
+            .checked_duration_since(start_ts)
+            .expect("Invalid duration");
+        assert!(elapsed > Duration::from_secs(3));
+
+        // Terminate before timeout due to closed socket
+        let mut vm = get_vm_no_disk();
+        vm.opts.args.timeout_s = Some(10);
+        let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let start_ts = Instant::now();
+        let handle = thread::spawn(move || {
+            assert!(vm.wait_for_timeout(&mut recv, start_ts).is_ok());
+        });
+        thread::sleep(Duration::from_secs(1));
+        assert!(!handle.is_finished());
+        send.shutdown(Shutdown::Both)
+            .expect("Failed to shutdown sender");
+        handle.join().expect("Test thread panic'ed");
+        let elapsed = Instant::now()
+            .checked_duration_since(start_ts)
+            .expect("Invalid duration");
+        assert!(elapsed < Duration::from_secs(10));
+
+        // Without timeout
+        let mut vm = get_vm_no_disk();
+        vm.opts.args.timeout_s = None;
+        let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let handle = thread::spawn(move || {
+            assert!(vm.wait_for_timeout(&mut recv, Instant::now()).is_ok());
+        });
+        thread::sleep(Duration::from_secs(1));
+        assert!(!handle.is_finished());
+        send.shutdown(Shutdown::Both)
+            .expect("Failed to shutdown sender");
+        handle.join().expect("Test thread panic'ed");
     }
 }
