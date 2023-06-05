@@ -31,6 +31,17 @@ image.layer(
     parent_layer = ":foobar.layer",
 )
 
+image.layer(
+    name = "for-empty.layer",
+    features = [
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/empty-file-will-not-exist-in-rpm",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
 _GEN_VERSIONS = [
     1,
     2,
@@ -43,10 +54,22 @@ all_rpms = [
         parent_layer = ":foo.layer",
         recommends = ["foo-recommends-me == " + str(version)],
         release = "1",
+        requires = ["foo-empty == " + str(version)],
         version = str(version),
     )
     for version in _GEN_VERSIONS
 ]
+
+all_rpms.extend([
+    test_rpm(
+        name = "foo-empty",
+        empty = True,
+        parent_layer = ":for-empty.layer",
+        release = "1",
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
 
 all_rpms.extend([
     test_rpm(

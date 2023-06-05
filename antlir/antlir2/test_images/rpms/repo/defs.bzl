@@ -19,7 +19,8 @@ def test_rpm(
         requires: [str.type] = [],
         recommends: [str.type] = [],
         features: [types.antlir_feature] = [],
-        parent_layer: [str.type, None] = None) -> str.type:
+        parent_layer: [str.type, None] = None,
+        empty: bool.type = False) -> str.type:
     target_name = name + "-" + version + "-" + release + "." + arch
     image.layer(
         name = target_name + "--layer",
@@ -38,6 +39,7 @@ def test_rpm(
         license = license,
         requires = requires,
         recommends = recommends,
+        empty = empty,
         visibility = [":" + target_name],
     )
     rpm(
