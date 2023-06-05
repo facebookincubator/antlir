@@ -1,3 +1,4 @@
 foo                  0 bytes required by foobar
+foo-empty            0 bytes required by foo
 foobar               0 bytes required by foobarbaz
 foobarbaz            0 bytes

@@ -92,6 +92,8 @@ pub enum Spec {
         summary: String,
         requires: Vec<String>,
         recommends: Vec<String>,
+        provides: Vec<String>,
+        empty: bool,
     },
     #[serde(rename = "squashfs")]
     SquashFs {

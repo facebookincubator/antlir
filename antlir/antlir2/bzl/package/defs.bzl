@@ -179,14 +179,18 @@ def _rpm(
         summary: [str.type, None] = None,
         requires: [str.type] = [],
         recommends: [str.type] = [],
+        provides: [str.type] = [],
+        empty: bool.type = False,
         **kwargs):
     check_kwargs(kwargs)
 
     opts = {
         "arch": arch,
+        "empty": empty,
         "epoch": epoch,
         "license": license,
         "name": rpm_name,
+        "provides": provides,
         "recommends": recommends,
         "release": release,
         "requires": requires,

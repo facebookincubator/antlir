@@ -362,6 +362,8 @@ fn main() -> Result<()> {
             license,
             requires,
             recommends,
+            provides,
+            empty,
         } => {
             let layer_abspath = layer
                 .canonicalize()
@@ -369,14 +371,23 @@ fn main() -> Result<()> {
 
             let requires = requires
                 .into_iter()
-                .map(|req| format!("Requires: {req}"))
+                .map(|r| format!("Requires: {r}"))
                 .join("\n");
 
             let recommends = recommends
                 .into_iter()
-                .map(|req| format!("Recommends: {req}"))
+                .map(|r| format!("Recommends: {r}"))
                 .join("\n");
 
+            let provides = provides
+                .into_iter()
+                .map(|p| format!("Provides: {p}"))
+                .join("\n");
+
+            let comment_install = match empty {
+                true => "#",
+                _ => "",
+            };
             let mut spec = format!(
                 r#"Name: {name}
 Epoch: {epoch}
@@ -389,30 +400,36 @@ License: {license}
 
 {requires}
 {recommends}
+{provides}
 
 %description
 
-%install
-cp -rp "{layer}"/* %{{buildroot}}/
+{comment_install}%install
+{comment_install}cp -rp "{layer}"/* %{{buildroot}}/
 
 %files
 "#,
+                comment_install = comment_install,
                 layer = layer_abspath.display(),
                 requires = requires,
+                recommends = recommends,
+                provides = provides,
             );
-            for entry in walkdir::WalkDir::new(&layer) {
-                let entry = entry.context("while walking layer")?;
-                let relpath = Path::new("/").join(
-                    entry
-                        .path()
-                        .strip_prefix(&layer)
-                        .expect("must be under layer"),
-                );
-                if relpath == Path::new("/") {
-                    continue;
+            if !empty {
+                for entry in walkdir::WalkDir::new(&layer) {
+                    let entry = entry.context("while walking layer")?;
+                    let relpath = Path::new("/").join(
+                        entry
+                            .path()
+                            .strip_prefix(&layer)
+                            .expect("must be under layer"),
+                    );
+                    if relpath == Path::new("/") {
+                        continue;
+                    }
+                    spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
+                    spec.push('\n');
                 }
-                spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
-                spec.push('\n');
             }
             let mut rpm_spec_file =
                 NamedTempFile::new().context("failed to create tempfile for rpm spec")?;
