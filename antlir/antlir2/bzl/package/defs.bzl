@@ -181,6 +181,7 @@ def _rpm(
         recommends: [str.type] = [],
         provides: [str.type] = [],
         empty: bool.type = False,
+        post_install_script: [str.type, None] = None,
         **kwargs):
     check_kwargs(kwargs)
 
@@ -190,6 +191,7 @@ def _rpm(
         "epoch": epoch,
         "license": license,
         "name": rpm_name,
+        "post_install_script": post_install_script,
         "provides": provides,
         "recommends": recommends,
         "release": release,

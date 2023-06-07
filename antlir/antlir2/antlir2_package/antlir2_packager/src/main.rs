@@ -364,6 +364,7 @@ fn main() -> Result<()> {
             recommends,
             provides,
             empty,
+            post_install_script,
         } => {
             let layer_abspath = layer
                 .canonicalize()
@@ -408,12 +409,17 @@ License: {license}
 {comment_install}cp -rp "{layer}"/* %{{buildroot}}/
 
 %files
+
+{post_install_script}
 "#,
                 comment_install = comment_install,
                 layer = layer_abspath.display(),
                 requires = requires,
                 recommends = recommends,
                 provides = provides,
+                post_install_script = post_install_script
+                    .map(|s| format!("%post\n{s}\n"))
+                    .unwrap_or_default(),
             );
             if !empty {
                 for entry in walkdir::WalkDir::new(&layer) {

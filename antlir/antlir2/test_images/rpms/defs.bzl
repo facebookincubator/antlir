@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "buck_command_alias")
@@ -35,7 +36,10 @@ def test_rpms(
         name = name + "--layer",
         parent_layer = parent_layer,
         flavor = flavor,
-        features = features,
+        features = features + [
+            feature.remove(path = "/etc/dnf/dnf.conf", must_exist = False),
+            feature.install(src = "//antlir:empty", dst = "/etc/dnf/dnf.conf"),
+        ],
         dnf_available_repos = dnf_available_repos,
         dnf_versionlock = dnf_versionlock,
     )

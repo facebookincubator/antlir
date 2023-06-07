@@ -102,6 +102,11 @@ def add_repos(*, base: dnf.Base, repos_dir: Path) -> None:
             else:
                 conf._set_value("gpgcheck", "1")
                 conf._set_value("gpgkey", "\n".join(uris))
+        else:
+            if hasattr(conf, "set_or_append_opt_value"):
+                conf.set_or_append_opt_value("gpgcheck", "0")
+            else:
+                conf._set_value("gpgcheck", "0")
         repo = dnf.repo.Repo(id, conf)
         repo.baseurl = [basedir.as_uri()]
         base.repos.add(repo)

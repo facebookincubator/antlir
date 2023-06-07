@@ -46,12 +46,18 @@ for spec in expected["installed_not_userinstalled"]:
     installed_spec = subprocess.run(
         ["rpm", "-q", spec], capture_output=True, text=True, check=True
     ).stdout.strip()
-    userinstalled_spec = subprocess.run(
+    proc = subprocess.run(
         ["dnf", "repoquery", "--userinstalled", spec],
         capture_output=True,
         text=True,
-        check=True,
-    ).stdout.strip()
+        check=False,
+    )
+    if proc.returncode != 0:
+        print(
+            f"'dnf repoquery --userinstalled {spec}' failed:\n{proc.stdout}\n{proc.stderr}"
+        )
+        sys.exit(1)
+    userinstalled_spec = proc.stdout.strip()
     if userinstalled_spec:
         print(f"'{spec}' is installed and userinstalled ({userinstalled_spec})")
         sys.exit(1)
