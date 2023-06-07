@@ -14,7 +14,10 @@ repo_set(
         ],
     }),
     repos = ["//antlir/antlir2/test_images/rpms/repo:test-repo"],
-    visibility = ["//antlir/antlir2/testing/tests:"],
+    visibility = [
+        "//antlir/antlir2/test_images/...",
+        "//antlir/antlir2/testing/tests:",
+    ],
 )
 
 _RPM_DEPS_OF_TEST = [
