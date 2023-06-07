@@ -90,4 +90,6 @@ vm_opts_t = shape.shape(
     ),
     # Add ability to create multiple Network Input/Output Cards
     nics = shape.field(int, default = 1),
+    # Opaque args to give QEMU after everything else
+    qemu_args = shape.field(shape.list(str), default = []),
 )

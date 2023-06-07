@@ -470,6 +470,9 @@ async def vm(
     # Build and append the args from all the various shares
     args.extend(chain.from_iterable(share.qemu_args for share in shares))
 
+    # Add extra opaque args at the end for power users
+    args.extend(opts.qemu_args)
+
     qemu_cmd = ns.nsenter_as_user(str(opts.runtime.emulator.binary.path), *args)
 
     # Special console handling here.
