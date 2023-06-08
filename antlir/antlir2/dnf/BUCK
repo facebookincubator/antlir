@@ -17,18 +17,19 @@ feature.new(
             target = "/__antlir2__/dnf/dnf.conf",
         ),
         feature.install(
+            src = "base.py",
+            dst = "/__antlir2__/dnf/base.py",
+        ),
+        feature.install(
             src = "driver.py",
             dst = "/__antlir2__/dnf/driver",
             mode = "a+rx",
         ),
         feature.install(
-            src = "base.py",
-            dst = "/__antlir2__/dnf/base.py",
-        ),
-        feature.install(
             src = "plugin.py",
             dst = "/__antlir2__/dnf/plugins/antlir.py",
         ),
+        # @oss-disable
     ],
     visibility = ["//antlir/antlir2/build_appliance:features"],
 )
