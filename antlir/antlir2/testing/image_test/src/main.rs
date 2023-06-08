@@ -10,8 +10,10 @@ use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::OsString;
-use std::io::Seek;
+use std::fs::File;
 use std::io::Write;
+use std::os::fd::AsRawFd;
+use std::os::fd::FromRawFd;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
@@ -280,7 +282,7 @@ fn main() -> Result<()> {
             dropin.path(),
         ));
 
-        let (container_stdout, _container_stderr) = make_log_files("container")?;
+        let container_stdout = container_stdout_file()?;
         let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
 
         let mut test_unit = NamedTempFile::new()?;
@@ -301,8 +303,21 @@ fn main() -> Result<()> {
         // the test process exits either way.
         writeln!(test_unit, "Type=simple")?;
 
+        write!(test_unit, "WorkingDirectory=")?;
+        let cwd = std::env::current_dir().context("while getting cwd")?;
+        test_unit.write_all(cwd.as_os_str().as_bytes())?;
+        test_unit.write_all(b"\n")?;
+
         write!(test_unit, "ExecStart=")?;
         let mut iter = args.test.into_inner_cmd().into_iter().peekable();
+        if let Some(exe) = iter.next() {
+            let realpath = std::fs::canonicalize(&exe)
+                .with_context(|| format!("while getting absolute path of {exe:?}"))?;
+            test_unit.write_all(realpath.as_os_str().as_bytes())?;
+            if iter.peek().is_some() {
+                test_unit.write_all(b" ")?;
+            }
+        }
         while let Some(arg) = iter.next() {
             test_unit.write_all(arg.as_os_str().as_bytes())?;
             if iter.peek().is_some() {
@@ -338,17 +353,18 @@ fn main() -> Result<()> {
         ));
 
         let mut isol = isolate(ctx.build()).into_command();
-        isol.arg(systemd_run_arg);
+        isol.arg(systemd_run_arg)
+            .arg("systemd.journald.forward_to_console=1")
+            .arg("systemd.log_time=1");
         debug!("executing test in booted isolated container: {isol:?}");
         let mut child = isol
             // the stdout/err of the systemd inside the container is a pipe
             // so that we can print it IFF the test fails
-            .stdout(container_stdout.as_file().try_clone()?)
-            .stderr(container_stdout.as_file().try_clone()?)
+            .stdout(container_stdout.try_clone()?)
+            .stderr(container_stdout.try_clone()?)
             .spawn()
             .context("while spawning systemd-nspawn")?;
         let res = child.wait().context("while waiting for systemd-nspawn")?;
-        report(container_stdout)?;
 
         std::io::copy(&mut test_stdout, &mut std::io::stdout())?;
         std::io::copy(&mut test_stderr, &mut std::io::stderr())?;
@@ -366,18 +382,15 @@ fn main() -> Result<()> {
     }
 }
 
-fn report(mut container_stdout: NamedTempFile) -> Result<()> {
-    // if tpx is running this test, have it upload the logs
+/// Create a file to record container stdout into. When invoked under tpx, this
+/// will be uploaded as an artifact. The artifact metadata is set up before
+/// running the test so that it still gets uploaded even in case of a timeout
+fn container_stdout_file() -> Result<File> {
+    // if tpx has provided this artifacts dir, put the logs there so they get
+    // uploaded along with the test results
     if let Some(artifacts_dir) = std::env::var_os("TEST_RESULT_ARTIFACTS_DIR") {
         std::fs::create_dir_all(&artifacts_dir)?;
         let dst = Path::new(&artifacts_dir).join("container-stdout.txt");
-        // In case the output is not tmpfs, rename will not work so we need to
-        // copy the bytes explicitly
-        if let Err(mut e) = container_stdout.persist(&dst) {
-            e.file.rewind()?;
-            let mut dst = std::fs::File::create(&dst)?;
-            std::io::copy(&mut e.file, &mut dst)?;
-        }
         if let Some(annotations_dir) = std::env::var_os("TEST_RESULT_ARTIFACT_ANNOTATIONS_DIR") {
             std::fs::create_dir_all(&annotations_dir)?;
             std::fs::write(
@@ -385,11 +398,9 @@ fn report(mut container_stdout: NamedTempFile) -> Result<()> {
                 r#"{"type": {"generic_text_log": {}}, "description": "systemd logs"}"#,
             )?;
         }
+        File::create(&dst).with_context(|| format!("while creating {}", dst.display()))
+    } else {
+        // otherwise, have it go right to stderr
+        Ok(unsafe { File::from_raw_fd(std::io::stderr().as_raw_fd()) })
     }
-    // otherwise, print it out on stderr
-    else {
-        container_stdout.rewind()?;
-        std::io::copy(&mut container_stdout, &mut std::io::stderr())?;
-    }
-    Ok(())
 }

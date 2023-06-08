@@ -79,7 +79,6 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         }
     };
     cmd.arg("--quiet")
-        .arg("--pipe")
         .arg("--directory")
         .arg(layer.as_ref())
         .arg("--private-network")
@@ -94,20 +93,33 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         .arg("--settings=no");
     if ephemeral {
         cmd.arg("--ephemeral");
+        // run as many ephemeral containers as we want
+        cmd.env("SYSTEMD_NSPAWN_LOCK", "0");
     }
     if !boot {
+        cmd.arg("--console=pipe");
         // TODO(vmagro): we might actually want to implement real pid1 semantics
         // in the compiler process for better control, but for now let's not
         cmd.arg("--as-pid2");
     } else {
         cmd.arg("--boot");
+        cmd.arg("--console=read-only");
     }
     if register {
         cmd.arg(format!("--machine={}", Uuid::new_v4()));
     } else {
         cmd.arg("--register=no");
-        cmd.arg("--keep-unit");
+        if !boot {
+            // In a booted container, let systemd-nspawn create a transient
+            // scope unit so that cgroup management by the booted systemd works
+            // as expected, regardless of any questionable environment
+            // surrounding this antlir2_isolate call. This doesn't matter for
+            // non-booted containers since they shouldn't be doing anything with
+            // cgroups (other than whatever systemd-nspawn is doing)
+            cmd.arg("--keep-unit");
+        }
     }
+
     if let Some(wd) = &working_directory {
         cmd.arg("--chdir").arg(wd.as_ref());
     }
