@@ -3,7 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":build_defs.bzl", "add_test_framework_label", "python_unittest")
+load("//antlir/antlir2/testing:image_test.bzl?v2_only", antlir2_image_python_test = "image_python_test")
+load(":antlir2_shim.bzl", "antlir2_shim")
+load(":build_defs.bzl", "add_test_framework_label", "is_buck2", "python_unittest")
 load(":flavor.shape.bzl", "flavor_t")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load(":types.bzl", "types")
@@ -44,7 +46,6 @@ def image_python_unittest(
         container_opts = container_opts,
         flavor = flavor,
         flavor_config_override = flavor_config_override,
-        antlir2 = antlir2,
     )
 
     wrapper_props.outer_test_kwargs["tags"] = \
@@ -132,3 +133,16 @@ def image_python_unittest(
         supports_static_listing = False,
         **wrapper_props.outer_test_kwargs
     )
+
+    if antlir2_shim.should_make_parallel_test(antlir2):
+        if is_buck2():
+            antlir2_image_python_test(
+                name = name + ".antlir2",
+                layer = layer + ".antlir2",
+                boot = boot,
+                run_as_user = run_as_user,
+                boot_requires_units = ["dbus.socket"] if (boot and wrapper_props.container_opts.boot_await_dbus) else [],
+                **python_unittest_kwargs
+            )
+        else:
+            antlir2_shim.fake_buck1_test(name = name, test = "python")

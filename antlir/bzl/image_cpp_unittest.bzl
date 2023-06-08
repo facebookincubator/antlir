@@ -3,7 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(":build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_binary")
+load("//antlir/antlir2/testing:image_test.bzl?v2_only", antlir2_image_cpp_test = "image_cpp_test")
+load(":antlir2_shim.bzl", "antlir2_shim")
+load(":build_defs.bzl", "buck_sh_test", "cpp_unittest", "is_buck2", "python_binary")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 
 def image_cpp_unittest(
@@ -14,6 +16,7 @@ def image_cpp_unittest(
         visibility = None,
         hostname = None,
         container_opts = None,
+        antlir2 = None,
         **cpp_unittest_kwargs):
     visibility = visibility or []
 
@@ -79,3 +82,16 @@ def image_cpp_unittest(
         visibility = visibility,
         **wrapper_props.outer_test_kwargs
     )
+
+    if antlir2_shim.should_make_parallel_test(antlir2):
+        if is_buck2():
+            antlir2_image_cpp_test(
+                name = name + ".antlir2",
+                layer = layer + ".antlir2",
+                boot = boot,
+                run_as_user = run_as_user,
+                boot_requires_units = ["dbus.socket"] if (boot and wrapper_props.container_opts.boot_await_dbus) else [],
+                **cpp_unittest_kwargs
+            )
+        else:
+            antlir2_shim.fake_buck1_test(name = name)

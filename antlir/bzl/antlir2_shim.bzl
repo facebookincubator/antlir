@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:build_defs.bzl", "export_file")
-load(":build_defs.bzl", "is_buck2")
+load(":build_defs.bzl", "is_buck2", "python_unittest")
 load(":flavor.shape.bzl", "flavor_t")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":target_helpers.bzl", "antlir_dep")
@@ -51,6 +51,8 @@ antlir2_setting = native.enum(
     "rpmbuild",  # antlir2 does not allow rpm installation during a genrule
     # user wants to explicitly alias a built layer instead of downloading it from fbpkg
     "skip-fbpkg-indirection",
+    # tests are natively supported and do not require the same antlir1 indirections
+    "test",
 ) if is_buck2() else _antlir2_setting_buck1
 
 def _antlir2_or_default(antlir2: [
@@ -108,9 +110,12 @@ def _fake_buck1_layer(name):
     _fake_buck1_target(name = name + ".antlir2.antlir2")
     _fake_buck1_target(name = name + ".antlir2--features")
 
-def _fake_buck1_test(name):
-    _fake_buck1_target(name = name)
-    _fake_buck1_target(name = name + "_image_test_inner")
+def _fake_buck1_test(name, test = None):
+    _fake_buck1_target(name = name + ".antlir2")
+    if test == "python":
+        python_unittest(name = name + ".antlir2_image_test_inner")
+    else:
+        _fake_buck1_target(name = name + ".antlir2_image_test_inner")
 
 def _fake_buck1_target(name):
     # export a target of the same name to make td happy
@@ -127,4 +132,5 @@ antlir2_shim = struct(
     fake_buck1_test = _fake_buck1_test,
     should_make_parallel_feature = _should_make_parallel,
     should_make_parallel_layer = _should_make_parallel,
+    should_make_parallel_test = _should_make_parallel,
 )
