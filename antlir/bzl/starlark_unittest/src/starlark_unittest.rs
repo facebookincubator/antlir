@@ -176,6 +176,11 @@ impl TestModule {
                     compile_fail: false,
                     no_run: false,
                     test_type: TestType::UnitTest,
+                    source_file: "",
+                    start_line: 0,
+                    start_col: 0,
+                    end_line: 0,
+                    end_col: 0,
                 },
                 testfn: TestFn::DynTestFn(Box::new(move || {
                     let module = Module::new();
