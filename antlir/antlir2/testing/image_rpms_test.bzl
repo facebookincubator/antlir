@@ -27,7 +27,7 @@ _rpm_names_test = rule(
     },
 )
 
-def image_test_rpm_names(name: str.type, src: str.type, layer: str.type, **kwargs):
+def image_test_rpm_names(name: str.type, src: [str.type, "selector"], layer: str.type, **kwargs):
     _rpm_names_test(
         name = name + "--script",
         src = src,
