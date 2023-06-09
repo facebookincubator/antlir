@@ -27,10 +27,10 @@ impl<'a> CompileFeature for Install<'a> {
         if self.src.is_dir() {
             debug!("{:?} is a dir", self.src);
             if !self.is_dir() {
-                return Err(Error::InstallSrcIsDirectoryButNotDst(
-                    self.src.to_path_buf(),
-                    self.dst.to_path_buf(),
-                ));
+                return Err(Error::InstallSrcIsDirectoryButNotDst {
+                    src: self.src.to_path_buf(),
+                    dst: self.dst.to_path_buf(),
+                });
             }
             for entry in WalkDir::new(&self.src) {
                 let entry = entry.map_err(std::io::Error::from)?;
@@ -63,6 +63,12 @@ impl<'a> CompileFeature for Install<'a> {
                 copy_with_metadata(entry.path(), &dst_path, Some(0), Some(0))?;
             }
         } else {
+            if self.is_dir() {
+                return Err(Error::InstallDstIsDirectoryButNotSrc {
+                    src: self.src.to_path_buf(),
+                    dst: self.dst.to_path_buf(),
+                });
+            }
             let dst = ctx.dst_path(&self.dst);
             if self.dev_mode {
                 // If we are installing a buck-built binary in @mode/dev, it must be
