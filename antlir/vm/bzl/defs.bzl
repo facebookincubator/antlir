@@ -58,6 +58,8 @@ with the options allowed there.  The key differences with
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("@fbcode_macros//build_defs/lib:re_test_utils.bzl", "re_test_utils")
+load("@fbsource//tools/build_defs/buck2:is_buck2.bzl", "is_buck2")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
@@ -194,6 +196,12 @@ def _vm_unittest(
         vm_opts = vm_opts,
     )
 
+    # NOTE: We could put this code in buck_sh_test itself, but that has much wider impact.
+    # It's safer to start off just doing a local change for antlir.
+    re_attrs = {}
+    if is_buck2():
+        re_test_utils.set_re_info(re_attrs, wrapper_labels)
+
     # Building buck_sh_test with a specific type to trick TestPilot into
     # thinking that it is running a unit test of the specific type directly.
     # In reality {}--vmtest-binary will transparently run the binary in a VM
@@ -210,6 +218,7 @@ def _vm_unittest(
         # binary, like llvm-cov
         env = {"BUCK_BASE_BINARY": "$(location :{})".format(actual_test_binary)},
         antlir_rule = "user-facing",
+        **re_attrs
     )
 
 def _vm_cpp_unittest(

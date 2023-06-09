@@ -255,6 +255,24 @@ vm.python_unittest(
 )
 
 vm.python_unittest(
+    name = "python-remote-execution",
+    srcs = [
+        "test_vm_boot.py",
+    ],
+    labels = [
+        "supports_remote_execution",
+        're_opts_capabilities={"platform": "linux-remote-execution"}',
+        # FIXME(@pdel): Need some more work to get RE test execution for antlir1 vmtests.
+        "disabled",
+    ],
+    vm_opts = vm.types.opts.new(
+        disk = vm.types.disk.root(
+            layer = ":vmtest-custom-layer",
+        ),
+    ),
+)
+
+vm.python_unittest(
     name = "python-multinics",
     srcs = [
         "test_multinics_vm.py",
