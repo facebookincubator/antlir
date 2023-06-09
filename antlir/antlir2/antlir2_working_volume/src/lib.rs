@@ -26,13 +26,16 @@ impl WorkingVolume {
             // https://www.internalfb.com/intern/wiki/EdenFS/detecting-an-eden-mount/#on-linux-and-macos
             if Path::new(".eden").exists() {
                 let res = Command::new("eden")
+                    .env("EDENFSCTL_ONLY_RUST", "1")
                     .arg("redirect")
                     .arg("add")
                     .arg(&path)
                     .arg("bind")
                     .spawn()?
                     .wait()?;
-                if res.success() {
+                if path.exists() {
+                    // the redirect add may have failed due to a race condition that eden
+                    // doesn't guard against, but if the path exists now just call it good
                     Ok(Self(path))
                 } else {
                     Err(Error::new(
