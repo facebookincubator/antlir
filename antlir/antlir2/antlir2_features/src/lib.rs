@@ -59,4 +59,7 @@ pub enum Data<'a> {
     #[cfg(facebook)]
     #[serde(rename = "facebook/chef_solo")]
     ChefSolo(facebook::ChefSolo<'a>),
+    #[cfg(facebook)]
+    #[serde(rename = "facebook/fbpkg_install")]
+    FbpkgInstall(facebook::FbpkgInstall<'a>),
 }
