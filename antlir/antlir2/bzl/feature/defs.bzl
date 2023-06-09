@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @oss-disable
 load("//antlir/antlir2/bzl/feature/clone.bzl", "clone")
 load("//antlir/antlir2/bzl/feature/ensure_dirs_exist.bzl", "ensure_dirs_exist", "ensure_subdirs_exist")
 load("//antlir/antlir2/bzl/feature/extract.bzl", "extract_buck_binary", "extract_from_layer")
@@ -41,4 +42,5 @@ feature = struct(
     user_add = user_add,
     usermod = usermod,
     group_add = group_add,
+    # @oss-disable
 )

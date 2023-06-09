@@ -9,7 +9,7 @@ load("//antlir/bzl:types.bzl", "types")
 
 def _flatten_any(lst):
     flat = []
-    for item in lst:
+    for item in lst if types.is_list(lst) or types.is_tuple(lst) else [lst]:
         if types.is_list(item) or types.is_tuple(item):
             flat.extend(_flatten_any(item))
         else:

@@ -253,6 +253,8 @@ impl<'a> CompileFeature for Feature<'a> {
             // this is its own buck rule
             #[cfg(facebook)]
             Data::ChefSolo(x) => x.compile(ctx),
+            #[cfg(facebook)]
+            Data::FbpkgInstall(x) => x.compile(ctx),
         }
     }
 

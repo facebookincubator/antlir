@@ -59,6 +59,8 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::UserMod(x) => x.provides(),
             #[cfg(facebook)]
             Data::ChefSolo(_) => Ok(Vec::new()),
+            #[cfg(facebook)]
+            Data::FbpkgInstall(_) => Ok(Vec::new()),
         }
     }
 
@@ -80,6 +82,8 @@ impl<'f> FeatureExt<'f> for Feature<'f> {
             Data::UserMod(x) => x.requires(),
             #[cfg(facebook)]
             Data::ChefSolo(_) => Vec::new(),
+            #[cfg(facebook)]
+            Data::FbpkgInstall(_) => Vec::new(),
         }
     }
 }

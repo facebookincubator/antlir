@@ -56,6 +56,7 @@ load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
+# @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
@@ -100,6 +101,7 @@ _analyze_feature = {
     "extract": extract_analyze,
     # @oss-disable
     # @oss-disable
+    # @oss-disable
     "genrule": genrule_analyze,
     "group": group_analyze,
     "install": install_analyze,
@@ -123,6 +125,7 @@ def _impl(ctx: "context") -> ["provider"]:
         feature_deps = ctx.attrs.inline_features_deps.get(key, None)
         feature_deps_or_sources = ctx.attrs.inline_features_deps_or_sources.get(key, None)
         feature_unnamed_deps_or_sources = ctx.attrs.inline_features_unnamed_deps_or_sources.get(key, None)
+
         analyze_kwargs = inline["kwargs"]
         if feature_deps != None:
             analyze_kwargs["deps"] = feature_deps
@@ -138,16 +141,17 @@ def _impl(ctx: "context") -> ["provider"]:
             )
 
         analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
-        inline_artifacts.extend(analysis.required_artifacts)
-        inline_run_infos.extend(analysis.required_run_infos)
-        inline_layer_deps.extend(analysis.required_layers)
+        for analysis in flatten.flatten(analysis):
+            inline_artifacts.extend(analysis.required_artifacts)
+            inline_run_infos.extend(analysis.required_run_infos)
+            inline_layer_deps.extend(analysis.required_layers)
 
-        feat = feature_record(
-            feature_type = analysis.feature_type or inline["feature_type"],
-            label = ctx.label.raw_target(),
-            analysis = analysis,
-        )
-        inline_features.append(feat)
+            feat = feature_record(
+                feature_type = analysis.feature_type or inline["feature_type"],
+                label = ctx.label.raw_target(),
+                analysis = analysis,
+            )
+            inline_features.append(feat)
 
     # Track the JSON outputs and deps of other feature targets with transitive
     # sets. Note that we cannot produce a single JSON file with all the
