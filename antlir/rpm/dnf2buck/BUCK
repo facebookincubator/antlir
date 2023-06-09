@@ -11,6 +11,7 @@ python_binary(
     name = "makechunk",
     srcs = ["makechunk.py"],
     main_module = "antlir.rpm.dnf2buck.makechunk",
+    visibility = ["PUBLIC"],
     deps = third_party.libraries(
         [
             "click",
