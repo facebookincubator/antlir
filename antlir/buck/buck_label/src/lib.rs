@@ -340,6 +340,7 @@ mod tests {
     #[rstest]
     #[case::raw("abc//path/to/target:label")]
     #[case::with_cfg("abc//path/to/target:label (config//path/to:config)")]
+    #[case::subtarget("abc//path/to/target:label[foo] (config//path/to:config)")]
     fn display(#[case] s: &str) {
         let label = Label::new(s).expect("well-formed");
         assert_eq!(s, label.to_string());
