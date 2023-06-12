@@ -149,7 +149,7 @@ def _btrfs(
         name: str.type,
         subvols: dict.type,
         default_subvol: str.type,
-        free_mb: [int.type, None] = None,
+        free_mb: [int.type, "selector", None] = None,
         compression_level: int.type = 3,
         label: [str.type, None] = None,
         **kwargs):
