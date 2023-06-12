@@ -115,6 +115,7 @@ _PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
         "par_style",
         "resources",
         "runtime_deps",
+        "runtime_env",
         "srcs",
         "tags",
         "visibility",
