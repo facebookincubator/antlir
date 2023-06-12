@@ -100,7 +100,11 @@ def feature_group_add(groupname, gid = None):
         ) if is_buck2() else None,
     )
 
-def feature_usermod(username: types.str, add_supplementary_groups: types.list(types.str) = []):
+_ADD_SUPPLEMENTARY_GROUPS_T = types.list(types.str)
+
+types.lint_noop(_ADD_SUPPLEMENTARY_GROUPS_T)
+
+def feature_usermod(username: types.str, add_supplementary_groups: _ADD_SUPPLEMENTARY_GROUPS_T = []):
     usermod = usermod_t(
         username = username,
         add_supplementary_groups = add_supplementary_groups,

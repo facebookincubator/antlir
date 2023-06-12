@@ -13,14 +13,18 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//metalos/kernel:kernel.shape.bzl", "kernel_t")
 
-types.lint_noop(kernel_t)
+_KERNEL_T = types.shape(kernel_t)
+_OPT_STR = types.optional(types.str)
+_OPT_VISIBILITY = types.optional(types.visibility)
+
+types.lint_noop(_KERNEL_T, _OPT_STR, _OPT_VISIBILITY)
 
 def initrd(
-        kernel: types.shape(kernel_t),
+        kernel: _KERNEL_T,
         *,
-        name: types.optional(types.str) = None,
+        name: _OPT_STR = None,
         features = None,
-        visibility: types.optional(types.visibility) = None):
+        visibility: _OPT_VISIBILITY = None):
     """
     Construct an initrd (gzipped cpio archive) that can be used to boot this
     kernel in a virtual machine.

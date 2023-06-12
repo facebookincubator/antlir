@@ -27,11 +27,14 @@ load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
-types.lint_noop()
+_STR_OR_SELECTOR = types.or_selector(str.type)
+_BINARIES_T = types.or_selector([types.or_selector(str.type)])
+
+types.lint_noop(_STR_OR_SELECTOR, _BINARIES_T)
 
 def extract_from_layer(
-        layer: types.or_selector(str.type),
-        binaries: types.or_selector([types.or_selector(str.type)])) -> ParseTimeFeature.type:
+        layer: _STR_OR_SELECTOR,
+        binaries: _BINARIES_T) -> ParseTimeFeature.type:
     """
     Extract binaries that are installed into `layer`, most commonly by RPMs.
 
@@ -52,8 +55,8 @@ def extract_from_layer(
     )
 
 def extract_buck_binary(
-        src: types.or_selector(str.type),
-        dst: types.or_selector(str.type)) -> ParseTimeFeature.type:
+        src: _STR_OR_SELECTOR,
+        dst: _STR_OR_SELECTOR) -> ParseTimeFeature.type:
     """
     Extract a binary built by buck into the target layer.
 

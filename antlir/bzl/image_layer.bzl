@@ -100,16 +100,22 @@ load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
 load(":types.bzl", "types")
 
-types.lint_noop(flavor_t)
+_OPTIONAL_LABEL_T = types.optional(types.label)
+_EXTRA_DEPS_T = types.optional(types.list(types.label))
+_FLAVOR_T = types.optional(types.union(types.str, types.shape(flavor_t)))
+_FLAVOR_CONFIG_OVERRIDE_T = types.optional(types.struct)
+_ANTLIR_RULE_T = types.union(types.antlir_rule.type, types.str) if is_buck2() else None
+
+types.lint_noop(_OPTIONAL_LABEL_T, _EXTRA_DEPS_T, _FLAVOR_T, _FLAVOR_CONFIG_OVERRIDE_T, _ANTLIR_RULE_T)
 
 def image_layer(
         name: types.str,
-        parent_layer: types.optional(types.label) = None,
+        parent_layer: _OPTIONAL_LABEL_T = None,
         features = None,
-        extra_deps: types.optional(types.list(types.label)) = None,
-        flavor: types.optional(types.union(types.str, types.shape(flavor_t))) = None,
-        flavor_config_override: types.optional(types.struct) = None,
-        antlir_rule: types.union(types.antlir_rule.type, types.str) = types.antlir_rule("user-internal"),
+        extra_deps: _EXTRA_DEPS_T = None,
+        flavor: _FLAVOR_T = None,
+        flavor_config_override: _FLAVOR_CONFIG_OVERRIDE_T = None,
+        antlir_rule: _ANTLIR_RULE_T = types.antlir_rule("user-internal"),
         **image_layer_kwargs):
     """
     Arguments

@@ -8,7 +8,9 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
-types.lint_noop()
+_RPMS_T = types.or_selector([types.or_selector(str.type)])
+
+types.lint_noop(_RPMS_T)
 
 # a fully qualified rpm nevra with epoch will contain a ':' so we have to be a
 # little more particular than just checking "if ':' in s"
@@ -22,8 +24,8 @@ def _looks_like_label(s: str.type) -> bool.type:
 def rpms_install(
         *,
         rpms: [str.type] = [],
-        rpm_names: types.or_selector([types.or_selector(str.type)]) = [],
-        rpm_deps: types.or_selector([types.or_selector(str.type)]) = []) -> ParseTimeFeature.type:
+        rpm_names: _RPMS_T = [],
+        rpm_deps: _RPMS_T = []) -> ParseTimeFeature.type:
     """
     Install RPMs by identifier or .rpm src
 
@@ -63,7 +65,7 @@ def rpms_install(
         },
     )
 
-def rpms_remove_if_exists(*, rpms: types.or_selector([types.or_selector(str.type)])) -> ParseTimeFeature.type:
+def rpms_remove_if_exists(*, rpms: _RPMS_T) -> ParseTimeFeature.type:
     """
     Remove RPMs if they are installed
 

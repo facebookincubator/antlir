@@ -28,9 +28,13 @@ def _typed_flattener(item_type) -> types.function:
 
     return _flatten
 
+_ITEM_T = types.optional(types.union(types.str, types.list(types.str)))
+
+types.lint_noop(_ITEM_T)
+
 def _flatten_with_inline_hint(
         lst,
-        item_type: types.optional(types.union(types.str, types.list(types.str))) = None):
+        item_type: _ITEM_T = None):
     if item_type:
         f = _typed_flattener(item_type)
         return f(lst)

@@ -10,14 +10,17 @@ load(":image.bzl", "image")
 load(":target_helpers.bzl", "normalize_target")
 load(":types.bzl", "types")
 
-types.lint_noop()
+_STR_OPT = types.optional(types.str)
+_VISIBILITY_OPT = types.optional(types.visibility)
+
+types.lint_noop(_STR_OPT, _VISIBILITY_OPT)
 
 def _split(
         layer: types.label,
-        stripped_name: types.optional(types.str) = None,
-        debuginfo_name: types.optional(types.str) = None,
-        flavor: types.optional(types.str) = None,
-        visibility: types.optional(types.visibility) = None) -> types.struct:
+        stripped_name: _STR_OPT = None,
+        debuginfo_name: _STR_OPT = None,
+        flavor: _STR_OPT = None,
+        visibility: _VISIBILITY_OPT = None) -> types.struct:
     """
     Given an OS-like image layer, split it into two images, one of which
     contains the original layer minus any debug symbols and the other _only_ the

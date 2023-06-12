@@ -12,11 +12,13 @@ load(":ensure_dirs_exist.bzl", "ensure_subdirs_exist")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 load(":install.bzl", "install")
 
-types.lint_noop()
+_STR_OR_SELECTOR = types.or_selector(str.type)
+
+types.lint_noop(_STR_OR_SELECTOR)
 
 def layer_mount(
         *,
-        source: types.or_selector(str.type),
+        source: _STR_OR_SELECTOR,
         mountpoint: [str.type, None] = None,
         _implicit_from_antlir1: bool.type = False) -> [ParseTimeFeature.type]:
     features = [
