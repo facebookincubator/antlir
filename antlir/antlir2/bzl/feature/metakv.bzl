@@ -6,14 +6,18 @@
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
-types.lint_noop()
+_STR_OR_SELECTOR = types.or_selector(str.type)
+_REQUIRE_KEYS_T = types.or_selector([types.or_selector(str.type)])
+_BOOL_OR_SELECTOR = types.or_selector(bool.type)
+
+types.lint_noop(_STR_OR_SELECTOR, _REQUIRE_KEYS_T, _BOOL_OR_SELECTOR)
 
 def metakv_store(
         *,
-        key: types.or_selector(str.type),
-        value: types.or_selector(str.type),
-        require_keys: types.or_selector([types.or_selector(str.type)]) = [],
-        store_if_not_exists: types.or_selector(bool.type) = False) -> ParseTimeFeature.type:
+        key: _STR_OR_SELECTOR,
+        value: _STR_OR_SELECTOR,
+        require_keys: _REQUIRE_KEYS_T = [],
+        store_if_not_exists: _BOOL_OR_SELECTOR = False) -> ParseTimeFeature.type:
     """
     `metakv_store("key", "value")` writes the key value pair into
     the META_KEY_VALUE_STORE_FILE in the image. This can be read later. It is enforced that
@@ -45,7 +49,7 @@ def metakv_store(
         },
     )
 
-def metakv_remove(*, key: types.or_selector(str.type)):
+def metakv_remove(*, key: _STR_OR_SELECTOR):
     """
     `metakv_remove("key")` removes the key value pair that was written into the
     META_KEY_VALUE_STORE_FILE in the image. This throws an error if the key is

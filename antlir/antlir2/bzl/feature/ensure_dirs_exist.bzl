@@ -8,15 +8,18 @@ load("//antlir/bzl:stat.bzl", "stat")
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
-types.lint_noop()
+_STR_OR_SELECTOR = types.or_selector(str.type)
+_INT_OR_STR_OR_SELECTOR = types.or_selector([int.type, str.type])
+
+types.lint_noop(_STR_OR_SELECTOR, _INT_OR_STR_OR_SELECTOR)
 
 def ensure_subdirs_exist(
         *,
-        into_dir: types.or_selector(str.type),
-        subdirs_to_create: types.or_selector(str.type),
-        mode: types.or_selector([int.type, str.type]) = 0o755,
-        user: types.or_selector(str.type) = "root",
-        group: types.or_selector(str.type) = "root") -> [ParseTimeFeature.type]:
+        into_dir: _STR_OR_SELECTOR,
+        subdirs_to_create: _STR_OR_SELECTOR,
+        mode: _INT_OR_STR_OR_SELECTOR = 0o755,
+        user: _STR_OR_SELECTOR = "root",
+        group: _STR_OR_SELECTOR = "root") -> [ParseTimeFeature.type]:
     """
     `ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y` and
     `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already been

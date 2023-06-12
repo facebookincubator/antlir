@@ -8,13 +8,15 @@ load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
-types.lint_noop()
+_STR_OR_SELECTOR = types.or_selector(str.type)
+
+types.lint_noop(_STR_OR_SELECTOR)
 
 def clone(
         *,
-        src_layer: types.or_selector(str.type),
-        src_path: types.or_selector(str.type),
-        dst_path: types.or_selector(str.type)) -> ParseTimeFeature.type:
+        src_layer: _STR_OR_SELECTOR,
+        src_path: _STR_OR_SELECTOR,
+        dst_path: _STR_OR_SELECTOR) -> ParseTimeFeature.type:
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.

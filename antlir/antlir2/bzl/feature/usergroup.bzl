@@ -6,19 +6,23 @@
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
-types.lint_noop()
-
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
 
+_STR_OR_SELECTOR = types.or_selector(str.type)
+_UID_T = types.optional(types.or_selector(int.type))
+_SUPPLEMENTARY_GROUPS_T = types.or_selector([str.type])
+
+types.lint_noop(_STR_OR_SELECTOR, _UID_T, _SUPPLEMENTARY_GROUPS_T)
+
 def user_add(
         *,
-        username: types.or_selector(str.type),
-        primary_group: types.or_selector(str.type),
-        home_dir: types.or_selector(str.type),
-        shell: types.or_selector(str.type) = SHELL_NOLOGIN,
-        uid: types.optional(types.or_selector(int.type)) = None,
-        supplementary_groups: types.or_selector([str.type]) = [],
+        username: _STR_OR_SELECTOR,
+        primary_group: _STR_OR_SELECTOR,
+        home_dir: _STR_OR_SELECTOR,
+        shell: _STR_OR_SELECTOR = SHELL_NOLOGIN,
+        uid: _UID_T = None,
+        supplementary_groups: _SUPPLEMENTARY_GROUPS_T = [],
         comment: [str.type, None] = None) -> ParseTimeFeature.type:
     """
     Add a user entry to /etc/passwd.
@@ -64,8 +68,8 @@ def user_add(
 
 def group_add(
         *,
-        groupname: types.or_selector(str.type),
-        gid: types.optional(types.or_selector(int.type)) = None) -> ParseTimeFeature.type:
+        groupname: _STR_OR_SELECTOR,
+        gid: _UID_T = None) -> ParseTimeFeature.type:
     """
     Add a group entry to /etc/group
 
@@ -81,10 +85,14 @@ def group_add(
         },
     )
 
+_ADD_SUPPLEMENTARY_GROUPS_T = types.optional(types.or_selector([str.type]))
+
+types.lint_noop(_ADD_SUPPLEMENTARY_GROUPS_T)
+
 def usermod(
         *,
-        username: types.or_selector(str.type),
-        add_supplementary_groups: types.optional(types.or_selector([str.type])) = None) -> ParseTimeFeature.type:
+        username: _STR_OR_SELECTOR,
+        add_supplementary_groups: _ADD_SUPPLEMENTARY_GROUPS_T = None) -> ParseTimeFeature.type:
     """
     Modify an existing entry in the /etc/passwd and /etc/group databases
     """

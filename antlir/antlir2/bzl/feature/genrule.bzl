@@ -7,14 +7,18 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
-types.lint_noop()
+_STR_LIST_OR_SELECTOR = types.or_selector([str.type])
+_STR_OR_SELECTOR = types.or_selector(str.type)
+_BOOL_OR_SELECTOR = types.or_selector(bool.type)
+
+types.lint_noop(_STR_LIST_OR_SELECTOR, _STR_OR_SELECTOR, _BOOL_OR_SELECTOR)
 
 def genrule(
         *,
-        cmd: types.or_selector([str.type]),
-        user: types.or_selector(str.type) = "nobody",
-        boot: types.or_selector(bool.type) = False,
-        bind_repo_ro: types.or_selector(bool.type) = False) -> ParseTimeFeature.type:
+        cmd: _STR_LIST_OR_SELECTOR,
+        user: _STR_OR_SELECTOR = "nobody",
+        boot: _BOOL_OR_SELECTOR = False,
+        bind_repo_ro: _BOOL_OR_SELECTOR = False) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "genrule",
         kwargs = {

@@ -57,6 +57,10 @@ def _tags_to_hide_test():
         "slow",
     ]
 
+_FLAVOR_CONFIG_OVERRIDE_T = types.optional(types.struct)
+
+types.lint_noop(_FLAVOR_CONFIG_OVERRIDE_T)
+
 def _nspawn_wrapper_properties(
         name,
         layer,
@@ -72,7 +76,7 @@ def _nspawn_wrapper_properties(
         # set `shadow_proxied_binaries`.
         container_opts,
         flavor = None,
-        flavor_config_override: types.optional(types.struct) = None):
+        flavor_config_override: _FLAVOR_CONFIG_OVERRIDE_T = None):
     container_opts = normalize_container_opts(container_opts)
 
     # Fail early, so the user doesn't have to wait for the test to build.

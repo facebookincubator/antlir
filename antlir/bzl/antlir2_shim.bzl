@@ -64,6 +64,13 @@ def _antlir2_or_default(antlir2: [
     else:
         return default
 
+_FLAVOR_T = types.optional(types.union(
+    types.str,
+    types.shape(flavor_t),
+))
+
+types.lint_noop(_FLAVOR_T)
+
 def _should_make_parallel(
         antlir2: [
             str.type,
@@ -71,10 +78,7 @@ def _should_make_parallel(
             None,
         ],
         *,
-        flavor: types.optional(types.union(
-            types.str,
-            types.shape(flavor_t),
-        )) = None) -> bool.type:
+        flavor: _FLAVOR_T = None) -> bool.type:
     if flavor and flavor_to_struct(flavor).name == "centos7":
         return False
 

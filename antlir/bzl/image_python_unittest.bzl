@@ -10,11 +10,13 @@ load(":flavor.shape.bzl", "flavor_t")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load(":types.bzl", "types")
 
-types.lint_noop(flavor_t)
-
 # This exists to hack around a complex FB-internal migration. *sigh*
 # It should be removable when this is done:  https://fburl.com/nxc3u5mk
 _TEMP_TP_TAG = "use-testpilot-adapter"
+
+_OPTIONAL_STRUCT = types.optional(types.struct)
+
+types.lint_noop(flavor_t, _OPTIONAL_STRUCT)
 
 def image_python_unittest(
         name,
@@ -26,7 +28,7 @@ def image_python_unittest(
         hostname = None,
         container_opts = None,
         flavor = None,
-        flavor_config_override: types.optional(types.struct) = None,
+        flavor_config_override: _OPTIONAL_STRUCT = None,
         antlir2 = None,
         **python_unittest_kwargs):
     visibility = visibility or []

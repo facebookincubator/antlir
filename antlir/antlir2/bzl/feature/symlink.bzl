@@ -6,13 +6,15 @@
 load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
-types.lint_noop()
+_STR_OR_SELECTOR = types.or_selector(str.type)
+
+types.lint_noop(_STR_OR_SELECTOR)
 
 def _symlink_feature(
         *,
-        link: types.or_selector(str.type),
-        target: types.or_selector(str.type),
-        feature_type: types.or_selector(str.type)) -> ParseTimeFeature.type:
+        link: _STR_OR_SELECTOR,
+        target: _STR_OR_SELECTOR,
+        feature_type: _STR_OR_SELECTOR) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = feature_type,
         kwargs = {
