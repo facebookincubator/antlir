@@ -14,6 +14,14 @@ feature.new(
             path = "/etc/dnf/dnf.conf",
         ),
         feature.ensure_dirs_exist(dirs = "/__antlir2__"),
+        feature.ensure_subdirs_exist(
+            into_dir = "/__antlir2__",
+            subdirs_to_create = "root",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/__antlir2__",
+            subdirs_to_create = "build_appliance",
+        ),
         "//antlir/antlir2/dnf:features",
     ],
     visibility = ["//antlir/antlir2/..."],

@@ -11,8 +11,9 @@
 import os.path
 import platform
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Mapping, Optional, Set
+from typing import ContextManager, Mapping, Optional, Set
 
 import dnf
 import hawkey
@@ -22,15 +23,33 @@ class AntlirError(Exception):
     pass
 
 
+@contextmanager
+def base(
+    *, install_root: Optional[str] = None, **configure_base_kwargs
+) -> ContextManager[dnf.Base]:
+    conf = dnf.conf.Conf()
+    conf.read("/__antlir2__/dnf/dnf.conf")
+    if install_root:
+        conf.installroot = install_root
+    with dnf.Base(conf) as base:
+        configure_base(base=base, install_root=install_root, **configure_base_kwargs)
+        yield base
+
+
 def configure_base(
-    *, base: dnf.Base, install_root: Optional[str] = None, arch: Optional[str] = None
+    *,
+    base: dnf.Base,
+    install_root: Optional[str] = None,
+    arch: Optional[str] = None,
+    set_persistdir_under_installroot: bool = True,
 ) -> None:
     base.conf.read("/__antlir2__/dnf/dnf.conf")
     if install_root:
         base.conf.installroot = install_root
-    base.conf.persistdir = os.path.join(
-        base.conf.installroot, base.conf.persistdir.lstrip("/")
-    )
+    if set_persistdir_under_installroot:
+        base.conf.persistdir = os.path.join(
+            base.conf.installroot, base.conf.persistdir.lstrip("/")
+        )
     base.conf.arch = arch or platform.uname().machine
 
 
