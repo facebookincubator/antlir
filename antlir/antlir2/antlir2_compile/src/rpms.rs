@@ -36,12 +36,13 @@ struct DriverSpec<'a> {
     arch: Arch,
     versionlock: Option<&'a BTreeMap<String, String>>,
     excluded_rpms: Option<&'a BTreeSet<String>>,
+    resolved_transaction: Option<DnfTransaction>,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
 #[serde(rename_all = "kebab-case")]
 enum DriverMode {
-    ResolveOnly,
+    Resolve,
     Run,
 }
 
@@ -97,7 +98,29 @@ impl Package {
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 struct InstallPackage {
     package: Package,
-    repo: String,
+    repo: Option<String>,
+    reason: Reason,
+}
+
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) enum Reason {
+    Clean,
+    Dependency,
+    Group,
+    Unkown,
+    User,
+    WeakDependency,
 }
 
 #[derive(Debug, Deserialize)]
@@ -125,11 +148,20 @@ enum DriverEvent {
 impl<'a> CompileFeature for Rpm<'a> {
     #[tracing::instrument(name = "rpms", skip(self, ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
-        run_dnf_driver(ctx, &self.items, DriverMode::Run).map(|_| ())
+        run_dnf_driver(
+            ctx,
+            &self.items,
+            DriverMode::Run,
+            ctx.plan()
+                .expect("rpms feature is always planned")
+                .dnf_transaction
+                .clone(),
+        )
+        .map(|_| ())
     }
 
     fn plan(&self, ctx: &CompilerContext) -> Result<Item> {
-        let events = run_dnf_driver(ctx, &self.items, DriverMode::ResolveOnly)?;
+        let events = run_dnf_driver(ctx, &self.items, DriverMode::Resolve, None)?;
         if events.len() != 1 {
             return Err(Error::msg("expected exactly one event in resolve-only mode").into());
         }
@@ -141,6 +173,7 @@ impl<'a> CompileFeature for Rpm<'a> {
                         .map(|ip| crate::plan::InstallPackage {
                             nevra: ip.package.nevra(),
                             repo: ip.repo.clone(),
+                            reason: ip.reason,
                         })
                         .collect(),
                     remove: remove.iter().map(|p| p.nevra()).collect(),
@@ -155,6 +188,7 @@ fn run_dnf_driver(
     ctx: &CompilerContext,
     items: &[RpmItem<'_>],
     mode: DriverMode,
+    resolved_transaction: Option<DnfTransaction>,
 ) -> Result<Vec<DriverEvent>> {
     let input = serde_json::to_string(&DriverSpec {
         repos: Some(ctx.dnf.repos()),
@@ -164,6 +198,7 @@ fn run_dnf_driver(
         arch: ctx.target_arch(),
         versionlock: ctx.dnf.versionlock(),
         excluded_rpms: Some(ctx.dnf.excluded_rpms()),
+        resolved_transaction,
     })
     .context("while serializing dnf-driver input")?;
 

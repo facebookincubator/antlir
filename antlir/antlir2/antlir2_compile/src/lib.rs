@@ -96,8 +96,10 @@ pub struct CompilerContext {
     target_arch: Arch,
     /// Path to the root of the image being built
     root: PathBuf,
-    /// Seutp information for dnf repos
+    /// Setup information for dnf repos
     dnf: DnfContext,
+    /// Pre-computed plan for this compilation phase
+    plan: Option<plan::Plan>,
 }
 
 #[derive(Debug)]
@@ -155,12 +157,14 @@ impl CompilerContext {
         target_arch: Arch,
         root: PathBuf,
         dnf: DnfContext,
+        plan: Option<plan::Plan>,
     ) -> Result<Self> {
         Ok(Self {
             label,
             target_arch,
             root,
             dnf,
+            plan,
         })
     }
 
@@ -179,6 +183,10 @@ impl CompilerContext {
 
     pub(crate) fn dnf(&self) -> &DnfContext {
         &self.dnf
+    }
+
+    pub(crate) fn plan(&self) -> Option<&plan::Plan> {
+        self.plan.as_ref()
     }
 
     /// Join a (possibly absolute) path with the root directory of the image
