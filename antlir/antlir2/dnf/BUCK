@@ -29,6 +29,11 @@ feature.new(
             src = "plugin.py",
             dst = "/__antlir2__/dnf/plugins/antlir.py",
         ),
+        feature.install(
+            src = "rpm2extents",
+            dst = "/__antlir2__/dnf/rpm2extents",
+            mode = "a+rx",
+        ),
         # @oss-disable
     ],
     visibility = ["//antlir/antlir2/build_appliance:features"],

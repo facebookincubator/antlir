@@ -15,10 +15,13 @@ def _impl(ctx: "context") -> ["provider"]:
                 default_excluded_rpms = ctx.attrs.default_dnf_excluded_rpms,
                 default_repo_set = ctx.attrs.default_dnf_repo_set,
                 default_versionlock = ctx.attrs.default_dnf_versionlock,
+                reflink_flavor = ctx.attrs.rpm_reflink_flavor,
             ),
             label = ctx.label,
         ),
-        DefaultInfo(),
+        DefaultInfo(sub_targets = {
+            "default_build_appliance": ctx.attrs.default_build_appliance.providers,
+        }),
     ]
 
 _flavor = rule(
@@ -34,10 +37,17 @@ _flavor = rule(
             attrs.source(),
             default = None,
         ),
+        "rpm_reflink_flavor": attrs.option(attrs.string(), default = None),
     },
 )
 
-def flavor(name: str.type, flavored_build_appliance: str.type, **kwargs):
+def flavor(
+        name: str.type,
+        flavored_build_appliance: str.type,
+        # Force the flavor author to say that their flavor does not support
+        # reflink to make it impossible to forget
+        rpm_reflink_flavor: [str.type, None],
+        **kwargs):
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
     # Ideally this would be a subtarget, but then it would be a circular dependency
@@ -46,4 +56,8 @@ def flavor(name: str.type, flavored_build_appliance: str.type, **kwargs):
         actual = flavored_build_appliance,
         visibility = kwargs.get("visibility", None),
     )
-    return _flavor(name = name, **kwargs)
+    return _flavor(
+        name = name,
+        rpm_reflink_flavor = rpm_reflink_flavor,
+        **kwargs
+    )
