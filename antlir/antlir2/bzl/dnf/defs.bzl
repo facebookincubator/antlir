@@ -52,7 +52,7 @@ def compiler_plan_to_local_repos(
         tx = plan.get("dnf_transaction", {"install": []})
         tree = {}
         for install in tx["install"]:
-            if install["nevra"] not in by_repo[install["repo"]]["nevras"]:
+            if install["repo"] and install["nevra"] not in by_repo[install["repo"]]["nevras"]:
                 # This is impossible because the dnf transaction resolution will
                 # fail before we even get to this, but format a nice warning
                 # anyway

@@ -143,33 +143,46 @@ def dnf_base(spec) -> dnf.Base:
     return base
 
 
-def driver(spec) -> None:
-    out = LockedOutput(sys.stdout)
-    mode = spec["mode"]
-    versionlock = spec["versionlock"] or {}
+REASON_TO_STRING = {
+    getattr(libdnf.transaction, r): libdnf.transaction.TransactionItemReasonToString(
+        getattr(libdnf.transaction, r)
+    )
+    for r in dir(libdnf.transaction)
+    if r.startswith("TransactionItemReason_")
+}
+REASON_FROM_STRING = {s: r for r, s in REASON_TO_STRING.items()}
 
-    base = dnf_base(spec)
-    antlir2_dnf_base.add_repos(base=base, repos_dir=spec["repos"])
 
-    # Load .solv files to determine available repos and rpms. This will re-parse
-    # repomd.xml, but does not require re-loading all the other large xml blobs,
-    # since the .solv{x} files are copied into the cache dir immediately before
-    # this. Ideally we could use `fill_sack_from_repos_in_cache`, but that
-    # requires knowing the dnf cache key (like /antlir/dnf-cache/repo-HEXSTRING)
-    # which is based on the base url. We don't have a persistent baseurl, but
-    # this is incredibly fast anyway.
-    base.fill_sack()
-
-    # local rpm files must be added before anything is added to the transaction goal
-    local_rpms = {}
-    for item in spec["items"]:
-        rpm = item["rpm"]
-        if "source" in rpm:
-            packages = base.add_remote_rpms([os.path.realpath(rpm["source"])])
-            local_rpms[rpm["source"]] = packages[0]
-
+def _explicitly_installed_package_names(spec, local_rpms):
     explicitly_installed_package_names = set()
+    for item in spec["items"]:
+        action = item["action"]
+        rpm = item["rpm"]
+        if "name" in rpm:
+            source = rpm["name"]
+        else:
+            source = local_rpms[rpm["source"]]
+
+        if action == "install":
+            if isinstance(source, dnf.package.Package):
+                explicitly_installed_package_names.add(source.name)
+            else:
+                explicitly_installed_package_names.update(
+                    {
+                        nevra.name
+                        for nevra in dnf.subject.Subject(
+                            source
+                        ).get_nevra_possibilities()
+                    }
+                )
+
+    return explicitly_installed_package_names
+
+
+def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
     explicitly_removed_package_names = set()
+
+    versionlock = spec["versionlock"] or {}
 
     for item in spec["items"]:
         action = item["action"]
@@ -188,17 +201,8 @@ def driver(spec) -> None:
         if action == "install":
             if isinstance(source, dnf.package.Package):
                 base.package_install(source, strict=True)
-                explicitly_installed_package_names.add(source.name)
             else:
                 base.install(source, strict=True)
-                explicitly_installed_package_names.update(
-                    {
-                        nevra.name
-                        for nevra in dnf.subject.Subject(
-                            source
-                        ).get_nevra_possibilities()
-                    }
-                )
         elif action == "remove_if_exists":
             # cannot remove by file path, so let's do this to be extra safe
             try:
@@ -221,21 +225,35 @@ def driver(spec) -> None:
     )
 
     base.resolve(allow_erasing=True)
+
+    def _try_get_repoid(p):
+        try:
+            return p.pkg.repo.id
+        except KeyError:
+            return None
+
     with out as o:
         json.dump(
             {
                 "transaction_resolved": {
                     "install": [
                         {
-                            "package": package_struct(p),
-                            "repo": p.repo.id,
+                            "package": package_struct(p.pkg),
+                            "repo": _try_get_repoid(p),
+                            "reason": REASON_TO_STRING[p.reason],
                         }
-                        for p in base.transaction.install_set
-                        # local rpm files get this "repo" which doesn't actually
-                        # exist, and it's a local file so we don't need to push
-                        # it back up into buck2 since it's already available as
-                        # a dep on this feature
-                        if p.reponame != hawkey.CMDLINE_REPO_NAME
+                        for p in base.transaction
+                        if p.action
+                        # See some documentation of the different actions here
+                        # https://github.com/rpm-software-management/libdnf/blob/3fca06e8b1037f117ba57b5e824ea59a343b44ed/libdnf/transaction/Types.hpp#L60
+                        in {
+                            libdnf.transaction.TransactionItemAction_INSTALL,
+                            libdnf.transaction.TransactionItemAction_REINSTALL,
+                            libdnf.transaction.TransactionItemAction_DOWNGRADE,
+                            libdnf.transaction.TransactionItemAction_OBSOLETE,
+                            libdnf.transaction.TransactionItemAction_UPGRADE,
+                            libdnf.transaction.TransactionItemAction_REASON_CHANGE,
+                        }
                     ],
                     "remove": [package_struct(p) for p in base.transaction.remove_set],
                 }
@@ -253,10 +271,55 @@ def driver(spec) -> None:
         with out as o:
             json.dump({"tx_error": str(e)})
 
-    if mode == "resolve-only":
-        return
+
+def driver(spec) -> None:
+    out = LockedOutput(sys.stdout)
+    mode = spec["mode"]
+
+    base = dnf_base(spec)
+    antlir2_dnf_base.add_repos(base=base, repos_dir=spec["repos"])
+
+    # Load .solv files to determine available repos and rpms. This will re-parse
+    # repomd.xml, but does not require re-loading all the other large xml blobs,
+    # since the .solv{x} files are copied into the cache dir immediately before
+    # this. Ideally we could use `fill_sack_from_repos_in_cache`, but that
+    # requires knowing the dnf cache key (like /antlir/dnf-cache/repo-HEXSTRING)
+    # which is based on the base url. We don't have a persistent baseurl, but
+    # this is incredibly fast anyway.
+    base.fill_sack()
+
+    # Local rpm files must be added before anything is added to the transaction goal
+    # They also don't appear in the recorded transaction resolution, so are
+    # common to mode=resolve and mode=run
+    local_rpms = {}
+    for item in spec["items"]:
+        rpm = item["rpm"]
+        if "source" in rpm:
+            packages = base.add_remote_rpms([os.path.realpath(rpm["source"])])
+            local_rpms[rpm["source"]] = packages[0]
+
+    explicitly_installed_package_names = _explicitly_installed_package_names(
+        spec, local_rpms
+    )
+
+    if mode == "resolve":
+        return resolve(out, spec, base, local_rpms, explicitly_installed_package_names)
 
     assert mode == "run"
+    assert "resolved_transaction" in spec
+
+    for install in spec["resolved_transaction"]["install"]:
+        base.install(
+            install["nevra"],
+            forms=[hawkey.FORM_NEVRA],
+            reponame=install["repo"],
+        )
+    for nevra in spec["resolved_transaction"]["remove"]:
+        base.remove(nevra, forms=[hawkey.FORM_NEVRA])
+
+    # We actually do need to resolve again, but we've explicitly told dnf every
+    # single package to install and remove
+    base.resolve()
 
     # Check the GPG signatures for all the to-be-installed packages before doing
     # the transaction
@@ -296,24 +359,53 @@ def driver(spec) -> None:
     base.do_transaction(TransactionProgress(out))
     base.close()
 
-    # After doing the transaction, go through and (re)mark all the
-    # explicitly packages as explicitly installed. Otherwise a reinstall of
-    # a package that had previously been brought in as a dependency will not
-    # be recorded with "user' as the install reason
+    # After doing the transaction, ensure that all the package history entries
+    # match the actual reason for installation.
+    # Otherwise one of two bad things will happen:
+    # 1) reinstallation of a package that had previously been brought in as a
+    #    dependency will not be recorded with "user' as the install reason
+    # 2) installation of a dependency in a pre-resolved transaction will be
+    #    marked as "user" installed rather than "dependency"
     base = dnf_base(spec)
     base.fill_sack()
-    explicitly_installed_packages = list(
-        base.sack.query()
-        .installed()
-        .filter(name__eq=explicitly_installed_package_names)
-    )
-    if explicitly_installed_package_names:
-        assert (
-            explicitly_installed_package_names
-        ), "installing packages, but they were not found"
 
-    for pkg in explicitly_installed_packages:
-        base.history.set_reason(pkg, libdnf.transaction.TransactionItemReason_USER)
+    set_reasons = []
+    for install in spec["resolved_transaction"]["install"]:
+        subject = dnf.subject.Subject(install["nevra"])
+        set_reasons.extend(
+            [
+                (pkg, REASON_FROM_STRING[install["reason"]])
+                for pkg in subject.get_best_query(
+                    base.sack, forms=[hawkey.FORM_NEVRA]
+                ).installed()
+            ]
+        )
+    # The above queries will not pick up any re-installed packages because dnf
+    # treats that as a no-op. This query looks for currently (after the
+    # transaction has been run) installed packages that have the same name as
+    # the packages that are being explicitly installed in this transaction.
+    for name in explicitly_installed_package_names:
+        subject = dnf.subject.Subject(name)
+        set_reasons.extend(
+            [
+                (pkg, libdnf.transaction.TransactionItemReason_USER)
+                for pkg in subject.get_best_query(
+                    base.sack, forms=[hawkey.FORM_NAME]
+                ).installed()
+            ]
+        )
+
+    if spec["resolved_transaction"]["install"] and not set_reasons:
+        json.dump(
+            {
+                "tx_error": "installed packages, but history marking query returned nothing"
+            },
+            out,
+        )
+        sys.exit(1)
+
+    for pkg, reason in set_reasons:
+        base.history.set_reason(pkg, reason)
     # commit that change to the db
     rpmdb_version = base.history.last().end_rpmdb_version
     base.history.beg(rpmdb_version, [], [])

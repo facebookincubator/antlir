@@ -126,7 +126,10 @@ impl Compileish {
         v
     }
 
-    pub(super) fn compiler_context(&self) -> Result<CompilerContext> {
+    pub(super) fn compiler_context(
+        &self,
+        plan: Option<antlir2_compile::plan::Plan>,
+    ) -> Result<CompilerContext> {
         CompilerContext::new(
             self.label.clone(),
             self.external.target_arch,
@@ -145,6 +148,7 @@ impl Compileish {
                     .cloned()
                     .unwrap_or_default(),
             ),
+            plan,
         )
         .map_err(Error::Compile)
     }

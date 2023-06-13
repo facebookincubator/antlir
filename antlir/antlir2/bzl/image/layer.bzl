@@ -174,7 +174,7 @@ def _impl(ctx: "context") -> ["provider"]:
         )
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
-            plan = ctx.actions.declare_output(identifier_prefix + "plan")
+            plan = ctx.actions.declare_output(identifier_prefix + "plan.json")
             cmd, _ = _map_image(
                 build_appliance = build_appliance[LayerInfo],
                 cmd = cmd_args(
@@ -189,6 +189,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 identifier = identifier_prefix + "plan",
                 parent = parent_layer,
             )
+            creator.append(cmd)
 
             # Part of the compiler plan is any possible dnf transaction resolution,
             # which lets us know what rpms we will need. We can have buck download them
@@ -196,7 +197,6 @@ def _impl(ctx: "context") -> ["provider"]:
             # completely-offline dnf installation (which is MUCH faster and more
             # reliable)
             dnf_repos_dir = compiler_plan_to_local_repos(ctx, identifier_prefix, dnf_available_repos, plan)
-            creator.append(cmd)
         else:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
@@ -208,6 +208,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
                 "compile",
                 compileish_args,
+                cmd_args(plan, format = "--plan={}") if plan else cmd_args(),
             ).hidden(feature_hidden_deps),
             ctx = ctx,
             identifier = identifier_prefix + "compile",

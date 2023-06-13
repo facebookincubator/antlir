@@ -10,12 +10,13 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::rpms::Reason;
 use crate::Result;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Plan {
     #[serde(skip_serializing_if = "Option::is_none")]
-    dnf_transaction: Option<DnfTransaction>,
+    pub(crate) dnf_transaction: Option<DnfTransaction>,
 }
 
 impl Plan {
@@ -47,7 +48,8 @@ pub type Nevra = String;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct InstallPackage {
     pub(crate) nevra: Nevra,
-    pub(crate) repo: String,
+    pub(crate) repo: Option<String>,
+    pub(crate) reason: Reason,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

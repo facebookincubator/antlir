@@ -137,6 +137,40 @@ test_rpms(
 )
 
 test_rpms(
+    name = "userinstalled-package-upgraded-as-dep",
+    expected = expected_t(
+        userinstalled = ["foo"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                # This will trigger an upgrade of 'foo' which should still be
+                # recorded as a userinstalled package
+                "foobar-3",
+            ],
+        ),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "userinstalled-package-reinstalled-as-dep",
+    expected = expected_t(
+        userinstalled = ["foo"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                # This may trigger a "reinstall" (no-oped) of 'foo' which should
+                # still be recorded as a userinstalled package
+                "foobar-3",
+            ],
+        ),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
     name = "local-rpm-file",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [

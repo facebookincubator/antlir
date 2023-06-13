@@ -20,6 +20,8 @@ use buck_label::Label;
 use clap::Parser;
 use tracing::debug;
 
+use super::compile::Compile;
+use super::compile::CompileExternal;
 use super::plan::Plan;
 use super::plan::PlanExternal;
 use super::Compileish;
@@ -66,7 +68,12 @@ struct SetupArgs {
 
 #[derive(Parser, Debug)]
 enum Subcommand {
-    Compile(CompileishExternal),
+    Compile {
+        #[clap(flatten)]
+        compileish: CompileishExternal,
+        #[clap(flatten)]
+        external: CompileExternal,
+    },
     Plan {
         #[clap(flatten)]
         compileish: CompileishExternal,
@@ -175,13 +182,19 @@ impl Map {
         .into_command();
         isol.arg(std::env::current_exe().context("while getting argv[0]")?);
         match self.subcommand {
-            Subcommand::Compile(external) => {
+            Subcommand::Compile {
+                compileish,
+                external,
+            } => {
                 isol.arg("compile").args(
-                    Compileish {
-                        label: self.label,
-                        root: subvol.path().to_owned(),
+                    Compile {
+                        compileish: Compileish {
+                            label: self.label,
+                            root: subvol.path().to_owned(),
+                            external: compileish,
+                            dnf: self.setup.dnf,
+                        },
                         external,
-                        dnf: self.setup.dnf,
                     }
                     .to_args(),
                 );

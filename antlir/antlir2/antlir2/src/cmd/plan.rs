@@ -64,7 +64,7 @@ impl Plan {
 impl Plan {
     #[tracing::instrument(name = "plan", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
-        let ctx = self.compileish.compiler_context()?;
+        let ctx = self.compileish.compiler_context(None)?;
 
         let items: Vec<_> = self
             .compileish
