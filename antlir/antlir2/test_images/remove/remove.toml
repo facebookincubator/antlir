@@ -16,7 +16,7 @@ mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
-content-hash = 0
+content_hash = "0"
 
 ["b/c"]
 op = 'removed'

@@ -1,0 +1,11 @@
+[hello]
+op = "added"
+
+[hello.diff]
+mode = "u+rw,g+rw,o+rw"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+Hello world!
+"""
