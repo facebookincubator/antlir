@@ -155,7 +155,7 @@ else:
 split_binary = rule(
     impl = _split_binary_impl,
     attrs = {
-        "cxx_toolchain": attrs.toolchain_dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]),
+        "cxx_toolchain": attrs.dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]),
         "src": attrs.dep(providers = [RunInfo]),
     },
 )
