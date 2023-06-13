@@ -4,11 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load(":install.bzl", "install_record")
-
-types.lint_noop()
 
 def tarball(
         *,

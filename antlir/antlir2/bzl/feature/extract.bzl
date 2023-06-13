@@ -23,18 +23,12 @@ binaries without first installing them into a layer.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
-_STR_OR_SELECTOR = types.or_selector(str.type)
-_BINARIES_T = types.or_selector([types.or_selector(str.type)])
-
-types.lint_noop(_STR_OR_SELECTOR, _BINARIES_T)
-
 def extract_from_layer(
-        layer: _STR_OR_SELECTOR,
-        binaries: _BINARIES_T) -> ParseTimeFeature.type:
+        layer: [str.type, "selector"],
+        binaries: [[[str.type, "selector"]], "selector"]) -> ParseTimeFeature.type:
     """
     Extract binaries that are installed into `layer`, most commonly by RPMs.
 
@@ -55,8 +49,8 @@ def extract_from_layer(
     )
 
 def extract_buck_binary(
-        src: _STR_OR_SELECTOR,
-        dst: _STR_OR_SELECTOR) -> ParseTimeFeature.type:
+        src: [str.type, "selector"],
+        dst: [str.type, "selector"]) -> ParseTimeFeature.type:
     """
     Extract a binary built by buck into the target layer.
 
