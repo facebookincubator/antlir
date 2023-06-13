@@ -16,6 +16,11 @@ pub enum FindRootError {
 }
 
 pub fn find_repo_root(path_in_repo: &AbsolutePath) -> Result<AbsolutePathBuf, FindRootError> {
+    if let Ok("1") = std::env::var("INSIDE_RE_WORKER").as_deref() {
+        let path = AbsolutePathBuf::new("/re_cwd".into())
+            .expect("Expected /re_cwd to be an absolute path");
+        return Ok(path);
+    }
     // Technically there is a bug here where we will return the first hg
     // repo found even if there is a git repo inside that hg repo.
     //

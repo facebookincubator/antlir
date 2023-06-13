@@ -96,6 +96,9 @@ cat >> "$TMP/out" << {EOF}
 cat >> "$TMP/out" << '{EOF}'
 export ANTLIR_BUCK="{antlir_buck}"
 {literal_preamble}
+if [[ "$INSIDE_RE_WORKER" == "1" ]]; then
+    export REPO_ROOT="/re_cwd"
+fi
 exec "$REPO_ROOT/"$(exe_target {runnable}){maybe_quoted_path_in_output} {args}
 {EOF}
 chmod +x "$TMP/out"
