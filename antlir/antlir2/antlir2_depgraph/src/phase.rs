@@ -9,8 +9,8 @@ use antlir2_features::Data;
 use antlir2_features::Feature;
 use serde::Deserialize;
 use serde::Serialize;
-use strum_macros::Display;
-use strum_macros::EnumIter;
+use strum::Display;
+use strum::EnumIter;
 
 #[derive(
     Debug,
