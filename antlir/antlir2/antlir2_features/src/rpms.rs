@@ -71,8 +71,36 @@ pub struct Item<'a> {
     pub rpm: Source<'a>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize,
+    Default
+)]
 #[serde(bound(deserialize = "'de: 'a"))]
 pub struct Rpm<'a> {
     pub items: Vec<Item<'a>>,
+    #[serde(skip_deserializing)]
+    pub internal_only_options: InternalOnlyOptions,
+}
+
+#[derive(
+    Debug,
+    Default,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
+pub struct InternalOnlyOptions {
+    #[serde(default)]
+    pub ignore_postin_script_error: bool,
 }

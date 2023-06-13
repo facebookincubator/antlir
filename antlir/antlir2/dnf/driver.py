@@ -87,9 +87,10 @@ _TX_ACTION_TO_JSON = {
 
 
 class TransactionProgress(dnf.callback.TransactionProgress):
-    def __init__(self, out):
+    def __init__(self, out, ignore_postin_script_error: bool = False):
         self.out = out
         self._sent = defaultdict(set)
+        self._ignore_postin_script_error = ignore_postin_script_error
 
     def scriptout(self, msgs):
         """Hook for reporting an rpm scriptlet output.
@@ -106,10 +107,12 @@ class TransactionProgress(dnf.callback.TransactionProgress):
 
     def error(self, message):
         with self.out as out:
-            json.dump(
-                {"tx_error": message},
-                out,
-            )
+            key = "tx_error"
+            if self._ignore_postin_script_error and message.startswith(
+                "Error in POSTIN scriptlet"
+            ):
+                key = "tx_warning"
+            json.dump({key: message}, out)
             out.write("\n")
 
     def progress(self, package, action, ti_done, ti_total, ts_done, ts_total):
@@ -356,7 +359,11 @@ def driver(spec) -> None:
         sys.exit(1)
 
     # dnf go brrr
-    base.do_transaction(TransactionProgress(out))
+    base.do_transaction(
+        TransactionProgress(
+            out, ignore_postin_script_error=spec["ignore_postin_script_error"]
+        )
+    )
     base.close()
 
     # After doing the transaction, ensure that all the package history entries
