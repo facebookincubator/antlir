@@ -11,6 +11,7 @@ use std::path::Path;
 use std::process::Command;
 use std::process::Stdio;
 
+use antlir2_features::rpms::InternalOnlyOptions;
 use antlir2_features::rpms::Item as RpmItem;
 use antlir2_features::rpms::Rpm;
 use anyhow::Context;
@@ -37,6 +38,7 @@ struct DriverSpec<'a> {
     versionlock: Option<&'a BTreeMap<String, String>>,
     excluded_rpms: Option<&'a BTreeSet<String>>,
     resolved_transaction: Option<DnfTransaction>,
+    ignore_postin_script_error: bool,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -136,6 +138,7 @@ enum DriverEvent {
         operation: TransactionOperation,
     },
     TxError(String),
+    TxWarning(String),
     GpgError {
         package: Package,
         error: String,
@@ -156,12 +159,19 @@ impl<'a> CompileFeature for Rpm<'a> {
                 .expect("rpms feature is always planned")
                 .dnf_transaction
                 .clone(),
+            &self.internal_only_options,
         )
         .map(|_| ())
     }
 
     fn plan(&self, ctx: &CompilerContext) -> Result<Item> {
-        let events = run_dnf_driver(ctx, &self.items, DriverMode::Resolve, None)?;
+        let events = run_dnf_driver(
+            ctx,
+            &self.items,
+            DriverMode::Resolve,
+            None,
+            &self.internal_only_options,
+        )?;
         if events.len() != 1 {
             return Err(Error::msg("expected exactly one event in resolve-only mode").into());
         }
@@ -189,6 +199,7 @@ fn run_dnf_driver(
     items: &[RpmItem<'_>],
     mode: DriverMode,
     resolved_transaction: Option<DnfTransaction>,
+    internal_only_options: &InternalOnlyOptions,
 ) -> Result<Vec<DriverEvent>> {
     let input = serde_json::to_string(&DriverSpec {
         repos: Some(ctx.dnf.repos()),
@@ -199,6 +210,7 @@ fn run_dnf_driver(
         versionlock: ctx.dnf.versionlock(),
         excluded_rpms: Some(ctx.dnf.excluded_rpms()),
         resolved_transaction,
+        ignore_postin_script_error: internal_only_options.ignore_postin_script_error,
     })
     .context("while serializing dnf-driver input")?;
 
