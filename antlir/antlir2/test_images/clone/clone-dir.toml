@@ -12,7 +12,7 @@ mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
-content-hash = 0
+content_hash = "0"
 
 ["cloned/cloned-symlink"]
 op = 'added'
@@ -32,7 +32,7 @@ mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "antlir"
 group = "antlir"
-content-hash = 0
+content_hash = "0"
 
 ["cloned/deeper/nesting"]
 op = 'added'
@@ -42,7 +42,7 @@ mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "antlir"
 group = "antlir"
-content-hash = 0
+content_hash = "0"
 
 ["cloned/deeper/nesting/foo"]
 op = 'added'

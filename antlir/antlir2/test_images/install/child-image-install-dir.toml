@@ -1,0 +1,9 @@
+["installed-dir/foo/child"]
+op = "added"
+
+["installed-dir/foo/child".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+content_hash = "0"

@@ -1,0 +1,31 @@
+[installed-dir]
+op = "added"
+
+[installed-dir.diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+content_hash = "0"
+
+["installed-dir/foo"]
+op = "added"
+
+["installed-dir/foo".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+content_hash = "0"
+
+["installed-dir/foo/bar"]
+op = "added"
+
+["installed-dir/foo/bar".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+I am bar
+"""

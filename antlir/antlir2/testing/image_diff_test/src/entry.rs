@@ -26,6 +26,7 @@ use serde_with::DisplayFromStr;
 use twox_hash::XxHash64;
 
 #[serde_as]
+#[serde_with::skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct Entry {
@@ -37,6 +38,7 @@ pub(crate) struct Entry {
     pub(crate) group: String,
     #[serde(default)]
     pub(crate) text: Option<String>,
+    #[serde_as(as = "Option<DisplayFromStr>")]
     #[serde(default)]
     pub(crate) content_hash: Option<u64>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
@@ -78,9 +80,9 @@ impl Entry {
             let contents = std::fs::read(path).context("while reading file")?;
             let mut hasher = XxHash64::with_seed(0);
             hasher.write(&contents);
-            (String::from_utf8(contents).ok(), hasher.finish())
+            (String::from_utf8(contents).ok(), Some(hasher.finish()))
         } else {
-            (None, 0)
+            (None, None)
         };
         let xattrs = xattr::list(path)
             .context("while listing xattrs")?
@@ -105,11 +107,7 @@ impl Entry {
                 .to_string(),
             file_type: FileType::from(meta.file_type()),
             xattrs,
-            content_hash: if text.is_none() {
-                Some(content_hash)
-            } else {
-                None
-            },
+            content_hash: if text.is_none() { content_hash } else { None },
             text,
         })
     }

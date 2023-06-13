@@ -116,7 +116,7 @@ fn main() -> Result<()> {
             .expect("this must be relative");
         if !paths_that_exist_in_layer.contains(relpath) {
             let entry = Entry::new(fs_entry.path(), &parent_userdb, &parent_groupdb)
-                .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
+                .with_context(|| format!("while building Entry for '{}'", relpath.display()))?;
             entries.insert(relpath.to_path_buf(), Diff::Removed(entry));
         }
     }
@@ -136,7 +136,8 @@ fn main() -> Result<()> {
                     TextDiff::from_lines(
                         &toml::to_string_pretty(expected.as_inner())
                             .context("while (re)serializing expected")?,
-                        &toml::to_string_pretty(&diff).context("while serializing actual diff")?,
+                        &toml::to_string_pretty(&diff)
+                            .with_context(|| format!("while serializing actual diff: {diff:#?}"))?,
                     )
                     .unified_diff()
                     .context_radius(3)

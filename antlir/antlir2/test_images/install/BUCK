@@ -1,7 +1,9 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary", "rust_binary")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_test", "export_file", "python_binary", "rust_binary")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
 image.layer(
     name = "base",
@@ -11,6 +13,24 @@ image.layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
+image.layer(
+    name = "install-file",
+    features = [
+        feature.install(
+            src = "hello.txt",
+            dst = "/hello",
+            mode = "a+rw",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-install-file",
+    diff = "install-file.toml",
+    layer = ":install-file",
+)
+
 buck_genrule(
     name = "genrule-dir",
     out = "out",
@@ -18,6 +38,7 @@ buck_genrule(
       mkdir $OUT
       mkdir $OUT/foo
       touch $OUT/foo/bar
+      echo "I am bar" > $OUT/foo/bar
     """,
 )
 
@@ -31,6 +52,12 @@ image.layer(
         ),
     ],
     parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-install-dir",
+    diff = "install-dir.toml",
+    layer = ":install-dir",
 )
 
 image.layer(
@@ -48,10 +75,10 @@ image.layer(
     parent_layer = ":install-dir",
 )
 
-image_sh_test(
-    name = "test-installed-dir",
+image_diff_test(
+    name = "test-child-image-install-dir",
+    diff = "child-image-install-dir.toml",
     layer = ":child-image-install-dir",
-    test = "test_installed_dir.sh",
 )
 
 # use a fresh binaries that we know will not have already been materialized for
@@ -107,4 +134,36 @@ image_python_test(
     name = "test-installed-binary",
     srcs = ["test_installed_binary.py"],
     layer = ":installed-binary",
+)
+
+export_file(
+    name = "true.precompiled",
+)
+
+buck_genrule(
+    name = "deterministic-binary",
+    cmd = "cp --reflink=auto $(location :true.precompiled) $OUT",
+    executable = True,
+)
+
+# precompiled binary so that image_diff_test can be used to validate the split
+# debug info support
+image.layer(
+    name = "deterministic-split-debuginfo",
+    features = [
+        feature.install(
+            src = ":deterministic-binary",
+            dst = "/true",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-deterministic-split-debuginfo",
+    diff = "deterministic-split-debuginfo.opt.toml",
+    layer = ":deterministic-split-debuginfo",
+) if not REPO_CFG.artifacts_require_repo else buck_sh_test(
+    name = "test-deterministic-split-debuginfo",
+    test = ":true-rs",
 )
