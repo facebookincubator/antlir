@@ -6,6 +6,7 @@ rust_library(
     deps = [
         "derivative",
         "serde",
+        "serde_json",
         "//antlir/buck/buck_label:buck_label",
     ],
 )

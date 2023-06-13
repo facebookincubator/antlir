@@ -65,8 +65,6 @@ def tarball_analyze(
             mode = 0o755,
             user = user,
             group = group,
-            separate_debug_symbols = False,
-            dev_mode = False,
         ),
         feature_type = "install",
         required_artifacts = [extracted],

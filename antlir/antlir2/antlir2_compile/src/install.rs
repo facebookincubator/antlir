@@ -10,8 +10,12 @@ use std::fs::FileTimes;
 use std::fs::Permissions;
 use std::os::unix::fs::fchown;
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 
+use antlir2_features::install::BinaryInfo;
 use antlir2_features::install::Install;
+use antlir2_features::install::InstalledBinary;
+use antlir2_users::Id;
 use tracing::debug;
 use walkdir::WalkDir;
 
@@ -24,6 +28,8 @@ use crate::Result;
 impl<'a> CompileFeature for Install<'a> {
     #[tracing::instrument(name = "install", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+        let uid = ctx.uid(self.user.name())?;
+        let gid = ctx.gid(self.group.name())?;
         if self.src.is_dir() {
             debug!("{:?} is a dir", self.src);
             if !self.is_dir() {
@@ -54,13 +60,12 @@ impl<'a> CompileFeature for Install<'a> {
                     continue;
                 }
 
-                // For installing directories, we chown all the copied files as root.
-                // Otherwise the files would be owned by the build user, which is
-                // most certainly not what was intended.  Until we have a better
-                // way of describing in the API what user should own the copied
-                // directory and all of the contents, we replicate the current
-                // Antlir1 behavior, which is to have everything owned by root.
-                copy_with_metadata(entry.path(), &dst_path, Some(0), Some(0))?;
+                copy_with_metadata(
+                    entry.path(),
+                    &dst_path,
+                    Some(uid.as_raw()),
+                    Some(gid.as_raw()),
+                )?;
             }
         } else {
             if self.is_dir() {
@@ -70,25 +75,68 @@ impl<'a> CompileFeature for Install<'a> {
                 });
             }
             let dst = ctx.dst_path(&self.dst);
-            if self.dev_mode {
-                // If we are installing a buck-built binary in @mode/dev, it must be
-                // executed from the exact same path so that it can find relatively
-                // located .so libraries. There are two ways to do this:
-                // 1) make a symlink to the binary
-                // 2) install a shell script that `exec`s the real binary at the right
-                // path
-                //
-                // Antlir2 chooses option 1, since it's substantially simpler and does
-                // not require any assumptions about the layer (like /bin/sh even
-                // existing).
-                let src_abspath = std::fs::canonicalize(&self.src)?;
-                std::os::unix::fs::symlink(src_abspath, &dst)?;
-            } else {
-                std::fs::copy(&self.src, &dst)?;
-                let uid = ctx.uid(self.user.name())?;
-                let gid = ctx.gid(self.group.name())?;
 
-                let dst_file = File::options().write(true).open(&dst)?;
+            let dst_file = match &self.binary_info {
+                Some(binary_info) => match binary_info {
+                    BinaryInfo::Dev => {
+                        // If we are installing a buck-built binary in @mode/dev, it must be
+                        // executed from the exact same path so that it can find relatively
+                        // located .so libraries. There are two ways to do this:
+                        // 1) make a symlink to the binary
+                        // 2) install a shell script that `exec`s the real binary at the right
+                        // path
+                        //
+                        // Antlir2 chooses option 1, since it's substantially simpler and does
+                        // not require any assumptions about the layer (like /bin/sh even
+                        // existing).
+                        let src_abspath = std::fs::canonicalize(&self.src)?;
+                        std::os::unix::fs::symlink(src_abspath, &dst)?;
+                        None
+                    }
+                    BinaryInfo::Installed(InstalledBinary {
+                        debuginfo,
+                        metadata,
+                    }) => {
+                        if metadata.elf {
+                            let debuginfo_dst = ctx
+                                .dst_path(match metadata.buildid.as_ref() {
+                                    Some(buildid) => Path::new("/usr/lib/debug/.build-id")
+                                        .join(&buildid[..2])
+                                        .join(&buildid[2..]),
+                                    None => Path::new("/usr/lib/debug")
+                                        .join(self.dst.strip_prefix("/").unwrap_or(&self.dst)),
+                                })
+                                .with_extension("debug");
+                            std::fs::create_dir_all(
+                                debuginfo_dst
+                                    .parent()
+                                    .expect("debuginfo_dst will always have parent"),
+                            )?;
+                            copy_with_metadata(
+                                debuginfo,
+                                &debuginfo_dst,
+                                Some(uid.as_raw()),
+                                Some(gid.as_raw()),
+                            )?;
+                        }
+                        copy_with_metadata(
+                            &self.src,
+                            &dst,
+                            Some(uid.as_raw()),
+                            Some(gid.as_raw()),
+                        )?;
+                        let dst_file = File::options().write(true).open(&dst)?;
+                        Some(dst_file)
+                    }
+                },
+                None => {
+                    std::fs::copy(&self.src, &dst)?;
+                    let dst_file = File::options().write(true).open(&dst)?;
+                    Some(dst_file)
+                }
+            };
+
+            if let Some(dst_file) = dst_file {
                 fchown(&dst_file, Some(uid.into()), Some(gid.into()))
                     .map_err(std::io::Error::from)?;
                 dst_file.set_permissions(Permissions::from_mode(self.mode.as_raw()))?;
