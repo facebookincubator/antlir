@@ -6,7 +6,7 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
-load("//metalos/host_configs/tests/bzl:defs.bzl", "host_config")
+load("//metalos/host_configs/tests:host.bzl", "host_config")
 load(":kernel.bzl", "normalize_kernel")
 
 def _host_config(kernel_version):
