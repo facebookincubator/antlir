@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 rust_library(
     name = "antlir2_isolate",
@@ -6,5 +6,16 @@ rust_library(
     deps = [
         "nix",
         "uuid",
+    ],
+)
+
+rust_binary(
+    name = "cli",
+    srcs = ["main.rs"],
+    unittests = False,
+    deps = [
+        "anyhow",
+        "clap",
+        ":antlir2_isolate",
     ],
 )

@@ -34,6 +34,16 @@ class AntlirPlugin(dnf.Plugin):
         antlir2_dnf_base.configure_base(
             base=self.base, set_persistdir_under_installroot=False
         )
+        # Patch the base download_packages function so that it does not do
+        # anything. For local repositories all it does is check checksums, but
+        # we've already verified the checksum with buck2, and possibly changed
+        # the file on disk in the case of rpm2extents. This is perfectly safe.
+        def _noop_download(*args, **kwargs):
+            assert (
+                not self.base.conf.destdir
+            ), "destdir requires copying packages which is not implemented (yet)"
+
+        self.base.download_packages = _noop_download
 
     def resolved(self):
         try:

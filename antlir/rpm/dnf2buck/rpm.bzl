@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/dnf:reflink.bzl", "REFLINK_FLAVORS", "rpm2extents")
 load("//antlir/bzl:types.bzl", "types")
 
 nevra = record(
@@ -33,9 +35,10 @@ def package_href(nevra: [nevra.type, str.type], id: str.type) -> str.type:
     return "Packages/{id}/{nevra}.rpm".format(id = id, nevra = nevra)
 
 RpmInfo = provider(fields = {
+    "extents": ".rpm transformed by rpm2extents",
     "nevra": "RPM NEVRA",
     "pkgid": "checksum (sha256 or sha1, usually sha256)",
-    "rpm": ".rpm file artifact",
+    "raw_rpm": ".rpm file artifact",
     "xml": "combined xml chunks",
 })
 
@@ -76,24 +79,62 @@ def _impl(ctx: "context") -> ["provider"]:
 
     xml = ctx.attrs.xml or _make_xml(ctx, rpm_file, href)
 
+    return common_impl(
+        ctx = ctx,
+        nevra = pkg_nevra,
+        rpm = rpm_file,
+        xml = xml,
+        pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
+        antlir2_isolate = ctx.attrs.antlir2_isolate[RunInfo],
+        reflink_flavors = {name: dep[LayerInfo] for name, dep in ctx.attrs.reflink_flavors.items()},
+    )
+
+def common_impl(
+        ctx: "context",
+        nevra: "nevra",
+        rpm: "artifact",
+        xml: "artifact",
+        pkgid: str.type,
+        antlir2_isolate: "RunInfo",
+        reflink_flavors: {str.type: "LayerInfo"}) -> ["provider"]:
+    # Produce an rpm2extents artifact for each flavor. This is tied specifically
+    # to the version of `rpm` being used in the build appliance, and should be
+    # broadly compatible in practice, especially within os versions (eg if we
+    # ever end up with centos9-untested in antlir2, it could use the centos9
+    # reflink flavor). rpm will reject any version mismatch so the worst that
+    # can happen is builds will fail, not be incorrect.
+    #
+    # Ideally, these reflink artifacts would be constructed on-demand as
+    # anonymous targets, but since we don't know the full depgraph of rpms, it's
+    # too late at that point, and it's a huge efficiency win to only build them
+    # once per reflink flavor that we put it directly onto the provider
+    extents = {
+        name: ctx.actions.declare_output("{}_extents.rpm".format(name))
+        for name in reflink_flavors
+    }
+    for name, appliance in reflink_flavors.items():
+        rpm2extents(ctx, antlir2_isolate, rpm, extents[name], appliance, name)
     return [
-        DefaultInfo(default_outputs = [rpm_file], sub_targets = {
+        DefaultInfo(default_outputs = [rpm], sub_targets = {
             "xml": [DefaultInfo(xml)],
         }),
         RpmInfo(
-            nevra = pkg_nevra,
-            rpm = rpm_file,
-            pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
+            nevra = nevra,
+            raw_rpm = rpm,
+            pkgid = pkgid,
             xml = xml,
+            extents = extents,
         ),
     ]
 
 rpm = rule(
     impl = _impl,
     attrs = {
+        "antlir2_isolate": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_isolate:cli")),
         "arch": attrs.string(),
         "epoch": attrs.int(),
         "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makechunk")),
+        "reflink_flavors": attrs.dict(attrs.string(), attrs.dep(providers = [LayerInfo]), default = REFLINK_FLAVORS),
         "release": attrs.string(),
         "rpm": attrs.option(attrs.source(), default = None),
         "rpm_name": attrs.string(),

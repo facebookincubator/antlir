@@ -6,7 +6,6 @@
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/rpm/dnf2buck:rpm.bzl", "nevra_to_string", "package_href")
 
 def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo", None]) -> "artifact":
@@ -29,11 +28,25 @@ def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo
     ctx.actions.copied_dir(dir, tree)
     return dir
 
+def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: [str.type, None]) -> "artifact":
+    if not reflink_flavor:
+        return rpm_info.raw_rpm
+    else:
+        # The default behavior is to fail the build if the flavor is reflinkable
+        # and the rpm does not have any reflinkable artifacts. This is a safety
+        # mechanism to ensure we don't silently regress rpm reflink support. If
+        # that regressed, installations would still succeed but be orders of
+        # magnitude slower, so instead we want to scream very loudly.
+        if reflink_flavor not in rpm_info.extents:
+            fail("{} does not have a reflinkable artifact for {}".format(rpm_info.nevra, reflink_flavor))
+        return rpm_info.extents[reflink_flavor]
+
 def compiler_plan_to_local_repos(
         ctx: "context",
         identifier_prefix: str.type,
         dnf_available_repos: ["RepoSetInfo", None],
-        compiler_plan: "artifact") -> "artifact":
+        compiler_plan: "artifact",
+        reflink_flavor: [str.type, None]) -> "artifact":
     """
     Use the compiler plan to build a directory of all the RPM repodata and RPM
     blobs we need to perform the dnf installations in the image.
@@ -74,18 +87,30 @@ def compiler_plan_to_local_repos(
                     rpm_i = repo["nevras"][install["nevra"]]
                     for key in repo_i.gpg_keys:
                         tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
-                    tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = rpm_i.rpm
+
+                    tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = _best_rpm_artifact(
+                        rpm_info = rpm_i,
+                        reflink_flavor = reflink_flavor,
+                    )
 
         # copied_dir instead of symlink_dir so that this can be directly bind
         # mounted into the container
         ctx.actions.copied_dir(outputs[dir], tree)
 
+    # to determine which dependencies it needs out of the set of every available
+    # rpm, but we also want the efficient reflinkable artifacts
+    inputs = []
+    for repo in by_repo.values():
+        for rpm_info in repo["nevras"].values():
+            inputs.append(_best_rpm_artifact(
+                rpm_info = rpm_info,
+                reflink_flavor = reflink_flavor,
+            ))
+
     ctx.actions.dynamic_output(
         # the dynamic action reads this
         dynamic = [compiler_plan],
-        # to determine which dependencies it needs out of the set of every
-        # available rpm
-        inputs = flatten.flatten([[rpm_info.rpm for rpm_info in repo["nevras"].values()] for repo in by_repo.values()]),
+        inputs = inputs,
         # to produce this, a directory that contains a (partial, but complete
         # for the transaction) copy of the repos needed to do the installation
         outputs = [dir],

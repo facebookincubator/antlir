@@ -196,7 +196,13 @@ def _impl(ctx: "context") -> ["provider"]:
             # and mount in a pre-built directory of all repositories for
             # completely-offline dnf installation (which is MUCH faster and more
             # reliable)
-            dnf_repos_dir = compiler_plan_to_local_repos(ctx, identifier_prefix, dnf_available_repos, plan)
+            dnf_repos_dir = compiler_plan_to_local_repos(
+                ctx,
+                identifier_prefix,
+                dnf_available_repos,
+                plan,
+                flavor_info.dnf_info.reflink_flavor,
+            )
         else:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})

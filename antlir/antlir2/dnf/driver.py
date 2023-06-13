@@ -272,7 +272,7 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
         )
     except Exception as e:
         with out as o:
-            json.dump({"tx_error": str(e)})
+            json.dump({"tx_error": str(e)}, o)
 
 
 def driver(spec) -> None:
@@ -335,16 +335,15 @@ def driver(spec) -> None:
         if pkg.reponame == hawkey.CMDLINE_REPO_NAME or not pkg.repo.gpgkey:
             continue
 
+        # Always make sure that the key is imported
+        try:
+            base.package_import_key(pkg)
+        except Exception:
+            pass
+
         code, error = base.package_signature_check(pkg)
         if code == 0:
             continue  # gpg check is ok!
-        elif code == 1:
-            # If the key(s) for the repo aren't installed, install them now,
-            # which also checks the signature on this package
-            try:
-                base.package_import_key(pkg)
-            except Exception as e:
-                gpg_errors[pkg] = str(e)
         else:
             gpg_errors[pkg] = error
 
