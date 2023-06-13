@@ -4,21 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
-
-_STR_LIST_OR_SELECTOR = types.or_selector([str.type])
-_STR_OR_SELECTOR = types.or_selector(str.type)
-_BOOL_OR_SELECTOR = types.or_selector(bool.type)
-
-types.lint_noop(_STR_LIST_OR_SELECTOR, _STR_OR_SELECTOR, _BOOL_OR_SELECTOR)
 
 def genrule(
         *,
-        cmd: _STR_LIST_OR_SELECTOR,
-        user: _STR_OR_SELECTOR = "nobody",
-        boot: _BOOL_OR_SELECTOR = False,
-        bind_repo_ro: _BOOL_OR_SELECTOR = False) -> ParseTimeFeature.type:
+        cmd: [[str.type], "selector"],
+        user: [str.type, "selector"] = "nobody",
+        boot: [bool.type, "selector"] = False,
+        bind_repo_ro: [bool.type, "selector"] = False) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "genrule",
         kwargs = {

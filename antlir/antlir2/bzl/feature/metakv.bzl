@@ -3,21 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
-
-_STR_OR_SELECTOR = types.or_selector(str.type)
-_REQUIRE_KEYS_T = types.or_selector([types.or_selector(str.type)])
-_BOOL_OR_SELECTOR = types.or_selector(bool.type)
-
-types.lint_noop(_STR_OR_SELECTOR, _REQUIRE_KEYS_T, _BOOL_OR_SELECTOR)
 
 def metakv_store(
         *,
-        key: _STR_OR_SELECTOR,
-        value: _STR_OR_SELECTOR,
-        require_keys: _REQUIRE_KEYS_T = [],
-        store_if_not_exists: _BOOL_OR_SELECTOR = False) -> ParseTimeFeature.type:
+        key: [str.type, "selector"],
+        value: [str.type, "selector"],
+        require_keys: [[[str.type, "selector"]], "selector"] = [],
+        store_if_not_exists: [bool.type, "selector"] = False) -> ParseTimeFeature.type:
     """
     `metakv_store("key", "value")` writes the key value pair into
     the META_KEY_VALUE_STORE_FILE in the image. This can be read later. It is enforced that
@@ -49,7 +42,7 @@ def metakv_store(
         },
     )
 
-def metakv_remove(*, key: _STR_OR_SELECTOR):
+def metakv_remove(*, key: [str.type, "selector"]):
     """
     `metakv_remove("key")` removes the key value pair that was written into the
     META_KEY_VALUE_STORE_FILE in the image. This throws an error if the key is

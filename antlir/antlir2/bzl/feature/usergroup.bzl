@@ -3,26 +3,19 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
 
-_STR_OR_SELECTOR = types.or_selector(str.type)
-_UID_T = types.optional(types.or_selector(int.type))
-_SUPPLEMENTARY_GROUPS_T = types.or_selector([str.type])
-
-types.lint_noop(_STR_OR_SELECTOR, _UID_T, _SUPPLEMENTARY_GROUPS_T)
-
 def user_add(
         *,
-        username: _STR_OR_SELECTOR,
-        primary_group: _STR_OR_SELECTOR,
-        home_dir: _STR_OR_SELECTOR,
-        shell: _STR_OR_SELECTOR = SHELL_NOLOGIN,
-        uid: _UID_T = None,
-        supplementary_groups: _SUPPLEMENTARY_GROUPS_T = [],
+        username: [str.type, "selector"],
+        primary_group: [str.type, "selector"],
+        home_dir: [str.type, "selector"],
+        shell: [str.type, "selector"] = SHELL_NOLOGIN,
+        uid: [int.type, "selector", None] = None,
+        supplementary_groups: [[[str.type, "selector"]], "selector"] = [],
         comment: [str.type, None] = None) -> ParseTimeFeature.type:
     """
     Add a user entry to /etc/passwd.
@@ -68,8 +61,8 @@ def user_add(
 
 def group_add(
         *,
-        groupname: _STR_OR_SELECTOR,
-        gid: _UID_T = None) -> ParseTimeFeature.type:
+        groupname: [str.type, "selector"],
+        gid: [int.type, "selector", None] = None) -> ParseTimeFeature.type:
     """
     Add a group entry to /etc/group
 
@@ -85,21 +78,17 @@ def group_add(
         },
     )
 
-_ADD_SUPPLEMENTARY_GROUPS_T = types.optional(types.or_selector([str.type]))
-
-types.lint_noop(_ADD_SUPPLEMENTARY_GROUPS_T)
-
 def usermod(
         *,
-        username: _STR_OR_SELECTOR,
-        add_supplementary_groups: _ADD_SUPPLEMENTARY_GROUPS_T = None) -> ParseTimeFeature.type:
+        username: [str.type, "selector"],
+        add_supplementary_groups: [[[str.type, "selector"]], "selector"] = []) -> ParseTimeFeature.type:
     """
     Modify an existing entry in the /etc/passwd and /etc/group databases
     """
     return ParseTimeFeature(
         feature_type = "user_mod",
         kwargs = {
-            "add_supplementary_groups": add_supplementary_groups or [],
+            "add_supplementary_groups": add_supplementary_groups,
             "username": username,
         },
     )

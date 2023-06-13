@@ -3,18 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
-
-_STR_OR_SELECTOR = types.or_selector(str.type)
-
-types.lint_noop(_STR_OR_SELECTOR)
 
 def _symlink_feature(
         *,
-        link: _STR_OR_SELECTOR,
-        target: _STR_OR_SELECTOR,
-        feature_type: _STR_OR_SELECTOR) -> ParseTimeFeature.type:
+        link: [str.type, "selector"],
+        target: [str.type, "selector"],
+        feature_type: [str.type, "selector"]) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = feature_type,
         kwargs = {

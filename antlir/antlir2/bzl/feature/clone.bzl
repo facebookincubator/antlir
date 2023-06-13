@@ -4,19 +4,14 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
-_STR_OR_SELECTOR = types.or_selector(str.type)
-
-types.lint_noop(_STR_OR_SELECTOR)
-
 def clone(
         *,
-        src_layer: _STR_OR_SELECTOR,
-        src_path: _STR_OR_SELECTOR,
-        dst_path: _STR_OR_SELECTOR) -> ParseTimeFeature.type:
+        src_layer: [str.type, "selector"],
+        src_path: [str.type, "selector"],
+        dst_path: [str.type, "selector"]) -> ParseTimeFeature.type:
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.

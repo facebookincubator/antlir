@@ -6,22 +6,16 @@
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:stat.bzl", "stat")
-load("//antlir/bzl:types.bzl", "types")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
-
-_STR_OR_SELECTOR = types.or_selector(str.type)
-_BOOL_OR_SELECTOR = types.or_selector(bool.type)
-
-types.lint_noop(_STR_OR_SELECTOR, _BOOL_OR_SELECTOR)
 
 def install(
         *,
-        src: _STR_OR_SELECTOR,
-        dst: _STR_OR_SELECTOR,
+        src: [str.type, "selector"],
+        dst: [str.type, "selector"],
         mode: [int.type, str.type, "selector", None] = None,
-        user: _STR_OR_SELECTOR = "root",
-        group: _STR_OR_SELECTOR = "root",
-        separate_debug_symbols: _BOOL_OR_SELECTOR = True) -> ParseTimeFeature.type:
+        user: [str.type, "selector"] = "root",
+        group: [str.type, "selector"] = "root",
+        separate_debug_symbols: [bool.type, "selector"] = True) -> ParseTimeFeature.type:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
