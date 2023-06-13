@@ -1,14 +1,12 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_binary", "rust_binary")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary", "rust_binary")
 
 image.layer(
     name = "base",
     features = [
-        feature.rpms_install(
-            rpms = ["bash"],
-        ),
+        feature.rpms_install(rpms = ["bash"]),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -65,6 +63,13 @@ rust_binary(
     unittests = False,
 )
 
+# hide that this is a binary using an export_file, otherwise antlir2 will apply
+# the binary split debuginfo feature
+export_file(
+    name = "true-rs.unstripped",
+    src = ":true-rs",
+)
+
 python_binary(
     name = "true-py",
     srcs = ["true.py"],
@@ -78,22 +83,28 @@ image.layer(
             rpms = [
                 "bash",
                 "coreutils",
+                "gdb",
+                # @oss-disable
             ],
         ),
         feature.install(
             src = ":true-rs",
-            dst = "/true-rs",
+            dst = "/usr/bin/true-rs",
+        ),
+        feature.install(
+            src = ":true-rs.unstripped",
+            dst = "/usr/bin/true-rs.unstripped",
         ),
         feature.install(
             src = ":true-py",
-            dst = "/true-py",
+            dst = "/usr/bin/true-py",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-image_sh_test(
-    name = "test-installed-binary-runs",
+image_python_test(
+    name = "test-installed-binary",
+    srcs = ["test_installed_binary.py"],
     layer = ":installed-binary",
-    test = "test_installed_binary_runs.sh",
 )

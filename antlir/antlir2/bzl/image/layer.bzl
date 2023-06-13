@@ -285,6 +285,8 @@ def _impl(ctx: "context") -> ["provider"]:
     if ctx.attrs.parent_layer:
         sub_targets["parent_layer"] = ctx.attrs.parent_layer.providers
 
+    sub_targets["features"] = ctx.attrs.features.providers
+
     return [
         LayerInfo(
             build_appliance = build_appliance,

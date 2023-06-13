@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:stat.bzl", "stat")
@@ -14,8 +15,7 @@ def install(
         dst: [str.type, "selector"],
         mode: [int.type, str.type, "selector", None] = None,
         user: [str.type, "selector"] = "root",
-        group: [str.type, "selector"] = "root",
-        separate_debug_symbols: [bool.type, "selector"] = True) -> ParseTimeFeature.type:
+        group: [str.type, "selector"] = "root") -> ParseTimeFeature.type:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -43,10 +43,20 @@ def install(
             "dst": dst,
             "group": group,
             "mode": mode,
-            "separate_debug_symbols": separate_debug_symbols,
             "user": user,
         },
+        analyze_uses_context = True,
     )
+
+installed_binary = record(
+    debuginfo = field(["artifact", None], default = None),
+    metadata = field(["artifact", None], default = None),
+)
+
+binary_record = record(
+    dev = field([bool.type, None], default = None),
+    installed = field([installed_binary.type, None], default = None),
+)
 
 install_record = record(
     src = "artifact",
@@ -54,20 +64,20 @@ install_record = record(
     mode = int.type,
     user = str.type,
     group = str.type,
-    separate_debug_symbols = bool.type,
-    dev_mode = bool.type,
+    binary_info = field([binary_record.type, None], default = None),
 )
 
 def install_analyze(
+        ctx: "AnalyzeFeatureContext",
         dst: str.type,
         group: str.type,
         mode: [int.type, None],
         user: str.type,
-        separate_debug_symbols: bool.type,
         deps_or_sources: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
     src = deps_or_sources["src"]
-    dev_mode = False
+    binary_info = None
     required_run_infos = []
+    required_artifacts = []
     if type(src) == "dependency":
         if mode == None:
             if RunInfo in src:
@@ -87,10 +97,30 @@ def install_analyze(
             # dependencies of this binary are made available on the local
             # machine
             required_run_infos.append(src[RunInfo])
-            if REPO_CFG.artifacts_require_repo:
-                dev_mode = True
 
-        src = ensure_single_output(src)
+            # dev mode binaries don't get stripped, they just get symlinked
+            if REPO_CFG.artifacts_require_repo:
+                src = ensure_single_output(src)
+                binary_info = binary_record(
+                    dev = True,
+                )
+            else:
+                split_anon_target = ctx.actions.anon_target(split_binary, {
+                    "cxx_toolchain": ctx.toolchains.cxx,
+                    "name": "debuginfo//:" + ensure_single_output(src).short_path,
+                    "src": src,
+                })
+                binary_info = binary_record(
+                    installed = installed_binary(
+                        debuginfo = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].debuginfo)),
+                        metadata = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].metadata)),
+                    ),
+                )
+                required_artifacts.extend([binary_info.installed.debuginfo, binary_info.installed.metadata])
+                src = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].stripped))
+        else:
+            src = ensure_single_output(src)
+            binary_info = None
     elif type(src) == "artifact":
         # If the source is an artifact, that means it was given as an
         # `attrs.source()`, and is thus not a dependency.
@@ -105,9 +135,8 @@ def install_analyze(
             mode = mode,
             user = user,
             group = group,
-            separate_debug_symbols = separate_debug_symbols,
-            dev_mode = dev_mode,
+            binary_info = binary_info,
         ),
-        required_artifacts = [src],
+        required_artifacts = [src] + required_artifacts,
         required_run_infos = required_run_infos,
     )

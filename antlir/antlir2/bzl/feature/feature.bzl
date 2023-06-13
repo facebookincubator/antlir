@@ -52,6 +52,7 @@ added to the `_analyze_feature` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("@prelude//cxx:cxx_toolchain_types.bzl", "CxxToolchainInfo")
 load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
@@ -63,7 +64,7 @@ load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":clone.bzl", "clone_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
-load(":feature_info.bzl", "AnalyzeFeatureContext")
+load(":feature_info.bzl", "AnalyzeFeatureContext", "Toolchains")
 load(":genrule.bzl", "genrule_analyze")
 load(":install.bzl", "install_analyze")
 load(":metakv.bzl", "metakv_analyze")
@@ -138,6 +139,9 @@ def _impl(ctx: "context") -> ["provider"]:
                 toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo],
                 unique_action_identifier = key,
                 actions = ctx.actions,
+                toolchains = Toolchains(
+                    cxx = ctx.attrs.cxx_toolchain,
+                ),
             )
 
         analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
@@ -200,6 +204,7 @@ _nestable_value = attrs.one_of(
 _feature = rule(
     impl = _impl,
     attrs = {
+        "cxx_toolchain": attrs.toolchain_dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]),
         # feature targets are instances of `_feature` rules that are merged into
         # the output of this rule
         "feature_targets": attrs.list(

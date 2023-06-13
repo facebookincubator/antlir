@@ -62,10 +62,15 @@ FeatureAnalysis = record(
     build_phase = field(BuildPhase.type, default = BuildPhase(None)),
 )
 
+Toolchains = record(
+    cxx = "dependency",
+)
+
 AnalyzeFeatureContext = record(
     toolchain = Antlir2ToolchainInfo.type,
     unique_action_identifier = str.type,
     actions = "actions",
+    toolchains = Toolchains.type,
 )
 
 def data_only_feature_analysis_fn(record_type, build_phase: BuildPhase.type = BuildPhase(None)):
