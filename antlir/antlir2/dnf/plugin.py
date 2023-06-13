@@ -31,7 +31,9 @@ class AntlirPlugin(dnf.Plugin):
         antlir2_dnf_base.add_repos(base=self.base, repos_dir="/__antlir2__/dnf/repos")
 
     def config(self):
-        antlir2_dnf_base.configure_base(base=self.base)
+        antlir2_dnf_base.configure_base(
+            base=self.base, set_persistdir_under_installroot=False
+        )
 
     def resolved(self):
         try:
