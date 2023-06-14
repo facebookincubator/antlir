@@ -5,6 +5,7 @@
 
 # @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
+load("@fbsource//tools/build_defs/buck2:is_buck2.bzl", "is_buck2")
 load("//antlir/bzl:types.bzl", "types")
 
 def _flatten_any(lst):
@@ -20,11 +21,14 @@ def _flatten_any(lst):
 def _typed_flattener(item_type) -> types.function:
     types.lint_noop(item_type)
 
-    # At a glance, this does not appear to do anything that interesting, but
-    # buck2 will validate that the return type matches the hint here so this
-    # gives us strong typing
-    def _flatten(lst) -> [item_type]:
-        return _flatten_any(lst)
+    # @lint-ignore BUCKLINT
+    t = native.eval_type([item_type]) if is_buck2() else ""
+
+    def _flatten(lst):
+        r = _flatten_any(lst)
+        if is_buck2():
+            t.check_matches(r)
+        return r
 
     return _flatten
 
