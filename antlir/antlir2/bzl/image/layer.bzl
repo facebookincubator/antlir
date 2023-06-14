@@ -21,10 +21,8 @@ def _map_image(
         cmd: "cmd_args",
         identifier: str.type,
         build_appliance: LayerInfo.type,
-        parent: [
-            "artifact",
-            None,
-        ]) -> ("cmd_args", "artifact"):
+        parent: ["artifact", None],
+        logs: "artifact") -> ("cmd_args", "artifact"):
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
     produce a new image.
@@ -35,6 +33,7 @@ def _map_image(
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
         toolchain.antlir2[RunInfo],
+        cmd_args(logs.as_output(), format = "--logs={}"),
         "map",
         "--working-dir=antlir2-out",
         cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
@@ -116,13 +115,14 @@ def _impl(ctx: "context") -> ["provider"]:
     parent_depgraph = ctx.attrs.parent_layer[LayerInfo].depgraph if ctx.attrs.parent_layer else None
     final_subvol = None
     final_depgraph = None
-    phased_subvols = {}
+    debug_sub_targets = {}
 
     for phase in BuildPhase.values():
         phase = BuildPhase(phase)
-        creator = []
+        build_cmd = []
+        logs = {}
 
-        identifier_prefix = phase.value + "_" if phase.value else ""
+        identifier_prefix = phase.value + "_"
         features = [
             feat
             for feat in all_features
@@ -133,7 +133,7 @@ def _impl(ctx: "context") -> ["provider"]:
         # this is the final phase and nothing has been built yet, we need to
         # fall through and produce an empty subvolume so it can still be used as
         # a parent_layer and/or snapshot its own parent's contents
-        if not features and not (phase == BuildPhase(None) and parent_layer == None):
+        if not features and not (phase == BuildPhase("compile") and parent_layer == None):
             continue
 
         # JSON file for only the features that are part of this BuildPhase
@@ -175,6 +175,7 @@ def _impl(ctx: "context") -> ["provider"]:
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
             plan = ctx.actions.declare_output(identifier_prefix + "plan.json")
+            logs["plan"] = ctx.actions.declare_output(identifier_prefix + "plan.log")
             cmd, _ = _map_image(
                 build_appliance = build_appliance[LayerInfo],
                 cmd = cmd_args(
@@ -188,8 +189,9 @@ def _impl(ctx: "context") -> ["provider"]:
                 ctx = ctx,
                 identifier = identifier_prefix + "plan",
                 parent = parent_layer,
+                logs = logs["plan"],
             )
-            creator.append(cmd)
+            build_cmd.append(cmd)
 
             # Part of the compiler plan is any possible dnf transaction resolution,
             # which lets us know what rpms we will need. We can have buck download them
@@ -207,6 +209,7 @@ def _impl(ctx: "context") -> ["provider"]:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
 
+        logs["compile"] = ctx.actions.declare_output(identifier_prefix + "compile.log")
         cmd, final_subvol = _map_image(
             build_appliance = build_appliance[LayerInfo],
             cmd = cmd_args(
@@ -219,11 +222,9 @@ def _impl(ctx: "context") -> ["provider"]:
             ctx = ctx,
             identifier = identifier_prefix + "compile",
             parent = parent_layer,
+            logs = logs["compile"],
         )
-        creator.append(cmd)
-
-        if phase.value:
-            phased_subvols[phase.value] = {"creator": creator, "subvol": final_subvol}
+        build_cmd.append(cmd)
 
         if build_phase.is_predictable(phase):
             final_depgraph = depgraph_input
@@ -240,6 +241,35 @@ def _impl(ctx: "context") -> ["provider"]:
                 subvol = final_subvol,
             )
 
+        build_script = ctx.actions.write(
+            "{}_build.sh".format(identifier_prefix),
+            cmd_args(
+                "#!/bin/bash",
+                "set -e",
+                "export RUST_LOG=\"antlir2=trace\"",
+                cmd_args(build_cmd, delimiter = "\n", quote = "shell"),
+                delimiter = "\n",
+            ),
+            is_executable = True,
+        )
+
+        phase_mounts = all_mounts(
+            features = features,
+            parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+        )
+        all_logs = ctx.actions.declare_output(identifier_prefix + "logs", dir = True)
+        ctx.actions.symlinked_dir(all_logs, {key + ".log": artifact for key, artifact in logs.items()})
+        debug_sub_targets[phase.value] = [
+            DefaultInfo(
+                sub_targets = {
+                    "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
+                    "logs": [DefaultInfo(all_logs)],
+                    "nspawn": _nspawn_sub_target(final_subvol, mounts = phase_mounts),
+                    "subvol": [DefaultInfo(final_subvol)],
+                },
+            ),
+        ]
+
         parent_layer = final_subvol
         parent_depgraph = final_depgraph
 
@@ -251,7 +281,6 @@ def _impl(ctx: "context") -> ["provider"]:
         final_subvol = parent_layer
 
     sub_targets = {}
-    debug_sub_targets = {}
 
     # Expose the build appliance as a subtarget so that it can be used by test
     # macros like image_rpms_test. Generally this should be accessed by the
@@ -267,27 +296,8 @@ def _impl(ctx: "context") -> ["provider"]:
         parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
     )
 
-    for phase, phase_info in phased_subvols.items():
-        debug_script = [[cmd_args(cmd, delimiter = " \\\n  ", quote = "shell"), "\n"] for cmd in phase_info["creator"]]
-        debug_cmd = cmd_args("bash", "-c", "-e", debug_script)
-
-        creator_sh, _ = ctx.actions.write(
-            "create_{}.sh".format(phase),
-            cmd_args("#!/bin/bash -e\nexport RUST_LOG=\"antlir2=trace\"\n", debug_script),
-            is_executable = True,
-            allow_args = True,
-        )
-
-        debug_sub_targets[phase] = [
-            RunInfo(debug_cmd),
-            DefaultInfo(creator_sh, sub_targets = {
-                "nspawn": _nspawn_sub_target(phase_info["subvol"], mounts),
-            }),
-        ]
-
     sub_targets["nspawn"] = _nspawn_sub_target(final_subvol, mounts)
-    if debug_sub_targets:
-        sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
+    sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
     if ctx.attrs.parent_layer:
         sub_targets["parent_layer"] = ctx.attrs.parent_layer.providers
 
