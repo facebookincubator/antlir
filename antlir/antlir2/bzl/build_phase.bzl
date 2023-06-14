@@ -26,11 +26,14 @@ BuildPhase = enum(
     # treated as a parent layer and any features that try to interact with the
     # removed paths (eg replace one of them) will just work.
     "remove",
-    None,
+    # Generally well-behaved image features that are predictable and
+    # topologically orderable. Everything should go here that doesn't have to be
+    # in one of the earlier, less well-behaved phases.
+    "compile",
 )
 
 # Quick self-test to ensure that order is correct
-if list(BuildPhase.values()) != ["package_manager", "chef", "genrule", "remove", None]:
+if list(BuildPhase.values()) != ["package_manager", "chef", "genrule", "remove", "compile"]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
 
 def _is_predictable(phase: BuildPhase.type) -> bool.type:
@@ -45,10 +48,10 @@ def _is_predictable(phase: BuildPhase.type) -> bool.type:
     """
     return {
         "chef": False,
+        "compile": True,
         "genrule": False,
         "package_manager": False,
         "remove": False,  # for directories, ensure that all the children are removed
-        None: True,
     }[phase.value]
 
 build_phase = struct(

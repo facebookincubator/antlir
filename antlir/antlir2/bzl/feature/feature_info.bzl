@@ -59,7 +59,7 @@ FeatureAnalysis = record(
     # discovered in the depgraph, so those features are grouped together in
     # hidden internal layer(s) that acts as the parent layer(s) for the final
     # image.
-    build_phase = field(BuildPhase.type, default = BuildPhase(None)),
+    build_phase = field(BuildPhase.type, default = BuildPhase("compile")),
 )
 
 Toolchains = record(
@@ -73,7 +73,7 @@ AnalyzeFeatureContext = record(
     toolchains = Toolchains.type,
 )
 
-def data_only_feature_analysis_fn(record_type, build_phase: BuildPhase.type = BuildPhase(None)):
+def data_only_feature_analysis_fn(record_type, build_phase: BuildPhase.type = BuildPhase("compile")):
     # @lint-ignore BUCKRESTRICTEDSYNTAX
     def inner(**kwargs) -> FeatureAnalysis.type:
         return FeatureAnalysis(

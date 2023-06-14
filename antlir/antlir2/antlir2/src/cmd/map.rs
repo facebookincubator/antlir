@@ -129,7 +129,7 @@ impl Map {
     }
 
     #[tracing::instrument(name = "map", skip(self))]
-    pub(crate) fn run(self) -> Result<()> {
+    pub(crate) fn run(self, log_path: Option<&Path>) -> Result<()> {
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
         let mut subvol = self.create_new_subvol(&working_volume)?;
@@ -147,6 +147,9 @@ impl Map {
             .writable_outputs()
             .context("while preparing writable outputs")?;
         writable_outputs.insert(working_volume.path());
+        if let Some(path) = log_path {
+            writable_outputs.insert(path);
+        }
 
         let mut isol = isolate(
             IsolationContext::builder(&self.build_appliance)
@@ -181,6 +184,9 @@ impl Map {
         )
         .into_command();
         isol.arg(std::env::current_exe().context("while getting argv[0]")?);
+        if let Some(path) = log_path {
+            isol.arg("--append-logs").arg(path);
+        }
         match self.subcommand {
             Subcommand::Compile {
                 compileish,

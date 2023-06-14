@@ -7,8 +7,12 @@
 
 #![feature(iter_intersperse)]
 
+use std::fs::File;
+use std::path::Path;
+use std::path::PathBuf;
 use std::process::ExitStatus;
 
+use anyhow::Context;
 use clap::Parser;
 use colored::Colorize;
 use thiserror::Error;
@@ -32,8 +36,63 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Parser, Debug)]
 struct Args {
+    #[command(flatten)]
+    log: LogArgs,
     #[clap(subcommand)]
     subcommand: Subcommand,
+}
+
+#[derive(clap::Args, Debug)]
+#[group(multiple = false)]
+struct LogArgs {
+    #[clap(long)]
+    /// File to write logs to in addition to stdout
+    logs: Option<PathBuf>,
+    #[clap(long = "append-logs")]
+    /// Append logs to this already-existing file
+    append: Option<PathBuf>,
+}
+
+impl LogArgs {
+    fn path(&self) -> Option<&Path> {
+        self.logs.as_deref().or(self.append.as_deref())
+    }
+
+    fn file(&self) -> anyhow::Result<Option<File>> {
+        match (&self.logs, &self.append) {
+            (Some(path), None) => {
+                // This is not technically atomic, but does a good enough job to
+                // clean up after previous buck builds. We know that buck isn't
+                // going to run two concurrent processes with this same log file
+                // at the same time, so we can ignore the small race between
+                // removing this file and creating a new one, the end result
+                // being that the log file is safely truncated.
+                match std::fs::remove_file(path) {
+                    Ok(()) => Ok(()),
+                    Err(e) => match e.kind() {
+                        std::io::ErrorKind::NotFound => Ok(()),
+                        _ => Err(e),
+                    },
+                }?;
+                Ok(Some(
+                    std::fs::OpenOptions::new()
+                        .create(true)
+                        .append(true)
+                        .open(path)
+                        .context("while opening new logs file")?,
+                ))
+            }
+            (None, Some(append_path)) => Ok(Some(
+                std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(append_path)
+                    .context("while opening logs file for appending")?,
+            )),
+            (None, None) => Ok(None),
+            _ => unreachable!(),
+        }
+    }
 }
 
 #[derive(Parser, Debug)]
@@ -46,7 +105,7 @@ enum Subcommand {
     Shell(cmd::Shell),
 }
 
-fn main() {
+fn main() -> Result<()> {
     let args = Args::parse();
 
     tracing_subscriber::registry()
@@ -59,6 +118,16 @@ fn main() {
                 )
                 .fmt_fields(tracing_glog::GlogFields::default()),
         )
+        .with(args.log.file()?.map(|file| {
+            tracing_subscriber::fmt::Layer::default()
+                .event_format(
+                    tracing_glog::Glog::default()
+                        .with_span_context(true)
+                        .with_timer(tracing_glog::LocalTime::default()),
+                )
+                .fmt_fields(tracing_glog::GlogFields::default())
+                .with_writer(file)
+        }))
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
@@ -66,7 +135,7 @@ fn main() {
         Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(p) => p.run(),
         Subcommand::ExtractTarball(x) => x.run(),
-        Subcommand::Map(x) => x.run(),
+        Subcommand::Map(x) => x.run(args.log.path()),
         Subcommand::Plan(x) => x.run(),
         Subcommand::Shell(x) => x.run(),
     };
@@ -74,4 +143,5 @@ fn main() {
         eprintln!("{}", format!("{:#?}", e).red());
         std::process::exit(1);
     }
+    Ok(())
 }
