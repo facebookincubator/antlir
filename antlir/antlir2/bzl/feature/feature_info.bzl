@@ -32,16 +32,19 @@ ParseTimeFeature = record(
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = {str.type: ""},
     analyze_uses_context = field(bool.type, default = False),
+    # Some features do mutations to the image filesystem that cannot be
+    # discovered in the depgraph, so those features are grouped together in
+    # hidden internal layer(s) that acts as the parent layer(s) for the final
+    # image.
+    build_phase = field(BuildPhase.type, default = BuildPhase("compile")),
 )
 
 # Produced by the feature implementation, this tells the rule how to build it
 FeatureAnalysis = record(
+    feature_type = str.type,
     # Arbitrary feature record type (the antlir2 compiler must be able to
     # deserialize this)
     data = "record",
-    # Allow analysis implementation to override the feature_type returned in
-    # its ParseTimeFeature
-    feature_type = field([str.type, None], default = None),
     # Artifacts that are needed to build this feature. Antlir does not
     # automatically attach any dependencies to features based on the input,
     # feature implementations must always specify it exactly (this prevents
@@ -73,12 +76,24 @@ AnalyzeFeatureContext = record(
     toolchains = Toolchains.type,
 )
 
-def data_only_feature_analysis_fn(record_type, build_phase: BuildPhase.type = BuildPhase("compile")):
+def data_only_feature_analysis_fn(
+        record_type,
+        feature_type: str.type,
+        build_phase: BuildPhase.type = BuildPhase("compile")):
     # @lint-ignore BUCKRESTRICTEDSYNTAX
     def inner(**kwargs) -> FeatureAnalysis.type:
         return FeatureAnalysis(
+            feature_type = feature_type,
             data = record_type(**kwargs),
             build_phase = build_phase,
         )
 
     return inner
+
+def with_phase_override(
+        feature: FeatureAnalysis.type,
+        *,
+        phase: BuildPhase.type) -> FeatureAnalysis.type:
+    kwargs = {k: getattr(feature, k) for k in dir(feature)}
+    kwargs["build_phase"] = phase
+    return FeatureAnalysis(**kwargs)

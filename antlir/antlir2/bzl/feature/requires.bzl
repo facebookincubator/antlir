@@ -39,4 +39,7 @@ requires_record = record(
     groups = [str.type],
 )
 
-requires_analyze = data_only_feature_analysis_fn(requires_record)
+requires_analyze = data_only_feature_analysis_fn(
+    requires_record,
+    feature_type = "requires",
+)

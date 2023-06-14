@@ -34,5 +34,6 @@ remove_record = record(
 
 remove_analyze = data_only_feature_analysis_fn(
     remove_record,
+    feature_type = "remove",
     build_phase = BuildPhase("remove"),
 )

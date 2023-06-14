@@ -72,7 +72,7 @@ load(":mount.bzl", "mount_analyze")
 load(":remove.bzl", "remove_analyze")
 load(":requires.bzl", "requires_analyze")
 load(":rpms.bzl", "rpms_analyze")
-load(":symlink.bzl", "symlink_analyze")
+load(":symlink.bzl", "ensure_dir_symlink_analyze", "ensure_file_symlink_analyze")
 load(":tarball.bzl", "tarball_analyze")
 load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
 
@@ -97,8 +97,8 @@ _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
     "clone": clone_analyze,
     "ensure_dir_exists": ensure_dir_exists_analyze,
-    "ensure_dir_symlink": symlink_analyze,
-    "ensure_file_symlink": symlink_analyze,
+    "ensure_dir_symlink": ensure_dir_symlink_analyze,
+    "ensure_file_symlink": ensure_file_symlink_analyze,
     "extract": extract_analyze,
     # @oss-disable
     # @oss-disable

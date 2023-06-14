@@ -110,6 +110,7 @@ def rpms_analyze(
         artifacts.append(rpm)
 
     return FeatureAnalysis(
+        feature_type = "rpm",
         data = rpms_record(
             items = [
                 rpm_item_record(

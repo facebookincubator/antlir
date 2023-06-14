@@ -11,6 +11,10 @@ BuildPhase = enum(
     # unpredictable side effects (file creation/deletion, {user,group}
     # creation/deletion, etc)
     "package_manager",
+    # chef_solo is the worst-behaved antlir2 feature. This build phase exists so
+    # that we can install solo bundles into the image before running chef which
+    # gives better visibility than bind-mounting them in at compile time
+    "chef_setup",
     # Chef could really be part of "genrule", but breaking it out into its own
     # phase lets us more explicitly order it, while also clearly attributing
     # slowness to the user in the buck logs
@@ -33,7 +37,14 @@ BuildPhase = enum(
 )
 
 # Quick self-test to ensure that order is correct
-if list(BuildPhase.values()) != ["package_manager", "chef", "genrule", "remove", "compile"]:
+if list(BuildPhase.values()) != [
+    "package_manager",
+    "chef_setup",
+    "chef",
+    "genrule",
+    "remove",
+    "compile",
+]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
 
 def _is_predictable(phase: BuildPhase.type) -> bool.type:
@@ -48,6 +59,7 @@ def _is_predictable(phase: BuildPhase.type) -> bool.type:
     """
     return {
         "chef": False,
+        "chef_setup": True,  # using regular well-behaved features
         "compile": True,
         "genrule": False,
         "package_manager": False,

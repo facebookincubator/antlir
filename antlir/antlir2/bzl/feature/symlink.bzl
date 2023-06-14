@@ -41,4 +41,5 @@ symlink_record = record(
     is_directory = bool.type,
 )
 
-symlink_analyze = data_only_feature_analysis_fn(symlink_record)
+ensure_file_symlink_analyze = data_only_feature_analysis_fn(symlink_record, feature_type = "ensure_file_symlink")
+ensure_dir_symlink_analyze = data_only_feature_analysis_fn(symlink_record, feature_type = "ensure_file_symlink")

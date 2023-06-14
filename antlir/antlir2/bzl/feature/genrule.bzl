@@ -31,5 +31,6 @@ genrule_record = record(
 
 genrule_analyze = data_only_feature_analysis_fn(
     genrule_record,
+    feature_type = "genrule",
     build_phase = BuildPhase("genrule"),
 )

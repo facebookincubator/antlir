@@ -8,7 +8,6 @@
 #![feature(io_error_other)]
 
 use std::borrow::Cow;
-use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -28,14 +27,11 @@ use petgraph::Direction;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
-use strum::IntoEnumIterator;
 
 mod dot;
 mod item;
 use item::Item;
 use item::ItemKey;
-mod phase;
-pub use phase::Phase;
 mod requires_provides;
 use requires_provides::FeatureExt as _;
 use requires_provides::Validator;
@@ -46,8 +42,6 @@ pub use node::Node;
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
 pub enum Edge<'a> {
-    /// This feature is part of a phase
-    PartOf,
     /// This feature provides an item
     Provides,
     /// This feature requires a provided item, and requires additional
@@ -102,10 +96,9 @@ pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
 #[derive(Debug)]
 pub struct GraphBuilder<'a> {
     g: DiGraph<Node<'a>, Edge<'a>, DefaultIx>,
-    root: node::PhaseStartNodeIndex,
+    root: node::RootNodeIndex,
     pending_features: Vec<node::PendingFeatureNodeIndex<'a>>,
     items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
-    phases: BTreeMap<Phase, (node::PhaseStartNodeIndex, node::PhaseEndNodeIndex)>,
     rpm_feature: Option<node::PendingFeatureNodeIndex<'a>>,
     label: Label<'a>,
 }
@@ -114,19 +107,6 @@ impl<'a> GraphBuilder<'a> {
     pub fn new(label: Label<'a>, parent: Option<Graph<'a>>) -> Self {
         let mut g = DiGraph::new();
         let mut items = HashMap::new();
-
-        let phases: BTreeMap<_, _> = Phase::iter()
-            .map(|p| (p, (g.add_node_typed(p), g.add_node_typed(p))))
-            .collect();
-
-        let root = phases[&Phase::Init].0;
-
-        // Set up ordering for phases
-        for ((a_start, a_end), (b_start, b_end)) in phases.values().tuple_windows() {
-            g.update_edge(**a_start, **a_end, Edge::After);
-            g.update_edge(**a_end, **b_start, Edge::After);
-            g.update_edge(**b_start, **b_end, Edge::After);
-        }
 
         // Some items are always available, since they are a property of the
         // operating system. Add them to the graph now so that the dependency
@@ -148,13 +128,13 @@ impl<'a> GraphBuilder<'a> {
             let nx = g.add_node_typed(item);
             items.insert(key, nx);
         }
+        let root = g.add_node_typed(());
 
         let mut s = Self {
             g,
             root,
             pending_features: Vec::new(),
             items,
-            phases,
             label,
             rpm_feature: None,
         };
@@ -238,7 +218,7 @@ impl<'a> GraphBuilder<'a> {
 
     pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
         // rpm features get merged into a single node so that the transaction management is easier
-        let (phase, feature_nx) = if let antlir2_features::Data::Rpm(rpm) = feature.data {
+        let feature_nx = if let antlir2_features::Data::Rpm(rpm) = feature.data {
             if let Some(nx) = self.rpm_feature {
                 match &mut self.g[nx] {
                     Feature {
@@ -254,22 +234,17 @@ impl<'a> GraphBuilder<'a> {
                     label: feature.label,
                 });
                 self.rpm_feature = Some(feature_nx);
-                (Phase::OsPackage, feature_nx)
+                feature_nx
             }
         } else {
-            let phase = Phase::for_feature(&feature);
             let feature_nx = self.g.add_node_typed(feature);
-            (phase, feature_nx)
+            feature_nx
         };
 
+        // make sure all features are reachable from the root node
+        self.g.update_edge(*self.root, *feature_nx, Edge::After);
+
         self.pending_features.push(feature_nx);
-
-        // Insert edges so that features are in the right part of the graph wrt phases
-        self.g
-            .update_edge(*self.phases[&phase].0, *feature_nx, Edge::PartOf);
-        self.g
-            .update_edge(*feature_nx, *self.phases[&phase].1, Edge::After);
-
         self
     }
 
@@ -543,7 +518,6 @@ impl<'a> GraphBuilder<'a> {
             root: self.root,
             items: self.items,
             topo,
-            end: self.phases[&Phase::End],
         })
     }
 }
@@ -555,11 +529,10 @@ pub struct Graph<'a> {
     label: Label<'a>,
     #[serde(borrow)]
     g: DiGraph<Node<'a>, Edge<'a>>,
-    root: node::PhaseStartNodeIndex,
+    root: node::RootNodeIndex,
     #[serde_as(as = "Vec<(_, _)>")]
     items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
     topo: Vec<NodeIndex<DefaultIx>>,
-    end: (node::PhaseStartNodeIndex, node::PhaseEndNodeIndex),
 }
 
 impl<'a> Graph<'a> {
@@ -621,8 +594,6 @@ impl<'a> Graph<'a> {
                 };
                 let nx = self.g.add_node_typed(Item::Path(path_item));
                 e.insert(nx);
-                self.g.add_edge(*self.end.0, *nx, Edge::PartOf);
-                self.g.add_edge(*nx, *self.end.1, Edge::After);
             }
         }
         // remove any items from the depgraph if they refer to paths that are no
@@ -655,8 +626,6 @@ impl<'a> Graph<'a> {
                     .g
                     .add_node_typed(Item::User(item::User { name: user.name }));
                 e.insert(nx);
-                self.g.add_edge(*self.end.0, *nx, Edge::PartOf);
-                self.g.add_edge(*nx, *self.end.1, Edge::After);
             }
         }
         let group_path = root.join("etc/group");
@@ -675,8 +644,6 @@ impl<'a> Graph<'a> {
                     .g
                     .add_node_typed(Item::Group(item::Group { name: group.name }));
                 e.insert(nx);
-                self.g.add_edge(*self.end.0, *nx, Edge::PartOf);
-                self.g.add_edge(*nx, *self.end.1, Edge::After);
             }
         }
         Ok(())

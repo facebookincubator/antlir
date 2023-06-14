@@ -79,6 +79,7 @@ def metakv_analyze(
         store: [{str.type: ""}, None] = None,
         remove: [{str.type: ""}, None] = None) -> FeatureAnalysis.type:
     return FeatureAnalysis(
+        feature_type = "metakv",
         data = metakv_record(
             store = metakv_store_record(**store) if store else None,
             remove = metakv_remove_record(**remove) if remove else None,
