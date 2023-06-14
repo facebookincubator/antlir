@@ -31,4 +31,7 @@ antlir1_no_equivalent_record = record(
     description = str.type,
 )
 
-antlir1_no_equivalent_analyze = data_only_feature_analysis_fn(antlir1_no_equivalent_record)
+antlir1_no_equivalent_analyze = data_only_feature_analysis_fn(
+    antlir1_no_equivalent_record,
+    feature_type = "antlir1_no_equivalent",
+)

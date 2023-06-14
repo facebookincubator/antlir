@@ -18,6 +18,8 @@ use crate::item::Path;
 
 mod feature_ext;
 pub(crate) use feature_ext::FeatureExt;
+#[cfg(facebook)]
+mod facebook;
 
 pub(crate) struct Requirement<'a> {
     pub(crate) key: ItemKey<'a>,

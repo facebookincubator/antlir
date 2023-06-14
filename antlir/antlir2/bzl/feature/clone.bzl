@@ -94,6 +94,7 @@ def clone_analyze(
     src_layer = deps["src_layer"]
 
     return FeatureAnalysis(
+        feature_type = "clone",
         data = clone_record(
             src_layer = layer_dep_analyze(src_layer),
             src_path = src_path,

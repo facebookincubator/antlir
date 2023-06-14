@@ -103,18 +103,27 @@ user_record = record(
     comment = [str.type, None],
 )
 
-user_analyze = data_only_feature_analysis_fn(user_record)
+user_analyze = data_only_feature_analysis_fn(
+    user_record,
+    feature_type = "user",
+)
 
 group_record = record(
     name = str.type,
     gid = [int.type, None],
 )
 
-group_analyze = data_only_feature_analysis_fn(group_record)
+group_analyze = data_only_feature_analysis_fn(
+    group_record,
+    feature_type = "group",
+)
 
 usermod_record = record(
     username = str.type,
     add_supplementary_groups = [str.type],
 )
 
-usermod_analyze = data_only_feature_analysis_fn(usermod_record)
+usermod_analyze = data_only_feature_analysis_fn(
+    usermod_record,
+    feature_type = "user_mod",
+)

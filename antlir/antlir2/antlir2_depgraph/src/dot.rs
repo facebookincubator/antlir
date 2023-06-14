@@ -22,16 +22,13 @@ fn node_color(node: &Node) -> &'static str {
         Node::Item(_) => "ivory",
         Node::MissingItem(_) => "red",
         Node::ParentFeature(_) => "darkseagreen",
-        Node::PhaseStart(_) => "grey75",
-        Node::PhaseEnd(_) => "grey75",
+        Node::Root(_) => "grey75",
     }
 }
 
 fn debug_node(node: &Node<'_>, alternate: bool) -> String {
     let s = match (node, alternate) {
-        (Node::PhaseStart(_p), _) | (Node::PhaseEnd(_p), _) => {
-            format!("{node:?}")
-        }
+        (Node::Root(_), _) => "Root".to_owned(),
         (_, true) => format!("{:#?}\n", node),
         (_, false) => format!("{:?}", node),
     };

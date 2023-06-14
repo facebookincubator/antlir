@@ -91,6 +91,7 @@ def extract_analyze(
     if source == "layer":
         layer = deps["layer"]
         return FeatureAnalysis(
+            feature_type = "extract",
             data = extract_record(
                 layer = extract_layer_record(
                     layer = layer_dep_analyze(layer),
@@ -105,6 +106,7 @@ def extract_analyze(
         if RunInfo not in src:
             fail("'{}' does not appear to be a binary".format(src))
         return FeatureAnalysis(
+            feature_type = "extract",
             data = extract_record(
                 buck = extract_buck_record(
                     src = ensure_single_output(src),

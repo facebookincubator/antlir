@@ -116,6 +116,7 @@ def mount_analyze(
         if not mountpoint:
             mountpoint = source[LayerInfo].default_mountpoint
         return FeatureAnalysis(
+            feature_type = "mount",
             data = mount_record(
                 layer = layer_mount_record(
                     src = layer_dep_analyze(source),
@@ -127,6 +128,7 @@ def mount_analyze(
         )
     elif source_kind == "host":
         return FeatureAnalysis(
+            feature_type = "mount",
             data = mount_record(
                 host = host_mount_record(
                     src = host_source,

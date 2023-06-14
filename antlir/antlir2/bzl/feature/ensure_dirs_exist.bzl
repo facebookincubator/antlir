@@ -69,4 +69,7 @@ ensure_dir_exists_record = record(
     group = str.type,
 )
 
-ensure_dir_exists_analyze = data_only_feature_analysis_fn(ensure_dir_exists_record)
+ensure_dir_exists_analyze = data_only_feature_analysis_fn(
+    ensure_dir_exists_record,
+    feature_type = "ensure_dir_exists",
+)

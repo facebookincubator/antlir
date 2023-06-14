@@ -129,6 +129,7 @@ def install_analyze(
         if mode == None:
             mode = 0o444
     return FeatureAnalysis(
+        feature_type = "install",
         data = install_record(
             src = src,
             dst = dst,

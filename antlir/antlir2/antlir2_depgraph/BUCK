@@ -11,7 +11,6 @@ rust_library(
         "serde",
         "serde_json",
         "serde_with",
-        "strum",
         "thiserror",
         "tracing",
         "walkdir",

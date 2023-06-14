@@ -20,7 +20,6 @@ use serde::Serialize;
 
 use crate::item::Item;
 use crate::item::ItemKey;
-use crate::phase::Phase;
 use crate::Edge;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
@@ -37,11 +36,8 @@ pub enum Node<'a> {
     MissingItem(ItemKey<'a>),
     /// A Feature that was provided by a layer in the parent chain.
     ParentFeature(Feature<'a>),
-    /// Start of a distinct phase of the image build process.
-    PhaseStart(Phase),
-    /// End of a distinct phase of the image build process. All features that
-    /// are part of that phase will have an edge pointing to the end.
-    PhaseEnd(Phase),
+    /// Root node, starting point for image build
+    Root(()),
 }
 
 impl<'a> Node<'a> {
@@ -211,10 +207,4 @@ typed_node_index!(
     antlir2_features::Feature<'a>
 );
 
-typed_node_index!(
-    PhaseStartNodeIndex,
-    PhaseStartNodeIndexMapper,
-    PhaseStart,
-    Phase
-);
-typed_node_index!(PhaseEndNodeIndex, PhaseEndNodeIndexMapper, PhaseEnd, Phase);
+typed_node_index!(RootNodeIndex, RootNodeIndexMapper, Root, ());
