@@ -9,6 +9,7 @@ import asyncio
 import contextlib
 import logging
 import os.path
+import subprocess
 import sys
 import uuid
 from typing import Any, AsyncGenerator, Dict, List, Optional, Tuple, Union
@@ -255,13 +256,11 @@ async def run(
             args += ["--list"]
 
         log.debug(f"Listing tests: {args} to {list_tests}")
-        output = Path("/dev/fd/1")
-        with open(output, "wb") as f:
-            proc = await asyncio.create_subprocess_exec(
-                *args,
-                stderr=f,
-            )
-            await proc.wait()
+        proc = await asyncio.create_subprocess_exec(
+            *args,
+            stderr=subprocess.STDOUT,
+        )
+        await proc.wait()
         return proc.returncode
 
     # If we've made it this far we are executing the actual test, not just
