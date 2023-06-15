@@ -263,7 +263,10 @@ def _impl(ctx: "context") -> ["provider"]:
             DefaultInfo(
                 sub_targets = {
                     "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
-                    "logs": [DefaultInfo(all_logs)],
+                    "logs": [DefaultInfo(all_logs, sub_targets = {
+                        key: [DefaultInfo(artifact)]
+                        for key, artifact in logs.items()
+                    })],
                     "nspawn": _nspawn_sub_target(final_subvol, mounts = phase_mounts),
                     "subvol": [DefaultInfo(final_subvol)],
                 },

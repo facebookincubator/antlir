@@ -9,6 +9,7 @@ rust_library(
     deps = [
         "anyhow",
         "goblin",
+        "itertools",
         "once_cell",
         "regex",
         "serde",
