@@ -270,6 +270,10 @@ vm.python_unittest(
             layer = ":vmtest-custom-layer",
         ),
     ),
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir:testlib_common",
+    ],
 )
 
 vm.python_unittest(
