@@ -1,0 +1,22 @@
+load("//antlir/antlir2/bzl/flavor:defs.bzl", "flavor")
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
+
+repo_set(
+    name = "empty-repo-set",
+    repo_sets = [],
+    repos = [],
+    visibility = [
+        "PUBLIC",
+    ],
+)
+
+flavor(
+    name = "none",
+    # TODO: this should have its own build_appliance that doesn't have dnf
+    # installed, but is not strictly necessary right now
+    default_build_appliance = "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance.flavorless",
+    default_dnf_repo_set = ":empty-repo-set",
+    flavored_build_appliance = "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
+    rpm_reflink_flavor = None,
+    visibility = ["PUBLIC"],
+)
