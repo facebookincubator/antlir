@@ -180,14 +180,12 @@ def _rpm(
         requires: [str.type] = [],
         recommends: [str.type] = [],
         provides: [str.type] = [],
-        empty: bool.type = False,
         post_install_script: [str.type, None] = None,
         **kwargs):
     check_kwargs(kwargs)
 
     opts = {
         "arch": arch,
-        "empty": empty,
         "epoch": epoch,
         "license": license,
         "name": rpm_name,

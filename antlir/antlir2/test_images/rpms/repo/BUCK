@@ -63,7 +63,6 @@ all_rpms = [
 all_rpms.extend([
     test_rpm(
         name = "foo-empty",
-        empty = True,
         parent_layer = ":for-empty.layer",
         release = "1",
         version = str(version),
