@@ -5,10 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Write as _;
 use std::fs::File;
 use std::io::Seek;
 use std::io::SeekFrom;
-use std::io::Write;
+use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -363,7 +364,6 @@ fn main() -> Result<()> {
             requires,
             recommends,
             provides,
-            empty,
             post_install_script,
         } => {
             let layer_abspath = layer
@@ -385,10 +385,6 @@ fn main() -> Result<()> {
                 .map(|p| format!("Provides: {p}"))
                 .join("\n");
 
-            let comment_install = match empty {
-                true => "#",
-                _ => "",
-            };
             let mut spec = format!(
                 r#"Name: {name}
 Epoch: {epoch}
@@ -405,15 +401,9 @@ License: {license}
 
 %description
 
-{comment_install}%install
-{comment_install}cp -rp "{layer}"/* %{{buildroot}}/
-
-%files
-
 {post_install_script}
+
 "#,
-                comment_install = comment_install,
-                layer = layer_abspath.display(),
                 requires = requires,
                 recommends = recommends,
                 provides = provides,
@@ -421,7 +411,18 @@ License: {license}
                     .map(|s| format!("%post\n{s}\n"))
                     .unwrap_or_default(),
             );
-            if !empty {
+            if std::fs::read_dir(&layer)
+                .context("failed to list layer contents")?
+                .count()
+                != 0
+            {
+                spec.push_str("%install\n");
+                writeln!(
+                    spec,
+                    "cp -rp \"{layer}\"/* %{{buildroot}}/",
+                    layer = layer_abspath.display()
+                )?;
+                spec.push_str("%files\n");
                 for entry in walkdir::WalkDir::new(&layer) {
                     let entry = entry.context("while walking layer")?;
                     let relpath = Path::new("/").join(
@@ -436,6 +437,8 @@ License: {license}
                     spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
                     spec.push('\n');
                 }
+            } else {
+                spec.push_str("%files\n");
             }
             let mut rpm_spec_file =
                 NamedTempFile::new().context("failed to create tempfile for rpm spec")?;
@@ -477,7 +480,10 @@ License: {license}
                 .filter_map(Result::ok)
                 .collect();
 
-            ensure!(outputs.len() == 1, "expected exactly one output rpm file");
+            ensure!(
+                outputs.len() == 1,
+                "expected exactly one output rpm file, got: {outputs:?}"
+            );
 
             std::fs::copy(outputs[0].path(), args.out)
                 .context("while moving output to correct location")?;
