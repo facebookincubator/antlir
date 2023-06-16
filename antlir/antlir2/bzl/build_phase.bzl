@@ -19,6 +19,8 @@ BuildPhase = enum(
     # phase lets us more explicitly order it, while also clearly attributing
     # slowness to the user in the buck logs
     "chef",
+    # Clean up litter left behind when running chef-solo
+    "chef_cleanup",
     # We have no idea what this is going to do, but ordering it after
     # 'package_manager' will allow the user to install dependencies in the same
     # layer.
@@ -41,6 +43,7 @@ if list(BuildPhase.values()) != [
     "package_manager",
     "chef_setup",
     "chef",
+    "chef_cleanup",
     "genrule",
     "remove",
     "compile",
@@ -59,6 +62,7 @@ def _is_predictable(phase: BuildPhase.type) -> bool.type:
     """
     return {
         "chef": False,
+        "chef_cleanup": False,
         "chef_setup": True,  # using regular well-behaved features
         "compile": True,
         "genrule": False,
