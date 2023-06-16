@@ -20,6 +20,7 @@ use std::str::FromStr;
 use antlir2_features::Data;
 use antlir2_features::Feature;
 use buck_label::Label;
+use json_arg::JsonFile;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -107,7 +108,7 @@ pub struct DnfContext {
     /// Root directory where dnf repos are mounted
     repos: PathBuf,
     /// Versionlock of package name -> EVRA
-    versionlock: Option<BTreeMap<String, String>>,
+    versionlock: Option<JsonFile<BTreeMap<String, String>>>,
     /// Rpms to exclude from all operations
     excluded_rpms: BTreeSet<String>,
 }
@@ -115,7 +116,7 @@ pub struct DnfContext {
 impl DnfContext {
     pub fn new(
         repos: PathBuf,
-        versionlock: Option<BTreeMap<String, String>>,
+        versionlock: Option<JsonFile<BTreeMap<String, String>>>,
         excluded_rpms: BTreeSet<String>,
     ) -> Self {
         Self {
@@ -129,7 +130,11 @@ impl DnfContext {
     }
 
     pub(crate) fn versionlock(&self) -> Option<&BTreeMap<String, String>> {
-        self.versionlock.as_ref()
+        self.versionlock.as_ref().map(JsonFile::as_inner)
+    }
+
+    pub(crate) fn versionlock_path(&self) -> Option<&Path> {
+        self.versionlock.as_ref().map(JsonFile::path)
     }
 
     pub(crate) fn excluded_rpms(&self) -> &BTreeSet<String> {
