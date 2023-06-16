@@ -136,11 +136,7 @@ impl Compileish {
             self.root.clone(),
             DnfContext::new(
                 self.dnf.repos.clone(),
-                self.dnf
-                    .versionlock
-                    .as_ref()
-                    .map(JsonFile::as_inner)
-                    .cloned(),
+                self.dnf.versionlock.clone(),
                 self.dnf
                     .excluded_rpms
                     .as_ref()
