@@ -22,12 +22,15 @@ use antlir2_package_lib::Spec;
 use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
+use anyhow::Error;
 use anyhow::Result;
 use btrfs_send_stream_upgrade_lib::upgrade::send_stream::SendStream;
 use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use clap::Parser;
 use itertools::Itertools;
 use json_arg::JsonFile;
+use retry::delay::Fixed;
+use retry::retry;
 use tempfile::NamedTempFile;
 use tracing::trace;
 use tracing_subscriber::prelude::*;
@@ -130,20 +133,28 @@ fn main() -> Result<()> {
             layer,
             compression_level,
         } => {
-            let v1file = NamedTempFile::new()?;
-            trace!("sending v1 sendstream to {}", v1file.path().display());
-            ensure!(
-                Command::new("sudo")
+            let v1file = retry(Fixed::from_millis(10_000).take(10), || {
+                let v1file = NamedTempFile::new()?;
+                trace!("sending v1 sendstream to {}", v1file.path().display());
+                if Command::new("sudo")
                     .arg("btrfs")
                     .arg("send")
                     .arg(&layer)
                     .arg("-f")
                     .arg(v1file.path())
-                    .spawn()?
-                    .wait()?
-                    .success(),
-                "btrfs-send failed"
-            );
+                    .spawn()
+                    .context("while spawning btrfs-send")?
+                    .wait()
+                    .context("while waiting for btrfs-send")?
+                    .success()
+                {
+                    Ok(v1file)
+                } else {
+                    Err(anyhow!("btrfs-send failed"))
+                }
+            })
+            .map_err(Error::msg)
+            .context("btrfs-send failed too many times")?;
             trace!("upgrading to v2 sendstream");
             let mut stream = SendStream::new(SendStreamUpgradeOptions {
                 input: Some(v1file.path().to_path_buf()),

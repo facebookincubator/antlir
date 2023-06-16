@@ -8,6 +8,7 @@ rust_binary(
         "anyhow",
         "clap",
         "itertools",
+        "retry",
         "serde_json",
         "tempfile",
         "tracing",
