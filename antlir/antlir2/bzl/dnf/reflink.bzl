@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 REFLINK_FLAVORS = {
+    "centos8": "//antlir/antlir2/facebook/images/build_appliance/centos8:build-appliance.flavorless",
     "centos9": "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance.flavorless",
 }
 
