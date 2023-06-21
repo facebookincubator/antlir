@@ -1,5 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/bzl:build_defs.bzl", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_binary")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 load(":defs.bzl", "expected_t", "test_rpms")
 
@@ -196,9 +196,17 @@ test_rpms(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
+buck_genrule(
+    name = "versionlock.json",
+    out = "versionlock.json",
+    cmd = """
+        jq '.foo = "2-1"' < $(location //antlir/antlir2/test_images:test-image-flavor[default_versionlock]) > $OUT
+    """,
+)
+
 test_rpms(
     name = "versionlock",
-    dnf_versionlock = "versionlock.json",
+    dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
         feature.rpms_install(rpms = [
@@ -210,7 +218,7 @@ test_rpms(
 
 test_rpms(
     name = "versionlocked-dependency",
-    dnf_versionlock = "versionlock.json",
+    dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
         feature.rpms_install(
@@ -229,7 +237,7 @@ test_rpms(
 
 test_rpms(
     name = "nevra-overrides-versionlock",
-    dnf_versionlock = "versionlock.json",
+    dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-3-1"]),
     features = [
         feature.rpms_install(rpms = [

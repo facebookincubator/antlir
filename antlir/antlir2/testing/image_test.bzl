@@ -5,6 +5,7 @@
 
 # @oss-disable
 # @oss-disable
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 
@@ -55,7 +56,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ),
     ]
 
-image_test = rule(
+_image_test = rule(
     impl = _impl,
     attrs = {
         "boot": attrs.bool(
@@ -75,6 +76,8 @@ image_test = rule(
     },
     doc = "Run a test inside an image layer",
 )
+
+image_test = rule_with_default_target_platform(_image_test)
 
 # Collection of helpers to create the inner test implicitly, and hide it from
 # TestPilot

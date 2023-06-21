@@ -26,7 +26,11 @@ elif [ "${BOOT}" == "True" ]; then
     systemctl is-active "sysinit.target"
 elif [ "${BOOT}" == "wait-default" ]; then
     # This should report true by now because the test waits on default.target
-    systemctl is-system-running
+    if ! systemctl is-system-running; then
+        systemctl --failed
+        journalctl
+        exit 1
+    fi
 else
     echo "unrecognized BOOT=${BOOT} - update this test for new behavior"
     exit 100

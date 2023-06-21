@@ -21,6 +21,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ),
         DefaultInfo(sub_targets = {
             "default_build_appliance": ctx.attrs.default_build_appliance.providers,
+            "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
         }),
     ]
 
