@@ -41,6 +41,10 @@ image.layer(
     name = "binaries-clone-src",
     features = [
         feature.rpms_install(rpms = ["systemd"]),
+        feature.ensure_file_symlink(
+            link = "/usr/bin/systemctl.link",
+            target = "/usr/bin/systemctl",
+        ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -69,11 +73,16 @@ image.layer(
     features = [
         feature.ensure_dirs_exist(dirs = "/usr/bin"),
         feature.extract_from_layer(
-            binaries = ["/usr/bin/systemctl"],
+            binaries = [
+                "/usr/bin/systemctl",
+                "/usr/bin/systemctl.link",
+            ],
             layer = ":binaries-clone-src",
         ),
         feature.extract_from_layer(
-            binaries = ["/antlir2-simply-installed"],
+            binaries = [
+                "/antlir2-simply-installed",
+            ],
             layer = ":extract-buck",
         ),
     ],
@@ -84,4 +93,24 @@ image_sh_test(
     name = "extract-layer-test",
     layer = ":extract-layer",
     test = "test-extract-layer.sh",
+)
+
+image.layer(
+    name = "extract-symlink-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.extract_from_layer(
+            binaries = [
+                "/usr/bin/systemctl.link",
+            ],
+            layer = ":binaries-clone-src",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_sh_test(
+    name = "extract-symlink-layer-test",
+    layer = ":extract-symlink-layer",
+    test = "test-extract-symlink-layer.sh",
 )
