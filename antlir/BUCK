@@ -71,6 +71,11 @@ python_library(
 antlir_rust_extension(
     name = "fs_utils_rs",
     srcs = ["fs_utils_rs.rs"],
+    # Doesn't compile on windows.
+    compatible_with = [
+        "ovr_config//os:linux",
+        "ovr_config//os:macos",
+    ],
     crate_root = "fs_utils_rs.rs",
     rust_visibility = ["//antlir/..."],
     typestub = "fs_utils_rs.pyi",
