@@ -244,6 +244,22 @@ impl<'a> CompileFeature for Extract<'a> {
                     let src =
                         src_layer.join(binary.path().strip_prefix("/").unwrap_or(binary.path()));
                     copy_with_metadata(&src, &dst, None, None)?;
+
+                    // If the cloned source was a symlink, the thing it points
+                    // to should be considered a dep
+                    let src_meta = std::fs::symlink_metadata(&src)
+                        .with_context(|| format!("while lstatting {}", src.display()))?;
+                    if src_meta.is_symlink() {
+                        let target = src
+                            .canonicalize()
+                            .with_context(|| format!("while canonicalizing {}", src.display()))?;
+                        all_deps.insert(
+                            target
+                                .strip_prefix(&src_layer)
+                                .unwrap_or(target.as_path())
+                                .to_path_buf(),
+                        );
+                    }
                 }
                 let cwd = std::env::current_dir()?;
                 for dep in all_deps {
