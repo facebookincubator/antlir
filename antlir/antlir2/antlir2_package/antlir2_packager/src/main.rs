@@ -296,10 +296,12 @@ fn main() -> Result<()> {
 
             let cpio_script = format!(
                 "set -ue -o pipefail; \
+                pushd '{}'; \
                 /usr/bin/find . -mindepth 1 ! -type s | \
                 LANG=C /usr/bin/sort | \
                 LANG=C /usr/bin/cpio -o -H newc | \
                 /usr/bin/gzip -{} --stdout > {}",
+                layer_abs_path.display(),
                 compression_level,
                 output_abs_path.as_path().display()
             );
@@ -341,10 +343,12 @@ fn main() -> Result<()> {
 
             let cpio_script = format!(
                 "set -ue -o pipefail; \
+                pushd '{}'; \
                 /usr/bin/find . -mindepth 1 ! -type s | \
                 LANG=C /usr/bin/sort | \
                 LANG=C /usr/bin/cpio -o -H newc | \
                 /usr/bin/zstd --compress -{} -T0 -f -o {}",
+                layer_abs_path.display(),
                 compression_level,
                 output_abs_path.as_path().display()
             );
