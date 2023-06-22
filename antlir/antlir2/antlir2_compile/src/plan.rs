@@ -17,6 +17,8 @@ use crate::Result;
 pub struct Plan {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub(crate) dnf_transaction: Option<DnfTransaction>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) fbpkg_transaction: Option<FbpkgTransaction>,
 }
 
 impl Plan {
@@ -36,7 +38,15 @@ impl Plan {
                     }
                     plan.dnf_transaction = Some(tx);
                 }
-                Item::None => {}
+                Item::FbpkgTransaction(tx) => {
+                    if plan.fbpkg_transaction.is_some() {
+                        return Err(anyhow::anyhow!(
+                            "impossibly ended up with more than one FbpkgTransaction"
+                        )
+                        .into());
+                    }
+                    plan.fbpkg_transaction = Some(tx);
+                }
             }
         }
         Ok(plan)
@@ -58,8 +68,21 @@ pub struct DnfTransaction {
     pub(crate) remove: BTreeSet<Nevra>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct InstallFbpkg {
+    pub(crate) name: String,
+    pub(crate) tag: String,
+    pub(crate) dst: Option<String>,
+    pub(crate) organize: bool,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct FbpkgTransaction {
+    pub(crate) install: Vec<InstallFbpkg>,
+}
+
 #[derive(Debug, Clone)]
 pub enum Item {
-    None,
     DnfTransaction(DnfTransaction),
+    FbpkgTransaction(FbpkgTransaction),
 }
