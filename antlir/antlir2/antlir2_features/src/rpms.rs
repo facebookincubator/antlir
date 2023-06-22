@@ -33,7 +33,7 @@ pub enum Action {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub enum Source<'a> {
-    Name(Cow<'a, str>),
+    Subject(Cow<'a, str>),
     Source(BuckOutSource<'a>),
 }
 
@@ -50,15 +50,15 @@ impl<'a, 'de: 'a> Deserialize<'de> for Source<'a> {
         #[derive(Deserialize)]
         #[serde(bound(deserialize = "'de: 'a"))]
         struct SourceStruct<'a> {
-            name: Option<Cow<'a, str>>,
+            subject: Option<Cow<'a, str>>,
             source: Option<BuckOutSource<'a>>,
         }
 
-        SourceStruct::deserialize(deserializer).and_then(|s| match (s.name, s.source) {
-            (Some(name), None) => Ok(Self::Name(name)),
+        SourceStruct::deserialize(deserializer).and_then(|s| match (s.subject, s.source) {
+            (Some(subj), None) => Ok(Self::Subject(subj)),
             (None, Some(source)) => Ok(Self::Source(source)),
             (_, _) => Err(D::Error::custom(
-                "exactly one of {name, source} must be set",
+                "exactly one of {subject, source} must be set",
             )),
         })
     }
