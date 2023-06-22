@@ -8,7 +8,7 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def genrule(
         *,
-        cmd: [[str.type], "selector"],
+        cmd: [[[str.type, "selector"]], "selector"],
         user: [str.type, "selector"] = "nobody",
         boot: [bool.type, "selector"] = False,
         bind_repo_ro: [bool.type, "selector"] = False) -> ParseTimeFeature.type:

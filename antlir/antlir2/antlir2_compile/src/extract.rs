@@ -23,6 +23,7 @@ use regex::Regex;
 use twox_hash::XxHash64;
 
 use crate::util::copy_with_metadata;
+use crate::Arch;
 use crate::CompileFeature;
 use crate::CompilerContext;
 use crate::Error;
@@ -37,15 +38,6 @@ static LDSO_RE: Lazy<Regex> = Lazy::new(|| {
         .expect("this is a valid regex")
 });
 
-// Using the target architecture here is fine, because we'll be executing the
-// target-arch version of antlir2 inside of an arch-specific ba container when
-// doing cross-arch image builds.
-#[cfg(target_arch = "x86_64")]
-static DEFAULT_LD_SO: &str = "/usr/lib64/ld-linux-x86-64.so.2";
-
-#[cfg(target_arch = "aarch64")]
-static DEFAULT_LD_SO: &str = "/lib/ld-linux-aarch64.so.1";
-
 /// In all the cases that we care about, a library will live under /lib64, but
 /// this directory will be a symlink to /usr/lib64. To avoid build conflicts with
 /// other image layers, replace it.
@@ -57,9 +49,11 @@ fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
 }
 
 /// Look up absolute paths to all (recursive) deps of this binary
-fn so_dependencies<S: AsRef<OsStr>>(
+#[tracing::instrument]
+fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
     binary: S,
     sysroot: Option<&Path>,
+    default_interpreter: &Path,
 ) -> anyhow::Result<Vec<PathBuf>> {
     let binary = Path::new(binary.as_ref());
     let binary_as_seen_from_here = match sysroot {
@@ -70,7 +64,8 @@ fn so_dependencies<S: AsRef<OsStr>>(
         .with_context(|| format!("while reading {}", binary_as_seen_from_here.display()))?;
     let elf =
         Elf::parse(&buf).with_context(|| format!("while parsing ELF {}", binary.display()))?;
-    let interpreter = Path::new(elf.interpreter.unwrap_or(DEFAULT_LD_SO));
+    let interpreter = elf.interpreter.map_or(default_interpreter, Path::new);
+
     tracing::debug!("using interpreter {}", interpreter.display());
 
     let mut cmd = Command::new(interpreter);
@@ -195,10 +190,14 @@ fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
 impl<'a> CompileFeature for Extract<'a> {
     #[tracing::instrument(name = "extract", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+        let default_interpreter = Path::new(match ctx.target_arch() {
+            Arch::X86_64 => "/usr/lib64/ld-linux-x86-64.so.2",
+            Arch::Aarch64 => "/lib/ld-linux-aarch64.so.1",
+        });
         match self {
             Self::Buck(buck) => {
                 let src = buck.src.path().canonicalize()?;
-                let deps = so_dependencies(buck.src.path(), None)?;
+                let deps = so_dependencies(buck.src.path(), None, default_interpreter)?;
                 for dep in &deps {
                     if let Ok(relpath) =
                         dep.strip_prefix(src.parent().expect("src always has parent"))
@@ -237,7 +236,7 @@ impl<'a> CompileFeature for Extract<'a> {
                 for binary in &layer.binaries {
                     let dst = ctx.dst_path(binary.path());
                     all_deps.extend(
-                        so_dependencies(binary.path(), Some(&src_layer))?
+                        so_dependencies(binary.path(), Some(&src_layer), default_interpreter)?
                             .into_iter()
                             .map(|path| ensure_usr(&path).to_path_buf()),
                     );

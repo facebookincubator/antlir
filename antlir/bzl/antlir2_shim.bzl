@@ -78,7 +78,9 @@ def _should_make_parallel(
             None,
         ],
         *,
-        flavor: _FLAVOR_T = None) -> bool.type:
+        flavor: _FLAVOR_T = None,
+        disabled_packages: [str.type] = _DEFAULT_DISABLED_PACKAGES,
+        enabled_packages: [str.type] = _DEFAULT_ENABLED_PACKAGES) -> bool.type:
     if flavor and flavor_to_struct(flavor).name == "centos7":
         return False
 
@@ -93,13 +95,13 @@ def _should_make_parallel(
     # Find the "closest" match so that _DEFAULT_{ENABLED,DISABLED}_PACKAGES can
     # peacefully co-exist
     distance = 999999999
-    for pkg in _DEFAULT_ENABLED_PACKAGES:
+    for pkg in enabled_packages:
         if native.package_name() == pkg or native.package_name().startswith(pkg + "/"):
             this_distance = len(native.package_name()[len(pkg):].split("/"))
             if this_distance < distance:
                 result = _antlir2_or_default(antlir2, True)
                 distance = this_distance
-    for pkg in _DEFAULT_DISABLED_PACKAGES:
+    for pkg in disabled_packages:
         if native.package_name() == pkg or native.package_name().startswith(pkg + "/"):
             this_distance = len(native.package_name()[len(pkg):].split("/"))
             if this_distance < distance:
@@ -137,4 +139,5 @@ antlir2_shim = struct(
     should_make_parallel_feature = _should_make_parallel,
     should_make_parallel_layer = _should_make_parallel,
     should_make_parallel_test = _should_make_parallel,
+    should_make_parallel_package = partial(_should_make_parallel, enabled_packages = ["metalos/initrd"]),
 )

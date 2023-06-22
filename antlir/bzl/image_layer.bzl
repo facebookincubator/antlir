@@ -116,6 +116,7 @@ def image_layer(
         flavor: _FLAVOR_T = None,
         flavor_config_override: _FLAVOR_CONFIG_OVERRIDE_T = None,
         antlir_rule: _ANTLIR_RULE_T = types.antlir_rule("user-internal"),
+        antlir2_compatible_with = None,
         **image_layer_kwargs):
     """
     Arguments
@@ -146,6 +147,7 @@ def image_layer(
                 flavor = flavor,
                 features = features or [],
                 implicit_antlir2 = True,
+                compatible_with = antlir2_compatible_with,
                 visibility = get_visibility(image_layer_kwargs.get("visibility")),
             )
         else:
