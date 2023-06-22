@@ -161,8 +161,8 @@ def _explicitly_installed_package_names(spec, local_rpms):
     for item in spec["items"]:
         action = item["action"]
         rpm = item["rpm"]
-        if "name" in rpm:
-            source = rpm["name"]
+        if "subject" in rpm:
+            source = rpm["subject"]
         else:
             source = local_rpms[rpm["source"]]
 
@@ -190,8 +190,8 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
     for item in spec["items"]:
         action = item["action"]
         rpm = item["rpm"]
-        if "name" in rpm:
-            source = rpm["name"]
+        if "subject" in rpm:
+            source = rpm["subject"]
             # If the versionlock specifies an exact version, construct a NEVRA
             # from it instead of using just name. If an image owner specifies an
             # exact NEVRA, this condition will be false, which is our
@@ -209,14 +209,14 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
         elif action == "remove_if_exists":
             # cannot remove by file path, so let's do this to be extra safe
             try:
-                base.remove(rpm["name"])
+                base.remove(rpm["subject"])
             except dnf.exceptions.PackagesNotInstalledError:
                 # The action is 'remove_if_exists'...
                 # We should probably have a 'remove' version as well to
                 # force users to clean up features that are no longer doing
                 # anything
                 pass
-            explicitly_removed_package_names.add(rpm["name"])
+            explicitly_removed_package_names.add(rpm["subject"])
         else:
             raise RuntimeError(f"unknown action '{action}'")
 

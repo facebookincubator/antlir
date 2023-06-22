@@ -19,8 +19,8 @@ def _looks_like_label(s: str.type) -> bool.type:
 def rpms_install(
         *,
         rpms: [str.type] = [],
-        rpm_names: [[[str.type, "selector"]], "selector"] = [],
-        rpm_deps: [[[str.type, "selector"]], "selector"] = []) -> ParseTimeFeature.type:
+        subjects: [[[str.type, "selector"]], "selector"] = [],
+        deps: [[[str.type, "selector"]], "selector"] = []) -> ParseTimeFeature.type:
     """
     Install RPMs by identifier or .rpm src
 
@@ -32,12 +32,12 @@ def rpms_install(
 
     To ergonomically use `select`, callers must disambiguate between rpm names (or, more accurately, dnf subjects)
     """
-    if rpms and (rpm_names or rpm_deps):
-        fail("'rpms' cannot be mixed with 'rpm_names' or 'rpm_deps', it causes api ambiguity")
+    if rpms and (subjects or deps):
+        fail("'rpms' cannot be mixed with 'subjects' or 'deps', it causes api ambiguity")
 
     # make a writable copy if we might need to add to it
-    if type(rpm_names) == "list":
-        rpm_names = list(rpm_names)
+    if type(subjects) == "list":
+        subjects = list(subjects)
     unnamed_deps_or_srcs = None
     for rpm in rpms:
         if _looks_like_label(rpm):
@@ -45,18 +45,18 @@ def rpms_install(
                 unnamed_deps_or_srcs = []
             unnamed_deps_or_srcs.append(rpm)
         else:
-            rpm_names.append(rpm)
-    if unnamed_deps_or_srcs and rpm_deps:
+            subjects.append(rpm)
+    if unnamed_deps_or_srcs and deps:
         fail("impossible, 'unnamed_deps_or_srcs' cannot be populated if 'rpms' is empty")
     if not unnamed_deps_or_srcs:
-        unnamed_deps_or_srcs = rpm_deps
+        unnamed_deps_or_srcs = deps
 
     return ParseTimeFeature(
         feature_type = "rpm",
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         kwargs = {
             "action": "install",
-            "rpm_names": rpm_names,
+            "subjects": subjects,
         },
     )
 
@@ -74,14 +74,14 @@ def rpms_remove_if_exists(*, rpms: [[[str.type, "selector"]], "selector"]) -> Pa
         feature_type = "rpm",
         kwargs = {
             "action": "remove_if_exists",
-            "rpm_names": rpms,
+            "subjects": rpms,
         },
     )
 
 action_enum = enum("install", "remove_if_exists")
 
 rpm_source_record = record(
-    name = [str.type, None],
+    subject = [str.type, None],
     source = ["artifact", None],
 )
 
@@ -96,17 +96,17 @@ rpms_record = record(
 
 def rpms_analyze(
         action: str.type,
-        rpm_names: [str.type],
+        subjects: [str.type],
         unnamed_deps_or_srcs: [["dependency", "artifact"]] = []) -> FeatureAnalysis.type:
     rpms = []
-    for rpm in rpm_names:
-        rpms.append(rpm_source_record(name = rpm, source = None))
+    for rpm in subjects:
+        rpms.append(rpm_source_record(subject = rpm, source = None))
 
     artifacts = []
     for rpm in unnamed_deps_or_srcs:
         if type(rpm) == "dependency":
             rpm = ensure_single_output(rpm)
-        rpms.append(rpm_source_record(source = rpm, name = None))
+        rpms.append(rpm_source_record(source = rpm, subject = None))
         artifacts.append(rpm)
 
     return FeatureAnalysis(
