@@ -25,7 +25,7 @@ def _rpm_name_or_source(name_source):
 # names at this point, since we'd need the repo snapshot to decide
 # whether the names are valid, and whether they contain a
 # version or release number.  That'll happen later in the build.
-def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feature):
+def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feature, antlir1_i_know_what_im_doing_arch = None):
     flavors = flavors_to_structs(flavors)
 
     target_tagger = new_target_tagger()
@@ -52,6 +52,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feat
                 name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
                 action = action,
                 flavor_to_version_set = {flavor.name: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
+                antlir1_i_know_what_im_doing_arch = antlir1_i_know_what_im_doing_arch,
             ),
         )
 
@@ -87,6 +88,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feat
             flavor_to_version_set = flavor_to_version_set,
             source = source,
             name = name,
+            antlir1_i_know_what_im_doing_arch = antlir1_i_know_what_im_doing_arch,
         )
         res_rpms.append(rpm_action_item)
     return target_tagger_to_feature(
@@ -95,7 +97,7 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feat
         antlir2_feature = antlir2_feature,
     )
 
-def feature_rpms_install(rpmlist, flavors = None):
+def feature_rpms_install(rpmlist, flavors = None, antlir1_i_know_what_im_doing_arch: [str.type, None] = None):
     """
 `feature.rpms_install(["foo"])` installs `foo.rpm`,
 `feature.rpms_install(["//target:bar"])` builds `bar` target and installs
@@ -173,6 +175,7 @@ operation successful even if the binary fails.
         "install",
         needs_version_set = True,
         flavors = flavors,
+        antlir1_i_know_what_im_doing_arch = antlir1_i_know_what_im_doing_arch,
         antlir2_feature = antlir2.rpms_install(rpms = antlir2_rpms) if is_buck2() else None,
     )
 

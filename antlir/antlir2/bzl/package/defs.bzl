@@ -295,7 +295,7 @@ def _squashfs(
     )
 
 package = struct(
-    backward_compatible_new = _package,
+    backward_compatible_new = _package_macro,
     cpio_gz = _cpio_gz,
     cpio_zst = _cpio_zst,
     btrfs = _btrfs,

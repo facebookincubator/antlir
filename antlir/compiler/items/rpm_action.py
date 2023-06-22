@@ -385,6 +385,9 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
                         # `dnf` is order-dependent
                         yum_dnf_args=list(cmd.value) + sorted(rpms),
                         layer_opts=layer_opts,
+                        arch=next(
+                            item.antlir1_i_know_what_im_doing_arch for item in items
+                        ),
                     )
 
         return builder
@@ -399,6 +402,7 @@ def _yum_dnf_using_build_appliance(
     versionlock_list: Path,
     yum_dnf_args: List[str],
     layer_opts: LayerOpts,
+    arch: Optional[str],
 ) -> None:
     work_dir = generate_work_dir()
     prog_name = not_none(layer_opts.rpm_installer).value
@@ -423,6 +427,7 @@ def _yum_dnf_using_build_appliance(
                 '--debug' if layer_opts.debug else ''
             } \
             -- \
+            {f"--setopt=ignorearch=1 --setopt=arch={arch}" if arch else ""} \
             --installroot={work_dir.decode()} {
                 ' '.join(shlex.quote(arg) for arg in yum_dnf_args)
             }

@@ -10,8 +10,9 @@ files, as described by the specified `format`.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/antlir2/bzl/package:defs.bzl?v2_only", antlir2_package = "package")
+load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
 load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "use_antlir2")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "is_buck2")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:query.bzl", "layer_deps_query")
 load("//antlir/bzl:shape.bzl", "shape")
@@ -39,19 +40,9 @@ def package_new(
         loopback_opts = None,
         subvol_name = None,
         ba_tgt = None,
-        zstd_compression_level = None):
-    if use_antlir2():
-        antlir2_package.backward_compatible_new(
-            name = name,
-            layer = layer,
-            format = format,
-            opts = {
-                "compression_level": 3,
-            } if format in ("sendstream.v2", "sendstream.zst") else None,
-        )
-        return
-
-    visibility = visibility or []
+        zstd_compression_level = None,
+        antlir2 = None):
+    visibility = get_visibility(visibility or [])
 
     if not format:
         fail("`format` is required for package.new")
@@ -65,6 +56,24 @@ def package_new(
         subvol_name = "volume"
 
     loopback_opts = normalize_loopback_opts(loopback_opts)
+
+    if antlir2_shim.should_make_parallel_package(antlir2 = antlir2):
+        if is_buck2():
+            antlir2_opts = shape.as_dict_shallow(loopback_opts)
+            if format in ("sendstream.v2", "sendstream.zst", "cpio.gz"):
+                antlir2_opts["compression_level"] = zstd_compression_level or 3
+
+            antlir2_package.backward_compatible_new(
+                name = name + ".antlir2",
+                layer = layer + ".antlir2",
+                format = format,
+                opts = antlir2_opts,
+                visibility = visibility,
+            )
+        else:
+            antlir2_shim.fake_buck1_target(
+                name = name + ".antlir2",
+            )
 
     buck_genrule(
         name = name,
