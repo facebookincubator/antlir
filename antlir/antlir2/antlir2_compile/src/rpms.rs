@@ -164,7 +164,7 @@ impl<'a> CompileFeature for Rpm<'a> {
         .map(|_| ())
     }
 
-    fn plan(&self, ctx: &CompilerContext) -> Result<Item> {
+    fn plan(&self, ctx: &CompilerContext) -> Result<Vec<Item>> {
         let events = run_dnf_driver(
             ctx,
             &self.items,
@@ -177,7 +177,7 @@ impl<'a> CompileFeature for Rpm<'a> {
         }
         match &events[0] {
             DriverEvent::TransactionResolved { install, remove } => {
-                Ok(Item::DnfTransaction(DnfTransaction {
+                Ok(vec![Item::DnfTransaction(DnfTransaction {
                     install: install
                         .iter()
                         .map(|ip| crate::plan::InstallPackage {
@@ -187,7 +187,7 @@ impl<'a> CompileFeature for Rpm<'a> {
                         })
                         .collect(),
                     remove: remove.iter().map(|p| p.nevra()).collect(),
-                }))
+                })])
             }
             _ => Err(Error::msg("resolve-only event should have been TransactionResolved").into()),
         }

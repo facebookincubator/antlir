@@ -12,6 +12,7 @@ use std::path::PathBuf;
 use antlir2_compile::CompileFeature;
 use anyhow::Context;
 use clap::Parser;
+use itertools::Itertools;
 
 use super::Compileish;
 use crate::Error;
@@ -72,6 +73,7 @@ impl Plan {
             .depgraph
             .pending_features()
             .map(|f| f.plan(&ctx).map_err(Error::Compile))
+            .flatten_ok()
             .collect::<Result<_>>()?;
         let plan = antlir2_compile::plan::Plan::from_items(items)?;
 

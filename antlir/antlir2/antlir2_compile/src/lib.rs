@@ -241,8 +241,8 @@ pub trait CompileFeature {
     fn compile(&self, ctx: &CompilerContext) -> Result<()>;
 
     /// Add details about this [Feature] to the compiler [plan::Plan].
-    fn plan(&self, _ctx: &CompilerContext) -> Result<plan::Item> {
-        Ok(plan::Item::None)
+    fn plan(&self, _ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
+        Ok(Default::default())
     }
 }
 
@@ -273,12 +273,12 @@ impl<'a> CompileFeature for Feature<'a> {
         }
     }
 
-    fn plan(&self, ctx: &CompilerContext) -> Result<plan::Item> {
+    fn plan(&self, ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
         match &self.data {
             Data::Rpm(x) => x.plan(ctx),
             #[cfg(facebook)]
             Data::ChefSolo(x) => x.plan(ctx),
-            _ => Ok(plan::Item::None),
+            _ => Ok(Default::default()),
         }
     }
 }
