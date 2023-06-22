@@ -34,17 +34,17 @@ Inline feature macros must return an `ParseTimeFeature` record, that is then
 used to reconstruct compiler-JSON on the other end.
 The `ParseTimeFeature` contains:
     - feature_type: type disambiguation for internal macros and compiler
-    - deps_or_sources: map of key -> source for
+    - deps_or_srcs: map of key -> source for
         `attrs.one_of(attrs.dep(), attrs.source())` dependencies needed by the
         feature. The feature is always able to get the "artifact", and will be
         able to get provider details on "dependency" deps
     - deps: map of key -> dep for `attrs.dep()` dependencies needed by the
         feature.
     - kwargs: map of all non-dependency inputs
-For `deps_and_sources` and `deps`, the user input to the inline feature input
-will just be a simple string that is a label (or path for plain source files),
-but by including it in the special maps in `ParseTimeFeature`, the `feature`
-rule is able to coerce those labels to concrete artifacts.
+For `deps_or_srcs` and `deps`, the user input to the inline feature input will
+just be a simple string that is a label (or path for plain source files), but by
+including it in the special maps in `ParseTimeFeature`, the `feature` rule is
+able to coerce those labels to concrete artifacts.
 
 Image features must also provide a function to convert the kwargs, sources and
 deps into a JSON struct readable by the compiler. This function must then be
@@ -124,16 +124,19 @@ def _impl(ctx: "context") -> ["provider"]:
     inline_layer_deps = []
     for key, inline in ctx.attrs.inline_features.items():
         feature_deps = ctx.attrs.inline_features_deps.get(key, None)
-        feature_deps_or_sources = ctx.attrs.inline_features_deps_or_sources.get(key, None)
-        feature_unnamed_deps_or_sources = ctx.attrs.inline_features_unnamed_deps_or_sources.get(key, None)
+        feature_deps_or_srcs = ctx.attrs.inline_features_deps_or_srcs.get(key, None)
+        feature_unnamed_deps_or_srcs = ctx.attrs.inline_features_unnamed_deps_or_srcs.get(key, None)
+        feature_srcs = ctx.attrs.inline_features_srcs.get(key, None)
 
         analyze_kwargs = inline["kwargs"]
         if feature_deps != None:
             analyze_kwargs["deps"] = feature_deps
-        if feature_deps_or_sources != None:
-            analyze_kwargs["deps_or_sources"] = feature_deps_or_sources
-        if feature_unnamed_deps_or_sources != None:
-            analyze_kwargs["unnamed_deps_or_sources"] = feature_unnamed_deps_or_sources
+        if feature_deps_or_srcs != None:
+            analyze_kwargs["deps_or_srcs"] = feature_deps_or_srcs
+        if feature_unnamed_deps_or_srcs != None:
+            analyze_kwargs["unnamed_deps_or_srcs"] = feature_unnamed_deps_or_srcs
+        if feature_srcs != None:
+            analyze_kwargs["srcs"] = feature_srcs
         if inline.get("analyze_uses_context"):
             analyze_kwargs["ctx"] = AnalyzeFeatureContext(
                 toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo],
@@ -225,15 +228,17 @@ _feature = rule(
         # Map "feature key" -> "feature deps"
         "inline_features_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.dep()))),
         # Map "feature key" -> "feature dep/source"
-        "inline_features_deps_or_sources": attrs.dict(
+        "inline_features_deps_or_srcs": attrs.dict(
             attrs.string(),
             attrs.dict(
                 attrs.string(),
                 attrs.one_of(attrs.dep(), attrs.source()),
             ),
         ),
+        # Map "feature key" -> "feature srcs"
+        "inline_features_srcs": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.source()))),
         # Map "feature key" -> "feature dep/source"
-        "inline_features_unnamed_deps_or_sources": attrs.dict(
+        "inline_features_unnamed_deps_or_srcs": attrs.dict(
             attrs.string(),
             attrs.list(
                 attrs.one_of(attrs.dep(), attrs.source()),
@@ -273,8 +278,9 @@ def feature(
     inline_features = {}
     feature_targets = []
     inline_features_deps = {}
-    inline_features_deps_or_sources = {}
-    inline_features_unnamed_deps_or_sources = {}
+    inline_features_deps_or_srcs = {}
+    inline_features_unnamed_deps_or_srcs = {}
+    inline_features_srcs = {}
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -294,10 +300,12 @@ def feature(
             if feat.deps:
                 # TODO: record providers for later checking
                 inline_features_deps[feature_key] = {k: d.dep for k, d in feat.deps.items()}
-            if feat.deps_or_sources:
-                inline_features_deps_or_sources[feature_key] = feat.deps_or_sources
-            if feat.unnamed_deps_or_sources:
-                inline_features_unnamed_deps_or_sources[feature_key] = feat.unnamed_deps_or_sources
+            if feat.deps_or_srcs:
+                inline_features_deps_or_srcs[feature_key] = feat.deps_or_srcs
+            if feat.unnamed_deps_or_srcs:
+                inline_features_unnamed_deps_or_srcs[feature_key] = feat.unnamed_deps_or_srcs
+            if feat.srcs:
+                inline_features_srcs[feature_key] = feat.srcs
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
@@ -306,8 +314,9 @@ def feature(
         feature_targets = feature_targets,
         inline_features = inline_features,
         inline_features_deps = inline_features_deps,
-        inline_features_deps_or_sources = inline_features_deps_or_sources,
-        inline_features_unnamed_deps_or_sources = inline_features_unnamed_deps_or_sources,
+        inline_features_deps_or_srcs = inline_features_deps_or_srcs,
+        inline_features_unnamed_deps_or_srcs = inline_features_unnamed_deps_or_srcs,
+        inline_features_srcs = inline_features_srcs,
         visibility = visibility,
         **kwargs
     )

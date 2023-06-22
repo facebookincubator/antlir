@@ -21,14 +21,16 @@ ParseTimeFeature = record(
     # Items in this list may be either raw source files, or dependencies
     # produced by another rule. If a dependency, the full provider set will be
     # made available to the analysis code for the feature.
-    deps_or_sources = field([{str.type: [str.type, "selector"]}, None], default = None),
+    deps_or_srcs = field([{str.type: [str.type, "selector"]}, None], default = None),
+    # Items in this list must be coerce-able to an "artifact"
+    srcs = field([{str.type: [str.type, "selector"]}, None], default = None),
     # These items must be `deps` and will be validated early in analysis time to
     # contain the required providers
     deps = field([{str.type: ParseTimeDependency.type}, None], default = None),
     # Sources/deps that do not require named tracking between the parse and
     # analysis phases. Useful to support `select` in features that accept lists
     # of dependencies.
-    unnamed_deps_or_sources = field([[[str.type, "selector"]], None], default = None),
+    unnamed_deps_or_srcs = field([[[str.type, "selector"]], None], default = None),
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = {str.type: ""},
     analyze_uses_context = field(bool.type, default = False),

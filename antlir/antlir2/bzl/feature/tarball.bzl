@@ -15,7 +15,7 @@ def tarball(
         group: str.type = "root") -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "tarball",
-        deps_or_sources = {
+        srcs = {
             "source": src,
         },
         kwargs = {
@@ -37,27 +37,17 @@ def tarball_analyze(
         into_dir: str.type,
         user: str.type,
         group: str.type,
-        deps_or_sources: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
-    tarball = deps_or_sources["source"]
-    if type(tarball) == "dependency":
-        tarball = ensure_single_output(tarball)
-    extracted = ctx.actions.declare_output(
-        "tarball_" + ctx.unique_action_identifier + "_" + tarball.basename,
-        dir = True,
-    )
-    ctx.actions.run(
-        cmd_args(
-            ctx.toolchain.antlir2[RunInfo],
-            "extract-tarball",
-            cmd_args(tarball, format = "--tar={}"),
-            cmd_args(extracted.as_output(), format = "--out={}"),
-            cmd_args(user, format = "--user={}"),
-            cmd_args(group, format = "--group={}"),
-        ),
-        category = "feature_tarball",
-        identifier = "tarball_" + ctx.unique_action_identifier,
-        local_only = True,  # needs 'zstd' binary available
-    )
+        srcs: {str.type: "artifact"}) -> FeatureAnalysis.type:
+    tarball = srcs["source"]
+
+    if user != "root" or group != "root":
+        fail("tarball must be installed root:root")
+
+    extracted_anon_target = ctx.actions.anon_target(extract_tarball, {
+        "archive": tarball,
+        "name": "archive//:" + tarball.short_path,
+    })
+    extracted = ctx.actions.artifact_promise(extracted_anon_target.map(lambda x: ensure_single_output(x[DefaultInfo])))
     return FeatureAnalysis(
         data = install_record(
             src = extracted,
@@ -69,3 +59,42 @@ def tarball_analyze(
         feature_type = "install",
         required_artifacts = [extracted],
     )
+
+def _extract_impl(ctx: "context") -> ["provider"]:
+    output = ctx.actions.declare_output("extracted")
+
+    script, _ = ctx.actions.write(
+        "unpack.sh",
+        [
+            cmd_args(output, format = "mkdir -p {}"),
+            cmd_args(output, format = "cd {}"),
+            cmd_args(
+                "tar",
+                cmd_args("--use-compress-program=zstd") if ctx.attrs.archive.extension == ".zst" else cmd_args(),
+                "-xf",
+                ctx.attrs.archive,
+                delimiter = " \\\n",
+            ).relative_to(output),
+            "\n",
+        ],
+        is_executable = True,
+        allow_args = True,
+    )
+    ctx.actions.run(
+        cmd_args(["/bin/sh", script])
+            .hidden([ctx.attrs.archive, output.as_output()]),
+        category = "extract_archive",
+        local_only = True,  # needs 'zstd' binary available, also gets installed
+        # into a local subvol anyway
+    )
+
+    return [
+        DefaultInfo(output),
+    ]
+
+extract_tarball = rule(
+    impl = _extract_impl,
+    attrs = {
+        "archive": attrs.source(),
+    },
+)

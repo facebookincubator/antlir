@@ -24,13 +24,11 @@ use crate::Result;
 
 mod compile;
 mod depgraph;
-mod extract_tarball;
 mod map;
 mod plan;
 mod shell;
 pub(crate) use compile::Compile;
 pub(crate) use depgraph::Depgraph;
-pub(crate) use extract_tarball::ExtractTarball;
 pub(crate) use map::Map;
 pub(crate) use plan::Plan;
 pub(crate) use shell::Shell;
