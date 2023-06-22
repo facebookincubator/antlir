@@ -38,22 +38,22 @@ def rpms_install(
     # make a writable copy if we might need to add to it
     if type(rpm_names) == "list":
         rpm_names = list(rpm_names)
-    unnamed_deps_or_sources = None
+    unnamed_deps_or_srcs = None
     for rpm in rpms:
         if _looks_like_label(rpm):
-            if not unnamed_deps_or_sources:
-                unnamed_deps_or_sources = []
-            unnamed_deps_or_sources.append(rpm)
+            if not unnamed_deps_or_srcs:
+                unnamed_deps_or_srcs = []
+            unnamed_deps_or_srcs.append(rpm)
         else:
             rpm_names.append(rpm)
-    if unnamed_deps_or_sources and rpm_deps:
-        fail("impossible, 'unnamed_deps_or_sources' cannot be populated if 'rpms' is empty")
-    if not unnamed_deps_or_sources:
-        unnamed_deps_or_sources = rpm_deps
+    if unnamed_deps_or_srcs and rpm_deps:
+        fail("impossible, 'unnamed_deps_or_srcs' cannot be populated if 'rpms' is empty")
+    if not unnamed_deps_or_srcs:
+        unnamed_deps_or_srcs = rpm_deps
 
     return ParseTimeFeature(
         feature_type = "rpm",
-        unnamed_deps_or_sources = unnamed_deps_or_sources,
+        unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         kwargs = {
             "action": "install",
             "rpm_names": rpm_names,
@@ -97,13 +97,13 @@ rpms_record = record(
 def rpms_analyze(
         action: str.type,
         rpm_names: [str.type],
-        unnamed_deps_or_sources: [["dependency", "artifact"]] = []) -> FeatureAnalysis.type:
+        unnamed_deps_or_srcs: [["dependency", "artifact"]] = []) -> FeatureAnalysis.type:
     rpms = []
     for rpm in rpm_names:
         rpms.append(rpm_source_record(name = rpm, source = None))
 
     artifacts = []
-    for rpm in unnamed_deps_or_sources:
+    for rpm in unnamed_deps_or_srcs:
         if type(rpm) == "dependency":
             rpm = ensure_single_output(rpm)
         rpms.append(rpm_source_record(source = rpm, name = None))

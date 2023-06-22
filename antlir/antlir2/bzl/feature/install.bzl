@@ -38,7 +38,7 @@ def install(
 
     return ParseTimeFeature(
         feature_type = "install",
-        deps_or_sources = {"src": src},
+        deps_or_srcs = {"src": src},
         kwargs = {
             "dst": dst,
             "group": group,
@@ -73,8 +73,8 @@ def install_analyze(
         group: str.type,
         mode: [int.type, None],
         user: str.type,
-        deps_or_sources: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
-    src = deps_or_sources["src"]
+        deps_or_srcs: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
+    src = deps_or_srcs["src"]
     binary_info = None
     required_run_infos = []
     required_artifacts = []
