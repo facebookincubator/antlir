@@ -29,6 +29,7 @@ def _split_binary_impl(ctx: "context") -> ["provider"]:
     split = ctx.actions.write("split.py", """#!/usr/bin/env python3
 import argparse
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -112,7 +113,7 @@ else:
     # the hash of the debuginfo file so that it can be loaded correctly.
     subprocess.run(
         [
-            args.objcopy,
+            os.path.abspath(args.objcopy),
             f"--add-gnu-debuglink={args.debuginfo.name}",
             args.stripped.resolve(),
         ],
