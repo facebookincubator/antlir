@@ -18,7 +18,7 @@ def test_rpm(
         license: str.type = "NONE",
         requires: [str.type] = [],
         recommends: [str.type] = [],
-        features: [types.antlir_feature] = [],
+        features = [],
         parent_layer: [str.type, None] = None,
         post_install_script: [str.type, None] = None) -> str.type:
     target_name = name + "-" + version + "-" + release + "." + arch

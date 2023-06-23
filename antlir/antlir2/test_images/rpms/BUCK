@@ -246,3 +246,26 @@ test_rpms(
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
+
+protected_installed = test_rpms(
+    name = "install-protected",
+    expected = expected_t(installed = ["dnf"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "dnf",
+        ] + _RPM_DEPS_OF_TEST),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "remove-protected",
+    expected = expected_t(not_installed = ["dnf"]),
+    features = [
+        feature.rpms_remove_if_exists(rpms = [
+            "dnf",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+    parent_layer = protected_installed,
+)
