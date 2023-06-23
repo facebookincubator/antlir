@@ -120,7 +120,7 @@ pub(crate) enum Reason {
     Clean,
     Dependency,
     Group,
-    Unkown,
+    Unknown,
     User,
     WeakDependency,
 }
