@@ -31,11 +31,11 @@ use starlark::eval::Evaluator;
 use starlark::eval::FileLoader;
 use starlark::starlark_module;
 use starlark::starlark_simple_value;
-use starlark::starlark_type;
 use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
 use starlark::values::dict::DictOf;
 use starlark::values::function::NativeFunction;
+use starlark::values::starlark_value;
 use starlark::values::structs::AllocStruct;
 use starlark::values::AllocValue;
 use starlark::values::NoSerialize;
@@ -87,9 +87,8 @@ impl std::fmt::Display for TypeId {
     }
 }
 starlark_simple_value!(TypeId);
-impl<'v> StarlarkValue<'v> for TypeId {
-    starlark_type!("TypeId");
-}
+#[starlark_value(type = "TypeId")]
+impl<'v> StarlarkValue<'v> for TypeId {}
 
 #[derive(Debug, ProvidesStaticType, Default, Deref)]
 struct TypeRegistryRefCell(RefCell<TypeRegistry>);
@@ -113,9 +112,8 @@ impl TypeRegistry {
 #[allocative(skip)]
 struct StarlarkType(Arc<ir::Type>);
 starlark_simple_value!(StarlarkType);
-impl<'v> StarlarkValue<'v> for StarlarkType {
-    starlark_type!("StarlarkType");
-}
+#[starlark_value(type = "StarlarkType")]
+impl<'v> StarlarkValue<'v> for StarlarkType {}
 
 trait TryToType {
     fn try_to_type(&self, reg: &TypeRegistry) -> Result<Arc<ir::Type>>;
@@ -167,9 +165,8 @@ impl<'v> TryToField for Value<'v> {
 #[allocative(skip)]
 struct StarlarkField(ir::Field);
 starlark_simple_value!(StarlarkField);
-impl<'v> StarlarkValue<'v> for StarlarkField {
-    starlark_type!("StarlarkField");
-}
+#[starlark_value(type = "StarlarkField")]
+impl<'v> StarlarkValue<'v> for StarlarkField {}
 
 fn get_type_registry<'a>(eval: &'a Evaluator) -> Result<&'a TypeRegistryRefCell> {
     let extra = eval
