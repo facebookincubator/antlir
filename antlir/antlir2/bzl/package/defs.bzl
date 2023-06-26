@@ -180,6 +180,7 @@ def _rpm(
         requires: [str.type] = [],
         recommends: [str.type] = [],
         provides: [str.type] = [],
+        supplements: [str.type] = [],
         post_install_script: [str.type, None] = None,
         **kwargs):
     check_kwargs(kwargs)
@@ -195,6 +196,7 @@ def _rpm(
         "release": release,
         "requires": requires,
         "summary": summary or rpm_name,
+        "supplements": supplements,
         "version": version,
     }
 
