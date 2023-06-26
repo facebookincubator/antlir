@@ -75,7 +75,6 @@ image.layer(
         feature.extract_from_layer(
             binaries = [
                 "/usr/bin/systemctl",
-                "/usr/bin/systemctl.link",
             ],
             layer = ":binaries-clone-src",
         ),
