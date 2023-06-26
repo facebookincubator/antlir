@@ -379,6 +379,7 @@ fn main() -> Result<()> {
             requires,
             recommends,
             provides,
+            supplements,
             post_install_script,
         } => {
             let layer_abspath = layer
@@ -400,6 +401,11 @@ fn main() -> Result<()> {
                 .map(|p| format!("Provides: {p}"))
                 .join("\n");
 
+            let supplements = supplements
+                .into_iter()
+                .map(|p| format!("Supplements: {p}"))
+                .join("\n");
+
             let mut spec = format!(
                 r#"Name: {name}
 Epoch: {epoch}
@@ -413,6 +419,7 @@ License: {license}
 {requires}
 {recommends}
 {provides}
+{supplements}
 
 %description
 
@@ -422,6 +429,7 @@ License: {license}
                 requires = requires,
                 recommends = recommends,
                 provides = provides,
+                supplements = supplements,
                 post_install_script = post_install_script
                     .map(|s| format!("%post\n{s}\n"))
                     .unwrap_or_default(),
