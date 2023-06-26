@@ -18,7 +18,7 @@ pub(crate) enum GuestSSHError {
     #[error("Expected private key does not exist at {0}")]
     PrivKeyError(String),
     #[error("SSH command failed: {0}")]
-    SSHCommandError(std::io::Error),
+    _SSHCommandError(std::io::Error),
 }
 
 type Result<T> = std::result::Result<T, GuestSSHError>;
@@ -57,6 +57,7 @@ impl GuestSSHCommand {
     }
 
     /// Set or override SSH connection options. See `man ssh_config` for details.
+    #[allow(unused)]
     pub(crate) fn option(&mut self, name: String, value: String) -> &mut Self {
         self.options.insert(name, value);
         self
