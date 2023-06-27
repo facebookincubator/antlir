@@ -5,14 +5,7 @@ load(":defs.bzl", "expected_t", "test_rpms")
 
 repo_set(
     name = "test-repo-set",
-    repo_sets = select({
-        "ovr_config//cpu:arm64": [
-            "//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9-aarch64",
-        ],
-        "ovr_config//cpu:x86_64": [
-            "//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9",
-        ],
-    }),
+    repo_sets = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9"],
     repos = ["//antlir/antlir2/test_images/rpms/repo:test-repo"],
     visibility = [
         "//antlir/antlir2/test_images/...",
