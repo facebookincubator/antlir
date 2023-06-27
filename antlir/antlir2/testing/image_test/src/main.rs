@@ -334,6 +334,8 @@ fn main() -> Result<()> {
         test_unit.write_all(test_stderr.path().as_os_str().as_bytes())?;
         test_unit.write_all(b"\n")?;
 
+        writeln!(test_unit, "Environment=USER=%u")?;
+
         for (key, val) in &setenv {
             write!(test_unit, "Environment=\"{key}=")?;
             test_unit.write_all(val.as_bytes())?;

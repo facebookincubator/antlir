@@ -181,12 +181,16 @@ def _rpm(
         recommends: [str.type] = [],
         provides: [str.type] = [],
         supplements: [str.type] = [],
+        conflicts: [str.type] = [],
+        description: [str.type, None] = None,
         post_install_script: [str.type, None] = None,
         **kwargs):
     check_kwargs(kwargs)
 
     opts = {
         "arch": arch,
+        "conflicts": conflicts,
+        "description": description,
         "epoch": epoch,
         "license": license,
         "name": rpm_name,
