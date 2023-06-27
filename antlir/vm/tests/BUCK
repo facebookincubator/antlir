@@ -261,7 +261,8 @@ vm.python_unittest(
     ],
     labels = [
         "supports_remote_execution",
-        're_opts_capabilities={"platform": "linux-remote-execution"}',
+        # FIXME(@pdel): Only the MTIA remote execution platform has chattr installed.
+        're_opts_capabilities={"platform":"linux-mtia-iommu","subplatform":"freya"}',
         # FIXME(@pdel): Need some more work to get RE test execution for antlir1 vmtests.
         "disabled",
     ],
