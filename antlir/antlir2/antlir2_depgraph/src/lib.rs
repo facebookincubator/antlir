@@ -598,13 +598,16 @@ impl<'a> Graph<'a> {
         }
         // remove any items from the depgraph if they refer to paths that are no
         // longer in the actual filesystem
-        for (key, nx) in self.items.iter() {
-            if let ItemKey::Path(p) = key {
-                if !seen_paths.contains(p.as_ref()) {
-                    self.g.remove_node(**nx);
+        self.g.retain_nodes(|graph, nx| match &graph[nx] {
+            Node::Item(item) => {
+                if let ItemKey::Path(p) = item.key() {
+                    seen_paths.contains(p.as_ref())
+                } else {
+                    true
                 }
             }
-        }
+            _ => true,
+        });
         self.items.retain(|key, _val| match key {
             ItemKey::Path(p) => seen_paths.contains(p.as_ref()),
             _ => true,

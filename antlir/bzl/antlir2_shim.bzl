@@ -21,7 +21,7 @@ _DEFAULT_ENABLED_PACKAGES = [
     "netos",
     "os_foundation",
     "tupperware/image/features",
-    "tupperware/image/base/impl/features",
+    "tupperware/image/base",
     "tupperware/image/rpmbuild",
 ]
 

@@ -94,6 +94,8 @@ pub enum Spec {
         recommends: Vec<String>,
         provides: Vec<String>,
         supplements: Vec<String>,
+        conflicts: Vec<String>,
+        description: Option<String>,
         post_install_script: Option<String>,
     },
     #[serde(rename = "squashfs")]

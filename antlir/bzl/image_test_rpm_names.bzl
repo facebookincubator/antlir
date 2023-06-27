@@ -66,5 +66,5 @@ A Hilariously Unlikely Yet Cheeky Sigil
         resources = {maybe_export_file(rpm_list): "expected_rpm_names"},
         deps = ["//antlir/bzl/tests:check_rpm_names"],
         flavor = flavor,
-        antlir2 = antlir2,
+        antlir2 = antlir2 or ("centos7" if flavor == "centos7" else None),
     )
