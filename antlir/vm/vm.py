@@ -420,19 +420,6 @@ async def vm(
     args.extend(["-L", str(opts.runtime.emulator.roms_dir.path)])
 
     if not opts.boot_from_disk:
-        # When not booting from disk, modules are always required, insert the
-        # export for them here.  Note: This Share uses "generator=False" because
-        # the initrd will mount these into the rootfs before the switch-root.
-        # (see: //antlir/vm/bzl:initrd.bzl)
-        shares.append(
-            Plan9Export(
-                path=find_built_subvol(opts.kernel.derived_targets.image.path).path()
-                / "modules",
-                mount_tag="kernel-modules",
-                generator=False,
-            )
-        )
-
         args.extend(
             [
                 "-kernel",
