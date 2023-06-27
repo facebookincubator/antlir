@@ -202,6 +202,36 @@ def _vm_unittest(
     if is_buck2():
         re_test_utils.set_re_info(re_attrs, wrapper_labels)
 
+    # FIXME: We use a bunch of genrules to generate trampoline scripts that
+    # don't specify their runtime dependencies (because they can't:
+    # https://fburl.com/workplace/ljtl2dv3) To support remote execution of
+    # tests, we need to manually list all the runtime dependencies here. It
+    # would be much better to rely on buck to include the build dependencies
+    # from $(location ...) in the runtime dependencies of a genrule
+    # executable, but this will probably be solved by antlir2 anyways.
+    deps = [
+        antlir_dep("vm:vmtest"),
+        ":" + name + "=vmtest__vm_opts",
+        ":" + actual_test_binary,
+        antlir_dep("vm:wrap-in-vm-test-exec"),
+        vm_opts.runtime.emulator.binary,
+        vm_opts.runtime.emulator.firmware,
+        vm_opts.runtime.emulator.img_util,
+        vm_opts.runtime.emulator.roms_dir,
+    ] + [
+        disk.package
+        for disk in vm_opts.disks
+    ]
+
+    if vm_opts.kernel:
+        deps.append(vm_opts.kernel.derived_targets.vmlinuz)
+        deps.append(vm_opts.kernel.derived_targets.image)
+        deps.append(vm_opts.kernel.derived_targets.modules_directory)
+        deps.append(vm_opts.kernel.derived_targets.disk_boot_modules)
+
+    if vm_opts.initrd:
+        deps.append(vm_opts.initrd)
+
     # Building buck_sh_test with a specific type to trick TestPilot into
     # thinking that it is running a unit test of the specific type directly.
     # In reality {}--vmtest-binary will transparently run the binary in a VM
@@ -218,6 +248,7 @@ def _vm_unittest(
         # binary, like llvm-cov
         env = {"BUCK_BASE_BINARY": "$(location :{})".format(actual_test_binary)},
         antlir_rule = "user-facing",
+        deps = deps,
         **re_attrs
     )
 
