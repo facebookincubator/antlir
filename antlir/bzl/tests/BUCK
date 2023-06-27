@@ -15,7 +15,6 @@ python_library(
     name = "check_rpm_names",
     srcs = ["check_rpm_names.py"],
     visibility = ["PUBLIC"],
-    deps = ["//antlir:fs_utils"],
 )
 
 # Useful together with `image.test_rpm_names`

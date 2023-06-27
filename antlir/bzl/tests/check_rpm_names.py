@@ -4,10 +4,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import importlib.resources
 import subprocess
 from typing import Set
-
-from antlir.fs_utils import Path
 
 
 def get_rpms() -> Set[str]:
@@ -22,14 +21,11 @@ def get_rpms() -> Set[str]:
 
 
 def check_rpm_names(test_case, package, resource: str) -> None:
-    with Path.resource(package, resource, exe=False) as expected_path, open(
-        expected_path
-    ) as expected_file:
-        expected = {
-            # `rpms-with-reason` adds a TAB-separated reason to the RPM name
-            s.split("\t")[0].strip()
-            for s in expected_file
-        }
+    expected = {
+        # `rpms-with-reason` adds a TAB-separated reason to the RPM name
+        s.split("\t")[0].strip()
+        for s in importlib.resources.read_text(package, resource).splitlines()
+    }
     test_case.assertEqual(
         expected,
         get_rpms(),
