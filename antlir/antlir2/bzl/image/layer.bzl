@@ -247,7 +247,11 @@ def _impl(ctx: "context") -> ["provider"]:
                 "#!/bin/bash",
                 "set -e",
                 "export RUST_LOG=\"antlir2=trace\"",
-                cmd_args(build_cmd, delimiter = "\n", quote = "shell"),
+                cmd_args(
+                    [cmd_args(cmd, delimiter = " ", quote = "shell") for cmd in build_cmd],
+                    delimiter = "\n\n",
+                ),
+                "\n",
                 delimiter = "\n",
             ),
             is_executable = True,
