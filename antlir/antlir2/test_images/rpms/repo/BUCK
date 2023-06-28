@@ -105,6 +105,20 @@ all_rpms.extend([
     for version in _GEN_VERSIONS
 ])
 
+all_rpms.extend([
+    test_rpm(
+        name = "requires-any-foo",
+        features = [feature.install(
+            src = "//antlir:empty",
+            dst = "/foo-recommends-me",
+        )],
+        release = "1",
+        requires = ["foo"],
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
+
 repo(
     name = "test-repo",
     compress = "none",

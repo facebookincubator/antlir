@@ -186,18 +186,21 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
     explicitly_removed_package_names = set()
 
     versionlock = spec["versionlock"] or {}
+    locked_packages = antlir2_dnf_base.locked_packages(
+        sack=base.sack, versionlock=versionlock
+    )
 
     for item in spec["items"]:
         action = item["action"]
         rpm = item["rpm"]
         if "subject" in rpm:
             source = rpm["subject"]
-            # If the versionlock specifies an exact version, construct a NEVRA
-            # from it instead of using just name. If an image owner specifies an
-            # exact NEVRA, this condition will be false, which is our
-            # versionlock opt-out mechanism.
-            if source in versionlock:
-                source = source + "-" + versionlock[source]
+            # If the versionlock contains a match for this name, install that
+            # package.  If an image author specifies an exact NEVRA, this
+            # condition will be false, which is our versionlock opt-out
+            # mechanism.
+            if source in locked_packages:
+                source = locked_packages[source]
         else:
             source = local_rpms[rpm["source"]]
 

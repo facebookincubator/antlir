@@ -13,7 +13,7 @@ import platform
 import shutil
 from contextlib import contextmanager
 from pathlib import Path
-from typing import ContextManager, Mapping, Optional, Set
+from typing import ContextManager, Dict, Mapping, Optional, Set
 
 import dnf
 import hawkey
@@ -139,6 +139,37 @@ def add_repos(*, base: dnf.Base, repos_dir: Path) -> None:
         )
 
 
+def _versionlock_query(
+    sack: dnf.sack.Sack, versionlock: Mapping[str, str]
+) -> dnf.query.Query:
+    locked_query = sack.query().filter(empty=True)
+    for name, version in versionlock.items():
+        pattern = name + "-" + version
+        possible_nevras = dnf.subject.Subject(pattern).get_nevra_possibilities()
+        for nevra in possible_nevras:
+            locked_query = locked_query.union(nevra.to_query(sack))
+
+    return locked_query
+
+
+def locked_packages(
+    *, sack: dnf.sack.Sack, versionlock: Mapping[str, str]
+) -> Dict[str, dnf.package.Package]:
+    """
+    Turn a requested versionlock into a set of lockable packages. This allows
+    antlir2 to ignore the versionlock when it references a package that does not
+    actually exist (which unfortunately happens all the time with the bad data
+    quality we have to work with).
+
+    The philosophy here is that the image author requested an rpm. If the
+    environment owner provided a bad versionlock, ignoring that impossible
+    versionlock is better than to fail to satisfy the image author request for
+    this rpm to be installed when they have no control over the default
+    versionlock being applied to their image.
+    """
+    return {pkg.name: pkg for pkg in _versionlock_query(sack, versionlock)}
+
+
 def versionlock_sack(
     *,
     sack: dnf.sack.Sack,
@@ -146,21 +177,18 @@ def versionlock_sack(
     explicitly_installed_package_names: Set[str],
     excluded_rpms: Set[str],
 ) -> None:
+    locked_query = _versionlock_query(sack, versionlock)
+
+    # Only lock packages that had a valid versionlock
+    locked_names = {pkg.name for pkg in locked_query}
+
     # Explicitly installed package names are excluded from version lock queries.
     # Note that this is not the same as saying they are excluded from version
     # locking, since the version lock will have happened already. These packages
     # are excluded from the queries so that an image owner is able to specify an
     # exact NEVRA and be sure to get that installed, without this query being
     # able to interfere.
-    locked_query = sack.query().filter(empty=True)
-    for name, version in versionlock.items():
-        pattern = name + "-" + version
-        possible_nevras = dnf.subject.Subject(pattern).get_nevra_possibilities()
-        for nevra in possible_nevras:
-            locked_query = locked_query.union(nevra.to_query(sack))
-    # locked_query now has the exact versions of all the packages that should be
-    # locked, excluding packages that have been explicitly installed
-    locked_names = set(versionlock.keys()) - explicitly_installed_package_names
+    locked_names = locked_names - explicitly_installed_package_names
     all_versions = sack.query().filter(name__glob=list(locked_names))
     disallowed_versions = all_versions.difference(locked_query)
     # ignore already-installed packages
