@@ -228,6 +228,38 @@ test_rpms(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
+buck_genrule(
+    name = "versionlock-missing-version.json",
+    out = "versionlock.json",
+    cmd = """
+        jq '.foo = "99-1"' < $(location //antlir/antlir2/test_images:test-image-flavor[default_versionlock]) > $OUT
+    """,
+)
+
+test_rpms(
+    name = "versionlock-missing-version",
+    dnf_versionlock = ":versionlock-missing-version.json",
+    expected = expected_t(installed = ["foo-3-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "foo",  # test rpm
+        ] + _RPM_DEPS_OF_TEST),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "versionlock-missing-version-of-dependency",
+    dnf_versionlock = ":versionlock-missing-version.json",
+    expected = expected_t(installed = ["foo-3-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "requires-any-foo",
+        ] + _RPM_DEPS_OF_TEST),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
 test_rpms(
     name = "nevra-overrides-versionlock",
     dnf_versionlock = ":versionlock.json",
