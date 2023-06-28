@@ -119,7 +119,10 @@ def _fake_buck1_layer(name):
 def _fake_buck1_test(name, test = None):
     _fake_buck1_target(name = name + ".antlir2")
     if test == "python":
-        python_unittest(name = name + ".antlir2_image_test_inner")
+        python_unittest(
+            name = name + ".antlir2_image_test_inner",
+            antlir_rule = "user-facing",
+        )
     else:
         _fake_buck1_target(name = name + ".antlir2_image_test_inner")
 
