@@ -7,11 +7,12 @@
 
 use std::ffi::OsStr;
 use std::path::Path;
+use std::process::Command;
 
 use antlir2_features::genrule::Genrule;
-use antlir2_isolate::isolate;
-use antlir2_isolate::IsolationContext;
 use anyhow::anyhow;
+use anyhow::Context;
+use itertools::Itertools;
 
 use crate::CompileFeature;
 use crate::CompilerContext;
@@ -28,23 +29,32 @@ impl<'a> CompileFeature for Genrule<'a> {
             unimplemented!("bind_repo_ro is not yet implemented");
         }
         let cwd = std::env::current_dir()?;
-        let mut cmd = isolate(
-            IsolationContext::builder(ctx.root())
-                .user(self.user.name())
-                .ephemeral(false)
-                .platform([
-                    cwd.as_path(),
-                    #[cfg(facebook)]
-                    Path::new("/usr/local/fbcode"),
-                    #[cfg(facebook)]
-                    Path::new("/mnt/gvfs"),
-                ])
-                .working_directory(&cwd)
-                .boot(self.boot)
-                .build(),
-        )
-        .into_command();
+        let mut cmd = Command::new("/__antlir2__/bwrap");
+        cmd.arg("--bind")
+            .arg(ctx.root())
+            .arg("/")
+            .args(["--proc", "/proc"]);
+
+        let mut support_binds = vec![cwd.as_path()];
+        #[cfg(facebook)]
+        support_binds.extend(vec![Path::new("/usr/local/fbcode"), Path::new("/mnt/gvfs")]);
+
         cmd.args(
+            support_binds
+                .iter()
+                .flat_map(|path| vec![OsStr::new("--ro-bind"), path.as_os_str(), path.as_os_str()]),
+        );
+
+        // record any directories created solely as supporting bind-mounts so
+        // they can be deleted
+        let support_dirs_to_clean_up: Vec<_> = support_binds
+            .iter()
+            .flat_map(|path| path.ancestors())
+            .filter(|path| !ctx.dst_path(path).exists())
+            .sorted_by_key(|path| path.components().count())
+            .collect();
+
+        cmd.arg("--").args(
             self.cmd
                 .iter()
                 .map(|s| OsStr::new(s.as_ref()))
@@ -63,6 +73,12 @@ impl<'a> CompileFeature for Genrule<'a> {
                 std::str::from_utf8(&res.stderr).unwrap_or("<invalid utf8>"),
             )));
         }
+
+        for dir in support_dirs_to_clean_up.iter().rev() {
+            std::fs::remove_dir(ctx.dst_path(dir))
+                .with_context(|| format!("while deleting bind-mount dst '{}'", dir.display()))?;
+        }
+
         Ok(())
     }
 }
