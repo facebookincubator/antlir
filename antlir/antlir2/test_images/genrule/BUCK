@@ -1,6 +1,14 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "genrule-rs",
+    srcs = ["genrule.rs"],
+    crate_root = "genrule.rs",
+    unittests = False,
+)
 
 image.layer(
     name = "base",
@@ -21,13 +29,10 @@ image.layer(
             dst = "/genrule.sh",
             mode = "a+rx",
         ),
-        # This is stupid, but the systemd-nspawn performed by 'genrule' dumps a
-        # ton of other junk (ex P717441612) into the image and I want my diff
-        # test to just show the things that my "interesting" genrule did, not
-        # implementation details of systemd-nspawn
-        feature.genrule(
-            cmd = ["true"],
-            user = "root",
+        feature.install(
+            src = ":genrule-rs",
+            dst = "/genrule-rs",
+            mode = "a+rx",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
@@ -38,6 +43,10 @@ image.layer(
     features = [
         feature.genrule(
             cmd = ["/genrule.sh"],
+            user = "root",
+        ),
+        feature.genrule(
+            cmd = ["/genrule-rs"],
             user = "root",
         ),
     ],
