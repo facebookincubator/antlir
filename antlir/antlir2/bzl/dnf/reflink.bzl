@@ -29,4 +29,5 @@ def rpm2extents(
         category = "rpm2extents",
         identifier = identifier,
         local_only = True,  # local subvolume required
+        allow_cache_upload = True,  # the actual produced artifact is fine to cache
     )
