@@ -17,7 +17,7 @@ class TestExtracted(unittest.TestCase):
     # libsystemd-shared-*.so is only found in the binary's RPATH, not in /lib64
     def test_rpath(self):
         subvol = layer_resource_subvol(__package__, "layer")
-        paths = Path.listdir(subvol.path("/usr/lib/systemd"))
+        paths = Path.listdir(subvol.path("/usr/lib64/systemd"))
         self.assertTrue(
             any(
                 re.match(rb"libsystemd-shared-\d+.*\.so", path.basename())
