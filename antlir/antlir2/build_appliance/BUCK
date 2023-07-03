@@ -23,10 +23,6 @@ feature.new(
             subdirs_to_create = "build_appliance",
         ),
         "//antlir/antlir2/dnf:features",
-        feature.install(
-            src = "fbsource//third-party/bubblewrap:bwrap",
-            dst = "/__antlir2__/bwrap",
-        ),
     ],
     visibility = ["//antlir/antlir2/..."],
 )
