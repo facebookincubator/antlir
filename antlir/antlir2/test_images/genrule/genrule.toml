@@ -39,15 +39,3 @@ group = 'root'
 text = '''
 qux
 '''
-
-[from-rust]
-op = "added"
-
-[from-rust.diff]
-mode = "u+rw,g+r,o+r"
-file-type = "regular-file"
-user = "root"
-group = "root"
-text = """
-hello world!
-"""
