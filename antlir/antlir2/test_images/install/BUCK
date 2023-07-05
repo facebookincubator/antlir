@@ -138,6 +138,10 @@ image_python_test(
 
 export_file(
     name = "true.precompiled",
+    src = select({
+        "ovr_config//cpu:arm64": "true.precompiled.aarch64",
+        "ovr_config//cpu:x86_64": "true.precompiled.x86_64",
+    }),
 )
 
 buck_genrule(
