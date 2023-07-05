@@ -98,8 +98,8 @@ impl VM {
 
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
-        self.spawn_vm()?;
-        self.wait_for_vm()?;
+        let proc = self.spawn_vm()?;
+        self.wait_for_vm(proc)?;
         Ok(())
     }
 
@@ -232,10 +232,25 @@ impl VM {
         Ok(())
     }
 
+    /// We control VM process through sockets. If VM process exited for any reason
+    /// before socket connection is established, it's an error. Detect such early
+    /// failure by polling process status.
+    fn try_wait_vm_proc(&self, child: &mut Child) -> Result<()> {
+        match child.try_wait() {
+            Ok(Some(status)) => Err(VMError::BootError(format!(
+                "VM process exited prematurely: {status}"
+            ))),
+            Ok(None) => Ok(()),
+            Err(e) => Err(VMError::BootError(format!(
+                "Error attempting to wait for VM process: {e}"
+            ))),
+        }
+    }
+
     /// Connect to the notify socket, wait for boot ready message and wait for the VM
     /// to terminate. If time out is specified, this function will return error
     /// upon timing out.
-    fn wait_for_vm(&self) -> Result<()> {
+    fn wait_for_vm(&self, mut vm_proc: Child) -> Result<()> {
         let start_ts = Instant::now();
 
         // Wait for notify file to be created by qemu
@@ -243,7 +258,10 @@ impl VM {
         while !self.time_left(start_ts)?.is_zero() {
             match self.notify_file().try_exists() {
                 Ok(true) => break,
-                Ok(false) => thread::sleep(Duration::from_millis(100)),
+                Ok(false) => {
+                    self.try_wait_vm_proc(&mut vm_proc)?;
+                    thread::sleep(Duration::from_millis(100));
+                }
                 Err(e) => {
                     return Err(VMError::BootError(format!(
                         "Unable to access notify file {e}"
@@ -545,5 +563,20 @@ mod test {
         send.shutdown(Shutdown::Both)
             .expect("Failed to shutdown sender");
         handle.join().expect("Test thread panic'ed");
+    }
+
+    #[test]
+    fn test_try_wait_vm_proc() {
+        let vm = get_vm_no_disk();
+        let mut child = Command::new("sleep")
+            .arg("1")
+            .spawn()
+            .expect("Failed to spawn test process");
+        assert!(vm.try_wait_vm_proc(&mut child).is_ok());
+        Command::new("sleep")
+            .arg("1")
+            .status()
+            .expect("Failed to finish second sleep");
+        assert!(vm.try_wait_vm_proc(&mut child).is_err());
     }
 }
