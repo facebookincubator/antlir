@@ -45,10 +45,9 @@ jobs:
         with:
           python-version: "~3.9"
 
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: nightly-2021-03-25
-          override: true
 
       - name: Fetch buck
         run: buck --version
