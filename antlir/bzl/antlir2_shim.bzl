@@ -20,6 +20,7 @@ _DEFAULT_ENABLED_PACKAGES = [
     "metalos",
     "netos",
     "os_foundation",
+    "sandcastle/images",
     "tupperware/image/features",
     "tupperware/image/base",
     "tupperware/image/rpmbuild",
@@ -30,6 +31,8 @@ _DEFAULT_DISABLED_PACKAGES = [
     # try to make antlir2 images for them when the goal is to delete it all soon
     # enough anyway
     "antlir",
+    "sandcastle/images/runtime",
+    "sandcastle/images/worker",
     "tupperware/cm/antlir/tests",
     "tupperware/cm/tests",
     "tupperware/image/slimos",
