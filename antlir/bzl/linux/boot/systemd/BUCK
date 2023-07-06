@@ -9,6 +9,15 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 oncall("twimage")
 
+image.layer(
+    name = "deps",
+    antlir2 = "skip-fbpkg-indirection",
+    features = [
+        feature.rpms_install(["systemd-boot-unsigned"]),
+    ],
+    parent_layer = REPO_CFG.artifact["metalos.layer.base.c8"],
+)
+
 # The base image.layer for a systemd boot partition
 # There is no kernel, initrd, or loader entries
 # configured in this layer.
@@ -23,14 +32,14 @@ image.layer(
         feature.ensure_subdirs_exist("/", "loader"),
         feature.ensure_subdirs_exist("/loader", "entries"),
         feature.clone(
-            REPO_CFG.artifact["metalos.layer.base.c8"],
-            "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
-            "/EFI/systemd/systemd-bootx64.efi",
+            dest_path = "/EFI/systemd/systemd-bootx64.efi",
+            src_layer = ":deps",
+            src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
         ),
         feature.clone(
-            REPO_CFG.artifact["metalos.layer.base.c8"],
-            "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
-            "/EFI/BOOT/BOOTX64.efi",
+            dest_path = "/EFI/BOOT/BOOTX64.efi",
+            src_layer = ":deps",
+            src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
         ),
     ],
     flavor = flavor_helpers.get_antlir_linux_flavor(),
