@@ -287,7 +287,9 @@ def _impl(ctx: "context") -> ["provider"]:
     if not final_subvol:
         final_subvol = parent_layer
 
-    sub_targets = {}
+    sub_targets = {
+        "subvol_symlink": [DefaultInfo(final_subvol)],
+    }
 
     # Expose the build appliance as a subtarget so that it can be used by test
     # macros like image_rpms_test. Generally this should be accessed by the
