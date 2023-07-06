@@ -28,7 +28,11 @@ class OsReleaseTest(unittest.TestCase):
         )
         self.assertEqual(
             os_release["ID"],
-            "antlirtest",
+            "centos",
+        )
+        self.assertEqual(
+            os_release["VERSION"],
+            "9",
         )
         self.assertEqual(
             os_release["VARIANT"],
@@ -51,12 +55,6 @@ class OsReleaseTest(unittest.TestCase):
         # Validate the second part of the BUILD_ID is a vcs rev
         self.assertTrue(re.match(rev_id_regex, os_release["IMAGE_VCS_REV"]))
 
-        try:
-            datetime.strptime(os_release["VERSION"], "%Y-%m-%dT%H:%M:%S%z")
-        except Exception as e:
-            self.fail(
-                f"Can't parse revision_time_iso8601 {os_release['VERSION']} as date: {e}"
-            )
         try:
             datetime.strptime(os_release["IMAGE_VCS_REV_TIME"], "%Y-%m-%dT%H:%M:%S%z")
         except Exception as e:

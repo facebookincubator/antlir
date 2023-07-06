@@ -8,7 +8,7 @@ load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-def _install(path, layer, os_name, variant, ansi_color = "0;34", api_versions = {}):
+def _install(path, layer, os_name, variant, os_version = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}):
     """
     Build an `os-release` file and install it at the provided `path` location.
     See https://www.freedesktop.org/software/systemd/man/os-release.html
@@ -87,8 +87,8 @@ rev_time="`$(exe {vcs}) --revision_time_iso8601`"
 
 cat > $OUT << EOF
 NAME="{os_name}"
-ID="{os_name_lower}"
-VERSION="$rev_time"
+ID="{os_id}"
+VERSION="{os_version}"
 PRETTY_NAME="{os_name} {variant} ($rev)"
 IMAGE_ID="{image_id}"
 IMAGE_LAYER="{target}"
@@ -103,7 +103,9 @@ ANSI_COLOR="{ansi_color}"
             image_id = native.read_config("build_info", "target_path", "local"),
             target = normalize_target(layer),
             os_name = os_name,
+            os_id = os_id,
             os_name_lower = os_name.lower(),
+            os_version = os_version,
             lower_variant = variant.lower(),
             variant = variant,
             vcs = antlir_dep(":vcs"),
