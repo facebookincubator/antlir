@@ -5,7 +5,9 @@
 
 load("//antlir/bzl:types.bzl", "types")
 
-def _from_antlir1_flavor(flavor: [str.type, ""]) -> str.type:
+def _from_antlir1_flavor(flavor: [str.type, ""]) -> [str.type, None]:
+    if not flavor:
+        return None
     if not types.is_string(flavor):
         flavor = flavor.unaliased_name
 
