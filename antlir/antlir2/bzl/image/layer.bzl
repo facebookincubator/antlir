@@ -11,6 +11,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:build_defs.bzl", "alias")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":depgraph.bzl", "build_depgraph")
@@ -58,16 +59,21 @@ def _map_image(
 
     return cmd, out
 
-def _nspawn_sub_target(subvol: "artifact", mounts: ["mount_record"]) -> ["provider"]:
+def _nspawn_sub_target(nspawn_binary: "dependency", subvol: "artifact", mounts: ["mount_record"]) -> ["provider"]:
+    dev_mode_args = cmd_args()
+    if REPO_CFG.artifacts_require_repo:
+        dev_mode_args = cmd_args(
+            "--artifacts-require-repo",
+            cmd_args([["--bind-ro", x] for x in REPO_CFG.host_mounts_for_repo_artifacts]),
+        )
     return [
         DefaultInfo(),
         RunInfo(cmd_args(
             "sudo",
-            "systemd-nspawn",
-            "--ephemeral",
-            "--directory",
-            subvol,
+            nspawn_binary[RunInfo],
+            cmd_args(subvol, format = "--subvol={}"),
             cmd_args([nspawn_mount_args(mount) for mount in mounts]),
+            dev_mode_args,
         )),
     ]
 
@@ -271,7 +277,7 @@ def _impl(ctx: "context") -> ["provider"]:
                         key: [DefaultInfo(artifact)]
                         for key, artifact in logs.items()
                     })],
-                    "nspawn": _nspawn_sub_target(final_subvol, mounts = phase_mounts),
+                    "nspawn": _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts = phase_mounts),
                     "subvol": [DefaultInfo(final_subvol)],
                 },
             ),
@@ -305,7 +311,7 @@ def _impl(ctx: "context") -> ["provider"]:
         parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
     )
 
-    sub_targets["nspawn"] = _nspawn_sub_target(final_subvol, mounts)
+    sub_targets["nspawn"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
     if ctx.attrs.parent_layer:
         sub_targets["parent_layer"] = ctx.attrs.parent_layer.providers
@@ -366,6 +372,7 @@ _layer = rule(
             default = "//antlir/antlir2:toolchain",
             providers = [Antlir2ToolchainInfo],
         ),
+        "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
     },
 )
 
