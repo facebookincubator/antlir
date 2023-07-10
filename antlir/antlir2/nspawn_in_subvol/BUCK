@@ -1,0 +1,16 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+rust_binary(
+    name = "nspawn",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "tracing",
+        "tracing-subscriber",
+        "//antlir:find_root",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ],
+)
