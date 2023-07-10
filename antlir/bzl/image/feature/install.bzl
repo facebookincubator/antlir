@@ -199,7 +199,7 @@ def feature_install(
         user = "root",
         group = "root",
         separate_debug_symbols = True,
-        # @lint-ignore BUILDIFIERLINT
+        # buildifier: disable=unused-variable
         wrap_as_buck_runnable = False):
     """
 `feature.install("//path/fs:data", "dir/bar")` installs file or directory
