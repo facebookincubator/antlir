@@ -33,7 +33,9 @@ image.layer(
         feature.rpms_install(rpms = [
             "glib2",  # for virtiofsd
             "iproute",  # for NIC configuration
+            "numactl-libs",  # for qemu-system
             "openssh-clients",  # for ssh shell
+            "pixman",  # for qemu-system
             "systemd-container",  # for systemd-detect-virt
         ]),
         feature.install(
