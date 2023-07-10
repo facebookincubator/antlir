@@ -10,6 +10,7 @@ use std::path::Path;
 
 use antlir2_features::genrule::Genrule;
 use antlir2_isolate::isolate;
+use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::anyhow;
 
@@ -40,7 +41,10 @@ impl<'a> CompileFeature for Genrule<'a> {
                     Path::new("/mnt/gvfs"),
                 ])
                 .working_directory(&cwd)
-                .boot(self.boot)
+                .invocation_type(match self.boot {
+                    true => InvocationType::BootReadOnly,
+                    false => InvocationType::Pid2Pipe,
+                })
                 .build(),
         )
         .into_command();

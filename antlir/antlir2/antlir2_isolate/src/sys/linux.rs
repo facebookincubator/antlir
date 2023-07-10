@@ -16,6 +16,7 @@ use std::process::Command;
 use nix::unistd::Uid;
 use uuid::Uuid;
 
+use crate::InvocationType;
 use crate::IsolatedContext;
 use crate::IsolationContext;
 
@@ -65,7 +66,7 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         platform,
         inputs,
         outputs,
-        boot,
+        invocation_type,
         register,
         user,
         ephemeral,
@@ -96,20 +97,29 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         // run as many ephemeral containers as we want
         cmd.env("SYSTEMD_NSPAWN_LOCK", "0");
     }
-    if !boot {
-        cmd.arg("--console=pipe");
-        // TODO(vmagro): we might actually want to implement real pid1 semantics
-        // in the compiler process for better control, but for now let's not
-        cmd.arg("--as-pid2");
-    } else {
-        cmd.arg("--boot");
-        cmd.arg("--console=read-only");
+    match invocation_type {
+        InvocationType::Pid2Interactive => {
+            cmd.arg("--console=interactive");
+            // TODO(vmagro): we might actually want to implement real pid1 semantics
+            // in the compiler process for better control, but for now let's not
+            cmd.arg("--as-pid2");
+        }
+        InvocationType::Pid2Pipe => {
+            cmd.arg("--console=pipe");
+            // TODO(vmagro): we might actually want to implement real pid1 semantics
+            // in the compiler process for better control, but for now let's not
+            cmd.arg("--as-pid2");
+        }
+        InvocationType::BootReadOnly => {
+            cmd.arg("--boot");
+            cmd.arg("--console=read-only");
+        }
     }
     if register {
         cmd.arg(format!("--machine={}", Uuid::new_v4()));
     } else {
         cmd.arg("--register=no");
-        if !boot {
+        if !invocation_type.booted() {
             // In a booted container, let systemd-nspawn create a transient
             // scope unit so that cgroup management by the booted systemd works
             // as expected, regardless of any questionable environment

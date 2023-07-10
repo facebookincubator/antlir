@@ -40,14 +40,33 @@ pub struct IsolationContext<'a> {
     inputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
     /// See [IsolationContextBuilder::outputs]
     outputs: BTreeMap<Cow<'a, Path>, Cow<'a, Path>>,
-    /// See [IsolationContextBuilder::boot]
-    boot: bool,
+    /// See [InvocationType]
+    invocation_type: InvocationType,
     /// See [IsolationContextBuilder::register]
     register: bool,
     /// See [IsolationContextBuilder::user]
     user: Cow<'a, str>,
     /// See [IsolationContextBuilder::ephemeral]
     ephemeral: bool,
+}
+
+/// Controls how the container is spawned and how console is configured for the
+/// container payload.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum InvocationType {
+    /// Runs /init from inside the layer as PID 1, sets console as read-only
+    BootReadOnly,
+    /// Invokes command in layer as PID 2 w/ stub PID 1, sets console as interactive
+    Pid2Interactive,
+    /// Invokes command in layer as PID 2 w/ stub PID 1, sets console as pipe (helpful
+    /// when using in pipelines)
+    Pid2Pipe,
+}
+
+impl InvocationType {
+    fn booted(&self) -> bool {
+        self == &InvocationType::BootReadOnly
+    }
 }
 
 impl<'a> IsolationContext<'a> {
@@ -66,7 +85,7 @@ impl<'a> IsolationContext<'a> {
                 setenv: Default::default(),
                 inputs: Default::default(),
                 outputs: Default::default(),
-                boot: false,
+                invocation_type: InvocationType::Pid2Pipe,
                 register: false,
                 user: Cow::Borrowed("root"),
                 ephemeral: true,
@@ -122,9 +141,9 @@ impl<'a> IsolationContextBuilder<'a> {
         self
     }
 
-    /// Run /init from inside the layer as PID 1
-    pub fn boot(&mut self, boot: bool) -> &mut Self {
-        self.ctx.boot = boot;
+    /// See [InvocationType]
+    pub fn invocation_type<I: Into<InvocationType>>(&mut self, invocation_type: I) -> &mut Self {
+        self.ctx.invocation_type = invocation_type.into();
         self
     }
 
