@@ -22,6 +22,7 @@ use std::str::FromStr;
 
 use antlir2_features::mount::Mount;
 use antlir2_isolate::isolate;
+use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::anyhow;
 use anyhow::Context;
@@ -241,7 +242,10 @@ fn main() -> Result<()> {
     .working_directory(&working_directory)
     .setenv(setenv.clone())
     .outputs(args.test.bind_mounts())
-    .boot(args.boot);
+    .invocation_type(match args.boot {
+        true => InvocationType::BootReadOnly,
+        false => InvocationType::Pid2Pipe,
+    });
     ctx.inputs(
         args.mounts
             .into_inner()
