@@ -911,7 +911,7 @@ def _stable_json(instance):
     elif instance == None:
         return "null"
     elif types.is_string(instance):
-        return '"{}"'.format(instance)
+        return repr(instance)
     elif types.is_bool(instance):
         return str(instance).lower()
     else:

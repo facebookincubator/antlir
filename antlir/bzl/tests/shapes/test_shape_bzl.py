@@ -480,12 +480,12 @@ class TestShapeBzl(unittest.TestCase):
             v2=123,
             v3=False,
             v1=None,
-            items=["two", "one"],
+            items=["two", "one", "item_with_new_line\n"],
         )
         instance_json = shape.stable_json(instance)
         self.assertEqual(
             instance_json,
-            '{"items":["two","one"],"v1":null,"v2":123,"v3":false}',
+            "{'items':['two','one','item_with_new_line\\n'],'v1':null,'v2':123,'v3':false}",
         )
 
     def test_hash(self) -> None:
