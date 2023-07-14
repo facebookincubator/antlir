@@ -9,8 +9,8 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 oncall("twimage")
 
 third_party.build(
-    name = "libtpms",
-    src = third_party.source("libtpms"),
+    name = "libcrypto",
+    src = third_party.source("openssl_1.1.1k"),
     features = [
         feature.rpms_install([
             # build deps
@@ -19,33 +19,21 @@ third_party.build(
             "autoconf-archive",
             "libtool",
             "make",
-            "sed",
-            "net-tools",
-            "tpm-tools",
-            "expect",
-            "socat",
-            # static deps
-            "glibc-static",
-            "glib2-static",
-            "pcre-static",
         ]),
     ],
     script = third_party.script(
         build = "make",
         install = "make install",
         prepare = """
-export CFLAGS="-fPIC -I/third-party-build/deps/libcrypto/include"
-export LDFLAGS="-L/third-party-build/deps/libcrypto/lib"
+export CFLAGS="-fPIC -fno-omit-frame-pointer"
 
-# need to fix a global symbol otherwise it collides
-# later on due to static linkage
-sed -i 's/char state_directory/static char state_directory/' ./src/tpm12/tpm_nvfile.c
-
-./autogen.sh --prefix="${OUTPUT}" --with-openssl --with-tpm2 --disable-shared
+./config --prefix="${OUTPUT}" \
+    enable-camellia enable-seed enable-rfc3779 enable-cms enable-md2 \
+    no-mdc2 no-ec2m no-sm2 no-sm4 \
+    no-zlib \
+    no-rc5 no-ec2m no-gost no-sm3 no-idea no-whirlpool \
+    no-shared
         """,
     ),
     visibility = ["//antlir/third-party/..."],
-    deps = [
-        third_party.library("libcrypto"),
-    ],
 )

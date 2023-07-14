@@ -17,24 +17,8 @@ SRC_DIR = paths.join(PREFIX, "src")
 DEPS_DIR = paths.join(PREFIX, "deps")
 OUTPUT_DIR = "/output"
 
-def _cmd_prepare_dependency(dependency):
-    """ Provide the .pc file for the dep in the right place. """
-    return "\n".join([
-        "cp -a {deps}/{name}/{path}/pkgconfig/*.pc {deps}/pkgconfig/".format(
-            deps = DEPS_DIR,
-            name = dependency.name,
-            path = path,
-        )
-        for path in dependency.paths
-    ])
-
 def _build(name, features, script, src, deps = None, **kwargs):
     deps = deps or []
-
-    prepare_deps = "\n".join([
-        _cmd_prepare_dependency(dep)
-        for dep in deps
-    ])
 
     OUTPUT_DIR = paths.join(DEPS_DIR, name)
 
@@ -48,10 +32,6 @@ cat > $TMP/out << 'EOF'
 set -ue
 set -o pipefail
 
-# copy all specified dependencies
-mkdir -p "{deps_dir}/pkgconfig"
-{prepare_deps}
-
 # unpack the source in build dir
 cd "{src_dir}"
 tar xzf {src} --strip-components=1
@@ -62,7 +42,7 @@ for p in \\$(ls -A {patches_dir}); do
 done
 
 export OUTPUT="{output_dir}/"
-export PKG_CONFIG_PATH="{deps_dir}/pkgconfig"
+export PKG_CONFIG_PATH="\\$(find {deps_dir} -type d -name pkgconfig | paste -sd ':')"
 export MAKEFLAGS=-j
 
 {prepare}
@@ -73,7 +53,6 @@ mv $TMP/out $OUT
 chmod +x $OUT
         """).format(
             src = SRC_TGZ,
-            prepare_deps = prepare_deps,
             prepare = script.prepare if script.prepare else "",
             build = script.build,
             install = script.install,
