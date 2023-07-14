@@ -88,7 +88,8 @@ def _gen_nevras_in_subvol(ba_subvol: Subvol, subvol: Subvol) -> Iterator[NEVRA]:
     rpm_cp, _ = run_nspawn(opts, PopenArgs(stdout=subprocess.PIPE))
     for nevra_str in rpm_cp.stdout.decode().split():
         n, e, v, r, a = nevra_str.split(delim)
-        yield NEVRA(n, e, v, r, a)
+        if n != "gpg-pubkey":
+            yield NEVRA(n, e, v, r, a)
 
 
 def _gen_nevras_from_installer_output(
