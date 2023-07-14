@@ -1,5 +1,6 @@
 # (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
+load("@fbcode_macros//build_defs:export_files.bzl", "export_files")
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
@@ -9,6 +10,8 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # This is required for libffi coming from TP2 which uses ld 2.32
 
 oncall("twimage")
+
+export_files(files = ["00_configure"])
 
 third_party.build(
     name = "swtpm",
@@ -28,32 +31,41 @@ third_party.build(
             "expect",
             "socat",
             "python38",
-            "openssl-devel",
+            "libtasn1-devel",  # required but not for swtpm binary (ok with shared here)
+
             # static deps
             "glibc-static",
             "glib2-static",
             "pcre-static",
-            "libtasn1-devel",  # required but seemingly unused (ok with shared here)
         ]),
     ],
     script = third_party.script(
         build = """
+cd src/swtpm
 # swtpm doesnt support static linkage by itself, so convince it
-make LDFLAGS="${LDFLAGS} -all-static"
+make LDFLAGS="${LDFLAGS} -all-static" LIBS="-ldl"
         """,
         install = """
+strip swtpm
 make install
-
-# swtpm creates a root only folder to keep CA files, and it's not copyable
-# from outside the container, since we don't need it, delete
-rm -rf "${OUTPUT}/var"
         """,
+        patches = [":00_configure"],
         # TODO: Dynamically build the LDFLAGS + CLFAGS env vars based on the provided deps
         prepare = """
-export CFLAGS="-B/opt/rh/gcc-toolset-9/root/bin -I/third-party-build/deps/libffi/include -I/third-party-build/deps/json-glib/include/json-glib-1.0 -I/usr/include/glib-2.0 -I/usr/lib64/glib-2.0/include -I/third-party-build/deps/libtpms/include"
-export LDFLAGS="-L/third-party-build/deps/libtpms/lib -L/third-party-build/deps/libffi/lib/../lib64 -L/third-party-build/deps/json-glib/lib64 -lcrypto -ldl -lpthread"
+export CFLAGS="-B/opt/rh/gcc-toolset-9/root/bin \
+    -I/third-party-build/deps/libffi/include \
+    -I/third-party-build/deps/json-glib/include/json-glib-1.0 \
+    -I/third-party-build/deps/libcrypto/include \
+    -I/usr/include/glib-2.0 \
+    -I/usr/lib64/glib-2.0/include \
+    -I/third-party-build/deps/libtpms/include"
+export LDFLAGS="-L/third-party-build/deps/libtpms/lib \
+    -L/third-party-build/deps/libffi/lib/../lib64 \
+    -L/third-party-build/deps/json-glib/lib64 \
+    -L/third-party-build/deps/libcrypto/lib \
+    -ldl -lpthread"
 
-./autogen.sh --prefix="${OUTPUT}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp 
+./autogen.sh --prefix="${OUTPUT}" --with-openssl --without-gnutls --without-selinux --without-cuse --without-seccomp
         """,
     ),
     visibility = ["//antlir/vm/..."],
@@ -66,5 +78,6 @@ export LDFLAGS="-L/third-party-build/deps/libtpms/lib -L/third-party-build/deps/
             lib_path = "lib64",
         ),
         third_party.library("libtpms"),
+        third_party.library("libcrypto"),
     ],
 )

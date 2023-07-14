@@ -1,0 +1,14 @@
+# since we're trying to build a static swtpm, the check for libtpms version needs
+# to use the static libcrypto.a otherwise compile fails and configure will complain
+# that the version is wrong
+--- configure.ac        2023-07-11 15:46:24.557440526 -0700
++++ configure.ac        2023-07-11 15:47:14.603685386 -0700
+@@ -172,7 +172,8 @@
+ CFLAGS="$CFLAGS $LIBTPMS_CFLAGS"
+ AC_CHECK_LIB(tpms,
+              TPMLIB_ChooseTPMVersion,[true],
+-             AC_MSG_ERROR("libtpms 0.6 or later is required")
++             AC_MSG_ERROR("libtpms 0.6 or later is required"),
++             -lcrypto
+ )
+ AC_SUBST([LIBTPMS_LIBS])
