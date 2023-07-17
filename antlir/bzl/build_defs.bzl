@@ -76,6 +76,7 @@ _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
         "labels",
         "name",
         "owner",
+        "resources",
         "srcs",
         "tags",
         "visibility",
