@@ -696,6 +696,8 @@ def _render_template(name, instance, template, visibility = None):  # pragma: no
     Warning: this will fail to serialize any shape type that contains a
     reference to a target location, as that cannot be safely cached by buck.
     """
+    if native.rule_exists(name + "--data.json"):
+        return normalize_target(":" + name)
     _json_file(name + "--data.json", instance)
 
     buck_genrule(
