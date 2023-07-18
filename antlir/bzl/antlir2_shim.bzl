@@ -134,6 +134,11 @@ def _fake_buck1_target(name):
         antlir_rule = "user-internal",
     )
 
+antlir2_enabled_packages = [
+    "metalos/imaging_initrd",
+    "metalos/initrd",
+]
+
 antlir2_shim = struct(
     fake_buck1_layer = _fake_buck1_layer,
     fake_buck1_feature = _fake_buck1_target,
@@ -142,5 +147,5 @@ antlir2_shim = struct(
     should_make_parallel_feature = _should_make_parallel,
     should_make_parallel_layer = _should_make_parallel,
     should_make_parallel_test = _should_make_parallel,
-    should_make_parallel_package = partial(_should_make_parallel, enabled_packages = ["metalos/initrd"]),
+    should_make_parallel_package = partial(_should_make_parallel, enabled_packages = antlir2_enabled_packages),
 )
