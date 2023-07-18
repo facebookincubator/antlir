@@ -89,7 +89,7 @@ cat > $OUT << EOF
 NAME="{os_name}"
 ID="{os_id}"
 VERSION="{os_version}"
-PRETTY_NAME="{os_name} {variant} ($rev)"
+PRETTY_NAME="{os_name} {os_version} {variant} ($rev)"
 IMAGE_ID="{image_id}"
 IMAGE_LAYER="{target}"
 IMAGE_VCS_REV="$rev"
