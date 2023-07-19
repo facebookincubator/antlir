@@ -202,6 +202,8 @@ impl CompilerContext {
     {
         if !path.as_ref().is_absolute() {
             self.root.join(path)
+        } else if path.as_ref().starts_with(&self.root) {
+            path.as_ref().to_path_buf()
         } else {
             self.root
                 .join(path.as_ref().strip_prefix("/").expect("infallible"))
