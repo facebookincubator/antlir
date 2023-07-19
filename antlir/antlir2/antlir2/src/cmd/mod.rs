@@ -27,6 +27,10 @@ mod depgraph;
 mod map;
 mod plan;
 mod shell;
+#[cfg(facebook)]
+use antlir2_compile::facebook::FbpkgContext;
+#[cfg(facebook)]
+use antlir2_compile::facebook::ResolvedFbpkgInfoJsonFile;
 pub(crate) use compile::Compile;
 pub(crate) use depgraph::Depgraph;
 pub(crate) use map::Map;
@@ -48,6 +52,9 @@ pub(self) struct Compileish {
     pub(crate) external: CompileishExternal,
     #[clap(flatten)]
     pub(crate) dnf: DnfCompileishArgs,
+    #[cfg(facebook)]
+    #[clap(flatten)]
+    pub(crate) fbpkg: FbpkgCompileishArgs,
 }
 
 #[derive(Parser, Debug)]
@@ -61,6 +68,14 @@ pub(self) struct DnfCompileishArgs {
     #[clap(long = "dnf-excluded-rpms")]
     /// Path to json file with list of rpms to exclude from dnf operations
     pub(crate) excluded_rpms: Option<JsonFile<BTreeSet<String>>>,
+}
+
+#[cfg(facebook)]
+#[derive(Parser, Debug)]
+pub(self) struct FbpkgCompileishArgs {
+    #[clap(long = "resolved-fbpkgs")]
+    /// Path to resolced fbpkgs json file
+    pub(crate) resolved_fbpkgs: Option<ResolvedFbpkgInfoJsonFile>,
 }
 
 #[derive(Parser, Debug)]
@@ -96,6 +111,8 @@ impl Compileish {
                     versionlock: dnf_versionlock,
                     excluded_rpms: dnf_excluded_rpms,
                 },
+            #[cfg(facebook)]
+                fbpkg: FbpkgCompileishArgs { resolved_fbpkgs },
         } = self;
         let mut v = vec![
             Cow::Borrowed(OsStr::new("--label")),
@@ -116,6 +133,11 @@ impl Compileish {
         if let Some(excluded_rpms) = dnf_excluded_rpms {
             v.push(Cow::Borrowed(OsStr::new("--dnf-excluded-rpms")));
             v.push(Cow::Borrowed(excluded_rpms.path().as_os_str()));
+        }
+        #[cfg(facebook)]
+        if let Some(resolved_fbpkgs) = resolved_fbpkgs {
+            v.push(Cow::Borrowed(OsStr::new("--resolved-fbpkgs")));
+            v.push(Cow::Borrowed(resolved_fbpkgs.path().as_os_str()));
         }
         for dep in image_dependencies {
             v.push(Cow::Borrowed(OsStr::new("--image-dependency")));
@@ -143,6 +165,8 @@ impl Compileish {
                     .unwrap_or_default(),
             ),
             plan,
+            #[cfg(facebook)]
+            FbpkgContext::new(self.fbpkg.resolved_fbpkgs.clone()),
         )
         .map_err(Error::Compile)
     }
