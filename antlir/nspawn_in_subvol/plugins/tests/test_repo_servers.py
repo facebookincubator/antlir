@@ -63,10 +63,6 @@ class TestImpl:
             )
         check_popen_returncode(tee)
 
-    def setUp(self):
-        if self._PROG not in get_rpm_installers_supported():
-            self.skipTest(f"'{self._PROG}'' not in '{get_rpm_installers_supported()}'")
-
     def _check_repo_servers(self, build_appliance):
         # Get basic coverage for our non-trivial debug log code.
         # Note also that `_check_no_repodata_fetches` relies on this.
@@ -97,10 +93,6 @@ class TestImpl:
 
 class DnfRepoServersTestCase(TestImpl, RpmNspawnTestBase):
     _PROG = "dnf"
-
-
-class YumRepoServersTestCase(TestImpl, RpmNspawnTestBase):
-    _PROG = "yum"
 
 
 class ProxyServerTestCase(NspawnTestBase):

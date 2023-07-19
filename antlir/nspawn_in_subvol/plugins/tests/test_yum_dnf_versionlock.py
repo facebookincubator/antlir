@@ -13,8 +13,6 @@ from unittest import skipIf
 
 from antlir.nspawn_in_subvol.plugins.tests.rpm_base import RpmNspawnTestBase
 
-from antlir.tests.flavor_helpers import get_rpm_installers_supported
-
 
 class TestImpl:
     @contextmanager
@@ -83,11 +81,3 @@ class TestImpl:
 
 class DnfVersionlockTestCase(TestImpl, RpmNspawnTestBase):
     _PROG = "dnf"
-
-
-@skipIf(
-    "yum" not in get_rpm_installers_supported(),
-    "yum is not a supported rpm installer",
-)
-class YumVersionlockTestCase(TestImpl, RpmNspawnTestBase):
-    _PROG = "yum"

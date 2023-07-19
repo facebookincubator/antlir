@@ -39,10 +39,10 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feat
         # feature.new(
         #     name = "test",
         #     features=[
-        #         feature.rpms_install([], flavors=["only-relevant-on-centos7"]),
+        #         feature.rpms_install([], flavors=["only-relevant-on-centos9"]),
         #         feature.rpms_install([], flavors=["only-relevant-on-centos8"]),
         #     ],
-        #     flavors = ["centos7", "centos8"],
+        #     flavors = ["centos9", "centos8"],
         # )
         # ```
         #
