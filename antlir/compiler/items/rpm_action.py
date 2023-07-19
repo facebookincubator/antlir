@@ -146,6 +146,11 @@ def _get_action_to_names_or_rpms(
                 metadata=RpmMetadata.from_file(rpm_path),
             )
             conflict_detector.add(name_or_rpm.metadata.name, item)
+        elif item.subjects_src:  # pragma: no cover
+            with open(item.subjects_src["source"]) as f:
+                subjects = f.readlines()
+            action_to_names_or_rpms[item.action].update(subjects)
+            continue
         else:
             name_or_rpm = item.name
             conflict_detector.add(item.name, item)
@@ -297,6 +302,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     flavor_to_version_set: Dict[str, Union[str, Dict[str, str]]]
     name: Optional[str] = None
     source: Optional[Path] = None
+    subjects_src: Optional[Any] = None
 
     def __init__(self, *args: Any, **kwargs: Any):
         rpm_action_item_t.__init__(self, *args, **kwargs)
@@ -306,9 +312,12 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
     def check_name_or_source_exclusive(
         cls, values: Mapping[str, Any]
     ) -> Mapping[str, Any]:  # noqa B902
-        assert (values.get("name") is None) ^ (
-            values.get("source") is None
-        ), f"Exactly one of `name` or `source` must be set in {values}"
+        assert (
+            int(values.get("name") is not None)
+            + int(values.get("source") is not None)
+            + int(values.get("subjects_src") is not None)
+            == 1
+        ), f"Exactly one of {{name, source, subjects_src}} must be set in {values}"
         return values
 
     def phase_order(self):

@@ -14,6 +14,7 @@ use std::process::Stdio;
 use antlir2_features::rpms::InternalOnlyOptions;
 use antlir2_features::rpms::Item as RpmItem;
 use antlir2_features::rpms::Rpm;
+use antlir2_features::rpms::Source as RpmSource;
 use anyhow::Context;
 use anyhow::Error;
 use serde::Deserialize;
@@ -201,10 +202,28 @@ fn run_dnf_driver(
     resolved_transaction: Option<DnfTransaction>,
     internal_only_options: &InternalOnlyOptions,
 ) -> Result<Vec<DriverEvent>> {
+    let items = items
+        .iter()
+        .cloned()
+        .map(|item| match item.rpm {
+            RpmSource::SubjectsSource(subjects_src) => Ok(std::fs::read_to_string(&subjects_src)
+                .with_context(|| format!("while reading {}", subjects_src.display()))?
+                .lines()
+                .map(|subject| RpmItem {
+                    action: item.action,
+                    rpm: RpmSource::Subject(subject.to_owned().into()),
+                })
+                .collect()),
+            _ => Ok(vec![item]),
+        })
+        .collect::<Result<Vec<_>>>()?
+        .into_iter()
+        .flatten()
+        .collect::<Vec<_>>();
     let input = serde_json::to_string(&DriverSpec {
         repos: Some(ctx.dnf.repos()),
         install_root: ctx.root(),
-        items,
+        items: &items,
         mode,
         arch: ctx.target_arch(),
         versionlock: ctx.dnf.versionlock(),

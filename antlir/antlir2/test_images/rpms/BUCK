@@ -175,6 +175,16 @@ test_rpms(
 )
 
 test_rpms(
+    name = "subjects-src",
+    expected = expected_t(installed = ["foo-2-1"]),
+    features = [
+        feature.rpms_install(subjects_src = "subjects-src"),
+        feature.rpms_install(rpms = _RPM_DEPS_OF_TEST),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
     name = "remove-file-from-rpm",
     expected = expected_t(installed = ["foo"]),
     features = [
