@@ -142,7 +142,3 @@ class TestImpl:
 
 class DnfRpmInstallerShadowPathsTestCase(TestImpl, RpmNspawnTestBase):
     _PROG = "dnf"
-
-
-class YumRpmInstallerShadowPathsTestCase(TestImpl, RpmNspawnTestBase):
-    _PROG = "yum"

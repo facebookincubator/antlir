@@ -6,7 +6,6 @@
 load("//antlir/bzl:build_defs.bzl", "export_file")
 load(":build_defs.bzl", "is_buck2", "python_unittest")
 load(":flavor.shape.bzl", "flavor_t")
-load(":flavor_impl.bzl", "flavor_to_struct")
 load(":target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "types")
 
@@ -45,7 +44,6 @@ def _antlir2_setting_buck1(x):
 antlir2_setting = native.enum(
     "yes",  # enable antlir2 shadow
     "no",  # disable antlir2 without a recorded reason
-    "centos7",  # disable antlir2 because of centos7
     "chef",  # disable antlir2 because chef is natively supported
     "debuginfo",  # antlir2 does not yet support this TODO(T153698233)
     "rpmbuild",  # antlir2 does not allow rpm installation during a genrule
@@ -81,9 +79,6 @@ def _should_make_parallel(
         flavor: _FLAVOR_T = None,
         disabled_packages: [str.type] = _DEFAULT_DISABLED_PACKAGES,
         enabled_packages: [str.type] = _DEFAULT_ENABLED_PACKAGES) -> bool.type:
-    if flavor and flavor_to_struct(flavor).name == "centos7":
-        return False
-
     if types.is_bool(antlir2):
         antlir2 = antlir2_setting("yes" if antlir2 else "no")
     else:

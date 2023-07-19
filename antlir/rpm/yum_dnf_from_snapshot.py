@@ -629,7 +629,7 @@ def yum_dnf_from_snapshot(
             ]
         )
         # Unlike `/etc/dnf/dnf.conf` this isn't protected by an outer directory
-        if yum_dnf == YumDnf.yum:
+        if yum_dnf == YumDnf.yum:  # pragma: no cover
             optional_protected_paths.append("/etc/yum.conf")
         # Protect `install_root / META_DIR` if it exists, because it should
         # always be off-limits to RPMs -- it is for `antlir/compiler/`

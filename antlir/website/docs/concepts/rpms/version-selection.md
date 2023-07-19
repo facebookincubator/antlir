@@ -82,7 +82,7 @@ Suggested auto-formatting is `name=YOUR_FILE.json cfg="$(cat "$name")" ; echo "$
 Update version files for each flavor affected:
 
 ```
-for f in centos7 centos8 centos8-untested centos9 centos9-untested; do
+for f in centos8 centos8-untested centos9 centos9-untested; do
   buck2 run antlir/rpm/allowed_versions:update-allowed-versions -- \
     --no-update-data-snapshot \
     --flavor $f \

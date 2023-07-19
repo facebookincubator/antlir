@@ -19,7 +19,6 @@ from antlir.rpm import yum_dnf_from_snapshot
 from antlir.rpm.find_snapshot import snapshot_install_dir
 from antlir.rpm.yum_dnf_conf import YumDnf
 from antlir.subvol_utils import Subvol
-from antlir.tests.flavor_helpers import get_rpm_installers_supported
 from antlir.tests.subvol_helpers import check_common_rpm_render, pop_path, render_subvol
 
 _INSTALL_ARGS = ["install", "--assumeyes", "rpm-test-carrot", "rpm-test-milk"]
@@ -380,39 +379,6 @@ class YumDnfFromSnapshotTestImpl:
             "YumDnfError(returncode=37)",
             repr(yum_dnf_from_snapshot._YumDnfError(returncode=37, cmd=["unused"])),
         )
-
-
-@unittest.skipIf(
-    "yum" not in get_rpm_installers_supported(),
-    f"yum is not a supported rpm installer in {get_rpm_installers_supported()}",
-)
-class YumFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
-    _YUM_DNF = YumDnf.yum
-
-    def test_yum_builddep(self) -> None:
-        with _temp_subvol("test_yum_builddep") as sv, Path.resource(
-            __package__, "needs-carrot.spec", exe=False
-        ) as spec_path:
-            with create_ro("needs-carrot.spec", "w") as outfile:
-                outfile.write(spec_path.read_text())
-            self._yum_dnf_from_snapshot(
-                protected_paths=[],
-                yum_dnf_args=[
-                    "builddep",  # our implementation needs this to be argv[1]
-                    f"--installroot={sv.path()}",
-                    "--assumeyes",
-                    "needs-carrot.spec",
-                ],
-            )
-            r = render_subvol(sv)
-            self.assertEqual(
-                ["(Dir)", {"carrot.txt": ["(File d13)"]}],
-                pop_path(r, "rpm_test"),
-            )
-            check_common_rpm_render(self, r, no_meta=True, subvol=sv)
-            self.assertEqual(
-                "carrot 2 rc0\n", sv.path("rpm_test/carrot.txt").read_text()
-            )
 
 
 class DnfFromSnapshotTestCase(YumDnfFromSnapshotTestImpl, unittest.TestCase):
