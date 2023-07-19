@@ -64,6 +64,9 @@ struct SetupArgs {
     output: PathBuf,
     #[clap(flatten)]
     dnf: super::DnfCompileishArgs,
+    #[cfg(facebook)]
+    #[clap(flatten)]
+    fbpkg: super::FbpkgCompileishArgs,
 }
 
 #[derive(Parser, Debug)]
@@ -199,6 +202,8 @@ impl Map {
                             root: subvol.path().to_owned(),
                             external: compileish,
                             dnf: self.setup.dnf,
+                            #[cfg(facebook)]
+                            fbpkg: self.setup.fbpkg,
                         },
                         external,
                     }
@@ -216,6 +221,8 @@ impl Map {
                             root: subvol.path().to_owned(),
                             external: compileish,
                             dnf: self.setup.dnf,
+                            #[cfg(facebook)]
+                            fbpkg: self.setup.fbpkg,
                         },
                         external,
                     }

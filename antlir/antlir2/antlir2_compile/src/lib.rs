@@ -28,7 +28,7 @@ mod clone;
 mod ensure_dir_exists;
 mod extract;
 #[cfg(facebook)]
-mod facebook;
+pub mod facebook;
 mod genrule;
 mod install;
 pub mod plan;
@@ -101,6 +101,9 @@ pub struct CompilerContext {
     dnf: DnfContext,
     /// Pre-computed plan for this compilation phase
     plan: Option<plan::Plan>,
+    #[cfg(facebook)]
+    /// Resolved fbpkgs from plan
+    fbpkg: facebook::FbpkgContext,
 }
 
 #[derive(Debug)]
@@ -163,6 +166,7 @@ impl CompilerContext {
         root: PathBuf,
         dnf: DnfContext,
         plan: Option<plan::Plan>,
+        #[cfg(facebook)] fbpkg: facebook::FbpkgContext,
     ) -> Result<Self> {
         Ok(Self {
             label,
@@ -170,6 +174,8 @@ impl CompilerContext {
             root,
             dnf,
             plan,
+            #[cfg(facebook)]
+            fbpkg,
         })
     }
 

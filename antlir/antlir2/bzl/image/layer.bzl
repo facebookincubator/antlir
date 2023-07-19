@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKFORMAT
+
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "build_phase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
@@ -13,6 +15,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
+# @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":depgraph.bzl", "build_depgraph")
 load(":mounts.bzl", "all_mounts", "nspawn_mount_args")
@@ -92,6 +95,7 @@ def _impl(ctx: "context") -> ["provider"]:
     # expect it in starlark instead of a cli/json projection.
     all_features = list(ctx.attrs.features[FeatureInfo].features.traverse())
 
+    # @oss-disable
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
@@ -211,16 +215,29 @@ def _impl(ctx: "context") -> ["provider"]:
                 plan,
                 flavor_info.dnf_info.reflink_flavor,
             )
+
+            # @oss-disable
+                # @oss-disable
+                # @oss-disable
+                # @oss-disable
+                # @oss-disable
+            # @oss-disable
         else:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
+            # @oss-disable
+            # @oss-disable
 
         logs["compile"] = ctx.actions.declare_output(identifier_prefix + "compile.log")
+        # @oss-disable
+            # @oss-disable
+
         cmd, final_subvol = _map_image(
             build_appliance = build_appliance[LayerInfo],
             cmd = cmd_args(
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
                 cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
+                # @oss-disable
                 "compile",
                 compileish_args,
                 cmd_args(plan, format = "--plan={}") if plan else cmd_args(),
@@ -336,6 +353,12 @@ _layer = rule(
     impl = _impl,
     attrs = {
         "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
+        # @oss-disable
+            # @oss-disable
+                # @oss-disable
+                # @oss-disable
+            # @oss-disable
+        # @oss-disable
         "build_appliance": attrs.option(
             attrs.dep(providers = [LayerInfo]),
             default = None,
