@@ -20,7 +20,8 @@ def rpms_install(
         *,
         rpms: [str.type] = [],
         subjects: [[[str.type, "selector"]], "selector"] = [],
-        deps: [[[str.type, "selector"]], "selector"] = []) -> ParseTimeFeature.type:
+        deps: [[[str.type, "selector"]], "selector"] = [],
+        subjects_src: [str.type, "selector", None] = None) -> ParseTimeFeature.type:
     """
     Install RPMs by identifier or .rpm src
 
@@ -54,6 +55,9 @@ def rpms_install(
     return ParseTimeFeature(
         feature_type = "rpm",
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
+        srcs = {
+            "subjects": subjects_src,
+        } if subjects_src else None,
         kwargs = {
             "action": "install",
             "subjects": subjects,
@@ -81,8 +85,9 @@ def rpms_remove_if_exists(*, rpms: [[[str.type, "selector"]], "selector"]) -> Pa
 action_enum = enum("install", "remove_if_exists")
 
 rpm_source_record = record(
-    subject = [str.type, None],
-    source = ["artifact", None],
+    subject = field([str.type, None], default = None),
+    src = field(["artifact", None], default = None),
+    subjects_src = field(["artifact", None], default = None),
 )
 
 rpm_item_record = record(
@@ -97,17 +102,23 @@ rpms_record = record(
 def rpms_analyze(
         action: str.type,
         subjects: [str.type],
+        srcs: {str.type: "artifact"} = {},
         unnamed_deps_or_srcs: [["dependency", "artifact"]] = []) -> FeatureAnalysis.type:
     rpms = []
     for rpm in subjects:
-        rpms.append(rpm_source_record(subject = rpm, source = None))
+        rpms.append(rpm_source_record(subject = rpm))
 
     artifacts = []
     for rpm in unnamed_deps_or_srcs:
         if type(rpm) == "dependency":
             rpm = ensure_single_output(rpm)
-        rpms.append(rpm_source_record(source = rpm, subject = None))
+        rpms.append(rpm_source_record(src = rpm))
         artifacts.append(rpm)
+
+    subjects_src = srcs.get("subjects")
+    if subjects_src:
+        rpms.append(rpm_source_record(subjects_src = subjects_src))
+        artifacts.append(subjects_src)
 
     return FeatureAnalysis(
         feature_type = "rpm",

@@ -34,7 +34,10 @@ pub enum Action {
 #[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub enum Source<'a> {
     Subject(Cow<'a, str>),
+    #[serde(rename = "src")]
     Source(BuckOutSource<'a>),
+    #[serde(rename = "subjects_src")]
+    SubjectsSource(BuckOutSource<'a>),
 }
 
 /// Buck2's `record` will always include `null` values, but serde's native enum
@@ -51,15 +54,19 @@ impl<'a, 'de: 'a> Deserialize<'de> for Source<'a> {
         #[serde(bound(deserialize = "'de: 'a"))]
         struct SourceStruct<'a> {
             subject: Option<Cow<'a, str>>,
-            source: Option<BuckOutSource<'a>>,
+            src: Option<BuckOutSource<'a>>,
+            subjects_src: Option<BuckOutSource<'a>>,
         }
 
-        SourceStruct::deserialize(deserializer).and_then(|s| match (s.subject, s.source) {
-            (Some(subj), None) => Ok(Self::Subject(subj)),
-            (None, Some(source)) => Ok(Self::Source(source)),
-            (_, _) => Err(D::Error::custom(
-                "exactly one of {subject, source} must be set",
-            )),
+        SourceStruct::deserialize(deserializer).and_then(|s| {
+            match (s.subject, s.src, s.subjects_src) {
+                (Some(subj), None, None) => Ok(Self::Subject(subj)),
+                (None, Some(source), None) => Ok(Self::Source(source)),
+                (None, None, Some(subjects_src)) => Ok(Self::SubjectsSource(subjects_src)),
+                _ => Err(D::Error::custom(
+                    "exactly one of {subject, src, subjects_src} must be set",
+                )),
+            }
         })
     }
 }

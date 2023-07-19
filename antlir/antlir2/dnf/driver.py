@@ -163,8 +163,10 @@ def _explicitly_installed_package_names(spec, local_rpms):
         rpm = item["rpm"]
         if "subject" in rpm:
             source = rpm["subject"]
+        elif "src" in rpm:
+            source = local_rpms[rpm["src"]]
         else:
-            source = local_rpms[rpm["source"]]
+            raise AntlirError(f"none of {{subject,src}} not found in: {rpm}")
 
         if action == "install":
             if isinstance(source, dnf.package.Package):
@@ -202,7 +204,7 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
             if source in locked_packages:
                 source = locked_packages[source]
         else:
-            source = local_rpms[rpm["source"]]
+            source = local_rpms[rpm["src"]]
 
         if action == "install":
             if isinstance(source, dnf.package.Package):
@@ -300,9 +302,9 @@ def driver(spec) -> None:
     local_rpms = {}
     for item in spec["items"]:
         rpm = item["rpm"]
-        if "source" in rpm:
-            packages = base.add_remote_rpms([os.path.realpath(rpm["source"])])
-            local_rpms[rpm["source"]] = packages[0]
+        if "src" in rpm:
+            packages = base.add_remote_rpms([os.path.realpath(rpm["src"])])
+            local_rpms[rpm["src"]] = packages[0]
 
     explicitly_installed_package_names = _explicitly_installed_package_names(
         spec, local_rpms

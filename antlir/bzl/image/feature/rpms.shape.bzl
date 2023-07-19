@@ -20,4 +20,5 @@ rpm_action_item_t = shape.shape(
     source = shape.field(target_tagged_image_source_t, optional = True),
     name = shape.field(str, optional = True),
     antlir1_i_know_what_im_doing_arch = shape.field(str, optional = True),
+    subjects_src = shape.field(target_tagged_image_source_t, optional = True),
 )

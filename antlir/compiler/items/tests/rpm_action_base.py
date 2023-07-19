@@ -89,7 +89,7 @@ class RpmActionItemTestBase:
             #  `assertRaisesRegex`.
             with self.assertRaisesRegex(
                 ValidationError,
-                "Exactly one of `name` or `source` must be set .*",
+                "Exactly one of {name, source, subjects_src} must be set .*",
             ):
                 RpmActionItem.get_phase_builder(
                     [
