@@ -1,0 +1,13 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+rust_library(
+    name = "antlir2_userns",
+    srcs = glob(["src/**/*.rs"]),
+    test_deps = [
+        "rstest",
+    ],
+    deps = [
+        "anyhow",
+        "serde",
+    ],
+)
