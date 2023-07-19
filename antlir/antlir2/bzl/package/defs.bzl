@@ -101,7 +101,7 @@ _package = rule(
 _package_macro = rule_with_default_target_platform(_package)
 
 def BtrfsSubvol(
-        layer: str.type,
+        layer: [str.type, "selector"],
         writable: [bool.type, None] = None):
     return {
         "layer": layer,
