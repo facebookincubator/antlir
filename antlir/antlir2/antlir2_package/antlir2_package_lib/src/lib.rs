@@ -24,6 +24,7 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct BtrfsSubvol {
+    pub sendstream: PathBuf,
     pub layer: PathBuf,
     pub writable: Option<bool>,
 }
@@ -45,16 +46,6 @@ pub enum Spec {
     Btrfs {
         btrfs_packager_path: Vec<PathBuf>,
         spec: BtrfsSpec,
-    },
-    #[serde(rename = "sendstream.v2")]
-    SendstreamV2 {
-        layer: PathBuf,
-        compression_level: i32,
-    },
-    #[serde(rename = "sendstream.zst")]
-    SendstreamZst {
-        layer: PathBuf,
-        compression_level: i32,
     },
     #[serde(rename = "sendstream")]
     Sendstream { layer: PathBuf },

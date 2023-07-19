@@ -55,25 +55,26 @@ def package_new(
     if format in _SENDSTREAM_FORMATS and not subvol_name:
         subvol_name = "volume"
 
-    loopback_opts = normalize_loopback_opts(loopback_opts)
-
     if antlir2_shim.should_make_parallel_package(antlir2 = antlir2):
         if is_buck2():
-            antlir2_opts = shape.as_dict_shallow(loopback_opts)
-            if format in ("sendstream.v2", "sendstream.zst", "cpio.gz"):
-                antlir2_opts["compression_level"] = zstd_compression_level or 3
+            antlir2_opts = shape.as_dict_shallow(loopback_opts) if loopback_opts else None
+            opts_kwargs = {
+                "opts": antlir2_opts,
+            } if antlir2_opts else {}
 
             antlir2_package.backward_compatible_new(
                 name = name + ".antlir2",
                 layer = layer + ".antlir2",
                 format = format,
-                opts = antlir2_opts,
                 visibility = visibility,
+                **opts_kwargs
             )
         else:
             antlir2_shim.fake_buck1_target(
                 name = name + ".antlir2",
             )
+
+    loopback_opts = normalize_loopback_opts(loopback_opts)
 
     buck_genrule(
         name = name,

@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/bzl/package:defs.bzl", "BtrfsSubvol", "package")
+load("//antlir/antlir2/bzl/package:btrfs.bzl", "BtrfsSubvol")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 
 image.layer(
     name = "btrfs-test-1",

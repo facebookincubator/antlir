@@ -24,15 +24,15 @@ use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
-use btrfs_send_stream_upgrade_lib::upgrade::send_stream::SendStream;
-use btrfs_send_stream_upgrade_lib::upgrade::send_stream_upgrade_options::SendStreamUpgradeOptions;
 use clap::Parser;
 use itertools::Itertools;
 use json_arg::JsonFile;
 use retry::delay::Fixed;
 use retry::retry;
 use tempfile::NamedTempFile;
+use tempfile::PersistError;
 use tracing::trace;
+use tracing::warn;
 use tracing_subscriber::prelude::*;
 
 #[derive(Parser, Debug)]
@@ -129,10 +129,8 @@ fn main() -> Result<()> {
                 )),
             }
         }
-        Spec::SendstreamV2 {
-            layer,
-            compression_level,
-        } => {
+        // Uncompressed sendstream, for Antlir1 compat
+        Spec::Sendstream { layer } => {
             let v1file = retry(Fixed::from_millis(10_000).take(10), || {
                 let v1file = NamedTempFile::new()?;
                 trace!("sending v1 sendstream to {}", v1file.path().display());
@@ -140,8 +138,12 @@ fn main() -> Result<()> {
                     .arg("btrfs")
                     .arg("send")
                     .arg(&layer)
-                    .arg("-f")
-                    .arg(v1file.path())
+                    .stdout(
+                        v1file
+                            .as_file()
+                            .try_clone()
+                            .context("while cloning v1file")?,
+                    )
                     .spawn()
                     .context("while spawning btrfs-send")?
                     .wait()
@@ -155,53 +157,11 @@ fn main() -> Result<()> {
             })
             .map_err(Error::msg)
             .context("btrfs-send failed too many times")?;
-            trace!("upgrading to v2 sendstream");
-            let mut stream = SendStream::new(SendStreamUpgradeOptions {
-                input: Some(v1file.path().to_path_buf()),
-                output: Some(args.out),
-                compression_level,
-                ..Default::default()
-            })
-            .context("while creating sendstream upgrader")?;
-            stream.upgrade().context("while upgrading sendstream")
-        }
-        Spec::SendstreamZst {
-            layer,
-            compression_level,
-        } => {
-            trace!("sending v1 sendstream to zstd");
-            let mut btrfs_send = Command::new("sudo")
-                .arg("btrfs")
-                .arg("send")
-                .arg(&layer)
-                .stdout(Stdio::piped())
-                .spawn()?;
-            let mut zstd = Command::new("zstd")
-                .arg("--compress")
-                .arg(format!("-{compression_level}"))
-                .arg("-o")
-                .arg(args.out)
-                .stdin(btrfs_send.stdout.take().expect("is a pipe"))
-                .spawn()?;
-            ensure!(zstd.wait()?.success(), "zstd failed");
-            ensure!(btrfs_send.wait()?.success(), "btrfs-send failed");
-            Ok(())
-        }
-        // Uncompressed sendstream, for Antlir1 compat
-        Spec::Sendstream { layer } => {
-            File::create(&args.out).context("failed to create output file")?;
-            ensure!(
-                Command::new("sudo")
-                    .arg("btrfs")
-                    .arg("send")
-                    .arg(&layer)
-                    .arg("-f")
-                    .arg(args.out)
-                    .spawn()?
-                    .wait()?
-                    .success(),
-                "btrfs-send failed"
-            );
+            if let Err(PersistError { file, error }) = v1file.persist(&args.out) {
+                warn!("failed to persist tempfile, falling back on full copy: {error:?}");
+                std::fs::copy(file.path(), &args.out)
+                    .context("while copying sendstream to output")?;
+            }
             Ok(())
         }
 
