@@ -4,20 +4,12 @@ oncall("twimage")
 
 rust_library(
     name = "btrfs_send_stream_upgrade_lib",
-    srcs = ["src/lib.rs"] + glob([
-        "src/mp/*.rs",
-    ]) + glob([
-        "src/mp/send_elements/*.rs",
-    ]) + glob([
-        "src/mp/sync/*.rs",
-    ]) + glob([
-        "src/mp/threads/*.rs",
-    ]) + glob([
-        "src/send_elements/*.rs",
-    ]) + glob([
-        "src/upgrade/*.rs",
-    ]),
+    srcs = glob(
+        ["src/**/*.rs"],
+        exclude = ["src/main.rs"],
+    ),
     doctests = False,  # FIXME
+    test_srcs = glob(["tests/**/*.rs"]),
     deps = [
         "anyhow",
         "crc32c-hw",
@@ -39,7 +31,7 @@ rust_binary(
     name = "btrfs_send_stream_upgrade",
     srcs = ["src/main.rs"],
     visibility = [
-        "//antlir/...",
+        "PUBLIC",
     ],
     deps = [
         "anyhow",

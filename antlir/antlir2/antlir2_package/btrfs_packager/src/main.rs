@@ -7,10 +7,10 @@
 
 use std::collections::BTreeMap;
 use std::fs::create_dir_all;
+use std::fs::File;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::process::Stdio;
 
 use antlir2_package_lib::create_empty_file;
 use antlir2_package_lib::run_cmd;
@@ -122,6 +122,11 @@ pub(crate) struct PackageArgs {
 fn calculate_subvol_sizes(subvols: &BTreeMap<PathBuf, BtrfsSubvol>) -> Result<ByteSize> {
     let mut total_size = ByteSize::b(0);
 
+    // TODO(vmagro): AFAICT, this size calculation assumes that the compression
+    // level of the build subvolume is on par with the compression level of the
+    // package. While this is largely true today, it does not seem that
+    // reliable. Probably better would be to compress a sendstream at the same
+    // level and using the size of that.
     for (subvol_path, subvol) in subvols.iter() {
         let du_out = run_cmd(
             Command::new("du")
@@ -202,7 +207,7 @@ fn discover_subvol_name(temp_dir: &Path) -> Result<PathBuf> {
     }
 }
 
-fn send_and_receive_subvol(
+fn receive_subvol(
     btrfs_root: &Path,
     subvol_path: &Path,
     subvol: &BtrfsSubvol,
@@ -224,22 +229,17 @@ fn send_and_receive_subvol(
             .context("Subvols must start with /")?,
     );
 
-    let mut btrfs_send = Command::new("btrfs")
-        .arg("send")
-        .arg(&subvol.layer)
-        .stdout(Stdio::piped())
-        .spawn()
-        .context("Failed to spawn btrfs send")?;
+    let sendstream = File::open(&subvol.sendstream)
+        .with_context(|| format!("while opening sendstream {}", subvol.sendstream.display()))?;
 
     let mut btrfs_recv = Command::new("btrfs")
         .arg("receive")
         .arg(recv_target.path())
-        .stdin(btrfs_send.stdout.take().expect("is a pipe"))
+        .stdin(sendstream)
         .spawn()
         .context("Failed to spawn btrfs receive")?;
 
     ensure!(btrfs_recv.wait()?.success(), "btrfs-recv failed");
-    ensure!(btrfs_send.wait()?.success(), "btrfs-send failed");
 
     create_dir_all(&subvol_parent_path).context(format!(
         "Failed to create destination directory {:?}",
@@ -279,7 +279,7 @@ fn send_and_receive_subvols(
 
     let mut built_subvols = BTreeMap::new();
     for (subvol_path, subvol) in subvols {
-        let built_subvol = send_and_receive_subvol(btrfs_root, &subvol_path, &subvol)
+        let built_subvol = receive_subvol(btrfs_root, &subvol_path, &subvol)
             .context(format!("Failed to setup subvolume: {:?}", subvol_path))?;
         built_subvols.insert(subvol_path, (built_subvol, subvol));
     }
