@@ -67,7 +67,7 @@ def _nspawn_sub_target(nspawn_binary: "dependency", subvol: "artifact", mounts: 
     if REPO_CFG.artifacts_require_repo:
         dev_mode_args = cmd_args(
             "--artifacts-require-repo",
-            cmd_args([["--bind-ro", x] for x in REPO_CFG.host_mounts_for_repo_artifacts]),
+            cmd_args([cmd_args("--bind-mount-ro", p, p) for p in REPO_CFG.host_mounts_for_repo_artifacts]),
         )
     return [
         DefaultInfo(),

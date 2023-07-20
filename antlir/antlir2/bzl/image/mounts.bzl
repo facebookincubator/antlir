@@ -52,14 +52,8 @@ def all_mounts(
 
 def nspawn_mount_args(mount: mount_record.type) -> cmd_args.type:
     if mount.layer:
-        return cmd_args(
-            "--bind-ro",
-            cmd_args(mount.layer.src.subvol_symlink, format = "{{}}:{}".format(mount.layer.mountpoint.replace(":", "\\:"))),
-        )
+        return cmd_args("--bind-mount-ro", mount.layer.src.subvol_symlink, mount.layer.mountpoint)
     elif mount.host:
-        return cmd_args(
-            "--bind-ro",
-            mount.host.src + ":" + mount.host.mountpoint.replace(":", "\\:"),
-        )
+        return cmd_args("--bind-mount-ro", mount.host.src, mount.host.mountpoint)
     else:
         fail("neither host nor layer mount, what is it?!")
