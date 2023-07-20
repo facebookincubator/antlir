@@ -10,6 +10,7 @@
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::io::Error;
+use std::path::Path;
 use std::path::PathBuf;
 
 use antlir2_users::group::EtcGroup;
@@ -38,6 +39,9 @@ struct Args {
     layer: PathBuf,
     #[clap(subcommand)]
     subcommand: Subcommand,
+    /// Exclude entries that start with given prefixes
+    #[clap(long)]
+    exclude: Vec<String>,
 }
 
 #[derive(Parser)]
@@ -50,8 +54,23 @@ enum Subcommand {
     },
 }
 
+const ALWAYS_EXCLUDE: [&str; 2] = ["var/lib/rpm", "var/lib/dnf"];
+
+fn exclude_entry(entry: &Path, exclude_list: &[String]) -> bool {
+    exclude_list
+        .iter()
+        .any(|e| entry.to_string_lossy().starts_with(e))
+}
+
 fn main() -> Result<()> {
     let args = Args::parse();
+    let exclude_list: Vec<String> = args
+        .exclude
+        .iter()
+        .map(|e| e.to_owned())
+        .chain(ALWAYS_EXCLUDE.iter().map(|e| e.to_string()))
+        .collect();
+
     let mut entries = BTreeMap::new();
     let mut paths_that_exist_in_layer = HashSet::new();
 
@@ -77,6 +96,11 @@ fn main() -> Result<()> {
             .path()
             .strip_prefix(&args.layer)
             .expect("this must be relative");
+
+        if exclude_entry(relpath, &exclude_list) {
+            continue;
+        }
+
         let parent_path = args.parent.join(relpath);
         let entry = Entry::new(fs_entry.path(), &layer_userdb, &layer_groupdb)
             .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
@@ -105,6 +129,7 @@ fn main() -> Result<()> {
             }
         }
     }
+
     for fs_entry in WalkDir::new(&args.parent) {
         let fs_entry = fs_entry?;
         if fs_entry.path() == args.parent {
@@ -114,6 +139,11 @@ fn main() -> Result<()> {
             .path()
             .strip_prefix(&args.parent)
             .expect("this must be relative");
+
+        if exclude_entry(relpath, &exclude_list) {
+            continue;
+        }
+
         if !paths_that_exist_in_layer.contains(relpath) {
             let entry = Entry::new(fs_entry.path(), &parent_userdb, &parent_groupdb)
                 .with_context(|| format!("while building Entry for '{}'", relpath.display()))?;

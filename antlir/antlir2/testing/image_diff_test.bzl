@@ -14,6 +14,7 @@ def _impl(ctx: "context") -> ["provider"]:
         ctx.attrs.image_diff_test[RunInfo],
         cmd_args(ctx.attrs.layer[LayerInfo].parent.subvol_symlink, format = "--parent={}"),
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
+        cmd_args(ctx.attrs.exclude, format = "--exclude={}"),
     )
     test_cmd = cmd_args(
         base_cmd,
@@ -36,6 +37,7 @@ _image_diff_test = rule(
     impl = _impl,
     attrs = {
         "diff": attrs.source(doc = "expected diff between the two"),
+        "exclude": attrs.list(attrs.string(), default = []),
         "image_diff_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_diff_test:image-diff-test")),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
