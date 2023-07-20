@@ -5,13 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
 
 use antlir2_isolate::isolate;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
+use anyhow::anyhow;
 use anyhow::Context;
 use clap::Parser;
 use tracing_subscriber::filter;
@@ -22,8 +23,9 @@ use tracing_subscriber::prelude::*;
 struct Args {
     #[clap(long)]
     subvol: PathBuf,
-    #[clap(long)]
-    bind_ro: Vec<PathBuf>,
+    /// `--bind-mount-ro src dst` creates an RO bind-mount of src to dst in the subvol
+    #[clap(long, num_args = 2)]
+    bind_mount_ro: Vec<PathBuf>,
     #[clap(long)]
     artifacts_require_repo: bool,
 }
@@ -50,9 +52,20 @@ fn main() -> anyhow::Result<()> {
     )
     .context("while looking for repo root")?;
 
+    // antlir2_isolate re-parses these into --bind-ro args and escapes any colons, so we
+    // instead take an explicit pair to not have to deal with the added complexity of
+    // de-and-re-serializing.
+    let bind_ro_inputs = args
+        .bind_mount_ro
+        .chunks(2)
+        .map(|pair| match pair {
+            [src, dst] => Ok((dst.clone(), src.clone())),
+            _ => Err(anyhow!("Unrecognized --mount arg: {:?}", pair)),
+        })
+        .collect::<anyhow::Result<HashMap<_, _>>>()?;
     let mut cmd_builder = IsolationContext::builder(args.subvol);
     cmd_builder
-        .inputs(args.bind_ro.into_iter().collect::<HashSet<_>>())
+        .inputs(bind_ro_inputs)
         .ephemeral(true)
         .invocation_type(InvocationType::Pid2Interactive);
     if args.artifacts_require_repo {
