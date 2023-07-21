@@ -90,6 +90,7 @@ def _implicit_image_test(
         labels: [[str.type], None] = None,
         boot: bool.type = False,
         boot_requires_units: [str.type] = [],
+        _add_outer_labels: [str.type] = [],
         **kwargs):
     test_rule(
         name = name + "_image_test_inner",
@@ -98,6 +99,7 @@ def _implicit_image_test(
         **kwargs
     )
     labels = list(labels) if labels else []
+    labels.extend(_add_outer_labels)
 
     # @oss-disable
         # @oss-disable
@@ -112,7 +114,15 @@ def _implicit_image_test(
         boot_requires_units = boot_requires_units,
     )
 
-image_cpp_test = partial(_implicit_image_test, cpp_unittest)
-image_python_test = partial(_implicit_image_test, python_unittest, supports_static_listing = False)
+image_cpp_test = partial(
+    _implicit_image_test,
+    cpp_unittest,
+    _add_outer_labels = ["tpx:optout-test-result-output-spec"],
+)
+image_python_test = partial(
+    _implicit_image_test,
+    python_unittest,
+    supports_static_listing = False,
+)
 image_rust_test = partial(_implicit_image_test, rust_unittest)
 image_sh_test = partial(_implicit_image_test, buck_sh_test)
