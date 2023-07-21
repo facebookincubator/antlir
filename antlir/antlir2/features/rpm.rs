@@ -22,6 +22,7 @@ use antlir2_features::types::BuckOutSource;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
+use buck_label::Label;
 use serde::de::Error as _;
 use serde::Deserialize;
 use serde::Serialize;
@@ -93,6 +94,7 @@ impl<'a, 'de: 'a> Deserialize<'de> for Source<'a> {
 pub struct RpmItem<'a> {
     pub action: Action,
     pub rpm: Source<'a>,
+    pub feature_label: Label<'a>,
 }
 
 #[derive(
@@ -199,6 +201,7 @@ struct DriverSpec<'a> {
     excluded_rpms: Option<&'a BTreeSet<String>>,
     resolved_transaction: Option<DnfTransaction>,
     ignore_postin_script_error: bool,
+    layer_label: Label<'a>,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
@@ -302,6 +305,7 @@ fn run_dnf_driver(
                 .map(|subject| RpmItem {
                     action: item.action,
                     rpm: Source::Subject(subject.to_owned().into()),
+                    feature_label: item.feature_label.clone(),
                 })
                 .collect()),
             _ => Ok(vec![item]),
@@ -320,6 +324,7 @@ fn run_dnf_driver(
         excluded_rpms: Some(ctx.dnf().excluded_rpms()),
         resolved_transaction,
         ignore_postin_script_error: internal_only_options.ignore_postin_script_error,
+        layer_label: ctx.label().clone(),
     })
     .context("while serializing dnf-driver input")?;
 

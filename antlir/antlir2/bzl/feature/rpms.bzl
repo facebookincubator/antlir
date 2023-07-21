@@ -63,6 +63,7 @@ def rpms_install(
             "action": "install",
             "subjects": subjects,
         },
+        analyze_uses_context = True,
     )
 
 def rpms_remove_if_exists(*, rpms: [[[str.type, "selector"]], "selector"]) -> ParseTimeFeature.type:
@@ -82,6 +83,7 @@ def rpms_remove_if_exists(*, rpms: [[[str.type, "selector"]], "selector"]) -> Pa
             "action": "remove_if_exists",
             "subjects": rpms,
         },
+        analyze_uses_context = True,
     )
 
 action_enum = enum("install", "remove_if_exists")
@@ -95,6 +97,7 @@ rpm_source_record = record(
 rpm_item_record = record(
     action = action_enum.type,
     rpm = rpm_source_record.type,
+    feature_label = "target_label",
 )
 
 rpms_record = record(
@@ -102,6 +105,7 @@ rpms_record = record(
 )
 
 def rpms_analyze(
+        ctx: "AnalyzeFeatureContext",
         action: str.type,
         subjects: [str.type],
         srcs: {str.type: "artifact"} = {},
@@ -130,6 +134,7 @@ def rpms_analyze(
                 rpm_item_record(
                     action = action_enum(action),
                     rpm = rpm,
+                    feature_label = ctx.label.raw_target(),
                 )
                 for rpm in rpms
             ],

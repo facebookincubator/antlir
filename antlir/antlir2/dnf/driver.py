@@ -362,6 +362,13 @@ def driver(spec) -> None:
                 out.write("\n")
         sys.exit(1)
 
+    # setting base.args will record a comment in the history db
+    base.args = [
+        "antlir2",
+        spec["layer_label"],
+        json.dumps(spec["resolved_transaction"], sort_keys=True),
+    ]
+
     # dnf go brrr
     base.do_transaction(
         TransactionProgress(
@@ -416,10 +423,11 @@ def driver(spec) -> None:
         sys.exit(1)
 
     for pkg, reason in set_reasons:
-        base.history.set_reason(pkg, reason)
+        if REASON_FROM_STRING[pkg.reason] != reason:
+            base.history.set_reason(pkg, reason)
     # commit that change to the db
     rpmdb_version = base.history.last().end_rpmdb_version
-    base.history.beg(rpmdb_version, [], [])
+    base.history.beg(rpmdb_version, [], [], "antlir2: correct installed reasons")
     base.history.end(rpmdb_version)
 
 

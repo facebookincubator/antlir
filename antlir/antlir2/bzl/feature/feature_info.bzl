@@ -83,6 +83,7 @@ AnalyzeFeatureContext = record(
     unique_action_identifier = str.type,
     actions = "actions",
     toolchains = Toolchains.type,
+    label = "label",
 )
 
 def data_only_feature_analysis_fn(
