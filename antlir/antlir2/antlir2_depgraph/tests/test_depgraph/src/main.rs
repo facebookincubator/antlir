@@ -11,12 +11,8 @@ use anyhow::anyhow;
 use anyhow::Result;
 use buck_label::Label;
 use clap::Parser;
-use json_arg::Json;
 use json_arg::JsonFile;
 use regex::Regex;
-use serde::Deserialize;
-use serde_with::serde_as;
-use serde_with::DisplayFromStr;
 
 #[derive(Debug, Parser)]
 struct Args {
@@ -30,15 +26,7 @@ struct Args {
     /// Path to depgraphs for image dependencies
     dependencies: Vec<JsonFile<Graph<'static>>>,
     #[clap(long)]
-    expect: Json<Expect<'static>>,
-}
-
-#[serde_as]
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-enum Expect<'a> {
-    Err(antlir2_depgraph::Error<'a>),
-    ErrorRegex(#[serde_as(as = "DisplayFromStr")] Regex),
+    error_regex: Regex,
 }
 
 fn main() -> Result<()> {
@@ -55,23 +43,14 @@ fn main() -> Result<()> {
     // always print this for debuggability
     eprintln!("{builder_dot:#?}");
     let result = builder.build();
-    match args.expect.into_inner() {
-        Expect::Err(expect_err) => match result {
-            Ok(g) => Err(anyhow!("graph built successfully: {:#?}", g.to_dot())),
-            Err(err) => {
-                similar_asserts::assert_eq!(err, expect_err);
+    match result {
+        Ok(g) => Err(anyhow!("graph built successfully: {:#?}", g.to_dot())),
+        Err(err) => {
+            if !args.error_regex.is_match(&err.to_string()) {
+                Err(anyhow!("'{err}' did not match '{}'", args.error_regex))
+            } else {
                 Ok(())
             }
-        },
-        Expect::ErrorRegex(err_re) => match result {
-            Ok(g) => Err(anyhow!("graph built successfully: {:#?}", g.to_dot())),
-            Err(err) => {
-                if !err_re.is_match(&err.to_string()) {
-                    Err(anyhow!("'{err}' did not match '{err_re}'"))
-                } else {
-                    Ok(())
-                }
-            }
-        },
+        }
     }
 }

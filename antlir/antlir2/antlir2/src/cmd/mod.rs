@@ -29,8 +29,6 @@ mod plan;
 mod shell;
 #[cfg(facebook)]
 use antlir2_compile::facebook::FbpkgContext;
-#[cfg(facebook)]
-use antlir2_compile::facebook::ResolvedFbpkgInfoJsonFile;
 pub(crate) use compile::Compile;
 pub(crate) use depgraph::Depgraph;
 pub(crate) use map::Map;
@@ -75,7 +73,8 @@ pub(self) struct DnfCompileishArgs {
 pub(self) struct FbpkgCompileishArgs {
     #[clap(long = "resolved-fbpkgs")]
     /// Path to resolced fbpkgs json file
-    pub(crate) resolved_fbpkgs: Option<ResolvedFbpkgInfoJsonFile>,
+    pub(crate) resolved_fbpkgs:
+        Option<JsonFile<BTreeMap<String, antlir2_compile::facebook::ResolvedFbpkgInfo>>>,
 }
 
 #[derive(Parser, Debug)]
@@ -166,7 +165,7 @@ impl Compileish {
             ),
             plan,
             #[cfg(facebook)]
-            FbpkgContext::new(self.fbpkg.resolved_fbpkgs.clone()),
+            FbpkgContext::new(self.fbpkg.resolved_fbpkgs.clone().map(JsonFile::into_inner)),
         )
         .map_err(Error::Compile)
     }

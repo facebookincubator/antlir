@@ -9,7 +9,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 
-def _make_test_cmd(ctx: "context", expect) -> "cmd_args":
+def _make_test_cmd(ctx: "context") -> "cmd_args":
     features = ctx.attrs.features[FeatureInfo]
     features_json = ctx.actions.write_json(
         "features.json",
@@ -33,20 +33,12 @@ def _make_test_cmd(ctx: "context", expect) -> "cmd_args":
             [li.depgraph for li in dependency_layers],
             format = "--image-dependency={}",
         ),
-        "--expect",
-        json.encode(expect),
+        cmd_args(ctx.attrs.error_regex, format = "--error-regex={}"),
         cmd_args(ctx.attrs.parent[LayerInfo].depgraph, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
     )
 
 def _bad_impl(ctx: "context") -> ["provider"]:
-    if ctx.attrs.error:
-        expect = {"err": ctx.attrs.error}
-    elif ctx.attrs.error_regex:
-        expect = {"error_regex": ctx.attrs.error_regex}
-    else:
-        fail("one of {error, error_regex} must be set")
-
-    cmd = _make_test_cmd(ctx, expect)
+    cmd = _make_test_cmd(ctx)
     return [
         DefaultInfo(),
         RunInfo(args = cmd),
@@ -60,8 +52,7 @@ def _bad_impl(ctx: "context") -> ["provider"]:
 _bad_depgraph = rule(
     impl = _bad_impl,
     attrs = {
-        "error": attrs.option(attrs.any(), default = None),
-        "error_regex": attrs.option(attrs.string(), default = None),
+        "error_regex": attrs.string(),
         "features": attrs.dep(providers = [FeatureInfo]),
         "parent": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "test_depgraph": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_depgraph/tests/test_depgraph:test-depgraph")),

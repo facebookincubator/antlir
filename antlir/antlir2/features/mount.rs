@@ -7,12 +7,21 @@
 
 use std::path::PathBuf;
 
+use antlir2_compile::CompilerContext;
+use antlir2_depgraph::item::FileType;
+use antlir2_depgraph::item::Item;
+use antlir2_depgraph::item::ItemKey;
+use antlir2_depgraph::requires_provides::Requirement;
+use antlir2_depgraph::requires_provides::Validator;
+use antlir2_features::types::LayerInfo;
+use antlir2_features::types::PathInLayer;
+use anyhow::Result;
 use serde::de::Error;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing as _;
 
-use crate::types::LayerInfo;
-use crate::types::PathInLayer;
+pub type Feature = Mount<'static>;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
@@ -74,5 +83,33 @@ impl<'a> Mount<'a> {
             Self::Layer(_) => true,
             Self::Host(h) => h.is_directory,
         }
+    }
+}
+
+impl<'f> antlir2_feature_impl::Feature<'f> for Mount<'f> {
+    fn provides(&self) -> Result<Vec<Item<'f>>> {
+        Ok(Default::default())
+    }
+
+    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+        let mut v = vec![Requirement::ordered(
+            ItemKey::Path(self.mountpoint().path().to_owned().into()),
+            Validator::FileType(match self.is_directory() {
+                true => FileType::Directory,
+                false => FileType::File,
+            }),
+        )];
+        match self {
+            Self::Layer(l) => v.push(Requirement::ordered(
+                ItemKey::Layer(l.src.label.to_owned()),
+                Validator::Exists,
+            )),
+            Self::Host(_) => (),
+        }
+        Ok(v)
+    }
+
+    fn compile(&self, _ctx: &CompilerContext) -> Result<()> {
+        Ok(())
     }
 }

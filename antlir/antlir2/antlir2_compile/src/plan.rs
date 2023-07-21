@@ -10,7 +10,6 @@ use std::collections::BTreeSet;
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::rpms::Reason;
 use crate::Result;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
@@ -51,37 +50,66 @@ impl Plan {
         }
         Ok(plan)
     }
+
+    pub fn dnf_transaction(&self) -> Option<&DnfTransaction> {
+        self.dnf_transaction.as_ref()
+    }
+
+    pub fn fbpkg_transaction(&self) -> Option<&FbpkgTransaction> {
+        self.fbpkg_transaction.as_ref()
+    }
 }
 
 pub type Nevra = String;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct InstallPackage {
-    pub(crate) nevra: Nevra,
-    pub(crate) repo: Option<String>,
-    pub(crate) reason: Reason,
+    pub nevra: Nevra,
+    pub repo: Option<String>,
+    pub reason: RpmReason,
+}
+
+#[derive(
+    Debug,
+    Copy,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
+#[serde(rename_all = "kebab-case")]
+pub enum RpmReason {
+    Clean,
+    Dependency,
+    Group,
+    Unknown,
+    User,
+    WeakDependency,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct DnfTransaction {
-    pub(crate) install: BTreeSet<InstallPackage>,
-    pub(crate) remove: BTreeSet<Nevra>,
+    pub install: BTreeSet<InstallPackage>,
+    pub remove: BTreeSet<Nevra>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct InstallFbpkg {
-    pub(crate) name: String,
-    pub(crate) tag: String,
-    pub(crate) dst: Option<String>,
-    pub(crate) organize: bool,
+    pub name: String,
+    pub tag: String,
+    pub dst: Option<String>,
+    pub organize: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct FbpkgTransaction {
-    pub(crate) install: Vec<InstallFbpkg>,
+    pub install: Vec<InstallFbpkg>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub enum Item {
     DnfTransaction(DnfTransaction),
     FbpkgTransaction(FbpkgTransaction),

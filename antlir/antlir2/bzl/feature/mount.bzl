@@ -20,6 +20,7 @@ def layer_mount(
     features = [
         ParseTimeFeature(
             feature_type = "mount",
+            impl = "//antlir/antlir2/features:mount",
             deps = {
                 "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
             },
@@ -52,6 +53,7 @@ def host_mount(
     mountpoint = mountpoint or source
     features = [ParseTimeFeature(
         feature_type = "mount",
+        impl = "//antlir/antlir2/features:mount",
         kwargs = {
             "host_source": source,
             "is_directory": is_directory,

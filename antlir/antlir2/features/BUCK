@@ -1,0 +1,111 @@
+load("//antlir/bzl:build_defs.bzl", "export_file")
+load(":defs.bzl", "feature_impl")
+
+export_file(name = "main.rs")
+
+feature_impl(
+    name = "antlir1_no_equivalent",
+)
+
+feature_impl(
+    name = "clone",
+    unstable_features = [
+        "io_error_more",
+        "io_error_other",
+        "unix_chown",
+    ],
+    deps = [
+        "serde_json",
+        "walkdir",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ],
+)
+
+feature_impl(
+    name = "ensure_dir_exists",
+    unstable_features = [
+        "unix_chown",
+    ],
+)
+
+feature_impl(
+    name = "extract",
+    deps = [
+        "goblin",
+        "once_cell",
+        "regex",
+        "twox-hash",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+    ],
+)
+
+feature_impl(
+    name = "genrule",
+    deps = [
+        "derivative",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+    ],
+)
+
+feature_impl(
+    name = "group",
+    deps = [
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ],
+)
+
+feature_impl(
+    name = "install",
+    src = "install.rs",
+    unstable_features = [
+        "file_set_times",
+        "unix_chown",
+    ],
+    deps = [
+        "serde_json",
+        "walkdir",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ],
+)
+
+feature_impl(
+    name = "meta_kv",
+    src = "unimplemented.rs",
+)
+
+feature_impl(
+    name = "mount",
+)
+
+feature_impl(
+    name = "remove",
+    unstable_features = [
+        "io_error_more",
+    ],
+)
+
+feature_impl(
+    name = "requires",
+)
+
+feature_impl(
+    name = "rpm",
+    deps = [
+        "serde_json",
+    ],
+)
+
+feature_impl(
+    name = "symlink",
+)
+
+feature_impl(
+    name = "user",
+    deps = [
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ],
+)
+
+feature_impl(
+    name = "usermod",
+)

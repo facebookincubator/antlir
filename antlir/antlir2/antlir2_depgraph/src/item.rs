@@ -106,9 +106,9 @@ pub enum Path<'a> {
     Serialize
 )]
 pub struct FsEntry<'a> {
-    pub(crate) path: Cow<'a, std::path::Path>,
-    pub(crate) file_type: FileType,
-    pub(crate) mode: u32,
+    pub path: Cow<'a, std::path::Path>,
+    pub file_type: FileType,
+    pub mode: u32,
 }
 
 #[derive(
@@ -173,7 +173,7 @@ impl From<std::fs::FileType> for FileType {
     Serialize
 )]
 pub struct User<'a> {
-    pub(crate) name: Cow<'a, str>,
+    pub name: Cow<'a, str>,
     // there is more information available about users, but it's not necessary
     // for the depgraph
 }
@@ -190,7 +190,7 @@ pub struct User<'a> {
     Serialize
 )]
 pub struct Group<'a> {
-    pub(crate) name: Cow<'a, str>,
+    pub name: Cow<'a, str>,
 }
 
 #[derive(Clone, Derivative, Deserialize, Serialize)]

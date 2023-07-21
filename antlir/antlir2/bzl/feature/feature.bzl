@@ -80,6 +80,7 @@ feature_record = record(
     feature_type = str.type,
     label = "target_label",
     analysis = "FeatureAnalysis",
+    run_info = "RunInfo",
 )
 
 def _feature_as_json(feat: feature_record.type) -> "struct":
@@ -87,6 +88,7 @@ def _feature_as_json(feat: feature_record.type) -> "struct":
         feature_type = feat.feature_type,
         label = feat.label,
         data = feat.analysis.data,
+        run_info = feat.run_info,
     )
 
 Features = transitive_set(
@@ -126,6 +128,7 @@ def _impl(ctx: "context") -> ["provider"]:
         feature_deps = ctx.attrs.inline_features_deps.get(key, None)
         feature_deps_or_srcs = ctx.attrs.inline_features_deps_or_srcs.get(key, None)
         feature_unnamed_deps_or_srcs = ctx.attrs.inline_features_unnamed_deps_or_srcs.get(key, None)
+        feature_exec_deps = ctx.attrs.inline_features_exec_deps.get(key, None)
         feature_srcs = ctx.attrs.inline_features_srcs.get(key, None)
 
         analyze_kwargs = inline["kwargs"]
@@ -135,6 +138,8 @@ def _impl(ctx: "context") -> ["provider"]:
             analyze_kwargs["deps_or_srcs"] = feature_deps_or_srcs
         if feature_unnamed_deps_or_srcs != None:
             analyze_kwargs["unnamed_deps_or_srcs"] = feature_unnamed_deps_or_srcs
+        if feature_exec_deps != None:
+            analyze_kwargs["exec_deps"] = feature_exec_deps
         if feature_srcs != None:
             analyze_kwargs["srcs"] = feature_srcs
         if inline.get("analyze_uses_context"):
@@ -154,9 +159,10 @@ def _impl(ctx: "context") -> ["provider"]:
             inline_layer_deps.extend(analysis.required_layers)
 
             feat = feature_record(
-                feature_type = analysis.feature_type or inline["feature_type"],
+                feature_type = analysis.feature_type,
                 label = ctx.label.raw_target(),
                 analysis = analysis,
+                run_info = analysis.impl_run_info or ctx.attrs.inline_features_impls[key][RunInfo],
             )
             inline_features.append(feat)
 
@@ -235,6 +241,9 @@ _feature = rule(
                 attrs.one_of(attrs.dep(), attrs.source()),
             ),
         ),
+        "inline_features_exec_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.exec_dep()))),
+        # Map "feature key" -> "feature impl binary"
+        "inline_features_impls": attrs.dict(attrs.string(), attrs.exec_dep(providers = [RunInfo])),
         # Map "feature key" -> "feature srcs"
         "inline_features_srcs": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.source()))),
         # Map "feature key" -> "feature dep/source"
@@ -277,10 +286,12 @@ def feature(
 
     inline_features = {}
     feature_targets = []
+    inline_features_impls = {}
     inline_features_deps = {}
     inline_features_deps_or_srcs = {}
-    inline_features_unnamed_deps_or_srcs = {}
     inline_features_srcs = {}
+    inline_features_exec_deps = {}
+    inline_features_unnamed_deps_or_srcs = {}
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -297,9 +308,13 @@ def feature(
                 "kwargs": feat.kwargs,
             }
 
+            inline_features_impls[feature_key] = feat.impl
+
             if feat.deps:
                 # TODO: record providers for later checking
                 inline_features_deps[feature_key] = {k: d.dep for k, d in feat.deps.items()}
+            if feat.exec_deps:
+                inline_features_exec_deps[feature_key] = {k: d.dep for k, d in feat.exec_deps.items()}
             if feat.deps_or_srcs:
                 inline_features_deps_or_srcs[feature_key] = feat.deps_or_srcs
             if feat.unnamed_deps_or_srcs:
@@ -313,10 +328,12 @@ def feature(
         name = name,
         feature_targets = feature_targets,
         inline_features = inline_features,
+        inline_features_impls = inline_features_impls,
         inline_features_deps = inline_features_deps,
         inline_features_deps_or_srcs = inline_features_deps_or_srcs,
-        inline_features_unnamed_deps_or_srcs = inline_features_unnamed_deps_or_srcs,
         inline_features_srcs = inline_features_srcs,
+        inline_features_exec_deps = inline_features_exec_deps,
+        inline_features_unnamed_deps_or_srcs = inline_features_unnamed_deps_or_srcs,
         visibility = visibility,
         **kwargs
     )

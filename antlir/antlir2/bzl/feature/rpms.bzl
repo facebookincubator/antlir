@@ -54,6 +54,7 @@ def rpms_install(
 
     return ParseTimeFeature(
         feature_type = "rpm",
+        impl = "//antlir/antlir2/features:rpm",
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         srcs = {
             "subjects": subjects_src,
@@ -76,6 +77,7 @@ def rpms_remove_if_exists(*, rpms: [[[str.type, "selector"]], "selector"]) -> Pa
     """
     return ParseTimeFeature(
         feature_type = "rpm",
+        impl = "//antlir/antlir2/features:rpm",
         kwargs = {
             "action": "remove_if_exists",
             "subjects": rpms,
@@ -103,7 +105,8 @@ def rpms_analyze(
         action: str.type,
         subjects: [str.type],
         srcs: {str.type: "artifact"} = {},
-        unnamed_deps_or_srcs: [["dependency", "artifact"]] = []) -> FeatureAnalysis.type:
+        unnamed_deps_or_srcs: [["dependency", "artifact"]] = [],
+        impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
     rpms = []
     for rpm in subjects:
         rpms.append(rpm_source_record(subject = rpm))
@@ -134,4 +137,5 @@ def rpms_analyze(
         required_artifacts = artifacts,
         requires_planning = True,
         build_phase = BuildPhase("package_manager"),
+        impl_run_info = impl,
     )

@@ -4,7 +4,6 @@ rust_library(
     name = "antlir2_features",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "derivative",
         "serde",
         "serde_json",
         "//antlir/buck/buck_label:buck_label",

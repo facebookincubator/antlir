@@ -9,8 +9,10 @@ use std::fmt::Display;
 use std::fmt::Formatter;
 
 pub mod group;
+mod next_available;
 pub mod passwd;
 pub mod shadow;
+pub use next_available::NextAvailableId;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {

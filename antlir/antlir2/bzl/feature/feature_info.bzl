@@ -18,6 +18,8 @@ ParseTimeDependency = record(
 
 ParseTimeFeature = record(
     feature_type = str.type,
+    # Binary that implements this feature
+    impl = str.type,
     # Items in this list may be either raw source files, or dependencies
     # produced by another rule. If a dependency, the full provider set will be
     # made available to the analysis code for the feature.
@@ -27,6 +29,9 @@ ParseTimeFeature = record(
     # These items must be `deps` and will be validated early in analysis time to
     # contain the required providers
     deps = field([{str.type: ParseTimeDependency.type}, None], default = None),
+    # Deps resolved for the execution platform. These should not be installed
+    # into images because they are produced only to be run on the build worker
+    exec_deps = field([{str.type: ParseTimeDependency.type}, None], default = None),
     # Sources/deps that do not require named tracking between the parse and
     # analysis phases. Useful to support `select` in features that accept lists
     # of dependencies.
@@ -44,6 +49,8 @@ ParseTimeFeature = record(
 # Produced by the feature implementation, this tells the rule how to build it
 FeatureAnalysis = record(
     feature_type = str.type,
+    # Binary implementation of this feature
+    impl_run_info = field(["RunInfo", None], default = None),
     # Arbitrary feature record type (the antlir2 compiler must be able to
     # deserialize this)
     data = "record",
@@ -83,11 +90,12 @@ def data_only_feature_analysis_fn(
         feature_type: str.type,
         build_phase: BuildPhase.type = BuildPhase("compile")):
     # @lint-ignore BUCKRESTRICTEDSYNTAX
-    def inner(**kwargs) -> FeatureAnalysis.type:
+    def inner(impl: ["RunInfo", None] = None, **kwargs) -> FeatureAnalysis.type:
         return FeatureAnalysis(
             feature_type = feature_type,
             data = record_type(**kwargs),
             build_phase = build_phase,
+            impl_run_info = impl,
         )
 
     return inner

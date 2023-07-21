@@ -149,7 +149,12 @@ def _impl(ctx: "context") -> ["provider"]:
         # JSON file for only the features that are part of this BuildPhase
         features_json = ctx.actions.write_json(
             identifier_prefix + "features.json",
-            [{"data": f.analysis.data, "feature_type": f.feature_type, "label": f.label} for f in features],
+            [{
+                "data": f.analysis.data,
+                "feature_type": f.feature_type,
+                "label": f.label,
+                "run_info": f.run_info,
+            } for f in features],
             with_inputs = True,
         )
 
@@ -165,6 +170,7 @@ def _impl(ctx: "context") -> ["provider"]:
         feature_hidden_deps = [
             [feat.analysis.required_artifacts for feat in features],
             [feat.analysis.required_run_infos for feat in features],
+            [feat.run_info for feat in features],
         ]
 
         depgraph_input = build_depgraph(

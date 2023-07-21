@@ -14,6 +14,7 @@ def genrule(
         bind_repo_ro: [bool.type, "selector"] = False) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "genrule",
+        impl = "//antlir/antlir2/features:genrule",
         kwargs = {
             "bind_repo_ro": bind_repo_ro,
             "boot": boot,

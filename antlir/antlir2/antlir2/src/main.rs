@@ -138,7 +138,8 @@ fn main() -> Result<()> {
         Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {
-        eprintln!("{}", format!("{:#?}", e).red());
+        eprintln!("{}", format!("{e:#?}").red());
+        eprintln!("{}", e.to_string().red());
         std::process::exit(1);
     }
     Ok(())
