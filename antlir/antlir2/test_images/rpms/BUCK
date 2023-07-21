@@ -1,4 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_binary")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 load(":defs.bzl", "expected_t", "test_rpms")
@@ -315,4 +316,10 @@ test_rpms(
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
     parent_layer = protected_installed,
+)
+
+image_sh_test(
+    name = "test-history",
+    layer = simple,
+    test = "test-history.sh",
 )

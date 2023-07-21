@@ -150,6 +150,7 @@ def _impl(ctx: "context") -> ["provider"]:
                 toolchains = Toolchains(
                     cxx = ctx.attrs.cxx_toolchain,
                 ),
+                label = ctx.label,
             )
 
         analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
