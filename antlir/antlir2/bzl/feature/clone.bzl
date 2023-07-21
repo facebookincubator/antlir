@@ -57,6 +57,7 @@ def clone(
     """
     return ParseTimeFeature(
         feature_type = "clone",
+        impl = "//antlir/antlir2/features:clone",
         deps = {
             "src_layer": ParseTimeDependency(
                 dep = src_layer,

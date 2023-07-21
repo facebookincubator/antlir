@@ -70,3 +70,39 @@ pub struct LayerInfo<'a> {
     pub subvol_symlink: Cow<'a, Path>,
     pub depgraph: Cow<'a, Path>,
 }
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct UserName<'a>(Cow<'a, str>);
+
+impl<'a> UserName<'a> {
+    pub fn name(&self) -> &str {
+        &self.0
+    }
+}
+
+impl<'a, S> From<S> for UserName<'a>
+where
+    S: Into<Cow<'a, str>>,
+{
+    fn from(s: S) -> Self {
+        Self(s.into())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct GroupName<'a>(Cow<'a, str>);
+
+impl<'a> GroupName<'a> {
+    pub fn name(&self) -> &str {
+        &self.0
+    }
+}
+
+impl<'a, S> From<S> for GroupName<'a>
+where
+    S: Into<Cow<'a, str>>,
+{
+    fn from(s: S) -> Self {
+        Self(s.into())
+    }
+}

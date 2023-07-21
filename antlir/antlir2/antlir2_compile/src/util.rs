@@ -19,7 +19,7 @@ use xattr::FileExt;
 use crate::Result;
 
 #[tracing::instrument(ret, err)]
-pub(crate) fn copy_with_metadata(
+pub fn copy_with_metadata(
     src: &Path,
     dst: &Path,
     uid: Option<u32>,

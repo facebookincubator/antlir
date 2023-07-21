@@ -6,22 +6,22 @@
  */
 
 use std::fmt::Debug;
+use std::io::Cursor;
 
+use antlir2_features::Feature;
 use nix::sys::stat::Mode;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::trace;
 
 use crate::item::FileType;
 use crate::item::Item;
 use crate::item::ItemKey;
 use crate::item::Path;
 
-mod feature_ext;
-pub(crate) use feature_ext::FeatureExt;
-#[cfg(facebook)]
-mod facebook;
-
-pub(crate) struct Requirement<'a> {
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Requirement<'a> {
     pub(crate) key: ItemKey<'a>,
     pub(crate) validator: Validator<'a>,
     /// This [Requirement] necessitates ordered running of the features
@@ -35,7 +35,7 @@ impl<'a> Requirement<'a> {
     /// use this function. The compiler will not attempt to build the feature
     /// that has this [Requirement] until the feature that provides it has been
     /// built.
-    pub(crate) fn ordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
+    pub fn ordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
         Self {
             key,
             validator,
@@ -48,7 +48,7 @@ impl<'a> Requirement<'a> {
     /// [Requirement] before the feature that provides it, which is useful for
     /// avoiding ordering cycles for purely logical "this has to happen by the
     /// time the layer is done" requirements.
-    pub(crate) fn unordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
+    pub fn unordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
         Self {
             key,
             validator,
@@ -118,6 +118,47 @@ impl<'a> Validator<'a> {
                 },
                 _ => false,
             },
+        }
+    }
+}
+
+pub(crate) trait FeatureExt<'f> {
+    fn provides(&self) -> std::result::Result<Vec<Item<'f>>, String>;
+    fn requires(&self) -> std::result::Result<Vec<Requirement<'f>>, String>;
+}
+
+impl<'f> FeatureExt<'f> for Feature<'f> {
+    #[tracing::instrument]
+    fn provides(&self) -> std::result::Result<Vec<Item<'f>>, String> {
+        let mut cmd = self.base_cmd();
+        cmd.arg("provides");
+        trace!("running {cmd:?} to determine provides");
+        let out = cmd
+            .output()
+            .map_err(|e| format!("failed to run cmd {cmd:?}: {e}"))?;
+        if !out.status.success() {
+            Err(format!("{cmd:?} failed with exit code {}", out.status))
+        } else {
+            let mut deser = serde_json::Deserializer::from_reader(Cursor::new(&out.stdout));
+            <Vec<Item<'f>>>::deserialize(&mut deser)
+                .map_err(|e| format!("failed to deserialize output: {e}"))
+        }
+    }
+
+    #[tracing::instrument]
+    fn requires(&self) -> std::result::Result<Vec<Requirement<'f>>, String> {
+        let mut cmd = self.base_cmd();
+        cmd.arg("requires");
+        trace!("running {cmd:?} to determine requires");
+        let out = cmd
+            .output()
+            .map_err(|e| format!("failed to run cmd {cmd:?}: {e}"))?;
+        if !out.status.success() {
+            Err(format!("{cmd:?} failed with exit code {}", out.status))
+        } else {
+            let mut deser = serde_json::Deserializer::from_reader(Cursor::new(&out.stdout));
+            <Vec<Requirement<'f>>>::deserialize(&mut deser)
+                .map_err(|e| format!("failed to deserialize output: {e}"))
         }
     }
 }

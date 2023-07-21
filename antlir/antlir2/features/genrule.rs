@@ -5,21 +5,45 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::path::Path;
 
-use antlir2_features::genrule::Genrule;
+use antlir2_compile::CompilerContext;
+use antlir2_depgraph::item::Item;
+use antlir2_depgraph::requires_provides::Requirement;
+use antlir2_features::types::UserName;
 use antlir2_isolate::isolate;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
-use anyhow::anyhow;
+use anyhow::ensure;
+use anyhow::Context;
+use anyhow::Result;
+use derivative::Derivative;
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::CompileFeature;
-use crate::CompilerContext;
-use crate::Error;
-use crate::Result;
+pub type Feature = Genrule<'static>;
 
-impl<'a> CompileFeature for Genrule<'a> {
+#[derive(Debug, Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
+#[derivative(PartialOrd, Ord)]
+#[serde(bound(deserialize = "'de: 'a"))]
+pub struct Genrule<'a> {
+    pub cmd: Vec<Cow<'a, str>>,
+    pub user: UserName<'a>,
+    pub boot: bool,
+    pub bind_repo_ro: bool,
+}
+
+impl<'f> antlir2_feature_impl::Feature<'f> for Genrule<'f> {
+    fn provides(&self) -> Result<Vec<Item<'f>>> {
+        Ok(Default::default())
+    }
+
+    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+        Ok(Default::default())
+    }
+
     #[tracing::instrument(name = "genrule", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
         if self.boot {
@@ -55,18 +79,17 @@ impl<'a> CompileFeature for Genrule<'a> {
                 .collect::<Vec<_>>(),
         );
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
-        let res = cmd.output().map_err(Error::IO)?;
-        if !res.status.success() {
-            return Err(Error::Other(anyhow!(
-                "genrule {self:?} {}. {}\n{}",
-                match res.status.code() {
-                    Some(code) => format!("exited with code {code}"),
-                    None => "was terminated by a signal".to_owned(),
-                },
-                std::str::from_utf8(&res.stdout).unwrap_or("<invalid utf8>"),
-                std::str::from_utf8(&res.stderr).unwrap_or("<invalid utf8>"),
-            )));
-        }
+        let res = cmd.output().context("while running cmd")?;
+        ensure!(
+            res.status.success(),
+            "genrule {self:?} {}. {}\n{}",
+            match res.status.code() {
+                Some(code) => format!("exited with code {code}"),
+                None => "was terminated by a signal".to_owned(),
+            },
+            std::str::from_utf8(&res.stdout).unwrap_or("<invalid utf8>"),
+            std::str::from_utf8(&res.stderr).unwrap_or("<invalid utf8>"),
+        );
         Ok(())
     }
 }

@@ -39,6 +39,7 @@ def extract_from_layer(
     """
     return ParseTimeFeature(
         feature_type = "extract",
+        impl = "//antlir/antlir2/features:extract",
         deps = {
             "layer": ParseTimeDependency(dep = layer, providers = [LayerInfo]),
         },
@@ -59,6 +60,7 @@ def extract_buck_binary(
     """
     return ParseTimeFeature(
         feature_type = "extract",
+        impl = "//antlir/antlir2/features:extract",
         # include in deps so we can look at the providers
         deps = {"src": ParseTimeDependency(dep = src, providers = [RunInfo])},
         kwargs = {

@@ -4,34 +4,7 @@ load(":defs.bzl", "bad_depgraph", "good_depgraph")
 
 bad_depgraph(
     name = "cycle",
-    error = {"cycle": [
-        {
-            "data": {
-                "dev_mode": False,
-                "dst": "/etc/passwd",
-                "group": "root",
-                "mode": 0o444,
-                "separate_debug_symbols": True,
-                "src": "fbcode/antlir/empty",
-                "user": "antlir",
-            },
-            "feature_type": "install",
-            "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:cycle--features",
-        },
-        {
-            "data": {
-                "comment": None,
-                "home_dir": "/",
-                "name": "antlir",
-                "primary_group": "root",
-                "shell": "/fakeshell",
-                "supplementary_groups": [],
-                "uid": None,
-            },
-            "feature_type": "user",
-            "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:cycle--features",
-        },
-    ]},
+    error_regex = "^cycle in dependency graph:(.|\n)*install(.|\n)*user",
     features = [
         # user_add has a dep on an executable shell file (is is not part of the cycle)
         feature.install(
@@ -156,17 +129,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "missing-dep",
-    error = {"missing_item": {
-        "key": {"path": "/foo"},
-        "required_by": {
-            "data": {
-                "must_exist": True,
-                "path": "/foo",
-            },
-            "feature_type": "remove",
-            "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:missing-dep--features",
-        },
-    }},
+    error_regex = "\"/foo\"\\)? is required by ",
     features = [
         feature.remove(
             must_exist = True,
@@ -204,41 +167,7 @@ bad_depgraph(
 
 bad_depgraph(
     name = "conflict-in-same-layer",
-    error = {"conflict": {
-        "features": [
-            {
-                "data": {
-                    "dev_mode": False,
-                    "dst": "/foo",
-                    "group": "root",
-                    "mode": 0o444,
-                    "separate_debug_symbols": True,
-                    "src": "fbcode/antlir/empty",
-                    "user": "root",
-                },
-                "feature_type": "install",
-                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-in-same-layer--features",
-            },
-            {
-                "data": {
-                    "dev_mode": False,
-                    "dst": "/foo",
-                    "group": "root",
-                    "mode": 0o444,
-                    "separate_debug_symbols": True,
-                    "src": "fbcode/antlir/antlir2/antlir2_depgraph/tests/TARGETS",
-                    "user": "root",
-                },
-                "feature_type": "install",
-                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-in-same-layer--features",
-            },
-        ],
-        "item": {"path": {"entry": {
-            "file_type": "file",
-            "mode": 0o444,
-            "path": "/foo",
-        }}},
-    }},
+    error_regex = "\"/foo\".*is provided by multiple features",
     features = [
         feature.install(
             src = "//antlir:empty",
@@ -304,41 +233,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "conflict-with-parent",
-    error = {"conflict": {
-        "features": [
-            {
-                "data": {
-                    "dev_mode": False,
-                    "dst": "/foo",
-                    "group": "root",
-                    "mode": 0o444,
-                    "separate_debug_symbols": True,
-                    "src": "fbcode/antlir/empty",
-                    "user": "root",
-                },
-                "feature_type": "install",
-                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:simple-install--features",
-            },
-            {
-                "data": {
-                    "dev_mode": False,
-                    "dst": "/foo",
-                    "group": "root",
-                    "mode": 0o400,
-                    "separate_debug_symbols": True,
-                    "src": "fbcode/antlir/empty",
-                    "user": "root",
-                },
-                "feature_type": "install",
-                "label": "fbcode//antlir/antlir2/antlir2_depgraph/tests:conflict-with-parent--features",
-            },
-        ],
-        "item": {"path": {"entry": {
-            "file_type": "file",
-            "mode": 0o444,
-            "path": "/foo",
-        }}},
-    }},
+    error_regex = "\"/foo\".*is provided by multiple features",
     features = [
         feature.install(
             src = "//antlir:empty",

@@ -20,7 +20,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use antlir2_features::mount::Mount;
 use antlir2_isolate::isolate;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
@@ -30,6 +29,7 @@ use anyhow::Error;
 use anyhow::Result;
 use clap::Parser;
 use json_arg::JsonFile;
+use mount::Mount;
 use tempfile::NamedTempFile;
 use tracing::debug;
 use tracing_subscriber::prelude::*;

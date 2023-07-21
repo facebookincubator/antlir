@@ -29,10 +29,10 @@ use serde::Serialize;
 use serde_with::serde_as;
 
 mod dot;
-mod item;
+pub mod item;
 use item::Item;
 use item::ItemKey;
-mod requires_provides;
+pub mod requires_provides;
 use requires_provides::FeatureExt as _;
 use requires_provides::Validator;
 mod node;
@@ -89,6 +89,8 @@ pub enum Error<'a> {
     },
     #[error("failure determining 'provides': {0}")]
     Provides(String),
+    #[error("failure determining 'requires': {0}")]
+    Requires(String),
 }
 
 pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
@@ -135,8 +137,8 @@ impl<'a> GraphBuilder<'a> {
             root,
             pending_features: Vec::new(),
             items,
-            label,
             rpm_feature: None,
+            label,
         };
 
         if let Some(parent) = parent {
@@ -218,21 +220,33 @@ impl<'a> GraphBuilder<'a> {
 
     pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
         // rpm features get merged into a single node so that the transaction management is easier
-        let feature_nx = if let antlir2_features::Data::Rpm(rpm) = feature.data {
+        // TODO(vmagro): this is really not the right place for this, we need a
+        // better way to batch features together, but this can just use this
+        // slightly unsafe json mangling to unblock refactoring right now
+        let feature_nx = if feature.feature_type == "rpm" {
             if let Some(nx) = self.rpm_feature {
-                match &mut self.g[nx] {
-                    Feature {
-                        label: _,
-                        data: antlir2_features::Data::Rpm(existing_feature),
-                    } => existing_feature.items.extend(rpm.items),
-                    _ => unreachable!("rpm_feature node is always an Rpm feature"),
-                }
+                self.g[nx]
+                    .data
+                    .as_object_mut()
+                    .expect("rpm feature is an object")
+                    .get_mut("items")
+                    .expect("rpm feature has 'items'")
+                    .as_array_mut()
+                    .expect("rpm 'items' is array")
+                    .extend(
+                        feature
+                            .data
+                            .as_object()
+                            .expect("rpm feature is an object")
+                            .get("items")
+                            .expect("rpm feature has 'items'")
+                            .as_array()
+                            .expect("rpm 'items' is array")
+                            .clone(),
+                    );
                 return self;
             } else {
-                let feature_nx = self.g.add_node_typed(Feature {
-                    data: antlir2_features::Data::Rpm(rpm),
-                    label: feature.label,
-                });
+                let feature_nx = self.g.add_node_typed(feature);
                 self.rpm_feature = Some(feature_nx);
                 feature_nx
             }
@@ -269,7 +283,12 @@ impl<'a> GraphBuilder<'a> {
         // encountered yet.
         for feature_nx in &self.pending_features {
             let f = &self.g[*feature_nx];
-            for req in f.requires().into_iter().filter(|r| r.ordered) {
+            for req in f
+                .requires()
+                .map_err(Error::Requires)?
+                .into_iter()
+                .filter(|r| r.ordered)
+            {
                 let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
                     None => {
@@ -351,7 +370,12 @@ impl<'a> GraphBuilder<'a> {
         // edges like these.
         for feature_nx in &self.pending_features {
             let f = &self.g[*feature_nx];
-            for req in f.requires().into_iter().filter(|r| !r.ordered) {
+            for req in f
+                .requires()
+                .map_err(Error::Requires)?
+                .into_iter()
+                .filter(|r| !r.ordered)
+            {
                 let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
                     None => {
@@ -557,11 +581,15 @@ impl<'a> Graph<'a> {
         })
     }
 
-    pub(crate) fn get_item(&self, key: &ItemKey<'_>) -> Option<&Item<'a>> {
+    pub fn get_item(&self, key: &ItemKey<'_>) -> Option<&Item<'a>> {
         match self.items.get(key) {
             Some(nx) => Some(&self.g[*nx]),
             None => None,
         }
+    }
+
+    pub fn items_keys(&self) -> impl Iterator<Item = &ItemKey<'_>> {
+        self.items.keys()
     }
 
     /// There are many image features that produce items that we cannot

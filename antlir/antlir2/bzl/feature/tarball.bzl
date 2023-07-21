@@ -15,6 +15,7 @@ def tarball(
         group: str.type = "root") -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "tarball",
+        impl = "//antlir/antlir2/features:install",
         srcs = {
             "source": src,
         },

@@ -13,11 +13,16 @@ repo_set(
     ],
 )
 
-_RPM_DEPS_OF_TEST = [
-    "dnf",
-    "rpm",
-    # @oss-disable
-]
+feature.new(
+    name = "test-deps",
+    features = [
+        feature.rpms_install(rpms = [
+            "dnf",
+            "rpm",
+            # @oss-disable
+        ]),
+    ],
+)
 
 simple = test_rpms(
     name = "simple",
@@ -37,8 +42,9 @@ simple = test_rpms(
                 "foo-2",
                 # this depends on 'foobar' and 'foobarbaz' should be removed when 'foobar' is
                 "foobarbaz",
-            ] + _RPM_DEPS_OF_TEST,
+            ],
         ),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -169,7 +175,8 @@ test_rpms(
     features = [
         feature.rpms_install(rpms = [
             "//antlir/antlir2/test_images/rpms/repo:foo-2-1.noarch",
-        ] + _RPM_DEPS_OF_TEST),
+        ]),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -179,7 +186,7 @@ test_rpms(
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
         feature.rpms_install(subjects_src = "subjects-src"),
-        feature.rpms_install(rpms = _RPM_DEPS_OF_TEST),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -189,8 +196,9 @@ test_rpms(
     expected = expected_t(installed = ["foo"]),
     features = [
         feature.rpms_install(
-            rpms = ["foo"] + _RPM_DEPS_OF_TEST,
+            rpms = ["foo"],
         ),
+        ":test-deps",
         feature.remove(
             must_exist = True,
             path = "/foo",
@@ -214,7 +222,8 @@ test_rpms(
     features = [
         feature.rpms_install(rpms = [
             "foo",  # test rpm
-        ] + _RPM_DEPS_OF_TEST),
+        ]),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -224,16 +233,15 @@ test_rpms(
     dnf_versionlock = ":versionlock.json",
     expected = expected_t(installed = ["foo-2-1"]),
     features = [
-        feature.rpms_install(
-            rpms = [
-                # Only explicitly install 'foobar', which depends on 'foo'.
-                # Without versionlock (or if versionlock only worked on
-                # explicitly-requested packages), this would pull in 'foo-3-1', but
-                # when versionlock is applied to dependencies 'foo-2-1' will end up
-                # being installed.
-                "foobar",
-            ] + _RPM_DEPS_OF_TEST,
-        ),
+        feature.rpms_install(rpms = [
+            # Only explicitly install 'foobar', which depends on 'foo'.
+            # Without versionlock (or if versionlock only worked on
+            # explicitly-requested packages), this would pull in 'foo-3-1', but
+            # when versionlock is applied to dependencies 'foo-2-1' will end up
+            # being installed.
+            "foobar",
+        ]),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -253,7 +261,8 @@ test_rpms(
     features = [
         feature.rpms_install(rpms = [
             "foo",  # test rpm
-        ] + _RPM_DEPS_OF_TEST),
+        ]),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -265,7 +274,8 @@ test_rpms(
     features = [
         feature.rpms_install(rpms = [
             "requires-any-foo",
-        ] + _RPM_DEPS_OF_TEST),
+        ]),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -277,7 +287,8 @@ test_rpms(
     features = [
         feature.rpms_install(rpms = [
             "foo-3-1",
-        ] + _RPM_DEPS_OF_TEST),
+        ]),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -288,7 +299,8 @@ protected_installed = test_rpms(
     features = [
         feature.rpms_install(rpms = [
             "dnf",
-        ] + _RPM_DEPS_OF_TEST),
+        ]),
+        ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )

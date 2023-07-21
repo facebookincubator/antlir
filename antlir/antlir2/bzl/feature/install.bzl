@@ -38,6 +38,7 @@ def install(
 
     return ParseTimeFeature(
         feature_type = "install",
+        impl = "//antlir/antlir2/features:install",
         deps_or_srcs = {"src": src},
         kwargs = {
             "dst": dst,
@@ -73,7 +74,8 @@ def install_analyze(
         group: str.type,
         mode: [int.type, None],
         user: str.type,
-        deps_or_srcs: {str.type: ["artifact", "dependency"]}) -> FeatureAnalysis.type:
+        deps_or_srcs: {str.type: ["artifact", "dependency"]},
+        impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
     src = deps_or_srcs["src"]
     binary_info = None
     required_run_infos = []
@@ -140,4 +142,5 @@ def install_analyze(
         ),
         required_artifacts = [src] + required_artifacts,
         required_run_infos = required_run_infos,
+        impl_run_info = impl,
     )

@@ -12,6 +12,7 @@ def _symlink_feature(
         feature_type: [str.type, "selector"]) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = feature_type,
+        impl = "//antlir/antlir2/features:symlink",
         kwargs = {
             "is_directory": feature_type == "ensure_dir_symlink",
             "link": link,

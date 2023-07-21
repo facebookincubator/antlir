@@ -32,6 +32,7 @@ def metakv_store(
     """
     return ParseTimeFeature(
         feature_type = "metakv",
+        impl = "//antlir/antlir2/features:metakv",
         kwargs = {
             "store": {
                 "key": key,
@@ -52,6 +53,7 @@ def metakv_remove(*, key: [str.type, "selector"]):
     """
     return ParseTimeFeature(
         feature_type = "metakv",
+        impl = "//antlir/antlir2/features:metakv",
         kwargs = {
             "remove": {
                 "key": key,
