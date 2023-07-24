@@ -4,9 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-def _timezone(zone, timezone_dir = "/usr/share/zoneinfo"):
+def _timezone(zone, timezone_dir = "/usr/share/zoneinfo", use_antlir2 = False):
     """
     Build Antlir image features to support setting the timezone to the provided
     `zone`.
@@ -17,6 +18,17 @@ def _timezone(zone, timezone_dir = "/usr/share/zoneinfo"):
 
     dest = "/etc/localtime"
 
+    if use_antlir2:
+        return [
+            antlir2_feature.remove(
+                path = dest,
+                must_exist = False,
+            ),
+            antlir2_feature.ensure_file_symlink(
+                link = dest,
+                target = paths.join(timezone_dir, zone),
+            ),
+        ]
     return [
         feature.remove(
             dest,
