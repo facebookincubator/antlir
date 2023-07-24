@@ -286,11 +286,22 @@ fn main() -> Result<()> {
             dropin.path(),
         ));
 
+        // If we drop into emergency.target, we still want the test to run.
+        // To prevent this behavior, set boot_requires_units to sysinit.target.
+        let mut dropin = NamedTempFile::new()?;
+        writeln!(dropin, "[Unit]")?;
+        writeln!(dropin, "Requires=antlir2_image_test.service")?;
+        ctx.inputs((
+            Path::new("/run/systemd/system/emergency.service.d/antlir2.conf"),
+            dropin.path(),
+        ));
+
         let container_stdout = container_stdout_file()?;
         let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
 
         let mut test_unit = NamedTempFile::new()?;
         writeln!(test_unit, "[Unit]")?;
+        writeln!(test_unit, "DefaultDependencies=no")?;
         // exit the container as soon as this test is done, using the exit code
         // of the process
         writeln!(test_unit, "SuccessAction=exit-force")?;
