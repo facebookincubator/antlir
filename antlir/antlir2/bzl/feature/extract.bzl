@@ -21,8 +21,10 @@ This new-and-improved version of extract is capable of extracting buck-built
 binaries without first installing them into a layer.
 """
 
+load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
@@ -47,11 +49,13 @@ def extract_from_layer(
             "binaries": binaries,
             "source": "layer",
         },
+        analyze_uses_context = True,
     )
 
 def extract_buck_binary(
         src: [str.type, "selector"],
-        dst: [str.type, "selector"]) -> ParseTimeFeature.type:
+        dst: [str.type, "selector"],
+        strip: [bool.type, "selector"] = True) -> ParseTimeFeature.type:
     """
     Extract a binary built by buck into the target layer.
 
@@ -66,7 +70,9 @@ def extract_buck_binary(
         kwargs = {
             "dst": dst,
             "source": "buck",
+            "strip": strip,
         },
+        analyze_uses_context = True,
     )
 
 extract_buck_record = record(
@@ -85,11 +91,13 @@ extract_record = record(
 )
 
 def extract_analyze(
+        ctx: "AnalyzeFeatureContext",
         source: str.type,
         deps: {str.type: "dependency"},
         binaries: [[str.type], None] = None,
         src: [str.type, None] = None,
-        dst: [str.type, None] = None) -> FeatureAnalysis.type:
+        dst: [str.type, None] = None,
+        strip: [bool.type, None] = None) -> FeatureAnalysis.type:
     if source == "layer":
         layer = deps["layer"]
         return FeatureAnalysis(
@@ -107,17 +115,31 @@ def extract_analyze(
         src = deps["src"]
         if RunInfo not in src:
             fail("'{}' does not appear to be a binary".format(src))
+
+        src_runinfo = src[RunInfo]
+
+        # Only strip if both strip=True and we're in opt mode (standalone binaries)
+        if strip and not REPO_CFG.artifacts_require_repo:
+            split_anon_target = split_binary_anon(
+                ctx = ctx,
+                src = src,
+                objcopy = ctx.tools.objcopy,
+            )
+            src = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].stripped))
+        else:
+            src = ensure_single_output(src)
+
         return FeatureAnalysis(
             feature_type = "extract",
             data = extract_record(
                 buck = extract_buck_record(
-                    src = ensure_single_output(src),
+                    src = src,
                     dst = dst,
                 ),
                 layer = None,
             ),
-            required_artifacts = [ensure_single_output(src)],
-            required_run_infos = [src[RunInfo]],
+            required_artifacts = [src],
+            required_run_infos = [src_runinfo],
         )
     else:
         fail("invalid extract source '{}'".format(source))
