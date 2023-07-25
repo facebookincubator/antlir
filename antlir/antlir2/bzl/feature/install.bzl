@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary")
+load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:stat.bzl", "stat")
@@ -107,11 +107,11 @@ def install_analyze(
                     dev = True,
                 )
             else:
-                split_anon_target = ctx.actions.anon_target(split_binary, {
-                    "name": "debuginfo//:" + ensure_single_output(src).short_path,
-                    "objcopy": ctx.tools.objcopy,
-                    "src": src,
-                })
+                split_anon_target = split_binary_anon(
+                    ctx = ctx,
+                    src = src,
+                    objcopy = ctx.tools.objcopy,
+                )
                 binary_info = binary_record(
                     installed = installed_binary(
                         debuginfo = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].debuginfo)),

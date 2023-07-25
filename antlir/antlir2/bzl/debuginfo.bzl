@@ -158,3 +158,16 @@ split_binary = rule(
         "src": attrs.dep(providers = [RunInfo]),
     },
 )
+
+def split_binary_anon(
+        *,
+        ctx: ["context", "AnalyzeFeatureContext"],
+        src: "dependency",
+        objcopy: "dependency") -> "promise":
+    if RunInfo not in src:
+        fail("{} does not have a RunInfo provider".format(src.label))
+    return ctx.actions.anon_target(split_binary, {
+        "name": "debuginfo//" + src.label.package + ":" + src.label.name + ("[{}]".format(src.label.sub_target) if src.label.sub_target else ""),
+        "objcopy": objcopy,
+        "src": src,
+    })
