@@ -54,6 +54,11 @@ pub(crate) struct VMArgs {
     /// By default, we suppress the spammy console output and show a prompt through
     /// ssh after VM boots. Pass in this flag to redirect console output to stdout.
     pub(crate) console: bool,
+    /// Command to execute inside VM. By default, we spawn a shell. If command is
+    /// passed in, we run the command and exit.
+    pub(crate) command: Option<Vec<String>>,
+    /// Env for the command
+    pub(crate) command_envs: Option<Vec<(String, String)>>,
 }
 
 /// Everything we need to create and run the VM

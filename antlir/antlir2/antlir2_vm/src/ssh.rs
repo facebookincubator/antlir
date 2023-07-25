@@ -63,16 +63,14 @@ impl GuestSSHCommand {
         self
     }
 
-    /// Execute a command inside VM
-    pub(crate) fn ssh_cmd(&self, cmd: Option<&str>, timeout_s: Option<u32>) -> Command {
-        let mut command = self.ssh_with_args();
-        if let Some(s) = timeout_s {
-            command.arg("/usr/bin/timeout");
-            command.arg(s.to_string());
-        }
-        if let Some(cmd) = cmd {
-            command.arg(cmd);
-        }
+    /// Return a `Command` that sshes into the guest VM.
+    pub fn ssh_cmd(&self) -> Command {
+        let mut command = Command::new("ssh");
+        self.options.iter().for_each(|(name, value)| {
+            command.arg("-o").arg(format!("{}={}", name, value));
+        });
+        command.arg("-i").arg(&self.privkey);
+        command.arg(format!("root@{}%vm0", self.guest_ipv6_addr_ll()));
         command
     }
 
@@ -81,17 +79,6 @@ impl GuestSSHCommand {
     /// to open up firewall for some global address specific for VM testing.
     fn guest_ipv6_addr_ll(&self) -> Ipv6Addr {
         Ipv6Addr::from_str("fe80::200:ff:fe00:1").expect("Invalid IPv6 address")
-    }
-
-    /// `Command` to ssh into guest VM.
-    fn ssh_with_args(&self) -> Command {
-        let mut command = Command::new("ssh");
-        self.options.iter().for_each(|(name, value)| {
-            command.arg("-o").arg(format!("{}={}", name, value));
-        });
-        command.arg("-i").arg(&self.privkey);
-        command.arg(format!("root@{}%vm0", self.guest_ipv6_addr_ll()));
-        command
     }
 }
 
@@ -133,14 +120,14 @@ mod test {
     }
 
     #[test]
-    fn test_ssh_args() {
+    fn test_ssh_cmd() {
         let mut ssh = new();
         // default options
         ssh.get_options().iter().for_each(|(name, value)| {
-            assert!(get_args(&ssh.ssh_with_args()).contains(&format!("-o {}={}", name, value)));
+            assert!(get_args(&ssh.ssh_cmd()).contains(&format!("-o {}={}", name, value)));
         });
-        assert!(get_args(&ssh.ssh_with_args()).contains(&format!("-i {}", ssh.get_key())));
-        assert!(get_args(&ssh.ssh_with_args()).contains("root@fe80::200:ff:fe00:1"));
+        assert!(get_args(&ssh.ssh_cmd()).contains(&format!("-i {}", ssh.get_key())));
+        assert!(get_args(&ssh.ssh_cmd()).contains("root@fe80::200:ff:fe00:1"));
 
         // option override
         ssh.option(
@@ -148,28 +135,16 @@ mod test {
             "/dev/whatever".to_string(),
         );
         ssh.get_options().iter().for_each(|(name, value)| {
-            assert!(get_args(&ssh.ssh_with_args()).contains(&format!("-o {}={}", name, value)));
+            assert!(get_args(&ssh.ssh_cmd()).contains(&format!("-o {}={}", name, value)));
         });
-        assert!(get_args(&ssh.ssh_with_args()).contains("-o UserKnownHostsFile=/dev/whatever"));
-        assert!(!get_args(&ssh.ssh_with_args()).contains("-o UserKnownHostsFile=/dev/null"));
+        assert!(get_args(&ssh.ssh_cmd()).contains("-o UserKnownHostsFile=/dev/whatever"));
+        assert!(!get_args(&ssh.ssh_cmd()).contains("-o UserKnownHostsFile=/dev/null"));
 
         // new option
         ssh.option("Whatever".to_string(), "hello".to_string());
         ssh.get_options().iter().for_each(|(name, value)| {
-            assert!(get_args(&ssh.ssh_with_args()).contains(&format!("-o {}={}", name, value)));
+            assert!(get_args(&ssh.ssh_cmd()).contains(&format!("-o {}={}", name, value)));
         });
-        assert!(get_args(&ssh.ssh_with_args()).contains("-o Whatever=hello"));
-    }
-
-    #[test]
-    fn test_ssh_cmd() {
-        let ssh = new();
-        let cmd = ssh.ssh_cmd(Some("sleep 3"), None);
-        assert!(get_args(&cmd).contains("sleep 3"));
-        assert!(!get_args(&cmd).contains("/usr/bin/timeout"));
-
-        let cmd = ssh.ssh_cmd(Some("whatever"), Some(3));
-        assert!(get_args(&cmd).contains("whatever"));
-        assert!(get_args(&cmd).contains("/usr/bin/timeout 3 "));
+        assert!(get_args(&ssh.ssh_cmd()).contains("-o Whatever=hello"));
     }
 }
