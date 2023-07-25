@@ -42,7 +42,7 @@ impl WorkingVolume {
                         .arg("redirect")
                         .arg("add")
                         .arg(&path)
-                        .arg("bind")
+                        .arg("symlink")
                         .spawn()?
                         .wait()?;
                     if res.success() {
