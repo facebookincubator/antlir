@@ -13,7 +13,7 @@ SplitBinaryInfo = provider(fields = [
 ])
 
 def _split_binary_impl(ctx: "context") -> ["provider"]:
-    cxx_toolchain_info = ctx.attrs.cxx_toolchain[CxxToolchainInfo]
+    objcopy = ctx.attrs.objcopy[RunInfo] if ctx.attrs.objcopy else ctx.attrs.cxx_toolchain[CxxToolchainInfo].binary_utilities_info.objcopy
 
     src = ensure_single_output(ctx.attrs.src)
 
@@ -127,10 +127,7 @@ else:
     ctx.actions.run(
         cmd_args(
             split,
-            cmd_args(
-                cxx_toolchain_info.binary_utilities_info.objcopy,
-                format = "--objcopy={}",
-            ),
+            cmd_args(objcopy, format = "--objcopy={}"),
             cmd_args(src, format = "--binary={}"),
             cmd_args(stripped.as_output(), format = "--stripped={}"),
             cmd_args(debuginfo.as_output(), format = "--debuginfo={}"),
@@ -156,7 +153,8 @@ else:
 split_binary = rule(
     impl = _split_binary_impl,
     attrs = {
-        "cxx_toolchain": attrs.dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]),
+        "cxx_toolchain": attrs.option(attrs.dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]), default = None),
+        "objcopy": attrs.option(attrs.exec_dep(), default = None),
         "src": attrs.dep(providers = [RunInfo]),
     },
 )
