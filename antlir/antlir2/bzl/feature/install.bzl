@@ -108,8 +108,8 @@ def install_analyze(
                 )
             else:
                 split_anon_target = ctx.actions.anon_target(split_binary, {
-                    "cxx_toolchain": ctx.toolchains.cxx,
                     "name": "debuginfo//:" + ensure_single_output(src).short_path,
+                    "objcopy": ctx.tools.objcopy,
                     "src": src,
                 })
                 binary_info = binary_record(

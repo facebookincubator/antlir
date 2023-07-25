@@ -52,8 +52,6 @@ added to the `_analyze_feature` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
-load("@prelude//cxx:cxx_toolchain_types.bzl", "CxxToolchainInfo")
-load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
@@ -64,7 +62,7 @@ load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":clone.bzl", "clone_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
-load(":feature_info.bzl", "AnalyzeFeatureContext", "Toolchains")
+load(":feature_info.bzl", "AnalyzeFeatureContext", "Tools")
 load(":genrule.bzl", "genrule_analyze")
 load(":install.bzl", "install_analyze")
 load(":metakv.bzl", "metakv_analyze")
@@ -144,11 +142,10 @@ def _impl(ctx: "context") -> ["provider"]:
             analyze_kwargs["srcs"] = feature_srcs
         if inline.get("analyze_uses_context"):
             analyze_kwargs["ctx"] = AnalyzeFeatureContext(
-                toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo],
                 unique_action_identifier = key,
                 actions = ctx.actions,
-                toolchains = Toolchains(
-                    cxx = ctx.attrs.cxx_toolchain,
+                tools = Tools(
+                    objcopy = ctx.attrs._objcopy,
                 ),
                 label = ctx.label,
             )
@@ -210,65 +207,69 @@ _nestable_value = attrs.one_of(
     attrs.list(attrs.dict(_primitive, _value)),
     attrs.list(attrs.list(_value)),
 )
+nestable_value = _nestable_value
 
-_feature = rule(
+shared_features_attrs = {
+    # feature targets are instances of `_feature` rules that are merged into
+    # the output of this rule
+    "feature_targets": attrs.list(
+        attrs.dep(providers = [FeatureInfo]),
+    ),
+    # inline features are direct calls to a feature macro inside a layer()
+    # or feature() rule instance
+    "inline_features": attrs.dict(
+        # Unique key for this feature (see _hash_key below)
+        attrs.string(),
+        attrs.dict(
+            # top level kwargs
+            attrs.string(),  # kwarg name
+            _nestable_value,
+        ),
+    ),
+    # Features need a way to coerce strings to sources or dependencies.
+    # Map "feature key" -> "feature deps"
+    "inline_features_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.dep()))),
+    # Map "feature key" -> "feature dep/source"
+    "inline_features_deps_or_srcs": attrs.dict(
+        attrs.string(),
+        attrs.dict(
+            attrs.string(),
+            attrs.one_of(attrs.dep(), attrs.source()),
+        ),
+    ),
+    "inline_features_exec_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.exec_dep()))),
+    # Map "feature key" -> "feature impl binary"
+    "inline_features_impls": attrs.dict(attrs.string(), attrs.exec_dep(providers = [RunInfo])),
+    # Map "feature key" -> "feature srcs"
+    "inline_features_srcs": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.source()))),
+    # Map "feature key" -> "feature dep/source"
+    "inline_features_unnamed_deps_or_srcs": attrs.dict(
+        attrs.string(),
+        attrs.list(
+            attrs.one_of(attrs.dep(), attrs.source()),
+        ),
+    ),
+}
+
+_features_attrs = {
+    "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
+}
+
+_features_attrs.update(shared_features_attrs)
+
+feature_rule = rule(
     impl = _impl,
-    attrs = {
-        "cxx_toolchain": attrs.toolchain_dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]),
-        # feature targets are instances of `_feature` rules that are merged into
-        # the output of this rule
-        "feature_targets": attrs.list(
-            attrs.dep(providers = [FeatureInfo]),
-        ),
-        # inline features are direct calls to a feature macro inside a layer()
-        # or feature() rule instance
-        "inline_features": attrs.dict(
-            # Unique key for this feature (see _hash_key below)
-            attrs.string(),
-            attrs.dict(
-                # top level kwargs
-                attrs.string(),  # kwarg name
-                _nestable_value,
-            ),
-        ),
-        # Features need a way to coerce strings to sources or dependencies.
-        # Map "feature key" -> "feature deps"
-        "inline_features_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.dep()))),
-        # Map "feature key" -> "feature dep/source"
-        "inline_features_deps_or_srcs": attrs.dict(
-            attrs.string(),
-            attrs.dict(
-                attrs.string(),
-                attrs.one_of(attrs.dep(), attrs.source()),
-            ),
-        ),
-        "inline_features_exec_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.exec_dep()))),
-        # Map "feature key" -> "feature impl binary"
-        "inline_features_impls": attrs.dict(attrs.string(), attrs.exec_dep(providers = [RunInfo])),
-        # Map "feature key" -> "feature srcs"
-        "inline_features_srcs": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.source()))),
-        # Map "feature key" -> "feature dep/source"
-        "inline_features_unnamed_deps_or_srcs": attrs.dict(
-            attrs.string(),
-            attrs.list(
-                attrs.one_of(attrs.dep(), attrs.source()),
-            ),
-        ),
-        "toolchain": attrs.toolchain_dep(
-            default = "//antlir/antlir2:toolchain",
-            providers = [Antlir2ToolchainInfo],
-        ),
-    },
+    attrs = _features_attrs,
 )
 
-def feature(
-        name: str.type,
+def feature_attrs(
         # No type hint here, but it is validated by flatten_features
-        features,
-        visibility = None,
-        **kwargs):
+        features) -> {str.type: ""}:
     """
-    Create a target representing a collection of one or more image features.
+    Create a dict suitable to pass to the _feature rule.
+
+    Used by both the feature() macro below and by anything wishing to create an
+    anon_target doing all the feature analysis
 
     `features` is a list that can contain either:
         - inline (aka unnamed) features created with macros like `install()`
@@ -323,20 +324,39 @@ def feature(
             if feat.srcs:
                 inline_features_srcs[feature_key] = feat.srcs
 
+    return {
+        "feature_targets": feature_targets,
+        "inline_features": inline_features,
+        "inline_features_deps": inline_features_deps,
+        "inline_features_deps_or_srcs": inline_features_deps_or_srcs,
+        "inline_features_exec_deps": inline_features_exec_deps,
+        "inline_features_impls": inline_features_impls,
+        "inline_features_srcs": inline_features_srcs,
+        "inline_features_unnamed_deps_or_srcs": inline_features_unnamed_deps_or_srcs,
+    }
+
+def feature(
+        name: str.type,
+        # No type hint here, but it is validated by flatten_features
+        features,
+        visibility = None,
+        **kwargs):
+    """
+    Create a target representing a collection of one or more image features.
+
+    `features` is a list that can contain either:
+        - inline (aka unnamed) features created with macros like `install()`
+        - labels referring to other `feature` targets
+    """
+    attrs = feature_attrs(features)
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
-    return _feature(
+    kwargs.update(attrs)
+
+    return feature_rule(
         name = name,
-        feature_targets = feature_targets,
-        inline_features = inline_features,
-        inline_features_impls = inline_features_impls,
-        inline_features_deps = inline_features_deps,
-        inline_features_deps_or_srcs = inline_features_deps_or_srcs,
-        inline_features_srcs = inline_features_srcs,
-        inline_features_exec_deps = inline_features_exec_deps,
-        inline_features_unnamed_deps_or_srcs = inline_features_unnamed_deps_or_srcs,
         visibility = visibility,
-        **kwargs
+        **attrs
     )
 
 # We need a way to disambiguate inline features so that deps/sources can be
@@ -345,7 +365,3 @@ def feature(
 # just unique for a single evaluation of the target graph.
 def _hash_key(x) -> str.type:
     return sha256(repr(x))
-
-# Real, proper buck2 code can use this instead of the macro that shims some
-# shitty buck1 conventions
-feature_rule = _feature

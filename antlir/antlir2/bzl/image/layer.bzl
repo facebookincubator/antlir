@@ -11,7 +11,7 @@ load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
-load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "shared_features_attrs")
 load("//antlir/bzl:build_defs.bzl", "alias")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
@@ -80,20 +80,47 @@ def _nspawn_sub_target(nspawn_binary: "dependency", subvol: "artifact", mounts: 
         )),
     ]
 
-def _impl(ctx: "context") -> ["provider"]:
+def _impl(ctx: "context") -> "promise":
     if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
         fail("'flavor' must be set if there is no 'parent_layer'")
 
+    feature_anon_kwargs = {key.removeprefix("_feature_"): getattr(ctx.attrs, key) for key in dir(ctx.attrs) if key.startswith("_feature_")}
+    feature_anon_kwargs["_objcopy"] = ctx.attrs._objcopy
+    feature_anon_kwargs["name"] = str(ctx.label.raw_target()) + ".features"
+    return ctx.actions.anon_target(
+        feature_rule,
+        feature_anon_kwargs,
+    ).map(partial(_impl_with_features, ctx = ctx))
+
+def _impl_with_features(features: "provider_collection", *, ctx: "context") -> ["provider"]:
     flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
     if not ctx.attrs.antlir_internal_build_appliance and not flavor:
         fail("flavor= was not set, and {} does not have a flavor".format(ctx.attrs.parent_layer.label))
     flavor_info = flavor[FlavorInfo] if flavor else None
     build_appliance = ctx.attrs.build_appliance or flavor_info.default_build_appliance
 
+    # Expose a number of things as sub-targets for both humans doing `buck
+    # build` and cases where we must access a specific output from the macro
+    # layer where we don't have proper rules and access to providers
+    sub_targets = {
+        "features": [features[FeatureInfo], features[DefaultInfo]],
+    }
+    if ctx.attrs.parent_layer:
+        sub_targets["parent_layer"] = ctx.attrs.parent_layer.providers
+
+    # Expose the build appliance as a subtarget so that it can be used by test
+    # macros like image_rpms_test. Generally this should be accessed by the
+    # provider, but that is unavailable at macro parse time.
+    if build_appliance:
+        sub_targets["build_appliance"] = build_appliance.providers
+
+    if flavor:
+        sub_targets["flavor"] = flavor.providers
+
     # Yeah this is against the spirit of Transitive Sets, but we can save an
     # insane amount of actual image building work if we do the "wrong thing" and
     # expect it in starlark instead of a cli/json projection.
-    all_features = list(ctx.attrs.features[FeatureInfo].features.traverse())
+    all_features = list(features[FeatureInfo].features.traverse())
 
     # @oss-disable
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
@@ -222,7 +249,8 @@ def _impl(ctx: "context") -> ["provider"]:
                 flavor_info.dnf_info.reflink_flavor,
             )
 
-            # @oss-disable
+            (resolved_fbpkgs_json, resolved_fbpkgs_dir) = compiler_plan_to_chef_fbpkgs(
+                # @oss-disable
                 # @oss-disable
                 # @oss-disable
                 # @oss-disable
@@ -316,18 +344,7 @@ def _impl(ctx: "context") -> ["provider"]:
     if not final_subvol:
         final_subvol = parent_layer
 
-    sub_targets = {
-        "subvol_symlink": [DefaultInfo(final_subvol)],
-    }
-
-    # Expose the build appliance as a subtarget so that it can be used by test
-    # macros like image_rpms_test. Generally this should be accessed by the
-    # provider, but that is unavailable at macro parse time.
-    if build_appliance:
-        sub_targets["build_appliance"] = build_appliance.providers
-
-    if flavor:
-        sub_targets["flavor"] = flavor.providers
+    sub_targets["subvol_symlink"] = [DefaultInfo(final_subvol)]
 
     mounts = all_mounts(
         features = all_features,
@@ -336,10 +353,6 @@ def _impl(ctx: "context") -> ["provider"]:
 
     sub_targets["nspawn"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
-    if ctx.attrs.parent_layer:
-        sub_targets["parent_layer"] = ctx.attrs.parent_layer.providers
-
-    sub_targets["features"] = ctx.attrs.features.providers
 
     return [
         LayerInfo(
@@ -355,54 +368,65 @@ def _impl(ctx: "context") -> ["provider"]:
         DefaultInfo(final_subvol, sub_targets = sub_targets),
     ]
 
+_layer_attrs = {
+    "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
+    "available_fbpkgs": attrs.default_only(
+        # @oss-disable
+        attrs.dep(
+            # @oss-disable
+            # @oss-disable
+            # @oss-disable
+        # @oss-disable
+    # @oss-disable
+    "build_appliance": attrs.option(
+        attrs.dep(providers = [LayerInfo]),
+        default = None,
+    ),
+    "dnf_available_repos": attrs.option(
+        attrs.dep(providers = [RepoSetInfo]),
+        default = None,
+    ),
+    "dnf_excluded_rpms": attrs.option(
+        attrs.list(attrs.string()),
+        default = None,
+    ),
+    "dnf_versionlock": attrs.option(
+        attrs.source(),
+        default = None,
+    ),
+    "flavor": attrs.option(
+        attrs.dep(providers = [FlavorInfo]),
+        default = None,
+    ),
+    "parent_layer": attrs.option(
+        attrs.dep(providers = [LayerInfo]),
+        default = None,
+    ),
+    "target_arch": attrs.default_only(attrs.string(
+        default =
+            select({
+                "ovr_config//cpu:arm64": "aarch64",
+                "ovr_config//cpu:x86_64": "x86_64",
+            }),
+    )),
+    "toolchain": attrs.toolchain_dep(
+        default = "//antlir/antlir2:toolchain",
+        providers = [Antlir2ToolchainInfo],
+    ),
+    "_objcopy": attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy")),
+    "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
+}
+
+_layer_attrs.update(
+    {
+        "_feature_" + key: val
+        for key, val in shared_features_attrs.items()
+    },
+)
+
 _layer = rule(
     impl = _impl,
-    attrs = {
-        "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
-        # @oss-disable
-            # @oss-disable
-                # @oss-disable
-                # @oss-disable
-            # @oss-disable
-        # @oss-disable
-        "build_appliance": attrs.option(
-            attrs.dep(providers = [LayerInfo]),
-            default = None,
-        ),
-        "dnf_available_repos": attrs.option(
-            attrs.dep(providers = [RepoSetInfo]),
-            default = None,
-        ),
-        "dnf_excluded_rpms": attrs.option(
-            attrs.list(attrs.string()),
-            default = None,
-        ),
-        "dnf_versionlock": attrs.option(
-            attrs.source(),
-            default = None,
-        ),
-        "features": attrs.dep(providers = [FeatureInfo]),
-        "flavor": attrs.option(
-            attrs.dep(providers = [FlavorInfo]),
-            default = None,
-        ),
-        "parent_layer": attrs.option(
-            attrs.dep(providers = [LayerInfo]),
-            default = None,
-        ),
-        "target_arch": attrs.default_only(attrs.string(
-            default =
-                select({
-                    "ovr_config//cpu:arm64": "aarch64",
-                    "ovr_config//cpu:x86_64": "x86_64",
-                }),
-        )),
-        "toolchain": attrs.toolchain_dep(
-            default = "//antlir/antlir2:toolchain",
-            providers = [Antlir2ToolchainInfo],
-        ),
-        "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
-    },
+    attrs = _layer_attrs,
 )
 
 def layer(
@@ -429,15 +453,7 @@ def layer(
         flavor = kwargs.pop("flavor", None)
         kwargs["flavor"] = compat.from_antlir1_flavor(flavor) if flavor else None
 
-    feature_target = name + "--features"
-    feature.new(
-        name = feature_target,
-        features = features,
-        toolchain = kwargs.get("toolchain"),
-        visibility = [":" + name],
-        compatible_with = kwargs.get("compatible_with"),
-    )
-    feature_target = ":" + feature_target
+    kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
@@ -454,7 +470,6 @@ def layer(
 
     return _layer(
         name = name,
-        features = feature_target,
         visibility = get_visibility(visibility),
         **kwargs
     )

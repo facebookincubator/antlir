@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 
 # A dependency of a feature that is not yet resolved. This is of very limited
 # use at parse time, but allows the feature definition to inform the rule what
@@ -74,16 +73,15 @@ FeatureAnalysis = record(
     build_phase = field(BuildPhase.type, default = BuildPhase("compile")),
 )
 
-Toolchains = record(
-    cxx = "dependency",
+Tools = record(
+    objcopy = "dependency",
 )
 
 AnalyzeFeatureContext = record(
-    toolchain = Antlir2ToolchainInfo.type,
+    label = "label",
     unique_action_identifier = str.type,
     actions = "actions",
-    toolchains = Toolchains.type,
-    label = "label",
+    tools = Tools.type,
 )
 
 def data_only_feature_analysis_fn(
