@@ -8,4 +8,6 @@ set -e
 
 systemctl --version
 
-/antlir2-simply-installed --help
+# Simple exit status is not enough because on cross-compiled dev builds, LSAN
+# pitches a fit
+test-binary-installed | grep "Hello world!"

@@ -37,6 +37,8 @@ use regex::Regex;
 use serde::de::Error;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::trace;
+use tracing::warn;
 use twox_hash::XxHash64;
 
 pub type Feature = Extract<'static>;
@@ -195,6 +197,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                 }
                 // don't copy the metadata from the buck binary, the owner will
                 // be wrong
+                trace!(
+                    "copying {} -> {}",
+                    buck.src.path().display(),
+                    ctx.dst_path(&buck.dst).display()
+                );
                 std::fs::copy(buck.src.path(), ctx.dst_path(&buck.dst))?;
                 Ok(())
             }
@@ -204,34 +211,98 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                     .subvol_symlink
                     .canonicalize()
                     .context("while looking up abspath of src layer")?;
-                tracing::trace!("extract root = {}", src_layer.display());
+                trace!("extract root = {}", src_layer.display());
                 let mut all_deps = HashSet::new();
                 for binary in &layer.binaries {
-                    let dst = ctx.dst_path(binary.path());
-                    all_deps.extend(
-                        so_dependencies(binary.path(), Some(&src_layer), default_interpreter)?
-                            .into_iter()
-                            .map(|path| ensure_usr(&path).to_path_buf()),
-                    );
                     let src =
                         src_layer.join(binary.path().strip_prefix("/").unwrap_or(binary.path()));
-                    copy_with_metadata(&src, &dst, None, None)?;
+                    let dst = ctx.dst_path(binary.path());
 
-                    // If the cloned source was a symlink, the thing it points
-                    // to should be considered a dep
                     let src_meta = std::fs::symlink_metadata(&src)
                         .with_context(|| format!("while lstatting {}", src.display()))?;
-                    if src_meta.is_symlink() {
-                        let target = src
+                    let real_src = if src_meta.is_symlink() {
+                        // If src is a symlink, the destination should also be
+                        // created as a symlink, and the target should be
+                        // processed as the real binary.
+
+                        let canonical_target = src
                             .canonicalize()
                             .with_context(|| format!("while canonicalizing {}", src.display()))?;
-                        all_deps.insert(
-                            target
-                                .strip_prefix(&src_layer)
-                                .unwrap_or(target.as_path())
-                                .to_path_buf(),
+
+                        if canonical_target
+                            .components()
+                            .any(|c| c.as_os_str() == OsStr::new("buck-out"))
+                        {
+                            warn!(
+                                "{} looks like a buck-built binary ({}). You should use feature.extract_buck_binary",
+                                src.display(),
+                                canonical_target.display(),
+                            );
+                            Self::Buck(ExtractBuckBinary {
+                                src: canonical_target.to_owned().into(),
+                                dst: binary.path().to_owned().into(),
+                            })
+                            .compile(ctx)
+                            .with_context(|| {
+                                format!(
+                                    "while extracting buck binary '{}'",
+                                    canonical_target.display()
+                                )
+                            })?;
+                            continue;
+                        }
+
+                        let canonical_target_rel = canonical_target
+                            .strip_prefix(&src_layer)
+                            .unwrap_or(canonical_target.as_path());
+                        let target_under_src = src_layer.join(
+                            canonical_target_rel
+                                .strip_prefix("/")
+                                .unwrap_or(canonical_target.as_path()),
                         );
-                    }
+                        ensure!(
+                            target_under_src.exists(),
+                            "symlink target {} ({} under src_layer) does not actually exist",
+                            canonical_target.display(),
+                            target_under_src.display()
+                        );
+
+                        copy_with_metadata(
+                            &target_under_src,
+                            &ctx.dst_path(canonical_target_rel),
+                            None,
+                            None,
+                        )
+                        .context("while copying target_under_src to canonical_target_rel")?;
+
+                        // use the exact same link target when recreating the
+                        // symlinkg (in other words, the same "relativeness")
+                        let target = std::fs::read_link(&src).with_context(|| {
+                            format!("while reading the link target of  {}", src.display())
+                        })?;
+
+                        std::os::unix::fs::symlink(&target, &dst).with_context(|| {
+                            format!("while symlinking {} -> {}", dst.display(), target.display())
+                        })?;
+
+                        canonical_target
+                    } else {
+                        // if the binary is a regular file, copy it directly
+                        copy_with_metadata(&src, &dst, None, None)?;
+                        binary.path().to_owned()
+                    };
+
+                    all_deps.extend(
+                        so_dependencies(
+                            real_src
+                                .strip_prefix(&src_layer)
+                                .unwrap_or(real_src.as_path()),
+                            Some(&src_layer),
+                            default_interpreter,
+                        )?
+                        .into_iter()
+                        .map(|path| ensure_usr(&path).to_path_buf()),
+                    );
                 }
                 let cwd = std::env::current_dir()?;
                 for dep in all_deps {
@@ -296,13 +367,23 @@ fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
         Some(sysroot) => Cow::Owned(sysroot.join(binary.strip_prefix("/").unwrap_or(binary))),
         None => Cow::Borrowed(binary),
     };
+
+    trace!(
+        binary = binary_as_seen_from_here.display().to_string(),
+        "reading binary to discover interpreter"
+    );
+
     let buf = std::fs::read(&binary_as_seen_from_here)
         .with_context(|| format!("while reading {}", binary_as_seen_from_here.display()))?;
     let elf =
         Elf::parse(&buf).with_context(|| format!("while parsing ELF {}", binary.display()))?;
     let interpreter = elf.interpreter.map_or(default_interpreter, Path::new);
 
-    tracing::debug!("using interpreter {}", interpreter.display());
+    trace!(
+        binary_as_seen_from_here = binary_as_seen_from_here.display().to_string(),
+        interpreter = interpreter.display().to_string(),
+        "found interpreter"
+    );
 
     let mut cmd = Command::new(interpreter);
     if let Some(sysroot) = sysroot {
@@ -318,10 +399,18 @@ fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
                     Path::new("/mnt/gvfs"),
                 ])
                 .working_directory(&cwd)
+                // There's a memory allocation bug under qemu-aarch64 when asking the linker to --list
+                // an elf binary.  This configures qemu-aarch64 to pre-allocate enough virtual address
+                // space to not exploded in this case.  This env var has no effect when running on the
+                // native host (x86_64 or aarch64).
+                // TODO: Remove this after the issue is found and fixed with qemu-aarch64.
+                .setenv(("QEMU_RESERVED_VA", "0x40000000"))
                 .build(),
         )
         .into_command();
         cmd.arg(interpreter);
+    } else {
+        cmd.env("QEMU_RESERVED_VA", "0x40000000");
     }
 
     // Canonicalize the binary path before dealing with ld.so, because that does
@@ -334,21 +423,18 @@ fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
         )
     })?;
 
+    cmd.arg("--list").arg(&binary);
+
+    trace!("running ld.so {cmd:?}");
+
     let output = cmd
-        .arg("--list")
-        .arg(&binary)
-        // There's a memory allocation bug under qemu-aarch64 when asking the linker to --list
-        // an elf binary.  This configures qemu-aarch64 to pre-allocate enough virtual address
-        // space to not exploded in this case.  This env var has no effect when running on the
-        // native host (x86_64 or aarch64).
-        // TODO: Remove this after the issue is found and fixed with qemu-aarch64.
-        .env("QEMU_RESERVED_VA", "0x40000000")
         .output()
         .with_context(|| format!("while listing libraries for {:?}", binary))?;
     anyhow::ensure!(
         output.status.success(),
-        "{} failed with exit code {}: {}\n{}",
+        "{} --list {} failed with exit code {}: {}\n{}",
         interpreter.display(),
+        binary.display(),
         output.status,
         std::str::from_utf8(&output.stdout).unwrap_or("<not utf8>"),
         std::str::from_utf8(&output.stderr).unwrap_or("<not utf8>"),
@@ -382,12 +468,15 @@ fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
             .rev()
         {
             if !dir.exists() {
+                trace!("creating parent directory {}", dir.display());
                 std::fs::create_dir(dir)?;
             }
         }
     }
+    trace!("getting metadata of {}", dep.display());
     let metadata = std::fs::symlink_metadata(dep)
         .with_context(|| format!("while statting '{}'", dep.display()))?;
+    trace!("stat of {}: {metadata:?}", dep.display());
     // Thar be dragons. Copying symlinks is probably _never_ what we want - for
     // extracting binaries we want the contents of these dependencies
     let dep: Cow<Path> = if metadata.is_symlink() {
@@ -413,6 +502,13 @@ fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
         let mut hasher = XxHash64::with_seed(0);
         hasher.write(&src_contents);
         let new_src_hash = hasher.finish();
+
+        trace!(
+            "hashed {} (existing = {}, new = {})",
+            dst.display(),
+            pre_existing_hash,
+            new_src_hash
+        );
 
         ensure!(
             pre_existing_hash == new_src_hash,
