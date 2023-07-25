@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
 image.layer(
     name = "base",
@@ -14,17 +15,29 @@ image.layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
+rust_binary(
+    name = "binary_1",
+    srcs = ["main.rs"],
+    unittests = False,
+)
+
+rust_binary(
+    name = "binary_2",
+    srcs = ["main.rs"],
+    unittests = False,
+)
+
 image.layer(
     name = "extract-buck",
     features = [
         feature.ensure_dirs_exist(dirs = "/usr/bin"),
         feature.extract_buck_binary(
-            src = "//antlir/antlir2/antlir2:antlir2",
-            dst = "/usr/bin/antlir2",
+            src = ":binary_1",
+            dst = "/usr/bin/test-binary-extracted",
         ),
         feature.install(
-            src = "//antlir/antlir2/antlir2:antlir2",
-            dst = "/antlir2-simply-installed",
+            src = ":binary_2",
+            dst = "/usr/bin/test-binary-installed",
             mode = "a+rx",
         ),
     ],
@@ -78,9 +91,11 @@ image.layer(
             ],
             layer = ":binaries-clone-src",
         ),
+        # TODO(T153572212): in the future this should be an error and require
+        # the use of feature.extract_buck_binary
         feature.extract_from_layer(
             binaries = [
-                "/antlir2-simply-installed",
+                "/usr/bin/test-binary-installed",
             ],
             layer = ":extract-buck",
         ),
