@@ -57,6 +57,7 @@ def image_layer_from_package_helper(
         image_layer_alias(
             name = name,
             layer = rc_layer,
+            antlir2 = antlir2,
         )
         if antlir2:
             alias(
