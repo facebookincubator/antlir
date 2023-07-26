@@ -4,11 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:types.bzl", "types")
+load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 
-def _install(path, layer, os_name, variant, os_version = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}):
+def _install(path, layer, os_name, variant, os_version = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}, use_antlir2 = False):
     """
     Build an `os-release` file and install it at the provided `path` location.
     See https://www.freedesktop.org/software/systemd/man/os-release.html
@@ -115,9 +116,22 @@ ANSI_COLOR="{ansi_color}"
         antlir_rule = "user-internal",
     )
 
+    if use_antlir2:
+        return [
+            antlir2_feature.remove(
+                path = path,
+                must_exist = False,
+            ),
+            antlir2_feature.install(
+                src = normalize_target(":" + name),
+                dst = path,
+            ),
+        ]
+
+    # the rest of this function is Antlir1 code
     return [
-        feature.remove(path, must_exist = False),
-        feature.install(normalize_target(":" + name), path),
+        antlir1_feature.remove(path, must_exist = False),
+        antlir1_feature.install(normalize_target(":" + name), path),
     ]
 
 # Exported API

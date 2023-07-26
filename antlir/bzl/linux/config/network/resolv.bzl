@@ -3,9 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 load(":resolv.shape.bzl", "conf_t")
 
 def _new(**kwargs):
@@ -18,7 +19,7 @@ def _render(name, instance):
         template = "//antlir/bzl/linux/config/network:resolv",
     )
 
-def _install(instance = None, **kwargs):
+def _install(instance = None, use_antlir2 = False, **kwargs):
     contents_hash = sha256_b64(str(kwargs))
     name = "resolv.conf--" + contents_hash
 
@@ -29,7 +30,12 @@ def _install(instance = None, **kwargs):
         name = name,
         instance = instance,
     )
-    return feature.install(
+    if use_antlir2:
+        return antlir2_feature.install(
+            src = file,
+            dst = "/etc/resolv.conf",
+        )
+    return antlir1_feature.install(
         file,
         "/etc/resolv.conf",
     )
