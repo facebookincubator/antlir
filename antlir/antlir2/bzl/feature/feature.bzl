@@ -56,6 +56,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 # @oss-disable
+# @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
@@ -100,6 +101,7 @@ _analyze_feature = {
     "ensure_dir_symlink": ensure_dir_symlink_analyze,
     "ensure_file_symlink": ensure_file_symlink_analyze,
     "extract": extract_analyze,
+    # @oss-disable
     # @oss-disable
     # @oss-disable
     # @oss-disable
@@ -228,7 +230,18 @@ shared_features_attrs = {
     ),
     # Features need a way to coerce strings to sources or dependencies.
     # Map "feature key" -> "feature deps"
-    "inline_features_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.dep()))),
+    "inline_features_deps": attrs.dict(
+        attrs.string(),
+        attrs.option(
+            attrs.dict(
+                attrs.string(),
+                attrs.one_of(
+                    attrs.dep(),
+                    # @oss-disable
+                ),
+            ),
+        ),
+    ),
     # Map "feature key" -> "feature dep/source"
     "inline_features_deps_or_srcs": attrs.dict(
         attrs.string(),
