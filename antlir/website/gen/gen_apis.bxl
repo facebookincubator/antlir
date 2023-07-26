@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-def _internal_rustdoc_url(target: "target_node") -> str.type:
+def _internal_rustdoc_url(target: "target_node") -> str:
     lazy = target.attrs_lazy()
     crate = lazy.get("crate").value()
     if not crate:
