@@ -286,6 +286,7 @@ enum DriverEvent {
         error: String,
     },
     ScriptletOutput(String),
+    PackageNotFound(String),
 }
 
 fn run_dnf_driver(
@@ -349,7 +350,10 @@ fn run_dnf_driver(
         let errors: Vec<_> = events
             .iter()
             .filter_map(|ev| match ev {
-                DriverEvent::TxError(error) => Some(error.as_str()),
+                DriverEvent::TxError(error) => Some(Cow::Borrowed(error.as_str())),
+                DriverEvent::PackageNotFound(package) => {
+                    Some(Cow::Owned(format!("No such package found '{package}'")))
+                }
                 _ => None,
             })
             .collect();
