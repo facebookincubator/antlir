@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @lint-ignore-every BUCKFORMAT
-
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "build_phase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
@@ -12,7 +10,8 @@ load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "shared_features_attrs")
-load("//antlir/bzl:build_defs.bzl", "alias")
+# @oss-disable
+load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 # @oss-disable
@@ -122,7 +121,6 @@ def _impl_with_features(features: "provider_collection", *, ctx: "context") -> [
     # expect it in starlark instead of a cli/json projection.
     all_features = list(features[FeatureInfo].features.traverse())
 
-    # @oss-disable
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
@@ -249,22 +247,26 @@ def _impl_with_features(features: "provider_collection", *, ctx: "context") -> [
                 flavor_info.dnf_info.reflink_flavor,
             )
 
-            (resolved_fbpkgs_json, resolved_fbpkgs_dir) = compiler_plan_to_chef_fbpkgs(
-                # @oss-disable
-                # @oss-disable
-                # @oss-disable
-                # @oss-disable
-                # @oss-disable
-            # @oss-disable
+            if is_facebook:
+                available_fbpkgs = ctx.attrs.available_fbpkgs[SnapshottedFbpkgSetInfo]
+                (resolved_fbpkgs_json, resolved_fbpkgs_dir) = compiler_plan_to_chef_fbpkgs(
+                    ctx,
+                    identifier_prefix,
+                    available_fbpkgs,
+                    plan,
+                )
+            else:
+                resolved_fbpkgs_json = None
+                resolved_fbpkgs_dir = None
         else:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
-            # @oss-disable
-            # @oss-disable
+            resolved_fbpkgs_json = None
+            resolved_fbpkgs_dir = None
 
         logs["compile"] = ctx.actions.declare_output(identifier_prefix + "compile.log")
-        # @oss-disable
-            # @oss-disable
+        if resolved_fbpkgs_dir:
+            feature_hidden_deps.append(resolved_fbpkgs_dir)
 
         cmd, final_subvol = _map_image(
             build_appliance = build_appliance[LayerInfo],
@@ -370,14 +372,6 @@ def _impl_with_features(features: "provider_collection", *, ctx: "context") -> [
 
 _layer_attrs = {
     "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
-    "available_fbpkgs": attrs.default_only(
-        # @oss-disable
-        attrs.dep(
-            # @oss-disable
-            # @oss-disable
-            # @oss-disable
-        # @oss-disable
-    # @oss-disable
     "build_appliance": attrs.option(
         attrs.dep(providers = [LayerInfo]),
         default = None,
@@ -423,6 +417,8 @@ _layer_attrs.update(
         for key, val in shared_features_attrs.items()
     },
 )
+
+# @oss-disable
 
 _layer = rule(
     impl = _impl,
