@@ -210,7 +210,11 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
             if isinstance(source, dnf.package.Package):
                 base.package_install(source, strict=True)
             else:
-                base.install(source, strict=True)
+                try:
+                    base.install(source, strict=True)
+                except dnf.exceptions.PackageNotFoundError as e:
+                    with out as o:
+                        json.dump({"package_not_found": e.pkg_spec}, o)
         elif action == "remove_if_exists":
             # cannot remove by file path, so let's do this to be extra safe
             try:
