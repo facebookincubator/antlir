@@ -68,15 +68,15 @@ install_record = record(
     binary_info = field([binary_record.type, None], default = None),
 )
 
-def install_analyze(
+def get_feature_anaylsis_for_install(
         ctx: "AnalyzeFeatureContext",
+        src: ["dependency", "artifact"],
         dst: str.type,
         group: str.type,
         mode: [int.type, None],
         user: str.type,
-        deps_or_srcs: {str.type: ["artifact", "dependency"]},
-        impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
-    src = deps_or_srcs["src"]
+        skip_debuginfo_split: bool.type,
+        impl: ["RunInfo", None] = None):
     binary_info = None
     required_run_infos = []
     required_artifacts = []
@@ -101,11 +101,9 @@ def install_analyze(
             required_run_infos.append(src[RunInfo])
 
             # dev mode binaries don't get stripped, they just get symlinked
-            if REPO_CFG.artifacts_require_repo:
+            if skip_debuginfo_split or REPO_CFG.artifacts_require_repo:
                 src = ensure_single_output(src)
-                binary_info = binary_record(
-                    dev = True,
-                )
+                binary_info = binary_record(dev = REPO_CFG.artifacts_require_repo)
             else:
                 split_anon_target = split_binary_anon(
                     ctx = ctx,
@@ -143,4 +141,24 @@ def install_analyze(
         required_artifacts = [src] + required_artifacts,
         required_run_infos = required_run_infos,
         impl_run_info = impl,
+    )
+
+def install_analyze(
+        ctx: "AnalyzeFeatureContext",
+        dst: str.type,
+        group: str.type,
+        mode: [int.type, None],
+        user: str.type,
+        deps_or_srcs: {str.type: ["artifact", "dependency"]},
+        impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
+    src = deps_or_srcs["src"]
+    return get_feature_anaylsis_for_install(
+        ctx,
+        src = src,
+        dst = dst,
+        group = group,
+        user = user,
+        mode = mode,
+        skip_debuginfo_split = False,
+        impl = impl,
     )

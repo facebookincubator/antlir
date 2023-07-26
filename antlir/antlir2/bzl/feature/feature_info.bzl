@@ -11,7 +11,11 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 # analysis.  This is analogous to a hard-coded `attrs.dep(providers=["foo"])`
 # but allows each feature to depend on different types of targets.
 ParseTimeDependency = record(
-    dep = [str.type, "selector"],
+    dep = [
+        str.type,
+        "selector",
+        # @oss-disable
+    ],
     providers = field(["provider_callable", ""], default = []),
 )
 
