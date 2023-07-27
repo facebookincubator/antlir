@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(let_chains)]
 use std::borrow::Cow;
 use std::fs::File;
 use std::fs::FileTimes;
@@ -260,7 +261,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install<'f> {
     }
 
     fn requires(&self) -> Result<Vec<Requirement<'f>>> {
-        Ok(vec![
+        let mut requires = vec![
             Requirement::ordered(
                 ItemKey::User(self.user.name().to_owned().into()),
                 Validator::Exists,
@@ -269,18 +270,15 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install<'f> {
                 ItemKey::Group(self.group.name().to_owned().into()),
                 Validator::Exists,
             ),
-            Requirement::ordered(
-                ItemKey::Path(
-                    self.dst
-                        .path()
-                        .parent()
-                        .expect("Install dst will always have parent")
-                        .to_owned()
-                        .into(),
-                ),
+        ];
+        // For relative dest paths (or `/`), parent() could be the empty string
+        if let Some(parent) = self.dst.path().parent() && !parent.as_os_str().is_empty() {
+            requires.push(Requirement::ordered(
+                ItemKey::Path(parent.to_owned().into()),
                 Validator::FileType(FileType::Directory),
-            ),
-        ])
+            ));
+        }
+        Ok(requires)
     }
 
     #[tracing::instrument(name = "install", skip(ctx), ret, err)]

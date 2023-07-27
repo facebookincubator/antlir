@@ -79,7 +79,6 @@ Now you can refer to a stable version of a package, represented as an
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "is_buck2")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
@@ -149,6 +148,7 @@ def fetched_package_layers_from_json_dir_db(
         _fetched_package_layer(
             package = package,
             tag = tag,
+            db_buck_prefix = "//" + native.package_name() + "/" + package_db_dir + ".buck",
             name_suffix = layer_suffix,
             print_how_to_fetch_json = print_how_to_fetch_json,
             fetcher = fetcher,
@@ -186,6 +186,7 @@ def _print_how_to_fetch_json(how_to_fetch):
 def _fetched_package_layer(
         package,
         tag,
+        db_buck_prefix,
         name_suffix,
         print_how_to_fetch_json,
         fetcher,  # `_PackageInfoFetcher`
@@ -236,10 +237,16 @@ def _fetched_package_layer(
         ),
         visibility = visibility,
     )
+
     if is_buck2():
         antlir2_feature.new(
             name = package_feature,
-            features = [antlir1_no_equivalent(description = "fetched-package-feature", label = normalize_target(":" + package_feature))],
+            features = [
+                antlir2_feature.install(
+                    src = db_buck_prefix + "/" + package + ":" + tag,
+                    dst = "/",
+                ),
+            ],
             visibility = ["PUBLIC"],
         )
     else:
