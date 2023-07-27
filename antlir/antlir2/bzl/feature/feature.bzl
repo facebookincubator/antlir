@@ -58,19 +58,20 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
+load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":clone.bzl", "clone_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
-load(":feature_info.bzl", "AnalyzeFeatureContext", "Tools")
+load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_analyze")
 load(":install.bzl", "install_analyze")
 load(":metakv.bzl", "metakv_analyze")
 load(":mount.bzl", "mount_analyze")
 load(":remove.bzl", "remove_analyze")
 load(":requires.bzl", "requires_analyze")
-load(":rpms.bzl", "rpms_analyze")
+load(":rpms.bzl", "rpms_analyze", "rpms_record")
 load(":symlink.bzl", "ensure_dir_symlink_analyze", "ensure_file_symlink_analyze")
 load(":tarball.bzl", "tarball_analyze")
 load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
@@ -89,10 +90,6 @@ def _feature_as_json(feat: feature_record.type) -> "struct":
         data = feat.analysis.data,
         run_info = feat.run_info,
     )
-
-Features = transitive_set(
-    json_projections = {"features_json": _feature_as_json},
-)
 
 _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
@@ -166,19 +163,11 @@ def _impl(ctx: "context") -> ["provider"]:
             )
             inline_features.append(feat)
 
-    # Track the JSON outputs and deps of other feature targets with transitive
-    # sets. Note that we cannot produce a single JSON file with all the
-    # transitive features, because we need to support "genrule" features where a
-    # command outside of buck can be used to produce much more dynamic feature
-    # JSON (for example, extract.bzl requires Rust logic to produce its feature
-    # output)
-    features = ctx.actions.tset(
-        Features,
-        children = [ctx.actions.tset(Features, value = feat) for feat in inline_features] +
-                   [f[FeatureInfo].features for f in ctx.attrs.feature_targets],
-    )
+    features = inline_features
+    for dep in ctx.attrs.feature_targets:
+        features.extend(dep[FeatureInfo].features)
+    features_json = [_feature_as_json(f) for f in features]
 
-    features_json = features.project_as_json("features_json")
     json_file = ctx.actions.write_json("features.json", features_json)
 
     return [
@@ -378,3 +367,42 @@ def feature(
 # just unique for a single evaluation of the target graph.
 def _hash_key(x) -> str.type:
     return sha256(repr(x))
+
+def regroup_features(label: "label", features: ["feature_record"]) -> ["feature_record"]:
+    """
+    Some features must be grouped at buck time so that the compiler can act on
+    them as a single unit for performance reasons.
+
+    Currently this is only true of the RPM features, but will likely be true of
+    any future package managers as well.
+    """
+    ungrouped_features = []
+
+    # keep all the extra junk (like run_info) attached to the rpm feature
+    any_rpm_feature = None
+    rpm_required_artifacts = []
+    rpm_items = []
+    for feat in features:
+        if feat.feature_type == "rpm":
+            rpm_items.extend(feat.analysis.data.items)
+            rpm_required_artifacts.extend(feat.analysis.required_artifacts)
+            any_rpm_feature = feat
+        else:
+            ungrouped_features.append(feat)
+
+    if any_rpm_feature:
+        # records are immutable, so we have to do this crazy dance to just
+        # mutate the rpm feature data
+        rpm_feature = structs.to_dict(any_rpm_feature)
+        rpm_feature["analysis"] = structs.to_dict(rpm_feature["analysis"])
+        rpm_feature["analysis"]["data"] = structs.to_dict(rpm_feature["analysis"]["data"])
+        rpm_feature["analysis"]["data"]["items"] = rpm_items
+        rpm_feature["analysis"]["data"] = rpms_record(**rpm_feature["analysis"]["data"])
+        rpm_feature["analysis"]["required_artifacts"] = rpm_required_artifacts
+        rpm_feature["analysis"] = FeatureAnalysis(**rpm_feature["analysis"])
+        rpm_feature["label"] = label.raw_target()
+        rpm_feature = feature_record(**rpm_feature)
+    else:
+        rpm_feature = None
+
+    return ungrouped_features + ([rpm_feature] if rpm_feature else [])

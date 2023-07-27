@@ -9,7 +9,7 @@ load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
-load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "shared_features_attrs")
+load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
 # @oss-disable
 load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
@@ -116,10 +116,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: "context") -> [
     if flavor:
         sub_targets["flavor"] = flavor.providers
 
-    # Yeah this is against the spirit of Transitive Sets, but we can save an
-    # insane amount of actual image building work if we do the "wrong thing" and
-    # expect it in starlark instead of a cli/json projection.
-    all_features = list(features[FeatureInfo].features.traverse())
+    all_features = features[FeatureInfo].features
 
     dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
@@ -171,9 +168,14 @@ def _impl_with_features(features: "provider_collection", *, ctx: "context") -> [
         if not features and not (phase == BuildPhase("compile") and parent_layer == None):
             continue
 
+        # TODO(vmagro): when we introduce other package managers, this will need
+        # to be more generic
+        features = regroup_features(ctx.label, features)
+
         # JSON file for only the features that are part of this BuildPhase
+        features_json_artifact = ctx.actions.declare_output(identifier_prefix + "features.json")
         features_json = ctx.actions.write_json(
-            identifier_prefix + "features.json",
+            features_json_artifact,
             [{
                 "data": f.analysis.data,
                 "feature_type": f.feature_type,
@@ -326,6 +328,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: "context") -> [
             DefaultInfo(
                 sub_targets = {
                     "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
+                    "features": [DefaultInfo(features_json_artifact)],
                     "logs": [DefaultInfo(all_logs, sub_targets = {
                         key: [DefaultInfo(artifact)]
                         for key, artifact in logs.items()

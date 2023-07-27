@@ -101,7 +101,6 @@ pub struct GraphBuilder<'a> {
     root: node::RootNodeIndex,
     pending_features: Vec<node::PendingFeatureNodeIndex<'a>>,
     items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
-    rpm_feature: Option<node::PendingFeatureNodeIndex<'a>>,
     label: Label<'a>,
 }
 
@@ -137,7 +136,6 @@ impl<'a> GraphBuilder<'a> {
             root,
             pending_features: Vec::new(),
             items,
-            rpm_feature: None,
             label,
         };
 
@@ -219,41 +217,7 @@ impl<'a> GraphBuilder<'a> {
     }
 
     pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
-        // rpm features get merged into a single node so that the transaction management is easier
-        // TODO(vmagro): this is really not the right place for this, we need a
-        // better way to batch features together, but this can just use this
-        // slightly unsafe json mangling to unblock refactoring right now
-        let feature_nx = if feature.feature_type == "rpm" {
-            if let Some(nx) = self.rpm_feature {
-                self.g[nx]
-                    .data
-                    .as_object_mut()
-                    .expect("rpm feature is an object")
-                    .get_mut("items")
-                    .expect("rpm feature has 'items'")
-                    .as_array_mut()
-                    .expect("rpm 'items' is array")
-                    .extend(
-                        feature
-                            .data
-                            .as_object()
-                            .expect("rpm feature is an object")
-                            .get("items")
-                            .expect("rpm feature has 'items'")
-                            .as_array()
-                            .expect("rpm 'items' is array")
-                            .clone(),
-                    );
-                return self;
-            } else {
-                let feature_nx = self.g.add_node_typed(feature);
-                self.rpm_feature = Some(feature_nx);
-                feature_nx
-            }
-        } else {
-            let feature_nx = self.g.add_node_typed(feature);
-            feature_nx
-        };
+        let feature_nx = self.g.add_node_typed(feature);
 
         // make sure all features are reachable from the root node
         self.g.update_edge(*self.root, *feature_nx, Edge::After);
