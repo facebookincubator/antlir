@@ -26,6 +26,7 @@ use starlark::any::ProvidesStaticType;
 use starlark::environment::FrozenModule;
 use starlark::environment::Globals;
 use starlark::environment::GlobalsBuilder;
+use starlark::environment::LibraryExtension;
 use starlark::environment::Module;
 use starlark::eval::Evaluator;
 use starlark::eval::FileLoader;
@@ -213,11 +214,27 @@ impl TestModule {
 struct Loader<'a>(TargetsAndOutputs<'a>);
 
 fn globals() -> Globals {
-    GlobalsBuilder::extended()
-        .with_struct("unittest", unittest)
-        .with(saving_fail)
-        .with_struct("native", native)
-        .build()
+    GlobalsBuilder::extended_by(&[
+        // TODO(nga): drop extensions which are not needed.
+        LibraryExtension::StructType,
+        LibraryExtension::RecordType,
+        LibraryExtension::EnumType,
+        LibraryExtension::Map,
+        LibraryExtension::Filter,
+        LibraryExtension::Partial,
+        LibraryExtension::ExperimentalRegex,
+        LibraryExtension::Debug,
+        LibraryExtension::Print,
+        LibraryExtension::Pprint,
+        LibraryExtension::Breakpoint,
+        LibraryExtension::Json,
+        LibraryExtension::Abs,
+        LibraryExtension::Typing,
+    ])
+    .with_struct("unittest", unittest)
+    .with(saving_fail)
+    .with_struct("native", native)
+    .build()
 }
 
 impl<'a> FileLoader for Loader<'a> {
