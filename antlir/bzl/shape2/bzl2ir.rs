@@ -24,8 +24,8 @@ use slotmap::SlotMap;
 use starlark::any::ProvidesStaticType;
 use starlark::collections::SmallMap;
 use starlark::environment::FrozenModule;
-use starlark::environment::Globals;
 use starlark::environment::GlobalsBuilder;
+use starlark::environment::LibraryExtension;
 use starlark::environment::Module;
 use starlark::eval::Evaluator;
 use starlark::eval::FileLoader;
@@ -46,6 +46,26 @@ use starlark::values::Value;
 use starlark::values::ValueLike;
 use structopt::StructOpt;
 
+fn bzl_globals() -> GlobalsBuilder {
+    GlobalsBuilder::extended_by(&[
+        // TODO(nga): drop extensions which are not needed.
+        LibraryExtension::StructType,
+        LibraryExtension::RecordType,
+        LibraryExtension::EnumType,
+        LibraryExtension::Map,
+        LibraryExtension::Filter,
+        LibraryExtension::Partial,
+        LibraryExtension::ExperimentalRegex,
+        LibraryExtension::Debug,
+        LibraryExtension::Print,
+        LibraryExtension::Pprint,
+        LibraryExtension::Breakpoint,
+        LibraryExtension::Json,
+        LibraryExtension::Abs,
+        LibraryExtension::Typing,
+    ])
+}
+
 /// We have a bit of an easier job than loading arbitrary bzl files. We know
 /// that the target graph is not circular (since buck has already walked it
 /// before we ever call this binary) and we can enforce that we are given the
@@ -55,7 +75,7 @@ fn eval_and_freeze_module(
     ast: AstModule,
 ) -> Result<(FrozenModule, SlotMap<TypeId, Arc<ir::Type>>)> {
     let module = Module::new();
-    let globals = Globals::extended();
+    let globals = bzl_globals().build();
     let registry = TypeRegistryRefCell::default();
     {
         let mut evaluator: Evaluator = Evaluator::new(&module);
@@ -361,9 +381,7 @@ impl FileLoader for Dependencies {
             let module = Module::new();
             {
                 let mut evaluator: Evaluator = Evaluator::new(&module);
-                let globals = GlobalsBuilder::extended()
-                    .with_struct("shape_impl", shape)
-                    .build();
+                let globals = bzl_globals().with_struct("shape_impl", shape).build();
                 evaluator.eval_module(ast, &globals)?;
             }
             return module.freeze();
