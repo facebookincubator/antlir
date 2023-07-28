@@ -38,14 +38,17 @@ use crate::share::Shares;
 use crate::share::VirtiofsShare;
 use crate::ssh::GuestSSHCommand;
 use crate::ssh::GuestSSHError;
-use crate::types::VMOpts;
+use crate::types::MachineOpts;
+use crate::types::VMArgs;
 use crate::utils::log_command;
 use crate::utils::NodeNameCounter;
 
 #[derive(Debug)]
 pub(crate) struct VM {
-    /// VM specification
-    opts: VMOpts,
+    /// VM machine specification
+    machine: MachineOpts,
+    /// VM execution behavior
+    args: VMArgs,
     /// List of writable drives created for the VM. We need to hold the ownership
     /// to prevent the temporary disks from getting cleaned up prematuresly.
     disks: Vec<QCow2Disk>,
@@ -83,14 +86,15 @@ type Result<T> = std::result::Result<T, VMError>;
 
 impl VM {
     /// Create a new VM along with its virtual resources
-    pub(crate) fn new(opts: VMOpts) -> Result<Self> {
+    pub(crate) fn new(machine: MachineOpts, args: VMArgs) -> Result<Self> {
         let state_dir = Self::create_state_dir()?;
-        let disks = Self::create_disks(&opts, &state_dir)?;
-        let shares = Self::create_shares(&state_dir, opts.mem_mib)?;
-        let nics = Self::create_nics(opts.num_nics)?;
+        let disks = Self::create_disks(&machine, &state_dir)?;
+        let shares = Self::create_shares(&state_dir, machine.mem_mib)?;
+        let nics = Self::create_nics(machine.num_nics)?;
 
         Ok(VM {
-            opts,
+            machine,
+            args,
             disks,
             shares,
             nics,
@@ -114,7 +118,7 @@ impl VM {
     }
 
     /// Create all writable disks
-    fn create_disks(opts: &VMOpts, state_dir: &Path) -> Result<Vec<QCow2Disk>> {
+    fn create_disks(opts: &MachineOpts, state_dir: &Path) -> Result<Vec<QCow2Disk>> {
         let mut vd_counter = NodeNameCounter::new("vd");
         opts.disks
             .iter()
@@ -165,7 +169,7 @@ impl VM {
     /// If timeout is specified, returns time until timeout, or TimeOutError
     /// if already timed out.
     fn time_left(&self, start_ts: Instant) -> Result<Duration> {
-        match self.opts.args.timeout_s {
+        match self.args.timeout_s {
             Some(timeout) => {
                 let elapsed = Instant::now()
                     .checked_duration_since(start_ts)
@@ -195,7 +199,7 @@ impl VM {
         args.extend(self.nic_qemu_args());
         let mut command = Command::new(&get_runtime().qemu_system);
         let command = command.args(&args);
-        if !self.opts.args.console {
+        if !self.args.console {
             command.stdin(Stdio::null());
             command.stdout(Stdio::null());
             command.stderr(Stdio::null());
@@ -215,7 +219,7 @@ impl VM {
         start_ts: Instant,
         thread_handle: Option<JoinHandle<T>>,
     ) -> Result<()> {
-        if self.opts.args.timeout_s.is_some() {
+        if self.args.timeout_s.is_some() {
             // Poll until either socket close or timeout. The buffer size is arbitrary,
             // because we don't expect any data.
             let mut buf = [0; 8];
@@ -297,7 +301,7 @@ impl VM {
 
         // Wait for boot notify message. We expect "READY" message once VM boots
         debug!("Waiting for boot notify message");
-        if self.opts.args.timeout_s.is_some() {
+        if self.args.timeout_s.is_some() {
             socket
                 .set_read_timeout(Some(self.time_left(start_ts)?))
                 .map_err(|e| {
@@ -315,10 +319,10 @@ impl VM {
         );
 
         // VM booted
-        if let Some(command) = &self.opts.args.command {
+        if let Some(command) = &self.args.command {
             // Execute the specified command and wait for it to finish or timeout.
             let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
-            if let Some(envs) = &self.opts.args.command_envs {
+            if let Some(envs) = &self.args.command_envs {
                 envs.iter().for_each(|(k, v)| {
                     ssh_cmd.arg(format!("{}={}", k, v));
                 })
@@ -361,9 +365,9 @@ impl VM {
             "-cpu",
             "host",
             "-smp",
-            &self.opts.cpus.to_string(),
+            &self.machine.cpus.to_string(),
             "-m",
-            &format!("{}M", self.opts.mem_mib),
+            &format!("{}M", self.machine.mem_mib),
             // Common devices
             "-object",
             "rng-random,filename=/dev/urandom,id=rng0",
@@ -401,7 +405,7 @@ impl VM {
     }
 
     fn non_disk_boot_qemu_args(&self) -> Vec<OsString> {
-        match &self.opts.non_disk_boot_opts {
+        match &self.machine.non_disk_boot_opts {
             Some(opts) => [
                 "-initrd",
                 &opts.initrd,
@@ -455,18 +459,18 @@ mod test {
     use crate::utils::qemu_args_to_string;
 
     fn get_vm_no_disk() -> VM {
-        let opts = VMOpts {
+        let machine = MachineOpts {
             cpus: 1,
             mem_mib: 1024,
             disks: vec![],
             num_nics: 1,
             non_disk_boot_opts: None,
-            args: VMArgs {
-                timeout_s: None,
-                console: false,
-                command: None,
-                command_envs: None,
-            },
+        };
+        let args = VMArgs {
+            timeout_s: None,
+            console: false,
+            command: None,
+            command_envs: None,
         };
         let share_opts = ShareOpts {
             path: PathBuf::from("/path"),
@@ -475,7 +479,8 @@ mod test {
         };
         let share = VirtiofsShare::new(share_opts, 1, PathBuf::from("/state"));
         VM {
-            opts,
+            machine,
+            args,
             disks: vec![],
             shares: Shares::new(vec![share], 1024, PathBuf::from("/state/units"))
                 .expect("Failed to create Shares"),
@@ -525,10 +530,10 @@ mod test {
         );
 
         // with timeout
-        vm.opts.args.timeout_s = Some(60);
+        vm.args.timeout_s = Some(60);
         let start_ts = Instant::now();
         assert!(vm.time_left(start_ts).expect("Unexpected timeout") > Duration::from_secs(1));
-        vm.opts.args.timeout_s = Some(1);
+        vm.args.timeout_s = Some(1);
         thread::sleep(Duration::from_secs(1));
         assert!(vm.time_left(start_ts).is_err());
     }
@@ -538,7 +543,7 @@ mod test {
         let mut vm = get_vm_no_disk();
         assert_eq!(vm.non_disk_boot_qemu_args(), Vec::<OsString>::new());
 
-        vm.opts.non_disk_boot_opts = Some(NonDiskBootOpts {
+        vm.machine.non_disk_boot_opts = Some(NonDiskBootOpts {
             initrd: "initrd".to_string(),
             kernel: "kernel".to_string(),
             append: "whatever".to_string(),
@@ -554,7 +559,7 @@ mod test {
     fn test_wait_for_timeout_without_command() {
         // Terminate after timeout
         let mut vm = get_vm_no_disk();
-        vm.opts.args.timeout_s = Some(3);
+        vm.args.timeout_s = Some(3);
         let (_send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
@@ -573,7 +578,7 @@ mod test {
 
         // Terminate before timeout due to closed socket
         let mut vm = get_vm_no_disk();
-        vm.opts.args.timeout_s = Some(10);
+        vm.args.timeout_s = Some(10);
         let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
@@ -591,7 +596,7 @@ mod test {
 
         // Without timeout
         let mut vm = get_vm_no_disk();
-        vm.opts.args.timeout_s = None;
+        vm.args.timeout_s = None;
         let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
         let handle = thread::spawn(move || {
             assert!(
@@ -610,7 +615,7 @@ mod test {
     fn test_wait_for_timeout_with_command() {
         // Command finished before timeout.
         let mut vm = get_vm_no_disk();
-        vm.opts.args.timeout_s = Some(10);
+        vm.args.timeout_s = Some(10);
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_secs(3));
@@ -630,7 +635,7 @@ mod test {
 
         // Command exceeded timeout.
         let mut vm = get_vm_no_disk();
-        vm.opts.args.timeout_s = Some(3);
+        vm.args.timeout_s = Some(3);
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_secs(5));
