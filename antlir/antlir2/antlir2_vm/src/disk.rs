@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -118,7 +119,7 @@ impl QCow2Disk {
         }
     }
 
-    pub(crate) fn qemu_args(&self) -> Vec<String> {
+    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
         [
             "-blockdev",
             &format!(
@@ -136,13 +137,15 @@ impl QCow2Disk {
             ),
         ]
             .iter()
-            .map(|x| x.to_string())
+            .map(|x| x.into())
             .collect()
     }
 }
 
 #[cfg(test)]
 mod test {
+    use std::ffi::OsStr;
+
     use super::*;
 
     #[test]
@@ -169,7 +172,7 @@ mod test {
             PathBuf::from("/tmp/test/test-device.qcow2")
         );
         assert_eq!(
-            &disk.qemu_args().join(" "),
+            &disk.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
             driver=qcow2,node-name=test-device,file.driver=file,file.filename=/tmp/test/test-device.qcow2 \
             -device virtio-blk,drive=test-device,serial=test-device,\

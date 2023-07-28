@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsString;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
@@ -20,7 +21,7 @@ use crate::utils::log_command;
 #[derive(Debug, Clone)]
 pub(crate) struct ShareOpts {
     /// Path to the directory to share
-    pub(crate) path: String,
+    pub(crate) path: PathBuf,
     /// Read-only mount if true. R/W otherwise.
     pub(crate) read_only: bool,
     /// Mount tag override. If None, a unique tag will be generated
@@ -85,9 +86,13 @@ impl VirtiofsShare {
             .arg("--path")
             .arg(&self.opts.path)
             .output()
-            .map_err(|_| ShareError::InvalidMountTagError(self.opts.path.clone()))?;
+            .map_err(|_| {
+                ShareError::InvalidMountTagError(self.opts.path.to_string_lossy().to_string())
+            })?;
         Ok(std::str::from_utf8(&output.stdout)
-            .map_err(|_| ShareError::InvalidMountTagError(self.opts.path.clone()))?
+            .map_err(|_| {
+                ShareError::InvalidMountTagError(self.opts.path.to_string_lossy().to_string())
+            })?
             .trim()
             .to_string())
     }
@@ -107,7 +112,7 @@ Where={mountpoint}
 Type=virtiofs
 Options={ro_or_rw}"#,
             tag = self.mount_tag(),
-            mountpoint = self.opts.path,
+            mountpoint = self.opts.path.to_str().expect("Invalid UTF-8"),
             ro_or_rw = match self.opts.read_only {
                 true => "ro",
                 false => "rw",
@@ -128,7 +133,10 @@ Options={ro_or_rw}"#,
                         .expect("socket file should be valid string")
                 ))
                 .arg("-o")
-                .arg(format!("source={}", self.opts.path))
+                .arg(format!(
+                    "source={}",
+                    self.opts.path.to_str().expect("Invalid UTF-8")
+                ))
                 .arg("-o")
                 .arg("cache=always"),
         )
@@ -137,7 +145,7 @@ Options={ro_or_rw}"#,
     }
 
     /// Qemu args for virtiofs mounts.
-    pub(crate) fn qemu_args(&self) -> Vec<String> {
+    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
         [
             "-chardev",
             &format!(
@@ -155,7 +163,7 @@ Options={ro_or_rw}"#,
             ),
         ]
         .iter()
-        .map(|x| x.to_string())
+        .map(|x| x.into())
         .collect()
     }
 }
@@ -206,7 +214,7 @@ impl Shares {
     /// Qemu args for 9p read-only share for antlir/vm/mount-generator. Keeping
     /// it backwards compatible for now to make migrating VMs easier. Once all
     /// VMs are migrated over, we can change mount-generator to do virtiofsd too.
-    fn setup_share_qemu_args(&self) -> Vec<String> {
+    fn setup_share_qemu_args(&self) -> Vec<OsString> {
         [
             "-virtfs",
             &format!(
@@ -215,12 +223,12 @@ impl Shares {
             ),
         ]
         .iter()
-        .map(|x| x.to_string())
+        .map(|x| x.into())
         .collect()
     }
 
     /// Required by virtiofsd shares
-    fn memory_file_qemu_args(&self) -> Vec<String> {
+    fn memory_file_qemu_args(&self) -> Vec<OsString> {
         [
             "-object",
             &format!("memory-backend-memfd,id=mem,share=on,size={}M", self.mem_mb,),
@@ -228,12 +236,12 @@ impl Shares {
             "node,memdev=mem",
         ]
         .iter()
-        .map(|x| x.to_string())
+        .map(|x| x.into())
         .collect()
     }
 
     /// Qemu args for all shares including setup share
-    pub(crate) fn qemu_args(&self) -> Vec<String> {
+    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
         let mut args: Vec<_> = self.shares.iter().flat_map(|x| x.qemu_args()).collect();
         args.extend(self.setup_share_qemu_args());
         args.extend(self.memory_file_qemu_args());
@@ -243,17 +251,19 @@ impl Shares {
 
 #[cfg(test)]
 mod test {
+    use std::ffi::OsStr;
     use std::fs;
 
     use tempfile::tempdir;
 
     use super::*;
+    use crate::utils::qemu_args_to_string;
 
     #[test]
     fn test_virtiofs_share() {
         // Read-only mount without mount_tag
         let opts = ShareOpts {
-            path: "/this/is/a/test".to_string(),
+            path: PathBuf::from("/this/is/a/test"),
             read_only: true,
             mount_tag: None,
         };
@@ -279,14 +289,14 @@ Type=virtiofs
 Options=ro"#;
         assert_eq!(&share.mount_unit_content(), mount_unit_content);
         assert_eq!(
-            share.qemu_args().join(" "),
+            share.qemu_args().join(OsStr::new(" ")),
             "-chardev socket,id=fs_chardev3,path=/tmp/test/fs3 \
             -device vhost-user-fs-pci,queue-size=1024,chardev=fs_chardev3,tag=fs3",
         );
 
         // RW mount with custom mount_tag
         let opts = ShareOpts {
-            path: "/this/is/a/test".to_string(),
+            path: PathBuf::from("/this/is/a/test"),
             read_only: false,
             mount_tag: Some("whatever".to_string()),
         };
@@ -312,7 +322,7 @@ Type=virtiofs
 Options=rw"#;
         assert_eq!(&share.mount_unit_content(), mount_unit_content);
         assert_eq!(
-            share.qemu_args().join(" "),
+            share.qemu_args().join(OsStr::new(" ")),
             "-chardev socket,id=fs_chardev3,path=/tmp/test/whatever \
             -device vhost-user-fs-pci,queue-size=1024,chardev=fs_chardev3,tag=whatever",
         );
@@ -321,7 +331,7 @@ Options=rw"#;
     #[test]
     fn test_shares() {
         let opts = ShareOpts {
-            path: "/this/is/a/test".to_string(),
+            path: PathBuf::from("/this/is/a/test"),
             read_only: true,
             mount_tag: None,
         };
@@ -347,22 +357,26 @@ Options=rw"#;
         );
 
         assert_eq!(
-            shares.setup_share_qemu_args().join(" "),
+            shares
+                .setup_share_qemu_args()
+                .join(OsStr::new(" ")),
             format!(
                 "-virtfs local,path={},security_model=none,multidevs=remap,mount_tag=exports,readonly=on",
-                dir.path().to_str().expect("Invalid temp dir path"),
-            ),
+                dir.path().display(),
+            ).as_str(),
         );
         assert_eq!(
-            shares.memory_file_qemu_args().join(" "),
+            shares.memory_file_qemu_args().join(OsStr::new(" ")),
             "-object memory-backend-memfd,id=mem,share=on,size=1024M -numa node,memdev=mem",
         );
-        let qemu_args = shares.qemu_args().join(" ");
-        assert!(qemu_args.contains(&shares.setup_share_qemu_args().join(" ")));
-        assert!(qemu_args.contains(&shares.memory_file_qemu_args().join(" ")));
-        shares
-            .shares
-            .iter()
-            .for_each(|x| assert!(qemu_args.contains(&x.qemu_args().join(" "))));
+        let qemu_args = qemu_args_to_string(&shares.qemu_args());
+        let setup_share_qemu_args = qemu_args_to_string(&shares.setup_share_qemu_args());
+        assert!(qemu_args.contains(&setup_share_qemu_args));
+        let memory_file_qemu_args = qemu_args_to_string(&shares.memory_file_qemu_args());
+        assert!(qemu_args.contains(&memory_file_qemu_args));
+        shares.shares.iter().for_each(|x| {
+            let share_args = qemu_args_to_string(&x.qemu_args());
+            assert!(qemu_args.contains(&share_args))
+        });
     }
 }

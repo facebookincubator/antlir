@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsString;
 use std::fs;
 use std::io::BufRead;
 use std::io::BufReader;
@@ -134,7 +135,7 @@ impl VM {
             .enumerate()
             .map(|(i, d)| -> Result<VirtiofsShare> {
                 let opts = ShareOpts {
-                    path: d.to_str().expect("Invalid share path").to_string(),
+                    path: d.clone(),
                     read_only: true,
                     mount_tag: None,
                 };
@@ -187,7 +188,7 @@ impl VM {
     /// Spawn qemu-system process. It won't immediately start running until we connect
     /// to the notify socket.
     fn spawn_vm(&self) -> Result<Child> {
-        let mut args = self.common_qemu_args()?;
+        let mut args = self.common_qemu_args();
         args.extend(self.non_disk_boot_qemu_args());
         args.extend(self.disk_qemu_args());
         args.extend(self.share_qemu_args());
@@ -347,8 +348,8 @@ impl VM {
         Ok(())
     }
 
-    fn common_qemu_args(&self) -> Result<Vec<String>> {
-        Ok([
+    fn common_qemu_args(&self) -> Vec<OsString> {
+        [
             // General
             "-no-reboot",
             "-display",
@@ -391,15 +392,15 @@ impl VM {
             "-enable-kvm",
         ]
         .iter()
-        .map(|x| x.to_string())
-        .collect())
+        .map(|x| x.into())
+        .collect()
     }
 
-    fn disk_qemu_args(&self) -> Vec<String> {
+    fn disk_qemu_args(&self) -> Vec<OsString> {
         self.disks.iter().flat_map(|x| x.qemu_args()).collect()
     }
 
-    fn non_disk_boot_qemu_args(&self) -> Vec<String> {
+    fn non_disk_boot_qemu_args(&self) -> Vec<OsString> {
         match &self.opts.non_disk_boot_opts {
             Some(opts) => [
                 "-initrd",
@@ -424,17 +425,17 @@ impl VM {
                 .join(" "),
             ]
             .iter()
-            .map(|x| x.to_string())
+            .map(|x| x.into())
             .collect(),
             None => vec![],
         }
     }
 
-    fn share_qemu_args(&self) -> Vec<String> {
+    fn share_qemu_args(&self) -> Vec<OsString> {
         self.shares.qemu_args()
     }
 
-    fn nic_qemu_args(&self) -> Vec<String> {
+    fn nic_qemu_args(&self) -> Vec<OsString> {
         self.nics.iter().flat_map(|x| x.qemu_args()).collect()
     }
 }
@@ -451,6 +452,7 @@ mod test {
     use crate::types::NonDiskBootOpts;
     use crate::types::RuntimeOpts;
     use crate::types::VMArgs;
+    use crate::utils::qemu_args_to_string;
 
     fn get_vm_no_disk() -> VM {
         let opts = VMOpts {
@@ -467,7 +469,7 @@ mod test {
             },
         };
         let share_opts = ShareOpts {
-            path: "/path".to_string(),
+            path: PathBuf::from("/path"),
             read_only: true,
             mount_tag: None,
         };
@@ -497,10 +499,7 @@ mod test {
     fn test_common_qemu_args() {
         let vm = get_vm_no_disk();
         set_bogus_runtime();
-        let common_args = vm
-            .common_qemu_args()
-            .expect("Failed to get qemu args")
-            .join(" ");
+        let common_args = qemu_args_to_string(&vm.common_qemu_args());
         // Only checking fields affected by args
         assert!(common_args.contains("-cpu host -smp 1"));
         assert!(common_args.contains("-m 1024M"));
@@ -537,14 +536,14 @@ mod test {
     #[test]
     fn test_non_boot_qemu_args() {
         let mut vm = get_vm_no_disk();
-        assert_eq!(vm.non_disk_boot_qemu_args(), Vec::<String>::new());
+        assert_eq!(vm.non_disk_boot_qemu_args(), Vec::<OsString>::new());
 
         vm.opts.non_disk_boot_opts = Some(NonDiskBootOpts {
             initrd: "initrd".to_string(),
             kernel: "kernel".to_string(),
             append: "whatever".to_string(),
         });
-        let args = vm.non_disk_boot_qemu_args().join(" ");
+        let args = qemu_args_to_string(&vm.non_disk_boot_qemu_args());
         assert!(args.contains("-initrd initrd"));
         assert!(args.contains("-kernel kernel"));
         let re = Regex::new("-append .* whatever").expect("Failed to get regex");
