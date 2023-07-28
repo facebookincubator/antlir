@@ -215,6 +215,15 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
                 except dnf.exceptions.PackageNotFoundError as e:
                     with out as o:
                         json.dump({"package_not_found": e.pkg_spec}, o)
+        elif action == "upgrade":
+            if isinstance(source, dnf.package.Package):
+                base.package_upgrade(source)
+            else:
+                try:
+                    base.upgrade(source)
+                except dnf.exceptions.PackageNotFoundError as e:
+                    with out as o:
+                        json.dump({"package_not_found": e.pkg_spec}, o)
         elif action == "remove_if_exists":
             # cannot remove by file path, so let's do this to be extra safe
             try:

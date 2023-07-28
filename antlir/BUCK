@@ -899,6 +899,11 @@ export_file(
     visibility = ["PUBLIC"],
 )
 
+export_file(
+    name = "empty.json",
+    visibility = ["PUBLIC"],
+)
+
 python_binary(
     name = "vcs",
     srcs = ["vcs.py"],

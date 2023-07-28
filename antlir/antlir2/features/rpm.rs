@@ -45,6 +45,7 @@ pub type Feature = Rpm<'static>;
 #[serde(rename_all = "snake_case")]
 pub enum Action {
     Install,
+    Upgrade,
     RemoveIfExists,
 }
 
