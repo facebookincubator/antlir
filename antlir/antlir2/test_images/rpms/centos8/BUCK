@@ -16,7 +16,9 @@ _RPM_DEPS_OF_TEST = [
 
 test_rpms(
     name = "install-modular-rpm",
-    dnf_available_repos = ":test-repo-set",
+    dnf_additional_repos = [
+        "//antlir/antlir2/test_images/rpms/repo:test-repo",
+    ],
     expected = expected_t(
         installed_module = ["nodejs"],
     ),
