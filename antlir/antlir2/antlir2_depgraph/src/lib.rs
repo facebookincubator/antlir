@@ -52,10 +52,10 @@ pub enum Edge<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(transparent, bound(deserialize = "'de: 'a"))]
-pub struct Cycle<'a>(Vec<Feature<'a>>);
+#[serde(transparent)]
+pub struct Cycle(Vec<Feature>);
 
-impl<'a> Display for Cycle<'a> {
+impl Display for Cycle {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for feature in &self.0 {
             writeln!(f, "  {feature:?}")?;
@@ -68,16 +68,16 @@ impl<'a> Display for Cycle<'a> {
 #[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub enum Error<'a> {
     #[error("cycle in dependency graph:\n{0}")]
-    Cycle(Cycle<'a>),
+    Cycle(Cycle),
     #[error("{item:?} is provided by multiple features: {features:#?}")]
     Conflict {
         item: Item<'a>,
-        features: BTreeSet<Feature<'a>>,
+        features: BTreeSet<Feature>,
     },
     #[error("{key:?} is required by {required_by:#?} but was never provided")]
     MissingItem {
         key: ItemKey<'a>,
-        required_by: Feature<'a>,
+        required_by: Feature,
     },
     #[error(
         "{item:?} does not satisfy the validation rules: {validator:?} as required by {required_by:#?}"
@@ -85,7 +85,7 @@ pub enum Error<'a> {
     Unsatisfied {
         item: Item<'a>,
         validator: Validator<'a>,
-        required_by: Feature<'a>,
+        required_by: Feature,
     },
     #[error("failure determining 'provides': {0}")]
     Provides(String),
@@ -216,7 +216,7 @@ impl<'a> GraphBuilder<'a> {
         self
     }
 
-    pub fn add_feature(&mut self, feature: Feature<'a>) -> &mut Self {
+    pub fn add_feature(&mut self, feature: Feature) -> &mut Self {
         let feature_nx = self.g.add_node_typed(feature);
 
         // make sure all features are reachable from the root node
@@ -538,7 +538,7 @@ impl<'a> Graph<'a> {
 
     /// Iterate over features in topographical order (dependencies sorted before the
     /// features that require them).
-    pub fn pending_features(&self) -> impl Iterator<Item = &Feature<'a>> {
+    pub fn pending_features(&self) -> impl Iterator<Item = &Feature> {
         self.topo.iter().filter_map(|nx| match &self.g[*nx] {
             Node::PendingFeature(f) => Some(f),
             _ => None,

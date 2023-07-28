@@ -19,7 +19,7 @@ struct Args {
     #[clap(long)]
     label: Label<'static>,
     #[clap(long = "feature-json")]
-    features: Vec<JsonFile<Vec<Feature<'static>>>>,
+    features: Vec<JsonFile<Vec<Feature>>>,
     #[clap(long)]
     parent: Option<JsonFile<Graph<'static>>>,
     #[clap(long = "image-dependency")]

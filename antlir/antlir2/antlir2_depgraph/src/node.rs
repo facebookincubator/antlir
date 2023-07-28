@@ -26,7 +26,7 @@ use crate::Edge;
 #[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
 pub enum Node<'a> {
     /// A Feature that is to be compiled in this layer.
-    PendingFeature(Feature<'a>),
+    PendingFeature(Feature),
     /// An item provided by the parent layer or a feature in this layer.
     Item(Item<'a>),
     /// An item that is required by a feature, but does not exist in the graph.
@@ -35,13 +35,13 @@ pub enum Node<'a> {
     /// the full [Item].
     MissingItem(ItemKey<'a>),
     /// A Feature that was provided by a layer in the parent chain.
-    ParentFeature(Feature<'a>),
+    ParentFeature(Feature),
     /// Root node, starting point for image build
     Root(()),
 }
 
 impl<'a> Node<'a> {
-    pub(crate) fn as_feature(&self) -> Option<&Feature<'a>> {
+    pub(crate) fn as_feature(&self) -> Option<&Feature> {
         match &self {
             Self::PendingFeature(f) | Self::ParentFeature(f) => Some(f),
             _ => None,
@@ -187,7 +187,7 @@ typed_node_index!(
     PendingFeatureNodeIndex,
     PendingFeatureNodeIndexMapper,
     PendingFeature,
-    antlir2_features::Feature<'a>
+    antlir2_features::Feature
 );
 
 typed_node_index!(a, ItemNodeIndex, ItemNodeIndexMapper, Item, Item<'a>);
@@ -204,7 +204,7 @@ typed_node_index!(
     ParentFeatureNodeIndex,
     ParentFeatureNodeIndexMapper,
     ParentFeature,
-    antlir2_features::Feature<'a>
+    antlir2_features::Feature
 );
 
 typed_node_index!(RootNodeIndex, RootNodeIndexMapper, Root, ());

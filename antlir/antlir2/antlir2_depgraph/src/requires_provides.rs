@@ -127,7 +127,7 @@ pub(crate) trait FeatureExt<'f> {
     fn requires(&self) -> std::result::Result<Vec<Requirement<'f>>, String>;
 }
 
-impl<'f> FeatureExt<'f> for Feature<'f> {
+impl<'f> FeatureExt<'f> for Feature {
     #[tracing::instrument]
     fn provides(&self) -> std::result::Result<Vec<Item<'f>>, String> {
         let mut cmd = self.base_cmd();
