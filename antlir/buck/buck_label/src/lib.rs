@@ -237,6 +237,16 @@ impl<'de: 'a, 'a> Deserialize<'de> for Label<'a> {
     }
 }
 
+impl Label<'static> {
+    pub fn deserialize_owned<'de, D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Label::new(s).map_err(D::Error::custom)
+    }
+}
+
 impl<'a> Serialize for Label<'a> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where

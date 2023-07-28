@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::process::Command;
 
@@ -18,18 +17,18 @@ pub mod types;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
-pub struct Feature<'a> {
-    #[serde(borrow)]
-    pub label: Label<'a>,
-    pub feature_type: Cow<'a, str>,
+pub struct Feature {
+    #[serde(deserialize_with = "Label::deserialize_owned")]
+    pub label: Label<'static>,
+    pub feature_type: String,
     pub data: serde_json::Value,
-    pub run_info: Vec<Cow<'a, str>>,
+    pub run_info: Vec<String>,
 }
 
-impl<'a> Feature<'a> {
+impl Feature {
     /// Create a Command that will run this feature implementation process with the data passed as a cli arg
     pub fn base_cmd(&self) -> Command {
-        let mut run_info = self.run_info.iter().map(Cow::as_ref);
+        let mut run_info = self.run_info.iter();
         let feature_json = serde_json::to_string(&self.data)
             .expect("serde_json::Value reserialization will never fail");
         let mut cmd = Command::new(
@@ -42,13 +41,13 @@ impl<'a> Feature<'a> {
     }
 }
 
-impl<'a> PartialOrd for Feature<'a> {
+impl PartialOrd for Feature {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a> Ord for Feature<'a> {
+impl Ord for Feature {
     fn cmp(&self, other: &Self) -> Ordering {
         match self.label.cmp(&other.label) {
             Ordering::Equal => match self.feature_type.cmp(&other.feature_type) {

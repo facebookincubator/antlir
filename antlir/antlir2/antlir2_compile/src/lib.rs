@@ -259,7 +259,7 @@ pub trait CompileFeature {
     }
 }
 
-impl<'a> CompileFeature for Feature<'a> {
+impl CompileFeature for Feature {
     fn base_compileish_cmd(&self, sub: &'static str, ctx: &CompilerContext) -> Result<Command> {
         let ctx_json = serde_json::to_string(ctx).context("while serializing CompilerContext")?;
         let mut cmd = Feature::base_cmd(self);
