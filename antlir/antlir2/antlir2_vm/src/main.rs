@@ -23,15 +23,16 @@ use anyhow::Context;
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
+use json_arg::JsonFile;
 use tracing::debug;
-use tracing::info;
 
 use crate::isolation::is_isolated;
 use crate::isolation::isolated;
 use crate::isolation::Platform;
 use crate::runtime::set_runtime;
-use crate::types::parse_opts;
-use crate::types::VMOpts;
+use crate::types::MachineOpts;
+use crate::types::RuntimeOpts;
+use crate::types::VMArgs;
 use crate::utils::log_command;
 use crate::vm::VM;
 
@@ -53,38 +54,44 @@ enum Commands {
 
 #[derive(Debug, Args)]
 struct RunArgs {
-    /// Json-encoded string for VM configuration
+    /// Json-encoded file for VM machine configuration
     #[arg(long)]
-    vm_spec: String,
-    /// Json-encoded string describing paths of binary and data required by VM
+    machine_spec: JsonFile<MachineOpts>,
+    /// Json-encoded file describing paths of binaries required by VM
     #[arg(long)]
-    runtime: String,
+    runtime_spec: JsonFile<RuntimeOpts>,
+    /// Json-encoded file controlling execution of the VM
+    #[arg(long)]
+    args_spec: JsonFile<VMArgs>,
 }
 
 #[derive(Debug, Args)]
 struct IsolateArgs {
     /// Path to container image. VM will be spawned inside the container.
     #[arg(long)]
-    image: String,
+    image: PathBuf,
     /// List of env variable names to pass through into the container.
     #[arg(long)]
     envs: Option<Vec<String>>,
+    /// Args for run command
     #[command(flatten)]
     vm_args: RunArgs,
 }
 
 fn respawn(args: &IsolateArgs) -> Result<()> {
-    let isolated = isolated(PathBuf::from(&args.image), args.envs.as_deref())?;
+    let isolated = isolated(&args.image, args.envs.as_deref())?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     log_command(
         isolated
             .into_command()
             .arg(&exe)
             .arg("run")
-            .arg("--vm-spec")
-            .arg(&args.vm_args.vm_spec)
-            .arg("--runtime")
-            .arg(&args.vm_args.runtime),
+            .arg("--machine-spec")
+            .arg(args.vm_args.machine_spec.path())
+            .arg("--runtime-spec")
+            .arg(args.vm_args.runtime_spec.path())
+            .arg("--args-spec")
+            .arg(args.vm_args.args_spec.path()),
     )
     .status()?;
     Ok(())
@@ -94,16 +101,17 @@ fn run(args: &RunArgs) -> Result<()> {
     if !is_isolated()? {
         return Err(anyhow!("run must be called from inside container"));
     }
+    debug!("RuntimeOpts: {:?}", args.runtime_spec);
+    debug!("MachineOpts: {:?}", args.machine_spec);
+    debug!("ArgsOpts: {:?}", args.args_spec);
 
-    let runtime = parse_opts(&args.runtime).context(format!("Failed to parse {}", args.runtime))?;
-    debug!("RuntimeOpts: {:?}", runtime);
-    set_runtime(runtime).map_err(|_| anyhow!("Failed to set runtime"))?;
-
-    let vm_opts =
-        parse_opts::<VMOpts>(&args.vm_spec).context(format!("Failed to parse {}", args.vm_spec))?;
-    info!("VMOpts: {:?}", vm_opts);
-
-    Ok(VM::new(vm_opts)?.run()?)
+    set_runtime(args.runtime_spec.clone().into_inner())
+        .map_err(|_| anyhow!("Failed to set runtime"))?;
+    Ok(VM::new(
+        args.machine_spec.clone().into_inner(),
+        args.args_spec.clone().into_inner(),
+    )?
+    .run()?)
 }
 
 fn main() -> Result<()> {

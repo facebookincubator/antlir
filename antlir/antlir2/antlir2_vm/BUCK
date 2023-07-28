@@ -15,13 +15,13 @@ rust_binary(
         "derive_builder",
         "once_cell",
         "serde",
-        "serde_json",
         "thiserror",
         "tracing",
         "tracing-subscriber",
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/filesystem/absolute_path:absolute_path",
+        "//antlir/util/cli/json_arg:json_arg",
     ],
 )
 

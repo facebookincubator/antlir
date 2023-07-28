@@ -104,7 +104,7 @@ fn env_filter(envs: Option<&[String]>) -> Vec<&str> {
 /// # Arguments
 /// * `image` - container image that would be used to run the VM
 /// * `envs` - Additional envs to set inside container.
-pub(crate) fn isolated(image: PathBuf, envs: Option<&[String]>) -> Result<IsolatedContext> {
+pub(crate) fn isolated(image: &PathBuf, envs: Option<&[String]>) -> Result<IsolatedContext> {
     let repo = Platform::repo_root()?;
     let mut builder = IsolationContext::builder(image);
     builder

@@ -8,13 +8,9 @@
 //! This file contains data structure that mirrors what described in vm bzl files
 //! so that we can directly deserialize a json into Rust structs.
 
-use std::fs;
-use std::path::Path;
 use std::path::PathBuf;
 
-use serde::de::DeserializeOwned;
 use serde::Deserialize;
-use thiserror::Error;
 
 /// Captures property of the disk specified by user to describe a writable disk
 #[derive(Debug, Clone, Deserialize)]
@@ -63,7 +59,7 @@ pub(crate) struct VMArgs {
 
 /// Everything we need to create and run the VM
 #[derive(Debug, Clone, Deserialize)]
-pub(crate) struct VMOpts {
+pub(crate) struct MachineOpts {
     /// number of cores
     pub(crate) cpus: usize,
     /// memory size in MiB
@@ -75,8 +71,6 @@ pub(crate) struct VMOpts {
     pub(crate) num_nics: usize,
     /// initrd and data if not booting from disk
     pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
-    /// Operational specific parameters
-    pub(crate) args: VMArgs,
 }
 
 /// Location of various binary and data we need to operate the VM
@@ -87,20 +81,4 @@ pub(crate) struct RuntimeOpts {
     pub(crate) firmware: String,
     pub(crate) roms_dir: String,
     pub(crate) virtiofsd: String,
-}
-
-#[derive(Debug, Error)]
-pub enum VMOptsError {
-    #[error(transparent)]
-    FileError(#[from] std::io::Error),
-    #[error(transparent)]
-    JsonParsingError(#[from] serde_json::Error),
-}
-
-pub(crate) fn parse_opts<T>(filename: &str) -> Result<T, VMOptsError>
-where
-    T: DeserializeOwned,
-{
-    let content = fs::read_to_string(Path::new(filename))?;
-    Ok(serde_json::from_str(&content)?)
 }
