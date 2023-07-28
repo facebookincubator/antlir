@@ -1,3 +1,6 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", antlir2_image = "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", antlir2_package = "package")
 load("//antlir/bzl:build_defs.bzl", "export_file", "python_unittest", "rust_binary")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
@@ -5,7 +8,6 @@ load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:systemd.bzl", "ADMIN_ROOT", "systemd")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load("//metalos/os/tests:defs.bzl", "fail_unit")
@@ -151,7 +153,7 @@ python_unittest(
 # To test initrd.break functionality override the default
 # debug-shell.conf behavior. Instead of spawning a shell we'll dump some
 # debug information and then halt the VM.
-image.layer(
+antlir2_image.layer(
     name = "vmtest-initrd-break-custom-initrd-layer",
     features = [
         #
@@ -159,12 +161,16 @@ image.layer(
         # because it's overriding the existing debug-shell.conf override
         # in PROVIDER_ROOT (/usr/lib/systemd/system).
         #
-        feature.ensure_subdirs_exist("/", ADMIN_ROOT),
+        antlir2_feature.ensure_subdirs_exist(
+            into_dir = "/",
+            subdirs_to_create = ADMIN_ROOT,
+        ),
         systemd.install_dropin(
             dest = "override.conf",
             install_root = ADMIN_ROOT,
             source = "debug-shell-exec-override.conf",
             unit = "debug-shell.service",
+            use_antlir2 = True,
         ),
     ],
     parent_layer = "//antlir/vm/initrd:{}-initrd-layer".format(
@@ -172,9 +178,8 @@ image.layer(
     ),
 )
 
-package.new(
+antlir2_package.cpio_gz(
     name = "vmtest-initrd-break-custom-initrd",
-    format = "cpio.gz",
     layer = ":vmtest-initrd-break-custom-initrd-layer",
 )
 
