@@ -55,6 +55,16 @@ impl NodeNameCounter {
 }
 
 #[cfg(test)]
+/// Helper function for converting qemu args to a single string for asserting in tests.
+/// This is usually only needed for string only functions like `contains`.
+pub(crate) fn qemu_args_to_string(args: &[std::ffi::OsString]) -> String {
+    args.join(std::ffi::OsStr::new(" "))
+        .to_str()
+        .expect("Invalid unicode")
+        .to_string()
+}
+
+#[cfg(test)]
 mod test {
     use super::*;
 

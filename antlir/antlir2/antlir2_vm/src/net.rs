@@ -8,6 +8,7 @@
 //! This file contains structs that create network interfaces for the VM. All code
 //! here should only be run inside a container.
 
+use std::ffi::OsString;
 use std::net::Ipv6Addr;
 use std::process::Command;
 
@@ -55,7 +56,7 @@ impl VirtualNIC {
     }
 
     /// Qemu args to append
-    pub(crate) fn qemu_args(&self) -> Vec<String> {
+    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
         [
             "-netdev",
             &format!(
@@ -71,7 +72,7 @@ impl VirtualNIC {
             ),
         ]
         .iter()
-        .map(|x| x.to_string())
+        .map(|x| x.into())
         .collect()
     }
 
@@ -118,6 +119,8 @@ impl VirtualNIC {
 
 #[cfg(test)]
 mod test {
+    use std::ffi::OsStr;
+
     use super::*;
 
     #[test]
@@ -143,7 +146,7 @@ mod test {
     #[test]
     fn test_qemu_args() {
         assert_eq!(
-            VirtualNIC::new(0).qemu_args().join(" "),
+            VirtualNIC::new(0).qemu_args().join(OsStr::new(" ")),
             "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no \
             -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01"
         )
