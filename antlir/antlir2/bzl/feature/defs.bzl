@@ -13,7 +13,7 @@ load("//antlir/antlir2/bzl/feature:metakv.bzl", "metakv_remove", "metakv_store")
 load("//antlir/antlir2/bzl/feature:mount.bzl", "host_mount", "layer_mount")
 load("//antlir/antlir2/bzl/feature:remove.bzl", "remove")
 load("//antlir/antlir2/bzl/feature:requires.bzl", "requires")
-load("//antlir/antlir2/bzl/feature:rpms.bzl", "rpms_install", "rpms_remove_if_exists")
+load("//antlir/antlir2/bzl/feature:rpms.bzl", "rpms_install", "rpms_remove_if_exists", "rpms_upgrade")
 load("//antlir/antlir2/bzl/feature:symlink.bzl", "ensure_dir_symlink", "ensure_file_symlink")
 load("//antlir/antlir2/bzl/feature:tarball.bzl", "tarball")
 load("//antlir/antlir2/bzl/feature:usergroup.bzl", "group_add", "user_add", "usermod")
@@ -37,6 +37,7 @@ feature = struct(
     requires = requires,
     rpms_install = rpms_install,
     rpms_remove_if_exists = rpms_remove_if_exists,
+    rpms_upgrade = rpms_upgrade,
     ensure_file_symlink = ensure_file_symlink,
     ensure_dir_symlink = ensure_dir_symlink,
     tarball = tarball,

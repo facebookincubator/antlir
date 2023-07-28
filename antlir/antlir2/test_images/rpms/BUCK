@@ -95,13 +95,39 @@ test_rpms(
 )
 
 test_rpms(
-    name = "upgrade",
+    name = "upgrade-by-installing-nevra",
     expected = expected_t(
         installed = ["foo-3"],
         not_installed = ["foo-2"],
     ),
     features = [
         feature.rpms_install(rpms = ["foo-3"]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "upgrade",
+    dnf_versionlock = "//antlir:empty.json",
+    expected = expected_t(
+        installed = ["foo-3"],
+        not_installed = ["foo-2"],
+    ),
+    features = [
+        feature.rpms_upgrade(rpms = ["foo"]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "upgrade-respects-versionlock",
+    dnf_versionlock = ":versionlock.json",
+    expected = expected_t(
+        installed = ["foo-2"],
+        not_installed = ["foo-3"],
+    ),
+    features = [
+        feature.rpms_upgrade(rpms = ["foo"]),
     ],
     parent_layer = simple,
 )

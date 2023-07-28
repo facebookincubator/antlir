@@ -16,7 +16,8 @@ def _looks_like_label(s: str) -> bool:
         return True
     return False
 
-def rpms_install(
+def _install_common(
+        action: str,
         *,
         rpms: list[str] = [],
         subjects: [list[[str, "selector"]], "selector"] = [],
@@ -60,11 +61,42 @@ def rpms_install(
             "subjects": subjects_src,
         } if subjects_src else None,
         kwargs = {
-            "action": "install",
+            "action": action,
             "subjects": subjects,
         },
         analyze_uses_context = True,
     )
+
+def rpms_install(*args, **kwargs) -> ParseTimeFeature.type:
+    """
+    Install RPMs by identifier or .rpm src
+
+    Elements in `rpms` can be an rpm name like 'systemd', a NEVR like
+    'systemd-251.4-1.2.hs+fb.el8' (or anything that resolves as a DNF subject -
+    see
+    https://dnf.readthedocs.io/en/latest/command_ref.html#specifying-packages-label)
+    or a buck target that produces a .rpm artifact.
+
+    To ergonomically use `select`, callers must disambiguate between rpm names
+    (or, more accurately, dnf subjects)
+    """
+    return _install_common("install", *args, **kwargs)
+
+def rpms_upgrade(*args, **kwargs) -> ParseTimeFeature.type:
+    """
+    Force an upgrade (if possible, which includes respecting versionlock!) of
+    these rpms.
+
+    Elements in `rpms` can be an rpm name like 'systemd', a NEVR like
+    'systemd-251.4-1.2.hs+fb.el8' (or anything that resolves as a DNF subject -
+    see
+    https://dnf.readthedocs.io/en/latest/command_ref.html#specifying-packages-label)
+    or a buck target that produces a .rpm artifact.
+
+    To ergonomically use `select`, callers must disambiguate between rpm names
+    (or, more accurately, dnf subjects)
+    """
+    return _install_common("upgrade", *args, **kwargs)
 
 def rpms_remove_if_exists(*, rpms: [list[[str, "selector"]], "selector"]) -> ParseTimeFeature.type:
     """
@@ -86,7 +118,7 @@ def rpms_remove_if_exists(*, rpms: [list[[str, "selector"]], "selector"]) -> Par
         analyze_uses_context = True,
     )
 
-action_enum = enum("install", "remove_if_exists")
+action_enum = enum("install", "remove_if_exists", "upgrade")
 
 rpm_source_record = record(
     subject = field([str.type, None], default = None),
