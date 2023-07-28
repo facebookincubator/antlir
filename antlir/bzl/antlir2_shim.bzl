@@ -56,7 +56,7 @@ antlir2_setting = native.enum(
 def _antlir2_or_default(antlir2: [
     antlir2_setting.type,
     None,
-], default: bool.type) -> bool.type:
+], default: bool) -> bool:
     if antlir2 != None:
         return antlir2 == antlir2_setting("yes")
     else:
@@ -71,14 +71,14 @@ types.lint_noop(_FLAVOR_T)
 
 def _should_make_parallel(
         antlir2: [
-            str.type,
-            bool.type,
+            str,
+            bool,
             None,
         ],
         *,
         flavor: _FLAVOR_T = None,
-        disabled_packages: [str.type] = _DEFAULT_DISABLED_PACKAGES,
-        enabled_packages: [str.type] = _DEFAULT_ENABLED_PACKAGES) -> bool.type:
+        disabled_packages: list[str] = _DEFAULT_DISABLED_PACKAGES,
+        enabled_packages: list[str] = _DEFAULT_ENABLED_PACKAGES) -> bool:
     if types.is_bool(antlir2):
         antlir2 = antlir2_setting("yes" if antlir2 else "no")
     else:

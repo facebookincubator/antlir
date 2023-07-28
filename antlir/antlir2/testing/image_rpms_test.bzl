@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
-def _rpm_names_test_impl(ctx: "context") -> ["provider"]:
+def _rpm_names_test_impl(ctx: "context") -> list["provider"]:
     return [
         DefaultInfo(),
         RunInfo(cmd_args(
@@ -27,7 +27,7 @@ _rpm_names_test = rule(
     },
 )
 
-def image_test_rpm_names(name: str.type, src: [str.type, "selector"], layer: str.type, **kwargs):
+def image_test_rpm_names(name: str, src: [str, "selector"], layer: str, **kwargs):
     _rpm_names_test(
         name = name + "--script",
         src = src,
@@ -54,7 +54,7 @@ def image_test_rpm_names(name: str.type, src: [str.type, "selector"], layer: str
         **kwargs
     )
 
-def _rpm_integrity_test_impl(ctx: "context") -> ["provider"]:
+def _rpm_integrity_test_impl(ctx: "context") -> list["provider"]:
     return [
         DefaultInfo(),
         RunInfo(cmd_args(
@@ -81,10 +81,10 @@ _rpm_integrity_test = rule(
 )
 
 def image_test_rpm_integrity(
-        name: str.type,
-        layer: str.type,
-        ignored_files: [str.type] = [],
-        ignored_rpms: [str.type] = [],
+        name: str,
+        layer: str,
+        ignored_files: list[str] = [],
+        ignored_rpms: list[str] = [],
         **kwargs):
     """
     Verify the integrity of all installed RPMs to ensure that any changes done

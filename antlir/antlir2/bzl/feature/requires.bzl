@@ -7,9 +7,9 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def requires(
         *,
-        files: [str.type] = [],
-        groups: [str.type] = [],
-        users: [str.type] = []) -> ParseTimeFeature.type:
+        files: list[str] = [],
+        groups: list[str] = [],
+        users: list[str] = []) -> ParseTimeFeature.type:
     """
     Add rule-level requirements on image layers.
 

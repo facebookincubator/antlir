@@ -9,10 +9,10 @@ load(":install.bzl", "install_record")
 
 def tarball(
         *,
-        src: str.type,
-        into_dir: str.type,
-        user: str.type = "root",
-        group: str.type = "root") -> ParseTimeFeature.type:
+        src: str,
+        into_dir: str,
+        user: str = "root",
+        group: str = "root") -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "tarball",
         impl = "//antlir/antlir2/features:install",
@@ -35,10 +35,10 @@ tarball_record = record(
 
 def tarball_analyze(
         ctx: "AnalyzeFeatureContext",
-        into_dir: str.type,
-        user: str.type,
-        group: str.type,
-        srcs: {str.type: "artifact"}) -> FeatureAnalysis.type:
+        into_dir: str,
+        user: str,
+        group: str,
+        srcs: dict[str, "artifact"]) -> FeatureAnalysis.type:
     tarball = srcs["source"]
 
     if user != "root" or group != "root":
@@ -61,7 +61,7 @@ def tarball_analyze(
         required_artifacts = [extracted],
     )
 
-def _extract_impl(ctx: "context") -> ["provider"]:
+def _extract_impl(ctx: "context") -> list["provider"]:
     output = ctx.actions.declare_output("extracted")
 
     script, _ = ctx.actions.write(

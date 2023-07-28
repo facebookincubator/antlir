@@ -11,16 +11,16 @@ load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
 types.lint_noop()
 
 def test_rpm(
-        name: str.type,
-        version: str.type,
-        release: str.type,
-        arch: str.type = "noarch",
-        license: str.type = "NONE",
-        requires: [str.type] = [],
-        recommends: [str.type] = [],
+        name: str,
+        version: str,
+        release: str,
+        arch: str = "noarch",
+        license: str = "NONE",
+        requires: list[str] = [],
+        recommends: list[str] = [],
         features = [],
-        parent_layer: [str.type, None] = None,
-        post_install_script: [str.type, None] = None) -> str.type:
+        parent_layer: [str, None] = None,
+        post_install_script: [str, None] = None) -> str:
     target_name = name + "-" + version + "-" + release + "." + arch
     image.layer(
         name = target_name + "--layer",

@@ -15,7 +15,7 @@ nevra = record(
     arch = str.type,
 )
 
-def nevra_to_string(nevra: nevra.type) -> str.type:
+def nevra_to_string(nevra: nevra.type) -> str:
     return "{}-{}:{}-{}.{}".format(
         nevra.name,
         nevra.epoch,
@@ -24,7 +24,7 @@ def nevra_to_string(nevra: nevra.type) -> str.type:
         nevra.arch,
     )
 
-def package_href(nevra: [nevra.type, str.type], id: str.type) -> str.type:
+def package_href(nevra: [nevra.type, str], id: str) -> str:
     """
     Make the location encode the pkgid. The last path component is the package
     nevra so that dnf logs look nice, but the repo proxy only looks at the
@@ -42,7 +42,7 @@ RpmInfo = provider(fields = {
     "xml": "combined xml chunks",
 })
 
-def _make_xml(ctx: "context", rpm: "artifact", href: str.type) -> "artifact":
+def _make_xml(ctx: "context", rpm: "artifact", href: str) -> "artifact":
     out = ctx.actions.declare_output("xml.json")
     ctx.actions.run(
         cmd_args(
@@ -55,7 +55,7 @@ def _make_xml(ctx: "context", rpm: "artifact", href: str.type) -> "artifact":
     )
     return out
 
-def _impl(ctx: "context") -> ["provider"]:
+def _impl(ctx: "context") -> list["provider"]:
     if (int(bool(ctx.attrs.sha256)) + int(bool(ctx.attrs.sha1))) != 1:
         fail("exactly one of {sha256,sha1} must be set")
 
@@ -94,9 +94,9 @@ def common_impl(
         nevra: "nevra",
         rpm: "artifact",
         xml: "artifact",
-        pkgid: str.type,
+        pkgid: str,
         antlir2_isolate: "RunInfo",
-        reflink_flavors: {str.type: "LayerInfo"}) -> ["provider"]:
+        reflink_flavors: dict[str, "LayerInfo"]) -> list["provider"]:
     # Produce an rpm2extents artifact for each flavor. This is tied specifically
     # to the version of `rpm` being used in the build appliance, and should be
     # broadly compatible in practice, especially within os versions (eg if we

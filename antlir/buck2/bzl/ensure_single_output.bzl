@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-def ensure_single_output(dep: ["dependency", DefaultInfo.type], optional: bool.type = False) -> ["artifact", None]:
+def ensure_single_output(dep: ["dependency", DefaultInfo.type], optional: bool = False) -> ["artifact", None]:
     if type(dep) == DefaultInfo.type:
         default_outputs = dep.default_outputs
     else:

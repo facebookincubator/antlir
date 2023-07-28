@@ -14,7 +14,7 @@ def rpm2extents(
         rpm: "artifact",
         extents: "artifact",
         build_appliance: "LayerInfo",
-        identifier: [str.type, None] = None):
+        identifier: [str, None] = None):
     ctx.actions.run(
         cmd_args(
             antlir2_isolate,

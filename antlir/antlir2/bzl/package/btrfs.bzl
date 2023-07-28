@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":sendstream.bzl", "anon_v1_sendstream")
 
-def _impl(ctx: "context") -> ["provider"]:
+def _impl(ctx: "context") -> list["provider"]:
     package = ctx.actions.declare_output("image.btrfs")
 
     spec = ctx.actions.write_json(
@@ -80,8 +80,8 @@ _btrfs = rule(
 btrfs = rule_with_default_target_platform(_btrfs)
 
 def BtrfsSubvol(
-        layer: [str.type, "selector"],
-        writable: [bool.type, None] = None):
+        layer: [str, "selector"],
+        writable: [bool, None] = None):
     return {
         "layer": layer,
         "writable": writable,

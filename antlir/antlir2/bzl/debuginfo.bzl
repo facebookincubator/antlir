@@ -12,7 +12,7 @@ SplitBinaryInfo = provider(fields = [
     "metadata",
 ])
 
-def _split_binary_impl(ctx: "context") -> ["provider"]:
+def _split_binary_impl(ctx: "context") -> list["provider"]:
     objcopy = ctx.attrs.objcopy[RunInfo] if ctx.attrs.objcopy else ctx.attrs.cxx_toolchain[CxxToolchainInfo].binary_utilities_info.objcopy
 
     src = ensure_single_output(ctx.attrs.src)

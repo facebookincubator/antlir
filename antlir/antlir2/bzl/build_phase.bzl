@@ -50,7 +50,7 @@ if list(BuildPhase.values()) != [
 ]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
 
-def _is_predictable(phase: BuildPhase.type) -> bool.type:
+def _is_predictable(phase: BuildPhase.type) -> bool:
     """
     If a BuildPhase is predictable, we don't have to crawl the filesystem tree
     to discover "dynamic" items, like we do to discover things like rpm-created

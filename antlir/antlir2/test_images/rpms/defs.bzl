@@ -20,13 +20,13 @@ expected_t = record(
 )
 
 def test_rpms(
-        name: str.type,
+        name: str,
         expected: expected_t.type,
-        features: [types.antlir_feature],
-        parent_layer: [str.type, None] = None,
-        flavor: [str.type, None] = None,
-        dnf_available_repos: str.type = "//antlir/antlir2/test_images/rpms:test-repo-set",
-        dnf_versionlock: [str.type, None] = None):
+        features: list[types.antlir_feature],
+        parent_layer: [str, None] = None,
+        flavor: [str, None] = None,
+        dnf_available_repos: str = "//antlir/antlir2/test_images/rpms:test-repo-set",
+        dnf_versionlock: [str, None] = None):
     buck_command_alias(
         name = name + "--script",
         exe = "//antlir/antlir2/test_images/rpms:test-installed-rpms",

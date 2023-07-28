@@ -7,7 +7,7 @@ Antlir2ToolchainInfo = provider(fields = [
     "antlir2",
 ])
 
-def _impl(ctx: "context") -> ["provider"]:
+def _impl(ctx: "context") -> list["provider"]:
     return [
         DefaultInfo(),
         Antlir2ToolchainInfo(

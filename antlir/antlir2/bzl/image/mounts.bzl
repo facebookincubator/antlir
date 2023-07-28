@@ -10,13 +10,13 @@ load("//antlir/bzl:types.bzl", "types")
 
 types.lint_noop(feature_record)
 
-def _mountpoint(mount: mount_record.type) -> str.type:
+def _mountpoint(mount: mount_record.type) -> str:
     return mount.layer.mountpoint if mount.layer else mount.host.mountpoint
 
 def all_mounts(
         *,
-        features: [feature_record.type],
-        parent_layer: ["LayerInfo", None]) -> [mount_record.type]:
+        features: list[feature_record.type],
+        parent_layer: ["LayerInfo", None]) -> list[mount_record.type]:
     """
     Find all the mounts that would need to be directly applied to this layer
     based on these features. This expands nested layer mounts so that they can

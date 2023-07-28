@@ -8,7 +8,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":btrfs.bzl", "btrfs")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 
-def _impl(ctx: "context") -> ["provider"]:
+def _impl(ctx: "context") -> list["provider"]:
     extension = {
         "cpio.gz": ".cpio.gz",
         "cpio.zst": ".cpio.zst",
@@ -54,9 +54,9 @@ def check_kwargs(kwargs):
         fail("opts is not allowed to be provided as kwargs")
 
 def _cpio_gz(
-        name: str.type,
-        layer: str.type,
-        compression_level: int.type = 3,
+        name: str,
+        layer: str,
+        compression_level: int = 3,
         **kwargs):
     check_kwargs(kwargs)
     return _package_macro(
@@ -70,9 +70,9 @@ def _cpio_gz(
     )
 
 def _cpio_zst(
-        name: str.type,
-        layer: str.type,
-        compression_level: int.type = 15,
+        name: str,
+        layer: str,
+        compression_level: int = 15,
         **kwargs):
     check_kwargs(kwargs)
     return _package_macro(
@@ -86,22 +86,22 @@ def _cpio_zst(
     )
 
 def _rpm(
-        name: str.type,
-        layer: str.type,
-        rpm_name: str.type,
-        version: str.type,
-        release: str.type,
-        arch: str.type,
-        license: str.type,
-        epoch: int.type = 0,
-        summary: [str.type, None] = None,
-        requires: [str.type] = [],
-        recommends: [str.type] = [],
-        provides: [str.type] = [],
-        supplements: [str.type] = [],
-        conflicts: [str.type] = [],
-        description: [str.type, None] = None,
-        post_install_script: [str.type, None] = None,
+        name: str,
+        layer: str,
+        rpm_name: str,
+        version: str,
+        release: str,
+        arch: str,
+        license: str,
+        epoch: int = 0,
+        summary: [str, None] = None,
+        requires: list[str] = [],
+        recommends: list[str] = [],
+        provides: list[str] = [],
+        supplements: list[str] = [],
+        conflicts: list[str] = [],
+        description: [str, None] = None,
+        post_install_script: [str, None] = None,
         **kwargs):
     check_kwargs(kwargs)
 
@@ -131,11 +131,11 @@ def _rpm(
     )
 
 def _vfat(
-        name: str.type,
-        layer: str.type,
-        fat_size: [int.type, None] = None,
-        label: [str.type, None] = None,
-        size_mb: [int.type, None] = None,
+        name: str,
+        layer: str,
+        fat_size: [int, None] = None,
+        label: [str, None] = None,
+        size_mb: [int, None] = None,
         **kwargs):
     check_kwargs(kwargs)
 
@@ -158,8 +158,8 @@ def _vfat(
     )
 
 def _squashfs(
-        name: str.type,
-        layer: str.type,
+        name: str,
+        layer: str,
         **kwargs):
     check_kwargs(kwargs)
     return _package_macro(
@@ -169,7 +169,7 @@ def _squashfs(
         **kwargs
     )
 
-def _backwards_compatible_new(format: str.type, **kwargs):
+def _backwards_compatible_new(format: str, **kwargs):
     {
         "btrfs": btrfs,
         "cpio.gz": _cpio_gz,

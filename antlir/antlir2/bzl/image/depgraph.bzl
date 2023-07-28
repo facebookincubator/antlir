@@ -10,10 +10,10 @@ def build_depgraph(
         ctx: "context",
         parent_depgraph: ["artifact", None],
         features_json: ["write_json_cli_args", None],
-        format: str.type,
+        format: str,
         subvol: ["artifact", None],
-        dependency_layers: ["LayerInfo"],
-        identifier_prefix: str.type = "") -> "artifact":
+        dependency_layers: list["LayerInfo"],
+        identifier_prefix: str = "") -> "artifact":
     output = ctx.actions.declare_output(identifier_prefix + "depgraph." + format + (".pre" if not subvol else ""))
     ctx.actions.run(
         cmd_args(

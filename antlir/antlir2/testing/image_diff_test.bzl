@@ -6,7 +6,7 @@
 load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
-def _impl(ctx: "context") -> ["provider"]:
+def _impl(ctx: "context") -> list["provider"]:
     if not ctx.attrs.layer[LayerInfo].parent:
         fail("image_diff_test only works for layers with parents")
     base_cmd = cmd_args(

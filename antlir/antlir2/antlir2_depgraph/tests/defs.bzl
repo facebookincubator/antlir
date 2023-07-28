@@ -34,7 +34,7 @@ def _make_test_cmd(ctx: "context") -> "cmd_args":
         cmd_args(ctx.attrs.parent[LayerInfo].depgraph, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
     )
 
-def _bad_impl(ctx: "context") -> ["provider"]:
+def _bad_impl(ctx: "context") -> list["provider"]:
     cmd = _make_test_cmd(ctx)
     return [
         DefaultInfo(),
@@ -57,7 +57,7 @@ _bad_depgraph = rule(
 )
 
 def bad_depgraph(
-        name: str.type,
+        name: str,
         features,
         **kwargs):
     feature.new(
@@ -71,7 +71,7 @@ def bad_depgraph(
         **kwargs
     )
 
-def _good_impl(ctx: "context") -> ["provider"]:
+def _good_impl(ctx: "context") -> list["provider"]:
     return [
         DefaultInfo(),
         ExternalRunnerTestInfo(
