@@ -4,13 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
-load("//antlir/bzl:flatten.bzl", "flatten")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:types.bzl", "types")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/bzl/image/package:defs.bzl", "package")
 load("//metalos/kernel:kernel.shape.bzl", "kernel_t")
 
 _KERNEL_T = types.shape(kernel_t)
@@ -38,28 +37,36 @@ def initrd(
     # MetalOS initrd and modified to support 9p shared mounts for the repository,
     # kernel modules, and others.
 
-    if features:
-        features = flatten.antlir_features(features)
-
     image.layer(
         name = name + "-layer",
         parent_layer = "//metalos/initrd:initrd",
         visibility = visibility,
         features = [
-            feature.ensure_subdirs_exist("/usr/lib", "modules-load.d"),
-            feature.install("//antlir/vm/initrd:modules.conf", "/usr/lib/modules-load.d/vm.conf"),
-            feature.ensure_subdirs_exist("/usr/lib", "modules"),
-            feature.install(kernel.derived_targets.disk_boot_modules, paths.join("/usr/lib/modules", kernel.uname) + "/"),
-            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "default.target"),
-            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "metalos-init.service"),
+            feature.ensure_subdirs_exist(
+                into_dir = "/usr/lib",
+                subdirs_to_create = "modules-load.d",
+            ),
+            feature.install(
+                src = "//antlir/vm/initrd:modules.conf",
+                dst = "/usr/lib/modules-load.d/vm.conf",
+            ),
+            feature.ensure_subdirs_exist(
+                into_dir = "/usr/lib",
+                subdirs_to_create = "modules",
+            ),
+            feature.install(
+                src = kernel.derived_targets.disk_boot_modules,
+                dst = paths.join("/usr/lib/modules", kernel.uname) + "/",
+            ),
+            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "default.target", use_antlir2 = True),
+            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "metalos-init.service", use_antlir2 = True),
             # vm has no network
-            systemd.skip_unit("systemd-networkd-wait-online.service"),
+            systemd.skip_unit("systemd-networkd-wait-online.service", use_antlir2 = True),
         ] + (features or []),
     )
 
-    package.new(
+    package.cpio_gz(
         name = name,
         layer = ":" + name + "-layer",
-        format = "cpio.gz",
         visibility = visibility,
     )
