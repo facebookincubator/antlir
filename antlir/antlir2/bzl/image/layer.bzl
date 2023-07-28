@@ -13,7 +13,8 @@ load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule"
 # @oss-disable
 load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
+load("//antlir/bzl:types.bzl", "types")
+load("//antlir/rpm/dnf2buck:repo.bzl", "RepoInfo", "RepoSetInfo")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":depgraph.bzl", "build_depgraph")
@@ -118,7 +119,18 @@ def _impl_with_features(features: "provider_collection", *, ctx: "context") -> l
 
     all_features = features[FeatureInfo].features
 
-    dnf_available_repos = (ctx.attrs.dnf_available_repos or flavor_info.dnf_info.default_repo_set)[RepoSetInfo]
+    dnf_available_repos = []
+    if types.is_list(ctx.attrs.dnf_available_repos):
+        dnf_available_repos = [r[RepoInfo] for r in ctx.attrs.dnf_available_repos]
+    elif ctx.attrs.dnf_available_repos != None:
+        dnf_available_repos = list(ctx.attrs.dnf_available_repos[RepoSetInfo].repo_infos)
+    else:
+        dnf_available_repos = list(flavor_info.dnf_info.default_repo_set[RepoSetInfo].repo_infos)
+    for repo in (ctx.attrs.dnf_additional_repos or []):
+        if RepoSetInfo in repo:
+            dnf_available_repos.extend(repo[RepoSetInfo].repo_infos)
+        else:
+            dnf_available_repos.append(repo[RepoInfo])
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
     dnf_excluded_rpms = ctx.attrs.dnf_excluded_rpms if ctx.attrs.dnf_excluded_rpms != None else flavor_info.dnf_info.default_excluded_rpms
@@ -379,9 +391,26 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
+    "dnf_additional_repos": attrs.list(
+        attrs.one_of(
+            attrs.dep(providers = [RepoInfo]),
+            attrs.dep(providers = [RepoSetInfo]),
+        ),
+        default = [],
+        doc = """
+            Make more dnf repos available while building this layer.
+        """,
+    ),
     "dnf_available_repos": attrs.option(
-        attrs.dep(providers = [RepoSetInfo]),
+        attrs.one_of(
+            attrs.list(attrs.dep(providers = [RepoInfo])),
+            attrs.dep(providers = [RepoSetInfo]),
+        ),
         default = None,
+        doc = """
+            Restrict the available dnf repos while building this layer to this
+            repo_set and anything in dnf_additional_repos
+        """,
     ),
     "dnf_excluded_rpms": attrs.option(
         attrs.list(attrs.string()),

@@ -25,7 +25,7 @@ def test_rpms(
         features: list[types.antlir_feature],
         parent_layer: [str, None] = None,
         flavor: [str, None] = None,
-        dnf_available_repos: str = "//antlir/antlir2/test_images/rpms:test-repo-set",
+        dnf_additional_repos: [str.type] = ["//antlir/antlir2/test_images/rpms/repo:test-repo"],
         dnf_versionlock: [str, None] = None):
     buck_command_alias(
         name = name + "--script",
@@ -40,7 +40,7 @@ def test_rpms(
             feature.remove(path = "/etc/dnf/dnf.conf", must_exist = False),
             feature.install(src = "//antlir:empty", dst = "/etc/dnf/dnf.conf"),
         ],
-        dnf_available_repos = dnf_available_repos,
+        dnf_additional_repos = dnf_additional_repos,
         dnf_versionlock = dnf_versionlock,
     )
     image_sh_test(

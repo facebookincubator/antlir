@@ -8,7 +8,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/rpm/dnf2buck:rpm.bzl", "nevra_to_string", "package_href")
 
-def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo", None]) -> "artifact":
+def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoInfo"]) -> "artifact":
     """
     Produce a directory that contains a local copy of the available RPM repo's
     repodata directories.
@@ -18,7 +18,7 @@ def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo
     dir = ctx.actions.declare_output("dnf_repodatas", dir = True)
 
     tree = {}
-    for repo_info in (dnf_available_repos.repo_infos if dnf_available_repos else []):
+    for repo_info in dnf_available_repos:
         tree[paths.join(repo_info.id, "repodata")] = repo_info.repodata
         for key in repo_info.gpg_keys:
             tree[paths.join(repo_info.id, "gpg-keys", key.basename)] = key
@@ -44,7 +44,7 @@ def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: [str, None]) -> "
 def compiler_plan_to_local_repos(
         ctx: "context",
         identifier_prefix: str,
-        dnf_available_repos: ["RepoSetInfo", None],
+        dnf_available_repos: ["RepoInfo"],
         compiler_plan: "artifact",
         reflink_flavor: [str, None]) -> "artifact":
     """
@@ -55,7 +55,7 @@ def compiler_plan_to_local_repos(
 
     # collect all rpms keyed by repo, then nevra
     by_repo = {}
-    for repo_info in (dnf_available_repos.repo_infos if dnf_available_repos else []):
+    for repo_info in dnf_available_repos:
         by_repo[repo_info.id] = {"nevras": {}, "repo_info": repo_info}
         for rpm_info in repo_info.all_rpms:
             by_repo[repo_info.id]["nevras"][nevra_to_string(rpm_info.nevra)] = rpm_info
