@@ -65,7 +65,7 @@ pub(crate) struct EntryDiff {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     file_type: Option<FieldDiff<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    content_hash: Option<FieldDiff<u64>>,
+    content_hash: Option<FieldDiff<String>>,
     #[serde(default, skip_serializing_if = "XattrDiff::is_empty")]
     xattrs: XattrDiff,
 }
@@ -110,8 +110,8 @@ impl EntryDiff {
                 None
             } else {
                 FieldDiff::new(
-                    content_hash.expect("set if text is None"),
-                    child.content_hash.expect("set if text is None"),
+                    content_hash.clone().expect("set if text is None"),
+                    child.content_hash.clone().expect("set if text is None"),
                 )
             },
             xattrs: XattrDiff::new(xattrs, &child.xattrs),

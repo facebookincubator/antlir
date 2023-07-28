@@ -6,11 +6,11 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "md-5",
         "serde",
         "serde_with",
         "similar",
         "toml",
-        "twox-hash",
         "walkdir",
         "xattr",
         "//antlir/antlir2/antlir2_mode:antlir2_mode",

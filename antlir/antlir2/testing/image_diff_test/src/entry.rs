@@ -8,7 +8,6 @@
 use std::collections::BTreeMap;
 use std::ffi::OsString;
 use std::fmt::Display;
-use std::hash::Hasher;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::prelude::MetadataExt;
 use std::path::Path;
@@ -19,11 +18,12 @@ use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
+use md5::Digest;
+use md5::Md5;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
 use serde_with::DisplayFromStr;
-use twox_hash::XxHash64;
 
 #[serde_as]
 #[serde_with::skip_serializing_none]
@@ -38,9 +38,9 @@ pub(crate) struct Entry {
     pub(crate) group: String,
     #[serde(default)]
     pub(crate) text: Option<String>,
-    #[serde_as(as = "Option<DisplayFromStr>")]
+
     #[serde(default)]
-    pub(crate) content_hash: Option<u64>,
+    pub(crate) content_hash: Option<String>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
     pub(crate) xattrs: BTreeMap<OsString, Vec<u8>>,
 }
@@ -78,9 +78,12 @@ impl Entry {
         }
         let (text, content_hash) = if meta.is_file() {
             let contents = std::fs::read(path).context("while reading file")?;
-            let mut hasher = XxHash64::with_seed(0);
-            hasher.write(&contents);
-            (String::from_utf8(contents).ok(), Some(hasher.finish()))
+            let mut hasher = Md5::new();
+            hasher.update(&contents);
+            (
+                String::from_utf8(contents).ok(),
+                Some(format!("{:x}", hasher.finalize())),
+            )
         } else {
             (None, None)
         };
