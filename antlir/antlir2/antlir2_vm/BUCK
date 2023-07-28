@@ -1,6 +1,10 @@
+load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//metalos/kernel/bzl:defs.bzl", "metalos_kernel")
+load("//metalos/vm/disks:simple.bzl", "simple_disk")
+load("//metalos/vm/initrd:defs.bzl", "initrd")
 
 rust_binary(
     name = "antlir2_vm",
@@ -46,4 +50,32 @@ image.layer(
         feature.ensure_dirs_exist(dirs = "/antlir"),
     ],
     flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
+)
+
+vm.run(
+    name = "default",
+    compatible_with = ["ovr_config//cpu:x86_64"],
+    disks = [simple_disk.default_boot_disk],
+)
+
+# TODO: The following are just placeholders for CI to exercise disk building
+# API until we move to actual vm tests soon(TM).
+vm.run(
+    name = "default-nondisk-boot",
+    compatible_with = ["ovr_config//cpu:x86_64"],
+    disks = [simple_disk.default_control_disk],
+    initrd = initrd.default,
+    kernel = metalos_kernel.default.vmlinuz,
+)
+
+vm.run(
+    name = "default-nvme",
+    compatible_with = ["ovr_config//cpu:x86_64"],
+    disks = [
+        simple_disk.get_boot_disk(
+            arch = metalos_kernel.default.arch,
+            interface = "nvme",
+            uname = metalos_kernel.default.uname,
+        ),
+    ],
 )

@@ -110,6 +110,7 @@ pub(crate) fn isolated(image: &PathBuf, envs: Option<&[String]>) -> Result<Isola
     builder
         .register(true)
         .platform(Platform::get().clone())
+        .working_directory(&repo)
         .outputs([
             // Carry over virtualizations support
             // TODO: Linux-specific
