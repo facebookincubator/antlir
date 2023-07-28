@@ -22,7 +22,7 @@ load(":mounts.bzl", "all_mounts", "nspawn_mount_args")
 def _map_image(
         ctx: "context",
         cmd: "cmd_args",
-        identifier: str.type,
+        identifier: str,
         build_appliance: LayerInfo.type,
         parent: ["artifact", None],
         logs: "artifact") -> ("cmd_args", "artifact"):
@@ -61,7 +61,7 @@ def _map_image(
 
     return cmd, out
 
-def _nspawn_sub_target(nspawn_binary: "dependency", subvol: "artifact", mounts: ["mount_record"]) -> ["provider"]:
+def _nspawn_sub_target(nspawn_binary: "dependency", subvol: "artifact", mounts: list["mount_record"]) -> list["provider"]:
     dev_mode_args = cmd_args()
     if REPO_CFG.artifacts_require_repo:
         dev_mode_args = cmd_args(
@@ -91,7 +91,7 @@ def _impl(ctx: "context") -> "promise":
         feature_anon_kwargs,
     ).map(partial(_impl_with_features, ctx = ctx))
 
-def _impl_with_features(features: "provider_collection", *, ctx: "context") -> ["provider"]:
+def _impl_with_features(features: "provider_collection", *, ctx: "context") -> list["provider"]:
     flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
     if not ctx.attrs.antlir_internal_build_appliance and not flavor:
         fail("flavor= was not set, and {} does not have a flavor".format(ctx.attrs.parent_layer.label))
@@ -430,16 +430,16 @@ _layer = rule(
 
 def layer(
         *,
-        name: str.type,
+        name: str,
         # Features does not have a direct type hint, but it is still validated
         # by a type hint inside feature.bzl. Feature targets or
         # InlineFeatureInfo providers are accepted, at any level of nesting
         features = [],
         # We'll implicitly forward some users to antlir2, so any hacks for them
         # should be confined behind this flag
-        implicit_antlir2: bool.type = False,
+        implicit_antlir2: bool = False,
         visibility: [
-            [str.type],
+            list[str],
             None,
         ] = None,
         **kwargs):

@@ -90,7 +90,7 @@ AnalyzeFeatureContext = record(
 
 def data_only_feature_analysis_fn(
         record_type,
-        feature_type: str.type,
+        feature_type: str,
         build_phase: BuildPhase.type = BuildPhase("compile")):
     # @lint-ignore BUCKRESTRICTEDSYNTAX
     def inner(impl: ["RunInfo", None] = None, **kwargs) -> FeatureAnalysis.type:

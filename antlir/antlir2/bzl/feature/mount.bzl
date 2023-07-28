@@ -14,9 +14,9 @@ load(":install.bzl", "install")
 
 def layer_mount(
         *,
-        source: [str.type, "selector"],
-        mountpoint: [str.type, None] = None,
-        _implicit_from_antlir1: bool.type = False) -> [ParseTimeFeature.type]:
+        source: [str, "selector"],
+        mountpoint: [str, None] = None,
+        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature.type]:
     features = [
         ParseTimeFeature(
             feature_type = "mount",
@@ -46,10 +46,10 @@ def layer_mount(
 
 def host_mount(
         *,
-        source: str.type,
-        is_directory: bool.type,
-        mountpoint: [str.type, None] = None,
-        _implicit_from_antlir1: bool.type = False) -> [ParseTimeFeature.type]:
+        source: str,
+        is_directory: bool,
+        mountpoint: [str, None] = None,
+        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature.type]:
     mountpoint = mountpoint or source
     features = [ParseTimeFeature(
         feature_type = "mount",
@@ -107,12 +107,12 @@ mount_record = record(
 )
 
 def mount_analyze(
-        mountpoint: [str.type, None],
+        mountpoint: [str, None],
         source_kind: _source_kind.type,
-        is_directory: [bool.type, None],
-        host_source: [str.type, None],
-        _implicit_from_antlir1: bool.type,
-        deps: {str.type: "dependency"} = {}) -> FeatureAnalysis.type:
+        is_directory: [bool, None],
+        host_source: [str, None],
+        _implicit_from_antlir1: bool,
+        deps: dict[str, "dependency"] = {}) -> FeatureAnalysis.type:
     if source_kind == "layer":
         source = deps.pop("source")
         if not mountpoint:

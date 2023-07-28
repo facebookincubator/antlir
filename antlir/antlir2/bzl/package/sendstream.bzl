@@ -10,7 +10,7 @@ SendstreamInfo = provider(fields = {
     "sendstream": "'artifact' that is the btrfs sendstream",
 })
 
-def _impl(ctx: "context") -> ["provider"]:
+def _impl(ctx: "context") -> list["provider"]:
     sendstream = ctx.actions.declare_output("image.sendstream")
 
     spec = ctx.actions.write_json(
@@ -59,7 +59,7 @@ def anon_v1_sendstream(
         v1_anon_target.map(lambda x: x[SendstreamInfo].sendstream),
     )
 
-def _zst_impl(ctx: "context") -> ["provider"]:
+def _zst_impl(ctx: "context") -> list["provider"]:
     sendstream_zst = ctx.actions.declare_output("image.sendstream.zst")
 
     v1_sendstream = anon_v1_sendstream(
@@ -96,7 +96,7 @@ _sendstream_zst = rule(
 
 sendstream_zst = rule_with_default_target_platform(_sendstream_zst)
 
-def _v2_impl(ctx: "context") -> ["provider"]:
+def _v2_impl(ctx: "context") -> list["provider"]:
     sendstream_v2 = ctx.actions.declare_output("image.sendstream.v2")
 
     v1_sendstream = anon_v1_sendstream(

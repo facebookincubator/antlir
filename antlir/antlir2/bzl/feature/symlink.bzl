@@ -7,9 +7,9 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def _symlink_feature(
         *,
-        link: [str.type, "selector"],
-        target: [str.type, "selector"],
-        feature_type: [str.type, "selector"]) -> ParseTimeFeature.type:
+        link: [str, "selector"],
+        target: [str, "selector"],
+        feature_type: [str, "selector"]) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = feature_type,
         impl = "//antlir/antlir2/features:symlink",
@@ -20,7 +20,7 @@ def _symlink_feature(
         },
     )
 
-def ensure_file_symlink(*, link: str.type, target: str.type) -> ParseTimeFeature.type:
+def ensure_file_symlink(*, link: str, target: str) -> ParseTimeFeature.type:
     """
     Create a symlink to a file.
 
@@ -28,7 +28,7 @@ def ensure_file_symlink(*, link: str.type, target: str.type) -> ParseTimeFeature
     """
     return _symlink_feature(feature_type = "ensure_file_symlink", link = link, target = target)
 
-def ensure_dir_symlink(*, link: str.type, target: str.type) -> ParseTimeFeature.type:
+def ensure_dir_symlink(*, link: str, target: str) -> ParseTimeFeature.type:
     """
     Create a symlink to a directory.
 

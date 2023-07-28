@@ -118,8 +118,8 @@ def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feat
 def feature_rpms_install(
         rpmlist,
         flavors = None,
-        subjects_src: [str.type, None] = None,
-        antlir1_i_know_what_im_doing_arch: [str.type, None] = None):
+        subjects_src: [str, None] = None,
+        antlir1_i_know_what_im_doing_arch: [str, None] = None):
     """
 `feature.rpms_install(["foo"])` installs `foo.rpm`,
 `feature.rpms_install(["//target:bar"])` builds `bar` target and installs

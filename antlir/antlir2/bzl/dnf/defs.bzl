@@ -28,7 +28,7 @@ def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoSetInfo
     ctx.actions.copied_dir(dir, tree)
     return dir
 
-def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: [str.type, None]) -> "artifact":
+def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: [str, None]) -> "artifact":
     if not reflink_flavor:
         return rpm_info.raw_rpm
     else:
@@ -43,10 +43,10 @@ def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: [str.type, None])
 
 def compiler_plan_to_local_repos(
         ctx: "context",
-        identifier_prefix: str.type,
+        identifier_prefix: str,
         dnf_available_repos: ["RepoSetInfo", None],
         compiler_plan: "artifact",
-        reflink_flavor: [str.type, None]) -> "artifact":
+        reflink_flavor: [str, None]) -> "artifact":
     """
     Use the compiler plan to build a directory of all the RPM repodata and RPM
     blobs we need to perform the dnf installations in the image.

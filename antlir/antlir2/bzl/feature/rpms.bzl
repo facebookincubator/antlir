@@ -9,7 +9,7 @@ load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 # a fully qualified rpm nevra with epoch will contain a ':' so we have to be a
 # little more particular than just checking "if ':' in s"
-def _looks_like_label(s: str.type) -> bool.type:
+def _looks_like_label(s: str) -> bool:
     if s.startswith(":"):
         return True
     if ":" in s and "//" in s:
@@ -18,10 +18,10 @@ def _looks_like_label(s: str.type) -> bool.type:
 
 def rpms_install(
         *,
-        rpms: [str.type] = [],
-        subjects: [[[str.type, "selector"]], "selector"] = [],
-        deps: [[[str.type, "selector"]], "selector"] = [],
-        subjects_src: [str.type, "selector", None] = None) -> ParseTimeFeature.type:
+        rpms: list[str] = [],
+        subjects: [list[[str, "selector"]], "selector"] = [],
+        deps: [list[[str, "selector"]], "selector"] = [],
+        subjects_src: [str, "selector", None] = None) -> ParseTimeFeature.type:
     """
     Install RPMs by identifier or .rpm src
 
@@ -66,7 +66,7 @@ def rpms_install(
         analyze_uses_context = True,
     )
 
-def rpms_remove_if_exists(*, rpms: [[[str.type, "selector"]], "selector"]) -> ParseTimeFeature.type:
+def rpms_remove_if_exists(*, rpms: [list[[str, "selector"]], "selector"]) -> ParseTimeFeature.type:
     """
     Remove RPMs if they are installed
 
@@ -106,10 +106,10 @@ rpms_record = record(
 
 def rpms_analyze(
         ctx: "AnalyzeFeatureContext",
-        action: str.type,
-        subjects: [str.type],
-        srcs: {str.type: "artifact"} = {},
-        unnamed_deps_or_srcs: [["dependency", "artifact"]] = [],
+        action: str,
+        subjects: list[str],
+        srcs: dict[str, "artifact"] = {},
+        unnamed_deps_or_srcs: list[["dependency", "artifact"]] = [],
         impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
     rpms = []
     for rpm in subjects:
