@@ -35,9 +35,9 @@ def requires(
     )
 
 requires_record = record(
-    files = [str.type],
-    users = [str.type],
-    groups = [str.type],
+    files = list[str],
+    users = list[str],
+    groups = list[str],
 )
 
 requires_analyze = data_only_feature_analysis_fn(

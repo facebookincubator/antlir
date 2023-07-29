@@ -37,9 +37,9 @@ def ensure_dir_symlink(*, link: str, target: str) -> ParseTimeFeature.type:
     return _symlink_feature(feature_type = "ensure_dir_symlink", link = link, target = target)
 
 symlink_record = record(
-    link = str.type,
-    target = str.type,
-    is_directory = bool.type,
+    link = str,
+    target = str,
+    is_directory = bool,
 )
 
 ensure_file_symlink_analyze = data_only_feature_analysis_fn(symlink_record, feature_type = "ensure_file_symlink")

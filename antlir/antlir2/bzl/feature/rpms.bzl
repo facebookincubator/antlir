@@ -133,7 +133,7 @@ rpm_item_record = record(
 )
 
 rpms_record = record(
-    items = [rpm_item_record.type],
+    items = list[rpm_item_record.type],
 )
 
 def rpms_analyze(

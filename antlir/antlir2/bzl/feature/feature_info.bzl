@@ -12,7 +12,7 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 # but allows each feature to depend on different types of targets.
 ParseTimeDependency = record(
     dep = [
-        str.type,
+        str,
         "selector",
         # @oss-disable
     ],
@@ -20,9 +20,9 @@ ParseTimeDependency = record(
 )
 
 ParseTimeFeature = record(
-    feature_type = str.type,
+    feature_type = str,
     # Binary that implements this feature
-    impl = str.type,
+    impl = str,
     # Items in this list may be either raw source files, or dependencies
     # produced by another rule. If a dependency, the full provider set will be
     # made available to the analysis code for the feature.
@@ -40,7 +40,7 @@ ParseTimeFeature = record(
     # of dependencies.
     unnamed_deps_or_srcs = field([[[str, "selector"]], None], default = None),
     # Plain data that defines this feature, aside from input artifacts/dependencies
-    kwargs = {str.type: ""},
+    kwargs = dict[str, typing.Any],
     analyze_uses_context = field(bool, default = False),
     # Some features do mutations to the image filesystem that cannot be
     # discovered in the depgraph, so those features are grouped together in
@@ -51,7 +51,7 @@ ParseTimeFeature = record(
 
 # Produced by the feature implementation, this tells the rule how to build it
 FeatureAnalysis = record(
-    feature_type = str.type,
+    feature_type = str,
     # Binary implementation of this feature
     impl_run_info = field(["RunInfo", None], default = None),
     # Arbitrary feature record type (the antlir2 compiler must be able to
@@ -82,8 +82,8 @@ Tools = record(
 )
 
 AnalyzeFeatureContext = record(
-    label = "label",
-    unique_action_identifier = str.type,
+    label = Label,
+    unique_action_identifier = str,
     actions = "actions",
     tools = Tools.type,
 )

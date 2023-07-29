@@ -8,11 +8,11 @@ load("//antlir/antlir2/bzl/dnf:reflink.bzl", "REFLINK_FLAVORS", "rpm2extents")
 load("//antlir/bzl:types.bzl", "types")
 
 nevra = record(
-    name = str.type,
-    epoch = int.type,
-    version = str.type,
-    release = str.type,
-    arch = str.type,
+    name = str,
+    epoch = int,
+    version = str,
+    release = str,
+    arch = str,
 )
 
 def nevra_to_string(nevra: nevra.type) -> str:

@@ -77,7 +77,7 @@ load(":tarball.bzl", "tarball_analyze")
 load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
 
 feature_record = record(
-    feature_type = str.type,
+    feature_type = str,
     label = "target_label",
     analysis = "FeatureAnalysis",
     run_info = "RunInfo",

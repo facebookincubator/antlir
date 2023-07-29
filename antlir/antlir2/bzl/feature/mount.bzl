@@ -91,14 +91,14 @@ types.lint_noop(_source_kind)
 layer_mount_record = record(
     # TODO: this is only nullable because implicit conversions from antlir1
     # don't correctly set this in many cases
-    mountpoint = [str.type, None],
+    mountpoint = [str, None],
     src = layer_dep.type,
 )
 
 host_mount_record = record(
-    mountpoint = str.type,
-    src = str.type,
-    is_directory = bool.type,
+    mountpoint = str,
+    src = str,
+    is_directory = bool,
 )
 
 mount_record = record(

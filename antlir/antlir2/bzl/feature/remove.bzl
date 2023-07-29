@@ -29,8 +29,8 @@ def remove(
     )
 
 remove_record = record(
-    path = str.type,
-    must_exist = bool.type,
+    path = str,
+    must_exist = bool,
 )
 
 remove_analyze = data_only_feature_analysis_fn(

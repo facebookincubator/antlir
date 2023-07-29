@@ -62,14 +62,14 @@ def metakv_remove(*, key: str | "selector"):
     )
 
 metakv_store_record = record(
-    key = str.type,
-    value = str.type,
-    require_keys = [str.type],
-    store_if_not_exists = bool.type,
+    key = str,
+    value = str,
+    require_keys = list[str],
+    store_if_not_exists = bool,
 )
 
 metakv_remove_record = record(
-    key = str.type,
+    key = str,
 )
 
 metakv_record = record(
