@@ -27,11 +27,11 @@ def _lint_noop(*_args):
     """
     pass
 
-_bool = bool.type if is_buck2() else "bool"
+_bool = bool if is_buck2() else "bool"
 _function = "function"
-_int = int.type if is_buck2() else "int"
-_str = str.type if is_buck2() else "str"
-_struct = struct.type if is_buck2() else "struct"
+_int = int if is_buck2() else "int"
+_str = str if is_buck2() else "str"
+_struct = struct if is_buck2() else "struct"
 
 def _dict(kt, vt):
     return {kt: vt}
