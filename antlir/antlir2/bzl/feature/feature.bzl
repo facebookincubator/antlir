@@ -286,7 +286,7 @@ def feature_attrs(
 
     # This is already flat but this will enforce the type checking again after
     # the antlir1-compat-promotion above
-    features = flatten.flatten(features, item_type = ["ParseTimeFeature", str.type, "selector"])
+    features = flatten.flatten(features, item_type = ["ParseTimeFeature", str, "selector"])
 
     inline_features = {}
     feature_targets = []

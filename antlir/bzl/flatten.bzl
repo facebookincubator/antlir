@@ -32,7 +32,9 @@ def _typed_flattener(item_type) -> types.function:
 
     return _flatten
 
-_ITEM_T = types.optional(types.union(types.str, types.list(types.str)))
+# TODO(nga): "function" is for example "str" which acts as type.
+#   Add a type of type to starlark.
+_ITEM_T = types.optional(types.union(types.str, types.function, types.list(types.union(types.str, types.function))))
 
 types.lint_noop(_ITEM_T)
 
