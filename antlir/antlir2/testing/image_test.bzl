@@ -11,7 +11,7 @@ load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", 
 
 _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
 
     test_cmd = cmd_args(
@@ -86,8 +86,8 @@ def _implicit_image_test(
         test_rule,
         name: str,
         layer: str,
-        run_as_user: [str, None] = None,
-        labels: [list[str], None] = None,
+        run_as_user: str | None = None,
+        labels: list[str] | None = None,
         boot: bool = False,
         boot_requires_units: list[str] = [],
         _add_outer_labels: list[str] = [],

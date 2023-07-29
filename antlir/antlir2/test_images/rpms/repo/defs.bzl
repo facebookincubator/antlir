@@ -19,8 +19,8 @@ def test_rpm(
         requires: list[str] = [],
         recommends: list[str] = [],
         features = [],
-        parent_layer: [str, None] = None,
-        post_install_script: [str, None] = None) -> str:
+        parent_layer: str | None = None,
+        post_install_script: str | None = None) -> str:
     target_name = name + "-" + version + "-" + release + "." + arch
     image.layer(
         name = target_name + "--layer",

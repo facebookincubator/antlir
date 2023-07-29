@@ -12,7 +12,7 @@ PrebuiltImageInfo = provider(fields = {
     "source": "source file of the image",
 })
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     format = ctx.attrs.format
     src = ctx.attrs.src
     if format == "sendstream.zst":

@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "DiskInfo")
 
-def _disk_impl(ctx: "context") -> list["provider"]:
+def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
     if not ctx.attrs.base_image and ctx.attrs.additional_size_mib <= 0:
         fail(
             "Either base_image or additional_size_mib must be set. \
@@ -57,7 +57,7 @@ def _create_disk_from_package(
         interface: str = "virtio-blk",
         logical_block_size: int = 512,
         physical_block_size: int = 512,
-        visibility: [list[str], None] = None):
+        visibility: list[str] | None = None):
     """This functions take image targets and wrap them with desired properties
     to create a VM disk target that can be used by VM. `image` is expected to
     be in a disk file format that can be directly consumed by qemu. It will be
@@ -81,7 +81,7 @@ def _create_empty_disk(
         interface: str = "virtio-blk",
         logical_block_size: int = 512,
         physical_block_size: int = 512,
-        visibility: [list[str], None] = None):
+        visibility: list[str] | None = None):
     """Create an empty disk of `size` MiB"""
     _create_disk_from_package(
         name = name,

@@ -12,7 +12,7 @@ SplitBinaryInfo = provider(fields = [
     "metadata",
 ])
 
-def _split_binary_impl(ctx: "context") -> list["provider"]:
+def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     objcopy = ctx.attrs.objcopy[RunInfo] if ctx.attrs.objcopy else ctx.attrs.cxx_toolchain[CxxToolchainInfo].binary_utilities_info.objcopy
 
     src = ensure_single_output(ctx.attrs.src)
@@ -161,7 +161,7 @@ split_binary = rule(
 
 def split_binary_anon(
         *,
-        ctx: ["context", "AnalyzeFeatureContext"],
+        ctx: AnalysisContext | "AnalyzeFeatureContext",
         src: "dependency",
         objcopy: "dependency") -> "promise":
     if RunInfo not in src:

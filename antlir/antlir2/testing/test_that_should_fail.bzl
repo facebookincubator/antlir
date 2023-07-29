@@ -8,7 +8,7 @@ load("//antlir/bzl:build_defs.bzl", "buck_sh_test", "cpp_unittest", "python_unit
 
 _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     test_cmd = cmd_args(
         ctx.attrs.test_that_should_fail[RunInfo],
         cmd_args(ctx.attrs.stdout_re, format = "--stdout-re={}") if ctx.attrs.stdout_re else cmd_args(),
@@ -62,9 +62,9 @@ _test_that_should_fail = rule(
 def test_that_should_fail(
         test_rule,
         name: str,
-        stdout_re: [str, None] = None,
-        stderr_re: [str, None] = None,
-        labels: [list[str], None] = None,
+        stdout_re: str | None = None,
+        stderr_re: str | None = None,
+        labels: list[str] | None = None,
         **kwargs):
     test_rule(
         name = name + "_failing_inner_test",

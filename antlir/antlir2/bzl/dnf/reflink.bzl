@@ -9,12 +9,12 @@ REFLINK_FLAVORS = {
 }
 
 def rpm2extents(
-        ctx: "context",
+        ctx: AnalysisContext,
         antlir2_isolate: "RunInfo",
-        rpm: "artifact",
-        extents: "artifact",
+        rpm: Artifact,
+        extents: Artifact,
         build_appliance: "LayerInfo",
-        identifier: [str, None] = None):
+        identifier: str | None = None):
     ctx.actions.run(
         cmd_args(
             antlir2_isolate,

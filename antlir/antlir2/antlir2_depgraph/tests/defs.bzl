@@ -10,7 +10,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
-def _make_test_cmd(ctx: "context") -> "cmd_args":
+def _make_test_cmd(ctx: AnalysisContext) -> "cmd_args":
     features = ctx.attrs.features[FeatureInfo]
     features_json = ensure_single_output(ctx.attrs.features)
 
@@ -34,7 +34,7 @@ def _make_test_cmd(ctx: "context") -> "cmd_args":
         cmd_args(ctx.attrs.parent[LayerInfo].depgraph, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
     )
 
-def _bad_impl(ctx: "context") -> list["provider"]:
+def _bad_impl(ctx: AnalysisContext) -> list[Provider]:
     cmd = _make_test_cmd(ctx)
     return [
         DefaultInfo(),
@@ -71,7 +71,7 @@ def bad_depgraph(
         **kwargs
     )
 
-def _good_impl(ctx: "context") -> list["provider"]:
+def _good_impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         DefaultInfo(),
         ExternalRunnerTestInfo(

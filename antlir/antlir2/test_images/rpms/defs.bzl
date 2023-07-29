@@ -12,21 +12,21 @@ load("//antlir/bzl:types.bzl", "types")
 types.lint_noop()
 
 expected_t = record(
-    installed = field([str.type], default = []),
-    userinstalled = field([str.type], default = []),
-    installed_not_userinstalled = field([str.type], default = []),
-    not_installed = field([str.type], default = []),
-    installed_module = field([str.type], default = []),
+    installed = field([str], default = []),
+    userinstalled = field([str], default = []),
+    installed_not_userinstalled = field([str], default = []),
+    not_installed = field([str], default = []),
+    installed_module = field([str], default = []),
 )
 
 def test_rpms(
         name: str,
         expected: expected_t.type,
         features: list[types.antlir_feature],
-        parent_layer: [str, None] = None,
-        flavor: [str, None] = None,
-        dnf_additional_repos: [str.type] = ["//antlir/antlir2/test_images/rpms/repo:test-repo"],
-        dnf_versionlock: [str, None] = None):
+        parent_layer: str | None = None,
+        flavor: str | None = None,
+        dnf_additional_repos: list[str] = ["//antlir/antlir2/test_images/rpms/repo:test-repo"],
+        dnf_versionlock: str | None = None):
     buck_command_alias(
         name = name + "--script",
         exe = "//antlir/antlir2/test_images/rpms:test-installed-rpms",

@@ -8,7 +8,7 @@ load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 def feature_impl(
         *,
         name: str,
-        src: [str, None] = None,
+        src: str | None = None,
         extra_srcs: list[str] = [],
         deps: list[str] = [],
         unstable_features: list[str] = [],

@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FlavorDnfInfo", "FlavorInfo", "LayerInfo
 load("//antlir/bzl:build_defs.bzl", "alias", "config")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         FlavorInfo(
             default_build_appliance = ctx.attrs.default_build_appliance,
@@ -47,7 +47,7 @@ def flavor(
         flavored_build_appliance: str,
         # Force the flavor author to say that their flavor does not support
         # reflink to make it impossible to forget
-        rpm_reflink_flavor: [str, None],
+        rpm_reflink_flavor: str | None,
         **kwargs):
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 

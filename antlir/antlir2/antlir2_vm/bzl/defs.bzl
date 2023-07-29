@@ -9,7 +9,7 @@ load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "DiskInfo")
 
-def _machine_json(ctx: "context") -> ("artifact", "write_json_cli_args"):
+def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
     """Generate json file that describes VM hardware and setup"""
 
     # We restrict the ways of booting the VM to prevent accidentally
@@ -56,7 +56,7 @@ def _machine_json(ctx: "context") -> ("artifact", "write_json_cli_args"):
     )
     return machine_json, machine_json_args
 
-def _vm_args_json(ctx: "context") -> ("artifact", "write_json_cli_args"):
+def _vm_args_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
     """Generate the json file to pass runtime information to the VM"""
     args_json = ctx.actions.declare_output("args.json")
     args_json_args = ctx.actions.write_json(
@@ -69,7 +69,7 @@ def _vm_args_json(ctx: "context") -> ("artifact", "write_json_cli_args"):
     )
     return args_json, args_json_args
 
-def _runtime_json(ctx: "context") -> ("artifact", "write_json_cli_args"):
+def _runtime_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
     """Generate the json file to pass runtime information to the VM"""
     runtime_json = ctx.actions.declare_output("runtime.json")
     runtime_json_args = ctx.actions.write_json(
@@ -85,7 +85,7 @@ def _runtime_json(ctx: "context") -> ("artifact", "write_json_cli_args"):
     )
     return runtime_json, runtime_json_args
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     """Create the json specs used as input for VM target."""
     machine_json, machine_json_args = _machine_json(ctx)
     runtime_json, runtime_json_args = _runtime_json(ctx)

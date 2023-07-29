@@ -11,11 +11,11 @@ load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def install(
         *,
-        src: [str, "selector"],
-        dst: [str, "selector"],
-        mode: [int, str, "selector", None] = None,
-        user: [str, "selector"] = "root",
-        group: [str, "selector"] = "root") -> ParseTimeFeature.type:
+        src: str | "selector",
+        dst: str | "selector",
+        mode: int | str | "selector" | None = None,
+        user: str | "selector" = "root",
+        group: str | "selector" = "root") -> ParseTimeFeature.type:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -50,12 +50,12 @@ def install(
     )
 
 installed_binary = record(
-    debuginfo = field(["artifact", None], default = None),
-    metadata = field(["artifact", None], default = None),
+    debuginfo = field([Artifact, None], default = None),
+    metadata = field([Artifact, None], default = None),
 )
 
 binary_record = record(
-    dev = field([bool.type, None], default = None),
+    dev = field([bool, None], default = None),
     installed = field([installed_binary.type, None], default = None),
 )
 
@@ -70,13 +70,13 @@ install_record = record(
 
 def get_feature_anaylsis_for_install(
         ctx: "AnalyzeFeatureContext",
-        src: ["dependency", "artifact"],
+        src: "dependency" | Artifact,
         dst: str,
         group: str,
-        mode: [int, None],
+        mode: int | None,
         user: str,
         skip_debuginfo_split: bool,
-        impl: ["RunInfo", None] = None):
+        impl: "RunInfo" | None = None):
     binary_info = None
     required_run_infos = []
     required_artifacts = []
@@ -147,10 +147,10 @@ def install_analyze(
         ctx: "AnalyzeFeatureContext",
         dst: str,
         group: str,
-        mode: [int, None],
+        mode: int | None,
         user: str,
-        deps_or_srcs: dict[str, ["artifact", "dependency"]],
-        impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
+        deps_or_srcs: dict[str, Artifact | "dependency"],
+        impl: "RunInfo" | None = None) -> FeatureAnalysis.type:
     src = deps_or_srcs["src"]
     return get_feature_anaylsis_for_install(
         ctx,

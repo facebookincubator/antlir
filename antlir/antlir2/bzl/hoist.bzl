@@ -7,7 +7,7 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load(":types.bzl", "LayerInfo")
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     out = ctx.actions.declare_output(paths.basename(ctx.attrs.path), dir = ctx.attrs.dir)
     ctx.actions.run(
         cmd_args(

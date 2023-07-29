@@ -115,7 +115,7 @@ _analyze_feature = {
     "user_mod": usermod_analyze,
 }
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     # Merge inline features into a single JSON file
     inline_features = []
     inline_artifacts = []
@@ -266,7 +266,7 @@ feature_rule = rule(
 
 def feature_attrs(
         # No type hint here, but it is validated by flatten_features
-        features) -> dict[str, ""]:
+        features) -> dict[str, typing.Any]:
     """
     Create a dict suitable to pass to the _feature rule.
 
@@ -368,7 +368,7 @@ def feature(
 def _hash_key(x) -> str:
     return sha256(repr(x))
 
-def regroup_features(label: "label", features: list["feature_record"]) -> list["feature_record"]:
+def regroup_features(label: Label, features: list["feature_record"]) -> list["feature_record"]:
     """
     Some features must be grouped at buck time so that the compiler can act on
     them as a single unit for performance reasons.

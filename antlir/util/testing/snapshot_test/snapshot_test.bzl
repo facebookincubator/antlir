@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
 
-def _dir_snapshot_test_impl(ctx: "context") -> list["provider"]:
+def _dir_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
     inputs = ctx.actions.declare_output("inputs", dir = True)
     input_dir_map = {"actual": ctx.attrs.actual}
     for src in ctx.attrs.snapshot:
@@ -60,7 +60,7 @@ def dir_snapshot_test(**kwargs):
         snapshot = kwargs.get("snapshot"),
     )
 
-def _file_snapshot_test_impl(ctx: "context") -> list["provider"]:
+def _file_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
     inputs = ctx.actions.declare_output("inputs", dir = True)
     ctx.actions.copied_dir(inputs, {
         "actual": ctx.attrs.actual,
