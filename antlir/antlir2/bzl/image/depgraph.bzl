@@ -7,13 +7,13 @@ load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 
 def build_depgraph(
         *,
-        ctx: "context",
-        parent_depgraph: ["artifact", None],
-        features_json: ["write_json_cli_args", None],
+        ctx: AnalysisContext,
+        parent_depgraph: Artifact | None,
+        features_json: "write_json_cli_args" | None,
         format: str,
-        subvol: ["artifact", None],
+        subvol: Artifact | None,
         dependency_layers: list["LayerInfo"],
-        identifier_prefix: str = "") -> "artifact":
+        identifier_prefix: str = "") -> Artifact:
     output = ctx.actions.declare_output(identifier_prefix + "depgraph." + format + (".pre" if not subvol else ""))
     ctx.actions.run(
         cmd_args(

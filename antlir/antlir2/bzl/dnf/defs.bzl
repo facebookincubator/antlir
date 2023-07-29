@@ -8,7 +8,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/rpm/dnf2buck:rpm.bzl", "nevra_to_string", "package_href")
 
-def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoInfo"]) -> "artifact":
+def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list["RepoInfo"]) -> Artifact:
     """
     Produce a directory that contains a local copy of the available RPM repo's
     repodata directories.
@@ -28,7 +28,7 @@ def repodata_only_local_repos(ctx: "context", dnf_available_repos: ["RepoInfo"])
     ctx.actions.copied_dir(dir, tree)
     return dir
 
-def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: [str, None]) -> "artifact":
+def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: str | None) -> Artifact:
     if not reflink_flavor:
         return rpm_info.raw_rpm
     else:
@@ -42,11 +42,11 @@ def _best_rpm_artifact(*, rpm_info: "RpmInfo", reflink_flavor: [str, None]) -> "
         return rpm_info.extents[reflink_flavor]
 
 def compiler_plan_to_local_repos(
-        ctx: "context",
+        ctx: AnalysisContext,
         identifier_prefix: str,
-        dnf_available_repos: ["RepoInfo"],
-        compiler_plan: "artifact",
-        reflink_flavor: [str, None]) -> "artifact":
+        dnf_available_repos: list["RepoInfo"],
+        compiler_plan: Artifact,
+        reflink_flavor: str | None) -> Artifact:
     """
     Use the compiler plan to build a directory of all the RPM repodata and RPM
     blobs we need to perform the dnf installations in the image.

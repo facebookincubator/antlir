@@ -10,13 +10,13 @@ SHELL_NOLOGIN = "/sbin/nologin"
 
 def user_add(
         *,
-        username: [str, "selector"],
-        primary_group: [str, "selector"],
-        home_dir: [str, "selector"],
-        shell: [str, "selector"] = SHELL_NOLOGIN,
-        uid: [int, "selector", None] = None,
-        supplementary_groups: [list[[str, "selector"]], "selector"] = [],
-        comment: [str, None] = None) -> ParseTimeFeature.type:
+        username: str | "selector",
+        primary_group: str | "selector",
+        home_dir: str | "selector",
+        shell: str | "selector" = SHELL_NOLOGIN,
+        uid: int | "selector" | None = None,
+        supplementary_groups: list[str | "selector"] | "selector" = [],
+        comment: str | None = None) -> ParseTimeFeature.type:
     """
     Add a user entry to /etc/passwd.
 
@@ -62,8 +62,8 @@ def user_add(
 
 def group_add(
         *,
-        groupname: [str, "selector"],
-        gid: [int, "selector", None] = None) -> ParseTimeFeature.type:
+        groupname: str | "selector",
+        gid: int | "selector" | None = None) -> ParseTimeFeature.type:
     """
     Add a group entry to /etc/group
 
@@ -82,8 +82,8 @@ def group_add(
 
 def usermod(
         *,
-        username: [str, "selector"],
-        add_supplementary_groups: [list[[str, "selector"]], "selector"] = []) -> ParseTimeFeature.type:
+        username: str | "selector",
+        add_supplementary_groups: list[str | "selector"] | "selector" = []) -> ParseTimeFeature.type:
     """
     Modify an existing entry in the /etc/passwd and /etc/group databases
     """

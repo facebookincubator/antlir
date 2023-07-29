@@ -8,7 +8,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":btrfs.bzl", "btrfs")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     extension = {
         "cpio.gz": ".cpio.gz",
         "cpio.zst": ".cpio.zst",
@@ -94,14 +94,14 @@ def _rpm(
         arch: str,
         license: str,
         epoch: int = 0,
-        summary: [str, None] = None,
+        summary: str | None = None,
         requires: list[str] = [],
         recommends: list[str] = [],
         provides: list[str] = [],
         supplements: list[str] = [],
         conflicts: list[str] = [],
-        description: [str, None] = None,
-        post_install_script: [str, None] = None,
+        description: str | None = None,
+        post_install_script: str | None = None,
         **kwargs):
     check_kwargs(kwargs)
 
@@ -133,9 +133,9 @@ def _rpm(
 def _vfat(
         name: str,
         layer: str,
-        fat_size: [int, None] = None,
-        label: [str, None] = None,
-        size_mb: [int, None] = None,
+        fat_size: int | None = None,
+        label: str | None = None,
+        size_mb: int | None = None,
         **kwargs):
     check_kwargs(kwargs)
 

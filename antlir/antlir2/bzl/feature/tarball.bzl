@@ -38,7 +38,7 @@ def tarball_analyze(
         into_dir: str,
         user: str,
         group: str,
-        srcs: dict[str, "artifact"]) -> FeatureAnalysis.type:
+        srcs: dict[str, Artifact]) -> FeatureAnalysis.type:
     tarball = srcs["source"]
 
     if user != "root" or group != "root":
@@ -61,7 +61,7 @@ def tarball_analyze(
         required_artifacts = [extracted],
     )
 
-def _extract_impl(ctx: "context") -> list["provider"]:
+def _extract_impl(ctx: AnalysisContext) -> list[Provider]:
     output = ctx.actions.declare_output("extracted")
 
     script, _ = ctx.actions.write(

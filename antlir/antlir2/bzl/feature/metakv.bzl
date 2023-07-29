@@ -7,10 +7,10 @@ load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def metakv_store(
         *,
-        key: [str, "selector"],
-        value: [str, "selector"],
-        require_keys: [list[[str, "selector"]], "selector"] = [],
-        store_if_not_exists: [bool, "selector"] = False) -> ParseTimeFeature.type:
+        key: str | "selector",
+        value: str | "selector",
+        require_keys: list[str | "selector"] | "selector" = [],
+        store_if_not_exists: bool | "selector" = False) -> ParseTimeFeature.type:
     """
     `metakv_store("key", "value")` writes the key value pair into
     the META_KEY_VALUE_STORE_FILE in the image. This can be read later. It is enforced that
@@ -43,7 +43,7 @@ def metakv_store(
         },
     )
 
-def metakv_remove(*, key: [str, "selector"]):
+def metakv_remove(*, key: str | "selector"):
     """
     `metakv_remove("key")` removes the key value pair that was written into the
     META_KEY_VALUE_STORE_FILE in the image. This throws an error if the key is
@@ -78,8 +78,8 @@ metakv_record = record(
 )
 
 def metakv_analyze(
-        store: [dict[str, ""], None] = None,
-        remove: [dict[str, ""], None] = None) -> FeatureAnalysis.type:
+        store: dict[str, typing.Any] | None = None,
+        remove: dict[str, typing.Any] | None = None) -> FeatureAnalysis.type:
     return FeatureAnalysis(
         feature_type = "metakv",
         data = metakv_record(

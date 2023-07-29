@@ -16,7 +16,7 @@ RepoInfo = provider(fields = {
     "urlgen": "URL generator for repo_proxy::RpmRepo",
 })
 
-def _impl(ctx: "context") -> list["provider"]:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     rpm_infos = [rpm[RpmInfo] for rpm in ctx.attrs.rpms]
 
     repo_id = ctx.label.name.replace("/", "_")
@@ -153,7 +153,7 @@ repo = rule(
 
 RepoSetInfo = provider(fields = ["repo_infos", "proxy_cmd"])
 
-def _repo_set_impl(ctx: "context") -> list["provider"]:
+def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
     combined_repodatas = ctx.actions.declare_output("repodatas")
     all_repos = {}
     for repo in ctx.attrs.repos:

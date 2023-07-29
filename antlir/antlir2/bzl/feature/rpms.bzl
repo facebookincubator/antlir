@@ -20,9 +20,9 @@ def _install_common(
         action: str,
         *,
         rpms: list[str] = [],
-        subjects: [list[[str, "selector"]], "selector"] = [],
-        deps: [list[[str, "selector"]], "selector"] = [],
-        subjects_src: [str, "selector", None] = None) -> ParseTimeFeature.type:
+        subjects: list[str | "selector"] | "selector" = [],
+        deps: list[str | "selector"] | "selector" = [],
+        subjects_src: str | "selector" | None = None) -> ParseTimeFeature.type:
     """
     Install RPMs by identifier or .rpm src
 
@@ -98,7 +98,7 @@ def rpms_upgrade(*args, **kwargs) -> ParseTimeFeature.type:
     """
     return _install_common("upgrade", *args, **kwargs)
 
-def rpms_remove_if_exists(*, rpms: [list[[str, "selector"]], "selector"]) -> ParseTimeFeature.type:
+def rpms_remove_if_exists(*, rpms: list[str | "selector"] | "selector") -> ParseTimeFeature.type:
     """
     Remove RPMs if they are installed
 
@@ -121,9 +121,9 @@ def rpms_remove_if_exists(*, rpms: [list[[str, "selector"]], "selector"]) -> Par
 action_enum = enum("install", "remove_if_exists", "upgrade")
 
 rpm_source_record = record(
-    subject = field([str.type, None], default = None),
-    src = field(["artifact", None], default = None),
-    subjects_src = field(["artifact", None], default = None),
+    subject = field([str, None], default = None),
+    src = field([Artifact, None], default = None),
+    subjects_src = field([Artifact, None], default = None),
 )
 
 rpm_item_record = record(
@@ -140,9 +140,9 @@ def rpms_analyze(
         ctx: "AnalyzeFeatureContext",
         action: str,
         subjects: list[str],
-        srcs: dict[str, "artifact"] = {},
-        unnamed_deps_or_srcs: list[["dependency", "artifact"]] = [],
-        impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
+        srcs: dict[str, Artifact] = {},
+        unnamed_deps_or_srcs: list["dependency" | Artifact] = [],
+        impl: "RunInfo" | None = None) -> FeatureAnalysis.type:
     rpms = []
     for rpm in subjects:
         rpms.append(rpm_source_record(subject = rpm))
