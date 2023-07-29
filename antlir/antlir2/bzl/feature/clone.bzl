@@ -72,10 +72,10 @@ def clone(
 
 clone_record = record(
     src_layer = layer_dep.type,
-    src_path = str.type,
-    dst_path = str.type,
-    omit_outer_dir = bool.type,
-    pre_existing_dest = bool.type,
+    src_path = str,
+    dst_path = str,
+    omit_outer_dir = bool,
+    pre_existing_dest = bool,
 )
 
 def clone_analyze(

@@ -60,11 +60,11 @@ binary_record = record(
 )
 
 install_record = record(
-    src = "artifact",
-    dst = str.type,
-    mode = int.type,
-    user = str.type,
-    group = str.type,
+    src = Artifact,
+    dst = str,
+    mode = int,
+    user = str,
+    group = str,
     binary_info = field([binary_record.type, None], default = None),
 )
 

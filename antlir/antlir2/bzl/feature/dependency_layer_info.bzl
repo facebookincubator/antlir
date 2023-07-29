@@ -6,13 +6,13 @@
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
 layer_dep = record(
-    label = "label",
-    depgraph = ["artifact", None],
-    subvol_symlink = ["artifact", None],
-    mounts = [["mount_record"], None],
+    label = Label,
+    depgraph = [Artifact, None],
+    subvol_symlink = [Artifact, None],
+    mounts = [list["mount_record"], None],
     # We can't do anything useful with this, but if recording that this appears
     # to be an antlir1 layer will be useful for ripping this out later
-    appears_to_be_antlir1_layer = [bool.type, None],
+    appears_to_be_antlir1_layer = [bool, None],
 )
 
 def layer_dep_analyze(layer: "dependency") -> layer_dep.type:

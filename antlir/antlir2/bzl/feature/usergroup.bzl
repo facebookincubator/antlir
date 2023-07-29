@@ -97,13 +97,13 @@ def usermod(
     )
 
 user_record = record(
-    name = str.type,
-    uid = [int.type, None],
-    home_dir = str.type,
-    shell = str.type,
-    primary_group = str.type,
-    supplementary_groups = [str.type],
-    comment = [str.type, None],
+    name = str,
+    uid = [int, None],
+    home_dir = str,
+    shell = str,
+    primary_group = str,
+    supplementary_groups = list[str],
+    comment = [str, None],
 )
 
 user_analyze = data_only_feature_analysis_fn(
@@ -112,8 +112,8 @@ user_analyze = data_only_feature_analysis_fn(
 )
 
 group_record = record(
-    name = str.type,
-    gid = [int.type, None],
+    name = str,
+    gid = [int, None],
 )
 
 group_analyze = data_only_feature_analysis_fn(
@@ -122,8 +122,8 @@ group_analyze = data_only_feature_analysis_fn(
 )
 
 usermod_record = record(
-    username = str.type,
-    add_supplementary_groups = [str.type],
+    username = str,
+    add_supplementary_groups = list[str],
 )
 
 usermod_analyze = data_only_feature_analysis_fn(

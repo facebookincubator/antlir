@@ -76,13 +76,13 @@ def extract_buck_binary(
     )
 
 extract_buck_record = record(
-    src = "artifact",
-    dst = str.type,
+    src = Artifact,
+    dst = str,
 )
 
 extract_layer_record = record(
     layer = layer_dep.type,
-    binaries = [str.type],
+    binaries = list[str],
 )
 
 extract_record = record(

@@ -28,9 +28,9 @@ def tarball(
     )
 
 tarball_record = record(
-    src = "artifact",
-    into_dir = str.type,
-    force_root_ownership = bool.type,
+    src = Artifact,
+    into_dir = str,
+    force_root_ownership = bool,
 )
 
 def tarball_analyze(

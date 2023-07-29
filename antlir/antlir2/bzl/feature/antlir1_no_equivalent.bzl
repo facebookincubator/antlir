@@ -28,8 +28,8 @@ def antlir1_no_equivalent(*, label: str, description: str) -> ParseTimeFeature.t
     )
 
 antlir1_no_equivalent_record = record(
-    label = str.type,
-    description = str.type,
+    label = str,
+    description = str,
 )
 
 antlir1_no_equivalent_analyze = data_only_feature_analysis_fn(

@@ -64,10 +64,10 @@ def ensure_dirs_exist(
     )
 
 ensure_dir_exists_record = record(
-    dir = str.type,
-    mode = int.type,
-    user = str.type,
-    group = str.type,
+    dir = str,
+    mode = int,
+    user = str,
+    group = str,
 )
 
 ensure_dir_exists_analyze = data_only_feature_analysis_fn(

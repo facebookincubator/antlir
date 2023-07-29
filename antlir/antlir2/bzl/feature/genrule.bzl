@@ -24,10 +24,10 @@ def genrule(
     )
 
 genrule_record = record(
-    cmd = [str.type],
-    user = str.type,
-    boot = bool.type,
-    bind_repo_ro = bool.type,
+    cmd = list[str],
+    user = str,
+    boot = bool,
+    bind_repo_ro = bool,
 )
 
 genrule_analyze = data_only_feature_analysis_fn(
