@@ -21,13 +21,13 @@ use serde::Deserialize;
 use serde::Serialize;
 use tracing as _;
 
-pub type Feature = Mount<'static>;
+pub type Feature = Mount;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-pub enum Mount<'a> {
-    Host(HostMount<'a>),
-    Layer(LayerMount<'a>),
+#[serde(rename_all = "snake_case")]
+pub enum Mount {
+    Host(HostMount),
+    Layer(LayerMount),
 }
 
 /// Buck2's `record` will always include `null` values, but serde's native enum
@@ -35,16 +35,15 @@ pub enum Mount<'a> {
 /// null.
 /// TODO(vmagro): make this general in the future (either codegen from `record`s
 /// or as a proc-macro)
-impl<'a, 'de: 'a> Deserialize<'de> for Mount<'a> {
+impl<'de> Deserialize<'de> for Mount {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        #[serde(bound(deserialize = "'de: 'a"))]
-        struct MountStruct<'a> {
-            host: Option<HostMount<'a>>,
-            layer: Option<LayerMount<'a>>,
+        struct MountStruct {
+            host: Option<HostMount>,
+            layer: Option<LayerMount>,
         }
 
         MountStruct::deserialize(deserializer).and_then(|s| match (s.host, s.layer) {
@@ -56,21 +55,20 @@ impl<'a, 'de: 'a> Deserialize<'de> for Mount<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct HostMount<'a> {
-    pub mountpoint: PathInLayer<'a>,
+pub struct HostMount {
+    pub mountpoint: PathInLayer,
     pub is_directory: bool,
     pub src: PathBuf,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-pub struct LayerMount<'a> {
-    pub mountpoint: PathInLayer<'a>,
-    pub src: LayerInfo<'a>,
+#[serde(rename_all = "snake_case")]
+pub struct LayerMount {
+    pub mountpoint: PathInLayer,
+    pub src: LayerInfo,
 }
 
-impl<'a> Mount<'a> {
+impl Mount {
     pub fn mountpoint(&self) -> &PathInLayer {
         match self {
             Self::Host(h) => &h.mountpoint,
@@ -86,14 +84,14 @@ impl<'a> Mount<'a> {
     }
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Mount<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Mount {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(Default::default())
     }
 
     fn requires(&self) -> Result<Vec<Requirement<'f>>> {
         let mut v = vec![Requirement::ordered(
-            ItemKey::Path(self.mountpoint().path().to_owned().into()),
+            ItemKey::Path(self.mountpoint().to_owned().into()),
             Validator::FileType(match self.is_directory() {
                 true => FileType::Directory,
                 false => FileType::File,

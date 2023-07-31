@@ -25,21 +25,20 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub type Feature = EnsureDirExists<'static>;
+pub type Feature = EnsureDirExists;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct EnsureDirExists<'a> {
-    pub group: GroupName<'a>,
-    pub dir: PathInLayer<'a>,
+pub struct EnsureDirExists {
+    pub group: GroupName,
+    pub dir: PathInLayer,
     pub mode: Mode,
-    pub user: UserName<'a>,
+    pub user: UserName,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for EnsureDirExists<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for EnsureDirExists {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(vec![Item::Path(Path::Entry(FsEntry {
-            path: self.dir.path().to_owned().into(),
+            path: self.dir.clone().into(),
             file_type: FileType::Directory,
             mode: self.mode.0,
         }))])
@@ -47,14 +46,8 @@ impl<'f> antlir2_feature_impl::Feature<'f> for EnsureDirExists<'f> {
 
     fn requires(&self) -> Result<Vec<Requirement<'f>>> {
         let mut v = vec![
-            Requirement::ordered(
-                ItemKey::User(self.user.name().to_owned().into()),
-                Validator::Exists,
-            ),
-            Requirement::ordered(
-                ItemKey::Group(self.group.name().to_owned().into()),
-                Validator::Exists,
-            ),
+            Requirement::ordered(ItemKey::User(self.user.clone().into()), Validator::Exists),
+            Requirement::ordered(ItemKey::Group(self.group.clone().into()), Validator::Exists),
         ];
         if let Some(parent) = self.dir.parent() {
             v.push(Requirement::ordered(
@@ -71,8 +64,8 @@ impl<'f> antlir2_feature_impl::Feature<'f> for EnsureDirExists<'f> {
         tracing::trace!("creating {}", dst.display());
         match std::fs::create_dir(&dst) {
             Ok(_) => {
-                let uid = ctx.uid(self.user.name())?;
-                let gid = ctx.gid(self.group.name())?;
+                let uid = ctx.uid(&self.user)?;
+                let gid = ctx.gid(&self.group)?;
                 chown(&dst, Some(uid.into()), Some(gid.into())).map_err(std::io::Error::from)?;
                 std::fs::set_permissions(&dst, Permissions::from_mode(self.mode.0))?;
             }

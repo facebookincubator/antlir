@@ -17,21 +17,20 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub type Feature = Symlink<'static>;
+pub type Feature = Symlink;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Symlink<'a> {
-    pub link: PathInLayer<'a>,
-    pub target: PathInLayer<'a>,
+pub struct Symlink {
+    pub link: PathInLayer,
+    pub target: PathInLayer,
     pub is_directory: bool,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Symlink<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Symlink {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(vec![Item::Path(Path::Symlink {
-            link: self.link.path().to_owned().into(),
-            target: self.target.path().to_owned().into(),
+            link: self.link.to_owned().into(),
+            target: self.target.to_owned().into(),
         })])
     }
 
@@ -39,7 +38,6 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Symlink<'f> {
         let mut requires = vec![Requirement::ordered(
             ItemKey::Path(
                 self.link
-                    .path()
                     .parent()
                     .unwrap_or_else(|| std::path::Path::new("/"))
                     .to_owned()
@@ -50,14 +48,13 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Symlink<'f> {
         // target may be a relative path, in which
         // case we need to resolve it relative to
         // the link
-        let absolute_target = match self.target.path().is_absolute() {
-            true => self.target.path().to_owned(),
+        let absolute_target = match self.target.is_absolute() {
+            true => self.target.to_owned(),
             false => self
                 .link
-                .path()
                 .parent()
                 .expect("the link cannot itself be /")
-                .join(self.target.path()),
+                .join(&self.target),
         };
         // Allow an image author to create a symlink to certain files without verifying
         // that they exist, when the target indicates that the author knows what
@@ -88,12 +85,12 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Symlink<'f> {
         // installed somewhere and used as a rootfs, and doing things "inside"
         // the image without actually doing some form of chroot is super broken
         // anyway.
-        if std::fs::symlink_metadata(ctx.dst_path(self.link.path())).is_ok() {
+        if std::fs::symlink_metadata(ctx.dst_path(&self.link)).is_ok() {
             // the depgraph already ensured that it points to the right location
             tracing::debug!("symlink already exists");
             return Ok(());
         }
-        std::os::unix::fs::symlink(self.target.path(), ctx.dst_path(self.link.path()))?;
+        std::os::unix::fs::symlink(&self.target, ctx.dst_path(&self.link))?;
         Ok(())
     }
 }

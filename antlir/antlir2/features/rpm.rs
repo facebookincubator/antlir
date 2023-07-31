@@ -54,9 +54,9 @@ pub enum Action {
 pub enum Source<'a> {
     Subject(Cow<'a, str>),
     #[serde(rename = "src")]
-    Source(BuckOutSource<'a>),
+    Source(BuckOutSource),
     #[serde(rename = "subjects_src")]
-    SubjectsSource(BuckOutSource<'a>),
+    SubjectsSource(BuckOutSource),
 }
 
 /// Buck2's `record` will always include `null` values, but serde's native enum
@@ -73,8 +73,8 @@ impl<'a, 'de: 'a> Deserialize<'de> for Source<'a> {
         #[serde(bound(deserialize = "'de: 'a"))]
         struct SourceStruct<'a> {
             subject: Option<Cow<'a, str>>,
-            src: Option<BuckOutSource<'a>>,
-            subjects_src: Option<BuckOutSource<'a>>,
+            src: Option<BuckOutSource>,
+            subjects_src: Option<BuckOutSource>,
         }
 
         SourceStruct::deserialize(deserializer).and_then(|s| {

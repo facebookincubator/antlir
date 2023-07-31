@@ -58,7 +58,7 @@ struct Args {
     setenv: Vec<KvPair>,
     #[clap(long)]
     /// Mounts required by the layer-under-test
-    mounts: JsonFile<BTreeSet<Mount<'static>>>,
+    mounts: JsonFile<BTreeSet<Mount>>,
     #[clap(subcommand)]
     test: Test,
 }
@@ -251,8 +251,8 @@ fn main() -> Result<()> {
             .into_inner()
             .into_iter()
             .map(|mount| match mount {
-                Mount::Host(m) => (m.mountpoint.into_owned(), m.src),
-                Mount::Layer(m) => (m.mountpoint.into_owned(), m.src.subvol_symlink.into_owned()),
+                Mount::Host(m) => (m.mountpoint, m.src),
+                Mount::Layer(m) => (m.mountpoint, m.src.subvol_symlink),
             })
             .collect::<HashMap<_, _>>(),
     );

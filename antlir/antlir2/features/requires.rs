@@ -19,20 +19,19 @@ use serde::Deserialize;
 use serde::Serialize;
 use tracing as _;
 
-pub type Feature = Requires<'static>;
+pub type Feature = Requires;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Requires<'a> {
+pub struct Requires {
     #[serde(default)]
-    pub files: Vec<PathInLayer<'a>>,
+    pub files: Vec<PathInLayer>,
     #[serde(default)]
-    pub users: Vec<UserName<'a>>,
+    pub users: Vec<UserName>,
     #[serde(default)]
-    pub groups: Vec<GroupName<'a>>,
+    pub groups: Vec<GroupName>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Requires<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Requires {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(Default::default())
     }
@@ -48,18 +47,15 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Requires<'f> {
             .iter()
             .map(|p| {
                 Requirement::ordered(
-                    ItemKey::Path(p.path().to_owned().into()),
+                    ItemKey::Path(p.to_owned().into()),
                     Validator::FileType(FileType::File),
                 )
             })
             .chain(users.iter().map(|u| {
-                Requirement::ordered(ItemKey::User(u.name().to_owned().into()), Validator::Exists)
+                Requirement::ordered(ItemKey::User(u.to_owned().into()), Validator::Exists)
             }))
             .chain(groups.iter().map(|g| {
-                Requirement::ordered(
-                    ItemKey::Group(g.name().to_owned().into()),
-                    Validator::Exists,
-                )
+                Requirement::ordered(ItemKey::Group(g.to_owned().into()), Validator::Exists)
             }))
             .collect())
     }

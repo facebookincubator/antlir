@@ -20,19 +20,18 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub type Feature = Group<'static>;
+pub type Feature = Group;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Group<'a> {
-    pub name: GroupName<'a>,
+pub struct Group {
+    pub name: GroupName,
     pub gid: Option<u32>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Group<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Group {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(vec![Item::Group(GroupItem {
-            name: self.name.name().to_owned().into(),
+            name: self.name.to_owned().into(),
         })])
     }
 
@@ -57,7 +56,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Group<'f> {
             }
         };
         let record = GroupRecord {
-            name: self.name.name().into(),
+            name: self.name.to_owned().into(),
             password: Password::Shadow,
             gid,
             users: Vec::new(),

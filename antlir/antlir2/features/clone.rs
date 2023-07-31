@@ -30,24 +30,23 @@ use serde::Deserialize;
 use serde::Serialize;
 use walkdir::WalkDir;
 
-pub type Feature = Clone<'static>;
+pub type Feature = Clone;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Clone<'a> {
-    pub src_layer: LayerInfo<'a>,
+pub struct Clone {
+    pub src_layer: LayerInfo,
     pub omit_outer_dir: bool,
     pub pre_existing_dest: bool,
-    pub src_path: PathInLayer<'a>,
-    pub dst_path: PathInLayer<'a>,
+    pub src_path: PathInLayer,
+    pub dst_path: PathInLayer,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Clone {
     fn requires(&self) -> Result<Vec<Requirement<'f>>> {
         let mut v = vec![Requirement::ordered(
             ItemKey::Layer(self.src_layer.label.to_owned()),
             Validator::ItemInLayer {
-                key: ItemKey::Path(self.src_path.path().to_owned().into()),
+                key: ItemKey::Path(self.src_path.to_owned().into()),
                 validator: Box::new(if self.omit_outer_dir {
                     Validator::FileType(FileType::Directory)
                 } else {
@@ -59,14 +58,13 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
         )];
         if self.pre_existing_dest {
             v.push(Requirement::ordered(
-                ItemKey::Path(self.dst_path.path().to_owned().into()),
+                ItemKey::Path(self.dst_path.to_owned().into()),
                 Validator::FileType(FileType::Directory),
             ));
         } else {
             v.push(Requirement::ordered(
                 ItemKey::Path(
                     self.dst_path
-                        .path()
                         .parent()
                         .expect("Clone with pre_existing_dst will always have parent")
                         .to_owned()
@@ -81,11 +79,9 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
         let mut uids = HashSet::new();
         let mut gids = HashSet::new();
         for entry in WalkDir::new(
-            self.src_layer.subvol_symlink.join(
-                self.src_path
-                    .strip_prefix("/")
-                    .unwrap_or(self.src_path.path()),
-            ),
+            self.src_layer
+                .subvol_symlink
+                .join(self.src_path.strip_prefix("/").unwrap_or(&self.src_path)),
         ) {
             // ignore any errors, they'll surface again later at a more
             // appropriate place than this user/group id collection process
@@ -130,7 +126,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
     }
 
     fn provides(&self) -> Result<Vec<Item<'f>>> {
-        let src_layer_depgraph_path = &self.src_layer.depgraph.as_ref();
+        let src_layer_depgraph_path: &Path = self.src_layer.depgraph.as_ref();
         let src_layer =
             std::fs::read(src_layer_depgraph_path).context("while reading src_layer depgraph")?;
         let src_depgraph: Graph<'_> =
@@ -138,10 +134,10 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
         let mut v = Vec::new();
         // if this is creating the top-level dest, we need to produce that now
         if !self.pre_existing_dest {
-            match src_depgraph.get_item(&ItemKey::Path(self.src_path.path().to_owned().into())) {
+            match src_depgraph.get_item(&ItemKey::Path(self.src_path.to_owned().into())) {
                 Some(Item::Path(PathItem::Entry(entry))) => {
                     v.push(Item::Path(PathItem::Entry(FsEntry {
-                        path: self.dst_path.path().to_owned().into(),
+                        path: self.dst_path.to_owned().into(),
                         file_type: entry.file_type,
                         mode: entry.mode,
                     })));
@@ -155,11 +151,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
         // find any files or directories that appear underneath the clone source
         for key in src_depgraph.items_keys() {
             if let ItemKey::Path(p) = key {
-                if self.omit_outer_dir && p == self.src_path.path() {
+                if self.omit_outer_dir && p == self.src_path.as_path() {
                     continue;
                 }
 
-                if let Ok(relpath) = p.strip_prefix(self.src_path.path()) {
+                if let Ok(relpath) = p.strip_prefix(&self.src_path) {
                     // If we are cloning a directory without a trailing / into a
                     // directory with a trailing /, we need to prepend the name of the
                     // directory to the relpath of each entry in that src directory, so
@@ -202,7 +198,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
             .canonicalize()?;
         for entry in WalkDir::new(&src_root) {
             let entry = entry.map_err(std::io::Error::from)?;
-            if self.omit_outer_dir && entry.path() == src_root {
+            if self.omit_outer_dir && entry.path() == src_root.as_path() {
                 tracing::debug!("skipping top-level dir");
                 continue;
             }
@@ -227,7 +223,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone<'f> {
                 Cow::Borrowed(relpath)
             };
 
-            let dst_path = ctx.dst_path(self.dst_path.path().join(relpath.as_ref()));
+            let dst_path = ctx.dst_path(self.dst_path.join(relpath.as_ref()));
             copy_with_metadata(entry.path(), &dst_path, None, None)?;
 
             // {ug}ids might not map to the same names in both images, so make
