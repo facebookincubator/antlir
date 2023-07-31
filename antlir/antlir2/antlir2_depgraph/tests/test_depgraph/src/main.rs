@@ -17,7 +17,7 @@ use regex::Regex;
 #[derive(Debug, Parser)]
 struct Args {
     #[clap(long)]
-    label: Label<'static>,
+    label: Label,
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<Feature>>>,
     #[clap(long)]

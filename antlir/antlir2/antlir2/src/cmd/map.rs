@@ -34,7 +34,7 @@ use crate::Result;
 pub(crate) struct Map {
     #[clap(long)]
     /// Label of the image being built
-    label: Label<'static>,
+    label: Label,
     #[clap(flatten)]
     setup: SetupArgs,
     #[clap(long)]

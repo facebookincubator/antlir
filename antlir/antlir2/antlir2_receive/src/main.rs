@@ -27,7 +27,7 @@ use tracing_subscriber::prelude::*;
 pub(crate) struct Receive {
     #[clap(long)]
     /// Label of the image being build
-    label: Label<'static>,
+    label: Label,
     #[clap(long)]
     /// Path to the image file
     source: PathBuf,

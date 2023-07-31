@@ -19,7 +19,7 @@ pub mod types;
 #[serde(rename_all = "snake_case")]
 pub struct Feature {
     #[serde(deserialize_with = "Label::deserialize_owned")]
-    pub label: Label<'static>,
+    pub label: Label,
     pub feature_type: String,
     pub data: serde_json::Value,
     pub run_info: Vec<String>,

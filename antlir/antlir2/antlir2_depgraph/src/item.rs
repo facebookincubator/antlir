@@ -56,8 +56,7 @@ pub enum ItemKey<'a> {
     Path(Cow<'a, std::path::Path>),
     User(Cow<'a, str>),
     Group(Cow<'a, str>),
-    #[serde(borrow)]
-    Layer(Label<'a>),
+    Layer(Label),
 }
 
 impl<'a> Item<'a> {
@@ -195,9 +194,9 @@ pub struct Group<'a> {
 
 #[derive(Clone, Derivative, Deserialize, Serialize)]
 #[derivative(Debug)]
+#[serde(bound(deserialize = "'de: 'a"))]
 pub struct Layer<'a> {
-    #[serde(borrow)]
-    pub(crate) label: Label<'a>,
+    pub(crate) label: Label,
     #[derivative(Debug = "ignore")]
     pub(crate) graph: crate::Graph<'a>,
 }

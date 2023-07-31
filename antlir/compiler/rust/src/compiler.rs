@@ -64,7 +64,7 @@ struct WorkingVolumeArgs {
 struct LayerArgs {
     /// The Buck target describing the layer being built
     #[clap(long)]
-    child_layer_target: Label<'static>,
+    child_layer_target: Label,
     /// The path of the JSON output of any `feature`s that are directly included
     /// by the layer being built
     #[clap(long)]
@@ -111,7 +111,7 @@ struct BuildSettingsArgs {
     /// Target name that is allowed to contain host mounts used as
     /// build_sources. Can be specified more than once.
     #[clap(long)]
-    allowed_host_mount_target: Vec<Label<'static>>,
+    allowed_host_mount_target: Vec<Label>,
     /// The path to the compiler binary being invoked currently.
     /// It is used to re-invoke the compiler inside the BA container as root.
     #[clap(long)]

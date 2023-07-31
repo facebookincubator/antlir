@@ -95,7 +95,7 @@ impl<'a, 'de: 'a> Deserialize<'de> for Source<'a> {
 pub struct RpmItem<'a> {
     pub action: Action,
     pub rpm: Source<'a>,
-    pub feature_label: Label<'a>,
+    pub feature_label: Label,
 }
 
 #[derive(
@@ -202,7 +202,7 @@ struct DriverSpec<'a> {
     excluded_rpms: Option<&'a BTreeSet<String>>,
     resolved_transaction: Option<DnfTransaction>,
     ignore_postin_script_error: bool,
-    layer_label: Label<'a>,
+    layer_label: Label,
 }
 
 #[derive(Debug, Copy, Clone, Serialize)]
