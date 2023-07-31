@@ -17,16 +17,15 @@ use serde::Deserialize;
 use serde::Serialize;
 use tracing::trace;
 
-pub type Feature = Remove<'static>;
+pub type Feature = Remove;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Remove<'a> {
-    pub path: PathInLayer<'a>,
+pub struct Remove {
+    pub path: PathInLayer,
     pub must_exist: bool,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Remove<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Remove {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(Default::default())
     }
@@ -35,7 +34,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Remove<'f> {
         Ok(match self.must_exist {
             false => vec![],
             true => vec![Requirement::ordered(
-                ItemKey::Path(self.path.path().to_owned().into()),
+                ItemKey::Path(self.path.to_owned().into()),
                 Validator::Exists,
             )],
         })

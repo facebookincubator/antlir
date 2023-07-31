@@ -19,31 +19,29 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub type Feature = UserMod<'static>;
+pub type Feature = UserMod;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct UserMod<'a> {
-    pub username: UserName<'a>,
-    pub add_supplementary_groups: Vec<GroupName<'a>>,
+pub struct UserMod {
+    pub username: UserName,
+    pub add_supplementary_groups: Vec<GroupName>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for UserMod<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for UserMod {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(Default::default())
     }
 
     fn requires(&self) -> Result<Vec<Requirement<'f>>> {
         let mut v = vec![Requirement::ordered(
-            ItemKey::User(self.username.name().to_owned().into()),
+            ItemKey::User(self.username.to_owned().into()),
             Validator::Exists,
         )];
-        v.extend(self.add_supplementary_groups.iter().map(|g| {
-            Requirement::ordered(
-                ItemKey::Group(g.name().to_owned().into()),
-                Validator::Exists,
-            )
-        }));
+        v.extend(
+            self.add_supplementary_groups.iter().map(|g| {
+                Requirement::ordered(ItemKey::Group(g.to_owned().into()), Validator::Exists)
+            }),
+        );
         Ok(v)
     }
 
@@ -52,10 +50,10 @@ impl<'f> antlir2_feature_impl::Feature<'f> for UserMod<'f> {
         let mut groups_db = ctx.groups_db()?;
         for group in &self.add_supplementary_groups {
             groups_db
-                .get_group_by_name_mut(group.name())
-                .with_context(|| format!("no such group '{}'", group.name()))?
+                .get_group_by_name_mut(group)
+                .with_context(|| format!("no such group '{}'", group))?
                 .users
-                .push(Cow::Borrowed(self.username.name()));
+                .push(Cow::Borrowed(&self.username));
         }
         std::fs::write(ctx.dst_path("/etc/group"), groups_db.to_string())?;
         Ok(())

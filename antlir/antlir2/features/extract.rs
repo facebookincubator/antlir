@@ -41,13 +41,13 @@ use tracing::trace;
 use tracing::warn;
 use twox_hash::XxHash64;
 
-pub type Feature = Extract<'static>;
+pub type Feature = Extract;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-pub enum Extract<'a> {
-    Buck(ExtractBuckBinary<'a>),
-    Layer(ExtractLayerBinaries<'a>),
+#[serde(rename_all = "snake_case")]
+pub enum Extract {
+    Buck(ExtractBuckBinary),
+    Layer(ExtractLayerBinaries),
 }
 
 /// Buck2's `record` will always include `null` values, but serde's native enum
@@ -55,16 +55,15 @@ pub enum Extract<'a> {
 /// null.
 /// TODO(vmagro): make this general in the future (either codegen from `record`s
 /// or as a proc-macro)
-impl<'a, 'de: 'a> Deserialize<'de> for Extract<'a> {
+impl<'de> Deserialize<'de> for Extract {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        #[serde(bound(deserialize = "'de: 'a"))]
-        struct ExtractStruct<'a> {
-            buck: Option<ExtractBuckBinary<'a>>,
-            layer: Option<ExtractLayerBinaries<'a>>,
+        struct ExtractStruct {
+            buck: Option<ExtractBuckBinary>,
+            layer: Option<ExtractLayerBinaries>,
         }
 
         ExtractStruct::deserialize(deserializer).and_then(|s| match (s.buck, s.layer) {
@@ -76,20 +75,18 @@ impl<'a, 'de: 'a> Deserialize<'de> for Extract<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct ExtractBuckBinary<'a> {
-    pub src: BuckOutSource<'a>,
-    pub dst: PathInLayer<'a>,
+pub struct ExtractBuckBinary {
+    pub src: BuckOutSource,
+    pub dst: PathInLayer,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct ExtractLayerBinaries<'a> {
-    pub layer: LayerInfo<'a>,
-    pub binaries: Vec<PathInLayer<'a>>,
+pub struct ExtractLayerBinaries {
+    pub layer: LayerInfo,
+    pub binaries: Vec<PathInLayer>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Extract {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         // Intentionally provide only the direct files the user asked for,
         // because we don't want to produce conflicts with all the transitive
@@ -102,7 +99,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                 .iter()
                 .map(|path| {
                     Item::Path(PathItem::Entry(FsEntry {
-                        path: path.path().to_owned().into(),
+                        path: path.to_owned().into(),
                         file_type: FileType::File,
                         mode: 0o555,
                     }))
@@ -110,7 +107,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                 .collect(),
             Self::Buck(b) => {
                 vec![Item::Path(PathItem::Entry(FsEntry {
-                    path: b.dst.path().to_owned().into(),
+                    path: b.dst.to_owned().into(),
                     file_type: FileType::File,
                     mode: 0o555,
                 }))]
@@ -128,7 +125,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                         Requirement::ordered(
                             ItemKey::Layer(l.layer.label.to_owned()),
                             Validator::ItemInLayer {
-                                key: ItemKey::Path(path.path().to_owned().into()),
+                                key: ItemKey::Path(path.to_owned().into()),
                                 // TODO(T153458901): for correctness, this
                                 // should be Validator::Executable, but some
                                 // depgraph validation is currently buggy and
@@ -138,8 +135,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                         ),
                         Requirement::ordered(
                             ItemKey::Path(
-                                path.path()
-                                    .parent()
+                                path.parent()
                                     .expect("dst always has parent")
                                     .to_owned()
                                     .into(),
@@ -152,7 +148,6 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
             Self::Buck(b) => vec![Requirement::ordered(
                 ItemKey::Path(
                     b.dst
-                        .path()
                         .parent()
                         .expect("dst always has parent")
                         .to_owned()
@@ -171,8 +166,8 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
         });
         match self {
             Self::Buck(buck) => {
-                let src = buck.src.path().canonicalize()?;
-                let deps = so_dependencies(buck.src.path(), None, default_interpreter)?;
+                let src = buck.src.canonicalize()?;
+                let deps = so_dependencies(buck.src.to_owned(), None, default_interpreter)?;
                 for dep in &deps {
                     if let Ok(relpath) =
                         dep.strip_prefix(src.parent().expect("src always has parent"))
@@ -199,10 +194,10 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                 // be wrong
                 trace!(
                     "copying {} -> {}",
-                    buck.src.path().display(),
+                    buck.src.display(),
                     ctx.dst_path(&buck.dst).display()
                 );
-                std::fs::copy(buck.src.path(), ctx.dst_path(&buck.dst))?;
+                std::fs::copy(&buck.src, ctx.dst_path(&buck.dst))?;
                 Ok(())
             }
             Self::Layer(layer) => {
@@ -214,9 +209,8 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                 trace!("extract root = {}", src_layer.display());
                 let mut all_deps = HashSet::new();
                 for binary in &layer.binaries {
-                    let src =
-                        src_layer.join(binary.path().strip_prefix("/").unwrap_or(binary.path()));
-                    let dst = ctx.dst_path(binary.path());
+                    let src = src_layer.join(binary.strip_prefix("/").unwrap_or(binary));
+                    let dst = ctx.dst_path(binary);
 
                     let src_meta = std::fs::symlink_metadata(&src)
                         .with_context(|| format!("while lstatting {}", src.display()))?;
@@ -240,7 +234,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                             );
                             Self::Buck(ExtractBuckBinary {
                                 src: canonical_target.to_owned().into(),
-                                dst: binary.path().to_owned().into(),
+                                dst: binary.to_owned(),
                             })
                             .compile(ctx)
                             .with_context(|| {
@@ -289,7 +283,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract<'f> {
                     } else {
                         // if the binary is a regular file, copy it directly
                         copy_with_metadata(&src, &dst, None, None)?;
-                        binary.path().to_owned()
+                        binary.to_owned()
                     };
 
                     all_deps.extend(

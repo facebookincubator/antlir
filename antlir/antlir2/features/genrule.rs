@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
 use std::ffi::OsStr;
 use std::path::Path;
 
@@ -23,19 +22,18 @@ use derivative::Derivative;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub type Feature = Genrule<'static>;
+pub type Feature = Genrule;
 
 #[derive(Debug, Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
 #[derivative(PartialOrd, Ord)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Genrule<'a> {
-    pub cmd: Vec<Cow<'a, str>>,
-    pub user: UserName<'a>,
+pub struct Genrule {
+    pub cmd: Vec<String>,
+    pub user: UserName,
     pub boot: bool,
     pub bind_repo_ro: bool,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Genrule<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(Default::default())
     }
@@ -55,7 +53,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule<'f> {
         let cwd = std::env::current_dir()?;
         let mut cmd = isolate(
             IsolationContext::builder(ctx.root())
-                .user(self.user.name())
+                .user(&self.user)
                 .ephemeral(false)
                 .platform([
                     cwd.as_path(),
@@ -72,12 +70,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule<'f> {
                 .build(),
         )
         .into_command();
-        cmd.args(
-            self.cmd
-                .iter()
-                .map(|s| OsStr::new(s.as_ref()))
-                .collect::<Vec<_>>(),
-        );
+        cmd.args(self.cmd.iter().map(OsStr::new).collect::<Vec<_>>());
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;
         ensure!(

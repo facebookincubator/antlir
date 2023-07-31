@@ -26,35 +26,34 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub type Feature = User<'static>;
+pub type Feature = User;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct User<'a> {
-    pub name: UserName<'a>,
+pub struct User {
+    pub name: UserName,
     pub uid: Option<u32>,
-    pub primary_group: GroupName<'a>,
-    pub supplementary_groups: Vec<GroupName<'a>>,
-    pub home_dir: PathInLayer<'a>,
-    pub shell: PathInLayer<'a>,
-    pub comment: Option<Cow<'a, str>>,
+    pub primary_group: GroupName,
+    pub supplementary_groups: Vec<GroupName>,
+    pub home_dir: PathInLayer,
+    pub shell: PathInLayer,
+    pub comment: Option<String>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for User<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for User {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(vec![Item::User(UserItem {
-            name: self.name.name().to_owned().into(),
+            name: self.name.to_owned().into(),
         })])
     }
 
     fn requires(&self) -> Result<Vec<Requirement<'f>>> {
         let mut v = vec![
             Requirement::unordered(
-                ItemKey::Path(self.home_dir.path().to_owned().into()),
+                ItemKey::Path(self.home_dir.to_owned().into()),
                 Validator::FileType(FileType::Directory),
             ),
             Requirement::unordered(
-                ItemKey::Path(self.shell.path().to_owned().into()),
+                ItemKey::Path(self.shell.to_owned().into()),
                 Validator::Executable,
             ),
             Requirement::ordered(
@@ -71,10 +70,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for User<'f> {
                 .iter()
                 .chain(vec![&self.primary_group])
                 .map(|g| {
-                    Requirement::ordered(
-                        ItemKey::Group(g.name().to_owned().into()),
-                        Validator::Exists,
-                    )
+                    Requirement::ordered(ItemKey::Group(g.to_owned().into()), Validator::Exists)
                 }),
         );
         Ok(v)
@@ -94,13 +90,13 @@ impl<'f> antlir2_feature_impl::Feature<'f> for User<'f> {
             }
         };
         let record = UserRecord {
-            name: self.name.name().into(),
+            name: self.name.clone().into(),
             password: Password::Shadow,
             uid,
-            gid: ctx.gid(self.primary_group.name())?,
-            comment: self.comment.clone().unwrap_or(Cow::Borrowed("")),
-            homedir: self.home_dir.path().to_owned().into(),
-            shell: self.shell.path().to_owned().into(),
+            gid: ctx.gid(&self.primary_group)?,
+            comment: self.comment.clone().unwrap_or("".to_owned()).into(),
+            homedir: self.home_dir.to_owned().into(),
+            shell: self.shell.to_owned().into(),
         };
         let mut shadow_db = ctx.shadow_db()?;
         shadow_db.push(record.new_shadow_record());
@@ -119,10 +115,10 @@ impl<'f> antlir2_feature_impl::Feature<'f> for User<'f> {
             .chain(vec![&self.primary_group])
         {
             groups_db
-                .get_group_by_name_mut(group.name())
-                .with_context(|| format!("no such group '{}'", group.name()))?
+                .get_group_by_name_mut(group)
+                .with_context(|| format!("no such group '{}'", group))?
                 .users
-                .push(Cow::Borrowed(self.name.name()));
+                .push(Cow::Borrowed(&self.name));
         }
         std::fs::write(ctx.dst_path("/etc/group"), groups_db.to_string())?;
         Ok(())

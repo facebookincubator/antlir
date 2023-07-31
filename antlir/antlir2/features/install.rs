@@ -6,7 +6,6 @@
  */
 
 #![feature(let_chains)]
-use std::borrow::Cow;
 use std::fs::File;
 use std::fs::FileTimes;
 use std::fs::Permissions;
@@ -39,44 +38,41 @@ use serde::Serialize;
 use tracing::debug;
 use walkdir::WalkDir;
 
-pub type Feature = Install<'static>;
+pub type Feature = Install;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Install<'a> {
-    pub dst: PathInLayer<'a>,
-    pub group: GroupName<'a>,
+pub struct Install {
+    pub dst: PathInLayer,
+    pub group: GroupName,
     pub mode: Mode,
-    pub src: BuckOutSource<'a>,
-    pub user: UserName<'a>,
-    pub binary_info: Option<BinaryInfo<'a>>,
+    pub src: BuckOutSource,
+    pub user: UserName,
+    pub binary_info: Option<BinaryInfo>,
 }
 
-impl<'a> Install<'a> {
+impl Install {
     pub fn is_dir(&self) -> bool {
         self.dst.as_os_str().as_bytes().last().copied() == Some(b'/')
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct SplitBinaryMetadata<'a> {
+pub struct SplitBinaryMetadata {
     pub elf: bool,
     #[serde(default)]
-    pub buildid: Option<Cow<'a, str>>,
+    pub buildid: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum BinaryInfo<'a> {
+pub enum BinaryInfo {
     Dev,
-    Installed(InstalledBinary<'a>),
+    Installed(InstalledBinary),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct InstalledBinary<'a> {
-    pub debuginfo: BuckOutSource<'a>,
-    pub metadata: SplitBinaryMetadata<'a>,
+pub struct InstalledBinary {
+    pub debuginfo: BuckOutSource,
+    pub metadata: SplitBinaryMetadata,
 }
 
 /// Buck2's `record` will always include `null` values, but serde's native enum
@@ -84,16 +80,15 @@ pub struct InstalledBinary<'a> {
 /// null.
 /// TODO(vmagro): make this general in the future (either codegen from `record`s
 /// or as a proc-macro)
-impl<'a, 'de: 'a> Deserialize<'de> for BinaryInfo<'a> {
+impl<'de> Deserialize<'de> for BinaryInfo {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        #[serde(bound(deserialize = "'de: 'a"))]
-        struct Deser<'a> {
+        struct Deser {
             dev: Option<bool>,
-            installed: Option<InstalledBinary<'a>>,
+            installed: Option<InstalledBinary>,
         }
 
         Deser::deserialize(deserializer).and_then(|s| match (s.dev, s.installed) {
@@ -106,15 +101,15 @@ impl<'a, 'de: 'a> Deserialize<'de> for BinaryInfo<'a> {
     }
 }
 
-impl<'a> Serialize for BinaryInfo<'a> {
+impl Serialize for BinaryInfo {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
     {
         #[derive(Serialize)]
-        struct Ser<'a, 'b> {
+        struct Ser<'b> {
             dev: Option<bool>,
-            installed: Option<&'b InstalledBinary<'a>>,
+            installed: Option<&'b InstalledBinary>,
         }
         Ser {
             dev: match self {
@@ -130,23 +125,22 @@ impl<'a> Serialize for BinaryInfo<'a> {
     }
 }
 
-impl<'a, 'de: 'a> Deserialize<'de> for InstalledBinary<'a> {
+impl<'de> Deserialize<'de> for InstalledBinary {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        #[serde(bound(deserialize = "'de: 'a"))]
-        struct Deser<'a> {
-            debuginfo: BuckOutSource<'a>,
-            metadata: Metadata<'a>,
+        struct Deser {
+            debuginfo: BuckOutSource,
+            metadata: Metadata,
         }
 
         #[derive(Deserialize)]
-        #[serde(untagged, bound(deserialize = "'de: 'a"))]
-        enum Metadata<'a> {
-            Metadata(SplitBinaryMetadata<'a>),
-            Path(BuckOutSource<'a>),
+        #[serde(untagged)]
+        enum Metadata {
+            Metadata(SplitBinaryMetadata),
+            Path(BuckOutSource),
         }
 
         Deser::deserialize(deserializer).and_then(|s| {
@@ -169,11 +163,11 @@ impl<'a, 'de: 'a> Deserialize<'de> for InstalledBinary<'a> {
     }
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Install<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Install {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         if self.is_dir() {
             let mut v = vec![Item::Path(PathItem::Entry(FsEntry {
-                path: self.dst.path().to_owned().into(),
+                path: self.dst.to_owned().into(),
                 file_type: FileType::Directory,
                 mode: self.mode.as_raw(),
             }))];
@@ -212,7 +206,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install<'f> {
             Ok(v)
         } else {
             let mut provides = vec![Item::Path(PathItem::Entry(FsEntry {
-                path: self.dst.path().to_owned().into(),
+                path: self.dst.to_owned().into(),
                 file_type: FileType::File,
                 mode: self.mode.as_raw(),
             }))];
@@ -263,16 +257,16 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install<'f> {
     fn requires(&self) -> Result<Vec<Requirement<'f>>> {
         let mut requires = vec![
             Requirement::ordered(
-                ItemKey::User(self.user.name().to_owned().into()),
+                ItemKey::User(self.user.to_owned().into()),
                 Validator::Exists,
             ),
             Requirement::ordered(
-                ItemKey::Group(self.group.name().to_owned().into()),
+                ItemKey::Group(self.group.to_owned().into()),
                 Validator::Exists,
             ),
         ];
         // For relative dest paths (or `/`), parent() could be the empty string
-        if let Some(parent) = self.dst.path().parent() && !parent.as_os_str().is_empty() {
+        if let Some(parent) = self.dst.parent() && !parent.as_os_str().is_empty() {
             requires.push(Requirement::ordered(
                 ItemKey::Path(parent.to_owned().into()),
                 Validator::FileType(FileType::Directory),
@@ -283,8 +277,8 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install<'f> {
 
     #[tracing::instrument(name = "install", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
-        let uid = ctx.uid(self.user.name())?;
-        let gid = ctx.gid(self.group.name())?;
+        let uid = ctx.uid(&self.user)?;
+        let gid = ctx.gid(&self.group)?;
         if self.src.is_dir() {
             debug!("{:?} is a dir", self.src);
             ensure!(
@@ -302,7 +296,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install<'f> {
 
                 debug!("relpath is {relpath:?}");
 
-                let dst_path = ctx.dst_path(self.dst.path().join(relpath));
+                let dst_path = ctx.dst_path(self.dst.join(relpath));
                 debug!("dst path is {dst_path:?}");
 
                 // the depgraph already ensured that there are no conflicts, so if
