@@ -28,7 +28,7 @@ struct Args {
     #[clap(long, value_enum)]
     buck_version: BuckVersion,
     #[clap(long)]
-    label: Label<'static>,
+    label: Label,
     #[clap(long)]
     tmp_dir: PathBuf,
     #[clap(long)]

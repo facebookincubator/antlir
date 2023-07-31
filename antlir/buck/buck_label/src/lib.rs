@@ -7,7 +7,6 @@
 
 #![feature(cow_is_borrowed)]
 
-use std::borrow::Cow;
 use std::cmp::Ordering;
 use std::cmp::PartialOrd;
 use std::hash::Hash;
@@ -16,10 +15,10 @@ use std::ops::Range;
 
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serde::de::Deserializer;
 use serde::de::Error as _;
 use serde::ser::Serializer;
 use serde::Deserialize;
+use serde::Deserializer;
 use serde::Serialize;
 use thiserror::Error;
 
@@ -48,12 +47,12 @@ pub enum Error {
 /// A buck target label. Points to a specific target and is always fully
 /// qualified (aka, with cell name).
 #[derive(Clone, Eq)]
-pub struct Label<'a> {
-    full: Cow<'a, str>,
+pub struct Label {
+    full: String,
     cell: Range<usize>,
     package: Range<usize>,
     name: Range<usize>,
-    config: Option<Box<Label<'a>>>,
+    config: Option<Box<Label>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -64,9 +63,9 @@ pub struct Parts<'a> {
     config: Option<Box<Parts<'a>>>,
 }
 
-impl<'a> Label<'a> {
-    pub fn new(s: impl Into<Cow<'a, str>>) -> Result<Self, Error> {
-        let full: Cow<'a, str> = s.into();
+impl<'a> Label {
+    pub fn new(s: impl Into<String>) -> Result<Self, Error> {
+        let full: String = s.into();
         match LABEL_WITH_CONFIG_RE.captures(&full) {
             Some(cap) => {
                 assert_eq!(
@@ -87,7 +86,7 @@ impl<'a> Label<'a> {
                     let cfg_package = cap.get(5).expect("cfg_package must exist").range();
                     let cfg_name = cap.get(6).expect("cfg_name must exist").range();
                     Some(Box::new(Self {
-                        full: full.clone(),
+                        full: full.to_owned(),
                         cell: cfg_cell,
                         package: cfg_package,
                         name: cfg_name,
@@ -97,17 +96,14 @@ impl<'a> Label<'a> {
                     None
                 };
                 Ok(Self {
-                    full,
+                    full: full.to_owned(),
                     cell,
                     package,
                     name,
                     config,
                 })
             }
-            None => Err(Error::NoMatch(
-                full.to_string(),
-                LABEL_WITH_CONFIG_RE.to_string(),
-            )),
+            None => Err(Error::NoMatch(full, LABEL_WITH_CONFIG_RE.to_string())),
         }
     }
 
@@ -153,9 +149,9 @@ impl<'a> Label<'a> {
         }
     }
 
-    pub fn to_owned(&self) -> Label<'static> {
+    pub fn to_owned(&self) -> Label {
         Label {
-            full: Cow::Owned(self.full.to_string()),
+            full: self.full.clone(),
             cell: self.cell.clone(),
             package: self.package.clone(),
             name: self.name.clone(),
@@ -164,31 +160,31 @@ impl<'a> Label<'a> {
     }
 }
 
-impl<'a, 'b> PartialEq<Label<'b>> for Label<'a> {
-    fn eq(&self, other: &Label<'b>) -> bool {
+impl PartialEq<Label> for Label {
+    fn eq(&self, other: &Label) -> bool {
         self.parts() == other.parts()
     }
 }
 
-impl<'a, 'b> PartialOrd<Label<'b>> for Label<'a> {
-    fn partial_cmp(&self, other: &Label<'b>) -> Option<Ordering> {
+impl PartialOrd<Label> for Label {
+    fn partial_cmp(&self, other: &Label) -> Option<Ordering> {
         self.parts().partial_cmp(&other.parts())
     }
 }
 
-impl<'a> Ord for Label<'a> {
+impl Ord for Label {
     fn cmp(&self, other: &Self) -> Ordering {
         self.parts().cmp(&other.parts())
     }
 }
 
-impl<'a> Hash for Label<'a> {
+impl Hash for Label {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.parts().hash(state);
     }
 }
 
-impl<'a> std::str::FromStr for Label<'a> {
+impl std::str::FromStr for Label {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Error> {
@@ -196,13 +192,13 @@ impl<'a> std::str::FromStr for Label<'a> {
     }
 }
 
-impl<'a> std::fmt::Debug for Label<'a> {
+impl std::fmt::Debug for Label {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         f.debug_tuple("Label").field(&self.to_string()).finish()
     }
 }
 
-impl<'a> std::fmt::Display for Label<'a> {
+impl std::fmt::Display for Label {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match &self.config {
             Some(cfg) => {
@@ -221,23 +217,18 @@ impl<'a> std::fmt::Display for Label<'a> {
     }
 }
 
-/// This simple CowWrapper struct with #[serde(borrow)] makes it easy to
-/// deserialize a `Label` using borrowed or owned data as appropriate, without
-/// having to figure it out ourselves. See [tests::serde] for proof.
-#[derive(Deserialize, Serialize)]
-struct CowWrapper<'a>(#[serde(borrow)] Cow<'a, str>);
-
-impl<'de: 'a, 'a> Deserialize<'de> for Label<'a> {
+impl<'de> Deserialize<'de> for Label {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
-        let c = CowWrapper::deserialize(deserializer)?;
-        Label::new(c.0).map_err(D::Error::custom)
+        let s = String::deserialize(deserializer)?;
+        Label::new(s).map_err(D::Error::custom)
     }
 }
 
-impl Label<'static> {
+
+impl Label {
     pub fn deserialize_owned<'de, D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -247,7 +238,7 @@ impl Label<'static> {
     }
 }
 
-impl<'a> Serialize for Label<'a> {
+impl Serialize for Label {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -264,31 +255,6 @@ mod tests {
     use super::*;
 
     assert_impl_all!(Label: Send, Sync);
-
-    #[test]
-    fn cow_behavior() {
-        let l =
-            Label::new("abc//path/to/target:label (config//path/to:config)").expect("valid label");
-        assert!(
-            l.full.is_borrowed(),
-            "static str should produce borrowed Label"
-        );
-        assert!(
-            l.config.as_ref().expect("has config").full.is_borrowed(),
-            "static str should produce borrowed config Label"
-        );
-
-        let l = Label::new("abc//path/to/target:label (config//path/to:config)".to_string())
-            .expect("valid label");
-        assert!(
-            l.full.is_owned(),
-            "passing owned String should produce owned Label"
-        );
-        assert!(
-            l.config.as_ref().expect("has config").full.is_owned(),
-            "passing owned String should produce owned config Label"
-        );
-    }
 
     #[test]
     fn parse_label() {
@@ -385,18 +351,9 @@ mod tests {
             },
             label.parts()
         );
-        assert!(
-            label.full.is_borrowed(),
-            "serde_json::from_str should produce borrowed Label"
-        );
         let mut deser =
             serde_json::Deserializer::from_reader(&br#""abc//path/to/target:label""#[..]);
         let label = Label::deserialize(&mut deser).expect("well formed");
-        assert!(
-            label.full.is_owned(),
-            "serde_json::from_reader should produce owned Label"
-        );
-
         // serialization is easier to check
         assert_eq!(
             r#""abc//path/to/target:label""#,

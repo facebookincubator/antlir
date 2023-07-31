@@ -86,7 +86,7 @@ impl Display for Arch {
 #[serde(bound(deserialize = "'de: 'static"))]
 pub struct CompilerContext {
     /// Buck label of the image being built
-    label: Label<'static>,
+    label: Label,
     /// Architecture of the image being built (may not be the same as the host
     /// architecture)
     target_arch: Arch,
@@ -159,7 +159,7 @@ where
 
 impl CompilerContext {
     pub fn new(
-        label: Label<'static>,
+        label: Label,
         target_arch: Arch,
         root: PathBuf,
         dnf: DnfContext,

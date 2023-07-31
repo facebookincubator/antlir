@@ -66,7 +66,7 @@ path_wrapper!(PathInLayer, "A path inside an image layer");
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'a"))]
 pub struct LayerInfo<'a> {
-    pub label: Label<'a>,
+    pub label: Label,
     pub subvol_symlink: Cow<'a, Path>,
     pub depgraph: Cow<'a, Path>,
 }

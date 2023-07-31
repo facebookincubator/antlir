@@ -21,7 +21,7 @@ use crate::Result;
 /// Process an image's dependency graph without building it
 pub(crate) struct Depgraph {
     #[clap(long)]
-    label: Label<'static>,
+    label: Label,
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<antlir2_features::Feature>>>,
     #[clap(long = "parent")]

@@ -11,12 +11,12 @@ use pyo3::types::PyString;
 
 #[pyclass(module = "antlir.buck.buck_label.buck_label_py")]
 #[derive(Clone)]
-pub struct Label(buck_label::Label<'static>);
+pub struct Label(buck_label::Label);
 
 py_utils::wrap_err!(Error, buck_label::Error, pyo3::exceptions::PyValueError);
 
 impl Label {
-    pub fn new(label: buck_label::Label<'static>) -> Self {
+    pub fn new(label: buck_label::Label) -> Self {
         Self(label)
     }
 }

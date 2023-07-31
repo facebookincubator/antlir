@@ -41,7 +41,7 @@ pub(crate) use shell::Shell;
 pub(self) struct Compileish {
     #[clap(long)]
     /// Buck label of the image being built
-    pub(crate) label: Label<'static>,
+    pub(crate) label: Label,
     #[clap(long)]
     /// Root directory of under-construction image. Must already exist (either
     /// empty or as a snapshot of a parent layer)

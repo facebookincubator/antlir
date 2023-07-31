@@ -101,11 +101,11 @@ pub struct GraphBuilder<'a> {
     root: node::RootNodeIndex,
     pending_features: Vec<node::PendingFeatureNodeIndex<'a>>,
     items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
-    label: Label<'a>,
+    label: Label,
 }
 
 impl<'a> GraphBuilder<'a> {
-    pub fn new(label: Label<'a>, parent: Option<Graph<'a>>) -> Self {
+    pub fn new(label: Label, parent: Option<Graph<'a>>) -> Self {
         let mut g = DiGraph::new();
         let mut items = HashMap::new();
 
@@ -513,8 +513,7 @@ impl<'a> GraphBuilder<'a> {
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Graph<'a> {
-    #[serde(borrow)]
-    label: Label<'a>,
+    label: Label,
     #[serde(borrow)]
     g: DiGraph<Node<'a>, Edge<'a>>,
     root: node::RootNodeIndex,
@@ -524,11 +523,11 @@ pub struct Graph<'a> {
 }
 
 impl<'a> Graph<'a> {
-    pub fn builder(label: Label<'a>, parent: Option<Self>) -> GraphBuilder<'a> {
+    pub fn builder(label: Label, parent: Option<Self>) -> GraphBuilder<'a> {
         GraphBuilder::new(label, parent)
     }
 
-    pub fn label(&self) -> &Label<'a> {
+    pub fn label(&self) -> &Label {
         &self.label
     }
 

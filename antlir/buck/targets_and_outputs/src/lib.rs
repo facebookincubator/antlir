@@ -24,7 +24,7 @@ pub struct TargetsAndOutputs<'a> {
     #[serde(borrow)]
     metadata: Metadata<'a>,
     #[serde(borrow)]
-    targets_and_outputs: HashMap<Label<'a>, Cow<'a, Path>>,
+    targets_and_outputs: HashMap<Label, Cow<'a, Path>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -44,10 +44,7 @@ impl<'a> Metadata<'a> {
 }
 
 impl<'a> TargetsAndOutputs<'a> {
-    pub fn new(
-        metadata: Metadata<'a>,
-        targets_and_outputs: HashMap<Label<'a>, Cow<'a, Path>>,
-    ) -> Self {
+    pub fn new(metadata: Metadata<'a>, targets_and_outputs: HashMap<Label, Cow<'a, Path>>) -> Self {
         Self {
             metadata,
             targets_and_outputs,
@@ -59,7 +56,7 @@ impl<'a> TargetsAndOutputs<'a> {
     }
 
     /// Give the (relative) path of an output file.
-    pub fn path(&self, target: &'a Label<'_>) -> Option<Cow<'a, Path>> {
+    pub fn path(&self, target: &'a Label) -> Option<Cow<'a, Path>> {
         self.targets_and_outputs.get(target).cloned()
     }
 
@@ -71,14 +68,14 @@ impl<'a> TargetsAndOutputs<'a> {
         self.targets_and_outputs.is_empty()
     }
 
-    pub fn iter(&'a self) -> std::collections::hash_map::Iter<'a, Label<'a>, Cow<'a, Path>> {
+    pub fn iter(&'a self) -> std::collections::hash_map::Iter<'a, Label, Cow<'a, Path>> {
         self.targets_and_outputs.iter()
     }
 }
 
 impl<'a> IntoIterator for TargetsAndOutputs<'a> {
-    type IntoIter = <HashMap<Label<'a>, Cow<'a, Path>> as IntoIterator>::IntoIter;
-    type Item = (Label<'a>, Cow<'a, Path>);
+    type IntoIter = <HashMap<Label, Cow<'a, Path>> as IntoIterator>::IntoIter;
+    type Item = (Label, Cow<'a, Path>);
 
     fn into_iter(self) -> Self::IntoIter {
         self.targets_and_outputs.into_iter()
