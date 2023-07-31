@@ -15,18 +15,8 @@ use std::process::Command;
 use thiserror::Error;
 
 use crate::runtime::get_runtime;
+use crate::types::ShareOpts;
 use crate::utils::log_command;
-
-/// `ShareOpts` describes the property of a shared directory.
-#[derive(Debug, Clone)]
-pub(crate) struct ShareOpts {
-    /// Path to the directory to share
-    pub(crate) path: PathBuf,
-    /// Read-only mount if true. R/W otherwise.
-    pub(crate) read_only: bool,
-    /// Mount tag override. If None, a unique tag will be generated
-    pub(crate) mount_tag: Option<String>,
-}
 
 #[derive(Debug, Error)]
 pub(crate) enum ShareError {

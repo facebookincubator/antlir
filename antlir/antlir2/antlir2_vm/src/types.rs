@@ -41,6 +41,17 @@ pub(crate) struct NonDiskBootOpts {
     pub(crate) append: String,
 }
 
+/// `ShareOpts` describes the property of a shared directory.
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub(crate) struct ShareOpts {
+    /// Path to the directory to share
+    pub(crate) path: PathBuf,
+    /// Read-only mount if true. R/W otherwise.
+    pub(crate) read_only: bool,
+    /// Mount tag override. If None, a unique tag will be generated
+    pub(crate) mount_tag: Option<String>,
+}
+
 /// Operational specific parameters for VM but not related to VM configuration itself
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct VMArgs {
@@ -55,6 +66,9 @@ pub(crate) struct VMArgs {
     pub(crate) command: Option<Vec<String>>,
     /// Env for the command
     pub(crate) command_envs: Option<Vec<(String, String)>>,
+    /// Additional writable directories for outputs
+    #[serde(default)]
+    pub(crate) output_dirs: Vec<PathBuf>,
 }
 
 /// Everything we need to create and run the VM
