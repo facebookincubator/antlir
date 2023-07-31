@@ -33,12 +33,12 @@ use crate::net::VirtualNIC;
 use crate::net::VirtualNICError;
 use crate::runtime::get_runtime;
 use crate::share::ShareError;
-use crate::share::ShareOpts;
 use crate::share::Shares;
 use crate::share::VirtiofsShare;
 use crate::ssh::GuestSSHCommand;
 use crate::ssh::GuestSSHError;
 use crate::types::MachineOpts;
+use crate::types::ShareOpts;
 use crate::types::VMArgs;
 use crate::utils::log_command;
 use crate::utils::NodeNameCounter;
@@ -89,7 +89,11 @@ impl VM {
     pub(crate) fn new(machine: MachineOpts, args: VMArgs) -> Result<Self> {
         let state_dir = Self::create_state_dir()?;
         let disks = Self::create_disks(&machine, &state_dir)?;
-        let shares = Self::create_shares(&state_dir, machine.mem_mib)?;
+        let shares = Self::create_shares(
+            Self::get_all_shares_opts(&args.output_dirs),
+            &state_dir,
+            machine.mem_mib,
+        )?;
         let nics = Self::create_nics(machine.num_nics)?;
 
         Ok(VM {
@@ -132,17 +136,35 @@ impl VM {
             .collect()
     }
 
-    /// Create all shares for the platform and generate all necessary unit files
-    fn create_shares(state_dir: &Path, mem_mb: usize) -> Result<Shares> {
-        let platform_shares: Result<Vec<_>> = Platform::get()
+    /// All platform paths needs to be mounted inside the VM as read-only shares.
+    /// Collect them into ShareOpts along with others.
+    fn get_all_shares_opts(output_dirs: &[PathBuf]) -> Vec<ShareOpts> {
+        let mut shares: Vec<_> = Platform::get()
             .iter()
+            .map(|path| ShareOpts {
+                path: path.to_path_buf(),
+                read_only: true,
+                mount_tag: None,
+            })
+            .collect();
+        let mut outputs: Vec<_> = output_dirs
+            .iter()
+            .map(|p| ShareOpts {
+                path: p.to_path_buf(),
+                read_only: false,
+                mount_tag: None,
+            })
+            .collect();
+        shares.append(&mut outputs);
+        shares
+    }
+
+    /// Create all shares, start virtiofsd daemon and generate necessary unit files
+    fn create_shares(shares: Vec<ShareOpts>, state_dir: &Path, mem_mb: usize) -> Result<Shares> {
+        let virtiofs_shares: Result<Vec<_>> = shares
+            .into_iter()
             .enumerate()
-            .map(|(i, d)| -> Result<VirtiofsShare> {
-                let opts = ShareOpts {
-                    path: d.clone(),
-                    read_only: true,
-                    mount_tag: None,
-                };
+            .map(|(i, opts)| -> Result<VirtiofsShare> {
                 let share = VirtiofsShare::new(opts, i, state_dir.to_path_buf());
                 share.start_virtiofsd()?;
                 Ok(share)
@@ -150,7 +172,7 @@ impl VM {
             .collect();
         let unit_files_dir = state_dir.join("mount_units");
         fs::create_dir(&unit_files_dir).map_err(VMError::StateDirError)?;
-        let shares = Shares::new(platform_shares?, mem_mb, unit_files_dir)?;
+        let shares = Shares::new(virtiofs_shares?, mem_mb, unit_files_dir)?;
         shares.generate_unit_files()?;
         Ok(shares)
     }
@@ -471,6 +493,7 @@ mod test {
             console: false,
             command: None,
             command_envs: None,
+            output_dirs: vec![],
         };
         let share_opts = ShareOpts {
             path: PathBuf::from("/path"),
@@ -664,5 +687,18 @@ mod test {
             .status()
             .expect("Failed to finish second sleep");
         assert!(vm.try_wait_vm_proc(&mut child).is_err());
+    }
+
+    #[test]
+    fn test_get_all_shares_opts() {
+        Platform::set().expect("Failed to query platform");
+        let outputs = vec![PathBuf::from("/path")];
+        let opt = ShareOpts {
+            path: PathBuf::from("/path"),
+            read_only: false,
+            mount_tag: None,
+        };
+        let all_opts = VM::get_all_shares_opts(&outputs);
+        assert!(all_opts.contains(&opt));
     }
 }

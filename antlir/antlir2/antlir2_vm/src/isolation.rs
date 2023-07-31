@@ -7,6 +7,7 @@
 
 use std::collections::HashSet;
 use std::env;
+use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
@@ -104,20 +105,26 @@ fn env_filter(envs: Option<&[String]>) -> Vec<&str> {
 /// # Arguments
 /// * `image` - container image that would be used to run the VM
 /// * `envs` - Additional envs to set inside container.
-pub(crate) fn isolated(image: &PathBuf, envs: Option<&[String]>) -> Result<IsolatedContext> {
+/// * `outputs` - Additional writable directories
+pub(crate) fn isolated<T: AsRef<OsStr>>(
+    image: &PathBuf,
+    envs: Option<&[String]>,
+    outputs: &[T],
+) -> Result<IsolatedContext> {
     let repo = Platform::repo_root()?;
     let mut builder = IsolationContext::builder(image);
+    let mut all_outputs: HashSet<&Path> = outputs.iter().map(|x| Path::new(x)).collect();
+    // Carry over virtualizations support
+    // TODO: Linux-specific
+    all_outputs.insert(Path::new("/dev/kvm"));
+    // virtiofsd uses relative path to binary for local state
+    all_outputs.insert(&repo);
+
     builder
         .register(true)
         .platform(Platform::get().clone())
         .working_directory(&repo)
-        .outputs([
-            // Carry over virtualizations support
-            // TODO: Linux-specific
-            Path::new("/dev/kvm"),
-            // virtiofsd uses relative path to binary for local state
-            repo.as_path(),
-        ]);
+        .outputs(all_outputs);
     let filter = env_filter(envs);
     env::vars()
         .filter(|(k, _)| filter.contains(&k.as_str()))
