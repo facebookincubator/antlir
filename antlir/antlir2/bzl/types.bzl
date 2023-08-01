@@ -33,6 +33,7 @@ FlavorDnfInfo = provider(fields = {
 LayerInfo = provider(fields = {
     "build_appliance": "dep on the build appliance that was use to build this (if any)",
     "depgraph": "JSON-serialized depgraph",
+    "features": "List of all feature analyses",
     "flavor": "dep on the flavor this layer was built with",
     "flavor_info": "The FlavorInfo this layer was built with",
     "label": "Label that originally created this layer",

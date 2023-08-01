@@ -23,6 +23,7 @@ use petgraph::graph::DefaultIx;
 use petgraph::graph::DiGraph;
 use petgraph::graph::NodeIndex;
 use petgraph::visit::Dfs;
+use petgraph::visit::IntoNodeReferences;
 use petgraph::Direction;
 use serde::Deserialize;
 use serde::Serialize;
@@ -533,6 +534,12 @@ impl<'a> Graph<'a> {
 
     pub fn to_dot<'b>(&'b self) -> dot::Dot<'a, 'b> {
         dot::Dot(&self.g)
+    }
+
+    pub fn get_all_features(&self) -> impl Iterator<Item = &Feature> {
+        self.g
+            .node_references()
+            .flat_map(|(_nix, node)| node.as_feature())
     }
 
     /// Iterate over features in topographical order (dependencies sorted before the
