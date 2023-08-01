@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import os
+from dataclasses import dataclass
 
 from antlir.bzl.image.feature.symlink import symlink_t
 
@@ -39,6 +40,7 @@ def _make_rsync_style_dest_path(dest: str, source: str) -> str:
     )
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class SymlinkBase(symlink_t, ImageItem):
     _normalize_source = validate_path_field_normal_relative("source")
 
@@ -102,6 +104,7 @@ class SymlinkBase(symlink_t, ImageItem):
             )
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class SymlinkToDirItem(SymlinkBase):
     def requires(self):
         yield RequireDirectory(path=self.source)
@@ -114,6 +117,7 @@ def _allowlisted_symlink_source(source: Path) -> bool:
     return (source in [b"dev/null"]) or source.startswith(b"run/")
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class SymlinkToFileItem(SymlinkBase):
     def requires(self):
         if not _allowlisted_symlink_source(self.source):

@@ -69,10 +69,12 @@ class RequirePath(Requirement):
         object.__setattr__(self, "path", _normalize_path(path))
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class RequireDirectory(RequirePath):
     pass
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class RequireFile(RequirePath):
     pass
 
@@ -144,11 +146,13 @@ class ProvidesPath(Provider):
         return self.__class__(new_path)
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class ProvidesDirectory(ProvidesPath):
     def __init__(self, path: Path) -> None:
         super().__init__(req=RequireDirectory(path=path))
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class ProvidesFile(ProvidesPath):
     "Does not have to be a regular file, just any leaf in the FS tree"
 
@@ -156,6 +160,7 @@ class ProvidesFile(ProvidesPath):
         super().__init__(req=RequireFile(path=path))
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class ProvidesSymlink(ProvidesPath):
     def __init__(self, path: Path, target: Path) -> None:
         super().__init__(req=RequireSymlink(path, target))
@@ -165,21 +170,25 @@ class ProvidesSymlink(ProvidesPath):
         return self.__class__(new_path, self.req.target)
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class ProvidesDoNotAccess(ProvidesPath):
     def __init__(self, path: Path) -> None:
         super().__init__(req=_RequireDoNotAccess(path=path))
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class ProvidesGroup(Provider):
     def __init__(self, groupname: str) -> None:
         super().__init__(req=RequireGroup(groupname))
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class ProvidesUser(Provider):
     def __init__(self, username: str) -> None:
         super().__init__(req=RequireUser(username))
 
 
+@dataclasses.dataclass(init=False, repr=False, eq=False, frozen=True)
 class ProvidesKey(Provider):
     def __init__(self, key) -> None:
         super().__init__(req=RequireKey(key))

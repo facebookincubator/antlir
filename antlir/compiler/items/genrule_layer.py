@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pwd
+from dataclasses import dataclass
 from typing import Iterable
 
 from antlir.bzl.genrule_layer import genrule_layer_t
@@ -26,6 +27,7 @@ from antlir.nspawn_in_subvol.plugins.repo_plugins import repo_nspawn_plugins
 from antlir.subvol_utils import Subvol
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class GenruleLayerItem(genrule_layer_t):
     def phase_order(self):
         return PhaseOrder.GENRULE_LAYER

@@ -9,6 +9,7 @@ import pwd
 import shlex
 import tempfile
 from contextlib import contextmanager
+from dataclasses import dataclass
 from typing import (
     Any,
     Dict,
@@ -295,6 +296,7 @@ def _prepare_versionlock(
 # These items are part of a phase, so they don't get dependency-sorted, so
 # there is no `requires()` or `provides()` or `build()` method.
 # pyre-fixme[13]: Attribute `action` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class RpmActionItem(rpm_action_item_t, ImageItem):
     # pyre-fixme[15]: `action` overrides attribute defined in
     # `rpm_action_item_t` inconsistently.
@@ -306,7 +308,7 @@ class RpmActionItem(rpm_action_item_t, ImageItem):
 
     def __init__(self, *args: Any, **kwargs: Any):
         rpm_action_item_t.__init__(self, *args, **kwargs)
-        ImageItem.__init__(self, from_target=kwargs.get("from_target"))
+        object.__setattr__(self, "from_target", kwargs.get("from_target"))
 
     @root_validator
     def check_name_or_source_exclusive(

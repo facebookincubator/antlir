@@ -9,6 +9,7 @@ import shutil
 import stat
 import subprocess
 import tempfile
+from dataclasses import dataclass
 from typing import Iterable, NamedTuple, Union
 
 from antlir.bzl.image.feature.install import install_files_t
@@ -84,6 +85,7 @@ def _recurse_into_source(
 #      `PhasesProvideItem` -- we would need to do the same traversal,
 #      but disallowing non-regular files.
 # pyre-fixme[13]: Attribute `source` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class InstallFileItem(install_files_t, ImageItem):
 
     source: Path
@@ -103,7 +105,7 @@ class InstallFileItem(install_files_t, ImageItem):
         st_source = os.stat(str(source), follow_symlinks=False)
         if stat.S_ISDIR(st_source.st_mode):
             assert mode is None, "Cannot use `mode` for directory sources."
-            self._paths = tuple(
+            paths = tuple(
                 _recurse_into_source(
                     source,
                     dest,
@@ -123,7 +125,7 @@ class InstallFileItem(install_files_t, ImageItem):
                 # the ambient umask is pathological, which is why
                 # `compiler.py` checks the umask.
                 mode = _EXE_MODE if os.access(source, os.X_OK) else _DATA_MODE
-            self._paths = (
+            paths = (
                 _InstallablePath(
                     source=source, provides=ProvidesFile(path=dest), mode=mode
                 ),
@@ -132,6 +134,7 @@ class InstallFileItem(install_files_t, ImageItem):
             raise RuntimeError(
                 f"{source} must be a regular file or directory, got {st_source}"
             )
+        object.__setattr__(self, "_paths", paths)
 
         super().__init__(dest=dest, **kwargs)
 

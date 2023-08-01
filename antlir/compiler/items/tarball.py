@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import pwd
+from dataclasses import dataclass
 
 from antlir.bzl.image.feature.tarball import tarball_t
 
@@ -126,6 +127,7 @@ def load_from_tarball(
 
 
 # pyre-fixme[13]: Attribute `source` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class TarballItem(tarball_t, ImageItem):
     source: Path
 

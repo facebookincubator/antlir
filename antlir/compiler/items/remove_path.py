@@ -6,6 +6,7 @@
 
 import os
 import shutil
+from dataclasses import dataclass
 from typing import Iterable
 
 from antlir.bzl.image.feature.remove import remove_paths_t
@@ -23,6 +24,7 @@ from antlir.errors import UserError
 from antlir.subvol_utils import Subvol
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class RemovePathItem(remove_paths_t, ImageItem):
     _normalize_path = validate_path_field_normal_relative("path")
 

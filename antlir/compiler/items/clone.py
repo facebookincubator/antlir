@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import subprocess
+from dataclasses import dataclass
 
 from antlir.bzl.image.feature.clone import clone_t
 from antlir.compiler.items.common import (
@@ -22,6 +23,7 @@ from pydantic import root_validator
 
 # pyre-fixme[13]: Attribute `source` is never initialized.
 # pyre-fixme[13]: Attribute `source_layer` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class CloneItem(clone_t, ImageItem):
     class Config:
         arbitrary_types_allowed = True

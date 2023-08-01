@@ -408,7 +408,10 @@ def _make_image_source_item(
 
     # pyre-fixme[6]: Expected `Subvol` for 2nd param but got `str`.
     source_path = _image_source_path(layer_opts, **source)
-    return item_cls(**kwargs, source=source_path)
+    try:
+        return item_cls(**kwargs, source=source_path)
+    except TypeError as e:  # pragma: no cover
+        raise TypeError(f"{e} for item_cls: {item_cls}")
 
 
 def image_source_item(item_cls, layer_opts: LayerOpts):
