@@ -11,6 +11,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
 # @oss-disable
+# @oss-disable
 load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:types.bzl", "types")
@@ -363,10 +364,9 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
 
     sub_targets["subvol_symlink"] = [DefaultInfo(final_subvol)]
 
-    mounts = all_mounts(
-        features = all_features,
-        parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
-    )
+    parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None
+    mounts = all_mounts(features = all_features, parent_layer = parent_layer)
+    # @oss-disable
 
     sub_targets["nspawn"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
@@ -379,7 +379,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
             flavor_info = flavor_info,
             label = ctx.label,
             mounts = mounts,
-            parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
+            parent = parent_layer,
             subvol_symlink = final_subvol,
             features = all_features,
         ),
