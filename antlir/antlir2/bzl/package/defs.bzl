@@ -14,6 +14,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "cpio.zst": ".cpio.zst",
         "rpm": ".rpm",
         "squashfs": ".squashfs",
+        "tar.gz": ".tar.gz",
         "vfat": ".vfat",
     }[ctx.attrs.format]
     package = ctx.actions.declare_output("image" + extension)
@@ -41,7 +42,7 @@ _package = rule(
     attrs = {
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-        "format": attrs.enum(["cpio.gz", "cpio.zst", "vfat", "rpm", "squashfs"]),
+        "format": attrs.enum(["cpio.gz", "cpio.zst", "vfat", "rpm", "squashfs", "tar.gz"]),
         "layer": attrs.dep(providers = [LayerInfo]),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
     },
@@ -169,6 +170,23 @@ def _squashfs(
         **kwargs
     )
 
+def _tar_gz(
+        name: str,
+        layer: str,
+        compression_level: int = 3,
+        **kwargs):
+    check_kwargs(kwargs)
+    opts = {
+        "compression_level": compression_level,
+    }
+    return _package_macro(
+        name = name,
+        layer = layer,
+        format = "tar.gz",
+        opts = opts,
+        **kwargs
+    )
+
 def _backwards_compatible_new(format: str, **kwargs):
     {
         "btrfs": btrfs,
@@ -179,6 +197,7 @@ def _backwards_compatible_new(format: str, **kwargs):
         "sendstream.v2": sendstream_v2,
         "sendstream.zst": sendstream_zst,
         "squashfs": _squashfs,
+        "tar.gz": _tar_gz,
         "vfat": _vfat,
     }[format](**kwargs)
 
@@ -192,5 +211,6 @@ package = struct(
     sendstream_v2 = sendstream_v2,
     sendstream_zst = sendstream_zst,
     squashfs = _squashfs,
+    tar_gz = _tar_gz,
     vfat = _vfat,
 )

@@ -532,5 +532,56 @@ License: {license}
 
             Ok(())
         }
+
+        Spec::TarGz {
+            build_appliance,
+            layer,
+            compression_level,
+        } => {
+            File::create(&args.out).context("failed to create output file")?;
+
+            let layer_abs_path = layer
+                .canonicalize()
+                .context("failed to build absolute path to layer")?;
+
+            let output_abs_path = args
+                .out
+                .canonicalize()
+                .context("failed to build abs path to output")?;
+
+            let isol_context = IsolationContext::builder(&build_appliance)
+                .inputs([layer_abs_path.as_path()])
+                .outputs([output_abs_path.as_path()])
+                .working_directory(std::env::current_dir().context("while getting cwd")?)
+                .build();
+
+            let tar_script = format!(
+                "tar -c \
+                --sparse \
+                --one-file-system \
+                --acls \
+                --xattrs \
+                --to-stdout \
+                -C \
+                {} \
+                . | \
+                /usr/bin/gzip -{} --stdout > {}",
+                layer_abs_path.display(),
+                compression_level,
+                output_abs_path.as_path().display(),
+            );
+
+            run_cmd(
+                isolate(isol_context)
+                    .into_command()
+                    .arg("/bin/bash")
+                    .arg("-c")
+                    .arg(tar_script)
+                    .stdout(Stdio::piped()),
+            )
+            .context("Failed to build tar")?;
+
+            Ok(())
+        }
     }
 }
