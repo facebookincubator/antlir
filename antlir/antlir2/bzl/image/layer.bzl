@@ -381,6 +381,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
             mounts = mounts,
             parent = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
             subvol_symlink = final_subvol,
+            features = all_features,
         ),
         DefaultInfo(final_subvol, sub_targets = sub_targets),
     ]
