@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+from dataclasses import dataclass
 from typing import Generator
 
 from antlir.bzl.image.feature.requires import requires_t
@@ -17,6 +18,7 @@ from antlir.compiler.requires_provides import (
 )
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class RequiresItem(requires_t, ImageItem):
     def provides(self):
         return []

@@ -6,6 +6,7 @@
 
 import threading
 from collections import OrderedDict
+from dataclasses import dataclass
 from typing import AnyStr, Dict, Generator, List, NamedTuple, Optional
 
 from antlir.bzl.image.feature.usergroup import group_t
@@ -123,6 +124,7 @@ def _write_group_file(subvol: Subvol, contents: AnyStr) -> None:
 USERGROUP_LOCK = threading.Lock()
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class GroupItem(group_t, ImageItem):
     def requires(self) -> Generator[Requirement, None, None]:
         # The root group is *always* available, even without a

@@ -286,6 +286,7 @@ def _write_shadow_file(subvol: Subvol, contents: AnyStr):
     subvol.overwrite_path_as_root(SHADOW_FILE_PATH, str(contents))
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class UserItem(user_t, ImageItem):
     @validator("name")
     def _validate_name(cls, name):  # noqa B902
@@ -361,6 +362,7 @@ class UserItem(user_t, ImageItem):
             _write_shadow_file(subvol, shadow_file)
 
 
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class UsermodItem(usermod_t, ImageItem):
     def provides(self) -> List[Requirement]:
         return []

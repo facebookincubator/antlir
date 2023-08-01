@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import json
+from dataclasses import dataclass
 from typing import Iterable, List, Tuple
 
 from antlir.bzl.image.feature.meta_key_value_store import (
@@ -24,6 +25,7 @@ META_KEY_VALUE_STORE_FILE = META_DIR / "key_value_store"
 
 
 # pyre-fixme[13]: Attribute `key`, `value` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
     key: str
     value: str
@@ -63,6 +65,7 @@ class MetaKeyValueStoreItem(meta_key_value_store_item_t, ImageItem):
 
 
 # pyre-fixme[13]: Attribute `key` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class RemoveMetaKeyValueStoreItem(remove_meta_key_value_store_item_t, ImageItem):
     key: str
 

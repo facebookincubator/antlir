@@ -145,7 +145,12 @@ class ItemFactory:
 
     def gen_items_for_feature(self, feature_key: str, target: str, config):
         if feature_key in self._key_to_item_factory:
-            yield self._key_to_item_factory[feature_key](from_target=target, **config)
+            try:
+                yield self._key_to_item_factory[feature_key](
+                    from_target=target, **config
+                )
+            except TypeError as e:  # pragma: no cover
+                raise TypeError(f"{e} for feature_key: {feature_key}")
         elif feature_key in self._key_to_items_factory:
             yield from self._key_to_items_factory[feature_key](
                 from_target=target, **config

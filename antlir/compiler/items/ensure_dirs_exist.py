@@ -8,6 +8,7 @@ import grp
 import os
 import pwd
 import stat
+from dataclasses import dataclass
 from typing import Iterator, Optional
 
 from antlir.bzl.image.feature.ensure_subdirs_exist import ensure_subdirs_exist_t
@@ -39,6 +40,7 @@ def _validate_into_dir(into_dir: Optional[str]) -> str:
 # `ensure_subdirs_exist_factory` below should be used to construct this
 # pyre-fixme[13]: Attribute `basename` is never initialized.
 # pyre-fixme[13]: Attribute `subdirs_to_create` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
 class EnsureDirsExistItem(ensure_subdirs_exist_t, ImageItem):
     basename: str
 
