@@ -279,6 +279,22 @@ impl VM {
         Ok(())
     }
 
+    /// Execute ssh command and wait for timeout specified for the VM.
+    fn run_ssh_cmd_and_wait(
+        &self,
+        mut ssh_cmd: Command,
+        mut socket: UnixStream,
+        start_ts: Instant,
+    ) -> Result<()> {
+        // Spawn ssh command in a separate thread so that we can enforce timeout.
+        let handle = thread::spawn(move || {
+            log_command(&mut ssh_cmd)
+                .status()
+                .map_err(|e| VMError::BootError(format!("Failed to open SSH shell: {}", e)))
+        });
+        self.wait_for_timeout(&mut socket, start_ts, Some(handle))
+    }
+
     /// We control VM process through sockets. If VM process exited for any reason
     /// before socket connection is established, it's an error. Detect such early
     /// failure by polling process status.
@@ -350,24 +366,11 @@ impl VM {
                 })
             };
             ssh_cmd.args(command);
-
-            // We have to guard against the possibility that VM is completely screwed up.
-            // So we fire and forget and poll outside.
-            let handle = thread::spawn(move || {
-                log_command(&mut ssh_cmd)
-                    .status()
-                    .map_err(|e| VMError::BootError(format!("Failed to open SSH shell: {}", e)))
-            });
-
-            let mut socket = f.into_inner();
-            self.wait_for_timeout(&mut socket, start_ts, Some(handle))?;
+            self.run_ssh_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
         } else {
-            // If we want a shell, open it now and don't timeout. We don't care about return
-            // status of the ssh command in this case.
-            let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
-            log_command(&mut ssh_cmd)
-                .status()
-                .map_err(|e| VMError::BootError(format!("Failed to open SSH shell: {}", e)))?;
+            // Opens a shell
+            let ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+            self.run_ssh_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
         }
 
         info!("VM executed for {} seconds", start_ts.elapsed().as_secs());
@@ -672,6 +675,30 @@ mod test {
         assert!(elapsed < Duration::from_secs(5));
         send.shutdown(Shutdown::Both)
             .expect("Failed to shutdown sender");
+    }
+
+    #[test]
+    fn test_run_ssh_cmd_and_wait() {
+        let mut vm = get_vm_no_disk();
+        vm.args.timeout_s = Some(1);
+
+        // timeout
+        let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
+        let mut command = Command::new("sleep");
+        command.arg("5");
+        assert!(
+            vm.run_ssh_cmd_and_wait(command, recv, Instant::now())
+                .is_err()
+        );
+
+        // successful completion
+        vm.args.timeout_s = Some(5);
+        let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
+        let command = Command::new("exit");
+        assert!(
+            vm.run_ssh_cmd_and_wait(command, recv, Instant::now())
+                .is_ok()
+        );
     }
 
     #[test]
