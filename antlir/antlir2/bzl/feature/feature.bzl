@@ -57,6 +57,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 # @oss-disable
+# @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
@@ -98,6 +99,7 @@ _analyze_feature = {
     "ensure_dir_symlink": ensure_dir_symlink_analyze,
     "ensure_file_symlink": ensure_file_symlink_analyze,
     "extract": extract_analyze,
+    # @oss-disable
     # @oss-disable
     # @oss-disable
     # @oss-disable

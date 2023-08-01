@@ -19,6 +19,7 @@ load("//antlir/antlir2/bzl/feature:tarball.bzl", "tarball")
 load("//antlir/antlir2/bzl/feature:usergroup.bzl", "group_add", "user_add", "usermod")
 # @oss-disable
 # @oss-disable
+# @oss-disable
 
 feature = struct(
     clone = clone,
@@ -44,6 +45,7 @@ feature = struct(
     user_add = user_add,
     usermod = usermod,
     group_add = group_add,
+    # @oss-disable
     # @oss-disable
     # @oss-disable
 )
