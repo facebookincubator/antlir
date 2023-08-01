@@ -227,7 +227,6 @@ impl<'de> Deserialize<'de> for Label {
     }
 }
 
-
 impl Label {
     pub fn deserialize_owned<'de, D>(deserializer: D) -> Result<Self, D::Error>
     where
