@@ -94,6 +94,12 @@ pub enum Spec {
         build_appliance: PathBuf,
         layer: PathBuf,
     },
+    #[serde(rename = "tar.gz")]
+    TarGz {
+        build_appliance: PathBuf,
+        layer: PathBuf,
+        compression_level: i32,
+    },
 }
 
 pub fn run_cmd(command: &mut Command) -> Result<std::process::Output> {

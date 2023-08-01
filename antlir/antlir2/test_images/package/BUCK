@@ -99,3 +99,8 @@ package.btrfs(
         ),
     },
 )
+
+package.tar_gz(
+    name = "vfat-layer.tar.gz",
+    layer = ":vfat-layer",
+)
