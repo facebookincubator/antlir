@@ -60,9 +60,8 @@ struct RunArgs {
     /// Json-encoded file describing paths of binaries required by VM
     #[arg(long)]
     runtime_spec: JsonFile<RuntimeOpts>,
-    /// Json-encoded file controlling execution of the VM
-    #[arg(long)]
-    args_spec: JsonFile<VMArgs>,
+    #[clap(flatten)]
+    args: VMArgs,
 }
 
 #[derive(Debug, Args)]
@@ -74,7 +73,7 @@ struct IsolateArgs {
     #[arg(long)]
     envs: Option<Vec<String>>,
     /// Args for run command
-    #[command(flatten)]
+    #[clap(flatten)]
     vm_args: RunArgs,
 }
 
@@ -82,22 +81,22 @@ fn respawn(args: &IsolateArgs) -> Result<()> {
     let isolated = isolated(
         &args.image,
         args.envs.as_deref(),
-        &args.vm_args.args_spec.as_inner().output_dirs,
+        &args.vm_args.args.output_dirs,
     )?;
     let exe = env::current_exe().context("while getting argv[0]")?;
-    log_command(
-        isolated
-            .into_command()
-            .arg(&exe)
-            .arg("run")
-            .arg("--machine-spec")
-            .arg(args.vm_args.machine_spec.path())
-            .arg("--runtime-spec")
-            .arg(args.vm_args.runtime_spec.path())
-            .arg("--args-spec")
-            .arg(args.vm_args.args_spec.path()),
-    )
-    .status()?;
+    let mut command = isolated.into_command();
+    command
+        .arg(&exe)
+        .arg("run")
+        .arg("--machine-spec")
+        .arg(args.vm_args.machine_spec.path())
+        .arg("--runtime-spec")
+        .arg(args.vm_args.runtime_spec.path());
+    args.vm_args.args.to_args().iter().for_each(|arg| {
+        command.arg(arg);
+    });
+
+    log_command(&mut command).status()?;
     Ok(())
 }
 
@@ -107,15 +106,10 @@ fn run(args: &RunArgs) -> Result<()> {
     }
     debug!("RuntimeOpts: {:?}", args.runtime_spec);
     debug!("MachineOpts: {:?}", args.machine_spec);
-    debug!("ArgsOpts: {:?}", args.args_spec);
 
     set_runtime(args.runtime_spec.clone().into_inner())
         .map_err(|_| anyhow!("Failed to set runtime"))?;
-    Ok(VM::new(
-        args.machine_spec.clone().into_inner(),
-        args.args_spec.clone().into_inner(),
-    )?
-    .run()?)
+    Ok(VM::new(args.machine_spec.clone().into_inner(), args.args.clone())?.run()?)
 }
 
 fn main() -> Result<()> {

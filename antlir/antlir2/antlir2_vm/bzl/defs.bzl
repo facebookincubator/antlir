@@ -56,19 +56,6 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
     )
     return machine_json, machine_json_args
 
-def _vm_args_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
-    """Generate the json file to pass runtime information to the VM"""
-    args_json = ctx.actions.declare_output("args.json")
-    args_json_args = ctx.actions.write_json(
-        args_json,
-        {
-            "console": ctx.attrs.console,
-            "timeout_s": ctx.attrs.timeout_s,
-        },
-        with_inputs = True,
-    )
-    return args_json, args_json_args
-
 def _runtime_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
     """Generate the json file to pass runtime information to the VM"""
     runtime_json = ctx.actions.declare_output("runtime.json")
@@ -88,7 +75,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     """Create the json specs used as input for VM target."""
     machine_json, machine_json_args = _machine_json(ctx)
     runtime_json, runtime_json_args = _runtime_json(ctx)
-    vm_args_json, vm_args_json_args = _vm_args_json(ctx)
     cmds = cmd_args(
         cmd_args(ctx.attrs.vm_exec[RunInfo]),
         "isolate",
@@ -98,14 +84,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(machine_json_args),
         "--runtime-spec",
         cmd_args(runtime_json_args),
-        "--args-spec",
-        cmd_args(vm_args_json_args),
     )
+    if ctx.attrs.timeout_s:
+        cmds = cmd_args(cmds, "--timeout-s", str(ctx.attrs.timeout_s))
+
     return [
         DefaultInfo(
             default_outputs = ctx.attrs.vm_exec[DefaultInfo].default_outputs,
             sub_targets = {
-                "args_json": [DefaultInfo(vm_args_json)],
+                "console": [DefaultInfo(), RunInfo(cmd_args(cmds, "--console"))],
                 "machine_json": [DefaultInfo(machine_json)],
                 "runtime_json": [DefaultInfo(runtime_json)],
             },
@@ -126,10 +113,6 @@ _vm_run = rule(
         "num_nics": attrs.int(default = 1),
     } | {
         # Non-hardware parameters for the VM
-        "console": attrs.bool(
-            default = False,
-            doc = "show console output for debugging purpose",
-        ),
         "initrd": attrs.option(
             attrs.source(),
             default = None,
