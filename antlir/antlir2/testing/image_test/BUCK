@@ -1,8 +1,19 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+
+rust_library(
+    name = "image_test_lib",
+    srcs = ["src/lib.rs"],
+    visibility = ["PUBLIC"],
+    deps = [
+        "clap",
+        "thiserror",
+    ],
+)
 
 rust_binary(
     name = "image-test",
     srcs = glob(["src/**/*.rs"]),
+    crate_root = "src/main.rs",
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
@@ -11,6 +22,7 @@ rust_binary(
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
+        ":image_test_lib",
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/features:mount.lib",
