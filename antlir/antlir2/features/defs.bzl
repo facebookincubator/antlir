@@ -31,7 +31,10 @@ def feature_impl(
             "//antlir/antlir2/antlir2_features:antlir2_features",
             "//antlir/antlir2/features/antlir2_feature_impl:antlir2_feature_impl",
         ],
-        visibility = ["//antlir/antlir2/..."],
+        visibility = [
+            "//antlir/antlir2/...",
+            "//tupperware/cm/antlir2/...",
+        ],
     )
     rust_binary(
         name = name,
