@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::fs;
 use std::io::BufRead;
@@ -361,8 +362,12 @@ impl VM {
             // Execute the specified command and wait for it to finish or timeout.
             let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
             if let Some(envs) = &self.args.command_envs {
-                envs.iter().for_each(|(k, v)| {
-                    ssh_cmd.arg(format!("{}={}", k, v));
+                envs.iter().for_each(|kv| {
+                    let mut kv_str = OsString::new();
+                    kv_str.push(kv.key.clone());
+                    kv_str.push(OsStr::new("="));
+                    kv_str.push(kv.value.clone());
+                    ssh_cmd.arg(kv_str);
                 })
             };
             ssh_cmd.args(command);
