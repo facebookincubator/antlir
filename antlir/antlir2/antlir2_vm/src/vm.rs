@@ -521,7 +521,6 @@ mod test {
             qemu_img: "qemu-img".to_string(),
             firmware: "edk2-x86_64-code.fd".to_string(),
             roms_dir: "roms".to_string(),
-            virtiofsd: "virtiofsd".to_string(),
         })
         .expect("Failed to set fake runtime");
     }

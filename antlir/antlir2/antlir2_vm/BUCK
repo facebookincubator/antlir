@@ -35,12 +35,13 @@ image.layer(
     name = "container-image",
     features = [
         feature.rpms_install(rpms = [
-            "glib2",  # for virtiofsd
+            "glib2",  # for qemu-img
             "iproute",  # for NIC configuration
             "numactl-libs",  # for qemu-system
             "openssh-clients",  # for ssh shell
             "pixman",  # for qemu-system
             "systemd-container",  # for systemd-detect-virt
+            "virtiofsd",  # rust virtiofsd
         ]),
         feature.install(
             src = "//antlir/linux/vm/ssh:privkey",

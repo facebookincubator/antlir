@@ -14,7 +14,6 @@ use std::process::Command;
 
 use thiserror::Error;
 
-use crate::runtime::get_runtime;
 use crate::types::ShareOpts;
 use crate::utils::log_command;
 
@@ -113,22 +112,15 @@ Options={ro_or_rw}"#,
     /// Virtiofs requires one virtiofsd for each shared path. This command assumes
     /// it's running as root inside container.
     pub(crate) fn start_virtiofsd(&self) -> Result<Child> {
-        let mut command = Command::new(&get_runtime().virtiofsd);
+        let mut command = Command::new("/usr/libexec/virtiofsd");
         log_command(
             command
-                .arg(format!(
-                    "--socket-path={}",
-                    self.socket_path()
-                        .to_str()
-                        .expect("socket file should be valid string")
-                ))
-                .arg("-o")
-                .arg(format!(
-                    "source={}",
-                    self.opts.path.to_str().expect("Invalid UTF-8")
-                ))
-                .arg("-o")
-                .arg("cache=always"),
+                .arg("--socket-path")
+                .arg(&self.socket_path())
+                .arg("--shared-dir")
+                .arg(&self.opts.path)
+                .arg("--cache")
+                .arg("always"),
         )
         .spawn()
         .map_err(ShareError::VirtiofsdError)
