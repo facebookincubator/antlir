@@ -54,23 +54,25 @@ image.layer(
     flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
 )
 
-vm.run(
+vm.host(
     name = "default",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.default_boot_disk],
+    visibility = ["//antlir/..."],
 )
 
 # TODO: The following are just placeholders for CI to exercise disk building
 # API until we move to actual vm tests soon(TM).
-vm.run(
+vm.host(
     name = "default-nondisk-boot",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.default_control_disk],
     initrd = initrd.default,
     kernel = metalos_kernel.default.vmlinuz,
+    visibility = ["//antlir/..."],
 )
 
-vm.run(
+vm.host(
     name = "default-nvme",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [
@@ -80,4 +82,5 @@ vm.run(
             uname = metalos_kernel.default.uname,
         ),
     ],
+    visibility = ["//antlir/..."],
 )

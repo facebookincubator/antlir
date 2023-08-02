@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load(":types.bzl", "DiskInfo")
+load(":types.bzl", "DiskInfo", "VMHostInfo")
 
 def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
     """Generate json file that describes VM hardware and setup"""
@@ -75,7 +75,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     """Create the json specs used as input for VM target."""
     machine_json, machine_json_args = _machine_json(ctx)
     runtime_json, runtime_json_args = _runtime_json(ctx)
-    cmds = cmd_args(
+    run_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_exec[RunInfo]),
         "isolate",
         "--image",
@@ -86,21 +86,33 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(runtime_json_args),
     )
     if ctx.attrs.timeout_s:
-        cmds = cmd_args(cmds, "--timeout-s", str(ctx.attrs.timeout_s))
+        run_cmd = cmd_args(run_cmd, "--timeout-s", str(ctx.attrs.timeout_s))
 
+    run_script, _ = ctx.actions.write(
+        "run.sh",
+        cmd_args("#!/bin/bash", cmd_args(run_cmd, delimiter = " \\\n  "), "\n"),
+        is_executable = True,
+        allow_args = True,
+    )
     return [
         DefaultInfo(
-            default_outputs = ctx.attrs.vm_exec[DefaultInfo].default_outputs,
+            default_output = run_script,
             sub_targets = {
-                "console": [DefaultInfo(), RunInfo(cmd_args(cmds, "--console"))],
+                "console": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--console"))],
                 "machine_json": [DefaultInfo(machine_json)],
                 "runtime_json": [DefaultInfo(runtime_json)],
             },
         ),
-        RunInfo(cmds),
+        RunInfo(run_cmd),
+        VMHostInfo(
+            vm_exec = ctx.attrs.vm_exec,
+            image = ctx.attrs.image,
+            machine_spec = machine_json_args,
+            runtime_spec = runtime_json_args,
+        ),
     ]
 
-_vm_run = rule(
+_vm_host = rule(
     impl = _impl,
     attrs = {
         # Hardware parameters for the VM
@@ -160,5 +172,5 @@ _vm_run = rule(
 )
 
 vm = struct(
-    run = rule_with_default_target_platform(_vm_run),
+    host = rule_with_default_target_platform(_vm_host),
 )
