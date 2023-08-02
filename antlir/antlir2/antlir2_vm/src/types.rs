@@ -94,5 +94,4 @@ pub(crate) struct RuntimeOpts {
     pub(crate) qemu_img: String,
     pub(crate) firmware: String,
     pub(crate) roms_dir: String,
-    pub(crate) virtiofsd: String,
 }

@@ -79,7 +79,6 @@ def _runtime_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
             "qemu_img": ensure_single_output(ctx.attrs.qemu_img),
             "qemu_system": ensure_single_output(ctx.attrs.qemu_system),
             "roms_dir": ctx.attrs.roms_dir,
-            "virtiofsd": ensure_single_output(ctx.attrs.virtiofsd),
         },
         with_inputs = True,
     )
@@ -167,10 +166,6 @@ _vm_run = rule(
         "roms_dir": attrs.default_only(
             attrs.source(default = antlir_dep("vm/runtime:roms")),
             doc = "ROMs for the VM",
-        ),
-        "virtiofsd": attrs.default_only(
-            attrs.exec_dep(default = antlir_dep("vm/runtime:virtiofsd")),
-            doc = "daemon for sharing directories into the VM",
         ),
         "vm_exec": attrs.default_only(
             attrs.exec_dep(
