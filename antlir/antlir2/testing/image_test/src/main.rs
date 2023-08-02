@@ -8,8 +8,6 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::collections::HashSet;
-use std::ffi::OsString;
 use std::fs::File;
 use std::io::Write;
 use std::os::fd::AsRawFd;
@@ -18,16 +16,15 @@ use std::os::unix::ffi::OsStrExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use antlir2_isolate::isolate;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
-use anyhow::anyhow;
 use anyhow::Context;
-use anyhow::Error;
 use anyhow::Result;
 use clap::Parser;
+use image_test_lib::KvPair;
+use image_test_lib::Test;
 use json_arg::JsonFile;
 use mount::Mount;
 use tempfile::NamedTempFile;
@@ -63,127 +60,6 @@ struct Args {
     test: Test,
 }
 
-#[derive(Parser, Debug)]
-enum Test {
-    Custom {
-        test_cmd: Vec<OsString>,
-    },
-    Gtest {
-        #[clap(long, env = "GTEST_OUTPUT")]
-        output: Option<String>,
-        #[clap(allow_hyphen_values = true)]
-        test_cmd: Vec<OsString>,
-    },
-    Pyunit {
-        #[clap(long)]
-        list_tests: Option<PathBuf>,
-        #[clap(long)]
-        output: Option<PathBuf>,
-        #[clap(long)]
-        test_filter: Vec<OsString>,
-        test_cmd: Vec<OsString>,
-    },
-    Rust {
-        #[clap(allow_hyphen_values = true)]
-        test_cmd: Vec<OsString>,
-    },
-}
-
-impl Test {
-    /// Some tests need to write to output paths on the host. Instead of a
-    /// complicated fd-passing dance in the name of isolation purity, we just
-    /// mount the parent directories of the output files so that the inner test
-    /// can do writes just as tpx expects.
-    fn bind_mounts(&self) -> HashSet<PathBuf> {
-        match self {
-            Self::Custom { .. } => HashSet::new(),
-            Self::Gtest { output, .. } => match output {
-                Some(output) => {
-                    let path = Path::new(match output.split_once(':') {
-                        Some((_format, path)) => path,
-                        None => output.as_str(),
-                    });
-                    HashSet::from([path
-                        .parent()
-                        .expect("output file always has parent")
-                        .to_owned()])
-                }
-                None => HashSet::new(),
-            },
-            Self::Rust { .. } => HashSet::new(),
-            Self::Pyunit {
-                list_tests, output, ..
-            } => {
-                let mut paths = HashSet::new();
-                if let Some(p) = list_tests {
-                    paths.insert(
-                        p.parent()
-                            .expect("output file always has parent")
-                            .to_owned(),
-                    );
-                }
-                if let Some(p) = output {
-                    paths.insert(
-                        p.parent()
-                            .expect("output file always has parent")
-                            .to_owned(),
-                    );
-                }
-                paths
-            }
-        }
-    }
-    fn into_inner_cmd(self) -> Vec<OsString> {
-        match self {
-            Self::Custom { test_cmd } => test_cmd,
-            Self::Gtest {
-                mut test_cmd,
-                output,
-            } => {
-                if let Some(out) = output {
-                    test_cmd.push(format!("--gtest_output={out}").into());
-                }
-                test_cmd
-            }
-            Self::Rust { test_cmd } => test_cmd,
-            Self::Pyunit {
-                mut test_cmd,
-                list_tests,
-                test_filter,
-                output,
-            } => {
-                if let Some(list) = list_tests {
-                    test_cmd.push("--list-tests".into());
-                    test_cmd.push(list.into());
-                }
-                if let Some(out) = output {
-                    test_cmd.push("--output".into());
-                    test_cmd.push(out.into());
-                }
-                for filter in test_filter {
-                    test_cmd.push("--test-filter".into());
-                    test_cmd.push(filter);
-                }
-                test_cmd
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct KvPair(String, OsString);
-
-impl FromStr for KvPair {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        match s.split_once('=') {
-            Some((key, value)) => Ok(Self(key.to_owned(), value.trim_matches('"').into())),
-            None => Err(anyhow!("expected = separated kv pair, got '{s}'")),
-        }
-    }
-}
-
 fn main() -> Result<()> {
     let args = Args::parse();
 
@@ -211,7 +87,7 @@ fn main() -> Result<()> {
     let mut setenv: BTreeMap<_, _> = args
         .setenv
         .into_iter()
-        .map(|pair| (pair.0, pair.1))
+        .map(|pair| (pair.key, pair.value))
         .collect();
     // forward test runner env vars to the inner test
     for (key, val) in std::env::vars() {
@@ -241,7 +117,7 @@ fn main() -> Result<()> {
     ])
     .working_directory(&working_directory)
     .setenv(setenv.clone())
-    .outputs(args.test.bind_mounts())
+    .outputs(args.test.output_dirs())
     .invocation_type(match args.boot {
         true => InvocationType::BootReadOnly,
         false => InvocationType::Pid2Pipe,
