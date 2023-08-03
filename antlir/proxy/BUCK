@@ -13,7 +13,6 @@ python_unittest(
     needed_coverage = [
         (100, ":http_socket_server"),
     ],
-    supports_static_listing = True,
     deps = [":http_socket_server"],
 )
 
@@ -50,7 +49,6 @@ python_unittest(
     resources = {
         ":test-cert": "tests/test-cert",
     },
-    supports_static_listing = True,
     deps = [
         ":proxy_url",
     ],

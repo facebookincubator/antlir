@@ -30,7 +30,6 @@ python_unittest(
     name = "test-common",
     srcs = ["tests/test_common.py"],
     needed_coverage = [(100, ":common")],
-    supports_static_listing = True,
     deps = [
         ":common",
     ],
@@ -46,7 +45,6 @@ python_unittest(
     name = "test-netns-socket",
     srcs = ["tests/test_netns_socket.py"],
     needed_coverage = [(100, ":netns_socket")],
-    supports_static_listing = True,
     deps = [
         ":netns_socket",
         "//antlir:testlib_common",
@@ -171,7 +169,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "test-layer-iproute",
         ): "tests/test-layer-iproute",
     },
-    supports_static_listing = True,
     deps = [":testlib_base"],
 )
 
@@ -183,7 +180,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "tests/build-appliance",
     },
-    supports_static_listing = True,
     deps = [":testlib_base"],
 )
 
@@ -206,6 +202,5 @@ python_unittest(
     name = "test-run-test",
     srcs = ["tests/test_run_test.py"],
     needed_coverage = [(100, ":run-test-library")],
-    supports_static_listing = True,
     deps = [":run-test-library"],
 )

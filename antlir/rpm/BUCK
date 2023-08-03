@@ -31,7 +31,6 @@ python_unittest(
     env = {"antlir_test_snapshot": "$(location :repo-snapshot-for-tests)"},
     labels = ["no_pyre"],
     needed_coverage = [(100, ":common")],
-    supports_static_listing = True,
     deps = [
         ":common",
         "//antlir:fs_utils",
@@ -48,7 +47,6 @@ python_unittest(
     name = "test-find-snapshot",
     srcs = ["tests/test_find_snapshot.py"],
     needed_coverage = [(100, ":find_snapshot")],
-    supports_static_listing = True,
     deps = [
         ":find_snapshot",
     ],
@@ -71,7 +69,6 @@ python_unittest(
     name = "test-open-url",
     srcs = ["tests/test_open_url.py"],
     needed_coverage = [(100, ":open_url")],
-    supports_static_listing = True,
     deps = [
         ":open_url",
         "//antlir:fs_utils",
@@ -123,7 +120,6 @@ python_unittest(
     needed_coverage = [
         (100, ":repo_objects"),
     ],
-    supports_static_listing = True,
     deps = [
         ":common",
         ":repo_objects",
@@ -147,7 +143,6 @@ python_unittest(
     needed_coverage = [
         (100, ":repo_sizer"),
     ],
-    supports_static_listing = True,
     deps = [
         ":common",
         ":repo_objects",
@@ -169,7 +164,6 @@ python_unittest(
     needed_coverage = [
         (100, ":parse_repodata"),
     ],
-    supports_static_listing = True,
     deps = [
         ":parse_repodata",
         ":repo_objects",
@@ -196,7 +190,6 @@ python_unittest(
     needed_coverage = [
         (100, ":repo_snapshot"),
     ],
-    supports_static_listing = True,
     deps = [
         ":common",
         ":repo_objects",
@@ -221,7 +214,6 @@ python_unittest(
     needed_coverage = [
         (100, ":repo_db"),
     ],
-    supports_static_listing = True,
     deps = [
         ":common",
         ":db_connection",
@@ -252,7 +244,6 @@ python_unittest(
     needed_coverage = [
         (100, ":repo_server"),
     ],
-    supports_static_listing = True,
     deps = [
         ":repo_server",
         ":temp_repos",
@@ -294,7 +285,6 @@ python_unittest(
     name = "test-gpg-keys",
     srcs = ["tests/test_gpg_keys.py"],
     needed_coverage = [(100, ":gpg_keys")],
-    supports_static_listing = True,
     deps = [
         ":gpg_keys",
         "//antlir:fs_utils",
@@ -336,7 +326,6 @@ python_unittest(
         (100, ":common_args"),
         (100, ":snapshot_repo"),
     ],
-    supports_static_listing = True,
     deps = [
         ":repo_snapshot",
         ":snapshot_repo",
@@ -357,7 +346,6 @@ python_unittest(
     needed_coverage = [
         (100, ":yum_dnf_conf"),
     ],
-    supports_static_listing = True,
     deps = [":yum_dnf_conf"],
 )
 
@@ -378,7 +366,6 @@ python_unittest(
     needed_coverage = [
         (100, ":write-yum-dnf-conf-library"),
     ],
-    supports_static_listing = True,
     deps = [":write-yum-dnf-conf-library"],
 )
 
@@ -523,7 +510,6 @@ python_unittest(
         (100, ":common_args"),
         (100, ":snapshot_repos"),
     ],
-    supports_static_listing = True,
     deps = [
         ":repo_db",
         ":repo_snapshot",
@@ -560,7 +546,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "tests/test-build-appliance",
     },
-    supports_static_listing = True,
     deps = [
         ":rpm_metadata",
         ":temp_repos",

@@ -12,7 +12,6 @@ python_unittest(
     name = "test-envra",
     srcs = ["tests/test_envra.py"],
     needed_coverage = [(100, ":envra")],
-    supports_static_listing = True,
     deps = [
         ":envra",
     ],
@@ -59,7 +58,6 @@ python_unittest(
     name = "test-update-allowed-versions",
     srcs = ["tests/test_update_allowed_versions.py"],
     needed_coverage = [(100, ":update-allowed-versions-library")],
-    supports_static_listing = True,
     deps = [
         ":update-allowed-versions-library",
         "//antlir/rpm:repo_snapshot",
