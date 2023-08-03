@@ -7,7 +7,10 @@
 # @oss-disable
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
 _HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
@@ -119,10 +122,29 @@ image_cpp_test = partial(
     cpp_unittest,
     _add_outer_labels = ["tpx:optout-test-result-output-spec"],
 )
-image_python_test = partial(
-    _implicit_image_test,
-    python_unittest,
-    supports_static_listing = False,
-)
+
 image_rust_test = partial(_implicit_image_test, rust_unittest)
 image_sh_test = partial(_implicit_image_test, buck_sh_test)
+
+def image_python_test(name: str, layer: str, **kwargs):
+    test_layer = layer
+    if not REPO_CFG.artifacts_require_repo:
+        # In @mode/opt we need to install fb-xarexec
+        test_layer = name + "--with-xarexec"
+        image.layer(
+            name = test_layer,
+            parent_layer = layer,
+            features = [
+                feature.rpms_install(rpms = ["fb-xarexec"]),
+            ],
+            visibility = [":" + name],
+        )
+        test_layer = ":{}".format(test_layer)
+
+    _implicit_image_test(
+        test_rule = python_unittest,
+        name = name,
+        layer = test_layer,
+        supports_static_listing = False,
+        **kwargs
+    )
