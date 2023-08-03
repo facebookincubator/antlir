@@ -11,33 +11,37 @@ import styles from './HomepageFeatures.module.css';
 
 const FeatureList = [
   {
-    title: 'Easy to Use',
-    Svg: require('../../static/img/undraw_docusaurus_mountain.svg').default,
+    title: (<code>buck build</code>),
+    Svg: require('../../static/img/logo.svg').default,
     description: (
-      <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
-      </>
+      <ul>
+        <li>Safe, declarative FS construction</li>
+        <li>SCM-determistic builds</li>
+        <li><code>buck build</code> your code</li>
+        <li>Install upstream packages</li>
+      </ul>
     ),
   },
   {
-    title: 'Focus on What Matters',
-    Svg: require('../../static/img/undraw_docusaurus_tree.svg').default,
+    title: (<code>buck test</code>),
+    Svg: require('../../static/img/logo.svg').default,
     description: (
-      <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
-      </>
+      <ul>
+        <li>Run tests inside containers</li>
+        <li>Run tests inside VMs</li>
+        <li>Inspect whole filesystems</li>
+      </ul>
     ),
   },
   {
-    title: 'Powered by React',
-    Svg: require('../../static/img/undraw_docusaurus_react.svg').default,
+    title: 'Deploy',
+    Svg: require('../../static/img/logo.svg').default,
     description: (
-      <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
-      </>
+      <ul>
+        <li>Disk images to physical hosts</li>
+        <li>Container images</li>
+        <li>Many other packaging formats</li>
+      </ul>
     ),
   },
 ];
@@ -48,7 +52,7 @@ function Feature({Svg, title, description}) {
       <div className="text--center">
         <Svg className={styles.featureSvg} alt={title} />
       </div>
-      <div className="text--center padding-horiz--md">
+      <div className="padding-horiz--md">
         <h3>{title}</h3>
         <p>{description}</p>
       </div>
