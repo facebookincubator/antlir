@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @lint-ignore-every BUCKRESTRICTEDSYNTAX
-
 load("@fbsource//tools/build_defs/buck2:is_buck2.bzl", "is_buck2")
 load("//antlir/bzl:types.bzl", "types")
 
@@ -12,6 +10,7 @@ def _flatten_any(lst):
     flat = []
     for item in lst if types.is_list(lst) or types.is_tuple(lst) else [lst]:
         if types.is_list(item) or types.is_tuple(item):
+            # @lint-ignore BUCKRESTRICTEDSYNTAX
             flat.extend(_flatten_any(item))
         else:
             flat.append(item)

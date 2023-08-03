@@ -3,12 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKLINT
+
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("@config//:config.bzl", _do_not_use_repo_cfg = "do_not_use_repo_cfg")
 load("//third-party/fedora33/kernel:kernels.bzl", "kernels")
-# @lint-ignore-every BUCKLINT
-# @lint-ignore-every BUCKRESTRICTEDSYNTAX
 
 _RULE_TYPE_KWARG = "antlir_rule"
 
