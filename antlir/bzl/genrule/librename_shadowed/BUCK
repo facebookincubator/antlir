@@ -35,7 +35,6 @@ python_library(
 python_unittest(
     name = "test-rename-shadowed-internals",
     srcs = ["tests/test_rename_shadowed_internals.py"],
-    supports_static_listing = True,
     deps = [
         ":testlib_librename_shadowed.so",
         "//antlir:fs_utils",

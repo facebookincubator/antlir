@@ -21,7 +21,6 @@ python_unittest(
         layer_resource(flavor_helpers.get_build_appliance()): "build-appliance",
         layer_resource(TEST_IMAGE_PREFIX + "empty.layer"): "empty-layer",
     },
-    supports_static_listing = True,
     deps = [
         "//antlir:subvol_utils",
         "//antlir:testlib_layer_resource",
@@ -36,7 +35,6 @@ python_unittest(
         100,
         "//antlir/compiler:procfs_serde",
     )],
-    supports_static_listing = True,
     deps = [
         "//antlir:subvol_utils",
         "//antlir:testlib_subvol_helpers",
@@ -51,7 +49,6 @@ python_unittest(
         100,
         "//antlir/compiler:requires_provides",
     )],
-    supports_static_listing = True,
     deps = ["//antlir/compiler:requires_provides"],
 )
 
@@ -62,7 +59,6 @@ python_unittest(
         100,
         "//antlir/compiler:dep_graph",
     )],
-    supports_static_listing = True,
     deps = [
         "//antlir:subvol_utils",
         "//antlir/compiler:dep_graph",
@@ -121,7 +117,6 @@ image_feature_python_unittest(
         100,
         "//antlir/compiler:items_for_features",
     )],
-    supports_static_listing = True,
     test_image_feature_transitive_deps = TEST_IMAGE_FEATURE_TRANSITIVE_DEPS,
     test_image_feature_wrapped_transitive_deps = TEST_IMAGE_WRAPPED_TRANSITIVE_DEPS,
     deps = [
@@ -163,7 +158,6 @@ python_unittest(
         ): "test-build-appliance",
         layer_resource("//antlir:empty"): "empty",
     },
-    supports_static_listing = True,
     deps = [
         "//antlir:bzl_const",
         "//antlir:testlib_flavor_helpers",
@@ -219,7 +213,6 @@ python_unittest(
         ): "test_image_layer_path_to_" + t.replace("/", LAYER_SLASH_ENCODE)
         for t in IMAGE_LAYER_DEPS
     },
-    supports_static_listing = True,
     # As with `test-image-feature`, we cannot get `image_layer.py` coverage.
     deps = [
         ":sample_items",
@@ -246,7 +239,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "addremove_conflict_parent",
         ): "parent",
     },
-    supports_static_listing = True,
     deps = [
         "//antlir:testlib_flavor_helpers",
         "//antlir:testlib_layer_resource",
