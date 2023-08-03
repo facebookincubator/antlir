@@ -9,7 +9,6 @@ entirely, but for now this is required to keep buck1 code evaluating.
 """
 
 # We use recursion and `native.` so ignore those lints
-# @lint-ignore-every BUCKRESTRICTEDSYNTAX
 # @lint-ignore-every BUCKLINT
 
 load("@bazel_skylib//lib:types.bzl", skylib_types = "types")

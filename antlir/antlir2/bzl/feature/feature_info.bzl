@@ -92,7 +92,6 @@ def data_only_feature_analysis_fn(
         record_type,
         feature_type: str,
         build_phase: BuildPhase.type = BuildPhase("compile")):
-    # @lint-ignore BUCKRESTRICTEDSYNTAX
     def inner(impl: "RunInfo" | None = None, **kwargs) -> FeatureAnalysis.type:
         return FeatureAnalysis(
             feature_type = feature_type,
