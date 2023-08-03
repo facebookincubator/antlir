@@ -70,7 +70,6 @@ python_unittest(
         (100, ":repomd_downloader"),
         (100, ":rpm_downloader"),
     ],
-    supports_static_listing = True,
     deps = [
         ":repo_downloader",
         "//antlir/rpm:temp_repos",

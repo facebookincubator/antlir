@@ -94,7 +94,6 @@ python_unittest(
     resources = {
         layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
     },
-    supports_static_listing = True,
     deps = [
         ":launch_repo_servers",
         ":server_launcher",
@@ -127,7 +126,6 @@ python_unittest(
     resources = {
         layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
     },
-    supports_static_listing = True,
     deps = [
         ":testlib_rpm_base",
         "//antlir:testlib_flavor_helpers",
@@ -157,7 +155,6 @@ python_unittest(
     resources = {
         layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance",
     },
-    supports_static_listing = True,
     deps = [
         ":repo_plugins",
         "//antlir:fs_utils",
@@ -229,7 +226,6 @@ python_unittest(
         layer_resource(":shadow-paths-test-layer"): "tests/shadows",
         layer_resource(":shadow-paths-no-rpm"): "tests/shadows-no-rpm",
     },
-    supports_static_listing = True,
     deps = [
         ":shadow_paths",
         "//antlir:subvol_utils",
@@ -257,7 +253,6 @@ python_unittest(
     resources = {
         layer_resource(":shadow-build-appliance"): "tests/shadow-build-appliance",
     },
-    supports_static_listing = True,
     deps = [
         ":testlib_rpm_base",
         "//antlir:config",
@@ -285,7 +280,6 @@ python_unittest(
     resources = {
         layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-layer",
     },
-    supports_static_listing = True,
     deps = [
         ":attach_antlir_dir",
         "//antlir:subvol_utils",
