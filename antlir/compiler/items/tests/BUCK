@@ -72,7 +72,6 @@ python_unittest(
     name = "test-group",
     srcs = ["test_group.py"],
     needed_coverage = [(100, "//antlir/compiler/items:group")],
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir/compiler/items:group",
@@ -90,7 +89,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "groups-added",
         ): "groups-added",
     },
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir:find_built_subvol",
@@ -104,7 +102,6 @@ python_unittest(
     name = "test-phases-provide",
     srcs = ["test_phases_provide.py"],
     needed_coverage = [(100, "//antlir/compiler/items:phases_provide")],
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir/compiler/items:phases_provide",
@@ -186,7 +183,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "validates-dnf-build-appliance",
         ): "genrule-layer-busybox-base",
     },
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir:common",
@@ -248,7 +244,6 @@ python_unittest(
         TEST_IMAGE_PREFIX + "create_ops.cpio.gz": "create_ops.cpio.gz",
         TEST_IMAGE_PREFIX + "create_ops.tar.gz": "create_ops.tar.gz",
     },
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir/btrfs_diff:testlib_demo_sendstreams",
@@ -261,7 +256,6 @@ python_unittest(
     name = "test-requires",
     srcs = ["test_requires.py"],
     needed_coverage = [(100, "//antlir/compiler/items:requires")],
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir/compiler/items:requires",
@@ -360,7 +354,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "build_appliance_testing",
         ): "test-build-appliance",
     },
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir:find_built_subvol",
@@ -380,7 +373,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "users-groups-from-scratch",
         ): "test-layer-users-groups-from-scratch",
     },
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir/compiler/items:user",
@@ -398,7 +390,6 @@ python_unittest(
             TEST_IMAGE_PREFIX + "users-added",
         ): "users-added",
     },
-    supports_static_listing = True,
     deps = [
         ":common_testlib",
         "//antlir:find_built_subvol",
