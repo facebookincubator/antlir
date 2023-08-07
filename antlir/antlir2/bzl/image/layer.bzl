@@ -364,8 +364,8 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
 
     sub_targets["subvol_symlink"] = [DefaultInfo(final_subvol)]
 
-    parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None
-    mounts = all_mounts(features = all_features, parent_layer = parent_layer)
+    parent_layer_info = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None
+    mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
     # @oss-disable
 
     sub_targets["nspawn"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
@@ -379,7 +379,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
             flavor_info = flavor_info,
             label = ctx.label,
             mounts = mounts,
-            parent = parent_layer,
+            parent = ctx.attrs.parent_layer,
             subvol_symlink = final_subvol,
             features = all_features,
         ),
