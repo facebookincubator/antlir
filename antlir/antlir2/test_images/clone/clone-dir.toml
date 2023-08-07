@@ -4,50 +4,50 @@
 # 1) simply cloning the '/path/to/clone/dir' directory to '/cloned'
 # 2) pre-creating '/cloned' and cloning '/path/to/clone/dir/' into '/cloned/'
 
-[cloned]
+[file.cloned]
 op = 'added'
 
-[cloned.diff]
+[file.cloned.diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["cloned/cloned-symlink"]
+[file."cloned/cloned-symlink"]
 op = 'added'
 
-["cloned/cloned-symlink".diff]
+[file."cloned/cloned-symlink".diff]
 mode = 'u+rwx,g+rwx,o+rwx'
 file-type = 'symlink'
 user = "root"
 group = "root"
 text = '/f'
 
-["cloned/deeper"]
+[file."cloned/deeper"]
 op = 'added'
 
-["cloned/deeper".diff]
+[file."cloned/deeper".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "antlir"
 group = "antlir"
 content_hash = "0"
 
-["cloned/deeper/nesting"]
+[file."cloned/deeper/nesting"]
 op = 'added'
 
-["cloned/deeper/nesting".diff]
+[file."cloned/deeper/nesting".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "antlir"
 group = "antlir"
 content_hash = "0"
 
-["cloned/deeper/nesting/foo"]
+[file."cloned/deeper/nesting/foo"]
 op = 'added'
 
-["cloned/deeper/nesting/foo".diff]
+[file."cloned/deeper/nesting/foo".diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = "root"

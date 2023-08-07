@@ -1,7 +1,7 @@
-["installed-dir/foo/child"]
+[file."installed-dir/foo/child"]
 op = "added"
 
-["installed-dir/foo/child".diff]
+[file."installed-dir/foo/child".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"

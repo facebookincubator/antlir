@@ -47,5 +47,6 @@ image.layer(
 image_diff_test(
     name = "genrule-test",
     diff = "genrule.toml",
+    diff_type = "file",
     layer = ":genrule",
 )

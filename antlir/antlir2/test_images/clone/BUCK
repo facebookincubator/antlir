@@ -82,6 +82,7 @@ image.layer(
 image_diff_test(
     name = "clone-file-test",
     diff = "clone-file.toml",
+    diff_type = "file",
     layer = ":clone-file",
 )
 
@@ -105,6 +106,7 @@ image.layer(
 image_diff_test(
     name = "clone-file-from-aliased-layer-test",
     diff = "clone-file.toml",
+    diff_type = "file",
     layer = ":clone-file-from-aliased-layer",
 )
 
@@ -123,6 +125,7 @@ image.layer(
 image_diff_test(
     name = "clone-dir-test",
     diff = "clone-dir.toml",
+    diff_type = "file",
     layer = ":clone-dir",
 )
 
@@ -144,6 +147,7 @@ image_diff_test(
     # This is intentionally the same as ':clone-dir', see the comment in the
     # toml file for details
     diff = "clone-dir.toml",
+    diff_type = "file",
     layer = ":clone-dir-omit-outer",
 )
 
@@ -163,6 +167,7 @@ image.layer(
 image_diff_test(
     name = "clone-dir-pre-existing-test",
     diff = "clone-dir-pre-existing.toml",
+    diff_type = "file",
     layer = ":clone-dir-pre-existing",
 )
 
@@ -218,5 +223,6 @@ image_diff_test(
     name = "clone-file-remap-ids-test",
     # same user and group names but different ids
     diff = "clone-file.toml",
+    diff_type = "file",
     layer = ":clone-file-remap-ids",
 )

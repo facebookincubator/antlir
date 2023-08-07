@@ -1,27 +1,27 @@
-[a]
+[file.a]
 op = 'removed'
 
-[a.diff]
+[file.a.diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = "root"
 group = "root"
 text = ''
 
-[b]
+[file.b]
 op = 'removed'
 
-[b.diff]
+[file.b.diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["b/c"]
+[file."b/c"]
 op = 'removed'
 
-["b/c".diff]
+[file."b/c".diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = "root"

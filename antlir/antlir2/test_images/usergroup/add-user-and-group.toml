@@ -1,7 +1,7 @@
-["etc/group"]
+[file."etc/group"]
 op = 'diff'
 
-["etc/group".diff]
+[file."etc/group".diff]
 text-patch = '''
 --- parent
 +++ child
@@ -10,10 +10,10 @@ text-patch = '''
 +antlir:x:1000:antlir
 '''
 
-["etc/passwd"]
+[file."etc/passwd"]
 op = 'diff'
 
-["etc/passwd".diff]
+[file."etc/passwd".diff]
 text-patch = '''
 --- parent
 +++ child
@@ -22,10 +22,10 @@ text-patch = '''
 +antlir:x:1000:1000::/:/fakeshell
 '''
 
-["etc/shadow"]
+[file."etc/shadow"]
 op = 'added'
 
-["etc/shadow".diff]
+[file."etc/shadow".diff]
 mode = ''
 file-type = 'regular-file'
 user = 'root'

@@ -18,16 +18,22 @@ use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
+use clap::ValueEnum;
+use image_test_lib::get_installed_rpms;
 use json_arg::TomlFile;
 use similar::TextDiff;
 use walkdir::WalkDir;
 
-mod entry;
-use entry::Entry;
+mod file_entry;
+use file_entry::FileEntry;
 mod diff;
-use diff::Diff;
-use diff::EntryDiff;
+use diff::FileDiff;
+use diff::FileEntryDiff;
 use diff::LayerDiff;
+mod rpm_entry;
+use diff::RpmDiff;
+use diff::RpmEntryDiff;
+use rpm_entry::RpmEntry;
 
 #[derive(Parser)]
 struct Args {
@@ -37,21 +43,25 @@ struct Args {
     #[clap(long)]
     /// Child layer
     layer: PathBuf,
-    #[clap(subcommand)]
-    subcommand: Subcommand,
+    /// Expected diff in TOML format
+    #[clap(long)]
+    expected: TomlFile<LayerDiff>,
+    /// Print the diff instead of running test
+    #[clap(long)]
+    print: bool,
     /// Exclude entries that start with given prefixes
     #[clap(long)]
     exclude: Vec<String>,
+    /// Diff type to generete: file, rpm, or all
+    #[clap(long, value_enum, value_parser, default_value_t=DiffType::All)]
+    diff_type: DiffType,
 }
 
-#[derive(Parser)]
-enum Subcommand {
-    /// Print the diff between the two in TOML form
-    Print,
-    Test {
-        #[clap(long)]
-        expected: TomlFile<LayerDiff>,
-    },
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
+enum DiffType {
+    File,
+    Rpm,
+    All,
 }
 
 const ALWAYS_EXCLUDE: [&str; 2] = ["var/lib/rpm", "var/lib/dnf"];
@@ -62,8 +72,7 @@ fn exclude_entry(entry: &Path, exclude_list: &[String]) -> bool {
         .any(|e| entry.to_string_lossy().starts_with(e))
 }
 
-fn main() -> Result<()> {
-    let args = Args::parse();
+fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
     let exclude_list: Vec<String> = args
         .exclude
         .iter()
@@ -102,8 +111,8 @@ fn main() -> Result<()> {
         }
 
         let parent_path = args.parent.join(relpath);
-        let entry = Entry::new(fs_entry.path(), &layer_userdb, &layer_groupdb)
-            .with_context(|| format!("while building Entry for '{}", relpath.display()))?;
+        let entry = FileEntry::new(fs_entry.path(), &layer_userdb, &layer_groupdb)
+            .with_context(|| format!("while building FileEntry for '{}", relpath.display()))?;
         paths_that_exist_in_layer.insert(relpath.to_path_buf());
         // broken symlinks are allowed
         let parent_exists = if fs_entry.path_is_symlink() {
@@ -112,19 +121,19 @@ fn main() -> Result<()> {
             parent_path.exists()
         };
         if !parent_exists {
-            entries.insert(relpath.to_path_buf(), Diff::Added(entry));
+            entries.insert(relpath.to_path_buf(), FileDiff::Added(entry));
         } else {
-            let parent_entry = Entry::new(&parent_path, &parent_userdb, &parent_groupdb)
+            let parent_entry = FileEntry::new(&parent_path, &parent_userdb, &parent_groupdb)
                 .with_context(|| {
                     format!(
-                        "while building Entry for parent version of '{}",
+                        "while building FileEntry for parent version of '{}",
                         relpath.display(),
                     )
                 })?;
             if parent_entry != entry {
                 entries.insert(
                     relpath.to_path_buf(),
-                    Diff::Diff(EntryDiff::new(&parent_entry, &entry)),
+                    FileDiff::Diff(FileEntryDiff::new(&parent_entry, &entry)),
                 );
             }
         }
@@ -145,37 +154,107 @@ fn main() -> Result<()> {
         }
 
         if !paths_that_exist_in_layer.contains(relpath) {
-            let entry = Entry::new(fs_entry.path(), &parent_userdb, &parent_groupdb)
-                .with_context(|| format!("while building Entry for '{}'", relpath.display()))?;
-            entries.insert(relpath.to_path_buf(), Diff::Removed(entry));
+            let entry = FileEntry::new(fs_entry.path(), &parent_userdb, &parent_groupdb)
+                .with_context(|| format!("while building FileEntry for '{}'", relpath.display()))?;
+            entries.insert(relpath.to_path_buf(), FileDiff::Removed(entry));
         }
     }
-    let diff = LayerDiff(entries);
 
-    match args.subcommand {
-        Subcommand::Print => {
-            println!(
-                "{}",
-                toml::to_string_pretty(&diff).context("while serializing")?
-            );
-        }
-        Subcommand::Test { expected } => {
-            if &diff != expected.as_inner() {
-                println!(
-                    "{}",
-                    TextDiff::from_lines(
-                        &toml::to_string_pretty(expected.as_inner())
-                            .context("while (re)serializing expected")?,
-                        &toml::to_string_pretty(&diff)
-                            .with_context(|| format!("while serializing actual diff: {diff:#?}"))?,
-                    )
-                    .unified_diff()
-                    .context_radius(3)
-                    .header("expected", "actual")
+    Ok(entries)
+}
+
+fn generate_rpm_diff(args: &Args) -> Result<BTreeMap<String, RpmDiff>> {
+    let parent_rpms = get_installed_rpms(args.parent.clone())?;
+    let layer_rpms = get_installed_rpms(args.layer.clone())?;
+    let mut entries = BTreeMap::new();
+
+    for (name, info) in &layer_rpms {
+        let child_entry = RpmEntry::new(info.evra());
+
+        match parent_rpms.get(name) {
+            Some(parent_info) => {
+                let parent_entry = RpmEntry::new(parent_info.evra());
+                if parent_entry != child_entry {
+                    entries.insert(
+                        name.clone(),
+                        RpmDiff::Changed(RpmEntryDiff::new(&parent_entry, &child_entry)),
+                    );
+                };
+            }
+            None => {
+                entries.insert(
+                    name.clone(),
+                    RpmDiff::Installed(RpmEntry::new("from_snapshot")),
                 );
-                anyhow::bail!("actual diff did not match expected diff");
             }
         }
     }
+
+    for (name, info) in &parent_rpms {
+        let parent_entry = RpmEntry::new(info.evra());
+        match layer_rpms.get(name) {
+            Some(child_info) => {
+                let child_entry = RpmEntry::new(child_info.evra());
+                if parent_entry != child_entry {
+                    entries.insert(
+                        name.clone(),
+                        RpmDiff::Changed(RpmEntryDiff::new(&parent_entry, &child_entry)),
+                    );
+                };
+            }
+            None => {
+                entries.insert(
+                    name.clone(),
+                    RpmDiff::Removed(RpmEntry::new("from_snapshot")),
+                );
+            }
+        }
+    }
+
+    Ok(entries)
+}
+
+fn main() -> Result<()> {
+    let args = Args::parse();
+
+    let (file_diff, rpm_diff) = match args.diff_type {
+        DiffType::File => (Some(generate_file_diff(&args)?), None),
+        DiffType::Rpm => (None, Some(generate_rpm_diff(&args)?)),
+        DiffType::All => (
+            Some(generate_file_diff(&args)?),
+            Some(generate_rpm_diff(&args)?),
+        ),
+    };
+
+    let diff = LayerDiff {
+        file: file_diff,
+        rpm: rpm_diff,
+    };
+
+    if args.print {
+        println!(
+            "{}",
+            toml::to_string_pretty(&diff).context("while serializing")?
+        );
+
+        return Ok(());
+    }
+
+    if &diff != args.expected.as_inner() {
+        println!(
+            "{}",
+            TextDiff::from_lines(
+                &toml::to_string_pretty(args.expected.as_inner())
+                    .context("while (re)serializing expected")?,
+                &toml::to_string_pretty(&diff)
+                    .with_context(|| format!("while serializing actual diff: {diff:#?}"))?,
+            )
+            .unified_diff()
+            .context_radius(3)
+            .header("expected", "actual")
+        );
+        anyhow::bail!("actual diff did not match expected diff");
+    }
+
     Ok(())
 }

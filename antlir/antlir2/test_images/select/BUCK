@@ -29,6 +29,7 @@ image_diff_test(
         "ovr_config//cpu:arm64": "select.aarch64.toml",
         "ovr_config//cpu:x86_64": "select.x86_64.toml",
     }),
+    diff_type = "file",
     layer = ":select-inside-feature",
 )
 
@@ -69,5 +70,6 @@ image_diff_test(
         "ovr_config//cpu:arm64": "select.aarch64.toml",
         "ovr_config//cpu:x86_64": "select.x86_64.toml",
     }),
+    diff_type = "file",
     layer = ":select-feature-target",
 )

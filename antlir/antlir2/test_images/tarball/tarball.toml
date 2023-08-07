@@ -1,27 +1,27 @@
-[tar]
+[file.tar]
 op = "added"
 
-[tar.diff]
+[file.tar.diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar/foo"]
+[file."tar/foo"]
 op = "added"
 
-["tar/foo".diff]
+[file."tar/foo".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar/foo/bar"]
+[file."tar/foo/bar"]
 op = "added"
 
-["tar/foo/bar".diff]
+[file."tar/foo/bar".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"
@@ -30,20 +30,20 @@ text = """
 I am bar
 """
 
-["tar/foo/baz"]
+[file."tar/foo/baz"]
 op = "added"
 
-["tar/foo/baz".diff]
+[file."tar/foo/baz".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar/foo/baz/qux"]
+[file."tar/foo/baz/qux"]
 op = "added"
 
-["tar/foo/baz/qux".diff]
+[file."tar/foo/baz/qux".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"
@@ -52,30 +52,30 @@ text = """
 I am qux
 """
 
-["tar.gz"]
+[file."tar.gz"]
 op = "added"
 
-["tar.gz".diff]
+[file."tar.gz".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar.gz/foo"]
+[file."tar.gz/foo"]
 op = "added"
 
-["tar.gz/foo".diff]
+[file."tar.gz/foo".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar.gz/foo/bar"]
+[file."tar.gz/foo/bar"]
 op = "added"
 
-["tar.gz/foo/bar".diff]
+[file."tar.gz/foo/bar".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"
@@ -84,20 +84,20 @@ text = """
 I am bar
 """
 
-["tar.gz/foo/baz"]
+[file."tar.gz/foo/baz"]
 op = "added"
 
-["tar.gz/foo/baz".diff]
+[file."tar.gz/foo/baz".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar.gz/foo/baz/qux"]
+[file."tar.gz/foo/baz/qux"]
 op = "added"
 
-["tar.gz/foo/baz/qux".diff]
+[file."tar.gz/foo/baz/qux".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"
@@ -106,30 +106,30 @@ text = """
 I am qux
 """
 
-["tar.zst"]
+[file."tar.zst"]
 op = "added"
 
-["tar.zst".diff]
+[file."tar.zst".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar.zst/foo"]
+[file."tar.zst/foo"]
 op = "added"
 
-["tar.zst/foo".diff]
+[file."tar.zst/foo".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar.zst/foo/bar"]
+[file."tar.zst/foo/bar"]
 op = "added"
 
-["tar.zst/foo/bar".diff]
+[file."tar.zst/foo/bar".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"
@@ -138,20 +138,20 @@ text = """
 I am bar
 """
 
-["tar.zst/foo/baz"]
+[file."tar.zst/foo/baz"]
 op = "added"
 
-["tar.zst/foo/baz".diff]
+[file."tar.zst/foo/baz".diff]
 mode = "u+rwx,g+rx,o+rx"
 file-type = "directory"
 user = "root"
 group = "root"
 content_hash = "0"
 
-["tar.zst/foo/baz/qux"]
+[file."tar.zst/foo/baz/qux"]
 op = "added"
 
-["tar.zst/foo/baz/qux".diff]
+[file."tar.zst/foo/baz/qux".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"

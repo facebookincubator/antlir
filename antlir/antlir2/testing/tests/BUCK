@@ -1,5 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_integrity", "image_test_rpm_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
 load("//antlir/antlir2/testing:test_that_should_fail.bzl", "sh_test_that_should_fail", "test_that_should_fail")
@@ -7,10 +8,14 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 
 image.layer(
     name = "base",
+    dnf_additional_repos = [
+        "//antlir/antlir2/test_images/rpms/repo:test-repo",
+    ],
     features = [
         feature.rpms_install(rpms = [
             "systemd",
             # @oss-disable
+            "foobar",
         ]),
         systemd.install_unit("slow-unit.service"),
         systemd.enable_unit(
@@ -148,4 +153,35 @@ test_that_should_fail(
     stdout_re = "^this is some stdout of a test that is expected to fail\n$",
     test = "failing_test.sh",
     test_rule = image_sh_test,
+)
+
+image.layer(
+    name = "diff_test",
+    dnf_additional_repos = [
+        "//antlir/antlir2/test_images/rpms/repo:test-repo",
+    ],
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/home/diff_test",
+            group = "users",
+            mode = 0o755,
+            user = "diff_test",
+        ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "users",
+            shell = "/bin/sh",
+            username = "diff_test",
+        ),
+        feature.rpms_install(rpms = ["foo"]),
+        feature.rpms_remove_if_exists(rpms = ["foobar"]),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-image-diff",
+    diff = "image_diff.toml",
+    exclude = ["usr/lib/sysimage/rpm/rpmdb.sqlite"],
+    layer = ":diff_test",
 )

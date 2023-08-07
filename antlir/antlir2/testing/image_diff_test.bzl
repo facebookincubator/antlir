@@ -3,54 +3,72 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
-def _impl(ctx: AnalysisContext) -> list[Provider]:
+def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
     if not ctx.attrs.layer[LayerInfo].parent:
         fail("image_diff_test only works for layers with parents")
-    base_cmd = cmd_args(
-        "sudo",  # this needs to read files that are only readable by root (eg /etc/shadow)
-        ctx.attrs.image_diff_test[RunInfo],
-        cmd_args(ctx.attrs.layer[LayerInfo].parent.subvol_symlink, format = "--parent={}"),
-        cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
-        cmd_args(ctx.attrs.exclude, format = "--exclude={}"),
-    )
+
     test_cmd = cmd_args(
-        base_cmd,
-        "test",
+        ctx.attrs.image_diff_test[RunInfo],
+        cmd_args("--"),
+        cmd_args("/parent", format = "--parent={}"),
+        cmd_args("/layer", format = "--layer={}"),
+        cmd_args(ctx.attrs.exclude, format = "--exclude={}"),
+        cmd_args(ctx.attrs.diff_type, format = "--diff-type={}"),
         cmd_args(ctx.attrs.diff, format = "--expected={}"),
     )
+
     return [
-        DefaultInfo(sub_targets = {
-            "print": [DefaultInfo(), RunInfo(cmd_args(base_cmd, "print"))],
-        }),
+        DefaultInfo(),
         RunInfo(test_cmd),
-        ExternalRunnerTestInfo(
-            command = [test_cmd],
-            labels = ctx.attrs.labels,
-            type = "custom",
-        ),
     ]
 
 _image_diff_test = rule(
-    impl = _impl,
+    impl = _diff_test_impl,
     attrs = {
         "diff": attrs.source(doc = "expected diff between the two"),
+        "diff_type": attrs.enum(["file", "rpm", "all"], default = "all"),
         "exclude": attrs.list(attrs.string(), default = []),
         "image_diff_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_diff_test:image-diff-test")),
-        "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
     },
     doc = "Test that the only changes between a layer and it's parent is what you expect",
 )
 
-def image_diff_test(**kwargs):
-    labels = kwargs.pop("labels", [])
-    if fully_qualified_test_name_rollout.use_fully_qualified_name():
-        labels = labels + [NAMING_ROLLOUT_LABEL]
-
+def image_diff_test(name: str, diff: str | "selector", layer: str, **kwargs):
     _image_diff_test(
-        labels = labels,
+        name = name + "--script",
+        diff = diff,
+        layer = layer,
         **kwargs
+    )
+
+    image.layer(
+        name = name + "--layer",
+        # Diff test does rpm list comparison so we need to run it in the BA where we have
+        # `rpm` installed
+        parent_layer = layer + "[build_appliance]",
+        flavor = layer + "[flavor]",
+        features = [
+            feature.ensure_dirs_exist(dirs = "/layer"),
+            feature.layer_mount(
+                source = layer,
+                mountpoint = "/layer",
+            ),
+            feature.ensure_dirs_exist(dirs = "/parent"),
+            feature.layer_mount(
+                source = layer + "[parent_layer]",
+                mountpoint = "/parent",
+            ),
+        ],
+    )
+
+    image_sh_test(
+        name = name,
+        layer = ":{}--layer".format(name),
+        test = ":{}--script".format(name),
     )

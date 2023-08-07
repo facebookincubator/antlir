@@ -1,7 +1,7 @@
-[arch]
+[file.arch]
 op = 'added'
 
-[arch.diff]
+[file.arch.diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = 'root'

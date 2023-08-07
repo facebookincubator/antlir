@@ -1,0 +1,100 @@
+[file.empty-file-will-not-exist-in-rpm]
+op = "removed"
+
+[file.empty-file-will-not-exist-in-rpm.diff]
+mode = "u+r,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = ""
+
+[file."etc/group"]
+op = "diff"
+
+[file."etc/group".diff]
+text-patch = """
+--- parent
++++ child
+@@ -20,7 +20,7 @@
+ ftp:x:50:
+ lock:x:54:
+ audio:x:63:
+-users:x:100:
++users:x:100:diff_test
+ nobody:x:65534:
+ utmp:x:22:
+ input:x:104:
+"""
+
+[file."etc/passwd"]
+op = "diff"
+
+[file."etc/passwd".diff]
+text-patch = """
+--- parent
++++ child
+@@ -13,3 +13,4 @@
+ nobody:x:65534:65534:Kernel Overflow User:/:/sbin/nologin
+ systemd-oom:x:999:999:systemd Userspace OOM Killer:/:/usr/sbin/nologin
+ dbus:x:81:81:System message bus:/:/sbin/nologin
++diff_test:x:1000:100::/:/bin/sh
+"""
+
+[file."etc/shadow"]
+op = "diff"
+
+[file."etc/shadow".diff]
+text-patch = """
+--- parent
++++ child
+@@ -13,3 +13,4 @@
+ nobody:*:19347:0:99999:7:::
+ systemd-oom:!*:19576::::::
+ dbus:!!:19576::::::
++diff_test:!!:::::::
+"""
+
+[file.foo]
+op = "removed"
+
+[file.foo.diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."foo/bar"]
+op = "removed"
+
+[file."foo/bar".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."home/diff_test"]
+op = "added"
+
+[file."home/diff_test".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "diff_test"
+group = "users"
+
+[rpm.foo]
+op = "removed"
+
+[rpm.foo.diff]
+evra = "from_snapshot"
+
+[rpm.foo-empty]
+op = "removed"
+
+[rpm.foo-empty.diff]
+evra = "from_snapshot"
+
+[rpm.foobar]
+op = "removed"
+
+[rpm.foobar.diff]
+evra = "from_snapshot"

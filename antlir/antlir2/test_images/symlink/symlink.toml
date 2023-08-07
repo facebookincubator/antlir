@@ -1,17 +1,17 @@
-["dir/symlink-to-file"]
+[file."dir/symlink-to-file"]
 op = 'added'
 
-["dir/symlink-to-file".diff]
+[file."dir/symlink-to-file".diff]
 mode = 'u+rwx,g+rwx,o+rwx'
 user = "root"
 group = "root"
 file-type = "symlink"
 text = '/target'
 
-[symlink-to-dir]
+[file.symlink-to-dir]
 op = 'added'
 
-[symlink-to-dir.diff]
+[file.symlink-to-dir.diff]
 mode = 'u+rwx,g+rwx,o+rwx'
 user = "root"
 group = "root"

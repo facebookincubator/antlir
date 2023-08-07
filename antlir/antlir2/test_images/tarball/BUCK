@@ -68,5 +68,6 @@ image.layer(
 image_diff_test(
     name = "tarball-test",
     diff = "tarball.toml",
+    diff_type = "file",
     layer = ":tarball",
 )

@@ -17,18 +17,31 @@ use serde::Serialize;
 use serde_with::serde_as;
 use similar::TextDiff;
 
-use crate::entry::Entry;
+use crate::file_entry::FileEntry;
+use crate::rpm_entry::RpmEntry;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(transparent)]
-pub(crate) struct LayerDiff(pub(crate) BTreeMap<PathBuf, Diff>);
+pub(crate) struct LayerDiff {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) file: Option<BTreeMap<PathBuf, FileDiff>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) rpm: Option<BTreeMap<String, RpmDiff>>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case", tag = "op", content = "diff")]
-pub(crate) enum Diff {
-    Added(Entry),
-    Removed(Entry),
-    Diff(EntryDiff),
+pub(crate) enum FileDiff {
+    Added(FileEntry),
+    Removed(FileEntry),
+    Diff(FileEntryDiff),
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case", tag = "op", content = "diff")]
+pub(crate) enum RpmDiff {
+    Installed(RpmEntry),
+    Removed(RpmEntry),
+    Changed(RpmEntryDiff),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -53,7 +66,7 @@ impl<T> FieldDiff<T> {
 #[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct EntryDiff {
+pub(crate) struct FileEntryDiff {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     text_patch: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -70,10 +83,10 @@ pub(crate) struct EntryDiff {
     xattrs: XattrDiff,
 }
 
-impl EntryDiff {
+impl FileEntryDiff {
     #[deny(unused_variables)]
-    pub(crate) fn new(parent: &Entry, child: &Entry) -> Self {
-        let Entry {
+    pub(crate) fn new(parent: &FileEntry, child: &FileEntry) -> Self {
+        let FileEntry {
             mode,
             user,
             group,
@@ -216,5 +229,21 @@ impl XattrDiff {
 
     fn is_empty(&self) -> bool {
         self.removed.is_empty() && self.added.is_empty() && self.changed.is_empty()
+    }
+}
+
+#[serde_as]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "kebab-case")]
+pub(crate) struct RpmEntryDiff {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    evra: Option<FieldDiff<String>>,
+}
+
+impl RpmEntryDiff {
+    pub(crate) fn new(parent: &RpmEntry, child: &RpmEntry) -> Self {
+        Self {
+            evra: FieldDiff::new(parent.evra.clone(), child.evra.clone()),
+        }
     }
 }
