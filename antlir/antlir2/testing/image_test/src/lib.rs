@@ -6,6 +6,7 @@
  */
 
 use std::collections::HashSet;
+use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
@@ -167,6 +168,30 @@ impl FromStr for KvPair {
     }
 }
 
+impl<K, V> From<(K, V)> for KvPair
+where
+    K: AsRef<str> + Clone + std::fmt::Display,
+    V: AsRef<OsStr> + Clone,
+    OsString: From<V>,
+{
+    fn from(kv: (K, V)) -> Self {
+        KvPair {
+            key: kv.0.to_string(),
+            value: OsString::from(kv.1),
+        }
+    }
+}
+
+impl KvPair {
+    pub fn to_os_string(&self) -> OsString {
+        let mut value = OsString::new();
+        value.push(self.key.clone());
+        value.push(OsStr::new("="));
+        value.push(self.value.clone());
+        value
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::env;
@@ -257,7 +282,7 @@ mod test {
     }
 
     #[test]
-    fn test_kvpair() {
+    fn test_kvpair_from_str() {
         #[derive(Parser, Debug)]
         struct KvPairArgs {
             #[clap(long)]
@@ -277,5 +302,13 @@ mod test {
                 }
             ]
         );
+    }
+
+    #[test]
+    fn test_kvpair_to_os_string() {
+        assert_eq!(
+            KvPair::from(("a", "b")).to_os_string(),
+            OsString::from("a=b"),
+        )
     }
 }
