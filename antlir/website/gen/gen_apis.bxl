@@ -25,7 +25,7 @@ def _impl(ctx):
     ctx.output.print("</FbInternalOnly>")
     ctx.output.print("<OssOnly>Rustdoc links coming soon</OssOnly>")
 
-gen_apis = bxl(
+gen_apis = bxl_main(
     impl = _impl,
     cli_args = {
         "set": cli_args.list(cli_args.target_expr()),
