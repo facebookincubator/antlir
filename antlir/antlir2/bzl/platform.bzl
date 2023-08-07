@@ -7,7 +7,13 @@ load("//antlir/bzl/build_defs.bzl", "config")
 
 def rule_with_default_target_platform(rule_fn):
     def _wrapped(**kwargs):
-        kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
+        for k, v in default_target_platform_kwargs().items():
+            kwargs.setdefault(k, v)
         return rule_fn(**kwargs)
 
     return _wrapped
+
+def default_target_platform_kwargs():
+    return {
+        "default_target_platform": config.get_platform_for_current_buildfile().target_platform,
+    }
