@@ -12,7 +12,7 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
-_HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
+HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
@@ -34,7 +34,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     # other people are already writing in the standard *_unittest macros.
     # This wrapper should be as invisible as possible.
     inner_labels = list(ctx.attrs.test[ExternalRunnerTestInfo].labels)
-    for label in _HIDE_TEST_LABELS:
+    for label in HIDE_TEST_LABELS:
         inner_labels.remove(label)
 
     script, _ = ctx.actions.write(
@@ -98,7 +98,7 @@ def _implicit_image_test(
     test_rule(
         name = name + "_image_test_inner",
         antlir_rule = "user-internal",
-        labels = add_test_framework_label(_HIDE_TEST_LABELS, "test-framework=7:antlir_image_test"),
+        labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test"),
         **kwargs
     )
     labels = list(labels) if labels else []

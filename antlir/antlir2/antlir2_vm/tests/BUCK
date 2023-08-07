@@ -1,0 +1,9 @@
+load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
+
+vm.rust_test(
+    name = "rust",
+    srcs = ["test.rs"],
+    crate = "test_rs",
+    crate_root = "test.rs",
+    vm_host = "//antlir/antlir2/antlir2_vm:default-nondisk-boot",
+)

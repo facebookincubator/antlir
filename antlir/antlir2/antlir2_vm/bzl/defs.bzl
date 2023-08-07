@@ -7,6 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
+load(":test.bzl", "vm_rust_test")
 load(":types.bzl", "DiskInfo", "VMHostInfo")
 
 def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
@@ -78,15 +79,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     run_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_exec[RunInfo]),
         "isolate",
-        "--image",
-        cmd_args(ctx.attrs.image[LayerInfo].subvol_symlink),
-        "--machine-spec",
-        cmd_args(machine_json_args),
-        "--runtime-spec",
-        cmd_args(runtime_json_args),
+        cmd_args(ctx.attrs.image[LayerInfo].subvol_symlink, format = "--image={}"),
+        cmd_args(machine_json_args, format = "--machine-spec={}"),
+        cmd_args(runtime_json_args, format = "--runtime-spec={}"),
     )
     if ctx.attrs.timeout_s:
-        run_cmd = cmd_args(run_cmd, "--timeout-s", str(ctx.attrs.timeout_s))
+        run_cmd = cmd_args(
+            run_cmd,
+            cmd_args(str(ctx.attrs.timeout_s), format = "--timeout-s={}"),
+        )
 
     run_script, _ = ctx.actions.write(
         "run.sh",
@@ -173,4 +174,5 @@ _vm_host = rule(
 
 vm = struct(
     host = rule_with_default_target_platform(_vm_host),
+    rust_test = vm_rust_test,
 )
