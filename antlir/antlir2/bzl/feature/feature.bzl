@@ -63,6 +63,7 @@ load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":clone.bzl", "clone_analyze")
+load(":dot_meta.bzl", "dot_meta_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
 load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
@@ -95,6 +96,7 @@ def _feature_as_json(feat: feature_record.type) -> "struct":
 _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
     "clone": clone_analyze,
+    "dot_meta": dot_meta_analyze,
     "ensure_dir_exists": ensure_dir_exists_analyze,
     "ensure_dir_symlink": ensure_dir_symlink_analyze,
     "ensure_file_symlink": ensure_file_symlink_analyze,
@@ -207,6 +209,7 @@ shared_features_attrs = {
     # the output of this rule
     "feature_targets": attrs.list(
         attrs.dep(providers = [FeatureInfo]),
+        default = [],
     ),
     # inline features are direct calls to a feature macro inside a layer()
     # or feature() rule instance
@@ -218,6 +221,7 @@ shared_features_attrs = {
             attrs.string(),  # kwarg name
             _nestable_value,
         ),
+        default = {},
     ),
     # Features need a way to coerce strings to sources or dependencies.
     # Map "feature key" -> "feature deps"
@@ -232,6 +236,7 @@ shared_features_attrs = {
                 ),
             ),
         ),
+        default = {},
     ),
     # Map "feature key" -> "feature dep/source"
     "inline_features_deps_or_srcs": attrs.dict(
@@ -240,18 +245,32 @@ shared_features_attrs = {
             attrs.string(),
             attrs.one_of(attrs.dep(), attrs.source()),
         ),
+        default = {},
     ),
-    "inline_features_exec_deps": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.exec_dep()))),
+    "inline_features_exec_deps": attrs.dict(
+        attrs.string(),
+        attrs.option(attrs.dict(attrs.string(), attrs.exec_dep())),
+        default = {},
+    ),
     # Map "feature key" -> "feature impl binary"
-    "inline_features_impls": attrs.dict(attrs.string(), attrs.exec_dep(providers = [RunInfo])),
+    "inline_features_impls": attrs.dict(
+        attrs.string(),
+        attrs.exec_dep(providers = [RunInfo]),
+        default = {},
+    ),
     # Map "feature key" -> "feature srcs"
-    "inline_features_srcs": attrs.dict(attrs.string(), attrs.option(attrs.dict(attrs.string(), attrs.source()))),
+    "inline_features_srcs": attrs.dict(
+        attrs.string(),
+        attrs.option(attrs.dict(attrs.string(), attrs.source())),
+        default = {},
+    ),
     # Map "feature key" -> "feature dep/source"
     "inline_features_unnamed_deps_or_srcs": attrs.dict(
         attrs.string(),
         attrs.list(
             attrs.one_of(attrs.dep(), attrs.source()),
         ),
+        default = {},
     ),
 }
 

@@ -1,0 +1,10 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:dot_meta.bzl", "dot_meta")
+
+feature.new(
+    name = "dot-meta",
+    features = [
+        dot_meta(),
+    ],
+    visibility = ["PUBLIC"],
+)

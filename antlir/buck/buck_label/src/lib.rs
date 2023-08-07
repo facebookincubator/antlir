@@ -30,7 +30,7 @@ static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
 });
 static LABEL_WITH_CONFIG_RE: Lazy<Regex> = Lazy::new(|| {
     Regex::new(&format!(
-        r"^{}(?:\s+\({}\))?$",
+        r"^{}(?:\s+\((?:(?:<unspecified>)|(?:{}))\))?$",
         *LABEL_PATTERN, *LABEL_PATTERN
     ))
     .expect("I know this works")
@@ -292,6 +292,21 @@ mod tests {
                 config: None,
             },
             Label::new("abc//path/to/target:label[subtarget]")
+                .expect("valid label")
+                .parts(),
+        );
+    }
+
+    #[test]
+    fn anon() {
+        assert_eq!(
+            Parts {
+                cell: "abc",
+                package: "path/to/target",
+                name: "label",
+                config: None,
+            },
+            Label::new("abc//path/to/target:label (<unspecified>)")
                 .expect("valid label")
                 .parts(),
         );

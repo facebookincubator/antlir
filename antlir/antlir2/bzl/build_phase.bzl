@@ -36,6 +36,8 @@ BuildPhase = enum(
     # topologically orderable. Everything should go here that doesn't have to be
     # in one of the earlier, less well-behaved phases.
     "compile",
+    # Stamp build info into the built layer
+    "buildinfo_stamp",
 )
 
 # Quick self-test to ensure that order is correct
@@ -47,6 +49,7 @@ if list(BuildPhase.values()) != [
     "genrule",
     "remove",
     "compile",
+    "buildinfo_stamp",
 ]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
 
@@ -61,6 +64,10 @@ def _is_predictable(phase: BuildPhase.type) -> bool:
     cannot be determined in advance without actually building them.
     """
     return {
+        # buildinfo_stamp really is predictable, but the depgraph does not
+        # currently have any support for files that are intentionally
+        # overwritten
+        "buildinfo_stamp": False,
         "chef": False,
         "chef_cleanup": False,
         "chef_setup": True,  # using regular well-behaved features

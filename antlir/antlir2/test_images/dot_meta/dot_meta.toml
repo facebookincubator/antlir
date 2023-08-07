@@ -1,0 +1,35 @@
+[".meta/fbpkg"]
+op = "added"
+
+[".meta/fbpkg".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+foo:bar
+"""
+
+[".meta/revision"]
+op = "added"
+
+[".meta/revision".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+deadbeef
+"""
+
+[".meta/target"]
+op = "diff"
+
+[".meta/target".diff]
+text-patch = """
+--- parent
++++ child
+@@ -1 +1 @@
+-fbcode//antlir/antlir2/test_images/dot_meta:base
++fbcode//antlir/antlir2/test_images/dot_meta:dot_meta
+"""

@@ -1,0 +1,51 @@
+load("//antlir/antlir2/bzl/feature:dot_meta.bzl", "dot_meta")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
+
+# Normally, the `dot_meta` feature is included only when packaging up a final
+# layer, but we want to make it easier to test with image_diff_test, so these
+# layers explicitly include the `dot_meta` feature
+
+image.layer(
+    name = "base",
+    features = [
+        dot_meta(),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "dot_meta",
+    features = [
+        dot_meta(
+            package_name = "foo",
+            package_version = "bar",
+            revision = "deadbeef",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "dot_meta-test",
+    diff = "dot_meta.toml",
+    layer = ":dot_meta",
+)
+
+image.layer(
+    name = "unstamped",
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+package.cpio_gz(
+    name = "stamped.cpio.gz",
+    layer = ":unstamped",
+)
+
+buck_sh_test(
+    name = "cpio-is-stamped",
+    args = ["$(location :stamped.cpio.gz)"],
+    test = "test-cpio-is-stamped.sh",
+)
