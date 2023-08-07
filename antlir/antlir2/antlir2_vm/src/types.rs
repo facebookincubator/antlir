@@ -57,7 +57,7 @@ pub(crate) struct ShareOpts {
 }
 
 /// Operational specific parameters for VM but not related to VM configuration itself
-#[derive(Debug, Clone, Args)]
+#[derive(Debug, Clone, Args, PartialEq)]
 pub(crate) struct VMArgs {
     /// Timeout in seconds before VM will be terminated. None disables the
     /// timeout, which should only be used for interactive shells for
