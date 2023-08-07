@@ -72,7 +72,7 @@ pub(crate) struct VMArgs {
     pub(crate) output_dirs: Vec<PathBuf>,
     /// Environment variables for the command
     #[clap(long)]
-    pub(crate) command_envs: Option<Vec<KvPair>>,
+    pub(crate) command_envs: Vec<KvPair>,
     /// Command to execute inside VM. If not passed in, a shell will be spawned
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
     pub(crate) command: Option<Vec<OsString>>,
@@ -90,16 +90,14 @@ impl VMArgs {
         if self.console {
             args.push("--console".into());
         }
-        if let Some(command_envs) = &self.command_envs {
-            for pair in command_envs {
-                args.push("--command-envs".into());
-                let mut kv_str = OsString::new();
-                kv_str.push(pair.key.clone());
-                kv_str.push(OsStr::new("="));
-                kv_str.push(pair.value.clone());
-                args.push(kv_str);
-            }
-        }
+        self.command_envs.iter().for_each(|pair| {
+            args.push("--command-envs".into());
+            let mut kv_str = OsString::new();
+            kv_str.push(pair.key.clone());
+            kv_str.push(OsStr::new("="));
+            kv_str.push(pair.value.clone());
+            args.push(kv_str);
+        });
         self.output_dirs.iter().for_each(|dir| {
             args.push("--output-dirs".into());
             args.push(dir.clone().into());

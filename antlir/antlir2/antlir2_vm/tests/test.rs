@@ -14,3 +14,8 @@ extern "C" {
 fn is_root() {
     assert_eq!(0, unsafe { geteuid() });
 }
+
+#[test]
+fn env_propagated() {
+    assert_eq!("1", std::env::var("ANTLIR2_TEST").expect("env var missing"));
+}

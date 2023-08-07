@@ -5,5 +5,8 @@ vm.rust_test(
     srcs = ["test.rs"],
     crate = "test_rs",
     crate_root = "test.rs",
+    env = {
+        "ANTLIR2_TEST": "1",
+    },
     vm_host = "//antlir/antlir2/antlir2_vm:default-nondisk-boot",
 )

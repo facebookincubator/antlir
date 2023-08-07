@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::env;
 use std::ffi::OsStr;
@@ -16,6 +17,7 @@ use std::process::Command;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolatedContext;
 use antlir2_isolate::IsolationContext;
+use image_test_lib::KvPair;
 use once_cell::sync::OnceCell;
 use thiserror::Error;
 use tracing::debug;
@@ -85,34 +87,32 @@ impl Platform {
     }
 }
 
-/// If these env exist, pass them into the container too.
+/// If these env exist, always pass them through.
 const PASSTHROUGH_ENVS: &[&str] = &["RUST_LOG", "ANTLIR_BUCK"];
 
-/// Concatenate PASSTHROUGH_ENVS and `envs` to create a list of env names that
-/// should be passed through
-fn env_filter(envs: Option<&[String]>) -> Vec<&str> {
-    match envs {
-        Some(envs) => envs
-            .iter()
-            .map(|x| x.as_str())
-            .chain(PASSTHROUGH_ENVS.iter().copied())
-            .collect(),
-        None => PASSTHROUGH_ENVS.to_vec(),
-    }
+/// Generate default passthrough env vars
+pub(crate) fn default_passthrough_envs() -> Vec<KvPair> {
+    PASSTHROUGH_ENVS
+        .iter()
+        .filter(|x| env::var(*x).is_ok())
+        .map(|x| KvPair {
+            key: x.to_string(),
+            value: OsString::from(env::var(x).expect("must exist")),
+        })
+        .collect()
 }
 
 /// Return IsolatedContext ready for executing a command inside isolation
 /// # Arguments
 /// * `image` - container image that would be used to run the VM
-/// * `envs` - Additional envs to set inside container.
+/// * `envs` - env vars to set inside container.
 /// * `outputs` - Additional writable directories
 pub(crate) fn isolated<T: AsRef<OsStr>>(
     image: &PathBuf,
-    envs: Option<&[String]>,
+    envs: Vec<KvPair>,
     outputs: &[T],
 ) -> Result<IsolatedContext> {
     let repo = Platform::repo_root()?;
-    let mut builder = IsolationContext::builder(image);
     let mut all_outputs: HashSet<&Path> = outputs.iter().map(|x| Path::new(x)).collect();
     // Carry over virtualizations support
     // TODO: Linux-specific
@@ -120,18 +120,17 @@ pub(crate) fn isolated<T: AsRef<OsStr>>(
     // virtiofsd uses relative path to binary for local state
     all_outputs.insert(&repo);
 
+    let mut builder = IsolationContext::builder(image);
     builder
         .register(true)
         .platform(Platform::get().clone())
         .working_directory(&repo)
         .outputs(all_outputs);
-    let filter = env_filter(envs);
-    env::vars()
-        .filter(|(k, _)| filter.contains(&k.as_str()))
-        .for_each(|(k, v)| {
-            builder.setenv::<(String, OsString)>((k, v.into()));
-        });
-
+    builder.setenv(
+        envs.into_iter()
+            .map(|p| (p.key, p.value))
+            .collect::<BTreeMap<_, _>>(),
+    );
     Ok(isolate(builder.build()))
 }
 
@@ -150,26 +149,15 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_env_filter() {
-        let all_envs = [("HELLO", "a"), ("WORLD", "b"), ("RUST_LOG", "c")];
-
-        let filter = env_filter(None);
+    fn test_default_envs() {
+        assert_eq!(default_passthrough_envs(), Vec::new());
+        env::set_var("RUST_LOG", "hello");
         assert_eq!(
-            all_envs
-                .into_iter()
-                .filter(|(k, _)| filter.contains(k))
-                .collect::<Vec<_>>(),
-            vec![("RUST_LOG", "c")],
-        );
-
-        let envs = ["HELLO".to_string()];
-        let filter = env_filter(Some(&envs));
-        assert_eq!(
-            all_envs
-                .into_iter()
-                .filter(|(k, _)| filter.contains(k))
-                .collect::<Vec<_>>(),
-            vec![("HELLO", "a"), ("RUST_LOG", "c")],
+            default_passthrough_envs(),
+            vec![KvPair {
+                key: "RUST_LOG".into(),
+                value: "hello".into(),
+            }],
         );
     }
 }

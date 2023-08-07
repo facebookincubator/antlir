@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::ffi::OsStr;
+use std::collections::HashMap;
 use std::ffi::OsString;
 use std::fs;
 use std::io::BufRead;
@@ -22,6 +22,7 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 use std::time::Instant;
 
+use image_test_lib::KvPair;
 use thiserror::Error;
 use tracing::debug;
 use tracing::info;
@@ -361,15 +362,16 @@ impl VM {
         if let Some(command) = &self.args.command {
             // Execute the specified command and wait for it to finish or timeout.
             let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
-            if let Some(envs) = &self.args.command_envs {
-                envs.iter().for_each(|kv| {
-                    let mut kv_str = OsString::new();
-                    kv_str.push(kv.key.clone());
-                    kv_str.push(OsStr::new("="));
-                    kv_str.push(kv.value.clone());
-                    ssh_cmd.arg(kv_str);
-                })
-            };
+            let dedup: HashMap<_, _> = self
+                .args
+                .command_envs
+                .iter()
+                .cloned()
+                .map(|p| (p.key, p.value))
+                .collect();
+            dedup.iter().map(KvPair::from).for_each(|kv| {
+                ssh_cmd.arg(kv.to_os_string());
+            });
             ssh_cmd.args(command);
             self.run_ssh_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
         } else {
@@ -500,7 +502,7 @@ mod test {
             timeout_s: None,
             console: false,
             command: None,
-            command_envs: None,
+            command_envs: vec![],
             output_dirs: vec![],
         };
         let share_opts = ShareOpts {
