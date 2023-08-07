@@ -7,8 +7,9 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":btrfs.bzl", "btrfs")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
+load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 
-def _impl(ctx: AnalysisContext) -> list[Provider]:
+def _impl_with_layer(layer: [Dependency, "provider_collection"], *, ctx: AnalysisContext) -> list[Provider]:
     extension = {
         "cpio.gz": ".cpio.gz",
         "cpio.zst": ".cpio.zst",
@@ -20,8 +21,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     package = ctx.actions.declare_output("image" + extension)
 
     spec_opts = {
-        "build_appliance": (ctx.attrs.build_appliance or ctx.attrs.layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
-        "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
+        "build_appliance": (ctx.attrs.build_appliance or layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
+        "layer": layer[LayerInfo].subvol_symlink,
     }
     spec_opts.update(ctx.attrs.opts)
 
@@ -37,14 +38,43 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     )
     return [DefaultInfo(package)]
 
+def _impl(ctx: "context"):
+    if ctx.attrs.dot_meta:
+        return ctx.actions.anon_target(stamp_buildinfo_rule, {
+            "layer": ctx.attrs.layer,
+            "name": str(ctx.label.raw_target()),
+            "_antlir2": ctx.attrs._antlir2,
+            "_dot_meta_feature": ctx.attrs._dot_meta_feature,
+            "_objcopy": ctx.attrs._objcopy,
+            "_run_nspawn": ctx.attrs._run_nspawn,
+            "_target_arch": ctx.attrs._target_arch,
+        }).map(partial(_impl_with_layer, ctx = ctx))
+    else:
+        return _impl_with_layer(
+            layer = ctx.attrs.layer,
+            ctx = ctx,
+        )
+
 _package = rule(
     impl = _impl,
     attrs = {
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+        "dot_meta": attrs.bool(default = True, doc = "record build info in /.meta"),
         "format": attrs.enum(["cpio.gz", "cpio.zst", "vfat", "rpm", "squashfs", "tar.gz"]),
         "layer": attrs.dep(providers = [LayerInfo]),
         "opts": attrs.dict(attrs.string(), attrs.any(), default = {}, doc = "options for this package format"),
+        "_antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
+        "_dot_meta_feature": attrs.dep(default = "//antlir/antlir2/bzl/package:dot-meta"),
+        "_objcopy": attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy")),
+        "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
+        "_target_arch": attrs.default_only(attrs.string(
+            default =
+                select({
+                    "ovr_config//cpu:arm64": "aarch64",
+                    "ovr_config//cpu:x86_64": "x86_64",
+                }),
+        )),
     },
 )
 
@@ -128,6 +158,7 @@ def _rpm(
         layer = layer,
         format = "rpm",
         opts = opts,
+        dot_meta = False,
         **kwargs
     )
 

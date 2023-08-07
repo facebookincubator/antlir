@@ -6,7 +6,6 @@
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "build_phase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
-load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
@@ -33,11 +32,11 @@ def _map_image(
     produce a new image.
     In other words, this is a mapping function of 'image A -> A1'
     """
-    toolchain = ctx.attrs.toolchain[Antlir2ToolchainInfo]
+    antlir2 = ctx.attrs.antlir2[RunInfo]
     out = ctx.actions.declare_output("subvol-" + identifier)
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
-        toolchain.antlir2[RunInfo],
+        antlir2,
         cmd_args(logs.as_output(), format = "--logs={}"),
         "map",
         "--working-dir=antlir2-out",
@@ -87,7 +86,7 @@ def _impl(ctx: AnalysisContext) -> "promise":
 
     feature_anon_kwargs = {key.removeprefix("_feature_"): getattr(ctx.attrs, key) for key in dir(ctx.attrs) if key.startswith("_feature_")}
     feature_anon_kwargs["_objcopy"] = ctx.attrs._objcopy
-    feature_anon_kwargs["name"] = str(ctx.label.raw_target()) + ".features"
+    feature_anon_kwargs["name"] = str(ctx.label.raw_target())
     return ctx.actions.anon_target(
         feature_rule,
         feature_anon_kwargs,
@@ -387,6 +386,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
     ]
 
 _layer_attrs = {
+    "antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
     "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
     "build_appliance": attrs.option(
         attrs.dep(providers = [LayerInfo]),
@@ -436,12 +436,8 @@ _layer_attrs = {
                 "ovr_config//cpu:x86_64": "x86_64",
             }),
     )),
-    "toolchain": attrs.toolchain_dep(
-        default = "//antlir/antlir2:toolchain",
-        providers = [Antlir2ToolchainInfo],
-    ),
-    "_objcopy": attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy")),
-    "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
+    "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
+    "_run_nspawn": attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn"),
 }
 
 _layer_attrs.update(
@@ -453,7 +449,7 @@ _layer_attrs.update(
 
 # @oss-disable
 
-_layer = rule(
+layer_rule = rule(
     impl = _impl,
     attrs = _layer_attrs,
 )
@@ -481,6 +477,17 @@ def layer(
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
+    if is_facebook:
+        # available_fbpkgs is logically an optional dep, but to make it truly
+        # optional for using layers in anon_targets, we must just set the
+        # default at the macro layer
+        # TODO(vmagro): the best fix is to introduce this dep only on the
+        # chef_solo feature itself, but that's trickier to accomplish
+        kwargs.setdefault(
+            "available_fbpkgs",
+            "//bot_generated/antlir/fbpkg/db/main_db/.buck:snapshotted_fbpkgs",
+        )
+
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
     # TODO(vmagro): remove this when antlir1 compat is no longer needed
@@ -494,7 +501,7 @@ def layer(
         visibility = get_visibility(visibility),
     )
 
-    return _layer(
+    return layer_rule(
         name = name,
         visibility = get_visibility(visibility),
         **kwargs

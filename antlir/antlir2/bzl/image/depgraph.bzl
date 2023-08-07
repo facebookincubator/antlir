@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
-
 def build_depgraph(
         *,
         ctx: AnalysisContext,
@@ -19,7 +17,7 @@ def build_depgraph(
         cmd_args(
             # Inspecting already-built images often requires root privileges
             "sudo" if subvol else cmd_args(),
-            ctx.attrs.toolchain[Antlir2ToolchainInfo].antlir2[RunInfo],
+            ctx.attrs.antlir2[RunInfo],
             "depgraph",
             cmd_args(str(ctx.label), format = "--label={}"),
             format,

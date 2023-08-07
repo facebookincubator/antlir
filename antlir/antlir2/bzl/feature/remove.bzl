@@ -11,7 +11,7 @@ def remove(
         path: str,
         must_exist: bool = True) -> ParseTimeFeature.type:
     """
-    Recursivel remove a file or directory
+    Recursively remove a file or directory
 
     These are allowed to remove paths inherited from the parent layer, or those
     installed in this layer.

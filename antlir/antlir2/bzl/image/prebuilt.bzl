@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:toolchain.bzl", "Antlir2ToolchainInfo")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
 
@@ -84,17 +83,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 prebuilt = rule(
     impl = _impl,
     attrs = {
-        # It's still worth splitting out toolchain and antlir2_receive since
-        # only the post-processed depgraph will be invalidated if the toolchain
-        # changes, not the cached layer itself
+        "antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_receive:antlir2-receive")),
         "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "format": attrs.enum(["sendstream.v2", "sendstream", "sendstream.zst"]),
         "src": attrs.source(doc = "source file of the image"),
-        "toolchain": attrs.toolchain_dep(
-            providers = [Antlir2ToolchainInfo],
-            default = "//antlir/antlir2:toolchain",
-        ),
     },
 )

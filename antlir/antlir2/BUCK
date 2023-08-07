@@ -1,8 +1,0 @@
-load("//antlir/antlir2/bzl:toolchain.bzl", "antlir2_toolchain")
-
-antlir2_toolchain(
-    name = "toolchain",
-    # yo dawg, i heard you liked antlir2...
-    antlir2 = "//antlir/antlir2/antlir2:antlir2",
-    visibility = ["PUBLIC"],
-)
