@@ -15,6 +15,7 @@ import random
 import re
 import socket
 import subprocess
+import sys
 import tempfile
 import time
 from contextlib import contextmanager
@@ -96,7 +97,7 @@ def init_logging(*, debug: bool = False) -> None:
 
 
 def get_logger():
-    calling_file = os.path.basename(inspect.stack()[1].filename)
+    calling_file = os.path.basename(inspect.getframeinfo(sys._getframe(1)).filename)
     # Strip extension from name of logger
     if calling_file.endswith(".py"):
         calling_file = calling_file[: -len(".py")]
