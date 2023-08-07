@@ -126,7 +126,7 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
 
 /// Further validate `VMArgs` parsed by clap and generate a new `VMArgs` with
 /// content specific to test execution.
-fn get_test_vm_args(orig_args: &VMArgs) -> Result<VMArgs> {
+fn get_test_vm_args(orig_args: &VMArgs) -> Result<(VMArgs, bool)> {
     if orig_args.timeout_s.is_none() {
         return Err(anyhow!("Test command must specify --timeout-s."));
     }
@@ -151,33 +151,41 @@ fn get_test_vm_args(orig_args: &VMArgs) -> Result<VMArgs> {
     );
     let test_args = TestArgsParser::try_parse_from(orig_command)
         .context("Test command does not match expected format of `<type> <command>`")?;
+    let is_list = test_args.test.is_list_tests();
     let mut vm_args = orig_args.clone();
     vm_args.output_dirs = test_args.test.output_dirs().into_iter().collect();
     vm_args.command = Some(test_args.test.into_inner_cmd());
-    Ok(vm_args)
+    Ok((vm_args, is_list))
 }
 
 /// This function is similar to `respawn`, except that we assume control for
 /// some inputs instead of allowing caller to pass them in. Some inputs are
 /// parsed from test command.
 fn test(args: &TestCmdArgs) -> Result<()> {
-    let vm_args = get_test_vm_args(&args.isolate_cmd_args.run_cmd_args.vm_args)?;
+    let (vm_args, is_list) = get_test_vm_args(&args.isolate_cmd_args.run_cmd_args.vm_args)?;
     let isolated = isolated(
         &args.isolate_cmd_args.image,
         None, // TODO
         &vm_args.output_dirs.iter().collect::<Vec<_>>(),
     )?;
 
-    let exe = env::current_exe().context("while getting argv[0]")?;
     let mut command = isolated.into_command();
-    command
-        .arg(&exe)
-        .arg("run")
-        .arg("--machine-spec")
-        .arg(args.isolate_cmd_args.run_cmd_args.machine_spec.path())
-        .arg("--runtime-spec")
-        .arg(args.isolate_cmd_args.run_cmd_args.runtime_spec.path());
-    command.args(vm_args.to_args());
+    if is_list {
+        // If this is a list test command, we run it directly inside container
+        command.args(vm_args.command.as_ref().expect("command must exist here"));
+    } else {
+        // Otherwise, it's a real test we run inside a VM
+        let exe = env::current_exe().context("while getting argv[0]")?;
+        command
+            .arg(&exe)
+            .arg("run")
+            .arg("--machine-spec")
+            .arg(args.isolate_cmd_args.run_cmd_args.machine_spec.path())
+            .arg("--runtime-spec")
+            .arg(args.isolate_cmd_args.run_cmd_args.runtime_spec.path());
+        command.args(vm_args.to_args());
+    }
+
     log_command(&mut command).status()?;
     Ok(())
 }
@@ -211,10 +219,9 @@ mod test {
         };
         let mut expected = valid.clone();
         expected.command = Some(vec![OsString::from("whatever")]);
-        assert_eq!(
-            get_test_vm_args(&valid).expect("Parsing should succeed"),
-            expected,
-        );
+        let (parsed, is_list) = get_test_vm_args(&valid).expect("Parsing should succeed");
+        assert_eq!(parsed, expected);
+        assert!(!is_list);
 
         let mut timeout = valid.clone();
         timeout.timeout_s = None;
