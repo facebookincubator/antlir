@@ -38,6 +38,6 @@ LayerInfo = provider(fields = {
     "flavor_info": "The FlavorInfo this layer was built with",
     "label": "Label that originally created this layer",
     "mounts": "List of mount features",
-    "parent": "LayerInfo from parent_layer, if any",
+    "parent": "Dependency for the parent of the layer, if one exists",
     "subvol_symlink": "symlink pointing to the built subvol",
 })
