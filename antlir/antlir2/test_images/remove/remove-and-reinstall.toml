@@ -1,17 +1,17 @@
-["b/c"]
+[file."b/c"]
 op = 'removed'
 
-["b/c".diff]
+[file."b/c".diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = "root"
 group = "root"
 text = ''
 
-["b/d"]
+[file."b/d"]
 op = 'added'
 
-["b/d".diff]
+[file."b/d".diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = 'root'

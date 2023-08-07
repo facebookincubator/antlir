@@ -15,7 +15,7 @@ use anyhow::Context;
 use anyhow::Result;
 use itertools::Itertools;
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct InstalledInfo {
     evra: String,
     size: u64,
@@ -59,7 +59,13 @@ pub fn get_installed_rpms(layer: PathBuf) -> Result<BTreeMap<String, InstalledIn
         .output()
         .context("failed to execute rpm")?;
 
-    ensure!(res.status.success(), "'rpm' failed");
+    ensure!(
+        res.status.success(),
+        format!(
+            "'rpm' failed: {:?}",
+            std::str::from_utf8(&res.stderr).context("invalid utf8")?
+        )
+    );
     let mut installed = BTreeMap::<String, InstalledInfo>::new();
     for line in std::str::from_utf8(&res.stdout)
         .context("invalid utf8")?

@@ -25,5 +25,6 @@ image.layer(
 image_diff_test(
     name = "ensure-dirs_exist-test",
     diff = "ensure_dirs_exist.toml",
+    diff_type = "file",
     layer = ":ensure_dirs_exist",
 )

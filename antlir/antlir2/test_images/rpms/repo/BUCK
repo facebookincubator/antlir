@@ -128,5 +128,6 @@ repo(
         "//antlir/antlir2/antlir2_depgraph/tests/...",
         "//antlir/antlir2/test_images/facebook/chef_solo/...",
         "//antlir/antlir2/test_images/rpms/...",
+        "//antlir/antlir2/testing/...",
     ],
 )

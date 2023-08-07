@@ -35,5 +35,6 @@ image.layer(
 image_diff_test(
     name = "symlink-test",
     diff = "symlink.toml",
+    diff_type = "file",
     layer = ":symlink",
 )

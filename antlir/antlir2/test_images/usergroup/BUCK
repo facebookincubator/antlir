@@ -46,6 +46,7 @@ image.layer(
 image_diff_test(
     name = "add-user-and-group-test",
     diff = "add-user-and-group.toml",
+    diff_type = "file",
     layer = ":add-user-and-group",
 )
 
@@ -63,6 +64,7 @@ image.layer(
 image_diff_test(
     name = "add-user-to-group-test",
     diff = "add-user-to-group.toml",
+    diff_type = "file",
     layer = ":add-user-to-group",
 )
 
@@ -97,5 +99,6 @@ image.layer(
 image_diff_test(
     name = "add-user-and-group-existing-shadow-test",
     diff = "add-user-and-group-existing-shadow.toml",
+    diff_type = "file",
     layer = ":add-user-and-group-existing-shadow",
 )

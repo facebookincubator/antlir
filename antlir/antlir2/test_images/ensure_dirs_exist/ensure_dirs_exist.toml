@@ -1,47 +1,47 @@
-[a]
+[file.a]
 op = 'added'
 
-[a.diff]
+[file.a.diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-[foo]
+[file.foo]
 op = 'added'
 
-[foo.diff]
+[file.foo.diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["foo/bar"]
+[file."foo/bar"]
 op = 'added'
 
-["foo/bar".diff]
+[file."foo/bar".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["foo/bar/baz"]
+[file."foo/bar/baz"]
 op = 'added'
 
-["foo/bar/baz".diff]
+[file."foo/bar/baz".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["foo/bar/baz/qux"]
+[file."foo/bar/baz/qux"]
 op = 'added'
 
-["foo/bar/baz/qux".diff]
+[file."foo/bar/baz/qux".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"

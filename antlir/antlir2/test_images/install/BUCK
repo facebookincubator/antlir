@@ -28,6 +28,7 @@ image.layer(
 image_diff_test(
     name = "test-install-file",
     diff = "install-file.toml",
+    diff_type = "file",
     layer = ":install-file",
 )
 
@@ -57,6 +58,7 @@ image.layer(
 image_diff_test(
     name = "test-install-dir",
     diff = "install-dir.toml",
+    diff_type = "file",
     layer = ":install-dir",
 )
 
@@ -78,6 +80,7 @@ image.layer(
 image_diff_test(
     name = "test-child-image-install-dir",
     diff = "child-image-install-dir.toml",
+    diff_type = "file",
     layer = ":child-image-install-dir",
 )
 
@@ -166,6 +169,7 @@ image.layer(
 image_diff_test(
     name = "test-deterministic-split-debuginfo",
     diff = "deterministic-split-debuginfo.opt.toml",
+    diff_type = "file",
     layer = ":deterministic-split-debuginfo",
 ) if not REPO_CFG.artifacts_require_repo else buck_sh_test(
     name = "test-deterministic-split-debuginfo",

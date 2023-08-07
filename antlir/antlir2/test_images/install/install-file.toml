@@ -1,7 +1,7 @@
-[hello]
+[file.hello]
 op = "added"
 
-[hello.diff]
+[file.hello.diff]
 mode = "u+rw,g+rw,o+rw"
 file-type = "regular-file"
 user = "root"

@@ -1,77 +1,77 @@
-[clone]
+[file.clone]
 op = 'added'
 
-[clone.diff]
+[file.clone.diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["clone/into"]
+[file."clone/into"]
 op = 'added'
 
-["clone/into".diff]
+[file."clone/into".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["clone/into/existing"]
+[file."clone/into/existing"]
 op = 'added'
 
-["clone/into/existing".diff]
+[file."clone/into/existing".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["clone/into/existing/dir"]
+[file."clone/into/existing/dir"]
 op = 'added'
 
-["clone/into/existing/dir".diff]
+[file."clone/into/existing/dir".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "root"
 group = "root"
 content_hash = "0"
 
-["clone/into/existing/dir/cloned-symlink"]
+[file."clone/into/existing/dir/cloned-symlink"]
 op = 'added'
 
-["clone/into/existing/dir/cloned-symlink".diff]
+[file."clone/into/existing/dir/cloned-symlink".diff]
 mode = 'u+rwx,g+rwx,o+rwx'
 file-type = 'symlink'
 user = "root"
 group = "root"
 text = '/f'
 
-["clone/into/existing/dir/deeper"]
+[file."clone/into/existing/dir/deeper"]
 op = 'added'
 
-["clone/into/existing/dir/deeper".diff]
+[file."clone/into/existing/dir/deeper".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "antlir"
 group = "antlir"
 content_hash = "0"
 
-["clone/into/existing/dir/deeper/nesting"]
+[file."clone/into/existing/dir/deeper/nesting"]
 op = 'added'
 
-["clone/into/existing/dir/deeper/nesting".diff]
+[file."clone/into/existing/dir/deeper/nesting".diff]
 mode = 'u+rwx,g+rx,o+rx'
 file-type = 'directory'
 user = "antlir"
 group = "antlir"
 content_hash = "0"
 
-["clone/into/existing/dir/deeper/nesting/foo"]
+[file."clone/into/existing/dir/deeper/nesting/foo"]
 op = 'added'
 
-["clone/into/existing/dir/deeper/nesting/foo".diff]
+[file."clone/into/existing/dir/deeper/nesting/foo".diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = "root"

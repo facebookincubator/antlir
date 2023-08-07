@@ -29,7 +29,7 @@ use serde_with::DisplayFromStr;
 #[serde_with::skip_serializing_none]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "kebab-case")]
-pub(crate) struct Entry {
+pub(crate) struct FileEntry {
     #[serde_as(as = "DisplayFromStr")]
     pub(crate) mode: Mode,
     #[serde_as(as = "DisplayFromStr")]
@@ -45,7 +45,7 @@ pub(crate) struct Entry {
     pub(crate) xattrs: BTreeMap<OsString, Vec<u8>>,
 }
 
-impl Entry {
+impl FileEntry {
     pub fn new(path: &Path, users: &EtcPasswd, groups: &EtcGroup) -> Result<Self> {
         let meta = std::fs::symlink_metadata(path).context("while statting file")?;
         let mode = Mode::from(meta.permissions());

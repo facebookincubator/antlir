@@ -32,6 +32,7 @@ image.layer(
 image_diff_test(
     name = "remove-test",
     diff = "remove.toml",
+    diff_type = "file",
     layer = ":remove",
 )
 
@@ -56,5 +57,6 @@ image.layer(
 image_diff_test(
     name = "remove-and-reinstall-test",
     diff = "remove-and-reinstall.toml",
+    diff_type = "file",
     layer = ":remove-and-reinstall",
 )

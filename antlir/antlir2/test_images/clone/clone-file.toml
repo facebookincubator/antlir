@@ -1,7 +1,7 @@
-[cloned-file]
+[file.cloned-file]
 op = 'added'
 
-[cloned-file.diff]
+[file.cloned-file.diff]
 mode = 'u+r,g+r,o+r'
 file-type = 'regular-file'
 user = "antlir"

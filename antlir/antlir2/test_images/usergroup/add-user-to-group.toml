@@ -1,7 +1,7 @@
-["etc/group"]
+[file."etc/group"]
 op = 'diff'
 
-["etc/group".diff]
+[file."etc/group".diff]
 text-patch = '''
 --- parent
 +++ child
