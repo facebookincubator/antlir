@@ -124,6 +124,18 @@ impl Test {
             }
         }
     }
+
+    /// Check if the command is for listing tests
+    pub fn is_list_tests(&self) -> bool {
+        match self {
+            Self::Custom { .. } => false,
+            Self::Gtest { test_cmd, .. } => {
+                test_cmd.contains(&OsString::from("--gtest_list_tests".to_string()))
+            }
+            Self::Rust { test_cmd, .. } => test_cmd.contains(&OsString::from("--list".to_string())),
+            Self::Pyunit { list_tests, .. } => list_tests.is_some(),
+        }
+    }
 }
 
 #[derive(Error, Debug)]
@@ -173,6 +185,7 @@ mod test {
     fn test_gtest() {
         env::set_var("GTEST_OUTPUT", "/here/here");
         let arg = TestArgs::parse_from(["test", "gtest", "whatever"]);
+        assert!(!arg.test.is_list_tests());
         assert_eq!(
             arg.test.output_dirs(),
             HashSet::from([PathBuf::from("/here")])
@@ -180,6 +193,15 @@ mod test {
         assert_eq!(
             arg.test.into_inner_cmd(),
             vec!["whatever", "--gtest_output=/here/here"]
+        );
+
+        env::remove_var("GTEST_OUTPUT");
+        let arg = TestArgs::parse_from(["test", "gtest", "whatever", "--gtest_list_tests"]);
+        assert!(arg.test.is_list_tests());
+        assert_eq!(arg.test.output_dirs(), HashSet::new());
+        assert_eq!(
+            arg.test.into_inner_cmd(),
+            vec!["whatever", "--gtest_list_tests"]
         );
     }
 
@@ -189,44 +211,47 @@ mod test {
             "test",
             "pyunit",
             "whatever",
-            "--list-tests",
-            "/a/here",
             "--output",
             "/here/here",
             "--test-filter",
             "c",
         ]);
+        assert!(!arg.test.is_list_tests());
         assert_eq!(
             arg.test.output_dirs(),
-            ["/a", "/here"]
-                .iter()
-                .map(PathBuf::from)
-                .collect::<HashSet<_>>(),
+            HashSet::from([PathBuf::from("/here")])
         );
         assert_eq!(
             arg.test.into_inner_cmd(),
-            vec![
-                "whatever",
-                "--list-tests",
-                "/a/here",
-                "--output",
-                "/here/here",
-                "--test-filter",
-                "c",
-            ]
+            vec!["whatever", "--output", "/here/here", "--test-filter", "c",]
+        );
+
+        let arg = TestArgs::parse_from(["test", "pyunit", "whatever", "--list-tests", "/a/here"]);
+        assert!(arg.test.is_list_tests());
+        assert_eq!(arg.test.output_dirs(), HashSet::from([PathBuf::from("/a")]));
+        assert_eq!(
+            arg.test.into_inner_cmd(),
+            vec!["whatever", "--list-tests", "/a/here"]
         );
     }
 
     #[test]
     fn test_rust() {
         let arg = TestArgs::parse_from(["test", "rust", "whatever"]);
+        assert!(!arg.test.is_list_tests());
         assert_eq!(arg.test.output_dirs(), HashSet::new());
         assert_eq!(arg.test.into_inner_cmd(), vec!["whatever"]);
+
+        let arg = TestArgs::parse_from(["test", "rust", "whatever", "--list"]);
+        assert!(arg.test.is_list_tests());
+        assert_eq!(arg.test.output_dirs(), HashSet::new());
+        assert_eq!(arg.test.into_inner_cmd(), vec!["whatever", "--list"]);
     }
 
     #[test]
     fn test_custom() {
         let arg = TestArgs::parse_from(["test", "custom", "whatever"]);
+        assert!(!arg.test.is_list_tests());
         assert_eq!(arg.test.output_dirs(), HashSet::new());
         assert_eq!(arg.test.into_inner_cmd(), vec!["whatever"]);
     }
