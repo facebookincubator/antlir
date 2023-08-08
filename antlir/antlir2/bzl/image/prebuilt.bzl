@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
 
@@ -80,7 +81,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(subvol_symlink),
     ]
 
-prebuilt = rule(
+_prebuilt = rule(
     impl = _impl,
     attrs = {
         "antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
@@ -91,3 +92,5 @@ prebuilt = rule(
         "src": attrs.source(doc = "source file of the image"),
     },
 )
+
+prebuilt = rule_with_default_target_platform(_prebuilt)
