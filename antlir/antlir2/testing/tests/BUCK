@@ -163,15 +163,7 @@ image.layer(
     features = [
         feature.ensure_dirs_exist(
             dirs = "/home/diff_test",
-            group = "users",
             mode = 0o755,
-            user = "diff_test",
-        ),
-        feature.user_add(
-            home_dir = "/",
-            primary_group = "users",
-            shell = "/bin/sh",
-            username = "diff_test",
         ),
         feature.rpms_install(rpms = ["foo"]),
         feature.rpms_remove_if_exists(rpms = ["foobar"]),
