@@ -1,6 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
@@ -884,6 +884,12 @@ export_file(
 
 export_file(
     name = "empty.json",
+    visibility = ["PUBLIC"],
+)
+
+buck_sh_binary(
+    name = "empty.bin",
+    main = "empty.sh",
     visibility = ["PUBLIC"],
 )
 
