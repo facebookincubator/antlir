@@ -31,6 +31,7 @@ image.layer(
 image_diff_test(
     name = "dot_meta-test",
     diff = "dot_meta.toml",
+    diff_type = "file",
     layer = ":dot_meta",
 )
 

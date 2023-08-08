@@ -1,7 +1,7 @@
-[".meta/fbpkg"]
+[file.".meta/fbpkg"]
 op = "added"
 
-[".meta/fbpkg".diff]
+[file.".meta/fbpkg".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"
@@ -10,10 +10,10 @@ text = """
 foo:bar
 """
 
-[".meta/revision"]
+[file.".meta/revision"]
 op = "added"
 
-[".meta/revision".diff]
+[file.".meta/revision".diff]
 mode = "u+rw,g+r,o+r"
 file-type = "regular-file"
 user = "root"
@@ -22,10 +22,10 @@ text = """
 deadbeef
 """
 
-[".meta/target"]
+[file.".meta/target"]
 op = "diff"
 
-[".meta/target".diff]
+[file.".meta/target".diff]
 text-patch = """
 --- parent
 +++ child
