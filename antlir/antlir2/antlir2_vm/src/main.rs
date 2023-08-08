@@ -50,12 +50,12 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
-    /// Respawn inside isolated image and execute `Run` command.
-    Isolate(IsolateCmdArgs),
     /// Run the VM. Must be executed inside container.
     Run(RunCmdArgs),
+    /// Respawn inside isolated image and execute `Run` command.
+    Isolate(IsolateCmdArgs),
     /// Run VM tests inside container.
-    Test(TestCmdArgs),
+    Test(IsolateCmdArgs),
 }
 
 /// Execute the VM
@@ -84,13 +84,6 @@ struct IsolateCmdArgs {
     /// Args for run command
     #[clap(flatten)]
     run_cmd_args: RunCmdArgs,
-}
-
-/// Similar to `isolate` with additional restrictions enforced after parsing.
-#[derive(Debug, Args)]
-struct TestCmdArgs {
-    #[clap(flatten)]
-    isolate_cmd_args: IsolateCmdArgs,
 }
 
 /// Actually starting the VM. This needs to be inside an ephemeral container as
@@ -185,13 +178,10 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<(VMArgs, 
 /// This function is similar to `respawn`, except that we assume control for
 /// some inputs instead of allowing caller to pass them in. Some inputs are
 /// parsed from test command.
-fn test(args: &TestCmdArgs) -> Result<()> {
-    let (vm_args, is_list) = get_test_vm_args(
-        &args.isolate_cmd_args.run_cmd_args.vm_args,
-        &args.isolate_cmd_args.setenv,
-    )?;
+fn test(args: &IsolateCmdArgs) -> Result<()> {
+    let (vm_args, is_list) = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
     let isolated = isolated(
-        &args.isolate_cmd_args.image,
+        &args.image,
         vm_args.command_envs.clone(),
         &vm_args.output_dirs,
     )?;
@@ -207,9 +197,9 @@ fn test(args: &TestCmdArgs) -> Result<()> {
             .arg(&exe)
             .arg("run")
             .arg("--machine-spec")
-            .arg(args.isolate_cmd_args.run_cmd_args.machine_spec.path())
+            .arg(args.run_cmd_args.machine_spec.path())
             .arg("--runtime-spec")
-            .arg(args.isolate_cmd_args.run_cmd_args.runtime_spec.path());
+            .arg(args.run_cmd_args.runtime_spec.path());
         command.args(vm_args.to_args());
     }
 
