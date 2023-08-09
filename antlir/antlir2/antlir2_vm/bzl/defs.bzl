@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load(":test.bzl", "vm_rust_test")
+load(":test.bzl", "vm_rust_test", "vm_sh_test")
 load(":types.bzl", "DiskInfo", "VMHostInfo")
 
 def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
@@ -175,4 +175,5 @@ _vm_host = rule(
 vm = struct(
     host = rule_with_default_target_platform(_vm_host),
     rust_test = vm_rust_test,
+    sh_test = vm_sh_test,
 )
