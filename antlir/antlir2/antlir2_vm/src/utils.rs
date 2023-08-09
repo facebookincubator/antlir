@@ -7,7 +7,7 @@
 
 use std::process::Command;
 
-use tracing::trace;
+use tracing::debug;
 
 /// Format the Command for printing
 pub(crate) fn format_command(command: &Command) -> String {
@@ -27,7 +27,7 @@ pub(crate) fn format_command(command: &Command) -> String {
 
 /// Log the command being executed, unless it can't be decoded.
 pub(crate) fn log_command(command: &mut Command) -> &mut Command {
-    trace!("Executing command: {}", format_command(command));
+    debug!("Executing command: {}", format_command(command));
     command
 }
 

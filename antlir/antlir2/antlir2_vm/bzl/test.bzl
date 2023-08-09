@@ -12,9 +12,13 @@ load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", 
 load(":types.bzl", "VMHostInfo")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    test_cmd = cmd_args(
-        cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
-        "test",
+    inner_labels = [
+        label
+        for label in ctx.attrs.test[ExternalRunnerTestInfo].labels
+        if label not in HIDE_TEST_LABELS
+    ]
+
+    common_args = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].runtime_spec, format = "--runtime-spec={}"),
@@ -26,11 +30,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
     )
-    inner_labels = [
-        label
-        for label in ctx.attrs.test[ExternalRunnerTestInfo].labels
-        if label not in HIDE_TEST_LABELS
-    ]
+
+    test_cmd = cmd_args(
+        cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
+        "test",
+        common_args,
+    )
     test_script, _ = ctx.actions.write(
         "test.sh",
         cmd_args(
@@ -41,8 +46,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         is_executable = True,
         allow_args = True,
     )
+
+    # vm_exec will hijack the command to spawn a shell for `testdebug` action
+    shell_cmd = cmd_args(
+        cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
+        "test-debug",
+        common_args,
+    )
+
     return [
-        DefaultInfo(test_script),
+        DefaultInfo(
+            test_script,
+            sub_targets = {
+                "shell": [DefaultInfo(test_script), RunInfo(shell_cmd)],
+            },
+        ),
         ExternalRunnerTestInfo(
             command = [test_cmd],
             type = ctx.attrs.test[ExternalRunnerTestInfo].test_type,

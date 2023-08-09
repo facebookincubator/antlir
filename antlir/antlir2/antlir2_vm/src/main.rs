@@ -56,6 +56,9 @@ enum Commands {
     Isolate(IsolateCmdArgs),
     /// Run VM tests inside container.
     Test(IsolateCmdArgs),
+    /// Exactly same as `test` command, but hijack the command inside VM to
+    /// spawn a shell for debugging purpose.
+    TestDebug(IsolateCmdArgs),
 }
 
 /// Execute the VM
@@ -139,9 +142,17 @@ fn get_test_envs(from_cli: &[KvPair]) -> Vec<KvPair> {
     envs
 }
 
+/// Validated `VMArgs` and other necessary metadata for tests.
+struct ValidatedVMArgs {
+    /// VMArgs that will be passed into the VM with modified fields
+    inner: VMArgs,
+    /// True if the test command is listing tests
+    is_list: bool,
+}
+
 /// Further validate `VMArgs` parsed by clap and generate a new `VMArgs` with
 /// content specific to test execution.
-fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<(VMArgs, bool)> {
+fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<ValidatedVMArgs> {
     if orig_args.timeout_s.is_none() {
         return Err(anyhow!("Test command must specify --timeout-s."));
     }
@@ -172,24 +183,29 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<(VMArgs, 
     vm_args.output_dirs = test_args.test.output_dirs().into_iter().collect();
     vm_args.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
-    Ok((vm_args, is_list))
+    Ok(ValidatedVMArgs {
+        inner: vm_args,
+        is_list,
+    })
 }
 
-/// This function is similar to `respawn`, except that we assume control for
-/// some inputs instead of allowing caller to pass them in. Some inputs are
-/// parsed from test command.
-fn test(args: &IsolateCmdArgs) -> Result<()> {
-    let (vm_args, is_list) = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
+fn _test(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<()> {
     let isolated = isolated(
         &args.image,
-        vm_args.command_envs.clone(),
-        &vm_args.output_dirs,
+        validated_args.inner.command_envs.clone(),
+        &validated_args.inner.output_dirs,
     )?;
 
     let mut command = isolated.into_command();
-    if is_list {
+    if validated_args.is_list {
         // If this is a list test command, we run it directly inside container
-        command.args(vm_args.command.as_ref().expect("command must exist here"));
+        command.args(
+            validated_args
+                .inner
+                .command
+                .as_ref()
+                .expect("command must exist here"),
+        );
     } else {
         // Otherwise, it's a real test we run inside a VM
         let exe = env::current_exe().context("while getting argv[0]")?;
@@ -200,11 +216,28 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
             .arg(args.run_cmd_args.machine_spec.path())
             .arg("--runtime-spec")
             .arg(args.run_cmd_args.runtime_spec.path());
-        command.args(vm_args.to_args());
+        command.args(validated_args.inner.to_args());
     }
 
     log_command(&mut command).status()?;
     Ok(())
+}
+
+/// `test` is similar to `respawn`, except that we assume control for some
+/// inputs instead of allowing caller to pass them in. Some inputs are parsed
+/// from the test command.
+fn test(args: &IsolateCmdArgs) -> Result<()> {
+    let vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
+    _test(args, &vm_args)
+}
+
+/// Exactly same as `test`, but we hijack the command to run a debugging shell
+/// so that its environment is the same as the test.
+fn test_debug(args: &IsolateCmdArgs) -> Result<()> {
+    let mut vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
+    vm_args.inner.command = Some(["/bin/bash", "-l"].iter().map(OsString::from).collect());
+    vm_args.inner.timeout_s = None;
+    _test(args, &vm_args)
 }
 
 fn main() -> Result<()> {
@@ -218,6 +251,7 @@ fn main() -> Result<()> {
         Commands::Isolate(args) => respawn(args),
         Commands::Run(args) => run(args),
         Commands::Test(args) => test(args),
+        Commands::TestDebug(args) => test_debug(args),
     }
 }
 
@@ -252,10 +286,9 @@ mod test {
         let empty_env = Vec::<KvPair>::new();
         let mut expected = valid.clone();
         expected.command = Some(vec![OsString::from("whatever")]);
-        let (parsed, is_list) =
-            get_test_vm_args(&valid, &empty_env).expect("Parsing should succeed");
-        assert_eq!(parsed, expected);
-        assert!(!is_list);
+        let parsed = get_test_vm_args(&valid, &empty_env).expect("Parsing should succeed");
+        assert_eq!(parsed.inner, expected);
+        assert!(!parsed.is_list);
 
         let mut timeout = valid.clone();
         timeout.timeout_s = None;

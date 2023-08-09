@@ -69,7 +69,7 @@ impl GuestSSHCommand {
         self.options.iter().for_each(|(name, value)| {
             command.arg("-o").arg(format!("{}={}", name, value));
         });
-        command.arg("-i").arg(&self.privkey);
+        command.arg("-i").arg(&self.privkey).arg("-t");
         command.arg(format!("root@{}%vm0", self.guest_ipv6_addr_ll()));
         command
     }
