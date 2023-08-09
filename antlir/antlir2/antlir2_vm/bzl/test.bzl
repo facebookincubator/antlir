@@ -81,7 +81,8 @@ def _implicit_vm_test(
         test_rule,
         name: str,
         vm_host: str,
-        labels: [list[str], None] = None,
+        labels: list[str] | None = None,
+        _add_outer_labels: list[str] = [],
         **kwargs):
     """Wraps a unit test rule to execute inside a VM. @vm_host must be a VM
     target constructed by `:defs.bzl::vm.host()`."""
@@ -92,8 +93,9 @@ def _implicit_vm_test(
         labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=8:vmtest"),
         **kwargs
     )
-
     labels = list(labels) if labels else []
+    labels.extend(_add_outer_labels)
+
     # @oss-disable
         # @oss-disable
 
@@ -104,7 +106,11 @@ def _implicit_vm_test(
         vm_host = vm_host,
     )
 
-vm_cpp_test = partial(_implicit_vm_test, cpp_unittest)
+vm_cpp_test = partial(
+    _implicit_vm_test,
+    cpp_unittest,
+    _add_outer_labels = ["tpx:optout-test-result-output-spec"],
+)
 vm_python_test = partial(_implicit_vm_test, python_unittest, supports_static_listing = False)
 vm_rust_test = partial(_implicit_vm_test, rust_unittest)
 vm_sh_test = partial(_implicit_vm_test, buck_sh_test)
