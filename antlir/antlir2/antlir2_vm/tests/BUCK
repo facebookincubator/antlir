@@ -11,6 +11,14 @@ load("//antlir/antlir2/antlir2_vm/bzl:preconfigured.bzl", "DEFAULT_DISK_BOOT", "
             },
             vm_host = vm_target,
         ),
+        vm.python_test(
+            name = "python-test-" + vm_target.split(":")[-1],
+            srcs = ["test.py"],
+            env = {
+                "ANTLIR2_TEST": "1",
+            },
+            vm_host = vm_target,
+        ),
         vm.rust_test(
             name = "rust-test-" + vm_target.split(":")[-1],
             srcs = ["test.rs"],

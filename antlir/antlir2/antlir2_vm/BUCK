@@ -36,6 +36,7 @@ image.layer(
     name = "container-image",
     features = [
         feature.rpms_install(rpms = [
+            "fb-xarexec",  # for @mode/opt python tests @oss-disable
             "glib2",  # for qemu-img
             "iproute",  # for NIC configuration
             "numactl-libs",  # for qemu-system
