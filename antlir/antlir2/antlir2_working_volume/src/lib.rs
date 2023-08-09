@@ -27,16 +27,16 @@ pub struct WorkingVolume(PathBuf);
 impl WorkingVolume {
     /// Ensure this [WorkingVolume] exists and is set up correctly.
     pub fn ensure(path: PathBuf) -> Result<Self> {
-        if path.exists() {
-            Ok(Self(path))
-        } else {
-            // If we're on Eden, create a new redirection
-            // https://www.internalfb.com/intern/wiki/EdenFS/detecting-an-eden-mount/#on-linux-and-macos
-            match Dir::open(".eden", OFlag::O_RDONLY, Mode::empty()) {
-                Ok(dir) => {
-                    // There seems to be some racy behavior with eden adding
-                    // redirects, take an exclusive lock before adding
-                    flock(dir.as_raw_fd(), FlockArg::LockExclusive)?;
+        // If we're on Eden, create a new redirection
+        // https://www.internalfb.com/intern/wiki/EdenFS/detecting-an-eden-mount/#on-linux-and-macos
+        match Dir::open(".eden", OFlag::O_RDONLY, Mode::empty()) {
+            Ok(dir) => {
+                // There seems to be some racy behavior with eden adding
+                // redirects, take an exclusive lock before adding
+                flock(dir.as_raw_fd(), FlockArg::LockExclusive)?;
+                if path.exists() {
+                    Ok(Self(path))
+                } else {
                     let res = Command::new("eden")
                         .env("EDENFSCTL_ONLY_RUST", "1")
                         .arg("redirect")
@@ -54,20 +54,20 @@ impl WorkingVolume {
                         ))
                     }
                 }
-                Err(e) => match e {
-                    Errno::ENOENT => {
-                        if let Err(e) = std::fs::create_dir(&path) {
-                            match e.kind() {
-                                ErrorKind::AlreadyExists => Ok(Self(path)),
-                                _ => Err(e),
-                            }
-                        } else {
-                            Ok(Self(path))
-                        }
-                    }
-                    _ => Err(e.into()),
-                },
             }
+            Err(e) => match e {
+                Errno::ENOENT => {
+                    if let Err(e) = std::fs::create_dir(&path) {
+                        match e.kind() {
+                            ErrorKind::AlreadyExists => Ok(Self(path)),
+                            _ => Err(e),
+                        }
+                    } else {
+                        Ok(Self(path))
+                    }
+                }
+                _ => Err(e.into()),
+            },
         }
     }
 
