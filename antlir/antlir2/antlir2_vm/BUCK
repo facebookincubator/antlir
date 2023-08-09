@@ -61,8 +61,6 @@ vm.host(
     visibility = ["//antlir/..."],
 )
 
-# TODO: The following are just placeholders for CI to exercise disk building
-# API until we move to actual vm tests soon(TM).
 vm.host(
     name = "default-nondisk-boot",
     compatible_with = ["ovr_config//cpu:x86_64"],
@@ -72,6 +70,8 @@ vm.host(
     visibility = ["//antlir/..."],
 )
 
+# TODO: The following are just placeholders for CI to exercise disk building
+# API until we move to actual vm tests soon(TM).
 vm.host(
     name = "default-nvme",
     compatible_with = ["ovr_config//cpu:x86_64"],
