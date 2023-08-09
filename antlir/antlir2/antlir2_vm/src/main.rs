@@ -18,6 +18,7 @@ mod vm;
 use std::env;
 use std::ffi::OsString;
 use std::path::PathBuf;
+use std::process::Command;
 
 use anyhow::anyhow;
 use anyhow::Context;
@@ -189,36 +190,63 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<Validated
     })
 }
 
-fn _test(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<()> {
+/// For some tests, an explicit "list test" step is run against the test binary
+/// to discover the tests to run. This command is not our intended test to
+/// execute, so it's unnecessarily wasteful to execute it inside the VM. We
+/// directly run it inside the container without booting VM.
+fn list_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<Command> {
+    // RW bind-mount /dev/fuse.
+    // Refer to comment in antlir/antlir2/testing/image_test/src/main.rs for details.
+    let output_dirs: Vec<_> = validated_args
+        .inner
+        .output_dirs
+        .iter()
+        .cloned()
+        .chain([PathBuf::from("/dev/fuse")])
+        .collect();
+    let isolated = isolated(
+        &args.image,
+        validated_args.inner.command_envs.clone(),
+        &output_dirs,
+    )?;
+    let mut command = isolated.into_command();
+    command.args(
+        validated_args
+            .inner
+            .command
+            .as_ref()
+            .expect("command must exist here"),
+    );
+    Ok(command)
+}
+
+/// For actual test command, we spawn the VM and run it.
+fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<Command> {
     let isolated = isolated(
         &args.image,
         validated_args.inner.command_envs.clone(),
         &validated_args.inner.output_dirs,
     )?;
-
     let mut command = isolated.into_command();
-    if validated_args.is_list {
-        // If this is a list test command, we run it directly inside container
-        command.args(
-            validated_args
-                .inner
-                .command
-                .as_ref()
-                .expect("command must exist here"),
-        );
-    } else {
-        // Otherwise, it's a real test we run inside a VM
-        let exe = env::current_exe().context("while getting argv[0]")?;
-        command
-            .arg(&exe)
-            .arg("run")
-            .arg("--machine-spec")
-            .arg(args.run_cmd_args.machine_spec.path())
-            .arg("--runtime-spec")
-            .arg(args.run_cmd_args.runtime_spec.path());
-        command.args(validated_args.inner.to_args());
-    }
+    let exe = env::current_exe().context("while getting argv[0]")?;
+    command
+        .arg(&exe)
+        .arg("run")
+        .arg("--machine-spec")
+        .arg(args.run_cmd_args.machine_spec.path())
+        .arg("--runtime-spec")
+        .arg(args.run_cmd_args.runtime_spec.path())
+        .args(validated_args.inner.to_args());
+    Ok(command)
+}
 
+/// Runs test inside container or VM based on test command.
+fn _test(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<()> {
+    let mut command = if validated_args.is_list {
+        list_test_command(args, validated_args)
+    } else {
+        vm_test_command(args, validated_args)
+    }?;
     log_command(&mut command).status()?;
     Ok(())
 }
