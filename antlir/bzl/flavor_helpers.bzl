@@ -116,7 +116,7 @@ def _maybe_get_tgt_flavor(tgt):
     )
 
 def _get_shortname(flavor):
-    # Flavor shornames are commonly used in target and fbpkg names,
+    # Flavor shortnames are commonly used in target and fbpkg names,
     # where we generally don't want flavor aliasing to be used.
     flavor = get_unaliased_flavor(flavor)
     return REPO_CFG.flavor_to_config[flavor.name].shortname
