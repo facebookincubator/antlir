@@ -44,7 +44,7 @@ fn main() -> Result<()> {
                         .with_span_context(true)
                         .with_timer(tracing_glog::LocalTime::default()),
                 )
-                .fmt_fields(tracing_glog::GlogFields),
+                .fmt_fields(tracing_glog::GlogFields::default()),
         )
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
