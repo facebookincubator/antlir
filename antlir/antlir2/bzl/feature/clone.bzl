@@ -9,9 +9,9 @@ load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFe
 
 def clone(
         *,
-        src_layer: str | "selector",
-        src_path: str | "selector",
-        dst_path: str | "selector") -> ParseTimeFeature.type:
+        src_layer: str | Select,
+        src_path: str | Select,
+        dst_path: str | Select) -> ParseTimeFeature.type:
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
@@ -81,7 +81,7 @@ clone_record = record(
 def clone_analyze(
         src_path: str,
         dst_path: str,
-        deps: dict[str, "dependency"]) -> FeatureAnalysis.type:
+        deps: dict[str, Dependency]) -> FeatureAnalysis.type:
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:

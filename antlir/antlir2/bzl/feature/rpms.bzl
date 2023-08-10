@@ -20,9 +20,9 @@ def _install_common(
         action: str,
         *,
         rpms: list[str] = [],
-        subjects: list[str | "selector"] | "selector" = [],
-        deps: list[str | "selector"] | "selector" = [],
-        subjects_src: str | "selector" | None = None) -> ParseTimeFeature.type:
+        subjects: list[str | Select] | Select = [],
+        deps: list[str | Select] | Select = [],
+        subjects_src: str | Select | None = None) -> ParseTimeFeature.type:
     """
     Install RPMs by identifier or .rpm src
 
@@ -98,7 +98,7 @@ def rpms_upgrade(*args, **kwargs) -> ParseTimeFeature.type:
     """
     return _install_common("upgrade", *args, **kwargs)
 
-def rpms_remove_if_exists(*, rpms: list[str | "selector"] | "selector") -> ParseTimeFeature.type:
+def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeature.type:
     """
     Remove RPMs if they are installed
 
@@ -141,7 +141,7 @@ def rpms_analyze(
         action: str,
         subjects: list[str],
         srcs: dict[str, Artifact] = {},
-        unnamed_deps_or_srcs: list["dependency" | Artifact] = [],
+        unnamed_deps_or_srcs: list[Dependency | Artifact] = [],
         impl: "RunInfo" | None = None) -> FeatureAnalysis.type:
     rpms = []
     for rpm in subjects:

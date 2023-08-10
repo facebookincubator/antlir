@@ -7,9 +7,9 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def _symlink_feature(
         *,
-        link: str | "selector",
-        target: str | "selector",
-        feature_type: str | "selector") -> ParseTimeFeature.type:
+        link: str | Select,
+        target: str | Select,
+        feature_type: str | Select) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = feature_type,
         impl = "//antlir/antlir2/features:symlink",

@@ -80,7 +80,7 @@ _btrfs = rule(
 btrfs = rule_with_default_target_platform(_btrfs)
 
 def BtrfsSubvol(
-        layer: str | "selector",
+        layer: str | Select,
         writable: bool | None = None):
     return {
         "layer": layer,

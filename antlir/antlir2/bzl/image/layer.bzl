@@ -62,7 +62,7 @@ def _map_image(
 
     return cmd, out
 
-def _nspawn_sub_target(nspawn_binary: "dependency", subvol: Artifact, mounts: list["mount_record"]) -> list[Provider]:
+def _nspawn_sub_target(nspawn_binary: Dependency, subvol: Artifact, mounts: list["mount_record"]) -> list[Provider]:
     dev_mode_args = cmd_args()
     if REPO_CFG.artifacts_require_repo:
         dev_mode_args = cmd_args(

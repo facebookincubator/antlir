@@ -38,7 +38,7 @@ def _impl_with_layer(layer: [Dependency, "provider_collection"], *, ctx: Analysi
     )
     return [DefaultInfo(package)]
 
-def _impl(ctx: "context"):
+def _impl(ctx: AnalysisContext):
     if ctx.attrs.dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
             "layer": ctx.attrs.layer,

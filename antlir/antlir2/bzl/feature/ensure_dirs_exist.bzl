@@ -9,11 +9,11 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def ensure_subdirs_exist(
         *,
-        into_dir: str | "selector",
-        subdirs_to_create: str | "selector",
-        mode: int | str | "selector" = 0o755,
-        user: str | "selector" = "root",
-        group: str | "selector" = "root") -> list[ParseTimeFeature.type]:
+        into_dir: str | Select,
+        subdirs_to_create: str | Select,
+        mode: int | str | Select = 0o755,
+        user: str | Select = "root",
+        group: str | Select = "root") -> list[ParseTimeFeature.type]:
     """
     `ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y` and
     `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already been

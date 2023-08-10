@@ -13,7 +13,7 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 ParseTimeDependency = record(
     dep = [
         str,
-        "selector",
+        Select,
         # @oss-disable
     ],
     providers = field(["provider_callable", typing.Any], default = []),
@@ -26,9 +26,9 @@ ParseTimeFeature = record(
     # Items in this list may be either raw source files, or dependencies
     # produced by another rule. If a dependency, the full provider set will be
     # made available to the analysis code for the feature.
-    deps_or_srcs = field([dict[str, [str, "selector"]], None], default = None),
+    deps_or_srcs = field([dict[str, [str, Select]], None], default = None),
     # Items in this list must be coerce-able to an "artifact"
-    srcs = field([dict[str, [str, "selector"]], None], default = None),
+    srcs = field([dict[str, [str, Select]], None], default = None),
     # These items must be `deps` and will be validated early in analysis time to
     # contain the required providers
     deps = field([dict[str, ParseTimeDependency.type], None], default = None),
@@ -38,7 +38,7 @@ ParseTimeFeature = record(
     # Sources/deps that do not require named tracking between the parse and
     # analysis phases. Useful to support `select` in features that accept lists
     # of dependencies.
-    unnamed_deps_or_srcs = field([[[str, "selector"]], None], default = None),
+    unnamed_deps_or_srcs = field([list[[str, Select]], None], default = None),
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = dict[str, typing.Any],
     analyze_uses_context = field(bool, default = False),
@@ -61,11 +61,11 @@ FeatureAnalysis = record(
     # automatically attach any dependencies to features based on the input,
     # feature implementations must always specify it exactly (this prevents
     # building things unnecessarily)
-    required_artifacts = field([Artifact], default = []),
+    required_artifacts = field(list[Artifact], default = []),
     # Runnable binaries required to build this feature.
-    required_run_infos = field(["RunInfo"], default = []),
+    required_run_infos = field(list["RunInfo"], default = []),
     # Other image layers that are required to build this feature.
-    required_layers = field(["LayerInfo"], default = []),
+    required_layers = field(list["LayerInfo"], default = []),
     # This feature requires running 'antlir2' binaries to inform buck of dynamic
     # dependencies. If no feature requires planning, the entire step can be
     # skipped and save a few seconds of build time
@@ -78,13 +78,13 @@ FeatureAnalysis = record(
 )
 
 Tools = record(
-    objcopy = "dependency",
+    objcopy = Dependency,
 )
 
 AnalyzeFeatureContext = record(
     label = Label,
     unique_action_identifier = str,
-    actions = "actions",
+    actions = AnalysisActions,
     tools = Tools.type,
 )
 

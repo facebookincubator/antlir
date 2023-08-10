@@ -12,11 +12,11 @@ load("//antlir/bzl:types.bzl", "types")
 types.lint_noop()
 
 expected_t = record(
-    installed = field([str], default = []),
-    userinstalled = field([str], default = []),
-    installed_not_userinstalled = field([str], default = []),
-    not_installed = field([str], default = []),
-    installed_module = field([str], default = []),
+    installed = field(list[str], default = []),
+    userinstalled = field(list[str], default = []),
+    installed_not_userinstalled = field(list[str], default = []),
+    not_installed = field(list[str], default = []),
+    installed_module = field(list[str], default = []),
 )
 
 def test_rpms(
