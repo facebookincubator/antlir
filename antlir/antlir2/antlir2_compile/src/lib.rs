@@ -13,6 +13,7 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fmt::Display;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -278,12 +279,9 @@ impl CompileFeature for Feature {
         if res.status.success() {
             Ok(())
         } else {
-            Err(anyhow!(
-                "feature cmd failed:\nstdout: {}\nstderr: {}",
-                std::str::from_utf8(&res.stdout).unwrap_or(&String::from_utf8_lossy(&res.stdout)),
-                std::str::from_utf8(&res.stderr).unwrap_or(&String::from_utf8_lossy(&res.stderr)),
-            )
-            .into())
+            std::io::stdout().write_all(&res.stdout)?;
+            std::io::stderr().write_all(&res.stderr)?;
+            Err(anyhow!("feature cmd failed").into())
         }
     }
 
