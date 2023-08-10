@@ -8,10 +8,10 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def genrule(
         *,
-        cmd: list[str | "selector"] | "selector",
-        user: str | "selector" = "nobody",
-        boot: bool | "selector" = False,
-        bind_repo_ro: bool | "selector" = False) -> ParseTimeFeature.type:
+        cmd: list[str | Select] | Select,
+        user: str | Select = "nobody",
+        boot: bool | Select = False,
+        bind_repo_ro: bool | Select = False) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "genrule",
         impl = "//antlir/antlir2/features:genrule",

@@ -46,9 +46,9 @@ sendstream = rule_with_default_target_platform(_sendstream)
 def anon_v1_sendstream(
         *,
         ctx: AnalysisContext,
-        layer: "dependency",
-        build_appliance: "dependency" | None = None,
-        antlir2_packager: "dependency" | None = None) -> "promise_artifact":
+        layer: Dependency,
+        build_appliance: Dependency | None = None,
+        antlir2_packager: Dependency | None = None) -> "promise_artifact":
     v1_anon_target = ctx.actions.anon_target(_sendstream, {
         "antlir2_packager": antlir2_packager or ctx.attrs.antlir2_packager,
         "build_appliance": build_appliance or ctx.attrs.build_appliance,

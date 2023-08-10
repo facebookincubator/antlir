@@ -39,7 +39,7 @@ _image_diff_test = rule(
     doc = "Test that the only changes between a layer and it's parent is what you expect",
 )
 
-def image_diff_test(name: str, diff: str | "selector", layer: str, **kwargs):
+def image_diff_test(name: str, diff: str | Select, layer: str, **kwargs):
     _image_diff_test(
         name = name + "--script",
         diff = diff,

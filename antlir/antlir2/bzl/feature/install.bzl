@@ -11,11 +11,11 @@ load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def install(
         *,
-        src: str | "selector",
-        dst: str | "selector",
-        mode: int | str | "selector" | None = None,
-        user: str | "selector" = "root",
-        group: str | "selector" = "root") -> ParseTimeFeature.type:
+        src: str | Select,
+        dst: str | Select,
+        mode: int | str | Select | None = None,
+        user: str | Select = "root",
+        group: str | Select = "root") -> ParseTimeFeature.type:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -70,7 +70,7 @@ install_record = record(
 
 def get_feature_anaylsis_for_install(
         ctx: "AnalyzeFeatureContext",
-        src: "dependency" | Artifact,
+        src: Dependency | Artifact,
         dst: str,
         group: str,
         mode: int | None,
@@ -149,7 +149,7 @@ def install_analyze(
         group: str,
         mode: int | None,
         user: str,
-        deps_or_srcs: dict[str, Artifact | "dependency"],
+        deps_or_srcs: dict[str, Artifact | Dependency],
         impl: "RunInfo" | None = None) -> FeatureAnalysis.type:
     src = deps_or_srcs["src"]
     return get_feature_anaylsis_for_install(

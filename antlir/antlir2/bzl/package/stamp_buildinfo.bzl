@@ -8,7 +8,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "shared_features_attrs")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
 
-def _impl(ctx: "context") -> "promise":
+def _impl(ctx: AnalysisContext) -> "promise":
     return ctx.actions.anon_target(layer_rule, {
         "antlir2": ctx.attrs._antlir2,
         "name": str(ctx.label.raw_target()),

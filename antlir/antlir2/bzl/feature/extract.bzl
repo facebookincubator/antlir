@@ -29,8 +29,8 @@ load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
 def extract_from_layer(
-        layer: str | "selector",
-        binaries: list[str | "selector"] | "selector") -> ParseTimeFeature.type:
+        layer: str | Select,
+        binaries: list[str | Select] | Select) -> ParseTimeFeature.type:
     """
     Extract binaries that are installed into `layer`, most commonly by RPMs.
 
@@ -53,9 +53,9 @@ def extract_from_layer(
     )
 
 def extract_buck_binary(
-        src: str | "selector",
-        dst: str | "selector",
-        strip: bool | "selector" = True) -> ParseTimeFeature.type:
+        src: str | Select,
+        dst: str | Select,
+        strip: bool | Select = True) -> ParseTimeFeature.type:
     """
     Extract a binary built by buck into the target layer.
 
@@ -93,7 +93,7 @@ extract_record = record(
 def extract_analyze(
         ctx: "AnalyzeFeatureContext",
         source: str,
-        deps: dict[str, "dependency"],
+        deps: dict[str, Dependency],
         binaries: list[str] | None = None,
         src: str | None = None,
         dst: str | None = None,

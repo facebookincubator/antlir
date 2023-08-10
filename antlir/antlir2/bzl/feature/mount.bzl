@@ -14,7 +14,7 @@ load(":install.bzl", "install")
 
 def layer_mount(
         *,
-        source: str | "selector",
+        source: str | Select,
         mountpoint: str | None = None,
         _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature.type]:
     features = [
@@ -112,7 +112,7 @@ def mount_analyze(
         is_directory: bool | None,
         host_source: str | None,
         _implicit_from_antlir1: bool,
-        deps: dict[str, "dependency"] = {}) -> FeatureAnalysis.type:
+        deps: dict[str, Dependency] = {}) -> FeatureAnalysis.type:
     if source_kind == "layer":
         source = deps.pop("source")
         if not mountpoint:
