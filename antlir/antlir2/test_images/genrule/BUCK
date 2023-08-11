@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
 image.layer(
     name = "base",
@@ -49,4 +50,40 @@ image_diff_test(
     diff = "genrule.toml",
     diff_type = "file",
     layer = ":genrule",
+)
+
+image.layer(
+    name = "with-repo-parent",
+    features = [
+        feature.install(
+            src = "genrule-with-repo.sh",
+            dst = "/genrule-with-repo.sh",
+            mode = "a+rx",
+        ),
+    ] + ([
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/is-facebook",
+        ),
+    ] if is_facebook else []),
+    parent_layer = ":base",
+)
+
+image.layer(
+    name = "genrule-with-repo",
+    features = [
+        feature.genrule(
+            bind_repo_ro = True,
+            cmd = ["/genrule-with-repo.sh"],
+            user = "root",
+        ),
+    ],
+    parent_layer = ":with-repo-parent",
+)
+
+image_diff_test(
+    name = "genrule-with-repo-test",
+    diff = "genrule-with-repo.toml",
+    diff_type = "file",
+    layer = ":genrule-with-repo",
 )

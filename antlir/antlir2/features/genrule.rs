@@ -47,9 +47,6 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
         if self.boot {
             unimplemented!("boot is not yet implemented");
         }
-        if self.bind_repo_ro {
-            unimplemented!("bind_repo_ro is not yet implemented");
-        }
         let cwd = std::env::current_dir()?;
         let mut cmd = isolate(
             IsolationContext::builder(ctx.root())
