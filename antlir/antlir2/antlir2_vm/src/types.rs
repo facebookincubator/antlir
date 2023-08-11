@@ -9,6 +9,7 @@
 //! so that we can directly deserialize a json into Rust structs.
 
 use std::collections::HashSet;
+use std::env;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -65,9 +66,14 @@ pub(crate) struct VMArgs {
     /// development.
     #[clap(long)]
     pub(crate) timeout_s: Option<u32>,
-    /// Show console outputs. Disabled by default.
+    /// Drop into console prompt instead of opening ssh shell or executing the
+    /// `command`. This also enables console output on screen, unless
+    /// `--console-output-file` is specified.
     #[clap(long)]
     pub(crate) console: bool,
+    /// Redirect console output to file. By default it's suppressed.
+    #[clap(long)]
+    pub(crate) console_output_file: Option<PathBuf>,
     /// Output directories that need to be available inside VM
     #[clap(long)]
     pub(crate) output_dirs: Vec<PathBuf>,
@@ -91,6 +97,10 @@ impl VMArgs {
         if self.console {
             args.push("--console".into());
         }
+        if let Some(path) = &self.console_output_file {
+            args.push("--console-output-file".into());
+            args.push(path.into());
+        }
         self.command_envs.iter().for_each(|pair| {
             args.push("--command-envs".into());
             let mut kv_str = OsString::new();
@@ -111,7 +121,15 @@ impl VMArgs {
 
     /// Get all output directories for the VM.
     pub(crate) fn get_vm_output_dirs(&self) -> HashSet<PathBuf> {
-        self.output_dirs.iter().cloned().collect()
+        let mut outputs: HashSet<_> = self.output_dirs.iter().cloned().collect();
+        if let Some(file_path) = &self.console_output_file {
+            if let Some(parent) = file_path.parent() {
+                outputs.insert(parent.to_path_buf());
+            } else {
+                outputs.insert(env::current_dir().expect("current dir must be valid"));
+            }
+        }
+        outputs
     }
 
     /// Get all output directories for the container.
@@ -165,6 +183,7 @@ mod test {
         [
             vec!["bin"],
             vec!["bin", "--console"],
+            vec!["bin", "--console-output-file", "/path/to/out"],
             vec!["bin", "--timeout-s", "10"],
             vec!["bin", "--output-dirs", "/foo", "--output-dirs", "/bar"],
             vec![
@@ -217,6 +236,15 @@ mod test {
         assert_eq!(
             args.get_vm_output_dirs(),
             HashSet::from(["/foo/bar".into(), "/baz".into()])
+        );
+        let args = VMArgs {
+            output_dirs: vec!["/foo/bar".into()],
+            console_output_file: Some("/tmp/whatever".into()),
+            ..Default::default()
+        };
+        assert_eq!(
+            args.get_vm_output_dirs(),
+            HashSet::from(["/foo/bar".into(), "/tmp".into()])
         );
     }
 

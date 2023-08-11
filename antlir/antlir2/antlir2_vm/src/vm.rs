@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs;
+use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::Read;
@@ -77,6 +78,8 @@ pub(crate) enum VMError {
     SSHCommandError(#[from] GuestSSHError),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
+    #[error("Failed to open output file: {path}: {err}")]
+    FileOutputError { path: PathBuf, err: std::io::Error },
     #[error("Failed to boot VM: `{0}`")]
     BootError(String),
     #[error("VM error after boot: `{0}`")]
@@ -224,8 +227,20 @@ impl VM {
         args.extend(self.nic_qemu_args());
         let mut command = Command::new(&get_runtime().qemu_system);
         let command = command.args(&args);
+
+        // Disable console input for ssh shell by default
         if !self.args.console {
             command.stdin(Stdio::null());
+        }
+        if let Some(path) = &self.args.console_output_file {
+            let map_err = |err| VMError::FileOutputError {
+                path: path.to_owned(),
+                err,
+            };
+            let file = File::create(path).map_err(map_err)?;
+            command.stdout(file.try_clone().map_err(map_err)?);
+            command.stderr(file.try_clone().map_err(map_err)?);
+        } else if !self.args.console {
             command.stdout(Stdio::null());
             command.stderr(Stdio::null());
         }
@@ -240,7 +255,7 @@ impl VM {
     /// the thread exits.
     fn wait_for_timeout<T>(
         &self,
-        socket: &mut UnixStream,
+        mut socket: UnixStream,
         start_ts: Instant,
         thread_handle: Option<JoinHandle<T>>,
     ) -> Result<()> {
@@ -286,7 +301,7 @@ impl VM {
     fn run_ssh_cmd_and_wait(
         &self,
         mut ssh_cmd: Command,
-        mut socket: UnixStream,
+        socket: UnixStream,
         start_ts: Instant,
     ) -> Result<()> {
         // Spawn ssh command in a separate thread so that we can enforce timeout.
@@ -295,7 +310,7 @@ impl VM {
                 .status()
                 .map_err(|e| VMError::BootError(format!("Failed to open SSH shell: {}", e)))
         });
-        self.wait_for_timeout(&mut socket, start_ts, Some(handle))
+        self.wait_for_timeout(socket, start_ts, Some(handle))
     }
 
     /// We control VM process through sockets. If VM process exited for any reason
@@ -360,7 +375,10 @@ impl VM {
         );
 
         // VM booted
-        if let Some(command) = &self.args.command {
+        if self.args.console {
+            // Just wait for the human that's trying to debug with console
+            self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
+        } else if let Some(command) = &self.args.command {
             // Execute the specified command and wait for it to finish or timeout.
             let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
             let dedup: HashMap<_, _> = self
@@ -376,7 +394,7 @@ impl VM {
             ssh_cmd.args(command);
             self.run_ssh_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
         } else {
-            // Opens a shell
+            // Open an ssh shell for human
             let ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
             self.run_ssh_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
         }
@@ -499,13 +517,7 @@ mod test {
             num_nics: 1,
             non_disk_boot_opts: None,
         };
-        let args = VMArgs {
-            timeout_s: None,
-            console: false,
-            command: None,
-            command_envs: vec![],
-            output_dirs: vec![],
-        };
+        let args = VMArgs::default();
         let share_opts = ShareOpts {
             path: PathBuf::from("/path"),
             read_only: true,
@@ -593,13 +605,10 @@ mod test {
         // Terminate after timeout
         let mut vm = get_vm_no_disk();
         vm.args.timeout_s = Some(3);
-        let (_send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
-            assert!(
-                vm.wait_for_timeout::<()>(&mut recv, start_ts, None)
-                    .is_err()
-            );
+            assert!(vm.wait_for_timeout::<()>(recv, start_ts, None).is_err());
         });
         thread::sleep(Duration::from_secs(1));
         assert!(!handle.is_finished());
@@ -612,10 +621,10 @@ mod test {
         // Terminate before timeout due to closed socket
         let mut vm = get_vm_no_disk();
         vm.args.timeout_s = Some(10);
-        let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
-            assert!(vm.wait_for_timeout::<()>(&mut recv, start_ts, None).is_ok());
+            assert!(vm.wait_for_timeout::<()>(recv, start_ts, None).is_ok());
         });
         thread::sleep(Duration::from_secs(1));
         assert!(!handle.is_finished());
@@ -630,10 +639,10 @@ mod test {
         // Without timeout
         let mut vm = get_vm_no_disk();
         vm.args.timeout_s = None;
-        let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let handle = thread::spawn(move || {
             assert!(
-                vm.wait_for_timeout::<()>(&mut recv, Instant::now(), None)
+                vm.wait_for_timeout::<()>(recv, Instant::now(), None)
                     .is_ok()
             );
         });
@@ -653,9 +662,9 @@ mod test {
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_secs(3));
         });
-        let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         assert!(
-            vm.wait_for_timeout::<()>(&mut recv, start_ts, Some(handle))
+            vm.wait_for_timeout::<()>(recv, start_ts, Some(handle))
                 .is_ok()
         );
         let elapsed = Instant::now()
@@ -673,9 +682,9 @@ mod test {
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_secs(5));
         });
-        let (send, mut recv) = UnixStream::pair().expect("Failed to create sockets");
+        let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         assert!(
-            vm.wait_for_timeout::<()>(&mut recv, start_ts, Some(handle))
+            vm.wait_for_timeout::<()>(recv, start_ts, Some(handle))
                 .is_err()
         );
         assert!(elapsed > Duration::from_secs(3));
