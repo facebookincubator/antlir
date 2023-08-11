@@ -20,6 +20,7 @@ def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list["R
         tree[paths.join(repo_info.id, "repodata")] = repo_info.repodata
         for key in repo_info.gpg_keys:
             tree[paths.join(repo_info.id, "gpg-keys", key.basename)] = key
+        tree[paths.join(repo_info.id, "dnf_conf.json")] = repo_info.dnf_conf_json
 
     # copied_dir instead of symlink_dir so that this can be directly bind
     # mounted into the container
@@ -73,6 +74,7 @@ def compiler_plan_to_local_repos(
             tree[paths.join(repo_i.id, "repodata")] = repo_i.repodata
             for key in repo_i.gpg_keys:
                 tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
+            tree[paths.join(repo_i.id, "dnf_conf.json")] = repo_i.dnf_conf_json
 
         for install in tx["install"]:
             found = False
