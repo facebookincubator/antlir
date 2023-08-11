@@ -20,6 +20,7 @@ def image_cpp_unittest(
         **cpp_unittest_kwargs):
     visibility = visibility or []
 
+    supports_static_listing = cpp_unittest_kwargs.pop("supports_static_listing", False)
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,
         layer = layer,
@@ -35,6 +36,7 @@ def image_cpp_unittest(
 
     cpp_unittest(
         name = helpers.hidden_test_name(name),
+        supports_static_listing = supports_static_listing,
         tags = helpers.tags_to_hide_test(),
         visibility = visibility,
         antlir_rule = "user-internal",
