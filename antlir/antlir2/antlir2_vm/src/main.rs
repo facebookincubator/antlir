@@ -38,6 +38,7 @@ use crate::runtime::set_runtime;
 use crate::types::MachineOpts;
 use crate::types::RuntimeOpts;
 use crate::types::VMArgs;
+use crate::utils::console_output_path_for_tpx;
 use crate::utils::log_command;
 use crate::vm::VM;
 
@@ -184,6 +185,7 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<Validated
     vm_args.output_dirs = test_args.test.output_dirs().into_iter().collect();
     vm_args.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
+    vm_args.console_output_file = console_output_path_for_tpx()?;
     Ok(ValidatedVMArgs {
         inner: vm_args,
         is_list,
@@ -260,6 +262,7 @@ fn test_debug(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
     vm_args.inner.command = Some(["/bin/bash", "-l"].iter().map(OsString::from).collect());
     vm_args.inner.timeout_s = None;
+    // TODO: redirect console output to temp file and print help message for human
     _test(args, &vm_args)
 }
 
