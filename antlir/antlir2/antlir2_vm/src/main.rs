@@ -112,7 +112,7 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = args.run_cmd_args.vm_args.clone();
     vm_args.command_envs = envs.clone();
 
-    let isolated = isolated(&args.image, envs, &vm_args.output_dirs)?;
+    let isolated = isolated(&args.image, envs, vm_args.get_container_output_dirs())?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     let mut command = isolated.into_command();
     command
@@ -195,19 +195,14 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<Validated
 /// execute, so it's unnecessarily wasteful to execute it inside the VM. We
 /// directly run it inside the container without booting VM.
 fn list_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<Command> {
-    // RW bind-mount /dev/fuse.
-    // Refer to comment in antlir/antlir2/testing/image_test/src/main.rs for details.
-    let output_dirs: Vec<_> = validated_args
-        .inner
-        .output_dirs
-        .iter()
-        .cloned()
-        .chain([PathBuf::from("/dev/fuse")])
-        .collect();
+    let mut output_dirs = validated_args.inner.get_container_output_dirs();
+    // RW bind-mount /dev/fuse for running XAR.
+    // More details in antlir/antlir2/testing/image_test/src/main.rs.
+    output_dirs.insert(PathBuf::from("/dev/fuse"));
     let isolated = isolated(
         &args.image,
         validated_args.inner.command_envs.clone(),
-        &output_dirs,
+        output_dirs,
     )?;
     let mut command = isolated.into_command();
     command.args(
@@ -225,7 +220,7 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
     let isolated = isolated(
         &args.image,
         validated_args.inner.command_envs.clone(),
-        &validated_args.inner.output_dirs,
+        validated_args.inner.get_container_output_dirs(),
     )?;
     let mut command = isolated.into_command();
     let exe = env::current_exe().context("while getting argv[0]")?;

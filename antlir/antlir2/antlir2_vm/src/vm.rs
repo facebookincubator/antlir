@@ -6,6 +6,7 @@
  */
 
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs;
 use std::io::BufRead;
@@ -92,7 +93,7 @@ impl VM {
         let state_dir = Self::create_state_dir()?;
         let disks = Self::create_disks(&machine, &state_dir)?;
         let shares = Self::create_shares(
-            Self::get_all_shares_opts(&args.output_dirs),
+            Self::get_all_shares_opts(&args.get_vm_output_dirs()),
             &state_dir,
             machine.mem_mib,
         )?;
@@ -140,7 +141,7 @@ impl VM {
 
     /// All platform paths needs to be mounted inside the VM as read-only shares.
     /// Collect them into ShareOpts along with others.
-    fn get_all_shares_opts(output_dirs: &[PathBuf]) -> Vec<ShareOpts> {
+    fn get_all_shares_opts(output_dirs: &HashSet<PathBuf>) -> Vec<ShareOpts> {
         let mut shares: Vec<_> = Platform::get()
             .iter()
             .map(|path| ShareOpts {
@@ -725,7 +726,7 @@ mod test {
     #[test]
     fn test_get_all_shares_opts() {
         Platform::set().expect("Failed to query platform");
-        let outputs = vec![PathBuf::from("/path")];
+        let outputs = HashSet::from([PathBuf::from("/path")]);
         let opt = ShareOpts {
             path: PathBuf::from("/path"),
             read_only: false,

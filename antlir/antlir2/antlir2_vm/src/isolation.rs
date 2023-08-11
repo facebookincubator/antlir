@@ -8,9 +8,7 @@
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::env;
-use std::ffi::OsStr;
 use std::ffi::OsString;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -107,25 +105,18 @@ pub(crate) fn default_passthrough_envs() -> Vec<KvPair> {
 /// * `image` - container image that would be used to run the VM
 /// * `envs` - env vars to set inside container.
 /// * `outputs` - Additional writable directories
-pub(crate) fn isolated<T: AsRef<OsStr>>(
+pub(crate) fn isolated(
     image: &PathBuf,
     envs: Vec<KvPair>,
-    outputs: &[T],
+    outputs: HashSet<PathBuf>,
 ) -> Result<IsolatedContext> {
     let repo = Platform::repo_root()?;
-    let mut all_outputs: HashSet<&Path> = outputs.iter().map(|x| Path::new(x)).collect();
-    // Carry over virtualizations support
-    // TODO: Linux-specific
-    all_outputs.insert(Path::new("/dev/kvm"));
-    // virtiofsd uses relative path to binary for local state
-    all_outputs.insert(&repo);
-
     let mut builder = IsolationContext::builder(image);
     builder
         .register(true)
         .platform(Platform::get().clone())
         .working_directory(&repo)
-        .outputs(all_outputs);
+        .outputs(outputs);
     builder.setenv(
         envs.into_iter()
             .map(|p| (p.key, p.value))
