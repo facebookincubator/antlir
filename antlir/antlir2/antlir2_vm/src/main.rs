@@ -121,8 +121,8 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
         .arg("--machine-spec")
         .arg(args.run_cmd_args.machine_spec.path())
         .arg("--runtime-spec")
-        .arg(args.run_cmd_args.runtime_spec.path());
-    command.args(vm_args.to_args());
+        .arg(args.run_cmd_args.runtime_spec.path())
+        .args(vm_args.to_args());
 
     log_command(&mut command).status()?;
     Ok(())
@@ -301,10 +301,8 @@ mod test {
     fn test_get_test_vm_args() {
         let valid = VMArgs {
             timeout_s: Some(1),
-            console: false,
-            output_dirs: vec![],
-            command_envs: vec![],
             command: Some(["custom", "whatever"].iter().map(OsString::from).collect()),
+            ..Default::default()
         };
         let empty_env = Vec::<KvPair>::new();
         let mut expected = valid.clone();
