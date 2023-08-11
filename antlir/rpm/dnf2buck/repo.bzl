@@ -8,6 +8,7 @@ load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 RepoInfo = provider(fields = {
     "all_rpms": "All RpmInfos contained in this repo",
     "base_url": "Optional upstream URL that was used to populate this target",
+    "dnf_conf_json": "JSON serialized dnf.conf KV for this repo",
     "gpg_keys": "Optional artifact against which signatures will be checked",
     "id": "Repo name",
     "offline": "Complete offline archive of repodata and all RPMs",
@@ -93,6 +94,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ctx.label.name: proxy_config,
     })
 
+    dnf_conf_json = ctx.actions.write_json("dnf_conf.json", ctx.attrs.dnf_conf)
+
     return [
         DefaultInfo(default_outputs = [repodata], sub_targets = {
             "offline": [DefaultInfo(default_outputs = [offline])],
@@ -112,6 +115,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             urlgen = urlgen_config,
             all_rpms = rpm_infos,
             proxy_config = proxy_config,
+            dnf_conf_json = dnf_conf_json,
         ),
     ]
 
@@ -130,6 +134,7 @@ repo_attrs = {
         doc = "base key for recently-deleted packages in manifold",
         default = None,
     ),
+    "dnf_conf": attrs.dict(attrs.string(), attrs.string(), default = {}),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),

@@ -8,6 +8,7 @@
 # /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
 # ensure that we're using the same python that dnf itself is using
 
+import json
 import os.path
 import platform
 import shutil
@@ -126,6 +127,13 @@ def add_repos(*, base: dnf.Base, repos_dir: Path) -> None:
                 conf.set_or_append_opt_value("gpgcheck", "0")
             else:
                 conf._set_value("gpgcheck", "0")
+        with open(basedir / "dnf_conf.json") as f:
+            dnf_conf = json.load(f)
+            for k, v in dnf_conf.items():
+                if hasattr(conf, "set_or_append_opt_value"):
+                    conf.set_or_append_opt_value(k, v)
+                else:
+                    conf._set_value(k, v)
         repo = dnf.repo.Repo(id, conf)
         repo.baseurl = [basedir.as_uri()]
         base.repos.add(repo)
