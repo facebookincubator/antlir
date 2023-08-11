@@ -8,6 +8,7 @@
 //! This file contains data structure that mirrors what described in vm bzl files
 //! so that we can directly deserialize a json into Rust structs.
 
+use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::PathBuf;
@@ -57,7 +58,7 @@ pub(crate) struct ShareOpts {
 }
 
 /// Operational specific parameters for VM but not related to VM configuration itself
-#[derive(Debug, Clone, Args, PartialEq)]
+#[derive(Debug, Clone, Args, PartialEq, Default)]
 pub(crate) struct VMArgs {
     /// Timeout in seconds before VM will be terminated. None disables the
     /// timeout, which should only be used for interactive shells for
@@ -67,7 +68,7 @@ pub(crate) struct VMArgs {
     /// Show console outputs. Disabled by default.
     #[clap(long)]
     pub(crate) console: bool,
-    /// Additional writable directories for outputs
+    /// Output directories that need to be available inside VM
     #[clap(long)]
     pub(crate) output_dirs: Vec<PathBuf>,
     /// Environment variables for the command
@@ -106,6 +107,19 @@ impl VMArgs {
             command.iter().for_each(|c| args.push(c.clone()));
         }
         args
+    }
+
+    /// Get all output directories for the VM.
+    pub(crate) fn get_vm_output_dirs(&self) -> HashSet<PathBuf> {
+        self.output_dirs.iter().cloned().collect()
+    }
+
+    /// Get all output directories for the container.
+    pub(crate) fn get_container_output_dirs(&self) -> HashSet<PathBuf> {
+        let mut outputs = self.get_vm_output_dirs();
+        // Carry over virtualization support
+        outputs.insert("/dev/kvm".into());
+        outputs
     }
 }
 
@@ -190,5 +204,36 @@ mod test {
             );
             assert_eq!(parsed.to_args(), original);
         });
+    }
+
+    #[test]
+    fn test_get_vm_output_dirs() {
+        let args = VMArgs::default();
+        assert!(args.get_vm_output_dirs().is_empty());
+        let args = VMArgs {
+            output_dirs: vec!["/foo/bar".into(), "/baz".into()],
+            ..Default::default()
+        };
+        assert_eq!(
+            args.get_vm_output_dirs(),
+            HashSet::from(["/foo/bar".into(), "/baz".into()])
+        );
+    }
+
+    #[test]
+    fn test_get_container_output_dirs() {
+        let args = VMArgs::default();
+        assert_eq!(
+            args.get_container_output_dirs(),
+            HashSet::from(["/dev/kvm".into()])
+        );
+        let args = VMArgs {
+            output_dirs: vec!["/foo/bar".into(), "/baz".into()],
+            ..Default::default()
+        };
+        assert_eq!(
+            args.get_container_output_dirs(),
+            HashSet::from(["/foo/bar".into(), "/baz".into(), "/dev/kvm".into()])
+        );
     }
 }
