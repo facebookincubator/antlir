@@ -80,6 +80,7 @@ _CPP_UNITTEST_KWARGS = _make_rule_kwargs_dict(
         "srcs",
         "tags",
         "visibility",
+        "supports_static_listing",
     ],
 )
 
