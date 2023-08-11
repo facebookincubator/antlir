@@ -256,6 +256,7 @@ def _vm_cpp_unittest(
         name,
         vm_opts = None,
         **kwargs):
+    kwargs["supports_static_listing"] = kwargs.get("supports_static_listing", True)
     _vm_unittest(
         name,
         cpp_unittest,
