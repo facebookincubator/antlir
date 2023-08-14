@@ -17,8 +17,8 @@ def dot_meta(
     revision = revision or native.read_config("build_info", "revision")
     package_name = package_name or native.read_config("build_info", "package_name")
     package_version = package_version or native.read_config("build_info", "package_version")
-    if int(bool(package_name)) + int(bool(package_version)) not in (0, 2):
-        fail("either both or neither of {package_name, package_version} must be set")
+    if int(bool(package_name)) ^ int(bool(package_version)):
+        warning("Only one of {package_name, package_version} was set; package info will not be materialized into .meta")
 
     package = None
     if package_name and package_version:
