@@ -131,3 +131,24 @@ repo(
         "//antlir/antlir2/testing/...",
     ],
 )
+
+repo(
+    name = "non-reflink-test-repo",
+    compress = "none",
+    disable_rpm_reflink = True,
+    rpms = [
+        test_rpm(
+            name = "foo-not-reflinked",
+            features = [feature.install(
+                src = "//antlir:empty",
+                dst = "/foo-recommends-me",
+            )],
+            release = "1",
+            version = "1",
+        ),
+    ],
+    timestamp = 0,
+    visibility = [
+        "//antlir/antlir2/test_images/rpms/...",
+    ],
+)

@@ -8,6 +8,7 @@ load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 RepoInfo = provider(fields = {
     "all_rpms": "All RpmInfos contained in this repo",
     "base_url": "Optional upstream URL that was used to populate this target",
+    "disable_rpm_reflink": "Disable rpm reflink. WARNING: this will SUBSTANTIALLY slow down installations",
     "dnf_conf_json": "JSON serialized dnf.conf KV for this repo",
     "gpg_keys": "Optional artifact against which signatures will be checked",
     "id": "Repo name",
@@ -115,6 +116,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             urlgen = urlgen_config,
             all_rpms = rpm_infos,
             proxy_config = proxy_config,
+            disable_rpm_reflink = ctx.attrs.disable_rpm_reflink,
             dnf_conf_json = dnf_conf_json,
         ),
     ]
@@ -133,6 +135,10 @@ repo_attrs = {
         attrs.string(),
         doc = "base key for recently-deleted packages in manifold",
         default = None,
+    ),
+    "disable_rpm_reflink": attrs.bool(
+        doc = "Disable rpm reflink. WARNING: this will SUBSTANTIALLY slow down installations",
+        default = False,
     ),
     "dnf_conf": attrs.dict(attrs.string(), attrs.string(), default = {}),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),

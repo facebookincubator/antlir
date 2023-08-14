@@ -350,3 +350,23 @@ image_sh_test(
     layer = simple,
     test = "test-history.sh",
 )
+
+test_rpms(
+    name = "mix-reflink-and-not",
+    dnf_additional_repos = [
+        "//antlir/antlir2/test_images/rpms/repo:test-repo",
+        "//antlir/antlir2/test_images/rpms/repo:non-reflink-test-repo",
+    ],
+    expected = expected_t(installed = [
+        "foo",
+        "foo-not-reflinked",
+    ]),
+    features = [
+        feature.rpms_install(rpms = [
+            "foo",
+            "foo-not-reflinked",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
