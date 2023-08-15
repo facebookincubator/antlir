@@ -395,6 +395,7 @@ License: {license}
 {post_install_script}
 
 "#,
+                summary = summary.as_deref().unwrap_or(name.as_str()),
                 requires = requires,
                 recommends = recommends,
                 provides = provides,
