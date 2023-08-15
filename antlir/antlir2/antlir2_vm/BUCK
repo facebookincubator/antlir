@@ -56,7 +56,7 @@ image.layer(
 )
 
 vm.host(
-    name = "default",
+    name = "default-disk-boot",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.default_boot_disk],
     visibility = ["//antlir/..."],
@@ -71,10 +71,8 @@ vm.host(
     visibility = ["//antlir/..."],
 )
 
-# TODO: The following are just placeholders for CI to exercise disk building
-# API until we move to actual vm tests soon(TM).
 vm.host(
-    name = "default-nvme",
+    name = "default-nvme-disk-boot",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [
         simple_disk.get_boot_disk(
