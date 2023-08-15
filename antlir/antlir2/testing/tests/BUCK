@@ -38,6 +38,7 @@ image.layer(
                 "BOOT": str(boot),
             },
             layer = ":base",
+            supports_static_listing = False,
         ),
         image_python_test(
             name = "test-py" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
