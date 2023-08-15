@@ -50,11 +50,22 @@ pub struct LdHandle {
 impl LdHandle {
     pub fn attach_next_free(target: PathBuf) -> Result<Self> {
         let lc = LoopControl::open().context("Failed to build loop device controller")?;
-        let ld = lc
-            .next_free()
-            .context("Failed to find a free loopback device")?;
 
-        Self::attach(ld, target)
+        // The /dev/loop-control interface being used by this library is
+        // supposed to be atomic, but we're clearly getting what looks like race
+        // conditions on CI, so just retry a few times and hopefully we'll get a
+        // good device before giving up
+        retry::retry(retry::delay::Fixed::from_millis(50).take(3), || {
+            let ld = lc
+                .next_free()
+                .context("Failed to find a free loopback device")?;
+            Self::attach(ld, target.clone())
+        })
+        .map_err(|e| match e {
+            retry::Error::Operation { error, .. } => error,
+            retry::Error::Internal(s) => anyhow::Error::msg(s),
+        })
+        .context("while trying to attach a loopback device")
     }
 
     pub fn attach(device: LoopDevice, target: PathBuf) -> Result<Self> {
@@ -82,10 +93,11 @@ impl LdHandle {
     }
 
     pub fn detach(mut self) -> Result<()> {
-        self.closed = true;
         self.device
             .detach()
-            .context("failed to detatch loop device")
+            .context("failed to detatch loop device")?;
+        self.closed = true;
+        Ok(())
     }
 
     pub fn device(&self) -> &LoopDevice {

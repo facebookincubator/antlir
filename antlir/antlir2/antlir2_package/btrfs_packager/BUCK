@@ -10,6 +10,7 @@ rust_binary(
         "clap",
         "loopdev",
         "nix",
+        "retry",
         "tempfile",
         "tracing-glog",
         "tracing-subscriber",
