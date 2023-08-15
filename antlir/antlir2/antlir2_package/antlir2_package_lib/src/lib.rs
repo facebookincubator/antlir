@@ -74,13 +74,14 @@ pub enum Spec {
     Rpm {
         build_appliance: PathBuf,
         layer: PathBuf,
+        #[serde(rename = "rpm_name")]
         name: String,
         epoch: i32,
         version: String,
         release: String,
         arch: String,
         license: String,
-        summary: String,
+        summary: Option<String>,
         requires: Vec<String>,
         recommends: Vec<String>,
         provides: Vec<String>,
