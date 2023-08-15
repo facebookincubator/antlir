@@ -112,6 +112,7 @@ def _implicit_vm_test(
         **kwargs
     )
     labels = list(labels) if labels else []
+    labels.append("heavyweight")
     labels.extend(_add_outer_labels)
 
     # @oss-disable
