@@ -76,5 +76,8 @@ fn main() -> anyhow::Result<()> {
         cmd_builder.inputs(repo_root.into_path_buf());
         cmd_builder.inputs(PathBuf::from("/usr/local/fbcode"));
     }
-    Err(isolate(cmd_builder.build()).into_command().exec().into())
+    Err(isolate(cmd_builder.build())?
+        .command("/bin/bash")?
+        .exec()
+        .into())
 }

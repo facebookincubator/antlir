@@ -181,9 +181,8 @@ impl Map {
                 .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
                 .outputs(writable_outputs)
                 .build(),
-        )
-        .into_command();
-        isol.arg(std::env::current_exe().context("while getting argv[0]")?);
+        )?
+        .command(std::env::current_exe().context("while getting argv[0]")?)?;
         if let Some(path) = log_path {
             isol.arg("--append-logs").arg(path);
         }

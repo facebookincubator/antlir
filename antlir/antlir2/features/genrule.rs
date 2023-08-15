@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::ffi::OsStr;
 use std::path::Path;
 
 use antlir2_compile::CompilerContext;
@@ -48,6 +47,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
             unimplemented!("boot is not yet implemented");
         }
         let cwd = std::env::current_dir()?;
+        let mut inner_cmd = self.cmd.iter();
         let mut cmd = isolate(
             IsolationContext::builder(ctx.root())
                 .user(&self.user)
@@ -65,9 +65,9 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
                     false => InvocationType::Pid2Pipe,
                 })
                 .build(),
-        )
-        .into_command();
-        cmd.args(self.cmd.iter().map(OsStr::new).collect::<Vec<_>>());
+        )?
+        .command(inner_cmd.next().expect("must have argv[0]"))?;
+        cmd.args(inner_cmd);
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;
         ensure!(

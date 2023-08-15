@@ -32,6 +32,8 @@ pub(crate) enum IsolationError {
     CommandError(#[from] std::io::Error),
     #[error(transparent)]
     FromUtf8Error(#[from] std::str::Utf8Error),
+    #[error(transparent)]
+    Antlir2Isolate(#[from] antlir2_isolate::Error),
 }
 type Result<T> = std::result::Result<T, IsolationError>;
 
@@ -122,7 +124,7 @@ pub(crate) fn isolated(
             .map(|p| (p.key, p.value))
             .collect::<BTreeMap<_, _>>(),
     );
-    Ok(isolate(builder.build()))
+    Ok(isolate(builder.build())?)
 }
 
 /// Basic check if current environment is isolated

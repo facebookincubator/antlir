@@ -22,9 +22,13 @@ use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
 
 mod sys;
+
+#[derive(Debug, Clone, thiserror::Error)]
+pub enum Error {}
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 /// Everything needed to know how to isolate an image compilation.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -293,20 +297,8 @@ impl<'a> IntoEnv<'a> for BTreeMap<String, String> {
     }
 }
 
-/// Dynamic information about the isolated environment that might be necessary
-/// for the image build.
-#[derive(Debug)]
-pub struct IsolatedContext {
-    /// Isolation command to which the compiler path and args should be
-    /// appended.
-    command: Command,
-}
-
-impl IsolatedContext {
-    pub fn into_command(self) -> Command {
-        self.command
-    }
-}
-
 /// Set up an isolated environment to run a compilation process.
 pub use sys::isolate;
+/// Dynamic information about the isolated environment that might be necessary
+/// for the image build.
+pub use sys::IsolatedContext;

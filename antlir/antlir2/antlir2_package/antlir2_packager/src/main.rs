@@ -197,8 +197,7 @@ fn main() -> Result<()> {
                 .build();
 
             // Build the vfat disk file first
-            let mut mkfs_iso = isolate(isol_context.clone()).into_command();
-            let mkfs = mkfs_iso.arg("/usr/sbin/mkfs.vfat");
+            let mut mkfs = isolate(isol_context.clone())?.command("/usr/sbin/mkfs.vfat")?;
             if let Some(fat_size) = fat_size {
                 mkfs.arg(format!("-F{}", fat_size));
             }
@@ -216,9 +215,8 @@ fn main() -> Result<()> {
             }
 
             run_cmd(
-                isolate(isol_context)
-                    .into_command()
-                    .arg("/usr/bin/mcopy")
+                isolate(isol_context)?
+                    .command("/usr/bin/mcopy")?
                     .arg("-v")
                     .arg("-i")
                     .arg(&output)
@@ -265,9 +263,8 @@ fn main() -> Result<()> {
             );
 
             run_cmd(
-                isolate(isol_context)
-                    .into_command()
-                    .arg("/bin/bash")
+                isolate(isol_context)?
+                    .command("/bin/bash")?
                     .arg("-c")
                     .arg(cpio_script)
                     .stdout(Stdio::piped()),
@@ -407,9 +404,8 @@ License: {license}
                 .build();
 
             run_cmd(
-                isolate(isol_context)
-                    .into_command()
-                    .arg("/bin/rpmbuild")
+                isolate(isol_context)?
+                    .command("/bin/rpmbuild")?
                     .arg("-bb")
                     .arg("--define")
                     .arg(format!("_rpmdir {}", output_dir.path().display()))
@@ -473,9 +469,8 @@ License: {license}
             );
 
             run_cmd(
-                isolate(isol_context)
-                    .into_command()
-                    .arg("/bin/bash")
+                isolate(isol_context)?
+                    .command("/bin/bash")?
                     .arg("-c")
                     .arg(squashfs_script)
                     .stdout(Stdio::piped()),
@@ -522,9 +517,8 @@ License: {license}
             );
 
             run_cmd(
-                isolate(isol_context)
-                    .into_command()
-                    .arg("/bin/bash")
+                isolate(isol_context)?
+                    .command("/bin/bash")?
                     .arg("-c")
                     .arg(tar_script)
                     .stdout(Stdio::piped()),

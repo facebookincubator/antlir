@@ -6,6 +6,7 @@
  */
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::os::unix::ffi::OsStrExt;
@@ -17,14 +18,14 @@ use nix::unistd::Uid;
 use uuid::Uuid;
 
 use crate::InvocationType;
-use crate::IsolatedContext;
 use crate::IsolationContext;
+use crate::Result;
 
 fn try_canonicalize<'a>(path: &'a Path) -> Cow<'a, Path> {
     std::fs::canonicalize(path).map_or(Cow::Borrowed(path), Cow::Owned)
 }
 
-/// 'systemd-nspawn' accepts ':' as a special delimiter in args to '--bind[-ro]'
+/// 'systemd-nspawn' accepts ':' as a special delimiter in nspawn_args to '--bind[-ro]'
 /// in the form of 'SRC[:DST[:OPTS]]'. If a path we're trying to mount into the
 /// container ends up with a ':' in it, we need to escape it ahead of time.
 fn escape_bind<'a>(s: &'a OsStr) -> Cow<'a, OsStr> {
@@ -58,7 +59,7 @@ fn bind_arg<'a>(dst: &'a Path, src: &'a Path) -> Cow<'a, OsStr> {
 
 /// Isolate the compiler process using `systemd-nspawn`.
 #[deny(unused_variables)]
-pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
+pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     let IsolationContext {
         layer,
         working_directory,
@@ -71,54 +72,55 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         user,
         ephemeral,
     } = ctx;
-    let mut cmd = match Uid::effective().is_root() {
-        true => Command::new("systemd-nspawn"),
+    let mut nspawn_args = Vec::<OsString>::new();
+    let mut env = HashMap::new();
+    let program = match Uid::effective().is_root() {
+        true => "systemd-nspawn",
         false => {
-            let mut cmd = Command::new("sudo");
-            cmd.arg("systemd-nspawn");
-            cmd
+            nspawn_args.push("systemd-nspawn".into());
+            "sudo"
         }
     };
-    cmd.arg("--quiet")
-        .arg("--directory")
-        .arg(layer.as_ref())
-        .arg("--private-network")
-        .arg("--user")
-        .arg(user.as_ref())
-        // keep whatever timezone was in the image, not on the host
-        .arg("--timezone=off")
-        // Don't pollute the host's /var/log/journal
-        .arg("--link-journal=no")
-        // Explicitly do not look for any settings for our ephemeral machine
-        // on the host.
-        .arg("--settings=no");
+    nspawn_args.push("--quiet".into());
+    nspawn_args.push("--directory".into());
+    nspawn_args.push(layer.as_ref().into());
+    nspawn_args.push("--private-network".into());
+    nspawn_args.push("--user".into());
+    nspawn_args.push(user.as_ref().into());
+    // keep whatever timezone was in the image, not on the host
+    nspawn_args.push("--timezone=off".into());
+    // Don't pollute the host's /var/log/journal
+    nspawn_args.push("--link-journal=no".into());
+    // Explicitly do not look for any settings for our ephemeral machine
+    // on the host.
+    nspawn_args.push("--settings=no".into());
     if ephemeral {
-        cmd.arg("--ephemeral");
+        nspawn_args.push("--ephemeral".into());
         // run as many ephemeral containers as we want
-        cmd.env("SYSTEMD_NSPAWN_LOCK", "0");
+        env.insert("SYSTEMD_NSPAWN_LOCK".into(), "0".into());
     }
     match invocation_type {
         InvocationType::Pid2Interactive => {
-            cmd.arg("--console=interactive");
+            nspawn_args.push("--console=interactive".into());
             // TODO(vmagro): we might actually want to implement real pid1 semantics
             // in the compiler process for better control, but for now let's not
-            cmd.arg("--as-pid2");
+            nspawn_args.push("--as-pid2".into());
         }
         InvocationType::Pid2Pipe => {
-            cmd.arg("--console=pipe");
+            nspawn_args.push("--console=pipe".into());
             // TODO(vmagro): we might actually want to implement real pid1 semantics
             // in the compiler process for better control, but for now let's not
-            cmd.arg("--as-pid2");
+            nspawn_args.push("--as-pid2".into());
         }
         InvocationType::BootReadOnly => {
-            cmd.arg("--boot");
-            cmd.arg("--console=read-only");
+            nspawn_args.push("--boot".into());
+            nspawn_args.push("--console=read-only".into());
         }
     }
     if register {
-        cmd.arg(format!("--machine={}", Uuid::new_v4()));
+        nspawn_args.push(format!("--machine={}", Uuid::new_v4()).into());
     } else {
-        cmd.arg("--register=no");
+        nspawn_args.push("--register=no".into());
         if !invocation_type.booted() {
             // In a booted container, let systemd-nspawn create a transient
             // scope unit so that cgroup management by the booted systemd works
@@ -126,31 +128,55 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
             // surrounding this antlir2_isolate call. This doesn't matter for
             // non-booted containers since they shouldn't be doing anything with
             // cgroups (other than whatever systemd-nspawn is doing)
-            cmd.arg("--keep-unit");
+            nspawn_args.push("--keep-unit".into());
         }
     }
 
     if let Some(wd) = &working_directory {
-        cmd.arg("--chdir").arg(wd.as_ref());
+        nspawn_args.push("--chdir".into());
+        nspawn_args.push(wd.as_ref().into());
     }
     for (key, val) in &setenv {
         let mut arg = OsString::from(key);
         arg.push("=");
         arg.push(val);
-        cmd.arg("--setenv").arg(arg);
+        nspawn_args.push("--setenv".into());
+        nspawn_args.push(arg);
     }
     for (dst, src) in &platform {
-        cmd.arg("--bind-ro").arg(bind_arg(dst, src));
+        nspawn_args.push("--bind-ro".into());
+        nspawn_args.push(bind_arg(dst, src).into());
     }
     for (dst, src) in &inputs {
-        cmd.arg("--bind-ro").arg(bind_arg(dst, src));
+        nspawn_args.push("--bind-ro".into());
+        nspawn_args.push(bind_arg(dst, src).into());
     }
     for (dst, out) in &outputs {
-        cmd.arg("--bind").arg(bind_arg(dst, out));
+        nspawn_args.push("--bind".into());
+        nspawn_args.push(bind_arg(dst, out).into());
     }
 
-    // caller will add the compiler path as the first argument
-    cmd.arg("--");
+    Ok(IsolatedContext {
+        program,
+        nspawn_args,
+        env,
+    })
+}
 
-    IsolatedContext { command: cmd }
+#[derive(Debug)]
+pub struct IsolatedContext {
+    program: &'static str,
+    nspawn_args: Vec<OsString>,
+    env: HashMap<OsString, OsString>,
+}
+
+impl IsolatedContext {
+    pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Result<Command> {
+        let mut cmd = Command::new(self.program);
+        cmd.args(&self.nspawn_args).arg("--").arg(program);
+        for (k, v) in &self.env {
+            cmd.env(k, v);
+        }
+        Ok(cmd)
+    }
 }
