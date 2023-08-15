@@ -420,7 +420,7 @@ def _parser_add_nspawn_opts(parser: argparse.ArgumentParser):
         default=defaults["user"],
         type=pwd.getpwnam,
         help="Changes to the specified user once in the nspawn container. "
-        'Defaults to `{defaults["user"]}` to give you a mostly read-only '
+        f'Defaults to `{defaults["user"].pw_name}` to give you a mostly read-only '
         "view of the OS.  This is honored when using the --boot option as "
         "well.",
     )
