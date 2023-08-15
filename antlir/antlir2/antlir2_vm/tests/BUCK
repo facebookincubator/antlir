@@ -1,45 +1,56 @@
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
-load("//antlir/antlir2/antlir2_vm/bzl:preconfigured.bzl", "DEFAULT_DISK_BOOT", "DEFAULT_NONDISK_BOOT")
+load("//antlir/antlir2/antlir2_vm/bzl:preconfigured.bzl", "PRECONFIGURED_VM", "get_vm")
 
+# Verify different type of tests
+vm.cpp_test(
+    name = "cpp-test",
+    srcs = ["test.cpp"],
+    env = {
+        "ANTLIR2_TEST": "1",
+    },
+    vm_host = get_vm(),
+)
+
+vm.python_test(
+    name = "python-test",
+    srcs = ["test.py"],
+    env = {
+        "ANTLIR2_TEST": "1",
+    },
+    vm_host = get_vm(),
+)
+
+vm.rust_test(
+    name = "rust-test",
+    srcs = ["test.rs"],
+    crate = "test_rs",
+    crate_root = "test.rs",
+    env = {
+        "ANTLIR2_TEST": "1",
+    },
+    vm_host = get_vm(),
+)
+
+vm.sh_test(
+    name = "sh-test",
+    env = {
+        "ANTLIR2_TEST": "1",
+    },
+    test = "test.sh",
+    vm_host = get_vm(),
+)
+
+# Verify all pre-configured VMs
 [
-    [
-        vm.cpp_test(
-            name = "cpp-test-" + vm_target.split(":")[-1],
-            srcs = ["test.cpp"],
-            env = {
-                "ANTLIR2_TEST": "1",
-            },
-            vm_host = vm_target,
-        ),
-        vm.python_test(
-            name = "python-test-" + vm_target.split(":")[-1],
-            srcs = ["test.py"],
-            env = {
-                "ANTLIR2_TEST": "1",
-            },
-            vm_host = vm_target,
-        ),
-        vm.rust_test(
-            name = "rust-test-" + vm_target.split(":")[-1],
-            srcs = ["test.rs"],
-            crate = "test_rs",
-            crate_root = "test.rs",
-            env = {
-                "ANTLIR2_TEST": "1",
-            },
-            vm_host = vm_target,
-        ),
-        vm.sh_test(
-            name = "sh-test-" + vm_target.split(":")[-1],
-            env = {
-                "ANTLIR2_TEST": "1",
-            },
-            test = "test.sh",
-            vm_host = vm_target,
-        ),
-    ]
-    for vm_target in [
-        DEFAULT_DISK_BOOT,
-        DEFAULT_NONDISK_BOOT,
-    ]
+    vm.rust_test(
+        name = "test-" + name,
+        srcs = ["test.rs"],
+        crate = "test_rs",
+        crate_root = "test.rs",
+        env = {
+            "ANTLIR2_TEST": "1",
+        },
+        vm_host = target,
+    )
+    for name, target in PRECONFIGURED_VM.items()
 ]
