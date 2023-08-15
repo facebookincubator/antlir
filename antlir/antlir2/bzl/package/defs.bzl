@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":btrfs.bzl", "btrfs")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
@@ -15,12 +16,10 @@ _common_attrs = {
     "layer": attrs.dep(providers = [LayerInfo]),
 }
 
-_PACKAGER = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager"
-
 # Attrs that will only ever be used as default_only
 _default_attrs = {
     "_antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
-    "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = _PACKAGER)),
+    "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
     "_dot_meta_feature": attrs.dep(default = "//antlir/antlir2/bzl/package:dot-meta"),
     "_objcopy": attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy")),
     "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
@@ -40,14 +39,13 @@ def _generic_impl_with_layer(
         format: str,
         rule_attr_keys: list[str]) -> list[Provider]:
     extension = {
-        "cpio.gz": ".cpio.gz",
-        "cpio.zst": ".cpio.zst",
+        "cpio": ".cpio",
         "rpm": ".rpm",
         "squashfs": ".squashfs",
-        "tar.gz": ".tar.gz",
+        "tar": ".tar",
         "vfat": ".vfat",
     }[format]
-    package = ctx.actions.declare_output("image" + extension)
+    package = ctx.actions.declare_output("package" + extension)
 
     spec_opts = {
         "build_appliance": (ctx.attrs.build_appliance or layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
@@ -110,18 +108,89 @@ def _new_package_rule(
         attrs = _default_attrs | _common_attrs | rule_attrs,
     )
 
-_cpio_gz = _new_package_rule(
-    rule_attrs = {
-        "compression_level": attrs.int(default = 3),
-    },
-    format = "cpio.gz",
+def _compressed_impl(
+        ctx: AnalysisContext,
+        uncompressed: "rule",
+        rule_attr_keys: list[str],
+        compressor: str) -> list[Provider]:
+    src = ctx.actions.artifact_promise(ctx.actions.anon_target(
+        uncompressed,
+        {key: getattr(ctx.attrs, key) for key in _default_attrs.keys()} |
+        {
+            "layer": ctx.attrs.layer,
+            "name": str(ctx.label.raw_target()),
+        } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys},
+    ).map(lambda x: ensure_single_output(x)))
+    extension = {
+        "gzip": ".gz",
+        "zstd": ".zst",
+    }[compressor]
+    package = ctx.actions.declare_output("package" + extension)
+
+    if compressor == "gzip":
+        compress_cmd = cmd_args(
+            "gzip",
+            cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
+            src,
+            cmd_args(package.as_output(), format = "--stdout > {}"),
+            delimiter = " \\\n",
+        )
+    elif compressor == "zstd":
+        compress_cmd = cmd_args(
+            "zstd",
+            "--compress",
+            cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
+            "-T0",  # we like threads
+            src,
+            cmd_args(package.as_output(), format = "--stdout > {}"),
+            delimiter = " \\\n",
+        )
+    else:
+        fail("unknown compressor '{}'".format(compressor))
+
+    script = ctx.actions.write(
+        "compress.sh",
+        cmd_args(
+            "#!/bin/sh",
+            compress_cmd,
+            delimiter = "\n",
+        ),
+        is_executable = True,
+    )
+    ctx.actions.run(cmd_args("/bin/sh", script).hidden(package.as_output(), src), category = "compress")
+    return [DefaultInfo(package)]
+
+def _new_compressed_package_rule(
+        compressor: str,
+        uncompressed: "rule",
+        default_compression_level: int,
+        rule_attrs: dict[str, "attribute"] = {}):
+    return rule(
+        impl = partial(
+            _compressed_impl,
+            uncompressed = uncompressed,
+            rule_attr_keys = list(rule_attrs.keys()),
+            compressor = compressor,
+        ),
+        attrs = _default_attrs | _common_attrs | rule_attrs | {
+            "compression_level": attrs.int(default = default_compression_level),
+        },
+    )
+
+_cpio = _new_package_rule(
+    format = "cpio",
 )
 
-_cpio_zst = _new_package_rule(
-    rule_attrs = {
-        "compression_level": attrs.int(default = 15),
-    },
-    format = "cpio.zst",
+_cpio_gz = _new_compressed_package_rule(
+    default_compression_level = 3,
+    uncompressed = _cpio,
+    compressor = "gzip",
+)
+
+_cpio_zst = _new_compressed_package_rule(
+    default_compression_level = 15,
+    uncompressed = _cpio,
+    compressor = "zstd",
 )
 
 _rpm = _new_package_rule(
@@ -156,11 +225,20 @@ _vfat = _new_package_rule(
 
 _squashfs = _new_package_rule(rule_attrs = {}, format = "squashfs")
 
-_tar_gz = _new_package_rule(
-    rule_attrs = {
-        "compression_level": attrs.int(default = 15),
-    },
-    format = "tar.gz",
+_tar = _new_package_rule(
+    format = "tar",
+)
+
+_tar_gz = _new_compressed_package_rule(
+    default_compression_level = 3,
+    uncompressed = _tar,
+    compressor = "gzip",
+)
+
+_tar_zst = _new_compressed_package_rule(
+    default_compression_level = 15,
+    uncompressed = _tar,
+    compressor = "zstd",
 )
 
 def _backwards_compatible_new(format: str, **kwargs):
@@ -174,6 +252,7 @@ def _backwards_compatible_new(format: str, **kwargs):
         "sendstream.zst": sendstream_zst,
         "squashfs": _squashfs,
         "tar.gz": _tar_gz,
+        "tar.zst": _tar_zst,
         "vfat": _vfat,
     }[format](
         **(default_target_platform_kwargs() | kwargs)
@@ -190,5 +269,6 @@ package = struct(
     sendstream_zst = sendstream_zst,
     squashfs = rule_with_default_target_platform(_squashfs),
     tar_gz = rule_with_default_target_platform(_tar_gz),
+    tar_zst = rule_with_default_target_platform(_tar_zst),
     vfat = rule_with_default_target_platform(_vfat),
 )
