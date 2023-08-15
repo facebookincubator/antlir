@@ -128,6 +128,7 @@ vm_cpp_test = partial(
     _implicit_vm_test,
     cpp_unittest,
     _add_outer_labels = ["tpx:optout-test-result-output-spec"],
+    supports_static_listing = False,
 )
 vm_python_test = partial(_implicit_vm_test, python_unittest, supports_static_listing = False)
 vm_rust_test = partial(_implicit_vm_test, rust_unittest)
