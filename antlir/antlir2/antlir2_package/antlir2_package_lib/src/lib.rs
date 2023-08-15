@@ -58,17 +58,10 @@ pub enum Spec {
         label: Option<String>,
         size_mb: u64,
     },
-    #[serde(rename = "cpio.gz")]
-    CpioGZ {
+    #[serde(rename = "cpio")]
+    Cpio {
         build_appliance: PathBuf,
         layer: PathBuf,
-        compression_level: i32,
-    },
-    #[serde(rename = "cpio.zst")]
-    CpioZst {
-        build_appliance: PathBuf,
-        layer: PathBuf,
-        compression_level: i32,
     },
     #[serde(rename = "rpm")]
     Rpm {
@@ -95,11 +88,10 @@ pub enum Spec {
         build_appliance: PathBuf,
         layer: PathBuf,
     },
-    #[serde(rename = "tar.gz")]
-    TarGz {
+    #[serde(rename = "tar")]
+    Tar {
         build_appliance: PathBuf,
         layer: PathBuf,
-        compression_level: i32,
     },
 }
 

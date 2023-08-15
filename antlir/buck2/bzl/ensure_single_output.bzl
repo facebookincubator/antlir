@@ -3,10 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-def ensure_single_output(dep: Dependency | Artifact | DefaultInfo.type, optional: bool = False) -> Artifact | None:
+def ensure_single_output(
+        dep: Dependency | Artifact | DefaultInfo.type | "provider_collection",
+        optional: bool = False) -> Artifact | None:
     if type(dep) == "artifact":
         return dep
-    if type(dep) == DefaultInfo.type:
+    elif type(dep) == DefaultInfo.type:
         default_outputs = dep.default_outputs
     else:
         default_outputs = dep[DefaultInfo].default_outputs
