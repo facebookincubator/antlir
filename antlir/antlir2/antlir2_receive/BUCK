@@ -11,8 +11,8 @@ rust_binary(
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
         "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
         "//antlir/buck/buck_label:buck_label",
-        "//metalos/lib/btrfs:btrfs",
     ],
 )

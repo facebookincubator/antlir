@@ -12,6 +12,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use antlir2_btrfs::Subvolume;
 use antlir2_package_lib::create_empty_file;
 use antlir2_package_lib::run_cmd;
 use antlir2_package_lib::BtrfsSpec;
@@ -23,7 +24,6 @@ use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use btrfs::Subvolume;
 use bytesize::ByteSize;
 use clap::Parser;
 use json_arg::JsonFile;
@@ -253,7 +253,7 @@ fn receive_subvol(
         discover_subvol_name(recv_target.path()).context("Failed to find received subvol path")?;
 
     let mut new_subvol =
-        Subvolume::get(&new_subvol_path).context("failed to create subvol from new directory")?;
+        Subvolume::open(&new_subvol_path).context("failed to create subvol from new directory")?;
     new_subvol
         .set_readonly(false)
         .context("failed to mark new subvol as RW")?;
@@ -264,7 +264,7 @@ fn receive_subvol(
     ))?;
 
     let renamed_subvol =
-        Subvolume::get(&subvol_final_path).context("failed to recreate subvol after rename")?;
+        Subvolume::open(&subvol_final_path).context("failed to recreate subvol after rename")?;
 
     drop(recv_target);
     Ok(renamed_subvol)
@@ -359,6 +359,10 @@ where
             .arg(mount_handle.mountpoint()),
     )
     .context("setting default subvolume")?;
+
+    // make sure no file descriptors to these subvolumes are open before
+    // unmounting the package
+    drop(subvols);
 
     mount_handle.umount(true).context("failed to umount")?;
     ld.detach().context("failed to detatch loopback device")?;

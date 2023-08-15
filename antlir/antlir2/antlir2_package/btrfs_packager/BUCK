@@ -13,9 +13,9 @@ rust_binary(
         "tempfile",
         "tracing-glog",
         "tracing-subscriber",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
         "//antlir/antlir2/antlir2_mount:antlir_mount",
         "//antlir/antlir2/antlir2_package/antlir2_package_lib:antlir2-package-lib",
         "//antlir/util/cli/json_arg:json_arg",
-        "//metalos/lib/btrfs:btrfs",
     ],
 )

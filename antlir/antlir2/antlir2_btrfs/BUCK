@@ -1,0 +1,55 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+load("//antlir/bzl:build_defs.bzl", "rust_bindgen_library")
+load("//metalos:defs.bzl", "rust_library")
+
+oncall("twimage")
+
+rust_bindgen_library(
+    name = "btrfsutil-sys",
+    cpp_deps = [
+        "third-party//btrfs-progs:btrfsutil",
+    ],
+    generate = ("types", "functions", "vars"),
+    header = "btrfsutil-sys/bridge.h",
+    visibility = ["//antlir/..."],
+)
+
+rust_library(
+    name = "antlir2_btrfs",
+    srcs = glob(["src/*.rs"]),
+    unittests = False,
+    deps = [
+        "anyhow",
+        "bitflags",
+        "nix",
+        "thiserror",
+        ":btrfsutil-sys",
+    ],
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = ["bash"]),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/empty",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image_rust_test(
+    name = "antlir2_btrfs-image-test",
+    srcs = glob(["src/*.rs"]),
+    layer = ":test-layer",
+    deps = [
+        "anyhow",
+        "bitflags",
+        "nix",
+        "thiserror",
+        ":btrfsutil-sys",
+    ],
+)

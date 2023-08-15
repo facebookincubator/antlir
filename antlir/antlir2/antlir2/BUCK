@@ -16,6 +16,7 @@ rust_binary(
         "tracing-subscriber",
         "uuid",
         "//antlir:find_root",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
         "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
         "//antlir/antlir2/antlir2_features:antlir2_features",
@@ -25,6 +26,5 @@ rust_binary(
         "//antlir/filesystem/absolute_path:absolute_path",
         "//antlir/filesystem/stdio_path:stdio_path",
         "//antlir/util/cli/json_arg:json_arg",
-        "//metalos/lib/btrfs:btrfs",
     ],
 )

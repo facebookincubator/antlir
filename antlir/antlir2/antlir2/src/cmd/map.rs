@@ -9,13 +9,13 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::path::PathBuf;
 
+use antlir2_btrfs::DeleteFlags;
+use antlir2_btrfs::SnapshotFlags;
+use antlir2_btrfs::Subvolume;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
-use btrfs::DeleteFlags;
-use btrfs::SnapshotFlags;
-use btrfs::Subvolume;
 use buck_label::Label;
 use clap::Parser;
 use tracing::debug;
@@ -110,20 +110,17 @@ impl Map {
     #[tracing::instrument(skip(self), ret, err)]
     fn create_new_subvol(&self, working_volume: &WorkingVolume) -> Result<Subvolume> {
         if self.setup.output.exists() {
-            let subvol =
-                Subvolume::get(&self.setup.output).context("while opening existing subvol")?;
+            let subvol = Subvolume::open(&self.setup.output)?;
             subvol
                 .delete(DeleteFlags::RECURSIVE)
-                .context("while deleting existing subvol")?;
+                .map_err(|(_subvol, err)| err)?;
             std::fs::remove_file(&self.setup.output).context("while deleting existing symlink")?;
         }
         let dst = working_volume.join(uuid::Uuid::new_v4().as_simple().to_string());
         let subvol = match &self.setup.parent {
             Some(parent) => {
-                let parent = Subvolume::get(parent).context("while opening parent subvol")?;
-                parent
-                    .snapshot(&dst, SnapshotFlags::RECURSIVE)
-                    .context("while snapshotting parent")?
+                let parent = Subvolume::open(parent)?;
+                parent.snapshot(&dst, SnapshotFlags::RECURSIVE)?
             }
             None => Subvolume::create(&dst).context("while creating new subvol")?,
         };
