@@ -12,11 +12,11 @@ use std::ffi::OsString;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
-use std::process::Command;
 
 use nix::unistd::Uid;
 use uuid::Uuid;
 
+use super::IsolatedContext;
 use crate::InvocationType;
 use crate::IsolationContext;
 use crate::Result;
@@ -71,6 +71,7 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         register,
         user,
         ephemeral,
+        tmpfs,
     } = ctx;
     let mut nspawn_args = Vec::<OsString>::new();
     let mut env = HashMap::new();
@@ -132,6 +133,11 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         }
     }
 
+    for path in &tmpfs {
+        nspawn_args.push("--tmpfs".into());
+        nspawn_args.push(path.as_ref().into());
+    }
+
     if let Some(wd) = &working_directory {
         nspawn_args.push("--chdir".into());
         nspawn_args.push(wd.as_ref().into());
@@ -157,26 +163,9 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     }
 
     Ok(IsolatedContext {
-        program,
-        nspawn_args,
+        program: program.into(),
+        args: nspawn_args,
         env,
+        ephemeral_subvol: None,
     })
-}
-
-#[derive(Debug)]
-pub struct IsolatedContext {
-    program: &'static str,
-    nspawn_args: Vec<OsString>,
-    env: HashMap<OsString, OsString>,
-}
-
-impl IsolatedContext {
-    pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Result<Command> {
-        let mut cmd = Command::new(self.program);
-        cmd.args(&self.nspawn_args).arg("--").arg(program);
-        for (k, v) in &self.env {
-            cmd.env(k, v);
-        }
-        Ok(cmd)
-    }
 }

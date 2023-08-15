@@ -23,10 +23,16 @@ use std::ffi::OsString;
 use std::path::Path;
 use std::path::PathBuf;
 
-mod sys;
+pub mod sys;
 
-#[derive(Debug, Clone, thiserror::Error)]
-pub enum Error {}
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+    #[cfg(target_os = "linux")]
+    #[error(transparent)]
+    Btrfs(#[from] antlir2_btrfs::Error),
+}
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -52,6 +58,8 @@ pub struct IsolationContext<'a> {
     user: Cow<'a, str>,
     /// See [IsolationContextBuilder::ephemeral]
     ephemeral: bool,
+    /// See [IsolationContextBuilder::tmpfs]
+    tmpfs: BTreeSet<Cow<'a, Path>>,
 }
 
 /// Controls how the container is spawned and how console is configured for the
@@ -93,6 +101,7 @@ impl<'a> IsolationContext<'a> {
                 register: false,
                 user: Cow::Borrowed("root"),
                 ephemeral: true,
+                tmpfs: Default::default(),
             },
         }
     }
@@ -171,6 +180,12 @@ impl<'a> IsolationContextBuilder<'a> {
         self
     }
 
+    /// Path to mount a (unique) tmpfs into.
+    pub fn tmpfs<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
+        self.ctx.tmpfs.insert(path.into());
+        self
+    }
+
     /// Finalize the IsolationContext
     pub fn build(&mut self) -> IsolationContext<'a> {
         self.ctx.clone()
@@ -201,6 +216,15 @@ impl<'a> IntoBinds<'a> for (&'a Path, &'a Path) {
     }
 }
 
+impl<'a> IntoBinds<'a> for (&'a str, &'a str) {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        HashMap::from([(
+            Cow::Borrowed(Path::new(self.0)),
+            Cow::Borrowed(Path::new(self.1)),
+        )])
+    }
+}
+
 impl<'a> IntoBinds<'a> for &[&'a Path] {
     fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
         self.iter()
@@ -209,10 +233,36 @@ impl<'a> IntoBinds<'a> for &[&'a Path] {
     }
 }
 
+impl<'a> IntoBinds<'a> for &[&'a str] {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.iter()
+            .map(|path| {
+                (
+                    Cow::Borrowed(Path::new(*path)),
+                    Cow::Borrowed(Path::new(*path)),
+                )
+            })
+            .collect()
+    }
+}
+
 impl<'a, const N: usize> IntoBinds<'a> for [&'a Path; N] {
     fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
         self.into_iter()
             .map(|path| (Cow::Borrowed(path), Cow::Borrowed(path)))
+            .collect()
+    }
+}
+
+impl<'a, const N: usize> IntoBinds<'a> for [&'a str; N] {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.into_iter()
+            .map(|path| {
+                (
+                    Cow::Borrowed(Path::new(path)),
+                    Cow::Borrowed(Path::new(path)),
+                )
+            })
             .collect()
     }
 }
@@ -245,6 +295,22 @@ impl<'a> IntoBinds<'a> for HashMap<PathBuf, PathBuf> {
     fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
         self.into_iter()
             .map(|(dst, src)| (Cow::Owned(dst), Cow::Owned(src)))
+            .collect()
+    }
+}
+
+impl<'a> IntoBinds<'a> for HashMap<&'a Path, &'a Path> {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.into_iter()
+            .map(|(dst, src)| (Cow::Borrowed(dst), Cow::Borrowed(src)))
+            .collect()
+    }
+}
+
+impl<'a> IntoBinds<'a> for HashMap<&'a str, &'a str> {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        self.into_iter()
+            .map(|(dst, src)| (Cow::Borrowed(Path::new(dst)), Cow::Borrowed(Path::new(src))))
             .collect()
     }
 }
