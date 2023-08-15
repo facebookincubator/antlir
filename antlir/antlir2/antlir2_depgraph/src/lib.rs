@@ -20,10 +20,11 @@ use antlir2_features::Feature;
 use buck_label::Label;
 use itertools::Itertools;
 use petgraph::graph::DefaultIx;
-use petgraph::graph::DiGraph;
 use petgraph::graph::NodeIndex;
+use petgraph::stable_graph::StableGraph;
 use petgraph::visit::Dfs;
 use petgraph::visit::IntoNodeReferences;
+use petgraph::Directed;
 use petgraph::Direction;
 use serde::Deserialize;
 use serde::Serialize;
@@ -98,7 +99,7 @@ pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
 
 #[derive(Debug)]
 pub struct GraphBuilder<'a> {
-    g: DiGraph<Node<'a>, Edge<'a>, DefaultIx>,
+    g: StableGraph<Node<'a>, Edge<'a>, Directed, DefaultIx>,
     root: node::RootNodeIndex,
     pending_features: Vec<node::PendingFeatureNodeIndex<'a>>,
     items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
@@ -107,7 +108,7 @@ pub struct GraphBuilder<'a> {
 
 impl<'a> GraphBuilder<'a> {
     pub fn new(label: Label, parent: Option<Graph<'a>>) -> Self {
-        let mut g = DiGraph::new();
+        let mut g = StableGraph::new();
         let mut items = HashMap::new();
 
         // Some items are always available, since they are a property of the
@@ -516,7 +517,7 @@ impl<'a> GraphBuilder<'a> {
 pub struct Graph<'a> {
     label: Label,
     #[serde(borrow)]
-    g: DiGraph<Node<'a>, Edge<'a>>,
+    g: StableGraph<Node<'a>, Edge<'a>>,
     root: node::RootNodeIndex,
     #[serde_as(as = "Vec<(_, _)>")]
     items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
