@@ -28,6 +28,8 @@ pub enum Error {
     Depgraph(#[from] antlir2_depgraph::Error<'static>),
     #[error("subprocess exited with {0}")]
     Subprocess(ExitStatus),
+    #[error(transparent)]
+    Btrfs(#[from] antlir2_btrfs::Error),
     #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
 }

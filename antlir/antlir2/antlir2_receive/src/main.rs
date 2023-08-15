@@ -9,13 +9,13 @@ use std::path::PathBuf;
 use std::process::Command;
 use std::time::SystemTime;
 
+use antlir2_btrfs::DeleteFlags;
+use antlir2_btrfs::Subvolume;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::anyhow;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
-use btrfs::DeleteFlags;
-use btrfs::Subvolume;
 use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;
@@ -62,10 +62,13 @@ impl Receive {
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
         if self.output.exists() {
-            let subvol = Subvolume::get(&self.output).context("while opening existing subvol")?;
+            let subvol = Subvolume::open(&self.output).context("while opening existing subvol")?;
             subvol
                 .delete(DeleteFlags::RECURSIVE)
-                .context("while deleting existing subvol")?;
+                .map_err(|(_subvol, err)| err)
+                .with_context(|| {
+                    format!("while deleting existing subvol {}", self.output.display())
+                })?;
             std::fs::remove_file(&self.output).context("while deleting existing symlink")?;
         }
         // Encode the current time into the subvol name so that the symlink's
@@ -114,7 +117,7 @@ impl Receive {
         }
 
         trace!("opening received subvol: {}", entries[0].display());
-        let mut subvol = Subvolume::get(&entries[0]).context("while opening subvol")?;
+        let mut subvol = Subvolume::open(&entries[0]).context("while opening subvol")?;
         subvol
             .set_readonly(false)
             .context("while making subvol rw")?;
@@ -126,7 +129,7 @@ impl Receive {
         );
         std::fs::rename(subvol.path(), &dst).context("while renaming subvol")?;
 
-        let mut subvol = Subvolume::get(&dst).context("while opening subvol")?;
+        let mut subvol = Subvolume::open(&dst).context("while opening subvol")?;
         subvol
             .set_readonly(true)
             .context("while making subvol ro")?;
