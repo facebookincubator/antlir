@@ -13,8 +13,8 @@ use std::ops::IndexMut;
 
 use antlir2_features::Feature;
 use petgraph::graph::DefaultIx;
-use petgraph::graph::Graph;
 use petgraph::graph::NodeIndex;
+use petgraph::stable_graph::StableGraph;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -93,7 +93,7 @@ where
     }
 }
 
-impl<'a, N> Index<TypedNodeIndex<'a, N>> for Graph<Node<'a>, Edge<'a>>
+impl<'a, N> Index<TypedNodeIndex<'a, N>> for StableGraph<Node<'a>, Edge<'a>>
 where
     N: NodeMapper<'a>,
 {
@@ -104,7 +104,7 @@ where
     }
 }
 
-impl<'a, N> IndexMut<TypedNodeIndex<'a, N>> for Graph<Node<'a>, Edge<'a>>
+impl<'a, N> IndexMut<TypedNodeIndex<'a, N>> for StableGraph<Node<'a>, Edge<'a>>
 where
     N: NodeMapper<'a>,
 {
@@ -120,7 +120,7 @@ where
     fn add_node_typed(&mut self, inner: N::Inner) -> TypedNodeIndex<'a, N>;
 }
 
-impl<'a, N> GraphExt<'a, N> for Graph<Node<'a>, Edge<'a>>
+impl<'a, N> GraphExt<'a, N> for StableGraph<Node<'a>, Edge<'a>>
 where
     N: NodeMapper<'a>,
 {
