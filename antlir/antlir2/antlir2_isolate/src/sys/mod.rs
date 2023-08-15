@@ -6,10 +6,12 @@
  */
 
 #[cfg(target_os = "linux")]
-mod linux;
+mod nspawn;
 
 #[cfg(target_os = "linux")]
-pub use linux::nspawn as isolate;
+pub use nspawn::nspawn as isolate;
+#[cfg(target_os = "linux")]
+pub use nspawn::IsolatedContext;
 
 #[cfg(not(target_os = "linux"))]
 compile_error!("only supported on linux");

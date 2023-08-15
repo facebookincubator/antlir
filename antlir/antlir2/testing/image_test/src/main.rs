@@ -245,9 +245,8 @@ fn main() -> Result<()> {
             test_unit.path(),
         ));
 
-        let mut isol = isolate(ctx.build()).into_command();
-        isol.arg(systemd_run_arg)
-            .arg("systemd.journald.forward_to_console=1")
+        let mut isol = isolate(ctx.build())?.command(systemd_run_arg)?;
+        isol.arg("systemd.journald.forward_to_console=1")
             .arg("systemd.log_time=1");
         debug!("executing test in booted isolated container: {isol:?}");
         let mut child = isol
@@ -268,8 +267,9 @@ fn main() -> Result<()> {
             Ok(())
         }
     } else {
-        let mut isol = isolate(ctx.build()).into_command();
-        isol.args(args.test.into_inner_cmd());
+        let mut cmd = args.test.into_inner_cmd().into_iter();
+        let mut isol = isolate(ctx.build())?.command(cmd.next().expect("must have program arg"))?;
+        isol.args(cmd);
         debug!("executing test in isolated container: {isol:?}");
         Err(anyhow::anyhow!("failed to exec test: {:?}", isol.exec()))
     }

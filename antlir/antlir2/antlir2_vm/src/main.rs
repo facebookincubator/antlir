@@ -115,9 +115,8 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
 
     let isolated = isolated(&args.image, envs, vm_args.get_container_output_dirs())?;
     let exe = env::current_exe().context("while getting argv[0]")?;
-    let mut command = isolated.into_command();
+    let mut command = isolated.command(exe)?;
     command
-        .arg(&exe)
         .arg("run")
         .arg("--machine-spec")
         .arg(args.run_cmd_args.machine_spec.path())
@@ -206,14 +205,14 @@ fn list_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) ->
         validated_args.inner.command_envs.clone(),
         output_dirs,
     )?;
-    let mut command = isolated.into_command();
-    command.args(
-        validated_args
-            .inner
-            .command
-            .as_ref()
-            .expect("command must exist here"),
-    );
+    let mut inner_cmd = validated_args
+        .inner
+        .command
+        .as_ref()
+        .expect("command must exist here")
+        .iter();
+    let mut command = isolated.command(inner_cmd.next().expect("must have program arg"))?;
+    command.args(inner_cmd);
     Ok(command)
 }
 
@@ -224,10 +223,9 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
         validated_args.inner.command_envs.clone(),
         validated_args.inner.get_container_output_dirs(),
     )?;
-    let mut command = isolated.into_command();
     let exe = env::current_exe().context("while getting argv[0]")?;
+    let mut command = isolated.command(exe)?;
     command
-        .arg(&exe)
         .arg("run")
         .arg("--machine-spec")
         .arg(args.run_cmd_args.machine_spec.path())

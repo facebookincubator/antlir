@@ -26,7 +26,8 @@ struct Args {
     outputs: Vec<PathBuf>,
     #[clap(long = "create-output-file")]
     create_output_files: Vec<PathBuf>,
-    cmd: Vec<OsString>,
+    program: OsString,
+    args: Vec<OsString>,
 }
 
 fn main() -> Result<()> {
@@ -42,9 +43,9 @@ fn main() -> Result<()> {
             .outputs(args.create_output_files.into_iter().collect::<HashSet<_>>())
             .working_directory(std::env::current_dir().context("while getting cwd")?)
             .build(),
-    )
-    .into_command()
-    .args(args.cmd)
+    )?
+    .command(args.program)?
+    .args(args.args)
     .exec()
     .into())
 }

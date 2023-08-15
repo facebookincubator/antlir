@@ -400,9 +400,8 @@ fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
                 // TODO: Remove this after the issue is found and fixed with qemu-aarch64.
                 .setenv(("QEMU_RESERVED_VA", "0x40000000"))
                 .build(),
-        )
-        .into_command();
-        cmd.arg(interpreter);
+        )?
+        .command(interpreter)?;
     } else {
         cmd.env("QEMU_RESERVED_VA", "0x40000000");
     }

@@ -30,6 +30,8 @@ pub enum Error {
     Subprocess(ExitStatus),
     #[error(transparent)]
     Btrfs(#[from] antlir2_btrfs::Error),
+    #[error(transparent)]
+    Isolate(#[from] antlir2_isolate::Error),
     #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
 }
