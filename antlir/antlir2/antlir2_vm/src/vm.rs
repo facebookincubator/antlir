@@ -18,6 +18,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Child;
 use std::process::Command;
+use std::process::ExitStatus;
 use std::process::Stdio;
 use std::thread;
 use std::thread::JoinHandle;
@@ -80,8 +81,13 @@ pub(crate) enum VMError {
     QemuProcessError(std::io::Error),
     #[error("Failed to open output file: {path}: {err}")]
     FileOutputError { path: PathBuf, err: std::io::Error },
-    #[error("Failed to boot VM: `{0}`")]
-    BootError(String),
+    #[error("Failed to boot VM: {desc}: `{err}`")]
+    BootError {
+        desc: &'static str,
+        err: std::io::Error,
+    },
+    #[error("VM terminated early unexpectedly: {0}")]
+    EarlyTerminationError(ExitStatus),
     #[error("VM error after boot: `{0}`")]
     RunError(String),
     #[error("VM timed out")]
@@ -263,9 +269,12 @@ impl VM {
             // Poll until either socket close or timeout. The buffer size is arbitrary,
             // because we don't expect any data.
             let mut buf = [0; 8];
-            socket.set_nonblocking(true).map_err(|e| {
-                VMError::BootError(format!("Failed to set non-blocking socket option: {e}"))
-            })?;
+            socket
+                .set_nonblocking(true)
+                .map_err(|err| VMError::BootError {
+                    desc: "Failed to set non-blocking socket option",
+                    err,
+                })?;
             while !self.time_left(start_ts)?.is_zero() {
                 if let Some(ref handle) = thread_handle {
                     if handle.is_finished() {
@@ -308,7 +317,10 @@ impl VM {
         let handle = thread::spawn(move || {
             log_command(&mut ssh_cmd)
                 .status()
-                .map_err(|e| VMError::BootError(format!("Failed to open SSH shell: {}", e)))
+                .map_err(|err| VMError::BootError {
+                    desc: "Failed to open SSH shell",
+                    err,
+                })
         });
         self.wait_for_timeout(socket, start_ts, Some(handle))
     }
@@ -318,13 +330,12 @@ impl VM {
     /// failure by polling process status.
     fn try_wait_vm_proc(&self, child: &mut Child) -> Result<()> {
         match child.try_wait() {
-            Ok(Some(status)) => Err(VMError::BootError(format!(
-                "VM process exited prematurely: {status}"
-            ))),
+            Ok(Some(status)) => Err(VMError::EarlyTerminationError(status)),
             Ok(None) => Ok(()),
-            Err(e) => Err(VMError::BootError(format!(
-                "Error attempting to wait for VM process: {e}"
-            ))),
+            Err(err) => Err(VMError::BootError {
+                desc: "Error attempting to wait for VM process",
+                err,
+            }),
         }
     }
 
@@ -343,31 +354,38 @@ impl VM {
                     self.try_wait_vm_proc(&mut vm_proc)?;
                     thread::sleep(Duration::from_millis(100));
                 }
-                Err(e) => {
-                    return Err(VMError::BootError(format!(
-                        "Unable to access notify file {e}"
-                    )));
+                Err(err) => {
+                    return Err(VMError::BootError {
+                        desc: "Unable to access notify file",
+                        err,
+                    });
                 }
             }
         }
 
         // Connect to the notify socket. This starts the boot process.
-        let socket = UnixStream::connect(self.notify_file())
-            .map_err(|e| VMError::BootError(format!("Failed to connect to notify socket {e}")))?;
+        let socket = UnixStream::connect(self.notify_file()).map_err(|err| VMError::BootError {
+            desc: "Failed to connect to notify socket",
+            err,
+        })?;
 
         // Wait for boot notify message. We expect "READY" message once VM boots
         debug!("Waiting for boot notify message");
         if self.args.timeout_s.is_some() {
             socket
                 .set_read_timeout(Some(self.time_left(start_ts)?))
-                .map_err(|e| {
-                    VMError::BootError(format!("Failed to set notify socket read timeout: {e}"))
+                .map_err(|err| VMError::BootError {
+                    desc: "Failed to set notify socket read timeout",
+                    err,
                 })?;
         }
         let mut response = String::new();
         let mut f = BufReader::new(socket);
         f.read_line(&mut response)
-            .map_err(|e| VMError::BootError(format!("Failed to read notify socket: {e}")))?;
+            .map_err(|err| VMError::BootError {
+                desc: "Failed to read notify socket",
+                err,
+            })?;
         debug!(
             "Received boot event {} after {} seconds",
             response.trim(),
