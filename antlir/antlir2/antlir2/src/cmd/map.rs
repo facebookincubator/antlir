@@ -9,7 +9,6 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::path::PathBuf;
 
-use antlir2_btrfs::DeleteFlags;
 use antlir2_btrfs::SnapshotFlags;
 use antlir2_btrfs::Subvolume;
 use antlir2_isolate::isolate;
@@ -62,6 +61,9 @@ struct SetupArgs {
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
+    #[clap(long)]
+    /// buck-out path to refcount this output
+    keepalive: PathBuf,
     #[clap(flatten)]
     dnf: super::DnfCompileishArgs,
     #[cfg(facebook)]
@@ -109,13 +111,6 @@ impl Map {
     /// Create a new mutable subvolume based on the [SetupArgs].
     #[tracing::instrument(skip(self), ret, err)]
     fn create_new_subvol(&self, working_volume: &WorkingVolume) -> Result<Subvolume> {
-        if self.setup.output.exists() {
-            let subvol = Subvolume::open(&self.setup.output)?;
-            subvol
-                .delete(DeleteFlags::RECURSIVE)
-                .map_err(|(_subvol, err)| err)?;
-            std::fs::remove_file(&self.setup.output).context("while deleting existing symlink")?;
-        }
         let dst = working_volume
             .allocate_new_path()
             .context("while allocating new path for subvol")?;
@@ -127,6 +122,12 @@ impl Map {
             None => Subvolume::create(&dst).context("while creating new subvol")?,
         };
         debug!("produced r/w subvol '{subvol:?}'");
+        working_volume
+            .keep_path_alive(&dst, &self.setup.keepalive)
+            .context("while setting up refcount")?;
+        working_volume
+            .collect_garbage()
+            .context("while garbage collecting old outputs")?;
         Ok(subvol)
     }
 

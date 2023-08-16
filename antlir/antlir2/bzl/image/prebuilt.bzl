@@ -41,6 +41,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         fail("unrecognized format='{}'".format(format))
 
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+    keepalive = ctx.actions.declare_output("keepalive")
     ctx.actions.run(
         cmd_args(
             "sudo",  # this requires privileged btrfs operations
@@ -50,12 +51,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(format, format = "--format={}"),
             cmd_args(src, format = "--source={}"),
             cmd_args(subvol_symlink.as_output(), format = "--output={}"),
+            cmd_args(keepalive.as_output(), format = "--keepalive={}"),
         ),
         category = "antlir2_prebuilt_layer",
         # needs local subvolumes
         local_only = True,
-        # 'antlir2-receive' will clean up an old image if it exists
-        no_outputs_cleanup = True,
         env = {
             "RUST_LOG": "antlir2=trace",
         },

@@ -8,7 +8,6 @@
 use std::path::PathBuf;
 use std::process::Command;
 
-use antlir2_btrfs::DeleteFlags;
 use antlir2_btrfs::Subvolume;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::anyhow;
@@ -36,6 +35,9 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
+    #[clap(long)]
+    /// buck-out path to refcount this output
+    keepalive: PathBuf,
     #[clap(flatten)]
     setup: SetupArgs,
 }
@@ -56,23 +58,24 @@ struct SetupArgs {
 impl Receive {
     /// Make sure that the working directory exists and clean up any existing
     /// version of the subvolume that we're receiving.
-    #[tracing::instrument(skip(self), ret, err)]
+    #[tracing::instrument(skip(self), ret, err(Debug))]
     fn prepare_dst(&self) -> Result<PathBuf> {
+        trace!("setting up WorkingVolume");
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
-        if self.output.exists() {
-            let subvol = Subvolume::open(&self.output).context("while opening existing subvol")?;
-            subvol
-                .delete(DeleteFlags::RECURSIVE)
-                .map_err(|(_subvol, err)| err)
-                .with_context(|| {
-                    format!("while deleting existing subvol {}", self.output.display())
-                })?;
-            std::fs::remove_file(&self.output).context("while deleting existing symlink")?;
-        }
         let dst = working_volume
             .allocate_new_path()
             .context("while allocating new path for subvol")?;
+        trace!("WorkingVolume gave us new path {}", dst.display());
+        working_volume.keep_path_alive(&dst, &self.keepalive)?;
+        trace!(
+            "marked path {} with keepalive {}",
+            dst.display(),
+            self.keepalive.display()
+        );
+        working_volume
+            .collect_garbage()
+            .context("while garbage collecting old outputs")?;
         Ok(dst)
     }
 
