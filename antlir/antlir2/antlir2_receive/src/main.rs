@@ -7,7 +7,6 @@
 
 use std::path::PathBuf;
 use std::process::Command;
-use std::time::SystemTime;
 
 use antlir2_btrfs::DeleteFlags;
 use antlir2_btrfs::Subvolume;
@@ -71,19 +70,9 @@ impl Receive {
                 })?;
             std::fs::remove_file(&self.output).context("while deleting existing symlink")?;
         }
-        // Encode the current time into the subvol name so that the symlink's
-        // cache key changes if the underlying image changes, otherwise it will
-        // point to the same path, so downstream artifacts will not get rebuilt
-        // since it appears to be identical, even though the thing behind the
-        // symlink has been changed.
-        let dst = working_volume.join(format!(
-            "{}-{}-received",
-            SystemTime::now()
-                .duration_since(SystemTime::UNIX_EPOCH)
-                .expect("time travelers shouldn't be building images")
-                .as_secs(),
-            self.label.flat_filename(),
-        ));
+        let dst = working_volume
+            .allocate_new_path()
+            .context("while allocating new path for subvol")?;
         Ok(dst)
     }
 
