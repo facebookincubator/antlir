@@ -23,6 +23,7 @@ _DEFAULT_ENABLED_PACKAGES = [
     "tupperware/image/features",
     "tupperware/image/base",
     "tupperware/image/rpmbuild",
+    "tupperware/image/webfoundation",
 ]
 
 _DEFAULT_DISABLED_PACKAGES = [
