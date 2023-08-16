@@ -52,6 +52,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
                 "kernel": ctx.attrs.kernel,
             } if ctx.attrs.initrd else None,
             "num_nics": ctx.attrs.num_nics,
+            "sidecar_services": ctx.attrs.sidecar_services,
         },
         with_inputs = True,
     )
@@ -135,6 +136,11 @@ _vm_host = rule(
             attrs.source(),
             default = None,
             doc = "kernel image to boot from when not booting from disk",
+        ),
+        "sidecar_services": attrs.list(
+            attrs.arg(),
+            default = [],
+            doc = "list of commands to spawn outside VM that VM can communicate with",
         ),
         "timeout_s": attrs.int(
             default = 300,
