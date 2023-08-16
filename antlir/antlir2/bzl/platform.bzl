@@ -17,3 +17,10 @@ def default_target_platform_kwargs():
     return {
         "default_target_platform": config.get_platform_for_current_buildfile().target_platform,
     }
+
+def arch_select(aarch64: str, x86_64: str) -> Select:
+    """Helper for any field that needs arch dependent select"""
+    return select({
+        "ovr_config//cpu:arm64": aarch64,
+        "ovr_config//cpu:x86_64": x86_64,
+    })

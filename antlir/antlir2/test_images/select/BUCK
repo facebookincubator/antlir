@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
@@ -13,10 +14,10 @@ image.layer(
     name = "select-inside-feature",
     features = [
         feature.install(
-            src = select({
-                "ovr_config//cpu:arm64": "src.aarch64",
-                "ovr_config//cpu:x86_64": "src.x86_64",
-            }),
+            src = arch_select(
+                aarch64 = "src.aarch64",
+                x86_64 = "src.x86_64",
+            ),
             dst = "/arch",
         ),
     ],
@@ -25,10 +26,10 @@ image.layer(
 
 image_diff_test(
     name = "select-inside-feature-test",
-    diff = select({
-        "ovr_config//cpu:arm64": "select.aarch64.toml",
-        "ovr_config//cpu:x86_64": "select.x86_64.toml",
-    }),
+    diff = arch_select(
+        aarch64 = "select.aarch64.toml",
+        x86_64 = "select.x86_64.toml",
+    ),
     diff_type = "file",
     layer = ":select-inside-feature",
 )
@@ -56,20 +57,20 @@ feature.new(
 image.layer(
     name = "select-feature-target",
     features = [
-        select({
-            "ovr_config//cpu:arm64": ":install.aarch64",
-            "ovr_config//cpu:x86_64": ":install.x86_64",
-        }),
+        arch_select(
+            aarch64 = ":install.aarch64",
+            x86_64 = ":install.x86_64",
+        ),
     ],
     parent_layer = ":base",
 )
 
 image_diff_test(
     name = "select-feature-target-test",
-    diff = select({
-        "ovr_config//cpu:arm64": "select.aarch64.toml",
-        "ovr_config//cpu:x86_64": "select.x86_64.toml",
-    }),
+    diff = arch_select(
+        aarch64 = "select.aarch64.toml",
+        x86_64 = "select.x86_64.toml",
+    ),
     diff_type = "file",
     layer = ":select-feature-target",
 )

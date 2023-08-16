@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "shared_features_attrs")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
@@ -28,11 +28,7 @@ stamp_buildinfo_rule = rule(
                 "_objcopy": attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy")),
                 "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
                 "_target_arch": attrs.default_only(attrs.string(
-                    default =
-                        select({
-                            "ovr_config//cpu:arm64": "aarch64",
-                            "ovr_config//cpu:x86_64": "x86_64",
-                        }),
+                    default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
                 )),
             } |
             {
