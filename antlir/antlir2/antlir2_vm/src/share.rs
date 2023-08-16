@@ -5,14 +5,18 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::env;
 use std::ffi::OsString;
 use std::fs::File;
 use std::io::Write;
 use std::path::PathBuf;
 use std::process::Child;
 use std::process::Command;
+use std::str::FromStr;
 
 use thiserror::Error;
+use tracing::Level;
+use tracing_subscriber::filter::LevelFilter;
 
 use crate::types::ShareOpts;
 use crate::utils::log_command;
@@ -32,7 +36,7 @@ pub(crate) enum ShareError {
 type Result<T> = std::result::Result<T, ShareError>;
 
 /// `ViriofsShare` setups sharing through virtiofs
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct VirtiofsShare {
     /// User specified options for the share
     opts: ShareOpts,
@@ -109,10 +113,39 @@ Options={ro_or_rw}"#,
         )
     }
 
+    /// Rust virtiofsd seems to print out every request it gets on debug level,
+    /// rendering terminal unusable. While users can craft the `RUST_LOG` env to
+    /// suppress it manually, let's just set a more sensible level for it by
+    /// default. We still honor level explicitly set for virtiofsd in case one
+    /// really wants it.
+    fn virtiofsd_log_level(&self) -> Option<&'static str> {
+        let reduced = "warn";
+        match env::var("RUST_LOG") {
+            Ok(v) => {
+                if v.split(',').any(|s| s.starts_with("virtiofsd=")) {
+                    // Honor level set explicitly for virtiofsd
+                    None
+                } else if LevelFilter::current()
+                    > Level::from_str(reduced)
+                        .unwrap_or_else(|_| panic!("Level {} must be valid", reduced))
+                {
+                    Some(reduced)
+                } else {
+                    None
+                }
+            }
+            Err(_) => Some(reduced),
+        }
+    }
+
     /// Virtiofs requires one virtiofsd for each shared path. This command assumes
     /// it's running as root inside container.
     pub(crate) fn start_virtiofsd(&self) -> Result<Child> {
         let mut command = Command::new("/usr/libexec/virtiofsd");
+        if let Some(lv) = self.virtiofsd_log_level() {
+            // Override logging level for virtiofsd
+            command.env("RUST_LOG", lv);
+        }
         log_command(
             command
                 .arg("--socket-path")
@@ -237,6 +270,7 @@ mod test {
     use std::fs;
 
     use tempfile::tempdir;
+    use tracing_subscriber::EnvFilter;
 
     use super::*;
     use crate::utils::qemu_args_to_string;
@@ -360,5 +394,48 @@ Options=rw"#;
             let share_args = qemu_args_to_string(&x.qemu_args());
             assert!(qemu_args.contains(&share_args))
         });
+    }
+
+    #[test]
+    fn test_virtiofsd_log_level() {
+        let share = VirtiofsShare::default();
+
+        // no RUST_LOG
+        if env::var_os("RUST_LOG").is_some() {
+            env::remove_var("RUST_LOG");
+            let _ = tracing::subscriber::set_default(
+                tracing_subscriber::fmt()
+                    .with_env_filter(EnvFilter::from_default_env())
+                    .finish(),
+            );
+            assert_eq!(share.virtiofsd_log_level(), Some("warn"));
+        }
+
+        // RUST_LOG set at a more verbose level than what we want from virtiofsd
+        env::set_var("RUST_LOG", "debug");
+        let _ = tracing::subscriber::set_default(
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .finish(),
+        );
+        assert_eq!(share.virtiofsd_log_level(), Some("warn"));
+
+        // RUST_LOG set to a less verbose level
+        env::set_var("RUST_LOG", "error");
+        let _ = tracing::subscriber::set_default(
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .finish(),
+        );
+        assert_eq!(share.virtiofsd_log_level(), None);
+
+        // Explicit virtiofsd level
+        env::set_var("RUST_LOG", "debug,virtiofsd=info");
+        let _ = tracing::subscriber::set_default(
+            tracing_subscriber::fmt()
+                .with_env_filter(EnvFilter::from_default_env())
+                .finish(),
+        );
+        assert_eq!(share.virtiofsd_log_level(), None);
     }
 }
