@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", antlir2_image = "image")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
@@ -40,7 +39,6 @@ def _split(
                 antlir2_feature.remove(path = "/usr/lib/debug", must_exist = False),
             ],
             parent_layer = layer,
-            flavor = compat.from_antlir1_flavor(flavor),
             visibility = visibility,
         )
         antlir2_image.layer(
@@ -52,7 +50,7 @@ def _split(
                     dst_path = "/",
                 ),
             ],
-            flavor = compat.from_antlir1_flavor(flavor),
+            flavor = "//antlir/antlir2/flavor:none",
             visibility = visibility,
         )
     else:

@@ -83,8 +83,8 @@ _rpm_integrity_test = rule(
 def image_test_rpm_integrity(
         name: str,
         layer: str,
-        ignored_files: list[str] = [],
-        ignored_rpms: list[str] = [],
+        ignored_files: list[str] | Select = [],
+        ignored_rpms: list[str] | Select = [],
         **kwargs):
     """
     Verify the integrity of all installed RPMs to ensure that any changes done
