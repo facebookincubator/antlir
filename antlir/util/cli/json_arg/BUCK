@@ -18,6 +18,7 @@ rust_library(
         "similar-asserts",
         "tempfile",
     ],
+    visibility = ["PUBLIC"],
     deps = [
         "serde",
         "serde_json",
