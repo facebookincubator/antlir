@@ -12,6 +12,7 @@ use std::fs;
 use std::fs::File;
 use std::io::BufRead;
 use std::io::BufReader;
+use std::io::ErrorKind;
 use std::io::Read;
 use std::os::unix::net::UnixStream;
 use std::path::Path;
@@ -28,6 +29,7 @@ use std::time::Instant;
 use image_test_lib::KvPair;
 use thiserror::Error;
 use tracing::debug;
+use tracing::error;
 use tracing::info;
 
 use crate::disk::QCow2Disk;
@@ -81,6 +83,8 @@ pub(crate) enum VMError {
     QemuProcessError(std::io::Error),
     #[error("Failed to open output file: {path}: {err}")]
     FileOutputError { path: PathBuf, err: std::io::Error },
+    #[error("Failed to start sidecar process: `{0}'")]
+    SidecarError(std::io::Error),
     #[error("Failed to boot VM: {desc}: `{err}`")]
     BootError {
         desc: &'static str,
@@ -120,7 +124,9 @@ impl VM {
 
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
+        let handles = self.spawn_sidecar_services();
         let proc = self.spawn_vm()?;
+        self.check_sidecar_services(handles)?;
         self.wait_for_vm(proc)?;
         Ok(())
     }
@@ -221,6 +227,65 @@ impl VM {
 
     fn notify_file(&self) -> PathBuf {
         self.state_dir.join("vmtest_notify.sock")
+    }
+
+    /// The sidecar services will continue to run indefinitely until the outer
+    /// container is torn down. Thus we just spawn them and forget.
+    fn spawn_sidecar_services(&self) -> Vec<JoinHandle<Result<ExitStatus>>> {
+        self.machine
+            .sidecar_services
+            .iter()
+            .filter(|x| !x.is_empty())
+            .map(|args| {
+                let mut command = Command::new(&args[0]);
+                args.iter().skip(1).for_each(|c| {
+                    command.arg(c);
+                });
+                thread::spawn(move || -> Result<ExitStatus> {
+                    log_command(&mut command)
+                        .status()
+                        .map_err(VMError::SidecarError)
+                })
+            })
+            .collect()
+    }
+
+    /// We assume the sidecar services are simple and fast, so we don't wait for
+    /// their startup or have complicated scheme to assess their health. Just do
+    /// a minimal check to ensure none have crashed immediately.
+    fn check_sidecar_services(&self, handles: Vec<JoinHandle<Result<ExitStatus>>>) -> Result<()> {
+        if !handles.iter().any(|x| x.is_finished()) {
+            return Ok(());
+        }
+
+        // Print out the terimnated sidecar service(s) for debugging
+        let results: Result<Vec<_>> = handles
+            .into_iter()
+            .enumerate()
+            .map(|(i, x)| -> Result<()> {
+                if x.is_finished() {
+                    let msg = format!("Sidecar service at index {} finished unexpectedly", i);
+                    error!(msg);
+                    let status = x.join().map_err(|e| {
+                        VMError::SidecarError(std::io::Error::new(
+                            ErrorKind::Other,
+                            format!(
+                                "Failed to join thread for sidecar service at index {}: {:?}",
+                                i, e
+                            ),
+                        ))
+                    })?;
+                    error!("Exit status {:#?}", status);
+                    return Err(VMError::SidecarError(std::io::Error::new(
+                        ErrorKind::Other,
+                        msg,
+                    )));
+                }
+                Ok(())
+            })
+            .collect();
+        results?;
+        Ok(())
     }
 
     /// Spawn qemu-system process. It won't immediately start running until we connect
@@ -531,9 +596,8 @@ mod test {
         let machine = MachineOpts {
             cpus: 1,
             mem_mib: 1024,
-            disks: vec![],
             num_nics: 1,
-            non_disk_boot_opts: None,
+            ..Default::default()
         };
         let args = VMArgs::default();
         let share_opts = ShareOpts {
@@ -761,5 +825,25 @@ mod test {
         };
         let all_opts = VM::get_all_shares_opts(&outputs);
         assert!(all_opts.contains(&opt));
+    }
+
+    #[test]
+    fn test_sidecar_services_happy() {
+        let mut vm = get_vm_no_disk();
+        vm.machine.sidecar_services = vec![
+            vec!["sleep".to_string(), "3".to_string()],
+            vec!["sleep".to_string(), "5".to_string()],
+        ];
+        let handles = vm.spawn_sidecar_services();
+        assert!(vm.check_sidecar_services(handles).is_ok());
+    }
+
+    #[test]
+    fn test_sidecar_services_early_finish() {
+        let mut vm = get_vm_no_disk();
+        vm.machine.sidecar_services = vec![vec!["command_does_not_exist".to_string()]];
+        let handles = vm.spawn_sidecar_services();
+        thread::sleep(Duration::from_secs(1));
+        assert!(vm.check_sidecar_services(handles).is_err());
     }
 }

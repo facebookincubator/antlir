@@ -142,7 +142,7 @@ impl VMArgs {
 }
 
 /// Everything we need to create and run the VM
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct MachineOpts {
     /// number of cores
     pub(crate) cpus: usize,
@@ -155,6 +155,8 @@ pub(crate) struct MachineOpts {
     pub(crate) num_nics: usize,
     /// initrd and data if not booting from disk
     pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
+    /// Processes that will spawn outside VM that VM can communicate with
+    pub(crate) sidecar_services: Vec<Vec<String>>,
 }
 
 /// Location of various binary and data we need to operate the VM
