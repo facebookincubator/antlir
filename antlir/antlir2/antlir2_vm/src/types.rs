@@ -48,7 +48,7 @@ pub(crate) struct NonDiskBootOpts {
 }
 
 /// `ShareOpts` describes the property of a shared directory.
-#[derive(Debug, Clone, PartialEq, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Deserialize, Default)]
 pub(crate) struct ShareOpts {
     /// Path to the directory to share
     pub(crate) path: PathBuf,
