@@ -113,6 +113,11 @@ def _v2_impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(sendstream_v2.as_output(), format = "--output={}"),
         ),
         category = "sendstream_upgrade",
+        # This _can_ run remotely, but we've just produced the (often quite
+        # large) sendstream artifact on this host, and we only care about the
+        # final result of this v2 sendstream, so we should prefer to run locally
+        # to avoid uploading and downloading many gigabytes of artifacts
+        prefer_local = True,
     )
 
     return [DefaultInfo(sendstream_v2)]
