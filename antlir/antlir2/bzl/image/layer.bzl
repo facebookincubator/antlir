@@ -6,6 +6,7 @@
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "build_phase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
@@ -430,11 +431,7 @@ _layer_attrs = {
         default = None,
     ),
     "target_arch": attrs.default_only(attrs.string(
-        default =
-            select({
-                "ovr_config//cpu:arm64": "aarch64",
-                "ovr_config//cpu:x86_64": "x86_64",
-            }),
+        default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),
     "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
     "_run_nspawn": attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn"),

@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
@@ -141,10 +142,10 @@ image_python_test(
 
 export_file(
     name = "true.precompiled",
-    src = select({
-        "ovr_config//cpu:arm64": "true.precompiled.aarch64",
-        "ovr_config//cpu:x86_64": "true.precompiled.x86_64",
-    }),
+    src = arch_select(
+        aarch64 = "true.precompiled.aarch64",
+        x86_64 = "true.precompiled.x86_64",
+    ),
 )
 
 buck_genrule(
