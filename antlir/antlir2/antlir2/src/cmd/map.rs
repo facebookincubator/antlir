@@ -116,7 +116,9 @@ impl Map {
                 .map_err(|(_subvol, err)| err)?;
             std::fs::remove_file(&self.setup.output).context("while deleting existing symlink")?;
         }
-        let dst = working_volume.join(uuid::Uuid::new_v4().as_simple().to_string());
+        let dst = working_volume
+            .allocate_new_path()
+            .context("while allocating new path for subvol")?;
         let subvol = match &self.setup.parent {
             Some(parent) => {
                 let parent = Subvolume::open(parent)?;

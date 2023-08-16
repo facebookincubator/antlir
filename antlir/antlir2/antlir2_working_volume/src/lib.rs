@@ -8,7 +8,6 @@
 use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Result;
-use std::ops::Deref;
 use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::path::PathBuf;
@@ -20,6 +19,7 @@ use nix::fcntl::flock;
 use nix::fcntl::FlockArg;
 use nix::fcntl::OFlag;
 use nix::sys::stat::Mode;
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct WorkingVolume(PathBuf);
@@ -74,18 +74,10 @@ impl WorkingVolume {
     pub fn path(&self) -> &Path {
         &self.0
     }
-}
 
-impl Deref for WorkingVolume {
-    type Target = Path;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl AsRef<Path> for WorkingVolume {
-    fn as_ref(&self) -> &Path {
-        &self.0
+    /// Provide a new (non-existent) path for an image build to put its result
+    /// into.
+    pub fn allocate_new_path(&self) -> Result<PathBuf> {
+        Ok(self.0.join(Uuid::new_v4().simple().to_string()))
     }
 }
