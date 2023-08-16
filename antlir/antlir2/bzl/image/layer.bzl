@@ -34,6 +34,7 @@ def _map_image(
     """
     antlir2 = ctx.attrs.antlir2[RunInfo]
     out = ctx.actions.declare_output("subvol-" + identifier)
+    keepalive = ctx.actions.declare_output("keepalive-" + identifier)
     cmd = cmd_args(
         "sudo",  # this requires privileged btrfs operations
         antlir2,
@@ -45,6 +46,7 @@ def _map_image(
         cmd_args(identifier, format = "--identifier={}"),
         cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
         cmd_args(out.as_output(), format = "--output={}"),
+        cmd_args(keepalive.as_output(), format = "--keepalive={}"),
         cmd,
     )
     ctx.actions.run(
@@ -56,8 +58,6 @@ def _map_image(
         identifier = identifier,
         # needs local subvolumes
         local_only = True,
-        # 'antlir2 isolate' will clean up an old image if it exists
-        no_outputs_cleanup = True,
     )
 
     return cmd, out

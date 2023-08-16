@@ -1,10 +1,28 @@
-load("//antlir/bzl:build_defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 rust_library(
     name = "antlir2_working_volume",
     srcs = glob(["src/**/*.rs"]),
     deps = [
+        "anyhow",
         "nix",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tracing",
         "uuid",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
+    ],
+)
+
+rust_binary(
+    name = "garbage-collect",
+    srcs = ["bin/garbage_collect.rs"],
+    deps = [
+        "anyhow",
+        "clap",
+        "tracing-glog",
+        "tracing-subscriber",
+        ":antlir2_working_volume",
     ],
 )
