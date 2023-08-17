@@ -9,3 +9,6 @@ set -ex
 mkdir -p /foo/bar
 echo qux > /foo/bar/baz
 rm /empty
+
+empty="$1"
+cp "$empty" "/empty-copied-from-location-macro"

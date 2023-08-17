@@ -8,6 +8,16 @@ user = 'root'
 group = 'root'
 text = ''
 
+[file.empty-copied-from-location-macro]
+op = "added"
+
+[file.empty-copied-from-location-macro.diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = ""
+
 [file.foo]
 op = 'added'
 
