@@ -89,35 +89,39 @@ def compiler_plan_to_local_repos(
                 tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
             tree[paths.join(repo_i.id, "dnf_conf.json")] = repo_i.dnf_conf_json
 
-        # TODO(T160732259) falling back for the entire transaction significantly slows
-        # down builds, but rpm barfs if there are transcoded and non-transcoded
-        # rpms in the same transaction
-        disable_reflink = False
-        user_rpms_causing_no_reflink = []
-        num_user_rpms = 0
+        # On CentOS 8 we cannot mix reflink and non-reflink rpms
+        if reflink_flavor == "centos8":
+            # TODO(T160732259) falling back for the entire transaction significantly slows
+            # down builds, but rpm barfs if there are transcoded and non-transcoded
+            # rpms in the same transaction
+            disable_reflink = False
+            user_rpms_causing_no_reflink = []
+            num_user_rpms = 0
 
-        for install in tx["install"]:
-            if install["reason"] == "user":
-                num_user_rpms += 1
-            for repo in by_repo.values():
-                if install["nevra"] in repo["nevras"]:
-                    if repo["repo_info"].disable_rpm_reflink:
-                        disable_reflink = True
+            for install in tx["install"]:
+                if install["reason"] == "user":
+                    num_user_rpms += 1
+                for repo in by_repo.values():
+                    if install["nevra"] in repo["nevras"]:
+                        if repo["repo_info"].disable_rpm_reflink:
+                            disable_reflink = True
 
-                        # If it's a dep, there's not really much they can do...
-                        if install["reason"] == "user":
-                            user_rpms_causing_no_reflink.append(install["nevra"])
+                            # If it's a dep, there's not really much they can do...
+                            if install["reason"] == "user":
+                                user_rpms_causing_no_reflink.append(install["nevra"])
 
-        if disable_reflink and user_rpms_causing_no_reflink and len(user_rpms_causing_no_reflink) < num_user_rpms:
-            if ctx.label.raw_target() != "fbcode//antlir/antlir2/test_images/rpms:mix-reflink-and-not--layer":
-                message = """{label}: UNNECESSARILY SLOW BUILD ALERT!!!!
-Some RPMs are causing your entire layer to fallback to non-reflink RPM
-installation. This will CONSIDERABLY SLOW DOWN your build. Until T160732259 is
-resolved upstream, the only way to avoid this slowdown is to install these RPMs
-in a separate layer (must be parent_layer if using chef-solo).
- {rpms}
-                """.format(label = ctx.label.raw_target(), rpms = user_rpms_causing_no_reflink)
-                warning(message)
+            if disable_reflink and user_rpms_causing_no_reflink and len(user_rpms_causing_no_reflink) < num_user_rpms:
+                if ctx.label.name != "mix-reflink-and-not--layer":
+                    message = """{label}: UNNECESSARILY SLOW BUILD ALERT!!!!
+    Some RPMs are causing your entire layer to fallback to non-reflink RPM
+    installation. This will CONSIDERABLY SLOW DOWN your build. Until T160732259 is
+    resolved upstream, the only way to avoid this slowdown is to install these RPMs
+    in a separate layer (must be parent_layer if using chef-solo).
+    {rpms}
+                    """.format(label = ctx.label.raw_target(), rpms = user_rpms_causing_no_reflink)
+                    warning(message)
+        else:
+            disable_reflink = False
 
         for install in tx["install"]:
             found = False
