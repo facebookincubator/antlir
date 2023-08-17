@@ -1,0 +1,28 @@
+[file.installed-dir]
+op = "added"
+
+[file.installed-dir.diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."installed-dir/bar"]
+op = "added"
+
+[file."installed-dir/bar".diff]
+mode = "u+rwx,g+rwx,o+rwx"
+file-type = "symlink"
+user = "root"
+group = "root"
+text = "/foo"
+
+[file."installed-dir/qux"]
+op = "added"
+
+[file."installed-dir/qux".diff]
+mode = "u+rwx,g+rwx,o+rwx"
+file-type = "symlink"
+user = "root"
+group = "root"
+text = "baz"
