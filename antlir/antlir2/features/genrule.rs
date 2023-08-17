@@ -6,7 +6,6 @@
  */
 
 use std::fmt::Debug;
-use std::path::Path;
 
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
@@ -31,6 +30,7 @@ pub struct Genrule {
     pub user: UserName,
     pub boot: bool,
     pub bind_repo_ro: bool,
+    pub mount_platform: bool,
 }
 
 #[derive(Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
@@ -69,25 +69,25 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
         }
         let cwd = std::env::current_dir()?;
         let mut inner_cmd = self.cmd_iter();
-        let mut cmd = isolate(
-            IsolationContext::builder(ctx.root())
-                .user(&self.user)
-                .ephemeral(false)
-                .platform([
-                    cwd.as_path(),
-                    #[cfg(facebook)]
-                    Path::new("/usr/local/fbcode"),
-                    #[cfg(facebook)]
-                    Path::new("/mnt/gvfs"),
-                ])
-                .working_directory(&cwd)
-                .invocation_type(match self.boot {
-                    true => InvocationType::BootReadOnly,
-                    false => InvocationType::Pid2Pipe,
-                })
-                .build(),
-        )?
-        .command(inner_cmd.next().expect("must have argv[0]"))?;
+        let mut isol = IsolationContext::builder(ctx.root());
+        isol.user(&self.user)
+            .ephemeral(false)
+            .inputs(cwd.as_path())
+            .working_directory(&cwd)
+            .invocation_type(match self.boot {
+                true => InvocationType::BootReadOnly,
+                false => InvocationType::Pid2Pipe,
+            });
+        if self.mount_platform {
+            isol.platform([
+                #[cfg(facebook)]
+                "/usr/local/fbcode",
+                #[cfg(facebook)]
+                "/mnt/gvfs",
+            ]);
+        }
+        let mut cmd =
+            isolate(isol.build())?.command(inner_cmd.next().expect("must have argv[0]"))?;
         cmd.args(inner_cmd);
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;
