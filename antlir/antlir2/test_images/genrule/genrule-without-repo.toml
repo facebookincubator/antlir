@@ -1,0 +1,11 @@
+[file.status]
+op = "added"
+
+[file.status.diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+not in repo
+"""

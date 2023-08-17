@@ -72,8 +72,6 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
         let mut isol = IsolationContext::builder(ctx.root());
         isol.user(&self.user)
             .ephemeral(false)
-            .inputs(cwd.as_path())
-            .working_directory(&cwd)
             .invocation_type(match self.boot {
                 true => InvocationType::BootReadOnly,
                 false => InvocationType::Pid2Pipe,
@@ -85,6 +83,9 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
                 #[cfg(facebook)]
                 "/mnt/gvfs",
             ]);
+        }
+        if self.bind_repo_ro {
+            isol.inputs(cwd.as_path()).working_directory(&cwd);
         }
         let mut cmd =
             isolate(isol.build())?.command(inner_cmd.next().expect("must have argv[0]"))?;

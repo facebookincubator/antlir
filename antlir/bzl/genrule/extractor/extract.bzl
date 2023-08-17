@@ -102,6 +102,7 @@ def _extract(
         ],
         parent_layer = source,
         visibility = [],
+        antlir2 = "extract",
     )
     extract_parent_layer = ":" + base_extract_layer
 
@@ -131,6 +132,7 @@ def _extract(
         parent_layer = extract_parent_layer,
         rule_type = "extract",
         user = "root",
+        antlir2 = "extract",
     )
 
     private_do_not_use_feature_json_genrule(
