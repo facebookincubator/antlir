@@ -23,7 +23,8 @@ def image_gpt(
         table,
         disk_guid = None,
         visibility = None,
-        build_appliance = None):
+        build_appliance = None,
+        **kwargs):
     visibility = visibility or []
     build_appliance = build_appliance or flavor_helpers.get_build_appliance()
 
@@ -45,4 +46,5 @@ def image_gpt(
         cacheable = False,
         visibility = visibility,
         antlir_rule = "user-internal",
+        **kwargs
     )
