@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
-load("//antlir/bzl:build_defs.bzl", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "is_facebook", "rust_binary")
 
 image.layer(
     name = "base",
@@ -22,6 +22,15 @@ image.layer(
             dst = "/genrule.sh",
             mode = "a+rx",
         ),
+        feature.install(
+            src = "genrule-with-repo.sh",
+            dst = "/genrule-with-repo.sh",
+            mode = "a+rx",
+        ),
+        feature.install(
+            src = ":needs-platform",
+            dst = "/binary-genrule",
+        ),
         # This is stupid, but the systemd-nspawn performed by 'genrule' dumps a
         # ton of other junk (ex P717441612) into the image and I want my diff
         # test to just show the things that my "interesting" genrule did, not
@@ -30,7 +39,12 @@ image.layer(
             cmd = ["true"],
             user = "root",
         ),
-    ],
+    ] + ([
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/is-facebook",
+        ),
+    ] if is_facebook else []),
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
@@ -56,32 +70,16 @@ image_diff_test(
 )
 
 image.layer(
-    name = "with-repo-parent",
-    features = [
-        feature.install(
-            src = "genrule-with-repo.sh",
-            dst = "/genrule-with-repo.sh",
-            mode = "a+rx",
-        ),
-    ] + ([
-        feature.install(
-            src = "//antlir:empty",
-            dst = "/is-facebook",
-        ),
-    ] if is_facebook else []),
-    parent_layer = ":base",
-)
-
-image.layer(
     name = "genrule-with-repo",
     features = [
         feature.genrule(
-            bind_repo_ro = True,
-            cmd = ["/genrule-with-repo.sh"],
+            cmd = [
+                "/genrule-with-repo.sh",
+            ],
             user = "root",
         ),
     ],
-    parent_layer = ":with-repo-parent",
+    parent_layer = ":base",
 )
 
 image_diff_test(
@@ -89,4 +87,32 @@ image_diff_test(
     diff = "genrule-with-repo.toml",
     diff_type = "file",
     layer = ":genrule-with-repo",
+)
+
+rust_binary(
+    name = "needs-platform",
+    srcs = ["bin.rs"],
+    crate_root = "bin.rs",
+    unittests = False,
+)
+
+image.layer(
+    name = "genrule-with-platform",
+    features = [
+        feature.genrule(
+            cmd = [
+                "/binary-genrule",
+            ],
+            mount_platform = True,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "genrule-with-platform-test",
+    diff = "genrule-with-platform.toml",
+    diff_type = "file",
+    layer = ":genrule-with-platform",
 )
