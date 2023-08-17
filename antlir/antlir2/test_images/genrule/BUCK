@@ -36,6 +36,7 @@ image.layer(
         # test to just show the things that my "interesting" genrule did, not
         # implementation details of systemd-nspawn
         feature.genrule(
+            bind_repo_ro = True,
             cmd = ["true"],
             user = "root",
         ),
@@ -52,6 +53,7 @@ image.layer(
     name = "genrule",
     features = [
         feature.genrule(
+            bind_repo_ro = True,
             cmd = [
                 "/genrule.sh",
                 "$(location //antlir:empty)",
@@ -73,6 +75,7 @@ image.layer(
     name = "genrule-with-repo",
     features = [
         feature.genrule(
+            bind_repo_ro = True,
             cmd = [
                 "/genrule-with-repo.sh",
             ],
@@ -87,6 +90,27 @@ image_diff_test(
     diff = "genrule-with-repo.toml",
     diff_type = "file",
     layer = ":genrule-with-repo",
+)
+
+image.layer(
+    name = "genrule-without-repo",
+    features = [
+        feature.genrule(
+            bind_repo_ro = False,
+            cmd = [
+                "/genrule-with-repo.sh",
+            ],
+            user = "root",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "genrule-without-repo-test",
+    diff = "genrule-without-repo.toml",
+    diff_type = "file",
+    layer = ":genrule-without-repo",
 )
 
 rust_binary(

@@ -47,6 +47,7 @@ antlir2_setting = native.enum(
     "no",  # disable antlir2 without a recorded reason
     "chef",  # disable antlir2 because chef is natively supported
     "debuginfo",  # antlir2 does not yet support this TODO(T153698233)
+    "extract",  # native antlir2 feature
     "rpmbuild",  # antlir2 does not allow rpm installation during a genrule
     # user wants to explicitly alias a built layer instead of downloading it from fbpkg
     "skip-fbpkg-indirection",

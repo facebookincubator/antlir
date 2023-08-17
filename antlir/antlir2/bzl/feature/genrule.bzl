@@ -50,7 +50,8 @@ def genrule_analyze(
             cmd = cmd,
             user = user,
             boot = boot,
-            bind_repo_ro = bind_repo_ro,
+            # The repo is considered part of the platform
+            bind_repo_ro = bind_repo_ro or mount_platform,
             mount_platform = mount_platform,
         ),
         build_phase = BuildPhase("genrule"),
