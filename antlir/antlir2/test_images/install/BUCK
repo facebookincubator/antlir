@@ -85,6 +85,35 @@ image_diff_test(
     layer = ":child-image-install-dir",
 )
 
+buck_genrule(
+    name = "genrule-dir-with-symlinks",
+    out = "out",
+    cmd = """
+      mkdir $OUT
+      ln -s /foo $OUT/bar
+      ln -s baz $OUT/qux
+    """,
+)
+
+image.layer(
+    name = "install-dir-with-symlinks",
+    features = [
+        feature.install(
+            src = ":genrule-dir-with-symlinks",
+            dst = "/installed-dir/",
+            mode = "a+rw,u+w",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-install-dir-with-symlinks",
+    diff = "install-dir-with-symlinks.toml",
+    diff_type = "file",
+    layer = ":install-dir-with-symlinks",
+)
+
 # use a fresh binaries that we know will not have already been materialized for
 # some other use case
 rust_binary(
