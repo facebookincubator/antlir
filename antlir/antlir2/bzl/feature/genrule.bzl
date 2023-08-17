@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def genrule(
         *,
@@ -18,20 +18,35 @@ def genrule(
         kwargs = {
             "bind_repo_ro": bind_repo_ro,
             "boot": boot,
-            "cmd": cmd,
             "user": user,
+        },
+        args = {
+            "cmd_" + str(idx): cmd
+            for idx, cmd in enumerate(cmd)
         },
     )
 
 genrule_record = record(
-    cmd = list[str],
+    cmd = list["resolved_macro"],
     user = str,
     boot = bool,
     bind_repo_ro = bool,
 )
 
-genrule_analyze = data_only_feature_analysis_fn(
-    genrule_record,
-    feature_type = "genrule",
-    build_phase = BuildPhase("genrule"),
-)
+def genrule_analyze(
+        user: str,
+        boot: bool,
+        bind_repo_ro: bool,
+        args: dict[str, str | "resolved_macro"]) -> FeatureAnalysis.type:
+    cmd = {int(key.removeprefix("cmd_")): val for key, val in args.items() if key.startswith("cmd_")}
+    cmd = [val for _key, val in sorted(cmd.items())]
+    return FeatureAnalysis(
+        feature_type = "genrule",
+        data = genrule_record(
+            cmd = cmd,
+            user = user,
+            boot = boot,
+            bind_repo_ro = bind_repo_ro,
+        ),
+        build_phase = BuildPhase("genrule"),
+    )

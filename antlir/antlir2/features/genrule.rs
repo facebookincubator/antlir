@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::path::Path;
 
 use antlir2_compile::CompilerContext;
@@ -26,10 +27,30 @@ pub type Feature = Genrule;
 #[derive(Debug, Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
 #[derivative(PartialOrd, Ord)]
 pub struct Genrule {
-    pub cmd: Vec<String>,
+    pub cmd: Vec<ResolvedMacro>,
     pub user: UserName,
     pub boot: bool,
     pub bind_repo_ro: bool,
+}
+
+#[derive(Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
+#[derivative(PartialOrd, Ord)]
+#[serde(transparent)]
+pub struct ResolvedMacro(Vec<String>);
+
+impl Debug for ResolvedMacro {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.0[..] {
+            [value] => write!(f, "{value:?}"),
+            array => write!(f, "{:?}", array),
+        }
+    }
+}
+
+impl Genrule {
+    fn cmd_iter(&self) -> impl Iterator<Item = &str> {
+        self.cmd.iter().flat_map(|r| r.0.iter().map(String::as_str))
+    }
 }
 
 impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
@@ -47,7 +68,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
             unimplemented!("boot is not yet implemented");
         }
         let cwd = std::env::current_dir()?;
-        let mut inner_cmd = self.cmd.iter();
+        let mut inner_cmd = self.cmd_iter();
         let mut cmd = isolate(
             IsolationContext::builder(ctx.root())
                 .user(&self.user)

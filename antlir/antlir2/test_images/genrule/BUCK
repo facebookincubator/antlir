@@ -38,7 +38,10 @@ image.layer(
     name = "genrule",
     features = [
         feature.genrule(
-            cmd = ["/genrule.sh"],
+            cmd = [
+                "/genrule.sh",
+                "$(location //antlir:empty)",
+            ],
             user = "root",
         ),
     ],

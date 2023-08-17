@@ -131,6 +131,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         feature_unnamed_deps_or_srcs = ctx.attrs.inline_features_unnamed_deps_or_srcs.get(key, None)
         feature_exec_deps = ctx.attrs.inline_features_exec_deps.get(key, None)
         feature_srcs = ctx.attrs.inline_features_srcs.get(key, None)
+        feature_args = ctx.attrs.inline_features_args.get(key, None)
 
         analyze_kwargs = inline["kwargs"]
         if feature_deps != None:
@@ -143,6 +144,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             analyze_kwargs["exec_deps"] = feature_exec_deps
         if feature_srcs != None:
             analyze_kwargs["srcs"] = feature_srcs
+        if feature_args != None:
+            analyze_kwargs["args"] = feature_args
         if inline.get("analyze_uses_context"):
             analyze_kwargs["ctx"] = AnalyzeFeatureContext(
                 unique_action_identifier = key,
@@ -223,6 +226,12 @@ shared_features_attrs = {
         ),
         default = {},
     ),
+    # Map "feature key" -> "feature attrs.arg"
+    "inline_features_args": attrs.dict(
+        attrs.string(),
+        attrs.option(attrs.dict(attrs.string(), attrs.arg(anon_target_compatible = True))),
+        default = {},
+    ),
     # Features need a way to coerce strings to sources or dependencies.
     # Map "feature key" -> "feature deps"
     "inline_features_deps": attrs.dict(
@@ -247,6 +256,7 @@ shared_features_attrs = {
         ),
         default = {},
     ),
+    # Map "feature key" -> "feature exec_dep"
     "inline_features_exec_deps": attrs.dict(
         attrs.string(),
         attrs.option(attrs.dict(attrs.string(), attrs.exec_dep())),
@@ -317,6 +327,7 @@ def feature_attrs(
     inline_features_srcs = {}
     inline_features_exec_deps = {}
     inline_features_unnamed_deps_or_srcs = {}
+    inline_features_args = {}
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -344,12 +355,15 @@ def feature_attrs(
                 inline_features_deps_or_srcs[feature_key] = feat.deps_or_srcs
             if feat.unnamed_deps_or_srcs:
                 inline_features_unnamed_deps_or_srcs[feature_key] = feat.unnamed_deps_or_srcs
+            if feat.args:
+                inline_features_args[feature_key] = feat.args
             if feat.srcs:
                 inline_features_srcs[feature_key] = feat.srcs
 
     return {
         "feature_targets": feature_targets,
         "inline_features": inline_features,
+        "inline_features_args": inline_features_args,
         "inline_features_deps": inline_features_deps,
         "inline_features_deps_or_srcs": inline_features_deps_or_srcs,
         "inline_features_exec_deps": inline_features_exec_deps,

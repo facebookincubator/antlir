@@ -39,6 +39,8 @@ ParseTimeFeature = record(
     # analysis phases. Useful to support `select` in features that accept lists
     # of dependencies.
     unnamed_deps_or_srcs = field([list[[str, Select]], None], default = None),
+    # attrs.arg values
+    args = field(dict[str, str | Select] | Select | None, default = None),
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = dict[str, typing.Any],
     analyze_uses_context = field(bool, default = False),
