@@ -123,6 +123,8 @@ def _implicit_vm_test(
         test = ":" + inner_test_name,
         test_labels = labels + [special_tags.enable_artifact_reporting],
         vm_host = vm_host,
+        # VM is not ready for other arch yet
+        compatible_with = ["ovr_config//cpu:x86_64"],
     )
 
 vm_cpp_test = partial(
