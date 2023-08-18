@@ -65,6 +65,8 @@ pub(crate) struct VM {
     nics: Vec<VirtualNIC>,
     /// Directory to keep all ephemeral states
     state_dir: PathBuf,
+    /// Handles to sidecar services
+    sidecar_handles: Vec<JoinHandle<Result<ExitStatus>>>,
 }
 
 #[derive(Error, Debug)]
@@ -119,14 +121,14 @@ impl VM {
             shares,
             nics,
             state_dir,
+            sidecar_handles: vec![],
         })
     }
 
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
-        let handles = self.spawn_sidecar_services();
+        self.sidecar_handles = self.spawn_sidecar_services();
         let proc = self.spawn_vm()?;
-        self.check_sidecar_services(handles)?;
         self.wait_for_vm(proc)?;
         Ok(())
     }
@@ -253,14 +255,15 @@ impl VM {
     /// We assume the sidecar services are simple and fast, so we don't wait for
     /// their startup or have complicated scheme to assess their health. Just do
     /// a minimal check to ensure none have crashed immediately.
-    fn check_sidecar_services(&self, handles: Vec<JoinHandle<Result<ExitStatus>>>) -> Result<()> {
-        if !handles.iter().any(|x| x.is_finished()) {
+    fn check_sidecar_services(&mut self) -> Result<()> {
+        if !self.sidecar_handles.iter().any(|x| x.is_finished()) {
             return Ok(());
         }
 
         // Print out the terimnated sidecar service(s) for debugging
-        let results: Result<Vec<_>> = handles
-            .into_iter()
+        let results: Result<Vec<_>> = self
+            .sidecar_handles
+            .drain(..)
             .enumerate()
             .map(|(i, x)| -> Result<()> {
                 if x.is_finished() {
@@ -407,7 +410,7 @@ impl VM {
     /// Connect to the notify socket, wait for boot ready message and wait for the VM
     /// to terminate. If time out is specified, this function will return error
     /// upon timing out.
-    fn wait_for_vm(&self, mut vm_proc: Child) -> Result<()> {
+    fn wait_for_vm(&mut self, mut vm_proc: Child) -> Result<()> {
         let start_ts = Instant::now();
 
         // Wait for notify file to be created by qemu
@@ -429,6 +432,7 @@ impl VM {
         }
 
         // Connect to the notify socket. This starts the boot process.
+        self.check_sidecar_services()?;
         let socket = UnixStream::connect(self.notify_file()).map_err(|err| VMError::BootError {
             desc: "Failed to connect to notify socket",
             err,
@@ -458,6 +462,7 @@ impl VM {
         );
 
         // VM booted
+        self.check_sidecar_services()?;
         if self.args.console {
             // Just wait for the human that's trying to debug with console
             self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
@@ -614,6 +619,7 @@ mod test {
                 .expect("Failed to create Shares"),
             nics: vec![VirtualNIC::new(0)],
             state_dir: PathBuf::from("/test/path"),
+            sidecar_handles: vec![],
         }
     }
 
@@ -834,16 +840,16 @@ mod test {
             vec!["sleep".to_string(), "3".to_string()],
             vec!["sleep".to_string(), "5".to_string()],
         ];
-        let handles = vm.spawn_sidecar_services();
-        assert!(vm.check_sidecar_services(handles).is_ok());
+        vm.sidecar_handles = vm.spawn_sidecar_services();
+        assert!(vm.check_sidecar_services().is_ok());
     }
 
     #[test]
     fn test_sidecar_services_early_finish() {
         let mut vm = get_vm_no_disk();
         vm.machine.sidecar_services = vec![vec!["command_does_not_exist".to_string()]];
-        let handles = vm.spawn_sidecar_services();
+        vm.sidecar_handles = vm.spawn_sidecar_services();
         thread::sleep(Duration::from_secs(1));
-        assert!(vm.check_sidecar_services(handles).is_err());
+        assert!(vm.check_sidecar_services().is_err());
     }
 }
