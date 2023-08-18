@@ -35,7 +35,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _sendstream = rule(
     impl = _impl,
     attrs = {
-        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
+        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "layer": attrs.dep(providers = [LayerInfo]),
     },
@@ -86,7 +86,7 @@ def _zst_impl(ctx: AnalysisContext) -> list[Provider]:
 _sendstream_zst = rule(
     impl = _zst_impl,
     attrs = {
-        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
+        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "compression_level": attrs.int(default = 3),
         "layer": attrs.dep(providers = [LayerInfo]),
@@ -125,7 +125,7 @@ def _v2_impl(ctx: AnalysisContext) -> list[Provider]:
 _sendstream_v2 = rule(
     impl = _v2_impl,
     attrs = {
-        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
+        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "compression_level": attrs.int(default = 3),
         "layer": attrs.dep(providers = [LayerInfo]),

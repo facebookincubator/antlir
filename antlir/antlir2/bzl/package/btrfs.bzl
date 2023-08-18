@@ -51,8 +51,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _btrfs = rule(
     impl = _impl,
     attrs = {
-        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_package/antlir2_packager:antlir2-packager")),
-        "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = "//antlir/antlir2/antlir2_package/btrfs_packager:btrfs-packager")),
+        "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
+        "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = "//antlir/antlir2/antlir2_packager/btrfs_packager:btrfs-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "compression_level": attrs.int(default = 3),
         "default_subvol": attrs.string(),

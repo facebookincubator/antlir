@@ -8,15 +8,14 @@
 use std::collections::BTreeMap;
 use std::fs::create_dir_all;
 use std::fs::File;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_btrfs::Subvolume;
-use antlir2_package_lib::create_empty_file;
-use antlir2_package_lib::run_cmd;
-use antlir2_package_lib::BtrfsSpec;
-use antlir2_package_lib::BtrfsSubvol;
 use antlir_mount::BoundMounter;
 use antlir_mount::Mounter;
 use antlir_mount::RealMounter;
@@ -30,6 +29,8 @@ use json_arg::JsonFile;
 use loopdev::LoopControl;
 use loopdev::LoopDevice;
 use nix::mount::MsFlags;
+use serde::Deserialize;
+use serde::Serialize;
 use tempfile::TempDir;
 use tracing_subscriber::prelude::*;
 
@@ -40,6 +41,24 @@ pub const MIN_CREATE_BYTES: ByteSize = ByteSize::mib(109);
 // Btrfs requires at least this many bytes free in the filesystem
 // for metadata
 pub const MIN_FREE_BYTES: ByteSize = ByteSize::mib(81);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct BtrfsSubvol {
+    pub sendstream: PathBuf,
+    pub layer: PathBuf,
+    pub writable: Option<bool>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct BtrfsSpec {
+    pub subvols: BTreeMap<PathBuf, BtrfsSubvol>,
+    pub default_subvol: PathBuf,
+    pub compression_level: i32,
+    pub label: Option<String>,
+    pub free_mb: Option<u64>,
+}
 
 pub struct LdHandle {
     device: LoopDevice,
@@ -129,6 +148,27 @@ pub(crate) struct PackageArgs {
     #[clap(long)]
     /// Path to output the image
     out: PathBuf,
+}
+
+pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
+    let output = command.output().context("Failed to run command")?;
+
+    match output.status.success() {
+        true => Ok(output),
+        false => Err(anyhow!("failed to run command {:?}: {:?}", command, output)),
+    }
+}
+
+pub fn create_empty_file(output: &Path, size: ByteSize) -> Result<()> {
+    let mut file = File::create(output).context("failed to create output file")?;
+    file.seek(SeekFrom::Start(size.0))
+        .context("failed to seek output to specified size")?;
+    file.write_all(&[0])
+        .context("Failed to write dummy byte at end of file")?;
+    file.sync_all()
+        .context("Failed to sync output file to disk")?;
+
+    Ok(())
 }
 
 fn calculate_subvol_sizes(subvols: &BTreeMap<PathBuf, BtrfsSubvol>) -> Result<ByteSize> {
