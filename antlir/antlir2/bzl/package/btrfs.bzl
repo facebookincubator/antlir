@@ -55,7 +55,7 @@ _btrfs = rule(
         "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = "//antlir/antlir2/antlir2_packager/btrfs_packager:btrfs-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "compression_level": attrs.int(default = 3),
-        "default_subvol": attrs.string(),
+        "default_subvol": attrs.option(attrs.string()),
         "free_mb": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
         "subvols": attrs.option(
