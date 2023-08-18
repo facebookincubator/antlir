@@ -54,7 +54,7 @@ pub struct BtrfsSubvol {
 #[serde(rename_all = "snake_case")]
 pub struct BtrfsSpec {
     pub subvols: BTreeMap<PathBuf, BtrfsSubvol>,
-    pub default_subvol: PathBuf,
+    pub default_subvol: Option<PathBuf>,
     pub compression_level: i32,
     pub label: Option<String>,
     pub free_mb: Option<u64>,
@@ -349,7 +349,7 @@ fn make_btrfs_package<M>(
     mounter: M,
     output_path: &Path,
     subvols: BTreeMap<PathBuf, BtrfsSubvol>,
-    default_subvol: PathBuf,
+    default_subvol: Option<PathBuf>,
     label: Option<String>,
     compression_level: i32,
     extra_free_space: Option<ByteSize>,
@@ -389,28 +389,30 @@ where
     let subvols = send_and_receive_subvols(mount_handle.mountpoint(), subvols)
         .context("failed to send/recv subvols")?;
 
-    let default_subvol_id = if default_subvol == Path::new("/") {
-        5
-    } else {
-        match subvols.get(&default_subvol) {
-            Some((built_default_subvol, _)) => built_default_subvol.id(),
-            None => {
-                return Err(anyhow!(
-                    "Default subvolume {:?} not found in subvolumes",
-                    default_subvol
-                ));
+    if let Some(default_subvol) = default_subvol {
+        let default_subvol_id = if default_subvol == Path::new("/") {
+            5
+        } else {
+            match subvols.get(&default_subvol) {
+                Some((built_default_subvol, _)) => built_default_subvol.id(),
+                None => {
+                    return Err(anyhow!(
+                        "Default subvolume {:?} not found in subvolumes",
+                        default_subvol
+                    ));
+                }
             }
-        }
-    };
+        };
 
-    run_cmd(
-        Command::new("btrfs")
-            .arg("subvolume")
-            .arg("set-default")
-            .arg(default_subvol_id.to_string())
-            .arg(mount_handle.mountpoint()),
-    )
-    .context("setting default subvolume")?;
+        run_cmd(
+            Command::new("btrfs")
+                .arg("subvolume")
+                .arg("set-default")
+                .arg(default_subvol_id.to_string())
+                .arg(mount_handle.mountpoint()),
+        )
+        .context("setting default subvolume")?;
+    }
 
     // make sure no file descriptors to these subvolumes are open before
     // unmounting the package
