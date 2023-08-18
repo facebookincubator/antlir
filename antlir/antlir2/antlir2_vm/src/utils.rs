@@ -14,18 +14,12 @@ use tracing::debug;
 
 /// Format the Command for printing
 pub(crate) fn format_command(command: &Command) -> String {
-    const CANNOT_PRINT: &str = "The command is not valid Unicode";
-    let program = match command.get_program().to_str() {
-        Some(s) => s,
-        None => {
-            return CANNOT_PRINT.to_string();
-        }
-    };
-    let args: Option<Vec<&str>> = command.get_args().map(|x| x.to_str()).collect();
-    match args {
-        Some(args) => format!("{} {}", program, args.join(" ")),
-        None => CANNOT_PRINT.to_string(),
-    }
+    let program = command.get_program().to_string_lossy().to_string();
+    let args: Vec<_> = command
+        .get_args()
+        .map(|x| x.to_string_lossy().to_string())
+        .collect();
+    format!("Program: `{}`. Args: `{:?}`", program, args)
 }
 
 /// Log the command being executed, unless it can't be decoded.
@@ -104,10 +98,13 @@ mod test {
 
     #[test]
     fn test_format_command() {
-        assert_eq!(format_command(&Command::new("hello")), "hello ".to_string());
+        assert_eq!(
+            format_command(&Command::new("hello")),
+            "Program: `hello`. Args: `[]`",
+        );
         assert_eq!(
             format_command(Command::new("hello").arg("world")),
-            "hello world".to_string(),
+            format!("Program: `hello`. Args: `{:?}`", vec!["world"]),
         );
     }
 }
