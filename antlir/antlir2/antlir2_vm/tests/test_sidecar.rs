@@ -8,6 +8,19 @@
 use reqwest::Client;
 use reqwest::Url;
 
+async fn test(client: &reqwest::Client, port: &'static str) {
+    let url =
+        Url::parse(&format!("http://vmtest-host:{}/hello", port)).expect("URL should be valid");
+    let response = client
+        .get(url)
+        .send()
+        .await
+        .expect("Failed to send request");
+    assert!(response.status().is_success());
+    let body = response.text().await.expect("Failed to read response");
+    assert_eq!(body, port);
+}
+
 /// This test verifies:
 /// 1. vmtest-host is specified in /etc/hosts for the VM to point to the right
 ///    IP inside the container.
@@ -17,13 +30,6 @@ async fn test_sidecar() {
     let client = Client::builder()
         .build()
         .expect("Failed to get http client");
-    let url = Url::parse("http://vmtest-host:8000/hello").expect("URL should be valid");
-    let response = client
-        .get(url)
-        .send()
-        .await
-        .expect("Failed to send request");
-    assert!(response.status().is_success());
-    let body = response.text().await.expect("Failed to read response");
-    assert_eq!(body, "world");
+    test(&client, "8000").await;
+    test(&client, "8001").await;
 }

@@ -237,9 +237,14 @@ impl VM {
         self.machine
             .sidecar_services
             .iter()
-            .filter(|x| !x.is_empty())
+            // Buck passes all args as one string, so what we have is a list of
+            // an inner list containing a single space-separated string as one
+            // command to execute. This space splitting is not foolproof, but we
+            // control sidecars so we can make it work.
+            .flatten()
             .map(|args| {
-                let mut command = Command::new(&args[0]);
+                let args: Vec<&str> = args.split(' ').collect();
+                let mut command = Command::new(args[0]);
                 args.iter().skip(1).for_each(|c| {
                     command.arg(c);
                 });

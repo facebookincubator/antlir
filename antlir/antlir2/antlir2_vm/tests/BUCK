@@ -64,6 +64,7 @@ rust_binary(
     crate_root = "sidecar.rs",
     deps = [
         "anyhow",
+        "clap",
         "tokio",
         "warp",
     ],
@@ -73,7 +74,10 @@ vm.host(
     name = "vm-with-sidecar",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.default_boot_disk],
-    sidecar_services = ["$(exe :sidecar)"],
+    sidecar_services = [
+        "$(exe :sidecar)",
+        "$(exe :sidecar) --port 8001",
+    ],
 )
 
 vm.rust_test(

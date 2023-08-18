@@ -9,12 +9,20 @@ use std::net::IpAddr;
 
 use anyhow::Context;
 use anyhow::Result;
+use clap::Parser;
 use warp::Filter;
+
+#[derive(Parser, Debug)]
+struct Cli {
+    #[clap(long, default_value_t = 8000)]
+    port: u16,
+}
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let hi = warp::path("hello").map(|| "world");
+    let cli = Cli::parse();
+    let hi = warp::path("hello").map(move || cli.port.to_string());
     let addr = IpAddr::V6("::".parse().context("Failed to get server address")?);
-    warp::serve(hi).run((addr, 8000)).await;
+    warp::serve(hi).run((addr, cli.port)).await;
     Ok(())
 }
