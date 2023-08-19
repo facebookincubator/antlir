@@ -52,31 +52,3 @@ if list(BuildPhase.values()) != [
     "buildinfo_stamp",
 ]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
-
-def _is_predictable(phase: BuildPhase.type) -> bool:
-    """
-    If a BuildPhase is predictable, we don't have to crawl the filesystem tree
-    to discover "dynamic" items, like we do to discover things like rpm-created
-    users or file paths.
-
-    Note that "predictable" is not the same as "deterministic". All phases are
-    deterministic/repeatable, but some have effects on the built image that
-    cannot be determined in advance without actually building them.
-    """
-    return {
-        # buildinfo_stamp really is predictable, but the depgraph does not
-        # currently have any support for files that are intentionally
-        # overwritten
-        "buildinfo_stamp": False,
-        "chef": False,
-        "chef_cleanup": False,
-        "chef_setup": True,  # using regular well-behaved features
-        "compile": True,
-        "genrule": False,
-        "package_manager": False,
-        "remove": False,  # for directories, ensure that all the children are removed
-    }[phase.value]
-
-build_phase = struct(
-    is_predictable = _is_predictable,
-)
