@@ -51,6 +51,8 @@ fn main() -> Result<()> {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
+    antlir2_rootless::init().context("while setting up antlir2_rootless")?;
+
     let args = Args::parse();
     for path in &args.create_output_files {
         std::fs::File::create(path)

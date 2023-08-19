@@ -1,0 +1,12 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+rust_library(
+    name = "antlir2_rootless",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "nix",
+        "once_cell",
+        "thiserror",
+        "tracing",
+    ],
+)

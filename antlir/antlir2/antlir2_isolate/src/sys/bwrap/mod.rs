@@ -74,7 +74,10 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
     bwrap_args.push("--cap-add".into());
     bwrap_args.push("ALL".into());
 
+    let rootless = antlir2_rootless::init()?;
+
     let ephemeral_root = if ephemeral {
+        let _guard = rootless.escalate()?;
         let layer = layer.canonicalize()?;
         let mut ephemeral_name = layer.file_name().unwrap_or_default().to_owned();
         ephemeral_name.push(format!(".ephemeral_{}", Uuid::new_v4()));
@@ -92,7 +95,10 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
         bwrap_args.push(snapshot_path.into());
         bwrap_args.push("/".into());
 
-        Some(EphemeralSubvolume(Some(snapshot)))
+        Some(EphemeralSubvolume {
+            subvol: Some(snapshot),
+            rootless,
+        })
     } else {
         bwrap_args.push("--ro-bind".into());
         bwrap_args.push(layer.as_ref().into());
@@ -157,11 +163,15 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
 
 #[derive(Debug)]
 #[must_use]
-pub(crate) struct EphemeralSubvolume(Option<Subvolume>);
+pub(crate) struct EphemeralSubvolume {
+    subvol: Option<Subvolume>,
+    rootless: antlir2_rootless::Rootless,
+}
 
 impl Drop for EphemeralSubvolume {
     fn drop(&mut self) {
-        if let Some(s) = self.0.take() {
+        if let Some(s) = self.subvol.take() {
+            let _guard = self.rootless.escalate();
             trace!("deleting subvol {}", s.path().display());
             if let Err((subvol, err)) = s.delete(DeleteFlags::RECURSIVE) {
                 error!("failed to delete {}: {err}", subvol.path().display());

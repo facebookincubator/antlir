@@ -32,6 +32,8 @@ pub enum Error {
     Btrfs(#[from] antlir2_btrfs::Error),
     #[error(transparent)]
     Isolate(#[from] antlir2_isolate::Error),
+    #[error(transparent)]
+    Rootless(#[from] antlir2_rootless::Error),
     #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
 }
@@ -134,10 +136,11 @@ fn main() -> Result<()> {
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
+    let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
     let result = match args.subcommand {
         Subcommand::Compile(x) => x.run(),
-        Subcommand::Depgraph(p) => p.run(),
-        Subcommand::Map(x) => x.run(args.log.path()),
+        Subcommand::Depgraph(x) => x.run(rootless),
+        Subcommand::Map(x) => x.run(args.log.path(), rootless),
         Subcommand::Plan(x) => x.run(),
         Subcommand::Shell(x) => x.run(),
     };
