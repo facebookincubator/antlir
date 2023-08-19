@@ -137,7 +137,12 @@ impl<'f> FeatureExt<'f> for Feature {
             .output()
             .map_err(|e| format!("failed to run cmd {cmd:?}: {e}"))?;
         if !out.status.success() {
-            Err(format!("{cmd:?} failed with exit code {}", out.status))
+            Err(format!(
+                "{cmd:?} failed with exit code {}\n{}\n{}",
+                out.status,
+                String::from_utf8_lossy(&out.stdout),
+                String::from_utf8_lossy(&out.stderr),
+            ))
         } else {
             let mut deser = serde_json::Deserializer::from_reader(Cursor::new(&out.stdout));
             <Vec<Item<'f>>>::deserialize(&mut deser)

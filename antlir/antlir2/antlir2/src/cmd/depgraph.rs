@@ -47,7 +47,7 @@ enum Output {
 
 impl Depgraph {
     #[tracing::instrument(name = "depgraph", skip(self))]
-    pub(crate) fn run(self) -> Result<()> {
+    pub(crate) fn run(self, rootless: antlir2_rootless::Rootless) -> Result<()> {
         let mut depgraph = Graph::builder(self.label, self.parent.map(JsonFile::into_inner));
         for features in self.features {
             for f in features.into_inner() {
@@ -59,6 +59,7 @@ impl Depgraph {
         }
         let mut depgraph = depgraph.build()?;
         if let Some(dir) = &self.add_built_items {
+            let _root = rootless.escalate()?;
             depgraph
                 .populate_dynamic_items(dir)
                 .context("while adding dynamically built items")?;

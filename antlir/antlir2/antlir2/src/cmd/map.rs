@@ -110,10 +110,15 @@ impl Subcommand {
 impl Map {
     /// Create a new mutable subvolume based on the [SetupArgs].
     #[tracing::instrument(skip(self), ret, err)]
-    fn create_new_subvol(&self, working_volume: &WorkingVolume) -> Result<Subvolume> {
+    fn create_new_subvol(
+        &self,
+        working_volume: &WorkingVolume,
+        rootless: antlir2_rootless::Rootless,
+    ) -> Result<Subvolume> {
         let dst = working_volume
             .allocate_new_path()
             .context("while allocating new path for subvol")?;
+        let _guard = rootless.escalate()?;
         let subvol = match &self.setup.parent {
             Some(parent) => {
                 let parent = Subvolume::open(parent)?;
@@ -132,10 +137,14 @@ impl Map {
     }
 
     #[tracing::instrument(name = "map", skip(self))]
-    pub(crate) fn run(self, log_path: Option<&Path>) -> Result<()> {
+    pub(crate) fn run(
+        self,
+        log_path: Option<&Path>,
+        rootless: antlir2_rootless::Rootless,
+    ) -> Result<()> {
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
-        let mut subvol = self.create_new_subvol(&working_volume)?;
+        let mut subvol = self.create_new_subvol(&working_volume, rootless)?;
 
         let repo = find_root::find_repo_root(
             &absolute_path::AbsolutePathBuf::canonicalize(
@@ -239,9 +248,7 @@ impl Map {
             return Err(anyhow::anyhow!("isolated command failed: {res}").into());
         } else {
             debug!("map finished, making subvol {subvol:?} readonly");
-            subvol
-                .set_readonly(true)
-                .context("while making subvol r/o")?;
+            rootless.as_root(|| subvol.set_readonly(true).context("while making subvol r/o"))??;
             debug!(
                 "linking {} -> {}",
                 self.setup.output.display(),

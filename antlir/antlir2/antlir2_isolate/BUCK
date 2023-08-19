@@ -9,6 +9,7 @@ rust_library(
         "tracing",
         "uuid",
         "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
 )
 
@@ -22,6 +23,7 @@ rust_binary(
         "tracing-glog",
         "tracing-subscriber",
         ":antlir2_isolate",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
 )
 

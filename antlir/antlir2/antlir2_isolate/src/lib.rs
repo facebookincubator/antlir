@@ -32,6 +32,8 @@ pub enum Error {
     #[cfg(target_os = "linux")]
     #[error(transparent)]
     Btrfs(#[from] antlir2_btrfs::Error),
+    #[error(transparent)]
+    Rootless(#[from] antlir2_rootless::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
