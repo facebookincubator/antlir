@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "build_phase")
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
@@ -300,20 +300,15 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
         )
         build_cmd.append(cmd)
 
-        if build_phase.is_predictable(phase):
-            final_depgraph = depgraph_input
-        else:
-            # If this phase was not predictable, we need to walk the fs to make
-            # sure we're not missing any files/users/groups/whatever
-            final_depgraph = build_depgraph(
-                ctx = ctx,
-                dependency_layers = dependency_layers,
-                features_json = features_json,
-                format = "json",
-                identifier_prefix = identifier_prefix,
-                parent_depgraph = parent_depgraph,
-                subvol = final_subvol,
-            )
+        final_depgraph = build_depgraph(
+            ctx = ctx,
+            dependency_layers = dependency_layers,
+            features_json = None,
+            format = "json",
+            identifier_prefix = identifier_prefix,
+            parent_depgraph = parent_depgraph,
+            subvol = final_subvol,
+        )
 
         build_script = ctx.actions.write(
             "{}_build.sh".format(identifier_prefix),
