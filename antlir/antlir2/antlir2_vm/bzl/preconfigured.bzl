@@ -11,7 +11,7 @@ PRECONFIGURED_VM = {
     "nvme-disk-boot": "//antlir/antlir2/antlir2_vm:default-nvme-disk-boot",
 }
 
-def get_vm(name: str.type = "nondisk-boot") -> str.type:
+def get_vm(name: str = "nondisk-boot") -> str:
     if name not in PRECONFIGURED_VM:
         fail("{} not listed in pre-configured VMs".format(name))
     return PRECONFIGURED_VM[name]
