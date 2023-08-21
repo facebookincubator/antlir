@@ -5,7 +5,7 @@
 
 load("//antlir/bzl:systemd.bzl", "systemd")
 
-def _install():
+def _install(use_antlir2 = False):
     """
     Return features to install the necessary configuration to notify
     the `antlir.vm` runtime when a host has booted.
@@ -14,10 +14,12 @@ def _install():
     return [
         systemd.install_unit(
             "//antlir/linux/vm/notify:virtio-notify@.service",
+            use_antlir2 = use_antlir2,
         ),
         # Enable using the virtio socket named "notify-host"
         systemd.enable_unit(
             "virtio-notify@notify-host.service",
+            use_antlir2 = use_antlir2,
         ),
     ]
 
