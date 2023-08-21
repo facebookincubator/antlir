@@ -106,6 +106,13 @@ impl QCow2Disk {
         self.state_dir.join(format!("{}.qcow2", self.name))
     }
 
+    fn serial(&self) -> &str {
+        match &self.opts.serial {
+            Some(serial) => serial,
+            None => &self.name,
+        }
+    }
+
     /// qemu-img has this unfortunate feature that if a relative path is given
     /// for -b, it will be looked up relative to the directory containing the
     /// resulting image file. Override relative path to be absolute with our
@@ -129,9 +136,10 @@ impl QCow2Disk {
             ),
             "-device",
             &format!(
-                "{driver},drive={name},serial={name},physical_block_size={pbs},logical_block_size={lbs}",
+                "{driver},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
                 driver = self.opts.interface,
                 name = self.name,
+                serial = self.serial(),
                 pbs = self.opts.physical_block_size,
                 lbs = self.opts.logical_block_size,
             ),
@@ -151,11 +159,10 @@ mod test {
     #[test]
     fn test_qcow2disk() {
         let opts = QCow2DiskOpts {
-            base_image: None,
-            additional_mib: None,
             interface: "virtio-blk".to_string(),
             physical_block_size: 512,
             logical_block_size: 512,
+            ..Default::default()
         };
 
         let mut builder = QCow2DiskBuilder::default();
@@ -165,17 +172,29 @@ mod test {
             .state_dir(PathBuf::from("/tmp/test"));
         // Can't easily test anything that depends on qemu binaries, so we invoke
         // the internal builder to skip creating the real disk file.
-        let disk = builder.build_internal().expect("Failed to build QCow2Disk");
+        let mut disk = builder.build_internal().expect("Failed to build QCow2Disk");
 
         assert_eq!(
             disk.disk_file_name(),
             PathBuf::from("/tmp/test/test-device.qcow2")
         );
+        assert_eq!(disk.serial(), "test-device");
         assert_eq!(
             &disk.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
             driver=qcow2,node-name=test-device,file.driver=file,file.filename=/tmp/test/test-device.qcow2 \
             -device virtio-blk,drive=test-device,serial=test-device,\
+            physical_block_size=512,logical_block_size=512"
+        );
+
+        // Test serial override
+        disk.opts.serial = Some("serial".to_string());
+        assert_eq!(disk.serial(), "serial");
+        assert_eq!(
+            &disk.qemu_args().join(OsStr::new(" ")),
+            "-blockdev \
+            driver=qcow2,node-name=test-device,file.driver=file,file.filename=/tmp/test/test-device.qcow2 \
+            -device virtio-blk,drive=test-device,serial=serial,\
             physical_block_size=512,logical_block_size=512"
         );
     }

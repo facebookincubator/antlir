@@ -19,7 +19,7 @@ use image_test_lib::KvPair;
 use serde::Deserialize;
 
 /// Captures property of the disk specified by user to describe a writable disk
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct QCow2DiskOpts {
     /// Path to the base image file
     pub(crate) base_image: Option<PathBuf>,
@@ -33,6 +33,8 @@ pub(crate) struct QCow2DiskOpts {
     pub(crate) physical_block_size: usize,
     /// Logical block size of the disk
     pub(crate) logical_block_size: usize,
+    /// Device serial override. By default it's automatically assigned.
+    pub(crate) serial: Option<String>,
 }
 
 /// Required data if not booting from disk

@@ -21,6 +21,7 @@ def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
             logical_block_size = ctx.attrs.logical_block_size,
             physical_block_size = ctx.attrs.physical_block_size,
             bootable = ctx.attrs.bootable,
+            serial = ctx.attrs.serial,
         ),
         DefaultInfo(),
     ]
@@ -45,6 +46,11 @@ _vm_disk = rule(
         ),
         "logical_block_size": attrs.int(default = 512),
         "physical_block_size": attrs.int(default = 512),
+        "serial": attrs.option(
+            attrs.string(),
+            default = None,
+            doc = "Device serial override. By default it's automatically assigned",
+        ),
     },
 )
 vm_disk = rule_with_default_target_platform(_vm_disk)
@@ -57,6 +63,7 @@ def _create_disk_from_package(
         interface: str = "virtio-blk",
         logical_block_size: int = 512,
         physical_block_size: int = 512,
+        serial: str | None = None,
         visibility: list[str] | None = None):
     """This functions take image targets and wrap them with desired properties
     to create a VM disk target that can be used by VM. `image` is expected to
@@ -72,6 +79,7 @@ def _create_disk_from_package(
         interface = interface,
         logical_block_size = logical_block_size,
         physical_block_size = physical_block_size,
+        serial = serial,
         visibility = visibility,
     )
 
@@ -81,6 +89,7 @@ def _create_empty_disk(
         interface: str = "virtio-blk",
         logical_block_size: int = 512,
         physical_block_size: int = 512,
+        serial: str | None = None,
         visibility: list[str] | None = None):
     """Create an empty disk of `size` MiB"""
     _create_disk_from_package(
@@ -91,6 +100,7 @@ def _create_empty_disk(
         interface = interface,
         logical_block_size = logical_block_size,
         physical_block_size = physical_block_size,
+        serial = serial,
         visibility = visibility,
     )
 
