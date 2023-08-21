@@ -65,6 +65,7 @@ impl PackageFormat for Vfat {
         if let Some(label) = &self.label {
             mkfs.arg("-n").arg(label);
         }
+        mkfs.arg("-S").arg("4096");
 
         run_cmd(mkfs.arg(&output).stdout(Stdio::piped())).context("failed to mkfs.vfat")?;
 
