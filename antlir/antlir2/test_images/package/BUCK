@@ -47,7 +47,7 @@ package.vfat(
     fat_size = 16,
     label = "NONE",
     layer = ":vfat-layer",
-    size_mb = 32,
+    size_mb = 128,
 )
 
 package.cpio_gz(
