@@ -57,7 +57,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _gpt = rule(
     impl = _impl,
     attrs = {
-        "block_size": attrs.int(default = 4096, doc = "block size of the gpt layout in bytes"),
+        "block_size": attrs.int(default = 512, doc = "block size of the gpt layout in bytes"),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "disk_guid": attrs.option(attrs.string(), default = None),
         "partitions": attrs.list(

@@ -108,6 +108,7 @@ package.tar_gz(
 
 package.gpt(
     name = "test-disk.gpt",
+    block_size = 512,
     partitions = [
         Partition(
             src = ":vfat-layer.vfat",
