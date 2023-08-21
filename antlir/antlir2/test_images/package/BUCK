@@ -2,6 +2,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:btrfs.bzl", "BtrfsSubvol")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/bzl/package:gpt.bzl", "Partition", "PartitionType")
 
 image.layer(
     name = "btrfs-test-1",
@@ -103,4 +104,18 @@ package.btrfs(
 package.tar_gz(
     name = "vfat-layer.tar.gz",
     layer = ":vfat-layer",
+)
+
+package.gpt(
+    name = "test-disk.gpt",
+    partitions = [
+        Partition(
+            src = ":vfat-layer.vfat",
+            type = PartitionType("esp"),
+        ),
+        Partition(
+            src = ":btrfs-layer-test.btrfs",
+            label = "/",
+        ),
+    ],
 )

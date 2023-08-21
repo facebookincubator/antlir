@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load(":gpt.bzl", "GptPartitionSource")
 load(":sendstream.bzl", "anon_v1_sendstream")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -46,7 +47,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         local_only = True,  # needs root
         category = "antlir2_package",
     )
-    return [DefaultInfo(package)]
+    return [
+        DefaultInfo(package),
+        GptPartitionSource(src = package),
+    ]
 
 _btrfs = rule(
     impl = _impl,
