@@ -6,7 +6,9 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
+        "bytesize",
         "clap",
+        "gpt",
         "itertools",
         "retry",
         "serde",
@@ -15,6 +17,7 @@ rust_binary(
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
+        "uuid",
         "walkdir",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/util/cli/json_arg:json_arg",

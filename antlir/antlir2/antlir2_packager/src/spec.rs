@@ -12,6 +12,7 @@ use serde::Deserialize;
 pub enum Spec {
     Btrfs(crate::btrfs::Btrfs),
     Cpio(crate::cpio::Cpio),
+    Gpt(crate::gpt::Gpt),
     Rpm(crate::rpm::Rpm),
     Sendstream(crate::sendstream::Sendstream),
     Squashfs(crate::squashfs::Squashfs),

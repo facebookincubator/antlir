@@ -7,6 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "default_target_platfor
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":btrfs.bzl", "btrfs")
+load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 
@@ -33,7 +34,8 @@ def _generic_impl_with_layer(
         *,
         ctx: AnalysisContext,
         format: str,
-        rule_attr_keys: list[str]) -> list[Provider]:
+        rule_attr_keys: list[str],
+        can_be_partition: bool) -> list[Provider]:
     extension = {
         "cpio": ".cpio",
         "rpm": ".rpm",
@@ -43,8 +45,9 @@ def _generic_impl_with_layer(
     }[format]
     package = ctx.actions.declare_output("package" + extension)
 
+    build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
     spec_opts = {
-        "build_appliance": (ctx.attrs.build_appliance or layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
+        "build_appliance": build_appliance[LayerInfo].subvol_symlink,
         "layer": layer[LayerInfo].subvol_symlink,
     }
     for key in rule_attr_keys:
@@ -59,13 +62,17 @@ def _generic_impl_with_layer(
         local_only = True,
         category = "antlir2_package",
     )
-    return [DefaultInfo(package)]
+    providers = [DefaultInfo(package)]
+    if can_be_partition:
+        providers.append(GptPartitionSource(src = package))
+    return providers
 
 def _generic_impl(
         ctx: AnalysisContext,
         format: str,
         rule_attr_keys: list[str],
-        dot_meta: bool):
+        dot_meta: bool,
+        can_be_partition: bool):
     if dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
             "layer": ctx.attrs.layer,
@@ -80,6 +87,7 @@ def _generic_impl(
             ctx = ctx,
             format = format,
             rule_attr_keys = rule_attr_keys,
+            can_be_partition = can_be_partition,
         ))
     else:
         return _generic_impl_with_layer(
@@ -87,19 +95,22 @@ def _generic_impl(
             ctx = ctx,
             format = format,
             rule_attr_keys = rule_attr_keys,
+            can_be_partition = can_be_partition,
         )
 
 # Create a new buck2 rule that implements a specific package format.
 def _new_package_rule(
         format: str,
         rule_attrs: dict[str, "attribute"] = {},
-        dot_meta: bool = True):
+        dot_meta: bool = True,
+        can_be_partition = False):
     return rule(
         impl = partial(
             _generic_impl,
             format = format,
             rule_attr_keys = list(rule_attrs.keys()),
             dot_meta = dot_meta,
+            can_be_partition = can_be_partition,
         ),
         attrs = _default_attrs | _common_attrs | rule_attrs,
     )
@@ -217,9 +228,14 @@ _vfat = _new_package_rule(
         "size_mb": attrs.option(attrs.int(), default = None),
     },
     format = "vfat",
+    can_be_partition = True,
 )
 
-_squashfs = _new_package_rule(rule_attrs = {}, format = "squashfs")
+_squashfs = _new_package_rule(
+    rule_attrs = {},
+    format = "squashfs",
+    can_be_partition = True,
+)
 
 _tar = _new_package_rule(
     format = "tar",
@@ -256,9 +272,10 @@ def _backwards_compatible_new(format: str, **kwargs):
 
 package = struct(
     backward_compatible_new = _backwards_compatible_new,
+    btrfs = btrfs,
     cpio_gz = rule_with_default_target_platform(_cpio_gz),
     cpio_zst = rule_with_default_target_platform(_cpio_zst),
-    btrfs = btrfs,
+    gpt = gpt,
     rpm = rule_with_default_target_platform(_rpm),
     sendstream = sendstream,
     sendstream_v2 = sendstream_v2,
