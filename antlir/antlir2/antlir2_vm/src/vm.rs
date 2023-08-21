@@ -273,7 +273,7 @@ impl VM {
             .map(|(i, x)| -> Result<()> {
                 if x.is_finished() {
                     let msg = format!("Sidecar service at index {} finished unexpectedly", i);
-                    error!(msg);
+                    error!("{}", &msg);
                     let status = x.join().map_err(|e| {
                         VMError::SidecarError(std::io::Error::new(
                             ErrorKind::Other,
@@ -438,6 +438,12 @@ impl VM {
 
         // Connect to the notify socket. This starts the boot process.
         self.check_sidecar_services()?;
+        if let Some(console_file) = &self.args.console_output_file {
+            info!(
+                "Note: console output is redirected to {}",
+                console_file.display()
+            );
+        }
         let socket = UnixStream::connect(self.notify_file()).map_err(|err| VMError::BootError {
             desc: "Failed to connect to notify socket",
             err,
