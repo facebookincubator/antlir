@@ -12,6 +12,7 @@ DiskInfo = provider(fields = {
     "interface": "Interface of the disk",
     "logical_block_size": "Logical block size of the disk",
     "physical_block_size": "Physical block size of the disk",
+    "serial": "Device serial override. By default it's automatically assigned",
 })
 
 # `VMHostInfo` is returned by the macro that constructs a VM target. It contains
