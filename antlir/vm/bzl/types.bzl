@@ -94,6 +94,8 @@ def _new_vm_scratch_disk(
 def _new_vm_disk_from_package(
         package,
         interface = "virtio-blk",
+        physical_block_size = 512,
+        logical_block_size = 512,
         subvol = "volume",
         additional_scratch_mb = None,
         contains_kernel = None,
@@ -102,6 +104,8 @@ def _new_vm_disk_from_package(
         package = package,
         interface = interface,
         subvol = subvol,
+        physical_block_size = physical_block_size,
+        logical_block_size = logical_block_size,
         additional_scratch_mb = additional_scratch_mb,
         contains_kernel = contains_kernel,
         serial = serial,
