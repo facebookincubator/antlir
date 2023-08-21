@@ -28,7 +28,10 @@ use clap::Subcommand;
 use image_test_lib::KvPair;
 use image_test_lib::Test;
 use json_arg::JsonFile;
+use tempfile::tempdir;
 use tracing::debug;
+use tracing_subscriber::filter::LevelFilter;
+use tracing_subscriber::prelude::*;
 
 use crate::isolation::default_passthrough_envs;
 use crate::isolation::is_isolated;
@@ -260,12 +263,26 @@ fn test_debug(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
     vm_args.inner.command = Some(["/bin/bash", "-l"].iter().map(OsString::from).collect());
     vm_args.inner.timeout_s = None;
-    // TODO: redirect console output to temp file and print help message for human
+    // Let's always capture console output if human is debugging
+    let _console_dir;
+    if vm_args.inner.console_output_file.is_none() {
+        let dir = tempdir().context("Failed to create temp dir for console output")?;
+        vm_args.inner.console_output_file = Some(dir.path().join("console.txt"));
+        _console_dir = dir;
+    }
     _test(args, &vm_args)
 }
 
 fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::fmt::Layer::default())
+        .with(
+            tracing_subscriber::EnvFilter::builder()
+                .with_default_directive(LevelFilter::INFO.into())
+                .from_env()
+                .expect("Invalid logging level set by env"),
+        )
+        .init();
     Platform::set()?;
 
     debug!("Args: {:?}", env::args());
