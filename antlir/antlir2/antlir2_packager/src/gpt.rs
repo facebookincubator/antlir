@@ -36,7 +36,6 @@ enum PartitionType {
 }
 
 #[derive(Debug, Copy, Clone, Default, Deserialize)]
-
 enum BlockSize {
     #[default]
     #[serde(rename = "512")]
