@@ -338,43 +338,35 @@ impl VM {
         start_ts: Instant,
         thread_handle: Option<JoinHandle<T>>,
     ) -> Result<()> {
-        if self.args.timeout_s.is_some() {
-            // Poll until either socket close or timeout. The buffer size is arbitrary,
-            // because we don't expect any data.
-            let mut buf = [0; 8];
-            socket
-                .set_nonblocking(true)
-                .map_err(|err| VMError::BootError {
-                    desc: "Failed to set non-blocking socket option",
-                    err,
-                })?;
-            while !self.time_left(start_ts)?.is_zero() {
-                if let Some(ref handle) = thread_handle {
-                    if handle.is_finished() {
-                        thread_handle
-                            .expect("Handle must exist here")
-                            .join()
-                            .map_err(|e| {
-                                VMError::RunError(format!("SSH command thread panic'ed: {:?}", e))
-                            })?;
-                        break;
-                    }
-                }
-                match socket.read(&mut buf) {
-                    Ok(0) => {
-                        debug!("Notify socket closed. VM exited");
-                        break;
-                    }
-                    Ok(_) => debug!("Received unexpected data from VM notify socket"),
-                    Err(_) => thread::sleep(Duration::from_secs(1)),
+        // Poll until either socket close or timeout. The buffer size is arbitrary,
+        // because we don't expect any data.
+        let mut buf = [0; 8];
+        socket
+            .set_nonblocking(true)
+            .map_err(|err| VMError::BootError {
+                desc: "Failed to set non-blocking socket option",
+                err,
+            })?;
+        while !self.time_left(start_ts)?.is_zero() {
+            if let Some(ref handle) = thread_handle {
+                if handle.is_finished() {
+                    thread_handle
+                        .expect("Handle must exist here")
+                        .join()
+                        .map_err(|e| {
+                            VMError::RunError(format!("SSH command thread panic'ed: {:?}", e))
+                        })?;
+                    break;
                 }
             }
-        } else {
-            // Block until socket close without timeout
-            let mut buf = Vec::new();
-            socket
-                .read_to_end(&mut buf)
-                .map_err(|e| VMError::RunError(format!("Failed to read socket: {}", e)))?;
+            match socket.read(&mut buf) {
+                Ok(0) => {
+                    debug!("Notify socket closed. VM exited");
+                    break;
+                }
+                Ok(_) => debug!("Received unexpected data from VM notify socket"),
+                Err(_) => thread::sleep(Duration::from_secs(1)),
+            }
         }
         Ok(())
     }
