@@ -117,7 +117,7 @@ def _new_package_rule(
 
 def _compressed_impl(
         ctx: AnalysisContext,
-        uncompressed: "rule",
+        uncompressed: typing.Callable,
         rule_attr_keys: list[str],
         compressor: str) -> list[Provider]:
     src = ctx.actions.artifact_promise(ctx.actions.anon_target(
@@ -169,7 +169,7 @@ def _compressed_impl(
 
 def _new_compressed_package_rule(
         compressor: str,
-        uncompressed: "rule",
+        uncompressed: typing.Callable,
         default_compression_level: int,
         rule_attrs: dict[str, "attribute"] = {}):
     return rule(
