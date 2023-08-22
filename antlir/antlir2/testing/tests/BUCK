@@ -32,7 +32,7 @@ image.layer(
             name = "test-cpp" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
             srcs = ["test.cpp"],
             boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else [],
+            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
             env = {
                 "ANTLIR2_TEST": "1",
                 "BOOT": str(boot),
@@ -44,7 +44,7 @@ image.layer(
             name = "test-py" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
             srcs = ["test.py"],
             boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else [],
+            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
             env = {
                 "ANTLIR2_TEST": "1",
                 "BOOT": str(boot),
@@ -55,7 +55,7 @@ image.layer(
             name = "test-rs" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
             srcs = ["test.rs"],
             boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else [],
+            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
             crate = "test_rs",
             crate_root = "test.rs",
             env = {
@@ -67,7 +67,7 @@ image.layer(
         image_sh_test(
             name = "test-sh" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
             boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else [],
+            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
             env = {
                 "ANTLIR2_TEST": "1",
                 "BOOT": str(boot),

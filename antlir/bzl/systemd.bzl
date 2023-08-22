@@ -207,6 +207,8 @@ def _install_impl(
         # Informational string that describes what is being installed. Prepended
         # to an error message on path verification failure.
         description,
+        # Remove an existing file that conflicts, if one exists
+        force = False,
         use_antlir2 = False):
     # We haven't been provided an explicit dest so let's try and derive one from the
     # source
@@ -235,24 +237,35 @@ def _install_impl(
     _assert_unit_suffix(dest)
 
     if use_antlir2:
-        return antlir2_feature.install(
-            src = source,
-            dst = paths.join(install_root, dest),
-        )
+        return [
+            antlir2_feature.install(
+                src = source,
+                dst = paths.join(install_root, dest),
+            ),
+        ] + ([antlir2_feature.remove(
+            path = paths.join(install_root, dest),
+            must_exist = False,
+        )] if force else [])
 
     # the rest of this function is Antlir1 code
-    return antlir1_feature.install(
+    return [antlir1_feature.install(
         source,
         paths.join(install_root, dest),
-    )
+    )] + ([
+        antlir1_feature.remove(
+            paths.join(install_root, dest),
+            must_exist = False,
+        ),
+    ] if force else [])
 
 # Image feature to install a system unit
 def _install_unit(
         source,
         dest = None,
         install_root = PROVIDER_ROOT,
+        force = False,
         use_antlir2 = False):
-    return _install_impl(source, dest, install_root, "Install System Unit", use_antlir2 = use_antlir2)
+    return _install_impl(source, dest, install_root, "Install System Unit", force = force, use_antlir2 = use_antlir2)
 
 # Image feature to install a user unit
 def _install_user_unit(

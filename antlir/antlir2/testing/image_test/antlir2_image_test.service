@@ -1,0 +1,19 @@
+# Unit that runs the booted unit test. This is heavily re-configured by a
+# drop-in that inserts the command, env vars, cwd, and any other things that can
+# only be determined at runtime
+[Unit]
+DefaultDependencies=no
+# Exit the container as soon as this test is done, using the exit code of the
+# process
+SuccessAction=exit-force
+FailureAction=exit-force
+
+[Service]
+# Having Type=simple will not cause a test that waits for `systemctl
+# is-system-running` to stall until the test itself is done (which would never
+# happen). {Failure,Success}Action are still respected when the test process
+# exits either way.
+Type=simple
+Environment=USER=%u
+StandardOutput=truncate:/antlir2/test_stdout
+StandardError=truncate:/antlir2/test_stderr
