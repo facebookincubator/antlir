@@ -54,10 +54,20 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         common_args,
     )
 
+    # Show console output and drop to console prompt. This is intended for
+    # initrd tests that don't boot an OS.
+    console_cmd = cmd_args(
+        cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
+        "test-debug",
+        "--console",
+        common_args,
+    )
+
     return [
         DefaultInfo(
             test_script,
             sub_targets = {
+                "console": [DefaultInfo(test_script), RunInfo(console_cmd)],
                 "shell": [DefaultInfo(test_script), RunInfo(shell_cmd)],
             },
         ),
@@ -85,10 +95,7 @@ _vm_test = rule(
             attrs.list(attrs.string(), default = []),
             default = None,
         ),
-        "timeout_s": attrs.int(
-            default = 300,
-            doc = "total allowed execution time for the test",
-        ),
+        "timeout_s": attrs.int(doc = "total allowed execution time for the test"),
         "vm_host": attrs.dep(providers = [VMHostInfo], doc = "VM host target for the test"),
     },
 )
@@ -99,6 +106,7 @@ def _implicit_vm_test(
         test_rule,
         name: str,
         vm_host: str,
+        timeout_s: int = 300,
         labels: list[str] | None = None,
         _add_outer_labels: list[str] = [],
         **kwargs):
@@ -123,6 +131,7 @@ def _implicit_vm_test(
         test = ":" + inner_test_name,
         test_labels = labels + [special_tags.enable_artifact_reporting],
         vm_host = vm_host,
+        timeout_s = timeout_s,
         # VM is not ready for other arch yet
         compatible_with = ["ovr_config//cpu:x86_64"],
     )
