@@ -265,7 +265,7 @@ fn test_debug(args: &IsolateCmdArgs) -> Result<()> {
     vm_args.inner.timeout_s = None;
     // Let's always capture console output if human is debugging
     let _console_dir;
-    if vm_args.inner.console_output_file.is_none() {
+    if !vm_args.inner.console && vm_args.inner.console_output_file.is_none() {
         let dir = tempdir().context("Failed to create temp dir for console output")?;
         vm_args.inner.console_output_file = Some(dir.path().join("console.txt"));
         _console_dir = dir;
