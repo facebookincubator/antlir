@@ -11,10 +11,22 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:systemd.bzl", "systemd")
 
 HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
+def _default_list(maybe_value: list[str] | None, default: list[str]) -> list[str]:
+    if maybe_value == None:
+        return default
+    return maybe_value
+
 def _impl(ctx: AnalysisContext) -> list[Provider]:
+    if not ctx.attrs.boot and (ctx.attrs.boot_requires_units or ctx.attrs.boot_after_units):
+        fail("boot=False cannot be combined with boot_{requires,after}_units")
+
+    boot_requires_units = _default_list(ctx.attrs.boot_requires_units, default = ["sysinit.target"])
+    boot_after_units = _default_list(ctx.attrs.boot_after_units, default = ["sysinit.target", "basic.target"])
+
     mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
 
     test_cmd = cmd_args(
@@ -22,7 +34,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
         cmd_args("--boot") if ctx.attrs.boot else cmd_args(),
-        cmd_args(ctx.attrs.boot_requires_units, format = "--requires-unit={}"),
+        cmd_args(boot_requires_units, format = "--requires-unit={}") if ctx.attrs.boot else cmd_args(),
+        cmd_args(boot_after_units, format = "--after-unit={}") if ctx.attrs.boot else cmd_args(),
         cmd_args(["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()], format = "--setenv={}"),
         cmd_args(mounts, format = "--mounts={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
@@ -66,10 +79,19 @@ _image_test = rule(
             default = False,
             doc = "boot the container with /init as pid1 before running the test",
         ),
-        "boot_requires_units": attrs.list(
-            attrs.string(),
-            default = [],
-            doc = "delay running the test until all of the given systemd units have started successfully",
+        "boot_after_units": attrs.option(
+            attrs.list(
+                attrs.string(),
+            ),
+            default = None,
+            doc = "Add an After= requirement on these units to the test",
+        ),
+        "boot_requires_units": attrs.option(
+            attrs.list(
+                attrs.string(),
+            ),
+            default = None,
+            doc = "Add a Requires= and After= requirement on these units to the test",
         ),
         "image_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_test:image-test")),
         "labels": attrs.list(attrs.string(), default = []),
@@ -92,7 +114,8 @@ def _implicit_image_test(
         run_as_user: str | None = None,
         labels: list[str] | None = None,
         boot: bool = False,
-        boot_requires_units: list[str] = [],
+        boot_requires_units: [list[str], None] = None,
+        boot_after_units: [list[str], None] = None,
         _add_outer_labels: list[str] = [],
         **kwargs):
     test_rule(
@@ -107,6 +130,19 @@ def _implicit_image_test(
     # @oss-disable
         # @oss-disable
 
+    if boot:
+        image.layer(
+            name = "{}--bootable-layer".format(name),
+            parent_layer = layer,
+            features = [
+                systemd.install_unit(
+                    "//antlir/antlir2/testing/image_test:antlir2_image_test.service",
+                    force = True,
+                ),
+            ],
+        )
+        layer = ":{}--bootable-layer".format(name)
+
     image_test(
         name = name,
         layer = layer,
@@ -115,6 +151,7 @@ def _implicit_image_test(
         labels = labels + [special_tags.enable_artifact_reporting],
         boot = boot,
         boot_requires_units = boot_requires_units,
+        boot_after_units = boot_after_units,
     )
 
 image_cpp_test = partial(

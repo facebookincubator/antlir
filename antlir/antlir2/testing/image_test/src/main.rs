@@ -16,10 +16,12 @@ use std::os::unix::ffi::OsStrExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
+use std::process::Command;
 
 use antlir2_isolate::isolate;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
+use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -29,6 +31,7 @@ use json_arg::JsonFile;
 use mount::Mount;
 use tempfile::NamedTempFile;
 use tracing::debug;
+use tracing::trace;
 use tracing_subscriber::prelude::*;
 
 fn make_log_files(_base: &str) -> Result<(NamedTempFile, NamedTempFile)> {
@@ -50,6 +53,9 @@ struct Args {
     #[clap(long = "requires-unit", requires = "boot")]
     /// Add Requires= and After= dependencies on these units
     requires_units: Vec<String>,
+    #[clap(long = "after-unit", requires = "boot")]
+    /// Add an After= dependency on these units
+    after_units: Vec<String>,
     #[clap(long)]
     /// Set these env vars in the test environment
     setenv: Vec<KvPair>,
@@ -132,6 +138,7 @@ fn main() -> Result<()> {
             })
             .collect::<HashMap<_, _>>(),
     );
+    ctx.setenv(("ANTLIR2_IMAGE_TEST", "1"));
 
     // XARs need /dev/fuse to run. Ideally we could just have this created
     // inside the container. Until
@@ -142,110 +149,93 @@ fn main() -> Result<()> {
     }
 
     if args.boot {
-        // Mark the kernel-command-line.service unit as being Type=simple so
-        // that the boot graph is considered complete as soon as it starts the
-        // test.
-        let mut dropin = NamedTempFile::new()?;
-        writeln!(dropin, "[Unit]")?;
-        // do not exit the container until the test itself is done
-        writeln!(dropin, "SuccessAction=none")?;
-        // if, however, kernel-command-line.service fails to even start the
-        // test, exit immediately
-        writeln!(dropin, "FailureAction=exit-force")?;
-        writeln!(dropin, "[Service]")?;
-        writeln!(dropin, "Type=simple")?;
-        // kernel-command-line.service will just start the
-        // antlir2_image_test.service unit that is created below. That unit has {Failure,Success}Action
-        let systemd_run_arg = "systemd.run=\"systemctl start antlir2_image_test.service\"";
-        ctx.inputs((
-            Path::new("/run/systemd/system/kernel-command-line.service.d/antlir2.conf"),
-            dropin.path(),
-        ));
-
-        // If we drop into emergency.target, we still want the test to run.
-        // To prevent this behavior, set boot_requires_units to sysinit.target.
-        let mut dropin = NamedTempFile::new()?;
-        writeln!(dropin, "[Unit]")?;
-        writeln!(dropin, "Requires=antlir2_image_test.service")?;
-        ctx.inputs((
-            Path::new("/run/systemd/system/emergency.service.d/antlir2.conf"),
-            dropin.path(),
-        ));
-
         let container_stdout = container_stdout_file()?;
         let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
 
-        let mut test_unit = NamedTempFile::new()?;
-        writeln!(test_unit, "[Unit]")?;
-        writeln!(test_unit, "DefaultDependencies=no")?;
-        // exit the container as soon as this test is done, using the exit code
-        // of the process
-        writeln!(test_unit, "SuccessAction=exit-force")?;
-        writeln!(test_unit, "FailureAction=exit-force")?;
+        let mut test_unit_dropin = NamedTempFile::new()?;
+        writeln!(test_unit_dropin, "[Unit]")?;
+
+        // If a test requires default.target, it really wants the _real_
+        // default.target, not the test itself which becomes default.target when
+        // we pass systemd.unit=
+        let res = Command::new("systemctl")
+            .arg("get-default")
+            .arg("--root")
+            .arg(&args.layer)
+            .output()
+            .context("while running systemctl get-default")?;
+        ensure!(
+            res.status.success(),
+            "systemctl get-default failed: {}",
+            String::from_utf8_lossy(&res.stderr)
+        );
+        let default_target = std::str::from_utf8(&res.stdout)
+            .context("systemctl get-default returned invalid utf8")?
+            .trim();
+        trace!("default target was {default_target}");
+
         for unit in &args.requires_units {
-            writeln!(test_unit, "After={unit}")?;
-            writeln!(test_unit, "Requires={unit}")?;
+            let unit = match unit.as_str() {
+                "default.target" => default_target,
+                unit => unit,
+            };
+            writeln!(test_unit_dropin, "Requires={unit}")?;
+        }
+        for unit in args.requires_units.iter().chain(&args.after_units) {
+            let unit = match unit.as_str() {
+                "default.target" => default_target,
+                unit => unit,
+            };
+            writeln!(test_unit_dropin, "After={unit}")?;
         }
 
-        writeln!(test_unit, "[Service]")?;
-        // Having Type=simple will not cause a test that waits for `systemctl
-        // is-system-running` to stall until the test itself is done (which
-        // would never happen). {Failure,Success}Action are still respected when
-        // the test process exits either way.
-        writeln!(test_unit, "Type=simple")?;
+        writeln!(test_unit_dropin, "[Service]")?;
 
-        write!(test_unit, "WorkingDirectory=")?;
+        write!(test_unit_dropin, "WorkingDirectory=")?;
         let cwd = std::env::current_dir().context("while getting cwd")?;
-        test_unit.write_all(cwd.as_os_str().as_bytes())?;
-        test_unit.write_all(b"\n")?;
+        test_unit_dropin.write_all(cwd.as_os_str().as_bytes())?;
+        test_unit_dropin.write_all(b"\n")?;
 
-        write!(test_unit, "ExecStart=")?;
+        write!(test_unit_dropin, "ExecStart=")?;
         let mut iter = args.test.into_inner_cmd().into_iter().peekable();
         if let Some(exe) = iter.next() {
             let realpath = std::fs::canonicalize(&exe)
                 .with_context(|| format!("while getting absolute path of {exe:?}"))?;
-            test_unit.write_all(realpath.as_os_str().as_bytes())?;
+            test_unit_dropin.write_all(realpath.as_os_str().as_bytes())?;
             if iter.peek().is_some() {
-                test_unit.write_all(b" ")?;
+                test_unit_dropin.write_all(b" ")?;
             }
         }
         while let Some(arg) = iter.next() {
-            test_unit.write_all(arg.as_os_str().as_bytes())?;
+            test_unit_dropin.write_all(arg.as_os_str().as_bytes())?;
             if iter.peek().is_some() {
-                test_unit.write_all(b" ")?;
+                test_unit_dropin.write_all(b" ")?;
             }
         }
-        test_unit.write_all(b"\n")?;
-
-        // wire the test output to the parent process's std{out,err}
-        write!(test_unit, "StandardOutput=truncate:")?;
-        test_unit.write_all(test_stdout.path().as_os_str().as_bytes())?;
-        test_unit.write_all(b"\n")?;
-        write!(test_unit, "StandardError=truncate:")?;
-        test_unit.write_all(test_stderr.path().as_os_str().as_bytes())?;
-        test_unit.write_all(b"\n")?;
-
-        writeln!(test_unit, "Environment=USER=%u")?;
+        test_unit_dropin.write_all(b"\n")?;
 
         for (key, val) in &setenv {
-            write!(test_unit, "Environment=\"{key}=")?;
-            test_unit.write_all(val.as_bytes())?;
-            writeln!(test_unit, "\"")?;
+            write!(test_unit_dropin, "Environment=\"{key}=")?;
+            test_unit_dropin.write_all(val.as_bytes())?;
+            writeln!(test_unit_dropin, "\"")?;
         }
         // forward test runner env vars to the inner test
         for (key, val) in std::env::vars() {
             if key.starts_with("TEST_PILOT") {
-                writeln!(test_unit, "Environment=\"{key}={val}\"")?;
+                writeln!(test_unit_dropin, "Environment=\"{key}={val}\"")?;
             }
         }
-        ctx.outputs(test_stdout.path());
-        ctx.outputs(test_stderr.path());
+        // wire the test output to the parent process's std{out,err}
+        ctx.outputs(HashMap::from([
+            (Path::new("/antlir2/test_stdout"), test_stdout.path()),
+            (Path::new("/antlir2/test_stderr"), test_stderr.path()),
+        ]));
         ctx.inputs((
-            Path::new("/run/systemd/system/antlir2_image_test.service"),
-            test_unit.path(),
+            Path::new("/run/systemd/system/antlir2_image_test.service.d/runtime.conf"),
+            test_unit_dropin.path(),
         ));
 
-        let mut isol = isolate(ctx.build())?.command(systemd_run_arg)?;
+        let mut isol = isolate(ctx.build())?.command("systemd.unit=antlir2_image_test.service")?;
         isol.arg("systemd.journald.forward_to_console=1")
             .arg("systemd.log_time=1");
         debug!("executing test in booted isolated container: {isol:?}");

@@ -17,7 +17,8 @@ def image_rust_unittest(
         container_opts = None,
         visibility = None,
         antlir2 = None,
-        antlir2_requires_units = [],
+        antlir2_requires_units = None,
+        antlir2_after_units = None,
         **rust_unittest_kwargs):
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,
@@ -69,9 +70,10 @@ def image_rust_unittest(
                 layer = layer + ".antlir2",
                 boot = boot,
                 run_as_user = run_as_user,
-                boot_requires_units = (
+                boot_requires_units = ((
                     ["dbus.socket"] if (boot and wrapper_props.container_opts.boot_await_dbus) else []
-                ) + antlir2_requires_units,
+                ) + (antlir2_requires_units or [])) if (boot and wrapper_props.container_opts.boot_await_dbus) else antlir2_requires_units,
+                boot_after_units = antlir2_after_units,
                 crate = rust_unittest_kwargs.pop("crate", name + "_unittest"),
                 **rust_unittest_kwargs
             )

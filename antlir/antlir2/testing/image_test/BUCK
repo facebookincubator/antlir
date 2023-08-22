@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "export_file", "rust_binary", "rust_library")
 
 rust_library(
     name = "image_test_lib",
@@ -29,4 +29,9 @@ rust_binary(
         "//antlir/filesystem/absolute_path:absolute_path",
         "//antlir/util/cli/json_arg:json_arg",
     ],
+)
+
+export_file(
+    name = "antlir2_image_test.service",
+    visibility = ["PUBLIC"],
 )
