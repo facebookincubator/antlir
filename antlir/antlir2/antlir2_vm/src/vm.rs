@@ -211,7 +211,7 @@ impl VM {
     /// If timeout is specified, returns time until timeout, or TimeOutError
     /// if already timed out.
     fn time_left(&self, start_ts: Instant) -> Result<Duration> {
-        match self.args.timeout_s {
+        match self.args.timeout_secs {
             Some(timeout) => {
                 let elapsed = Instant::now()
                     .checked_duration_since(start_ts)
@@ -443,7 +443,7 @@ impl VM {
 
         // Wait for boot notify message. We expect "READY" message once VM boots
         debug!("Waiting for boot notify message");
-        if self.args.timeout_s.is_some() {
+        if self.args.timeout_secs.is_some() {
             socket
                 .set_read_timeout(Some(self.time_left(start_ts)?))
                 .map_err(|err| VMError::BootError {
@@ -666,10 +666,10 @@ mod test {
         );
 
         // with timeout
-        vm.args.timeout_s = Some(60);
+        vm.args.timeout_secs = Some(60);
         let start_ts = Instant::now();
         assert!(vm.time_left(start_ts).expect("Unexpected timeout") > Duration::from_secs(1));
-        vm.args.timeout_s = Some(1);
+        vm.args.timeout_secs = Some(1);
         thread::sleep(Duration::from_secs(1));
         assert!(vm.time_left(start_ts).is_err());
     }
@@ -695,7 +695,7 @@ mod test {
     fn test_wait_for_timeout_without_command() {
         // Terminate after timeout
         let mut vm = get_vm_no_disk();
-        vm.args.timeout_s = Some(3);
+        vm.args.timeout_secs = Some(3);
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
@@ -711,7 +711,7 @@ mod test {
 
         // Terminate before timeout due to closed socket
         let mut vm = get_vm_no_disk();
-        vm.args.timeout_s = Some(10);
+        vm.args.timeout_secs = Some(10);
         let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
@@ -729,7 +729,7 @@ mod test {
 
         // Without timeout
         let mut vm = get_vm_no_disk();
-        vm.args.timeout_s = None;
+        vm.args.timeout_secs = None;
         let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let handle = thread::spawn(move || {
             assert!(
@@ -748,7 +748,7 @@ mod test {
     fn test_wait_for_timeout_with_command() {
         // Command finished before timeout.
         let mut vm = get_vm_no_disk();
-        vm.args.timeout_s = Some(10);
+        vm.args.timeout_secs = Some(10);
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_secs(3));
@@ -768,7 +768,7 @@ mod test {
 
         // Command exceeded timeout.
         let mut vm = get_vm_no_disk();
-        vm.args.timeout_s = Some(3);
+        vm.args.timeout_secs = Some(3);
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_secs(5));
@@ -787,7 +787,7 @@ mod test {
     #[test]
     fn test_run_ssh_cmd_and_wait() {
         let mut vm = get_vm_no_disk();
-        vm.args.timeout_s = Some(1);
+        vm.args.timeout_secs = Some(1);
 
         // timeout
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
@@ -799,7 +799,7 @@ mod test {
         );
 
         // successful completion
-        vm.args.timeout_s = Some(5);
+        vm.args.timeout_secs = Some(5);
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let command = Command::new("exit");
         assert!(
