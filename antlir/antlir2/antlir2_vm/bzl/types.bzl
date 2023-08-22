@@ -6,7 +6,7 @@
 # Describes a writable disk for the VM. It can be built from some base image, or
 # start empty with a specified size.
 DiskInfo = provider(fields = {
-    "additional_size_mib": "Grow the disk by specified size",
+    "additional_mib": "Grow the disk by specified size",
     "base_image": "Base image for the disk. If None, the disk will be empty",
     "bootable": "True if the disk is bootable",
     "interface": "Interface of the disk",

@@ -8,15 +8,15 @@ load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "DiskInfo")
 
 def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
-    if not ctx.attrs.base_image and ctx.attrs.additional_size_mib <= 0:
+    if not ctx.attrs.base_image and ctx.attrs.additional_mib <= 0:
         fail(
-            "Either base_image or additional_size_mib must be set. \
+            "Either base_image or additional_mib must be set. \
             An empty disk of zero size is invalid.",
         )
     return [
         DiskInfo(
             base_image = ctx.attrs.base_image[DefaultInfo].default_outputs[0],
-            additional_size_mib = ctx.attrs.additional_size_mib,
+            additional_mib = ctx.attrs.additional_mib,
             interface = ctx.attrs.interface,
             logical_block_size = ctx.attrs.logical_block_size,
             physical_block_size = ctx.attrs.physical_block_size,
@@ -30,7 +30,7 @@ def _disk_impl(ctx: AnalysisContext) -> list[Provider]:
 _vm_disk = rule(
     impl = _disk_impl,
     attrs = {
-        "additional_size_mib": attrs.int(
+        "additional_mib": attrs.int(
             default = 0,
             doc = "Additional free disk space in MiB",
         ),
@@ -58,7 +58,7 @@ vm_disk = rule_with_default_target_platform(_vm_disk)
 def _create_disk_from_package(
         name: str,
         image: str,
-        additional_size_mib: int = 0,
+        additional_mib: int = 0,
         bootable: bool = False,
         interface: str = "virtio-blk",
         logical_block_size: int = 512,
@@ -68,14 +68,14 @@ def _create_disk_from_package(
     """This functions take image targets and wrap them with desired properties
     to create a VM disk target that can be used by VM. `image` is expected to
     be in a disk file format that can be directly consumed by qemu. It will be
-    optionally expanded by `additional_size_mib` if requested. The rule here
-    does not change the images themselves, but supply other parameters that
-    could affect how the disk image is used by the VM.  """
+    optionally expanded by `additional_mib` if requested. The rule here does
+    not change the images themselves, but supply other parameters that could
+    affect how the disk image is used by the VM.  """
     vm_disk(
         name = name,
         base_image = image,
         bootable = bootable,
-        additional_size_mib = additional_size_mib,
+        additional_mib = additional_mib,
         interface = interface,
         logical_block_size = logical_block_size,
         physical_block_size = physical_block_size,
@@ -95,7 +95,7 @@ def _create_empty_disk(
     _create_disk_from_package(
         name = name,
         image = antlir_dep(":empty"),
-        additional_size_mib = size_mib,
+        additional_mib = size_mib,
         bootable = False,
         interface = interface,
         logical_block_size = logical_block_size,

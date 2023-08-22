@@ -79,19 +79,21 @@ impl QCow2Disk {
             ))?;
 
         if let Some(size) = self.opts.additional_mib {
-            log_command(
-                Command::new(&get_runtime().qemu_img)
-                    .arg("resize")
-                    .arg(self.disk_file_name().as_os_str())
-                    .arg(&format!("+{}M", size)),
-            )
-            .status()
-            .map_err(|e| QCow2DiskError::DiskUpsizeError(e.to_string()))?
-            .success()
-            .then_some(())
-            .ok_or(QCow2DiskError::DiskUpsizeError(
-                "qemu-img failed".to_string(),
-            ))?;
+            if size != 0 {
+                log_command(
+                    Command::new(&get_runtime().qemu_img)
+                        .arg("resize")
+                        .arg(self.disk_file_name().as_os_str())
+                        .arg(&format!("+{}M", size)),
+                )
+                .status()
+                .map_err(|e| QCow2DiskError::DiskUpsizeError(e.to_string()))?
+                .success()
+                .then_some(())
+                .ok_or(QCow2DiskError::DiskUpsizeError(
+                    "qemu-img failed".to_string(),
+                ))?;
+            }
         }
 
         debug!(
