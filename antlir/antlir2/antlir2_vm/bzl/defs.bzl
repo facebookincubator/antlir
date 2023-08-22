@@ -47,7 +47,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
             "disks": [d[DiskInfo] for d in disks],
             "mem_mib": ctx.attrs.mem_mib,
             "non_disk_boot_opts": {
-                "append": "",
+                "append": ctx.attrs.append or "",
                 "initrd": ctx.attrs.initrd,
                 "kernel": ctx.attrs.kernel,
             } if ctx.attrs.initrd else None,
@@ -126,6 +126,11 @@ _vm_host = rule(
         "mem_mib": attrs.int(default = 4096, doc = "memory size in MiB"),
         "num_nics": attrs.int(default = 1),
     } | {
+        "append": attrs.option(
+            attrs.string(),
+            default = None,
+            doc = "additional kernel command line parameter",
+        ),
         # Non-hardware parameters for the VM
         "initrd": attrs.option(
             attrs.source(),
