@@ -67,7 +67,7 @@ pub(crate) struct VMArgs {
     /// timeout, which should only be used for interactive shells for
     /// development.
     #[clap(long)]
-    pub(crate) timeout_s: Option<u32>,
+    pub(crate) timeout_secs: Option<u32>,
     /// Drop into console prompt instead of opening ssh shell or executing the
     /// `command`. This also enables console output on screen, unless
     /// `--console-output-file` is specified.
@@ -92,9 +92,9 @@ impl VMArgs {
     /// the same content as `self`.
     pub(crate) fn to_args(&self) -> Vec<OsString> {
         let mut args: Vec<OsString> = Vec::new();
-        if let Some(timeout_s) = &self.timeout_s {
-            args.push("--timeout-s".into());
-            args.push(timeout_s.to_string().into());
+        if let Some(timeout_secs) = &self.timeout_secs {
+            args.push("--timeout-secs".into());
+            args.push(timeout_secs.to_string().into());
         }
         if self.console {
             args.push("--console".into());
@@ -188,7 +188,7 @@ mod test {
             vec!["bin"],
             vec!["bin", "--console"],
             vec!["bin", "--console-output-file", "/path/to/out"],
-            vec!["bin", "--timeout-s", "10"],
+            vec!["bin", "--timeout-secs", "10"],
             vec!["bin", "--output-dirs", "/foo", "--output-dirs", "/bar"],
             vec![
                 "bin",

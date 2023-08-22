@@ -84,10 +84,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(machine_json_args, format = "--machine-spec={}"),
         cmd_args(runtime_json_args, format = "--runtime-spec={}"),
     )
-    if ctx.attrs.timeout_s:
+    if ctx.attrs.timeout_secs:
         run_cmd = cmd_args(
             run_cmd,
-            cmd_args(str(ctx.attrs.timeout_s), format = "--timeout-s={}"),
+            cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
         )
 
     run_script, _ = ctx.actions.write(
@@ -147,7 +147,7 @@ _vm_host = rule(
             default = [],
             doc = "list of commands to spawn outside VM that VM can communicate with",
         ),
-        "timeout_s": attrs.int(
+        "timeout_secs": attrs.int(
             default = 300,
             doc = "total allowed execution time for the VM",
         ),

@@ -22,7 +22,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].runtime_spec, format = "--runtime-spec={}"),
-        cmd_args(str(ctx.attrs.timeout_s), format = "--timeout-s={}"),
+        cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
         cmd_args(
             ["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()],
             format = "--setenv={}",
@@ -95,7 +95,7 @@ _vm_test = rule(
             attrs.list(attrs.string(), default = []),
             default = None,
         ),
-        "timeout_s": attrs.int(doc = "total allowed execution time for the test"),
+        "timeout_secs": attrs.int(doc = "total allowed execution time for the test"),
         "vm_host": attrs.dep(providers = [VMHostInfo], doc = "VM host target for the test"),
     },
 )
@@ -106,7 +106,7 @@ def _implicit_vm_test(
         test_rule,
         name: str,
         vm_host: str,
-        timeout_s: int = 300,
+        timeout_secs: int = 300,
         labels: list[str] | None = None,
         _add_outer_labels: list[str] = [],
         **kwargs):
@@ -131,7 +131,7 @@ def _implicit_vm_test(
         test = ":" + inner_test_name,
         test_labels = labels + [special_tags.enable_artifact_reporting],
         vm_host = vm_host,
-        timeout_s = timeout_s,
+        timeout_secs = timeout_secs,
         # VM is not ready for other arch yet
         compatible_with = ["ovr_config//cpu:x86_64"],
     )

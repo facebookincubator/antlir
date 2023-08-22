@@ -157,8 +157,8 @@ struct ValidatedVMArgs {
 /// Further validate `VMArgs` parsed by clap and generate a new `VMArgs` with
 /// content specific to test execution.
 fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<ValidatedVMArgs> {
-    if orig_args.timeout_s.is_none() {
-        return Err(anyhow!("Test command must specify --timeout-s."));
+    if orig_args.timeout_secs.is_none() {
+        return Err(anyhow!("Test command must specify --timeout-secs."));
     }
     if !orig_args.output_dirs.is_empty() {
         return Err(anyhow!(
@@ -262,7 +262,7 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
 fn test_debug(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
     vm_args.inner.command = Some(["/bin/bash", "-l"].iter().map(OsString::from).collect());
-    vm_args.inner.timeout_s = None;
+    vm_args.inner.timeout_secs = None;
     // Let's always capture console output if human is debugging
     let _console_dir;
     if !vm_args.inner.console && vm_args.inner.console_output_file.is_none() {
@@ -318,7 +318,7 @@ mod test {
     #[test]
     fn test_get_test_vm_args() {
         let valid = VMArgs {
-            timeout_s: Some(1),
+            timeout_secs: Some(1),
             command: Some(["custom", "whatever"].iter().map(OsString::from).collect()),
             ..Default::default()
         };
@@ -330,7 +330,7 @@ mod test {
         assert!(!parsed.is_list);
 
         let mut timeout = valid.clone();
-        timeout.timeout_s = None;
+        timeout.timeout_secs = None;
         assert!(get_test_vm_args(&timeout, &empty_env).is_err());
 
         let mut output_dirs = valid.clone();
