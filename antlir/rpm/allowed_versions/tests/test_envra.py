@@ -26,15 +26,15 @@ class EnvraTestCase(TestCase):
 
     def test_repr(self) -> None:
         e = SortableENVRA(epoch=0, name="n", version="v", release="r", arch="a")
-        self.assertEqual(str(e), "0:n-v-r-a")
+        self.assertEqual(str(e), "0:n-v-r.a")
         epoch_none = SortableENVRA(
             epoch=None, name="n", version="v", release="r", arch="a"
         )
-        self.assertEqual(str(epoch_none), "*:n-v-r-a")
+        self.assertEqual(str(epoch_none), "*:n-v-r.a")
         name_none = SortableENVRA(
             epoch=0, name=None, version="v", release="r", arch="a"
         )
-        self.assertEqual(str(name_none), "0:*-v-r-a")
+        self.assertEqual(str(name_none), "0:*-v-r.a")
         arch_none = SortableENVRA(
             epoch=0,
             name="n",
@@ -43,7 +43,7 @@ class EnvraTestCase(TestCase):
             # pyre-fixme[6]: For 5th param expected `str` but got `None`.
             arch=None,
         )
-        self.assertEqual(str(arch_none), "0:n-v-r-*")
+        self.assertEqual(str(arch_none), "0:n-v-r.*")
 
     def test_to_versionlock_line_raise(self) -> None:
         epoch_none = SortableENVRA(
