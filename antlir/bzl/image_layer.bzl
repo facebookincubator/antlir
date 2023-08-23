@@ -117,6 +117,9 @@ def image_layer(
         flavor_config_override: _FLAVOR_CONFIG_OVERRIDE_T = None,
         antlir_rule: _ANTLIR_RULE_T = types.antlir_rule("user-internal"),
         antlir2_compatible_with = None,
+        antlir2_features = [],
+        antlir1_features = [],
+        antlir2_allow_ignored_flavor_config_override: bool = False,
         **image_layer_kwargs):
     """
     Arguments
@@ -141,11 +144,13 @@ def image_layer(
     """
     if antlir2_shim.should_make_parallel_layer(image_layer_kwargs.pop("antlir2", None), flavor = flavor):
         if is_buck2():
+            if not antlir2_allow_ignored_flavor_config_override and flavor_config_override:
+                fail("antlir2 does not support flavor_config_override: {}".format(flavor_config_override))
             antlir2_image.layer(
                 name = name + ".antlir2",
                 parent_layer = parent_layer + ".antlir2" if parent_layer else None,
                 flavor = flavor,
-                features = features or [],
+                features = (features or []) + antlir2_features,
                 implicit_antlir2 = True,
                 compatible_with = antlir2_compatible_with,
                 visibility = get_visibility(image_layer_kwargs.get("visibility")),
@@ -162,7 +167,7 @@ def image_layer(
         name = name,
         current_target = normalize_target(":" + name),
         parent_layer = parent_layer,
-        features = features,
+        features = (features or []) + antlir1_features,
         extra_deps = extra_deps,
         flavor = flavor,
         flavor_config_override = flavor_config_override,
