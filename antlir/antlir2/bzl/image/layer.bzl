@@ -81,6 +81,16 @@ def _nspawn_sub_target(nspawn_binary: Dependency, subvol: Artifact, mounts: list
         )),
     ]
 
+def _implicit_image_test(subvol: Artifact, implicit_image_test: ExternalRunnerTestInfo.type) -> ExternalRunnerTestInfo.type:
+    implicit_image_test = ExternalRunnerTestInfo(
+        type = implicit_image_test.test_type,
+        command = implicit_image_test.command,
+        env = (implicit_image_test.env or {}) | {"ANTLIR2_LAYER": subvol},
+        labels = [],
+        run_from_project_root = True,
+    )
+    return implicit_image_test
+
 def _impl(ctx: AnalysisContext) -> "promise":
     if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
         fail("'flavor' must be set if there is no 'parent_layer'")
@@ -366,7 +376,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
     sub_targets["nspawn"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
-    return [
+    providers = [
         LayerInfo(
             build_appliance = build_appliance,
             depgraph = final_depgraph,
@@ -380,6 +390,12 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
         ),
         DefaultInfo(final_subvol, sub_targets = sub_targets),
     ]
+
+    if ctx.attrs._implicit_image_test:
+        providers.append(
+            _implicit_image_test(final_subvol, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
+        )
+    return providers
 
 _layer_attrs = {
     "antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
@@ -428,6 +444,10 @@ _layer_attrs = {
     "target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),
+    "_implicit_image_test": attrs.option(
+        attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
+        default = None,
+    ),
     "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
     "_run_nspawn": attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn"),
 }
@@ -496,5 +516,6 @@ def layer(
     return layer_rule(
         name = name,
         visibility = get_visibility(visibility),
+        _implicit_image_test = "//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
         **kwargs
     )

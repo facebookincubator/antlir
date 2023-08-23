@@ -1,0 +1,9 @@
+load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
+load("//antlir/bzl:build_defs.bzl", "rust_unittest")
+
+rust_unittest(
+    name = "implicit_image_test",
+    srcs = glob(["src/**/*.rs"]),
+    labels = HIDE_TEST_LABELS,
+    visibility = ["PUBLIC"],
+)
