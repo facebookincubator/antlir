@@ -121,7 +121,7 @@ class SortableENVRA(NamedTuple):
         epoch = "*" if self.epoch is None else self.epoch
         name = "*" if self.name is None else self.name
         arch = "*" if self.arch is None else self.arch
-        return f"{epoch}:{name}-{self.version}-{self.release}-{arch}"
+        return f"{epoch}:{name}-{self.version}-{self.release}.{arch}"
 
 
 # As a type-hint, this alias represents the fact that the `name` must be
