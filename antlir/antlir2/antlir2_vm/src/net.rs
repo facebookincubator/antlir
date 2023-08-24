@@ -83,7 +83,7 @@ impl VirtualNIC {
 
     /// MAC needs to be predicatable so the VM can pre-configure its network.
     /// The MAC address is formatted `self.id`.
-    fn guest_mac(&self) -> String {
+    pub(crate) fn guest_mac(&self) -> String {
         format!("{:012x}", self.id + 1)
             .split("")
             .filter(|x| !x.is_empty())
