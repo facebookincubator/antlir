@@ -68,11 +68,6 @@ pub(crate) struct VMArgs {
     /// development.
     #[clap(long)]
     pub(crate) timeout_secs: Option<u32>,
-    /// Drop into console prompt instead of opening ssh shell or executing the
-    /// `command`. This also enables console output on screen, unless
-    /// `--console-output-file` is specified.
-    #[clap(long)]
-    pub(crate) console: bool,
     /// Redirect console output to file. By default it's suppressed.
     #[clap(long)]
     pub(crate) console_output_file: Option<PathBuf>,
@@ -82,7 +77,21 @@ pub(crate) struct VMArgs {
     /// Environment variables for the command
     #[clap(long)]
     pub(crate) command_envs: Vec<KvPair>,
-    /// Command to execute inside VM. If not passed in, a shell will be spawned
+    /// Operation for VM to carry out
+    #[clap(flatten)]
+    pub(crate) mode: VMModeArgs,
+}
+
+/// Describes which VM mode to use. By default, an ssh shell into VM will open
+/// after VM boots.
+#[derive(Debug, Clone, Args, PartialEq, Default)]
+#[group(multiple = false)]
+pub(crate) struct VMModeArgs {
+    /// Drop into console prompt. This also enables console output on screen,
+    /// unless `--console-output-file` is specified.
+    #[clap(long)]
+    pub(crate) console: bool,
+    /// Execute command through ssh inside VM.
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
     pub(crate) command: Option<Vec<OsString>>,
 }
@@ -96,7 +105,7 @@ impl VMArgs {
             args.push("--timeout-secs".into());
             args.push(timeout_secs.to_string().into());
         }
-        if self.console {
+        if self.mode.console {
             args.push("--console".into());
         }
         if let Some(path) = &self.console_output_file {
@@ -115,7 +124,7 @@ impl VMArgs {
             args.push("--output-dirs".into());
             args.push(dir.clone().into());
         });
-        if let Some(command) = &self.command {
+        if let Some(command) = &self.mode.command {
             command.iter().for_each(|c| args.push(c.clone()));
         }
         args
@@ -220,6 +229,7 @@ mod test {
             let original: Vec<_> = args.iter().skip(1).map(OsString::from).collect();
             assert_eq!(
                 &parsed
+                    .mode
                     .command
                     .clone()
                     .expect("command field shouldn't be None"),
