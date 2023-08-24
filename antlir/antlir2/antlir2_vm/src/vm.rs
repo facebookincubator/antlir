@@ -563,6 +563,7 @@ impl VM {
                     "selinux=0",
                     "systemd.hostname=vmtest",
                     "net.ifnames=1",
+                    &format!("macaddress={}", self.nics[0].guest_mac()),
                     "root=LABEL=/",
                     // kernel args
                     "rootflags=subvol=volume",
