@@ -128,6 +128,7 @@ impl VM {
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
         self.sidecar_handles = self.spawn_sidecar_services();
+        info!("Booting VM. It could take seconds to minutes...");
         let proc = self.spawn_vm()?;
         self.wait_for_vm(proc)?;
         Ok(())
@@ -458,7 +459,7 @@ impl VM {
                 desc: "Failed to read notify socket",
                 err,
             })?;
-        debug!(
+        info!(
             "Received boot event {} after {} seconds",
             response.trim(),
             start_ts.elapsed().as_secs_f32()
