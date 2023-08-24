@@ -18,6 +18,7 @@ use crate::isolation::Platform;
 use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
 use crate::utils::log_command;
+use crate::utils::run_command_capture_output;
 
 /// A writable QCow2Disk.
 /// This create a qcow2 disk on top of the base image file and is passed to qemu with
@@ -40,7 +41,7 @@ pub(crate) enum QCow2DiskError {
     #[error(transparent)]
     RepoRootError(#[from] IsolationError),
     #[error("qemu-img failed to create the disk: {0}")]
-    DiskCreationError(String),
+    DiskCreationError(std::io::Error),
     #[error("qemu-img failed to upsize the disk: {0}")]
     DiskUpsizeError(String),
 }
@@ -69,14 +70,7 @@ impl QCow2Disk {
         if let Some(image) = &self.opts.base_image {
             cmd.arg("-b").arg(self.format_image_path(image)?);
         }
-        log_command(&mut cmd)
-            .status()
-            .map_err(|e| QCow2DiskError::DiskCreationError(e.to_string()))?
-            .success()
-            .then_some(())
-            .ok_or(QCow2DiskError::DiskCreationError(
-                "qemu-img failed".to_string(),
-            ))?;
+        run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskCreationError)?;
 
         if let Some(size) = self.opts.additional_mib {
             if size != 0 {

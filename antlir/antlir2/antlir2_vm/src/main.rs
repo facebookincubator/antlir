@@ -102,6 +102,7 @@ fn run(args: &RunCmdArgs) -> Result<()> {
     }
     debug!("RuntimeOpts: {:?}", args.runtime_spec);
     debug!("MachineOpts: {:?}", args.machine_spec);
+    debug!("VMArgs: {:?}", args.vm_args);
 
     set_runtime(args.runtime_spec.clone().into_inner())
         .map_err(|_| anyhow!("Failed to set runtime"))?;
