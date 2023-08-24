@@ -6,123 +6,16 @@
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
+load("//metalos/host_configs/tests/bzl:builder.bzl", "builders")
 load("//metalos/host_configs/tests/bzl:defs.bzl", "host_config")
 load(":kernel.bzl", "normalize_kernel")
 
 def _host_config(kernel_version):
-    return {
-        "boot_config": {
-            "bootloader": {
-                "cmdline": "console=ttyS0,57600 systemd.unified_cgroup_hierarchy=1 selinux=0 cgroup_no_v1=all root=LABEL=/ macaddress=00:00:00:00:00:01",
-                "pkg": {
-                    "format": 2,
-                    "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
-                    "kind": 8,
-                    "name": "metalos.bootloader",
-                },
-            },
-            "deployment_specific": {"metalos": {}},
-            "initrd": {
-                "format": 2,
-                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
-                "kind": 3,
-                "name": "metalos.initrd",
-            },
-            "kernel": {
-                "cmdline": "console=ttyS0,57600 systemd.unified_cgroup_hierarchy=1 selinux=0 cgroup_no_v1=all root=LABEL=/ macaddress=00:00:00:00:00:01",
-                "pkg": {
-                    "format": 1,
-                    # deadbeef is always used as the version, but the package name is changed
-                    "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
-                    "kind": 2,
-                    "name": "kernel." + kernel_version,
-                },
-            },
-            "rootfs": {
-                "format": 1,
-                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
-                "kind": 1,
-                "name": "metalos",
-            },
-        },
-        "provisioning_config": {
-            "deployment_specific": {"metalos": {}},
-            "event_backend": {
-                "base_uri": "http://vmtest-host:8000/send-event",
-                "source": {
-                    "asset_id": 1,
-                },
-            },
-            "gpt_root_disk": {
-                "format": 2,
-                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
-                "kind": 7,
-                "name": "metalos.gpt-root-disk",
-            },
-            "identity": {
-                "hostname": "vm00.abc00.facebook.com",
-                "id": "1",
-                "network": {
-                    "dns": {
-                        "search_domains": [
-                            "example.com",
-                            "subdomain.example.com",
-                        ],
-                        "servers": [
-                            "beef::cafe:1",
-                            "beef::cafe:2",
-                        ],
-                    },
-                    "interfaces": [
-                        {
-                            "addrs": ["fd00:{0}::2".format(i)],
-                            "essential": True if i == 0 else False,
-                            "interface_type": 0,
-                            "mac": "00:00:00:00:00:0{0}".format(i + 1),
-                            "name": "eth{0}".format(i),
-                            "structured_addrs": [
-                                {
-                                    "addr": "fd00:{0}::2".format(i),
-                                    "mode": 0,
-                                    "prefix_length": 64,
-                                },
-                            ],
-                        }
-                        for i in range(4)
-                    ],
-                    "primary_interface": {
-                        "addrs": ["fd00::2"],
-                        "essential": True,
-                        "interface_type": 0,
-                        "mac": "00:00:00:00:00:01",
-                        "name": "eth0",
-                        "structured_addrs": [
-                            {
-                                "addr": "fd00::2",
-                                "mode": 0,
-                                "prefix_length": 64,
-                            },
-                        ],
-                    },
-                },
-            },
-            "imaging_initrd": {
-                "format": 2,
-                "id": {"uuid": "deadbeefdeadbeefdeadbeefdeadbeef"},
-                "kind": 4,
-                "name": "metalos.imaging-initrd",
-            },
-            "root_disk_config": {
-                "single_serial": {
-                    "config": {},
-                    "serial": "ROOT_DISK_SERIAL",
-                },
-            },
-        },
-        "runtime_config": {
-            "deployment_specific": {"metalos": {}},
-        },
-    }
+    return builders.build_host_config(
+        boot_config = builders.build_boot_config(uname = kernel_version),
+        provisioning_config = builders.build_provisioning_config(num_nics = 4),
+        runtime_config = builders.build_runtime_config(),
+    )
 
 def _control_layer(
         name,
