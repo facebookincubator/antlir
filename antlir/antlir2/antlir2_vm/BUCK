@@ -59,7 +59,10 @@ vm.host(
     name = "default-disk-boot",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.default_boot_disk],
-    visibility = ["//antlir/..."],
+    visibility = [
+        "//antlir/...",
+        "//metalos/...",
+    ],
 )
 
 vm.host(
@@ -68,7 +71,10 @@ vm.host(
     disks = [simple_disk.default_control_disk],
     initrd = initrd.default,
     kernel = metalos_kernel.default.vmlinuz,
-    visibility = ["//antlir/..."],
+    visibility = [
+        "//antlir/...",
+        "//metalos/...",
+    ],
 )
 
 vm.host(
@@ -81,5 +87,8 @@ vm.host(
             uname = metalos_kernel.default.uname,
         ),
     ],
-    visibility = ["//antlir/..."],
+    visibility = [
+        "//antlir/...",
+        "//metalos/...",
+    ],
 )
