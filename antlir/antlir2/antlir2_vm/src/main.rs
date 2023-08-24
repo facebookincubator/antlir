@@ -119,7 +119,7 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
 
     // Let's always capture console output unless it's console mode
     let _console_dir;
-    if !vm_args.console && vm_args.console_output_file.is_none() {
+    if !vm_args.mode.console && vm_args.console_output_file.is_none() {
         let dir = tempdir().context("Failed to create temp dir for console output")?;
         vm_args.console_output_file = Some(dir.path().join("console.txt"));
         _console_dir = dir;
@@ -185,6 +185,7 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<Validated
     let mut orig_command = vec![OsString::from("bogus_exec")];
     orig_command.extend_from_slice(
         &orig_args
+            .mode
             .command
             .clone()
             .ok_or(anyhow!("Test command must not be empty"))?,
@@ -194,7 +195,7 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: &[KvPair]) -> Result<Validated
     let is_list = test_args.test.is_list_tests();
     let mut vm_args = orig_args.clone();
     vm_args.output_dirs = test_args.test.output_dirs().into_iter().collect();
-    vm_args.command = Some(test_args.test.into_inner_cmd());
+    vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
     vm_args.console_output_file = console_output_path_for_tpx()?;
     Ok(ValidatedVMArgs {
@@ -219,6 +220,7 @@ fn list_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) ->
     )?;
     let mut inner_cmd = validated_args
         .inner
+        .mode
         .command
         .as_ref()
         .expect("command must exist here")
@@ -270,11 +272,11 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
 /// so that its environment is the same as the test.
 fn test_debug(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
-    vm_args.inner.command = Some(["/bin/bash", "-l"].iter().map(OsString::from).collect());
+    vm_args.inner.mode.command = Some(["/bin/bash", "-l"].iter().map(OsString::from).collect());
     vm_args.inner.timeout_secs = None;
     // Let's always capture console output if human is debugging
     let _console_dir;
-    if !vm_args.inner.console && vm_args.inner.console_output_file.is_none() {
+    if !vm_args.inner.mode.console && vm_args.inner.console_output_file.is_none() {
         let dir = tempdir().context("Failed to create temp dir for console output")?;
         vm_args.inner.console_output_file = Some(dir.path().join("console.txt"));
         _console_dir = dir;
@@ -308,6 +310,7 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::types::VMModeArgs;
 
     #[test]
     fn test_get_test_envs() {
@@ -328,12 +331,15 @@ mod test {
     fn test_get_test_vm_args() {
         let valid = VMArgs {
             timeout_secs: Some(1),
-            command: Some(["custom", "whatever"].iter().map(OsString::from).collect()),
+            mode: VMModeArgs {
+                command: Some(["custom", "whatever"].iter().map(OsString::from).collect()),
+                ..Default::default()
+            },
             ..Default::default()
         };
         let empty_env = Vec::<KvPair>::new();
         let mut expected = valid.clone();
-        expected.command = Some(vec![OsString::from("whatever")]);
+        expected.mode.command = Some(vec![OsString::from("whatever")]);
         let parsed = get_test_vm_args(&valid, &empty_env).expect("Parsing should succeed");
         assert_eq!(parsed.inner, expected);
         assert!(!parsed.is_list);
@@ -347,9 +353,9 @@ mod test {
         assert!(get_test_vm_args(&output_dirs, &empty_env).is_err());
 
         let mut command = valid;
-        command.command = None;
+        command.mode.command = None;
         assert!(get_test_vm_args(&command, &empty_env).is_err());
-        command.command = Some(vec![OsString::from("invalid")]);
+        command.mode.command = Some(vec![OsString::from("invalid")]);
         assert!(get_test_vm_args(&command, &empty_env).is_err());
     }
 }

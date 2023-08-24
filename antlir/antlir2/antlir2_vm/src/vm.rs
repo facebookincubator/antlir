@@ -309,7 +309,7 @@ impl VM {
         let command = command.args(&args);
 
         // Disable console input for ssh shell by default
-        if !self.args.console {
+        if !self.args.mode.console {
             command.stdin(Stdio::null());
         }
         if let Some(path) = &self.args.console_output_file {
@@ -320,7 +320,7 @@ impl VM {
             let file = File::create(path).map_err(map_err)?;
             command.stdout(file.try_clone().map_err(map_err)?);
             command.stderr(file.try_clone().map_err(map_err)?);
-        } else if !self.args.console {
+        } else if !self.args.mode.console {
             command.stdout(Stdio::null());
             command.stderr(Stdio::null());
         }
@@ -467,10 +467,10 @@ impl VM {
 
         // VM booted
         self.check_sidecar_services()?;
-        if self.args.console {
+        if self.args.mode.console {
             // Just wait for the human that's trying to debug with console
             self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
-        } else if let Some(command) = &self.args.command {
+        } else if let Some(command) = &self.args.mode.command {
             // Execute the specified command and wait for it to finish or timeout.
             let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
             let dedup: HashMap<_, _> = self
