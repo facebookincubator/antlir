@@ -117,6 +117,14 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = args.run_cmd_args.vm_args.clone();
     vm_args.command_envs = envs.clone();
 
+    // Let's always capture console output unless it's console mode
+    let _console_dir;
+    if !vm_args.console && vm_args.console_output_file.is_none() {
+        let dir = tempdir().context("Failed to create temp dir for console output")?;
+        vm_args.console_output_file = Some(dir.path().join("console.txt"));
+        _console_dir = dir;
+    }
+
     let isolated = isolated(&args.image, envs, vm_args.get_container_output_dirs())?;
     let exe = env::current_exe().context("while getting argv[0]")?;
     let mut command = isolated.command(exe)?;
