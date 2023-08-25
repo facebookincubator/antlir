@@ -353,10 +353,6 @@ image_sh_test(
 
 test_rpms(
     name = "mix-reflink-and-not",
-    dnf_additional_repos = [
-        "//antlir/antlir2/test_images/rpms/repo:test-repo",
-        "//antlir/antlir2/test_images/rpms/repo:non-reflink-test-repo",
-    ],
     expected = expected_t(installed = [
         "foo",
         "foo-not-reflinked",

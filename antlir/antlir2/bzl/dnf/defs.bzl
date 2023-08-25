@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+# @oss-disable
 load("//antlir/rpm/dnf2buck:rpm.bzl", "nevra_to_string", "package_href")
 
 def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list["RepoInfo"]) -> Artifact:
@@ -27,17 +28,23 @@ def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list["R
     ctx.actions.copied_dir(dir, tree)
     return dir
 
+# Some RPMs are problematic and don't work with cow
+def _disable_reflink(rpm: "RpmInfo"):
+    if rpm.nevra.name == "foo-not-reflinked":
+        return True
+    # @oss-disable
+    # @oss-enable return False
+
 def _best_rpm_artifact(
         *,
         rpm_info: "RpmInfo",
-        reflink_flavor: str | None,
-        disable_reflink: bool) -> Artifact:
-    if disable_reflink:
-        return rpm_info.raw_rpm
-
+        reflink_flavor: str | None) -> Artifact:
     if not reflink_flavor:
         return rpm_info.raw_rpm
     else:
+        if _disable_reflink(rpm_info):
+            return rpm_info.raw_rpm
+
         # The default behavior is to fail the build if the flavor is reflinkable
         # and the rpm does not have any reflinkable artifacts. This is a safety
         # mechanism to ensure we don't silently regress rpm reflink support. If
@@ -89,40 +96,6 @@ def compiler_plan_to_local_repos(
                 tree[paths.join(repo_i.id, "gpg-keys", key.basename)] = key
             tree[paths.join(repo_i.id, "dnf_conf.json")] = repo_i.dnf_conf_json
 
-        # On CentOS 8 we cannot mix reflink and non-reflink rpms
-        if reflink_flavor == "centos8":
-            # TODO(T160732259) falling back for the entire transaction significantly slows
-            # down builds, but rpm barfs if there are transcoded and non-transcoded
-            # rpms in the same transaction
-            disable_reflink = False
-            user_rpms_causing_no_reflink = []
-            num_user_rpms = 0
-
-            for install in tx["install"]:
-                if install["reason"] == "user":
-                    num_user_rpms += 1
-                for repo in by_repo.values():
-                    if install["nevra"] in repo["nevras"]:
-                        if repo["repo_info"].disable_rpm_reflink:
-                            disable_reflink = True
-
-                            # If it's a dep, there's not really much they can do...
-                            if install["reason"] == "user":
-                                user_rpms_causing_no_reflink.append(install["nevra"])
-
-            if disable_reflink and user_rpms_causing_no_reflink and len(user_rpms_causing_no_reflink) < num_user_rpms:
-                if ctx.label.name != "mix-reflink-and-not--layer":
-                    message = """{label}: UNNECESSARILY SLOW BUILD ALERT!!!!
-    Some RPMs are causing your entire layer to fallback to non-reflink RPM
-    installation. This will CONSIDERABLY SLOW DOWN your build. Until T160732259 is
-    resolved upstream, the only way to avoid this slowdown is to install these RPMs
-    in a separate layer (must be parent_layer if using chef-solo).
-    {rpms}
-                    """.format(label = ctx.label.raw_target(), rpms = user_rpms_causing_no_reflink)
-                    warning(message)
-        else:
-            disable_reflink = False
-
         for install in tx["install"]:
             found = False
 
@@ -142,7 +115,6 @@ def compiler_plan_to_local_repos(
                     tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = _best_rpm_artifact(
                         rpm_info = rpm_i,
                         reflink_flavor = reflink_flavor,
-                        disable_reflink = disable_reflink,
                     )
                     found = True
 
