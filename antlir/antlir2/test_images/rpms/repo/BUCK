@@ -119,6 +119,18 @@ all_rpms.extend([
     for version in _GEN_VERSIONS
 ])
 
+all_rpms.append(
+    test_rpm(
+        name = "foo-not-reflinked",
+        features = [feature.install(
+            src = "//antlir:empty",
+            dst = "/foo-recommends-me",
+        )],
+        release = "1",
+        version = "1",
+    ),
+)
+
 repo(
     name = "test-repo",
     compress = "none",
@@ -129,26 +141,5 @@ repo(
         "//antlir/antlir2/test_images/facebook/chef_solo/...",
         "//antlir/antlir2/test_images/rpms/...",
         "//antlir/antlir2/testing/...",
-    ],
-)
-
-repo(
-    name = "non-reflink-test-repo",
-    compress = "none",
-    disable_rpm_reflink = True,
-    rpms = [
-        test_rpm(
-            name = "foo-not-reflinked",
-            features = [feature.install(
-                src = "//antlir:empty",
-                dst = "/foo-recommends-me",
-            )],
-            release = "1",
-            version = "1",
-        ),
-    ],
-    timestamp = 0,
-    visibility = [
-        "//antlir/antlir2/test_images/rpms/...",
     ],
 )
