@@ -91,6 +91,9 @@ pub(crate) struct VMModeArgs {
     /// unless `--console-output-file` is specified.
     #[clap(long)]
     pub(crate) console: bool,
+    /// Drop into container shell outside VM.
+    #[clap(long)]
+    pub(crate) container: bool,
     /// Execute command through ssh inside VM.
     #[clap(trailing_var_arg = true, allow_hyphen_values = true)]
     pub(crate) command: Option<Vec<OsString>>,
@@ -104,9 +107,6 @@ impl VMArgs {
         if let Some(timeout_secs) = &self.timeout_secs {
             args.push("--timeout-secs".into());
             args.push(timeout_secs.to_string().into());
-        }
-        if self.mode.console {
-            args.push("--console".into());
         }
         if let Some(path) = &self.console_output_file {
             args.push("--console-output-file".into());
@@ -124,6 +124,12 @@ impl VMArgs {
             args.push("--output-dirs".into());
             args.push(dir.clone().into());
         });
+        if self.mode.console {
+            args.push("--console".into());
+        }
+        if self.mode.container {
+            args.push("--container".into());
+        }
         if let Some(command) = &self.mode.command {
             command.iter().for_each(|c| args.push(c.clone()));
         }
@@ -196,6 +202,7 @@ mod test {
         [
             vec!["bin"],
             vec!["bin", "--console"],
+            vec!["bin", "--container"],
             vec!["bin", "--console-output-file", "/path/to/out"],
             vec!["bin", "--timeout-secs", "10"],
             vec!["bin", "--output-dirs", "/foo", "--output-dirs", "/bar"],
