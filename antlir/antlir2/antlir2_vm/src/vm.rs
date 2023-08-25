@@ -88,10 +88,7 @@ pub(crate) enum VMError {
     #[error("Failed to start sidecar process: `{0}'")]
     SidecarError(std::io::Error),
     #[error("Failed to boot VM: {desc}: `{err}`")]
-    BootError {
-        desc: &'static str,
-        err: std::io::Error,
-    },
+    BootError { desc: String, err: std::io::Error },
     #[error("VM terminated early unexpectedly: {0}")]
     EarlyTerminationError(ExitStatus),
     #[error("VM error after boot: `{0}`")]
@@ -345,7 +342,7 @@ impl VM {
         socket
             .set_nonblocking(true)
             .map_err(|err| VMError::BootError {
-                desc: "Failed to set non-blocking socket option",
+                desc: "Failed to set non-blocking socket option".into(),
                 err,
             })?;
         while !self.time_left(start_ts)?.is_zero() {
@@ -373,18 +370,18 @@ impl VM {
     }
 
     /// Execute ssh command and wait for timeout specified for the VM.
-    fn run_ssh_cmd_and_wait(
+    fn run_cmd_and_wait(
         &self,
-        mut ssh_cmd: Command,
+        mut cmd: Command,
         socket: UnixStream,
         start_ts: Instant,
     ) -> Result<()> {
         // Spawn ssh command in a separate thread so that we can enforce timeout.
         let handle = thread::spawn(move || {
-            log_command(&mut ssh_cmd)
+            log_command(&mut cmd)
                 .status()
                 .map_err(|err| VMError::BootError {
-                    desc: "Failed to open SSH shell",
+                    desc: format!("Failed to run command: {:?}", cmd),
                     err,
                 })
         });
@@ -399,7 +396,7 @@ impl VM {
             Ok(Some(status)) => Err(VMError::EarlyTerminationError(status)),
             Ok(None) => Ok(()),
             Err(err) => Err(VMError::BootError {
-                desc: "Error attempting to wait for VM process",
+                desc: "Error attempting to wait for VM process".into(),
                 err,
             }),
         }
@@ -422,7 +419,7 @@ impl VM {
                 }
                 Err(err) => {
                     return Err(VMError::BootError {
-                        desc: "Unable to access notify file",
+                        desc: "Unable to access notify file".into(),
                         err,
                     });
                 }
@@ -438,9 +435,19 @@ impl VM {
             );
         }
         let socket = UnixStream::connect(self.notify_file()).map_err(|err| VMError::BootError {
-            desc: "Failed to connect to notify socket",
+            desc: "Failed to connect to notify socket".into(),
             err,
         })?;
+
+        // Spawn container shell immediately if requested. VM is probably not
+        // booting or one wouldn't be debugging this. There is also nothing to
+        // do once the container shell closes.
+        if self.args.mode.container {
+            let mut cmd = Command::new("/bin/bash");
+            cmd.arg("-l");
+            self.run_cmd_and_wait(cmd, socket, start_ts)?;
+            return Ok(());
+        }
 
         // Wait for boot notify message. We expect "READY" message once VM boots
         debug!("Waiting for boot notify message");
@@ -448,7 +455,7 @@ impl VM {
             socket
                 .set_read_timeout(Some(self.time_left(start_ts)?))
                 .map_err(|err| VMError::BootError {
-                    desc: "Failed to set notify socket read timeout",
+                    desc: "Failed to set notify socket read timeout".into(),
                     err,
                 })?;
         }
@@ -456,7 +463,7 @@ impl VM {
         let mut f = BufReader::new(socket);
         f.read_line(&mut response)
             .map_err(|err| VMError::BootError {
-                desc: "Failed to read notify socket",
+                desc: "Failed to read notify socket".into(),
                 err,
             })?;
         info!(
@@ -484,11 +491,11 @@ impl VM {
                 ssh_cmd.arg(kv.to_os_string());
             });
             ssh_cmd.args(command);
-            self.run_ssh_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
-        } else {
+            self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
+        } else if !self.args.mode.container {
             // Open an ssh shell for human
             let ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
-            self.run_ssh_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
+            self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
         }
 
         info!("VM executed for {} seconds", start_ts.elapsed().as_secs());
@@ -787,7 +794,7 @@ mod test {
     }
 
     #[test]
-    fn test_run_ssh_cmd_and_wait() {
+    fn test_run_cmd_and_wait() {
         let mut vm = get_vm_no_disk();
         vm.args.timeout_secs = Some(1);
 
@@ -795,19 +802,13 @@ mod test {
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let mut command = Command::new("sleep");
         command.arg("5");
-        assert!(
-            vm.run_ssh_cmd_and_wait(command, recv, Instant::now())
-                .is_err()
-        );
+        assert!(vm.run_cmd_and_wait(command, recv, Instant::now()).is_err());
 
         // successful completion
         vm.args.timeout_secs = Some(5);
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let command = Command::new("exit");
-        assert!(
-            vm.run_ssh_cmd_and_wait(command, recv, Instant::now())
-                .is_ok()
-        );
+        assert!(vm.run_cmd_and_wait(command, recv, Instant::now()).is_ok());
     }
 
     #[test]

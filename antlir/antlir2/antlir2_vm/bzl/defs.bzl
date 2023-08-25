@@ -101,6 +101,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             default_output = run_script,
             sub_targets = {
                 "console": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--console"))],
+                "container": [DefaultInfo(run_script), RunInfo(cmd_args(run_cmd, "--container"))],
                 "machine_json": [DefaultInfo(machine_json)],
                 "runtime_json": [DefaultInfo(runtime_json)],
             },

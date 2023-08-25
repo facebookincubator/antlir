@@ -22,11 +22,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].runtime_spec, format = "--runtime-spec={}"),
-        cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
         cmd_args(
             ["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()],
             format = "--setenv={}",
         ),
+    )
+    test_args = cmd_args(
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
     )
@@ -35,6 +36,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
         "test",
         common_args,
+        cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
+        test_args,
     )
     test_script, _ = ctx.actions.write(
         "test.sh",
@@ -52,14 +55,24 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
         "test-debug",
         common_args,
+        test_args,
     )
 
     # Show console output and drop to console prompt. This is intended for
     # initrd tests that don't boot an OS.
     console_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
-        "test-debug",
+        "isolate",
         "--console",
+        common_args,
+    )
+
+    # Drop to container shell outside VM. This is intended for debugging VM
+    # setup. It's the same as `:vm_host[container]`.
+    container_cmd = cmd_args(
+        cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
+        "isolate",
+        "--container",
         common_args,
     )
 
@@ -68,6 +81,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             test_script,
             sub_targets = {
                 "console": [DefaultInfo(test_script), RunInfo(console_cmd)],
+                "container": [DefaultInfo(test_script), RunInfo(container_cmd)],
                 "shell": [DefaultInfo(test_script), RunInfo(shell_cmd)],
             },
         ),
