@@ -17,7 +17,7 @@ log = get_logger()
 _mockable_popen_for_server = subprocess.Popen
 
 
-class ServerLauncher(object):
+class ServerLauncher:
     """
     An abstract parent class for socket servers that need to be launched
     to serve sockets in namespaces
