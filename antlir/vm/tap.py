@@ -21,7 +21,7 @@ class TapError(Exception):
 
 
 @dataclass(frozen=True)
-class VmTap(object):
+class VmTap:
     """Functionality to manage a tap device to communicate with a VM guest
     over a network.
     VmTap is designed to operate within a network namespace, which absolves

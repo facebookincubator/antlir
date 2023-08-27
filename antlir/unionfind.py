@@ -12,7 +12,7 @@ easily avoided by just placing the file in this directory.
 """
 
 
-class UnionFind(object):
+class UnionFind:
     """Special implementation of UnionFind (aka disjoint set) where nodes are
     stored as key value pairs in a dictionary and not in an actual tree
     with linked nodes. Upon a union call, the intermediate parents of the

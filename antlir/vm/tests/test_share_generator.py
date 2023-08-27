@@ -17,7 +17,7 @@ from antlir.vm.share import Plan9Export, Share
 
 
 @dataclass(frozen=True)
-class TestShare(object):
+class TestShare:
     share: Share
     unit: Optional[str]
     contents: Optional[str]

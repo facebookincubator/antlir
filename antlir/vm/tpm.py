@@ -60,7 +60,7 @@ class PseudoAsyncProcess(SidecarProcess):
 
 
 @dataclass(frozen=True)
-class VmTPM(object):
+class VmTPM:
     context_path: Path
 
     sock_path: Path = field(init=False)
