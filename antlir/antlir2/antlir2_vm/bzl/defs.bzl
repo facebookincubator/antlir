@@ -148,8 +148,9 @@ _vm_host = rule(
             default = [],
             doc = "list of commands to spawn outside VM that VM can communicate with",
         ),
-        "timeout_secs": attrs.int(
-            default = 300,
+        "timeout_secs": attrs.option(
+            attrs.int(),
+            default = None,
             doc = "total allowed execution time for the VM",
         ),
     } | {
