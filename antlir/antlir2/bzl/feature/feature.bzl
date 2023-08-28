@@ -80,7 +80,7 @@ load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
 
 feature_record = record(
     feature_type = str,
-    label = "target_label",
+    label = TargetLabel,
     analysis = "FeatureAnalysis",
     run_info = "RunInfo",
 )
