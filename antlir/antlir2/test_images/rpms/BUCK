@@ -33,6 +33,7 @@ simple = test_rpms(
             "foo-2-1",
             "foobar-2-1",
             "foobarbaz-2-1",
+            "foo-epoch-3:1-1",
         ],
         installed_not_userinstalled = ["foobar"],
         not_installed = ["foo-recommends-me"],
@@ -44,6 +45,8 @@ simple = test_rpms(
                 "foo-2",
                 # this depends on 'foobar' and 'foobarbaz' should be removed when 'foobar' is
                 "foobarbaz",
+                # this has a nonzero epoch
+                "foo-epoch-3:1-1.noarch",
             ],
         ),
         ":test-deps",

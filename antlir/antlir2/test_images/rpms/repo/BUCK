@@ -131,6 +131,15 @@ all_rpms.append(
     ),
 )
 
+all_rpms.append(
+    test_rpm(
+        name = "foo-epoch",
+        epoch = 3,
+        release = "1",
+        version = "1",
+    ),
+)
+
 repo(
     name = "test-repo",
     compress = "none",
