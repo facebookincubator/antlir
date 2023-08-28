@@ -8,7 +8,8 @@ Compatibility shims for antlir1->antlir2 migration
 This file must load on both buck1 and buck2
 """
 
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
+load("@fbcode_macros//build_defs:native_rules.bzl", "alias")
+load("//antlir/bzl:build_defs.bzl", "get_visibility", "is_buck2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:image_layer_utils.bzl", "image_layer_utils")
@@ -19,7 +20,11 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # DO NOT ADD ANYTHING HERE WITHOUT THE APPROVAL OF @vmagro OR @lsalis
 # THIS IS FULL OF FOOTGUNS AND YOU SHOULDN'T USE IT WITHOUT KNOWING EXACTLY WHAT
 # YOU'RE DOING
-_ALLOWED_LABELS = ("fbcode//antlir/antlir2/antlir1_compat/tests:antlir1-layer",)
+_ALLOWED_LABELS = (
+    "fbcode//antlir/antlir2/antlir1_compat/tests:antlir1-layer",
+    "fbcode//tupperware/image/base/impl:base.c8.rc.antlir1",
+    "fbcode//tupperware/image/base/impl:base.c9.rc.antlir1",
+)
 
 def _make_cmd(location, force_flavor):
     return """
@@ -42,7 +47,14 @@ def _make_cmd(location, force_flavor):
         force_flavor = force_flavor,
     )
 
-def _common(name, location, rule_type, force_flavor, antlir_rule = "user-facing", **kwargs):
+def _common(
+        name,
+        location,
+        rule_type,
+        force_flavor,
+        layer,
+        antlir_rule = "user-facing",
+        **kwargs):
     if normalize_target(":" + name) not in _ALLOWED_LABELS:
         fail("'{}' has not been approved for use with antlir2's compat mode".format(normalize_target(":" + name)))
     features_for_layer = name + "--antlir2-inner" + BZL_CONST.layer_feature_suffix
@@ -68,7 +80,13 @@ def _common(name, location, rule_type, force_flavor, antlir_rule = "user-facing"
         antlir_rule = antlir_rule,
         parent_layer = ":" + name + "--antlir2-inner",
         flavor = force_flavor,
+        antlir2 = False,
         **kwargs
+    )
+    alias(
+        name = name + ".antlir2",
+        actual = layer,
+        visibility = get_visibility(kwargs.get("visibility", None)),
     )
 
 def _export_for_antlir1_buck1(name, layer, **kwargs):
@@ -78,6 +96,7 @@ def _export_for_antlir1_buck1(name, layer, **kwargs):
             full_label = normalize_target(layer),
         ),
         rule_type = "antlir2_buck1_compat",
+        layer = layer,
         **kwargs
     )
 
@@ -86,6 +105,7 @@ def _export_for_antlir1_buck2(name, layer, **kwargs):
         name,
         location = "$(location {})".format(layer),
         rule_type = "antlir2_compat",
+        layer = layer,
         **kwargs
     )
 

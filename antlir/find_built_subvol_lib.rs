@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::ffi::OsStr;
 use std::fs::File;
+use std::path::Component;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -28,7 +30,7 @@ pub enum FindBuiltSubvolError {
     #[error(transparent)]
     BuckCellRoot(find_root::FindRootError),
     #[error("failed to absolutize path: {0}")]
-    AbsolutePathError(absolute_path::Error),
+    AbsolutePathError(#[from] absolute_path::Error),
     #[error("there is no parent dir to find the subvol from")]
     NoSourceOfTruth,
 }
@@ -58,6 +60,16 @@ pub fn find_built_subvol(
         }
         _ => Ok(()),
     }?;
+
+    if let Ok(target) = std::fs::read_link(&layer_output) {
+        if target
+            .components()
+            .any(|comp| comp == Component::Normal(OsStr::new("antlir2-out")))
+        {
+            return Ok(target.try_into()?);
+        }
+    }
+
     let json_file_path = layer_output.join("layer.json");
     let subvolumes_dir_rel_path = Path::new("buck-image-out/volume/targets");
     let layer_info = get_layer_info(&json_file_path)?;
