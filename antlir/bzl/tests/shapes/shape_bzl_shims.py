@@ -60,7 +60,7 @@ def fail(msg: str, attr=None):
     raise Fail(msg)
 
 
-class structs(object):
+class structs:
     @staticmethod
     def is_struct(x) -> bool:
         return dataclasses.is_dataclass(x)
@@ -74,7 +74,7 @@ class structs(object):
         return globals()["__struct_to_json"](x)
 
 
-class types(object):
+class types:
     @staticmethod
     def is_bool(x):
         return type(x) == bool
@@ -100,7 +100,7 @@ class types(object):
         return type(x) == tuple
 
 
-class collections(object):
+class collections:
     @staticmethod
     def uniq(it):
         return list(set(it))
