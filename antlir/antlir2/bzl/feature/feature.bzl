@@ -58,6 +58,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 # @oss-disable
+# @oss-disable
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
@@ -118,6 +119,7 @@ _analyze_feature = {
     "user": user_analyze,
     "user_mod": usermod_analyze,
 }
+# @oss-disable
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     # Merge inline features into a single JSON file
