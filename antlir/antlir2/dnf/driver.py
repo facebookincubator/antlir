@@ -38,7 +38,7 @@ class AntlirError(Exception):
     pass
 
 
-class LockedOutput(object):
+class LockedOutput:
     def __init__(self, file):
         self._file = file
         self._lock = threading.Lock()
