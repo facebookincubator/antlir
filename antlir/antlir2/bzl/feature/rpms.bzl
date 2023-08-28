@@ -129,7 +129,7 @@ rpm_source_record = record(
 rpm_item_record = record(
     action = action_enum.type,
     rpm = rpm_source_record.type,
-    feature_label = "target_label",
+    feature_label = TargetLabel,
 )
 
 rpms_record = record(
