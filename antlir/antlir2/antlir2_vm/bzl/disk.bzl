@@ -82,6 +82,7 @@ def _create_disk_from_package(
         serial = serial,
         visibility = visibility,
     )
+    return ":" + name
 
 def _create_empty_disk(
         name: str,
@@ -103,6 +104,7 @@ def _create_empty_disk(
         serial = serial,
         visibility = visibility,
     )
+    return ":" + name
 
 disk = struct(
     create_disk_from_package = _create_disk_from_package,
