@@ -477,24 +477,24 @@ impl VM {
         if self.args.mode.console {
             // Just wait for the human that's trying to debug with console
             self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
-        } else if let Some(command) = &self.args.mode.command {
-            // Execute the specified command and wait for it to finish or timeout.
-            let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
-            let dedup: HashMap<_, _> = self
+        } else if !self.args.mode.container {
+            // Open ssh shell or run command over ssh
+            let dedup_envs: HashMap<_, _> = self
                 .args
                 .command_envs
                 .iter()
                 .cloned()
                 .map(|p| (p.key, p.value))
                 .collect();
-            dedup.iter().map(KvPair::from).for_each(|kv| {
+            let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+            dedup_envs.iter().map(KvPair::from).for_each(|kv| {
                 ssh_cmd.arg(kv.to_os_string());
             });
-            ssh_cmd.args(command);
-            self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
-        } else if !self.args.mode.container {
-            // Open an ssh shell for human
-            let ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+            if let Some(command) = &self.args.mode.command {
+                ssh_cmd.args(command);
+            } else {
+                ssh_cmd.args(["/bin/bash", "-l"]);
+            }
             self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
         }
 

@@ -61,9 +61,6 @@ enum Commands {
     Isolate(IsolateCmdArgs),
     /// Run VM tests inside container.
     Test(IsolateCmdArgs),
-    /// Exactly same as `test` command, but hijack the command inside VM to
-    /// spawn a shell for debugging purpose.
-    TestDebug(IsolateCmdArgs),
 }
 
 /// Execute the VM
@@ -249,39 +246,18 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
     Ok(command)
 }
 
-/// Runs test inside container or VM based on test command.
-fn _test(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> Result<()> {
-    let mut command = if validated_args.is_list {
-        list_test_command(args, validated_args)
-    } else {
-        vm_test_command(args, validated_args)
-    }?;
-    log_command(&mut command).status()?;
-    Ok(())
-}
-
 /// `test` is similar to `respawn`, except that we assume control for some
 /// inputs instead of allowing caller to pass them in. Some inputs are parsed
 /// from the test command.
 fn test(args: &IsolateCmdArgs) -> Result<()> {
-    let vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
-    _test(args, &vm_args)
-}
-
-/// Exactly same as `test`, but we hijack the command to run a debugging shell
-/// so that its environment is the same as the test.
-fn test_debug(args: &IsolateCmdArgs) -> Result<()> {
-    let mut vm_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
-    vm_args.inner.mode.command = Some(["/bin/bash", "-l"].iter().map(OsString::from).collect());
-    vm_args.inner.timeout_secs = None;
-    // Let's always capture console output if human is debugging
-    let _console_dir;
-    if !vm_args.inner.mode.console && vm_args.inner.console_output_file.is_none() {
-        let dir = tempdir().context("Failed to create temp dir for console output")?;
-        vm_args.inner.console_output_file = Some(dir.path().join("console.txt"));
-        _console_dir = dir;
-    }
-    _test(args, &vm_args)
+    let validated_args = get_test_vm_args(&args.run_cmd_args.vm_args, &args.setenv)?;
+    let mut command = if validated_args.is_list {
+        list_test_command(args, &validated_args)
+    } else {
+        vm_test_command(args, &validated_args)
+    }?;
+    log_command(&mut command).status()?;
+    Ok(())
 }
 
 fn main() -> Result<()> {
@@ -303,7 +279,6 @@ fn main() -> Result<()> {
         Commands::Isolate(args) => respawn(args),
         Commands::Run(args) => run(args),
         Commands::Test(args) => test(args),
-        Commands::TestDebug(args) => test_debug(args),
     }
 }
 
