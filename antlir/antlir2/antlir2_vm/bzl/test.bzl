@@ -53,9 +53,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     # vm_exec will hijack the command to spawn a shell for `testdebug` action
     shell_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
-        "test-debug",
+        "isolate",
         common_args,
-        test_args,
     )
 
     # Show console output and drop to console prompt. This is intended for
