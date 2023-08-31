@@ -31,6 +31,7 @@ _hoist = rule(
     impl = _impl,
     attrs = {
         "dir": attrs.bool(default = False),
+        "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
         "path": attrs.string(),
     },
