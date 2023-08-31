@@ -58,7 +58,7 @@ FeatureAnalysis = record(
     impl_run_info = field(["RunInfo", None], default = None),
     # Arbitrary feature record type (the antlir2 compiler must be able to
     # deserialize this)
-    data = "record",
+    data = typing.Any,
     # Artifacts that are needed to build this feature. Antlir does not
     # automatically attach any dependencies to features based on the input,
     # feature implementations must always specify it exactly (this prevents
