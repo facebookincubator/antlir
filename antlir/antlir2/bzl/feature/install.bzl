@@ -6,6 +6,7 @@
 load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:stat.bzl", "stat")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
@@ -44,6 +45,31 @@ def install(
             "dst": dst,
             "group": group,
             "mode": mode,
+            "text": None,
+            "user": user,
+        },
+        analyze_uses_context = True,
+    )
+
+def install_text(
+        *,
+        text: str | Select,
+        dst: str | Select,
+        mode: int | str | Select | None = None,
+        user: str | Select = "root",
+        group: str | Select = "root") -> ParseTimeFeature.type:
+    # the default mode is determined later, after we know if the thing being
+    # installed is a binary or not
+    mode = stat.mode(mode) if mode != None else None
+
+    return ParseTimeFeature(
+        feature_type = "install",
+        impl = "//antlir/antlir2/features:install",
+        kwargs = {
+            "dst": dst,
+            "group": group,
+            "mode": mode,
+            "text": text,
             "user": user,
         },
         analyze_uses_context = True,
@@ -70,16 +96,21 @@ install_record = record(
 
 def get_feature_anaylsis_for_install(
         ctx: "AnalyzeFeatureContext",
-        src: Dependency | Artifact,
+        src: Dependency | Artifact | None,
         dst: str,
         group: str,
         mode: int | None,
         user: str,
         skip_debuginfo_split: bool,
+        text: str | None,
         impl: "RunInfo" | None = None):
     binary_info = None
     required_run_infos = []
     required_artifacts = []
+    if not src and text == None:
+        fail("src or text must be set")
+    if text != None:
+        src = ctx.actions.write("install_text_" + sha256_b64(text), text)
     if type(src) == "dependency":
         if mode == None:
             if RunInfo in src:
@@ -149,9 +180,10 @@ def install_analyze(
         group: str,
         mode: int | None,
         user: str,
-        deps_or_srcs: dict[str, Artifact | Dependency],
+        text: str | None,
+        deps_or_srcs: dict[str, Artifact | Dependency] | None = None,
         impl: "RunInfo" | None = None) -> FeatureAnalysis.type:
-    src = deps_or_srcs["src"]
+    src = None if not deps_or_srcs else deps_or_srcs["src"]
     return get_feature_anaylsis_for_install(
         ctx,
         src = src,
@@ -160,5 +192,6 @@ def install_analyze(
         user = user,
         mode = mode,
         skip_debuginfo_split = False,
+        text = text,
         impl = impl,
     )

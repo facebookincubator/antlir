@@ -8,9 +8,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
 image.layer(
     name = "base",
-    features = [
-        feature.rpms_install(rpms = ["bash"]),
-    ],
+    features = [],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
@@ -31,6 +29,25 @@ image_diff_test(
     diff = "install-file.toml",
     diff_type = "file",
     layer = ":install-file",
+)
+
+image.layer(
+    name = "install-text",
+    features = [
+        feature.install_text(
+            dst = "/hello",
+            mode = "a+rw",
+            text = "Hello world!\n",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-install-text",
+    diff = "install-file.toml",
+    diff_type = "file",
+    layer = ":install-text",
 )
 
 buck_genrule(
