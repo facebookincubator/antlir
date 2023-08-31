@@ -346,12 +346,12 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
             DefaultInfo(
                 sub_targets = {
                     "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
+                    "container": _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts = phase_mounts),
                     "features": [DefaultInfo(features_json_artifact)],
                     "logs": [DefaultInfo(all_logs, sub_targets = {
                         key: [DefaultInfo(artifact)]
                         for key, artifact in logs.items()
                     })],
-                    "nspawn": _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts = phase_mounts),
                     "subvol": [DefaultInfo(final_subvol)],
                 },
             ),
@@ -373,7 +373,7 @@ def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext
     mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
     # @oss-disable
 
-    sub_targets["nspawn"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
+    sub_targets["container"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
     providers = [
