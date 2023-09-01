@@ -9,6 +9,7 @@ This file must load on both buck1 and buck2
 """
 
 load("@fbcode_macros//build_defs:native_rules.bzl", "alias")
+load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/bzl:build_defs.bzl", "get_visibility", "is_buck2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST")
 load("//antlir/bzl:image.bzl", "image")
@@ -22,8 +23,10 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # YOU'RE DOING
 _ALLOWED_LABELS = (
     "fbcode//antlir/antlir2/antlir1_compat/tests:antlir1-layer",
-    "fbcode//tupperware/image/base/impl:base.c8.rc.antlir1",
-    "fbcode//tupperware/image/base/impl:base.c9.rc.antlir1",
+)
+
+_ALLOWED_PACKAGES = (
+    "fbcode//tupperware/image/base/impl:",
 )
 
 def _make_cmd(location, force_flavor):
@@ -55,8 +58,9 @@ def _common(
         layer,
         antlir_rule = "user-facing",
         **kwargs):
-    if normalize_target(":" + name) not in _ALLOWED_LABELS:
-        fail("'{}' has not been approved for use with antlir2's compat mode".format(normalize_target(":" + name)))
+    target = normalize_target(":" + name)
+    if target not in _ALLOWED_LABELS and not lazy.any(lambda pkg: target.startswith(pkg), _ALLOWED_PACKAGES):
+        fail("'{}' has not been approved for use with antlir2's compat mode".format(target))
     features_for_layer = name + "--antlir2-inner" + BZL_CONST.layer_feature_suffix
     feature.new(
         name = features_for_layer,
