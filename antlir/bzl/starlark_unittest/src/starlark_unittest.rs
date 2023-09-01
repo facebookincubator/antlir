@@ -222,7 +222,6 @@ fn globals() -> Globals {
         LibraryExtension::Map,
         LibraryExtension::Filter,
         LibraryExtension::Partial,
-        LibraryExtension::ExperimentalRegex,
         LibraryExtension::Debug,
         LibraryExtension::Print,
         LibraryExtension::Pprint,

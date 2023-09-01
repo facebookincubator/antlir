@@ -55,7 +55,6 @@ fn bzl_globals() -> GlobalsBuilder {
         LibraryExtension::Map,
         LibraryExtension::Filter,
         LibraryExtension::Partial,
-        LibraryExtension::ExperimentalRegex,
         LibraryExtension::Debug,
         LibraryExtension::Print,
         LibraryExtension::Pprint,
