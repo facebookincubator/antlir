@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "FlavorDnfInfo", "FlavorInfo", "LayerInfo")
+# @oss-disable
 load("//antlir/bzl:build_defs.bzl", "alias", "config")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 
@@ -37,7 +38,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "default_build_appliance": ctx.attrs.default_build_appliance.providers,
             "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
         }),
-    ]
+    # @oss-disable
+    # @oss-enable ]
 
 _flavor = rule(
     impl = _impl,
@@ -87,7 +89,8 @@ def _child_flavor_impl(ctx: AnalysisContext) -> list[Provider]:
             "default_build_appliance": flavor.default_build_appliance.providers,
             "default_versionlock": [DefaultInfo(flavor.dnf_info.default_versionlock)],
         }),
-    ]
+    # @oss-disable
+    # @oss-enable ]
 
 _child_flavor = rule(
     impl = _child_flavor_impl,
