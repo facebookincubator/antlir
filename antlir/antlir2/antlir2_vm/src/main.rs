@@ -21,6 +21,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use anyhow::anyhow;
+use anyhow::bail;
 use anyhow::Context;
 use clap::Args;
 use clap::Parser;
@@ -133,7 +134,10 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
         .arg(args.run_cmd_args.runtime_spec.path())
         .args(vm_args.to_args());
 
-    log_command(&mut command).status()?;
+    let status = log_command(&mut command).status()?;
+    if !status.success() {
+        bail!("VM run failed: {:?}", status);
+    }
     Ok(())
 }
 
@@ -256,7 +260,10 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     } else {
         vm_test_command(args, &validated_args)
     }?;
-    log_command(&mut command).status()?;
+    let status = log_command(&mut command).status()?;
+    if !status.success() {
+        bail!("VM run failed: {:?}", status);
+    }
     Ok(())
 }
 
