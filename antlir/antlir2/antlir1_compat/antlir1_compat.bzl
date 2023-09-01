@@ -33,7 +33,7 @@ def _make_cmd(location, force_flavor):
         dst_rel="$subvolume_wrapper_dir/volume"
         dst_abs="$SUBVOLUMES_DIR/$dst_rel"
         sudo btrfs subvolume snapshot "$location" "$dst_abs"
-        sudo mkdir "$dst_abs/.meta"
+        sudo mkdir -p "$dst_abs/.meta"
         echo -n "{force_flavor}" | sudo tee "$dst_abs/.meta/flavor"
         uuid=`sudo btrfs subvolume show "$dst_abs" | grep UUID: | grep -v "Parent UUID:" | grep -v "Received UUID:" | cut -f5`
         jq --null-input \\
