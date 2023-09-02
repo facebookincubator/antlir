@@ -60,7 +60,6 @@ fn bzl_globals() -> GlobalsBuilder {
         LibraryExtension::Pprint,
         LibraryExtension::Breakpoint,
         LibraryExtension::Json,
-        LibraryExtension::Abs,
         LibraryExtension::Typing,
     ])
 }
