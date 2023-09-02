@@ -227,7 +227,6 @@ fn globals() -> Globals {
         LibraryExtension::Pprint,
         LibraryExtension::Breakpoint,
         LibraryExtension::Json,
-        LibraryExtension::Abs,
         LibraryExtension::Typing,
     ])
     .with_struct("unittest", unittest)
