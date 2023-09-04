@@ -7,10 +7,10 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
 
-PrebuiltImageInfo = provider(fields = {
-    "format": "format of the image file",
-    "source": "source file of the image",
-})
+PrebuiltImageInfo = provider(fields = [
+    "format",  # format of the image file
+    "source",  # source file of the image
+])
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     format = ctx.attrs.format

@@ -6,9 +6,9 @@
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
-SendstreamInfo = provider(fields = {
-    "sendstream": "'artifact' that is the btrfs sendstream",
-})
+SendstreamInfo = provider(fields = [
+    "sendstream",  # 'artifact' that is the btrfs sendstream
+])
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     sendstream = ctx.actions.declare_output("image.sendstream")

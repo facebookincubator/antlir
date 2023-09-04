@@ -34,13 +34,13 @@ def package_href(nevra: nevra.type | str, id: str) -> str:
         nevra = nevra_to_string(nevra)
     return "Packages/{id}/{nevra}.rpm".format(id = id, nevra = nevra)
 
-RpmInfo = provider(fields = {
-    "extents": ".rpm transformed by rpm2extents",
-    "nevra": "RPM NEVRA",
-    "pkgid": "checksum (sha256 or sha1, usually sha256)",
-    "raw_rpm": ".rpm file artifact",
-    "xml": "combined xml chunks",
-})
+RpmInfo = provider(fields = [
+    "extents",  # .rpm transformed by rpm2extents
+    "nevra",  # RPM NEVRA
+    "pkgid",  # checksum (sha256 or sha1, usually sha256)
+    "raw_rpm",  # .rpm file artifact
+    "xml",  # combined xml chunks
+])
 
 def _make_xml(ctx: AnalysisContext, rpm: Artifact, href: str) -> Artifact:
     out = ctx.actions.declare_output("xml.json")
