@@ -5,18 +5,18 @@
 
 load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
-RepoInfo = provider(fields = {
-    "all_rpms": "All RpmInfos contained in this repo",
-    "base_url": "Optional upstream URL that was used to populate this target",
-    "disable_rpm_reflink": "Disable rpm reflink. WARNING: this will SUBSTANTIALLY slow down installations",
-    "dnf_conf_json": "JSON serialized dnf.conf KV for this repo",
-    "gpg_keys": "Optional artifact against which signatures will be checked",
-    "id": "Repo name",
-    "offline": "Complete offline archive of repodata and all RPMs",
-    "proxy_config": "proxy config for this repo",
-    "repodata": "Populated repodata/ directory",
-    "urlgen": "URL generator for repo_proxy::RpmRepo",
-})
+RepoInfo = provider(fields = [
+    "all_rpms",  # All RpmInfos contained in this repo
+    "base_url",  # Optional upstream URL that was used to populate this target
+    "disable_rpm_reflink",  # Disable rpm reflink. WARNING: this will SUBSTANTIALLY slow down installations
+    "dnf_conf_json",  # JSON serialized dnf.conf KV for this repo
+    "gpg_keys",  # Optional artifact against which signatures will be checked
+    "id",  # Repo name
+    "offline",  # Complete offline archive of repodata and all RPMs
+    "proxy_config",  # proxy config for this repo
+    "repodata",  # Populated repodata/ directory
+    "urlgen",  # URL generator for repo_proxy::RpmRepo
+])
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     rpm_infos = [rpm[RpmInfo] for rpm in ctx.attrs.rpms]
