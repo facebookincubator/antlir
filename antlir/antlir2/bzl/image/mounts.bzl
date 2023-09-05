@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @starlark-rust: allow_string_literals_in_type_expr
+
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_record")
 load("//antlir/antlir2/bzl/feature:mount.bzl", "host_mount_record", "layer_mount_record", "mount_record")
