@@ -35,10 +35,15 @@ pub struct Rpm {
     arch: String,
     license: String,
     summary: Option<String>,
+    #[serde(default)]
     requires: Vec<String>,
+    #[serde(default)]
     recommends: Vec<String>,
+    #[serde(default)]
     provides: Vec<String>,
+    #[serde(default)]
     supplements: Vec<String>,
+    #[serde(default)]
     conflicts: Vec<String>,
     description: Option<String>,
     post_install_script: Option<String>,
@@ -49,7 +54,7 @@ impl PackageFormat for Rpm {
         let layer_abspath = self
             .layer
             .canonicalize()
-            .context("failed to build absolute path to layer")?;
+            .with_context(|| format!("failed to build absolute path to layer {:?}", self.layer))?;
 
         let requires = self
             .requires
