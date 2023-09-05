@@ -241,7 +241,7 @@ impl Map {
         debug!("isolated command: {:?}", isol);
         let res = isol
             .spawn()
-            .context("while spawning isolated process")?
+            .with_context(|| format!("while spawning isolated process {isol:?}"))?
             .wait()
             .context("while waiting for isolated process")?;
         if !res.success() {

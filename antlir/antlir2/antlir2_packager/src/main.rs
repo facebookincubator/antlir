@@ -43,7 +43,9 @@ pub(crate) struct PackageArgs {
 }
 
 pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
-    let output = command.output().context("Failed to run command")?;
+    let output = command
+        .output()
+        .with_context(|| format!("failed to run command: {command:?}"))?;
 
     match output.status.success() {
         true => Ok(output),
