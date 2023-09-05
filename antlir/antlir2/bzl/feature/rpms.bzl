@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
@@ -55,7 +56,7 @@ def _install_common(
 
     return ParseTimeFeature(
         feature_type = "rpm",
-        impl = "//antlir/antlir2/features:rpm",
+        impl = antlir2_dep("features:rpm"),
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         srcs = {
             "subjects": subjects_src,
@@ -110,7 +111,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
     """
     return ParseTimeFeature(
         feature_type = "rpm",
-        impl = "//antlir/antlir2/features:rpm",
+        impl = antlir2_dep("features:rpm"),
         kwargs = {
             "action": "remove_if_exists",
             "subjects": rpms,

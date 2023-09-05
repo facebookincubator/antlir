@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def metakv_store(
@@ -32,7 +33,7 @@ def metakv_store(
     """
     return ParseTimeFeature(
         feature_type = "metakv",
-        impl = "//antlir/antlir2/features:metakv",
+        impl = antlir2_dep("features:metakv"),
         kwargs = {
             "store": {
                 "key": key,
@@ -53,7 +54,7 @@ def metakv_remove(*, key: str | Select):
     """
     return ParseTimeFeature(
         feature_type = "metakv",
-        impl = "//antlir/antlir2/features:metakv",
+        impl = antlir2_dep("features:metakv"),
         kwargs = {
             "remove": {
                 "key": key,

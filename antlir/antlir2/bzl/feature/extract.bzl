@@ -22,6 +22,7 @@ binaries without first installing them into a layer.
 """
 
 load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
@@ -41,7 +42,7 @@ def extract_from_layer(
     """
     return ParseTimeFeature(
         feature_type = "extract",
-        impl = "//antlir/antlir2/features:extract",
+        impl = antlir2_dep("features:extract"),
         deps = {
             "layer": ParseTimeDependency(dep = layer, providers = [LayerInfo]),
         },
@@ -64,7 +65,7 @@ def extract_buck_binary(
     """
     return ParseTimeFeature(
         feature_type = "extract",
-        impl = "//antlir/antlir2/features:extract",
+        impl = antlir2_dep("features:extract"),
         # include in deps so we can look at the providers
         deps = {"src": ParseTimeDependency(dep = src, providers = [RunInfo])},
         kwargs = {

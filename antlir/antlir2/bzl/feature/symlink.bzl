@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def _symlink_feature(
@@ -12,7 +13,7 @@ def _symlink_feature(
         feature_type: str | Select) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = feature_type,
-        impl = "//antlir/antlir2/features:symlink",
+        impl = antlir2_dep("features:symlink"),
         kwargs = {
             "is_directory": feature_type == "ensure_dir_symlink",
             "link": link,

@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:types.bzl", "types")
@@ -20,7 +21,7 @@ def layer_mount(
     features = [
         ParseTimeFeature(
             feature_type = "mount",
-            impl = "//antlir/antlir2/features:mount",
+            impl = antlir2_dep("features:mount"),
             deps = {
                 "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
             },
@@ -53,7 +54,7 @@ def host_mount(
     mountpoint = mountpoint or source
     features = [ParseTimeFeature(
         feature_type = "mount",
-        impl = "//antlir/antlir2/features:mount",
+        impl = antlir2_dep("features:mount"),
         kwargs = {
             "host_source": source,
             "is_directory": is_directory,

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
@@ -57,7 +58,7 @@ def clone(
     """
     return ParseTimeFeature(
         feature_type = "clone",
-        impl = "//antlir/antlir2/features:clone",
+        impl = antlir2_dep("features:clone"),
         deps = {
             "src_layer": ParseTimeDependency(
                 dep = src_layer,
