@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 SHELL_BASH = "/bin/bash"
@@ -48,7 +49,7 @@ def user_add(
     """
     return ParseTimeFeature(
         feature_type = "user",
-        impl = "//antlir/antlir2/features:user",
+        impl = antlir2_dep("features:user"),
         kwargs = {
             "comment": comment,
             "home_dir": home_dir,
@@ -73,7 +74,7 @@ def group_add(
     """
     return ParseTimeFeature(
         feature_type = "group",
-        impl = "//antlir/antlir2/features:group",
+        impl = antlir2_dep("features:group"),
         kwargs = {
             "gid": gid,
             "name": groupname,
@@ -89,7 +90,7 @@ def usermod(
     """
     return ParseTimeFeature(
         feature_type = "user_mod",
-        impl = "//antlir/antlir2/features:usermod",
+        impl = antlir2_dep("features:usermod"),
         kwargs = {
             "add_supplementary_groups": add_supplementary_groups,
             "username": username,

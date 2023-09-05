@@ -15,11 +15,12 @@
 # NOTE: this feature is NOT parseable by the antlir2 compiler, so attempting to
 # build any layer that contains this feature will fail, which is what we want
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 def antlir1_no_equivalent(*, label: str, description: str) -> ParseTimeFeature.type:
     return ParseTimeFeature(
-        impl = "//antlir/antlir2/features:antlir1_no_equivalent",
+        impl = antlir2_dep("features:antlir1_no_equivalent"),
         feature_type = "antlir1_no_equivalent",
         kwargs = {
             "description": description,

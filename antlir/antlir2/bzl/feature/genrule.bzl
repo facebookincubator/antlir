@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def genrule(
@@ -15,7 +16,7 @@ def genrule(
         mount_platform: bool | Select = False) -> ParseTimeFeature.type:
     return ParseTimeFeature(
         feature_type = "genrule",
-        impl = "//antlir/antlir2/features:genrule",
+        impl = antlir2_dep("features:genrule"),
         kwargs = {
             "bind_repo_ro": bind_repo_ro,
             "boot": boot,

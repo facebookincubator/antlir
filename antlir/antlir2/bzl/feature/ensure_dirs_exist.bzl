@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/bzl:stat.bzl", "stat")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
@@ -38,7 +39,7 @@ def ensure_subdirs_exist(
         dir = paths.join(dir, component)
         features.append(ParseTimeFeature(
             feature_type = "ensure_dir_exists",
-            impl = "//antlir/antlir2/features:ensure_dir_exists",
+            impl = antlir2_dep("features:ensure_dir_exists"),
             kwargs = {
                 "dir": dir,
                 "group": group,
