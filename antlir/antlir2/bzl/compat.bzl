@@ -5,17 +5,19 @@
 
 load("//antlir/bzl:types.bzl", "types")
 
-def _from_antlir1_flavor(flavor: str | typing.Any) -> str | None:
+def _from_antlir1_flavor(
+        flavor: str | typing.Any,
+        *,
+        strip_rou: bool = False) -> str | None:
     if not flavor:
         return None
     if not types.is_string(flavor):
         flavor = flavor.unaliased_name
 
     if ":" not in flavor:
-        # antlir2 does not have suffixes like -untested or -rou-preparation
-        # because it does not need them
-        flavor = flavor.split("-", 1)
-        flavor = flavor[0]
+        if strip_rou:
+            flavor = flavor.split("-", 1)
+            flavor = flavor[0]
         if flavor == "antlir_test":
             flavor = "//antlir/antlir2/test_images:test-image-flavor"
         else:
