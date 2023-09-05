@@ -89,6 +89,7 @@ _prebuilt = rule(
         "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "format": attrs.enum(["sendstream.v2", "sendstream", "sendstream.zst"]),
+        "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
     },
 )
