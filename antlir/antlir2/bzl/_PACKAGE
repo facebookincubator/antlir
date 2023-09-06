@@ -1,0 +1,12 @@
+load("@fbcode//target_determinator/macros:ci_package.bzl", "ci_package")
+load("@fbcode//target_determinator/macros:labels.bzl", "ci")
+
+ci_package.set(
+    [
+        ci.linux(
+            ci.aarch64(
+                ci.mode("fbcode//mode/dev-nosan"),
+            ),
+        ),
+    ],
+)
