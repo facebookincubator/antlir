@@ -21,7 +21,7 @@ def _typed_flattener(item_type) -> types.function:
     types.lint_noop(item_type)
 
     # @lint-ignore BUCKLINT
-    t = native.eval_type([item_type]) if is_buck2() else ""
+    t = native.eval_type(list[item_type]) if is_buck2() else ""
 
     def _flatten(lst):
         r = _flatten_any(lst)

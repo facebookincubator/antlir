@@ -33,7 +33,7 @@ _str = str if is_buck2() else "str"
 _struct = struct if is_buck2() else "struct"
 
 def _dict(kt, vt):
-    return {kt: vt}
+    return dict[kt, vt] if is_buck2() else ""
 
 def _enum(*values):
     if is_buck2():
@@ -50,15 +50,30 @@ def _enum(*values):
     return _buck1_enum
 
 def _union(*types):
+    if not is_buck2():
+        return ""
+
     if len(types) <= 1:
         fail("union must have more than 1 type")
-    return list(types)
+
+    # TODO(nga): `eval_type` won't be needed
+    #   when we get rid of string literals as types
+    result = native.eval_type(types[0])
+    for t in types[1:]:
+        result = result | t
+
+    return result
 
 def _list(ty):
-    return [ty]
+    return list[ty] if is_buck2() else ""
 
 def _optional(ty):
-    return [ty, None]
+    if not is_buck2():
+        return ""
+
+    # TODO(nga): `eval_type` won't be needed
+    #   when we switch all types from string literals.
+    return native.eval_type(ty) | None
 
 def _record_ctor(**kwargs):
     return struct(**kwargs)
