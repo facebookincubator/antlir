@@ -8,6 +8,33 @@ user = "root"
 group = "root"
 content-hash = "2c5563a16cb8a9318b6183de7b834dbd"
 
+[file.usr]
+op = "added"
+
+[file.usr.diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."usr/lib"]
+op = "added"
+
+[file."usr/lib".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."usr/lib/debug"]
+op = "added"
+
+[file."usr/lib/debug".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
 [file."usr/lib/debug/.build-id"]
 op = "added"
 
