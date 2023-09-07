@@ -95,6 +95,7 @@ feature_impl(
 feature_impl(
     name = "rpm",
     deps = [
+        "nix",
         "serde_json",
         "//antlir/buck/buck_label:buck_label",
     ],

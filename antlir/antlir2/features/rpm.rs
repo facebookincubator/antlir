@@ -23,6 +23,8 @@ use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use buck_label::Label;
+use nix::mount::MntFlags;
+use nix::mount::MsFlags;
 use serde::de::Error as _;
 use serde::Deserialize;
 use serde::Serialize;
@@ -330,6 +332,16 @@ fn run_dnf_driver(
     })
     .context("while serializing dnf-driver input")?;
 
+    std::fs::create_dir_all(ctx.dst_path("/dev")).context("while ensuring /dev exists")?;
+    nix::mount::mount(
+        Some("devtmpfs"),
+        &ctx.dst_path("/dev"),
+        Some("devtmpfs"),
+        MsFlags::empty(),
+        None::<&str>,
+    )
+    .context("while mounting /dev in installroot")?;
+
     let mut child = Command::new("/__antlir2__/dnf/driver")
         .arg(&input)
         .stdout(Stdio::piped())
@@ -344,6 +356,10 @@ fn run_dnf_driver(
         events.push(event);
     }
     let result = child.wait().context("while waiting for dnf-driver")?;
+
+    nix::mount::umount2(&ctx.dst_path("/dev"), MntFlags::empty())
+        .context("while unmounting /dev from installroot")?;
+
     if !result.success() {
         Err(Error::msg("dnf-driver failed"))
     } else {
