@@ -8,23 +8,15 @@ user = "root"
 group = "root"
 text = ""
 
-[file.foo]
+[file."foo/foo"]
 op = "removed"
 
-[file.foo.diff]
-mode = "u+rwx,g+rx,o+rx"
-file-type = "directory"
+[file."foo/foo".diff]
+mode = "u+r,g+r,o+r"
+file-type = "regular-file"
 user = "root"
 group = "root"
-
-[file."foo/bar"]
-op = "removed"
-
-[file."foo/bar".diff]
-mode = "u+rwx,g+rx,o+rx"
-file-type = "directory"
-user = "root"
-group = "root"
+text = ""
 
 [file."home/diff_test"]
 op = "added"
