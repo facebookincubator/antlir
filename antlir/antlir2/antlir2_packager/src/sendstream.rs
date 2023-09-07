@@ -9,6 +9,9 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use antlir2_btrfs::DeleteFlags;
+use antlir2_btrfs::SnapshotFlags;
+use antlir2_btrfs::Subvolume;
 use anyhow::anyhow;
 use anyhow::Context;
 use anyhow::Error;
@@ -26,39 +29,71 @@ use crate::PackageFormat;
 #[derive(Debug, Clone, Deserialize)]
 pub struct Sendstream {
     layer: PathBuf,
+    volume_name: String,
 }
 
 impl PackageFormat for Sendstream {
     fn build(&self, out: &Path) -> Result<()> {
+        let rootless = antlir2_rootless::init().context("while initializing rootless")?;
+        let subvol = Subvolume::open(&self.layer).context("while opening subvol")?;
+        let tempdir =
+            tempfile::tempdir_in(self.layer.canonicalize()?.parent().expect("cannot be /"))
+                .context("while creating temp dir")?;
+        let snapshot_path = tempdir.path().join(&self.volume_name);
+        let snapshot = rootless.as_root(|| {
+            let mut snapshot = subvol
+                .snapshot(&snapshot_path, SnapshotFlags::RECURSIVE)
+                .with_context(|| {
+                    format!(
+                        "while snapshotting to new subvol {}",
+                        snapshot_path.display()
+                    )
+                })?;
+
+            snapshot
+                .set_readonly(true)
+                .context("while setting snapshot readonly")?;
+            Ok::<_, anyhow::Error>(snapshot)
+        })??;
         let v1file = retry(Fixed::from_millis(10_000).take(10), || {
             let v1file = NamedTempFile::new()?;
             trace!("sending v1 sendstream to {}", v1file.path().display());
-            if Command::new("sudo")
-                .arg("btrfs")
-                .arg("send")
-                .arg(&self.layer)
-                .stdout(
-                    v1file
-                        .as_file()
-                        .try_clone()
-                        .context("while cloning v1file")?,
-                )
-                .spawn()
-                .context("while spawning btrfs-send")?
-                .wait()
-                .context("while waiting for btrfs-send")?
-                .success()
-            {
-                Ok(v1file)
-            } else {
-                Err(anyhow!("btrfs-send failed"))
-            }
+            rootless
+                .as_root(|| {
+                    if Command::new("btrfs")
+                        .arg("send")
+                        .arg(snapshot.path())
+                        .stdout(
+                            v1file
+                                .as_file()
+                                .try_clone()
+                                .context("while cloning v1file")?,
+                        )
+                        .spawn()
+                        .context("while spawning btrfs-send")?
+                        .wait()
+                        .context("while waiting for btrfs-send")?
+                        .success()
+                    {
+                        Ok(v1file)
+                    } else {
+                        Err(anyhow!("btrfs-send failed"))
+                    }
+                })
+                .context("rootless failed")?
         })
         .map_err(Error::msg)
         .context("btrfs-send failed too many times")?;
-        if let Err(PersistError { file, error }) = v1file.persist(&out) {
+        rootless.as_root(|| {
+            snapshot
+                .delete(DeleteFlags::RECURSIVE)
+                .map_err(|(_subvol, err)| err)
+                .context("while deleting snapshot")
+        })??;
+
+        if let Err(PersistError { file, error }) = v1file.persist(out) {
             warn!("failed to persist tempfile, falling back on full copy: {error:?}");
-            std::fs::copy(file.path(), &out).context("while copying sendstream to output")?;
+            std::fs::copy(file.path(), out).context("while copying sendstream to output")?;
         }
         Ok(())
     }
