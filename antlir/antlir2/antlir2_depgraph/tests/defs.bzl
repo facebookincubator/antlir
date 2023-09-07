@@ -10,7 +10,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
-def _make_test_cmd(ctx: AnalysisContext) -> "cmd_args":
+def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
     features = ctx.attrs.features[FeatureInfo]
     features_json = ensure_single_output(ctx.attrs.features)
 

@@ -25,11 +25,11 @@ load(":mounts.bzl", "all_mounts", "nspawn_mount_args")
 
 def _map_image(
         ctx: AnalysisContext,
-        cmd: "cmd_args",
+        cmd: cmd_args,
         identifier: str,
         build_appliance: LayerInfo.type,
         parent: Artifact | None,
-        logs: Artifact) -> ("cmd_args", Artifact):
+        logs: Artifact) -> (cmd_args, Artifact):
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
     produce a new image.
