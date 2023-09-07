@@ -20,11 +20,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         {"sendstream": {
             "build_appliance": (ctx.attrs.build_appliance or ctx.attrs.layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
             "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
+            "volume_name": ctx.attrs.volume_name,
         }},
         with_inputs = True,
     )
     ctx.actions.run(
         cmd_args(
+            "sudo",
             ctx.attrs.antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
             cmd_args(sendstream.as_output(), format = "--out={}"),
@@ -40,6 +42,7 @@ _sendstream = rule(
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "volume_name": attrs.string(default = "volume"),
     },
 )
 
@@ -49,6 +52,7 @@ def anon_v1_sendstream(
         *,
         ctx: AnalysisContext,
         layer: Dependency,
+        volume_name: str = "volume",
         build_appliance: Dependency | None = None,
         antlir2_packager: Dependency | None = None) -> "promise_artifact":
     v1_anon_target = ctx.actions.anon_target(_sendstream, {
@@ -56,6 +60,7 @@ def anon_v1_sendstream(
         "build_appliance": build_appliance or ctx.attrs.build_appliance,
         "layer": layer,
         "name": str(layer.label.raw_target()) + ".sendstream",
+        "volume_name": volume_name,
     })
     return ctx.actions.artifact_promise(
         v1_anon_target.map(lambda x: x[SendstreamInfo].sendstream),
@@ -68,6 +73,7 @@ def _zst_impl(ctx: AnalysisContext) -> list[Provider]:
         ctx = ctx,
         layer = ctx.attrs.layer,
         build_appliance = ctx.attrs.build_appliance,
+        volume_name = ctx.attrs.volume_name,
     )
 
     ctx.actions.run(
@@ -93,6 +99,7 @@ _sendstream_zst = rule(
         "compression_level": attrs.int(default = 3),
         "layer": attrs.dep(providers = [LayerInfo]),
         "sendstream_upgrader": attrs.default_only(attrs.exec_dep(default = "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade")),
+        "volume_name": attrs.string(default = "volume"),
     },
 )
 
@@ -105,6 +112,7 @@ def _v2_impl(ctx: AnalysisContext) -> list[Provider]:
         ctx = ctx,
         layer = ctx.attrs.layer,
         build_appliance = ctx.attrs.build_appliance,
+        volume_name = ctx.attrs.volume_name,
     )
 
     ctx.actions.run(
@@ -132,6 +140,7 @@ _sendstream_v2 = rule(
         "compression_level": attrs.int(default = 3),
         "layer": attrs.dep(providers = [LayerInfo]),
         "sendstream_upgrader": attrs.default_only(attrs.exec_dep(default = "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade")),
+        "volume_name": attrs.string(default = "volume"),
     },
 )
 

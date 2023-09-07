@@ -19,7 +19,9 @@ rust_binary(
         "tracing-subscriber",
         "uuid",
         "walkdir",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )
