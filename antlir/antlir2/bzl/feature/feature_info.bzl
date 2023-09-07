@@ -18,7 +18,8 @@ ParseTimeDependency = record(
         Select,
         # @oss-disable
     ],
-    providers = field(["provider_callable", typing.Any], default = []),
+    # List of provider types.
+    providers = field(typing.Any, default = []),
 )
 
 ParseTimeFeature = record(
