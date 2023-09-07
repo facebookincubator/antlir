@@ -85,7 +85,7 @@ feature_record = record(
     feature_type = str,
     label = TargetLabel,
     analysis = "FeatureAnalysis",
-    run_info = "RunInfo",
+    run_info = RunInfo,
 )
 
 def _feature_as_json(feat: feature_record.type) -> struct:

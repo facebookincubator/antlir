@@ -50,7 +50,7 @@ dot_meta_record = record(
 
 def dot_meta_analyze(
         build_info: [dict[str, typing.Any], None],
-        impl: ["RunInfo", None] = None) -> FeatureAnalysis.type:
+        impl: [RunInfo, None] = None) -> FeatureAnalysis.type:
     return FeatureAnalysis(
         feature_type = "dot_meta",
         data = dot_meta_record(

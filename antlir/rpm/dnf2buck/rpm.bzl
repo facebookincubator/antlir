@@ -97,7 +97,7 @@ def common_impl(
         rpm: Artifact,
         xml: Artifact,
         pkgid: str,
-        antlir2_isolate: "RunInfo",
+        antlir2_isolate: RunInfo,
         reflink_flavors: dict[str, "LayerInfo"]) -> list[Provider]:
     # Produce an rpm2extents artifact for each flavor. This is tied specifically
     # to the version of `rpm` being used in the build appliance, and should be
