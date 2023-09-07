@@ -17,7 +17,17 @@ pub type BuckOutSource = PathBuf;
 pub type PathInLayer = PathBuf;
 
 /// Serialized buck2 LayerInfo provider
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize,
+    Hash
+)]
 pub struct LayerInfo {
     pub label: Label,
     pub subvol_symlink: PathBuf,
