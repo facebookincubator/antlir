@@ -145,6 +145,9 @@ License: {license}
             spec.push_str("%files\n");
             for entry in walkdir::WalkDir::new(&self.layer) {
                 let entry = entry.context("while walking layer")?;
+                if entry.file_type().is_dir() {
+                    continue;
+                }
                 let relpath = Path::new("/").join(
                     entry
                         .path()

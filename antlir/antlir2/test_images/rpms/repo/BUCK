@@ -7,6 +7,10 @@ image.layer(
     name = "foo.layer",
     features = [
         feature.ensure_dirs_exist(dirs = "/foo"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/foo",
+        ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
