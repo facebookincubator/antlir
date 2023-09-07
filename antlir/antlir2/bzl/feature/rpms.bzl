@@ -145,7 +145,7 @@ def rpms_analyze(
         subjects: list[str],
         srcs: dict[str, Artifact] = {},
         unnamed_deps_or_srcs: list[Dependency | Artifact] = [],
-        impl: "RunInfo" | None = None) -> FeatureAnalysis.type:
+        impl: RunInfo | None = None) -> FeatureAnalysis.type:
     rpms = []
     for rpm in subjects:
         rpms.append(rpm_source_record(subject = rpm))

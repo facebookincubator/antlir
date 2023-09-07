@@ -58,7 +58,7 @@ ParseTimeFeature = record(
 FeatureAnalysis = record(
     feature_type = str,
     # Binary implementation of this feature
-    impl_run_info = field(["RunInfo", None], default = None),
+    impl_run_info = field([RunInfo, None], default = None),
     # Arbitrary feature record type (the antlir2 compiler must be able to
     # deserialize this)
     data = typing.Any,
@@ -68,7 +68,7 @@ FeatureAnalysis = record(
     # building things unnecessarily)
     required_artifacts = field(list[Artifact], default = []),
     # Runnable binaries required to build this feature.
-    required_run_infos = field(list["RunInfo"], default = []),
+    required_run_infos = field(list[RunInfo], default = []),
     # Other image layers that are required to build this feature.
     required_layers = field(list["LayerInfo"], default = []),
     # This feature requires running 'antlir2' binaries to inform buck of dynamic
@@ -97,7 +97,7 @@ def data_only_feature_analysis_fn(
         record_type,
         feature_type: str,
         build_phase: BuildPhase.type = BuildPhase("compile")):
-    def inner(impl: "RunInfo" | None = None, **kwargs) -> FeatureAnalysis.type:
+    def inner(impl: RunInfo | None = None, **kwargs) -> FeatureAnalysis.type:
         return FeatureAnalysis(
             feature_type = feature_type,
             data = record_type(**kwargs),
