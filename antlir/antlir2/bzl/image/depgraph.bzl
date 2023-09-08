@@ -3,7 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
+load(
+    "//antlir/antlir2/bzl:types.bzl",
+    "LayerInfo",  # @unused Used as type
+)
 
 def build_depgraph(
         *,
@@ -12,7 +15,7 @@ def build_depgraph(
         features_json: typing.Any,
         format: str,
         subvol: Artifact | None,
-        dependency_layers: list["LayerInfo"],
+        dependency_layers: list[LayerInfo],
         identifier_prefix: str = "") -> Artifact:
     output = ctx.actions.declare_output(identifier_prefix + "depgraph." + format + (".pre" if not subvol else ""))
     ctx.actions.run(

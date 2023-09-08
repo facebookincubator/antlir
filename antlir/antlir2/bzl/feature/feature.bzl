@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 """
 Feature rules in buck2
 ======================
@@ -407,7 +405,7 @@ def feature(
 def _hash_key(x) -> str:
     return sha256(repr(x))
 
-def regroup_features(label: Label, features: list["feature_record"]) -> list["feature_record"]:
+def regroup_features(label: Label, features: list[feature_record]) -> list[feature_record]:
     """
     Some features must be grouped at buck time so that the compiler can act on
     them as a single unit for performance reasons.

@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 """
 WARNING: you probably don't actually want this
 extract.bzl exists for very stripped down environments (for example, building
@@ -26,6 +24,10 @@ binaries without first installing them into a layer.
 load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load(
+    "//antlir/antlir2/bzl/feature:feature_info.bzl",
+    "AnalyzeFeatureContext",  # @unused Used as type
+)
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
@@ -94,7 +96,7 @@ extract_record = record(
 )
 
 def extract_analyze(
-        ctx: "AnalyzeFeatureContext",
+        ctx: AnalyzeFeatureContext,
         source: str,
         deps: dict[str, Dependency],
         binaries: list[str] | None = None,

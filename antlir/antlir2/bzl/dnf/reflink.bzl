@@ -3,7 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
+load(
+    "//antlir/antlir2/bzl:types.bzl",
+    "LayerInfo",  # @unused Used as type
+)
 
 REFLINK_FLAVORS = {
     "centos8": "//antlir/antlir2/facebook/images/build_appliance/centos8:build-appliance.flavorless",
@@ -15,7 +18,7 @@ def rpm2extents(
         antlir2_isolate: RunInfo,
         rpm: Artifact,
         extents: Artifact,
-        build_appliance: "LayerInfo",
+        build_appliance: LayerInfo,
         identifier: str | None = None):
     ctx.actions.run(
         cmd_args(

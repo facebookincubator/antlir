@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 
 # A dependency of a feature that is not yet resolved. This is of very limited

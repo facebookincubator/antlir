@@ -3,12 +3,15 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
+load(
+    ":feature_info.bzl",
+    "AnalyzeFeatureContext",  # @unused Used as type
+    "FeatureAnalysis",
+    "ParseTimeFeature",
+)
 
 # a fully qualified rpm nevra with epoch will contain a ':' so we have to be a
 # little more particular than just checking "if ':' in s"
@@ -140,7 +143,7 @@ rpms_record = record(
 )
 
 def rpms_analyze(
-        ctx: "AnalyzeFeatureContext",
+        ctx: AnalyzeFeatureContext,
         action: str,
         subjects: list[str],
         srcs: dict[str, Artifact] = {},
