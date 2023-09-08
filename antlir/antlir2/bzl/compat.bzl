@@ -24,6 +24,13 @@ def _from_antlir1_flavor(
         if strip_rou:
             flavor = flavor.split("-", 1)
             flavor = flavor[0]
+
+        if flavor.endswith("-untested") and "-rou-" not in flavor:
+            if is_buck2():
+                flavor = flavor.removesuffix("-untested")
+            else:
+                flavor = flavor[:-len("-untested")]
+
         if flavor == "antlir_test":
             flavor = "//antlir/antlir2/test_images:test-image-flavor"
         else:

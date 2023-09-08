@@ -14,9 +14,8 @@ flavor(
     name = "none",
     # TODO: this should have its own build_appliance that doesn't have dnf
     # installed, but is not strictly necessary right now
-    default_build_appliance = "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance.flavorless",
+    default_build_appliance = "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
     default_dnf_repo_set = ":empty-repo-set",
-    flavored_build_appliance = "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
     rpm_reflink_flavor = None,
     visibility = ["PUBLIC"],
 )

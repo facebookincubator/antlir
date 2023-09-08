@@ -148,8 +148,8 @@ def image_layer(
                 fail("antlir2 does not support flavor_config_override: {}".format(flavor_config_override))
             antlir2_image.layer(
                 name = name + ".antlir2",
-                parent_layer = parent_layer + ".antlir2" if parent_layer else None,
                 flavor = flavor,
+                parent_layer = parent_layer + ".antlir2" if parent_layer else None,
                 features = (features or []) + antlir2_features,
                 implicit_antlir2 = True,
                 compatible_with = antlir2_compatible_with,

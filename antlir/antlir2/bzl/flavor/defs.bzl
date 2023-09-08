@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorDnfInfo", "FlavorInfo", "LayerInfo")
 # @oss-disable
-load("//antlir/bzl:build_defs.bzl", "alias", "config")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
 
 _flavor_attrs = {
@@ -46,26 +46,7 @@ _flavor = rule(
     attrs = _flavor_attrs,
 )
 
-def flavor(
-        name: str,
-        flavored_build_appliance: str,
-        # Force the flavor author to say that their flavor does not support
-        # reflink to make it impossible to forget
-        rpm_reflink_flavor: str | None,
-        **kwargs):
-    kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
-
-    # Ideally this would be a subtarget, but then it would be a circular dependency
-    alias(
-        name = name + ".build-appliance",
-        actual = flavored_build_appliance,
-        visibility = kwargs.get("visibility", None),
-    )
-    return _flavor(
-        name = name,
-        rpm_reflink_flavor = rpm_reflink_flavor,
-        **kwargs
-    )
+flavor = rule_with_default_target_platform(_flavor)
 
 def _overridden_attr(self, parent):
     if self != None:
@@ -102,28 +83,4 @@ _child_flavor = rule(
     },
 )
 
-def child_flavor(
-        name: str,
-        parent: str,
-        flavored_build_appliance: str | None = None,
-        **kwargs):
-    kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
-
-    # Ideally this would be a subtarget, but then it would be a circular dependency
-    if flavored_build_appliance:
-        alias(
-            name = name + ".build-appliance",
-            actual = flavored_build_appliance,
-            visibility = kwargs.get("visibility", None),
-        )
-    else:
-        alias(
-            name = name + ".build-appliance",
-            actual = parent + ".build-appliance",
-            visibility = kwargs.get("visibility", None),
-        )
-    return _child_flavor(
-        name = name,
-        parent = parent,
-        **kwargs
-    )
+child_flavor = rule_with_default_target_platform(_child_flavor)
