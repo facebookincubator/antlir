@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "default_target_platform_kwargs", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -32,7 +30,7 @@ _default_attrs = {
 }
 
 def _generic_impl_with_layer(
-        layer: [Dependency, "provider_collection"],
+        layer: [Dependency, ProviderCollection],
         *,
         ctx: AnalysisContext,
         format: str,
@@ -103,7 +101,7 @@ def _generic_impl(
 # Create a new buck2 rule that implements a specific package format.
 def _new_package_rule(
         format: str,
-        rule_attrs: dict[str, "attribute"] = {},
+        rule_attrs: dict[str, Attr] = {},
         dot_meta: bool = True,
         can_be_partition = False):
     return rule(
@@ -173,7 +171,7 @@ def _new_compressed_package_rule(
         compressor: str,
         uncompressed: typing.Callable,
         default_compression_level: int,
-        rule_attrs: dict[str, "attribute"] = {}):
+        rule_attrs: dict[str, Attr] = {}):
     return rule(
         impl = partial(
             _compressed_impl,

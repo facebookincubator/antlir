@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
@@ -12,6 +10,10 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
+load(
+    "//antlir/antlir2/bzl/feature:mount.bzl",
+    "mount_record",  # @unused Used as type
+)
 # @oss-disable
 # @oss-disable
 load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
@@ -65,7 +67,7 @@ def _map_image(
 
     return cmd, out
 
-def _nspawn_sub_target(nspawn_binary: Dependency, subvol: Artifact, mounts: list["mount_record"]) -> list[Provider]:
+def _nspawn_sub_target(nspawn_binary: Dependency, subvol: Artifact, mounts: list[mount_record]) -> list[Provider]:
     dev_mode_args = cmd_args()
     if REPO_CFG.artifacts_require_repo:
         dev_mode_args = cmd_args(
@@ -105,7 +107,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         feature_anon_kwargs,
     ).map(partial(_impl_with_features, ctx = ctx))
 
-def _impl_with_features(features: "provider_collection", *, ctx: AnalysisContext) -> list[Provider]:
+def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -> list[Provider]:
     flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
     if not ctx.attrs.antlir_internal_build_appliance and not flavor:
         fail("flavor= was not set, and {} does not have a flavor".format(ctx.attrs.parent_layer.label))

@@ -3,13 +3,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("@bazel_skylib//lib:paths.bzl", "paths")
 # @oss-disable
-load("//antlir/rpm/dnf2buck:rpm.bzl", "nevra_to_string", "package_href")
+load(
+    "//antlir/rpm/dnf2buck:repo.bzl",
+    "RepoInfo",  # @unused Used as type
+)
+load(
+    "//antlir/rpm/dnf2buck:rpm.bzl",
+    "RpmInfo",  # @unused Used as type
+    "nevra_to_string",
+    "package_href",
+)
 
-def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list["RepoInfo"]) -> Artifact:
+def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list[RepoInfo]) -> Artifact:
     """
     Produce a directory that contains a local copy of the available RPM repo's
     repodata directories.
@@ -31,7 +38,7 @@ def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list["R
     return dir
 
 # Some RPMs are problematic and don't work with cow
-def _disable_reflink(rpm: "RpmInfo"):
+def _disable_reflink(rpm: RpmInfo):
     if rpm.nevra.name == "foo-not-reflinked":
         return True
     # @oss-disable
@@ -39,7 +46,7 @@ def _disable_reflink(rpm: "RpmInfo"):
 
 def _best_rpm_artifact(
         *,
-        rpm_info: "RpmInfo",
+        rpm_info: RpmInfo,
         reflink_flavor: str | None) -> Artifact:
     if not reflink_flavor:
         return rpm_info.raw_rpm
@@ -56,7 +63,7 @@ def _best_rpm_artifact(
             fail("{} does not have a reflinkable artifact for {}".format(rpm_info.nevra, reflink_flavor))
         return rpm_info.extents[reflink_flavor]
 
-def _possible_rpm_artifacts(*, rpm_info: "RpmInfo", reflink_flavor: str | None) -> list[Artifact]:
+def _possible_rpm_artifacts(*, rpm_info: RpmInfo, reflink_flavor: str | None) -> list[Artifact]:
     artifacts = [rpm_info.raw_rpm]
     if reflink_flavor and reflink_flavor in rpm_info.extents:
         artifacts.append(rpm_info.extents[reflink_flavor])
@@ -65,7 +72,7 @@ def _possible_rpm_artifacts(*, rpm_info: "RpmInfo", reflink_flavor: str | None) 
 def compiler_plan_to_local_repos(
         ctx: AnalysisContext,
         identifier_prefix: str,
-        dnf_available_repos: list["RepoInfo"],
+        dnf_available_repos: list[RepoInfo],
         compiler_plan: Artifact,
         reflink_flavor: str | None) -> Artifact:
     """

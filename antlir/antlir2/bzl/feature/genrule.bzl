@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
@@ -32,7 +30,7 @@ def genrule(
     )
 
 genrule_record = record(
-    cmd = list["resolved_macro"],
+    cmd = list[ResolvedStringWithMacros],
     user = str,
     boot = bool,
     bind_repo_ro = bool,
@@ -44,7 +42,7 @@ def genrule_analyze(
         boot: bool,
         bind_repo_ro: bool,
         mount_platform: bool,
-        args: dict[str, str | "resolved_macro"]) -> FeatureAnalysis:
+        args: dict[str, str | ResolvedStringWithMacros]) -> FeatureAnalysis:
     cmd = {int(key.removeprefix("cmd_")): val for key, val in args.items() if key.startswith("cmd_")}
     cmd = [val for _key, val in sorted(cmd.items())]
     return FeatureAnalysis(

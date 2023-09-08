@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
@@ -54,7 +52,7 @@ def anon_v1_sendstream(
         layer: Dependency,
         volume_name: str = "volume",
         build_appliance: Dependency | None = None,
-        antlir2_packager: Dependency | None = None) -> "promise_artifact":
+        antlir2_packager: Dependency | None = None) -> Artifact:
     v1_anon_target = ctx.actions.anon_target(_sendstream, {
         "antlir2_packager": antlir2_packager or ctx.attrs.antlir2_packager,
         "build_appliance": build_appliance or ctx.attrs.build_appliance,
