@@ -93,7 +93,7 @@ def _implicit_image_test(subvol: Artifact, implicit_image_test: ExternalRunnerTe
     )
     return implicit_image_test
 
-def _impl(ctx: AnalysisContext) -> "promise":
+def _impl(ctx: AnalysisContext) -> Promise:
     if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
         fail("'flavor' must be set if there is no 'parent_layer'")
 
