@@ -9,7 +9,7 @@ def build_depgraph(
         *,
         ctx: AnalysisContext,
         parent_depgraph: Artifact | None,
-        features_json: "write_json_cli_args" | None,
+        features_json: typing.Any,
         format: str,
         subvol: Artifact | None,
         dependency_layers: list["LayerInfo"],
