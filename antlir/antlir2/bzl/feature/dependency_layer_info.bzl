@@ -15,7 +15,7 @@ layer_dep = record(
     appears_to_be_antlir1_layer = [bool, None],
 )
 
-def layer_dep_analyze(layer: Dependency) -> layer_dep.type:
+def layer_dep_analyze(layer: Dependency) -> layer_dep:
     """
     Serialize a Layer dependency to a subset of LayerInfo that can be serialized
     and passed to antlir2

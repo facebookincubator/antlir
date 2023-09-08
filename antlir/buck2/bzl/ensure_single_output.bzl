@@ -6,7 +6,7 @@
 # @starlark-rust: allow_string_literals_in_type_expr
 
 def ensure_single_output(
-        dep: Dependency | Artifact | DefaultInfo.type | "provider_collection",
+        dep: Dependency | Artifact | DefaultInfo | "provider_collection",
         optional: bool = False) -> Artifact | None:
     if type(dep) == "artifact":
         return dep

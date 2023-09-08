@@ -14,7 +14,7 @@ def ensure_subdirs_exist(
         subdirs_to_create: str | Select,
         mode: int | str | Select = 0o755,
         user: str | Select = "root",
-        group: str | Select = "root") -> list[ParseTimeFeature.type]:
+        group: str | Select = "root") -> list[ParseTimeFeature]:
     """
     `ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y` and
     `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already been
@@ -54,7 +54,7 @@ def ensure_dirs_exist(
         dirs: str,
         mode: int | str = 0o755,
         user: str = "root",
-        group: str = "root") -> list[ParseTimeFeature.type]:
+        group: str = "root") -> list[ParseTimeFeature]:
     """Equivalent to `ensure_subdirs_exist("/", dirs, ...)`."""
     return ensure_subdirs_exist(
         into_dir = "/",

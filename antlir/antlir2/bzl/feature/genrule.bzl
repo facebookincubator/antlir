@@ -15,7 +15,7 @@ def genrule(
         user: str | Select = "nobody",
         boot: bool | Select = False,
         bind_repo_ro: bool | Select = False,
-        mount_platform: bool | Select = False) -> ParseTimeFeature.type:
+        mount_platform: bool | Select = False) -> ParseTimeFeature:
     return ParseTimeFeature(
         feature_type = "genrule",
         impl = antlir2_dep("features:genrule"),
@@ -44,7 +44,7 @@ def genrule_analyze(
         boot: bool,
         bind_repo_ro: bool,
         mount_platform: bool,
-        args: dict[str, str | "resolved_macro"]) -> FeatureAnalysis.type:
+        args: dict[str, str | "resolved_macro"]) -> FeatureAnalysis:
     cmd = {int(key.removeprefix("cmd_")): val for key, val in args.items() if key.startswith("cmd_")}
     cmd = [val for _key, val in sorted(cmd.items())]
     return FeatureAnalysis(

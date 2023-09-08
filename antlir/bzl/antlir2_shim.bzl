@@ -55,7 +55,7 @@ antlir2_setting = native.enum(
     "test",
 ) if is_buck2() else _antlir2_setting_buck1
 
-def _antlir2_or_default(antlir2: antlir2_setting.type | None, default: bool) -> bool:
+def _antlir2_or_default(antlir2: antlir2_setting | None, default: bool) -> bool:
     if antlir2 != None:
         return antlir2 == antlir2_setting("yes")
     else:

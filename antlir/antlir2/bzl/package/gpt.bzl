@@ -12,7 +12,7 @@ PartitionType = enum("linux", "esp")
 
 def Partition(
         src: str,
-        type: PartitionType.type = PartitionType("linux"),
+        type: PartitionType = PartitionType("linux"),
         label: str | None = None):
     return (src, type.value, label, "_internal_came_from_package_fn")
 

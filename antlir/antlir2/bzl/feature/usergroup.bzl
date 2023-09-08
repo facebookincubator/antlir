@@ -17,7 +17,7 @@ def user_add(
         shell: str | Select = SHELL_NOLOGIN,
         uid: int | Select | None = None,
         supplementary_groups: list[str | Select] | Select = [],
-        comment: str | None = None) -> ParseTimeFeature.type:
+        comment: str | None = None) -> ParseTimeFeature:
     """
     Add a user entry to /etc/passwd.
 
@@ -64,7 +64,7 @@ def user_add(
 def group_add(
         *,
         groupname: str | Select,
-        gid: int | Select | None = None) -> ParseTimeFeature.type:
+        gid: int | Select | None = None) -> ParseTimeFeature:
     """
     Add a group entry to /etc/group
 
@@ -84,7 +84,7 @@ def group_add(
 def usermod(
         *,
         username: str | Select,
-        add_supplementary_groups: list[str | Select] | Select = []) -> ParseTimeFeature.type:
+        add_supplementary_groups: list[str | Select] | Select = []) -> ParseTimeFeature:
     """
     Modify an existing entry in the /etc/passwd and /etc/group databases
     """

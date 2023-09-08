@@ -18,7 +18,7 @@
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
-def antlir1_no_equivalent(*, label: str, description: str) -> ParseTimeFeature.type:
+def antlir1_no_equivalent(*, label: str, description: str) -> ParseTimeFeature:
     return ParseTimeFeature(
         impl = antlir2_dep("features:antlir1_no_equivalent"),
         feature_type = "antlir1_no_equivalent",

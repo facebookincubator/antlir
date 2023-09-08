@@ -19,7 +19,7 @@ def install(
         dst: str | Select,
         mode: int | str | Select | None = None,
         user: str | Select = "root",
-        group: str | Select = "root") -> ParseTimeFeature.type:
+        group: str | Select = "root") -> ParseTimeFeature:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -60,7 +60,7 @@ def install_text(
         dst: str | Select,
         mode: int | str | Select | None = None,
         user: str | Select = "root",
-        group: str | Select = "root") -> ParseTimeFeature.type:
+        group: str | Select = "root") -> ParseTimeFeature:
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
     mode = stat.mode(mode) if mode != None else None
@@ -85,7 +85,7 @@ installed_binary = record(
 
 binary_record = record(
     dev = field([bool, None], default = None),
-    installed = field([installed_binary.type, None], default = None),
+    installed = field([installed_binary, None], default = None),
 )
 
 install_record = record(
@@ -94,7 +94,7 @@ install_record = record(
     mode = int,
     user = str,
     group = str,
-    binary_info = field([binary_record.type, None], default = None),
+    binary_info = field([binary_record, None], default = None),
 )
 
 def get_feature_anaylsis_for_install(
@@ -185,7 +185,7 @@ def install_analyze(
         user: str,
         text: str | None,
         deps_or_srcs: dict[str, Artifact | Dependency] | None = None,
-        impl: RunInfo | None = None) -> FeatureAnalysis.type:
+        impl: RunInfo | None = None) -> FeatureAnalysis:
     src = None if not deps_or_srcs else deps_or_srcs["src"]
     return get_feature_anaylsis_for_install(
         ctx,
