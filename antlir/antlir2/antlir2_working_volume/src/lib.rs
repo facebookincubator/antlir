@@ -39,6 +39,10 @@ pub enum Error {
     },
     #[error("failed to add redirect: {error}")]
     AddRedirect { error: String },
+    #[error("failed to create working volume")]
+    CreateWorkingVolume(std::io::Error),
+    #[error("failed to check eden presence")]
+    CheckEden(std::io::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -116,16 +120,17 @@ impl WorkingVolume {
             }
             Err(e) => match e {
                 Errno::ENOENT => {
+                    trace!("no .eden: {e:?}");
                     if let Err(e) = std::fs::create_dir(&path) {
                         match e.kind() {
                             ErrorKind::AlreadyExists => Ok(Self { path, eden: None }),
-                            _ => Err(e.into()),
+                            _ => Err(Error::CreateWorkingVolume(e)),
                         }
                     } else {
                         Ok(Self { path, eden: None })
                     }
                 }
-                _ => Err(std::io::Error::from(e).into()),
+                _ => Err(Error::CheckEden(std::io::Error::from(e))),
             },
         }
     }
