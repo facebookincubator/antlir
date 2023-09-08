@@ -37,6 +37,7 @@ def _dict(kt, vt):
 
 def _enum(*values):
     if is_buck2():
+        # TODO(nga): `enum` can only be called from top-level statement.
         return native.enum(*values)
 
     values = list(values)
@@ -80,6 +81,7 @@ def _record_ctor(**kwargs):
 
 def _record(**kwargs):
     if is_buck2():
+        # TODO(nga): record can only be called from top-level statement.
         return native.record(**kwargs)
     else:
         return _record_ctor
