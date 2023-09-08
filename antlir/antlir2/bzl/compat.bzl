@@ -14,8 +14,6 @@ def _from_antlir1_flavor(
     if not types.is_string(flavor):
         flavor = flavor.unaliased_name
 
-    flavor = flavor.removesuffix("-aarch64")
-
     if ":" not in flavor:
         if strip_rou:
             flavor = flavor.split("-", 1)
