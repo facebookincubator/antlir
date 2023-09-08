@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -12,7 +10,7 @@ load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":test.bzl", "vm_cpp_test", "vm_python_test", "vm_rust_test", "vm_sh_test")
 load(":types.bzl", "DiskInfo", "VMHostInfo")
 
-def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
+def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     """Generate json file that describes VM hardware and setup"""
 
     # We restrict the ways of booting the VM to prevent accidentally
@@ -60,7 +58,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
     )
     return machine_json, machine_json_args
 
-def _runtime_json(ctx: AnalysisContext) -> (Artifact, "write_json_cli_args"):
+def _runtime_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     """Generate the json file to pass runtime information to the VM"""
     runtime_json = ctx.actions.declare_output("runtime.json")
     runtime_json_args = ctx.actions.write_json(
