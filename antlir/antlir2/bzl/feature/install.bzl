@@ -3,15 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
 load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:stat.bzl", "stat")
-load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
+load(
+    ":feature_info.bzl",
+    "AnalyzeFeatureContext",  # @unused Used as type
+    "FeatureAnalysis",
+    "ParseTimeFeature",
+)
 
 def install(
         *,
@@ -98,7 +101,7 @@ install_record = record(
 )
 
 def get_feature_anaylsis_for_install(
-        ctx: "AnalyzeFeatureContext",
+        ctx: AnalyzeFeatureContext,
         src: Dependency | Artifact | None,
         dst: str,
         group: str,
@@ -178,7 +181,7 @@ def get_feature_anaylsis_for_install(
     )
 
 def install_analyze(
-        ctx: "AnalyzeFeatureContext",
+        ctx: AnalyzeFeatureContext,
         dst: str,
         group: str,
         mode: int | None,
