@@ -27,7 +27,7 @@ def _lint_noop(*_args):
     pass
 
 _bool = bool if is_buck2() else "bool"
-_function = "function"
+_function = native.typing.Callable if is_buck2() else "function"
 _int = int if is_buck2() else "int"
 _str = str if is_buck2() else "str"
 _struct = struct if is_buck2() else "struct"
