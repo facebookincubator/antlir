@@ -11,7 +11,7 @@ def metakv_store(
         key: str | Select,
         value: str | Select,
         require_keys: list[str | Select] | Select = [],
-        store_if_not_exists: bool | Select = False) -> ParseTimeFeature.type:
+        store_if_not_exists: bool | Select = False) -> ParseTimeFeature:
     """
     `metakv_store("key", "value")` writes the key value pair into
     the META_KEY_VALUE_STORE_FILE in the image. This can be read later. It is enforced that
@@ -74,13 +74,13 @@ metakv_remove_record = record(
 )
 
 metakv_record = record(
-    store = [metakv_store_record.type, None],
-    remove = [metakv_remove_record.type, None],
+    store = [metakv_store_record, None],
+    remove = [metakv_remove_record, None],
 )
 
 def metakv_analyze(
         store: dict[str, typing.Any] | None = None,
-        remove: dict[str, typing.Any] | None = None) -> FeatureAnalysis.type:
+        remove: dict[str, typing.Any] | None = None) -> FeatureAnalysis:
     return FeatureAnalysis(
         feature_type = "metakv",
         data = metakv_record(

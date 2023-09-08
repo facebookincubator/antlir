@@ -21,7 +21,7 @@ expected_t = record(
 
 def test_rpms(
         name: str,
-        expected: expected_t.type,
+        expected: expected_t,
         features: list[types.antlir_feature],
         parent_layer: str | None = None,
         flavor: str | None = None,

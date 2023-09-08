@@ -10,7 +10,7 @@ def _symlink_feature(
         *,
         link: str | Select,
         target: str | Select,
-        feature_type: str | Select) -> ParseTimeFeature.type:
+        feature_type: str | Select) -> ParseTimeFeature:
     return ParseTimeFeature(
         feature_type = feature_type,
         impl = antlir2_dep("features:symlink"),
@@ -21,7 +21,7 @@ def _symlink_feature(
         },
     )
 
-def ensure_file_symlink(*, link: str, target: str) -> ParseTimeFeature.type:
+def ensure_file_symlink(*, link: str, target: str) -> ParseTimeFeature:
     """
     Create a symlink to a file.
 
@@ -29,7 +29,7 @@ def ensure_file_symlink(*, link: str, target: str) -> ParseTimeFeature.type:
     """
     return _symlink_feature(feature_type = "ensure_file_symlink", link = link, target = target)
 
-def ensure_dir_symlink(*, link: str, target: str) -> ParseTimeFeature.type:
+def ensure_dir_symlink(*, link: str, target: str) -> ParseTimeFeature:
     """
     Create a symlink to a directory.
 

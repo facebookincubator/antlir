@@ -12,7 +12,7 @@ def clone(
         *,
         src_layer: str | Select,
         src_path: str | Select,
-        dst_path: str | Select) -> ParseTimeFeature.type:
+        dst_path: str | Select) -> ParseTimeFeature:
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
@@ -72,7 +72,7 @@ def clone(
     )
 
 clone_record = record(
-    src_layer = layer_dep.type,
+    src_layer = layer_dep,
     src_path = str,
     dst_path = str,
     omit_outer_dir = bool,
@@ -82,7 +82,7 @@ clone_record = record(
 def clone_analyze(
         src_path: str,
         dst_path: str,
-        deps: dict[str, Dependency]) -> FeatureAnalysis.type:
+        deps: dict[str, Dependency]) -> FeatureAnalysis:
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:

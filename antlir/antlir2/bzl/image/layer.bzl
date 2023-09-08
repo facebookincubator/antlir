@@ -27,7 +27,7 @@ def _map_image(
         ctx: AnalysisContext,
         cmd: cmd_args,
         identifier: str,
-        build_appliance: LayerInfo.type,
+        build_appliance: LayerInfo,
         parent: Artifact | None,
         logs: Artifact) -> (cmd_args, Artifact):
     """
@@ -83,7 +83,7 @@ def _nspawn_sub_target(nspawn_binary: Dependency, subvol: Artifact, mounts: list
         )),
     ]
 
-def _implicit_image_test(subvol: Artifact, implicit_image_test: ExternalRunnerTestInfo.type) -> ExternalRunnerTestInfo.type:
+def _implicit_image_test(subvol: Artifact, implicit_image_test: ExternalRunnerTestInfo) -> ExternalRunnerTestInfo:
     implicit_image_test = ExternalRunnerTestInfo(
         type = implicit_image_test.test_type,
         command = implicit_image_test.command,

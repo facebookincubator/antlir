@@ -13,7 +13,7 @@ def dot_meta(
         *,
         revision: [str, None] = None,
         package_name: [str, None] = None,
-        package_version: [str, None] = None) -> ParseTimeFeature.type:
+        package_version: [str, None] = None) -> ParseTimeFeature:
     """
     Stamp build info into /.meta in the built layer
     """
@@ -45,12 +45,12 @@ build_info_record = record(
 )
 
 dot_meta_record = record(
-    build_info = [build_info_record.type, None],
+    build_info = [build_info_record, None],
 )
 
 def dot_meta_analyze(
         build_info: [dict[str, typing.Any], None],
-        impl: [RunInfo, None] = None) -> FeatureAnalysis.type:
+        impl: [RunInfo, None] = None) -> FeatureAnalysis:
     return FeatureAnalysis(
         feature_type = "dot_meta",
         data = dot_meta_record(

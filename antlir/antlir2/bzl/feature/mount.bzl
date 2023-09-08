@@ -17,7 +17,7 @@ def layer_mount(
         *,
         source: str | Select,
         mountpoint: str | None = None,
-        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature.type]:
+        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature]:
     features = [
         ParseTimeFeature(
             feature_type = "mount",
@@ -50,7 +50,7 @@ def host_mount(
         source: str,
         is_directory: bool,
         mountpoint: str | None = None,
-        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature.type]:
+        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature]:
     mountpoint = mountpoint or source
     features = [ParseTimeFeature(
         feature_type = "mount",
@@ -93,7 +93,7 @@ layer_mount_record = record(
     # TODO: this is only nullable because implicit conversions from antlir1
     # don't correctly set this in many cases
     mountpoint = [str, None],
-    src = layer_dep.type,
+    src = layer_dep,
 )
 
 host_mount_record = record(
@@ -103,17 +103,17 @@ host_mount_record = record(
 )
 
 mount_record = record(
-    layer = [layer_mount_record.type, None],
-    host = [host_mount_record.type, None],
+    layer = [layer_mount_record, None],
+    host = [host_mount_record, None],
 )
 
 def mount_analyze(
         mountpoint: str | None,
-        source_kind: _source_kind.type,
+        source_kind: str,
         is_directory: bool | None,
         host_source: str | None,
         _implicit_from_antlir1: bool,
-        deps: dict[str, Dependency] = {}) -> FeatureAnalysis.type:
+        deps: dict[str, Dependency] = {}) -> FeatureAnalysis:
     if source_kind == "layer":
         source = deps.pop("source")
         if not mountpoint:

@@ -10,7 +10,7 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 def remove(
         *,
         path: str,
-        must_exist: bool = True) -> ParseTimeFeature.type:
+        must_exist: bool = True) -> ParseTimeFeature:
     """
     Recursively remove a file or directory
 

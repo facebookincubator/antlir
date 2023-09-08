@@ -34,10 +34,10 @@ ParseTimeFeature = record(
     srcs = field([dict[str, [str, Select]], None], default = None),
     # These items must be `deps` and will be validated early in analysis time to
     # contain the required providers
-    deps = field([dict[str, ParseTimeDependency.type], None], default = None),
+    deps = field([dict[str, ParseTimeDependency], None], default = None),
     # Deps resolved for the execution platform. These should not be installed
     # into images because they are produced only to be run on the build worker
-    exec_deps = field([dict[str, ParseTimeDependency.type], None], default = None),
+    exec_deps = field([dict[str, ParseTimeDependency], None], default = None),
     # Sources/deps that do not require named tracking between the parse and
     # analysis phases. Useful to support `select` in features that accept lists
     # of dependencies.
@@ -51,7 +51,7 @@ ParseTimeFeature = record(
     # discovered in the depgraph, so those features are grouped together in
     # hidden internal layer(s) that acts as the parent layer(s) for the final
     # image.
-    build_phase = field(BuildPhase.type, default = BuildPhase("compile")),
+    build_phase = field(BuildPhase, default = BuildPhase("compile")),
 )
 
 # Produced by the feature implementation, this tells the rule how to build it
@@ -79,7 +79,7 @@ FeatureAnalysis = record(
     # discovered in the depgraph, so those features are grouped together in
     # hidden internal layer(s) that acts as the parent layer(s) for the final
     # image.
-    build_phase = field(BuildPhase.type, default = BuildPhase("compile")),
+    build_phase = field(BuildPhase, default = BuildPhase("compile")),
 )
 
 Tools = record(
@@ -90,14 +90,14 @@ AnalyzeFeatureContext = record(
     label = Label,
     unique_action_identifier = str,
     actions = AnalysisActions,
-    tools = Tools.type,
+    tools = Tools,
 )
 
 def data_only_feature_analysis_fn(
         record_type,
         feature_type: str,
-        build_phase: BuildPhase.type = BuildPhase("compile")):
-    def inner(impl: RunInfo | None = None, **kwargs) -> FeatureAnalysis.type:
+        build_phase: BuildPhase = BuildPhase("compile")):
+    def inner(impl: RunInfo | None = None, **kwargs) -> FeatureAnalysis:
         return FeatureAnalysis(
             feature_type = feature_type,
             data = record_type(**kwargs),
@@ -108,9 +108,9 @@ def data_only_feature_analysis_fn(
     return inner
 
 def with_phase_override(
-        feature: FeatureAnalysis.type,
+        feature: FeatureAnalysis,
         *,
-        phase: BuildPhase.type) -> FeatureAnalysis.type:
+        phase: BuildPhase) -> FeatureAnalysis:
     kwargs = {k: getattr(feature, k) for k in dir(feature)}
     kwargs["build_phase"] = phase
     return FeatureAnalysis(**kwargs)

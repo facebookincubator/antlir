@@ -15,7 +15,7 @@ def tarball(
         src: str,
         into_dir: str,
         user: str = "root",
-        group: str = "root") -> ParseTimeFeature.type:
+        group: str = "root") -> ParseTimeFeature:
     return ParseTimeFeature(
         feature_type = "tarball",
         impl = antlir2_dep("features:install"),
@@ -41,7 +41,7 @@ def tarball_analyze(
         into_dir: str,
         user: str,
         group: str,
-        srcs: dict[str, Artifact]) -> FeatureAnalysis.type:
+        srcs: dict[str, Artifact]) -> FeatureAnalysis:
     tarball = srcs["source"]
 
     if user != "root" or group != "root":

@@ -17,7 +17,7 @@ nevra = record(
     arch = str,
 )
 
-def nevra_to_string(nevra: nevra.type) -> str:
+def nevra_to_string(nevra: nevra) -> str:
     return "{}-{}:{}-{}.{}".format(
         nevra.name,
         nevra.epoch,
@@ -26,7 +26,7 @@ def nevra_to_string(nevra: nevra.type) -> str:
         nevra.arch,
     )
 
-def package_href(nevra: nevra.type | str, id: str) -> str:
+def package_href(nevra: nevra | str, id: str) -> str:
     """
     Make the location encode the pkgid. The last path component is the package
     nevra so that dnf logs look nice, but the repo proxy only looks at the
