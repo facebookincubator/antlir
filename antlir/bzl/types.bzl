@@ -92,12 +92,12 @@ def _record(**kwargs):
 # for later type checking after this frontend interface allows either the
 # concrete type or a (possibly incorrect) selector
 def _or_selector(ty):
-    return [ty, "selector"]
+    return ty | native.Select if is_buck2() else ""
 
 # In the next diff, this gets changed to strong typing for individual shapes by
 # using `record`
 def _shape(_shape_type):
-    return "struct"
+    return native.struct if is_buck2() else "struct"
 
 # re-export the bazel_skylib types api to avoid annoying imports when both of
 # these are needed
