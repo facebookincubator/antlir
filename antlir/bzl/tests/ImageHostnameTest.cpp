@@ -6,7 +6,7 @@
  */
 
 #include <gtest/gtest.h>
-#include <limits.h>
+#include <climits>
 
 TEST(ImageHostname, TestContainer) {
   // Ensure the hostname configuration was propagated inside the container

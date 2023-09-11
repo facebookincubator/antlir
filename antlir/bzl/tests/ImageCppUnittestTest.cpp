@@ -6,8 +6,8 @@
  */
 
 #include <gtest/gtest.h>
-#include <stdlib.h>
 #include <unistd.h>
+#include <cstdlib>
 #include <set>
 #include <string>
 
