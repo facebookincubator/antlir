@@ -123,26 +123,30 @@ impl QCow2Disk {
     }
 
     pub(crate) fn qemu_args(&self) -> Vec<OsString> {
-        [
-            "-blockdev",
-            &format!(
+        let mut args = vec![
+            "-blockdev".into(),
+            format!(
                 "driver=qcow2,node-name={},file.driver=file,file.filename={}",
                 self.name,
                 self.disk_file_name().to_str().expect("Invalid filename"),
-            ),
-            "-device",
-            &format!(
-                "{driver},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
-                driver = self.opts.interface,
-                name = self.name,
-                serial = self.serial(),
-                pbs = self.opts.physical_block_size,
-                lbs = self.opts.logical_block_size,
-            ),
-        ]
-            .iter()
-            .map(|x| x.into())
-            .collect()
+            )
+            .into(),
+        ];
+        // Create AHCI controller for SATA drives
+        if self.opts.interface == "ide-hd" {
+            args.push("-device".into());
+            args.push(format!("ahci,id=ahci-{}", self.name).into());
+        }
+        args.push("-device".into());
+        args.push(format!(
+            "{driver},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
+            driver = self.opts.interface,
+            name = self.name,
+            serial = self.serial(),
+            pbs = self.opts.physical_block_size,
+            lbs = self.opts.logical_block_size,
+        ).into());
+        args
     }
 }
 
@@ -191,6 +195,17 @@ mod test {
             "-blockdev \
             driver=qcow2,node-name=test-device,file.driver=file,file.filename=/tmp/test/test-device.qcow2 \
             -device virtio-blk,drive=test-device,serial=serial,\
+            physical_block_size=512,logical_block_size=512"
+        );
+
+        // Test SATA drive
+        disk.opts.interface = "ide-hd".into();
+        assert_eq!(
+            &disk.qemu_args().join(OsStr::new(" ")),
+            "-blockdev \
+            driver=qcow2,node-name=test-device,file.driver=file,file.filename=/tmp/test/test-device.qcow2 \
+            -device ahci,id=ahci-test-device \
+            -device ide-hd,drive=test-device,serial=serial,\
             physical_block_size=512,logical_block_size=512"
         );
     }
