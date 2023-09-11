@@ -76,16 +76,6 @@ def _optional(ty):
     #   when we switch all types from string literals.
     return native.eval_type(ty) | None
 
-def _record_ctor(**kwargs):
-    return struct(**kwargs)
-
-def _record(**kwargs):
-    if is_buck2():
-        # TODO(nga): record can only be called from top-level statement.
-        return native.record(**kwargs)
-    else:
-        return _record_ctor
-
 # In the next diff, this gets changed to strong typing for individual shapes by
 # using `record`
 def _shape(_shape_type):
@@ -112,7 +102,6 @@ types = struct(
     # buck target label
     label = _str,
     path = _str,
-    record = _record,
     struct = _struct,
     # either a target label or a file path
     source = _str,
