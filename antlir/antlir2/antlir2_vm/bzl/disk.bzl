@@ -40,7 +40,7 @@ _vm_disk = rule(
         ),
         "bootable": attrs.bool(),
         "interface": attrs.enum(
-            ["virtio-blk", "nvme"],
+            ["virtio-blk", "nvme", "ide-hd"],
             default = "virtio-blk",
             doc = "Interface for attaching to VM",
         ),
