@@ -16,4 +16,4 @@ export_file(
 [initrd(
     kernel = kernels.get(uname),
     visibility = ["PUBLIC"],
-) for uname in kernels.versions["x86_64"].keys()]
+) for uname in kernels.all_kernels]
