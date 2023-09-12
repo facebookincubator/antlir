@@ -1,6 +1,8 @@
 load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "is_buck2", "rust_binary")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
+oncall("twimage")
+
 rust_binary(
     name = "builder",
     srcs = glob(["src/**/*.rs"]),
