@@ -48,7 +48,7 @@ kernels = struct(
     select = struct(
         selection = _selection,
     ),
-    versions = versions,
+    all_kernels = ["5.8.15-301.fc33.x86_64"],
     default = _get("5.8.15-301.fc33.x86_64"),
     default_aarch64 = _get("5.8.15-301.fc33.aarch64", "aarch64"),
 )
