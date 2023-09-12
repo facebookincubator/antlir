@@ -3,6 +3,8 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 
+oncall("twimage")
+
 image.layer(
     name = "base",
     features = [

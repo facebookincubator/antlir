@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
+oncall("twimage")
+
 rust_binary(
     name = "antlir2-packager",
     srcs = glob(["src/**/*.rs"]),

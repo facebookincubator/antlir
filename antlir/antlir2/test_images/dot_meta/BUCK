@@ -8,6 +8,8 @@ load("//antlir/bzl:build_defs.bzl", "buck_sh_test")
 # layer, but we want to make it easier to test with image_diff_test, so these
 # layers explicitly include the `dot_meta` feature
 
+oncall("twimage")
+
 image.layer(
     name = "base",
     features = [

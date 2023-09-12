@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
+oncall("twimage")
+
 rust_binary(
     name = "nspawn",
     srcs = glob(["src/**/*.rs"]),

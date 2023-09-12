@@ -6,6 +6,8 @@ load("//metalos/kernel/bzl:defs.bzl", "metalos_kernel")
 load("//metalos/vm/disks:simple.bzl", "simple_disk")
 load("//metalos/vm/initrd:defs.bzl", "initrd")
 
+oncall("twimage")
+
 rust_binary(
     name = "antlir2_vm",
     srcs = glob(["src/**/*.rs"]),

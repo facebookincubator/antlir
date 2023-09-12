@@ -6,6 +6,8 @@ load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_test", "export_file", "python_binary", "rust_binary")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
+oncall("twimage")
+
 image.layer(
     name = "base",
     features = [],

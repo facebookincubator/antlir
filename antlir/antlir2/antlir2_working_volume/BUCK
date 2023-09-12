@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
+oncall("twimage")
+
 rust_library(
     name = "antlir2_working_volume",
     srcs = glob(["src/**/*.rs"]),
