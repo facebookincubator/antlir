@@ -17,7 +17,6 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "_feature_feature_targets": [ctx.attrs._dot_meta_feature],
         "_objcopy": ctx.attrs._objcopy,
         "_run_nspawn": ctx.attrs._run_nspawn,
-        "_selected_target_arch": ctx.attrs._target_arch,
     }).map(lambda l: [l[LayerInfo], l[DefaultInfo]])
 
 stamp_buildinfo_rule = rule(
