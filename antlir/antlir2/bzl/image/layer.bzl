@@ -22,6 +22,7 @@ load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoInfo", "RepoSetInfo")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
+load(":cfg.bzl", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
 load(":mounts.bzl", "all_mounts", "nspawn_mount_args")
 
@@ -237,8 +238,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             subvol = None,
         )
 
+        target_arch = ctx.attrs._selected_target_arch
+
         compileish_args = cmd_args(
-            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+            cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
             cmd_args([li.depgraph for li in dependency_layers], format = "--image-dependency={}"),
         )
@@ -445,15 +448,22 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
-    "target_arch": attrs.default_only(attrs.string(
-        default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
-    )),
+    "target_arch": attrs.option(
+        attrs.enum(["x86_64", "aarch64"]),
+        default = None,
+        doc = "Build this image for a specific target arch",
+    ),
     "_implicit_image_test": attrs.option(
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
     ),
     "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
     "_run_nspawn": attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn"),
+    "_selected_target_arch": attrs.default_only(attrs.string(
+        default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
+        doc = "CPU arch that this layer is being built for. This is always " +
+              "correct, while target_arch might or might not be set",
+    )),
 }
 
 _layer_attrs.update(
@@ -468,6 +478,7 @@ _layer_attrs.update(
 layer_rule = rule(
     impl = _impl,
     attrs = _layer_attrs,
+    cfg = layer_cfg,
 )
 
 def layer(
