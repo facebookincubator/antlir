@@ -57,6 +57,17 @@ vm.sh_test(
     for name, target in PRECONFIGURED_VM.items()
 ]
 
+# Verify bundle
+vm.cpp_test(
+    name = "cpp-test-bundle",
+    srcs = ["test.cpp"],
+    env = {
+        "ANTLIR2_TEST": "1",
+    },
+    run_as_bundle = True,
+    vm_host = get_vm(),
+)
+
 # Test for sidecar
 rust_binary(
     name = "sidecar",
