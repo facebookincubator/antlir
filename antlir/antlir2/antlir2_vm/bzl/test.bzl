@@ -119,12 +119,24 @@ def _implicit_vm_test(
         test_rule,
         name: str,
         vm_host: str,
+        run_as_bundle: bool = False,
         timeout_secs: int = 300,
         labels: list[str] | None = None,
         _add_outer_labels: list[str] = [],
         **kwargs):
     """Wraps a unit test rule to execute inside a VM. @vm_host must be a VM
-    target constructed by `:defs.bzl::vm.host()`."""
+    target constructed by `:defs.bzl::vm.host()`.
+
+    @run_as_bundle
+        Provide a mechanism for users to control running all the test cases
+        defined in a single unittest as a bundle.  Running as a bundle means
+        that only *one* VM instance will be spun up for the whole unittest
+        and all test cases will be executed inside that single VM instance.
+        This might have undesirable effects if the test case is intentionally
+        doing something that changes the state of the VM that cannot or
+        should not be undone by the test fixture (ie, rebooting or setting
+        a sysctl that cannot be undone for example).
+    """
     inner_test_name = name + "_vm_test_inner"
     test_rule(
         name = inner_test_name,
@@ -135,6 +147,9 @@ def _implicit_vm_test(
     labels = list(labels) if labels else []
     labels.append("heavyweight")
     labels.extend(_add_outer_labels)
+
+    if run_as_bundle:
+        labels.append("run_as_bundle")
 
     # @oss-disable
         # @oss-disable
