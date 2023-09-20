@@ -13,7 +13,10 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fmt::Display;
+use std::fs::File;
+use std::io::Seek;
 use std::io::Write;
+use std::os::fd::IntoRawFd;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -260,13 +263,21 @@ pub trait CompileFeature {
     }
 }
 
+fn ctx_memfd(ctx: &CompilerContext) -> Result<File> {
+    let opts = memfd::MemfdOptions::default().close_on_exec(false);
+    let mfd = opts.create("ctx").context("while creating memfd")?;
+    serde_json::to_writer(&mut mfd.as_file(), &ctx).context("while serializing CompilerContext")?;
+    mfd.as_file().rewind()?;
+    Ok(mfd.into_file())
+}
+
 impl CompileFeature for Feature {
     fn base_compileish_cmd(&self, sub: &'static str, ctx: &CompilerContext) -> Result<Command> {
-        let ctx_json = serde_json::to_string(ctx).context("while serializing CompilerContext")?;
+        let ctx_file = ctx_memfd(ctx).context("while serializing CompilerContext")?;
         let mut cmd = Feature::base_cmd(self);
         cmd.arg(sub)
             .arg("--ctx")
-            .arg(ctx_json)
+            .arg(Path::new("/proc/self/fd").join(ctx_file.into_raw_fd().to_string()))
             .env("RUST_LOG", "trace");
         Ok(cmd)
     }

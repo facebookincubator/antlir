@@ -7,15 +7,16 @@
 
 use antlir2_compile::CompilerContext;
 use antlir2_feature_impl::Feature as _;
+use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use r#impl::Feature;
-use json_arg::Json;
+use json_arg::JsonFile;
+use serde::de::Deserialize;
 use tracing_subscriber::prelude::*;
 
 #[derive(Parser)]
 struct Args {
-    feature: Json<r#impl::Feature>,
     #[clap(subcommand)]
     cmd: Cmd,
 }
@@ -26,11 +27,11 @@ enum Cmd {
     Requires,
     Compile {
         #[clap(long)]
-        ctx: Json<CompilerContext>,
+        ctx: JsonFile<CompilerContext>,
     },
     Plan {
         #[clap(long)]
-        ctx: Json<CompilerContext>,
+        ctx: JsonFile<CompilerContext>,
     },
 }
 
@@ -50,7 +51,9 @@ fn main() -> Result<()> {
         .init();
 
     let args = Args::parse();
-    let feature = args.feature.into_inner();
+    let mut deser = serde_json::Deserializer::from_reader(std::io::stdin());
+    let feature =
+        r#impl::Feature::deserialize(&mut deser).context("while deserializing feature data")?;
     match args.cmd {
         Cmd::Provides => {
             serde_json::to_writer_pretty(std::io::stdout(), &Feature::provides(&feature)?)?;

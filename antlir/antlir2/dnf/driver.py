@@ -445,11 +445,8 @@ def driver(spec) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("spec", type=json.loads)
-
-    args = parser.parse_args()
-    driver(args.spec)
+    spec = json.load(sys.stdin)
+    driver(spec)
 
 
 if __name__ == "__main__":
