@@ -115,6 +115,32 @@ _vm_test = rule(
 
 vm_test = rule_with_default_target_platform(_vm_test)
 
+def _get_internal_labels(test_rule, run_as_bundle: bool):
+    wrapper_labels = ["heavyweight"]
+    if run_as_bundle:
+        wrapper_labels.append(special_tags.run_as_bundle)
+    if fully_qualified_test_name_rollout.use_fully_qualified_name():
+        wrapper_labels = wrapper_labels + [NAMING_ROLLOUT_LABEL]
+    wrapper_labels.append(special_tags.enable_artifact_reporting)
+
+    inner_labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=8:vmtest")
+
+    # Due to a complex internal migration, these labels are required to both
+    # change the runtime behavior of the outer test, as well as build-time
+    # behavior of the inner target.
+    if test_rule == python_unittest:
+        wrapper_labels.append("use-testpilot-adapter")
+        inner_labels.append("use-testpilot-adapter")
+
+        # this tag gets added to the inner test automatically, but we must
+        # inform tpx that the wrapper observes the same behavior
+        wrapper_labels.append("tpx:list-format-migration:json")
+
+        # also annotate wrapper target with a framework
+        wrapper_labels = add_test_framework_label(wrapper_labels, "test-framework=8:vmtest")
+
+    return inner_labels, wrapper_labels
+
 def _implicit_vm_test(
         test_rule,
         name: str,
@@ -137,27 +163,26 @@ def _implicit_vm_test(
         should not be undone by the test fixture (ie, rebooting or setting
         a sysctl that cannot be undone for example).
     """
+    wrapper_labels = list(labels) if labels else []
+    wrapper_labels.extend(_add_outer_labels)
+    inner_labels = []
+
+    # @oss-disable
+    # @oss-disable
+    # @oss-disable
+
     inner_test_name = name + "_vm_test_inner"
     test_rule(
         name = inner_test_name,
         antlir_rule = "user-internal",
-        labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=8:vmtest"),
+        labels = inner_labels,
         **kwargs
     )
-    labels = list(labels) if labels else []
-    labels.append("heavyweight")
-    labels.extend(_add_outer_labels)
-
-    if run_as_bundle:
-        labels.append("run_as_bundle")
-
-    # @oss-disable
-        # @oss-disable
 
     vm_test(
         name = name,
         test = ":" + inner_test_name,
-        test_labels = labels + [special_tags.enable_artifact_reporting],
+        test_labels = wrapper_labels,
         vm_host = vm_host,
         timeout_secs = timeout_secs,
         # VM is not ready for other arch yet
@@ -167,7 +192,7 @@ def _implicit_vm_test(
 vm_cpp_test = partial(
     _implicit_vm_test,
     cpp_unittest,
-    _add_outer_labels = ["tpx:optout-test-result-output-spec"],
+    # @oss-disable
     supports_static_listing = False,
 )
 vm_python_test = partial(_implicit_vm_test, python_unittest, supports_static_listing = False)
