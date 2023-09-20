@@ -47,6 +47,7 @@ def feature_impl(
         deps = [
             "anyhow",
             "clap",
+            "serde",
             "serde_json",
             "tracing-glog",
             "tracing-subscriber",

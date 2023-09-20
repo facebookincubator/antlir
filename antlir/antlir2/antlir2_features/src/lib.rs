@@ -6,6 +6,7 @@
  */
 
 use std::cmp::Ordering;
+use std::io::Seek;
 use std::process::Command;
 
 use buck_label::Label;
@@ -29,14 +30,19 @@ impl Feature {
     /// Create a Command that will run this feature implementation process with the data passed as a cli arg
     pub fn base_cmd(&self) -> Command {
         let mut run_info = self.run_info.iter();
-        let feature_json = serde_json::to_string(&self.data)
-            .expect("serde_json::Value reserialization will never fail");
         let mut cmd = Command::new(
             run_info
                 .next()
                 .expect("run_info will always have >=1 element"),
         );
-        cmd.args(run_info).arg(feature_json);
+        let opts = memfd::MemfdOptions::default().close_on_exec(false);
+        let mfd = opts
+            .create("stdin")
+            .expect("failed to create memfd for stdin");
+        serde_json::to_writer(&mut mfd.as_file(), &self.data)
+            .expect("serde_json::Value reserialization will never fail");
+        mfd.as_file().rewind().expect("failed to rewind memfd");
+        cmd.args(run_info).stdin(mfd.into_file());
         cmd
     }
 }

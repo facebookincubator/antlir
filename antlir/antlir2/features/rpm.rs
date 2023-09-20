@@ -8,6 +8,7 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
+use std::io::Seek;
 use std::path::Path;
 use std::process::Command;
 use std::process::Stdio;
@@ -318,7 +319,7 @@ fn run_dnf_driver(
         .into_iter()
         .flatten()
         .collect::<Vec<_>>();
-    let input = serde_json::to_string(&DriverSpec {
+    let spec = DriverSpec {
         repos: Some(ctx.dnf().repos()),
         install_root: ctx.root(),
         items: &items,
@@ -329,8 +330,7 @@ fn run_dnf_driver(
         resolved_transaction,
         ignore_postin_script_error: internal_only_options.ignore_postin_script_error,
         layer_label: ctx.label().clone(),
-    })
-    .context("while serializing dnf-driver input")?;
+    };
 
     std::fs::create_dir_all(ctx.dst_path("/dev")).context("while ensuring /dev exists")?;
     nix::mount::mount(
@@ -342,8 +342,14 @@ fn run_dnf_driver(
     )
     .context("while mounting /dev in installroot")?;
 
+    let opts = memfd::MemfdOptions::default().close_on_exec(false);
+    let mfd = opts.create("input").context("while creating memfd")?;
+    serde_json::to_writer(&mut mfd.as_file(), &spec)
+        .context("while serializing dnf-driver input")?;
+    mfd.as_file().rewind()?;
+
     let mut child = Command::new("/__antlir2__/dnf/driver")
-        .arg(&input)
+        .stdin(mfd.into_file())
         .stdout(Stdio::piped())
         .spawn()
         .context("while spawning dnf-driver")?;
