@@ -38,7 +38,7 @@ def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list[Re
     return dir
 
 # Some RPMs are problematic and don't work with cow
-def _disable_reflink(rpm: RpmInfo):
+def _disable_reflink(rpm: RpmInfo, repo: RepoInfo):
     if rpm.nevra.name == "foo-not-reflinked":
         return True
     # @oss-disable
@@ -47,11 +47,12 @@ def _disable_reflink(rpm: RpmInfo):
 def _best_rpm_artifact(
         *,
         rpm_info: RpmInfo,
+        repo: RepoInfo,
         reflink_flavor: str | None) -> Artifact:
     if not reflink_flavor:
         return rpm_info.raw_rpm
     else:
-        if _disable_reflink(rpm_info):
+        if _disable_reflink(rpm_info, repo):
             return rpm_info.raw_rpm
 
         # The default behavior is to fail the build if the flavor is reflinkable
@@ -124,6 +125,7 @@ def compiler_plan_to_local_repos(
                     tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = _best_rpm_artifact(
                         rpm_info = rpm_i,
                         reflink_flavor = reflink_flavor,
+                        repo = repo_i,
                     )
                     found = True
 
