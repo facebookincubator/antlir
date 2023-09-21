@@ -44,7 +44,8 @@ def tarball_analyze(
         into_dir: str,
         user: str,
         group: str,
-        srcs: dict[str, Artifact]) -> FeatureAnalysis:
+        srcs: dict[str, Artifact],
+        impl: RunInfo) -> FeatureAnalysis:
     tarball = srcs["source"]
 
     if user != "root" or group != "root":
@@ -65,6 +66,7 @@ def tarball_analyze(
         ),
         feature_type = "install",
         required_artifacts = [extracted],
+        impl_run_info = impl,
     )
 
 def _extract_impl(ctx: AnalysisContext) -> list[Provider]:

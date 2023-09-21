@@ -79,6 +79,8 @@ metakv_record = record(
 )
 
 def metakv_analyze(
+        *,
+        impl: RunInfo,
         store: dict[str, typing.Any] | None = None,
         remove: dict[str, typing.Any] | None = None) -> FeatureAnalysis:
     return FeatureAnalysis(
@@ -87,4 +89,5 @@ def metakv_analyze(
             store = metakv_store_record(**store) if store else None,
             remove = metakv_remove_record(**remove) if remove else None,
         ),
+        impl_run_info = impl,
     )

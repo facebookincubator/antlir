@@ -143,12 +143,13 @@ rpms_record = record(
 )
 
 def rpms_analyze(
+        *,
         ctx: AnalyzeFeatureContext,
+        impl: RunInfo,
         action: str,
         subjects: list[str],
         srcs: dict[str, Artifact] = {},
-        unnamed_deps_or_srcs: list[Dependency | Artifact] = [],
-        impl: RunInfo | None = None) -> FeatureAnalysis:
+        unnamed_deps_or_srcs: list[Dependency | Artifact] = []) -> FeatureAnalysis:
     rpms = []
     for rpm in subjects:
         rpms.append(rpm_source_record(subject = rpm))

@@ -95,7 +95,7 @@ def data_only_feature_analysis_fn(
         record_type,
         feature_type: str,
         build_phase: BuildPhase = BuildPhase("compile")):
-    def inner(impl: RunInfo | None = None, **kwargs) -> FeatureAnalysis:
+    def inner(impl: RunInfo, **kwargs) -> FeatureAnalysis:
         return FeatureAnalysis(
             feature_type = feature_type,
             data = record_type(**kwargs),

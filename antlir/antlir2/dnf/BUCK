@@ -41,7 +41,6 @@ feature.new(
             dst = "/__antlir2__/dnf/versionlock.json",
             mode = "a+rx",
         ),
-        # @oss-disable
     ],
     visibility = ["//antlir/antlir2/build_appliance:features"],
 )
