@@ -150,6 +150,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
     dnf_excluded_rpms = ctx.attrs.dnf_excluded_rpms if ctx.attrs.dnf_excluded_rpms != None else flavor_info.dnf_info.default_excluded_rpms
+
     if dnf_excluded_rpms:
         dnf_excluded_rpms = ctx.actions.write_json("excluded_rpms.json", dnf_excluded_rpms)
     else:
