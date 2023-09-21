@@ -22,10 +22,6 @@ pub trait Feature<'f> {
 
     fn compile(&self, ctx: &CompilerContext) -> Result<()>;
 
-    fn apply_plan(&self, _ctx: &CompilerContext) -> Result<()> {
-        Ok(())
-    }
-
     fn plan(&self, _ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
         Ok(Default::default())
     }

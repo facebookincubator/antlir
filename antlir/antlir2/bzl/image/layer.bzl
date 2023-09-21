@@ -177,6 +177,12 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     final_depgraph = None
     debug_sub_targets = {}
 
+    # Dirty hack to provide pre-computed dnf repos to multiple phases that
+    # comprise chef-solo image builds. Chef is full of things that require dirty
+    # hacks, and it's not worth the effort to make this gross thing be fully
+    # supported in a non-hacky manner
+    chef_plan_results = {}
+
     for phase in BuildPhase.values():
         phase = BuildPhase(phase)
         build_cmd = []
@@ -290,11 +296,21 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             else:
                 resolved_fbpkgs_json = None
                 resolved_fbpkgs_dir = None
+        elif phase == BuildPhase("chef"):
+            plan = None
+            dnf_repos_dir = chef_plan_results["dnf_repos_dir"]
+            resolved_fbpkgs_json = chef_plan_results["resolved_fbpkgs_json"]
+            resolved_fbpkgs_dir = chef_plan_results["resolved_fbpkgs_dir"]
         else:
             plan = None
             dnf_repos_dir = ctx.actions.symlinked_dir(identifier_prefix + "empty-dnf-repos", {})
             resolved_fbpkgs_json = None
             resolved_fbpkgs_dir = None
+
+        if phase == BuildPhase("chef_package_manager"):
+            chef_plan_results["dnf_repos_dir"] = dnf_repos_dir
+            chef_plan_results["resolved_fbpkgs_json"] = resolved_fbpkgs_json
+            chef_plan_results["resolved_fbpkgs_dir"] = resolved_fbpkgs_dir
 
         logs["compile"] = ctx.actions.declare_output(identifier_prefix + "compile.log")
         if resolved_fbpkgs_dir:

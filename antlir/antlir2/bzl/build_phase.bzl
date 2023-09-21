@@ -15,6 +15,12 @@ BuildPhase = enum(
     # that we can install solo bundles into the image before running chef which
     # gives better visibility than bind-mounting them in at compile time
     "chef_setup",
+    # Package installation (although driven by chef) is all handled internally
+    # in antlir2 and breaking it into its own phase makes it easier to:
+    #  a) attribute time spent on package installation vs time spent run chef
+    #  b) inspect the result of package installation before chef does anything
+    #     else
+    "chef_package_manager",
     # Chef could really be part of "genrule", but breaking it out into its own
     # phase lets us more explicitly order it, while also clearly attributing
     # slowness to the user in the buck logs
@@ -44,6 +50,7 @@ BuildPhase = enum(
 if list(BuildPhase.values()) != [
     "package_manager",
     "chef_setup",
+    "chef_package_manager",
     "chef",
     "chef_cleanup",
     "genrule",
