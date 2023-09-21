@@ -102,6 +102,7 @@ pub struct InstallFbpkg {
     pub tag: String,
     pub dst: Option<String>,
     pub organize: bool,
+    pub organize_alias: Option<String>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
