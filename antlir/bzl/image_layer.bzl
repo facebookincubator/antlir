@@ -146,6 +146,7 @@ def image_layer(
         if is_buck2():
             if not antlir2_allow_ignored_flavor_config_override and flavor_config_override:
                 fail("antlir2 does not support flavor_config_override: {}".format(flavor_config_override))
+
             antlir2_image.layer(
                 name = name + ".antlir2",
                 flavor = flavor,
@@ -154,6 +155,8 @@ def image_layer(
                 implicit_antlir2 = True,
                 compatible_with = antlir2_compatible_with,
                 visibility = get_visibility(image_layer_kwargs.get("visibility")),
+                # Antlir1 provisioning images explicitly install package-devel stub, we need to allow them here.
+                dnf_excluded_rpms = ["aziot-identity-service"],
             )
         else:
             antlir2_shim.fake_buck1_layer(name = name)
