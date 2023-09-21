@@ -109,7 +109,7 @@ def get_feature_anaylsis_for_install(
         user: str,
         skip_debuginfo_split: bool,
         text: str | None,
-        impl: RunInfo | None = None):
+        impl: RunInfo):
     binary_info = None
     required_run_infos = []
     required_artifacts = []
@@ -182,13 +182,13 @@ def get_feature_anaylsis_for_install(
 
 def install_analyze(
         ctx: AnalyzeFeatureContext,
+        impl: RunInfo,
         dst: str,
         group: str,
         mode: int | None,
         user: str,
         text: str | None,
-        deps_or_srcs: dict[str, Artifact | Dependency] | None = None,
-        impl: RunInfo | None = None) -> FeatureAnalysis:
+        deps_or_srcs: dict[str, Artifact | Dependency] | None = None) -> FeatureAnalysis:
     src = None if not deps_or_srcs else deps_or_srcs["src"]
     return get_feature_anaylsis_for_install(
         ctx,

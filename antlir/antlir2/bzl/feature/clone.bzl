@@ -82,7 +82,8 @@ clone_record = record(
 def clone_analyze(
         src_path: str,
         dst_path: str,
-        deps: dict[str, Dependency]) -> FeatureAnalysis:
+        deps: dict[str, Dependency],
+        impl: RunInfo) -> FeatureAnalysis:
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:
@@ -105,4 +106,5 @@ def clone_analyze(
             pre_existing_dest = pre_existing_dest,
         ),
         required_layers = [src_layer[LayerInfo]],
+        impl_run_info = impl,
     )

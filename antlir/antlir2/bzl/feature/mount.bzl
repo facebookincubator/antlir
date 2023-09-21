@@ -113,6 +113,7 @@ def mount_analyze(
         is_directory: bool | None,
         host_source: str | None,
         _implicit_from_antlir1: bool,
+        impl: RunInfo,
         deps: dict[str, Dependency] = {}) -> FeatureAnalysis:
     if source_kind == "layer":
         source = deps.pop("source")
@@ -128,6 +129,7 @@ def mount_analyze(
                 host = None,
             ),
             required_layers = [source[LayerInfo]],
+            impl_run_info = impl,
         )
     elif source_kind == "host":
         return FeatureAnalysis(
@@ -140,6 +142,7 @@ def mount_analyze(
                 ),
                 layer = None,
             ),
+            impl_run_info = impl,
         )
     else:
         fail("invalid source_kind '{}'".format(source_kind))

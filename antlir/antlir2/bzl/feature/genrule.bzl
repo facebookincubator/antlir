@@ -42,7 +42,8 @@ def genrule_analyze(
         boot: bool,
         bind_repo_ro: bool,
         mount_platform: bool,
-        args: dict[str, str | ResolvedStringWithMacros]) -> FeatureAnalysis:
+        args: dict[str, str | ResolvedStringWithMacros],
+        impl: RunInfo) -> FeatureAnalysis:
     cmd = {int(key.removeprefix("cmd_")): val for key, val in args.items() if key.startswith("cmd_")}
     cmd = [val for _key, val in sorted(cmd.items())]
     return FeatureAnalysis(
@@ -56,4 +57,5 @@ def genrule_analyze(
             mount_platform = mount_platform,
         ),
         build_phase = BuildPhase("genrule"),
+        impl_run_info = impl,
     )

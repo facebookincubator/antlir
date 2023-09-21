@@ -97,6 +97,7 @@ extract_record = record(
 
 def extract_analyze(
         ctx: AnalyzeFeatureContext,
+        impl: RunInfo,
         source: str,
         deps: dict[str, Dependency],
         binaries: list[str] | None = None,
@@ -115,6 +116,7 @@ def extract_analyze(
                 buck = None,
             ),
             required_layers = [layer[LayerInfo]],
+            impl_run_info = impl,
         )
     elif source == "buck":
         src = deps["src"]
@@ -145,6 +147,7 @@ def extract_analyze(
             ),
             required_artifacts = [src],
             required_run_infos = [src_runinfo],
+            impl_run_info = impl,
         )
     else:
         fail("invalid extract source '{}'".format(source))

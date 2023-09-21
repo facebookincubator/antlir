@@ -157,6 +157,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 ),
                 label = ctx.label,
             )
+        analyze_kwargs["impl"] = ctx.attrs.inline_features_impls[key][RunInfo]
 
         analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
         for analysis in flatten.flatten(analysis):
@@ -168,7 +169,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 feature_type = analysis.feature_type,
                 label = ctx.label.raw_target(),
                 analysis = analysis,
-                run_info = analysis.impl_run_info or ctx.attrs.inline_features_impls[key][RunInfo],
+                run_info = analysis.impl_run_info,
             )
             inline_features.append(feat)
 
