@@ -12,6 +12,7 @@ def feature_impl(
         extra_srcs: list[str] = [],
         deps: list[str] = [],
         unstable_features: list[str] = [],
+        allow_unused_crate_dependencies: bool = False,
         **kwargs):
     rust_library(
         name = name + ".lib",
@@ -31,6 +32,7 @@ def feature_impl(
             "//antlir/antlir2/antlir2_features:antlir2_features",
             "//antlir/antlir2/features/antlir2_feature_impl:antlir2_feature_impl",
         ],
+        allow_unused_crate_dependencies = allow_unused_crate_dependencies,
         visibility = [
             "//antlir/antlir2/...",
             "//tupperware/cm/antlir2/...",
