@@ -13,13 +13,20 @@ rust_bindgen_library(
     ],
     generate = ("types", "functions", "vars"),
     header = "btrfsutil-sys/bridge.h",
-    visibility = ["//antlir/..."],
+    visibility = [
+        "//antlir/...",
+        "//devenv/velvet/...",
+    ],
 )
 
 rust_library(
     name = "antlir2_btrfs",
     srcs = glob(["src/*.rs"]),
     unittests = False,
+    visibility = [
+        "//antlir/...",
+        "//devenv/velvet/...",
+    ],
     deps = [
         "anyhow",
         "bitflags",
