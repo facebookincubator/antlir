@@ -169,47 +169,6 @@ class UpdatePackageDbTestBase:
                     },
                 )
 
-    async def test_tag_deletion(self) -> None:
-        @asynccontextmanager
-        async def _none_get_db_info_fn(*args, **kwargs):
-            async def _get_db_info_none(pkg, tag, opts, _exist_opts):
-                return pkg, tag, opts if opts else None
-
-            yield _get_db_info_none
-
-        with temp_dir() as td:
-            db_path = td / "idb"
-            _write_json_db(db_path / "p1" / "tik.json", {"a": "b"})
-            _write_json_db(db_path / "p2" / "tok.json", {"y": "z"})  # Will be deleted
-            await self._update(
-                db=db_path,
-                pkg_updates={
-                    "p1": {
-                        "tik": updb.PackageDbUpdate(
-                            updb.UpdateAction.REPLACE, {"c": "d"}
-                        )
-                    },
-                    "never": {
-                        "seen": updb.PackageDbUpdate(
-                            updb.UpdateAction.CREATE, {"m": "n"}
-                        )
-                    },
-                },
-                # None will cause a deletion
-                get_db_info_fn=_none_get_db_info_fn(),
-            )
-            self._check_file(
-                db_path / "p1" / "tik.json",
-                _get_js_content("1003a3786a74bb5fc2b817e752d3499c", {"c": "d"}),
-            )
-            self._check_file(
-                db_path / "never" / "seen.json",
-                _get_js_content("3b96485ebd8dad07ef3393861364407a", {"m": "n"}),
-            )
-            # Should have been deleted
-            # pyre-fixme[16]: `UpdatePackageDbTestBase` has no attribute `assertFalse`.
-            self.assertFalse((db_path / "p2" / "tok.json").exists())
-
 
 class UpdatePackageDbCliTestCase(
     unittest.IsolatedAsyncioTestCase, UpdatePackageDbTestBase

@@ -289,9 +289,11 @@ async def _get_updated_db(
             futures.append(fut)
     for f in asyncio.as_completed(futures):
         pkg, tag, new_maybe_info = await f
-        if new_maybe_info is None:
-            log.warning(f"Empty info returned for {pkg}:{tag} - not including in DB")
-            db_to_update[pkg].pop(tag, None)
+        if new_maybe_info is None:  # pragma: no cover
+            log.warning(f"Empty info returned for {pkg}:{tag}")
+            # Do NOT delete the missing package as this could break TD and block the
+            # entire update diff (if the package is still depended on).
+            db_to_update[pkg][tag] = existing_db[pkg][tag]
         else:
             log.info(f"New info for {pkg}:{tag} -> {new_maybe_info}")
             db_to_update[pkg][tag] = new_maybe_info
