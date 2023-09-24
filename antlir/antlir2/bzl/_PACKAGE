@@ -1,7 +1,6 @@
-load("@fbcode//target_determinator/macros:ci_package.bzl", "ci_package")
-load("@fbcode//target_determinator/macros:labels.bzl", "ci")
+load("@fbcode//target_determinator/macros:ci.bzl", "ci")
 
-ci_package.set(
+ci.package(
     [
         ci.linux(
             ci.aarch64(
