@@ -97,8 +97,6 @@ def _parse_repomd(xml: bytes) -> Iterator[Repodata]:
             assert attr_name == "href"
             (checksum_node,) = data.getElementsByTagName("checksum")
             (checksum_text_node,) = checksum_node.childNodes
-            ((attr_name, checksum_type),) = checksum_node.attributes.items()
-            assert attr_name == "type"
             (size_node,) = data.getElementsByTagName("size")
             (size_text_node,) = size_node.childNodes
             assert len(size_node.attributes) == 0
