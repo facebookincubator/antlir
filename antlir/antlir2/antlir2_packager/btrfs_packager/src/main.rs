@@ -58,6 +58,7 @@ pub struct BtrfsSpec {
     pub compression_level: i32,
     pub label: Option<String>,
     pub free_mb: Option<u64>,
+    pub seed_device: bool,
 }
 
 pub struct LdHandle {
@@ -353,6 +354,7 @@ fn make_btrfs_package<M>(
     label: Option<String>,
     compression_level: i32,
     extra_free_space: Option<ByteSize>,
+    seed_device: bool,
 ) -> Result<()>
 where
     M: Mounter,
@@ -419,6 +421,12 @@ where
     drop(subvols);
 
     mount_handle.umount(true).context("failed to umount")?;
+
+    if seed_device {
+        run_cmd(Command::new("btrfstune").arg("-S").arg("1").arg(ld.path()))
+            .context("while setting seed device")?;
+    }
+
     ld.detach().context("failed to detatch loopback device")?;
 
     Ok(())
@@ -450,5 +458,6 @@ fn main() -> Result<()> {
         spec.label,
         spec.compression_level,
         spec.free_mb.map(ByteSize::mib),
+        spec.seed_device,
     )
 }
