@@ -20,6 +20,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "default_subvol": ctx.attrs.default_subvol,
                 "free_mb": ctx.attrs.free_mb,
                 "label": ctx.attrs.label,
+                "seed_device": ctx.attrs.seed_device,
                 "subvols": {
                     path: {
                         # needs access to the layer for size calculations :(
@@ -62,6 +63,7 @@ _btrfs = rule(
         "default_subvol": attrs.option(attrs.string()),
         "free_mb": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
+        "seed_device": attrs.bool(default = False),
         "subvols": attrs.option(
             attrs.dict(
                 attrs.string(doc = "subvol name"),
