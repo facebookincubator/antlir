@@ -149,7 +149,18 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             dnf_available_repos.append(repo[RepoInfo])
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
-    dnf_excluded_rpms = ctx.attrs.dnf_excluded_rpms if ctx.attrs.dnf_excluded_rpms != None else flavor_info.dnf_info.default_excluded_rpms
+
+    dnf_excluded_rpms = list(ctx.attrs.dnf_excluded_rpms) if ctx.attrs.dnf_excluded_rpms != None else list(flavor_info.dnf_info.default_excluded_rpms)
+
+    # rpmsign is missing a dependency: /usr/lib64/libtss2-rc.so.0
+    # (P557719932). This failure occurss because tpm2-tss provides
+    # /usr/lib64/libtss2-rc.so.0, but aziot-identity-service contains
+    # /usr/lib64/aziot-identity-service/libtss2-rc.so.0 and dnf will happily
+    # install that to satisfy the rpmsign dependency, even though it doesn't
+    # actually do that. Since aziot-identity-service isn't actually used
+    # anywhere, just exclude it
+    if "aziot-identity-service" not in dnf_excluded_rpms:
+        dnf_excluded_rpms.append("aziot-identity-service")
 
     if dnf_excluded_rpms:
         dnf_excluded_rpms = ctx.actions.write_json("excluded_rpms.json", dnf_excluded_rpms)
