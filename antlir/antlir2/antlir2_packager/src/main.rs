@@ -18,6 +18,7 @@ use tracing_subscriber::prelude::*;
 
 mod btrfs;
 mod cpio;
+mod ext;
 mod gpt;
 mod rpm;
 mod sendstream;
@@ -72,6 +73,7 @@ fn main() -> Result<()> {
     match args.spec.into_inner() {
         Spec::Btrfs(p) => p.build(&args.out),
         Spec::Cpio(p) => p.build(&args.out),
+        Spec::Ext3(p) => p.build(&args.out),
         Spec::Gpt(p) => p.build(&args.out),
         Spec::Rpm(p) => p.build(&args.out),
         Spec::Sendstream(p) => p.build(&args.out),

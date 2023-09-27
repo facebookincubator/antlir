@@ -38,6 +38,7 @@ def _generic_impl_with_layer(
         can_be_partition: bool) -> list[Provider]:
     extension = {
         "cpio": ".cpio",
+        "ext3": ".ext3",
         "rpm": ".rpm",
         "squashfs": ".squashfs",
         "tar": ".tar",
@@ -253,11 +254,20 @@ _tar_zst = _new_compressed_package_rule(
     compressor = "zstd",
 )
 
+_ext3 = _new_package_rule(
+    format = "ext3",
+    rule_attrs = {
+        "label": attrs.option(attrs.string(), default = None),
+        "size_mb": attrs.int(),
+    },
+)
+
 def _backwards_compatible_new(format: str, **kwargs):
     {
         "btrfs": btrfs,
         "cpio.gz": _cpio_gz,
         "cpio.zst": _cpio_zst,
+        "ext3": _ext3,
         "rpm": _rpm,
         "sendstream": sendstream,
         "sendstream.v2": sendstream_v2,
@@ -273,6 +283,7 @@ def _backwards_compatible_new(format: str, **kwargs):
 package = struct(
     backward_compatible_new = _backwards_compatible_new,
     btrfs = btrfs,
+    ext3 = rule_with_default_target_platform(_ext3),
     cpio_gz = rule_with_default_target_platform(_cpio_gz),
     cpio_zst = rule_with_default_target_platform(_cpio_zst),
     gpt = gpt,
