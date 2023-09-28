@@ -272,6 +272,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 cmd = cmd_args(
                     cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
                     cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
+                    cmd_args(
+                        json.encode(ctx.attrs.dnf_versionlock_extend),
+                        format = "--dnf-versionlock-extend={}",
+                    ),
                     cmd_args(dnf_excluded_rpms, format = "--dnf-excluded-rpms={}") if dnf_excluded_rpms else cmd_args(),
                     "plan",
                     compileish_args,
@@ -333,6 +337,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             cmd = cmd_args(
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
                 cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
+                cmd_args(
+                    json.encode(ctx.attrs.dnf_versionlock_extend),
+                    format = "--dnf-versionlock-extend={}",
+                ),
                 # @oss-disable
                 "compile",
                 compileish_args,
@@ -467,6 +475,11 @@ _layer_attrs = {
     "dnf_versionlock": attrs.option(
         attrs.source(),
         default = None,
+    ),
+    "dnf_versionlock_extend": attrs.dict(
+        attrs.string(doc = "rpm name"),
+        attrs.string(doc = "rpm evra"),
+        default = {},
     ),
     "flavor": attrs.option(
         attrs.dep(providers = [FlavorInfo]),
