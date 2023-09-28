@@ -201,7 +201,7 @@ struct DriverSpec<'a> {
     items: &'a [RpmItem<'a>],
     mode: DriverMode,
     arch: Arch,
-    versionlock: Option<&'a BTreeMap<String, String>>,
+    versionlock: &'a BTreeMap<String, String>,
     excluded_rpms: Option<&'a BTreeSet<String>>,
     resolved_transaction: Option<DnfTransaction>,
     ignore_postin_script_error: bool,

@@ -324,6 +324,22 @@ test_rpms(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
+test_rpms(
+    name = "versionlock-extend",
+    dnf_versionlock = ":versionlock.json",
+    dnf_versionlock_extend = {
+        "foo": "1-1",
+    },
+    expected = expected_t(installed = ["foo-1-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "foo",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
 protected_installed = test_rpms(
     name = "install-protected",
     expected = expected_t(installed = ["dnf"]),

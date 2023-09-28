@@ -9,6 +9,8 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::ffi::OsStr;
+use std::ffi::OsString;
+use std::os::unix::ffi::OsStringExt;
 use std::path::PathBuf;
 
 use antlir2_compile::Arch;
@@ -17,6 +19,7 @@ use antlir2_compile::DnfContext;
 use antlir2_depgraph::Graph;
 use buck_label::Label;
 use clap::Parser;
+use json_arg::Json;
 use json_arg::JsonFile;
 
 use crate::Error;
@@ -63,6 +66,9 @@ pub(self) struct DnfCompileishArgs {
     #[clap(long = "dnf-versionlock")]
     /// Path to dnf versionlock json file
     pub(crate) versionlock: Option<JsonFile<BTreeMap<String, String>>>,
+    #[clap(long = "dnf-versionlock-extend")]
+    /// Pin RPM versions, overwrites `dnf-versionlock`
+    pub(crate) versionlock_extend: Json<BTreeMap<String, String>>,
     #[clap(long = "dnf-excluded-rpms")]
     /// Path to json file with list of rpms to exclude from dnf operations
     pub(crate) excluded_rpms: Option<JsonFile<BTreeSet<String>>>,
@@ -108,6 +114,7 @@ impl Compileish {
                 DnfCompileishArgs {
                     repos: dnf_repos,
                     versionlock: dnf_versionlock,
+                    versionlock_extend: dnf_versionlock_extend,
                     excluded_rpms: dnf_excluded_rpms,
                 },
             #[cfg(facebook)]
@@ -129,6 +136,10 @@ impl Compileish {
             v.push(Cow::Borrowed(OsStr::new("--dnf-versionlock")));
             v.push(Cow::Borrowed(versionlock.path().as_os_str()));
         }
+        v.push(Cow::Borrowed(OsStr::new("--dnf-versionlock-extend")));
+        let dnf_versionlock_extend = serde_json::to_vec(dnf_versionlock_extend.as_inner())
+            .expect("json reserialization cannot fail");
+        v.push(OsString::from_vec(dnf_versionlock_extend).into());
         if let Some(excluded_rpms) = dnf_excluded_rpms {
             v.push(Cow::Borrowed(OsStr::new("--dnf-excluded-rpms")));
             v.push(Cow::Borrowed(excluded_rpms.path().as_os_str()));
@@ -149,13 +160,20 @@ impl Compileish {
         &self,
         plan: Option<antlir2_compile::plan::Plan>,
     ) -> Result<CompilerContext> {
+        let mut dnf_versionlock = self
+            .dnf
+            .versionlock
+            .clone()
+            .map(JsonFile::into_inner)
+            .unwrap_or_default();
+        dnf_versionlock.extend(self.dnf.versionlock_extend.clone().into_inner());
         CompilerContext::new(
             self.label.clone(),
             self.external.target_arch,
             self.root.clone(),
             DnfContext::new(
                 self.dnf.repos.clone(),
-                self.dnf.versionlock.clone(),
+                dnf_versionlock,
                 self.dnf
                     .excluded_rpms
                     .as_ref()
