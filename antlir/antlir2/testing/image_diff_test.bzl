@@ -14,18 +14,32 @@ def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
 
     test_cmd = cmd_args(
         ctx.attrs.image_diff_test[RunInfo],
-        cmd_args("--"),
-        cmd_args("/parent", format = "--parent={}"),
-        cmd_args("/layer", format = "--layer={}"),
+        cmd_args("--") if ctx.attrs.running_in_image else cmd_args(),
         cmd_args(ctx.attrs.exclude, format = "--exclude={}"),
         cmd_args(ctx.attrs.diff_type, format = "--diff-type={}"),
         cmd_args(ctx.attrs.diff, format = "--expected={}"),
+        cmd_args(
+            "/parent" if ctx.attrs.running_in_image else ctx.attrs.layer[LayerInfo].parent[LayerInfo].subvol_symlink,
+            format = "--parent={}",
+        ),
+        cmd_args(
+            "/layer" if ctx.attrs.running_in_image else ctx.attrs.layer[LayerInfo].subvol_symlink,
+            format = "--layer={}",
+        ),
     )
 
-    return [
+    providers = [
         DefaultInfo(),
         RunInfo(test_cmd),
     ]
+
+    if not ctx.attrs.running_in_image:
+        providers.append(ExternalRunnerTestInfo(
+            type = "simple",
+            command = [test_cmd],
+        ))
+
+    return providers
 
 _image_diff_test = rule(
     impl = _diff_test_impl,
@@ -35,40 +49,59 @@ _image_diff_test = rule(
         "exclude": attrs.list(attrs.string(), default = []),
         "image_diff_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_diff_test:image-diff-test")),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "running_in_image": attrs.bool(),
     },
     doc = "Test that the only changes between a layer and it's parent is what you expect",
 )
 
-def image_diff_test(name: str, diff: str | Select, layer: str, **kwargs):
-    _image_diff_test(
-        name = name + "--script",
-        diff = diff,
-        layer = layer,
-        **kwargs
-    )
+def image_diff_test(
+        *,
+        name: str,
+        diff: str | Select,
+        layer: str,
+        diff_type: str = "all",
+        **kwargs):
+    needs_rpm = diff_type in ("all", "rpm")
 
-    image.layer(
-        name = name + "--layer",
-        # Diff test does rpm list comparison so we need to run it in the BA where we have
-        # `rpm` installed
-        parent_layer = layer + "[build_appliance]",
-        flavor = layer + "[flavor]",
-        features = [
-            feature.ensure_dirs_exist(dirs = "/layer"),
-            feature.layer_mount(
-                source = layer,
-                mountpoint = "/layer",
-            ),
-            feature.ensure_dirs_exist(dirs = "/parent"),
-            feature.layer_mount(
-                source = layer + "[parent_layer]",
-                mountpoint = "/parent",
-            ),
-        ],
-    )
+    if needs_rpm:
+        _image_diff_test(
+            name = name + "--script",
+            diff = diff,
+            layer = layer,
+            diff_type = diff_type,
+            running_in_image = True,
+            **kwargs
+        )
 
-    image_sh_test(
-        name = name,
-        layer = ":{}--layer".format(name),
-        test = ":{}--script".format(name),
-    )
+        image.layer(
+            name = name + "--test-appliance",
+            parent_layer = layer + "[build_appliance]",
+            flavor = layer + "[flavor]",
+            features = [
+                feature.ensure_dirs_exist(dirs = "/layer"),
+                feature.layer_mount(
+                    source = layer,
+                    mountpoint = "/layer",
+                ),
+                feature.ensure_dirs_exist(dirs = "/parent"),
+                feature.layer_mount(
+                    source = layer + "[parent_layer]",
+                    mountpoint = "/parent",
+                ),
+            ],
+        )
+
+        image_sh_test(
+            name = name,
+            layer = ":{}--test-appliance".format(name),
+            test = ":{}--script".format(name),
+        )
+    else:
+        _image_diff_test(
+            name = name,
+            diff = diff,
+            layer = layer,
+            diff_type = diff_type,
+            running_in_image = False,
+            **kwargs
+        )
