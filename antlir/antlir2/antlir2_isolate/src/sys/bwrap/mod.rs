@@ -39,6 +39,7 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
         user,
         ephemeral,
         tmpfs,
+        hostname,
     } = ctx;
     assert_eq!(user, "root", "user != root unimplemented");
     assert!(!register, "register unimplemented");
@@ -67,7 +68,11 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
     // detach from this process's controlling terminal
     bwrap_args.push("--new-session".into());
     bwrap_args.push("--hostname".into());
-    bwrap_args.push("antlir2".into());
+    if let Some(hostname) = hostname {
+        bwrap_args.push(hostname.as_ref().into());
+    } else {
+        bwrap_args.push(Uuid::new_v4().simple().to_string().into());
+    }
 
     // our containers are for isolation, not security, so having all the caps of
     // the parent is desirable when we need to do things like btrfs snapshots

@@ -83,6 +83,21 @@ image.layer(
     ]
 ]
 
+image_python_test(
+    name = "test-hostname",
+    srcs = ["test_hostname.py"],
+    hostname = "antlir2-test-hostname",
+    layer = ":base",
+)
+
+image_python_test(
+    name = "test-hostname-booted",
+    srcs = ["test_hostname.py"],
+    boot = True,
+    hostname = "antlir2-test-hostname",
+    layer = ":base",
+)
+
 image.layer(
     name = "foo-rpms",
     dnf_available_repos = "//antlir/antlir2/test_images/rpms:test-repo-set",
