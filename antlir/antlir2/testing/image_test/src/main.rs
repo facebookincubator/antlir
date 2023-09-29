@@ -48,6 +48,9 @@ struct Args {
     /// Run the test as this user
     user: String,
     #[clap(long)]
+    /// Set container hostname
+    hostname: Option<String>,
+    #[clap(long)]
     /// Boot the container with /init as pid1 before running the test
     boot: bool,
     #[clap(long = "requires-unit", requires = "boot")]
@@ -146,6 +149,10 @@ fn main() -> Result<()> {
     // rw bind-mount /dev/fuse in
     if Path::new("/dev/fuse").exists() {
         ctx.outputs([Path::new("/dev/fuse")]);
+    }
+
+    if let Some(hostname) = args.hostname {
+        ctx.hostname(hostname);
     }
 
     if args.boot {

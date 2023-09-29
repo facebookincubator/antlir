@@ -33,6 +33,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         ctx.attrs.image_test[RunInfo],
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
+        cmd_args(ctx.attrs.hostname, format = "--hostname={}") if ctx.attrs.hostname else cmd_args(),
         cmd_args("--boot") if ctx.attrs.boot else cmd_args(),
         cmd_args(boot_requires_units, format = "--requires-unit={}") if ctx.attrs.boot else cmd_args(),
         cmd_args(boot_after_units, format = "--after-unit={}") if ctx.attrs.boot else cmd_args(),
@@ -93,6 +94,7 @@ _image_test = rule(
             default = None,
             doc = "Add a Requires= and After= requirement on these units to the test",
         ),
+        "hostname": attrs.option(attrs.string(), default = None),
         "image_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_test:image-test")),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
@@ -116,6 +118,7 @@ def _implicit_image_test(
         boot: bool = False,
         boot_requires_units: [list[str], None] = None,
         boot_after_units: [list[str], None] = None,
+        hostname: str | None = None,
         _add_outer_labels: list[str] = [],
         **kwargs):
     test_rule(
@@ -152,6 +155,7 @@ def _implicit_image_test(
         boot = boot,
         boot_requires_units = boot_requires_units,
         boot_after_units = boot_after_units,
+        hostname = hostname,
     )
 
 image_cpp_test = partial(

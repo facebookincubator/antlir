@@ -72,6 +72,7 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         user,
         ephemeral,
         tmpfs,
+        hostname,
     } = ctx;
     let mut nspawn_args = Vec::<OsString>::new();
     let mut env = HashMap::new();
@@ -88,6 +89,10 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     nspawn_args.push("--private-network".into());
     nspawn_args.push("--user".into());
     nspawn_args.push(user.as_ref().into());
+    if let Some(hostname) = hostname {
+        nspawn_args.push("--hostname".into());
+        nspawn_args.push(hostname.as_ref().into());
+    }
     // keep whatever timezone was in the image, not on the host
     nspawn_args.push("--timezone=off".into());
     // Don't pollute the host's /var/log/journal

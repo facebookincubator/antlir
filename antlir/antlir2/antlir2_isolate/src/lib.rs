@@ -62,6 +62,8 @@ pub struct IsolationContext<'a> {
     ephemeral: bool,
     /// See [IsolationContextBuilder::tmpfs]
     tmpfs: BTreeSet<Cow<'a, Path>>,
+    /// See [IsolationContextBuilder::hostname]
+    hostname: Option<Cow<'a, str>>,
 }
 
 /// Controls how the container is spawned and how console is configured for the
@@ -104,6 +106,7 @@ impl<'a> IsolationContext<'a> {
                 user: Cow::Borrowed("root"),
                 ephemeral: true,
                 tmpfs: Default::default(),
+                hostname: None,
             },
         }
     }
@@ -185,6 +188,12 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Path to mount a (unique) tmpfs into.
     pub fn tmpfs<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
         self.ctx.tmpfs.insert(path.into());
+        self
+    }
+
+    /// Set the hostname in the container
+    pub fn hostname<S: Into<Cow<'a, str>>>(&mut self, hostname: S) -> &mut Self {
+        self.ctx.hostname = Some(hostname.into());
         self
     }
 
