@@ -17,6 +17,7 @@ def layer_mount(
         *,
         source: str | Select,
         mountpoint: str | None = None,
+        mkdir: bool = False,
         _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature]:
     features = [
         ParseTimeFeature(
@@ -36,7 +37,7 @@ def layer_mount(
     ]
 
     # TODO(T153572212): antlir2 requires the image author to pre-create the mountpoint
-    if _implicit_from_antlir1 and mountpoint:
+    if mkdir or (_implicit_from_antlir1 and mountpoint):
         features.extend(
             ensure_subdirs_exist(
                 into_dir = paths.dirname(mountpoint),
@@ -50,6 +51,7 @@ def host_mount(
         source: str,
         is_directory: bool,
         mountpoint: str | None = None,
+        create_mountpoint: bool = False,
         _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature]:
     mountpoint = mountpoint or source
     features = [ParseTimeFeature(
@@ -66,7 +68,7 @@ def host_mount(
     )]
 
     # TODO(T153572212): antlir2 requires the image author to pre-create the mountpoint
-    if _implicit_from_antlir1 and mountpoint:
+    if create_mountpoint or (_implicit_from_antlir1 and mountpoint):
         if is_directory:
             features.extend(
                 ensure_subdirs_exist(
