@@ -13,18 +13,11 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fmt::Display;
-use std::fs::File;
-use std::io::Seek;
-use std::io::Write;
-use std::os::fd::IntoRawFd;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
 use std::str::FromStr;
 
 use antlir2_features::Feature;
-use anyhow::anyhow;
-use anyhow::Context;
 use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;
@@ -51,6 +44,8 @@ pub enum Error {
     InstallSrcIsDirectoryButNotDst { src: PathBuf, dst: PathBuf },
     #[error("install dst {dst:?} is claiming to be a directory, but {src:?} is a file")]
     InstallDstIsDirectoryButNotSrc { src: PathBuf, dst: PathBuf },
+    #[error(transparent)]
+    Feature(#[from] antlir2_features::Error),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
@@ -246,8 +241,6 @@ impl CompilerContext {
 }
 
 pub trait CompileFeature {
-    fn base_compileish_cmd(&self, sub: &'static str, ctx: &CompilerContext) -> Result<Command>;
-
     fn compile(&self, ctx: &CompilerContext) -> Result<()>;
 
     /// Add details about this [Feature] to the compiler [plan::Plan].
@@ -256,57 +249,45 @@ pub trait CompileFeature {
     }
 }
 
-fn ctx_memfd(ctx: &CompilerContext) -> Result<File> {
-    let opts = memfd::MemfdOptions::default().close_on_exec(false);
-    let mfd = opts.create("ctx").context("while creating memfd")?;
-    serde_json::to_writer(&mut mfd.as_file(), &ctx).context("while serializing CompilerContext")?;
-    mfd.as_file().rewind()?;
-    Ok(mfd.into_file())
+/// PluginExt indirects the implementation of [CompileFeature] through a .so
+/// plugin. The underlying crates all provide a type that implements
+/// [CompileFeature], and some generated code provides a set of exported symbols
+/// that let us call that implementation.
+trait PluginExt {
+    fn compile_fn(
+        &self,
+    ) -> Result<libloading::Symbol<fn(&antlir2_features::Feature, &CompilerContext) -> Result<()>>>;
+    fn plan_fn(
+        &self,
+    ) -> Result<
+        libloading::Symbol<
+            fn(&antlir2_features::Feature, &CompilerContext) -> Result<Vec<plan::Item>>,
+        >,
+    >;
+}
+
+impl PluginExt for antlir2_features::Plugin {
+    fn compile_fn(
+        &self,
+    ) -> Result<libloading::Symbol<fn(&Feature, &CompilerContext) -> Result<()>>> {
+        self.get_symbol(b"CompileFeature_compile\0")
+            .map_err(|e| anyhow::anyhow!("while getting compile function: {e}").into())
+    }
+
+    fn plan_fn(
+        &self,
+    ) -> Result<libloading::Symbol<fn(&Feature, &CompilerContext) -> Result<Vec<plan::Item>>>> {
+        self.get_symbol(b"CompileFeature_plan\0")
+            .map_err(|e| anyhow::anyhow!("while getting plan function: {e}").into())
+    }
 }
 
 impl CompileFeature for Feature {
-    fn base_compileish_cmd(&self, sub: &'static str, ctx: &CompilerContext) -> Result<Command> {
-        let ctx_file = ctx_memfd(ctx).context("while serializing CompilerContext")?;
-        let mut cmd = Feature::base_cmd(self);
-        cmd.arg(sub)
-            .arg("--ctx")
-            .arg(Path::new("/proc/self/fd").join(ctx_file.into_raw_fd().to_string()))
-            .env("RUST_LOG", "trace");
-        Ok(cmd)
-    }
-
     fn compile(&self, ctx: &CompilerContext) -> Result<()> {
-        let res = self
-            .base_compileish_cmd("compile", ctx)?
-            .output()
-            .context("while running feature cmd")?;
-        if res.status.success() {
-            Ok(())
-        } else {
-            std::io::stdout().write_all(&res.stdout)?;
-            std::io::stderr().write_all(&res.stderr)?;
-            Err(anyhow!("feature cmd failed").into())
-        }
+        self.plugin()?.compile_fn()?(self, ctx)
     }
 
     fn plan(&self, ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
-        let res = self
-            .base_compileish_cmd("plan", ctx)?
-            .output()
-            .context("while running feature cmd")?;
-        tracing::trace!(
-            "got plan: {}",
-            std::str::from_utf8(&res.stdout).unwrap_or("not utf8")
-        );
-        if res.status.success() {
-            Ok(serde_json::from_slice(&res.stdout).context("while parsing feature plan")?)
-        } else {
-            Err(anyhow!(
-                "feature cmd failed:\nstdout: {}\nstderr: {}",
-                std::str::from_utf8(&res.stdout).unwrap_or(&String::from_utf8_lossy(&res.stdout)),
-                std::str::from_utf8(&res.stderr).unwrap_or(&String::from_utf8_lossy(&res.stderr)),
-            )
-            .into())
-        }
+        self.plugin()?.plan_fn()?(self, ctx)
     }
 }

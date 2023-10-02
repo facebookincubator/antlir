@@ -28,6 +28,7 @@ load(
     "//antlir/antlir2/bzl/feature:feature_info.bzl",
     "AnalyzeFeatureContext",  # @unused Used as type
 )
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
@@ -46,7 +47,7 @@ def extract_from_layer(
     """
     return ParseTimeFeature(
         feature_type = "extract",
-        impl = antlir2_dep("features:extract"),
+        plugin = antlir2_dep("features:extract"),
         deps = {
             "layer": ParseTimeDependency(dep = layer, providers = [LayerInfo]),
         },
@@ -69,7 +70,7 @@ def extract_buck_binary(
     """
     return ParseTimeFeature(
         feature_type = "extract",
-        impl = antlir2_dep("features:extract"),
+        plugin = antlir2_dep("features:extract"),
         # include in deps so we can look at the providers
         deps = {"src": ParseTimeDependency(dep = src, providers = [RunInfo])},
         kwargs = {
@@ -97,7 +98,7 @@ extract_record = record(
 
 def extract_analyze(
         ctx: AnalyzeFeatureContext,
-        impl: RunInfo,
+        plugin: FeaturePluginInfo,
         source: str,
         deps: dict[str, Dependency],
         binaries: list[str] | None = None,
@@ -116,7 +117,7 @@ def extract_analyze(
                 buck = None,
             ),
             required_layers = [layer[LayerInfo]],
-            impl_run_info = impl,
+            plugin = plugin,
         )
     elif source == "buck":
         src = deps["src"]
@@ -147,7 +148,7 @@ def extract_analyze(
             ),
             required_artifacts = [src],
             required_run_infos = [src_runinfo],
-            impl_run_info = impl,
+            plugin = plugin,
         )
     else:
         fail("invalid extract source '{}'".format(source))

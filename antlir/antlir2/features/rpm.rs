@@ -32,7 +32,7 @@ use serde::Serialize;
 use serde_json::Deserializer;
 use tracing::trace;
 
-pub type Feature = Rpm<'static>;
+pub type Feature = Rpm;
 
 #[derive(
     Debug,
@@ -54,8 +54,8 @@ pub enum Action {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-pub enum Source<'a> {
-    Subject(Cow<'a, str>),
+pub enum Source {
+    Subject(String),
     #[serde(rename = "src")]
     Source(BuckOutSource),
     #[serde(rename = "subjects_src")]
@@ -67,15 +67,14 @@ pub enum Source<'a> {
 /// null.
 /// TODO(vmagro): make this general in the future (either codegen from `record`s
 /// or as a proc-macro)
-impl<'a, 'de: 'a> Deserialize<'de> for Source<'a> {
+impl<'de> Deserialize<'de> for Source {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
         #[derive(Deserialize)]
-        #[serde(bound(deserialize = "'de: 'a"))]
-        struct SourceStruct<'a> {
-            subject: Option<Cow<'a, str>>,
+        struct SourceStruct {
+            subject: Option<String>,
             src: Option<BuckOutSource>,
             subjects_src: Option<BuckOutSource>,
         }
@@ -94,10 +93,9 @@ impl<'a, 'de: 'a> Deserialize<'de> for Source<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct RpmItem<'a> {
+pub struct RpmItem {
     pub action: Action,
-    pub rpm: Source<'a>,
+    pub rpm: Source,
     pub feature_label: Label,
 }
 
@@ -112,9 +110,8 @@ pub struct RpmItem<'a> {
     Serialize,
     Default
 )]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Rpm<'a> {
-    pub items: Vec<RpmItem<'a>>,
+pub struct Rpm {
+    pub items: Vec<RpmItem>,
     #[serde(skip_deserializing)]
     pub internal_only_options: InternalOnlyOptions,
 }
@@ -135,7 +132,7 @@ pub struct InternalOnlyOptions {
     pub ignore_postin_script_error: bool,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Rpm<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for Rpm {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(Default::default())
     }
@@ -198,7 +195,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Rpm<'f> {
 struct DriverSpec<'a> {
     repos: Option<&'a Path>,
     install_root: &'a Path,
-    items: &'a [RpmItem<'a>],
+    items: &'a [RpmItem],
     mode: DriverMode,
     arch: Arch,
     versionlock: &'a BTreeMap<String, String>,
@@ -295,7 +292,7 @@ enum DriverEvent {
 
 fn run_dnf_driver(
     ctx: &CompilerContext,
-    items: &[RpmItem<'_>],
+    items: &[RpmItem],
     mode: DriverMode,
     resolved_transaction: Option<DnfTransaction>,
     internal_only_options: &InternalOnlyOptions,

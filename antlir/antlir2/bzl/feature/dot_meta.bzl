@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def dot_meta(
@@ -31,7 +32,7 @@ def dot_meta(
     }
     return ParseTimeFeature(
         feature_type = "dot_meta",
-        impl = antlir2_dep("features:dot_meta"),
+        plugin = antlir2_dep("features:dot_meta"),
         kwargs = {
             "build_info": build_info,
         },
@@ -48,12 +49,12 @@ dot_meta_record = record(
 
 def dot_meta_analyze(
         build_info: [dict[str, typing.Any], None],
-        impl: RunInfo) -> FeatureAnalysis:
+        plugin: FeaturePluginInfo) -> FeatureAnalysis:
     return FeatureAnalysis(
         feature_type = "dot_meta",
         data = dot_meta_record(
             build_info = build_info_record(**build_info) if build_info else None,
         ),
         build_phase = BuildPhase("buildinfo_stamp"),
-        impl_run_info = impl,
+        plugin = plugin,
     )

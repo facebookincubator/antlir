@@ -49,7 +49,7 @@ def user_add(
     """
     return ParseTimeFeature(
         feature_type = "user",
-        impl = antlir2_dep("features:user"),
+        plugin = antlir2_dep("features:user"),
         kwargs = {
             "comment": comment,
             "home_dir": home_dir,
@@ -74,7 +74,7 @@ def group_add(
     """
     return ParseTimeFeature(
         feature_type = "group",
-        impl = antlir2_dep("features:group"),
+        plugin = antlir2_dep("features:group"),
         kwargs = {
             "gid": gid,
             "name": groupname,
@@ -90,7 +90,7 @@ def usermod(
     """
     return ParseTimeFeature(
         feature_type = "user_mod",
-        impl = antlir2_dep("features:usermod"),
+        plugin = antlir2_dep("features:usermod"),
         kwargs = {
             "add_supplementary_groups": add_supplementary_groups,
             "username": username,

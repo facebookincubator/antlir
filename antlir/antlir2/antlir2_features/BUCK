@@ -6,9 +6,11 @@ rust_library(
     name = "antlir2_features",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "memfd",
+        "libloading",
+        "once_cell",
         "serde",
         "serde_json",
+        "thiserror",
         "//antlir/buck/buck_label:buck_label",
     ],
 )

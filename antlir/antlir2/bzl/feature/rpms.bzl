@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(
     ":feature_info.bzl",
@@ -61,7 +62,7 @@ def _install_common(
 
     return ParseTimeFeature(
         feature_type = "rpm",
-        impl = antlir2_dep("features:rpm"),
+        plugin = antlir2_dep("features:rpm"),
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         srcs = {
             "subjects": subjects_src,
@@ -116,7 +117,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
     """
     return ParseTimeFeature(
         feature_type = "rpm",
-        impl = antlir2_dep("features:rpm"),
+        plugin = antlir2_dep("features:rpm"),
         kwargs = {
             "action": "remove_if_exists",
             "subjects": rpms,
@@ -145,7 +146,7 @@ rpms_record = record(
 def rpms_analyze(
         *,
         ctx: AnalyzeFeatureContext,
-        impl: RunInfo,
+        plugin: FeaturePluginInfo,
         action: str,
         subjects: list[str],
         srcs: dict[str, Artifact] = {},
@@ -181,5 +182,5 @@ def rpms_analyze(
         required_artifacts = artifacts,
         requires_planning = True,
         build_phase = BuildPhase("package_manager"),
-        impl_run_info = impl,
+        plugin = plugin,
     )

@@ -35,7 +35,7 @@ pub mod item;
 use item::Item;
 use item::ItemKey;
 pub mod requires_provides;
-use requires_provides::FeatureExt as _;
+use requires_provides::RequiresProvides as _;
 use requires_provides::Validator;
 mod node;
 use node::GraphExt;

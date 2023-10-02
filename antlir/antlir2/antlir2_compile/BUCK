@@ -10,9 +10,8 @@ rust_library(
     ]),
     deps = [
         "anyhow",
-        "memfd",
+        "libloading",
         "serde",
-        "serde_json",
         "thiserror",
         "tracing",
         "xattr",

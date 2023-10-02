@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 
 # A dependency of a feature that is not yet resolved. This is of very limited
 # use at parse time, but allows the feature definition to inform the rule what
@@ -22,8 +23,8 @@ ParseTimeDependency = record(
 
 ParseTimeFeature = record(
     feature_type = str,
-    # Binary that implements this feature
-    impl = str,
+    # Plugin that implements this feature
+    plugin = str,
     # Items in this list may be either raw source files, or dependencies
     # produced by another rule. If a dependency, the full provider set will be
     # made available to the analysis code for the feature.
@@ -55,8 +56,8 @@ ParseTimeFeature = record(
 # Produced by the feature implementation, this tells the rule how to build it
 FeatureAnalysis = record(
     feature_type = str,
-    # Binary implementation of this feature
-    impl_run_info = field([RunInfo, None], default = None),
+    # Binary plugin implementation of this feature
+    plugin = FeaturePluginInfo,
     # Arbitrary feature record type (the antlir2 compiler must be able to
     # deserialize this)
     data = typing.Any,
@@ -95,12 +96,12 @@ def data_only_feature_analysis_fn(
         record_type,
         feature_type: str,
         build_phase: BuildPhase = BuildPhase("compile")):
-    def inner(impl: RunInfo, **kwargs) -> FeatureAnalysis:
+    def inner(plugin: FeaturePluginInfo, **kwargs) -> FeatureAnalysis:
         return FeatureAnalysis(
             feature_type = feature_type,
             data = record_type(**kwargs),
             build_phase = build_phase,
-            impl_run_info = impl,
+            plugin = plugin,
         )
 
     return inner

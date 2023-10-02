@@ -6,13 +6,11 @@
  */
 
 use std::fmt::Debug;
-use std::io::Cursor;
 
 use antlir2_features::Feature;
 use nix::sys::stat::Mode;
 use serde::Deserialize;
 use serde::Serialize;
-use tracing::trace;
 
 use crate::item::FileType;
 use crate::item::Item;
@@ -122,48 +120,51 @@ impl<'a> Validator<'a> {
     }
 }
 
-pub(crate) trait FeatureExt<'f> {
-    fn provides(&self) -> std::result::Result<Vec<Item<'f>>, String>;
-    fn requires(&self) -> std::result::Result<Vec<Requirement<'f>>, String>;
+pub trait RequiresProvides {
+    fn provides(&self) -> std::result::Result<Vec<Item<'static>>, String>;
+    fn requires(&self) -> std::result::Result<Vec<Requirement<'static>>, String>;
 }
 
-impl<'f> FeatureExt<'f> for Feature {
+/// PluginExt indirects the implementation of [RequiresProvides] through a .so
+/// plugin. The underlying crates all provide a type that implements
+/// [RequiresProvides], and some generated code provides a set of exported
+/// symbols that let us call that implementation.
+trait PluginExt {
+    fn provides_fn(
+        &self,
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Item<'static>>, String>>, String>;
+
+    fn requires_fn(
+        &self,
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Requirement<'static>>, String>>, String>;
+}
+
+impl PluginExt for antlir2_features::Plugin {
+    fn provides_fn(
+        &self,
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Item<'static>>, String>>, String>
+    {
+        self.get_symbol(b"RequiresProvides_provides\0")
+            .map_err(|e| format!("failed to get provides fn: {e}"))
+    }
+
+    fn requires_fn(
+        &self,
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Requirement<'static>>, String>>, String>
+    {
+        self.get_symbol(b"RequiresProvides_requires\0")
+            .map_err(|e| format!("failed to get provides fn: {e}"))
+    }
+}
+
+impl RequiresProvides for Feature {
     #[tracing::instrument]
-    fn provides(&self) -> std::result::Result<Vec<Item<'f>>, String> {
-        let mut cmd = self.base_cmd();
-        cmd.arg("provides");
-        trace!("running {cmd:?} to determine provides");
-        let out = cmd
-            .output()
-            .map_err(|e| format!("failed to run cmd {cmd:?}: {e}"))?;
-        if !out.status.success() {
-            Err(format!(
-                "{cmd:?} failed with exit code {}\n{}\n{}",
-                out.status,
-                String::from_utf8_lossy(&out.stdout),
-                String::from_utf8_lossy(&out.stderr),
-            ))
-        } else {
-            let mut deser = serde_json::Deserializer::from_reader(Cursor::new(&out.stdout));
-            <Vec<Item<'f>>>::deserialize(&mut deser)
-                .map_err(|e| format!("failed to deserialize output: {e}"))
-        }
+    fn provides(&self) -> std::result::Result<Vec<Item<'static>>, String> {
+        self.plugin().map_err(|e| e.to_string())?.provides_fn()?(self)
     }
 
     #[tracing::instrument]
-    fn requires(&self) -> std::result::Result<Vec<Requirement<'f>>, String> {
-        let mut cmd = self.base_cmd();
-        cmd.arg("requires");
-        trace!("running {cmd:?} to determine requires");
-        let out = cmd
-            .output()
-            .map_err(|e| format!("failed to run cmd {cmd:?}: {e}"))?;
-        if !out.status.success() {
-            Err(format!("{cmd:?} failed with exit code {}", out.status))
-        } else {
-            let mut deser = serde_json::Deserializer::from_reader(Cursor::new(&out.stdout));
-            <Vec<Requirement<'f>>>::deserialize(&mut deser)
-                .map_err(|e| format!("failed to deserialize output: {e}"))
-        }
+    fn requires(&self) -> std::result::Result<Vec<Requirement<'static>>, String> {
+        self.plugin().map_err(|e| e.to_string())?.requires_fn()?(self)
     }
 }

@@ -6,6 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
@@ -22,7 +23,7 @@ def layer_mount(
     features = [
         ParseTimeFeature(
             feature_type = "mount",
-            impl = antlir2_dep("features:mount"),
+            plugin = antlir2_dep("features:mount"),
             deps = {
                 "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
             },
@@ -56,7 +57,7 @@ def host_mount(
     mountpoint = mountpoint or source
     features = [ParseTimeFeature(
         feature_type = "mount",
-        impl = antlir2_dep("features:mount"),
+        plugin = antlir2_dep("features:mount"),
         kwargs = {
             "host_source": source,
             "is_directory": is_directory,
@@ -115,7 +116,7 @@ def mount_analyze(
         is_directory: bool | None,
         host_source: str | None,
         _implicit_from_antlir1: bool,
-        impl: RunInfo,
+        plugin: FeaturePluginInfo,
         deps: dict[str, Dependency] = {}) -> FeatureAnalysis:
     if source_kind == "layer":
         source = deps.pop("source")
@@ -131,7 +132,7 @@ def mount_analyze(
                 host = None,
             ),
             required_layers = [source[LayerInfo]],
-            impl_run_info = impl,
+            plugin = plugin,
         )
     elif source_kind == "host":
         return FeatureAnalysis(
@@ -144,7 +145,7 @@ def mount_analyze(
                 ),
                 layer = None,
             ),
-            impl_run_info = impl,
+            plugin = plugin,
         )
     else:
         fail("invalid source_kind '{}'".format(source_kind))

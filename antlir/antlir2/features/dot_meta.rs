@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
-
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
@@ -16,25 +14,23 @@ use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub type Feature = DotMeta<'static>;
+pub type Feature = DotMeta;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct DotMeta<'a> {
+pub struct DotMeta {
     /// Unknown for local dev builds (in other words not going to fbpkg)
-    build_info: Option<BuildInfo<'a>>,
+    build_info: Option<BuildInfo>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-struct BuildInfo<'a> {
+struct BuildInfo {
     /// SCM revision that this layer was built off of
-    revision: Option<Cow<'a, str>>,
+    revision: Option<String>,
     /// Package identifier
-    package: Option<Cow<'a, str>>,
+    package: Option<String>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for DotMeta<'f> {
+impl<'f> antlir2_feature_impl::Feature<'f> for DotMeta {
     fn provides(&self) -> Result<Vec<Item<'f>>> {
         Ok(Default::default())
     }

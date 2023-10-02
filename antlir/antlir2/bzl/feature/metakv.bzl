@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def metakv_store(
@@ -33,7 +34,7 @@ def metakv_store(
     """
     return ParseTimeFeature(
         feature_type = "metakv",
-        impl = antlir2_dep("features:metakv"),
+        plugin = antlir2_dep("features:metakv"),
         kwargs = {
             "store": {
                 "key": key,
@@ -54,7 +55,7 @@ def metakv_remove(*, key: str | Select):
     """
     return ParseTimeFeature(
         feature_type = "metakv",
-        impl = antlir2_dep("features:metakv"),
+        plugin = antlir2_dep("features:metakv"),
         kwargs = {
             "remove": {
                 "key": key,
@@ -80,7 +81,7 @@ metakv_record = record(
 
 def metakv_analyze(
         *,
-        impl: RunInfo,
+        plugin: FeaturePluginInfo,
         store: dict[str, typing.Any] | None = None,
         remove: dict[str, typing.Any] | None = None) -> FeatureAnalysis:
     return FeatureAnalysis(
@@ -89,5 +90,5 @@ def metakv_analyze(
             store = metakv_store_record(**store) if store else None,
             remove = metakv_remove_record(**remove) if remove else None,
         ),
-        impl_run_info = impl,
+        plugin = plugin,
     )
