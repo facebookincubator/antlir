@@ -22,7 +22,7 @@ def remove(
     """
     return ParseTimeFeature(
         feature_type = "remove",
-        impl = antlir2_dep("features:remove"),
+        plugin = antlir2_dep("features:remove"),
         kwargs = {
             "must_exist": must_exist,
             "path": path,

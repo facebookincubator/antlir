@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
@@ -58,7 +59,7 @@ def clone(
     """
     return ParseTimeFeature(
         feature_type = "clone",
-        impl = antlir2_dep("features:clone"),
+        plugin = antlir2_dep("features:clone"),
         deps = {
             "src_layer": ParseTimeDependency(
                 dep = src_layer,
@@ -83,7 +84,7 @@ def clone_analyze(
         src_path: str,
         dst_path: str,
         deps: dict[str, Dependency],
-        impl: RunInfo) -> FeatureAnalysis:
+        plugin: FeaturePluginInfo) -> FeatureAnalysis:
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:
@@ -106,5 +107,5 @@ def clone_analyze(
             pre_existing_dest = pre_existing_dest,
         ),
         required_layers = [src_layer[LayerInfo]],
-        impl_run_info = impl,
+        plugin = plugin,
     )

@@ -6,15 +6,27 @@
  */
 
 use std::cmp::Ordering;
-use std::io::Seek;
-use std::process::Command;
+use std::path::Path;
+use std::path::PathBuf;
+use std::sync::Arc;
 
 use buck_label::Label;
+use once_cell::sync::OnceCell;
 use serde::Deserialize;
 use serde::Serialize;
 
 pub mod stat;
 pub mod types;
+
+#[derive(thiserror::Error, Debug)]
+pub enum Error {
+    #[error("run_info was malformed")]
+    RunInfo,
+    #[error("could not load plugin: {0}")]
+    PluginLoad(#[from] libloading::Error),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -23,27 +35,67 @@ pub struct Feature {
     pub label: Label,
     pub feature_type: String,
     pub data: serde_json::Value,
-    pub run_info: Vec<String>,
+    #[serde(rename = "plugin")]
+    plugin_json: PluginJson,
+    #[serde(skip)]
+    plugin: OnceCell<Arc<Plugin>>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+struct PluginJson {
+    plugin: PathBuf,
+    libs: PathBuf,
+}
+
+pub struct Plugin {
+    path: PathBuf,
+    lib: libloading::Library,
 }
 
 impl Feature {
-    /// Create a Command that will run this feature implementation process with the data passed as a cli arg
-    pub fn base_cmd(&self) -> Command {
-        let mut run_info = self.run_info.iter();
-        let mut cmd = Command::new(
-            run_info
-                .next()
-                .expect("run_info will always have >=1 element"),
-        );
-        let opts = memfd::MemfdOptions::default().close_on_exec(false);
-        let mfd = opts
-            .create("stdin")
-            .expect("failed to create memfd for stdin");
-        serde_json::to_writer(&mut mfd.as_file(), &self.data)
-            .expect("serde_json::Value reserialization will never fail");
-        mfd.as_file().rewind().expect("failed to rewind memfd");
-        cmd.args(run_info).stdin(mfd.into_file());
-        cmd
+    pub fn plugin(&self) -> Result<&Plugin> {
+        if let Some(plugin) = &self.plugin.get() {
+            Ok(plugin)
+        } else {
+            let plugin = Plugin::open(&self.plugin_json.plugin)?;
+            let plugin = match self.plugin.try_insert(Arc::new(plugin)) {
+                Ok(plugin) => plugin,
+                Err((plugin, _)) => plugin,
+            };
+            Ok(plugin)
+        }
+    }
+}
+
+impl Plugin {
+    fn open(path: &Path) -> Result<Self> {
+        let lib = libloading::Library::new(path)?;
+
+        Ok(Self {
+            path: path.to_owned(),
+            lib,
+        })
+    }
+
+    pub fn get_symbol<T>(&self, symbol: &[u8]) -> Result<libloading::Symbol<T>> {
+        unsafe { self.lib.get(symbol).map_err(Error::from) }
+    }
+}
+
+impl PartialEq for Plugin {
+    fn eq(&self, other: &Self) -> bool {
+        self.path == other.path
+    }
+}
+
+impl Eq for Plugin {}
+
+impl std::fmt::Debug for Plugin {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Plugin")
+            .field("path", &self.path)
+            .finish_non_exhaustive()
     }
 }
 

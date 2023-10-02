@@ -90,7 +90,6 @@ impl LogArgs {
             }
             (None, Some(append_path)) => Ok(Some(
                 std::fs::OpenOptions::new()
-                    .create(true)
                     .append(true)
                     .open(append_path)
                     .context("while opening logs file for appending")?,
@@ -133,7 +132,6 @@ fn main() -> Result<()> {
                 .fmt_fields(tracing_glog::GlogFields::default())
                 .with_writer(file)
         }))
-        .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
 
     let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;

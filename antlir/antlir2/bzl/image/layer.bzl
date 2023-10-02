@@ -226,7 +226,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 "data": f.analysis.data,
                 "feature_type": f.feature_type,
                 "label": f.label,
-                "run_info": f.run_info,
+                "plugin": f.plugin,
             } for f in features],
             with_inputs = True,
         )
@@ -240,10 +240,12 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             for layer in feat.analysis.required_layers:
                 if layer not in dependency_layers:
                     dependency_layers.append(layer)
-        feature_hidden_deps = [
+
+        # deps that are needed for compiling the features, but not for depgraph
+        # analysis, so are not included in `features_json`
+        compile_feature_hidden_deps = [
             [feat.analysis.required_artifacts for feat in features],
             [feat.analysis.required_run_infos for feat in features],
-            [feat.run_info for feat in features],
         ]
 
         depgraph_input = build_depgraph(
@@ -280,7 +282,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                     "plan",
                     compileish_args,
                     cmd_args(plan.as_output(), format = "--plan={}"),
-                ).hidden(feature_hidden_deps),
+                ).hidden(features_json, compile_feature_hidden_deps),
                 ctx = ctx,
                 identifier = identifier_prefix + "plan",
                 parent = parent_layer,
@@ -330,7 +332,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         logs["compile"] = ctx.actions.declare_output(identifier_prefix + "compile.log")
         if resolved_fbpkgs_dir:
-            feature_hidden_deps.append(resolved_fbpkgs_dir)
+            compile_feature_hidden_deps.append(resolved_fbpkgs_dir)
 
         cmd, final_subvol = _map_image(
             build_appliance = build_appliance[LayerInfo],
@@ -345,7 +347,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 "compile",
                 compileish_args,
                 cmd_args(plan, format = "--plan={}") if plan else cmd_args(),
-            ).hidden(feature_hidden_deps),
+            ).hidden(features_json, compile_feature_hidden_deps),
             ctx = ctx,
             identifier = identifier_prefix + "compile",
             parent = parent_layer,

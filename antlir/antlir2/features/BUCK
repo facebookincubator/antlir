@@ -3,7 +3,7 @@ load(":defs.bzl", "feature_impl")
 
 oncall("twimage")
 
-export_file(name = "main.rs")
+export_file(name = "plugin_entrypoint.rs")
 
 feature_impl(
     name = "antlir1_no_equivalent",

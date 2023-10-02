@@ -8,10 +8,10 @@ rust_library(
     deps = [
         "derivative",
         "itertools",
+        "libloading",
         "nix",
         "petgraph",
         "serde",
-        "serde_json",
         "serde_with",
         "thiserror",
         "tracing",

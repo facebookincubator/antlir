@@ -59,6 +59,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 # @oss-disable
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
@@ -83,7 +84,7 @@ feature_record = record(
     feature_type = str,
     label = TargetLabel,
     analysis = "FeatureAnalysis",
-    run_info = RunInfo,
+    plugin = FeaturePluginInfo,
 )
 
 def _feature_as_json(feat: feature_record) -> struct:
@@ -91,7 +92,7 @@ def _feature_as_json(feat: feature_record) -> struct:
         feature_type = feat.feature_type,
         label = feat.label,
         data = feat.analysis.data,
-        run_info = feat.run_info,
+        plugin = feat.plugin,
     )
 
 _analyze_feature = {
@@ -157,7 +158,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 ),
                 label = ctx.label,
             )
-        analyze_kwargs["impl"] = ctx.attrs.inline_features_impls[key][RunInfo]
+        analyze_kwargs["plugin"] = ctx.attrs.inline_features_plugins[key][FeaturePluginInfo]
 
         analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
         for analysis in flatten.flatten(analysis):
@@ -169,7 +170,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 feature_type = analysis.feature_type,
                 label = ctx.label.raw_target(),
                 analysis = analysis,
-                run_info = analysis.impl_run_info,
+                plugin = analysis.plugin or ctx.attrs.inline_features_plugins[key][FeaturePluginInfo],
             )
             inline_features.append(feat)
 
@@ -266,9 +267,9 @@ shared_features_attrs = {
         default = {},
     ),
     # Map "feature key" -> "feature impl binary"
-    "inline_features_impls": attrs.dict(
+    "inline_features_plugins": attrs.dict(
         attrs.string(),
-        attrs.exec_dep(providers = [RunInfo]),
+        attrs.exec_dep(providers = [FeaturePluginInfo]),
         default = {},
     ),
     # Map "feature key" -> "feature srcs"
@@ -324,7 +325,7 @@ def feature_attrs(
 
     inline_features = {}
     feature_targets = []
-    inline_features_impls = {}
+    inline_features_plugins = {}
     inline_features_deps = {}
     inline_features_deps_or_srcs = {}
     inline_features_srcs = {}
@@ -347,7 +348,7 @@ def feature_attrs(
                 "kwargs": feat.kwargs,
             }
 
-            inline_features_impls[feature_key] = feat.impl
+            inline_features_plugins[feature_key] = feat.plugin
 
             if feat.deps:
                 # TODO: record providers for later checking
@@ -370,7 +371,7 @@ def feature_attrs(
         "inline_features_deps": inline_features_deps,
         "inline_features_deps_or_srcs": inline_features_deps_or_srcs,
         "inline_features_exec_deps": inline_features_exec_deps,
-        "inline_features_impls": inline_features_impls,
+        "inline_features_plugins": inline_features_plugins,
         "inline_features_srcs": inline_features_srcs,
         "inline_features_unnamed_deps_or_srcs": inline_features_unnamed_deps_or_srcs,
     }

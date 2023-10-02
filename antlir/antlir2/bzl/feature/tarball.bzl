@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(
     ":feature_info.bzl",
@@ -21,7 +22,7 @@ def tarball(
         group: str = "root") -> ParseTimeFeature:
     return ParseTimeFeature(
         feature_type = "tarball",
-        impl = antlir2_dep("features:install"),
+        plugin = antlir2_dep("features:install"),
         srcs = {
             "source": src,
         },
@@ -45,7 +46,7 @@ def tarball_analyze(
         user: str,
         group: str,
         srcs: dict[str, Artifact],
-        impl: RunInfo) -> FeatureAnalysis:
+        plugin: FeaturePluginInfo) -> FeatureAnalysis:
     tarball = srcs["source"]
 
     if user != "root" or group != "root":
@@ -66,7 +67,7 @@ def tarball_analyze(
         ),
         feature_type = "install",
         required_artifacts = [extracted],
-        impl_run_info = impl,
+        plugin = plugin,
     )
 
 def _extract_impl(ctx: AnalysisContext) -> list[Provider]:
