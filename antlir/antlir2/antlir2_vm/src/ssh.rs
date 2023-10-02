@@ -17,8 +17,6 @@ use thiserror::Error;
 pub(crate) enum GuestSSHError {
     #[error("Expected private key does not exist at {0}")]
     PrivKeyError(String),
-    #[error("SSH command failed: {0}")]
-    _SSHCommandError(std::io::Error),
 }
 
 type Result<T> = std::result::Result<T, GuestSSHError>;
