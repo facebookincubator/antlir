@@ -91,6 +91,8 @@ pub(crate) enum VMError {
     BootError { desc: String, err: std::io::Error },
     #[error("VM terminated early unexpectedly: {0}")]
     EarlyTerminationError(ExitStatus),
+    #[error("SSH Command exited with error: {0}")]
+    SSHCommandResultError(ExitStatus),
     #[error("VM error after boot: `{0}`")]
     RunError(String),
     #[error("VM timed out")]
@@ -335,7 +337,7 @@ impl VM {
         mut socket: UnixStream,
         start_ts: Instant,
         thread_handle: Option<JoinHandle<T>>,
-    ) -> Result<()> {
+    ) -> Result<Option<T>> {
         // Poll until either socket close or timeout. The buffer size is arbitrary,
         // because we don't expect any data.
         let mut buf = [0; 8];
@@ -345,15 +347,18 @@ impl VM {
                 desc: "Failed to set non-blocking socket option".into(),
                 err,
             })?;
+        let mut result = None;
         while !self.time_left(start_ts)?.is_zero() {
             if let Some(ref handle) = thread_handle {
                 if handle.is_finished() {
-                    thread_handle
-                        .expect("Handle must exist here")
-                        .join()
-                        .map_err(|e| {
-                            VMError::RunError(format!("SSH command thread panic'ed: {:?}", e))
-                        })?;
+                    result = Some(
+                        thread_handle
+                            .expect("Handle must exist here")
+                            .join()
+                            .map_err(|e| {
+                                VMError::RunError(format!("SSH command thread panic'ed: {:?}", e))
+                            })?,
+                    );
                     break;
                 }
             }
@@ -366,7 +371,9 @@ impl VM {
                 Err(_) => thread::sleep(Duration::from_secs(1)),
             }
         }
-        Ok(())
+        // Finishing the command is a success for this function. Let caller
+        // decide how to interpret the results.
+        Ok(result)
     }
 
     /// Execute ssh command and wait for timeout specified for the VM.
@@ -375,17 +382,20 @@ impl VM {
         mut cmd: Command,
         socket: UnixStream,
         start_ts: Instant,
-    ) -> Result<()> {
-        // Spawn ssh command in a separate thread so that we can enforce timeout.
+    ) -> Result<ExitStatus> {
+        // Spawn command in a separate thread so that we can enforce timeout.
         let handle = thread::spawn(move || {
-            log_command(&mut cmd)
-                .status()
-                .map_err(|err| VMError::BootError {
-                    desc: format!("Failed to run command: {:?}", cmd),
-                    err,
-                })
+            log_command(&mut cmd).status().map_err(|err| {
+                VMError::RunError(format!("Failed to run command `{:?}`: {}", cmd, err))
+            })
         });
-        self.wait_for_timeout(socket, start_ts, Some(handle))
+        let status = self.wait_for_timeout(socket, start_ts, Some(handle))?;
+        match status {
+            Some(s) => Ok(s?),
+            None => Err(VMError::RunError(
+                "Command didn't return before VM is terminated".into(),
+            )),
+        }
     }
 
     /// We control VM process through sockets. If VM process exited for any reason
@@ -474,6 +484,7 @@ impl VM {
 
         // VM booted
         self.check_sidecar_services()?;
+        let mut exit_status = None;
         if self.args.mode.console {
             // Just wait for the human that's trying to debug with console
             self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
@@ -495,10 +506,16 @@ impl VM {
             } else {
                 ssh_cmd.args(["/bin/bash", "-l"]);
             }
-            self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?;
+            exit_status = Some(self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?);
         }
-
         info!("VM executed for {} seconds", start_ts.elapsed().as_secs());
+
+        // We care about exit code only if we are running a command
+        if let Some(status) = exit_status {
+            if self.args.mode.command.is_some() && !status.success() {
+                return Err(VMError::SSHCommandResultError(status));
+            }
+        }
         Ok(())
     }
 
@@ -800,15 +817,29 @@ mod test {
 
         // timeout
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
-        let mut command = Command::new("sleep");
+        let mut command = Command::new("/usr/bin/sleep");
         command.arg("5");
         assert!(vm.run_cmd_and_wait(command, recv, Instant::now()).is_err());
 
-        // successful completion
+        // reset timeout for all tests below that shouldn't timeout
         vm.args.timeout_secs = Some(5);
+
+        // command completes with success
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
-        let command = Command::new("exit");
-        assert!(vm.run_cmd_and_wait(command, recv, Instant::now()).is_ok());
+        let command = Command::new("/usr/bin/ls");
+        let result = vm.run_cmd_and_wait(command, recv, Instant::now());
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        assert!(result.expect("Already checked").success());
+
+        // command completes with non-zero exit code
+        let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
+        let mut command = Command::new("/usr/bin/ls");
+        command.arg("non_existent_file");
+        let result = vm.run_cmd_and_wait(command, recv, Instant::now());
+        println!("{:?}", result);
+        assert!(result.is_ok());
+        assert!(!result.expect("Already checked").success());
     }
 
     #[test]
