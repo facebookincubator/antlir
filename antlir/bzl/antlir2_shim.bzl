@@ -24,6 +24,7 @@ _DEFAULT_ENABLED_PACKAGES = [
     "tupperware/image/base",
     "tupperware/image/rpmbuild",
     "tupperware/image/webfoundation",
+    "tupperware/image/multifeed",
 ]
 
 _DEFAULT_DISABLED_PACKAGES = [
