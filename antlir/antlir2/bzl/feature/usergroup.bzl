@@ -3,7 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load(":ensure_dirs_exist.bzl", "ensure_subdirs_exist")
 load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 
 SHELL_BASH = "/bin/bash"
@@ -131,3 +133,32 @@ usermod_analyze = data_only_feature_analysis_fn(
     usermod_record,
     feature_type = "user_mod",
 )
+
+def standard_user(username: str, groupname: str, home_dir: str | None = None, shell: str = SHELL_BASH, uid: int | None = None, gid: int | None = None) -> list[ParseTimeFeature | list[ParseTimeFeature]]:
+    """
+    A convenient function that wraps `group_add`, `user_add`,
+    and home dir creation logic.
+    The parent directory of `home_dir` must already exist.
+    """
+    if home_dir == None:
+        home_dir = "/home/" + username
+    return [
+        group_add(
+            groupname = groupname,
+            gid = gid,
+        ),
+        user_add(
+            username = username,
+            primary_group = groupname,
+            home_dir = home_dir,
+            shell = shell,
+            uid = uid,
+        ),
+        ensure_subdirs_exist(
+            into_dir = paths.dirname(home_dir),
+            subdirs_to_create = paths.basename(home_dir),
+            user = username,
+            group = groupname,
+            mode = 0o0750,
+        ),
+    ]

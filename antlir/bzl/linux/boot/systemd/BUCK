@@ -2,7 +2,6 @@ load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
 load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
@@ -15,7 +14,7 @@ image.layer(
     features = [
         feature.rpms_install(["systemd-boot-unsigned"]),
     ],
-    parent_layer = REPO_CFG.artifact["metalos.layer.base.c8"],
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
 )
 
 # The base image.layer for a systemd boot partition
@@ -23,7 +22,7 @@ image.layer(
 # configured in this layer.
 image.layer(
     name = "base",
-    antlir2 = "skip-fbpkg-indirection",
+    antlir2 = "no",
     features = [
         feature.ensure_subdirs_exist("/", "EFI"),
         feature.ensure_subdirs_exist("/EFI", "BOOT"),

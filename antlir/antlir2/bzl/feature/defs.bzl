@@ -16,7 +16,7 @@ load("//antlir/antlir2/bzl/feature:requires.bzl", "requires")
 load("//antlir/antlir2/bzl/feature:rpms.bzl", "rpms_install", "rpms_remove_if_exists", "rpms_upgrade")
 load("//antlir/antlir2/bzl/feature:symlink.bzl", "ensure_dir_symlink", "ensure_file_symlink")
 load("//antlir/antlir2/bzl/feature:tarball.bzl", "tarball")
-load("//antlir/antlir2/bzl/feature:usergroup.bzl", "group_add", "user_add", "usermod")
+load("//antlir/antlir2/bzl/feature:usergroup.bzl", "group_add", "standard_user", "user_add", "usermod")
 # @oss-disable
 # @oss-disable
 # @oss-disable
@@ -46,6 +46,7 @@ feature = struct(
     user_add = user_add,
     usermod = usermod,
     group_add = group_add,
+    standard_user = standard_user,
     # @oss-disable
     # @oss-disable
     # @oss-disable
