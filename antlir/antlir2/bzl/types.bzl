@@ -4,15 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 FeatureInfo = provider(fields = [
-    # FeatureDeps transitive set
-    # Transitive set of the artifacts that must be materialized on disk for the
-    # compiler to be able to build this feature
-    "required_artifacts",
-    # Runnable binaries required to build this feature.
-    "required_run_infos",
-    # Transitive set of the image layers that are required to be already-build
-    # before building this feature
-    "required_layers",
     # Transitive set of feature records deserializable by Antlir tools
     "features",
 ])
