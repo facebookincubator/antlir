@@ -10,6 +10,7 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 
 use antlir2_isolate::isolate;
+use antlir2_isolate::IsolatedContext;
 use antlir2_isolate::IsolationContext;
 use anyhow::ensure;
 use anyhow::Context;
@@ -68,8 +69,10 @@ fn main() -> Result<()> {
         .working_directory(cwd)
         .build();
     let ctx = match args.bwrap {
-        Some(bwrap) => antlir2_isolate::sys::bwrap(ctx, Some(&bwrap)),
-        None => isolate(ctx),
+        Some(bwrap) => antlir2_isolate::sys::bwrap(ctx, Some(&bwrap))
+            .context("while bwrapping")
+            .map(IsolatedContext::from),
+        None => isolate(ctx).context("while isolating"),
     }?;
     let res = ctx.command(args.program)?.args(args.args).spawn()?.wait()?;
     ensure!(res.success(), "isolated command failed");

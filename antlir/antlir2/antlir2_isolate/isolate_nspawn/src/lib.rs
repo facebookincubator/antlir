@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#[cfg(not(target_os = "linux"))]
+compile_error!("only supported on linux");
+
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::ffi::OsStr;
@@ -12,14 +15,30 @@ use std::ffi::OsString;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
+use std::process::Command;
 
+use isolate_cfg::InvocationType;
+use isolate_cfg::IsolationContext;
 use nix::unistd::Uid;
 use uuid::Uuid;
 
-use super::IsolatedContext;
-use crate::InvocationType;
-use crate::IsolationContext;
-use crate::Result;
+#[derive(Debug)]
+pub struct IsolatedContext {
+    program: OsString,
+    args: Vec<OsString>,
+    env: HashMap<OsString, OsString>,
+}
+
+impl IsolatedContext {
+    pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Command {
+        let mut cmd = Command::new(&self.program);
+        cmd.args(&self.args).arg("--").arg(program);
+        for (k, v) in &self.env {
+            cmd.env(k, v);
+        }
+        cmd
+    }
+}
 
 fn try_canonicalize<'a>(path: &'a Path) -> Cow<'a, Path> {
     std::fs::canonicalize(path).map_or(Cow::Borrowed(path), Cow::Owned)
@@ -59,7 +78,7 @@ fn bind_arg<'a>(dst: &'a Path, src: &'a Path) -> Cow<'a, OsStr> {
 
 /// Isolate the compiler process using `systemd-nspawn`.
 #[deny(unused_variables)]
-pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
+pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
     let IsolationContext {
         layer,
         working_directory,
@@ -167,10 +186,9 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         nspawn_args.push(bind_arg(dst, out).into());
     }
 
-    Ok(IsolatedContext {
+    IsolatedContext {
         program: program.into(),
         args: nspawn_args,
         env,
-        ephemeral_subvol: None,
-    })
+    }
 }
