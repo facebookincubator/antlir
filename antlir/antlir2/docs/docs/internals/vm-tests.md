@@ -82,10 +82,12 @@ what `buck2 test` or `buck2 run` would execute. Just be aware that buck2 doesn't
 execute the script, but the commands inside directly with more arguments
 potentially appended.
 
-If you want to know the exact command buck executed, you can run the desired
-`buck test` command first and then `buck2 log what-ran` or
-`buck2 log what-failed` should show you the exact command executed. This could
-be helpful when you want to run the test inside the VM shell.
+If you want to know the exact command buck executed to reproduce inside the
+shell, you can run the desired `buck test` command first and then
+`buck2 log what-ran` or `buck2 log what-failed` should show you the exact
+command executed. This could be helpful when you want to run the test inside the
+VM shell. You can find more details in the
+[example section](#putting-it-together-an-investigation-example)
 
 ### Logging
 
@@ -122,6 +124,46 @@ full console log in realtime and drop you inside an emergency shell for
 debugging if available. This can happen if the VM setup changes (bootloader,
 initrd, kernel, rootfs, etc). This is either owned by the test owner for custom
 setup, or if using common image artifacts, the image owner.
+
+### Putting it Together: An Investigation Example
+
+Let's say one of your VM test failed and you have no idea why and want to
+reproduce this interactively. Here is a sequence of commands that might help.
+The reason for this complexity is that tests are driven externally and also
+depends on test discovery, so we can't predict the test command beforehand.
+
+```
+# Run the test once
+$ buck2 test //antlir/antlir2/antlir2_vm/tests:rust-test
+
+# Run it the second time, so next what-ran command won't flush your screen with build commands
+$ buck2 test //antlir/antlir2/antlir2_vm/tests:rust-test
+
+$ buck2 log what-ran
+Showing commands from: <omitted> test antlir/antlir2/antlir2_vm/tests:rust-test
+test.run        antlir/antlir2/antlir2_vm/tests:rust-test       local   env -- "ANTLIR2_TEST=1" "RUSTC_BOOTSTRAP=1" "RUST_BACKTRACE=1" "RUST_LIB_BACKTRACE=0" <omitted> /<path_omitted>/antlir/antlir2/antlir2_vm/__antlir2_vm__/shared/antlir2_vm test "--image=<omitted>" "--machine-spec=<omitted>" "--runtime-spec=<omitted>" "--setenv=ANTLIR2_TEST=\"1\"" "--timeout-secs=300" rust <path redacted>/antlir/antlir2/antlir2_vm/tests/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact
+
+# The output could be a lot to parse, so you need to know what you are looking for.
+# 1) Find the lines start with `test.run` and ignore everything else.
+# 2) Focus towards the end of each long line, and look for a pattern of `<test type> <blah>`. The test type here is `rust` and all the following commands and args are the test args you want to copy. In this case, it would be `<path redacted>/antlir/antlir2/antlir2_vm/tests/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact`, assuming you are looking for the `is_root` test function.
+
+# Boot the interactive shell. You can optionally prepend `RUST_LOG` or use `[console]` if necessary.
+
+$ buck2 run antlir/antlir2/antlir2_vm/tests:rust-test[shell]
+2023-10-02T19:16:56.024106Z  INFO antlir2_vm::vm: Booting VM. It could take seconds to minutes...
+<more output omitted until you get the shell>
+
+[root@vmtest ~]# <path redacted>/antlir/antlir2/antlir2_vm/tests/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact
+{ "type": "suite", "event": "started", "test_count": 1 }
+{ "type": "test", "event": "started", "name": "is_root" }
+{ "type": "test", "name": "is_root", "event": "ok" }
+{ "type": "suite", "event": "ok", "passed": 1, "failed": 0, "ignored": 0, "measured": 0, "filtered_out": 1, "exec_time": 0.00170267 }
+```
+
+Congratulations! You just ran the test interactively. Feel free to mess around
+inside the VM for investigation. Note that the repository is shared read-only
+and vmtest run as root inside VM. So if you want to make changes or build, do it
+outside the VM and then repeat the steps.
 
 ## For Test Developers
 
