@@ -14,7 +14,6 @@ rust_binary(
         "serde_json",
         "thiserror",
         "tracing",
-        "tracing-glog",
         "tracing-subscriber",
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",

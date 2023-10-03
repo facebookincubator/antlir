@@ -113,23 +113,10 @@ fn main() -> Result<()> {
     let args = Args::parse();
 
     tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::Layer::default()
-                .event_format(
-                    tracing_glog::Glog::default()
-                        .with_span_context(true)
-                        .with_timer(tracing_glog::LocalTime::default()),
-                )
-                .fmt_fields(tracing_glog::GlogFields::default()),
-        )
+        .with(tracing_subscriber::fmt::Layer::default().with_ansi(false))
         .with(args.log.file()?.map(|file| {
             tracing_subscriber::fmt::Layer::default()
-                .event_format(
-                    tracing_glog::Glog::default()
-                        .with_span_context(true)
-                        .with_timer(tracing_glog::LocalTime::default()),
-                )
-                .fmt_fields(tracing_glog::GlogFields::default())
+                .with_ansi(false)
                 .with_writer(file)
         }))
         .init();

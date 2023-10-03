@@ -53,7 +53,7 @@ impl Compile {
 }
 
 impl Compile {
-    #[tracing::instrument(name = "compile", skip(self))]
+    #[tracing::instrument(name = "compile", skip(self), ret, err)]
     pub(crate) fn run(self) -> Result<()> {
         let ctx = self
             .compileish
