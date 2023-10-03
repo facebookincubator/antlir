@@ -361,7 +361,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             features_json = None,
             format = "json",
             identifier_prefix = identifier_prefix,
-            parent_depgraph = parent_depgraph,
+            parent_depgraph = depgraph_input,
             subvol = final_subvol,
         )
 

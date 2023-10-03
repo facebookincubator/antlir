@@ -12,6 +12,8 @@ def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
     features = ctx.attrs.features[FeatureInfo]
     features_json = ensure_single_output(ctx.attrs.features)
 
+    hidden_deps = []
+
     # traverse the features to find dependencies this image build has on other
     # image layers
     dependency_layers = []
@@ -19,6 +21,8 @@ def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
         for layer in feat.analysis.required_layers:
             if layer not in dependency_layers:
                 dependency_layers.append(layer)
+
+        hidden_deps.extend([feat.plugin.plugin, feat.plugin.libs])
 
     return cmd_args(
         ctx.attrs.test_depgraph[RunInfo],
@@ -30,7 +34,7 @@ def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
         ),
         cmd_args(ctx.attrs.error_regex, format = "--error-regex={}"),
         cmd_args(ctx.attrs.parent[LayerInfo].depgraph, format = "--parent={}") if ctx.attrs.parent else cmd_args(),
-    )
+    ).hidden(hidden_deps)
 
 def _bad_impl(ctx: AnalysisContext) -> list[Provider]:
     cmd = _make_test_cmd(ctx)
