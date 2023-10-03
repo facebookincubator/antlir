@@ -109,7 +109,7 @@ impl Subcommand {
 
 impl Map {
     /// Create a new mutable subvolume based on the [SetupArgs].
-    #[tracing::instrument(skip(self), ret, err)]
+    #[tracing::instrument(skip(self, rootless), ret, err)]
     fn create_new_subvol(
         &self,
         working_volume: &WorkingVolume,
@@ -136,7 +136,7 @@ impl Map {
         Ok(subvol)
     }
 
-    #[tracing::instrument(name = "map", skip(self))]
+    #[tracing::instrument(name = "map", skip_all, ret, err)]
     pub(crate) fn run(
         self,
         log_path: Option<&Path>,

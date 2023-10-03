@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fmt::Debug;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::os::fd::AsRawFd;
@@ -25,6 +26,7 @@ use nix::fcntl::OFlag;
 use nix::sys::stat::Mode;
 use serde::Deserialize;
 use tracing::trace;
+use tracing::trace_span;
 use tracing::warn;
 use uuid::Uuid;
 
@@ -53,10 +55,18 @@ pub struct WorkingVolume {
     eden: Option<EdenInfo>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 struct EdenInfo {
     repo_root: PathBuf,
     redirections: Vec<EdenRedirection>,
+}
+
+impl Debug for EdenInfo {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("EdenInfo")
+            .field("repo_root", &self.repo_root)
+            .finish_non_exhaustive()
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -210,6 +220,9 @@ impl WorkingVolume {
         for entry in std::fs::read_dir(&self.path)? {
             let entry = entry?;
             if entry.path().is_dir() {
+                let span =
+                    trace_span!("collect_garbage", path = entry.path().display().to_string());
+                let _guard = span.enter();
                 // skip outputs that are very new to avoid any race condition
                 // between creating the output and setting the keepalive
                 if let Ok(mtime) = entry.metadata().and_then(|meta| meta.modified()) {
@@ -228,10 +241,12 @@ impl WorkingVolume {
                     },
                 }?;
                 if delete {
-                    trace!("{} is no longer referenced", entry.path().display());
+                    trace!("subvol is no longer referenced");
                     try_delete_subvol(&entry.path());
                     if let Err(e) = std::fs::remove_file(&keepalive_path) {
-                        warn!("failed to remove keepalive file: {e}");
+                        if e.kind() != std::io::ErrorKind::NotFound {
+                            warn!("failed to remove keepalive file: {e}");
+                        }
                     }
                 }
             }
