@@ -55,7 +55,14 @@ def feature_impl(
         deps: list[str] = [],
         unstable_features: list[str] = [],
         allow_unused_crate_dependencies: bool = False,
+        lib_visibility: list[str] | None = None,
+        plugin_visibility: list[str] | None = None,
+        visibility: list[str] | None = None,
         **kwargs):
+    lib_visibility = lib_visibility or visibility or [
+        "//antlir/antlir2/...",
+        "//tupperware/cm/antlir2/...",
+    ]
     rust_library(
         name = name + ".lib",
         srcs = [src or name + ".rs"] + extra_srcs,
@@ -66,10 +73,7 @@ def feature_impl(
             for feat in unstable_features
         ],
         allow_unused_crate_dependencies = allow_unused_crate_dependencies,
-        visibility = [
-            "//antlir/antlir2/...",
-            "//tupperware/cm/antlir2/...",
-        ],
+        visibility = lib_visibility,
         deps = deps + [
             "anyhow",
             "serde",
@@ -102,6 +106,8 @@ def feature_impl(
         deps = [
             "anyhow",
             "serde_json",
+            "tracing",
+            "tracing-core",
             "//antlir/antlir2/antlir2_compile:antlir2_compile",
             "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
             "//antlir/antlir2/antlir2_features:antlir2_features",
@@ -112,5 +118,5 @@ def feature_impl(
     feature_plugin(
         name = name,
         lib = ":{}.linked".format(name),
-        visibility = ["PUBLIC"],
+        visibility = plugin_visibility or visibility or ["PUBLIC"],
     )

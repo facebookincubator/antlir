@@ -71,6 +71,11 @@ impl Feature {
 impl Plugin {
     fn open(path: &Path) -> Result<Self> {
         let lib = libloading::Library::new(path)?;
+        let init_tracing: libloading::Symbol<fn(&tracing::Dispatch) -> ()> =
+            unsafe { lib.get(b"init_tracing")? };
+        tracing::dispatcher::get_default(|dispatch| {
+            init_tracing(dispatch);
+        });
 
         Ok(Self {
             path: path.to_owned(),

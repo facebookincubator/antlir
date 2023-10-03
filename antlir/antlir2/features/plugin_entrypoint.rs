@@ -10,6 +10,12 @@ use antlir2_feature_impl::Feature as _;
 use anyhow::Context;
 use r#impl::Feature;
 
+#[no_mangle]
+pub fn init_tracing(dispatch: &tracing::Dispatch) {
+    let _ = tracing::dispatcher::set_global_default(dispatch.clone());
+    tracing_core::callsite::rebuild_interest_cache();
+}
+
 #[allow(non_snake_case)]
 #[no_mangle]
 pub fn RequiresProvides_provides(
