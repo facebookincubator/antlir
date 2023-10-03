@@ -1,0 +1,14 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("twimage")
+
+rust_library(
+    name = "isolate_nspawn",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//antlir/antlir2/antlir2_isolate:"],
+    deps = [
+        "nix",
+        "uuid",
+        "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
+    ],
+)

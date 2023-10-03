@@ -6,12 +6,11 @@ rust_library(
     name = "antlir2_isolate",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "nix",
+        "derive_more",
         "thiserror",
-        "tracing",
-        "uuid",
-        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
-        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/antlir2/antlir2_isolate/isolate_bwrap:isolate_bwrap",
+        "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
+        "//antlir/antlir2/antlir2_isolate/isolate_nspawn:isolate_nspawn",
     ],
 )
 

@@ -5,24 +5,58 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#[cfg(not(target_os = "linux"))]
+compile_error!("only supported on linux");
+
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::ffi::OsString;
+use std::process::Command;
 
 use antlir2_btrfs::DeleteFlags;
 use antlir2_btrfs::SnapshotFlags;
 use antlir2_btrfs::Subvolume;
+use isolate_cfg::InvocationType;
+use isolate_cfg::IsolationContext;
 use nix::unistd::Uid;
 use tracing::error;
 use tracing::trace;
 use uuid::Uuid;
 
-use super::IsolatedContext;
-use crate::InvocationType;
-use crate::IsolationContext;
-use crate::Result;
-
 mod bind;
 use bind::canonicalized_bind;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error(transparent)]
+    IO(#[from] std::io::Error),
+    #[error(transparent)]
+    Btrfs(#[from] antlir2_btrfs::Error),
+    #[error(transparent)]
+    Rootless(#[from] antlir2_rootless::Error),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug)]
+pub struct IsolatedContext {
+    program: OsString,
+    args: Vec<OsString>,
+    env: HashMap<OsString, OsString>,
+    #[allow(dead_code)]
+    ephemeral_subvol: Option<EphemeralSubvolume>,
+}
+
+impl IsolatedContext {
+    pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Command {
+        let mut cmd = Command::new(&self.program);
+        cmd.args(&self.args).arg("--").arg(program);
+        for (k, v) in &self.env {
+            cmd.env(k, v);
+        }
+        cmd
+    }
+}
 
 /// Isolate the compiler process using `bwrap`.
 #[deny(unused_variables)]

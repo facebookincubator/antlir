@@ -1,0 +1,18 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("twimage")
+
+rust_library(
+    name = "isolate_bwrap",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//antlir/antlir2/antlir2_isolate:"],
+    deps = [
+        "nix",
+        "thiserror",
+        "tracing",
+        "uuid",
+        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
+        "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+    ],
+)
