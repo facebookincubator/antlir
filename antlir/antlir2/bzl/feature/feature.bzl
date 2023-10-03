@@ -60,6 +60,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features/test_only_features:trace.bzl", "trace_analyze")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
@@ -117,6 +118,7 @@ _analyze_feature = {
     "requires": requires_analyze,
     "rpm": rpms_analyze,
     "tarball": tarball_analyze,
+    "test_only_features/trace": trace_analyze,
     "user": user_analyze,
     "user_mod": usermod_analyze,
 }
