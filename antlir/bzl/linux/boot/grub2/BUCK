@@ -12,7 +12,7 @@ image.layer(
             "grub2-efi-x64-modules",
         ]),
     ],
-    parent_layer = "//metalos/os:metalos.c8",
+    flavor = flavor_helpers.get_antlir_linux_flavor(),
 )
 
 grub2_modules = [
