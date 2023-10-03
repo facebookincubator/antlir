@@ -260,6 +260,7 @@ _ext3 = _new_package_rule(
         "label": attrs.option(attrs.string(), default = None),
         "size_mb": attrs.int(),
     },
+    can_be_partition = True,
 )
 
 def _backwards_compatible_new(format: str, **kwargs):
