@@ -59,6 +59,9 @@ struct Args {
     #[clap(long = "after-unit", requires = "boot")]
     /// Add an After= dependency on these units
     after_units: Vec<String>,
+    #[clap(long = "wants-unit", requires = "boot")]
+    /// Add Wants= dependencies on these units
+    wants_units: Vec<String>,
     #[clap(long)]
     /// Set these env vars in the test environment
     setenv: Vec<KvPair>,
@@ -195,6 +198,13 @@ fn main() -> Result<()> {
             };
             writeln!(test_unit_dropin, "After={unit}")?;
         }
+        for unit in args.wants_units.iter() {
+            let unit = match unit.as_str() {
+                "default.target" => default_target,
+                unit => unit,
+            };
+            writeln!(test_unit_dropin, "Wants={unit}")?;
+        }
 
         writeln!(test_unit_dropin, "[Service]")?;
 
@@ -242,9 +252,14 @@ fn main() -> Result<()> {
             test_unit_dropin.path(),
         ));
 
+        // Register the test container with systemd-machined so manual debugging
+        // is a easier.
+        ctx.register(true);
+
         let mut isol = isolate(ctx.build())?.command("systemd.unit=antlir2_image_test.service")?;
         isol.arg("systemd.journald.forward_to_console=1")
-            .arg("systemd.log_time=1");
+            .arg("systemd.log_time=1")
+            .arg("systemd.setenv=ANTLIR2_IMAGE_TEST=1");
         debug!("executing test in booted isolated container: {isol:?}");
         let mut child = isol
             // the stdout/err of the systemd inside the container is a pipe
