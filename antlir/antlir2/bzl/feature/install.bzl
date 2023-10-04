@@ -150,12 +150,12 @@ def get_feature_anaylsis_for_install(
                 )
                 binary_info = binary_record(
                     installed = installed_binary(
-                        debuginfo = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].debuginfo)),
-                        metadata = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].metadata)),
+                        debuginfo = split_anon_target.artifact("debuginfo"),
+                        metadata = split_anon_target.artifact("metadata"),
                     ),
                 )
                 required_artifacts.extend([binary_info.installed.debuginfo, binary_info.installed.metadata])
-                src = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].stripped))
+                src = split_anon_target.artifact("src"),
         else:
             src = ensure_single_output(src)
             binary_info = None

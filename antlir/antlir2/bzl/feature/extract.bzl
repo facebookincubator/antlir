@@ -21,7 +21,7 @@ This new-and-improved version of extract is capable of extracting buck-built
 binaries without first installing them into a layer.
 """
 
-load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
+load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load(
@@ -133,7 +133,7 @@ def extract_analyze(
                 src = src,
                 objcopy = ctx.tools.objcopy,
             )
-            src = ctx.actions.artifact_promise(split_anon_target.map(lambda x: x[SplitBinaryInfo].stripped))
+            src = split_anon_target.artifact("src")
         else:
             src = ensure_single_output(src)
 

@@ -154,12 +154,17 @@ else:
         ),
     ]
 
-split_binary = rule(
+split_binary = anon_rule(
     impl = _split_binary_impl,
     attrs = {
         "cxx_toolchain": attrs.option(attrs.dep(default = "toolchains//:cxx", providers = [CxxToolchainInfo]), default = None),
         "objcopy": attrs.option(attrs.exec_dep(), default = None),
         "src": attrs.dep(providers = [RunInfo]),
+    },
+    artifact_promise_mappings = {
+        "debuginfo": lambda x: x[SplitBinaryInfo].debuginfo,
+        "metadata": lambda x: x[SplitBinaryInfo].metadata,
+        "src": lambda x: x[SplitBinaryInfo].stripped,
     },
 )
 
@@ -167,11 +172,11 @@ def split_binary_anon(
         *,
         ctx: AnalysisContext | AnalyzeFeatureContext,
         src: Dependency,
-        objcopy: Dependency) -> Promise:
+        objcopy: Dependency) -> AnonTarget:
     if RunInfo not in src:
         fail("{} does not have a RunInfo provider".format(src.label))
     return ctx.actions.anon_target(split_binary, {
         "name": "debuginfo//" + src.label.package + ":" + src.label.name + ("[{}]".format(src.label.sub_target) if src.label.sub_target else ""),
         "objcopy": objcopy,
         "src": src,
-    })
+    }, with_artifacts = True)
