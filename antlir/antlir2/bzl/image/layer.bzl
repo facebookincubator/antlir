@@ -106,7 +106,8 @@ def _impl(ctx: AnalysisContext) -> Promise:
     return ctx.actions.anon_target(
         feature_rule,
         feature_anon_kwargs,
-    ).map(partial(_impl_with_features, ctx = ctx))
+        with_artifacts = True,
+    ).promise.map(partial(_impl_with_features, ctx = ctx))
 
 def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -> list[Provider]:
     flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
