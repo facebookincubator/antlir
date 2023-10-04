@@ -52,11 +52,11 @@ def tarball_analyze(
     if user != "root" or group != "root":
         fail("tarball must be installed root:root")
 
-    extracted_anon_target = ctx.actions.anon_target(extract_tarball, {
+    extracted = ctx.actions.anon_target(extract_tarball, {
         "archive": tarball,
         "name": "archive//:" + tarball.short_path,
-    })
-    extracted = ctx.actions.artifact_promise(extracted_anon_target.map(lambda x: ensure_single_output(x[DefaultInfo])))
+    }, with_artifacts = True).artifact("extracted")
+
     return FeatureAnalysis(
         data = install_record(
             src = extracted,
@@ -102,9 +102,12 @@ def _extract_impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(output),
     ]
 
-extract_tarball = rule(
+extract_tarball = anon_rule(
     impl = _extract_impl,
     attrs = {
         "archive": attrs.source(),
+    },
+    artifact_promise_mappings = {
+        "extracted": lambda x: ensure_single_output(x[DefaultInfo]),
     },
 )
