@@ -24,6 +24,8 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 _ALLOWED_LABELS = (
     "fbcode//antlir/antlir2/antlir1_compat/tests:antlir1-layer",
     "fbcode//metalos/os/vm:rootfs.antlir1",
+    "fbcode//os_foundation/metalos/impl/centos8:basesystem.rc.antlir1",
+    "fbcode//os_foundation/metalos/impl/centos9:basesystem.rc.antlir1",
 )
 
 _ALLOWED_PACKAGES = (
