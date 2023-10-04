@@ -83,7 +83,7 @@ def _generic_impl(
             "_objcopy": ctx.attrs._objcopy,
             "_run_nspawn": ctx.attrs._run_nspawn,
             "_target_arch": ctx.attrs._target_arch,
-        }).map(partial(
+        }, with_artifacts = True).promise.map(partial(
             _generic_impl_with_layer,
             ctx = ctx,
             format = format,
@@ -105,7 +105,7 @@ def _new_package_rule(
         rule_attrs: dict[str, Attr] = {},
         dot_meta: bool = True,
         can_be_partition = False):
-    return rule(
+    return anon_rule(
         impl = partial(
             _generic_impl,
             format = format,
@@ -114,6 +114,9 @@ def _new_package_rule(
             can_be_partition = can_be_partition,
         ),
         attrs = _default_attrs | _common_attrs | rule_attrs,
+        artifact_promise_mappings = {
+            "src": lambda x: ensure_single_output(x),
+        },
     )
 
 def _compressed_impl(
@@ -121,14 +124,15 @@ def _compressed_impl(
         uncompressed: typing.Callable,
         rule_attr_keys: list[str],
         compressor: str) -> list[Provider]:
-    src = ctx.actions.artifact_promise(ctx.actions.anon_target(
+    src = ctx.actions.anon_target(
         uncompressed,
         {key: getattr(ctx.attrs, key) for key in _default_attrs.keys()} |
         {
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
         } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys},
-    ).map(lambda x: ensure_single_output(x)))
+        with_artifacts = True,
+    ).artifact("src")
     extension = {
         "gzip": ".gz",
         "zstd": ".zst",
