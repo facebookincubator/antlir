@@ -26,6 +26,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     boot_requires_units = _default_list(ctx.attrs.boot_requires_units, default = ["sysinit.target"])
     boot_after_units = _default_list(ctx.attrs.boot_after_units, default = ["sysinit.target", "basic.target"])
+    boot_wants_units = _default_list(ctx.attrs.boot_wants_units, default = ["default.target"])
 
     mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
 
@@ -37,6 +38,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args("--boot") if ctx.attrs.boot else cmd_args(),
         cmd_args(boot_requires_units, format = "--requires-unit={}") if ctx.attrs.boot else cmd_args(),
         cmd_args(boot_after_units, format = "--after-unit={}") if ctx.attrs.boot else cmd_args(),
+        cmd_args(boot_wants_units, format = "--wants-unit={}") if ctx.attrs.boot else cmd_args(),
         cmd_args(["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()], format = "--setenv={}"),
         cmd_args(mounts, format = "--mounts={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
@@ -94,6 +96,13 @@ _image_test = rule(
             default = None,
             doc = "Add a Requires= and After= requirement on these units to the test",
         ),
+        "boot_wants_units": attrs.option(
+            attrs.list(
+                attrs.string(),
+            ),
+            default = None,
+            doc = "Add a Wants= requirement on these units to the test",
+        ),
         "hostname": attrs.option(attrs.string(), default = None),
         "image_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_test:image-test")),
         "labels": attrs.list(attrs.string(), default = []),
@@ -118,6 +127,7 @@ def _implicit_image_test(
         boot: bool = False,
         boot_requires_units: [list[str], None] = None,
         boot_after_units: [list[str], None] = None,
+        boot_wants_units: [list[str], None] = None,
         hostname: str | None = None,
         _add_outer_labels: list[str] = [],
         **kwargs):
@@ -155,6 +165,7 @@ def _implicit_image_test(
         boot = boot,
         boot_requires_units = boot_requires_units,
         boot_after_units = boot_after_units,
+        boot_wants_units = boot_wants_units,
         hostname = hostname,
     )
 
