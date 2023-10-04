@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:debuginfo.bzl", "SplitBinaryInfo", "split_binary_anon")
+load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -155,7 +155,7 @@ def get_feature_anaylsis_for_install(
                     ),
                 )
                 required_artifacts.extend([binary_info.installed.debuginfo, binary_info.installed.metadata])
-                src = split_anon_target.artifact("src"),
+                src = split_anon_target.artifact("src")
         else:
             src = ensure_single_output(src)
             binary_info = None
