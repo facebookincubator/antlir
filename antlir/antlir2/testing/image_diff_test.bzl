@@ -13,6 +13,7 @@ def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
         fail("image_diff_test only works for layers with parents")
 
     test_cmd = cmd_args(
+        cmd_args("sudo") if not ctx.attrs.running_in_image else cmd_args(),
         ctx.attrs.image_diff_test[RunInfo],
         cmd_args("--") if ctx.attrs.running_in_image else cmd_args(),
         cmd_args(ctx.attrs.exclude, format = "--exclude={}"),
