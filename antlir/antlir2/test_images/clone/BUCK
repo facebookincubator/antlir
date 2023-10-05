@@ -228,3 +228,24 @@ image_diff_test(
     diff_type = "file",
     layer = ":clone-file-remap-ids",
 )
+
+image.layer(
+    name = "clone-file-chown-root",
+    features = [
+        feature.clone(
+            dst_path = "/cloned-file",
+            group = "root",
+            src_layer = ":clone-src",
+            src_path = "/f",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":base-ids-remap",
+)
+
+image_diff_test(
+    name = "clone-file-chown-root-test",
+    diff = "clone-file-root.toml",
+    diff_type = "file",
+    layer = ":clone-file-chown-root",
+)

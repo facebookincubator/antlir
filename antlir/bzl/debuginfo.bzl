@@ -48,6 +48,8 @@ def _split(
                     src_layer = layer,
                     src_path = "/usr/lib/debug",
                     dst_path = "/",
+                    user = "root",
+                    group = "root",
                 ),
             ],
             flavor = "//antlir/antlir2/flavor:none",

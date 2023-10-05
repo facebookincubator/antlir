@@ -13,7 +13,9 @@ def clone(
         *,
         src_layer: str | Select,
         src_path: str | Select,
-        dst_path: str | Select) -> ParseTimeFeature:
+        dst_path: str | Select,
+        user: str | None = None,
+        group: str | None = None) -> ParseTimeFeature:
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
@@ -68,9 +70,16 @@ def clone(
         },
         kwargs = {
             "dst_path": dst_path,
+            "group": group,
             "src_path": src_path,
+            "user": user,
         },
     )
+
+clone_usergroup = record(
+    user = str,
+    group = str,
+)
 
 clone_record = record(
     src_layer = layer_dep,
@@ -78,11 +87,14 @@ clone_record = record(
     dst_path = str,
     omit_outer_dir = bool,
     pre_existing_dest = bool,
+    usergroup = clone_usergroup | None,
 )
 
 def clone_analyze(
         src_path: str,
         dst_path: str,
+        user: str | None,
+        group: str | None,
         deps: dict[str, Dependency],
         plugin: FeaturePluginInfo) -> FeatureAnalysis:
     omit_outer_dir = src_path.endswith("/")
@@ -97,6 +109,15 @@ def clone_analyze(
 
     src_layer = deps["src_layer"]
 
+    usergroup = None
+    if user and group:
+        usergroup = clone_usergroup(
+            user = user,
+            group = group,
+        )
+    elif user or group:
+        fail("either none or both of {user, group} must be set")
+
     return FeatureAnalysis(
         feature_type = "clone",
         data = clone_record(
@@ -105,6 +126,7 @@ def clone_analyze(
             dst_path = dst_path,
             omit_outer_dir = omit_outer_dir,
             pre_existing_dest = pre_existing_dest,
+            usergroup = usergroup,
         ),
         required_layers = [src_layer[LayerInfo]],
         plugin = plugin,
