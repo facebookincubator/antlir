@@ -20,8 +20,10 @@ use antlir2_depgraph::item::Path as PathItem;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_depgraph::requires_provides::Validator;
 use antlir2_depgraph::Graph;
+use antlir2_features::types::GroupName;
 use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
+use antlir2_features::types::UserName;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
@@ -39,6 +41,14 @@ pub struct Clone {
     pub pre_existing_dest: bool,
     pub src_path: PathInLayer,
     pub dst_path: PathInLayer,
+    #[serde(default)]
+    pub usergroup: Option<CloneUserGroup>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+pub struct CloneUserGroup {
+    pub user: UserName,
+    pub group: GroupName,
 }
 
 impl<'f> antlir2_feature_impl::Feature<'f> for Clone {
@@ -73,54 +83,65 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone {
                 Validator::FileType(FileType::Directory),
             ));
         }
-        // Files we clone will usually be owned by root:root, but not always! To
-        // be safe we have to make sure that all discovered users and groups
-        // exist in this destination layer
-        let mut uids = HashSet::new();
-        let mut gids = HashSet::new();
-        for entry in WalkDir::new(
-            self.src_layer
-                .subvol_symlink
-                .join(self.src_path.strip_prefix("/").unwrap_or(&self.src_path)),
-        ) {
-            // ignore any errors, they'll surface again later at a more
-            // appropriate place than this user/group id collection process
-            if let Ok(metadata) = entry.and_then(|e| e.metadata()) {
-                uids.insert(metadata.uid());
-                gids.insert(metadata.gid());
+        if let Some(usergroup) = &self.usergroup {
+            v.push(Requirement::ordered(
+                ItemKey::User(usergroup.user.clone().into()),
+                Validator::Exists,
+            ));
+            v.push(Requirement::ordered(
+                ItemKey::Group(usergroup.group.clone().into()),
+                Validator::Exists,
+            ));
+        } else {
+            // Files we clone will usually be owned by root:root, but not always! To
+            // be safe we have to make sure that all discovered users and groups
+            // exist in this destination layer
+            let mut uids = HashSet::new();
+            let mut gids = HashSet::new();
+            for entry in WalkDir::new(
+                self.src_layer
+                    .subvol_symlink
+                    .join(self.src_path.strip_prefix("/").unwrap_or(&self.src_path)),
+            ) {
+                // ignore any errors, they'll surface again later at a more
+                // appropriate place than this user/group id collection process
+                if let Ok(metadata) = entry.and_then(|e| e.metadata()) {
+                    uids.insert(metadata.uid());
+                    gids.insert(metadata.gid());
+                }
             }
-        }
-        let users: EtcPasswd =
-            std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/passwd"))
-                .and_then(|s| s.parse().map_err(std::io::Error::other))
-                .unwrap_or_else(|_| Default::default());
-        let groups: EtcGroup =
-            std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/group"))
-                .and_then(|s| s.parse().map_err(std::io::Error::other))
-                .unwrap_or_else(|_| Default::default());
-        for uid in uids {
-            v.push(Requirement::ordered(
-                ItemKey::User(
-                    users
-                        .get_user_by_id(uid.into())
-                        .expect("this layer could not have been built if this uid is missing")
-                        .name
-                        .clone(),
-                ),
-                Validator::Exists,
-            ));
-        }
-        for gid in gids {
-            v.push(Requirement::ordered(
-                ItemKey::Group(
-                    groups
-                        .get_group_by_id(gid.into())
-                        .expect("this layer could not have been built if this gid is missing")
-                        .name
-                        .clone(),
-                ),
-                Validator::Exists,
-            ));
+            let users: EtcPasswd =
+                std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/passwd"))
+                    .and_then(|s| s.parse().map_err(std::io::Error::other))
+                    .unwrap_or_else(|_| Default::default());
+            let groups: EtcGroup =
+                std::fs::read_to_string(self.src_layer.subvol_symlink.join("etc/group"))
+                    .and_then(|s| s.parse().map_err(std::io::Error::other))
+                    .unwrap_or_else(|_| Default::default());
+            for uid in uids {
+                v.push(Requirement::ordered(
+                    ItemKey::User(
+                        users
+                            .get_user_by_id(uid.into())
+                            .expect("this layer could not have been built if this uid is missing")
+                            .name
+                            .clone(),
+                    ),
+                    Validator::Exists,
+                ));
+            }
+            for gid in gids {
+                v.push(Requirement::ordered(
+                    ItemKey::Group(
+                        groups
+                            .get_group_by_id(gid.into())
+                            .expect("this layer could not have been built if this gid is missing")
+                            .name
+                            .clone(),
+                    ),
+                    Validator::Exists,
+                ));
+            }
         }
         Ok(v)
     }
@@ -241,18 +262,44 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone {
 
             let meta = entry.metadata().map_err(std::io::Error::from)?;
 
-            let new_uid = ctx.uid(
-                &src_userdb
-                    .get_user_by_id(meta.uid().into())
-                    .with_context(|| format!("src_layer missing passwd entry for {}", meta.uid()))?
-                    .name,
-            )?;
-            let new_gid = ctx.gid(
-                &src_groupdb
-                    .get_group_by_id(meta.gid().into())
-                    .with_context(|| format!("src_layer missing group entry for {}", meta.gid()))?
-                    .name,
-            )?;
+            let (new_uid, new_gid) = match &self.usergroup {
+                Some(usergroup) => (
+                    ctx.uid(
+                        &src_userdb
+                            .get_user_by_name(&usergroup.user)
+                            .with_context(|| {
+                                format!("src_layer missing passwd entry for {}", usergroup.user)
+                            })?
+                            .name,
+                    )?,
+                    ctx.gid(
+                        &src_groupdb
+                            .get_group_by_name(&usergroup.group)
+                            .with_context(|| {
+                                format!("src_layer missing group entry for {}", usergroup.group)
+                            })?
+                            .name,
+                    )?,
+                ),
+                None => (
+                    ctx.uid(
+                        &src_userdb
+                            .get_user_by_id(meta.uid().into())
+                            .with_context(|| {
+                                format!("src_layer missing passwd entry for {}", meta.uid())
+                            })?
+                            .name,
+                    )?,
+                    ctx.gid(
+                        &src_groupdb
+                            .get_group_by_id(meta.gid().into())
+                            .with_context(|| {
+                                format!("src_layer missing group entry for {}", meta.gid())
+                            })?
+                            .name,
+                    )?,
+                ),
+            };
 
             tracing::trace!("lchown {}:{} {}", new_uid, new_gid, dst_path.display());
             std::os::unix::fs::lchown(&dst_path, Some(new_uid.into()), Some(new_gid.into()))?;
