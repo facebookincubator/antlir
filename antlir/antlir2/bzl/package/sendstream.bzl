@@ -34,13 +34,16 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     )
     return [DefaultInfo(sendstream), SendstreamInfo(sendstream = sendstream)]
 
-_sendstream = rule(
+_sendstream = anon_rule(
     impl = _impl,
     attrs = {
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "layer": attrs.dep(providers = [LayerInfo]),
         "volume_name": attrs.string(default = "volume"),
+    },
+    artifact_promise_mappings = {
+        "anon_v1_sendstream": lambda x: x[SendstreamInfo].sendstream,
     },
 )
 
@@ -53,16 +56,13 @@ def anon_v1_sendstream(
         volume_name: str = "volume",
         build_appliance: Dependency | None = None,
         antlir2_packager: Dependency | None = None) -> Artifact:
-    v1_anon_target = ctx.actions.anon_target(_sendstream, {
+    return ctx.actions.anon_target(_sendstream, {
         "antlir2_packager": antlir2_packager or ctx.attrs.antlir2_packager,
         "build_appliance": build_appliance or ctx.attrs.build_appliance,
         "layer": layer,
         "name": str(layer.label.raw_target()) + ".sendstream",
         "volume_name": volume_name,
-    })
-    return ctx.actions.artifact_promise(
-        v1_anon_target.map(lambda x: x[SendstreamInfo].sendstream),
-    )
+    }, with_artifacts = True).artifact("anon_v1_sendstream")
 
 def _zst_impl(ctx: AnalysisContext) -> list[Provider]:
     sendstream_zst = ctx.actions.declare_output("image.sendstream.zst")
