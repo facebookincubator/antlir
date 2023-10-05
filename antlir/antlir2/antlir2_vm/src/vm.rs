@@ -295,6 +295,32 @@ impl VM {
         Ok(())
     }
 
+    /// Figure out what we want to do with stdin/out/err for the VM process
+    /// based on mode of operation.
+    fn redirect_input_output(&self, mut command: Command) -> Result<Command> {
+        // Leave stdin/out/err as is for console mode. The vm process we spawn
+        // will be the same process we interact with in console mode.
+        if !self.args.mode.console {
+            // Disable stdin as input will come from elsewhere.
+            command.stdin(Stdio::null());
+            if let Some(path) = &self.args.console_output_file {
+                // Redirect stdout/err to a file if specified.
+                let map_err = |err| VMError::FileOutputError {
+                    path: path.to_owned(),
+                    err,
+                };
+                let file = File::create(path).map_err(map_err)?;
+                command.stdout(file.try_clone().map_err(map_err)?);
+                command.stderr(file.try_clone().map_err(map_err)?);
+            } else {
+                // Disable stdout/err if we neither need it on screen or in file.
+                command.stdout(Stdio::null());
+                command.stderr(Stdio::null());
+            }
+        }
+        Ok(command)
+    }
+
     /// Spawn qemu-system process. It won't immediately start running until we connect
     /// to the notify socket.
     fn spawn_vm(&self) -> Result<Child> {
@@ -304,24 +330,9 @@ impl VM {
         args.extend(self.share_qemu_args());
         args.extend(self.nic_qemu_args());
         let mut command = Command::new(&get_runtime().qemu_system);
+        command = self.redirect_input_output(command)?;
         let command = command.args(&args);
 
-        // Disable console input for ssh shell by default
-        if !self.args.mode.console {
-            command.stdin(Stdio::null());
-        }
-        if let Some(path) = &self.args.console_output_file {
-            let map_err = |err| VMError::FileOutputError {
-                path: path.to_owned(),
-                err,
-            };
-            let file = File::create(path).map_err(map_err)?;
-            command.stdout(file.try_clone().map_err(map_err)?);
-            command.stderr(file.try_clone().map_err(map_err)?);
-        } else if !self.args.mode.console {
-            command.stdout(Stdio::null());
-            command.stderr(Stdio::null());
-        }
         log_command(command)
             .spawn()
             .map_err(VMError::QemuProcessError)
@@ -437,11 +448,13 @@ impl VM {
 
         // Connect to the notify socket. This starts the boot process.
         self.check_sidecar_services()?;
-        if let Some(console_file) = &self.args.console_output_file {
-            info!(
-                "Note: console output is redirected to {}",
-                console_file.display()
-            );
+        if !self.args.mode.console {
+            if let Some(console_file) = &self.args.console_output_file {
+                info!(
+                    "Note: console output is redirected to {}",
+                    console_file.display()
+                );
+            }
         }
         let socket = UnixStream::connect(self.notify_file()).map_err(|err| VMError::BootError {
             desc: "Failed to connect to notify socket".into(),
