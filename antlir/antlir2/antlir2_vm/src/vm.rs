@@ -48,7 +48,6 @@ use crate::types::MachineOpts;
 use crate::types::ShareOpts;
 use crate::types::VMArgs;
 use crate::utils::log_command;
-use crate::utils::NodeNameCounter;
 
 #[derive(Debug)]
 pub(crate) struct VM {
@@ -143,13 +142,13 @@ impl VM {
 
     /// Create all writable disks
     fn create_disks(opts: &MachineOpts, state_dir: &Path) -> Result<Vec<QCow2Disk>> {
-        let mut vd_counter = NodeNameCounter::new("vd");
         opts.disks
             .iter()
-            .map(|x| {
+            .enumerate()
+            .map(|(i, x)| {
                 Ok(QCow2DiskBuilder::default()
                     .opts(x.clone())
-                    .name(vd_counter.next())
+                    .id(i)
                     .state_dir(state_dir.to_path_buf())
                     .build()?)
             })
