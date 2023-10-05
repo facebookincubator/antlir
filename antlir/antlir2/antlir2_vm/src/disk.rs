@@ -15,6 +15,7 @@ use tracing::debug;
 
 use crate::isolation::IsolationError;
 use crate::isolation::Platform;
+use crate::pci::PCIBridge;
 use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
 use crate::utils::log_command;
@@ -28,6 +29,8 @@ use crate::utils::run_command_capture_output;
 pub(crate) struct QCow2Disk {
     /// Disk property specified by clients
     opts: QCow2DiskOpts,
+    /// The PCI bridge to attach on
+    pci_bridge: PCIBridge,
     /// Name prefix
     #[builder(default = "\"vd\".to_string()")]
     prefix: String,
@@ -139,15 +142,18 @@ impl QCow2Disk {
             )
             .into(),
         ];
+        let mut bus = self.pci_bridge.name();
         // Create AHCI controller for SATA drives
         if self.opts.interface == "ide-hd" {
             args.push("-device".into());
-            args.push(format!("ahci,id=ahci-{}", self.name()).into());
+            args.push(format!("ahci,id=ahci-{},bus={}", self.name(), bus).into());
+            bus = format!("ahci-{}.0", self.name());
         }
         args.push("-device".into());
         args.push(format!(
-            "{driver},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
+            "{driver},bus={bus},drive={name},serial={serial},physical_block_size={pbs},logical_block_size={lbs}",
             driver = self.opts.interface,
+            bus = bus,
             name = self.name(),
             serial = self.serial(),
             pbs = self.opts.physical_block_size,
@@ -175,6 +181,7 @@ mod test {
         let mut builder = QCow2DiskBuilder::default();
         builder
             .opts(opts)
+            .pci_bridge(PCIBridge::new(0, 1).expect("Failed to create PCI bridge"))
             .prefix("test-device".to_string())
             .id(3)
             .state_dir(PathBuf::from("/tmp/test"));
@@ -191,7 +198,7 @@ mod test {
             &disk.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
             driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
-            -device virtio-blk,drive=test-device3,serial=test-device3,\
+            -device virtio-blk,bus=pci0,drive=test-device3,serial=test-device3,\
             physical_block_size=512,logical_block_size=512"
         );
 
@@ -202,7 +209,7 @@ mod test {
             &disk.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
             driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
-            -device virtio-blk,drive=test-device3,serial=serial,\
+            -device virtio-blk,bus=pci0,drive=test-device3,serial=serial,\
             physical_block_size=512,logical_block_size=512"
         );
 
@@ -212,8 +219,8 @@ mod test {
             &disk.qemu_args().join(OsStr::new(" ")),
             "-blockdev \
             driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
-            -device ahci,id=ahci-test-device3 \
-            -device ide-hd,drive=test-device3,serial=serial,\
+            -device ahci,id=ahci-test-device3,bus=pci0 \
+            -device ide-hd,bus=ahci-test-device3.0,drive=test-device3,serial=serial,\
             physical_block_size=512,logical_block_size=512"
         );
     }

@@ -8,6 +8,7 @@
 mod disk;
 mod isolation;
 mod net;
+mod pci;
 mod runtime;
 mod share;
 mod ssh;
