@@ -75,12 +75,17 @@ impl LdHandle {
         // supposed to be atomic, but we're clearly getting what looks like race
         // conditions on CI, so just retry a few times and hopefully we'll get a
         // good device before giving up
-        retry::retry(retry::delay::Fixed::from_millis(50).take(3), || {
-            let ld = lc
-                .next_free()
-                .context("Failed to find a free loopback device")?;
-            Self::attach(ld, target.clone())
-        })
+        retry::retry(
+            retry::delay::Fixed::from_millis(100)
+                .map(retry::delay::jitter)
+                .take(10),
+            || {
+                let ld = lc
+                    .next_free()
+                    .context("Failed to find a free loopback device")?;
+                Self::attach(ld, target.clone())
+            },
+        )
         .map_err(|e| match e {
             retry::Error::Operation { error, .. } => error,
             retry::Error::Internal(s) => anyhow::Error::msg(s),
