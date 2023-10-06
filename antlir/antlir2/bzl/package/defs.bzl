@@ -141,11 +141,15 @@ def _compressed_impl(
 
     if compressor == "gzip":
         compress_cmd = cmd_args(
-            "gzip",
-            cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
-            src,
-            cmd_args(package.as_output(), format = "--stdout > {}"),
-            delimiter = " \\\n",
+            "compressor=\"$(which pigz || which gzip)\"",
+            cmd_args(
+                "$compressor",
+                cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
+                src,
+                cmd_args(package.as_output(), format = "--stdout > {}"),
+                delimiter = " \\\n",
+            ),
+            delimiter = " \n",
         )
     elif compressor == "zstd":
         compress_cmd = cmd_args(
@@ -170,7 +174,9 @@ def _compressed_impl(
         is_executable = True,
     )
     ctx.actions.run(cmd_args("/bin/sh", script).hidden(package.as_output(), src), category = "compress")
-    return [DefaultInfo(package)]
+    return [DefaultInfo(package, sub_targets = {
+        "uncompressed": [DefaultInfo(src)],
+    })]
 
 def _new_compressed_package_rule(
         compressor: str,
