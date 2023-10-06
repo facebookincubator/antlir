@@ -51,8 +51,8 @@ pub struct CloneUserGroup {
     pub group: GroupName,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Clone {
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut v = vec![Requirement::ordered(
             ItemKey::Layer(self.src_layer.label.to_owned()),
             Validator::ItemInLayer {
@@ -146,12 +146,14 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone {
         Ok(v)
     }
 
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         let src_layer_depgraph_path: &Path = self.src_layer.depgraph.as_ref();
-        let src_layer =
-            std::fs::read(src_layer_depgraph_path).context("while reading src_layer depgraph")?;
-        let src_depgraph: Graph<'_> =
-            serde_json::from_slice(&src_layer).context("while parsing src_layer depgraph")?;
+        let src_layer = std::fs::read(src_layer_depgraph_path)
+            .context("while reading src_layer depgraph")
+            .map_err(|e| e.to_string())?;
+        let src_depgraph: Graph<'_> = serde_json::from_slice(&src_layer)
+            .context("while parsing src_layer depgraph")
+            .map_err(|e| e.to_string())?;
         let mut v = Vec::new();
         // if this is creating the top-level dest, we need to produce that now
         if !self.pre_existing_dest {
@@ -207,9 +209,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Clone {
 
         Ok(v)
     }
+}
 
+impl antlir2_compile::CompileFeature for Clone {
     #[tracing::instrument(name = "clone", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         // antlir2_depgraph has already done all the safety validation, so we
         // can just go ahead and blindly copy everything here
         let src_root = self

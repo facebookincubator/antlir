@@ -53,7 +53,7 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
+#[serde(rename_all = "snake_case")]
 pub enum Source {
     Subject(String),
     #[serde(rename = "src")]
@@ -132,17 +132,19 @@ pub struct InternalOnlyOptions {
     pub ignore_postin_script_error: bool,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Rpm {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Rpm {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         Ok(Default::default())
     }
+}
 
+impl antlir2_compile::CompileFeature for Rpm {
     #[tracing::instrument(name = "rpms", skip(self, ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         run_dnf_driver(
             ctx,
             &self.items,
@@ -154,10 +156,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Rpm {
             &self.internal_only_options,
         )
         .map(|_| ())
+        .map_err(antlir2_compile::Error::from)
     }
 
     #[tracing::instrument(name = "rpms[plan]", skip(self, ctx), ret, err)]
-    fn plan(&self, ctx: &CompilerContext) -> Result<Vec<plan::Item>> {
+    fn plan(&self, ctx: &CompilerContext) -> antlir2_compile::Result<Vec<plan::Item>> {
         let events = run_dnf_driver(
             ctx,
             &self.items,
@@ -166,9 +169,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Rpm {
             &self.internal_only_options,
         )?;
         if events.len() != 1 {
-            return Err(Error::msg(
-                "expected exactly one event in resolve-only mode",
-            ));
+            return Err(Error::msg("expected exactly one event in resolve-only mode").into());
         }
         match &events[0] {
             DriverEvent::TransactionResolved { install, remove } => {
@@ -184,9 +185,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Rpm {
                     remove: remove.iter().map(|p| p.nevra()).collect(),
                 })])
             }
-            _ => Err(Error::msg(
-                "resolve-only event should have been TransactionResolved",
-            )),
+            _ => Err(Error::msg("resolve-only event should have been TransactionResolved").into()),
         }
     }
 }
@@ -306,7 +305,7 @@ fn run_dnf_driver(
                 .lines()
                 .map(|subject| RpmItem {
                     action: item.action,
-                    rpm: Source::Subject(subject.to_owned().into()),
+                    rpm: Source::Subject(subject.to_owned()),
                     feature_label: item.feature_label.clone(),
                 })
                 .collect()),

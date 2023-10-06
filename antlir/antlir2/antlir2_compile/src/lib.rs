@@ -47,6 +47,8 @@ pub enum Error {
     #[error(transparent)]
     Feature(#[from] antlir2_features::Error),
     #[error(transparent)]
+    Isolate(#[from] antlir2_isolate::Error),
+    #[error(transparent)]
     Other(#[from] anyhow::Error),
 }
 

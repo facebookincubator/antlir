@@ -29,7 +29,6 @@ use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
 use antlir2_users::Id;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use serde::de::Error;
@@ -163,8 +162,8 @@ impl<'de> Deserialize<'de> for InstalledBinary {
     }
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Install {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         if self.is_dir() {
             let mut v = vec![Item::Path(PathItem::Entry(FsEntry {
                 path: self.dst.to_owned().into(),
@@ -173,7 +172,8 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install {
             }))];
             for entry in WalkDir::new(&self.src) {
                 let entry = entry
-                    .with_context(|| format!("while walking src dir {}", self.src.display()))?;
+                    .with_context(|| format!("while walking src dir {}", self.src.display()))
+                    .map_err(|e| e.to_string())?;
                 let relpath = entry
                     .path()
                     .strip_prefix(&self.src)
@@ -194,9 +194,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install {
                         mode: 0o755,
                     })))
                 } else if entry.file_type().is_symlink() {
-                    let target = std::fs::read_link(entry.path()).with_context(|| {
-                        format!("while reading link target of {}", entry.path().display())
-                    })?;
+                    let target = std::fs::read_link(entry.path())
+                        .with_context(|| {
+                            format!("while reading link target of {}", entry.path().display())
+                        })
+                        .map_err(|e| e.to_string())?;
                     v.push(Item::Path(PathItem::Symlink {
                         link: self.dst.join(relpath).into(),
                         target: target.into(),
@@ -254,7 +256,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install {
         }
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut requires = vec![
             Requirement::ordered(
                 ItemKey::User(self.user.to_owned().into()),
@@ -274,19 +276,21 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install {
         }
         Ok(requires)
     }
+}
 
+impl antlir2_compile::CompileFeature for Install {
     #[tracing::instrument(name = "install", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let uid = ctx.uid(&self.user)?;
         let gid = ctx.gid(&self.group)?;
         if self.src.is_dir() {
             debug!("{:?} is a dir", self.src);
-            ensure!(
-                self.is_dir(),
-                "install src ({}) is directory but dst ({}) is missing trailing /",
-                self.src.display(),
-                self.dst.display()
-            );
+            if !self.is_dir() {
+                return Err(antlir2_compile::Error::InstallSrcIsDirectoryButNotDst {
+                    src: self.src.clone(),
+                    dst: self.dst.clone(),
+                });
+            }
             for entry in WalkDir::new(&self.src) {
                 let entry = entry.map_err(std::io::Error::from)?;
                 let relpath = entry
@@ -317,12 +321,12 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Install {
                 )?;
             }
         } else {
-            ensure!(
-                !self.is_dir(),
-                "install dst ({}) is claiming to be directory but src ({}) is a file",
-                self.dst.display(),
-                self.src.display()
-            );
+            if self.is_dir() {
+                return Err(antlir2_compile::Error::InstallDstIsDirectoryButNotSrc {
+                    src: self.src.clone(),
+                    dst: self.dst.clone(),
+                });
+            }
             let dst = ctx.dst_path(&self.dst);
 
             let dst_file = match &self.binary_info {

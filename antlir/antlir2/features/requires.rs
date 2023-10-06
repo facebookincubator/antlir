@@ -31,13 +31,13 @@ pub struct Requires {
     pub groups: Vec<GroupName>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Requires {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Requires {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
     #[deny(unused_variables)]
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let Self {
             files,
             users,
@@ -59,8 +59,10 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Requires {
             }))
             .collect())
     }
+}
 
-    fn compile(&self, _ctx: &CompilerContext) -> Result<()> {
+impl antlir2_compile::CompileFeature for Requires {
+    fn compile(&self, _ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         // entirely implemented in the depgraph
         Ok(())
     }

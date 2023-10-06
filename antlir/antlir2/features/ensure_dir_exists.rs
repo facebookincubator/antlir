@@ -35,8 +35,8 @@ pub struct EnsureDirExists {
     pub user: UserName,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for EnsureDirExists {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for EnsureDirExists {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(vec![Item::Path(Path::Entry(FsEntry {
             path: self.dir.clone().into(),
             file_type: FileType::Directory,
@@ -44,7 +44,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for EnsureDirExists {
         }))])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut v = vec![
             Requirement::ordered(ItemKey::User(self.user.clone().into()), Validator::Exists),
             Requirement::ordered(ItemKey::Group(self.group.clone().into()), Validator::Exists),
@@ -57,9 +57,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for EnsureDirExists {
         }
         Ok(v)
     }
+}
 
+impl antlir2_compile::CompileFeature for EnsureDirExists {
     #[tracing::instrument(name = "ensure_dir_exists", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let dst = ctx.dst_path(&self.dir);
         tracing::trace!("creating {}", dst.display());
         match std::fs::create_dir(&dst) {

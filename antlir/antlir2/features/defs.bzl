@@ -81,7 +81,6 @@ def feature_impl(
             "//antlir/antlir2/antlir2_compile:antlir2_compile",
             "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
             "//antlir/antlir2/antlir2_features:antlir2_features",
-            "//antlir/antlir2/features/antlir2_feature_impl:antlir2_feature_impl",
         ],
     )
     rust_library(
@@ -104,6 +103,10 @@ def feature_impl(
         ],
         visibility = [":" + name],
         deps = [
+            "//antlir/antlir2/antlir2_features:antlir2_features",
+            "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
+            "//antlir/antlir2/antlir2_compile:antlir2_compile",
+            "static_assertions",
             "anyhow",
             "serde_json",
             "tracing",
@@ -111,7 +114,6 @@ def feature_impl(
             "//antlir/antlir2/antlir2_compile:antlir2_compile",
             "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
             "//antlir/antlir2/antlir2_features:antlir2_features",
-            "//antlir/antlir2/features/antlir2_feature_impl:antlir2_feature_impl",
         ],
     )
 

@@ -28,7 +28,6 @@ use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use goblin::elf::Elf;
@@ -86,8 +85,8 @@ pub struct ExtractLayerBinaries {
     pub binaries: Vec<PathInLayer>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Extract {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Extract {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         // Intentionally provide only the direct files the user asked for,
         // because we don't want to produce conflicts with all the transitive
         // dependencies. However, we will check that any duplicated items are in
@@ -115,7 +114,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract {
         })
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         Ok(match self {
             Self::Layer(l) => l
                 .binaries
@@ -157,9 +156,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract {
             )],
         })
     }
+}
 
+impl antlir2_compile::CompileFeature for Extract {
     #[tracing::instrument(name = "extract", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let default_interpreter = Path::new(match ctx.target_arch() {
             Arch::X86_64 => "/usr/lib64/ld-linux-x86-64.so.2",
             Arch::Aarch64 => "/lib/ld-linux-aarch64.so.1",
@@ -233,7 +234,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract {
                                 canonical_target.display(),
                             );
                             Self::Buck(ExtractBuckBinary {
-                                src: canonical_target.to_owned().into(),
+                                src: canonical_target.clone(),
                                 dst: binary.to_owned(),
                             })
                             .compile(ctx)
@@ -254,12 +255,14 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract {
                                 .strip_prefix("/")
                                 .unwrap_or(canonical_target.as_path()),
                         );
-                        ensure!(
-                            target_under_src.exists(),
-                            "symlink target {} ({} under src_layer) does not actually exist",
-                            canonical_target.display(),
-                            target_under_src.display()
-                        );
+                        if !target_under_src.exists() {
+                            return Err(anyhow::anyhow!(
+                                "symlink target {} ({} under src_layer) does not actually exist",
+                                canonical_target.display(),
+                                target_under_src.display()
+                            )
+                            .into());
+                        }
 
                         copy_with_metadata(
                             &target_under_src,
@@ -316,7 +319,8 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Extract {
                             return Err(anyhow::anyhow!(
                                 "'{}' exists but it seems like we should get it from the host",
                                 path_in_src_layer.display()
-                            ));
+                            )
+                            .into());
                         }
                         dep.clone()
                     } else {
@@ -503,11 +507,12 @@ fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
             new_src_hash
         );
 
-        ensure!(
-            pre_existing_hash == new_src_hash,
-            "extract conflicts with existing file at {}",
-            dst.display()
-        );
+        if pre_existing_hash != new_src_hash {
+            return Err(anyhow::anyhow!(
+                "extract conflicts with existing file at {}",
+                dst.display()
+            ));
+        }
     } else {
         copy_with_metadata(&dep, dst, None, None)?;
     }
