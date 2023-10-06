@@ -28,22 +28,24 @@ pub struct Group {
     pub gid: Option<u32>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Group {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Group {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(vec![Item::Group(GroupItem {
             name: self.name.to_owned().into(),
         })])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         Ok(vec![Requirement::ordered(
             ItemKey::Path(std::path::Path::new("/etc/group").into()),
             Validator::Exists,
         )])
     }
+}
 
+impl antlir2_compile::CompileFeature for Group {
     #[tracing::instrument(skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let mut groups_db = ctx.groups_db()?;
         let gid = match self.gid {
             Some(gid) => gid.into(),

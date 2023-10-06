@@ -39,14 +39,14 @@ pub struct User {
     pub comment: Option<String>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for User {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for User {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(vec![Item::User(UserItem {
             name: self.name.to_owned().into(),
         })])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut v = vec![
             Requirement::unordered(
                 ItemKey::Path(self.home_dir.to_owned().into()),
@@ -75,9 +75,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for User {
         );
         Ok(v)
     }
+}
 
+impl antlir2_compile::CompileFeature for User {
     #[tracing::instrument(name = "user", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let mut user_db = ctx.user_db()?;
         let uid = match self.uid {
             Some(uid) => uid.into(),

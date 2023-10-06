@@ -6,6 +6,7 @@
  */
 
 use std::collections::BTreeSet;
+use std::path::PathBuf;
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -100,7 +101,7 @@ pub struct DnfTransaction {
 pub struct InstallFbpkg {
     pub name: String,
     pub tag: String,
-    pub dst: Option<String>,
+    pub dst: Option<PathBuf>,
     pub organize: bool,
     pub organize_alias: Option<String>,
 }

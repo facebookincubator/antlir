@@ -84,12 +84,12 @@ impl Mount {
     }
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Mount {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Mount {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut v = vec![Requirement::ordered(
             ItemKey::Path(self.mountpoint().to_owned().into()),
             Validator::FileType(match self.is_directory() {
@@ -106,8 +106,10 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Mount {
         }
         Ok(v)
     }
+}
 
-    fn compile(&self, _ctx: &CompilerContext) -> Result<()> {
+impl antlir2_compile::CompileFeature for Mount {
+    fn compile(&self, _ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         Ok(())
     }
 }

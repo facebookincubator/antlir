@@ -26,15 +26,15 @@ pub struct Symlink {
     pub is_directory: bool,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Symlink {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(vec![Item::Path(Path::Symlink {
             link: self.link.to_owned().into(),
             target: self.target.to_owned().into(),
         })])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut requires = vec![Requirement::ordered(
             ItemKey::Path(
                 self.link
@@ -75,9 +75,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Symlink {
         }
         Ok(requires)
     }
+}
 
+impl antlir2_compile::CompileFeature for Symlink {
     #[tracing::instrument(name = "symlink", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         // Unlike antlir1, we don't have to do all the paranoid checking,
         // because the new depgraph will have done it all for us already.
         // I am also choosing to do preserve absolute symlinks if that's what

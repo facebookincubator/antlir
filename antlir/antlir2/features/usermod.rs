@@ -27,12 +27,12 @@ pub struct UserMod {
     pub add_supplementary_groups: Vec<GroupName>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for UserMod {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for UserMod {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut v = vec![Requirement::ordered(
             ItemKey::User(self.username.to_owned().into()),
             Validator::Exists,
@@ -44,9 +44,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for UserMod {
         );
         Ok(v)
     }
+}
 
+impl antlir2_compile::CompileFeature for UserMod {
     #[tracing::instrument(skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let mut groups_db = ctx.groups_db()?;
         for group in &self.add_supplementary_groups {
             groups_db

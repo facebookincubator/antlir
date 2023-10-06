@@ -11,7 +11,6 @@ use antlir2_depgraph::item::ItemKey;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_depgraph::requires_provides::Validator;
 use antlir2_features::types::PathInLayer;
-use anyhow::Error;
 use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
@@ -25,12 +24,12 @@ pub struct Remove {
     pub must_exist: bool,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Remove {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Remove {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         Ok(match self.must_exist {
             false => vec![],
             true => vec![Requirement::ordered(
@@ -39,9 +38,11 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Remove {
             )],
         })
     }
+}
 
+impl antlir2_compile::CompileFeature for Remove {
     #[tracing::instrument(name = "remove", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let path = ctx.dst_path(&self.path);
         match std::fs::remove_file(&path) {
             Ok(()) => Ok(()),
@@ -50,7 +51,7 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Remove {
                     trace!("'{}' did not exist", self.path.display());
                     Ok(())
                 } else if e.kind() == std::io::ErrorKind::IsADirectory {
-                    std::fs::remove_dir_all(&path).map_err(Error::from)
+                    std::fs::remove_dir_all(&path).map_err(antlir2_compile::Error::from)
                 } else {
                     Err(e.into())
                 }

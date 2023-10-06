@@ -14,7 +14,6 @@ use antlir2_features::types::UserName;
 use antlir2_isolate::isolate;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
-use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use derivative::Derivative;
@@ -53,17 +52,19 @@ impl Genrule {
     }
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Genrule {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         Ok(Default::default())
     }
+}
 
+impl antlir2_compile::CompileFeature for Genrule {
     #[tracing::instrument(name = "genrule", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         if self.boot {
             unimplemented!("boot is not yet implemented");
         }
@@ -92,16 +93,18 @@ impl<'f> antlir2_feature_impl::Feature<'f> for Genrule {
         cmd.args(inner_cmd);
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;
-        ensure!(
-            res.status.success(),
-            "genrule {self:?} {}. {}\n{}",
-            match res.status.code() {
-                Some(code) => format!("exited with code {code}"),
-                None => "was terminated by a signal".to_owned(),
-            },
-            std::str::from_utf8(&res.stdout).unwrap_or("<invalid utf8>"),
-            std::str::from_utf8(&res.stderr).unwrap_or("<invalid utf8>"),
-        );
+        if !res.status.success() {
+            return Err(anyhow::anyhow!(
+                "genrule {self:?} {}. {}\n{}",
+                match res.status.code() {
+                    Some(code) => format!("exited with code {code}"),
+                    None => "was terminated by a signal".to_owned(),
+                },
+                std::str::from_utf8(&res.stdout).unwrap_or("<invalid utf8>"),
+                std::str::from_utf8(&res.stderr).unwrap_or("<invalid utf8>"),
+            )
+            .into());
+        }
         Ok(())
     }
 }

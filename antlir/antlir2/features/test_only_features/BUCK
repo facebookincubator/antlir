@@ -2,5 +2,6 @@ load("//antlir/antlir2/features:defs.bzl", "feature_impl")
 
 feature_impl(
     name = "trace",
+    allow_unused_crate_dependencies = True,
     visibility = ["//antlir/antlir2/test_images/..."],
 )

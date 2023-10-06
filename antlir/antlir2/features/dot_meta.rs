@@ -30,17 +30,19 @@ struct BuildInfo {
     package: Option<String>,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for DotMeta {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for DotMeta {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         Ok(Default::default())
     }
+}
 
+impl antlir2_compile::CompileFeature for DotMeta {
     #[tracing::instrument(name = "dot_meta", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> Result<()> {
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         std::fs::create_dir_all(ctx.dst_path("/.meta")).context("while creating /.meta")?;
         std::fs::write(
             ctx.dst_path("/.meta/target"),

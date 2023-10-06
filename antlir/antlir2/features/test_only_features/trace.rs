@@ -9,7 +9,6 @@ use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_features as _;
-use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing::trace;
@@ -21,16 +20,19 @@ pub struct Trace {
     msg: String,
 }
 
-impl<'f> antlir2_feature_impl::Feature<'f> for Trace {
-    fn provides(&self) -> Result<Vec<Item<'f>>> {
+impl antlir2_depgraph::requires_provides::RequiresProvides for Trace {
+    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'f>>> {
+    #[deny(unused_variables)]
+    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         Ok(Default::default())
     }
+}
 
-    fn compile(&self, _ctx: &CompilerContext) -> Result<()> {
+impl antlir2_compile::CompileFeature for Trace {
+    fn compile(&self, _ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         trace!("Trace feature: {}", self.msg);
         Ok(())
     }
