@@ -38,6 +38,8 @@ def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
         providers.append(ExternalRunnerTestInfo(
             type = "simple",
             command = [test_cmd],
+            # FIXME: Consider setting to true
+            run_from_project_root = False,
         ))
 
     return providers

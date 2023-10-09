@@ -33,6 +33,8 @@ def _dir_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
             command = [cmd],
             type = "custom",
             labels = ctx.attrs.labels,
+            # FIXME: Consider setting to true
+            run_from_project_root = False,
         ),
     ]
 
@@ -85,6 +87,8 @@ def _file_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
         ExternalRunnerTestInfo(
             command = [cmd],
             type = "custom",
+            # FIXME: Consider setting to true
+            run_from_project_root = False,
         ),
     ]
 
