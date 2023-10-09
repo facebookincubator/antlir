@@ -8,9 +8,20 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 
 image.layer(
     name = "base",
-    dnf_additional_repos = [
-        "//antlir/antlir2/test_images/rpms/repo:test-repo",
-    ],
+    # systemd-v253 is broken on aarch64 under qemu-user emulation
+    dnf_additional_repos = select({
+        "ovr_config//cpu:arm64": [
+            "//antlir/antlir2/test_images/rpms/repo:test-repo",
+            "fbcode//bot_generated/antlir/rpm/fast_snapshot/repos/centos/9/systemd-cd/aarch64:centos/9/systemd-cd/aarch64",
+        ],
+        "ovr_config//cpu:x86_64": [
+            "//antlir/antlir2/test_images/rpms/repo:test-repo",
+        ],
+    }),
+    dnf_versionlock = select({
+        "ovr_config//cpu:arm64": "//antlir:empty.json",
+        "ovr_config//cpu:x86_64": None,
+    }),
     features = [
         feature.rpms_install(rpms = [
             "systemd",
