@@ -30,6 +30,8 @@ use crate::PackageFormat;
 pub struct Sendstream {
     layer: PathBuf,
     volume_name: String,
+    #[serde(default)]
+    incremental_parent: Option<PathBuf>,
 }
 
 impl PackageFormat for Sendstream {
@@ -60,8 +62,13 @@ impl PackageFormat for Sendstream {
             trace!("sending v1 sendstream to {}", v1file.path().display());
             rootless
                 .as_root(|| {
-                    if Command::new("btrfs")
-                        .arg("send")
+                    let mut cmd = Command::new("btrfs");
+                    cmd.arg("send");
+                    if let Some(parent) = &self.incremental_parent {
+                        cmd.arg("-p").arg(parent);
+                    }
+
+                    if cmd
                         .arg(snapshot.path())
                         .stdout(
                             v1file
