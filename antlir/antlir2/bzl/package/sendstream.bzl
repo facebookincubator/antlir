@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# @lint-ignore-every BUCKRESTRICTEDSYNTAX
+
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
@@ -17,17 +19,41 @@ _base_sendstream_args_defaults = {
 _base_sendstream_args = {
     "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
     "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+    "incremental_parent": attrs.option(
+        attrs.dep(
+            providers = [LayerInfo],
+            doc = "create an incremental sendstream using this parent layer",
+        ),
+        default = None,
+    ),
     "layer": attrs.dep(providers = [LayerInfo]),
     "volume_name": attrs.string(default = _base_sendstream_args_defaults["volume_name"]),
 }
 
+def _is_ancestor(*, layer: LayerInfo, parent: Dependency):
+    if not layer.parent:
+        return False
+    elif layer.parent.label == parent.label:
+        return True
+    else:
+        return _is_ancestor(layer = layer.parent[LayerInfo], parent = parent)
+
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     sendstream = ctx.actions.declare_output("image.sendstream")
+
+    incremental_parent = ctx.attrs.incremental_parent
+    if incremental_parent:
+        if not _is_ancestor(layer = ctx.attrs.layer[LayerInfo], parent = incremental_parent):
+            fail("{} is not an ancestor of {}".format(
+                incremental_parent.label.raw_target(),
+                ctx.attrs.layer.label.raw_target(),
+            ))
 
     spec = ctx.actions.write_json(
         "spec.json",
         {"sendstream": {
             "build_appliance": (ctx.attrs.build_appliance or ctx.attrs.layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
+            "incremental_parent": incremental_parent[LayerInfo].subvol_symlink if incremental_parent else None,
             "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
             "volume_name": ctx.attrs.volume_name,
         }},

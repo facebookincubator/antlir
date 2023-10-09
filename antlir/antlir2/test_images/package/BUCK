@@ -128,3 +128,31 @@ package.gpt(
         ),
     ],
 )
+
+image.layer(
+    name = "incremental-parent",
+    features = [
+        feature.install_text(
+            dst = "/foo",
+            text = "foo",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "incremental-child",
+    features = [
+        feature.install_text(
+            dst = "/bar",
+            text = "bar",
+        ),
+    ],
+    parent_layer = ":incremental-parent",
+)
+
+package.sendstream_v2(
+    name = "incremental.sendstream.v2",
+    incremental_parent = ":incremental-parent",
+    layer = ":incremental-child",
+)
