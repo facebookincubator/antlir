@@ -7,7 +7,7 @@
 import os
 import pwd
 import subprocess
-from typing import AnyStr, Callable, Mapping, NamedTuple, Optional
+from typing import Callable, Mapping, NamedTuple, Optional
 
 from antlir.bzl.loopback_opts import loopback_opts_t
 from antlir.cli import add_targets_and_outputs_arg, init_cli, normalize_buck_path
@@ -312,7 +312,7 @@ class VfatImage(Format, format_name="vfat"):
                 "/usr/bin/truncate -s {image_size_mb}M {image_path}; "
                 "/usr/sbin/mkfs.vfat {maybe_fat_size} {maybe_label} "
                 "{image_path}; "
-                "/usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::"
+                "MTOOLS_SKIP_CHECK=1 /usr/bin/mcopy -v -i {image_path} -sp {work_dir}/* ::"
             ).format(
                 maybe_fat_size=f"-F{opts.loopback_opts.fat_size}"
                 if opts.loopback_opts.fat_size

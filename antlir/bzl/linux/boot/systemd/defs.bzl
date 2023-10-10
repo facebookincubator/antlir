@@ -15,13 +15,15 @@ def _systemd_build(
         label = "/",
         # A list of additional name=value arguments to pass on the
         # kernel cmd line.
-        args = None):
+        args = None,
+        efi_size_mb: int = 256):
     ble_build(
         name = name,
         kernels = kernels,
         label = label,
         args = args,
         parent_layer = "//antlir/bzl/linux/boot/systemd:base",
+        efi_size_mb = efi_size_mb,
     )
 
 systemd_boot = struct(
