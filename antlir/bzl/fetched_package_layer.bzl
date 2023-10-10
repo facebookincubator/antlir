@@ -284,6 +284,7 @@ def _fetched_package_layer(
             "antlir_fetched_package__name={}".format(package),
             "antlir_fetched_package__tag={}".format(tag),
         ],
+        antlir2_default_mountpoint = "/packages/" + package,
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`

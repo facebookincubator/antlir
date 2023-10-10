@@ -120,6 +120,7 @@ def image_layer(
         antlir2_features = [],
         antlir1_features = [],
         antlir2_allow_ignored_flavor_config_override: bool = False,
+        antlir2_default_mountpoint: str | None = None,
         **image_layer_kwargs):
     """
     Arguments
@@ -157,6 +158,7 @@ def image_layer(
                 visibility = get_visibility(image_layer_kwargs.get("visibility")),
                 # Antlir1 provisioning images explicitly install package-devel stub, we need to allow them here.
                 dnf_excluded_rpms = ["aziot-identity-service"],
+                default_mountpoint = antlir2_default_mountpoint,
             )
         else:
             antlir2_shim.fake_buck1_layer(name = name)

@@ -12,6 +12,7 @@ load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repod
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
 load(
     "//antlir/antlir2/bzl/feature:mount.bzl",
+    "DefaultMountpointInfo",
     "mount_record",  # @unused Used as type
 )
 # @oss-disable
@@ -441,6 +442,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         providers.append(
             _implicit_image_test(final_subvol, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
         )
+
+    if ctx.attrs.default_mountpoint:
+        providers.append(DefaultMountpointInfo(default_mountpoint = ctx.attrs.default_mountpoint))
+
     return providers
 
 _layer_attrs = {
@@ -450,6 +455,7 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
+    "default_mountpoint": attrs.option(attrs.string(), default = None),
     "dnf_additional_repos": attrs.list(
         attrs.one_of(
             attrs.dep(providers = [RepoInfo]),
