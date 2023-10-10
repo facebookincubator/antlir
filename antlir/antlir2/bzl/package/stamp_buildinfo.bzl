@@ -18,7 +18,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "_objcopy": ctx.attrs._objcopy,
         "_run_container": ctx.attrs._run_container,
         "_selected_target_arch": ctx.attrs._target_arch,
-    }, with_artifacts = True).promise.map(lambda l: [l[LayerInfo], l[DefaultInfo]])
+    }).promise.map(lambda l: [l[LayerInfo], l[DefaultInfo]])
 
 stamp_buildinfo_rule = rule(
     impl = _impl,
