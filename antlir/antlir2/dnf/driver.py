@@ -14,17 +14,21 @@
 # /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
 # ensure that we're using the same python that dnf itself is using
 
-import argparse
+import base64
 import importlib.util
 import json
 import os
+import subprocess
 import sys
 import threading
 from collections import defaultdict
+from typing import List
+from urllib.parse import urlparse
 
 import dnf
 import hawkey
 import libdnf
+import rpm as librpm
 from dnf.i18n import ucd
 
 spec = importlib.util.spec_from_file_location(
@@ -293,6 +297,28 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
             json.dump({"tx_error": str(e)}, o)
 
 
+def _parse_gpg_keys(rawkey: str) -> List[bytes]:
+    rawkey = rawkey.replace("\r\n", "\n").replace("\r", "\n")
+    keys = []
+    inblock = False
+    block = ""
+    for line in rawkey.splitlines():
+        if line == "-----BEGIN PGP PUBLIC KEY BLOCK-----":
+            inblock = True
+            block = ""
+        elif inblock:
+            if line == "-----END PGP PUBLIC KEY BLOCK-----":
+                inblock = False
+                keys.append(base64.b64decode(block))
+                continue
+            if line.startswith("Version:"):
+                continue
+            if line.startswith("="):
+                continue
+            block += line.strip()
+    return keys
+
+
 def driver(spec) -> None:
     out = LockedOutput(sys.stdout)
     mode = spec["mode"]
@@ -344,7 +370,32 @@ def driver(spec) -> None:
 
     # Check the GPG signatures for all the to-be-installed packages before doing
     # the transaction
-    gpg_errors = {}
+    gpg_errors = defaultdict(list)
+
+    # Import all the GPG keys for repos that we're installing packages from
+    import_keys = defaultdict(list)
+    for pkg in base.transaction.install_set:
+        # @commandline repo (local files) does not have a config and so an
+        # attempt to access 'pkg.repo' raises a KeyError
+        if pkg.reponame == hawkey.CMDLINE_REPO_NAME:
+            continue
+        # Import all the GPG keys for this repo
+        for keyfile in pkg.repo.gpgkey:
+            import_keys[keyfile].append(pkg)
+    for keyfile, pkgs in import_keys.items():
+        uri = urlparse(keyfile)
+        keyfile = os.path.abspath(os.path.join(uri.netloc, uri.path))
+        with open(keyfile, "r") as f:
+            keytext = f.read()
+            keys = _parse_gpg_keys(keytext)
+        for key in keys:
+            ret = base._ts.pgpImportPubkey(key)
+            if ret != 0:
+                for pkg in pkgs:
+                    gpg_errors[pkg].append(
+                        f"failed to import pubkey ({keyfile}): {ret}"
+                    )
+
     for pkg in base.transaction.install_set:
         # If the package comes from a repo without a GPG key, don't bother
         # checking its signature. If the repo is @commandline (aka, a local
@@ -353,26 +404,45 @@ def driver(spec) -> None:
         if pkg.reponame == hawkey.CMDLINE_REPO_NAME or not pkg.repo.gpgkey:
             continue
 
-        # Always make sure that the key is imported
+        # reading the header will cause rpm to do a gpg check
         try:
-            base.package_import_key(pkg)
-        except Exception:
-            pass
+            with open(pkg.localPkg(), "rb") as f:
+                base._ts.hdrFromFdno(f.fileno())
+        except librpm.error as e:
+            msg = str(e)
+            if "key" in msg:
+                gpg_errors[pkg].append(msg)
+            else:
+                raise e
 
-        code, error = base.package_signature_check(pkg)
-        if code == 0:
-            continue  # gpg check is ok!
-        else:
-            gpg_errors[pkg] = error
+        # If the rpm is unsigned but there are gpg keys for the repo, block the installation
+        if pkg.repo.gpgkey:
+            stdout = subprocess.run(
+                [
+                    "rpmkeys",
+                    "--checksig",
+                    "--verbose",
+                    "--define=_pkgverify_level signature",
+                    pkg.localPkg(),
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                encoding="utf8",
+                universal_newlines=True,
+                check=False,
+            ).stdout.lower()
+            if ("key id" not in stdout) or ("signature" not in stdout):
+                gpg_errors[pkg].append("RPM is not signed")
 
     if gpg_errors:
         with out as out:
-            for pkg, error in gpg_errors.items():
-                json.dump(
-                    {"gpg_error": {"package": package_struct(pkg), "error": error}},
-                    out,
-                )
-                out.write("\n")
+            for pkg, errors in gpg_errors.items():
+                for error in errors:
+                    json.dump(
+                        {"gpg_error": {"package": package_struct(pkg), "error": error}},
+                        out,
+                    )
+                    out.write("\n")
         sys.exit(1)
 
     # setting base.args will record a comment in the history db
