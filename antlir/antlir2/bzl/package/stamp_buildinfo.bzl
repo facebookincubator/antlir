@@ -16,7 +16,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "target_arch": ctx.attrs._target_arch,
         "_feature_feature_targets": [ctx.attrs._dot_meta_feature],
         "_objcopy": ctx.attrs._objcopy,
-        "_run_nspawn": ctx.attrs._run_nspawn,
+        "_run_container": ctx.attrs._run_container,
         "_selected_target_arch": ctx.attrs._target_arch,
     }, with_artifacts = True).promise.map(lambda l: [l[LayerInfo], l[DefaultInfo]])
 
@@ -27,7 +27,7 @@ stamp_buildinfo_rule = rule(
                 "_antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
                 "_dot_meta_feature": attrs.dep(default = "//antlir/antlir2/bzl/package:dot-meta"),
                 "_objcopy": attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy")),
-                "_run_nspawn": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn")),
+                "_run_container": attrs.exec_dep(default = "//antlir/antlir2/container_subtarget:run"),
                 "_target_arch": attrs.default_only(attrs.string(
                     default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
                 )),

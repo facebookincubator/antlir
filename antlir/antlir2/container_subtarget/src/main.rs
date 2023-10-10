@@ -6,6 +6,7 @@
  */
 
 use std::collections::HashMap;
+use std::ffi::OsString;
 use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
 
@@ -31,6 +32,8 @@ struct Args {
     /// `--user` run command as a given user
     #[clap(long, default_value = "root")]
     user: String,
+    #[clap(last = true)]
+    cmd: Vec<OsString>,
 }
 
 fn init_logging() {
@@ -76,8 +79,13 @@ fn main() -> anyhow::Result<()> {
         cmd_builder.inputs(repo_root.into_path_buf());
         cmd_builder.inputs(PathBuf::from("/usr/local/fbcode"));
     }
+
+    let mut cmd = args.cmd.into_iter();
+    let program = cmd.next().unwrap_or(OsString::from("/bin/bash"));
+
     Err(isolate(cmd_builder.build())?
-        .command("/bin/bash")?
+        .command(program)?
+        .args(cmd)
         .exec()
         .into())
 }
