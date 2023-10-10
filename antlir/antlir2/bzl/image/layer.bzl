@@ -25,7 +25,7 @@ load("//antlir/rpm/dnf2buck:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
-load(":mounts.bzl", "all_mounts", "nspawn_mount_args")
+load(":mounts.bzl", "all_mounts", "container_mount_args")
 
 def _map_image(
         ctx: AnalysisContext,
@@ -69,7 +69,7 @@ def _map_image(
 
     return cmd, out
 
-def _nspawn_sub_target(nspawn_binary: Dependency, subvol: Artifact, mounts: list[mount_record]) -> list[Provider]:
+def _container_sub_target(binary: Dependency, subvol: Artifact, mounts: list[mount_record]) -> list[Provider]:
     dev_mode_args = cmd_args()
     if REPO_CFG.artifacts_require_repo:
         dev_mode_args = cmd_args(
@@ -80,9 +80,9 @@ def _nspawn_sub_target(nspawn_binary: Dependency, subvol: Artifact, mounts: list
         DefaultInfo(),
         RunInfo(cmd_args(
             "sudo",
-            nspawn_binary[RunInfo],
+            binary[RunInfo],
             cmd_args(subvol, format = "--subvol={}"),
-            cmd_args([nspawn_mount_args(mount) for mount in mounts]),
+            cmd_args([container_mount_args(mount) for mount in mounts]),
             dev_mode_args,
         )),
     ]
@@ -393,7 +393,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             DefaultInfo(
                 sub_targets = {
                     "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
-                    "container": _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts = phase_mounts),
+                    "container": _container_sub_target(ctx.attrs._run_container, final_subvol, mounts = phase_mounts),
                     "features": [DefaultInfo(features_json_artifact)],
                     "logs": [DefaultInfo(all_logs, sub_targets = {
                         key: [DefaultInfo(artifact)]
@@ -420,7 +420,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
     # @oss-disable
 
-    sub_targets["container"] = _nspawn_sub_target(ctx.attrs._run_nspawn, final_subvol, mounts)
+    sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
     providers = [
@@ -508,7 +508,7 @@ _layer_attrs = {
         default = None,
     ),
     "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
-    "_run_nspawn": attrs.exec_dep(default = "//antlir/antlir2/nspawn_in_subvol:nspawn"),
+    "_run_container": attrs.exec_dep(default = "//antlir/antlir2/container_subtarget:run"),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         doc = "CPU arch that this layer is being built for. This is always " +

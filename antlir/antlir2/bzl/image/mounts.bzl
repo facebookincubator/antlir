@@ -54,7 +54,7 @@ def all_mounts(
 
     return mounts
 
-def nspawn_mount_args(mount: mount_record) -> cmd_args:
+def container_mount_args(mount: mount_record) -> cmd_args:
     if mount.layer:
         return cmd_args("--bind-mount-ro", mount.layer.src.subvol_symlink, mount.layer.mountpoint)
     elif mount.host:

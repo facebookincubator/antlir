@@ -3,7 +3,7 @@ load("//antlir/bzl:build_defs.bzl", "rust_binary")
 oncall("twimage")
 
 rust_binary(
-    name = "nspawn",
+    name = "run",
     srcs = glob(["src/**/*.rs"]),
     visibility = ["PUBLIC"],
     deps = [
