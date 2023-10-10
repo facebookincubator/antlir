@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use image_test_lib::KvPair;
+use serde_json::json;
 use tracing::debug;
 use tracing::error;
 
@@ -64,21 +65,30 @@ pub(crate) fn run_command_capture_output(command: &mut Command) -> Result<(), st
     Ok(())
 }
 
-/// Return a path to record VM console output. When invoked under tpx, this
-/// will be uploaded as an artifact.
-pub(crate) fn console_output_path_for_tpx() -> Result<Option<PathBuf>, std::io::Error> {
+/// Return a path to record debugging data. When invoked under tpx, this will be
+/// uploaded as an artifact.
+pub(crate) fn create_tpx_logs(
+    name: &str,
+    description: &str,
+) -> Result<Option<PathBuf>, std::io::Error> {
     // If tpx has provided this artifacts dir, put the logs there so they get
     // uploaded along with the test results
     if let Some(artifacts_dir) = std::env::var_os("TEST_RESULT_ARTIFACTS_DIR") {
         fs::create_dir_all(&artifacts_dir)?;
-        let dst = Path::new(&artifacts_dir).join("console.txt");
+        let dst = Path::new(&artifacts_dir).join(format!("{}.txt", name));
         // The artifact metadata is set up before running the test so that it
         // still gets uploaded even in case of a timeout
         if let Some(annotations_dir) = std::env::var_os("TEST_RESULT_ARTIFACT_ANNOTATIONS_DIR") {
             fs::create_dir_all(&annotations_dir)?;
             fs::write(
-                Path::new(&annotations_dir).join("console.txt.annotation"),
-                r#"{"type": {"generic_text_log": {}}, "description": "console logs"}"#,
+                Path::new(&annotations_dir).join(format!("{}.txt.annotation", name)),
+                json!({
+                    "type": {
+                        "generic_text_log": {},
+                    },
+                    "description": description,
+                })
+                .to_string(),
             )?;
         }
         Ok(Some(dst))
