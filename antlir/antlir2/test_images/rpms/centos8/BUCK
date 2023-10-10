@@ -31,18 +31,3 @@ test_rpms(
     ],
     flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8",
 )
-
-test_rpms(
-    name = "mix-reflink-and-not",
-    expected = expected_t(installed = [
-        "foo",
-        "foo-not-reflinked",
-    ]),
-    features = [
-        feature.rpms_install(rpms = [
-            "foo",
-            "foo-not-reflinked",
-        ] + _RPM_DEPS_OF_TEST),
-    ],
-    flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8",
-)
