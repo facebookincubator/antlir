@@ -1,23 +1,9 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
-load("//antlir/bzl:build_defs.bzl", "rust_bindgen_library")
-load("//metalos:defs.bzl", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("twimage")
-
-rust_bindgen_library(
-    name = "btrfsutil-sys",
-    cpp_deps = [
-        "third-party//btrfs-progs:btrfsutil",
-    ],
-    generate = ("types", "functions", "vars"),
-    header = "btrfsutil-sys/bridge.h",
-    visibility = [
-        "//antlir/...",
-        "//devenv/velvet/...",
-    ],
-)
 
 rust_library(
     name = "antlir2_btrfs",
@@ -28,11 +14,10 @@ rust_library(
         "//devenv/velvet/...",
     ],
     deps = [
-        "anyhow",
         "bitflags",
         "nix",
         "thiserror",
-        ":btrfsutil-sys",
+        "tracing",
     ],
 )
 
@@ -53,10 +38,22 @@ image_rust_test(
     srcs = glob(["src/*.rs"]),
     layer = ":test-layer",
     deps = [
-        "anyhow",
         "bitflags",
         "nix",
         "thiserror",
-        ":btrfsutil-sys",
+        "tracing",
+    ],
+)
+
+rust_binary(
+    name = "delete",
+    srcs = ["delete.rs"],
+    unittests = False,
+    deps = [
+        "anyhow",
+        "clap",
+        "tracing-glog",
+        "tracing-subscriber",
+        ":antlir2_btrfs",
     ],
 )

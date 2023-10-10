@@ -9,7 +9,6 @@ use std::collections::BTreeSet;
 use std::path::Path;
 use std::path::PathBuf;
 
-use antlir2_btrfs::SnapshotFlags;
 use antlir2_btrfs::Subvolume;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
@@ -122,7 +121,7 @@ impl Map {
         let subvol = match &self.setup.parent {
             Some(parent) => {
                 let parent = Subvolume::open(parent)?;
-                parent.snapshot(&dst, SnapshotFlags::RECURSIVE)?
+                parent.snapshot(&dst, Default::default())?
             }
             None => Subvolume::create(&dst).context("while creating new subvol")?,
         };

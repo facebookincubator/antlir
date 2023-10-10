@@ -6,136 +6,150 @@
  */
 
 #![feature(exit_status_error)]
+#![cfg_attr(test, feature(io_error_more))]
 
-use std::ffi::CStr;
-use std::ffi::CString;
+use std::ffi::OsStr;
 use std::os::fd::AsRawFd;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
 
-use anyhow::Context;
 use bitflags::bitflags;
-use btrfsutil_sys::btrfs_util_create_snapshot_fd;
-use btrfsutil_sys::btrfs_util_create_subvolume;
-use btrfsutil_sys::btrfs_util_delete_subvolume;
-use btrfsutil_sys::btrfs_util_error;
-use btrfsutil_sys::btrfs_util_is_subvolume_fd;
-use btrfsutil_sys::btrfs_util_set_subvolume_read_only_fd;
-use btrfsutil_sys::btrfs_util_strerror;
-use btrfsutil_sys::btrfs_util_subvolume_id_fd;
-use btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY;
-use btrfsutil_sys::BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE;
-use btrfsutil_sys::BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE;
 use nix::dir::Dir;
+use nix::errno::Errno;
 use nix::fcntl::OFlag;
+use nix::sys::stat::fstat;
 use nix::sys::stat::Mode;
+use nix::sys::statfs::fstatfs;
+use nix::sys::statfs::BTRFS_SUPER_MAGIC;
 use thiserror::Error;
+use tracing::trace;
+use tracing::trace_span;
 
-pub static BTRFS_FS_TREE_OBJECTID: u64 = 5;
+const INO_SUBVOL: u64 = 256;
+
+mod ioctl;
 
 #[derive(Debug, Error)]
 pub enum Error {
-    #[error("btrfsutil error {0:?}")]
-    Btrfs(#[from] BtrfsUtilError),
+    #[error("not a btrfs filesystem")]
+    NotBtrfs,
+    #[error("directory is not a btrfs subvolume")]
+    NotSubvol,
+    #[error("cannot delete root subvolume")]
+    CannotDeleteRoot,
+    #[error("cannot create subvolume at /")]
+    CannotCreateRoot,
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    #[error(transparent)]
-    Uncategorized(#[from] anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
-pub struct BtrfsUtilError {
-    pub code: btrfs_util_error,
-    pub msg: String,
-}
-
-impl From<btrfs_util_error> for BtrfsUtilError {
-    fn from(err: btrfs_util_error) -> Self {
-        let msg = unsafe {
-            let msg = btrfs_util_strerror(err);
-            CStr::from_ptr(msg)
-        };
-        Self {
-            code: err,
-            msg: format!("btrfs error {}: {:?}", err, msg),
-        }
-    }
-}
-
-impl std::fmt::Display for BtrfsUtilError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "btrfs_util_error({}, {})", self.code, self.msg)
-    }
-}
-
-impl std::error::Error for BtrfsUtilError {}
-
-/// Convenience macro to call btrfs_util functions that return a
-/// btrfs_util_error. Code inside the macro call will be evaluated and a
-/// `Result` will be returned.
-macro_rules! check {
-    ($code:block) => {{
-        let ret = unsafe { $code };
-        match ret {
-            0 => Ok(()),
-            _ => Err(BtrfsUtilError::from(ret)),
-        }
-    }};
-}
-
-#[derive(Debug)]
 pub struct Subvolume {
     fd: Dir,
+    parent: Option<Dir>,
     id: u64,
     opened_path: PathBuf,
 }
 
 bitflags! {
-    pub struct SnapshotFlags: i32 {
-        const RECURSIVE = BTRFS_UTIL_CREATE_SNAPSHOT_RECURSIVE as i32;
-        const READONLY = BTRFS_UTIL_CREATE_SNAPSHOT_READ_ONLY as i32;
+    #[derive(Default)]
+    pub struct SnapshotFlags: u64 {
+        const READONLY = 1 << 1;
     }
 }
 
 bitflags! {
-    pub struct DeleteFlags: i32 {
-        const RECURSIVE = BTRFS_UTIL_DELETE_SUBVOLUME_RECURSIVE as i32;
+    struct SubvolFlags: u64 {
+        const READ_ONLY = 1 << 1;
     }
+}
+
+fn name_bytes<const L: usize>(name: &OsStr) -> [u8; L] {
+    let mut buf = [0; L];
+    let name_bytes = name.as_bytes();
+    buf[..name_bytes.len()].copy_from_slice(name_bytes);
+    buf
+}
+
+fn ensure_is_btrfs(dir: &Dir) -> Result<()> {
+    let statfs = fstatfs(dir).map_err(std::io::Error::from)?;
+    if statfs.filesystem_type() != BTRFS_SUPER_MAGIC {
+        return Err(Error::NotBtrfs);
+    }
+    Ok(())
 }
 
 impl Subvolume {
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let fd = Dir::open(path.as_ref(), OFlag::empty(), Mode::empty())
+        let parent = match path.as_ref().parent() {
+            Some(parent) => Some(
+                Dir::open(
+                    if parent == Path::new("") {
+                        Path::new(".")
+                    } else {
+                        parent
+                    },
+                    OFlag::O_DIRECTORY | OFlag::O_RDONLY,
+                    Mode::empty(),
+                )
+                .map_err(std::io::Error::from)?,
+            ),
+            None => None,
+        };
+        let fd = Dir::open(path.as_ref(), OFlag::O_DIRECTORY, Mode::empty())
             .map_err(std::io::Error::from)?;
-        check!({ btrfs_util_is_subvolume_fd(fd.as_raw_fd()) })?;
-        let mut id = unsafe { std::mem::zeroed() };
-        check!({ btrfs_util_subvolume_id_fd(fd.as_raw_fd(), &mut id) })?;
+
+        ensure_is_btrfs(&fd)?;
+
+        let stat = fstat(fd.as_raw_fd()).map_err(std::io::Error::from)?;
+        if stat.st_ino != INO_SUBVOL {
+            return Err(Error::NotSubvol);
+        }
+
+        let mut args = ioctl::ino_lookup_args {
+            objectid: ioctl::FIRST_FREE_OBJECTID,
+            ..Default::default()
+        };
+        unsafe {
+            ioctl::ino_lookup(fd.as_raw_fd(), &mut args).map_err(std::io::Error::from)?;
+        }
+
+        let id = args.treeid;
 
         // if we ever want to delete it, we need to remember the original path
         // where it was opened :/
         let opened_path = path.as_ref().canonicalize()?;
         Ok(Self {
             fd,
+            parent,
             id,
             opened_path,
         })
     }
 
     pub fn create(path: impl AsRef<Path>) -> Result<Self> {
-        let cpath = CString::new(path.as_ref().as_os_str().as_bytes())
-            .context("failed to convert path to CString")?;
-        check!({
-            btrfs_util_create_subvolume(
-                cpath.as_ptr(),
-                0,
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-            )
-        })
-        .with_context(|| format!("failed to create subvol at {}", path.as_ref().display()))?;
+        let parent_fd = Dir::open(
+            path.as_ref().parent().ok_or(Error::CannotCreateRoot)?,
+            OFlag::O_DIRECTORY,
+            Mode::empty(),
+        )
+        .map_err(std::io::Error::from)?;
+
+        ensure_is_btrfs(&parent_fd)?;
+
+        let args = ioctl::vol_args_v2 {
+            id: ioctl::vol_args_v2_spec {
+                name: name_bytes(path.as_ref().file_name().ok_or(Error::CannotCreateRoot)?),
+            },
+            ..Default::default()
+        };
+        unsafe {
+            ioctl::subvol_create_v2(parent_fd.as_raw_fd(), &args).map_err(std::io::Error::from)?;
+        }
+
         Self::open(path)
     }
 
@@ -146,17 +160,28 @@ impl Subvolume {
     }
 
     pub fn snapshot(&self, path: impl AsRef<Path>, flags: SnapshotFlags) -> Result<Self> {
-        let snapshot_path = CString::new(path.as_ref().as_os_str().as_bytes())
-            .context("failed to convert path to CString")?;
-        check!({
-            btrfs_util_create_snapshot_fd(
-                self.fd.as_raw_fd(),
-                snapshot_path.as_ptr(),
-                flags.bits(),
-                std::ptr::null_mut(),
-                std::ptr::null_mut(),
-            )
-        })?;
+        let new_parent_fd = Dir::open(
+            path.as_ref().parent().ok_or(Error::CannotCreateRoot)?,
+            OFlag::O_DIRECTORY,
+            Mode::empty(),
+        )
+        .map_err(std::io::Error::from)?;
+
+        ensure_is_btrfs(&new_parent_fd)?;
+
+        let args = ioctl::vol_args_v2 {
+            id: ioctl::vol_args_v2_spec {
+                name: name_bytes(path.as_ref().file_name().ok_or(Error::CannotCreateRoot)?),
+            },
+            fd: self.fd.as_raw_fd() as u64,
+            flags: flags.bits(),
+            ..Default::default()
+        };
+        unsafe {
+            ioctl::snap_create_v2(new_parent_fd.as_raw_fd(), &args)
+                .map_err(std::io::Error::from)?;
+        }
+
         Self::open(path)
     }
 
@@ -165,23 +190,78 @@ impl Subvolume {
     }
 
     pub fn set_readonly(&mut self, ro: bool) -> Result<()> {
-        check!({ btrfs_util_set_subvolume_read_only_fd(self.fd.as_raw_fd(), ro) })?;
+        let mut original_flags = 0;
+        unsafe {
+            ioctl::get_flags(self.fd.as_raw_fd(), &mut original_flags)
+                .map_err(std::io::Error::from)?;
+        }
+        let flags = match ro {
+            true => original_flags | SubvolFlags::READ_ONLY.bits(),
+            false => original_flags & !SubvolFlags::READ_ONLY.bits(),
+        };
+        if flags != original_flags {
+            trace!("setting flags: {flags}");
+            unsafe {
+                ioctl::set_flags(self.fd.as_raw_fd(), &flags).map_err(std::io::Error::from)?;
+            }
+        }
         Ok(())
     }
 
-    pub fn delete(self, flags: DeleteFlags) -> std::result::Result<(), (Self, Error)> {
-        let opened_path = CString::new(self.opened_path.as_os_str().as_bytes())
-            .expect("failed to convert path to CString");
-        check!({ btrfs_util_delete_subvolume(opened_path.as_ptr(), flags.bits()) })
-            .map_err(|e| (self, e.into()))?;
-        Ok(())
+    fn name_bytes<const L: usize>(&self) -> [u8; L] {
+        match self.opened_path.file_name() {
+            None => [0; L],
+            Some(name) => name_bytes(name),
+        }
+    }
+
+    pub fn delete(self) -> std::result::Result<(), (Self, Error)> {
+        let span = trace_span!("delete", path = self.path().display().to_string());
+        let _enter = span.enter();
+        match &self.parent {
+            None => Err((self, Error::CannotDeleteRoot)),
+            Some(parent) => {
+                trace!("trying snap_destroy_v2");
+                match unsafe {
+                    ioctl::snap_destroy_v2(
+                        parent.as_raw_fd(),
+                        &ioctl::vol_args_v2 {
+                            flags: ioctl::SPEC_BY_ID,
+                            id: ioctl::vol_args_v2_spec { subvolid: self.id },
+                            ..Default::default()
+                        },
+                    )
+                } {
+                    Ok(_) => Ok(()),
+                    Err(e) => match e {
+                        Errno::EOPNOTSUPP | Errno::ENOSYS => {
+                            trace!("snap_destroy_v2 unsupported, trying snap_destroy");
+                            match unsafe {
+                                ioctl::snap_destroy(
+                                    parent.as_raw_fd(),
+                                    &ioctl::vol_args {
+                                        fd: 0,
+                                        name: self.name_bytes(),
+                                    },
+                                )
+                            } {
+                                Ok(_) => Ok(()),
+                                Err(e) => Err((self, std::io::Error::from(e).into())),
+                            }
+                        }
+                        _ => Err((self, std::io::Error::from(e).into())),
+                    },
+                }
+            }
+        }
     }
 }
 
 #[cfg(test)]
 #[allow(non_upper_case_globals)]
 mod tests {
-    use btrfsutil_sys::btrfs_util_error_BTRFS_UTIL_ERROR_NOT_SUBVOLUME;
+    use std::io::ErrorKind;
+    use std::os::linux::fs::MetadataExt;
 
     use super::*;
 
@@ -199,16 +279,41 @@ mod tests {
         std::fs::create_dir("/foo").expect("dir creation failed");
         std::fs::create_dir("/foo/bar").expect("subdir creation failed");
         assert!(
-            matches!(
-                Subvolume::open("/foo/bar"),
-                Err(Error::Btrfs(BtrfsUtilError {
-                    code: btrfs_util_error_BTRFS_UTIL_ERROR_NOT_SUBVOLUME,
-                    ..
-                }))
-            ),
+            matches!(Subvolume::open("/foo/bar"), Err(Error::NotSubvol)),
             "expected error on subvol lookup for regular directory"
         );
+        assert!(
+            matches!(Subvolume::open("/tmp"), Err(Error::NotBtrfs)),
+            "expected error on subvol lookup for non-btrfs"
+        );
         Ok(())
+    }
+
+    #[test]
+    fn create() {
+        Subvolume::create("/foo").expect("failed to create subvol /foo");
+        assert_eq!(
+            std::fs::metadata("/foo")
+                .expect("failed to stat /foo")
+                .st_ino(),
+            INO_SUBVOL,
+            "subvol stat did not return expected inode number"
+        )
+    }
+
+    #[test]
+    fn toggle_readonly() {
+        let mut subvol = Subvolume::create("/foo").expect("failed to create subvol /foo");
+        std::fs::write("/foo/bar", "bar").expect("failed to write /foo/bar");
+        subvol.set_readonly(true).expect("failed to set readonly");
+        assert_eq!(
+            std::fs::write("/foo/baz", "baz")
+                .expect_err("should have failed to write /foo/baz")
+                .kind(),
+            ErrorKind::ReadOnlyFilesystem,
+        );
+        subvol.set_readonly(false).expect("failed to set readwrite");
+        std::fs::write("/foo/qux", "qux").expect("failed to write /foo/qux");
     }
 
     #[test]
@@ -217,6 +322,33 @@ mod tests {
         let snap = subvol.snapshot("/snapshot", SnapshotFlags::empty())?;
         assert_eq!(snap.path(), Path::new("/snapshot"));
         assert!(snap.path().join("empty").exists());
+        Ok(())
+    }
+
+    #[test]
+    fn snapshot_readonly() {
+        let subvol = Subvolume::open("/").expect("failed to open /");
+        subvol
+            .snapshot("/snapshot", SnapshotFlags::READONLY)
+            .expect("failed to make snapshot");
+        assert_eq!(
+            std::fs::write("/snapshot/foo", "foo")
+                .expect_err("should have failed to write /snapshot/foo")
+                .kind(),
+            ErrorKind::ReadOnlyFilesystem,
+        );
+    }
+
+    #[test]
+    fn delete() -> Result<()> {
+        let subvol = Subvolume::open("/")?;
+        let snap = subvol.snapshot("/snapshot", SnapshotFlags::empty())?;
+        assert_eq!(snap.path(), Path::new("/snapshot"));
+        assert!(snap.path().join("empty").exists());
+        snap.delete()
+            .map_err(|(_, e)| e)
+            .expect("failed to delete subvol");
+        assert!(!Path::new("/snapshot").exists());
         Ok(())
     }
 }

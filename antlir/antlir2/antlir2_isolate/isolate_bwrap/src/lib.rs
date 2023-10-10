@@ -13,8 +13,6 @@ use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::process::Command;
 
-use antlir2_btrfs::DeleteFlags;
-use antlir2_btrfs::SnapshotFlags;
 use antlir2_btrfs::Subvolume;
 use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
@@ -127,7 +125,7 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
             snapshot_path.display()
         );
         let subvol = Subvolume::open(&layer)?;
-        let mut snapshot = subvol.snapshot(&snapshot_path, SnapshotFlags::RECURSIVE)?;
+        let mut snapshot = subvol.snapshot(&snapshot_path, Default::default())?;
         snapshot.set_readonly(false)?;
 
         bwrap_args.push("--bind".into());
@@ -212,7 +210,7 @@ impl Drop for EphemeralSubvolume {
         if let Some(s) = self.subvol.take() {
             let _guard = self.rootless.escalate();
             trace!("deleting subvol {}", s.path().display());
-            if let Err((subvol, err)) = s.delete(DeleteFlags::RECURSIVE) {
+            if let Err((subvol, err)) = s.delete() {
                 error!("failed to delete {}: {err}", subvol.path().display());
             }
         }
