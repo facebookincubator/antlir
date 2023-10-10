@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::path::Path;
+
 #[link(name = "c")]
 extern "C" {
     fn geteuid() -> u32;
@@ -18,4 +20,11 @@ fn is_root() {
 #[test]
 fn env_propagated() {
     assert_eq!("1", std::env::var("ANTLIR2_TEST").expect("env var missing"));
+}
+
+#[test]
+fn env_artifact_exists() {
+    let artifact = std::env::var("ENV_ARTIFACT");
+    assert!(artifact.is_ok());
+    assert!(Path::new(&artifact.expect("Already checked")).exists());
 }

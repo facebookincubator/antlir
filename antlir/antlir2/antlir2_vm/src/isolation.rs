@@ -8,7 +8,6 @@
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::env;
-use std::ffi::OsString;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -87,21 +86,6 @@ impl Platform {
     }
 }
 
-/// If these env exist, always pass them through.
-const PASSTHROUGH_ENVS: &[&str] = &["RUST_LOG", "ANTLIR_BUCK"];
-
-/// Generate default passthrough env vars
-pub(crate) fn default_passthrough_envs() -> Vec<KvPair> {
-    PASSTHROUGH_ENVS
-        .iter()
-        .filter(|x| env::var(*x).is_ok())
-        .map(|x| KvPair {
-            key: x.to_string(),
-            value: OsString::from(env::var(x).expect("must exist")),
-        })
-        .collect()
-}
-
 /// Return IsolatedContext ready for executing a command inside isolation
 /// # Arguments
 /// * `image` - container image that would be used to run the VM
@@ -135,22 +119,4 @@ pub(crate) fn is_isolated() -> Result<bool> {
     let virt = std::str::from_utf8(&output)?.trim();
     debug!("systemd-detect-virt returned: {}", virt);
     Ok(virt == "systemd-nspawn")
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_default_envs() {
-        assert_eq!(default_passthrough_envs(), Vec::new());
-        env::set_var("RUST_LOG", "hello");
-        assert_eq!(
-            default_passthrough_envs(),
-            vec![KvPair {
-                key: "RUST_LOG".into(),
-                value: "hello".into(),
-            }],
-        );
-    }
 }

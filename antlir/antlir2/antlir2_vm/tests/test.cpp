@@ -7,6 +7,7 @@
 
 #include <gtest/gtest.h>
 #include <unistd.h>
+#include <filesystem>
 
 TEST(CppTest, TestIsRoot) {
   EXPECT_EQ(getuid(), 0);
@@ -14,4 +15,10 @@ TEST(CppTest, TestIsRoot) {
 
 TEST(CppTest, TestEnvPropagated) {
   ASSERT_STREQ(std::getenv("ANTLIR2_TEST"), "1");
+}
+
+TEST(CppTest, TestEnvArtifactExists) {
+  auto artifact = std::getenv("ENV_ARTIFACT");
+  ASSERT_NE(nullptr, artifact);
+  ASSERT_TRUE(std::filesystem::exists(artifact));
 }

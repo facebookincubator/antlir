@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs;
@@ -26,7 +25,6 @@ use std::thread::JoinHandle;
 use std::time::Duration;
 use std::time::Instant;
 
-use image_test_lib::KvPair;
 use thiserror::Error;
 use tracing::debug;
 use tracing::error;
@@ -524,16 +522,8 @@ impl VM {
             // Just wait for the human that's trying to debug with console
             self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
         } else if !self.args.mode.container {
-            // Open ssh shell or run command over ssh
-            let dedup_envs: HashMap<_, _> = self
-                .args
-                .command_envs
-                .iter()
-                .cloned()
-                .map(|p| (p.key, p.value))
-                .collect();
             let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
-            dedup_envs.iter().map(KvPair::from).for_each(|kv| {
+            self.args.command_envs.iter().for_each(|kv| {
                 ssh_cmd.arg(kv.to_os_string());
             });
             if let Some(command) = &self.args.mode.command {
