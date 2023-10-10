@@ -15,7 +15,8 @@ def ble_build(
         kernels,
         label,
         args,
-        parent_layer):
+        parent_layer,
+        efi_size_mb: int = 256):
     args = args or []
     args.extend([
         "root=LABEL={}".format(label),
@@ -64,7 +65,7 @@ def ble_build(
         layer = ":" + name + "__layer",
         format = "vfat",
         loopback_opts = image.opts(
-            size_mb = 256,
+            size_mb = efi_size_mb,
             label = "efi",
         ),
     )

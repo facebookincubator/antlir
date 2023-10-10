@@ -55,6 +55,7 @@ impl PackageFormat for Vfat {
             .inputs(input.as_path())
             .outputs(output.as_path())
             .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
+            .setenv(("MTOOLS_SKIP_CHECK", "1"))
             .build();
 
         // Build the vfat disk file first
