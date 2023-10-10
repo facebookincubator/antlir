@@ -224,6 +224,7 @@ _rpm = _new_package_rule(
         "release": attrs.string(),
         "requires": attrs.list(attrs.string(), default = []),
         "rpm_name": attrs.string(),
+        "sign_with_private_key": attrs.option(attrs.source(), default = None),
         "summary": attrs.option(attrs.string(), default = None),
         "supplements": attrs.list(attrs.string(), default = []),
         "version": attrs.string(),
