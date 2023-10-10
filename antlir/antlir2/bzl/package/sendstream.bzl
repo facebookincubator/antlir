@@ -97,7 +97,6 @@ def anon_v1_sendstream(
     return ctx.actions.anon_target(
         _sendstream,
         attrs,
-        with_artifacts = True,
     ).artifact("anon_v1_sendstream")
 
 def _zst_impl(ctx: AnalysisContext) -> list[Provider]:

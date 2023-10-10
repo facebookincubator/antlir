@@ -55,7 +55,7 @@ def tarball_analyze(
     extracted = ctx.actions.anon_target(extract_tarball, {
         "archive": tarball,
         "name": "archive//:" + tarball.short_path,
-    }, with_artifacts = True).artifact("extracted")
+    }).artifact("extracted")
 
     return FeatureAnalysis(
         data = install_record(

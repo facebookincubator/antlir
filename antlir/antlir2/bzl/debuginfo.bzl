@@ -179,4 +179,4 @@ def split_binary_anon(
         "name": "debuginfo//" + src.label.package + ":" + src.label.name + ("[{}]".format(src.label.sub_target) if src.label.sub_target else ""),
         "objcopy": objcopy,
         "src": src,
-    }, with_artifacts = True)
+    })

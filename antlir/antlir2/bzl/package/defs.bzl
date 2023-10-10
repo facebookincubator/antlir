@@ -83,7 +83,7 @@ def _generic_impl(
             "_objcopy": ctx.attrs._objcopy,
             "_run_container": ctx.attrs._run_container,
             "_target_arch": ctx.attrs._target_arch,
-        }, with_artifacts = True).promise.map(partial(
+        }).promise.map(partial(
             _generic_impl_with_layer,
             ctx = ctx,
             format = format,
@@ -131,7 +131,6 @@ def _compressed_impl(
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
         } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys},
-        with_artifacts = True,
     ).artifact("src")
     extension = {
         "gzip": ".gz",
