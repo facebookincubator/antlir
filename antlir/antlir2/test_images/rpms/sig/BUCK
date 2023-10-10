@@ -80,7 +80,10 @@ rpm(
 repo(
     name = "repo",
     compress = "none",
-    gpg_keys = ["key.pub"],
+    gpg_keys = [
+        "key.pub",
+        "unused-key.pub",
+    ],
     rpms = [
         ":unsigned",
         ":signed",
@@ -137,3 +140,57 @@ image_rust_test(
     crate_root = "test_signatures.rs",
     layer = ":test-signatures-layer",
 )
+
+# This layer always builds because it's a nicely behaved rpm signed with the
+# correct key for this repo.
+image.layer(
+    name = "install-signed",
+    dnf_available_repos = [":repo"],
+    features = [
+        feature.rpms_install(rpms = ["signed"]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "test-install-signed-imported-keys-layer",
+    features = [
+        feature.layer_mount(
+            mkdir = True,
+            mountpoint = "/layer",
+            source = ":install-signed",
+        ),
+    ],
+    flavor = ":install-signed[flavor]",
+    parent_layer = ":install-signed[build_appliance]",
+)
+
+image_rust_test(
+    name = "test-install-signed-imported-keys",
+    srcs = ["test_install_signed_imported_keys.rs"],
+    crate_root = "test_install_signed_imported_keys.rs",
+    layer = ":test-install-signed-imported-keys-layer",
+)
+
+# TODO(T166070409) These images correctly fail to build, but until that task is
+# implemented, we can't write a proper test for it so just have to test manually
+# by passing `-c antlir2.rpm_sig_broken_images=1` and verifying that the build
+# fails.
+[
+    image.layer(
+        name = "install-signed-with-wrong-key",
+        dnf_available_repos = [":repo"],
+        features = [
+            feature.rpms_install(rpms = ["signed-with-wrong-key"]),
+        ],
+        flavor = "//antlir/antlir2/test_images:test-image-flavor",
+    ),
+    image.layer(
+        name = "install-unsigned",
+        dnf_available_repos = [":repo"],
+        features = [
+            feature.rpms_install(rpms = ["unsigned"]),
+        ],
+        flavor = "//antlir/antlir2/test_images:test-image-flavor",
+    ),
+] if read_config("antlir2", "rpm_sig_broken_images", False) else None
