@@ -4,7 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-# @oss-disable
 load(
     "//antlir/rpm/dnf2buck:repo.bzl",
     "RepoInfo",  # @unused Used as type
@@ -37,13 +36,6 @@ def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list[Re
     ctx.actions.copied_dir(dir, tree)
     return dir
 
-# Some RPMs are problematic and don't work with cow
-def _disable_reflink(rpm: RpmInfo, repo: RepoInfo):
-    if rpm.nevra.name == "foo-not-reflinked":
-        return True
-    # @oss-disable
-    # @oss-enable return False
-
 def _best_rpm_artifact(
         *,
         rpm_info: RpmInfo,
@@ -52,9 +44,6 @@ def _best_rpm_artifact(
     if not reflink_flavor:
         return rpm_info.raw_rpm
     else:
-        if _disable_reflink(rpm_info, repo):
-            return rpm_info.raw_rpm
-
         # The default behavior is to fail the build if the flavor is reflinkable
         # and the rpm does not have any reflinkable artifacts. This is a safety
         # mechanism to ensure we don't silently regress rpm reflink support. If
