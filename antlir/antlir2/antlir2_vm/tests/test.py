@@ -14,3 +14,8 @@ class TestInstalledBinary(unittest.TestCase):
 
     def test_env_propagated(self) -> None:
         self.assertEqual("1", os.getenv("ANTLIR2_TEST"))
+
+    def test_env_artifact_exists(self) -> None:
+        artifact = os.getenv("ENV_ARTIFACT")
+        self.assertNotEqual(None, artifact)
+        self.assertTrue(os.path.exists(artifact))

@@ -5,12 +5,14 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::HashSet;
 use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
+use image_test_lib::KvPair;
 use tracing::debug;
 use tracing::error;
 
@@ -85,6 +87,24 @@ pub(crate) fn console_output_path_for_tpx() -> Result<Option<PathBuf>, std::io::
     }
 }
 
+/// Convert a list of env names into KvPair with its values
+pub(crate) fn env_names_to_kvpairs(env_names: Vec<String>) -> Vec<KvPair> {
+    let mut names: HashSet<_> = env_names.into_iter().collect();
+    // If these env exist, always pass them through.
+    ["RUST_LOG", "RUST_BACKTRACE", "ANTLIR_BUCK"]
+        .iter()
+        .for_each(|name| {
+            names.insert(name.to_string());
+        });
+    names
+        .iter()
+        .filter_map(|name| match std::env::var(name) {
+            Ok(value) => Some(KvPair::from((name, value))),
+            _ => None,
+        })
+        .collect()
+}
+
 #[cfg(test)]
 /// Helper function for converting qemu args to a single string for asserting in tests.
 /// This is usually only needed for string only functions like `contains`.
@@ -97,6 +117,10 @@ pub(crate) fn qemu_args_to_string(args: &[std::ffi::OsString]) -> String {
 
 #[cfg(test)]
 mod test {
+    use std::collections::HashMap;
+    use std::env;
+    use std::ffi::OsString;
+
     use super::*;
 
     #[test]
@@ -109,5 +133,104 @@ mod test {
             format_command(Command::new("hello").arg("world")),
             format!("Program: `hello`. Args: `{:?}`", vec!["world"]),
         );
+    }
+
+    struct EnvTest {
+        envs: Vec<(&'static str, &'static str)>,
+        passenv: Vec<&'static str>,
+        result: HashMap<String, OsString>,
+    }
+
+    const ALLOWED_ENV_NAMES: &[&str] = &[
+        "RUST_LOG",
+        "RUST_BACKTRACE",
+        "ANTLIR_BUCK",
+        "TEST_PILOT_A",
+        "OTHER",
+    ];
+
+    impl EnvTest {
+        fn new(
+            envs: Vec<(&'static str, &'static str)>,
+            passenv: Vec<&'static str>,
+            result: Vec<(&'static str, &'static str)>,
+        ) -> Self {
+            // We have to clear all envs across tests, so we must know the ones to clear.
+            envs.iter().for_each(|(name, _)| {
+                assert!(
+                    ALLOWED_ENV_NAMES.contains(name),
+                    "{name} not allowed for testing"
+                )
+            });
+            Self {
+                envs,
+                passenv,
+                result: result
+                    .into_iter()
+                    .map(|(k, v)| (k.into(), v.into()))
+                    .collect(),
+            }
+        }
+
+        fn test(&self) {
+            ALLOWED_ENV_NAMES.iter().for_each(|name| {
+                env::remove_var(name);
+            });
+            self.envs.iter().for_each(|(name, val)| {
+                env::set_var(name, val);
+            });
+            let result: HashMap<_, _> =
+                env_names_to_kvpairs(self.passenv.iter().map(|s| s.to_string()).collect())
+                    .drain(..)
+                    .map(|pair| (pair.key, pair.value))
+                    .collect();
+            assert_eq!(result, self.result);
+        }
+    }
+
+    #[test]
+    fn test_env_names_to_kvpairs() {
+        [
+            EnvTest::new(vec![], vec![], vec![]),
+            // Reads nothing
+            EnvTest::new(
+                vec![],
+                vec!["RUST_LOG", "ANTLIR_BUCK", "TEST_PILOT_A", "OTHER"],
+                vec![],
+            ),
+            // Always pass through
+            EnvTest::new(
+                vec![
+                    ("RUST_LOG", "info"),
+                    ("ANTLIR_BUCK", "1"),
+                    ("TEST_PILOT_A", "A"),
+                    ("OTHER", "other"),
+                ],
+                vec![],
+                vec![("RUST_LOG", "info"), ("ANTLIR_BUCK", "1")],
+            ),
+            // Selection
+            EnvTest::new(
+                vec![("TEST_PILOT_A", "A"), ("OTHER", "other")],
+                vec!["TEST_PILOT_A"],
+                vec![("TEST_PILOT_A", "A")],
+            ),
+            // Mixed
+            EnvTest::new(
+                vec![
+                    ("RUST_LOG", "info"),
+                    ("TEST_PILOT_A", "A"),
+                    ("OTHER", "other"),
+                ],
+                vec!["TEST_PILOT_A"],
+                vec![("TEST_PILOT_A", "A"), ("RUST_LOG", "info")],
+            ),
+        ]
+        .iter()
+        .enumerate()
+        .for_each(|(i, test)| {
+            println!("Running test #{i}");
+            test.test();
+        });
     }
 }

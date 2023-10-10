@@ -22,10 +22,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].runtime_spec, format = "--runtime-spec={}"),
-        cmd_args(
-            ["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()],
-            format = "--setenv={}",
-        ),
+        cmd_args([k for k in ctx.attrs.test[ExternalRunnerTestInfo].env], format = "--passenv={}"),
     )
     test_args = cmd_args(
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,

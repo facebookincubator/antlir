@@ -9,7 +9,9 @@ vm.cpp_test(
     srcs = ["test.cpp"],
     env = {
         "ANTLIR2_TEST": "1",
+        "ENV_ARTIFACT": "$(exe :sidecar)",
     },
+    run_as_bundle = True,
     vm_host = get_vm(),
 )
 
@@ -18,7 +20,9 @@ vm.python_test(
     srcs = ["test.py"],
     env = {
         "ANTLIR2_TEST": "1",
+        "ENV_ARTIFACT": "$(exe :sidecar)",
     },
+    run_as_bundle = True,
     vm_host = get_vm(),
 )
 
@@ -29,7 +33,9 @@ vm.rust_test(
     crate_root = "test.rs",
     env = {
         "ANTLIR2_TEST": "1",
+        "ENV_ARTIFACT": "$(exe :sidecar)",
     },
+    run_as_bundle = True,
     vm_host = get_vm(),
 )
 
@@ -37,6 +43,7 @@ vm.sh_test(
     name = "sh-test",
     env = {
         "ANTLIR2_TEST": "1",
+        "ENV_ARTIFACT": "$(exe :sidecar)",
     },
     test = "test.sh",
     vm_host = get_vm(),
@@ -51,22 +58,12 @@ vm.sh_test(
         crate_root = "test.rs",
         env = {
             "ANTLIR2_TEST": "1",
+            "ENV_ARTIFACT": "$(exe :sidecar)",
         },
         vm_host = target,
     )
     for name, target in PRECONFIGURED_VM.items()
 ]
-
-# Verify bundle
-vm.cpp_test(
-    name = "cpp-test-bundle",
-    srcs = ["test.cpp"],
-    env = {
-        "ANTLIR2_TEST": "1",
-    },
-    run_as_bundle = True,
-    vm_host = get_vm(),
-)
 
 # Test for sidecar
 rust_binary(
