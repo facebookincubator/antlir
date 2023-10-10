@@ -1,0 +1,139 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo")
+load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
+
+oncall("twimage")
+
+image.layer(
+    name = "empty",
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+package.rpm(
+    name = "unsigned.rpm",
+    arch = "noarch",
+    layer = ":empty",
+    license = "NONE",
+    release = "0",
+    rpm_name = "unsigned",
+    version = "0",
+)
+
+rpm(
+    name = "unsigned",
+    arch = "noarch",
+    epoch = 0,
+    release = "0",
+    rpm = ":unsigned.rpm",
+    rpm_name = "unsigned",
+    sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    version = "0",
+)
+
+package.rpm(
+    name = "signed.rpm",
+    arch = "noarch",
+    layer = ":empty",
+    license = "NONE",
+    release = "0",
+    rpm_name = "signed",
+    sign_with_private_key = "key.priv",
+    version = "0",
+)
+
+rpm(
+    name = "signed",
+    arch = "noarch",
+    epoch = 0,
+    release = "0",
+    rpm = ":signed.rpm",
+    rpm_name = "signed",
+    sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    version = "0",
+)
+
+package.rpm(
+    name = "signed-with-wrong-key.rpm",
+    arch = "noarch",
+    layer = ":empty",
+    license = "NONE",
+    release = "0",
+    rpm_name = "signed-with-wrong-key",
+    sign_with_private_key = "wrong-key.priv",
+    version = "0",
+)
+
+rpm(
+    name = "signed-with-wrong-key",
+    arch = "noarch",
+    epoch = 0,
+    release = "0",
+    rpm = ":signed-with-wrong-key.rpm",
+    rpm_name = "signed-with-wrong-key",
+    sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    version = "0",
+)
+
+repo(
+    name = "repo",
+    compress = "none",
+    gpg_keys = ["key.pub"],
+    rpms = [
+        ":unsigned",
+        ":signed",
+        ":signed-with-wrong-key",
+    ],
+    timestamp = 0,
+    visibility = [
+    ],
+)
+
+image.layer(
+    name = "test-signatures-layer-parent",
+    features = [
+        feature.rpms_install(rpms = ["rpm"]),
+        feature.install(
+            src = "key.pub",
+            dst = "/key.pub",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "test-signatures-layer",
+    features = [
+        feature.genrule(
+            cmd = [
+                "rpm",
+                "--import",
+                "/key.pub",
+            ],
+            user = "root",
+        ),
+        feature.ensure_dirs_exist(dirs = "/rpms"),
+        feature.install(
+            src = ":unsigned.rpm",
+            dst = "/rpms/unsigned.rpm",
+        ),
+        feature.install(
+            src = ":signed.rpm",
+            dst = "/rpms/signed.rpm",
+        ),
+        feature.install(
+            src = ":signed-with-wrong-key.rpm",
+            dst = "/rpms/signed-with-wrong-key.rpm",
+        ),
+    ],
+    parent_layer = ":test-signatures-layer-parent",
+)
+
+image_rust_test(
+    name = "test-signatures",
+    srcs = ["test_signatures.rs"],
+    crate_root = "test_signatures.rs",
+    layer = ":test-signatures-layer",
+)

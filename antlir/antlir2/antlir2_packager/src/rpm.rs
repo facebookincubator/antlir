@@ -47,6 +47,7 @@ pub struct Rpm {
     conflicts: Vec<String>,
     description: Option<String>,
     post_install_script: Option<String>,
+    sign_with_private_key: Option<PathBuf>,
 }
 
 impl PackageFormat for Rpm {
@@ -176,14 +177,18 @@ License: {license}
         std::fs::create_dir(output_dir.path().join(&self.arch))
             .context("while creating output dir")?;
 
-        let isol_context = IsolationContext::builder(&self.build_appliance)
+        let mut isol_context = IsolationContext::builder(&self.build_appliance);
+        isol_context
             .inputs([rpm_spec_file.path(), self.layer.as_path()])
             .outputs([output_dir.path()])
-            .working_directory(std::env::current_dir().context("while getting cwd")?)
-            .build();
+            .working_directory(std::env::current_dir().context("while getting cwd")?);
+        if let Some(key) = &self.sign_with_private_key {
+            isol_context.inputs([key.as_path()]);
+        }
+        let isol_context = isol_context.build();
 
         run_cmd(
-            isolate(isol_context)?
+            isolate(isol_context.clone())?
                 .command("/bin/rpmbuild")?
                 .arg("-bb")
                 .arg("--define")
@@ -205,6 +210,28 @@ License: {license}
             outputs.len() == 1,
             "expected exactly one output rpm file, got: {outputs:?}"
         );
+
+        if let Some(key) = &self.sign_with_private_key {
+            let sign_script = format!(
+                r#"
+                set -e
+
+                gpg --import {key}
+                keyid="$(gpg --show-keys --with-colons {key} | awk -F':' '$1=="fpr"{{print $10}}' | head -1)"
+                rpmsign --key-id "$keyid" --addsign {out}
+            "#,
+                key = key.display(),
+                out = outputs[0].path().display(),
+            );
+            run_cmd(
+                isolate(isol_context)?
+                    .command("bash")?
+                    .arg("-c")
+                    .arg(sign_script)
+                    .stdout(Stdio::piped()),
+            )
+            .context("failed to sign rpm")?;
+        }
 
         std::fs::copy(outputs[0].path(), out).context("while moving output to correct location")?;
 
