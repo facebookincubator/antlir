@@ -9,7 +9,6 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use antlir2_btrfs::DeleteFlags;
 use antlir2_btrfs::SnapshotFlags;
 use antlir2_btrfs::Subvolume;
 use anyhow::anyhow;
@@ -43,19 +42,14 @@ impl PackageFormat for Sendstream {
                 .context("while creating temp dir")?;
         let snapshot_path = tempdir.path().join(&self.volume_name);
         let snapshot = rootless.as_root(|| {
-            let mut snapshot = subvol
-                .snapshot(&snapshot_path, SnapshotFlags::RECURSIVE)
+            subvol
+                .snapshot(&snapshot_path, SnapshotFlags::READONLY)
                 .with_context(|| {
                     format!(
                         "while snapshotting to new subvol {}",
                         snapshot_path.display()
                     )
-                })?;
-
-            snapshot
-                .set_readonly(true)
-                .context("while setting snapshot readonly")?;
-            Ok::<_, anyhow::Error>(snapshot)
+                })
         })??;
         let v1file = retry(Fixed::from_millis(10_000).take(10), || {
             let v1file = NamedTempFile::new()?;
@@ -93,7 +87,7 @@ impl PackageFormat for Sendstream {
         .context("btrfs-send failed too many times")?;
         rootless.as_root(|| {
             snapshot
-                .delete(DeleteFlags::RECURSIVE)
+                .delete()
                 .map_err(|(_subvol, err)| err)
                 .context("while deleting snapshot")
         })??;

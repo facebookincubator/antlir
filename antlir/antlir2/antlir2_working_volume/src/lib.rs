@@ -16,7 +16,6 @@ use std::process::Command;
 use std::time::Duration;
 use std::time::SystemTime;
 
-use antlir2_btrfs::DeleteFlags;
 use antlir2_btrfs::Subvolume;
 use nix::dir::Dir;
 use nix::errno::Errno;
@@ -171,6 +170,7 @@ impl WorkingVolume {
         }
         let full_keepalive_path = self.resolve_redirection(&Self::keepalive_path(allocated_path));
         File::create(&full_keepalive_path)?;
+        trace!("incrementing refcount for {}", allocated_path.display());
 
         let buck_parent = buck_out_path
             .parent()
@@ -184,6 +184,11 @@ impl WorkingVolume {
         let full_buck_out_path = self
             .resolve_redirection(&buck_parent)
             .join(buck_out_path.file_name().expect("cannot be /"));
+        trace!(
+            "hardlinking {} -> {}",
+            full_buck_out_path.display(),
+            full_keepalive_path.display()
+        );
         std::fs::hard_link(full_keepalive_path, full_buck_out_path)?;
         Ok(())
     }
@@ -259,7 +264,7 @@ impl WorkingVolume {
 fn try_delete_subvol(path: &Path) {
     match Subvolume::open(path) {
         Ok(subvol) => {
-            if let Err((_subvol, e)) = subvol.delete(DeleteFlags::RECURSIVE) {
+            if let Err((_subvol, e)) = subvol.delete() {
                 warn!("failed deleting subvol: {e}")
             }
         }
