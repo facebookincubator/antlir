@@ -21,6 +21,7 @@ rust_binary(
         "derive_builder",
         "once_cell",
         "serde",
+        "serde_json",
         "tempfile",
         "thiserror",
         "tracing",

@@ -89,6 +89,15 @@ command executed. This could be helpful when you want to run the test inside the
 VM shell. You can find more details in the
 [example section](#putting-it-together-an-investigation-example)
 
+Note: If your test target uses `env`, they won't be present for the interactive
+debugging sub targets. This is due to limitation in how envs are populated
+during tests, which are not fully available for `buck run`. One workaround is to
+run `buck test <test> -- --env RUST_LOG=debug` first, and look for the ssh
+command spawning the test in the failure output. It should contain a full list
+of envs that you can copy into your interactive shell. For Meta users, there are
+[additional integration](fb/vm-tests.md#more-internal-debugging-tips) to provide
+you the envs.
+
 ### Logging
 
 By default, the logging level is `info`. It only prints basic information like

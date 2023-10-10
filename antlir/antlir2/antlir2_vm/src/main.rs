@@ -27,6 +27,7 @@ use anyhow::Context;
 use clap::Args;
 use clap::Parser;
 use clap::Subcommand;
+use image_test_lib::KvPair;
 use image_test_lib::Test;
 use json_arg::JsonFile;
 use tempfile::tempdir;
@@ -41,7 +42,7 @@ use crate::runtime::set_runtime;
 use crate::types::MachineOpts;
 use crate::types::RuntimeOpts;
 use crate::types::VMArgs;
-use crate::utils::console_output_path_for_tpx;
+use crate::utils::create_tpx_logs;
 use crate::utils::env_names_to_kvpairs;
 use crate::utils::log_command;
 use crate::vm::VM;
@@ -147,6 +148,28 @@ struct ValidatedVMArgs {
     is_list: bool,
 }
 
+/// Record and upload envs for debugging purpose
+#[cfg(not(test))]
+fn record_envs(envs: &[KvPair]) -> Result<()> {
+    let env_file = create_tpx_logs("env", "env vars")?;
+    if let Some(file) = env_file {
+        std::fs::write(
+            file,
+            envs.iter()
+                .map(|s| s.to_os_string().to_string_lossy().to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )?;
+    }
+    Ok(())
+}
+
+/// We only want envs for actual VM test, not unit tests here.
+#[cfg(test)]
+fn record_envs(_envs: &[KvPair]) -> Result<()> {
+    Ok(())
+}
+
 /// Further validate `VMArgs` parsed by clap and generate a new `VMArgs` with
 /// content specific to test execution.
 fn get_test_vm_args(orig_args: &VMArgs, cli_envs: Vec<String>) -> Result<ValidatedVMArgs> {
@@ -168,6 +191,7 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: Vec<String>) -> Result<Validat
         }
     }
     let envs = env_names_to_kvpairs(env_names);
+    record_envs(&envs)?;
 
     #[derive(Debug, Parser)]
     struct TestArgsParser {
@@ -189,7 +213,7 @@ fn get_test_vm_args(orig_args: &VMArgs, cli_envs: Vec<String>) -> Result<Validat
     vm_args.output_dirs = test_args.test.output_dirs().into_iter().collect();
     vm_args.mode.command = Some(test_args.test.into_inner_cmd());
     vm_args.command_envs = envs;
-    vm_args.console_output_file = console_output_path_for_tpx()?;
+    vm_args.console_output_file = create_tpx_logs("console", "console logs")?;
     Ok(ValidatedVMArgs {
         inner: vm_args,
         is_list,
@@ -282,7 +306,6 @@ fn main() -> Result<()> {
 
 #[cfg(test)]
 mod test {
-    use image_test_lib::KvPair;
 
     use super::*;
     use crate::types::VMModeArgs;
