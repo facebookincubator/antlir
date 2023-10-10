@@ -10,9 +10,13 @@ load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
-load(":ensure_dirs_exist.bzl", "ensure_subdirs_exist")
+load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze", "ensure_subdirs_exist")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 load(":install.bzl", "install")
+
+# IMO this is a misfeature, but it is used in many places throughout the legacy
+# antlir1 world so we need to keep it around for a while
+DefaultMountpointInfo = provider(fields = ["default_mountpoint"])
 
 def layer_mount(
         *,
@@ -27,6 +31,12 @@ def layer_mount(
             deps = {
                 "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
             },
+            exec_deps = {
+                "ensure_dir_exists_plugin": ParseTimeDependency(
+                    dep = antlir2_dep("features:ensure_dir_exists"),
+                    providers = [FeaturePluginInfo],
+                ),
+            },
             kwargs = {
                 "host_source": None,
                 "is_directory": None,
@@ -37,14 +47,14 @@ def layer_mount(
         ),
     ]
 
-    # TODO(T153572212): antlir2 requires the image author to pre-create the mountpoint
-    if mkdir or (_implicit_from_antlir1 and mountpoint):
-        features.extend(
-            ensure_subdirs_exist(
-                into_dir = paths.dirname(mountpoint),
-                subdirs_to_create = paths.basename(mountpoint),
-            ),
-        )
+    if not _implicit_from_antlir1 and not mountpoint:
+        fail("antlir2 layer_mount requires mountpoint to be set")
+
+    if mkdir:
+        features.extend(ensure_subdirs_exist(
+            into_dir = paths.dirname(mountpoint),
+            subdirs_to_create = paths.basename(mountpoint),
+        ))
     return features
 
 def host_mount(
@@ -66,10 +76,15 @@ def host_mount(
             "_implicit_from_antlir1": False,
         },
         deps = {},
+        exec_deps = {
+            "ensure_dir_exists_plugin": ParseTimeDependency(
+                dep = antlir2_dep("features:ensure_dir_exists"),
+                providers = [FeaturePluginInfo],
+            ),
+        },
     )]
 
-    # TODO(T153572212): antlir2 requires the image author to pre-create the mountpoint
-    if create_mountpoint or (_implicit_from_antlir1 and mountpoint):
+    if create_mountpoint or _implicit_from_antlir1:
         if is_directory:
             features.extend(
                 ensure_subdirs_exist(
@@ -117,12 +132,14 @@ def mount_analyze(
         host_source: str | None,
         _implicit_from_antlir1: bool,
         plugin: FeaturePluginInfo,
-        deps: dict[str, Dependency] = {}) -> FeatureAnalysis:
+        deps: dict[str, Dependency] = {},
+        exec_deps: dict[str, Dependency] = {}) -> list[FeatureAnalysis]:
+    features = []
     if source_kind == "layer":
         source = deps.pop("source")
         if not mountpoint:
-            mountpoint = source[LayerInfo].default_mountpoint
-        return FeatureAnalysis(
+            mountpoint = source[DefaultMountpointInfo].default_mountpoint
+        features.append(FeatureAnalysis(
             feature_type = "mount",
             data = mount_record(
                 layer = layer_mount_record(
@@ -133,9 +150,9 @@ def mount_analyze(
             ),
             required_layers = [source[LayerInfo]],
             plugin = plugin,
-        )
+        ))
     elif source_kind == "host":
-        return FeatureAnalysis(
+        features.append(FeatureAnalysis(
             feature_type = "mount",
             data = mount_record(
                 host = host_mount_record(
@@ -146,6 +163,17 @@ def mount_analyze(
                 layer = None,
             ),
             plugin = plugin,
-        )
+        ))
     else:
         fail("invalid source_kind '{}'".format(source_kind))
+
+    # TODO(T153572212): antlir2 requires the image author to pre-create the mountpoint
+    if _implicit_from_antlir1:
+        features.append(ensure_dir_exists_analyze(
+            dir = mountpoint,
+            mode = 0o755,
+            user = "root",
+            group = "root",
+            plugin = exec_deps["ensure_dir_exists_plugin"][FeaturePluginInfo],
+        ))
+    return features
