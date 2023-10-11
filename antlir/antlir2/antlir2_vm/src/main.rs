@@ -12,6 +12,7 @@ mod pci;
 mod runtime;
 mod share;
 mod ssh;
+mod tpm;
 mod types;
 mod utils;
 mod vm;

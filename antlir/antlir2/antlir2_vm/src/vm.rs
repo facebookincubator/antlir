@@ -45,6 +45,8 @@ use crate::share::Shares;
 use crate::share::VirtiofsShare;
 use crate::ssh::GuestSSHCommand;
 use crate::ssh::GuestSSHError;
+use crate::tpm::TPMDevice;
+use crate::tpm::TPMError;
 use crate::types::MachineOpts;
 use crate::types::ShareOpts;
 use crate::types::VMArgs;
@@ -69,6 +71,8 @@ pub(crate) struct VM {
     state_dir: PathBuf,
     /// Handles to sidecar services
     sidecar_handles: Vec<JoinHandle<Result<ExitStatus>>>,
+    /// TPM device
+    tpm: Option<TPMDevice>,
 }
 
 #[derive(Error, Debug)]
@@ -85,6 +89,8 @@ pub(crate) enum VMError {
     NICInitError(#[from] VirtualNICError),
     #[error(transparent)]
     SSHCommandError(#[from] GuestSSHError),
+    #[error(transparent)]
+    TPMError(#[from] TPMError),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
     #[error("Failed to open output file: {path}: {err}")]
@@ -117,6 +123,10 @@ impl VM {
             machine.mem_mib,
         )?;
         let nics = Self::create_nics(machine.num_nics)?;
+        let tpm = match machine.use_tpm {
+            true => Some(TPMDevice::new(&state_dir)?),
+            false => None,
+        };
 
         Ok(VM {
             machine,
@@ -127,6 +137,7 @@ impl VM {
             nics,
             state_dir,
             sidecar_handles: vec![],
+            tpm,
         })
     }
 
@@ -350,6 +361,9 @@ impl VM {
         args.extend(self.disk_qemu_args());
         args.extend(self.share_qemu_args());
         args.extend(self.nic_qemu_args());
+        if let Some(tpm) = &self.tpm {
+            args.extend(tpm.qemu_args());
+        }
         let mut command = Command::new(&get_runtime().qemu_system);
         command = self.redirect_input_output(command)?;
         let command = command.args(&args);
@@ -682,6 +696,7 @@ mod test {
             nics: vec![VirtualNIC::new(0)],
             state_dir: PathBuf::from("/test/path"),
             sidecar_handles: vec![],
+            tpm: None,
         }
     }
 
@@ -691,6 +706,7 @@ mod test {
             qemu_img: "qemu-img".to_string(),
             firmware: "edk2-x86_64-code.fd".to_string(),
             roms_dir: "roms".to_string(),
+            swtpm: "swtpm".to_string(),
         })
         .expect("Failed to set fake runtime");
     }

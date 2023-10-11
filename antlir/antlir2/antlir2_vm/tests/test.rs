@@ -28,3 +28,9 @@ fn env_artifact_exists() {
     assert!(artifact.is_ok());
     assert!(Path::new(&artifact.expect("Already checked")).exists());
 }
+
+#[test]
+fn no_tpm() {
+    assert!(!Path::new("/dev/tpm0").exists());
+    assert!(!Path::new("/dev/tpmrm0").exists());
+}

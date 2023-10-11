@@ -174,6 +174,8 @@ pub(crate) struct MachineOpts {
     pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
     /// Processes that will spawn outside VM that VM can communicate with
     pub(crate) sidecar_services: Vec<Vec<String>>,
+    /// Enables TPM 2.0 support
+    pub(crate) use_tpm: bool,
 }
 
 /// Location of various binary and data we need to operate the VM
@@ -183,6 +185,7 @@ pub(crate) struct RuntimeOpts {
     pub(crate) qemu_img: String,
     pub(crate) firmware: String,
     pub(crate) roms_dir: String,
+    pub(crate) swtpm: String,
 }
 
 #[cfg(test)]
