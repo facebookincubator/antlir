@@ -18,6 +18,7 @@ import base64
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -89,6 +90,16 @@ _TX_ACTION_TO_JSON = {
     dnf.callback.PKG_SCRIPTLET: "scriptlet",
 }
 
+# Poorly packaged rpms that have failing postscripts.
+#
+# When adding RPMs to this list, create a task and model it after T166170831
+# (which also has an example of how to investigate _why_ a script is broken)
+# Use TODO(Txxxx) so that this entry can be easily tracked in the tasks tool and
+# removed when the task is fixed.
+_RPMS_THAT_CAN_FAIL_POST_SCRIPTS = {
+    "antlir2-failing-postscripts": "TODO(T166162108)",
+}
+
 
 class TransactionProgress(dnf.callback.TransactionProgress):
     def __init__(self, out, ignore_postin_script_error: bool = False):
@@ -116,6 +127,13 @@ class TransactionProgress(dnf.callback.TransactionProgress):
                 "Error in POSTIN scriptlet"
             ):
                 key = "tx_warning"
+            match = re.match(
+                r"^Error in (?:.*) scriptlet in rpm package (.*)$", message
+            )
+            if match and match.group(1):
+                rpm_name = match.group(1)
+                if rpm_name in _RPMS_THAT_CAN_FAIL_POST_SCRIPTS:
+                    key = "tx_warning"
             json.dump({key: message}, out)
             out.write("\n")
 

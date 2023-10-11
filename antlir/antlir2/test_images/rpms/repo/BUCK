@@ -146,6 +146,17 @@ all_rpms.append(
     ),
 )
 
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-failing-postscripts",
+        epoch = 0,
+        post_install_script = "echo antlir2-failing-postscripts && exit 1",
+        release = "1",
+        requires_post = ["/bin/sh"],
+        version = "1",
+    ),
+)
+
 repo(
     name = "test-repo",
     compress = "none",
