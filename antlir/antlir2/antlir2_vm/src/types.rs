@@ -172,6 +172,8 @@ pub(crate) struct MachineOpts {
     pub(crate) num_nics: usize,
     /// initrd and data if not booting from disk
     pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
+    /// Index of serial port
+    pub(crate) serial_index: usize,
     /// Processes that will spawn outside VM that VM can communicate with
     pub(crate) sidecar_services: Vec<Vec<String>>,
     /// Enables TPM 2.0 support
