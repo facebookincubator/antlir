@@ -559,51 +559,68 @@ impl VM {
     }
 
     fn common_qemu_args(&self) -> Vec<OsString> {
-        [
-            // General
-            "-no-reboot",
-            "-display",
-            "none",
-            // Serial
-            "-serial",
-            "mon:stdio",
-            // CPU & Memory
-            "-cpu",
-            "host",
-            "-smp",
-            &self.machine.cpus.to_string(),
-            "-m",
-            &format!("{}M", self.machine.mem_mib),
-            // Common devices
-            "-object",
-            "rng-random,filename=/dev/urandom,id=rng0",
-            "-device",
-            "virtio-rng-pci,rng=rng0",
-            "-device",
-            "virtio-serial",
-            // socket/serial device pair (for communicating with VM)
-            "-chardev",
-            &format!(
-                "socket,path={},id=notify,server=on",
-                self.notify_file().to_str().expect("Invalid file name")
-            ),
-            "-device",
-            "virtserialport,chardev=notify,name=notify-host",
-            // firmware
-            "-drive",
-            &format!(
-                "if=pflash,format=raw,unit=0,file={},readonly=on",
-                get_runtime().firmware,
-            ),
-            // ROM
-            "-L",
-            &get_runtime().roms_dir,
-            // Assuming we won't bother without virtualization support
-            "-enable-kvm",
-        ]
-        .iter()
-        .map(|x| x.into())
-        .collect()
+        let mut args = vec![];
+        args.append(
+            &mut [
+                // General
+                "-no-reboot",
+                "-display",
+                "none",
+            ]
+            .iter()
+            .map(|x| x.into())
+            .collect(),
+        );
+
+        let mut serial = vec![];
+        (0..self.machine.serial_index).for_each(|_| {
+            serial.push("-serial");
+            serial.push("null");
+        });
+        serial.append(&mut vec!["-serial", "mon:stdio"]);
+        args.append(&mut serial.into_iter().map(|x| x.into()).collect());
+
+        args.append(
+            &mut [
+                // CPU & Memory
+                "-cpu",
+                "host",
+                "-smp",
+                &self.machine.cpus.to_string(),
+                "-m",
+                &format!("{}M", self.machine.mem_mib),
+                // Common devices
+                "-object",
+                "rng-random,filename=/dev/urandom,id=rng0",
+                "-device",
+                "virtio-rng-pci,rng=rng0",
+                "-device",
+                "virtio-serial",
+                // socket/serial device pair (for communicating with VM)
+                "-chardev",
+                &format!(
+                    "socket,path={},id=notify,server=on",
+                    self.notify_file().to_str().expect("Invalid file name")
+                ),
+                "-device",
+                "virtserialport,chardev=notify,name=notify-host",
+                // firmware
+                "-drive",
+                &format!(
+                    "if=pflash,format=raw,unit=0,file={},readonly=on",
+                    get_runtime().firmware,
+                ),
+                // ROM
+                "-L",
+                &get_runtime().roms_dir,
+                // Assuming we won't bother without virtualization support
+                "-enable-kvm",
+            ]
+            .iter()
+            .map(|x| x.into())
+            .collect(),
+        );
+        args
     }
 
     fn pci_bridge_qemu_args(&self) -> Vec<OsString> {
@@ -713,7 +730,7 @@ mod test {
 
     #[test]
     fn test_common_qemu_args() {
-        let vm = get_vm_no_disk();
+        let mut vm = get_vm_no_disk();
         set_bogus_runtime();
         let common_args = qemu_args_to_string(&vm.common_qemu_args());
         // Only checking fields affected by args
@@ -728,6 +745,10 @@ mod test {
                 .contains("if=pflash,format=raw,unit=0,file=edk2-x86_64-code.fd,readonly=on")
         );
         assert!(common_args.contains("-L roms"));
+
+        vm.machine.serial_index = 2;
+        let common_args = qemu_args_to_string(&vm.common_qemu_args());
+        assert!(common_args.contains("none -serial null -serial null -serial mon:stdio"));
     }
 
     #[test]
