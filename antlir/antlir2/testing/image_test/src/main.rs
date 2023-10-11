@@ -9,10 +9,12 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::fs::File;
+use std::fs::Permissions;
 use std::io::Write;
 use std::os::fd::AsRawFd;
 use std::os::fd::FromRawFd;
 use std::os::unix::ffi::OsStrExt;
+use std::os::unix::fs::PermissionsExt;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::path::PathBuf;
@@ -158,6 +160,13 @@ fn main() -> Result<()> {
         ctx.hostname(hostname);
     }
 
+    // test output dirs/files need to be world-writable so that tests can run as
+    // unprivileged users that are not the build user
+    for path in args.test.output_dirs() {
+        std::fs::set_permissions(&path, Permissions::from_mode(0o777))
+            .with_context(|| format!("while making {} world-writable", path.display()))?;
+    }
+
     if args.boot {
         let container_stdout = container_stdout_file()?;
         let (mut test_stdout, mut test_stderr) = make_log_files("test")?;
@@ -208,6 +217,7 @@ fn main() -> Result<()> {
 
         writeln!(test_unit_dropin, "[Service]")?;
 
+        writeln!(test_unit_dropin, "User={}", args.user)?;
         write!(test_unit_dropin, "WorkingDirectory=")?;
         let cwd = std::env::current_dir().context("while getting cwd")?;
         test_unit_dropin.write_all(cwd.as_os_str().as_bytes())?;
@@ -279,6 +289,7 @@ fn main() -> Result<()> {
             Ok(())
         }
     } else {
+        ctx.user(args.user);
         let mut cmd = args.test.into_inner_cmd().into_iter();
         let mut isol = isolate(ctx.build())?.command(cmd.next().expect("must have program arg"))?;
         isol.args(cmd);

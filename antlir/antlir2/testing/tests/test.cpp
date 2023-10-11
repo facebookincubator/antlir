@@ -6,10 +6,14 @@
  */
 
 #include <gtest/gtest.h>
+#include <pwd.h>
 #include <unistd.h>
 
-TEST(CppTest, TestIsRoot) {
-  EXPECT_EQ(getuid(), 0);
+TEST(CppTest, TestUser) {
+  auto uid = geteuid();
+  auto pw = getpwuid(uid);
+  EXPECT_TRUE(pw);
+  EXPECT_STREQ(pw->pw_name, std::getenv("TEST_USER"));
 }
 
 TEST(CppTest, TestEnvPropagated) {

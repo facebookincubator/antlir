@@ -5,14 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#[link(name = "c")]
-extern "C" {
-    fn geteuid() -> u32;
-}
-
 #[test]
-fn is_root() {
-    assert_eq!(0, unsafe { geteuid() });
+fn user() {
+    let expected = std::env::var("TEST_USER").expect("TEST_USER not set");
+    let actual = whoami::username();
+    assert_eq!(expected, actual);
 }
 
 #[test]
