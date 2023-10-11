@@ -53,6 +53,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             } if ctx.attrs.initrd else None,
             "num_nics": ctx.attrs.num_nics,
             "sidecar_services": ctx.attrs.sidecar_services,
+            "use_tpm": ctx.attrs.use_tpm,
         },
         with_inputs = True,
     )
@@ -68,6 +69,7 @@ def _runtime_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             "qemu_img": ensure_single_output(ctx.attrs.qemu_img),
             "qemu_system": ensure_single_output(ctx.attrs.qemu_system),
             "roms_dir": ctx.attrs.roms_dir,
+            "swtpm": ensure_single_output(ctx.attrs.swtpm),
         },
         with_inputs = True,
     )
@@ -126,6 +128,7 @@ _vm_host = rule(
         ),
         "mem_mib": attrs.int(default = 4096, doc = "memory size in MiB"),
         "num_nics": attrs.int(default = 1),
+        "use_tpm": attrs.bool(default = False, doc = "enable software TPM"),
     } | {
         "append": attrs.option(
             attrs.string(),
@@ -175,6 +178,10 @@ _vm_host = rule(
         "roms_dir": attrs.default_only(
             attrs.source(default = antlir_dep("vm/runtime:roms")),
             doc = "ROMs for the VM",
+        ),
+        "swtpm": attrs.default_only(
+            attrs.exec_dep(default = antlir_dep("vm/runtime:swtpm")),
+            doc = "Software TPM binary for the VM",
         ),
         "vm_exec": attrs.default_only(
             attrs.exec_dep(

@@ -100,3 +100,18 @@ vm.rust_test(
         ":sidecar",
     ],
 )
+
+vm.host(
+    name = "vm-with-tpm",
+    compatible_with = ["ovr_config//cpu:x86_64"],
+    disks = [simple_disk.default_boot_disk],
+    use_tpm = True,
+)
+
+vm.rust_test(
+    name = "test-tpm",
+    srcs = ["tpm.rs"],
+    crate = "tpm",
+    crate_root = "tpm.rs",
+    vm_host = ":vm-with-tpm",
+)
