@@ -4,7 +4,9 @@ load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 load("//antlir/antlir2/testing:image_rpms_test.bzl", "image_test_rpm_integrity", "image_test_rpm_names")
 load("//antlir/antlir2/testing:image_test.bzl", "image_cpp_test", "image_python_test", "image_rust_test", "image_sh_test")
 load("//antlir/antlir2/testing:test_that_should_fail.bzl", "sh_test_that_should_fail", "test_that_should_fail")
+load("//antlir/bzl:build_defs.bzl", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
+load(":test.bzl", "test_variants")
 
 image.layer(
     name = "base",
@@ -37,62 +39,36 @@ image.layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-[
-    [
-        image_cpp_test(
-            name = "test-cpp" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
-            srcs = ["test.cpp"],
-            boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
-            env = {
-                "ANTLIR2_TEST": "1",
-                "BOOT": str(boot),
-            },
-            layer = ":base",
-            supports_static_listing = False,
-        ),
-        image_python_test(
-            name = "test-py" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
-            srcs = ["test.py"],
-            boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
-            env = {
-                "ANTLIR2_TEST": "1",
-                "BOOT": str(boot),
-            },
-            layer = ":base",
-        ),
-        image_rust_test(
-            name = "test-rs" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
-            srcs = ["test.rs"],
-            boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
-            crate = "test_rs",
-            crate_root = "test.rs",
-            env = {
-                "ANTLIR2_TEST": "1",
-                "BOOT": str(boot),
-            },
-            layer = ":base",
-        ),
-        image_sh_test(
-            name = "test-sh" + ("-booted" if boot else "") + ("-requires-units" if boot == "wait-default" else ""),
-            boot = bool(boot),
-            boot_requires_units = ["default.target"] if boot == "wait-default" else None,
-            env = {
-                "ANTLIR2_TEST": "1",
-                "BOOT": str(boot),
-            },
-            layer = ":base",
-            test = "test.sh",
-        ),
-    ]
-    for boot in [
-        False,
-        True,
-        "wait-default",
-    ]
-]
+test_variants(
+    srcs = ["test.cpp"],
+    lang = "cpp",
+    supports_static_listing = False,
+    test_rule = image_cpp_test,
+)
+
+test_variants(
+    srcs = ["test.py"],
+    lang = "py",
+    test_rule = image_python_test,
+)
+
+test_variants(
+    srcs = ["test.rs"],
+    crate = "test_rs",
+    crate_root = "test.rs",
+    lang = "rust",
+    test_rule = image_rust_test,
+    deps = [third_party.library(
+        "whoami",
+        platform = "rust",
+    )],
+)
+
+test_variants(
+    lang = "sh",
+    test = "test.sh",
+    test_rule = image_sh_test,
+)
 
 image_python_test(
     name = "test-hostname",

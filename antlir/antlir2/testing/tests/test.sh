@@ -6,8 +6,8 @@
 
 set -ex
 
-if [ "$UID" != "0" ]; then
-    echo "Not root!"
+if [ "$(id -nu)" != "$TEST_USER" ]; then
+    echo "expected to run as $TEST_USER but am $(id -nu)"
     exit 1
 fi
 
