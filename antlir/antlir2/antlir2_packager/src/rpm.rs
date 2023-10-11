@@ -38,6 +38,8 @@ pub struct Rpm {
     #[serde(default)]
     requires: Vec<String>,
     #[serde(default)]
+    requires_post: Vec<String>,
+    #[serde(default)]
     recommends: Vec<String>,
     #[serde(default)]
     provides: Vec<String>,
@@ -61,6 +63,12 @@ impl PackageFormat for Rpm {
             .requires
             .iter()
             .map(|r| format!("Requires: {r}"))
+            .join("\n");
+
+        let requires_post = self
+            .requires
+            .iter()
+            .map(|r| format!("Requires(post): {r}"))
             .join("\n");
 
         let recommends = self
@@ -108,6 +116,7 @@ Summary: {summary}
 License: {license}
 
 {requires}
+{requires_post}
 {recommends}
 {provides}
 {supplements}
@@ -121,6 +130,7 @@ License: {license}
 "#,
             summary = self.summary.as_deref().unwrap_or(name.as_str()),
             requires = requires,
+            requires_post = requires_post,
             recommends = recommends,
             provides = provides,
             supplements = supplements,

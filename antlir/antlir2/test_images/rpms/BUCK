@@ -369,3 +369,17 @@ image_sh_test(
     layer = simple,
     test = "test-history.sh",
 )
+
+test_rpms(
+    name = "allowlisted-failing-postscripts",
+    expected = expected_t(installed = [
+        "antlir2-failing-postscripts",
+    ]),
+    features = [
+        feature.rpms_install(rpms = [
+            "antlir2-failing-postscripts",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
