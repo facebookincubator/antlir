@@ -71,7 +71,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         RunInfo(test_cmd),
         DefaultInfo(
             script,
-            sub_targets = {"layer": ctx.attrs.layer.providers},
+            sub_targets = {
+                "inner_test": ctx.attrs.test.providers,
+                "layer": ctx.attrs.layer.providers,
+            },
         ),
     ]
 
