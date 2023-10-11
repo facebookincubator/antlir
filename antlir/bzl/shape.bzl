@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @lint-ignore-every BUCKRESTRICTEDSYNTAX
-
 """
 shape.bzl provides a convenient strongly-typed bridge from Buck bzl parse
 time to Python runtime.
@@ -337,7 +335,7 @@ def _enum(*values, **field_kwargs):
 def _is_enum(t):
     return structs.is_struct(t) and sorted(structs.to_dict(t).keys()) == sorted(["enum"])
 
-def _path(**field_kwargs):
+def _path(**_field_kwargs):
     fail("shape.path() is no longer supported, use `shape.path` directly, or wrap in `shape.field()`")
 
 def _shape(__thrift = None, **fields):
