@@ -371,37 +371,38 @@ class Path(bytes):
                 # Future: once the bug with the XAR `access` implementation
                 # is fixed (https://fburl.com/42s41c0g), this can just check
                 # for boolean equality.
-                if exe and not os.access(rsrc_in.name, os.X_OK):
-                    raise RuntimeError(
-                        f"{package}.{name} is not executable"
-                    )  # pragma: no cover
-                yield Path(rsrc_in.name).abspath()
-            else:  # pragma: no cover
-                # The resource has no path, so we have to materialize it.
-                #
-                # This code path is not reached by our coverage harness,
-                # since resources in '@mode/dev will always have a real
-                # filesystem path.  However, we get all the needed signal
-                # from running `test-fs-utils-path-resource-*' in
-                # `@mode/dev` and `@mode/opt'.
-                #
-                # Wrap in a temporary directory so we can `chmod 755` below.
-                with temp_dir() as td:
-                    with open(td / name, "wb") as rsrc_out:
-                        # We can't use `os.sendfile` because `rsrc_in` may
-                        # not be backed by a real FD.
-                        while True:
-                            # Read 512KiB chunks to mask the syscall cost
-                            chunk = rsrc_in.read(2**19)
-                            if not chunk:
-                                break
-                            rsrc_out.write(chunk)
-                    if exe:
-                        # The temporary directory protects us from undesired
-                        # access.  The goal is to let both the current user
-                        # and `root` execute this path, but nobody else.
-                        os.chmod(td / name, 0o755)
-                    yield td / name
+                if exe and os.access(rsrc_in.name, os.X_OK):
+                    yield Path(rsrc_in.name).abspath()
+                    return
+                else:
+                    # why does this happen? who knows but we can make a copy of
+                    # the binary that _is_ executable
+                    log.warning(f"{package}.{name} is not executable")
+            # The resource has no path, so we have to materialize it.
+            #
+            # This code path is not reached by our coverage harness,
+            # since resources in '@mode/dev will always have a real
+            # filesystem path.  However, we get all the needed signal
+            # from running `test-fs-utils-path-resource-*' in
+            # `@mode/dev` and `@mode/opt'.
+            #
+            # Wrap in a temporary directory so we can `chmod 755` below.
+            with temp_dir() as td:
+                with open(td / name, "wb") as rsrc_out:
+                    # We can't use `os.sendfile` because `rsrc_in` may
+                    # not be backed by a real FD.
+                    while True:
+                        # Read 512KiB chunks to mask the syscall cost
+                        chunk = rsrc_in.read(2**19)
+                        if not chunk:
+                            break
+                        rsrc_out.write(chunk)
+                if exe:
+                    # The temporary directory protects us from undesired
+                    # access.  The goal is to let both the current user
+                    # and `root` execute this path, but nobody else.
+                    os.chmod(td / name, 0o755)
+                yield td / name
 
     # Future: Consider if we actually want something like
     # `relative_outside_base`, which is `.normpath().has_leading_dot_dot()`.
