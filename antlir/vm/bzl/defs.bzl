@@ -145,7 +145,8 @@ def _vm_unittest(
     actual_test_binary = helpers.hidden_test_name(name)
     if unittest_rule == rust_unittest:
         # otherwise the linter complains that the crate is not snake_case
-        actual_test_binary = actual_test_binary.lower().replace("--", "-").replace("__", "_")
+        # or error: invalid character `'.'` in crate name: `bpftool_vm_tests_6.4.3_0_fbk1_rc14_648_g41fd19d9d0d3_test_binary`
+        actual_test_binary = actual_test_binary.lower().replace("--", "-").replace("__", "_").replace(".", "_")
 
     unittest_rule(
         name = actual_test_binary,
