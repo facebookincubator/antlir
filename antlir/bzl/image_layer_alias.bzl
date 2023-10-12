@@ -71,7 +71,7 @@ def image_layer_alias(name, layer, runtime = None, visibility = None, antlir2 = 
 
     add_runtime_targets(name, runtime)
 
-    if antlir2_shim.should_make_parallel_layer(antlir2):
+    if antlir2_shim.should_shadow_layer(antlir2):
         if is_buck2():
             alias(
                 name = name + ".antlir2",

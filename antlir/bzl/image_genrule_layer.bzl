@@ -109,7 +109,7 @@ Optional arguments:
     - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
         for supported, but less commonly used, kwargs.
     """
-    if antlir2_shim.should_make_parallel_layer(image_layer_kwargs.pop("antlir2", None), flavor = flavor):
+    if antlir2_shim.should_shadow_layer(image_layer_kwargs.pop("antlir2", None)):
         if is_buck2():
             antlir2_image.layer(
                 name = name + ".antlir2",

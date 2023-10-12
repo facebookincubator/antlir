@@ -384,7 +384,7 @@ def feature_new(
     # If we're on buck2, instantiate an antlir2 feature rule. This does not
     # conflict with the feature above, since antlir1 adds a "private" suffix to
     # all feature targets
-    if antlir2_shim.should_make_parallel_layer(antlir2):
+    if antlir2_shim.should_shadow_layer(antlir2):
         if is_buck2():
             antlir2_feature.new(
                 name,

@@ -143,7 +143,7 @@ def image_layer(
     [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
     possible helpers, their respective behaviours, and how to invoke them.
     """
-    if antlir2_shim.should_make_parallel_layer(image_layer_kwargs.pop("antlir2", None), flavor = flavor):
+    if antlir2_shim.should_shadow_layer(image_layer_kwargs.pop("antlir2", None)):
         if is_buck2():
             if not antlir2_allow_ignored_flavor_config_override and flavor_config_override:
                 fail("antlir2 does not support flavor_config_override: {}".format(flavor_config_override))
