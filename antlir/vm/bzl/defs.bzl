@@ -58,8 +58,6 @@ with the options allowed there.  The key differences with
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("@fbcode_macros//build_defs/lib:re_test_utils.bzl", "re_test_utils")
-load("@fbsource//tools/build_defs/buck2:is_buck2.bzl", "is_buck2")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
@@ -196,12 +194,6 @@ def _vm_unittest(
         vm_opts = vm_opts,
     )
 
-    # NOTE: We could put this code in buck_sh_test itself, but that has much wider impact.
-    # It's safer to start off just doing a local change for antlir.
-    re_attrs = {}
-    if is_buck2():
-        re_test_utils.set_re_info(re_attrs, wrapper_labels)
-
     # FIXME: We use a bunch of genrules to generate trampoline scripts that
     # don't specify their runtime dependencies (because they can't:
     # https://fburl.com/workplace/ljtl2dv3) To support remote execution of
@@ -249,7 +241,7 @@ def _vm_unittest(
         env = {"BUCK_BASE_BINARY": "$(location :{})".format(actual_test_binary)},
         antlir_rule = "user-facing",
         deps = deps,
-        **re_attrs
+        remote_execution = kwargs["remote_execution"] if "remote_execution" in kwargs else None,
     )
 
 def _vm_cpp_unittest(
