@@ -1,3 +1,4 @@
+load("@fbcode_macros//build_defs/lib:re_test_utils.bzl", "re_test_utils")
 load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", antlir2_image = "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", antlir2_package = "package")
@@ -263,11 +264,13 @@ vm.python_unittest(
         "test_vm_boot.py",
     ],
     labels = [
-        "supports_remote_execution",
-        're_opts_capabilities={"platform":"mtia", "codename":"freya"}',
         # FIXME(@pdel): Need some more work to get RE test execution for antlir1 vmtests.
         "disabled",
     ],
+    remote_execution = re_test_utils.remote_execution(
+        codename = "freya",
+        platform = "mtia",
+    ),
     vm_opts = vm.types.opts.new(
         disk = vm.types.disk.root(
             layer = ":vmtest-custom-layer",
