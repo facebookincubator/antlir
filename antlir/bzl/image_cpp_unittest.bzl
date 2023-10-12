@@ -85,7 +85,7 @@ def image_cpp_unittest(
         **wrapper_props.outer_test_kwargs
     )
 
-    if antlir2_shim.should_make_parallel_test(antlir2):
+    if antlir2_shim.should_shadow_test(antlir2):
         if is_buck2():
             antlir2_image_cpp_test(
                 name = name + ".antlir2",

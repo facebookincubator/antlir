@@ -151,7 +151,7 @@ cp "${{source_layer_path}}{output_dir}/feature.json" "$OUT"
         deps = ["//antlir/bzl/genrule/extractor:extract"],
     )
 
-    if antlir2_shim.should_make_parallel_feature(antlir2):
+    if antlir2_shim.should_shadow_feature(antlir2):
         if is_buck2():
             antlir2_feature.new(
                 name = name,

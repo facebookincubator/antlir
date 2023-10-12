@@ -33,7 +33,7 @@ def image_layer_from_package_helper(
         antlir2_src):
     flavor = flavor_to_struct(flavor)
     target = normalize_target(":" + name)
-    antlir2 = antlir2_shim.should_make_parallel_layer(image_layer_kwargs.pop("antlir2", None), flavor = flavor)
+    antlir2 = antlir2_shim.should_shadow_layer(image_layer_kwargs.pop("antlir2", None))
 
     # Do argument validation
     for bad_kwarg in ["parent_layer", "features"]:

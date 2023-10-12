@@ -55,7 +55,7 @@ def package_new(
     if format in _SENDSTREAM_FORMATS and not subvol_name:
         subvol_name = "volume"
 
-    if antlir2_shim.should_make_parallel_package(antlir2 = antlir2):
+    if antlir2_shim.should_shadow_package(antlir2 = antlir2):
         if is_buck2():
             antlir2_opts = shape.as_dict_shallow(loopback_opts) if loopback_opts else None
             opts_kwargs = {
