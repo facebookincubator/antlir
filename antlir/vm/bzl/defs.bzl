@@ -289,30 +289,32 @@ def _vm_multi_kernel_unittest(
     if disks or disk:
         fail("disk(s) are not allowed with multi_kernel tests")
     kernel_list = sets.to_list(sets.make(kernel_list))
+
+    if not vm_opts:
+        vm_opts = api.opts.new()
+
     for uname in kernel_list:
         kernel = kernels.get(uname)
         suffix = uname
-        if vm_opts:
-            merged_vm_opts = shape.as_dict_shallow(vm_opts)
-            merged_vm_opts["kernel"] = kernel
 
-            # Don't provide the initrd originally constructed since the
-            # kernel version has changed and it's now invalid
-            merged_vm_opts.pop("initrd")
+        merged_vm_opts = shape.as_dict_shallow(vm_opts)
+        merged_vm_opts["kernel"] = kernel
 
-            # Same with disks
-            merged_vm_opts.pop("disks")
+        # Don't provide the initrd originally constructed since the
+        # kernel version has changed and it's now invalid
+        merged_vm_opts.pop("initrd")
 
-            if custom_rootfs_layer:
-                merged_vm_opts["disks"] = [api.disk.root(layer = custom_rootfs_layer, kernel = kernel)]
+        # Same with disks
+        merged_vm_opts.pop("disks")
 
-            vm_opts = api.opts.new(**merged_vm_opts)
-        else:
-            vm_opts = api.opts.new(kernel = kernel)
+        if custom_rootfs_layer:
+            merged_vm_opts["disks"] = [api.disk.root(layer = custom_rootfs_layer, kernel = kernel)]
+
+        new_vm_opts = api.opts.new(**merged_vm_opts)
 
         vm_unittest(
             name = "-".join([name, suffix]),
-            vm_opts = vm_opts,
+            vm_opts = new_vm_opts,
             **kwargs
         )
 
