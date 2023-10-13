@@ -143,25 +143,25 @@ def image_layer(
     [docs](/docs/tutorials/helper-buck-targets#imagelayer) for the list of
     possible helpers, their respective behaviours, and how to invoke them.
     """
-    if antlir2_shim.upgrade_or_shadow_layer(
-        name = name,
-        antlir2 = image_layer_kwargs.pop("antlir2", None),
-        fn = antlir2_shim.getattr_buck2(antlir2_image, "layer"),
-        flavor = flavor,
-        parent_layer = parent_layer + ".antlir2" if parent_layer else None,
-        features = (features or []) + antlir2_features,
-        implicit_antlir2 = True,
-        compatible_with = antlir2_compatible_with,
-        visibility = get_visibility(image_layer_kwargs.get("visibility")),
-        # Antlir1 provisioning images explicitly install package-devel stub, we need to allow them here.
-        dnf_excluded_rpms = ["aziot-identity-service"],
-        default_mountpoint = antlir2_default_mountpoint,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_layer,
-            name = name,
-        ),
-    ) == "upgrade":
-        return
+    if antlir2_shim.should_shadow_layer(image_layer_kwargs.pop("antlir2", None)):
+        if is_buck2():
+            if not antlir2_allow_ignored_flavor_config_override and flavor_config_override:
+                fail("antlir2 does not support flavor_config_override: {}".format(flavor_config_override))
+
+            antlir2_image.layer(
+                name = name + ".antlir2",
+                flavor = flavor,
+                parent_layer = parent_layer + ".antlir2" if parent_layer else None,
+                features = (features or []) + antlir2_features,
+                implicit_antlir2 = True,
+                compatible_with = antlir2_compatible_with,
+                visibility = get_visibility(image_layer_kwargs.get("visibility")),
+                # Antlir1 provisioning images explicitly install package-devel stub, we need to allow them here.
+                dnf_excluded_rpms = ["aziot-identity-service"],
+                default_mountpoint = antlir2_default_mountpoint,
+            )
+        else:
+            antlir2_shim.fake_buck1_layer(name = name)
 
     flavor = flavor_to_struct(flavor)
     if not flavor and parent_layer:

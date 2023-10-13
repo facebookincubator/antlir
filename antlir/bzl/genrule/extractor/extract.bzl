@@ -62,6 +62,7 @@ exported by a parent layer which also includes an extract.extract feature.
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
@@ -88,25 +89,6 @@ def _extract(
     binaries = binaries or []
     normalized_source = normalize_target(source)
     name = sha256_b64(normalized_source + " ".join(binaries) + dest)
-
-    if antlir2_shim.upgrade_or_shadow_feature(
-        name = name,
-        antlir2 = antlir2,
-        fn = antlir2_feature.new,
-        features = [
-            antlir2_feature.extract_from_layer(
-                binaries = binaries,
-                layer = source + ".antlir2",
-            ),
-        ],
-        visibility = [],
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_feature,
-            name = name,
-        ),
-    ) == "upgrade":
-        return normalize_target(":" + name)
-
     base_extract_layer = "image-extract-setup--{}".format(name)
     image.layer(
         name = base_extract_layer,
@@ -168,6 +150,21 @@ cp "${{source_layer_path}}{output_dir}/feature.json" "$OUT"
         visibility = [],
         deps = ["//antlir/bzl/genrule/extractor:extract"],
     )
+
+    if antlir2_shim.should_shadow_feature(antlir2):
+        if is_buck2():
+            antlir2_feature.new(
+                name = name,
+                features = [
+                    antlir2_feature.extract_from_layer(
+                        binaries = binaries,
+                        layer = source + ".antlir2",
+                    ),
+                ],
+                visibility = [],
+            )
+        else:
+            antlir2_shim.fake_buck1_feature(name)
 
     return normalize_target(":" + name)
 

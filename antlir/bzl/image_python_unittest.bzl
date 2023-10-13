@@ -5,8 +5,7 @@
 
 load("//antlir/antlir2/testing:image_test.bzl?v2_only", antlir2_image_python_test = "image_python_test")
 load(":antlir2_shim.bzl", "antlir2_shim")
-load(":build_defs.bzl", "add_test_framework_label", "python_unittest")
-load(":container_opts.bzl", "normalize_container_opts")
+load(":build_defs.bzl", "add_test_framework_label", "is_buck2", "python_unittest")
 load(":flavor.shape.bzl", "flavor_t")
 load(":image_unittest_helpers.bzl", helpers = "image_unittest_helpers")
 load(":types.bzl", "types")
@@ -33,24 +32,6 @@ def image_python_unittest(
         antlir2 = None,
         **python_unittest_kwargs):
     visibility = visibility or []
-    container_opts = normalize_container_opts(container_opts)
-
-    if antlir2_shim.upgrade_or_shadow_test(
-        antlir2 = antlir2,
-        fn = antlir2_image_python_test,
-        name = name,
-        layer = layer + ".antlir2",
-        boot = boot,
-        run_as_user = run_as_user,
-        boot_requires_units = ["dbus.socket"] if (boot and container_opts and container_opts.boot_await_dbus) else [],
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_test,
-            name = name,
-            test = "python",
-        ),
-        **python_unittest_kwargs
-    ) == "upgrade":
-        return
 
     wrapper_props = helpers.nspawn_wrapper_properties(
         name = name,
@@ -154,3 +135,16 @@ def image_python_unittest(
         supports_static_listing = False,
         **wrapper_props.outer_test_kwargs
     )
+
+    if antlir2_shim.should_shadow_test(antlir2):
+        if is_buck2():
+            antlir2_image_python_test(
+                name = name + ".antlir2",
+                layer = layer + ".antlir2",
+                boot = boot,
+                run_as_user = run_as_user,
+                boot_requires_units = ["dbus.socket"] if (boot and wrapper_props.container_opts.boot_await_dbus) else [],
+                **python_unittest_kwargs
+            )
+        else:
+            antlir2_shim.fake_buck1_test(name = name, test = "python")

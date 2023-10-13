@@ -33,9 +33,7 @@ def image_layer_from_package_helper(
         antlir2_src):
     flavor = flavor_to_struct(flavor)
     target = normalize_target(":" + name)
-    antlir2 = image_layer_kwargs.pop("antlir2", None)
-    antlir2_upgrade = antlir2_shim.should_upgrade_layer()
-    antlir2 = antlir2_shim.should_shadow_layer(antlir2)
+    antlir2 = antlir2_shim.should_shadow_layer(image_layer_kwargs.pop("antlir2", None))
 
     # Do argument validation
     for bad_kwarg in ["parent_layer", "features"]:
@@ -56,26 +54,18 @@ def image_layer_from_package_helper(
         fail("{}'s rc build was requested but `rc_layer` is unset!".format(target))
 
     if use_rc_target(target = target) and rc_layer != None:
-        if antlir2_upgrade:
+        image_layer_alias(
+            name = name,
+            layer = rc_layer,
+            antlir2 = antlir2,
+        )
+        if antlir2:
             alias(
-                name = name,
+                name = name + ".antlir2",
                 antlir_rule = "user-internal",
-                layer = rc_layer,
+                layer = rc_layer + ".antlir2",
                 visibility = get_visibility(image_layer_kwargs.get("visibility")),
             )
-        else:
-            image_layer_alias(
-                name = name,
-                layer = rc_layer,
-                antlir2 = antlir2,
-            )
-            if antlir2:
-                alias(
-                    name = name + ".antlir2",
-                    antlir_rule = "user-internal",
-                    layer = rc_layer + ".antlir2",
-                    visibility = get_visibility(image_layer_kwargs.get("visibility")),
-                )
     else:
         _make_subvol_cmd, _deps_query = compile_image_features_fn(
             name = name,
@@ -86,16 +76,7 @@ def image_layer_from_package_helper(
             parent_layer = None,
         )
 
-        if antlir2_upgrade:
-            antlir2_image.prebuilt(
-                name = name,
-                src = antlir2_src,
-                flavor = antlir2_compat.from_antlir1_flavor(flavor),
-                format = format,
-                visibility = get_visibility(image_layer_kwargs.get("visibility")),
-            )
-            return
-        elif antlir2:
+        if antlir2:
             if is_buck2():
                 antlir2_image.prebuilt(
                     name = name + ".antlir2",
