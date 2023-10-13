@@ -384,12 +384,14 @@ def feature_new(
     # If we're on buck2, instantiate an antlir2 feature rule. This does not
     # conflict with the feature above, since antlir1 adds a "private" suffix to
     # all feature targets
-    if antlir2_shim.should_shadow_layer(antlir2):
-        if is_buck2():
-            antlir2_feature.new(
-                name,
-                features = [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
-                visibility = get_visibility(visibility),
-            )
-        else:
-            antlir2_shim.fake_buck1_feature(name)
+    antlir2_shim.upgrade_or_shadow_feature(
+        antlir2 = antlir2,
+        name = name,
+        fn = antlir2_feature.new,
+        features = [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
+        visibility = get_visibility(visibility),
+        fake_buck1 = struct(
+            fn = antlir2_shim.fake_buck1_feature,
+            name = name,
+        ),
+    )
