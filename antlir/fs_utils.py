@@ -371,7 +371,7 @@ class Path(bytes):
                 # Future: once the bug with the XAR `access` implementation
                 # is fixed (https://fburl.com/42s41c0g), this can just check
                 # for boolean equality.
-                if exe and os.access(rsrc_in.name, os.X_OK):
+                if not exe or (exe and os.access(rsrc_in.name, os.X_OK)):
                     yield Path(rsrc_in.name).abspath()
                     return
                 else:
