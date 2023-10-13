@@ -374,7 +374,7 @@ class Path(bytes):
                 if not exe or (exe and os.access(rsrc_in.name, os.X_OK)):
                     yield Path(rsrc_in.name).abspath()
                     return
-                else:
+                else:  # pragma: no cover
                     # why does this happen? who knows but we can make a copy of
                     # the binary that _is_ executable
                     log.warning(f"{package}.{name} is not executable")
@@ -387,7 +387,7 @@ class Path(bytes):
             # `@mode/dev` and `@mode/opt'.
             #
             # Wrap in a temporary directory so we can `chmod 755` below.
-            with temp_dir() as td:
+            with temp_dir() as td:  # pragma: no cover
                 with open(td / name, "wb") as rsrc_out:
                     # We can't use `os.sendfile` because `rsrc_in` may
                     # not be backed by a real FD.
