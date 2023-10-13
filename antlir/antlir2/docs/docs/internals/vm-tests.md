@@ -277,7 +277,95 @@ image. The goal is to provide anyone with an antlir2 image layer all the tools
 needed to create a MetalOS rootfs disk. It can be a bootable disk or can be
 combined with MetalOS kernel and initrd to boot the VM.
 
+### MetalOS VM API
+
+MetalOS provides default artifacts used by Antlir VM, for both antlir1 and
+antlir2. This includes initrd, kernel, rootfs, etc. In addition, most simply
+customization people do is only possible with some distro filling in the missing
+bits as default, and MetalOS is that distro in antlir VM. This is why we are
+introducing an additional API here, even though technically speaking, MetalOS is
+a separate project that uses antlir.
+
+A MetalOS VM could be created as below. The meaning of each parameter is
+documented in code which I wouldn't repeat here.
+
+```
+load("//metalos/vm:defs.bzl", "vm")
+
+vm.metalos_host(
+    name = "metalos-vm",
+    # rootfs_layer = ...,
+    # root_disk = ...,
+    # extra_disks = ...,
+    # arch = ...,
+    # uname = ...,
+    # any other parameter that antlir's vm.host takes
+)
+```
+
+Note how almost all parameters are optional and how they all focus on building
+the disk part of the VM. That's because the goal of this API is to fill in the
+defaults for simple customizations. Such customizations are fairly common when
+users just want some VM that boots, but perhaps throw in a few binaries into the
+rootfs, or change kernel version. Any parameter not consumed by the
+`vm.metalos_host` macro is passed through to the underlying antlir `vm.host`.
+This generally includes parameters not related to disk, like `cpus`, `mem_mib`,
+`num_nics`, etc.
+
+MetalOS VM API also provides multi-kernel test functionality.
+
+```
+load("//metalos/vm:defs.bzl", "vm")
+
+vm.multi_kernel.rust_test(
+    name = "some-test",
+    kernels = ["5.12", "5.19"],
+    **whatever_test_parameters_for_the_test_type,
+)
+```
+
+Internally it uses pre-configured MetalOS VM for each kernel, with default
+MetalOS rootfs. Note that the `kernels` parameter here is just for illustration
+purpose. For actual usage, the values have to be full kernel unames where a buck
+target for those kernels exist. Supported kernel versions are listed in
+`metalos/vm/kernels/versions.bzl` and how that's generated is outside the scope
+of this doc.
+
+If you need rootfs customization, you can't use this multi-kernel wrapper. You
+would need to create a `vm.metalos_host` for each kernel and point `vm_host` to
+that in your test. It would likely look something like this.
+
+```
+load("//metalos/vm:defs.bzl", "vm")
+
+[
+    [
+        vm.metalos_host(
+            name = "my-vm-" + uname,
+            rootfs_layer = ":my-layer",
+            ...
+        ),
+        vm.rust_test(
+            name = "vmtest-" + uname,
+            vm_host = ":my-vm-" + uname,
+            ...
+        )
+    ]
+    for uname in ["5.12", "5.19"]
+]
+```
+
+If you have lots of tests, or you want to reuse the same VM target across
+multiple TARGETS/BUCK files, it's recommended to factor out the part that
+creates VM instead of inlining it with list comphension. Just keep in mind that
+you can only create VM target of the same name once, but any number of tests can
+refer to it later.
+
 ### Customizing the kernel
+
+Make sure you've read the [MetalOS VM API](#metalos-vm-api) section first. If
+that satisfies your need, you likely don't need to follow the steps below. The
+following are shown here for more advanced customization.
 
 One common need is to change the kernel used by tests. A list of supported
 kernels are in `metalos/vm/kernels/versions.bzl`. This will eventually replace
@@ -336,9 +424,11 @@ ready, the various `get*()` will return `select()` to avoid the need of setting
 
 ### Migrating from Antlir1 VM test
 
-For internal users, migration will be done for you. The goal of the section is
-mostly for developers familiar with Antlir1 VM to quickly understand the general
-changes.
+Make sure you've read the [MetalOS VM API](#metalos-vm-api) section first. That
+API should satisfy most needs of migrating your test over. However, for
+developers familiar with Antlir1 vmtest, the comparison can be helpful to
+quickly understand the general changes. What explained below is effectively what
+the MetalOS VM API does internally.
 
 A somewhat complicated antlir1 VM test could look like this.
 
