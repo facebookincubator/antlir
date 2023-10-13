@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "is_buck2")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load(":antlir2_shim.bzl", "antlir2_shim")
 load(":constants.bzl", "BZL_CONST")
@@ -71,15 +71,12 @@ def image_layer_alias(name, layer, runtime = None, visibility = None, antlir2 = 
 
     add_runtime_targets(name, runtime)
 
-    if antlir2_shim.upgrade_or_shadow_layer(
-        antlir2 = antlir2,
-        name = name,
-        fn = alias,
-        actual = layer,
-        antlir_rule = "user-internal",
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_target,
-            name = name,
-        ),
-    ) == "upgrade":
-        return
+    if antlir2_shim.should_shadow_layer(antlir2):
+        if is_buck2():
+            alias(
+                name = name + ".antlir2",
+                actual = layer + ".antlir2",
+                antlir_rule = "user-internal",
+            )
+        else:
+            antlir2_shim.fake_buck1_target(name + ".antlir2")

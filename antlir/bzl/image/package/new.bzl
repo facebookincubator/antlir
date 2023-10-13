@@ -12,11 +12,10 @@ load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/antlir2/bzl/package:defs.bzl?v2_only", antlir2_package = "package")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
 load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "is_buck2")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
 load("//antlir/bzl:query.bzl", "layer_deps_query")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 
 _IMAGE_PACKAGE = "image_package"
@@ -56,27 +55,24 @@ def package_new(
     if format in _SENDSTREAM_FORMATS and not subvol_name:
         subvol_name = "volume"
 
-    if shape.is_any_instance(loopback_opts):
-        opts_kwargs = shape.as_dict_shallow(loopback_opts)
-    elif loopback_opts:
-        opts_kwargs = structs.to_dict(loopback_opts)
-    else:
-        opts_kwargs = {}
+    if antlir2_shim.should_shadow_package(antlir2 = antlir2):
+        if is_buck2():
+            antlir2_opts = shape.as_dict_shallow(loopback_opts) if loopback_opts else None
+            opts_kwargs = {
+                "opts": antlir2_opts,
+            } if antlir2_opts else {}
 
-    if antlir2_shim.upgrade_or_shadow_package(
-        antlir2 = antlir2,
-        name = name,
-        fn = antlir2_package.backward_compatible_new,
-        layer = layer + ".antlir2",
-        format = format,
-        visibility = visibility,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_target,
-            name = name + ".antlir2",
-        ),
-        **opts_kwargs
-    ) == "upgrade":
-        return
+            antlir2_package.backward_compatible_new(
+                name = name + ".antlir2",
+                layer = layer + ".antlir2",
+                format = format,
+                visibility = visibility,
+                **opts_kwargs
+            )
+        else:
+            antlir2_shim.fake_buck1_target(
+                name = name + ".antlir2",
+            )
 
     loopback_opts = normalize_loopback_opts(loopback_opts)
 

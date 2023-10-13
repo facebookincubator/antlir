@@ -5,16 +5,7 @@
 
 load("//antlir/bzl:types.bzl", "types")
 
-mode_t = enum(
-    # no antlir2 shadowing by default
-    "none",
-    # shadow all layers, features, packages and tests with antlir2 definitions by default
-    "shadow",
-    # transparently upgrade all targets to antlir2.
-    # antlir1 feature rules are kept around since they don't have conflicting
-    # names with the porcelain antlir2 targets
-    "upgrade",
-)
+mode_t = enum("none", "shadow")
 
 def _configure_package(*, mode: str | mode_t):
     if types.is_string(mode):
