@@ -245,6 +245,18 @@ bad_depgraph(
 )
 
 bad_depgraph(
+    name = "symlink-conflict-with-parent",
+    error_regex = "\"/foo\".*is provided by multiple features",
+    features = [
+        feature.ensure_file_symlink(
+            link = "/foo",
+            target = "/dev/null",
+        ),
+    ],
+    parent = ":simple-install",
+)
+
+bad_depgraph(
     name = "clone-with-missing-src",
     error_regex = "does not satisfy the validation rules: ItemInLayer \\{ key: Path\\(\"/bar\"\\), validator: Exists \\}",
     features = [

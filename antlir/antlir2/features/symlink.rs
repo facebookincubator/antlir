@@ -80,17 +80,21 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
 impl antlir2_compile::CompileFeature for Symlink {
     #[tracing::instrument(name = "symlink", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        // Unlike antlir1, we don't have to do all the paranoid checking,
-        // because the new depgraph will have done it all for us already.
-        // I am also choosing to do preserve absolute symlinks if that's what
-        // the user asked for, since it's more intuitive when the image is
-        // installed somewhere and used as a rootfs, and doing things "inside"
-        // the image without actually doing some form of chroot is super broken
-        // anyway.
-        if std::fs::symlink_metadata(ctx.dst_path(&self.link)).is_ok() {
-            // the depgraph already ensured that it points to the right location
-            tracing::debug!("symlink already exists");
-            return Ok(());
+        if let Ok(target) = std::fs::read_link(ctx.dst_path(&self.link)) {
+            // the depgraph should have already ensured that it points to the
+            // right location, but it can't hurt to check again
+            if target != self.target {
+                return Err(anyhow::anyhow!(
+                    "symlink {} already exists, but points to {}, not {}",
+                    self.link.display(),
+                    target.display(),
+                    self.target.display()
+                )
+                .into());
+            } else {
+                tracing::debug!("symlink already exists");
+                return Ok(());
+            }
         }
         std::os::unix::fs::symlink(&self.target, ctx.dst_path(&self.link))?;
         Ok(())
