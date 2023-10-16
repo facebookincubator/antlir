@@ -68,6 +68,16 @@ def _hostkey_setup_antlir2():
             path = "/usr/lib/systemd/system/sshd-keygen.service",
             must_exist = False,
         ),
+        # The tmpfiles.d provision.conf file on normal MetalOS image is a slightly modified
+        # version of standard systemd tmpfiles.d provision.conf file. It makes it so
+        # that /root/.ssh is a symlink to /run/fs/control/run/state/persistent/certs/root_ssh
+        # so t hat the generate root ssh key persists reboots and rootfs updates.
+        # VM images do not have persistent subvols so here we remove this file.
+        # More context in D50266692.
+        antlir2_feature.remove(
+            path = "/usr/lib/tmpfiles.d/provision.conf",
+            must_exist = False,
+        ),
         systemd.install_unit(
             "//antlir/linux/vm/ssh:sshd-keygen.service",
             use_antlir2 = True,
@@ -91,6 +101,16 @@ def _hostkey_setup_antlir1():
         antlir1_feature.install("//antlir/linux/vm/ssh:sshd.tmpfiles.conf", "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf"),
         # sshd-keygen.service doesn't exist on centos9
         antlir1_feature.remove("/usr/lib/systemd/system/sshd-keygen.service", must_exist = False),
+        # The tmpfiles.d provision.conf file on normal MetalOS image is a slightly modified
+        # version of standard systemd tmpfiles.d provision.conf file. It makes it so
+        # that /root/.ssh is a symlink to /run/fs/control/run/state/persistent/certs/root_ssh
+        # so t hat the generate root ssh key persists reboots and rootfs updates.
+        # VM images do not have persistent subvols so here we remove this file.
+        # More context in D50266692.
+        antlir1_feature.remove(
+            "/usr/lib/tmpfiles.d/provision.conf",
+            must_exist = False,
+        ),
         systemd.install_unit("//antlir/linux/vm/ssh:sshd-keygen.service"),
         systemd.enable_unit("sshd-keygen.service", "core-services.target"),
         # Install a drop-in that updates the cmd line to include the
