@@ -63,10 +63,12 @@ pass FDs pointed at your terminal into the container, allowing the guest to
 synthesize keystrokes on the host.
 """
 import functools
+import importlib
 import os
 import shlex
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
@@ -163,15 +165,19 @@ def _post_setup_popen_nspawn(
     setup: _NspawnSetup,
 ) -> Iterable[Tuple[subprocess.Popen, subprocess.Popen]]:
     # pyre-fixme[16]: `Iterable` has no attribute `__enter__`.
-    with _popen_nspawn(setup) as (nspawn_proc, container_proc_pid,), Path.resource(
-        __package__, "clonecaps", exe=True
-    ) as clonecaps, _popen_nsenter_into_container(
-        setup,
+    with _popen_nspawn(setup) as (
         nspawn_proc,
-        clonecaps=clonecaps,
-        container_proc_pid=container_proc_pid,
-    ) as nsenter_proc:
-        yield nsenter_proc, nspawn_proc
+        container_proc_pid,
+    ), importlib.resources.path(__package__, "clonecaps") as clonecaps:
+        if not os.access(clonecaps, os.X_OK):  # pragma: no cover
+            os.chmod(clonecaps, os.stat(clonecaps).st_mode | stat.S_IXUSR)
+        with _popen_nsenter_into_container(
+            setup,
+            nspawn_proc,
+            clonecaps=Path(clonecaps),
+            container_proc_pid=container_proc_pid,
+        ) as nsenter_proc:
+            yield nsenter_proc, nspawn_proc
 
 
 # We run the PID exfiltration scripts using a busybox that's provided as
