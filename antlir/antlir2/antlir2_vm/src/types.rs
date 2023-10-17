@@ -138,7 +138,14 @@ impl VMArgs {
 
     /// Get all output directories for the VM.
     pub(crate) fn get_vm_output_dirs(&self) -> HashSet<PathBuf> {
-        let mut outputs: HashSet<_> = self.output_dirs.iter().cloned().collect();
+        let outputs: HashSet<_> = self.output_dirs.iter().cloned().collect();
+        outputs
+    }
+
+    /// Get all output directories for the container.
+    pub(crate) fn get_container_output_dirs(&self) -> HashSet<PathBuf> {
+        let mut outputs = self.get_vm_output_dirs();
+        // Console output needs to be accessible for debugging and uploading
         if let Some(file_path) = &self.console_output_file {
             if let Some(parent) = file_path.parent() {
                 outputs.insert(parent.to_path_buf());
@@ -146,12 +153,6 @@ impl VMArgs {
                 outputs.insert(env::current_dir().expect("current dir must be valid"));
             }
         }
-        outputs
-    }
-
-    /// Get all output directories for the container.
-    pub(crate) fn get_container_output_dirs(&self) -> HashSet<PathBuf> {
-        let mut outputs = self.get_vm_output_dirs();
         // Carry over virtualization support
         outputs.insert("/dev/kvm".into());
         outputs
@@ -270,7 +271,7 @@ mod test {
         };
         assert_eq!(
             args.get_vm_output_dirs(),
-            HashSet::from(["/foo/bar".into(), "/tmp".into()])
+            HashSet::from(["/foo/bar".into()])
         );
     }
 
@@ -283,11 +284,17 @@ mod test {
         );
         let args = VMArgs {
             output_dirs: vec!["/foo/bar".into(), "/baz".into()],
+            console_output_file: Some("/tmp/whatever".into()),
             ..Default::default()
         };
         assert_eq!(
             args.get_container_output_dirs(),
-            HashSet::from(["/foo/bar".into(), "/baz".into(), "/dev/kvm".into()])
+            HashSet::from([
+                "/foo/bar".into(),
+                "/baz".into(),
+                "/tmp".into(),
+                "/dev/kvm".into()
+            ])
         );
     }
 }
