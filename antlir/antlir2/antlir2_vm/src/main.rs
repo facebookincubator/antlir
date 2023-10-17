@@ -117,7 +117,7 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
 
     // Let's always capture console output unless it's console mode
     let _console_dir;
-    if vm_args.console_output_file.is_none() {
+    if !vm_args.mode.console && vm_args.console_output_file.is_none() {
         let dir = tempdir().context("Failed to create temp dir for console output")?;
         vm_args.console_output_file = Some(dir.path().join("console.txt"));
         _console_dir = dir;
