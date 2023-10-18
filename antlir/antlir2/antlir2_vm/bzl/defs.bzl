@@ -132,12 +132,12 @@ _vm_host = rule(
         "serial_index": attrs.int(default = 0, doc = "index of the serial port"),
         "use_tpm": attrs.bool(default = False, doc = "enable software TPM"),
     } | {
+        # Non-hardware parameters for the VM
         "append": attrs.option(
             attrs.string(),
             default = None,
             doc = "additional kernel command line parameter",
         ),
-        # Non-hardware parameters for the VM
         "initrd": attrs.option(
             attrs.source(),
             default = None,
