@@ -94,12 +94,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _vm_test = rule(
     impl = _impl,
     attrs = {
-        "test": attrs.option(
-            attrs.dep(
-                providers = [ExternalRunnerTestInfo],
-                doc = "Test target to execute inside VM",
-            ),
-            default = None,
+        "test": attrs.dep(
+            providers = [ExternalRunnerTestInfo],
+            doc = "Test target to execute inside VM",
         ),
         "test_labels": attrs.option(
             attrs.list(attrs.string(), default = []),
