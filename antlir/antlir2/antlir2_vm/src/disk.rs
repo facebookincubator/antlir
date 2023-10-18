@@ -18,7 +18,6 @@ use crate::isolation::Platform;
 use crate::pci::PCIBridge;
 use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
-use crate::utils::log_command;
 use crate::utils::run_command_capture_output;
 
 /// A writable QCow2Disk.
@@ -49,7 +48,7 @@ pub(crate) enum QCow2DiskError {
     #[error("qemu-img failed to create the disk: {0}")]
     DiskCreationError(std::io::Error),
     #[error("qemu-img failed to upsize the disk: {0}")]
-    DiskUpsizeError(String),
+    DiskUpsizeError(std::io::Error),
 }
 
 type Result<T> = std::result::Result<T, QCow2DiskError>;
@@ -80,19 +79,11 @@ impl QCow2Disk {
 
         if let Some(size) = self.opts.additional_mib {
             if size != 0 {
-                log_command(
-                    Command::new(&get_runtime().qemu_img)
-                        .arg("resize")
-                        .arg(self.disk_file_name().as_os_str())
-                        .arg(&format!("+{}M", size)),
-                )
-                .status()
-                .map_err(|e| QCow2DiskError::DiskUpsizeError(e.to_string()))?
-                .success()
-                .then_some(())
-                .ok_or(QCow2DiskError::DiskUpsizeError(
-                    "qemu-img failed".to_string(),
-                ))?;
+                let mut cmd = Command::new(&get_runtime().qemu_img);
+                cmd.arg("resize")
+                    .arg(self.disk_file_name().as_os_str())
+                    .arg(&format!("+{}M", size));
+                run_command_capture_output(&mut cmd).map_err(QCow2DiskError::DiskUpsizeError)?;
             }
         }
 
