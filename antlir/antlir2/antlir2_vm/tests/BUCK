@@ -101,6 +101,7 @@ vm.rust_test(
     ],
 )
 
+# Test for TPM
 vm.host(
     name = "vm-with-tpm",
     compatible_with = ["ovr_config//cpu:x86_64"],
@@ -114,4 +115,17 @@ vm.rust_test(
     crate = "tpm",
     crate_root = "tpm.rs",
     vm_host = ":vm-with-tpm",
+)
+
+# Example target for running a command
+vm.run_command(
+    name = "run-command",
+    command = "uname -r",
+    vm_host = get_vm(),
+)
+
+vm.run_command(
+    name = "run-command-with-location",
+    command = "bash -c 'echo $(location :sidecar)'",
+    vm_host = get_vm(),
 )
