@@ -7,6 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
+load(":run_command.bzl", "vm_run_command")
 load(":test.bzl", "vm_cpp_test", "vm_python_test", "vm_rust_test", "vm_sh_test")
 load(":types.bzl", "DiskInfo", "VMHostInfo")
 
@@ -200,4 +201,5 @@ vm = struct(
     python_test = vm_python_test,
     rust_test = vm_rust_test,
     sh_test = vm_sh_test,
+    run_command = vm_run_command,
 )
