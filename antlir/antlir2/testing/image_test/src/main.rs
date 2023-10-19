@@ -223,6 +223,10 @@ fn main() -> Result<()> {
         test_unit_dropin.write_all(cwd.as_os_str().as_bytes())?;
         test_unit_dropin.write_all(b"\n")?;
 
+        write!(test_unit_dropin, "Environment=PWD=")?;
+        test_unit_dropin.write_all(cwd.as_os_str().as_bytes())?;
+        test_unit_dropin.write_all(b"\n")?;
+
         write!(test_unit_dropin, "ExecStart=")?;
         let mut iter = args.test.into_inner_cmd().into_iter().peekable();
         if let Some(exe) = iter.next() {
