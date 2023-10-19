@@ -110,6 +110,7 @@ _PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
         "base_module",
         "deps",
         "labels",
+        "main_function",
         "main_module",
         "main_src",
         "name",
