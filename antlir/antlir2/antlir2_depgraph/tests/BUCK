@@ -433,3 +433,23 @@ good_depgraph(
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
+
+good_depgraph(
+    name = "install-under-symlinked-dir",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/target"),
+        feature.ensure_dir_symlink(
+            link = "/symlink",
+            target = "/target",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/symlink",
+            subdirs_to_create = "new_directory",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/symlink/foo",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)

@@ -248,7 +248,7 @@ impl antlir2_compile::CompileFeature for Clone {
                 Cow::Borrowed(relpath)
             };
 
-            let dst_path = ctx.dst_path(self.dst_path.join(relpath.as_ref()));
+            let dst_path = ctx.dst_path(self.dst_path.join(relpath.as_ref()))?;
             copy_with_metadata(entry.path(), &dst_path, None, None)?;
 
             // {ug}ids might not map to the same names in both images, so make

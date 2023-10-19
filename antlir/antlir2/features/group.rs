@@ -64,7 +64,7 @@ impl antlir2_compile::CompileFeature for Group {
             users: Vec::new(),
         };
         groups_db.push(record);
-        std::fs::write(ctx.dst_path("/etc/group"), groups_db.to_string())?;
+        std::fs::write(ctx.dst_path("/etc/group")?, groups_db.to_string())?;
         Ok(())
     }
 }

@@ -62,3 +62,60 @@ image_diff_test(
     diff_type = "file",
     layer = ":remove-and-reinstall",
 )
+
+image.layer(
+    name = "remove-symlink-parent",
+    features = [
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo",
+        ),
+        feature.ensure_file_symlink(
+            link = "/bar",
+            target = "/foo",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "remove-symlink",
+    features = [feature.remove(path = "/bar")],
+    parent_layer = ":remove-symlink-parent",
+)
+
+image_diff_test(
+    name = "remove-symlink-test",
+    diff = "remove-symlink.toml",
+    diff_type = "file",
+    layer = ":remove-symlink",
+)
+
+image.layer(
+    name = "remove-under-symlink-parent",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+        feature.ensure_dir_symlink(
+            link = "/foo/baz",
+            target = "/foo/bar",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/bar/qux",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "remove-under-symlink",
+    features = [feature.remove(path = "/foo/bar/qux")],
+    parent_layer = ":remove-under-symlink-parent",
+)
+
+image_diff_test(
+    name = "remove-under-symlink-test",
+    diff = "remove-under-symlink.toml",
+    diff_type = "file",
+    layer = ":remove-under-symlink",
+)

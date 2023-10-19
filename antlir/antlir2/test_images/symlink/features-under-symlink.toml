@@ -1,0 +1,19 @@
+[file."path/to/target/installed-under-absolute-link"]
+op = "added"
+
+[file."path/to/target/installed-under-absolute-link".diff]
+mode = "u+r,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = "installed under absolute link"
+
+[file."path/to/target/installed-under-relative-link"]
+op = "added"
+
+[file."path/to/target/installed-under-relative-link".diff]
+mode = "u+r,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = "installed under relative link"

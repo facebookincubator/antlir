@@ -62,7 +62,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for EnsureDirExists {
 impl antlir2_compile::CompileFeature for EnsureDirExists {
     #[tracing::instrument(name = "ensure_dir_exists", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        let dst = ctx.dst_path(&self.dir);
+        let dst = ctx.dst_path(&self.dir)?;
         tracing::trace!("creating {}", dst.display());
         match std::fs::create_dir(&dst) {
             Ok(_) => {

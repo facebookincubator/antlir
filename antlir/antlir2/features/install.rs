@@ -300,7 +300,7 @@ impl antlir2_compile::CompileFeature for Install {
 
                 debug!("relpath is {relpath:?}");
 
-                let dst_path = ctx.dst_path(self.dst.join(relpath));
+                let dst_path = ctx.dst_path(self.dst.join(relpath))?;
                 debug!("dst path is {dst_path:?}");
 
                 // the depgraph already ensured that there are no conflicts, so if
@@ -327,7 +327,7 @@ impl antlir2_compile::CompileFeature for Install {
                     dst: self.dst.clone(),
                 });
             }
-            let dst = ctx.dst_path(&self.dst);
+            let dst = ctx.dst_path(&self.dst)?;
 
             let dst_file = match &self.binary_info {
                 Some(binary_info) => match binary_info {
@@ -348,7 +348,7 @@ impl antlir2_compile::CompileFeature for Install {
                         // TODO(vmagro): figure out how to kill this - it exists
                         // only so that /usr/lib/debug can be unconditionally
                         // cloned out of the source layer, but this feels dirty
-                        std::fs::create_dir_all(ctx.dst_path("/usr/lib/debug"))?;
+                        std::fs::create_dir_all(ctx.dst_path("/usr/lib/debug")?)?;
 
                         None
                     }
@@ -364,7 +364,7 @@ impl antlir2_compile::CompileFeature for Install {
                                         .join(&buildid[2..]),
                                     None => Path::new("/usr/lib/debug")
                                         .join(self.dst.strip_prefix("/").unwrap_or(&self.dst)),
-                                })
+                                })?
                                 .with_extension("debug");
                             std::fs::create_dir_all(
                                 debuginfo_dst
