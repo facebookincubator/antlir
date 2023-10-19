@@ -116,7 +116,21 @@ python_binary(
         "vmtest.py",
     ],
     main_module = "antlir.vm.vmtest",
-    visibility = ["PUBLIC"],
+    # Do not edit the visibility unless reviewed by antlir members. Antlir1
+    # vmtests are deprecated. Use antlir2 vmtest instead. For internal Meta
+    # users, docs are available at:
+    # https://www.internalfb.com/intern/staticdocs/antlir2/docs/internals/vm-tests/
+    visibility = [
+        "//antlir/...",
+        # 5.2 kernel not supported by antlir2 VM
+        "//ti/tcpevent/vmtest:",
+        # diffs waiting to land
+        "//remote_execution/rust/command/tests/systemd:",
+        "//schedulers/tangram/agent/system/systemd/tests/...",
+        "//schedulers/tangram/agent/utils/command_runner/tests/root:",
+        "//schedulers/tangram/agent/vmtest:",
+        "//tupperware/vmtest/...",
+    ],
     deps = [
         ":common",
         ":share",
