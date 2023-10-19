@@ -1,0 +1,9 @@
+[file.bar]
+op = "removed"
+
+[file.bar.diff]
+mode = "u+rwx,g+rwx,o+rwx"
+file-type = "symlink"
+user = "root"
+group = "root"
+text = "/foo"

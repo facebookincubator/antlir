@@ -103,10 +103,10 @@ impl antlir2_compile::CompileFeature for User {
         let mut shadow_db = ctx.shadow_db()?;
         shadow_db.push(record.new_shadow_record());
         user_db.push(record);
-        std::fs::write(ctx.dst_path("/etc/passwd"), user_db.to_string())?;
-        std::fs::write(ctx.dst_path("/etc/shadow"), shadow_db.to_string())?;
+        std::fs::write(ctx.dst_path("/etc/passwd")?, user_db.to_string())?;
+        std::fs::write(ctx.dst_path("/etc/shadow")?, shadow_db.to_string())?;
         std::fs::set_permissions(
-            ctx.dst_path("/etc/shadow"),
+            ctx.dst_path("/etc/shadow")?,
             std::fs::Permissions::from_mode(0o000),
         )?;
 
@@ -122,7 +122,7 @@ impl antlir2_compile::CompileFeature for User {
                 .users
                 .push(Cow::Borrowed(&self.name));
         }
-        std::fs::write(ctx.dst_path("/etc/group"), groups_db.to_string())?;
+        std::fs::write(ctx.dst_path("/etc/group")?, groups_db.to_string())?;
         Ok(())
     }
 }

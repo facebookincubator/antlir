@@ -328,10 +328,10 @@ fn run_dnf_driver(
         layer_label: ctx.label().clone(),
     };
 
-    std::fs::create_dir_all(ctx.dst_path("/dev")).context("while ensuring /dev exists")?;
+    std::fs::create_dir_all(ctx.dst_path("/dev")?).context("while ensuring /dev exists")?;
     nix::mount::mount(
         Some("devtmpfs"),
-        &ctx.dst_path("/dev"),
+        &ctx.dst_path("/dev")?,
         Some("devtmpfs"),
         MsFlags::empty(),
         None::<&str>,
@@ -359,7 +359,7 @@ fn run_dnf_driver(
     }
     let result = child.wait().context("while waiting for dnf-driver")?;
 
-    nix::mount::umount2(&ctx.dst_path("/dev"), MntFlags::empty())
+    nix::mount::umount2(&ctx.dst_path("/dev")?, MntFlags::empty())
         .context("while unmounting /dev from installroot")?;
 
     if !result.success() {

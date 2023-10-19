@@ -43,15 +43,15 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for DotMeta {
 impl antlir2_compile::CompileFeature for DotMeta {
     #[tracing::instrument(name = "dot_meta", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        std::fs::create_dir_all(ctx.dst_path("/.meta")).context("while creating /.meta")?;
+        std::fs::create_dir_all(ctx.dst_path("/.meta")?).context("while creating /.meta")?;
         std::fs::write(
-            ctx.dst_path("/.meta/target"),
+            ctx.dst_path("/.meta/target")?,
             format!("{}\n", ctx.label().as_unconfigured()),
         )
         .context("while writing /.meta/target")?;
         if let Some(build_info) = &self.build_info {
             if let Some(rev) = &build_info.revision {
-                std::fs::write(ctx.dst_path("/.meta/revision"), format!("{rev}\n"))
+                std::fs::write(ctx.dst_path("/.meta/revision")?, format!("{rev}\n"))
                     .context("while writing /.meta/revision")?;
             }
 
@@ -61,7 +61,7 @@ impl antlir2_compile::CompileFeature for DotMeta {
                 #[cfg(not(facebook))]
                 let package_filename = "/.meta/package";
 
-                std::fs::write(ctx.dst_path(package_filename), format!("{package}\n"))
+                std::fs::write(ctx.dst_path(package_filename)?, format!("{package}\n"))
                     .context("while writing package info")?;
             }
         }

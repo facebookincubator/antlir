@@ -1,0 +1,9 @@
+[file."foo/bar/qux"]
+op = "removed"
+
+[file."foo/bar/qux".diff]
+mode = "u+r,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = ""

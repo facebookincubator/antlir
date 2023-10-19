@@ -16,6 +16,7 @@ use antlir2_features::types::PathInLayer;
 use anyhow::Result;
 use serde::Deserialize;
 use serde::Serialize;
+use tracing::trace;
 
 pub type Feature = Symlink;
 
@@ -65,7 +66,11 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
         if absolute_target != std::path::Path::new("/dev/null")
             && !absolute_target.starts_with("/run")
         {
-            requires.push(Requirement::unordered(
+            // the symlink action itself does not really care if the target
+            // exists yet or if it will be created later in the run, but any
+            // features that depend on this symlink do, so just always order the
+            // symlink after its target
+            requires.push(Requirement::ordered(
                 ItemKey::Path(absolute_target.into()),
                 Validator::FileType(match self.is_directory {
                     true => FileType::Directory,
@@ -80,7 +85,8 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
 impl antlir2_compile::CompileFeature for Symlink {
     #[tracing::instrument(name = "symlink", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        if let Ok(target) = std::fs::read_link(ctx.dst_path(&self.link)) {
+        let link = ctx.dst_path(&self.link)?;
+        if let Ok(target) = std::fs::read_link(&link) {
             // the depgraph should have already ensured that it points to the
             // right location, but it can't hurt to check again
             if target != self.target {
@@ -96,7 +102,8 @@ impl antlir2_compile::CompileFeature for Symlink {
                 return Ok(());
             }
         }
-        std::os::unix::fs::symlink(&self.target, ctx.dst_path(&self.link))?;
+        trace!("symlinking {} -> {}", link.display(), self.target.display());
+        std::os::unix::fs::symlink(&self.target, &link)?;
         Ok(())
     }
 }

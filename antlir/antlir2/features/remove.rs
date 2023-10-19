@@ -43,7 +43,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Remove {
 impl antlir2_compile::CompileFeature for Remove {
     #[tracing::instrument(name = "remove", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        let path = ctx.dst_path(&self.path);
+        let path = ctx.dst_path(&self.path)?;
         match std::fs::remove_file(&path) {
             Ok(()) => Ok(()),
             Err(e) => {

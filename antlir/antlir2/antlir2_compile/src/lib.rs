@@ -13,14 +13,26 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::fmt::Display;
+use std::os::fd::AsRawFd;
 use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
 use antlir2_features::Feature;
 use buck_label::Label;
+use nix::dir::Dir;
+use nix::fcntl::OFlag;
+use nix::libc;
+use nix::sys::stat::Mode;
+use openat2::openat2;
+use openat2::OpenHow;
+use openat2::ResolveFlags;
+use serde::de::Error as _;
+use serde::ser::Error as _;
 use serde::Deserialize;
+use serde::Deserializer;
 use serde::Serialize;
+use serde::Serializer;
 
 #[cfg(facebook)]
 pub mod facebook;
@@ -52,7 +64,7 @@ pub enum Error {
     Other(#[from] anyhow::Error),
 }
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
@@ -82,7 +94,7 @@ impl Display for Arch {
     }
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(bound(deserialize = "'de: 'static"))]
 pub struct CompilerContext {
     /// Buck label of the image being built
@@ -91,7 +103,13 @@ pub struct CompilerContext {
     /// architecture)
     target_arch: Arch,
     /// Path to the root of the image being built
-    root: PathBuf,
+    root_path: PathBuf,
+    /// Open fd to the image root directory
+    #[serde(
+        serialize_with = "CompilerContext::serialize_root",
+        deserialize_with = "CompilerContext::deserialize_root"
+    )]
+    root: Dir,
     /// Setup information for dnf repos
     dnf: DnfContext,
     /// Pre-computed plan for this compilation phase
@@ -160,10 +178,13 @@ impl CompilerContext {
         plan: Option<plan::Plan>,
         #[cfg(facebook)] fbpkg: facebook::FbpkgContext,
     ) -> Result<Self> {
+        let root_fd =
+            Dir::open(&root, OFlag::O_PATH, Mode::empty()).map_err(|e| Error::IO(e.into()))?;
         Ok(Self {
             label,
             target_arch,
-            root,
+            root_path: root,
+            root: root_fd,
             dnf,
             plan,
             #[cfg(facebook)]
@@ -181,7 +202,7 @@ impl CompilerContext {
 
     /// Root directory for the image being built
     pub fn root(&self) -> &Path {
-        &self.root
+        &self.root_path
     }
 
     pub fn dnf(&self) -> &DnfContext {
@@ -199,30 +220,90 @@ impl CompilerContext {
 
     /// Join a (possibly absolute) path with the root directory of the image
     /// being built.
-    pub fn dst_path<P>(&self, path: P) -> PathBuf
+    pub fn dst_path<P>(&self, path: P) -> std::io::Result<PathBuf>
     where
         P: AsRef<Path>,
     {
-        if !path.as_ref().is_absolute() {
-            self.root.join(path)
-        } else if path.as_ref().starts_with(&self.root) {
-            path.as_ref().to_path_buf()
-        } else {
-            self.root
-                .join(path.as_ref().strip_prefix("/").expect("infallible"))
+        self.resolve_dst_path(path, ResolveMode::Parent)
+    }
+
+    fn resolve_dst_path<P>(&self, path: P, mode: ResolveMode) -> std::io::Result<PathBuf>
+    where
+        P: AsRef<Path>,
+    {
+        if path.as_ref() == Path::new("/") || path.as_ref() == Path::new("") {
+            return Ok(self.root_path.clone());
+        }
+        let mut how = OpenHow::new(libc::O_PATH, 0);
+        how.resolve |= ResolveFlags::IN_ROOT;
+
+        let resolve_path = match mode {
+            ResolveMode::Full => path.as_ref(),
+            ResolveMode::Parent => path.as_ref().parent().unwrap_or(path.as_ref()),
+        };
+
+        match openat2(Some(self.root.as_raw_fd()), resolve_path, &how) {
+            Ok(fd) => {
+                // TODO: this is gross, refactor this API into a more fd focused
+                // interface which is good for 90% of use cases, and have only the 10%
+                // that actually need paths use this mildly gross implementation
+                let real_path = std::fs::read_link(format!("/proc/self/fd/{fd}"))?;
+                nix::unistd::close(fd)?;
+                Ok(match mode {
+                    ResolveMode::Full => real_path,
+                    ResolveMode::Parent => match path.as_ref().file_name() {
+                        Some(n) => real_path.join(n),
+                        None => real_path,
+                    },
+                })
+            }
+            Err(e) => match e.kind() {
+                std::io::ErrorKind::NotFound => {
+                    // The path doesn't exist. OK, we can resolve the first path
+                    // along the ancestor chain that does, then join the new
+                    // parts that don't exist.
+                    for ancestor in path
+                        .as_ref()
+                        .parent()
+                        .expect("/ is always resolved")
+                        .ancestors()
+                    {
+                        if let Ok(ancestor_real_path) =
+                            self.resolve_dst_path(ancestor, ResolveMode::Full)
+                        {
+                            return Ok(ancestor_real_path.join(
+                                path.as_ref()
+                                    .strip_prefix(ancestor)
+                                    .expect("ancestor can always be stripped"),
+                            ));
+                        }
+                    }
+                    unreachable!("the final ancestor / is always resolvable")
+                }
+                _ => Err(e),
+            },
         }
     }
 
     pub fn user_db(&self) -> Result<antlir2_users::passwd::EtcPasswd> {
-        parse_file(&self.dst_path("/etc/passwd")).unwrap_or_else(|| Ok(Default::default()))
+        match self.dst_path("/etc/passwd") {
+            Ok(path) => parse_file(&path).unwrap_or_else(|| Ok(Default::default())),
+            Err(_) => Ok(Default::default()),
+        }
     }
 
     pub fn shadow_db(&self) -> Result<antlir2_users::shadow::EtcShadow> {
-        parse_file(&self.dst_path("/etc/shadow")).unwrap_or_else(|| Ok(Default::default()))
+        match self.dst_path("/etc/shadow") {
+            Ok(path) => parse_file(&path).unwrap_or_else(|| Ok(Default::default())),
+            Err(_) => Ok(Default::default()),
+        }
     }
 
     pub fn groups_db(&self) -> Result<antlir2_users::group::EtcGroup> {
-        parse_file(&self.dst_path("/etc/group")).unwrap_or_else(|| Ok(Default::default()))
+        match self.dst_path("/etc/group") {
+            Ok(path) => parse_file(&path).unwrap_or_else(|| Ok(Default::default())),
+            Err(_) => Ok(Default::default()),
+        }
     }
 
     /// Get the uid for a user inside of the image being built
@@ -240,6 +321,39 @@ impl CompilerContext {
             .map(|g| g.gid)
             .ok_or_else(|| Error::NoSuchGroup(name.to_owned()))
     }
+
+    fn serialize_root<S>(dir: &Dir, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let path = std::fs::read_link(format!("/proc/self/fd/{}", dir.as_raw_fd()))
+            .map_err(|e| {
+                format!(
+                    "failed to get path from /proc/self/fd/{}: {e}",
+                    dir.as_raw_fd()
+                )
+            })
+            .map_err(S::Error::custom)?;
+        path.serialize(s)
+    }
+
+    fn deserialize_root<'de, D>(d: D) -> Result<Dir, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let path = <PathBuf>::deserialize(d)?;
+        Dir::open(&path, OFlag::O_PATH, Mode::empty())
+            .map_err(|e| format!("failed to open '{}': {e}", path.display()))
+            .map_err(D::Error::custom)
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+enum ResolveMode {
+    /// Resolve the entirety of the path
+    Full,
+    /// Resolve symlinks down to the parent but leave the last component alone
+    Parent,
 }
 
 pub trait CompileFeature {

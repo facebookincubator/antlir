@@ -11,6 +11,8 @@ rust_library(
     deps = [
         "anyhow",
         "libloading",
+        "nix",
+        "openat2",
         "serde",
         "thiserror",
         "tracing",

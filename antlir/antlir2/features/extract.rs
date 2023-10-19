@@ -185,10 +185,10 @@ impl antlir2_compile::CompileFeature for Extract {
                                     .parent()
                                     .expect("dst always has parent")
                                     .join(relpath),
-                            ),
+                            )?,
                         )?;
                     } else {
-                        copy_dep(dep, &ctx.dst_path(dep.strip_prefix("/").unwrap_or(dep)))?;
+                        copy_dep(dep, &ctx.dst_path(dep.strip_prefix("/").unwrap_or(dep))?)?;
                     }
                 }
                 // don't copy the metadata from the buck binary, the owner will
@@ -196,9 +196,9 @@ impl antlir2_compile::CompileFeature for Extract {
                 trace!(
                     "copying {} -> {}",
                     buck.src.display(),
-                    ctx.dst_path(&buck.dst).display()
+                    ctx.dst_path(&buck.dst)?.display()
                 );
-                std::fs::copy(&buck.src, ctx.dst_path(&buck.dst))?;
+                std::fs::copy(&buck.src, ctx.dst_path(&buck.dst)?)?;
                 Ok(())
             }
             Self::Layer(layer) => {
@@ -211,7 +211,7 @@ impl antlir2_compile::CompileFeature for Extract {
                 let mut all_deps = HashSet::new();
                 for binary in &layer.binaries {
                     let src = src_layer.join(binary.strip_prefix("/").unwrap_or(binary));
-                    let dst = ctx.dst_path(binary);
+                    let dst = ctx.dst_path(binary)?;
 
                     let src_meta = std::fs::symlink_metadata(&src)
                         .with_context(|| format!("while lstatting {}", src.display()))?;
@@ -266,7 +266,7 @@ impl antlir2_compile::CompileFeature for Extract {
 
                         copy_with_metadata(
                             &target_under_src,
-                            &ctx.dst_path(canonical_target_rel),
+                            &ctx.dst_path(canonical_target_rel)?,
                             None,
                             None,
                         )
@@ -326,7 +326,7 @@ impl antlir2_compile::CompileFeature for Extract {
                     } else {
                         path_in_src_layer
                     };
-                    copy_dep(&dep_copy_path, &ctx.dst_path(&dep))?;
+                    copy_dep(&dep_copy_path, &ctx.dst_path(&dep)?)?;
                 }
                 Ok(())
             }
@@ -337,7 +337,7 @@ impl antlir2_compile::CompileFeature for Extract {
 /// Simple regex to parse the output of `ld.so --list` which is used to resolve
 /// the dependencies of a binary.
 static LDSO_RE: Lazy<Regex> = Lazy::new(|| {
-    regex::RegexBuilder::new(r#"^\s*(?P<name>.+)\s+=>\s+(?P<path>.+)\s+\(0x[0-9a-f]+\)$"#)
+    regex::RegexBuilder::new(r"^\s*(?P<name>.+)\s+=>\s+(?P<path>.+)\s+\(0x[0-9a-f]+\)$")
         .multi_line(true)
         .build()
         .expect("this is a valid regex")

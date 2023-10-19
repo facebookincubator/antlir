@@ -40,3 +40,49 @@ image_diff_test(
     diff_type = "file",
     layer = ":symlink",
 )
+
+image.layer(
+    name = "features-under-symlinks-base",
+    features = [
+        feature.rpms_install(rpms = [
+            "bash",
+            "coreutils",
+        ]),
+        feature.genrule(
+            cmd = [
+                "/bin/bash",
+                "-c",
+                "mkdir -p /path/to/target && ln -s target /path/to/relative",
+            ],
+            user = "root",
+        ),
+        feature.ensure_dirs_exist(dirs = "/other/path"),
+        feature.ensure_dir_symlink(
+            link = "/other/path/symlink",
+            target = "/path/to/target",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image.layer(
+    name = "features-under-symlinks",
+    features = [
+        feature.install_text(
+            dst = "/path/to/relative/installed-under-relative-link",
+            text = "installed under relative link",
+        ),
+        feature.install_text(
+            dst = "/other/path/symlink/installed-under-absolute-link",
+            text = "installed under absolute link",
+        ),
+    ],
+    parent_layer = ":features-under-symlinks-base",
+)
+
+image_diff_test(
+    name = "features-under-symlink-test",
+    diff = "features-under-symlink.toml",
+    diff_type = "file",
+    layer = ":features-under-symlinks",
+)
