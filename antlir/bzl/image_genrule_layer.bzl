@@ -109,22 +109,26 @@ Optional arguments:
     - See the `_image_layer_impl` signature (in `image_layer_utils.bzl`)
         for supported, but less commonly used, kwargs.
     """
-    if antlir2_shim.should_shadow_layer(image_layer_kwargs.pop("antlir2", None)):
-        if is_buck2():
-            antlir2_image.layer(
-                name = name + ".antlir2",
-                parent_layer = parent_layer + ".antlir2" if parent_layer else None,
-                flavor = flavor,
-                features = [
-                    antlir2_feature.genrule(
-                        cmd = cmd,
-                        user = user,
-                    ),
-                ],
-                implicit_antlir2 = True,
-            )
-        else:
-            antlir2_shim.fake_buck1_layer(name = name)
+    antlir2 = image_layer_kwargs.pop("antlir2", None)
+    if antlir2_shim.upgrade_or_shadow_layer(
+        antlir2 = antlir2,
+        name = name,
+        fn = antlir2_shim.getattr_buck2(antlir2_image, "layer"),
+        parent_layer = parent_layer + ".antlir2" if parent_layer else None,
+        flavor = flavor,
+        features = [
+            antlir2_feature.genrule(
+                cmd = cmd,
+                user = user,
+            ),
+        ],
+        implicit_antlir2 = True,
+        fake_buck1 = struct(
+            fn = antlir2_shim.fake_buck1_layer,
+            name = name,
+        ),
+    ) == "upgrade":
+        return
 
     flavor = flavor_to_struct(flavor)
     container_opts = normalize_container_opts(container_opts)
