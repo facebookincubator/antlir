@@ -40,9 +40,9 @@ use crate::pci::PCIBridge;
 use crate::pci::PCIBridgeError;
 use crate::pci::DEVICE_PER_BRIDGE;
 use crate::runtime::get_runtime;
+use crate::share::Share;
 use crate::share::ShareError;
 use crate::share::Shares;
-use crate::share::VirtiofsShare;
 use crate::ssh::GuestSSHCommand;
 use crate::ssh::GuestSSHError;
 use crate::tpm::TPMDevice;
@@ -53,7 +53,7 @@ use crate::types::VMArgs;
 use crate::utils::log_command;
 
 #[derive(Debug)]
-pub(crate) struct VM {
+pub(crate) struct VM<S: Share> {
     /// VM machine specification
     machine: MachineOpts,
     /// VM execution behavior
@@ -64,7 +64,7 @@ pub(crate) struct VM {
     /// to prevent the temporary disks from getting cleaned up prematuresly.
     disks: Vec<QCow2Disk>,
     /// All directories to be shared into the VM
-    shares: Shares,
+    shares: Shares<S>,
     /// Virtual NICs to create and attach
     nics: Vec<VirtualNIC>,
     /// Directory to keep all ephemeral states
@@ -111,7 +111,7 @@ pub(crate) enum VMError {
 
 type Result<T> = std::result::Result<T, VMError>;
 
-impl VM {
+impl<S: Share> VM<S> {
     /// Create a new VM along with its virtual resources
     pub(crate) fn new(machine: MachineOpts, args: VMArgs) -> Result<Self> {
         let state_dir = Self::create_state_dir()?;
@@ -210,13 +210,13 @@ impl VM {
     }
 
     /// Create all shares, start virtiofsd daemon and generate necessary unit files
-    fn create_shares(shares: Vec<ShareOpts>, state_dir: &Path, mem_mb: usize) -> Result<Shares> {
+    fn create_shares(shares: Vec<ShareOpts>, state_dir: &Path, mem_mb: usize) -> Result<Shares<S>> {
         let virtiofs_shares: Result<Vec<_>> = shares
             .into_iter()
             .enumerate()
-            .map(|(i, opts)| -> Result<VirtiofsShare> {
-                let share = VirtiofsShare::new(opts, i, state_dir.to_path_buf());
-                share.start_virtiofsd()?;
+            .map(|(i, opts)| -> Result<S> {
+                let share = S::new(opts, i, state_dir.to_path_buf());
+                share.setup()?;
                 Ok(share)
             })
             .collect();
@@ -684,12 +684,13 @@ mod test {
 
     use super::*;
     use crate::runtime::set_runtime;
+    use crate::share::VirtiofsShare;
     use crate::types::NonDiskBootOpts;
     use crate::types::RuntimeOpts;
     use crate::types::VMArgs;
     use crate::utils::qemu_args_to_string;
 
-    fn get_vm_no_disk() -> VM {
+    fn get_vm_no_disk() -> VM<VirtiofsShare> {
         let machine = MachineOpts {
             cpus: 1,
             mem_mib: 1024,
@@ -936,7 +937,7 @@ mod test {
             read_only: false,
             mount_tag: None,
         };
-        let all_opts = VM::get_all_shares_opts(&outputs);
+        let all_opts = VM::<VirtiofsShare>::get_all_shares_opts(&outputs);
         assert!(all_opts.contains(&opt));
     }
 
