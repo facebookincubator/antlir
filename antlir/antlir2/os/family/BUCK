@@ -1,0 +1,25 @@
+load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
+
+constraint_setting(
+    name = "family",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "none",
+    constraint_setting = ":family",
+    visibility = ["PUBLIC"],
+)
+
+# Any version of CentOS.
+constraint_value(
+    name = "centos",
+    constraint_setting = ":family",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "fedora",
+    constraint_setting = ":family",
+    visibility = ["PUBLIC"],
+)
