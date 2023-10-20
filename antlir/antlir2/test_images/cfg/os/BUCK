@@ -1,0 +1,74 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+load(":defs.bzl", "write_os")
+
+oncall("twimage")
+
+image.layer(
+    name = "root",
+    features = [
+        feature.rpms_install(rpms = [
+            "bash",
+            "coreutils",
+            # @oss-disable
+        ]),
+        write_os("/root.os"),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "intermediate",
+    features = [
+        write_os("/intermediate.os"),
+    ],
+    parent_layer = ":root",
+)
+
+image.layer(
+    name = "leaf.generic",
+    features = [
+        write_os("/leaf.os"),
+    ],
+    parent_layer = ":intermediate",
+)
+
+[
+    [
+        image.layer(
+            name = "leaf." + os,
+            default_os = os,
+            features = [
+                write_os("/leaf.os"),
+            ],
+            parent_layer = ":intermediate",
+        ),
+        image_rust_test(
+            name = "test-leaf." + os,
+            srcs = ["test.rs"],
+            crate = "test_leaf_" + os,
+            crate_root = "test.rs",
+            env = {
+                "OS": os,
+            },
+            layer = ":leaf." + os,
+        ),
+        image_rust_test(
+            name = "test-leaf.generic." + os,
+            srcs = ["test.rs"],
+            crate = "test_leaf_generic_" + os,
+            crate_root = "test.rs",
+            default_os = os,
+            env = {
+                "OS": os,
+            },
+            layer = ":leaf.generic",
+        ),
+    ]
+    for os in [
+        "centos8",
+        "centos9",
+        "eln",
+    ]
+]
