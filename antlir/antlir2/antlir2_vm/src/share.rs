@@ -35,63 +35,51 @@ pub(crate) enum ShareError {
 
 type Result<T> = std::result::Result<T, ShareError>;
 
-/// `ViriofsShare` setups sharing through virtiofs
-#[derive(Debug, Default)]
-pub(crate) struct VirtiofsShare {
-    /// User specified options for the share
-    opts: ShareOpts,
-    /// Index of the share, used to generate unique mount tag, chardev name
-    /// and socket file.
-    id: usize,
-    /// State directory
-    state_dir: PathBuf,
-}
+pub(crate) trait Share {
+    /// Create Share based on full set of ShareOpts
+    fn new(opts: ShareOpts, id: usize, state_dir: PathBuf) -> Self;
+    /// Run any necessary setup to enable the Share
+    fn setup(&self) -> Result<()>;
+    /// Mount `Options` string for the mount unit
+    fn mount_options(&self) -> String;
+    /// Qemu args for the mounts.
+    fn qemu_args(&self) -> Vec<OsString>;
 
-impl VirtiofsShare {
-    /// Create VirtiofsShare based on full set of ShareOpts
-    pub(crate) fn new(opts: ShareOpts, id: usize, state_dir: PathBuf) -> Self {
-        Self {
-            opts,
-            id,
-            state_dir,
-        }
-    }
+    // Boilerplate getters
+    fn get_mount_type(&self) -> &str;
+    fn get_id(&self) -> usize;
+    fn get_opts(&self) -> &ShareOpts;
 
-    fn mount_tag(&self) -> String {
-        match &self.opts.mount_tag {
-            Some(tag) => tag.clone(),
-            None => format!("fs{}", self.id),
-        }
-    }
-
-    fn chardev_node(&self) -> String {
-        format!("fs_chardev{}", self.id)
-    }
-
-    fn socket_path(&self) -> PathBuf {
-        self.state_dir.join(self.mount_tag())
-    }
+    // The following methods should be same across different mount types
 
     /// Generate file name according to systemd.mount(5)
     fn mount_unit_name(&self) -> Result<String> {
         let output = Command::new("systemd-escape")
             .arg("--suffix=mount")
             .arg("--path")
-            .arg(&self.opts.path)
+            .arg(&self.get_opts().path)
             .output()
             .map_err(|_| {
-                ShareError::InvalidMountTagError(self.opts.path.to_string_lossy().to_string())
+                ShareError::InvalidMountTagError(self.get_opts().path.to_string_lossy().to_string())
             })?;
         Ok(std::str::from_utf8(&output.stdout)
             .map_err(|_| {
-                ShareError::InvalidMountTagError(self.opts.path.to_string_lossy().to_string())
+                ShareError::InvalidMountTagError(self.get_opts().path.to_string_lossy().to_string())
             })?
             .trim()
             .to_string())
     }
 
+    /// Generate mount tag with id unless it's specified
+    fn mount_tag(&self) -> String {
+        match &self.get_opts().mount_tag {
+            Some(tag) => tag.clone(),
+            None => format!("fs{}", self.get_id()),
+        }
+    }
+
     /// Generate .mount unit content
-    pub(crate) fn mount_unit_content(&self) -> String {
+    fn mount_unit_content(&self) -> String {
         format!(
             r#"[Unit]
 Description=Mount {tag} at {mountpoint}
@@ -102,15 +90,100 @@ Before=local-fs.target
 [Mount]
 What={tag}
 Where={mountpoint}
-Type=virtiofs
-Options={ro_or_rw}"#,
+Type={mount_type}
+Options={mount_options}"#,
             tag = self.mount_tag(),
-            mountpoint = self.opts.path.to_str().expect("Invalid UTF-8"),
-            ro_or_rw = match self.opts.read_only {
-                true => "ro",
-                false => "rw",
-            }
+            mountpoint = self.get_opts().path.to_str().expect("Invalid UTF-8"),
+            mount_type = self.get_mount_type(),
+            mount_options = self.mount_options(),
         )
+    }
+}
+
+macro_rules! share_getters {
+    () => {
+        fn get_id(&self) -> usize {
+            self.id
+        }
+        fn get_opts(&self) -> &ShareOpts {
+            &self.opts
+        }
+        fn get_mount_type(&self) -> &str {
+            self.mount_type
+        }
+    };
+}
+
+/// `ViriofsShare` setups sharing through virtiofs
+#[derive(Debug, Default)]
+pub(crate) struct VirtiofsShare {
+    /// User specified options for the share
+    opts: ShareOpts,
+    /// Index of the share, used to generate unique mount tag, chardev name
+    /// and socket file.
+    id: usize,
+    /// State directory
+    state_dir: PathBuf,
+    /// Mount type
+    mount_type: &'static str,
+}
+
+impl Share for VirtiofsShare {
+    share_getters!();
+
+    fn new(opts: ShareOpts, id: usize, state_dir: PathBuf) -> Self {
+        Self {
+            opts,
+            id,
+            state_dir,
+            mount_type: "virtiofs",
+        }
+    }
+
+    fn setup(&self) -> Result<()> {
+        self.start_virtiofsd()?;
+        Ok(())
+    }
+
+    fn mount_options(&self) -> String {
+        if self.get_opts().read_only {
+            "ro"
+        } else {
+            "rw"
+        }
+        .to_owned()
+    }
+
+    fn qemu_args(&self) -> Vec<OsString> {
+        [
+            "-chardev",
+            &format!(
+                "socket,id={},path={}",
+                self.chardev_node(),
+                self.socket_path()
+                    .to_str()
+                    .expect("socket file should be valid string"),
+            ),
+            "-device",
+            &format!(
+                "vhost-user-fs-pci,queue-size=1024,chardev={},tag={}",
+                self.chardev_node(),
+                self.mount_tag(),
+            ),
+        ]
+        .iter()
+        .map(|x| x.into())
+        .collect()
+    }
+}
+
+impl VirtiofsShare {
+    fn chardev_node(&self) -> String {
+        format!("fs_chardev{}", self.id)
+    }
+
+    fn socket_path(&self) -> PathBuf {
+        self.state_dir.join(self.mount_tag())
     }
 
     /// Rust virtiofsd seems to print out every request it gets on debug level,
@@ -158,38 +231,15 @@ Options={ro_or_rw}"#,
         .spawn()
         .map_err(ShareError::VirtiofsdError)
     }
-
-    /// Qemu args for virtiofs mounts.
-    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
-        [
-            "-chardev",
-            &format!(
-                "socket,id={},path={}",
-                self.chardev_node(),
-                self.socket_path()
-                    .to_str()
-                    .expect("socket file should be valid string"),
-            ),
-            "-device",
-            &format!(
-                "vhost-user-fs-pci,queue-size=1024,chardev={},tag={}",
-                self.chardev_node(),
-                self.mount_tag(),
-            ),
-        ]
-        .iter()
-        .map(|x| x.into())
-        .collect()
-    }
 }
 
 /// In order to mount shares, we have to share something into the VM
 /// that contains various mount units for mount generator. This struct
 /// represents the initial trojan horse into the VM.
 #[derive(Debug)]
-pub(crate) struct Shares {
+pub(crate) struct Shares<T: Share> {
     /// Directories to be shared into VM
-    shares: Vec<VirtiofsShare>,
+    shares: Vec<T>,
     /// Memory size of the qemu VM. This should match -m parameter.
     /// This is used for memory-backend-file for virtiofsd shares.
     mem_mb: usize,
@@ -197,12 +247,8 @@ pub(crate) struct Shares {
     unit_files_dir: PathBuf,
 }
 
-impl Shares {
-    pub(crate) fn new(
-        shares: Vec<VirtiofsShare>,
-        mem_mb: usize,
-        unit_files_dir: PathBuf,
-    ) -> Result<Self> {
+impl<T: Share> Shares<T> {
+    pub(crate) fn new(shares: Vec<T>, mem_mb: usize, unit_files_dir: PathBuf) -> Result<Self> {
         if shares.is_empty() {
             return Err(ShareError::EmptyShareError);
         }
