@@ -35,6 +35,7 @@ use starlark::syntax::AstModule;
 use starlark::syntax::Dialect;
 use starlark::values::dict::DictOf;
 use starlark::values::function::NativeFunction;
+use starlark::values::list_or_tuple::UnpackListOrTuple;
 use starlark::values::starlark_value;
 use starlark::values::structs::AllocStruct;
 use starlark::values::AllocValue;
@@ -323,7 +324,7 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
-        #[starlark(require = named)] __thrift: Option<Vec<u32>>,
+        #[starlark(require = named)] __thrift: Option<UnpackListOrTuple<u32>>,
         eval: &mut Evaluator<'v, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
@@ -338,7 +339,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         let thrift_types = match __thrift {
             Some(t) => {
                 ensure!(
-                    t.len() == types.len(),
+                    t.items.len() == types.len(),
                     "Mismatched number of fields. This would have already failed in Buck."
                 );
                 Some(
