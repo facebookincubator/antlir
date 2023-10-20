@@ -8,7 +8,6 @@
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
@@ -82,7 +81,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _image_test = rule(
     impl = _impl,
     attrs = {
-        "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False), doc = "read by cfg.bzl"),
         "boot": attrs.bool(
             default = False,
             doc = "boot the container with /init as pid1 before running the test",
@@ -114,9 +112,8 @@ _image_test = rule(
         "layer": attrs.dep(providers = [LayerInfo]),
         "run_as_user": attrs.string(default = "root"),
         "test": attrs.dep(providers = [ExternalRunnerTestInfo]),
-    } | cfg_attrs(),
+    },
     doc = "Run a test inside an image layer",
-    cfg = layer_cfg,
 )
 
 image_test = rule_with_default_target_platform(_image_test)
@@ -136,7 +133,6 @@ def _implicit_image_test(
         boot_wants_units: [list[str], None] = None,
         hostname: str | None = None,
         _add_outer_labels: list[str] = [],
-        default_os: str | None = None,
         **kwargs):
     test_rule(
         name = name + "_image_test_inner",
@@ -174,7 +170,6 @@ def _implicit_image_test(
         boot_after_units = boot_after_units,
         boot_wants_units = boot_wants_units,
         hostname = hostname,
-        default_os = default_os,
     )
 
 image_cpp_test = partial(
