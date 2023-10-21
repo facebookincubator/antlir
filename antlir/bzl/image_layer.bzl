@@ -89,7 +89,6 @@ The consequences of this information hiding are:
         that metadata during compilation.
 """
 
-load("//antlir/antlir2/bzl:compat.bzl?v2_only", "compat")
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
 load(":antlir2_shim.bzl", "antlir2_shim")
 load(":build_defs.bzl", "get_visibility", "is_buck2")
@@ -120,6 +119,7 @@ def image_layer(
         antlir2_compatible_with = None,
         antlir2_features = [],
         antlir1_features = [],
+        antlir2_allow_ignored_flavor_config_override: bool = False,
         antlir2_default_mountpoint: str | None = None,
         **image_layer_kwargs):
     """
@@ -156,7 +156,6 @@ def image_layer(
         # Antlir1 provisioning images explicitly install package-devel stub, we need to allow them here.
         dnf_excluded_rpms = ["aziot-identity-service"],
         default_mountpoint = antlir2_default_mountpoint,
-        dnf_versionlock_extend = compat.flavor_config_override_to_versionlock_extend(flavor_config_override),
         fake_buck1 = struct(
             fn = antlir2_shim.fake_buck1_layer,
             name = name,
