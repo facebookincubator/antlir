@@ -80,7 +80,7 @@ mod tests {
 
     use anyhow::anyhow;
     use anyhow::Result;
-    use tempdir::TempDir;
+    use tempfile::TempDir;
 
     use super::*;
 
@@ -89,7 +89,7 @@ mod tests {
     }
 
     fn make_tmp_dir() -> Result<TempDir> {
-        let tmp_dir = TempDir::new("find_root_tests")?;
+        let tmp_dir = TempDir::with_prefix("find_root_tests.")?;
         let path = tmp_dir.path();
 
         if let Some(p) = first_parent_containing_sigil(abspath(path), ".hg", true) {

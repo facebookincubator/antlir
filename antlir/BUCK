@@ -393,7 +393,7 @@ rust_library(
     crate_root = "find_root.rs",
     test_deps = [
         "anyhow",
-        "tempdir",
+        "tempfile",
     ],
     visibility = ["PUBLIC"],
     deps = [
