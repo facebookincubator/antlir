@@ -179,6 +179,8 @@ pub(crate) struct MachineOpts {
     pub(crate) sidecar_services: Vec<Vec<String>>,
     /// Enables TPM 2.0 support
     pub(crate) use_tpm: bool,
+    /// Use 9p instead of virtiofs for sharing. This is required for kernel older than 5.4.
+    pub(crate) use_legacy_share: bool,
 }
 
 /// Location of various binary and data we need to operate the VM

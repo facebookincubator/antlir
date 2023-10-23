@@ -233,6 +233,55 @@ impl VirtiofsShare {
     }
 }
 
+/// `9pShare` for older kernels
+#[derive(Debug, Default)]
+pub(crate) struct NinePShare {
+    /// User specified options for the share
+    opts: ShareOpts,
+    /// Index of the share, used to generate unique mount tag, chardev name
+    /// and socket file.
+    id: usize,
+    /// Mount type
+    mount_type: &'static str,
+}
+
+impl Share for NinePShare {
+    share_getters!();
+
+    fn new(opts: ShareOpts, id: usize, _state_dir: PathBuf) -> Self {
+        Self {
+            opts,
+            id,
+            mount_type: "9p",
+        }
+    }
+
+    fn setup(&self) -> Result<()> {
+        Ok(())
+    }
+    fn mount_options(&self) -> String {
+        format!(
+            "version=9p2000.L,posixacl,cache={cache},{ro_rw},msize=209715200",
+            cache = if self.opts.read_only { "loose" } else { "none" },
+            ro_rw = if self.opts.read_only { "ro" } else { "rw" },
+        )
+    }
+
+    fn qemu_args(&self) -> Vec<OsString> {
+        let mut args = vec!["-virtfs".into()];
+        args.push(
+            format!(
+                "local,path={path},security_model=none,multidevs=remap,mount_tag={tag},readonly={ro}",
+                path = self.opts.path.to_str().expect("Path should be valid string"),
+                tag = self.mount_tag(),
+                ro = if self.opts.read_only { "on" } else { "off" },
+
+            ).into()
+        );
+        args
+    }
+}
+
 /// In order to mount shares, we have to share something into the VM
 /// that contains various mount units for mount generator. This struct
 /// represents the initial trojan horse into the VM.
@@ -332,6 +381,8 @@ mod test {
         let share = VirtiofsShare::new(opts, 3, PathBuf::from("/tmp/test"));
 
         assert_eq!(&share.mount_tag(), "fs3");
+        assert_eq!(share.get_mount_type(), "virtiofs");
+        assert_eq!(&share.mount_options(), "ro");
         assert_eq!(&share.chardev_node(), "fs_chardev3");
         assert_eq!(share.socket_path(), PathBuf::from("/tmp/test/fs3"));
         assert_eq!(
@@ -387,6 +438,37 @@ Options=rw"#;
             share.qemu_args().join(OsStr::new(" ")),
             "-chardev socket,id=fs_chardev3,path=/tmp/test/whatever \
             -device vhost-user-fs-pci,queue-size=1024,chardev=fs_chardev3,tag=whatever",
+        );
+    }
+
+    #[test]
+    fn test_9p_share() {
+        let opts = ShareOpts {
+            path: PathBuf::from("/this/is/a/test"),
+            read_only: true,
+            mount_tag: None,
+        };
+        let mut share = NinePShare::new(opts, 3, PathBuf::from("/tmp/test"));
+
+        assert_eq!(&share.mount_tag(), "fs3");
+        assert_eq!(share.get_mount_type(), "9p");
+        assert_eq!(
+            &share.mount_options(),
+            "version=9p2000.L,posixacl,cache=loose,ro,msize=209715200",
+        );
+        assert_eq!(
+            &share.qemu_args().join(OsStr::new(" ")),
+            "-virtfs local,path=/this/is/a/test,security_model=none,multidevs=remap,mount_tag=fs3,readonly=on",
+        );
+
+        share.opts.read_only = false;
+        assert_eq!(
+            &share.mount_options(),
+            "version=9p2000.L,posixacl,cache=none,rw,msize=209715200",
+        );
+        assert_eq!(
+            &share.qemu_args().join(OsStr::new(" ")),
+            "-virtfs local,path=/this/is/a/test,security_model=none,multidevs=remap,mount_tag=fs3,readonly=off",
         );
     }
 

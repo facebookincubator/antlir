@@ -40,6 +40,7 @@ use crate::isolation::is_isolated;
 use crate::isolation::isolated;
 use crate::isolation::Platform;
 use crate::runtime::set_runtime;
+use crate::share::NinePShare;
 use crate::share::VirtiofsShare;
 use crate::types::MachineOpts;
 use crate::types::RuntimeOpts;
@@ -106,10 +107,12 @@ fn run(args: &RunCmdArgs) -> Result<()> {
 
     set_runtime(args.runtime_spec.clone().into_inner())
         .map_err(|_| anyhow!("Failed to set runtime"))?;
-    Ok(
-        VM::<VirtiofsShare>::new(args.machine_spec.clone().into_inner(), args.vm_args.clone())?
-            .run()?,
-    )
+    let machine_opts = args.machine_spec.clone().into_inner();
+    if machine_opts.use_legacy_share {
+        Ok(VM::<NinePShare>::new(machine_opts, args.vm_args.clone())?.run()?)
+    } else {
+        Ok(VM::<VirtiofsShare>::new(machine_opts, args.vm_args.clone())?.run()?)
+    }
 }
 
 /// Enter isolated container and then respawn itself inside it with `run`
