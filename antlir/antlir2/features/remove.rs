@@ -22,6 +22,7 @@ pub type Feature = Remove;
 pub struct Remove {
     pub path: PathInLayer,
     pub must_exist: bool,
+    pub must_be_empty: bool,
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Remove {
@@ -51,7 +52,11 @@ impl antlir2_compile::CompileFeature for Remove {
                     trace!("'{}' did not exist", self.path.display());
                     Ok(())
                 } else if e.kind() == std::io::ErrorKind::IsADirectory {
-                    std::fs::remove_dir_all(&path).map_err(antlir2_compile::Error::from)
+                    if self.must_be_empty {
+                        std::fs::remove_dir(&path).map_err(antlir2_compile::Error::from)
+                    } else {
+                        std::fs::remove_dir_all(&path).map_err(antlir2_compile::Error::from)
+                    }
                 } else {
                     Err(e.into())
                 }

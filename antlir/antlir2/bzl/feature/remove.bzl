@@ -10,7 +10,8 @@ load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
 def remove(
         *,
         path: str,
-        must_exist: bool = True) -> ParseTimeFeature:
+        must_exist: bool = True,
+        must_be_empty: bool = False) -> ParseTimeFeature:
     """
     Recursively remove a file or directory
 
@@ -24,6 +25,7 @@ def remove(
         feature_type = "remove",
         plugin = antlir2_dep("features:remove"),
         kwargs = {
+            "must_be_empty": must_be_empty,
             "must_exist": must_exist,
             "path": path,
         },
@@ -32,6 +34,7 @@ def remove(
 remove_record = record(
     path = str,
     must_exist = bool,
+    must_be_empty = bool,
 )
 
 remove_analyze = data_only_feature_analysis_fn(
