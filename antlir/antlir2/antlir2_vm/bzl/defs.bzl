@@ -55,6 +55,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             "num_nics": ctx.attrs.num_nics,
             "serial_index": ctx.attrs.serial_index,
             "sidecar_services": ctx.attrs.sidecar_services,
+            "use_legacy_share": ctx.attrs.use_legacy_share,
             "use_tpm": ctx.attrs.use_tpm,
         },
         with_inputs = True,
@@ -131,6 +132,10 @@ _vm_host = rule(
         "mem_mib": attrs.int(default = 4096, doc = "memory size in MiB"),
         "num_nics": attrs.int(default = 1),
         "serial_index": attrs.int(default = 0, doc = "index of the serial port"),
+        "use_legacy_share": attrs.bool(
+            default = False,
+            doc = "use 9p instead of virtiofs for sharing for older kernels",
+        ),
         "use_tpm": attrs.bool(default = False, doc = "enable software TPM"),
     } | {
         # Non-hardware parameters for the VM
