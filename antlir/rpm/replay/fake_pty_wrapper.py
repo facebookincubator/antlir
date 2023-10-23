@@ -4,14 +4,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import importlib.resources
 import os
-from typing import ContextManager, List
+from contextlib import contextmanager
+from typing import Iterator, List
 
 from antlir.fs_utils import MehStr, Path
 
 
-def fake_pty_resource() -> ContextManager[Path]:
-    return Path.resource(__package__, "fake_pty_real.py", exe=False)
+@contextmanager
+def fake_pty_resource() -> Iterator[Path]:
+    with importlib.resources.path(__package__, "fake_pty_real.py") as fake_pty:
+        yield Path(fake_pty)
 
 
 def fake_pty_cmd(os_root: MehStr, fake_pty_path: MehStr) -> List[MehStr]:
