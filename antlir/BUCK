@@ -235,6 +235,7 @@ python_library(
     srcs = [
         "btrfsutil.py",
     ],
+    labels = ["uses_sudo"],
     resources = {
         ":btrfsutil-bin": "btrfsutil-bin",
     },
@@ -287,6 +288,7 @@ antlir_rust_extension(
 python_library(
     name = "subvol_utils",
     srcs = ["subvol_utils.py"],
+    labels = ["uses_sudo"],
     deps = [
         ":artifacts_dir",
         ":btrfsutil",
