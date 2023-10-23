@@ -96,12 +96,11 @@ class ItemsCommonTestCase(BaseItemTestCase):
         )
 
     def test_image_non_default_after_default(self):
-        @dataclass(init=False, frozen=True)
-        class TestImageSourceItem(FakeImageSourceItem):
-            invalid: str
-
         with self.assertRaisesRegex(TypeError, "follows default"):
-            TestImageSourceItem(from_target="m", source="x", kitteh="y", invalid="z")
+
+            @dataclass(init=True, frozen=True)
+            class TestImageSourceItem(FakeImageSourceItem):
+                invalid: str
 
     def test_image_defaults(self):
         item = FakeImageSourceItem(from_target="m", source="x", kitteh="y")
