@@ -17,13 +17,14 @@ load(
 )
 # @oss-disable
 # @oss-disable
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoInfo", "RepoSetInfo")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
-load(":cfg.bzl", "layer_cfg")
+load(":cfg.bzl", "cfg_attrs", "layer_cfg", "remove_os_constraint")
 load(":depgraph.bzl", "build_depgraph")
 load(":mounts.bzl", "all_mounts", "container_mount_args")
 
@@ -451,7 +452,7 @@ _layer_attrs = {
     "antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
     "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
     "build_appliance": attrs.option(
-        attrs.dep(providers = [LayerInfo]),
+        attrs.transition_dep(providers = [LayerInfo], cfg = remove_os_constraint),
         default = None,
     ),
     "default_mountpoint": attrs.option(attrs.string(), default = None),
@@ -497,11 +498,6 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
-    "target_arch": attrs.option(
-        attrs.enum(["x86_64", "aarch64"]),
-        default = None,
-        doc = "Build this image for a specific target arch",
-    ),
     "_implicit_image_test": attrs.option(
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
@@ -514,6 +510,8 @@ _layer_attrs = {
               "correct, while target_arch might or might not be set",
     )),
 }
+
+_layer_attrs.update(cfg_attrs())
 
 _layer_attrs.update(
     {
@@ -537,6 +535,9 @@ def layer(
         # by a type hint inside feature.bzl. Feature targets or
         # InlineFeatureInfo providers are accepted, at any level of nesting
         features = [],
+        default_os: str | None = None,
+        # TODO: remove this flag when all images are using this new mechanism
+        use_default_os_from_package: bool | None = None,
         # We'll implicitly forward some users to antlir2, so any hacks for them
         # should be confined behind this flag
         implicit_antlir2: bool = False,
@@ -550,6 +551,11 @@ def layer(
     if implicit_antlir2:
         flavor = kwargs.pop("flavor", None)
         kwargs["flavor"] = compat.from_antlir1_flavor(flavor) if flavor else None
+
+    if use_default_os_from_package == None:
+        use_default_os_from_package = should_all_images_in_package_use_default_os()
+    if use_default_os_from_package:
+        default_os = default_os or get_default_os_for_package()
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
@@ -579,6 +585,7 @@ def layer(
 
     return layer_rule(
         name = name,
+        default_os = default_os,
         visibility = get_visibility(visibility),
         _implicit_image_test = "//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
         **kwargs
