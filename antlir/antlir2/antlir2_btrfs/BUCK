@@ -5,6 +5,15 @@ load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("twimage")
 
+deps = [
+    "bitflags",
+    "derivative",
+    "nix",
+    "thiserror",
+    "tracing",
+    "uuid",
+]
+
 rust_library(
     name = "antlir2_btrfs",
     srcs = glob(["src/*.rs"]),
@@ -13,18 +22,16 @@ rust_library(
         "//antlir/...",
         "//devenv/velvet/...",
     ],
-    deps = [
-        "bitflags",
-        "nix",
-        "thiserror",
-        "tracing",
-    ],
+    deps = deps,
 )
 
 image.layer(
     name = "test-layer",
     features = [
-        feature.rpms_install(rpms = ["bash"]),
+        feature.rpms_install(rpms = [
+            "bash",
+            "btrfs-progs",
+        ]),
         feature.install(
             src = "//antlir:empty",
             dst = "/empty",
@@ -37,12 +44,7 @@ image_rust_test(
     name = "antlir2_btrfs-image-test",
     srcs = glob(["src/*.rs"]),
     layer = ":test-layer",
-    deps = [
-        "bitflags",
-        "nix",
-        "thiserror",
-        "tracing",
-    ],
+    deps = deps,
 )
 
 rust_binary(
