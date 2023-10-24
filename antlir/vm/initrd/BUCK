@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "export_file")
+load("//antlir/bzl:build_defs.bzl", "export_file", "is_buck2")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
 
@@ -16,4 +16,4 @@ export_file(
 [initrd(
     kernel = kernels.get(uname),
     visibility = ["PUBLIC"],
-) for uname in kernels.all_kernels]
+) for uname in kernels.all_kernels] if is_buck2() else None

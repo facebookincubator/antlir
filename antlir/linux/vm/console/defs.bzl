@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 
 def _autologin(use_antlir2 = False):

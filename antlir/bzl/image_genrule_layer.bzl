@@ -120,7 +120,7 @@ Optional arguments:
             antlir2_feature.genrule(
                 cmd = cmd,
                 user = user,
-            ),
+            ) if is_buck2() else None,
         ],
         implicit_antlir2 = True,
         fake_buck1 = struct(

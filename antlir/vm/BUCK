@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library")
+load("//antlir/bzl:build_defs.bzl", "export_file", "is_buck2", "python_binary", "python_library")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
@@ -151,7 +151,7 @@ vm.run(
         )],
         kernel = kernels.default,
     ),
-)
+) if is_buck2() else None
 
 vm.run(
     name = "default-5.19",
@@ -163,7 +163,7 @@ vm.run(
         )],
         kernel = kernels.get("5.19"),
     ),
-)
+) if is_buck2() else None
 
 vm.run(
     name = "default-initrd-debug",
@@ -179,7 +179,7 @@ vm.run(
         disk = vm.types.disk.root(),
         kernel = kernels.default,
     ),
-)
+) if is_buck2() else None
 
 vm.run(
     name = "multinics",
@@ -188,4 +188,4 @@ vm.run(
         kernel = kernels.default,
         nics = 4,
     ),
-)
+) if is_buck2() else None

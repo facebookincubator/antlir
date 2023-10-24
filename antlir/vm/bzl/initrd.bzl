@@ -4,9 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl?v2_only", "package")
 load("//antlir/bzl:build_defs.bzl", "get_visibility")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:types.bzl", "types")

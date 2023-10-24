@@ -62,6 +62,7 @@ exported by a parent layer which also includes an extract.extract feature.
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
@@ -92,12 +93,12 @@ def _extract(
     if antlir2_shim.upgrade_or_shadow_feature(
         name = name,
         antlir2 = antlir2,
-        fn = antlir2_feature.new,
+        fn = antlir2_shim.getattr_buck2(antlir2_feature, "new"),
         features = [
             antlir2_feature.extract_from_layer(
                 binaries = binaries,
                 layer = source + ".antlir2",
-            ),
+            ) if is_buck2() else None,
         ],
         visibility = [],
         fake_buck1 = struct(

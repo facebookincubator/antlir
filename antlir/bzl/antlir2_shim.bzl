@@ -31,6 +31,9 @@ antlir2_setting = native.enum(
 ) if is_buck2() else _antlir2_setting_buck1
 
 def _should_shadow(antlir2: str | bool | None) -> bool:
+    if not is_buck2():
+        return False
+
     if antlir2 == None and is_buck2():
         package_mode = antlir2_migration.get_mode()
         return package_mode == antlir2_migration.mode_t("shadow")

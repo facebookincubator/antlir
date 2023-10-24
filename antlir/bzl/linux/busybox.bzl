@@ -5,7 +5,7 @@
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 
 DEFAULT_APPLETS = sets.make([
