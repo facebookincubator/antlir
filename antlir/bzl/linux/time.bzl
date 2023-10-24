@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/antlir2/bzl/feature:defs.bzl", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def _timezone(zone, timezone_dir = "/usr/share/zoneinfo", use_antlir2 = False):

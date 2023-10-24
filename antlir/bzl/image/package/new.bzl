@@ -66,7 +66,7 @@ def package_new(
     if antlir2_shim.upgrade_or_shadow_package(
         antlir2 = antlir2,
         name = name,
-        fn = antlir2_package.backward_compatible_new,
+        fn = antlir2_shim.getattr_buck2(antlir2_package, "backward_compatible_new"),
         layer = layer + ".antlir2",
         format = format,
         visibility = visibility,
