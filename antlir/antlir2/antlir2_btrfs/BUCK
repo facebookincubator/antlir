@@ -32,9 +32,9 @@ image.layer(
             "bash",
             "btrfs-progs",
         ]),
-        feature.install(
-            src = "//antlir:empty",
-            dst = "/empty",
+        feature.ensure_dirs_exist(
+            dirs = "/work",
+            mode = 0o777,
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
@@ -44,6 +44,15 @@ image_rust_test(
     name = "antlir2_btrfs-image-test",
     srcs = glob(["src/*.rs"]),
     layer = ":test-layer",
+    deps = deps,
+)
+
+image_rust_test(
+    name = "antlir2_btrfs-image-test-unprivileged",
+    srcs = glob(["src/*.rs"]),
+    layer = ":test-layer",
+    run_as_user = "nobody",
+    rustc_flags = ["--cfg=unprivileged"],
     deps = deps,
 )
 

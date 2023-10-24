@@ -319,10 +319,10 @@ mod tests {
     /// an error rather than a footgun
     #[test]
     fn bad_get() -> Result<()> {
-        std::fs::create_dir("/foo").expect("dir creation failed");
-        std::fs::create_dir("/foo/bar").expect("subdir creation failed");
+        std::fs::create_dir("/work/foo").expect("dir creation failed");
+        std::fs::create_dir("/work/foo/bar").expect("subdir creation failed");
         assert!(
-            matches!(Subvolume::open("/foo/bar"), Err(Error::NotSubvol)),
+            matches!(Subvolume::open("/work/foo/bar"), Err(Error::NotSubvol)),
             "expected error on subvol lookup for regular directory"
         );
         assert!(
@@ -334,10 +334,10 @@ mod tests {
 
     #[test]
     fn create() {
-        Subvolume::create("/foo").expect("failed to create subvol /foo");
+        Subvolume::create("/work/foo").expect("failed to create subvol /work/foo");
         assert_eq!(
-            std::fs::metadata("/foo")
-                .expect("failed to stat /foo")
+            std::fs::metadata("/work/foo")
+                .expect("failed to stat /work/foo")
                 .st_ino(),
             INO_SUBVOL,
             "subvol stat did not return expected inode number"
@@ -346,52 +346,57 @@ mod tests {
 
     #[test]
     fn toggle_readonly() {
-        let mut subvol = Subvolume::create("/foo").expect("failed to create subvol /foo");
-        std::fs::write("/foo/bar", "bar").expect("failed to write /foo/bar");
+        let mut subvol = Subvolume::create("/work/foo").expect("failed to create subvol /work/foo");
+        std::fs::write("/work/foo/bar", "bar").expect("failed to write /work/foo/bar");
         subvol.set_readonly(true).expect("failed to set readonly");
         assert_eq!(
-            std::fs::write("/foo/baz", "baz")
+            std::fs::write("/work/foo/baz", "baz")
                 .expect_err("should have failed to write /foo/baz")
                 .kind(),
             ErrorKind::ReadOnlyFilesystem,
         );
         subvol.set_readonly(false).expect("failed to set readwrite");
-        std::fs::write("/foo/qux", "qux").expect("failed to write /foo/qux");
+        std::fs::write("/work/foo/qux", "qux").expect("failed to write /work/foo/qux");
     }
 
     #[test]
     fn snapshot() -> Result<()> {
-        let subvol = Subvolume::open("/")?;
-        let snap = subvol.snapshot("/snapshot", SnapshotFlags::empty())?;
-        assert_eq!(snap.path(), Path::new("/snapshot"));
+        let subvol = Subvolume::create("/work/src")?;
+        std::fs::write("/work/src/empty", "")?;
+        let snap = subvol.snapshot("/work/snapshot", SnapshotFlags::empty())?;
+        assert_eq!(snap.path(), Path::new("/work/snapshot"));
         assert!(snap.path().join("empty").exists());
         Ok(())
     }
 
     #[test]
     fn snapshot_readonly() {
-        let subvol = Subvolume::open("/").expect("failed to open /");
+        let subvol = Subvolume::create("/work/src").expect("failed to create src subvol");
+        std::fs::write("/work/src/empty", "").expect("failed to write empty file");
         subvol
-            .snapshot("/snapshot", SnapshotFlags::READONLY)
+            .snapshot("/work/snapshot", SnapshotFlags::READONLY)
             .expect("failed to make snapshot");
         assert_eq!(
-            std::fs::write("/snapshot/foo", "foo")
-                .expect_err("should have failed to write /snapshot/foo")
+            std::fs::write("/work/snapshot/foo", "foo")
+                .expect_err("should have failed to write /work/snapshot/foo")
                 .kind(),
             ErrorKind::ReadOnlyFilesystem,
         );
     }
 
-    #[test]
+    // TODO(T167555826): re-enable test when user_subvol_rm_allowed is enabled
+    #[cfg_attr(not(unprivileged), test)]
+    #[cfg_attr(unprivileged, allow(dead_code))]
     fn delete() -> Result<()> {
-        let subvol = Subvolume::open("/")?;
-        let snap = subvol.snapshot("/snapshot", SnapshotFlags::empty())?;
-        assert_eq!(snap.path(), Path::new("/snapshot"));
+        let subvol = Subvolume::create("/work/src").expect("failed to create src subvol");
+        std::fs::write("/work/src/empty", "").expect("failed to write empty file");
+        let snap = subvol.snapshot("/work/snapshot", SnapshotFlags::empty())?;
+        assert_eq!(snap.path(), Path::new("/work/snapshot"));
         assert!(snap.path().join("empty").exists());
         snap.delete()
             .map_err(|(_, e)| e)
             .expect("failed to delete subvol");
-        assert!(!Path::new("/snapshot").exists());
+        assert!(!Path::new("/work/snapshot").exists());
         Ok(())
     }
 
@@ -399,28 +404,39 @@ mod tests {
     fn get_info() {
         let subvol = Subvolume::open("/").expect("failed to open /");
         let info = subvol.info().expect("failed to get info");
-        let out = Command::new("btrfs")
-            .arg("subvolume")
-            .arg("show")
-            .arg("/")
-            .output()
-            .expect("failed to run btrfs");
-        assert!(out.status.success(), "btrfs subvolume show failed");
-        let stdout = String::from_utf8(out.stdout).expect("invalid utf8");
-        let props: HashMap<_, _> = stdout
-            .lines()
-            .filter_map(|line| {
-                line.split_once(':')
-                    .map(|(key, val)| (key.trim(), val.trim()))
-            })
-            .collect();
-        assert_eq!(
-            info.id(),
-            props["Subvolume ID"].parse::<u64>().expect("bad cli id")
-        );
-        assert_eq!(
-            info.uuid(),
-            props["UUID"].parse::<Uuid>().expect("bad cli uuid")
-        );
+
+        #[cfg(unprivileged)]
+        {
+            // in unprivileged contexts, 'btrfs subvolume show' will fail, so we
+            // can't compare against the ground truth
+            assert_ne!(info.id(), 0);
+            assert!(!info.uuid().is_nil());
+        }
+        #[cfg(not(unprivileged))]
+        {
+            let out = Command::new("btrfs")
+                .arg("subvolume")
+                .arg("show")
+                .arg("/")
+                .output()
+                .expect("failed to run btrfs");
+            assert!(out.status.success(), "btrfs subvolume show failed");
+            let stdout = String::from_utf8(out.stdout).expect("invalid utf8");
+            let props: HashMap<_, _> = stdout
+                .lines()
+                .filter_map(|line| {
+                    line.split_once(':')
+                        .map(|(key, val)| (key.trim(), val.trim()))
+                })
+                .collect();
+            assert_eq!(
+                info.id(),
+                props["Subvolume ID"].parse::<u64>().expect("bad cli id")
+            );
+            assert_eq!(
+                info.uuid(),
+                props["UUID"].parse::<Uuid>().expect("bad cli uuid")
+            );
+        }
     }
 }
