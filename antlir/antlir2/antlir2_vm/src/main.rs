@@ -292,7 +292,7 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
 
 fn main() -> Result<()> {
     tracing_subscriber::registry()
-        .with(tracing_subscriber::fmt::Layer::default())
+        .with(tracing_subscriber::fmt::Layer::default().with_writer(std::io::stderr))
         .with(
             tracing_subscriber::EnvFilter::builder()
                 .with_default_directive(LevelFilter::INFO.into())
