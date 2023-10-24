@@ -18,7 +18,17 @@ use tracing::trace;
 
 pub type Feature = Remove;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[derive(
+    Debug,
+    Clone,
+    Hash,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Deserialize,
+    Serialize
+)]
 pub struct Remove {
     pub path: PathInLayer,
     pub must_exist: bool,
