@@ -303,6 +303,23 @@ def render_demo_subvols(*, create_ops=None, mutate_ops=None, lossy_packaging=Non
                         "(Dir m700 o1:1)",
                         {"data": ["(File m400 o1:1)"]},
                     ],
+                    "dir_with_acls": [
+                        (
+                            "(Dir x"
+                            "'system.posix_acl_default'='{acl}',"
+                            "'system.posix_acl_access'='{acl}'"
+                            ")"
+                        ).format(
+                            acl=_dir_with_acls_system_posix_acl.decode(
+                                "ASCII", "surrogateescape"
+                            )
+                            .encode("unicode-escape")
+                            .decode("ISO-8859-1")
+                        )
+                        if lossy_packaging != "cpio"
+                        else "(Dir)",
+                        {},
+                    ],
                     "goodbye": [goodbye_world],
                     "bye_symlink": ["(Symlink hello/world)"],
                     "dir_perms_0500": ["(Dir m500)", {}],
