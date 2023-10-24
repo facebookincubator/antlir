@@ -365,19 +365,22 @@ class Path(bytes):
         open-source Python package formats: "zip", "fastzip", "pex", "xar".
         """
         with importlib.resources.open_binary(package, name) as rsrc_in:
-            # This check is clowny, but `importlib` doesn't provide a clean
-            # way to ask if the resource already exists on disk.
-            if hasattr(rsrc_in, "name"):
-                # Future: once the bug with the XAR `access` implementation
-                # is fixed (https://fburl.com/42s41c0g), this can just check
-                # for boolean equality.
-                if not exe or (exe and os.access(rsrc_in.name, os.X_OK)):
-                    yield Path(rsrc_in.name).abspath()
-                    return
-                else:  # pragma: no cover
-                    # why does this happen? who knows but we can make a copy of
-                    # the binary that _is_ executable
-                    log.warning(f"{package}.{name} is not executable")
+            # Future: once the bug with the XAR `access` implementation
+            # is fixed (https://fburl.com/42s41c0g), this can just check
+            # for boolean equality.
+            if (
+                hasattr(rsrc_in, "name")
+                and os.path.exists(rsrc_in.name)
+                and (not exe or (exe and os.access(rsrc_in.name, os.X_OK)))
+            ):
+                yield Path(rsrc_in.name).abspath()
+                return
+
+            # why does this happen? who knows but we can make a copy of
+            # the binary that _is_ executable
+            log.warning(
+                f"{package}.{name} doesn't exist or is not executable"
+            )  # pragma: no cover
             # The resource has no path, so we have to materialize it.
             #
             # This code path is not reached by our coverage harness,
