@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use derivative::Derivative;
 use nix::ioctl_read;
 use nix::ioctl_readwrite;
 use nix::ioctl_write_ptr;
@@ -15,6 +16,7 @@ const INO_LOOKUP_PATH_MAX: usize = 4080;
 pub(crate) const SUBVOL_NAME_MAX: usize = 4039;
 const PATH_NAME_MAX: usize = 4087;
 pub(crate) const SPEC_BY_ID: u64 = 1 << 3;
+const VOL_NAME_MAX: usize = 255;
 
 #[derive(Debug, Copy, Clone)]
 #[repr(C)]
@@ -76,6 +78,40 @@ pub struct vol_args {
 }
 
 ioctl_write_ptr!(snap_destroy, IOCTL_MAGIC, 15, vol_args);
+
+#[derive(Copy, Clone, Default)]
+#[repr(C)]
+pub struct btrfs_ioctl_timespec {
+    pub sec: u64,
+    pub nsec: u32,
+}
+
+#[derive(Copy, Clone, Derivative)]
+#[derivative(Default)]
+#[repr(C)]
+pub struct get_subvol_info_args {
+    pub id: u64,
+    /// Name of this subvolume, used to get the real name at mount point
+    #[derivative(Default(value = "[0; 256]"))]
+    pub name: [u8; VOL_NAME_MAX + 1],
+    pub parent_id: u64,
+    pub dirid: u64,
+    pub generation: u64,
+    pub flags: u64,
+    pub uuid: [u8; 16],
+    pub parent_uuid: [u8; 16],
+    pub received_uuid: [u8; 16],
+    pub ctransid: u64,
+    pub otransid: u64,
+    pub stransid: u64,
+    pub rtransid: u64,
+    pub ctime: btrfs_ioctl_timespec,
+    pub otime: btrfs_ioctl_timespec,
+    pub stime: btrfs_ioctl_timespec,
+    pub rtime: btrfs_ioctl_timespec,
+    pub reserved: [u64; 8],
+}
+ioctl_read!(get_subvol_info, IOCTL_MAGIC, 60, get_subvol_info_args);
 
 #[cfg(test)]
 mod tests {

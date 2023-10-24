@@ -9,6 +9,7 @@
 #![cfg_attr(test, feature(io_error_more))]
 
 use std::ffi::OsStr;
+use std::fmt::Debug;
 use std::os::fd::AsRawFd;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
@@ -25,6 +26,7 @@ use nix::sys::statfs::BTRFS_SUPER_MAGIC;
 use thiserror::Error;
 use tracing::trace;
 use tracing::trace_span;
+use uuid::Uuid;
 
 const INO_SUBVOL: u64 = 256;
 
@@ -255,13 +257,54 @@ impl Subvolume {
             }
         }
     }
+
+    pub fn info(&self) -> Result<Info> {
+        let mut args = Default::default();
+        unsafe {
+            ioctl::get_subvol_info(self.fd.as_raw_fd(), &mut args).map_err(std::io::Error::from)?;
+        }
+        Ok(Info(args))
+    }
+}
+
+#[derive(Clone, Copy)]
+pub struct Info(ioctl::get_subvol_info_args);
+
+impl Info {
+    pub fn id(&self) -> u64 {
+        self.0.id
+    }
+
+    pub fn uuid(&self) -> Uuid {
+        Uuid::from_slice(&self.0.uuid).expect("always correct len")
+    }
+
+    pub fn parent_uuid(&self) -> Option<Uuid> {
+        let uuid = Uuid::from_slice(&self.0.parent_uuid).expect("always correct len");
+        match uuid.is_nil() {
+            true => None,
+            false => Some(uuid),
+        }
+    }
+}
+
+impl Debug for Info {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Info")
+            .field("id", &self.id())
+            .field("uuid", &self.uuid())
+            .field("parent_uuid", &self.parent_uuid())
+            .finish_non_exhaustive()
+    }
 }
 
 #[cfg(test)]
 #[allow(non_upper_case_globals)]
 mod tests {
+    use std::collections::HashMap;
     use std::io::ErrorKind;
     use std::os::linux::fs::MetadataExt;
+    use std::process::Command;
 
     use super::*;
 
@@ -350,5 +393,34 @@ mod tests {
             .expect("failed to delete subvol");
         assert!(!Path::new("/snapshot").exists());
         Ok(())
+    }
+
+    #[test]
+    fn get_info() {
+        let subvol = Subvolume::open("/").expect("failed to open /");
+        let info = subvol.info().expect("failed to get info");
+        let out = Command::new("btrfs")
+            .arg("subvolume")
+            .arg("show")
+            .arg("/")
+            .output()
+            .expect("failed to run btrfs");
+        assert!(out.status.success(), "btrfs subvolume show failed");
+        let stdout = String::from_utf8(out.stdout).expect("invalid utf8");
+        let props: HashMap<_, _> = stdout
+            .lines()
+            .filter_map(|line| {
+                line.split_once(':')
+                    .map(|(key, val)| (key.trim(), val.trim()))
+            })
+            .collect();
+        assert_eq!(
+            info.id(),
+            props["Subvolume ID"].parse::<u64>().expect("bad cli id")
+        );
+        assert_eq!(
+            info.uuid(),
+            props["UUID"].parse::<Uuid>().expect("bad cli uuid")
+        );
     }
 }
