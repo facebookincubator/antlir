@@ -79,7 +79,7 @@ provide the parent `/path`, but this item will create the mount-point.
         items = struct(mounts = [mount_spec]),
         antlir2_feature = antlir2_feature.host_mount(
             source = source,
-            mountpoint = mountpoint,
+            mountpoint = mountpoint or source,
             is_directory = True,
             _implicit_from_antlir1 = True,
         ) if is_buck2() else None,
@@ -106,7 +106,7 @@ into the container at `/baz`.
         ) if is_buck2() else None,
     )
 
-def feature_layer_mount(source, mountpoint = None):
+def feature_layer_mount(source, mountpoint = None, antlir2_mountpoint = None):
     """
 `feature.layer_mount(":other-image-layer")` makes the specified layer available
 inside the container available at the "default_mountpoint" provided by the
@@ -125,7 +125,7 @@ then you can pass an explicit `mountpoint` argument.
         items = struct(mounts = [mount_spec]),
         antlir2_feature = antlir2_feature.layer_mount(
             source = source + ".antlir2",
-            mountpoint = mountpoint,
+            mountpoint = antlir2_mountpoint or mountpoint,
             _implicit_from_antlir1 = True,
         ) if is_buck2() else None,
     )
