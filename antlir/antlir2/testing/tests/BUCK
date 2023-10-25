@@ -180,3 +180,18 @@ image_diff_test(
     exclude = ["usr/lib/sysimage/rpm/rpmdb.sqlite"],
     layer = ":diff_test",
 )
+
+image.layer(
+    name = "test-loop-layer",
+    features = [
+        feature.rpms_install(rpms = ["btrfs-progs"]),
+    ],
+    parent_layer = ":base",
+)
+
+image_sh_test(
+    name = "test-loop",
+    allocate_loop_devices = 1,
+    layer = ":test-loop-layer",
+    test = "test-loop.sh",
+)

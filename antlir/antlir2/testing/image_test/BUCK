@@ -18,6 +18,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "loopdev",
         "tempfile",
         "tracing",
         "tracing-glog",
