@@ -216,6 +216,12 @@ impl<'a> IntoBinds<'a> for (&'a str, &'a str) {
     }
 }
 
+impl<'a> IntoBinds<'a> for (PathBuf, PathBuf) {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        HashMap::from([(Cow::Owned(self.0), Cow::Owned(self.1))])
+    }
+}
+
 impl<'a> IntoBinds<'a> for &[&'a Path] {
     fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
         self.iter()
@@ -351,5 +357,14 @@ impl<'a> IntoEnv<'a> for BTreeMap<String, String> {
         self.into_iter()
             .map(|(k, v)| (OsString::from(k).into(), OsString::from(v).into()))
             .collect()
+    }
+}
+
+impl<'a> IntoEnv<'a> for (String, PathBuf) {
+    fn into_env(self) -> HashMap<Cow<'a, OsStr>, Cow<'a, OsStr>> {
+        HashMap::from([(
+            Cow::Owned(OsString::from(self.0)),
+            Cow::Owned(self.1.into_os_string()),
+        )])
     }
 }

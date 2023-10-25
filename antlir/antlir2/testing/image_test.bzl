@@ -32,6 +32,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
 
     test_cmd = cmd_args(
+        "sudo" if ctx.attrs.allocate_loop_devices else cmd_args(),
         ctx.attrs.image_test[RunInfo],
         cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
         cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
@@ -42,6 +43,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(boot_wants_units, format = "--wants-unit={}") if ctx.attrs.boot else cmd_args(),
         cmd_args(["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()], format = "--setenv={}"),
         cmd_args(mounts, format = "--mounts={}"),
+        cmd_args(str(ctx.attrs.allocate_loop_devices), format = "--allocate-loop-devices={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
     )
@@ -82,6 +84,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _image_test = rule(
     impl = _impl,
     attrs = {
+        "allocate_loop_devices": attrs.int(default = 0),
         "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False), doc = "read by cfg.bzl"),
         "boot": attrs.bool(
             default = False,
@@ -135,6 +138,7 @@ def _implicit_image_test(
         boot_after_units: [list[str], None] = None,
         boot_wants_units: [list[str], None] = None,
         hostname: str | None = None,
+        allocate_loop_devices: int | None = None,
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         **kwargs):
@@ -174,6 +178,7 @@ def _implicit_image_test(
         boot_after_units = boot_after_units,
         boot_wants_units = boot_wants_units,
         hostname = hostname,
+        allocate_loop_devices = allocate_loop_devices,
         default_os = default_os,
     )
 
