@@ -29,7 +29,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                             ctx = ctx,
                             layer = subvol["layer"],
                             build_appliance = ctx.attrs.build_appliance,
-                        ),
+                        ).artifact("anon_v1_sendstream"),
                         "writable": subvol.get("writable"),
                     }
                     for path, subvol in ctx.attrs.subvols.items()
