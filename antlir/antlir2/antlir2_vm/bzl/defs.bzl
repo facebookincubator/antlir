@@ -207,4 +207,16 @@ vm = struct(
     rust_test = vm_rust_test,
     sh_test = vm_sh_test,
     run_command = vm_run_command,
+
+    # Various pre-built targets useful for building VM or writing tests
+    artifacts = struct(
+        # Pre-built VMs for `vm_host` of tests
+        default_vms = struct(
+            # initrd_boot is recommended for faster boot performance
+            initrd_boot = "//antlir/antlir2/antlir2_vm:default-initrd-boot",
+            # disk boots are recommended for more real boot sequence
+            disk_boot = "//antlir/antlir2/antlir2_vm:default-disk-boot",
+            nvme_disk_boot = "//antlir/antlir2/antlir2_vm:default-nvme-disk-boot",
+        ),
+    ),
 )

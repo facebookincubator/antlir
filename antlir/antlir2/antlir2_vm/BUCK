@@ -68,34 +68,12 @@ vm.host(
 )
 
 vm.host(
-    name = "disk-boot-5.19",
-    compatible_with = ["ovr_config//cpu:x86_64"],
-    disks = [simple_disk.get_boot_disk(
-        arch = "x86_64",
-        interface = "virtio-blk",
-        uname = "5.19",
-    )],
-)
-
-vm.host(
-    name = "default-nondisk-boot",
+    name = "default-initrd-boot",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.default_control_disk],
     initrd = initrd.default,
     kernel = metalos_kernel.default.vmlinuz,
     visibility = ["PUBLIC"],
-)
-
-vm.host(
-    name = "nondisk-boot-5.19",
-    compatible_with = ["ovr_config//cpu:x86_64"],
-    disks = [simple_disk.get_control_disk(
-        arch = "x86_64",
-        interface = "virtio-blk",
-        uname = "5.19",
-    )],
-    initrd = initrd.get("x86_64", "5.19"),
-    kernel = metalos_kernel.get("x86_64", "5.19").vmlinuz,
 )
 
 vm.host(
