@@ -1,5 +1,4 @@
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
-load("//antlir/antlir2/antlir2_vm/bzl:preconfigured.bzl", "PRECONFIGURED_VM", "get_vm")
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 load("//metalos/vm/disks:simple.bzl", "simple_disk")
 
@@ -12,7 +11,7 @@ vm.cpp_test(
         "ENV_ARTIFACT": "$(exe :sidecar)",
     },
     run_as_bundle = True,
-    vm_host = get_vm(),
+    vm_host = vm.artifacts.default_vms.initrd_boot,
 )
 
 vm.python_test(
@@ -23,7 +22,7 @@ vm.python_test(
         "ENV_ARTIFACT": "$(exe :sidecar)",
     },
     run_as_bundle = True,
-    vm_host = get_vm(),
+    vm_host = vm.artifacts.default_vms.initrd_boot,
 )
 
 vm.rust_test(
@@ -36,7 +35,7 @@ vm.rust_test(
         "ENV_ARTIFACT": "$(exe :sidecar)",
     },
     run_as_bundle = True,
-    vm_host = get_vm(),
+    vm_host = vm.artifacts.default_vms.initrd_boot,
 )
 
 vm.sh_test(
@@ -46,7 +45,7 @@ vm.sh_test(
         "ENV_ARTIFACT": "$(exe :sidecar)",
     },
     test = "test.sh",
-    vm_host = get_vm(),
+    vm_host = vm.artifacts.default_vms.initrd_boot,
 )
 
 # Verify all pre-configured VMs
@@ -62,7 +61,11 @@ vm.sh_test(
         },
         vm_host = target,
     )
-    for name, target in PRECONFIGURED_VM.items()
+    for name, target in {
+        "disk-boot": vm.artifacts.default_vms.disk_boot,
+        "initrd-boot": vm.artifacts.default_vms.initrd_boot,
+        "nvme-disk-boot": vm.artifacts.default_vms.nvme_disk_boot,
+    }.items()
 ]
 
 # Test for sidecar
@@ -121,11 +124,11 @@ vm.rust_test(
 vm.run_command(
     name = "run-command",
     command = "uname -r",
-    vm_host = get_vm(),
+    vm_host = vm.artifacts.default_vms.initrd_boot,
 )
 
 vm.run_command(
     name = "run-command-with-location",
     command = "bash -c 'echo $(location :sidecar)'",
-    vm_host = get_vm(),
+    vm_host = vm.artifacts.default_vms.initrd_boot,
 )

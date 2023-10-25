@@ -186,7 +186,6 @@ For example, the example test target looks like this.
 
 ```
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
-load("//antlir/antlir2/antlir2_vm/bzl:preconfigured.bzl", "get_vm")
 
 vm.rust_test(
     name = "rust-test",
@@ -196,7 +195,7 @@ vm.rust_test(
     env = {
         "ANTLIR2_TEST": "1",
     },
-    vm_host = get_vm(),  # vm specific
+    vm_host = vm.artifacts.default_vms.initrd_boot,  # vm specific
 )
 ```
 
@@ -209,9 +208,9 @@ optional `env` will be passed through into the VM, so your test will have access
 to them.
 
 The `vm_host` field specifies the VM host target to execute the test in.
-`get_vm()` is a function provided by `antlir2/antlir2_vm/bzl:preconfigured.bzl`
-for you to select from a list of pre-configured VMs, if you can find one that
-satisfies your need.
+`vm.artifacts.default_vms` provides several pre-configured VMs that can be
+directly used by VM test. If none of them meet your need, you would need to
+build a custom VM.
 
 ### Build a custom VM for your test (optional)
 
