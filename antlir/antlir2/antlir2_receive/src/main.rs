@@ -35,9 +35,6 @@ pub(crate) struct Receive {
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
-    #[clap(long)]
-    /// buck-out path to refcount this output
-    keepalive: PathBuf,
     #[clap(flatten)]
     setup: SetupArgs,
 }
@@ -59,29 +56,20 @@ impl Receive {
     /// Make sure that the working directory exists and clean up any existing
     /// version of the subvolume that we're receiving.
     #[tracing::instrument(skip(self), ret, err(Debug))]
-    fn prepare_dst(&self) -> Result<PathBuf> {
-        trace!("setting up WorkingVolume");
-        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
-            .context("while setting up WorkingVolume")?;
+    fn prepare_dst(&self, working_volume: &WorkingVolume) -> Result<PathBuf> {
         let dst = working_volume
             .allocate_new_path()
             .context("while allocating new path for subvol")?;
         trace!("WorkingVolume gave us new path {}", dst.display());
-        working_volume.keep_path_alive(&dst, &self.keepalive)?;
-        trace!(
-            "marked path {} with keepalive {}",
-            dst.display(),
-            self.keepalive.display()
-        );
-        working_volume
-            .collect_garbage()
-            .context("while garbage collecting old outputs")?;
         Ok(dst)
     }
 
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
-        let dst = self.prepare_dst()?;
+        trace!("setting up WorkingVolume");
+        let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
+            .context("while setting up WorkingVolume")?;
+        let dst = self.prepare_dst(&working_volume)?;
 
         let recv_tmp = tempfile::tempdir_in(&self.setup.working_dir)?;
         // If there are more [Format]s here, we'll need to match on it to do
@@ -128,6 +116,16 @@ impl Receive {
 
         let _ = std::fs::remove_file(&self.output);
         std::os::unix::fs::symlink(subvol.path(), &self.output).context("while making symlink")?;
+
+        working_volume.keep_path_alive(&dst, &self.output)?;
+        trace!(
+            "marked path {} with keepalive {}",
+            dst.display(),
+            self.output.display()
+        );
+        working_volume
+            .collect_garbage()
+            .context("while garbage collecting old outputs")?;
         Ok(())
     }
 }

@@ -60,9 +60,6 @@ struct SetupArgs {
     #[clap(long)]
     /// buck-out path to store the reference to this volume
     output: PathBuf,
-    #[clap(long)]
-    /// buck-out path to refcount this output
-    keepalive: PathBuf,
     #[clap(flatten)]
     dnf: super::DnfCompileishArgs,
     #[cfg(facebook)]
@@ -126,12 +123,6 @@ impl Map {
             None => Subvolume::create(&dst).context("while creating new subvol")?,
         };
         debug!("produced r/w subvol '{subvol:?}'");
-        working_volume
-            .keep_path_alive(&dst, &self.setup.keepalive)
-            .context("while setting up refcount")?;
-        working_volume
-            .collect_garbage()
-            .context("while garbage collecting old outputs")?;
         Ok(subvol)
     }
 
@@ -244,7 +235,7 @@ impl Map {
             .wait()
             .context("while waiting for isolated process")?;
         if !res.success() {
-            return Err(anyhow::anyhow!("isolated command failed: {res}").into());
+            Err(anyhow::anyhow!("isolated command failed: {res}").into())
         } else {
             debug!("map finished, making subvol {subvol:?} readonly");
             rootless.as_root(|| subvol.set_readonly(true).context("while making subvol r/o"))??;
@@ -256,6 +247,14 @@ impl Map {
             let _ = std::fs::remove_file(&self.setup.output);
             std::os::unix::fs::symlink(subvol.path(), &self.setup.output)
                 .context("while making symlink")?;
+
+            working_volume
+                .keep_path_alive(subvol.path(), &self.setup.output)
+                .context("while setting up refcount")?;
+            working_volume
+                .collect_garbage()
+                .context("while garbage collecting old outputs")?;
+
             Ok(())
         }
     }

@@ -165,11 +165,9 @@ impl WorkingVolume {
     pub fn keep_path_alive(&self, allocated_path: &Path, buck_out_path: &Path) -> Result<()> {
         if no_gc() {
             trace!("gc is disabled");
-            File::create(buck_out_path)?;
             return Ok(());
         }
         let full_keepalive_path = self.resolve_redirection(&Self::keepalive_path(allocated_path));
-        File::create(&full_keepalive_path)?;
         trace!("incrementing refcount for {}", allocated_path.display());
 
         let buck_parent = buck_out_path
@@ -186,10 +184,10 @@ impl WorkingVolume {
             .join(buck_out_path.file_name().expect("cannot be /"));
         trace!(
             "hardlinking {} -> {}",
+            full_keepalive_path.display(),
             full_buck_out_path.display(),
-            full_keepalive_path.display()
         );
-        std::fs::hard_link(full_keepalive_path, full_buck_out_path)?;
+        std::fs::hard_link(full_buck_out_path, full_keepalive_path)?;
         Ok(())
     }
 
