@@ -270,6 +270,17 @@ layer, to a partition, to a disk image and make it bootable.
 `metalos/vm/disks/simple.bzl` uses these API to provide the default disk used
 above and also serves as an example.
 
+To build rootfs layer that boots with VM, one can do one of the following,
+assuming you are familiar with building antlir2 layers.
+1. If you have an antlir2 layer already, add feature
+   `vm.artifacts.rootfs.virtualization_features` should make it work with VM,
+   unless the existing layer has conflicting configs, which should be unlikely.
+   This is a better approach if you have elaborated antlir2 image builds for
+   production already.
+2. If you just want to add something to the default VM rootfs, use
+   `vm.artifacts.rootfs.layer` as `parent_layer` to add your features. This is
+   the easier approach to do light customization for your VM rootfs.
+
 Various folders inside `metalos/vm/` provides targets for initrd, kernel,
 bootloader, etc that one can use to complete the construction from layer to disk
 image. The goal is to provide anyone with an antlir2 image layer all the tools
