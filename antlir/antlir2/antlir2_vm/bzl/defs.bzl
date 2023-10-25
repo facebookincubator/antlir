@@ -218,5 +218,11 @@ vm = struct(
             disk_boot = "//antlir/antlir2/antlir2_vm:default-disk-boot",
             nvme_disk_boot = "//antlir/antlir2/antlir2_vm:default-nvme-disk-boot",
         ),
+        rootfs = struct(
+            # Base layer to start from when customizing VM rootfs layer
+            layer = "//metalos/vm/os:rootfs",
+            # Features to add onto an existing layer to make it work for VM
+            virtualization_features = "//metalos/vm/os:virtualization-features",
+        ),
     ),
 )
