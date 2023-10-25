@@ -1,8 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "export_file")
-# load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 
 oncall("twimage")
 
@@ -17,13 +16,9 @@ image.layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
-# package.sendstream_v2(
-#     name = "parent.sendstream",
-#     layer = ":parent",
-# )
-
-export_file(
+package.sendstream_v2(
     name = "parent.sendstream",
+    layer = ":parent",
 )
 
 image.layer(
@@ -37,14 +32,10 @@ image.layer(
     parent_layer = ":parent",
 )
 
-# package.sendstream_v2(
-#     name = "child.sendstream",
-#     incremental_parent = ":parent",
-#     layer = ":child",
-# )
-
-export_file(
+package.sendstream_v2(
     name = "child.sendstream",
+    incremental_parent = ":parent.sendstream",
+    layer = ":child",
 )
 
 image.layer(

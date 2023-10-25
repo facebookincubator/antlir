@@ -15,6 +15,10 @@ mount /image.btrfs /mnt/recv -o loop="$loopdev"
 
 pushd /mnt/recv
 
+# NOTE: it's very important to test that receiving the child FAILS before
+# receiving the parent, otherwise we could fool ourselves into believing that
+# this works but in fact are relying on the parent subvolume still existing and
+# being usable somewhere on the build host.
 if btrfs receive . < /child.sendstream; then
     echo "receive child should not have worked (yet)"
     exit 1

@@ -140,6 +140,11 @@ image.layer(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
+package.sendstream_v2(
+    name = "incremental-parent.sendstream.v2",
+    layer = ":incremental-parent",
+)
+
 image.layer(
     name = "incremental-child",
     features = [
@@ -153,6 +158,6 @@ image.layer(
 
 package.sendstream_v2(
     name = "incremental.sendstream.v2",
-    incremental_parent = ":incremental-parent",
+    incremental_parent = ":incremental-parent.sendstream.v2",
     layer = ":incremental-child",
 )
