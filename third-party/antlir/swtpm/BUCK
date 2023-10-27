@@ -9,7 +9,7 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # The default linker for c8 is 2.30 which has incompatible format for archives.
 # This is required for libffi coming from TP2 which uses ld 2.32
 
-oncall("twimage")
+oncall("antlir")
 
 export_files(files = ["00_configure"])
 

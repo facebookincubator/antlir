@@ -1,5 +1,7 @@
 load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
 
+oncall("antlir")
+
 constraint_setting(
     name = "family",
     visibility = ["PUBLIC"],

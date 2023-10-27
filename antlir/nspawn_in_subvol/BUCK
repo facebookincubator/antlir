@@ -5,7 +5,7 @@ load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "python_u
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
-oncall("twimage")
+oncall("antlir")
 
 # Gets test coverage via `:test-run`
 python_library(

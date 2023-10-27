@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
-oncall("twimage")
+oncall("antlir")
 
 rust_binary(
     name = "starlark-unittest",

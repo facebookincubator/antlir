@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "buck_filegroup", "export_file")
 
-oncall("twimage")
+oncall("antlir")
 
 # The static test keys were generated with the following commands:
 #

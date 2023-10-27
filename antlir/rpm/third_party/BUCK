@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "export_file")
 
-oncall("twimage")
+oncall("antlir")
 
 # This file is used for validating rpm version comparsion logic.  It is
 # retrieved from the upstream rpm source repo.  The test cases defined in

@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "cpp_binary")
 
-oncall("twimage")
+oncall("antlir")
 
 cpp_binary(
     name = "clonecaps",

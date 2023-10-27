@@ -6,7 +6,7 @@
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-oncall("twimage")
+oncall("antlir")
 
 third_party.build(
     name = "libtpms",

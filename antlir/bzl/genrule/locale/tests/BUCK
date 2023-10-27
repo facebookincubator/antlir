@@ -2,7 +2,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/genrule/locale:locale.bzl", "image_build_locale_archive")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-oncall("twimage")
+oncall("antlir")
 
 image_build_locale_archive(
     name = "build-multiple-locales",

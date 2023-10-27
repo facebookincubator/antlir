@@ -4,7 +4,7 @@ load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
-oncall("twimage")
+oncall("antlir")
 
 # The `busybox.install()` feature requires a source image.layer
 # from which to clone `/busybox` from.  These targets produce

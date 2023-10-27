@@ -7,7 +7,7 @@ load("@fbcode_macros//build_defs:export_files.bzl", "export_files")
 load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule")
 load(":defs.bzl", "hello_world_build_test")
 
-oncall("twimage")
+oncall("antlir")
 
 export_files(files = [
     "hello_world.c",

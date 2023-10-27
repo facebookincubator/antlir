@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "cxx_genrule", "export_file", "python_library", "python_unittest")
 
-oncall("twimage")
+oncall("antlir")
 
 export_file(
     name = "rename_shadowed.c",

@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "export_file", "rust_binary", "rust_library")
 
+oncall("antlir")
+
 rust_library(
     name = "image_test_lib",
     srcs = ["src/lib.rs"],

@@ -5,7 +5,7 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl/genrule/extractor:extract.bzl", "extract")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-oncall("twimage")
+oncall("antlir")
 
 image.layer(
     name = "deps",

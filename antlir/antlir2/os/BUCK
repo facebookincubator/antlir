@@ -1,6 +1,8 @@
 load("@prelude//:rules.bzl", "constraint_setting")
 load(":defs.bzl", "os_version")
 
+oncall("antlir")
+
 constraint_setting(
     name = "os",
     visibility = ["PUBLIC"],

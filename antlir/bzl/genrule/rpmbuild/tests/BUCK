@@ -4,7 +4,7 @@ load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl/genrule/rpmbuild:rpmbuild.bzl", "image_import_rpm_public_key_layer", "image_rpmbuild")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-oncall("twimage")
+oncall("antlir")
 
 export_file(
     name = "toy_srcs",

@@ -3,7 +3,7 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl/image/package:btrfs.bzl", "btrfs")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
-oncall("twimage")
+oncall("antlir")
 
 btrfs.new(
     name = "single-subvol",

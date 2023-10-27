@@ -6,7 +6,7 @@ load("//antlir/bzl:snapshot_install_dir.bzl", "ANTLIR_DIR")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
-oncall("twimage")
+oncall("antlir")
 
 # No test coverage because it has no logic.
 python_library(

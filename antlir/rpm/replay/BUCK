@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "export_file", "python_library")
 
-oncall("twimage")
+oncall("antlir")
 
 export_file(name = "fake_pty_real.py")
 

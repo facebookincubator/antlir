@@ -1,6 +1,8 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/feature:dot_meta.bzl", "dot_meta")
 
+oncall("antlir")
+
 feature.new(
     name = "dot-meta",
     features = [

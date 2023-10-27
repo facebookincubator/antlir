@@ -2,7 +2,7 @@ load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
-oncall("twimage")
+oncall("antlir")
 
 export_file(
     name = "eth0.link",

@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "rust_library")
 
+oncall("antlir")
+
 rust_library(
     name = "buck_version",
     srcs = ["src/lib.rs"],

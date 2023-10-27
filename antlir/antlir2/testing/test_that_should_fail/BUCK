@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
+oncall("antlir")
+
 rust_binary(
     name = "test-that-should-fail",
     srcs = glob(["src/**/*.rs"]),

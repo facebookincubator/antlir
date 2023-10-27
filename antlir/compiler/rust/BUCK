@@ -1,5 +1,7 @@
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
+oncall("antlir")
+
 antlir_rust_extension(
     name = "compiler",
     srcs = glob(["src/*rs"]),

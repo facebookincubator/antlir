@@ -4,7 +4,7 @@ load("//antlir/antlir2/bzl/package:btrfs.bzl", "BtrfsSubvol")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/bzl/package:gpt.bzl", "Partition", "PartitionType")
 
-oncall("twimage")
+oncall("antlir")
 
 image.layer(
     name = "btrfs-test-1",

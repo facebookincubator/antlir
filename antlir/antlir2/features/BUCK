@@ -1,7 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "export_file")
 load(":defs.bzl", "feature_impl")
 
-oncall("twimage")
+oncall("antlir")
 
 export_file(name = "plugin_entrypoint.rs")
 

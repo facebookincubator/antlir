@@ -1,6 +1,6 @@
 load("//antlir/bzl:shape.bzl", "shape")
 
-oncall("twimage")
+oncall("antlir")
 
 shape.impl(
     name = "clone.shape",
