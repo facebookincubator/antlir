@@ -6,7 +6,7 @@ load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-oncall("twimage")
+oncall("antlir")
 
 image.layer(
     name = "deps",

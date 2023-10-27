@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "rust_binary", "rust_library")
 
-oncall("twimage")
+oncall("antlir")
 
 rust_library(
     name = "antlir2_isolate",

@@ -1,6 +1,6 @@
 load("//antlir/bzl:build_defs.bzl", "python_binary")
 
-oncall("twimage")
+oncall("antlir")
 
 python_binary(
     # @autodeps-skip

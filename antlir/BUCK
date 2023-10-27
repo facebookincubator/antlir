@@ -13,7 +13,7 @@ load("//antlir/bzl:target_helpers.bzl", "json_targets_and_outputs")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
-oncall("twimage")
+oncall("antlir")
 
 python_library(
     name = "common",

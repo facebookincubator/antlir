@@ -5,7 +5,7 @@ load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo")
 load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
 
-oncall("twimage")
+oncall("antlir")
 
 image.layer(
     name = "empty",

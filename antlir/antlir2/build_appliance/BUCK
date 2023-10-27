@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 
-oncall("twimage")
+oncall("antlir")
 
 feature.new(
     name = "features",

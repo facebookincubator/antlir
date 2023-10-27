@@ -9,7 +9,7 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 
-oncall("twimage")
+oncall("antlir")
 
 image.layer(
     name = "test_compiler_item_layer",

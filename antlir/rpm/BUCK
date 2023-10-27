@@ -5,7 +5,7 @@ load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":defs.bzl", "test_rpm_repo_snapshot")
 
-oncall("twimage")
+oncall("antlir")
 
 python_library(
     name = "pluggable",

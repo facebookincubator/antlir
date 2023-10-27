@@ -3,7 +3,7 @@ load("//antlir/bzl:build_defs.bzl", "buck_genrule", "third_party")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:hoist.bzl", "hoist")
 
-oncall("twimage")
+oncall("antlir")
 
 [
     hoist(

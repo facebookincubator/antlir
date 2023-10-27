@@ -7,6 +7,8 @@
 
 load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "python_binary", "third_party")
 
+oncall("antlir")
+
 python_binary(
     name = "makechunk",
     srcs = ["makechunk.py"],

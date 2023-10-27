@@ -1,6 +1,8 @@
 load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_library")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
+oncall("antlir")
+
 rust_library(
     name = "buck_label",
     srcs = glob(["src/**/*.rs"]),

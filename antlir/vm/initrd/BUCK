@@ -2,7 +2,7 @@ load("//antlir/bzl:build_defs.bzl", "export_file", "is_buck2")
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/vm/bzl:initrd.bzl", "initrd")
 
-oncall("twimage")
+oncall("antlir")
 
 export_file(
     name = "modules.conf",

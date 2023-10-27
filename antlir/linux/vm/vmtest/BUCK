@@ -1,6 +1,6 @@
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
-oncall("twimage")
+oncall("antlir")
 
 feature.new(
     name = "maybe_mark_non_build_step",

@@ -2,6 +2,8 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load(":defs.bzl", "bad_depgraph", "good_depgraph")
 
+oncall("antlir")
+
 bad_depgraph(
     name = "cycle",
     error_regex = "^cycle in dependency graph:(.|\n)*install(.|\n)*user",

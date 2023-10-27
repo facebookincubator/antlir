@@ -8,6 +8,8 @@ load("//antlir/bzl:build_defs.bzl", "third_party")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load(":test.bzl", "test_variants")
 
+oncall("antlir")
+
 image.layer(
     name = "base",
     # systemd-v253 is broken on aarch64 under qemu-user emulation

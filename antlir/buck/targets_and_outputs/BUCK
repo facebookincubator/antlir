@@ -1,6 +1,8 @@
 load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_binary", "rust_library")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
+oncall("antlir")
+
 rust_library(
     name = "targets_and_outputs",
     srcs = glob(["src/**/*.rs"]),

@@ -2,7 +2,7 @@ load("//antlir/bzl:build_defs.bzl", "export_file", "is_buck2", "python_binary", 
 load("//antlir/bzl:kernel_shim.bzl", "kernels")
 load("//antlir/vm/bzl:defs.bzl", "vm")
 
-oncall("twimage")
+oncall("antlir")
 
 python_library(
     name = "common",

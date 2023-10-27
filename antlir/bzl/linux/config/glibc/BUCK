@@ -1,6 +1,6 @@
 load("//antlir/bzl:template.bzl", "template")
 
-oncall("twimage")
+oncall("antlir")
 
 template(
     name = "nsswitch",

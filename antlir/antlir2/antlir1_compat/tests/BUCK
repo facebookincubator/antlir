@@ -4,6 +4,8 @@
 load("//antlir/bzl:build_defs.bzl", "export_file")
 load(":common.bzl", "expand_common_targets")
 
+oncall("antlir")
+
 expand_common_targets()
 
 # Dummy exports so that buck2 td allows buck1 to build this target. The actual

@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/flavor:defs.bzl", "flavor")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
 
-oncall("twimage")
+oncall("antlir")
 
 repo_set(
     name = "empty-repo-set",

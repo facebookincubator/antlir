@@ -1,7 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "python_library")
 load(":defs.bzl", "buck_isolation_py")
 
-oncall("twimage")
+oncall("antlir")
 
 buck_isolation_py(name = "buck_isolation.py")
 

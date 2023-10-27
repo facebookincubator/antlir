@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "rust_binary")
 
+oncall("antlir")
+
 rust_binary(
     name = "image-diff-test",
     srcs = glob(["src/**/*.rs"]),

@@ -8,7 +8,7 @@ load("//antlir/bzl/starlark_unittest:defs.bzl", "starlark_unittest")
 load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load(":test_hoist.bzl", "test_hoist")
 
-oncall("twimage")
+oncall("antlir")
 
 # Powers `image.test_rpm_names`
 python_library(

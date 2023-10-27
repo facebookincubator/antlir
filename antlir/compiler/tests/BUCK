@@ -8,7 +8,7 @@ load("//antlir/bzl:layer_resource.bzl", "LAYER_SLASH_ENCODE", "layer_resource")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/compiler:defs.bzl", "READ_MY_DOC_image_feature_target", "TEST_IMAGE_PREFIX", "image_feature_python_unittest")
 
-oncall("twimage")
+oncall("antlir")
 
 python_unittest(
     name = "test-subvolume-on-disk",
