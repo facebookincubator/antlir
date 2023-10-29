@@ -19,6 +19,7 @@ TMPFILES_ROOT = "/etc/tmpfiles.d"
 # This is obviously not an exhaustive list, but are the only unit types that we
 # care about at the moment
 _ALLOWED_UNIT_SUFFIXES = (
+    ".device",
     ".mount",
     ".path",
     ".service",
