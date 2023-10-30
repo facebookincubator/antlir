@@ -160,7 +160,7 @@ class Test(unittest.TestCase):
         """
         tao = object.__new__(TargetsAndOutputs)
         self.assertIsInstance(tao, TargetsAndOutputs)
-        self.assertEquals(0, len(tao))
+        self.assertEqual(0, len(tao))
 
     def test_repr(self) -> None:
         """
