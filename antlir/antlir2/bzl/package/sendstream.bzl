@@ -104,6 +104,7 @@ def anon_v1_sendstream(
         attrs["layer"] = layer
     if build_appliance:
         attrs["build_appliance"] = build_appliance
+    attrs["name"] = str(attrs["layer"].label.raw_target()) + ".sendstream"
     return ctx.actions.anon_target(
         _sendstream,
         attrs,
