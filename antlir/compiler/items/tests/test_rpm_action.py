@@ -144,7 +144,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 opts=layer_opts,
             )
             # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEquals`.
-            self.assertEquals(
+            self.assertEqual(
                 "carrot 1 lockme\n",
                 subvol.path("/rpm_test/carrot.txt").read_text(),
             )
@@ -188,7 +188,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 _self_check()
                 # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute
                 #  `assertEquals`.
-                self.assertEquals(
+                self.assertEqual(
                     "veggie 1 rc0\n",
                     subvol.path("/rpm_test/veggie.txt").read_text(),
                 )
@@ -217,7 +217,7 @@ class RpmActionItemTestImpl(RpmActionItemTestBase):
                 opts=layer_opts,
             )
             # pyre-fixme[16]: `RpmActionItemTestImpl` has no attribute `assertEquals`.
-            self.assertEquals(
+            self.assertEqual(
                 "carrot 1 lockme\n",
                 subvol.path("/rpm_test/carrot.txt").read_text(),
             )
