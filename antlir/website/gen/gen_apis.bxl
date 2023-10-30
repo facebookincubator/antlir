@@ -3,9 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-# @starlark-rust: allow_string_literals_in_type_expr
-
-def _internal_rustdoc_url(target: "target_node") -> str:
+def _internal_rustdoc_url(target: bxl.ConfiguredTargetNode) -> str:
     lazy = target.attrs_lazy()
     crate = lazy.get("crate").value()
     if not crate:
