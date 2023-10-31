@@ -26,4 +26,4 @@ ExecStart=/fake-service generated
 
 os.symlink(fake_service_path, multi_user_wants + "/" + fake_service)
 
-open("/fake-systemd-generator-ran", "w").close()
+open(sys.argv[1] + "/fake-systemd-generator-ran", "w").close()
