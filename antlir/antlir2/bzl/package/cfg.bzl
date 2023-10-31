@@ -4,10 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
+load("//antlir/antlir2/bzl/image:cfg.bzl", _cfg_attrs = "cfg_attrs")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
+
+cfg_attrs = _cfg_attrs
 
 # Let the layer be configured by the same configuration attrs in image.layer
 layer_attrs = {
@@ -20,8 +22,6 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
     if attrs.target_arch:
         target_arch = getattr(refs, "arch." + attrs.target_arch)[ConstraintValueInfo]
         constraints[target_arch.setting.label] = target_arch
-        if is_facebook:
-            constraints = transition_fbcode_platform(refs, attrs, constraints)
 
     if attrs.default_os:
         constraints = os_transition(
@@ -32,6 +32,9 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
             # installed into another image
             overwrite = True,
         )
+
+    if is_facebook:
+        constraints = fb_transition(refs, attrs, constraints)
 
     label = platform.label
 

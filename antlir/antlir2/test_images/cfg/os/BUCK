@@ -2,11 +2,19 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/rpm/dnf2buck:repo.bzl", "repo")
 load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
 load(":defs.bzl", "write_os")
 
 oncall("antlir")
+
+# This single-constraint select is useful to ensure that we can select on an ROU
+# and that the default of stable is actually configured and we don't need to
+# rely on DEFAULT
+test_rpm_root = select({
+    "//antlir/antlir2/os/facebook:rou-stable": "test-rpm-root",
+}) if is_facebook else "test-rpm-root"
 
 image.layer(
     name = "root",
@@ -21,7 +29,7 @@ image.layer(
             "coreutils",
             "rpm",
             # @oss-disable
-            "test-rpm-root",
+            test_rpm_root,
         ]),
         write_os("/root.os"),
     ],

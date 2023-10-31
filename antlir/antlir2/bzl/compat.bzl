@@ -51,7 +51,20 @@ def _flavor_config_override_to_versionlock_extend(flavor_config_override):
             )
     return versionlock_extend
 
+def _default_rou_from_antlir1_flavor(flavor: str | typing.Any) -> str:
+    if not types.is_string(flavor):
+        flavor = flavor.unaliased_name
+    parts = flavor.split("-")
+    if len(parts) >= 2:
+        if parts[-2] == "rou":
+            phase = parts[-1]
+            if phase == "testing" or phase == "untested":
+                return "test"
+            return phase
+    return "stable"
+
 compat = struct(
     from_antlir1_flavor = _from_antlir1_flavor,
     flavor_config_override_to_versionlock_extend = _flavor_config_override_to_versionlock_extend,
+    default_rou_from_antlir1_flavor = _default_rou_from_antlir1_flavor,
 )
