@@ -51,6 +51,8 @@ ParseTimeFeature = record(
     # hidden internal layer(s) that acts as the parent layer(s) for the final
     # image.
     build_phase = field(BuildPhase, default = BuildPhase("compile")),
+    # Set `compatible_with` on the feature / layer target
+    compatible_with = field(list[str] | None, default = None),
 )
 
 # Produced by the feature implementation, this tells the rule how to build it

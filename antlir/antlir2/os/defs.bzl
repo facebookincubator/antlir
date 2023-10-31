@@ -8,6 +8,7 @@ load("@prelude//:rules.bzl", "config_setting", "constraint_value")
 OsVersionInfo = provider(fields = [
     "constraint",
     "family",
+    "package_manager",
 ])
 
 def _os_version_rule_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -17,6 +18,7 @@ def _os_version_rule_impl(ctx: AnalysisContext) -> list[Provider]:
         OsVersionInfo(
             constraint = ctx.attrs.constraint,
             family = ctx.attrs.family,
+            package_manager = ctx.attrs.package_manager,
         ),
     ]
 
@@ -26,12 +28,14 @@ _os_version_rule = rule(
         "config_setting": attrs.dep(providers = [ConfigurationInfo]),
         "constraint": attrs.dep(providers = [ConstraintValueInfo]),
         "family": attrs.dep(providers = [ConstraintValueInfo]),
+        "package_manager": attrs.dep(providers = [ConstraintValueInfo]),
     },
 )
 
 def os_version(
         name: str,
-        family: str):
+        family: str,
+        package_manager: str):
     constraint_value(
         name = name + ".constraint",
         constraint_setting = "//antlir/antlir2/os:os",
@@ -42,6 +46,7 @@ def os_version(
         constraint_values = [
             ":{}.constraint".format(name),
             family,
+            package_manager,
         ],
         visibility = ["PUBLIC"],
     )
@@ -50,4 +55,5 @@ def os_version(
         family = family,
         constraint = ":{}.constraint".format(name),
         config_setting = ":{}.config".format(name),
+        package_manager = package_manager,
     )

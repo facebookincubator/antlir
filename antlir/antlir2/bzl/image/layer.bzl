@@ -565,6 +565,9 @@ def layer(
         fail("default_os= is preferred, stop setting flavor=")
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
+    compatible_with = kwargs.pop("compatible_with", []) or []
+    compatible_with.extend(kwargs.pop("_feature_compatible_with", []))
+    kwargs["compatible_with"] = compatible_with
 
     if is_facebook:
         # available_fbpkgs is logically an optional dep, but to make it truly

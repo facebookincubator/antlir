@@ -34,7 +34,7 @@ _base_sendstream_args = {
 def _is_ancestor(*, layer: LayerInfo, parent: Dependency):
     if not layer.parent:
         return False
-    elif layer.parent.label == parent.label:
+    elif layer.parent.label.raw_target() == parent.label.raw_target():
         return True
     else:
         return _is_ancestor(layer = layer.parent[LayerInfo], parent = parent)
