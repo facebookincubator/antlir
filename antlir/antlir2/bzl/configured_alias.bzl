@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl/image/facebook:fb_cfg.bzl", "fbcode_platform_refs", "transition_fbcode_platform")
+# @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
@@ -14,8 +14,6 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
     if attrs.target_arch:
         target_arch = getattr(refs, "arch." + attrs.target_arch)[ConstraintValueInfo]
         constraints[target_arch.setting.label] = target_arch
-        if is_facebook:
-            constraints = transition_fbcode_platform(refs, attrs, constraints)
 
     constraints = os_transition(
         default_os = attrs.default_os,
@@ -23,6 +21,9 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
         constraints = constraints,
         overwrite = True,
     )
+
+    if is_facebook:
+        constraints = fb_transition(refs, attrs, constraints)
 
     return PlatformInfo(
         label = platform.label,
@@ -41,7 +42,10 @@ _transition = transition(
         # @oss-disable
         # @oss-enable {}
     ) | os_transition_refs(),
-    attrs = ["default_os", "target_arch"],
+    attrs = ["default_os", "target_arch"] + (
+        # @oss-disable
+        [] # @oss-enable
+    ),
 )
 
 def _configured_alias_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -57,7 +61,10 @@ _configured_alias = rule(
             default = None,
             doc = "Build for a specific target arch without using `buck -c`",
         ),
-    },
+    } | (
+        # @oss-disable
+        # @oss-enable {}
+    ),
 )
 
 antlir2_configured_alias = rule_with_default_target_platform(_configured_alias)

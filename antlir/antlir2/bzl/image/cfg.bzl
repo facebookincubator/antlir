@@ -12,7 +12,7 @@ Currently this supports reconfiguring the target cpu architecture.
 """
 
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
-load("//antlir/antlir2/bzl/image/facebook:fb_cfg.bzl", "fbcode_platform_refs", "transition_fbcode_platform")
+# @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs", "remove_os_constraints")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
@@ -30,7 +30,10 @@ def cfg_attrs():
             default = None,
             doc = "Build this image for a specific target arch without using `buck -c`",
         ),
-    }
+    } | (
+        # @oss-disable
+        # @oss-enable {}
+    )
 
 def attrs_selected_by_cfg():
     return {
@@ -38,9 +41,24 @@ def attrs_selected_by_cfg():
         "flavor": attrs.option(
             attrs.dep(providers = [FlavorInfo]),
             default = select({
-                "//antlir/antlir2/os:centos8": "//antlir/antlir2/facebook/flavor/centos8:centos8",
-                "//antlir/antlir2/os:centos9": "//antlir/antlir2/facebook/flavor/centos9:centos9",
-                "//antlir/antlir2/os:eln": "//antlir/antlir2/facebook/flavor/eln:eln",
+                "//antlir/antlir2/os:centos8": select({
+                    "//antlir/antlir2/os/facebook:rou-preparation": "//antlir/antlir2/facebook/flavor/centos8-rou-preparation:centos8-rou-preparation",
+                    "//antlir/antlir2/os/facebook:rou-rolling": "//antlir/antlir2/facebook/flavor/centos8-rou-rolling:centos8-rou-rolling",
+                    "//antlir/antlir2/os/facebook:rou-stable": "//antlir/antlir2/facebook/flavor/centos8:centos8",
+                    "//antlir/antlir2/os/facebook:rou-test": "//antlir/antlir2/facebook/flavor/centos8-rou-untested:centos8-rou-untested",
+                }),
+                "//antlir/antlir2/os:centos9": select({
+                    "//antlir/antlir2/os/facebook:rou-preparation": "//antlir/antlir2/facebook/flavor/centos9-rou-preparation:centos9-rou-preparation",
+                    "//antlir/antlir2/os/facebook:rou-rolling": "//antlir/antlir2/facebook/flavor/centos9-rou-rolling:centos9-rou-rolling",
+                    "//antlir/antlir2/os/facebook:rou-stable": "//antlir/antlir2/facebook/flavor/centos9:centos9",
+                    "//antlir/antlir2/os/facebook:rou-test": "//antlir/antlir2/facebook/flavor/centos9-rou-untested:centos9-rou-untested",
+                }),
+                "//antlir/antlir2/os:eln": select({
+                    "//antlir/antlir2/os/facebook:rou-preparation": "//antlir/antlir2/facebook/flavor/eln-rou-preparation:eln-rou-preparation",
+                    "//antlir/antlir2/os/facebook:rou-rolling": "//antlir/antlir2/facebook/flavor/eln-rou-rolling:eln-rou-rolling",
+                    "//antlir/antlir2/os/facebook:rou-stable": "//antlir/antlir2/facebook/flavor/eln:eln",
+                    "//antlir/antlir2/os/facebook:rou-test": "//antlir/antlir2/facebook/flavor/eln-rou-untested:eln-rou-untested",
+                }),
                 "//antlir/antlir2/os:none": "//antlir/antlir2/flavor:none",
                 # TODO: in D49383768 this will be disallowed so that we can
                 # guarantee that we'll never end up building a layer without
@@ -56,8 +74,6 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     if attrs.target_arch:
         target_arch = getattr(refs, "arch." + attrs.target_arch)[ConstraintValueInfo]
         constraints[target_arch.setting.label] = target_arch
-        if is_facebook:
-            constraints = transition_fbcode_platform(refs, attrs, constraints)
 
     if attrs.default_os:
         # The rule transition to set the default antlir2 OS only happens if the
@@ -82,6 +98,9 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     # constraints to avoid circular dependencies.
     if attrs.antlir_internal_build_appliance:
         constraints = remove_os_constraints(refs = refs, constraints = constraints)
+
+    if is_facebook:
+        constraints = fb_transition(refs, attrs, constraints)
 
     label = platform.label
 
@@ -134,5 +153,6 @@ remove_os_constraint = transition(
         "os_constraint": "//antlir/antlir2/os:os",
         "os_family_constraint": "//antlir/antlir2/os/family:family",
         "package_manager_constraint": "//antlir/antlir2/os/package_manager:package_manager",
+        # @oss-disable
     },
 )

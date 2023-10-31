@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load(":defs.bzl", "OsVersionInfo")
 
 _OS_REFS = {
@@ -39,4 +40,6 @@ def remove_os_constraints(*, constraints, refs):
     constraints.pop(refs.os_constraint[ConstraintSettingInfo].label, None)
     constraints.pop(refs.os_family_constraint[ConstraintSettingInfo].label, None)
     constraints.pop(refs.package_manager_constraint[ConstraintSettingInfo].label, None)
+    if is_facebook:
+        constraints.pop(refs.rou_constraint[ConstraintSettingInfo].label, None)
     return constraints

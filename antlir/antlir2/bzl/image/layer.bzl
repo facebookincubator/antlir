@@ -541,6 +541,7 @@ def layer(
         default_os: str | None = None,
         # TODO: remove this flag when all images are using this new mechanism
         use_default_os_from_package: bool | None = None,
+        default_rou: str | None = None,
         # We'll implicitly forward some users to antlir2, so any hacks for them
         # should be confined behind this flag
         implicit_antlir2: bool = False,
@@ -554,6 +555,8 @@ def layer(
     if implicit_antlir2:
         flavor = kwargs.pop("flavor", None)
         kwargs["flavor"] = compat.from_antlir1_flavor(flavor) if flavor else None
+        if is_facebook:
+            default_rou = compat.default_rou_from_antlir1_flavor(flavor) if flavor else None
 
     if use_default_os_from_package == None:
         use_default_os_from_package = should_all_images_in_package_use_default_os()
@@ -563,6 +566,8 @@ def layer(
     # TODO(vmagro): codemod existing callsites to use default_os directly
     if "flavor" in kwargs and default_os:
         fail("default_os= is preferred, stop setting flavor=")
+    if kwargs.get("flavor", None) and not default_rou:
+        default_rou = compat.default_rou_from_antlir1_flavor(kwargs["flavor"])
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
     compatible_with = kwargs.pop("compatible_with", []) or []
@@ -596,6 +601,7 @@ def layer(
     return layer_rule(
         name = name,
         default_os = default_os,
+        default_rou = default_rou,
         visibility = get_visibility(visibility),
         _implicit_image_test = "//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
         **kwargs

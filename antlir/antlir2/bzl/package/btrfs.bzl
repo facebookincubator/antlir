@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/package:cfg.bzl", "package_cfg")
+load("//antlir/antlir2/bzl/package:cfg.bzl", "cfg_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
 load(":sendstream.bzl", "anon_v1_sendstream")
 
@@ -83,9 +83,7 @@ _btrfs = rule(
             ),
             default = None,
         ),
-        # used by transition
-        "target_arch": attrs.option(attrs.string(), default = None),
-    },
+    } | cfg_attrs(),
     cfg = package_cfg,
 )
 
