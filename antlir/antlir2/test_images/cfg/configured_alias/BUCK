@@ -1,0 +1,33 @@
+load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_unittest")
+
+export_file(
+    name = "f",
+    src = select({
+        "//antlir/antlir2/os:centos8": "c8",
+        "//antlir/antlir2/os:centos9": "c9",
+        "DEFAULT": "default",
+    }),
+)
+
+antlir2_configured_alias(
+    name = "f.c8",
+    actual = ":f",
+    default_os = "centos8",
+)
+
+antlir2_configured_alias(
+    name = "f.c9",
+    actual = ":f",
+    default_os = "centos9",
+)
+
+python_unittest(
+    name = "test",
+    srcs = ["test.py"],
+    resources = {
+        ":f": "f.default",
+        ":f.c8": "f.centos8",
+        ":f.c9": "f.centos9",
+    },
+)
