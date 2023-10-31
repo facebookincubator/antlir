@@ -11,8 +11,9 @@ distinct from the default target platform used by the `buck2 build`.
 Currently this supports reconfiguring the target cpu architecture.
 """
 
+load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 load("//antlir/antlir2/bzl/image/facebook:fb_cfg.bzl", "fbcode_platform_refs", "transition_fbcode_platform")
-load("//antlir/antlir2/os:defs.bzl", "OsVersionInfo")
+load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs", "remove_os_constraints")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
 def cfg_attrs():
@@ -31,6 +32,24 @@ def cfg_attrs():
         ),
     }
 
+def attrs_selected_by_cfg():
+    return {
+        # only attrs.option because it cannot be set on build appliance layers
+        "flavor": attrs.option(
+            attrs.dep(providers = [FlavorInfo]),
+            default = select({
+                "//antlir/antlir2/os:centos8": "//antlir/antlir2/facebook/flavor/centos8:centos8",
+                "//antlir/antlir2/os:centos9": "//antlir/antlir2/facebook/flavor/centos9:centos9",
+                "//antlir/antlir2/os:eln": "//antlir/antlir2/facebook/flavor/eln:eln",
+                "//antlir/antlir2/os:none": "//antlir/antlir2/flavor:none",
+                # TODO: in D49383768 this will be disallowed so that we can
+                # guarantee that we'll never end up building a layer without
+                # configuring the os
+                "DEFAULT": None,
+            }),
+        ),
+    }
+
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     constraints = platform.configuration.constraints
 
@@ -41,24 +60,22 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
             constraints = transition_fbcode_platform(refs, attrs, constraints)
 
     if attrs.default_os:
-        os = getattr(refs, "os." + attrs.default_os)[OsVersionInfo]
-        os_constraint = os.constraint[ConstraintValueInfo]
-        family = os.family[ConstraintValueInfo]
-
         # The rule transition to set the default antlir2 OS only happens if the
         # target has not been configured for a specific OS yet. This way the dep
-        # transition takes precedence - in other words, the default_os attribute of
-        # the leaf image being built is always respected and reconfigures all layers
-        # along the parent_layer chain
-        if os_constraint.setting.label not in constraints:
-            constraints[os_constraint.setting.label] = os_constraint
-            constraints[family.setting.label] = family
+        # transition takes precedence - in other words, the default_os attribute
+        # of the leaf image being built is always respected and reconfigures all
+        # layers along the parent_layer chain
+        constraints = os_transition(
+            default_os = attrs.default_os,
+            refs = refs,
+            constraints = constraints,
+            overwrite = False,
+        )
 
     # If a build appliance is being built, we must remove the OS configuration
     # constraint to avoid circular dependencies.
     if attrs.antlir_internal_build_appliance:
-        constraints.pop(refs.os_constraint[ConstraintSettingInfo].label, None)
-        constraints.pop(refs.os_family_constraint[ConstraintSettingInfo].label, None)
+        constraints = remove_os_constraints(refs = refs, constraints = constraints)
 
     label = platform.label
 
@@ -79,16 +96,10 @@ layer_cfg = transition(
     refs = {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
-        "os.centos8": "//antlir/antlir2/os:centos8",
-        "os.centos9": "//antlir/antlir2/os:centos9",
-        "os.eln": "//antlir/antlir2/os:eln",
-        "os.none": "//antlir/antlir2/os:none",
-        "os_constraint": "//antlir/antlir2/os:os",
-        "os_family_constraint": "//antlir/antlir2/os/family:family",
     } | (
         # @oss-disable
         # @oss-enable {}
-    ),
+    ) | os_transition_refs(),
     attrs = cfg_attrs().keys() + [
         # Build appliances are very low level and cannot depend on a flavor, so
         # they are just not transitioned to an os configuration
@@ -97,9 +108,10 @@ layer_cfg = transition(
 )
 
 def _remove_os_impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
-    constraints = platform.configuration.constraints
-    constraints.pop(refs.os_constraint[ConstraintSettingInfo].label, None)
-    constraints.pop(refs.os_family_constraint[ConstraintSettingInfo].label, None)
+    constraints = remove_os_constraints(
+        refs = refs,
+        constraints = platform.configuration.constraints,
+    )
     return PlatformInfo(
         label = platform.label,
         configuration = ConfigurationInfo(

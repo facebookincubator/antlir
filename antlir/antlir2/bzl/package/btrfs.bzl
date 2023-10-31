@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/package:cfg.bzl", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
 load(":sendstream.bzl", "anon_v1_sendstream")
 
@@ -60,6 +61,8 @@ _btrfs = rule(
         "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = "//antlir/antlir2/antlir2_packager/btrfs_packager:btrfs-packager")),
         "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "compression_level": attrs.int(default = 3),
+        # used by transition
+        "default_os": attrs.option(attrs.string(), default = None),
         "default_subvol": attrs.option(attrs.string()),
         "free_mb": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
@@ -80,7 +83,10 @@ _btrfs = rule(
             ),
             default = None,
         ),
+        # used by transition
+        "target_arch": attrs.option(attrs.string(), default = None),
     },
+    cfg = package_cfg,
 )
 
 btrfs = rule_with_default_target_platform(_btrfs)
