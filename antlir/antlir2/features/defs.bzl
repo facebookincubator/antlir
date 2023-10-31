@@ -27,7 +27,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     # we get left with only the plugin .so and none of its dependencies
     link_info = ctx.attrs.lib[RustLinkInfo]
     lib_dir_map = {}
-    for dep in link_info.non_rust_exported_link_deps:
+    for dep in link_info.exported_link_deps:
         lib_dir_map.update({
             soname: lib.lib.output
             for soname, lib in dep[SharedLibraryInfo].set.value.libraries.items()
