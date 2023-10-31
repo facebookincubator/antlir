@@ -785,7 +785,7 @@ set -x
 run_log=$(/fake-service only_write_to_stdout) && echo can_run
 [[ "$run_log" = "fake_service: only_write_to_stdout" ]] && echo run_ok
 
-[[ -f /fake-systemd-generator-ran ]] && echo gen_ok
+[[ -f /run/systemd/generator/fake-systemd-generator-ran ]] && echo gen_ok
 [[ -f /fake-generated-service-ran ]] && echo gen_svc_ok
 [[ -f /fake-static-service-ran ]] && echo static_svc_ok
 
