@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:configured_alias.bzl", "antlir2_configured_alias")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
@@ -103,68 +104,94 @@ image.layer(
 # rpm installation based on flavor reconfiguration at every level of the
 # parent_layer chain.
 
-all_rpms = []
-
 [
     [
         image.layer(
-            name = "rpm." + level + "." + f,
+            name = "rpm." + level,
             features = [
                 feature.install_text(
                     dst = "/test_rpm_" + level,
-                    text = f,
+                    text = select({
+                        "//antlir/antlir2/os:centos8": "centos8",
+                        "//antlir/antlir2/os:centos9": "centos9",
+                        "//antlir/antlir2/os:eln": "eln",
+                        "DEFAULT": "default",
+                    }),
                 ),
             ],
             visibility = [],
         ),
         package.rpm(
-            name = "rpm." + level + "." + f + "--package",
+            name = "rpm." + level + "--package",
             arch = "noarch",
-            layer = ":rpm." + level + "." + f,
+            layer = ":rpm." + level,
             license = "None",
             release = "1",
-            requires = requires,
+            requires = select({
+                # Can't know what the exact version is, so do a >= on the major
+                # and < on major+1 to match things like 8.6 for c8
+                "//antlir/antlir2/os:centos8": [
+                    "centos-stream-release >= 8",
+                    "centos-stream-release < 9",
+                ],
+                "//antlir/antlir2/os:centos9": [
+                    "centos-stream-release >= 9",
+                    "centos-stream-release < 10",
+                ],
+                "//antlir/antlir2/os:eln": [
+                    "fedora-release-eln",
+                ],
+                "DEFAULT": [],
+            }),
             rpm_name = "test-rpm-" + level,
-            version = f,
+            version = select({
+                "//antlir/antlir2/os:centos8": "centos8",
+                "//antlir/antlir2/os:centos9": "centos9",
+                "//antlir/antlir2/os:eln": "eln",
+                "DEFAULT": "default",
+            }),
             visibility = [],
         ),
         rpm(
-            name = "test-rpm-" + level + "." + f,
+            name = "test-rpm-" + level,
             arch = "noarch",
             epoch = 0,
             release = "1",
-            rpm = ":rpm." + level + "." + f + "--package",
+            rpm = ":rpm." + level + "--package",
             rpm_name = "test-rpm-" + level,
             sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
-            version = f,
+            version = select({
+                "//antlir/antlir2/os:centos8": "centos8",
+                "//antlir/antlir2/os:centos9": "centos9",
+                "//antlir/antlir2/os:eln": "eln",
+                "DEFAULT": "default",
+            }),
             visibility = [
             ],
         ),
-        all_rpms.append(":test-rpm-" + level + "." + f),
     ]
-    for (f, requires) in [
-        # Can't know what the exact version is, so do a >= on the major and < on
-        # major+1 to match things like 8.6 for c8
-        (
-            "centos8",
-            [
-                "centos-stream-release >= 8",
-                "centos-stream-release < 9",
-            ],
+    for level in [
+        "root",
+        "intermediate",
+        "leaf",
+    ]
+]
+
+all_rpms = []
+
+[
+    [
+        antlir2_configured_alias(
+            name = "test-rpm-" + level + "." + os,
+            actual = ":test-rpm-" + level,
+            default_os = os,
         ),
-        (
-            "centos9",
-            [
-                "centos-stream-release >= 9",
-                "centos-stream-release < 10",
-            ],
-        ),
-        (
-            "eln",
-            [
-                "fedora-release-eln",
-            ],
-        ),
+        all_rpms.append(":test-rpm-" + level + "." + os),
+    ]
+    for os in [
+        "centos8",
+        "centos9",
+        "eln",
     ]
     for level in [
         "root",
