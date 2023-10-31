@@ -6,11 +6,13 @@
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "shared_features_attrs")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
 
 def _impl(ctx: AnalysisContext) -> Promise:
     return ctx.actions.anon_target(layer_rule, {
         "antlir2": ctx.attrs._antlir2,
+        "flavor": ctx.attrs.flavor,
         "name": str(ctx.label.raw_target()),
         "parent_layer": ctx.attrs.layer,
         "target_arch": ctx.attrs._target_arch,
@@ -35,7 +37,7 @@ stamp_buildinfo_rule = rule(
             {
                 "_feature_" + key: val
                 for key, val in shared_features_attrs.items()
-            },
+            } | attrs_selected_by_cfg(),
     doc = """
     Stamp build info into a layer that is about to be packaged up.
     """,

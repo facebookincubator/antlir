@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
 
 SendstreamInfo = provider(fields = [
     "sendstream",  # 'artifact' that is the btrfs sendstream
@@ -83,10 +84,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
 _sendstream = anon_rule(
     impl = _impl,
-    attrs = _base_sendstream_args,
     artifact_promise_mappings = {
         "anon_v1_sendstream": lambda x: x[SendstreamInfo].sendstream,
     },
+    attrs = _base_sendstream_args | layer_attrs,
 )
 
 sendstream = rule_with_default_target_platform(_sendstream)
@@ -142,7 +143,8 @@ _sendstream_zst = rule(
     impl = _zst_impl,
     attrs = {
         "compression_level": attrs.int(default = 3),
-    } | _base_sendstream_args,
+    } | _base_sendstream_args | layer_attrs,
+    cfg = package_cfg,
 )
 
 sendstream_zst = rule_with_default_target_platform(_sendstream_zst)
@@ -183,7 +185,8 @@ _sendstream_v2 = rule(
     attrs = {
         "compression_level": attrs.int(default = 3),
         "sendstream_upgrader": attrs.default_only(attrs.exec_dep(default = "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade")),
-    } | _base_sendstream_args,
+    } | _base_sendstream_args | layer_attrs,
+    cfg = package_cfg,
 )
 
 sendstream_v2 = rule_with_default_target_platform(_sendstream_v2)

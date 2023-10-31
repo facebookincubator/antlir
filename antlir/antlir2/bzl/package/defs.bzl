@@ -3,10 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "default_target_platform_kwargs", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "default_target_platform_kwargs")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":btrfs.bzl", "btrfs")
+load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
@@ -14,8 +17,7 @@ load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 # Attrs that are required by all packages
 _common_attrs = {
     "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
-    "layer": attrs.dep(providers = [LayerInfo]),
-}
+} | layer_attrs
 
 # Attrs that will only ever be used as default_only
 _default_attrs = {
@@ -27,7 +29,7 @@ _default_attrs = {
     "_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),
-}
+} | {k: attrs.default_only(v) for k, v in attrs_selected_by_cfg().items()}
 
 def _generic_impl_with_layer(
         layer: [Dependency, ProviderCollection],
@@ -76,6 +78,7 @@ def _generic_impl(
         can_be_partition: bool):
     if dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
+            "flavor": ctx.attrs.flavor,
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
             "_antlir2": ctx.attrs._antlir2,
@@ -192,6 +195,7 @@ def _new_compressed_package_rule(
         attrs = _default_attrs | _common_attrs | rule_attrs | {
             "compression_level": attrs.int(default = default_compression_level),
         },
+        cfg = package_cfg,
     )
 
 _cpio = _new_package_rule(
@@ -274,37 +278,55 @@ _ext3 = _new_package_rule(
     can_be_partition = True,
 )
 
+def _package_macro(buck_rule):
+    def _inner(
+            use_default_os_from_package: bool | None = None,
+            default_os: str | None = None,
+            **kwargs):
+        if use_default_os_from_package == None:
+            use_default_os_from_package = should_all_images_in_package_use_default_os()
+        if use_default_os_from_package:
+            # get_default_os_for_package reads the closest PACKAGE file, it has
+            # nothing to do with antlir2 output packages
+            default_os = default_os or get_default_os_for_package()
+        buck_rule(
+            default_os = default_os,
+            **(kwargs | default_target_platform_kwargs())
+        )
+
+    return _inner
+
 def _backwards_compatible_new(format: str, **kwargs):
     {
         "btrfs": btrfs,
-        "cpio.gz": _cpio_gz,
-        "cpio.zst": _cpio_zst,
-        "ext3": _ext3,
-        "rpm": _rpm,
+        "cpio.gz": _package_macro(_cpio_gz),
+        "cpio.zst": _package_macro(_cpio_zst),
+        "ext3": _package_macro(_ext3),
+        "rpm": _package_macro(_rpm),
         "sendstream": sendstream,
         "sendstream.v2": sendstream_v2,
         "sendstream.zst": sendstream_zst,
-        "squashfs": _squashfs,
-        "tar.gz": _tar_gz,
-        "tar.zst": _tar_zst,
-        "vfat": _vfat,
+        "squashfs": _package_macro(_squashfs),
+        "tar.gz": _package_macro(_tar_gz),
+        "tar.zst": _package_macro(_tar_zst),
+        "vfat": _package_macro(_vfat),
     }[format](
-        **(default_target_platform_kwargs() | kwargs)
+        **kwargs
     )
 
 package = struct(
     backward_compatible_new = _backwards_compatible_new,
     btrfs = btrfs,
-    ext3 = rule_with_default_target_platform(_ext3),
-    cpio_gz = rule_with_default_target_platform(_cpio_gz),
-    cpio_zst = rule_with_default_target_platform(_cpio_zst),
+    ext3 = _package_macro(_ext3),
+    cpio_gz = _package_macro(_cpio_gz),
+    cpio_zst = _package_macro(_cpio_zst),
     gpt = gpt,
-    rpm = rule_with_default_target_platform(_rpm),
+    rpm = _package_macro(_rpm),
     sendstream = sendstream,
     sendstream_v2 = sendstream_v2,
     sendstream_zst = sendstream_zst,
-    squashfs = rule_with_default_target_platform(_squashfs),
-    tar_gz = rule_with_default_target_platform(_tar_gz),
-    tar_zst = rule_with_default_target_platform(_tar_zst),
-    vfat = rule_with_default_target_platform(_vfat),
+    squashfs = _package_macro(_squashfs),
+    tar_gz = _package_macro(_tar_gz),
+    tar_zst = _package_macro(_tar_zst),
+    vfat = _package_macro(_vfat),
 )

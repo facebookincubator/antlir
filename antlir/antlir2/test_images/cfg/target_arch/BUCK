@@ -30,7 +30,6 @@ image.layer(
             ),
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
     parent_layer = ":parent",
     target_arch = "x86_64",
 )
@@ -46,7 +45,6 @@ image.layer(
             ),
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
     parent_layer = ":parent",
     target_arch = "aarch64",
 )

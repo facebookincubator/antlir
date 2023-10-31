@@ -24,7 +24,7 @@ load("//antlir/bzl:types.bzl", "types")
 load("//antlir/rpm/dnf2buck:repo.bzl", "RepoInfo", "RepoSetInfo")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
-load(":cfg.bzl", "cfg_attrs", "layer_cfg", "remove_os_constraint")
+load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg", "remove_os_constraint")
 load(":depgraph.bzl", "build_depgraph")
 load(":mounts.bzl", "all_mounts", "container_mount_args")
 
@@ -97,9 +97,6 @@ def _implicit_image_test(subvol: Artifact, implicit_image_test: ExternalRunnerTe
     return implicit_image_test
 
 def _impl(ctx: AnalysisContext) -> Promise:
-    if not ctx.attrs.flavor and not ctx.attrs.parent_layer:
-        fail("'flavor' must be set if there is no 'parent_layer'")
-
     feature_anon_kwargs = {key.removeprefix("_feature_"): getattr(ctx.attrs, key) for key in dir(ctx.attrs) if key.startswith("_feature_")}
     feature_anon_kwargs["_objcopy"] = ctx.attrs._objcopy
     feature_anon_kwargs["name"] = str(ctx.label.raw_target())
@@ -109,9 +106,20 @@ def _impl(ctx: AnalysisContext) -> Promise:
     ).promise.map(partial(_impl_with_features, ctx = ctx))
 
 def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -> list[Provider]:
-    flavor = ctx.attrs.flavor or ctx.attrs.parent_layer[LayerInfo].flavor
+    flavor = None
+    if ctx.attrs.parent_layer and ctx.attrs.flavor:
+        parent_flavor = ctx.attrs.parent_layer[LayerInfo].flavor
+        if parent_flavor and ctx.attrs.flavor.label != parent_flavor.label:
+            fail("flavor ({}) was different from parent_layer's flavor ({})".format(
+                ctx.attrs.flavor.label,
+                parent_flavor.label,
+            ))
+    if ctx.attrs.parent_layer:
+        flavor = ctx.attrs.parent_layer[LayerInfo].flavor
+    if not flavor:
+        flavor = ctx.attrs.flavor
     if not ctx.attrs.antlir_internal_build_appliance and not flavor:
-        fail("flavor= was not set, and {} does not have a flavor".format(ctx.attrs.parent_layer.label))
+        fail("`flavor` is required")
     flavor_info = flavor[FlavorInfo] if flavor else None
     build_appliance = ctx.attrs.build_appliance or flavor_info.default_build_appliance
 
@@ -488,10 +496,6 @@ _layer_attrs = {
         attrs.string(doc = "rpm evra"),
         default = {},
     ),
-    "flavor": attrs.option(
-        attrs.dep(providers = [FlavorInfo]),
-        default = None,
-    ),
     "parent_layer": attrs.option(
         attrs.dep(providers = [LayerInfo]),
         default = None,
@@ -510,6 +514,7 @@ _layer_attrs = {
 }
 
 _layer_attrs.update(cfg_attrs())
+_layer_attrs.update(attrs_selected_by_cfg())
 
 _layer_attrs.update(
     {
@@ -554,6 +559,10 @@ def layer(
         use_default_os_from_package = should_all_images_in_package_use_default_os()
     if use_default_os_from_package:
         default_os = default_os or get_default_os_for_package()
+
+    # TODO(vmagro): codemod existing callsites to use default_os directly
+    if "flavor" in kwargs and default_os:
+        fail("default_os= is preferred, stop setting flavor=")
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 

@@ -63,6 +63,7 @@ def image_diff_test(
         diff: str | Select,
         layer: str,
         diff_type: str = "all",
+        default_os: str | None = None,
         **kwargs):
     needs_rpm = diff_type in ("all", "rpm")
 
@@ -92,6 +93,7 @@ def image_diff_test(
                     mountpoint = "/parent",
                 ),
             ],
+            default_os = default_os,
         )
 
         image_sh_test(

@@ -5,7 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::HashSet;
 use std::fmt::Display;
+use std::process::Command;
 use std::str::FromStr;
 
 static LEVELS: &[&str] = &["root", "intermediate", "leaf"];
@@ -59,4 +61,51 @@ fn os_select() {
                 .unwrap_or_else(|_| panic!("failed to read {filename}")),
         );
     }
+}
+
+#[test]
+fn os_release_rpm() {
+    let os = os_from_env();
+    let os_release_package = match os {
+        TestOs::Centos(_) => "centos-stream-release",
+        TestOs::Eln => "fedora-release-eln",
+    };
+    let proc = Command::new("rpm")
+        .arg("-q")
+        .arg(os_release_package)
+        .arg("--queryformat=%{RPMTAG_VERSION}\n")
+        .output()
+        .expect("failed to run rpm");
+    assert!(proc.status.success(), "rpm command failed");
+    let ver = std::str::from_utf8(&proc.stdout).expect("rpm stdout not utf8");
+    match os {
+        TestOs::Centos(num) => {
+            let ver_major = ver
+                .split('.')
+                .next()
+                .expect("invalid centos version format");
+            assert_eq!(num.to_string(), ver_major);
+        }
+        TestOs::Eln => {
+            assert!(!ver.is_empty());
+        }
+    }
+}
+
+#[test]
+fn synthetic_rpm() {
+    let os = os_from_env();
+    let proc = Command::new("rpm")
+        .arg("-q")
+        .arg("--queryformat=%{RPMTAG_VERSION}\n")
+        .args(LEVELS.iter().map(|l| format!("test-rpm-{l}")))
+        .output()
+        .expect("failed to run rpm");
+    assert!(proc.status.success(), "rpm command failed");
+    let releases: HashSet<&str> = std::str::from_utf8(&proc.stdout)
+        .expect("rpm stdout not utf8")
+        .lines()
+        .collect();
+    let os_str = os.to_string();
+    assert_eq!(HashSet::from([os_str.as_str()]), releases);
 }

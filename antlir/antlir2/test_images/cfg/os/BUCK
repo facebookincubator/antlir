@@ -1,35 +1,48 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+load("//antlir/rpm/dnf2buck:repo.bzl", "repo")
+load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
 load(":defs.bzl", "write_os")
 
 oncall("antlir")
 
 image.layer(
     name = "root",
+    dnf_additional_repos = [":repo"],
     features = [
-        feature.rpms_install(rpms = [
+        feature.rpms_install(subjects = [
+            select({
+                "//antlir/antlir2/os/family:centos": "centos-stream-release",
+                "//antlir/antlir2/os/family:fedora": "fedora-release",
+            }),
             "bash",
             "coreutils",
+            "rpm",
             # @oss-disable
+            "test-rpm-root",
         ]),
         write_os("/root.os"),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
     name = "intermediate",
+    dnf_additional_repos = [":repo"],
     features = [
         write_os("/intermediate.os"),
+        feature.rpms_install(rpms = ["test-rpm-intermediate"]),
     ],
     parent_layer = ":root",
 )
 
 image.layer(
     name = "leaf.generic",
+    dnf_additional_repos = [":repo"],
     features = [
         write_os("/leaf.os"),
+        feature.rpms_install(rpms = ["test-rpm-leaf"]),
     ],
     parent_layer = ":intermediate",
 )
@@ -39,8 +52,10 @@ image.layer(
         image.layer(
             name = "leaf." + os,
             default_os = os,
+            dnf_additional_repos = [":repo"],
             features = [
                 write_os("/leaf.os"),
+                feature.rpms_install(rpms = ["test-rpm-leaf"]),
             ],
             parent_layer = ":intermediate",
         ),
@@ -72,3 +87,89 @@ image.layer(
         "eln",
     ]
 ]
+
+# Create synthetic test rpms that dnf will choose different versions based on
+# the os version.
+# The centos-stream-release rpm will be installed in the :root image which will
+# be reconfigured by the children layers, but these synthetic rpms let us test
+# rpm installation based on flavor reconfiguration at every level of the
+# parent_layer chain.
+
+all_rpms = []
+
+[
+    [
+        image.layer(
+            name = "rpm." + level + "." + f,
+            features = [
+                feature.install_text(
+                    dst = "/test_rpm_" + level,
+                    text = f,
+                ),
+            ],
+            visibility = [],
+        ),
+        package.rpm(
+            name = "rpm." + level + "." + f + "--package",
+            arch = "noarch",
+            layer = ":rpm." + level + "." + f,
+            license = "None",
+            release = "1",
+            requires = requires,
+            rpm_name = "test-rpm-" + level,
+            version = f,
+            visibility = [],
+        ),
+        rpm(
+            name = "test-rpm-" + level + "." + f,
+            arch = "noarch",
+            epoch = 0,
+            release = "1",
+            rpm = ":rpm." + level + "." + f + "--package",
+            rpm_name = "test-rpm-" + level,
+            sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+            version = f,
+            visibility = [
+            ],
+        ),
+        all_rpms.append(":test-rpm-" + level + "." + f),
+    ]
+    for (f, requires) in [
+        # Can't know what the exact version is, so do a >= on the major and < on
+        # major+1 to match things like 8.6 for c8
+        (
+            "centos8",
+            [
+                "centos-stream-release >= 8",
+                "centos-stream-release < 9",
+            ],
+        ),
+        (
+            "centos9",
+            [
+                "centos-stream-release >= 9",
+                "centos-stream-release < 10",
+            ],
+        ),
+        (
+            "eln",
+            [
+                "fedora-release-eln",
+            ],
+        ),
+    ]
+    for level in [
+        "root",
+        "intermediate",
+        "leaf",
+    ]
+]
+
+repo(
+    name = "repo",
+    compress = "none",
+    rpms = all_rpms,
+    timestamp = 0,
+    visibility = [
+    ],
+)
