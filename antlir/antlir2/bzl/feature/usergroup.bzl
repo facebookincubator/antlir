@@ -134,7 +134,14 @@ usermod_analyze = data_only_feature_analysis_fn(
     feature_type = "user_mod",
 )
 
-def standard_user(username: str, groupname: str, home_dir: str | None = None, shell: str = SHELL_BASH, uid: int | None = None, gid: int | None = None) -> list[ParseTimeFeature | list[ParseTimeFeature]]:
+def standard_user(
+        username: str,
+        groupname: str,
+        home_dir: str | None = None,
+        shell: str = SHELL_BASH,
+        uid: int | None = None,
+        gid: int | None = None,
+        supplementary_groups: list[str] = []) -> list[ParseTimeFeature | list[ParseTimeFeature]]:
     """
     A convenient function that wraps `group_add`, `user_add`,
     and home dir creation logic.
@@ -153,6 +160,7 @@ def standard_user(username: str, groupname: str, home_dir: str | None = None, sh
             home_dir = home_dir,
             shell = shell,
             uid = uid,
+            supplementary_groups = supplementary_groups,
         ),
         ensure_subdirs_exist(
             into_dir = paths.dirname(home_dir),
