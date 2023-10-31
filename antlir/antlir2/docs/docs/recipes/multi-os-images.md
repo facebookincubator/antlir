@@ -35,7 +35,8 @@ with a `select` that fails to cover the requested OS).
 
 :::note `default_os` is applied from the bottom-up. The leaf image being built
 takes over the configuration of the entire chain. In other words, the
-`default_os` attribute of any `parent_layer`s is ignored. :::
+`default_os` attribute of any `parent_layer`s is ignored.
+:::
 
 ## Base Image Recommendations
 
