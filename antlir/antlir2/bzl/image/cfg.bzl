@@ -72,8 +72,14 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
             overwrite = False,
         )
 
+    # If there is still no package manager configuration, this means we're using
+    # the old-style flavor inheritance mechanism which implies dnf
+    package_manager_dnf = refs.package_manager_dnf[ConstraintValueInfo]
+    if package_manager_dnf.setting.label not in constraints:
+        constraints[package_manager_dnf.setting.label] = package_manager_dnf
+
     # If a build appliance is being built, we must remove the OS configuration
-    # constraint to avoid circular dependencies.
+    # constraints to avoid circular dependencies.
     if attrs.antlir_internal_build_appliance:
         constraints = remove_os_constraints(refs = refs, constraints = constraints)
 
@@ -96,6 +102,8 @@ layer_cfg = transition(
     refs = {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
+        "package_manager_constraint": "//antlir/antlir2/os/package_manager:package_manager",
+        "package_manager_dnf": "//antlir/antlir2/os/package_manager:dnf",
     } | (
         # @oss-disable
         # @oss-enable {}
@@ -125,5 +133,6 @@ remove_os_constraint = transition(
     refs = {
         "os_constraint": "//antlir/antlir2/os:os",
         "os_family_constraint": "//antlir/antlir2/os/family:family",
+        "package_manager_constraint": "//antlir/antlir2/os/package_manager:package_manager",
     },
 )

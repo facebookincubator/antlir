@@ -1,0 +1,18 @@
+load("@prelude//:rules.bzl", "constraint_setting", "constraint_value")
+
+constraint_setting(
+    name = "package_manager",
+    visibility = ["PUBLIC"],
+)
+
+constraint_value(
+    name = "none",
+    constraint_setting = ":package_manager",
+    visibility = ["//antlir/antlir2/os:"],
+)
+
+constraint_value(
+    name = "dnf",
+    constraint_setting = ":package_manager",
+    visibility = ["//antlir/antlir2/os:"],
+)

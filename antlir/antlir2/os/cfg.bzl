@@ -26,14 +26,17 @@ def os_transition(
     os = getattr(refs, "os." + default_os)[OsVersionInfo]
     os_constraint = os.constraint[ConstraintValueInfo]
     family = os.family[ConstraintValueInfo]
+    package_manager = os.package_manager[ConstraintValueInfo]
 
     if overwrite or os_constraint.setting.label not in constraints:
         constraints[os_constraint.setting.label] = os_constraint
         constraints[family.setting.label] = family
+        constraints[package_manager.setting.label] = package_manager
 
     return constraints
 
 def remove_os_constraints(*, constraints, refs):
     constraints.pop(refs.os_constraint[ConstraintSettingInfo].label, None)
     constraints.pop(refs.os_family_constraint[ConstraintSettingInfo].label, None)
+    constraints.pop(refs.package_manager_constraint[ConstraintSettingInfo].label, None)
     return constraints

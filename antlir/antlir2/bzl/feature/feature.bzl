@@ -65,6 +65,7 @@ load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
+load(":cfg.bzl", "feature_cfg")
 load(":clone.bzl", "clone_analyze")
 load(":dot_meta.bzl", "dot_meta_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
@@ -299,6 +300,7 @@ _features_attrs.update(shared_features_attrs)
 feature_rule = rule(
     impl = _impl,
     attrs = _features_attrs,
+    cfg = feature_cfg,
 )
 
 def feature_attrs(
@@ -334,6 +336,7 @@ def feature_attrs(
     inline_features_exec_deps = {}
     inline_features_unnamed_deps_or_srcs = {}
     inline_features_args = {}
+    features_compatible_with = []
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -365,8 +368,11 @@ def feature_attrs(
                 inline_features_args[feature_key] = feat.args
             if feat.srcs:
                 inline_features_srcs[feature_key] = feat.srcs
+            if feat.compatible_with:
+                features_compatible_with.extend(feat.compatible_with)
 
     return {
+        "compatible_with": features_compatible_with,
         "feature_targets": feature_targets,
         "inline_features": inline_features,
         "inline_features_args": inline_features_args,
