@@ -221,9 +221,12 @@ shared_features_attrs = {
     # feature targets are instances of `_feature` rules that are merged into
     # the output of this rule
     "feature_targets": attrs.list(
-        # optional so that a `select` can return `None` for some configurations
-        attrs.option(
-            attrs.dep(providers = [FeatureInfo]),
+        attrs.one_of(
+            # optional so that a `select` can return `None` for some configurations
+            attrs.option(
+                attrs.dep(providers = [FeatureInfo]),
+            ),
+            attrs.list(attrs.dep(providers = [FeatureInfo])),
         ),
         default = [],
     ),
