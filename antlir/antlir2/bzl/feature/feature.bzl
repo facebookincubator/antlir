@@ -179,6 +179,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     features = inline_features
     for dep in ctx.attrs.feature_targets:
+        # select() can return None for some branches
+        if not dep:
+            continue
         features.extend(dep[FeatureInfo].features)
     features_json = [_feature_as_json(f) for f in features]
 
@@ -218,7 +221,10 @@ shared_features_attrs = {
     # feature targets are instances of `_feature` rules that are merged into
     # the output of this rule
     "feature_targets": attrs.list(
-        attrs.dep(providers = [FeatureInfo]),
+        # optional so that a `select` can return `None` for some configurations
+        attrs.option(
+            attrs.dep(providers = [FeatureInfo]),
+        ),
         default = [],
     ),
     # inline features are direct calls to a feature macro inside a layer()

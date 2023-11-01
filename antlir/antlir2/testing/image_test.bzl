@@ -141,6 +141,8 @@ def _implicit_image_test(
         allocate_loop_devices: int | None = None,
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
+        # @oss-disable
+        visibility: list[str] | None = None,
         **kwargs):
     test_rule(
         name = name + "_image_test_inner",
@@ -164,6 +166,8 @@ def _implicit_image_test(
                     force = True,
                 ),
             ],
+            default_os = default_os,
+            default_rou = default_rou,
         )
         layer = ":{}--bootable-layer".format(name)
 
@@ -180,6 +184,8 @@ def _implicit_image_test(
         hostname = hostname,
         allocate_loop_devices = allocate_loop_devices,
         default_os = default_os,
+        # @oss-disable
+        visibility = visibility,
     )
 
 image_cpp_test = partial(
@@ -191,7 +197,12 @@ image_cpp_test = partial(
 image_rust_test = partial(_implicit_image_test, rust_unittest)
 image_sh_test = partial(_implicit_image_test, buck_sh_test)
 
-def image_python_test(name: str, layer: str, **kwargs):
+def image_python_test(
+        name: str,
+        layer: str,
+        default_os: str | None = None,
+        default_rou: str | None = None,
+        **kwargs):
     test_layer = layer
     if not REPO_CFG.artifacts_require_repo:
         # In @mode/opt we need to install fb-xarexec
@@ -203,6 +214,8 @@ def image_python_test(name: str, layer: str, **kwargs):
                 feature.rpms_install(rpms = ["fb-xarexec"]),
             ],
             visibility = [":" + name],
+            default_os = default_os,
+            # @oss-disable
         )
         test_layer = ":{}".format(test_layer)
 
@@ -211,5 +224,7 @@ def image_python_test(name: str, layer: str, **kwargs):
         name = name,
         layer = test_layer,
         supports_static_listing = False,
+        default_os = default_os,
+        # @oss-disable
         **kwargs
     )
