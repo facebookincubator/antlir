@@ -8,6 +8,8 @@ Simple buck2 configuration transition that marks all features as building with
 dnf.
 """
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+
 def _impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
     constraints = platform.configuration.constraints
 
@@ -28,6 +30,6 @@ def _impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
 feature_cfg = transition(
     impl = _impl,
     refs = {
-        "package_manager_dnf": "//antlir/antlir2/os/package_manager:dnf",
+        "package_manager_dnf": antlir2_dep("os/package_manager:dnf"),
     },
 )

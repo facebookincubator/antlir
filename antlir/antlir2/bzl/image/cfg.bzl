@@ -11,6 +11,7 @@ distinct from the default target platform used by the `buck2 build`.
 Currently this supports reconfiguring the target cpu architecture.
 """
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs", "remove_os_constraints")
@@ -121,8 +122,8 @@ layer_cfg = transition(
     refs = {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
-        "package_manager_constraint": "//antlir/antlir2/os/package_manager:package_manager",
-        "package_manager_dnf": "//antlir/antlir2/os/package_manager:dnf",
+        "package_manager_constraint": antlir2_dep("os/package_manager:package_manager"),
+        "package_manager_dnf": antlir2_dep("os/package_manager:dnf"),
     } | (
         # @oss-disable
         # @oss-enable {}
@@ -150,9 +151,9 @@ def _remove_os_impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
 remove_os_constraint = transition(
     impl = _remove_os_impl,
     refs = {
-        "os_constraint": "//antlir/antlir2/os:os",
-        "os_family_constraint": "//antlir/antlir2/os/family:family",
-        "package_manager_constraint": "//antlir/antlir2/os/package_manager:package_manager",
+        "os_constraint": antlir2_dep("os:os"),
+        "os_family_constraint": antlir2_dep("os/family:family"),
+        "package_manager_constraint": antlir2_dep("os/package_manager:package_manager"),
         # @oss-disable
     },
 )
