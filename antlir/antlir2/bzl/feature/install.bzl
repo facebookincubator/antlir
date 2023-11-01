@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
@@ -110,7 +110,7 @@ def get_feature_anaylsis_for_install(
         user: str,
         skip_debuginfo_split: bool,
         text: str | None,
-        plugin: FeaturePluginInfo):
+        plugin: FeaturePluginInfo | Provider):
     binary_info = None
     required_run_infos = []
     required_artifacts = []
@@ -183,7 +183,7 @@ def get_feature_anaylsis_for_install(
 
 def install_analyze(
         ctx: AnalyzeFeatureContext,
-        plugin: FeaturePluginInfo,
+        plugin: FeaturePluginInfo | Provider,
         dst: str,
         group: str,
         mode: int | None,

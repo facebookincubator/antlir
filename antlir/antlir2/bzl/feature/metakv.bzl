@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def metakv_store(
@@ -81,7 +81,7 @@ metakv_record = record(
 
 def metakv_analyze(
         *,
-        plugin: FeaturePluginInfo,
+        plugin: FeaturePluginInfo | Provider,
         store: dict[str, typing.Any] | None = None,
         remove: dict[str, typing.Any] | None = None) -> FeatureAnalysis:
     return FeatureAnalysis(

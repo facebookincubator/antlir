@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def genrule(
@@ -44,7 +44,7 @@ def genrule_analyze(
         bind_repo_ro: bool,
         mount_platform: bool,
         args: dict[str, str | ResolvedStringWithMacros],
-        plugin: FeaturePluginInfo) -> FeatureAnalysis:
+        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
     cmd = {int(key.removeprefix("cmd_")): val for key, val in args.items() if key.startswith("cmd_")}
     cmd = [val for _key, val in sorted(cmd.items())]
     return FeatureAnalysis(

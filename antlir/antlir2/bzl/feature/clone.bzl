@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
@@ -96,7 +96,7 @@ def clone_analyze(
         user: str | None,
         group: str | None,
         deps: dict[str, Dependency],
-        plugin: FeaturePluginInfo) -> FeatureAnalysis:
+        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
     omit_outer_dir = src_path.endswith("/")
     pre_existing_dest = dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:

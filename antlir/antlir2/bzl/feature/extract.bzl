@@ -28,7 +28,7 @@ load(
     "//antlir/antlir2/bzl/feature:feature_info.bzl",
     "AnalyzeFeatureContext",  # @unused Used as type
 )
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
@@ -98,7 +98,7 @@ extract_record = record(
 
 def extract_analyze(
         ctx: AnalyzeFeatureContext,
-        plugin: FeaturePluginInfo,
+        plugin: FeaturePluginInfo | Provider,
         source: str,
         deps: dict[str, Dependency],
         binaries: list[str] | None = None,
