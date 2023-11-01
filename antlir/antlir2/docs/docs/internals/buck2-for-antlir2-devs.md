@@ -46,6 +46,7 @@ targets are especially interesting because they come with
 [providers](#provider).
 
 #### Target Label
+
 Targets have a canonical, qualified label that uniquely identifies them in the
 project (something like `fbcode//antlir/antlir2/test_images/rpms:simple`).
 
@@ -73,14 +74,15 @@ always (transitively) expand to one or more [targets](#target) via one or more
 
 ### Rule
 
-Not to be confused with [macros](#macro), rules are a [first class concept in
-buck2](https://buck2.build/docs/rule_authors/writing_rules/) that let us write
-[starlark](#starlark) code that runs at [analysis time](#analysis-time) to determine
-how buck2 should build our [targets](#target).
+Not to be confused with [macros](#macro), rules are a
+[first class concept in buck2](https://buck2.build/docs/rule_authors/writing_rules/)
+that let us write [starlark](#starlark) code that runs at
+[analysis time](#analysis-time) to determine how buck2 should build our
+[targets](#target).
 
 A rule can produce zero or more [artifacts](#artifact) by running commands
-(either locally or via [Remote
-Execution](https://buck2.build/docs/users/remote_execution/)), or
+(either locally or via
+[Remote Execution](https://buck2.build/docs/users/remote_execution/)), or
 copying/symlinking other artifacts.
 
 Rules must return [providers](#provider), which is how both buck2 and other rule
@@ -92,19 +94,25 @@ A Provider is some [starlark](#starlark) struct that can be attached to a
 [target](#target).
 
 Providers can record any metadata about a target that the [rule](#rule)
-implementation had access to.
-Some examples from antlir2 where data is stored in providers and used by our rule implementations at [analysis time](#analysis-time)
-* `flavor` of an `image.layer`
-* `parent_layer` of an `image.layer`
-* `rpms` available in a `repo`
+implementation had access to. Some examples from antlir2 where data is stored in
+providers and used by our rule implementations at
+[analysis time](#analysis-time)
+
+- `flavor` of an `image.layer`
+- `parent_layer` of an `image.layer`
+- `rpms` available in a `repo`
 
 ## How buck2 works
 
 :::caution
+
+This is an ELI5 level description
+
 A very over-simplified description of `buck2 build` follows here, please do not
-take it as an accurate description of what's really going on.
-Instead, read it as a general framework for how to understand the capabilities
-of code at different times, and how things are generally organized
+take it as an accurate description of what's really going on. Instead, read it
+as a general framework for how to understand the capabilities of code at
+different times, and how things are generally organized.
+
 :::
 
 ### Parse Time
@@ -117,24 +125,24 @@ only time certain things can be done.
 
 #### What can we do?
 
-* call other macros
-* define new [targets](#target)
-* add `dep`s to new targets (by string [label](#target-label))
+- call other macros
+- define new [targets](#target)
+- add `dep`s to new targets (by string [label](#target-label))
 
 #### What can't we do?
 
-* inspect the target graph
-* read [providers](#provider) of dependencies
+- inspect the target graph
+- read [providers](#provider) of dependencies
 
 ### Analysis Time
 
 After buck2 [parses](#parse-time) all the [buildfiles](#buildfile), it needs to
 determine what [artifacts](#artifact) to build and how.
 
-This process is called _analysis_.
-It is in this phase where our [rule](#rule) implementations get access to all of
-the [providers](#provider) of their dependencies, and can decide what actions to
-execute to produce some `artifacts`.
+This process is called _analysis_. It is in this phase where our [rule](#rule)
+implementations get access to all of the [providers](#provider) of their
+dependencies, and can decide what actions to execute to produce some
+`artifacts`.
 
 Analysis is where all the interesting antlir2 features happen, which other parts
 of this doc site will explain in more detail.

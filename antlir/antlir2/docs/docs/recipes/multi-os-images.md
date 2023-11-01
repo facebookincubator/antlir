@@ -33,9 +33,13 @@ whatever OS the end user wanted - of course, provided that all images along the
 way are compatible (no `compatible_with` that excludes the OS or any features
 with a `select` that fails to cover the requested OS).
 
-:::note `default_os` is applied from the bottom-up. The leaf image being built
-takes over the configuration of the entire chain. In other words, the
-`default_os` attribute of any `parent_layer`s is ignored.
+:::note
+
+`default_os` is applied from the bottom-up
+
+The leaf image being built takes over the configuration of the entire chain. In
+other words, the `default_os` attribute of any `parent_layer`s is ignored.
+
 :::
 
 ## Base Image Recommendations
@@ -95,14 +99,26 @@ image.layer(
 )
 ```
 
-:::info Unless you know that your image is only compatible with certain OSes, it
-is preferred to not specify `compatible_with` in order to ease migration to new
-OS versions that are expected to be broadly compatible `feature`-wise. :::
+:::tip
 
-:::caution If you forget `compatible_with` but do have a `select` (that does not
-cover any incompatible OSes), the build will still fail if a child image uses an
+Prefer not to set `compatible_with`
+
+Unless you know that your image is only compatible with certain OSes, it is
+preferred to not specify `compatible_with` in order to ease migration to new OS
+versions that are expected to be broadly compatible `feature`-wise.
+
+:::
+
+:::caution
+
+`compatible_with` can give better error messages
+
+If you forget `compatible_with` but do have a `select` (that does not cover any
+incompatible OSes), the build will still fail if a child image uses an
 incompatible OS, but `compatible_with` will give the end user an
-easier-to-understand error. :::
+easier-to-understand error.
+
+:::
 
 ### CI for packages
 
