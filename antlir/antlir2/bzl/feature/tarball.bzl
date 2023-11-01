@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(
     ":feature_info.bzl",
@@ -46,7 +46,7 @@ def tarball_analyze(
         user: str,
         group: str,
         srcs: dict[str, Artifact],
-        plugin: FeaturePluginInfo) -> FeatureAnalysis:
+        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
     tarball = srcs["source"]
 
     if user != "root" or group != "root":

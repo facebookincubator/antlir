@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def dot_meta(
@@ -49,7 +49,7 @@ dot_meta_record = record(
 
 def dot_meta_analyze(
         build_info: [dict[str, typing.Any], None],
-        plugin: FeaturePluginInfo) -> FeatureAnalysis:
+        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
     return FeatureAnalysis(
         feature_type = "dot_meta",
         data = dot_meta_record(

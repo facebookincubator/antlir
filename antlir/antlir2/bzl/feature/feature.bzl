@@ -59,7 +59,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 # @oss-disable
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load("//antlir/antlir2/features/test_only_features:trace.bzl", "trace_analyze")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
@@ -86,7 +86,7 @@ feature_record = record(
     feature_type = str,
     label = TargetLabel,
     analysis = "FeatureAnalysis",
-    plugin = FeaturePluginInfo,
+    plugin = FeaturePluginInfo | Provider,
 )
 
 def _feature_as_json(feat: feature_record) -> struct:

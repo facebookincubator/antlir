@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
@@ -131,7 +131,7 @@ def mount_analyze(
         is_directory: bool | None,
         host_source: str | None,
         _implicit_from_antlir1: bool,
-        plugin: FeaturePluginInfo,
+        plugin: FeaturePluginInfo | Provider,
         deps: dict[str, Dependency] = {},
         exec_deps: dict[str, Dependency] = {}) -> list[FeatureAnalysis]:
     features = []

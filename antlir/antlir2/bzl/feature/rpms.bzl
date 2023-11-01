@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(
     ":feature_info.bzl",
@@ -152,7 +152,7 @@ rpms_record = record(
 def rpms_analyze(
         *,
         ctx: AnalyzeFeatureContext,
-        plugin: FeaturePluginInfo,
+        plugin: FeaturePluginInfo | Provider,
         action: str,
         subjects: list[str],
         srcs: dict[str, Artifact] = {},
