@@ -72,8 +72,6 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
 
             # `_CommitCallback` has a `try` to clean up on error. This
             # placement of the context assumes that `os.fdopen` cannot fail.
-            # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd
-            # param but got `() -> Any`.
             with _CommitCallback(self, get_id_and_release_resources) as commit:
                 yield StorageOutput(output=outfile, commit_callback=commit)
 

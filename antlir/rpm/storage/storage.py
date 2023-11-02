@@ -19,7 +19,7 @@ Then, the only thing we then need to version is an index of "repo file" to
 import logging
 import re
 from contextlib import AbstractContextManager
-from typing import Callable, ContextManager, IO
+from typing import Callable, ContextManager, IO, Optional
 
 from antlir.rpm.pluggable import Pluggable
 
@@ -143,7 +143,13 @@ class _CommitCallback(AbstractContextManager):
                 release_resources_that_were_held_for_the_blob_write()
     """
 
-    def __init__(self, storage: Storage, get_id_and_release_resources: ContextManager):
+    get_id_and_release_resources: Optional[Callable[[], ContextManager]]
+
+    def __init__(
+        self,
+        storage: Storage,
+        get_id_and_release_resources: Callable[[], ContextManager],
+    ):
         self.storage = storage
         self.get_id_and_release_resources = get_id_and_release_resources
         self.id = None  # Populated via `get_id_and_release_resources()`
@@ -158,11 +164,8 @@ class _CommitCallback(AbstractContextManager):
         # use `commit`, even if `get_id_and_release_resources` raises.
         get_id_and_release_resources = self.get_id_and_release_resources
         self.remove_on_exception = remove_on_exception
-        # pyre-fixme[8]: Attribute has type `ContextManager[typing.Any]`; used
-        # as `None`.
         self.get_id_and_release_resources = None  # Detect double-commits
 
-        # pyre-fixme[29]: `ContextManager[typing.Any]` is not a function.
         with get_id_and_release_resources() as id:
             # The user-visible ID should be keyed to the Storage that made it.
             self.id = self.storage._add_key(id)

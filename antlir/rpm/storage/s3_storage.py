@@ -92,8 +92,6 @@ class S3Storage(Storage, plugin_kind="s3"):
             # there is read-after-write guarantees
             yield key
 
-        # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd param
-        # but got `() -> Any`.
         with _CommitCallback(self, get_id_and_release_resources) as commit:
             # pyre-fixme[7]: Expected
             # `ContextManager[antlir.rpm.storage.storage.StorageOutput]` but
