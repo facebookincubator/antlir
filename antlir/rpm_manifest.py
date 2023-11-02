@@ -119,6 +119,10 @@ def extract_rpm_manifest(argv) -> None:
             # pyre-fixme [61]: Local variable `db_path_src` is undefined, or not always
             # defined
             bindmount_ro=[(db_path_src, db_path_dst)],
+            # this is totally unnecessary, but this short-circuits a condition
+            # here https://fburl.com/code/61e71kx7 that makes this work when run
+            # in an antlir2 build appliance
+            bind_repo_ro=True,
         ),
         PopenArgs(stdout=subprocess.PIPE),
     )
