@@ -133,8 +133,6 @@ class CLIObjectStorage(Storage):
                     raise
                 yield sid
 
-            # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd
-            # param but got `() -> Any`.
             with _CommitCallback(self, get_id_and_release_resources) as commit:
                 # pyre-fixme[6]: Expected `IO[typing.Any]` for 1st param but got
                 #  `Optional[typing.IO[typing.Any]]`.
