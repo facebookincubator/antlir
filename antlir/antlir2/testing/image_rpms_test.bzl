@@ -5,6 +5,7 @@
 
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
 def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -27,18 +28,28 @@ _rpm_names_test = rule(
     },
 )
 
-def image_test_rpm_names(name: str, src: str | Select, layer: str, **kwargs):
+def image_test_rpm_names(
+        name: str,
+        src: str | Select,
+        layer: str,
+        default_os: str | None = None,
+        **kwargs):
     _rpm_names_test(
         name = name + "--script",
         src = src,
     )
+    cfg_kwargs = {"flavor": layer + "[flavor]"}
+    if default_os or should_all_images_in_package_use_default_os():
+        default_os = default_os or get_default_os_for_package()
+        cfg_kwargs.pop("flavor", None)
+        cfg_kwargs["default_os"] = default_os
+
     image.layer(
         name = name + "--layer",
         # This must have 'rpm' installed already, so use the build appliance to
         # query the layer-under-test instead of relying on the image to have the
         # rpm cli installed
         parent_layer = layer + "[build_appliance]",
-        flavor = layer + "[flavor]",
         features = [
             feature.ensure_dirs_exist(dirs = "/layer"),
             feature.layer_mount(
@@ -46,12 +57,15 @@ def image_test_rpm_names(name: str, src: str | Select, layer: str, **kwargs):
                 mountpoint = "/layer",
             ),
         ],
+        **cfg_kwargs
     )
+
+    cfg_kwargs.pop("flavor", None)
     image_sh_test(
         name = name,
         test = ":{}--script".format(name),
         layer = ":{}--layer".format(name),
-        **kwargs
+        **(cfg_kwargs | kwargs)
     )
 
 def _rpm_integrity_test_impl(ctx: AnalysisContext) -> list[Provider]:
