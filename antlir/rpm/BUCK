@@ -257,7 +257,7 @@ python_unittest(
 python_binary(
     name = "repo-server",
     srcs = ["repo_server_main.py"],
-    main_module = "antlir.rpm.repo_server_main",
+    main_function = "antlir.rpm.repo_server_main.invoke_main",
     deps = [":repo_server"],
 )
 
@@ -310,7 +310,7 @@ python_library(
 
 python_binary(
     name = "snapshot-repo",
-    main_module = "antlir.rpm.snapshot_repo",
+    main_function = "antlir.rpm.snapshot_repo.main",
     deps = [
         ":snapshot_repo",
         "//antlir/rpm/facebook:db_connection",
@@ -352,7 +352,7 @@ python_unittest(
 python_binary(
     name = "write-yum-dnf-conf",
     srcs = ["write_yum_dnf_conf.py"],
-    main_module = "antlir.rpm.write_yum_dnf_conf",
+    main_function = "antlir.rpm.write_yum_dnf_conf.invoke_main",
     deps = [
         ":yum_dnf_conf",
         "//antlir:fs_utils",
@@ -372,7 +372,7 @@ python_unittest(
 python_binary(
     name = "yum-dnf-from-snapshot",
     srcs = ["yum_dnf_from_snapshot.py"],
-    main_module = "antlir.rpm.yum_dnf_from_snapshot",
+    main_function = "antlir.rpm.yum_dnf_from_snapshot.main",
     deps = [
         ":common",
         ":yum_dnf_conf",
@@ -388,7 +388,7 @@ python_binary(
     srcs = ["tests/temp_snapshot.py"],
     # Because :temp_repos has a layer dep
     labels = ["no_pyre"],
-    main_module = "antlir.rpm.tests.temp_snapshot",
+    main_function = "antlir.rpm.tests.temp_snapshot.main",
     deps = [
         ":common",
         ":snapshot_repos",
@@ -494,7 +494,7 @@ python_library(
 
 python_binary(
     name = "snapshot-repos",
-    main_module = "antlir.rpm.snapshot_repos",
+    main_function = "antlir.rpm.snapshot_repos.main",
     deps = [
         ":snapshot_repos",
         "//antlir/rpm/facebook:db_connection",

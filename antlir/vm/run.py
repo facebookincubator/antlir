@@ -85,5 +85,9 @@ async def run(
     return returncode
 
 
-if __name__ == "__main__":
+def main() -> None:
     asyncio.run(run(**dict(VMRunExecOpts.parse_cli(sys.argv[1:]))))
+
+
+if __name__ == "__main__":
+    main()

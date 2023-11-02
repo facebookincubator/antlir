@@ -86,7 +86,7 @@ def make_temp_snapshot(
     os.rmdir(snapshot_dir)
 
 
-if __name__ == "__main__":
+def main() -> None:
     import argparse
 
     kind_to_steps = {
@@ -151,3 +151,7 @@ if __name__ == "__main__":
             gpg_key_path,
             args.gpg_keypair_dir,
         )
+
+
+if __name__ == "__main__":
+    main()

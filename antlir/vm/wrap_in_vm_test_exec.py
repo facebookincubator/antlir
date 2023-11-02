@@ -99,5 +99,9 @@ async def main(argv) -> int:
     return proc.returncode or -1
 
 
-if __name__ == "__main__":
+def invoke_main() -> None:
     asyncio.run(main(sys.argv[1:]))
+
+
+if __name__ == "__main__":
+    invoke_main()

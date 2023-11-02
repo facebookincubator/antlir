@@ -87,7 +87,7 @@ python_unittest(
 python_binary(
     name = "cli",
     srcs = ["cli.py"],
-    main_module = "antlir.rpm.storage.cli",
+    main_function = "antlir.rpm.storage.cli.invoke_main",
     deps = [
         "//antlir:common",
         "//antlir:fs_utils",

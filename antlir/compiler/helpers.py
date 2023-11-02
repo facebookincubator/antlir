@@ -85,8 +85,7 @@ def compile_items_to_subvol(
             item.build(subvol, layer_opts)
 
 
-# This is covered by test-rpm-replay
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "compile_items_to_subvol_kwargs",
@@ -95,3 +94,8 @@ if __name__ == "__main__":  # pragma: no cover
     args = parser.parse_args()
 
     compile_items_to_subvol(**args.compile_items_to_subvol_kwargs)
+
+
+# This is covered by test-rpm-replay
+if __name__ == "__main__":
+    main()  # pragma: no cover

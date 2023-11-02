@@ -52,7 +52,7 @@ python_binary(
     srcs = [
         "run.py",
     ],
-    main_module = "antlir.vm.run",
+    main_function = "antlir.vm.run.main",
     visibility = ["PUBLIC"],
     deps = [
         ":vm",
@@ -102,7 +102,7 @@ python_binary(
     srcs = [
         "wrap_in_vm_test_exec.py",
     ],
-    main_module = "antlir.vm.wrap_in_vm_test_exec",
+    main_function = "antlir.vm.wrap_in_vm_test_exec.invoke_main",
     visibility = ["PUBLIC"],
     deps = [
         "//antlir:common",
@@ -115,7 +115,7 @@ python_binary(
     srcs = [
         "vmtest.py",
     ],
-    main_module = "antlir.vm.vmtest",
+    main_function = "antlir.vm.vmtest.main",
     # Do not edit the visibility unless reviewed by antlir members. Antlir1
     # vmtests are deprecated. Use antlir2 vmtest instead. For internal Meta
     # users, docs are available at:

@@ -100,5 +100,9 @@ def snapshot_repo(argv) -> None:
         log.info(sizer.get_report(f"This {args.rpm_shard} snapshot weighs"))
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     snapshot_repo(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

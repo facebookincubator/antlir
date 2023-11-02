@@ -708,5 +708,9 @@ def package_btrfs(args) -> None:
     )
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     package_btrfs(None)
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

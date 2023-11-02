@@ -28,8 +28,12 @@ def log_failure_message(msg: str) -> None:
     log.error(msg)
 
 
-# This is covered by `test_fail_with_message_e2e` in `test-fail-with-message`.
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     args = _parse_cmdline_args()
     init_logging()
     log_failure_message(args.message)
+
+
+# This is covered by `test_fail_with_message_e2e` in `test-fail-with-message`.
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -32,7 +32,7 @@ export_file(
 python_binary(
     name = "rpm-sign-with-test-key",
     srcs = ["rpm_sign_with_test_key.py"],
-    main_module = "antlir.bzl.genrule.rpmbuild.tests.rpm_sign_with_test_key",
+    main_function = "antlir.bzl.genrule.rpmbuild.tests.rpm_sign_with_test_key.main",
     resources = {
         "//antlir/rpm/tests/gpg_test_keypair:gpg-test-signing-key": "gpg-test-signing-key",
     },

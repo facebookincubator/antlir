@@ -1318,7 +1318,7 @@ defs.cpp_binary(
 defs.python_binary(
     name = "test-xar",
     srcs = ["main.py"],
-    main_module = "antlir.compiler.test_images.main",
+    main_function = "antlir.compiler.test_images.main.main",
     deps = [
         # huge dep to intentionally bloat this binary
         # @oss-disable

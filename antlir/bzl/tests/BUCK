@@ -21,7 +21,7 @@ python_library(
 python_binary(
     name = "rpms-with-reason",
     srcs = ["rpms_with_reason.py"],
-    main_module = "antlir.bzl.tests.rpms_with_reason",
+    main_function = "antlir.bzl.tests.rpms_with_reason.main",
     visibility = ["PUBLIC"],
 )
 

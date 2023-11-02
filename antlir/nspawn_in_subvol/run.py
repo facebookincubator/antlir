@@ -163,8 +163,7 @@ def _set_up_run_cli(argv: Iterable[Union[str, Path]]) -> _CliSetup:
         )
 
 
-# The manual test is in the first paragraph of the top docblock.
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     import sys
 
     try:
@@ -184,3 +183,8 @@ if __name__ == "__main__":  # pragma: no cover
         #  `UserFacingError`.
         sys.exit(e)
     sys.exit(ret.returncode)
+
+
+# The manual test is in the first paragraph of the top docblock.
+if __name__ == "__main__":
+    main()  # pragma: no cover
