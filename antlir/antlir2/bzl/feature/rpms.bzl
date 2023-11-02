@@ -131,7 +131,35 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
         ],
     )
 
-action_enum = enum("install", "remove_if_exists", "upgrade")
+def rpms_remove(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
+    """
+    Remove RPMs if they are installed, fail if they are not
+
+    Elements in `rpms` can be any rpm specifier (name, NEVR, etc). If the rpm is
+    not installed, this feature will fail.
+    Note that dependencies of these rpms can also be removed, but only if no
+    explicitly-installed RPM depends on them (in this case, the goal cannot be
+    solved and the image build will fail unless you remove those rpms as well).
+    """
+    return ParseTimeFeature(
+        feature_type = "rpm",
+        plugin = antlir2_dep("features:rpm"),
+        kwargs = {
+            "action": "remove",
+            "subjects": rpms,
+        },
+        analyze_uses_context = True,
+        compatible_with = [
+            "//antlir/antlir2/os/package_manager:dnf",
+        ],
+    )
+
+action_enum = enum(
+    "install",
+    "remove",
+    "remove_if_exists",
+    "upgrade",
+)
 
 rpm_source_record = record(
     subject = field([str, None], default = None),

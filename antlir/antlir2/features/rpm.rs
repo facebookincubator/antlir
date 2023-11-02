@@ -49,6 +49,7 @@ pub type Feature = Rpm;
 pub enum Action {
     Install,
     Upgrade,
+    Remove,
     RemoveIfExists,
 }
 
@@ -287,6 +288,7 @@ enum DriverEvent {
     },
     ScriptletOutput(String),
     PackageNotFound(String),
+    PackageNotInstalled(String),
 }
 
 fn run_dnf_driver(
@@ -373,6 +375,9 @@ fn run_dnf_driver(
                 DriverEvent::PackageNotFound(package) => {
                     Some(Cow::Owned(format!("No such package found '{package}'")))
                 }
+                DriverEvent::PackageNotInstalled(package) => Some(Cow::Owned(format!(
+                    "Package to be removed '{package}' was not installed"
+                ))),
                 _ => None,
             })
             .collect();
