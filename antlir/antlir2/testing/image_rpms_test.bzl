@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
@@ -23,9 +24,11 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
 _rpm_names_test = rule(
     impl = _rpm_names_test_impl,
     attrs = {
+        "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False), doc = "read by cfg.bzl"),
         "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
         "src": attrs.source(),
-    },
+    } | cfg_attrs(),
+    cfg = layer_cfg,
 )
 
 def image_test_rpm_names(
@@ -34,10 +37,6 @@ def image_test_rpm_names(
         layer: str,
         default_os: str | None = None,
         **kwargs):
-    _rpm_names_test(
-        name = name + "--script",
-        src = src,
-    )
     cfg_kwargs = {"flavor": layer + "[flavor]"}
     if default_os or should_all_images_in_package_use_default_os():
         default_os = default_os or get_default_os_for_package()
@@ -61,6 +60,13 @@ def image_test_rpm_names(
     )
 
     cfg_kwargs.pop("flavor", None)
+
+    _rpm_names_test(
+        name = name + "--script",
+        src = src,
+        **cfg_kwargs
+    )
+
     image_sh_test(
         name = name,
         test = ":{}--script".format(name),
