@@ -8,7 +8,7 @@ import subprocess
 import uuid
 from abc import abstractmethod
 from contextlib import contextmanager
-from typing import ContextManager, List, Mapping, NamedTuple
+from typing import Iterator, List, Mapping, NamedTuple
 
 from antlir.common import check_popen_returncode, get_logger
 
@@ -79,7 +79,7 @@ class CLIObjectStorage(Storage):
         return str(uuid.uuid4()).replace("-", "")
 
     @contextmanager
-    def writer(self) -> ContextManager[StorageOutput]:
+    def writer(self) -> Iterator[StorageOutput]:
         sid = self._make_storage_id()
         path = self._path_for_storage_id(sid)
         log_prefix = f"{self.__class__.__name__}"
@@ -136,16 +136,12 @@ class CLIObjectStorage(Storage):
             # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd
             # param but got `() -> Any`.
             with _CommitCallback(self, get_id_and_release_resources) as commit:
-                # pyre-fixme[7]: Expected
-                # `ContextManager[antlir.rpm.storage.storage.StorageOutput]`
-                # but got `Generator[antlir.rpm.storage.storage.StorageOutput,
-                # None, None]`.
                 # pyre-fixme[6]: Expected `IO[typing.Any]` for 1st param but got
                 #  `Optional[typing.IO[typing.Any]]`.
                 yield StorageOutput(output=proc.stdin, commit_callback=commit)
 
     @contextmanager
-    def reader(self, sid: str) -> ContextManager[StorageInput]:
+    def reader(self, sid: str) -> Iterator[StorageInput]:
         # We currently waste significant time per read waiting for CLIs
         # to start, which is terrible for small reads (most system
         # RPMs are small).
@@ -157,9 +153,6 @@ class CLIObjectStorage(Storage):
             stdout=subprocess.PIPE,
         ) as proc:
             log.debug(f"{log_prefix} - Started {path} GET proc")
-            # pyre-fixme[7]: Expected
-            #  `ContextManager[antlir.rpm.storage.storage.StorageInput]` but got
-            #  `Generator[antlir.rpm.storage.storage.StorageInput, None, None]`.
             # pyre-fixme[6]: Expected `IO[typing.Any]` for 1st param but got
             #  `Optional[typing.IO[typing.Any]]`.
             yield StorageInput(input=proc.stdout)
@@ -169,11 +162,9 @@ class CLIObjectStorage(Storage):
         check_popen_returncode(proc)
 
     @contextmanager
-    def remover(self) -> ContextManager[_StorageRemover]:
+    def remover(self) -> Iterator[_StorageRemover]:
         rm = _StorageRemover(storage=self, procs=[])
         try:
-            # pyre-fixme[7]: Expected `ContextManager[_StorageRemover]` but got
-            #  `Generator[_StorageRemover, None, None]`.
             yield rm
         finally:
             last_ex = None  # We'll re-raise the last exception.
