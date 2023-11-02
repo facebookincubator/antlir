@@ -8,7 +8,7 @@ import os
 import stat
 import uuid
 from contextlib import contextmanager
-from typing import AnyStr, ContextManager
+from typing import AnyStr, Iterator
 
 from antlir.fs_utils import Path
 
@@ -43,7 +43,7 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
         return self.base_dir / sid[:3] / sid[3:6] / sid[6:9] / sid[9:]
 
     @contextmanager
-    def writer(self) -> ContextManager[StorageOutput]:
+    def writer(self) -> Iterator[StorageOutput]:
         sid = str(uuid.uuid4()).replace("-", "")
         sid_path = self._path_for_storage_id(sid)
         try:
@@ -75,15 +75,11 @@ class FilesystemStorage(Storage, plugin_kind="filesystem"):
             # pyre-fixme[6]: Expected `ContextManager[typing.Any]` for 2nd
             # param but got `() -> Any`.
             with _CommitCallback(self, get_id_and_release_resources) as commit:
-                # pyre-fixme[7]: Expected `ContextManager[StorageOutput]` but
-                # got `Generator[StorageOutput, None, None]`.
                 yield StorageOutput(output=outfile, commit_callback=commit)
 
     @contextmanager
-    def reader(self, sid: str) -> ContextManager[StorageInput]:
+    def reader(self, sid: str) -> Iterator[StorageInput]:
         with open(self._path_for_storage_id(self.strip_key(sid)), "rb") as inp:
-            # pyre-fixme[7]: Expected `ContextManager[StorageInput]` but got
-            #  `Generator[StorageInput, None, None]`.
             yield StorageInput(input=inp)
 
     def remove(self, sid: str) -> None:
