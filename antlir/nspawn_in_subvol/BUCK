@@ -100,7 +100,7 @@ python_library(
 python_binary(
     name = "run",
     srcs = ["run.py"],
-    main_module = "antlir.nspawn_in_subvol.run",
+    main_function = "antlir.nspawn_in_subvol.run.main",
     visibility = ["PUBLIC"],
     deps = [
         ":args",
@@ -186,7 +186,7 @@ python_unittest(
 python_binary(
     name = "run-test",
     srcs = ["run_test.py"],
-    main_module = "antlir.nspawn_in_subvol.run_test",
+    main_function = "antlir.nspawn_in_subvol.run_test.main",
     resources = {
         "//antlir/nspawn_in_subvol/nisdomain:nis_domainname": "nis_domainname",
     },

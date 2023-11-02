@@ -41,7 +41,7 @@ export_file(
 python_binary(
     name = "fail-with-message",
     srcs = ["fail_with_message.py"],
-    main_module = "antlir.bzl.fail_with_message",
+    main_function = "antlir.bzl.fail_with_message.main",
     visibility = ["PUBLIC"],
     deps = [
         "//antlir:cli",

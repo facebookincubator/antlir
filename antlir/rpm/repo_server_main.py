@@ -26,7 +26,7 @@ def _sig_raise_keyboard_interrupt(signum, stackframe):
     raise KeyboardInterrupt
 
 
-if __name__ == "__main__":
+def invoke_main() -> None:
     try:
         signal.signal(signal.SIGTERM, _sig_raise_keyboard_interrupt)
 
@@ -35,3 +35,7 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         pass
+
+
+if __name__ == "__main__":
+    invoke_main()

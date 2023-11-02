@@ -383,7 +383,11 @@ async def run(
     return returncode
 
 
-if __name__ == "__main__":
+def main() -> None:
     # we don't want to terminate a test on simple logging errors
     logging.raiseExceptions = False
     asyncio.run(run(**dict(VMTestExecOpts.parse_cli(sys.argv[1:]))))
+
+
+if __name__ == "__main__":
+    main()

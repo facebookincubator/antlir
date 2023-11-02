@@ -735,8 +735,7 @@ def yum_dnf_from_snapshot(
             raise _YumDnfError(**ex.__dict__)
 
 
-# This argument-parsing logic is covered by RpmActionItem tests.
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     import shlex
     import sys
 
@@ -815,3 +814,8 @@ if __name__ == "__main__":  # pragma: no cover
             if isinstance(ex, subprocess.CalledProcessError)
             else 1  # No return code to forward
         )
+
+
+# This argument-parsing logic is covered by RpmActionItem tests.
+if __name__ == "__main__":
+    main()  # pragma: no cover

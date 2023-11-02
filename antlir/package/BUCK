@@ -8,7 +8,7 @@ python_binary(
     srcs = [
         "btrfs.py",
     ],
-    main_module = "antlir.package.btrfs",
+    main_function = "antlir.package.btrfs.main",
     visibility = ["PUBLIC"],
     deps = [
         "//antlir:btrfsutil",

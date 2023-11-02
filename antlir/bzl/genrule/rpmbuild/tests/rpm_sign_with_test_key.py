@@ -45,5 +45,9 @@ def sign_with_test_key(rpm: str) -> None:
         )
 
 
-if __name__ == "__main__":
+def main() -> None:
     sign_with_test_key(sys.argv[1])
+
+
+if __name__ == "__main__":
+    main()

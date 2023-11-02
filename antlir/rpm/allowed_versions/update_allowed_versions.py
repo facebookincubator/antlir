@@ -569,8 +569,12 @@ def parse_args(argv: List[str]):
     return Path.parse_args(parser, argv)
 
 
-# XXX: Do the source-only package group source
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     args = parse_args(sys.argv[1:])
     init_logging(debug=args.debug)
     update_allowed_versions(args)
+
+
+# XXX: Do the source-only package group source
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -191,7 +191,7 @@ python_library(
 # Use this binary to update the gold data.
 python_binary(
     name = "make-demo-sendstreams",
-    main_module = "antlir.btrfs_diff.tests.demo_sendstreams",
+    main_function = "antlir.btrfs_diff.tests.demo_sendstreams._main",
     deps = [":testlib_demo_sendstreams"],
 )
 

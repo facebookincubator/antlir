@@ -283,5 +283,9 @@ def snapshot_repos_from_args(
         )
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     snapshot_repos_from_args(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

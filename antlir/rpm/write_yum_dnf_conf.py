@@ -144,7 +144,11 @@ def main(argv: List[str]) -> None:
         )
 
 
-if __name__ == "__main__":  # pragma: no cover
+def invoke_main() -> None:  # pragma: no cover
     import sys
 
     main(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    invoke_main()  # pragma: no cover

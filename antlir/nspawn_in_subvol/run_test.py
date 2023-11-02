@@ -203,19 +203,7 @@ def add_container_not_part_of_build_step(argv):
         yield [f"--container-not-part-of-build-step={p}", *argv]
 
 
-# Integration coverage is provided by `image.python_unittest` targets, which
-# use `nspawn_in_subvol/run_test.py` in their implementation.  However, here
-# is a basic smoke test, which, incidentally, demonstrates our test error
-# handling is sane since `/layer-test-binary` is absent in that image,
-# causing the container to exit with code 1.
-#
-#   buck run //antlir/nspawn_in_subvol:run-test -- --layer "$(
-#     buck build --show-output \
-#       //antlir/compiler/test_images:test-layer |
-#         cut -f 2- -d ' '
-#   )" -- /layer-test-binary -ba r --baz=3 --output $(mktemp) --ou ; echo $?
-#
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     argv = []
 
     # pyre-fixme[6]: Expected `Dict[str, str]` for 1st param but got
@@ -312,3 +300,19 @@ if __name__ == "__main__":  # pragma: no cover
 
     # Only trigger SystemExit after the context was cleaned up.
     sys.exit(ret.returncode)
+
+
+# Integration coverage is provided by `image.python_unittest` targets, which
+# use `nspawn_in_subvol/run_test.py` in their implementation.  However, here
+# is a basic smoke test, which, incidentally, demonstrates our test error
+# handling is sane since `/layer-test-binary` is absent in that image,
+# causing the container to exit with code 1.
+#
+#   buck run //antlir/nspawn_in_subvol:run-test -- --layer "$(
+#     buck build --show-output \
+#       //antlir/compiler/test_images:test-layer |
+#         cut -f 2- -d ' '
+#   )" -- /layer-test-binary -ba r --baz=3 --output $(mktemp) --ou ; echo $?
+#
+if __name__ == "__main__":
+    main()  # pragma: no cover

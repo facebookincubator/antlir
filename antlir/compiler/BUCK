@@ -88,7 +88,7 @@ python_library(
 
 python_binary(
     name = "compile-items-to-subvol-bin",
-    main_module = "antlir.compiler.helpers",
+    main_function = "antlir.compiler.helpers.main",
     visibility = ["PUBLIC"],
     deps = [":helpers"],
 )

@@ -118,7 +118,11 @@ def print_rpms_with_reason(wanted_rpms) -> None:
         print(line)
 
 
-if __name__ == "__main__":
+def main() -> None:
     import sys
 
     print_rpms_with_reason(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()
