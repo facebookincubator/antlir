@@ -1,8 +1,6 @@
-load("//antlir/vm/bzl:defs.bzl", "vm")
-load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load(":defs.bzl", "fedora_kernel")
 
-kernel = fedora_kernel(
+fedora_kernel(
     arch = "x86_64",
     core_sha256 = "d8f263272b87175ece88f200f6b843c89c4294ee2abf630ff38485abac90fb47",
     devel_sha256 = "206daac2df7f704a0811c1ec7dd4833ae346315a351e2795a6d3710826440d40",
@@ -20,22 +18,4 @@ fedora_kernel(
     headers_sha256 = "261bdfdbaf810aaa420d7f3861ff30dd0e74e3cd984a6c30d88ef48a94368b08",
     headers_version = "5.8.11-300.fc33.aarch64",
     kernel = "5.8.15-301.fc33.aarch64",
-)
-
-initrd(
-    kernel = kernel,
-    module_list = [
-        "drivers/block/virtio_blk.ko.xz",
-        "fs/fscache/fscache.ko.xz",
-        "fs/9p/9p.ko.xz",
-        "net/9p/9pnet.ko.xz",
-        "net/9p/9pnet_virtio.ko.xz",
-    ],
-)
-
-vm.run(
-    name = "5.8.15-301.fc33.x86_64",
-    vm_opts = vm.types.opts.new(
-        kernel = kernel,
-    ),
 )
