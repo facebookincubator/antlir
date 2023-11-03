@@ -48,6 +48,7 @@ use crate::types::VMArgs;
 use crate::utils::create_tpx_logs;
 use crate::utils::env_names_to_kvpairs;
 use crate::utils::log_command;
+use crate::vm::VMError;
 use crate::vm::VM;
 
 type Result<T> = std::result::Result<T, anyhow::Error>;
@@ -77,6 +78,13 @@ struct RunCmdArgs {
     /// Json-encoded file describing paths of binaries required by VM
     #[arg(long)]
     runtime_spec: JsonFile<RuntimeOpts>,
+    /// Expects the VM to timeout or terminate early
+    #[arg(long)]
+    expect_failure: bool,
+    /// The command should be run after VM termination. Console log will be
+    /// available at env $CONSOLE_OUTPUT.
+    #[clap(long)]
+    postmortem: bool,
     #[clap(flatten)]
     vm_args: VMArgs,
 }
@@ -105,14 +113,70 @@ fn run(args: &RunCmdArgs) -> Result<()> {
     debug!("MachineOpts: {:?}", args.machine_spec);
     debug!("VMArgs: {:?}", args.vm_args);
 
+    if args.postmortem {
+        if args.vm_args.console_output_file.is_none() {
+            bail!("Console output file must be specified to run command after VM termination.");
+        }
+        if args.vm_args.mode.command.is_none() {
+            bail!("Expected to run command after VM termination but no command specified.");
+        }
+    }
+
     set_runtime(args.runtime_spec.clone().into_inner())
         .map_err(|_| anyhow!("Failed to set runtime"))?;
     let machine_opts = args.machine_spec.clone().into_inner();
-    if machine_opts.use_legacy_share {
-        Ok(VM::<NinePShare>::new(machine_opts, args.vm_args.clone())?.run()?)
+    let result = if machine_opts.use_legacy_share {
+        VM::<NinePShare>::new(machine_opts, args.vm_args.clone())?.run()
     } else {
-        Ok(VM::<VirtiofsShare>::new(machine_opts, args.vm_args.clone())?.run()?)
+        VM::<VirtiofsShare>::new(machine_opts, args.vm_args.clone())?.run()
+    };
+
+    if !args.expect_failure {
+        result?;
+    } else {
+        match result {
+            Ok(_) => bail!("Expected VM to fail but succeeded."),
+            Err(e) => match e {
+                // Only a subset of errors are allowed
+                VMError::BootError { .. }
+                | VMError::EarlyTerminationError(_)
+                | VMError::SSHCommandResultError(_)
+                | VMError::RunError(_) => debug!("VM failed with expected error: {:?}", e),
+                _ => bail!("VM failed with unexpected error: {:?}", e),
+            },
+        }
     }
+
+    if args.postmortem {
+        let cmd_args = args
+            .vm_args
+            .mode
+            .command
+            .as_ref()
+            .expect("Command not specified");
+        let mut cmd = Command::new(&cmd_args[0]);
+        args.vm_args.command_envs.iter().for_each(|pair| {
+            cmd.env(&pair.key, &pair.value);
+        });
+        cmd.env(
+            "CONSOLE_OUTPUT",
+            args.vm_args
+                .console_output_file
+                .as_ref()
+                .expect("No console output file"),
+        );
+        cmd_args.iter().skip(1).for_each(|arg| {
+            cmd.arg(arg);
+        });
+        let status = cmd
+            .status()
+            .context(format!("Command {:?} failed", cmd_args))?;
+        if !status.success() {
+            bail!("Command {:?} failed: {:?}", cmd_args, status);
+        }
+    }
+
+    Ok(())
 }
 
 /// Enter isolated container and then respawn itself inside it with `run`
@@ -268,8 +332,14 @@ fn vm_test_command(args: &IsolateCmdArgs, validated_args: &ValidatedVMArgs) -> R
         .arg("--machine-spec")
         .arg(args.run_cmd_args.machine_spec.path())
         .arg("--runtime-spec")
-        .arg(args.run_cmd_args.runtime_spec.path())
-        .args(validated_args.inner.to_args());
+        .arg(args.run_cmd_args.runtime_spec.path());
+    if args.run_cmd_args.expect_failure {
+        command.arg("--expect-failure");
+    }
+    if args.run_cmd_args.postmortem {
+        command.arg("--postmortem");
+    }
+    command.args(validated_args.inner.to_args());
     Ok(command)
 }
 
