@@ -570,9 +570,11 @@ def layer(
         default_rou = compat.default_rou_from_antlir1_flavor(kwargs["flavor"])
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
-    compatible_with = kwargs.pop("compatible_with", []) or []
-    compatible_with.extend(kwargs.pop("_feature_compatible_with", []))
-    kwargs["compatible_with"] = compatible_with
+
+    target_compatible_with = kwargs.pop("target_compatible_with", []) or []
+    target_compatible_with.extend(kwargs.pop("_feature_target_compatible_with", []))
+    if target_compatible_with:
+        kwargs["target_compatible_with"] = target_compatible_with
 
     if is_facebook:
         # available_fbpkgs is logically an optional dep, but to make it truly

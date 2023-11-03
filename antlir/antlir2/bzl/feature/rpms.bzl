@@ -72,7 +72,7 @@ def _install_common(
             "subjects": subjects,
         },
         analyze_uses_context = True,
-        compatible_with = [
+        target_compatible_with = [
             "//antlir/antlir2/os/package_manager:dnf",
         ],
     )
@@ -126,7 +126,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
             "subjects": rpms,
         },
         analyze_uses_context = True,
-        compatible_with = [
+        target_compatible_with = [
             "//antlir/antlir2/os/package_manager:dnf",
         ],
     )
@@ -149,7 +149,7 @@ def rpms_remove(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
             "subjects": rpms,
         },
         analyze_uses_context = True,
-        compatible_with = [
+        target_compatible_with = [
             "//antlir/antlir2/os/package_manager:dnf",
         ],
     )

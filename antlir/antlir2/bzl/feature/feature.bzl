@@ -345,7 +345,7 @@ def feature_attrs(
     inline_features_exec_deps = {}
     inline_features_unnamed_deps_or_srcs = {}
     inline_features_args = {}
-    features_compatible_with = []
+    features_target_compatible_with = []
     for feat in features:
         if types.is_string(feat):
             feature_targets.append(feat)
@@ -377,11 +377,10 @@ def feature_attrs(
                 inline_features_args[feature_key] = feat.args
             if feat.srcs:
                 inline_features_srcs[feature_key] = feat.srcs
-            if feat.compatible_with:
-                features_compatible_with.extend(feat.compatible_with)
+            if feat.target_compatible_with:
+                features_target_compatible_with.extend(feat.target_compatible_with)
 
     return {
-        "compatible_with": features_compatible_with,
         "feature_targets": feature_targets,
         "inline_features": inline_features,
         "inline_features_args": inline_features_args,
@@ -391,6 +390,7 @@ def feature_attrs(
         "inline_features_plugins": inline_features_plugins,
         "inline_features_srcs": inline_features_srcs,
         "inline_features_unnamed_deps_or_srcs": inline_features_unnamed_deps_or_srcs,
+        "target_compatible_with": features_target_compatible_with,
     }
 
 def feature(
