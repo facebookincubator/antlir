@@ -27,6 +27,16 @@ For developers, there are additional benefits:
 - Data types are decoupled from buck, which makes it easier wrap a VM standalone
 - Enables multi-arch testing (still WIP)
 
+## General Note for Examples
+
+Throughout the doc, you will see reference to MetalOS targets a lot. That's
+because to make a useful VM for tests, obviously one needs an image with OS.
+Unlike Antlir1 VM API that are tightly coupled with MetalOS, the Antlir2 VM
+framework and disk content are now decoupled. The advantage is that clean
+dependency enables Antlir2 VM to support any image better. The downside is that
+all VMs and tests have to be moved into the directory that provides those OS
+internals. MetalOS is the default OS we use for the purpose.
+
 ## For Test Users
 
 VM itself and VM tests are presented as a normal buck2 target. For example, one
@@ -34,7 +44,7 @@ can run the default VM with the following command and it will open a shell
 through ssh inside VM.
 
 ```
-$ buck2 run //antlir/antlir2/antlir2_vm:default-nondisk-boot
+$ buck2 run //metalos/vm:default-initrd-boot
 2023-09-12T18:43:03.624505Z  INFO antlir2_vm::vm: Booting VM. It could take seconds to minutes...
 2023-09-12T18:43:03.725167Z  INFO antlir2_vm::vm: Note: console output is redirected to /tmp/.tmpcgsDxD/console.txt
 2023-09-12T18:43:39.881741Z  INFO antlir2_vm::vm: Received boot event READY after 36.256695 seconds
@@ -45,7 +55,7 @@ Similarly, one can run the example tests. It will execute the test inside VM and
 report back results.
 
 ```
-$ buck2 test //antlir/antlir2/antlir2_vm/tests:rust-test
+$ buck2 test //metalos/vm/tests/antlir:rust-test
 <test output just like a normal tests>
 ```
 
@@ -65,15 +75,15 @@ target, with additional benefit of having all relevant environmental variables
 for the test set in the ssh shell.
 
 ```
-$ buck2 run //antlir/antlir2/antlir2_vm/tests:rust-test[shell]
+$ buck2 run //metalos/vm/tests/antlir:rust-test[shell]
 ```
 
 If you want a console instead of ssh shell, use the `[console]` sub target. This
 also prints console output to screen.
 
 ```
-$ buck2 run //antlir/antlir2/antlir2_vm/tests:rust-test[console]
-$ buck2 run //antlir/antlir2/antlir2_vm:default-nondisk-boot[console]
+$ buck2 run //metalos/vm/tests/antlir:rust-test[console]
+$ buck2 run //metalos/vm:default-initrd-boot[console]
 ```
 
 If you want to inspect the VM related artifacts,
@@ -143,26 +153,26 @@ depends on test discovery, so we can't predict the test command beforehand.
 
 ```
 # Run the test once
-$ buck2 test //antlir/antlir2/antlir2_vm/tests:rust-test
+$ buck2 test //metalos/vm/tests/antlir:rust-test
 
 # Run it the second time, so next what-ran command won't flush your screen with build commands
-$ buck2 test //antlir/antlir2/antlir2_vm/tests:rust-test
+$ buck2 test //metalos/vm/tests/antlir:rust-test
 
 $ buck2 log what-ran
-Showing commands from: <omitted> test antlir/antlir2/antlir2_vm/tests:rust-test
-test.run        antlir/antlir2/antlir2_vm/tests:rust-test       local   env -- "ANTLIR2_TEST=1" "RUSTC_BOOTSTRAP=1" "RUST_BACKTRACE=1" "RUST_LIB_BACKTRACE=0" <omitted> /<path_omitted>/antlir/antlir2/antlir2_vm/__antlir2_vm__/shared/antlir2_vm test "--image=<omitted>" "--machine-spec=<omitted>" "--runtime-spec=<omitted>" "--setenv=ANTLIR2_TEST=\"1\"" "--timeout-secs=300" rust <path redacted>/antlir/antlir2/antlir2_vm/tests/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact
+Showing commands from: <omitted> test metalos/vm/tests/antlir:rust-test
+test.run        metalos/vm/tests/antlir:rust-test       local   env -- "ANTLIR2_TEST=1" "RUSTC_BOOTSTRAP=1" "RUST_BACKTRACE=1" "RUST_LIB_BACKTRACE=0" <omitted> /<path_omitted>/antlir/antlir2/antlir2_vm/__antlir2_vm__/shared/antlir2_vm test "--image=<omitted>" "--machine-spec=<omitted>" "--runtime-spec=<omitted>" "--setenv=ANTLIR2_TEST=\"1\"" "--timeout-secs=300" rust <path redacted>/metalos/vm/tests/antlir/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact
 
 # The output could be a lot to parse, so you need to know what you are looking for.
 # 1) Find the lines start with `test.run` and ignore everything else.
-# 2) Focus towards the end of each long line, and look for a pattern of `<test type> <blah>`. The test type here is `rust` and all the following commands and args are the test args you want to copy. In this case, it would be `<path redacted>/antlir/antlir2/antlir2_vm/tests/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact`, assuming you are looking for the `is_root` test function.
+# 2) Focus towards the end of each long line, and look for a pattern of `<test type> <blah>`. The test type here is `rust` and all the following commands and args are the test args you want to copy. In this case, it would be `<path redacted>/metalos/vm/tests/antlir/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact`, assuming you are looking for the `is_root` test function.
 
 # Boot the interactive shell. You can optionally prepend `RUST_LOG` or use `[console]` if necessary.
 
-$ buck2 run antlir/antlir2/antlir2_vm/tests:rust-test[shell]
+$ buck2 run metalos/vm/tests/antlir:rust-test[shell]
 2023-10-02T19:16:56.024106Z  INFO antlir2_vm::vm: Booting VM. It could take seconds to minutes...
 <more output omitted until you get the shell>
 
-[root@vmtest ~]# <path redacted>/antlir/antlir2/antlir2_vm/tests/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact
+[root@vmtest ~]# <path redacted>/metalos/vm/tests/antlir/__rust-test_vm_test_inner__/shared/test_rs is_root -Z unstable-options "--format=json" --exact
 { "type": "suite", "event": "started", "test_count": 1 }
 { "type": "test", "event": "started", "name": "is_root" }
 { "type": "test", "name": "is_root", "event": "ok" }
@@ -219,7 +229,7 @@ need, you can use the pre-configured target. More likely though, you want to
 customize your VM, whether for hardware configuration or root disk. We provide
 relevant API for each.
 
-The default example VM is in `antlir2/antlir2_vm/TARGETS` and can be stripped
+The default example VM is in `metalos/vm/TARGETS` and can be stripped
 down to the following for a VM boots from disk.
 
 ```
@@ -290,7 +300,7 @@ combined with MetalOS kernel and initrd to boot the VM.
 ### MetalOS VM API
 
 MetalOS provides default artifacts used by Antlir VM, for both antlir1 and
-antlir2. This includes initrd, kernel, rootfs, etc. In addition, most simply
+antlir2. This includes initrd, kernel, rootfs, etc. In addition, most simple
 customization people do is only possible with some distro filling in the missing
 bits as default, and MetalOS is that distro in antlir VM. This is why we are
 introducing an additional API here, even though technically speaking, MetalOS is
@@ -527,19 +537,16 @@ vm.python_unittest(
 )
 ```
 
-In these cases, instead of splitting it out, check the
-`antlir2/antlir2_vm/bzl:preconfigured.bzl` to see if such a VM exists already.
-If so, refer to it directly.
+In these cases, various targets from `vm.artifacts.default_vms` in
+`antlir2/antlir2_vm/bzl:defs.bzl` should provide a default VM for your tests.
 
 ```
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
-load("//antlir/antlir2/antlir2_vm/bzl:preconfigured.bzl", "get_vm")
 
 vm.python_test(
     name = "test",
     srcs = ["test.py"],
-    # "nondisk-boot" can be omitted as it's the default
-    vm_host = get_vm("nondisk-boot"),
+    vm_host = vm.artifacts.default_vms.initrd_boot,
 )
 ```
 
@@ -590,7 +597,7 @@ investigation inside the container. This is mostly useful for investigating
 `sidecar_services` that run outside VM.
 
 ```
-$ buck2 run //antlir/antlir2/antlir2_vm:default-nondisk-boot[container]
+$ buck2 run //metalos/vm:default-initrd-boot[container]
 ```
 
 The VM will continue to boot in the background and you will still have access to
