@@ -24,18 +24,23 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(ctx.attrs.vm_host[VMHostInfo].runtime_spec, format = "--runtime-spec={}"),
         cmd_args([k for k in ctx.attrs.test[ExternalRunnerTestInfo].env], format = "--passenv={}"),
     )
-    test_args = cmd_args(
-        ctx.attrs.test[ExternalRunnerTestInfo].test_type,
-        ctx.attrs.test[ExternalRunnerTestInfo].command,
-    )
 
     test_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
         "test",
         common_args,
         cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
-        test_args,
     )
+    if ctx.attrs.expect_failure:
+        test_cmd = cmd_args(test_cmd, "--expect-failure")
+    if ctx.attrs.postmortem:
+        test_cmd = cmd_args(test_cmd, "--postmortem")
+    test_cmd = cmd_args(
+        test_cmd,
+        ctx.attrs.test[ExternalRunnerTestInfo].test_type,
+        ctx.attrs.test[ExternalRunnerTestInfo].command,
+    )
+
     test_script, _ = ctx.actions.write(
         "test.sh",
         cmd_args(
@@ -47,7 +52,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         allow_args = True,
     )
 
-    # vm_exec will hijack the command to spawn a shell for `testdebug` action
+    # vm_exec will spawn a shell inside VM
     shell_cmd = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].vm_exec[RunInfo]),
         "isolate",
@@ -94,9 +99,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _vm_test = rule(
     impl = _impl,
     attrs = {
+        "expect_failure": attrs.bool(
+            doc = "If true, VM is expected to timeout or fail early.",
+        ),
+        "postmortem": attrs.bool(
+            doc = "If true, the test is run after VM is terminated and its console log is accessible \
+            through env $CONSOLE_OUTPUT. This is usually combined with @expect_failure to validate \
+            failure scenarios.",
+        ),
         "test": attrs.dep(
             providers = [ExternalRunnerTestInfo],
-            doc = "Test target to execute inside VM",
+            doc = "Test target to execute. It's executed inside the VM unless @postmortem is set.",
         ),
         "test_labels": attrs.option(
             attrs.list(attrs.string(), default = []),
@@ -141,6 +154,8 @@ def _implicit_vm_test(
         vm_host: str,
         run_as_bundle: bool = False,
         timeout_secs: int = 300,
+        expect_failure: bool = False,
+        postmortem: bool = False,
         labels: list[str] | None = None,
         _add_outer_labels: list[str] = [],
         **kwargs):
@@ -179,6 +194,8 @@ def _implicit_vm_test(
         test_labels = wrapper_labels,
         vm_host = vm_host,
         timeout_secs = timeout_secs,
+        expect_failure = expect_failure,
+        postmortem = postmortem,
         # VM is not ready for other arch yet
         compatible_with = ["ovr_config//cpu:x86_64"],
     )
