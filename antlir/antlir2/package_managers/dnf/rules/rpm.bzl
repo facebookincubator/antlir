@@ -133,7 +133,7 @@ rpm = rule(
         "antlir2_isolate": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_isolate:cli")),
         "arch": attrs.string(),
         "epoch": attrs.int(),
-        "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makechunk")),
+        "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:makechunk")),
         "reflink_flavors": attrs.dict(attrs.string(), attrs.dep(providers = [LayerInfo]), default = REFLINK_FLAVORS),
         "release": attrs.string(),
         "rpm": attrs.option(attrs.source(), default = None),

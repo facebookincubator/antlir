@@ -5,8 +5,8 @@
 
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
 load("//antlir/bzl:types.bzl", "types")
-load("//antlir/rpm/dnf2buck:rpm.bzl", "rpm")
 
 types.lint_noop()
 
