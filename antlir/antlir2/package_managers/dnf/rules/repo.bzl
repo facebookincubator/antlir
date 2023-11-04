@@ -127,7 +127,7 @@ repo_attrs = {
         default = None,
     ),
     "bucket": attrs.option(attrs.string(doc = "manifold bucket"), default = None),
-    "build_solv": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:build-solv")),
+    "build_solv": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:build-solv")),
     "compress": attrs.enum(["none", "gzip"], default = "gzip"),
     "deleted_base_key": attrs.option(
         attrs.string(),
@@ -136,7 +136,7 @@ repo_attrs = {
     ),
     "dnf_conf": attrs.dict(attrs.string(), attrs.string(), default = {}),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
-    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/dnf2buck:makerepo")),
+    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),
     "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
     "rpms": attrs.list(

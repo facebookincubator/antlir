@@ -12,7 +12,7 @@ oncall("antlir")
 python_binary(
     name = "makechunk",
     srcs = ["makechunk.py"],
-    main_function = "antlir.rpm.dnf2buck.makechunk.main",
+    main_function = "antlir.antlir2.package_managers.dnf.rules.makechunk.main",
     visibility = ["PUBLIC"],
     deps = third_party.libraries(
         [
@@ -26,7 +26,7 @@ python_binary(
 python_binary(
     name = "makerepo",
     srcs = ["makerepo.py"],
-    main_function = "antlir.rpm.dnf2buck.makerepo.main",
+    main_function = "antlir.antlir2.package_managers.dnf.rules.makerepo.main",
     deps = third_party.libraries(
         [
             "click",

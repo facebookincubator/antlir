@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl:json_file.bzl", "json_file")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/rpm/dnf2buck:repo.bzl", "repo_set")
+load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 
 oncall("antlir")
 

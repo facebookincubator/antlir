@@ -5,11 +5,11 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load(
-    "//antlir/rpm/dnf2buck:repo.bzl",
+    "//antlir/antlir2/package_managers/dnf/rules:repo.bzl",
     "RepoInfo",  # @unused Used as type
 )
 load(
-    "//antlir/rpm/dnf2buck:rpm.bzl",
+    "//antlir/antlir2/package_managers/dnf/rules:rpm.bzl",
     "RpmInfo",  # @unused Used as type
     "nevra_to_string",
     "package_href",

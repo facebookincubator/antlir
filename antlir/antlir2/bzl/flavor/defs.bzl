@@ -6,7 +6,7 @@
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorDnfInfo", "FlavorInfo", "LayerInfo")
 # @oss-disable
-load("//antlir/rpm/dnf2buck:repo.bzl", "RepoSetInfo")
+load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoSetInfo")
 
 _flavor_attrs = {
     "default_build_appliance": attrs.dep(providers = [LayerInfo]),

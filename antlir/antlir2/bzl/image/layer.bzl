@@ -18,10 +18,10 @@ load(
 # @oss-disable
 # @oss-disable
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
+load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:types.bzl", "types")
-load("//antlir/rpm/dnf2buck:repo.bzl", "RepoInfo", "RepoSetInfo")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg", "remove_os_constraint")
