@@ -49,7 +49,6 @@ def image_layer_from_package_helper(
         # building with "-c antlir.rc_targets=XXX" won't fail.
         image_layer_alias(
             name = PRIVATE_DO_NOT_USE_feature_target_name(name),
-            antlir2 = False,
             layer = rc_layer,
         )
     if use_rc_target(exact_match = True, target = target) and rc_layer == None:
