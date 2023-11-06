@@ -1,3 +1,5 @@
+import Admonition from '@theme/Admonition';
+
 # Multi-OS (aka Base) Images
 
 A common requirement of complex base images is the support of multiple OS
@@ -33,12 +35,23 @@ whatever OS the end user wanted - of course, provided that all images along the
 way are compatible (no `compatible_with` that excludes the OS or any features
 with a `select` that fails to cover the requested OS).
 
-:::note
-
-`default_os` is applied from the bottom-up
+:::note `default_os` is applied from the bottom-up
 
 The leaf image being built takes over the configuration of the entire chain. In
 other words, the `default_os` attribute of any `parent_layer`s is ignored.
+
+:::
+
+:::caution
+
+Since not all images have been opted into this model, you need a flag in your
+`PACKAGE` file to enable this feature.
+
+```python title="fbcode/my_team/my_image/PACKAGE"
+load("//antlir/antlir2/os:package.bzl", "all_images_in_package_use_default_os")
+
+all_images_in_package_use_default_os()
+```
 
 :::
 
@@ -75,13 +88,23 @@ The base image author is free to set `default_os` on their own layers so that
 A chosen `default_os` value can also be applied to all image targets within a
 subdirectory of the repo by using `PACKAGE` files.
 
-```python
-load("//antlir/antlir2/os:defs.bzl", "set_default_os_for_package")
+```python title="fbcode/my_team/my_image/PACKAGE"
+load("//antlir/antlir2/os:package.bzl", "set_default_os_for_package")
 
 set_default_os_for_package(
     default_os = "centos9"
 )
 ```
+
+<InternalOnly>
+<Admonition type="tip" title="This is often unnecessary">
+<p>
+<code>fbcode</code> ships with a <code>PACKAGE</code> file that selects an
+appropriate <code>default_os</code> that the Antlir team maintains. If you don't
+specifically need a certain OS release, prefer to leave it unspecified.
+</p>
+</Admonition>
+</InternalOnly>
 
 ### (In)Compatibility
 
@@ -92,16 +115,14 @@ message.
 For example, if an image is only compatible with CentOS 9, the following might
 be used.
 
-```python
+```python title="fbcode/my_team/my_image/TARGETS"
 image.layer(
     name = "my-base-image",
     compatible_with = ["//antlir/antlir2/os:centos9"],
 )
 ```
 
-:::tip
-
-Prefer not to set `compatible_with`
+:::tip Prefer not to set `compatible_with`
 
 Unless you know that your image is only compatible with certain OSes, it is
 preferred to not specify `compatible_with` in order to ease migration to new OS
@@ -109,9 +130,7 @@ versions that are expected to be broadly compatible `feature`-wise.
 
 :::
 
-:::caution
-
-`compatible_with` can give better error messages
+:::caution `compatible_with` can give better error messages
 
 If you forget `compatible_with` but do have a `select` (that does not cover any
 incompatible OSes), the build will still fail if a child image uses an
