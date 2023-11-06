@@ -182,7 +182,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # select() can return None for some branches
         if not dep:
             continue
-        features.extend(dep[FeatureInfo].features)
+        deps = flatten.flatten(dep)
+        for dep in deps:
+            features.extend(dep[FeatureInfo].features)
     features_json = [_feature_as_json(f) for f in features]
 
     json_file = ctx.actions.write_json("features.json", features_json)
