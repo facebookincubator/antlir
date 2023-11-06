@@ -21,6 +21,14 @@ feature.new(
             mode = "a+rx",
         ),
     ],
-    # Do NOT use this target outside of the vmtest image.
-    visibility = ["//metalos/os/vm/..."],
+    # Do NOT use this target outside of:
+    #
+    # * MetalOS vmtest image.
+    # * Grasstile builds
+    #
+    # See https://fburl.com/workplace/hux7vro0 for discussion
+    visibility = [
+        "//metalos/os/vm/...",
+        "//provisioning/images/grasstile/...",
+    ],
 )
