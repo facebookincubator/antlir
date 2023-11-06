@@ -37,6 +37,20 @@ view of Buck:
 def image_layer_alias(name, layer, runtime = None, visibility = None, antlir2 = None):
     visibility = visibility or []
 
+    if antlir2_shim.upgrade_or_shadow_layer(
+        antlir2 = antlir2,
+        name = name,
+        fn = alias,
+        actual = layer,
+        antlir_rule = "user-internal",
+        fake_buck1 = struct(
+            fn = antlir2_shim.fake_buck1_target,
+            name = name,
+        ),
+        visibility = visibility,
+    ) == "upgrade":
+        return
+
     # IMPORTANT: If you touch this genrule, update `_image_layer_impl`.
     buck_genrule(
         name = name,
@@ -70,16 +84,3 @@ def image_layer_alias(name, layer, runtime = None, visibility = None, antlir2 = 
     )
 
     add_runtime_targets(name, runtime)
-
-    if antlir2_shim.upgrade_or_shadow_layer(
-        antlir2 = antlir2,
-        name = name,
-        fn = alias,
-        actual = layer,
-        antlir_rule = "user-internal",
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_target,
-            name = name,
-        ),
-    ) == "upgrade":
-        return
