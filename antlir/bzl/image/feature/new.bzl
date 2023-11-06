@@ -373,7 +373,10 @@ def feature_new(
         # that is not available for all flavors in REPO_CFG.flavor_to_config.
         # An example of this is the internal feature in `image_layer.bzl`.
         flavors = None,
-        antlir2 = None):
+        antlir2 = None,
+        # If set, will be directly used as antlir2 features, else we'll attempt to
+        # derive them implicitly from `features`
+        antlir2_features = None):
     private_feature_new(
         name,
         features,
@@ -388,7 +391,7 @@ def feature_new(
         antlir2 = antlir2,
         name = name,
         fn = antlir2_shim.getattr_buck2(antlir2_feature, "new"),
-        features = [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
+        features = antlir2_features or [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
         visibility = get_visibility(visibility),
         fake_buck1 = struct(
             fn = antlir2_shim.fake_buck1_feature,
