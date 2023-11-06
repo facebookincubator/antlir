@@ -51,6 +51,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 ctx.attrs.layer.label.raw_target(),
             ))
 
+        # this should be impossible, but let's be very careful
+        if ctx.attrs.layer[LayerInfo].flavor.label != incremental_parent[SendstreamInfo].layer[LayerInfo].flavor.label:
+            fail("flavor ({}) was different from incremental_parent's flavor ({})".format(
+                ctx.attrs.layer[LayerInfo].flavor.label,
+                incremental_parent[SendstreamInfo].layer[LayerInfo].flavor.label,
+            ))
+
     spec = ctx.actions.write_json(
         "spec.json",
         {"sendstream": {
@@ -90,7 +97,20 @@ _sendstream = anon_rule(
     attrs = _base_sendstream_args | layer_attrs,
 )
 
-sendstream = rule_with_default_target_platform(_sendstream)
+def _v1_impl(ctx: AnalysisContext):
+    return [
+        DefaultInfo(
+            anon_v1_sendstream(ctx = ctx).artifact("anon_v1_sendstream"),
+        ),
+    ]
+
+_sendstream_v1 = rule(
+    impl = _v1_impl,
+    attrs = _base_sendstream_args | layer_attrs,
+    cfg = package_cfg,
+)
+
+sendstream = rule_with_default_target_platform(_sendstream_v1)
 
 def anon_v1_sendstream(
         *,
