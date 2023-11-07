@@ -50,7 +50,6 @@ def image_test_rpm_names(
         # rpm cli installed
         parent_layer = layer + "[build_appliance]",
         features = [
-            feature.ensure_dirs_exist(dirs = "/layer"),
             feature.layer_mount(
                 source = layer,
                 mountpoint = "/layer",
@@ -123,7 +122,6 @@ def image_test_rpm_integrity(
         parent_layer = layer + "[build_appliance]",
         flavor = layer + "[flavor]",
         features = [
-            feature.ensure_dirs_exist(dirs = "/layer"),
             feature.layer_mount(
                 source = layer,
                 mountpoint = "/layer",

@@ -1,4 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load(":defs.bzl", "bad_depgraph", "good_depgraph")
 
@@ -454,4 +455,44 @@ good_depgraph(
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "mount-a",
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "mount-b",
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+bad_depgraph(
+    name = "conflicting-mounts",
+    error_regex = "\"\\/mnt\".*is provided by multiple features.*",
+    features = [
+        feature.layer_mount(
+            mountpoint = "/mnt",
+            source = ":mount-a",
+        ),
+        feature.layer_mount(
+            mountpoint = "/mnt",
+            source = ":mount-b",
+        ),
+    ],
+)
+
+bad_depgraph(
+    name = "install-under-mount-fails",
+    error_regex = "^.*/mnt.*\\sdoes not satisfy the validation rules: FileType\\(Directory\\)\\s.*",
+    features = [
+        feature.layer_mount(
+            mountpoint = "/mnt",
+            source = ":mount-a",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/mnt/empty",
+        ),
+    ],
 )

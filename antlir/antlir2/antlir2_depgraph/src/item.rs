@@ -65,6 +65,7 @@ impl<'a> Item<'a> {
             Self::Path(p) => match p {
                 Path::Entry(e) => ItemKey::Path(e.path.clone()),
                 Path::Symlink { link, .. } => ItemKey::Path(link.clone()),
+                Path::Mount(mnt) => ItemKey::Path(mnt.path.clone()),
             },
             Self::User(u) => ItemKey::User(u.name.clone()),
             Self::Group(g) => ItemKey::Group(g.name.clone()),
@@ -91,6 +92,7 @@ pub enum Path<'a> {
         link: Cow<'a, std::path::Path>,
         target: Cow<'a, std::path::Path>,
     },
+    Mount(Mount<'a>),
 }
 
 #[derive(
@@ -108,6 +110,25 @@ pub struct FsEntry<'a> {
     pub path: Cow<'a, std::path::Path>,
     pub file_type: FileType,
     pub mode: u32,
+}
+
+#[derive(
+    Debug,
+    Clone,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    Deserialize,
+    Serialize
+)]
+pub struct Mount<'a> {
+    pub path: Cow<'a, std::path::Path>,
+    pub file_type: FileType,
+    pub mode: u32,
+    /// Human readable description of where this mount comes from
+    pub source_description: Cow<'a, str>,
 }
 
 #[derive(

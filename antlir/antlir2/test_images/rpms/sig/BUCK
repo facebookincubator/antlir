@@ -156,7 +156,6 @@ image.layer(
     name = "test-install-signed-imported-keys-layer",
     features = [
         feature.layer_mount(
-            mkdir = True,
             mountpoint = "/layer",
             source = ":install-signed",
         ),

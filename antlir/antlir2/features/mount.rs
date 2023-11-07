@@ -8,9 +8,11 @@
 use std::path::PathBuf;
 
 use antlir2_compile::CompilerContext;
+use antlir2_depgraph::item;
 use antlir2_depgraph::item::FileType;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::item::ItemKey;
+use antlir2_depgraph::item::Path;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_depgraph::requires_provides::Validator;
 use antlir2_features::types::LayerInfo;
@@ -82,20 +84,38 @@ impl Mount {
             Self::Host(h) => h.is_directory,
         }
     }
+
+    fn mode(&self) -> u32 {
+        match self {
+            Self::Layer(_) => 0o555,
+            Self::Host(h) => match h.is_directory {
+                true => 0o555,
+                false => 0o444,
+            },
+        }
+    }
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Mount {
     fn provides(&self) -> Result<Vec<Item<'static>>, String> {
-        Ok(Default::default())
+        Ok(vec![Item::Path(Path::Mount(item::Mount {
+            path: self.mountpoint().clone().into(),
+            file_type: FileType::Directory,
+            mode: self.mode(),
+            source_description: format!("{self:#?}").into(),
+        }))])
     }
 
     fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
         let mut v = vec![Requirement::ordered(
-            ItemKey::Path(self.mountpoint().to_owned().into()),
-            Validator::FileType(match self.is_directory() {
-                true => FileType::Directory,
-                false => FileType::File,
-            }),
+            ItemKey::Path(
+                self.mountpoint()
+                    .parent()
+                    .unwrap_or(std::path::Path::new("/"))
+                    .to_owned()
+                    .into(),
+            ),
+            Validator::FileType(FileType::Directory),
         )];
         match self {
             Self::Layer(l) => v.push(Requirement::ordered(
@@ -109,7 +129,16 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Mount {
 }
 
 impl antlir2_compile::CompileFeature for Mount {
-    fn compile(&self, _ctx: &CompilerContext) -> antlir2_compile::Result<()> {
+    #[tracing::instrument(skip(ctx), ret, err)]
+    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
+        match self.is_directory() {
+            true => {
+                std::fs::create_dir(ctx.dst_path(self.mountpoint())?)?;
+            }
+            false => {
+                std::fs::File::create(ctx.dst_path(self.mountpoint())?)?;
+            }
+        }
         Ok(())
     }
 }
