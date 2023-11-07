@@ -6,10 +6,12 @@ oncall("antlir")
 
 export_file(
     name = "modules.conf",
+    visibility = ["PUBLIC"],
 )
 
 export_file(
     name = "reboot-on-fail.conf",
+    visibility = ["PUBLIC"],
 )
 
 # build a vmtest initrd for every kernel
