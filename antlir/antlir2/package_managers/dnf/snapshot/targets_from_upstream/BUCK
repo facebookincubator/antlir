@@ -1,0 +1,21 @@
+load("//antlir/bzl:build_defs.bzl", "python_binary", "third_party")
+
+oncall("antlir_oss")
+
+# @noautodeps
+
+python_binary(
+    name = "targets-from-upstream",
+    srcs = ["targets_from_upstream.py"],
+    main_module = "antlir.antlir2.package_managers.dnf.snapshot.targets_from_upstream.targets_from_upstream",
+    deps = [
+        third_party.library(
+            "requests",
+            platform = "pypi",
+        ),
+        third_party.library(
+            "createrepo-c",
+            platform = "pypi",
+        ),
+    ],
+)
