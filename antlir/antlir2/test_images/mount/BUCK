@@ -24,7 +24,7 @@ image.layer(
             "coreutils",
             "util-linux",
         ]),
-        feature.ensure_dirs_exist(dirs = "/mount/in/parent"),
+        feature.ensure_dirs_exist(dirs = "/mount/in"),
         feature.layer_mount(
             mountpoint = "/mount/in/parent",
             source = ":src",
@@ -36,7 +36,6 @@ image.layer(
 image.layer(
     name = "mount",
     features = [
-        feature.ensure_dirs_exist(dirs = "/mount/in/child"),
         feature.layer_mount(
             mountpoint = "/mount/in/child",
             source = ":parent",

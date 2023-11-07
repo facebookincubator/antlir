@@ -82,12 +82,10 @@ def image_diff_test(
             parent_layer = layer + "[build_appliance]",
             flavor = layer + "[flavor]",
             features = [
-                feature.ensure_dirs_exist(dirs = "/layer"),
                 feature.layer_mount(
                     source = layer,
                     mountpoint = "/layer",
                 ),
-                feature.ensure_dirs_exist(dirs = "/parent"),
                 feature.layer_mount(
                     source = layer + "[parent_layer]",
                     mountpoint = "/parent",
