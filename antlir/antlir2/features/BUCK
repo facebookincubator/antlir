@@ -75,11 +75,6 @@ feature_impl(
 )
 
 feature_impl(
-    name = "meta_kv",
-    src = "unimplemented.rs",
-)
-
-feature_impl(
     name = "mount",
 )
 
