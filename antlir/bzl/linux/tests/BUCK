@@ -103,7 +103,12 @@ image.layer(
             layer = ":test-layer-os-release",
             os_id = "centos",
             os_name = "AntlirTest",
-            os_version = "9",
+            # dummy select to ensure that selects are resolved instead of just
+            # being dumped with 'repr'
+            os_version = select({
+                "ovr_config//cpu:arm64": "9",
+                "ovr_config//cpu:x86_64": "9",
+            }),
             path = "/usr/lib/os-release",
             variant = "Test",
         ),

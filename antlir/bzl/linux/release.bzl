@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "is_buck2")
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
+load(":release.buck2.bzl?v2_only", buck2_release_file = "release_file")
 
 def _install(path, layer, os_name, variant, os_version = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}, use_antlir2 = False):
     """
@@ -55,66 +55,27 @@ def _install(path, layer, os_name, variant, os_version = "9", os_id = "centos", 
 
     name = layer[1:] + "__os-release"
 
-    if not types.is_dict(api_versions) or any(
-        [
-            (
-                not types.is_string(k) or
-                not types.is_int(v) or
-                k.islower() or
-                not k.replace("_", "Z").isalpha() or
-                k.startswith("_") or
-                k.endswith("_")
-            )
-            for k, v in api_versions.items()
-        ],
-    ):
-        fail(
-            "api_versions must be specified as a dictionary of uppercase keys and int values",
+    if not is_buck2():
+        buck_genrule(
+            name = name,
+            out = "unused",
+            cmd = """
+                echo "not supported on buck1"
+                exit 1
+            """,
         )
-
-    api_vers = "\n".join(
-        sorted(
-            ['API_VER_{}="{}"'.format(key, val) for key, val in api_versions.items()],
-        ),
-    )
-
-    buck_genrule(
-        name = name,
-        bash = r"""
-set -x -eu
-
-rev="`$(exe {vcs}) --rev`"
-rev_time="`$(exe {vcs}) --revision_time_iso8601`"
-
-cat > $OUT << EOF
-NAME="{os_name}"
-ID="{os_id}"
-VERSION="{os_version}"
-PRETTY_NAME="{os_name} {os_version} {variant} ($rev)"
-IMAGE_ID="{image_id}"
-IMAGE_LAYER="{target}"
-IMAGE_VCS_REV="$rev"
-IMAGE_VCS_REV_TIME="$rev_time"
-VARIANT="{variant}"
-VARIANT_ID="{lower_variant}"
-ANSI_COLOR="{ansi_color}"
-{api_vers}EOF
-        """.format(
+    else:
+        buck2_release_file(
+            name = name,
             ansi_color = ansi_color,
-            image_id = native.read_config("build_info", "target_path", "local"),
-            target = normalize_target(layer),
-            os_name = os_name,
+            api_versions = api_versions,
+            layer = layer,
             os_id = os_id,
-            os_name_lower = os_name.lower(),
+            os_name = os_name,
             os_version = os_version,
-            lower_variant = variant.lower(),
             variant = variant,
-            vcs = antlir_dep(":vcs"),
-            # Ensure no blank lines are added if api_vers is empty
-            api_vers = api_vers + "\n" if api_vers else "",
-        ),
-        antlir_rule = "user-internal",
-    )
+            visibility = ["PUBLIC"],
+        )
 
     if use_antlir2:
         return [

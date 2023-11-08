@@ -5,6 +5,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
+import json
 import subprocess
 import sys
 from datetime import datetime
@@ -107,6 +108,11 @@ if __name__ == "__main__":
         action="store_true",
         help="Print the current revision timestamp in ISO8601 format.",
     )
+    parser.add_argument(
+        "--json",
+        type=argparse.FileType("w"),
+        help="Dump to this JSON file",
+    )
     opts = parser.parse_args(sys.argv[1:])
 
     if opts.rev:
@@ -115,3 +121,15 @@ if __name__ == "__main__":
         print(int(revision_timestamp().timestamp()))
     if opts.revision_time_iso8601:
         print(revision_timestamp().strftime("%Y-%m-%dT%H:%M:%S%z"))
+
+    if opts.json:
+        json.dump(
+            {
+                "rev_id": rev_id(),
+                "rev_timestamp": int(revision_timestamp().timestamp()),
+                "rev_timestamp_iso8601": revision_timestamp().strftime(
+                    "%Y-%m-%dT%H:%M:%S%z"
+                ),
+            },
+            opts.json,
+        )
