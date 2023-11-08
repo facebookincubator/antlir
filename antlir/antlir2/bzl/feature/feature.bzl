@@ -73,7 +73,6 @@ load(":extract.bzl", "extract_analyze")
 load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_analyze")
 load(":install.bzl", "install_analyze")
-load(":metakv.bzl", "metakv_analyze")
 load(":mount.bzl", "mount_analyze")
 load(":remove.bzl", "remove_analyze")
 load(":requires.bzl", "requires_analyze")
@@ -113,7 +112,6 @@ _analyze_feature = {
     "genrule": genrule_analyze,
     "group": group_analyze,
     "install": install_analyze,
-    "metakv": metakv_analyze,
     "mount": mount_analyze,
     "remove": remove_analyze,
     "requires": requires_analyze,
