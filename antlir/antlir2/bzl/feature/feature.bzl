@@ -59,7 +59,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 # @oss-disable
 # @oss-disable
 # @oss-disable
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features/test_only_features:trace.bzl", "trace_analyze")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
@@ -123,12 +123,16 @@ _analyze_feature = {
 }
 # @oss-disable
 
-def _impl(ctx: AnalysisContext) -> list[Provider]:
+_anon_rules = {
+}
+
+def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     # Merge inline features into a single JSON file
     inline_features = []
     inline_artifacts = []
     inline_run_infos = []
     inline_layer_deps = []
+    anon_features = []
     for key, inline in ctx.attrs.inline_features.items():
         feature_deps = ctx.attrs.inline_features_deps.get(key, None)
         feature_deps_or_srcs = ctx.attrs.inline_features_deps_or_srcs.get(key, None)
@@ -161,38 +165,61 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             )
         analyze_kwargs["plugin"] = ctx.attrs.inline_features_plugins[key][FeaturePluginInfo]
 
-        analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
-        for analysis in flatten.flatten(analysis):
-            inline_artifacts.extend(analysis.required_artifacts)
-            inline_run_infos.extend(analysis.required_run_infos)
-            inline_layer_deps.extend(analysis.required_layers)
+        if inline["feature_type"] in _analyze_feature:
+            analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
+            for analysis in flatten.flatten(analysis):
+                inline_artifacts.extend(analysis.required_artifacts)
+                inline_run_infos.extend(analysis.required_run_infos)
+                inline_layer_deps.extend(analysis.required_layers)
 
-            feat = feature_record(
-                feature_type = analysis.feature_type,
+                feat = feature_record(
+                    feature_type = analysis.feature_type,
+                    label = ctx.label.raw_target(),
+                    analysis = analysis,
+                    plugin = analysis.plugin or ctx.attrs.inline_features_plugins[key][FeaturePluginInfo],
+                )
+                inline_features.append(feat)
+        else:
+            anon_args = analyze_kwargs
+            anon_args["plugin"] = ctx.attrs.inline_features_plugins[key]
+            anon_features.append(ctx.actions.anon_target(
+                _anon_rules[inline["feature_type"]],
+                analyze_kwargs,
+            ))
+
+    def _with_anon_features(anon_features: list[ProviderCollection]) -> list[Provider]:
+        anon_features = [
+            feature_record(
+                feature_type = af[FeatureAnalysis].feature_type,
                 label = ctx.label.raw_target(),
-                analysis = analysis,
-                plugin = analysis.plugin or ctx.attrs.inline_features_plugins[key][FeaturePluginInfo],
+                analysis = af[FeatureAnalysis],
+                plugin = af[FeatureAnalysis].plugin,
             )
-            inline_features.append(feat)
+            for af in anon_features
+        ]
+        features = anon_features + inline_features
+        for dep in ctx.attrs.feature_targets:
+            # select() can return None for some branches
+            if not dep:
+                continue
+            deps = flatten.flatten(dep)
+            for dep in deps:
+                features.extend(dep[FeatureInfo].features)
+        features_json = [_feature_as_json(f) for f in features]
 
-    features = inline_features
-    for dep in ctx.attrs.feature_targets:
-        # select() can return None for some branches
-        if not dep:
-            continue
-        deps = flatten.flatten(dep)
-        for dep in deps:
-            features.extend(dep[FeatureInfo].features)
-    features_json = [_feature_as_json(f) for f in features]
+        json_file = ctx.actions.write_json("features.json", features_json)
 
-    json_file = ctx.actions.write_json("features.json", features_json)
+        return [
+            FeatureInfo(
+                features = features,
+            ),
+            DefaultInfo(json_file),
+        ]
 
-    return [
-        FeatureInfo(
-            features = features,
-        ),
-        DefaultInfo(json_file),
-    ]
+    if anon_features:
+        return anon_features[0].promise.join(*[af.promise for af in anon_features[1:]]).map(_with_anon_features)
+    else:
+        return _with_anon_features([])
 
 # This horrible set of pseudo-exhaustive `one_of` calls is because there
 # currently is nothing like `attrs.json()` that will force things like `select`
