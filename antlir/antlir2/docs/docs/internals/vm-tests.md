@@ -363,6 +363,7 @@ load("//metalos/vm:defs.bzl", "vm")
         vm.metalos_host(
             name = "my-vm-" + uname,
             rootfs_layer = ":my-layer",
+            uname = uname,
             ...
         ),
         vm.rust_test(
@@ -371,7 +372,7 @@ load("//metalos/vm:defs.bzl", "vm")
             ...
         )
     ]
-    for uname in ["5.12", "5.19"]
+    for uname in ["5.12.0_full_uname", "5.19.0_full_uname"]
 ]
 ```
 
