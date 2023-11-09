@@ -6,7 +6,6 @@
  */
 
 use std::fmt::Debug;
-use std::fs::File;
 use std::io::ErrorKind;
 use std::os::fd::AsRawFd;
 use std::os::unix::fs::MetadataExt;
@@ -245,7 +244,7 @@ impl WorkingVolume {
                 }?;
                 if delete {
                     trace!("subvol is no longer referenced");
-                    try_delete_subvol(&entry.path());
+                    try_delete(&entry.path());
                     if let Err(e) = std::fs::remove_file(&keepalive_path) {
                         if e.kind() != std::io::ErrorKind::NotFound {
                             warn!("failed to remove keepalive file: {e}");
@@ -259,15 +258,21 @@ impl WorkingVolume {
 }
 
 #[tracing::instrument]
-fn try_delete_subvol(path: &Path) {
+fn try_delete(path: &Path) {
     match Subvolume::open(path) {
         Ok(subvol) => {
             if let Err((_subvol, e)) = subvol.delete() {
-                warn!("failed deleting subvol: {e}")
+                warn!("failed deleting subvol: {e}");
             }
         }
         Err(e) => {
-            warn!("failed opening subvol to be deleted: {e}")
+            warn!("failed opening subvol to be deleted: {e}");
+            if let Err(e) = std::fs::remove_dir_all(path) {
+                warn!("failed to rmdir: {e}");
+                if let Err(e) = std::fs::remove_file(path) {
+                    warn!("failed to remove: {e}");
+                }
+            }
         }
     }
 }
