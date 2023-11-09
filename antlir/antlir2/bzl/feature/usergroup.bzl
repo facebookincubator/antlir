@@ -6,7 +6,7 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load(":ensure_dirs_exist.bzl", "ensure_subdirs_exist")
-load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 SHELL_BASH = "/bin/bash"
 SHELL_NOLOGIN = "/sbin/nologin"
@@ -55,11 +55,11 @@ def user_add(
         kwargs = {
             "comment": comment,
             "home_dir": home_dir,
-            "name": username,
             "primary_group": primary_group,
             "shell": shell,
             "supplementary_groups": supplementary_groups,
             "uid": uid,
+            "username": username,
         },
     )
 
@@ -79,7 +79,7 @@ def group_add(
         plugin = antlir2_dep("features:group"),
         kwargs = {
             "gid": gid,
-            "name": groupname,
+            "groupname": groupname,
         },
     )
 
@@ -99,38 +99,32 @@ def usermod(
         },
     )
 
-user_record = record(
-    name = str,
-    uid = [int, None],
-    home_dir = str,
-    shell = str,
-    primary_group = str,
-    supplementary_groups = list[str],
-    comment = [str, None],
-)
-
-user_analyze = data_only_feature_analysis_fn(
-    user_record,
+user_rule = data_only_feature_rule(
+    feature_attrs = {
+        "comment": attrs.option(attrs.string(), default = None),
+        "home_dir": attrs.string(),
+        "primary_group": attrs.string(),
+        "shell": attrs.string(),
+        "supplementary_groups": attrs.list(attrs.string()),
+        "uid": attrs.option(attrs.int(), default = None),
+        "username": attrs.string(),
+    },
     feature_type = "user",
 )
 
-group_record = record(
-    name = str,
-    gid = [int, None],
-)
-
-group_analyze = data_only_feature_analysis_fn(
-    group_record,
+group_rule = data_only_feature_rule(
+    feature_attrs = {
+        "gid": attrs.option(attrs.int(), default = None),
+        "groupname": attrs.string(),
+    },
     feature_type = "group",
 )
 
-usermod_record = record(
-    username = str,
-    add_supplementary_groups = list[str],
-)
-
-usermod_analyze = data_only_feature_analysis_fn(
-    usermod_record,
+usermod_rule = data_only_feature_rule(
+    feature_attrs = {
+        "add_supplementary_groups": attrs.list(attrs.string()),
+        "username": attrs.string(),
+    },
     feature_type = "user_mod",
 )
 
