@@ -253,15 +253,15 @@ Note the change in `disks` and additional `initrd` and `kernel` fields.
 
 ```
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
-load("//metalos/kernel/bzl:defs.bzl", "metalos_kernel")
 load("//metalos/vm/disks:simple.bzl", "simple_disk")
 load("//metalos/vm/initrd:defs.bzl", "initrd")
+load("//metalos/vm/kernels:defs.bzl", "vm_kernel")
 
 vm.host(
     name = "default-nondisk-boot",
     disks = [simple_disk.default_control_disk],
     initrd = initrd.default,
-    kernel = metalos_kernel.default.vmlinuz,
+    kernel = vm_kernel.default.vmlinuz,
 )
 ```
 
@@ -419,8 +419,8 @@ If you want a non-disk boot VM with metalos bits, it's a bit more verbose.
 ```
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
 load("//antlir/antlir2/antlir2_vm/bzl:simple.bzl", "simple_disk")
-load("//metalos/kernel/bzl:defs.bzl", "metalos_kernel")
 load("//metalos/vm/initrd:defs.bzl", "initrd")
+load("//metalos/vm/kernels:defs.bzl", "vm_kernel")
 
 vm.host(
     name = "nondisk-boot-5.19",
@@ -431,7 +431,7 @@ vm.host(
         uname = "5.19",
     )],
     initrd = initrd.get("x86_64", "5.19"),
-    kernel = metalos_kernel.get("x86_64", "5.19").vmlinuz,
+    kernel = vm_kernel.get("x86_64", "5.19").vmlinuz,
 )
 ```
 
