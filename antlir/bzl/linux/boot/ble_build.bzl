@@ -3,11 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:image.bzl", "image")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/bzl/image/package:defs.bzl", "package")
 load(":boot_loader_entry.shape.bzl", "boot_loader_entry_t")
 
 def ble_build(
@@ -41,16 +41,16 @@ def ble_build(
 
         features.extend([
             feature.install(
-                antlir_dep("vm/initrd:{}-initrd".format(kernel.uname)),
-                "/initrd-{}.img".format(kernel.uname),
+                src = antlir_dep("vm/initrd:{}-initrd".format(kernel.uname)),
+                dst = "/initrd-{}.img".format(kernel.uname),
             ),
             feature.install(
-                kernel.derived_targets.vmlinuz,
-                "/vmlinuz-{}".format(kernel.uname),
+                src = kernel.vmlinuz,
+                dst = "/vmlinuz-{}".format(kernel.uname),
             ),
             feature.install(
-                ":loader-{}-{}".format(name, kernel.uname),
-                "/loader/entries/{}.conf".format(kernel.uname),
+                src = ":loader-{}-{}".format(name, kernel.uname),
+                dst = "/loader/entries/{}.conf".format(kernel.uname),
             ),
         ])
 
@@ -60,12 +60,9 @@ def ble_build(
         features = features,
     )
 
-    package.new(
+    package.vfat(
         name = name,
         layer = ":" + name + "__layer",
-        format = "vfat",
-        loopback_opts = image.opts(
-            size_mb = efi_size_mb,
-            label = "efi",
-        ),
+        size_mb = efi_size_mb,
+        label = "efi",
     )

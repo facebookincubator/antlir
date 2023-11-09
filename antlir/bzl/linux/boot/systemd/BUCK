@@ -92,6 +92,7 @@ image.layer(
             ),
         ],
         flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
+        visibility = ["PUBLIC"],
     ),
 ] if is_buck2() else [
     antlir2_shim.fake_buck1_layer(name = "deps"),
