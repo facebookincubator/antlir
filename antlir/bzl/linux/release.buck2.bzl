@@ -35,6 +35,7 @@ def _release_file_impl(ctx: AnalysisContext) -> list[Provider]:
 NAME="{os_name}"
 ID="{os_id}"
 VERSION="{os_version}"
+VERSION_ID="{os_version_id}"
 PRETTY_NAME="{os_name} {os_version} {variant} ({rev})"
 IMAGE_ID="{image_id}"
 IMAGE_LAYER="{target}"
@@ -48,6 +49,7 @@ ANSI_COLOR="{ansi_color}"
             os_name = ctx.attrs.os_name,
             os_id = ctx.attrs.os_id,
             os_version = ctx.attrs.os_version,
+            os_version_id = ctx.attrs.os_version_id,
             variant = ctx.attrs.variant,
             lower_variant = ctx.attrs.variant.lower(),
             ansi_color = ctx.attrs.ansi_color,
@@ -82,6 +84,7 @@ _release_file = rule(
         "os_id": attrs.string(),
         "os_name": attrs.string(),
         "os_version": attrs.string(),
+        "os_version_id": attrs.string(),
         "variant": attrs.string(doc = """
             A means of expressing the (preferably monotonically increasing) API
             version for various MetalOS features embedded in the image.

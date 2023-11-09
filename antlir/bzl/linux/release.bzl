@@ -9,7 +9,7 @@ load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 load(":release.buck2.bzl?v2_only", buck2_release_file = "release_file")
 
-def _install(path, layer, os_name, variant, os_version = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}, use_antlir2 = False):
+def _install(path, layer, os_name, variant, os_version = "9", os_version_id = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}, use_antlir2 = False):
     """
     Build an `os-release` file and install it at the provided `path` location.
     See https://www.freedesktop.org/software/systemd/man/os-release.html
@@ -73,6 +73,7 @@ def _install(path, layer, os_name, variant, os_version = "9", os_id = "centos", 
             os_id = os_id,
             os_name = os_name,
             os_version = os_version,
+            os_version_id = os_version_id,
             variant = variant,
             visibility = ["PUBLIC"],
         )
