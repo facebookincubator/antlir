@@ -1,93 +1,12 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 
 oncall("antlir")
-
-python_library(
-    name = "common",
-    srcs = [
-        "common.py",
-    ],
-)
-
-python_library(
-    name = "guest-ssh",
-    srcs = [
-        "guest_ssh.py",
-    ],
-    resources = {
-        "//antlir/linux/vm/ssh:privkey": "privkey",
-    },
-    deps = [
-        "//antlir:common",
-        "//antlir/nspawn_in_subvol:common",
-    ],
-)
-
-python_library(
-    name = "vm",
-    srcs = [
-        "vm.py",
-    ],
-    deps = [
-        ":common",
-        ":guest-ssh",
-        ":share",
-        ":tap",
-        ":tpm",
-        "//antlir:common",
-        "//antlir:config",
-        "//antlir:find_built_subvol",
-        "//antlir:shape",
-        "//antlir:testlib_layer_resource",
-        "//antlir:unshare",
-        "//antlir/compiler/items:mount",
-        "//antlir/vm/bzl:vm.shape-python",
-    ],
-)
-
-python_binary(
-    name = "run",
-    srcs = [
-        "run.py",
-    ],
-    main_function = "antlir.vm.run.main",
-    visibility = ["PUBLIC"],
-    deps = [
-        ":vm",
-    ],
-)
-
-python_library(
-    name = "tap",
-    srcs = ["tap.py"],
-    deps = [
-        "//antlir:unshare",
-    ],
-)
-
-python_library(
-    name = "tpm",
-    srcs = ["tpm.py"],
-    deps = [
-        ":common",
-        "//antlir:fs_utils",
-        "//antlir:unshare",
-    ],
-)
-
-# defines the `Share` dataclass for vm
-python_library(
-    name = "share",
-    srcs = ["share.py"],
-    deps = ["//antlir:fs_utils"],
-)
 
 export_file(
     name = "mount-generator",
     src = "mount-generator",
     visibility = [
         "//antlir/linux/vm/...",
-        "//antlir/vm/tests/...",
         "//images/...",
         "//metalos/...",
         "//provisioning/images/grasstile/...",

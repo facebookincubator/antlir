@@ -704,10 +704,6 @@ shim = struct(
     #
     # Constants
     #
-    default_vm_image = struct(
-        layer = "//antlir/vm:default-image",
-        package = "//antlir/vm:default-image.btrfs",
-    ),
     do_not_use_repo_cfg = _do_not_use_repo_cfg,
     export_file = _export_file,
     get_visibility = _normalize_visibility,

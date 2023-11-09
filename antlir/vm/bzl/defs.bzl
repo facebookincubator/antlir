@@ -9,7 +9,6 @@ antlir2/antlir2_vm/bzl/defs.bzl.
 """
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load(":build_vm_run_target.bzl", "build_vm_run_target")
 load(":types.bzl", "api")
 
 vm = struct(
@@ -22,5 +21,4 @@ vm = struct(
     ),
     # API export for building vm_opt_t and related types
     types = api,
-    run = build_vm_run_target,
 )
