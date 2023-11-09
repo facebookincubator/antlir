@@ -23,7 +23,7 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "tracing-glog",
+        "tracing",
         "tracing-subscriber",
         ":antlir2_working_volume",
     ],
