@@ -79,7 +79,7 @@ load(":requires.bzl", "requires_analyze")
 load(":rpms.bzl", "rpms_analyze", "rpms_record")
 load(":symlink.bzl", "ensure_dir_symlink_analyze", "ensure_file_symlink_analyze")
 load(":tarball.bzl", "tarball_analyze")
-load(":usergroup.bzl", "group_analyze", "user_analyze", "usermod_analyze")
+load(":usergroup.bzl", "group_rule", "user_rule", "usermod_rule")
 
 feature_record = record(
     feature_type = str,
@@ -110,7 +110,6 @@ _analyze_feature = {
     # @oss-disable
     # @oss-disable
     "genrule": genrule_analyze,
-    "group": group_analyze,
     "install": install_analyze,
     "mount": mount_analyze,
     "remove": remove_analyze,
@@ -118,12 +117,13 @@ _analyze_feature = {
     "rpm": rpms_analyze,
     "tarball": tarball_analyze,
     "test_only_features/trace": trace_analyze,
-    "user": user_analyze,
-    "user_mod": usermod_analyze,
 }
 # @oss-disable
 
 _anon_rules = {
+    "group": group_rule,
+    "user": user_rule,
+    "user_mod": usermod_rule,
 }
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:

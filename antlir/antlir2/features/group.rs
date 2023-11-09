@@ -24,14 +24,14 @@ pub type Feature = Group;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Group {
-    pub name: GroupName,
+    pub groupname: GroupName,
     pub gid: Option<u32>,
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Group {
     fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(vec![Item::Group(GroupItem {
-            name: self.name.to_owned().into(),
+            name: self.groupname.to_owned().into(),
         })])
     }
 
@@ -58,7 +58,7 @@ impl antlir2_compile::CompileFeature for Group {
             }
         };
         let record = GroupRecord {
-            name: self.name.to_owned().into(),
+            name: self.groupname.to_owned().into(),
             password: Password::Shadow,
             gid,
             users: Vec::new(),

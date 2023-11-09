@@ -30,7 +30,7 @@ pub type Feature = User;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct User {
-    pub name: UserName,
+    pub username: UserName,
     pub uid: Option<u32>,
     pub primary_group: GroupName,
     pub supplementary_groups: Vec<GroupName>,
@@ -42,7 +42,7 @@ pub struct User {
 impl antlir2_depgraph::requires_provides::RequiresProvides for User {
     fn provides(&self) -> Result<Vec<Item<'static>>, String> {
         Ok(vec![Item::User(UserItem {
-            name: self.name.to_owned().into(),
+            name: self.username.to_owned().into(),
         })])
     }
 
@@ -92,7 +92,7 @@ impl antlir2_compile::CompileFeature for User {
             }
         };
         let record = UserRecord {
-            name: self.name.clone().into(),
+            name: self.username.clone().into(),
             password: Password::Shadow,
             uid,
             gid: ctx.gid(&self.primary_group)?,
@@ -120,7 +120,7 @@ impl antlir2_compile::CompileFeature for User {
                 .get_group_by_name_mut(group)
                 .with_context(|| format!("no such group '{}'", group))?
                 .users
-                .push(Cow::Borrowed(&self.name));
+                .push(Cow::Borrowed(&self.username));
         }
         std::fs::write(ctx.dst_path("/etc/group")?, groups_db.to_string())?;
         Ok(())
