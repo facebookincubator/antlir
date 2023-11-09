@@ -104,6 +104,7 @@ def image_test_rpm_integrity(
         layer: str,
         ignored_files: list[str] | Select = [],
         ignored_rpms: list[str] | Select = [],
+        default_os: str | None = None,
         **kwargs):
     """
     Verify the integrity of all installed RPMs to ensure that any changes done
@@ -114,19 +115,23 @@ def image_test_rpm_integrity(
         ignored_files = ignored_files,
         ignored_rpms = ignored_rpms,
     )
+    cfg_kwargs = {"flavor": layer + "[flavor]"}
+    if default_os or should_all_images_in_package_use_default_os():
+        default_os = default_os or get_default_os_for_package()
+        cfg_kwargs = {"default_os": default_os}
     image.layer(
         name = name + "--layer",
         # This must have 'rpm' installed already, so use the build appliance to
         # query the layer-under-test instead of relying on the image to have the
         # rpm cli installed
         parent_layer = layer + "[build_appliance]",
-        flavor = layer + "[flavor]",
         features = [
             feature.layer_mount(
                 source = layer,
                 mountpoint = "/layer",
             ),
         ],
+        **cfg_kwargs
     )
     image_sh_test(
         name = name,
