@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 
 # A dependency of a feature that is not yet resolved. This is of very limited
 # use at parse time, but allows the feature definition to inform the rule what
@@ -56,32 +56,32 @@ ParseTimeFeature = record(
 )
 
 # Produced by the feature implementation, this tells the rule how to build it
-FeatureAnalysis = record(
-    feature_type = str,
-    # Binary plugin implementation of this feature
-    plugin = FeaturePluginInfo | Provider,
-    # Arbitrary feature record type (the antlir2 compiler must be able to
-    # deserialize this)
-    data = typing.Any,
-    # Artifacts that are needed to build this feature. Antlir does not
-    # automatically attach any dependencies to features based on the input,
-    # feature implementations must always specify it exactly (this prevents
-    # building things unnecessarily)
-    required_artifacts = field(list[Artifact], default = []),
-    # Runnable binaries required to build this feature.
-    required_run_infos = field(list[RunInfo], default = []),
-    # Other image layers that are required to build this feature.
-    required_layers = field(list["LayerInfo"], default = []),
-    # This feature requires running 'antlir2' binaries to inform buck of dynamic
-    # dependencies. If no feature requires planning, the entire step can be
-    # skipped and save a few seconds of build time
-    requires_planning = field(bool, default = False),
+FeatureAnalysis = provider(fields = {
     # Some features do mutations to the image filesystem that cannot be
     # discovered in the depgraph, so those features are grouped together in
     # hidden internal layer(s) that acts as the parent layer(s) for the final
     # image.
-    build_phase = field(BuildPhase, default = BuildPhase("compile")),
-)
+    "build_phase": provider_field(BuildPhase, default = BuildPhase("compile")),
+    # Arbitrary feature record type (the antlir2 compiler must be able to
+    # deserialize this)
+    "data": provider_field(typing.Any),
+    "feature_type": provider_field(str),
+    # Binary plugin implementation of this feature
+    "plugin": provider_field(FeaturePluginInfo | Provider),
+    # Artifacts that are needed to build this feature. Antlir does not
+    # automatically attach any dependencies to features based on the input,
+    # feature implementations must always specify it exactly (this prevents
+    # building things unnecessarily)
+    "required_artifacts": provider_field(list[Artifact], default = []),
+    # Other image layers that are required to build this feature.
+    "required_layers": provider_field(list["LayerInfo"], default = []),
+    # Runnable binaries required to build this feature.
+    "required_run_infos": provider_field(list[RunInfo], default = []),
+    # This feature requires running 'antlir2' binaries to inform buck of dynamic
+    # dependencies. If no feature requires planning, the entire step can be
+    # skipped and save a few seconds of build time
+    "requires_planning": provider_field(bool, default = False),
+})
 
 Tools = record(
     objcopy = Dependency,
@@ -108,10 +108,34 @@ def data_only_feature_analysis_fn(
 
     return inner
 
+def data_only_feature_rule(
+        feature_attrs: dict[str, typing.Any],
+        feature_type: str,
+        build_phase: BuildPhase = BuildPhase("compile")):
+    def _impl(ctx: AnalysisContext) -> list[Provider]:
+        return [
+            DefaultInfo(),
+            FeatureAnalysis(
+                feature_type = feature_type,
+                data = struct(**{
+                    key: getattr(ctx.attrs, key)
+                    for key in feature_attrs
+                }),
+                build_phase = build_phase,
+                plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            ),
+        ]
+
+    return rule(
+        impl = _impl,
+        attrs = feature_attrs | {"plugin": attrs.exec_dep(providers = [FeaturePluginInfo])},
+    )
+
 def with_phase_override(
         feature: FeatureAnalysis,
         *,
         phase: BuildPhase) -> FeatureAnalysis:
     kwargs = {k: getattr(feature, k) for k in dir(feature)}
     kwargs["build_phase"] = phase
+    kwargs.pop("to_json", None)
     return FeatureAnalysis(**kwargs)
