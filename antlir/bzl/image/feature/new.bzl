@@ -284,6 +284,7 @@ def private_do_not_use_feature_json_genrule(
                 for t in sorted(deps)
             ]),
         ),
+        compatible_with = ["ovr_config//os:linux-x86_64"],
         type = "image_feature",  # For queries
         visibility = visibility,
     )
