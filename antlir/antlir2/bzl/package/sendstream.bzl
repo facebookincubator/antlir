@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//utils:utils.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
@@ -31,13 +32,18 @@ _base_sendstream_args = {
     "volume_name": attrs.string(default = _base_sendstream_args_defaults["volume_name"]),
 }
 
-def _is_ancestor(*, layer: LayerInfo, parent: Dependency):
+def _find_incremental_parent(*, layer: LayerInfo, parent_label: Label) -> Dependency | None:
     if not layer.parent:
-        return False
-    elif layer.parent.label.raw_target() == parent.label.raw_target():
-        return True
-    else:
-        return _is_ancestor(layer = layer.parent[LayerInfo], parent = parent)
+        return None
+    if parent_label.raw_target() in (
+        layer.parent.label.raw_target(),
+        layer.parent[LayerInfo].label.raw_target(),
+    ):
+        return layer.parent
+    return _find_incremental_parent(
+        layer = layer.parent[LayerInfo],
+        parent_label = parent_label,
+    )
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     sendstream = ctx.actions.declare_output("image.sendstream")
@@ -45,24 +51,32 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     incremental_parent = ctx.attrs.incremental_parent
     if incremental_parent:
-        if not _is_ancestor(layer = ctx.attrs.layer[LayerInfo], parent = incremental_parent[SendstreamInfo].layer):
-            fail("{} is not an ancestor of {}".format(
-                incremental_parent.label.raw_target(),
-                ctx.attrs.layer.label.raw_target(),
-            ))
+        incremental_parent = _find_incremental_parent(
+            layer = ctx.attrs.layer[LayerInfo],
+            parent_label = incremental_parent[SendstreamInfo].layer.label,
+        )
+        expect_non_none(
+            incremental_parent,
+            "{} (aka {}) is not an ancestor of {}",
+            ctx.attrs.incremental_parent.label.raw_target(),
+            ctx.attrs.incremental_parent[SendstreamInfo].layer.label.raw_target(),
+            ctx.attrs.layer.label.raw_target(),
+        )
 
         # this should be impossible, but let's be very careful
-        if ctx.attrs.layer[LayerInfo].flavor.label != incremental_parent[SendstreamInfo].layer[LayerInfo].flavor.label:
-            fail("flavor ({}) was different from incremental_parent's flavor ({})".format(
-                ctx.attrs.layer[LayerInfo].flavor.label,
-                incremental_parent[SendstreamInfo].layer[LayerInfo].flavor.label,
-            ))
+        expect(
+            ctx.attrs.layer[LayerInfo].flavor.label.raw_target() ==
+            incremental_parent[LayerInfo].flavor.label.raw_target(),
+            "flavor ({}) was different from incremental_parent's flavor ({})",
+            ctx.attrs.layer[LayerInfo].flavor.label,
+            incremental_parent[LayerInfo].flavor.label,
+        )
 
     spec = ctx.actions.write_json(
         "spec.json",
         {"sendstream": {
             "build_appliance": (ctx.attrs.build_appliance or ctx.attrs.layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
-            "incremental_parent": incremental_parent[SendstreamInfo].subvol_symlink if incremental_parent else None,
+            "incremental_parent": incremental_parent[LayerInfo].subvol_symlink if incremental_parent else None,
             "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
             "subvol_symlink": subvol_symlink.as_output(),
             "volume_name": ctx.attrs.volume_name,

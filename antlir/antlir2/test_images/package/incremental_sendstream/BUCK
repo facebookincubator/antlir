@@ -1,13 +1,27 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 
 oncall("antlir")
+
+buck_genrule(
+    name = "parent_large_file",
+    out = "parent_large_file",
+    cmd = """
+        head -c 100M </dev/urandom >$OUT
+    """,
+    visibility = [],
+)
 
 image.layer(
     name = "parent",
     features = [
+        feature.install(
+            src = ":parent_large_file",
+            dst = "/parent_large_file",
+        ),
         feature.install_text(
             dst = "/foo",
             text = "foo\n",
@@ -21,9 +35,22 @@ package.sendstream_v2(
     layer = ":parent",
 )
 
+buck_genrule(
+    name = "child_large_file",
+    out = "child_large_file",
+    cmd = """
+        head -c 10M </dev/urandom >$OUT
+    """,
+    visibility = [],
+)
+
 image.layer(
     name = "child",
     features = [
+        feature.install(
+            src = ":child_large_file",
+            dst = "/child_large_file",
+        ),
         feature.install_text(
             dst = "/bar",
             text = "bar\n",
@@ -66,4 +93,10 @@ image_sh_test(
     compatible_with = ["ovr_config//cpu:x86_64"],
     layer = ":test-layer",
     test = "test-incremental.sh",
+)
+
+image_python_test(
+    name = "test-incremental-size",
+    srcs = ["test_incremental_size.py"],
+    layer = ":test-layer",
 )
