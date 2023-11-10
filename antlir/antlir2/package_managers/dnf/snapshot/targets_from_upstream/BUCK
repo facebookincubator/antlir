@@ -7,7 +7,7 @@ oncall("antlir_oss")
 python_binary(
     name = "targets-from-upstream",
     srcs = ["targets_from_upstream.py"],
-    main_module = "antlir.antlir2.package_managers.dnf.snapshot.targets_from_upstream.targets_from_upstream",
+    main_function = "antlir.antlir2.package_managers.dnf.snapshot.targets_from_upstream.targets_from_upstream.invoke_main",
     deps = [
         third_party.library(
             "requests",

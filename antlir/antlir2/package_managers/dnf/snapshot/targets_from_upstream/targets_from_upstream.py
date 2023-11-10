@@ -160,8 +160,12 @@ def main(args) -> None:
         f.write("\n")
 
 
-if __name__ == "__main__":
+def invoke_main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--dst", type=Path)
     parser.add_argument("baseurls", nargs="+", type=urlparse)
     main(parser.parse_args())
+
+
+if __name__ == "__main__":
+    invoke_main()  # pragma: no cover
