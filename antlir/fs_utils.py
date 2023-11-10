@@ -376,12 +376,10 @@ class Path(bytes):
                 yield Path(rsrc_in.name).abspath()
                 return
 
-            # why does this happen? who knows but we can make a copy of
-            # the binary that _is_ executable
-            log.warning(
-                f"{package}.{name} doesn't exist or is not executable"
-            )  # pragma: no cover
             # The resource has no path, so we have to materialize it.
+            #
+            # Why does this happen? Who knows - but we can make a copy of the
+            # binary that _is_ executable and antlir1 limps on another day.
             #
             # This code path is not reached by our coverage harness,
             # since resources in '@mode/dev will always have a real
