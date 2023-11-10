@@ -151,6 +151,7 @@ def python_library(*args, **kwargs):
 _PYTHON_UNITTEST_KWARGS = _make_rule_kwargs_dict(
     [
         "base_module",
+        "compatible_with",
         "cpp_deps",
         "deps",
         "env",
