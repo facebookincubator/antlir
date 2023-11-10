@@ -162,6 +162,7 @@ _PYTHON_UNITTEST_KWARGS = _make_rule_kwargs_dict(
         "needed_coverage",
         "package_style",
         "par_style",
+        "target_compatible_with",
         "resources",
         "runtime_deps",
         "srcs",
