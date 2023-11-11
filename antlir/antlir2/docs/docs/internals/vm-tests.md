@@ -86,6 +86,16 @@ $ buck2 run //metalos/vm/tests/antlir:rust-test[console]
 $ buck2 run //metalos/vm:default-initrd-boot[console]
 ```
 
+The VM doesn't have any RW directory sharing with host normally. Occasionally,
+it's useful to retrieve data during debugging, which can be achieved by
+`--scratch-dir`. Note that you are responsible for the scratch directory
+creation and clean up.
+
+```
+$ mkdir /tmp/scratch
+$ buck2 run //metalos/vm/tests/antlir:rust-test[shell] -- --scratch-dir /tmp/scratch
+```
+
 If you want to inspect the VM related artifacts,
 `buck2 build <target> --show-output` should show you a bash script similar to
 what `buck2 test` or `buck2 run` would execute. Just be aware that buck2 doesn't
@@ -229,8 +239,8 @@ need, you can use the pre-configured target. More likely though, you want to
 customize your VM, whether for hardware configuration or root disk. We provide
 relevant API for each.
 
-The default example VM is in `metalos/vm/TARGETS` and can be stripped
-down to the following for a VM boots from disk.
+The default example VM is in `metalos/vm/TARGETS` and can be stripped down to
+the following for a VM boots from disk.
 
 ```
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
@@ -282,6 +292,7 @@ above and also serves as an example.
 
 To build rootfs layer that boots with VM, one can do one of the following,
 assuming you are familiar with building antlir2 layers.
+
 1. If you have an antlir2 layer already, add feature
    `vm.artifacts.rootfs.virtualization_features` should make it work with VM,
    unless the existing layer has conflicting configs, which should be unlikely.
