@@ -98,6 +98,9 @@ struct IsolateCmdArgs {
     /// Pass through these environment variables into the container and VM, if they exist.
     #[arg(long)]
     passenv: Vec<String>,
+    /// Extra RW bind-mount into the VM for debugging purpose
+    #[arg(long)]
+    scratch_dir: Option<PathBuf>,
     /// Args for run command
     #[clap(flatten)]
     run_cmd_args: RunCmdArgs,
@@ -185,6 +188,9 @@ fn respawn(args: &IsolateCmdArgs) -> Result<()> {
     let mut vm_args = args.run_cmd_args.vm_args.clone();
     let envs = env_names_to_kvpairs(args.passenv.clone());
     vm_args.command_envs = envs.clone();
+    if let Some(scratch_dir) = args.scratch_dir.as_ref() {
+        vm_args.output_dirs.push(scratch_dir.clone());
+    }
 
     // Let's always capture console output unless it's console mode
     let _console_dir;
