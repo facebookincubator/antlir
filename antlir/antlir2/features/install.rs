@@ -268,7 +268,9 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
             ),
         ];
         // For relative dest paths (or `/`), parent() could be the empty string
-        if let Some(parent) = self.dst.parent() && !parent.as_os_str().is_empty() {
+        if let Some(parent) = self.dst.parent()
+            && !parent.as_os_str().is_empty()
+        {
             requires.push(Requirement::ordered(
                 ItemKey::Path(parent.to_owned().into()),
                 Validator::FileType(FileType::Directory),
