@@ -69,6 +69,7 @@ def image_genrule_layer(
         container_opts = None,
         bind_repo_ro = False,
         boot = False,
+        antlir2_mount_platform = False,
         **image_layer_kwargs):
     """
 ### Danger! Danger! Danger!
@@ -120,6 +121,9 @@ Optional arguments:
             antlir2_feature.genrule(
                 cmd = cmd,
                 user = user,
+                mount_platform = antlir2_mount_platform,
+                bind_repo_ro = bind_repo_ro,
+                boot = boot,
             ) if is_buck2() else None,
         ],
         implicit_antlir2 = True,
@@ -152,6 +156,9 @@ Optional arguments:
         antlir2_feature = antlir2_feature.genrule(
             cmd = cmd,
             user = user,
+            mount_platform = antlir2_mount_platform,
+            bind_repo_ro = bind_repo_ro,
+            boot = boot,
         ) if is_buck2() else None,
     )]
 

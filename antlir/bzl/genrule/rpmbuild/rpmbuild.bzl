@@ -9,6 +9,10 @@ given image layer, and outputs a new layer with the resulting RPM(s)
 available in a pre-determined location: `/rpmbuild/RPMS`.
 """
 
+load("//antlir/antlir2/bzl:hoist.bzl?v2_only", antlir2_hoist = "hoist")
+load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
+load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility")
 load("//antlir/bzl:flavor.shape.bzl", "flavor_t")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
@@ -135,6 +139,9 @@ def private_image_rpmbuild_impl(
             feature.ensure_subdirs_exist("/rpmbuild", "SPECS"),
             feature.tarball(":" + source_tarball, "/rpmbuild/SOURCES"),
         ] + (setup_features or []),
+        antlir2_features = [
+            "//antlir/facebook/image/build_appliance/common:etc_rpm_macros",
+        ],
         visibility = [],
         antlir_rule = types.antlir_rule("user-internal"),
     )
@@ -151,35 +158,62 @@ def private_image_rpmbuild_impl(
     )
 
     install_deps_layer = name + "-rpmbuild-install-deps"
-    image.genrule_layer(
-        name = install_deps_layer,
-        rule_type = "rpmbuild_install_deps_layer",
-        parent_layer = ":" + setup_layer,
-        flavor = flavor,
-        # Auto-installing RPM dependencies requires `root`.
-        user = "root",
-        cmd = [
-            installer,
-            "builddep",  # Hack: our `yum` wrapper maps this to `yum-builddep`
-            # Define the build directory for this project
-            "--define=_topdir {}".format(rpmbuild_dir),
-            "--assumeyes",
-            specfile_path,
-        ],
-        container_opts = struct(
-            # Serve default snapshots for the RPM installers that define
-            # one.  So, we may start `repo-server`s for both `yum` and `dnf`
-            # -- this minor inefficiency is worth the simplicity.
-            #
-            # In the unlikely event we need support for a non-default snapshot,
-            # we can expose a flag that chooses between enabling shadowing, or
-            # serving a specific snapshot.
-            shadow_proxied_binaries = True,
-        ),
-        antlir_rule = "user-internal",
-        visibility = [],
-        **image_layer_kwargs
-    )
+    if not antlir2_shim.should_shadow_layer(None) and not antlir2_shim.should_upgrade_layer():
+        image.genrule_layer(
+            name = install_deps_layer,
+            rule_type = "rpmbuild_install_deps_layer",
+            parent_layer = ":" + setup_layer,
+            flavor = flavor,
+            # Auto-installing RPM dependencies requires `root`.
+            user = "root",
+            cmd = [
+                installer,
+                "builddep",  # Hack: our `yum` wrapper maps this to `yum-builddep`
+                # Define the build directory for this project
+                "--define=_topdir {}".format(rpmbuild_dir),
+                "--assumeyes",
+                specfile_path,
+            ],
+            container_opts = struct(
+                # Serve default snapshots for the RPM installers that define
+                # one.  So, we may start `repo-server`s for both `yum` and `dnf`
+                # -- this minor inefficiency is worth the simplicity.
+                #
+                # In the unlikely event we need support for a non-default snapshot,
+                # we can expose a flag that chooses between enabling shadowing, or
+                # serving a specific snapshot.
+                shadow_proxied_binaries = True,
+            ),
+            antlir_rule = "user-internal",
+            visibility = [],
+            **image_layer_kwargs
+        )
+
+    else:
+        antlir2_image.layer(
+            name = name + "-rpmbuild-determine-builddeps",
+            parent_layer = ":" + setup_layer,
+            features = [antlir2_feature.genrule(user = "root", cmd = [
+                "/bin/bash",
+                "-c",
+                "rpmspec --define='_topdir /rpmbuild' -q --buildrequires /rpmbuild/SPECS/specfile.spec > /builddeps",
+            ])],
+        )
+        antlir2_hoist(
+            name = name + "-rpmbuild-builddeps",
+            layer = ":{}-rpmbuild-determine-builddeps".format(name),
+            path = "/builddeps",
+        )
+        antlir2_layer_name = install_deps_layer
+        if not antlir2_shim.should_upgrade_layer():
+            antlir2_layer_name += ".antlir2"
+        antlir2_image.layer(
+            name = antlir2_layer_name,
+            parent_layer = ":" + setup_layer,
+            features = [
+                antlir2_feature.rpms_install(subjects_src = ":{}-rpmbuild-builddeps".format(name)),
+            ],
+        )
 
     build_layer = name + "-rpmbuild-build"
     image.genrule_layer(
@@ -202,6 +236,7 @@ def private_image_rpmbuild_impl(
         ],
         antlir_rule = "user-facing",
         visibility = visibility,
+        antlir2_mount_platform = True,
         **image_layer_kwargs
     )
 
