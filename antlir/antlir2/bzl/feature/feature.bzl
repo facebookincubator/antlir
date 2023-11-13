@@ -70,7 +70,7 @@ load(":clone.bzl", "clone_rule")
 load(":dot_meta.bzl", "dot_meta_rule")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_rule")
 load(":extract.bzl", "extract_rule")
-load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
+load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "MultiFeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_rule")
 load(":install.bzl", "install_analyze")
 load(":mount.bzl", "mount_rule")
@@ -101,7 +101,6 @@ _analyze_feature = {
     # @oss-disable
     # @oss-disable
     # @oss-disable
-    # @oss-disable
     "install": install_analyze,
 }
 # @oss-disable
@@ -113,6 +112,7 @@ _anon_rules = {
     "ensure_dir_symlink": ensure_dir_symlink_rule,
     "ensure_file_symlink": ensure_file_symlink_rule,
     "extract": extract_rule,
+    # @oss-disable
     # @oss-disable
     "genrule": genrule_rule,
     "group": group_rule,
@@ -191,14 +191,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             ))
 
     def _with_anon_features(anon_features: list[ProviderCollection]) -> list[Provider]:
+        flat = []
+        for af in anon_features:
+            if FeatureAnalysis in af:
+                flat.append(af[FeatureAnalysis])
+            else:
+                flat.extend(af[MultiFeatureAnalysis].features)
+
         anon_features = [
             feature_record(
-                feature_type = af[FeatureAnalysis].feature_type,
+                feature_type = af.feature_type,
                 label = ctx.label.raw_target(),
-                analysis = af[FeatureAnalysis],
-                plugin = af[FeatureAnalysis].plugin,
+                analysis = af,
+                plugin = af.plugin,
             )
-            for af in anon_features
+            for af in flat
         ]
         features = anon_features + inline_features
         for dep in ctx.attrs.feature_targets:

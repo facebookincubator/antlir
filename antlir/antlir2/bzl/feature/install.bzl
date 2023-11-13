@@ -102,7 +102,7 @@ install_record = record(
 )
 
 def get_feature_anaylsis_for_install(
-        ctx: AnalyzeFeatureContext,
+        ctx: AnalyzeFeatureContext | AnalysisContext,
         src: Dependency | Artifact | None,
         dst: str,
         group: str,
@@ -182,7 +182,7 @@ def get_feature_anaylsis_for_install(
     )
 
 def install_analyze(
-        ctx: AnalyzeFeatureContext,
+        ctx: AnalyzeFeatureContext | AnalysisContext,
         plugin: FeaturePluginInfo | Provider,
         dst: str,
         group: str,
