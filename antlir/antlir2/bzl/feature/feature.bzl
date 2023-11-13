@@ -98,7 +98,6 @@ def _feature_as_json(feat: feature_record) -> struct:
 
 _analyze_feature = {
 }
-# @oss-disable
 
 _anon_rules = {
     "antlir1_no_equivalent": antlir1_no_equivalent_rule,
@@ -125,6 +124,7 @@ _anon_rules = {
     "user": user_rule,
     "user_mod": usermod_rule,
 }
+# @oss-disable
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     # Merge inline features into a single JSON file
