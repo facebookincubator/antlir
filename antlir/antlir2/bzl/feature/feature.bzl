@@ -74,7 +74,7 @@ load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_rule")
 load(":install.bzl", "install_analyze")
 load(":mount.bzl", "mount_rule")
-load(":remove.bzl", "remove_analyze")
+load(":remove.bzl", "remove_rule")
 load(":requires.bzl", "requires_analyze")
 load(":rpms.bzl", "rpms_analyze", "rpms_record")
 load(":symlink.bzl", "ensure_dir_symlink_analyze", "ensure_file_symlink_analyze")
@@ -106,7 +106,6 @@ _analyze_feature = {
     # @oss-disable
     # @oss-disable
     "install": install_analyze,
-    "remove": remove_analyze,
     "requires": requires_analyze,
     "rpm": rpms_analyze,
     "test_only_features/trace": trace_analyze,
@@ -121,6 +120,7 @@ _anon_rules = {
     "genrule": genrule_rule,
     "group": group_rule,
     "mount": mount_rule,
+    "remove": remove_rule,
     "tarball": tarball_rule,
     "user": user_rule,
     "user_mod": usermod_rule,
