@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def genrule(
@@ -38,25 +38,32 @@ genrule_record = record(
     mount_platform = bool,
 )
 
-def genrule_analyze(
-        user: str,
-        boot: bool,
-        bind_repo_ro: bool,
-        mount_platform: bool,
-        args: dict[str, str | ResolvedStringWithMacros],
-        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
-    cmd = {int(key.removeprefix("cmd_")): val for key, val in args.items() if key.startswith("cmd_")}
+def _genrule_impl(ctx: AnalysisContext) -> list[Provider]:
+    cmd = {int(key.removeprefix("cmd_")): val for key, val in ctx.attrs.args.items() if key.startswith("cmd_")}
     cmd = [val for _key, val in sorted(cmd.items())]
-    return FeatureAnalysis(
+    return [DefaultInfo(), FeatureAnalysis(
         feature_type = "genrule",
         data = genrule_record(
             cmd = cmd,
-            user = user,
-            boot = boot,
+            user = ctx.attrs.user,
+            boot = ctx.attrs.boot,
             # The repo is considered part of the platform
-            bind_repo_ro = bind_repo_ro or mount_platform,
-            mount_platform = mount_platform,
+            bind_repo_ro = ctx.attrs.bind_repo_ro or ctx.attrs.mount_platform,
+            mount_platform = ctx.attrs.mount_platform,
         ),
         build_phase = BuildPhase("genrule"),
-        plugin = plugin,
-    )
+        plugin = ctx.attrs.plugin[FeaturePluginInfo],
+    )]
+
+genrule_rule = rule(
+    impl = _genrule_impl,
+    attrs = {
+        # TODO: just use attrs.arg() by itself
+        "args": attrs.dict(attrs.string(), attrs.arg()),
+        "bind_repo_ro": attrs.bool(),
+        "boot": attrs.bool(),
+        "mount_platform": attrs.bool(),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "user": attrs.string(),
+    },
+)
