@@ -68,7 +68,7 @@ load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":cfg.bzl", "feature_cfg")
 load(":clone.bzl", "clone_rule")
 load(":dot_meta.bzl", "dot_meta_rule")
-load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
+load(":ensure_dirs_exist.bzl", "ensure_dir_exists_rule")
 load(":extract.bzl", "extract_analyze")
 load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_rule")
@@ -98,7 +98,6 @@ def _feature_as_json(feat: feature_record) -> struct:
 
 _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
-    "ensure_dir_exists": ensure_dir_exists_analyze,
     "ensure_dir_symlink": ensure_dir_symlink_analyze,
     "ensure_file_symlink": ensure_file_symlink_analyze,
     "extract": extract_analyze,
@@ -119,6 +118,7 @@ _analyze_feature = {
 _anon_rules = {
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
+    "ensure_dir_exists": ensure_dir_exists_rule,
     "genrule": genrule_rule,
     "group": group_rule,
     "tarball": tarball_rule,
