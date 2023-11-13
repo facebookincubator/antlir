@@ -64,7 +64,7 @@ load("//antlir/antlir2/features/test_only_features:trace.bzl", "trace_rule")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
-load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
+load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_rule")
 load(":cfg.bzl", "feature_cfg")
 load(":clone.bzl", "clone_rule")
 load(":dot_meta.bzl", "dot_meta_rule")
@@ -97,12 +97,12 @@ def _feature_as_json(feat: feature_record) -> struct:
     )
 
 _analyze_feature = {
-    "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
     "install": install_analyze,
 }
 # @oss-disable
 
 _anon_rules = {
+    "antlir1_no_equivalent": antlir1_no_equivalent_rule,
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
     "ensure_dir_exists": ensure_dir_exists_rule,

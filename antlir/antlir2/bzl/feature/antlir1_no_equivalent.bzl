@@ -16,7 +16,7 @@
 # build any layer that contains this feature will fail, which is what we want
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def antlir1_no_equivalent(*, label: str, description: str) -> ParseTimeFeature:
     return ParseTimeFeature(
@@ -28,12 +28,10 @@ def antlir1_no_equivalent(*, label: str, description: str) -> ParseTimeFeature:
         },
     )
 
-antlir1_no_equivalent_record = record(
-    label = str,
-    description = str,
-)
-
-antlir1_no_equivalent_analyze = data_only_feature_analysis_fn(
-    antlir1_no_equivalent_record,
+antlir1_no_equivalent_rule = data_only_feature_rule(
+    feature_attrs = {
+        "description": attrs.string(),
+        "label": attrs.string(),
+    },
     feature_type = "antlir1_no_equivalent",
 )
