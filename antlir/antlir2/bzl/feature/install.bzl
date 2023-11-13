@@ -5,15 +5,14 @@
 
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:stat.bzl", "stat")
 load(
     ":feature_info.bzl",
-    "AnalyzeFeatureContext",  # @unused Used as type
     "FeatureAnalysis",
+    "ParseTimeDependency",
     "ParseTimeFeature",
 )
 
@@ -48,6 +47,9 @@ def install(
         feature_type = "install",
         plugin = antlir2_dep("features:install"),
         deps_or_srcs = {"src": src},
+        exec_deps = {
+            "_objcopy": ParseTimeDependency(dep = "fbsource//third-party/binutils:objcopy"),
+        },
         kwargs = {
             "dst": dst,
             "group": group,
@@ -55,7 +57,6 @@ def install(
             "text": None,
             "user": user,
         },
-        analyze_uses_context = True,
     )
 
 def install_text(
@@ -79,7 +80,6 @@ def install_text(
             "text": text,
             "user": user,
         },
-        analyze_uses_context = True,
     )
 
 installed_binary = record(
@@ -101,23 +101,16 @@ install_record = record(
     binary_info = field([binary_record, None], default = None),
 )
 
-def get_feature_anaylsis_for_install(
-        ctx: AnalyzeFeatureContext | AnalysisContext,
-        src: Dependency | Artifact | None,
-        dst: str,
-        group: str,
-        mode: int | None,
-        user: str,
-        skip_debuginfo_split: bool,
-        text: str | None,
-        plugin: FeaturePluginInfo | Provider):
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     binary_info = None
     required_run_infos = []
     required_artifacts = []
-    if not src and text == None:
+    if not ctx.attrs.src and ctx.attrs.text == None:
         fail("src or text must be set")
-    if text != None:
-        src = ctx.actions.write("install_text_" + sha256_b64(text), text)
+    src = ctx.attrs.src
+    mode = ctx.attrs.mode
+    if ctx.attrs.text != None:
+        src = ctx.actions.write("install_text", ctx.attrs.text)
     if type(src) == "dependency":
         if mode == None:
             if RunInfo in src:
@@ -125,7 +118,7 @@ def get_feature_anaylsis_for_install(
                 # in buck2, since we put a dep on the binary directly onto the layer
                 # itself, which forces a rebuild when appropriate.
                 mode = 0o555
-            elif dst.endswith("/"):
+            elif ctx.attrs.dst.endswith("/"):
                 # If the user is installing a directory, we require they include
                 # a trailing '/' in `dst`
                 mode = 0o755
@@ -139,14 +132,14 @@ def get_feature_anaylsis_for_install(
             required_run_infos.append(src[RunInfo])
 
             # dev mode binaries don't get stripped, they just get symlinked
-            if skip_debuginfo_split or REPO_CFG.artifacts_require_repo:
+            if ctx.attrs.skip_debuginfo_split or REPO_CFG.artifacts_require_repo:
                 src = ensure_single_output(src)
                 binary_info = binary_record(dev = REPO_CFG.artifacts_require_repo)
             else:
                 split_anon_target = split_binary_anon(
                     ctx = ctx,
                     src = src,
-                    objcopy = ctx.tools.objcopy,
+                    objcopy = ctx.attrs._objcopy,
                 )
                 binary_info = binary_record(
                     installed = installed_binary(
@@ -166,39 +159,38 @@ def get_feature_anaylsis_for_install(
         # `attrs.source()`, then we can default the mode to 444
         if mode == None:
             mode = 0o444
-    return FeatureAnalysis(
-        feature_type = "install",
-        data = install_record(
-            src = src,
-            dst = dst,
-            mode = mode,
-            user = user,
-            group = group,
-            binary_info = binary_info,
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "install",
+            data = install_record(
+                src = src,
+                dst = ctx.attrs.dst,
+                mode = mode,
+                user = ctx.attrs.user,
+                group = ctx.attrs.group,
+                binary_info = binary_info,
+            ),
+            required_artifacts = [src] + required_artifacts,
+            required_run_infos = required_run_infos,
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
-        required_artifacts = [src] + required_artifacts,
-        required_run_infos = required_run_infos,
-        plugin = plugin,
-    )
+    ]
 
-def install_analyze(
-        ctx: AnalyzeFeatureContext | AnalysisContext,
-        plugin: FeaturePluginInfo | Provider,
-        dst: str,
-        group: str,
-        mode: int | None,
-        user: str,
-        text: str | None,
-        deps_or_srcs: dict[str, Artifact | Dependency] | None = None) -> FeatureAnalysis:
-    src = None if not deps_or_srcs else deps_or_srcs["src"]
-    return get_feature_anaylsis_for_install(
-        ctx,
-        src = src,
-        dst = dst,
-        group = group,
-        user = user,
-        mode = mode,
-        skip_debuginfo_split = False,
-        text = text,
-        plugin = plugin,
-    )
+install_rule = rule(
+    impl = _impl,
+    attrs = {
+        "dst": attrs.option(attrs.string(), default = None),
+        "group": attrs.string(default = "root"),
+        "mode": attrs.option(attrs.int(), default = None),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "skip_debuginfo_split": attrs.bool(default = False),
+        "src": attrs.option(
+            attrs.one_of(attrs.dep(), attrs.source()),
+            default = None,
+        ),
+        "text": attrs.option(attrs.string(), default = None),
+        "user": attrs.string(default = "root"),
+        "_objcopy": attrs.option(attrs.exec_dep(), default = None),
+    },
+)
