@@ -66,7 +66,7 @@ load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_analyze")
 load(":cfg.bzl", "feature_cfg")
-load(":clone.bzl", "clone_analyze")
+load(":clone.bzl", "clone_rule")
 load(":dot_meta.bzl", "dot_meta_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
@@ -98,7 +98,6 @@ def _feature_as_json(feat: feature_record) -> struct:
 
 _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
-    "clone": clone_analyze,
     "dot_meta": dot_meta_analyze,
     "ensure_dir_exists": ensure_dir_exists_analyze,
     "ensure_dir_symlink": ensure_dir_symlink_analyze,
@@ -119,6 +118,7 @@ _analyze_feature = {
 # @oss-disable
 
 _anon_rules = {
+    "clone": clone_rule,
     "genrule": genrule_rule,
     "group": group_rule,
     "tarball": tarball_rule,
@@ -183,6 +183,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             anon_args = analyze_kwargs
             anon_args["plugin"] = ctx.attrs.inline_features_plugins[key]
             anon_args.update(anon_args.pop("srcs", {}))
+            anon_args.update(anon_args.pop("deps", {}))
             anon_features.append(ctx.actions.anon_target(
                 _anon_rules[inline["feature_type"]],
                 analyze_kwargs,

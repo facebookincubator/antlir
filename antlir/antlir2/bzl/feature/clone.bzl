@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
 
@@ -90,44 +90,51 @@ clone_record = record(
     usergroup = clone_usergroup | None,
 )
 
-def clone_analyze(
-        src_path: str,
-        dst_path: str,
-        user: str | None,
-        group: str | None,
-        deps: dict[str, Dependency],
-        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
-    omit_outer_dir = src_path.endswith("/")
-    pre_existing_dest = dst_path.endswith("/")
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    omit_outer_dir = ctx.attrs.src_path.endswith("/")
+    pre_existing_dest = ctx.attrs.dst_path.endswith("/")
     if omit_outer_dir and not pre_existing_dest:
         fail(
             "Your `src_path` {} ends in /, which means only the contents " +
             "of the directory will be cloned. Therefore, you must also add a " +
             "trailing / to `dst_path` to signal that clone will write " +
-            "inside that pre-existing directory dst_path".format(src_path),
+            "inside that pre-existing directory dst_path".format(ctx.attrs.src_path),
         )
-
-    src_layer = deps["src_layer"]
 
     usergroup = None
-    if user and group:
+    if ctx.attrs.user and ctx.attrs.group:
         usergroup = clone_usergroup(
-            user = user,
-            group = group,
+            user = ctx.attrs.user,
+            group = ctx.attrs.group,
         )
-    elif user or group:
+    elif ctx.attrs.user or ctx.attrs.group:
         fail("either none or both of {user, group} must be set")
 
-    return FeatureAnalysis(
-        feature_type = "clone",
-        data = clone_record(
-            src_layer = layer_dep_analyze(src_layer),
-            src_path = src_path,
-            dst_path = dst_path,
-            omit_outer_dir = omit_outer_dir,
-            pre_existing_dest = pre_existing_dest,
-            usergroup = usergroup,
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "clone",
+            data = clone_record(
+                src_layer = layer_dep_analyze(ctx.attrs.src_layer),
+                src_path = ctx.attrs.src_path,
+                dst_path = ctx.attrs.dst_path,
+                omit_outer_dir = omit_outer_dir,
+                pre_existing_dest = pre_existing_dest,
+                usergroup = usergroup,
+            ),
+            required_layers = [ctx.attrs.src_layer[LayerInfo]],
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
-        required_layers = [src_layer[LayerInfo]],
-        plugin = plugin,
-    )
+    ]
+
+clone_rule = rule(
+    impl = _impl,
+    attrs = {
+        "dst_path": attrs.string(),
+        "group": attrs.option(attrs.string(), default = None),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "src_layer": attrs.dep(providers = [LayerInfo]),
+        "src_path": attrs.string(),
+        "user": attrs.option(attrs.string(), default = None),
+    },
+)
