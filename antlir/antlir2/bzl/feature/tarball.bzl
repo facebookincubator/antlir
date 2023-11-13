@@ -4,14 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
-load(
-    ":feature_info.bzl",
-    "AnalyzeFeatureContext",  # @unused Used as type
-    "FeatureAnalysis",
-    "ParseTimeFeature",
-)
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load(":install.bzl", "install_record")
 
 def tarball(
@@ -24,32 +19,19 @@ def tarball(
         feature_type = "tarball",
         plugin = antlir2_dep("features:install"),
         srcs = {
-            "source": src,
+            "src": src,
         },
         kwargs = {
             "group": group,
             "into_dir": into_dir,
             "user": user,
         },
-        analyze_uses_context = True,
     )
 
-tarball_record = record(
-    src = Artifact,
-    into_dir = str,
-    force_root_ownership = bool,
-)
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    tarball = ctx.attrs.src
 
-def tarball_analyze(
-        ctx: AnalyzeFeatureContext,
-        into_dir: str,
-        user: str,
-        group: str,
-        srcs: dict[str, Artifact],
-        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
-    tarball = srcs["source"]
-
-    if user != "root" or group != "root":
+    if ctx.attrs.user != "root" or ctx.attrs.group != "root":
         fail("tarball must be installed root:root")
 
     extracted = ctx.actions.anon_target(extract_tarball, {
@@ -57,18 +39,32 @@ def tarball_analyze(
         "name": "archive//:" + tarball.short_path,
     }).artifact("extracted")
 
-    return FeatureAnalysis(
-        data = install_record(
-            src = extracted,
-            dst = into_dir + "/",
-            mode = 0o755,
-            user = user,
-            group = group,
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            data = install_record(
+                src = extracted,
+                dst = ctx.attrs.into_dir + "/",
+                mode = 0o755,
+                user = ctx.attrs.user,
+                group = ctx.attrs.group,
+            ),
+            feature_type = "install",
+            required_artifacts = [extracted],
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
-        feature_type = "install",
-        required_artifacts = [extracted],
-        plugin = plugin,
-    )
+    ]
+
+tarball_rule = rule(
+    impl = _impl,
+    attrs = {
+        "group": attrs.string(),
+        "into_dir": attrs.string(),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "src": attrs.source(),
+        "user": attrs.string(),
+    },
+)
 
 def _extract_impl(ctx: AnalysisContext) -> list[Provider]:
     output = ctx.actions.declare_output("extracted")

@@ -78,7 +78,7 @@ load(":remove.bzl", "remove_analyze")
 load(":requires.bzl", "requires_analyze")
 load(":rpms.bzl", "rpms_analyze", "rpms_record")
 load(":symlink.bzl", "ensure_dir_symlink_analyze", "ensure_file_symlink_analyze")
-load(":tarball.bzl", "tarball_analyze")
+load(":tarball.bzl", "tarball_rule")
 load(":usergroup.bzl", "group_rule", "user_rule", "usermod_rule")
 
 feature_record = record(
@@ -114,7 +114,6 @@ _analyze_feature = {
     "remove": remove_analyze,
     "requires": requires_analyze,
     "rpm": rpms_analyze,
-    "tarball": tarball_analyze,
     "test_only_features/trace": trace_analyze,
 }
 # @oss-disable
@@ -122,6 +121,7 @@ _analyze_feature = {
 _anon_rules = {
     "genrule": genrule_rule,
     "group": group_rule,
+    "tarball": tarball_rule,
     "user": user_rule,
     "user_mod": usermod_rule,
 }
@@ -182,6 +182,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         else:
             anon_args = analyze_kwargs
             anon_args["plugin"] = ctx.attrs.inline_features_plugins[key]
+            anon_args.update(anon_args.pop("srcs", {}))
             anon_features.append(ctx.actions.anon_target(
                 _anon_rules[inline["feature_type"]],
                 analyze_kwargs,
