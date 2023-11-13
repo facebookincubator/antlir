@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
-load(":install.bzl", "install_record")
+load(":install.bzl", "install_rule")
 
 def tarball(
         *,
@@ -28,7 +28,7 @@ def tarball(
         },
     )
 
-def _impl(ctx: AnalysisContext) -> list[Provider]:
+def _impl(ctx: AnalysisContext) -> Promise:
     tarball = ctx.attrs.src
 
     if ctx.attrs.user != "root" or ctx.attrs.group != "root":
@@ -39,21 +39,20 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         "name": "archive//:" + tarball.short_path,
     }).artifact("extracted")
 
-    return [
-        DefaultInfo(),
-        FeatureAnalysis(
-            data = install_record(
-                src = extracted,
-                dst = ctx.attrs.into_dir + "/",
-                mode = 0o755,
-                user = ctx.attrs.user,
-                group = ctx.attrs.group,
-            ),
-            feature_type = "install",
-            required_artifacts = [extracted],
-            plugin = ctx.attrs.plugin[FeaturePluginInfo],
-        ),
-    ]
+    def _map(install_feature: ProviderCollection) -> list[Provider]:
+        return [
+            install_feature[DefaultInfo],
+            install_feature[FeatureAnalysis],
+        ]
+
+    return ctx.actions.anon_target(install_rule, {
+        "dst": ctx.attrs.into_dir + "/",
+        "group": ctx.attrs.group,
+        "mode": 0o755,
+        "plugin": ctx.attrs.plugin,
+        "src": extracted,
+        "user": ctx.attrs.user,
+    }).promise.map(_map)
 
 tarball_rule = rule(
     impl = _impl,

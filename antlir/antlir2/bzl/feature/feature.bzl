@@ -72,7 +72,7 @@ load(":ensure_dirs_exist.bzl", "ensure_dir_exists_rule")
 load(":extract.bzl", "extract_rule")
 load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "MultiFeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_rule")
-load(":install.bzl", "install_analyze")
+load(":install.bzl", "install_rule")
 load(":mount.bzl", "mount_rule")
 load(":remove.bzl", "remove_rule")
 load(":requires.bzl", "requires_rule")
@@ -97,7 +97,6 @@ def _feature_as_json(feat: feature_record) -> struct:
     )
 
 _analyze_feature = {
-    "install": install_analyze,
 }
 # @oss-disable
 
@@ -116,6 +115,7 @@ _anon_rules = {
     # @oss-disable
     "genrule": genrule_rule,
     "group": group_rule,
+    "install": install_rule,
     "mount": mount_rule,
     "remove": remove_rule,
     "requires": requires_rule,
@@ -184,6 +184,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             anon_args["plugin"] = ctx.attrs.inline_features_plugins[key]
             anon_args.update(anon_args.pop("srcs", {}))
             anon_args.update(anon_args.pop("deps", {}))
+            anon_args.update(anon_args.pop("deps_or_srcs", {}))
             anon_args.update(anon_args.pop("exec_deps", {}))
             anon_features.append(ctx.actions.anon_target(
                 _anon_rules[inline["feature_type"]],
