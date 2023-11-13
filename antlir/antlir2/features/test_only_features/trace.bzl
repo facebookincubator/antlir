@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/bzl/feature:feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
+load("//antlir/antlir2/bzl/feature:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def trace(
         *,
@@ -17,11 +17,9 @@ def trace(
         },
     )
 
-trace_record = record(
-    msg = str,
-)
-
-trace_analyze = data_only_feature_analysis_fn(
-    trace_record,
+trace_rule = data_only_feature_rule(
+    feature_attrs = {
+        "msg": attrs.string(),
+    },
     feature_type = "test_only_features/trace",
 )
