@@ -24,11 +24,7 @@ binaries without first installing them into a layer.
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load(
-    "//antlir/antlir2/bzl/feature:feature_info.bzl",
-    "AnalyzeFeatureContext",  # @unused Used as type
-)
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
@@ -53,10 +49,13 @@ def extract_from_layer(
         },
         kwargs = {
             "binaries": binaries,
-            "source": "layer",
+            "kind": "layer",
         },
-        analyze_uses_context = True,
     )
+
+def _should_strip(strip_attr: bool) -> bool:
+    # Only strip if both strip=True and we're in opt mode (standalone binaries)
+    return strip_attr and not REPO_CFG.artifacts_require_repo
 
 def extract_buck_binary(
         src: str | Select,
@@ -72,13 +71,17 @@ def extract_buck_binary(
         feature_type = "extract",
         plugin = antlir2_dep("features:extract"),
         # include in deps so we can look at the providers
-        deps = {"src": ParseTimeDependency(dep = src, providers = [RunInfo])},
+        deps = {
+            "src": ParseTimeDependency(dep = src, providers = [RunInfo]),
+        },
+        exec_deps = {
+            "_objcopy": ParseTimeDependency(dep = "fbsource//third-party/binutils:objcopy"),
+        } if _should_strip(strip) else {},
         kwargs = {
             "dst": dst,
-            "source": "buck",
+            "kind": "buck",
             "strip": strip,
         },
-        analyze_uses_context = True,
     )
 
 extract_buck_record = record(
@@ -96,59 +99,71 @@ extract_record = record(
     layer = [extract_layer_record, None],
 )
 
-def extract_analyze(
-        ctx: AnalyzeFeatureContext,
-        plugin: FeaturePluginInfo | Provider,
-        source: str,
-        deps: dict[str, Dependency],
-        binaries: list[str] | None = None,
-        src: str | None = None,
-        dst: str | None = None,
-        strip: bool | None = None) -> FeatureAnalysis:
-    if source == "layer":
-        layer = deps["layer"]
-        return FeatureAnalysis(
-            feature_type = "extract",
-            data = extract_record(
-                layer = extract_layer_record(
-                    layer = layer_dep_analyze(layer),
-                    binaries = binaries,
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    if ctx.attrs.kind == "layer":
+        return [
+            DefaultInfo(),
+            FeatureAnalysis(
+                feature_type = "extract",
+                data = extract_record(
+                    layer = extract_layer_record(
+                        layer = layer_dep_analyze(ctx.attrs.layer),
+                        binaries = ctx.attrs.binaries,
+                    ),
+                    buck = None,
                 ),
-                buck = None,
+                required_layers = [ctx.attrs.layer[LayerInfo]],
+                plugin = ctx.attrs.plugin[FeaturePluginInfo],
             ),
-            required_layers = [layer[LayerInfo]],
-            plugin = plugin,
-        )
-    elif source == "buck":
-        src = deps["src"]
-        if RunInfo not in src:
-            fail("'{}' does not appear to be a binary".format(src))
+        ]
+    elif ctx.attrs.kind == "buck":
+        src_runinfo = ctx.attrs.src[RunInfo]
 
-        src_runinfo = src[RunInfo]
-
-        # Only strip if both strip=True and we're in opt mode (standalone binaries)
-        if strip and not REPO_CFG.artifacts_require_repo:
+        if _should_strip(ctx.attrs.strip):
             split_anon_target = split_binary_anon(
                 ctx = ctx,
-                src = src,
-                objcopy = ctx.tools.objcopy,
+                src = ctx.attrs.src,
+                objcopy = ctx.attrs._objcopy,
             )
             src = split_anon_target.artifact("src")
         else:
-            src = ensure_single_output(src)
+            src = ensure_single_output(ctx.attrs.src)
 
-        return FeatureAnalysis(
-            feature_type = "extract",
-            data = extract_record(
-                buck = extract_buck_record(
-                    src = src,
-                    dst = dst,
+        return [
+            DefaultInfo(),
+            FeatureAnalysis(
+                feature_type = "extract",
+                data = extract_record(
+                    buck = extract_buck_record(
+                        src = src,
+                        dst = ctx.attrs.dst,
+                    ),
+                    layer = None,
                 ),
-                layer = None,
+                required_artifacts = [src],
+                required_run_infos = [src_runinfo],
+                plugin = ctx.attrs.plugin[FeaturePluginInfo],
             ),
-            required_artifacts = [src],
-            required_run_infos = [src_runinfo],
-            plugin = plugin,
-        )
+        ]
     else:
-        fail("invalid extract source '{}'".format(source))
+        fail("invalid extract kind '{}'".format(ctx.attrs.kind))
+
+extract_rule = rule(
+    impl = _impl,
+    attrs = {
+        "binaries": attrs.list(attrs.string(), default = []),
+        "dst": attrs.option(attrs.string(), default = None),
+        "kind": attrs.enum(["layer", "buck"]),
+        "layer": attrs.option(
+            attrs.dep(providers = [LayerInfo]),
+            default = None,
+        ),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "src": attrs.option(
+            attrs.dep(providers = [RunInfo]),
+            default = None,
+        ),
+        "strip": attrs.bool(default = True),
+        "_objcopy": attrs.option(attrs.exec_dep(), default = None),
+    },
+)

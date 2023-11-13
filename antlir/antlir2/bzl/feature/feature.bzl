@@ -69,7 +69,7 @@ load(":cfg.bzl", "feature_cfg")
 load(":clone.bzl", "clone_rule")
 load(":dot_meta.bzl", "dot_meta_rule")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_rule")
-load(":extract.bzl", "extract_analyze")
+load(":extract.bzl", "extract_rule")
 load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_rule")
 load(":install.bzl", "install_analyze")
@@ -100,7 +100,6 @@ _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
     "ensure_dir_symlink": ensure_dir_symlink_analyze,
     "ensure_file_symlink": ensure_file_symlink_analyze,
-    "extract": extract_analyze,
     # @oss-disable
     # @oss-disable
     # @oss-disable
@@ -119,6 +118,7 @@ _anon_rules = {
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
     "ensure_dir_exists": ensure_dir_exists_rule,
+    "extract": extract_rule,
     "genrule": genrule_rule,
     "group": group_rule,
     "tarball": tarball_rule,
@@ -184,6 +184,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             anon_args["plugin"] = ctx.attrs.inline_features_plugins[key]
             anon_args.update(anon_args.pop("srcs", {}))
             anon_args.update(anon_args.pop("deps", {}))
+            anon_args.update(anon_args.pop("exec_deps", {}))
             anon_features.append(ctx.actions.anon_target(
                 _anon_rules[inline["feature_type"]],
                 analyze_kwargs,
