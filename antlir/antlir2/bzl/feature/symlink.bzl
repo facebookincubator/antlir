@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def _symlink_feature(
         *,
@@ -37,11 +37,11 @@ def ensure_dir_symlink(*, link: str, target: str) -> ParseTimeFeature:
     """
     return _symlink_feature(feature_type = "ensure_dir_symlink", link = link, target = target)
 
-symlink_record = record(
-    link = str,
-    target = str,
-    is_directory = bool,
-)
+_rule_attrs = {
+    "is_directory": attrs.bool(),
+    "link": attrs.string(),
+    "target": attrs.string(),
+}
 
-ensure_file_symlink_analyze = data_only_feature_analysis_fn(symlink_record, feature_type = "ensure_file_symlink")
-ensure_dir_symlink_analyze = data_only_feature_analysis_fn(symlink_record, feature_type = "ensure_dir_symlink")
+ensure_file_symlink_rule = data_only_feature_rule(feature_attrs = _rule_attrs, feature_type = "ensure_file_symlink")
+ensure_dir_symlink_rule = data_only_feature_rule(feature_attrs = _rule_attrs, feature_type = "ensure_dir_symlink")
