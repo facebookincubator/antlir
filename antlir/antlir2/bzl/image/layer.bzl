@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//utils:utils.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
@@ -109,11 +110,13 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     flavor = None
     if ctx.attrs.parent_layer and ctx.attrs.flavor:
         parent_flavor = ctx.attrs.parent_layer[LayerInfo].flavor
-        if parent_flavor and ctx.attrs.flavor.label != parent_flavor.label:
-            fail("flavor ({}) was different from parent_layer's flavor ({})".format(
-                ctx.attrs.flavor.label,
-                parent_flavor.label,
-            ))
+        if parent_flavor:
+            expect(
+                ctx.attrs.flavor.label.raw_target() == parent_flavor.label.raw_target(),
+                "flavor ({}) was different from parent_layer's flavor ({})",
+                ctx.attrs.flavor.label.raw_target(),
+                parent_flavor.label.raw_target(),
+            )
     if ctx.attrs.parent_layer:
         flavor = ctx.attrs.parent_layer[LayerInfo].flavor
     if not flavor:
