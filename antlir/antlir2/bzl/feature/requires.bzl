@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def requires(
         *,
@@ -35,13 +35,11 @@ def requires(
         },
     )
 
-requires_record = record(
-    files = list[str],
-    users = list[str],
-    groups = list[str],
-)
-
-requires_analyze = data_only_feature_analysis_fn(
-    requires_record,
+requires_rule = data_only_feature_rule(
+    feature_attrs = {
+        "files": attrs.list(attrs.string()),
+        "groups": attrs.list(attrs.string()),
+        "users": attrs.list(attrs.string()),
+    },
     feature_type = "requires",
 )
