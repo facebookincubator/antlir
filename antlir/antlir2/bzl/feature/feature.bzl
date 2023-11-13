@@ -73,7 +73,7 @@ load(":extract.bzl", "extract_rule")
 load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
 load(":genrule.bzl", "genrule_rule")
 load(":install.bzl", "install_analyze")
-load(":mount.bzl", "mount_analyze")
+load(":mount.bzl", "mount_rule")
 load(":remove.bzl", "remove_analyze")
 load(":requires.bzl", "requires_analyze")
 load(":rpms.bzl", "rpms_analyze", "rpms_record")
@@ -106,7 +106,6 @@ _analyze_feature = {
     # @oss-disable
     # @oss-disable
     "install": install_analyze,
-    "mount": mount_analyze,
     "remove": remove_analyze,
     "requires": requires_analyze,
     "rpm": rpms_analyze,
@@ -121,6 +120,7 @@ _anon_rules = {
     "extract": extract_rule,
     "genrule": genrule_rule,
     "group": group_rule,
+    "mount": mount_rule,
     "tarball": tarball_rule,
     "user": user_rule,
     "user_mod": usermod_rule,
