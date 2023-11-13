@@ -9,7 +9,6 @@ antlir2/antlir2_vm/bzl/defs.bzl.
 """
 
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load(":types.bzl", "api")
 
 vm = struct(
     # This nested structure is for looking up the default set of artifacts
@@ -19,6 +18,4 @@ vm = struct(
             layer = REPO_CFG.artifact["vm.rootfs.layer"],
         ),
     ),
-    # API export for building vm_opt_t and related types
-    types = api,
 )

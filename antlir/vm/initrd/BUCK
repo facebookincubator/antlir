@@ -1,6 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "is_buck2")
-load("//antlir/bzl:kernel_shim.bzl", "kernels")
-load("//antlir/vm/bzl:initrd.bzl", "initrd")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 
 oncall("antlir")
 
@@ -13,9 +11,3 @@ export_file(
     name = "reboot-on-fail.conf",
     visibility = ["PUBLIC"],
 )
-
-# build a vmtest initrd for every kernel
-[initrd(
-    kernel = kernels.get(uname),
-    visibility = ["PUBLIC"],
-) for uname in kernels.all_kernels] if is_buck2() else None
