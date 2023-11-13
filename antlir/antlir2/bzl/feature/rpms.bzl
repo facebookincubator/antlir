@@ -5,11 +5,10 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(
     ":feature_info.bzl",
-    "AnalyzeFeatureContext",  # @unused Used as type
     "FeatureAnalysis",
     "ParseTimeFeature",
 )
@@ -65,13 +64,12 @@ def _install_common(
         plugin = antlir2_dep("features:rpm"),
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         srcs = {
-            "subjects": subjects_src,
+            "subjects_src": subjects_src,
         } if subjects_src else None,
         kwargs = {
             "action": action,
             "subjects": subjects,
         },
-        analyze_uses_context = True,
         target_compatible_with = [
             "//antlir/antlir2/os/package_manager:dnf",
         ],
@@ -125,7 +123,6 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
             "action": "remove_if_exists",
             "subjects": rpms,
         },
-        analyze_uses_context = True,
         target_compatible_with = [
             "//antlir/antlir2/os/package_manager:dnf",
         ],
@@ -148,7 +145,6 @@ def rpms_remove(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
             "action": "remove",
             "subjects": rpms,
         },
-        analyze_uses_context = True,
         target_compatible_with = [
             "//antlir/antlir2/os/package_manager:dnf",
         ],
@@ -177,44 +173,51 @@ rpms_record = record(
     items = list[rpm_item_record],
 )
 
-def rpms_analyze(
-        *,
-        ctx: AnalyzeFeatureContext,
-        plugin: FeaturePluginInfo | Provider,
-        action: str,
-        subjects: list[str],
-        srcs: dict[str, Artifact] = {},
-        unnamed_deps_or_srcs: list[Dependency | Artifact] = []) -> FeatureAnalysis:
+def _impl(ctx: AnalysisContext) -> list[Provider]:
     rpms = []
-    for rpm in subjects:
+    for rpm in ctx.attrs.subjects:
         rpms.append(rpm_source_record(subject = rpm))
 
     artifacts = []
-    for rpm in unnamed_deps_or_srcs:
+    for rpm in ctx.attrs.unnamed_deps_or_srcs:
         if type(rpm) == "dependency":
             rpm = ensure_single_output(rpm)
         rpms.append(rpm_source_record(src = rpm))
         artifacts.append(rpm)
 
-    subjects_src = srcs.get("subjects")
-    if subjects_src:
-        rpms.append(rpm_source_record(subjects_src = subjects_src))
-        artifacts.append(subjects_src)
+    if ctx.attrs.subjects_src:
+        rpms.append(rpm_source_record(subjects_src = ctx.attrs.subjects_src))
+        artifacts.append(ctx.attrs.subjects_src)
 
-    return FeatureAnalysis(
-        feature_type = "rpm",
-        data = rpms_record(
-            items = [
-                rpm_item_record(
-                    action = action_enum(action),
-                    rpm = rpm,
-                    feature_label = ctx.label.raw_target(),
-                )
-                for rpm in rpms
-            ],
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "rpm",
+            data = rpms_record(
+                items = [
+                    rpm_item_record(
+                        action = action_enum(ctx.attrs.action),
+                        rpm = rpm,
+                        feature_label = ctx.label.raw_target(),
+                    )
+                    for rpm in rpms
+                ],
+            ),
+            required_artifacts = artifacts,
+            requires_planning = True,
+            build_phase = BuildPhase("package_manager"),
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
-        required_artifacts = artifacts,
-        requires_planning = True,
-        build_phase = BuildPhase("package_manager"),
-        plugin = plugin,
-    )
+    ]
+
+rpms_rule = rule(
+    impl = _impl,
+    attrs = {
+        "action": attrs.enum(["install", "remove", "remove_if_exists", "upgrade"]),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "subjects": attrs.list(attrs.string()),
+        "subjects_src": attrs.option(attrs.source(), default = None),
+        # TODO: refactor this into a more obvious interface
+        "unnamed_deps_or_srcs": attrs.list(attrs.one_of(attrs.dep(), attrs.source()), default = []),
+    },
+)

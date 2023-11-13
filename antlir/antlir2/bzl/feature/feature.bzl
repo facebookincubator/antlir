@@ -76,7 +76,7 @@ load(":install.bzl", "install_analyze")
 load(":mount.bzl", "mount_rule")
 load(":remove.bzl", "remove_rule")
 load(":requires.bzl", "requires_rule")
-load(":rpms.bzl", "rpms_analyze", "rpms_record")
+load(":rpms.bzl", "rpms_record", "rpms_rule")
 load(":symlink.bzl", "ensure_dir_symlink_analyze", "ensure_file_symlink_analyze")
 load(":tarball.bzl", "tarball_rule")
 load(":usergroup.bzl", "group_rule", "user_rule", "usermod_rule")
@@ -104,9 +104,7 @@ _analyze_feature = {
     # @oss-disable
     # @oss-disable
     # @oss-disable
-    # @oss-disable
     "install": install_analyze,
-    "rpm": rpms_analyze,
 }
 # @oss-disable
 
@@ -115,11 +113,13 @@ _anon_rules = {
     "dot_meta": dot_meta_rule,
     "ensure_dir_exists": ensure_dir_exists_rule,
     "extract": extract_rule,
+    # @oss-disable
     "genrule": genrule_rule,
     "group": group_rule,
     "mount": mount_rule,
     "remove": remove_rule,
     "requires": requires_rule,
+    "rpm": rpms_rule,
     "tarball": tarball_rule,
     "test_only_features/trace": trace_rule,
     "user": user_rule,
