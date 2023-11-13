@@ -187,11 +187,7 @@ def send_fds_and_popen(opts, **popen_kwargs):
     )
 
 
-# The CLI functionality is pretty well-covered in `test_send_fds_and_run.py`.
-# Here is a manual smoke test that should print nothing and exit with code 1.
-#     buck run //antlir:send-fds-and-run -- --no-set-listen-fds -- \
-#         printenv LISTEN_FDS LISTEN_PID ; echo $?
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     opts = parse_opts(sys.argv[1:])
     init_logging(debug=opts.debug)
     with send_fds_and_popen(opts) as proc:
@@ -208,3 +204,11 @@ if __name__ == "__main__":  # pragma: no cover
             if fd != 2:
                 os.close(fd)
     sys.exit(proc.returncode)
+
+
+# The CLI functionality is pretty well-covered in `test_send_fds_and_run.py`.
+# Here is a manual smoke test that should print nothing and exit with code 1.
+#     buck run //antlir:send-fds-and-run -- --no-set-listen-fds -- \
+#         printenv LISTEN_FDS LISTEN_PID ; echo $?
+if __name__ == "__main__":
+    main()  # pragma: no cover

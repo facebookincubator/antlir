@@ -162,8 +162,12 @@ def extract_rpm_manifest(argv) -> None:
         json.dump({"rpms": objs}, of, sort_keys=True, indent=4)
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     import sys
 
     init_logging()
     extract_rpm_manifest(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

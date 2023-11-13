@@ -253,7 +253,7 @@ python_library(
 python_binary(
     name = "btrfsutil-bin",
     srcs = ["btrfsutil.py"],
-    main_module = "antlir.btrfsutil",
+    main_function = "antlir.btrfsutil.main",
     visibility = ["//antlir:btrfsutil"],
     deps = btrfsutil_deps,
 )
@@ -436,7 +436,7 @@ python_library(
 
 python_binary(
     name = "find-built-subvol",
-    main_module = "antlir.find_built_subvol",
+    main_function = "antlir.find_built_subvol.main",
     visibility = ["PUBLIC"],
     deps = [":find_built_subvol"],
 )
@@ -457,7 +457,7 @@ python_unittest(
 python_binary(
     name = "layer-mount-config",
     srcs = ["layer_mount_config.py"],
-    main_module = "antlir.layer_mount_config",
+    main_function = "antlir.layer_mount_config.invoke_main",
     visibility = ["PUBLIC"],
 )
 
@@ -495,7 +495,7 @@ python_library(
 python_binary(
     name = "recv-fds-and-run",
     srcs = ["recv_fds_and_run.py"],
-    main_module = "antlir.recv_fds_and_run",
+    main_function = "antlir.recv_fds_and_run.main",
     deps = [
         ":common",
         ":fs_utils",
@@ -521,7 +521,7 @@ python_unittest(
 
 python_binary(
     name = "send-fds-and-run",
-    main_module = "antlir.send_fds_and_run",
+    main_function = "antlir.send_fds_and_run.main",
     deps = [":send_fds_and_run"],
 )
 
@@ -529,21 +529,21 @@ python_binary(
 
 python_binary(
     name = "artifacts-dir",
-    main_module = "antlir.artifacts_dir",
+    main_function = "antlir.artifacts_dir.main",
     visibility = ["PUBLIC"],
     deps = [":artifacts_dir"],
 )
 
 python_binary(
     name = "compiler",
-    main_module = "antlir.compiler.compiler",
+    main_function = "antlir.compiler.compiler.main",
     visibility = ["PUBLIC"],
     deps = ["//antlir/compiler:compiler"],
 )
 
 python_binary(
     name = "subvolume-garbage-collector",
-    main_module = "antlir.subvolume_garbage_collector",
+    main_function = "antlir.subvolume_garbage_collector.main",
     visibility = ["PUBLIC"],
     deps = [":subvolume_garbage_collector"],
 )
@@ -557,7 +557,7 @@ python_binary(
 
 python_binary(
     name = "volume-for-repo",
-    main_module = "antlir.volume_for_repo",
+    main_function = "antlir.volume_for_repo.main",
     visibility = ["PUBLIC"],
     deps = [":volume_for_repo"],
 )
@@ -587,7 +587,7 @@ python_unittest(
 python_binary(
     name = "package-image",
     srcs = ["package_image.py"],
-    main_module = "antlir.package_image",
+    main_function = "antlir.package_image.main",
     resources = {
         "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade": "btrfs-send-stream-upgrade",
     },
@@ -756,7 +756,7 @@ python_library(
 
 python_binary(
     name = "print-config",
-    main_module = "antlir.config",
+    main_function = "antlir.config.main",
     deps = [":config"],
 )
 
@@ -821,7 +821,7 @@ python_binary(
     srcs = [
         "compile_template.py",
     ],
-    main_module = "antlir.compile_template",
+    main_function = "antlir.compile_template.main",
     visibility = ["PUBLIC"],
     deps = [
         third_party.library(
@@ -834,7 +834,7 @@ python_binary(
 python_binary(
     name = "gpt",
     srcs = ["gpt.py"],
-    main_module = "antlir.gpt",
+    main_function = "antlir.gpt.main",
     visibility = ["PUBLIC"],
     deps = [
         ":common",
@@ -849,7 +849,7 @@ python_binary(
 python_binary(
     name = "rpm-manifest",
     srcs = ["rpm_manifest.py"],
-    main_module = "antlir.rpm_manifest",
+    main_function = "antlir.rpm_manifest.main",
     visibility = ["PUBLIC"],
     deps = [
         ":common",
@@ -906,7 +906,7 @@ image.layer(
 python_binary(
     name = "vcs",
     srcs = ["vcs.py"],
-    main_module = "antlir.vcs",
+    main_function = "antlir.vcs.main",
     deps = [
         ":artifacts_dir",
         ":fs_utils",
@@ -993,6 +993,6 @@ antlir_rust_extension(
 python_binary(
     name = "delete-subvolume-recursive",
     srcs = ["delete_subvolume_recursive.py"],
-    main_module = "antlir.delete_subvolume_recursive",
+    main_function = "antlir.delete_subvolume_recursive.main",
     deps = [":btrfsutil"],
 )

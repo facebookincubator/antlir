@@ -180,5 +180,9 @@ def _ensure_clean_sh_exists(
     )
 
 
-if __name__ == "__main__":
+def main() -> None:
     print(ensure_per_repo_artifacts_dir_exists())
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -91,6 +91,10 @@ def antlir_dep(target: str) -> str:
     return f"{repo_config().antlir_cell_name}//antlir/{target}"
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     json.dump(json.loads(repo_config().json()), sys.stdout, indent=2)
     print()
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

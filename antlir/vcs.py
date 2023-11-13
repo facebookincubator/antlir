@@ -91,7 +91,7 @@ def revision_timestamp(
     return _new_vcs(path_in_repo=cwd).revision_timestamp(rev=rev, cwd=cwd)
 
 
-if __name__ == "__main__":
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--rev",
@@ -133,3 +133,7 @@ if __name__ == "__main__":
             },
             opts.json,
         )
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -37,7 +37,11 @@ def main(stdin, stdout, layer_target) -> None:
     json.dump(mount_config, stdout)
 
 
-if __name__ == "__main__":  # pragma: no cover
+def invoke_main() -> None:  # pragma: no cover
     import sys
 
     main(sys.stdin, sys.stdout, *sys.argv[1:])
+
+
+if __name__ == "__main__":
+    invoke_main()  # pragma: no cover

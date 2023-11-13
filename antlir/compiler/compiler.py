@@ -226,7 +226,8 @@ def build_image(args: Args, argv: List[str]) -> SubvolumeOnDisk:
         raise RuntimeError(f"Serializing subvolume {subvol.path()}") from ex
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
+    global argv
     from antlir.common import init_logging
 
     argv = sys.argv[1:]
@@ -265,3 +266,7 @@ if __name__ == "__main__":  # pragma: no cover
             "user.antlir.duration",
             f"{end - start}s".encode(),
         )
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -90,7 +90,7 @@ def get_volume_for_current_repo(artifacts_dir: Path):
     return volume_dir
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     # this is the first entry point for a CI build, where we should fail with
     # an understandable message if sudo is unavailable
     try:
@@ -106,3 +106,7 @@ if __name__ == "__main__":  # pragma: no cover
 
     args = [Path(sys.argv[1])]
     print(get_volume_for_current_repo(*args))
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover
