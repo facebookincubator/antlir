@@ -71,7 +71,7 @@ load(":dot_meta.bzl", "dot_meta_analyze")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_analyze")
 load(":extract.bzl", "extract_analyze")
 load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "Tools")
-load(":genrule.bzl", "genrule_analyze")
+load(":genrule.bzl", "genrule_rule")
 load(":install.bzl", "install_analyze")
 load(":mount.bzl", "mount_analyze")
 load(":remove.bzl", "remove_analyze")
@@ -109,7 +109,6 @@ _analyze_feature = {
     # @oss-disable
     # @oss-disable
     # @oss-disable
-    "genrule": genrule_analyze,
     "install": install_analyze,
     "mount": mount_analyze,
     "remove": remove_analyze,
@@ -121,6 +120,7 @@ _analyze_feature = {
 # @oss-disable
 
 _anon_rules = {
+    "genrule": genrule_rule,
     "group": group_rule,
     "user": user_rule,
     "user_mod": usermod_rule,
