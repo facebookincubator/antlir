@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def dot_meta(
@@ -39,22 +39,31 @@ def dot_meta(
     )
 
 build_info_record = record(
-    revision = [str, None],
-    package = [str, None],
+    revision = str | None,
+    package = str | None,
 )
 
 dot_meta_record = record(
-    build_info = [build_info_record, None],
+    build_info = build_info_record | None,
 )
 
-def dot_meta_analyze(
-        build_info: [dict[str, typing.Any], None],
-        plugin: FeaturePluginInfo | Provider) -> FeatureAnalysis:
-    return FeatureAnalysis(
-        feature_type = "dot_meta",
-        data = dot_meta_record(
-            build_info = build_info_record(**build_info) if build_info else None,
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "dot_meta",
+            data = dot_meta_record(
+                build_info = build_info_record(**ctx.attrs.build_info) if ctx.attrs.build_info else None,
+            ),
+            build_phase = BuildPhase("buildinfo_stamp"),
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
-        build_phase = BuildPhase("buildinfo_stamp"),
-        plugin = plugin,
-    )
+    ]
+
+dot_meta_rule = rule(
+    impl = _impl,
+    attrs = {
+        "build_info": attrs.dict(attrs.string(), attrs.option(attrs.string())),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+    },
+)
