@@ -77,7 +77,7 @@ load(":mount.bzl", "mount_rule")
 load(":remove.bzl", "remove_rule")
 load(":requires.bzl", "requires_rule")
 load(":rpms.bzl", "rpms_record", "rpms_rule")
-load(":symlink.bzl", "ensure_dir_symlink_analyze", "ensure_file_symlink_analyze")
+load(":symlink.bzl", "ensure_dir_symlink_rule", "ensure_file_symlink_rule")
 load(":tarball.bzl", "tarball_rule")
 load(":usergroup.bzl", "group_rule", "user_rule", "usermod_rule")
 
@@ -98,8 +98,6 @@ def _feature_as_json(feat: feature_record) -> struct:
 
 _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
-    "ensure_dir_symlink": ensure_dir_symlink_analyze,
-    "ensure_file_symlink": ensure_file_symlink_analyze,
     # @oss-disable
     # @oss-disable
     # @oss-disable
@@ -112,6 +110,8 @@ _anon_rules = {
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
     "ensure_dir_exists": ensure_dir_exists_rule,
+    "ensure_dir_symlink": ensure_dir_symlink_rule,
+    "ensure_file_symlink": ensure_file_symlink_rule,
     "extract": extract_rule,
     # @oss-disable
     "genrule": genrule_rule,
