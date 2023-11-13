@@ -83,6 +83,10 @@ FeatureAnalysis = provider(fields = {
     "requires_planning": provider_field(bool, default = False),
 })
 
+MultiFeatureAnalysis = provider(fields = {
+    "features": provider_field(list[FeatureAnalysis]),
+})
+
 Tools = record(
     objcopy = Dependency,
 )
