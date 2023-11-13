@@ -3,70 +3,13 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", "image")
-load("//antlir/antlir2/bzl/package:defs.bzl?v2_only", "package")
-load("//antlir/bzl:build_defs.bzl", "get_visibility")
-load("//antlir/bzl:systemd.bzl", "systemd")
-load("//antlir/bzl:types.bzl", "types")
-load("//metalos/kernel:kernel.shape.bzl", "kernel_t")
+def initrd(arch: str, uname: str):
+    """ Get the initrd target based on arch and uname. 
 
-_KERNEL_T = types.shape(kernel_t)
-_OPT_STR = types.optional(types.str)
-_OPT_VISIBILITY = types.optional(types.visibility)
-
-types.lint_noop(_KERNEL_T, _OPT_STR, _OPT_VISIBILITY)
-
-def initrd(
-        kernel: _KERNEL_T,
-        *,
-        name: _OPT_STR = None,
-        features = None,
-        visibility: _OPT_VISIBILITY = None):
+    Initrd data isn't really antlir's business, but some of our images need it.
+    MetalOS initrd is our only option, but we don't want to import its code. So
+    we hardcode target path here for now. Ideally, either we include some OSS
+    initrd, or we set this as a REPO_CFG so it's easier to specify where initrd
+    targets live.
     """
-    Construct an initrd (gzipped cpio archive) that can be used to boot this
-    kernel in a virtual machine.
-    """
-
-    if not name:
-        name = "{}-initrd".format(kernel.uname)
-    visibility = get_visibility(visibility)
-
-    # Build an initrd specifically for operating as a VM. This is built on top of the
-    # MetalOS initrd and modified to support 9p shared mounts for the repository,
-    # kernel modules, and others.
-
-    image.layer(
-        name = name + "-layer",
-        parent_layer = "//metalos/initrd:initrd",
-        visibility = visibility,
-        features = [
-            feature.ensure_subdirs_exist(
-                into_dir = "/usr/lib",
-                subdirs_to_create = "modules-load.d",
-            ),
-            feature.install(
-                src = "//antlir/vm/initrd:modules.conf",
-                dst = "/usr/lib/modules-load.d/vm.conf",
-            ),
-            feature.ensure_subdirs_exist(
-                into_dir = "/usr/lib",
-                subdirs_to_create = "modules",
-            ),
-            feature.install(
-                src = kernel.derived_targets.disk_boot_modules,
-                dst = paths.join("/usr/lib/modules", kernel.uname) + "/",
-            ),
-            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "default.target", use_antlir2 = True),
-            systemd.install_dropin("//antlir/vm/initrd:reboot-on-fail.conf", "metalos-init.service", use_antlir2 = True),
-            # vm has no network
-            systemd.skip_unit("systemd-networkd-wait-online.service", use_antlir2 = True),
-        ] + (features or []),
-    )
-
-    package.cpio_gz(
-        name = name,
-        layer = ":" + name + "-layer",
-        visibility = visibility,
-    )
+    return "//metalos/vm/initrd:vm-{}-{}-initrd".format(arch, uname)
