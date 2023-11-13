@@ -69,6 +69,9 @@ struct Args {
     /// Set these env vars in the test environment
     setenv: Vec<KvPair>,
     #[clap(long)]
+    /// Set these env vars in the test environment based on what is present in the parent
+    pass_env: Vec<String>,
+    #[clap(long)]
     /// Mounts required by the layer-under-test
     mounts: JsonFile<BTreeSet<Mount>>,
     #[clap(long)]
@@ -112,6 +115,12 @@ fn main() -> Result<()> {
         if key.starts_with("TEST_PILOT") {
             setenv.insert(key, val.into());
         }
+    }
+    for key in args.pass_env {
+        let var =
+            std::env::var_os(&key).with_context(|| format!("--pass-env var '{key}' missing"))?;
+
+        setenv.insert(key, var);
     }
     if let Some(rust_log) = std::env::var_os("RUST_LOG") {
         setenv.insert("RUST_LOG".into(), rust_log);

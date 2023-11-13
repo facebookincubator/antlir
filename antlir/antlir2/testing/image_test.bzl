@@ -41,7 +41,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         cmd_args(boot_requires_units, format = "--requires-unit={}") if ctx.attrs.boot else cmd_args(),
         cmd_args(boot_after_units, format = "--after-unit={}") if ctx.attrs.boot else cmd_args(),
         cmd_args(boot_wants_units, format = "--wants-unit={}") if ctx.attrs.boot else cmd_args(),
-        cmd_args(["{}={}".format(k, v) for k, v in ctx.attrs.test[ExternalRunnerTestInfo].env.items()], format = "--setenv={}"),
+        cmd_args(ctx.attrs.test[ExternalRunnerTestInfo].env.keys(), format = "--pass-env={}"),
         cmd_args(mounts, format = "--mounts={}"),
         cmd_args(str(ctx.attrs.allocate_loop_devices), format = "--allocate-loop-devices={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
@@ -191,6 +191,7 @@ def _implicit_image_test(
 image_cpp_test = partial(
     _implicit_image_test,
     cpp_unittest,
+    supports_static_listing = False,
     _add_outer_labels = ["tpx:optout-test-result-output-spec"],
 )
 

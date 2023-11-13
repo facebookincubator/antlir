@@ -44,7 +44,6 @@ image.layer(
 test_variants(
     srcs = ["test.cpp"],
     lang = "cpp",
-    supports_static_listing = False,
     test_rule = image_cpp_test,
 )
 
