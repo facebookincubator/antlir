@@ -66,9 +66,7 @@ def parse_opts(argv):
     return Path.parse_args(parser, argv)
 
 
-# This cannot be tested as a library since it `exec`s and rewrites the file
-# descriptor table.  However, `test_send_fds_and_run.py` covers this fully.
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     opts = parse_opts(sys.argv[1:])
     init_logging(debug=opts.debug)
 
@@ -100,3 +98,9 @@ if __name__ == "__main__":  # pragma: no cover
         os.dup2(src_fd, target_fd)
     os.closerange(max_set_fd + 1, max_fd_count)
     os.execvpe(opts.cmd[0], opts.cmd, env)
+
+
+# This cannot be tested as a library since it `exec`s and rewrites the file
+# descriptor table.  However, `test_send_fds_and_run.py` covers this fully.
+if __name__ == "__main__":
+    main()  # pragma: no cover

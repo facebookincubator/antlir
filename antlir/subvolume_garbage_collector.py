@@ -363,5 +363,9 @@ def subvolume_garbage_collector(argv) -> None:
         )
 
 
-if __name__ == "__main__":
+def main() -> None:
     subvolume_garbage_collector(sys.argv[1:])  # pragma: no cover
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -504,6 +504,10 @@ def package_image(args, btrfs_sendstream_kernel_version_path=None) -> None:
     )
 
 
-# This is covered by integration tests using `package.bzl`
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     package_image(None)
+
+
+# This is covered by integration tests using `package.bzl`
+if __name__ == "__main__":
+    main()  # pragma: no cover

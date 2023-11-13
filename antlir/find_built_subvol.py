@@ -30,6 +30,12 @@ def find_built_subvol(
     return Subvol(path=subvol, already_exists=True)
 
 
+def main() -> None:  # pragma: no cover
+    # The newline is for bash's $() to strip.  This way even paths ending in
+    # \n should work correctly.
+    sys.stdout.buffer.write(find_built_subvol(sys.argv[1]).path() + b"\n")
+
+
 # The manual test was as follows:
 #
 #   $ (buck run antlir:find-built-subvol -- "$(
@@ -37,7 +43,5 @@ def find_built_subvol(
 #         cut -f 2- -d\
 #     )") 2> /dev/null
 #   /.../buck-image-out/volume/targets/hello_world_base:JBc1y_8.PoDr.dwGz/volume
-if __name__ == "__main__":  # pragma: no cover
-    # The newline is for bash's $() to strip.  This way even paths ending in
-    # \n should work correctly.
-    sys.stdout.buffer.write(find_built_subvol(sys.argv[1]).path() + b"\n")
+if __name__ == "__main__":
+    main()  # pragma: no cover

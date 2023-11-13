@@ -112,9 +112,7 @@ for name in dir(_raw_btrfsutil):
         globals()[name] = __with_sudo_retry(name)
 
 
-# this is covered by the integration tests, but is in a separate binary
-# invocation so doesn't get counted
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument("func")
     args = parser.parse_args()
@@ -146,3 +144,9 @@ if __name__ == "__main__":  # pragma: no cover
     finally:
         return_pipe.close()
         sys.stdout.flush()
+
+
+# this is covered by the integration tests, but is in a separate binary
+# invocation so doesn't get counted
+if __name__ == "__main__":
+    main()  # pragma: no cover

@@ -142,8 +142,12 @@ def make_gpt(argv) -> None:
         )
 
 
-if __name__ == "__main__":  # pragma: no cover
+def main() -> None:  # pragma: no cover
     import sys
 
     init_logging()
     make_gpt(sys.argv[1:])
+
+
+if __name__ == "__main__":
+    main()  # pragma: no cover
