@@ -99,7 +99,6 @@ def _feature_as_json(feat: feature_record) -> struct:
 _analyze_feature = {
     "antlir1_no_equivalent": antlir1_no_equivalent_analyze,
     # @oss-disable
-    # @oss-disable
     "install": install_analyze,
 }
 # @oss-disable
@@ -111,6 +110,7 @@ _anon_rules = {
     "ensure_dir_symlink": ensure_dir_symlink_rule,
     "ensure_file_symlink": ensure_file_symlink_rule,
     "extract": extract_rule,
+    # @oss-disable
     # @oss-disable
     # @oss-disable
     # @oss-disable
