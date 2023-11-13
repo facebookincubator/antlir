@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")  # @unused Used as type
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
@@ -17,41 +17,28 @@ DefaultMountpointInfo = provider(fields = ["default_mountpoint"])
 def layer_mount(
         *,
         source: str | Select,
-        mountpoint: str | None = None,
-        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature]:
-    features = [
-        ParseTimeFeature(
-            feature_type = "mount",
-            plugin = antlir2_dep("features:mount"),
-            deps = {
-                "source": ParseTimeDependency(dep = source, providers = [LayerInfo]),
-            },
-            exec_deps = {
-                "ensure_dir_exists_plugin": ParseTimeDependency(
-                    dep = antlir2_dep("features:ensure_dir_exists"),
-                    providers = [FeaturePluginInfo],
-                ),
-            },
-            kwargs = {
-                "host_source": None,
-                "is_directory": None,
-                "mountpoint": mountpoint,
-                "source_kind": "layer",
-                "_implicit_from_antlir1": _implicit_from_antlir1,
-            },
-        ),
-    ]
-
-    return features
+        mountpoint: str | None = None) -> ParseTimeFeature:
+    return ParseTimeFeature(
+        feature_type = "mount",
+        plugin = antlir2_dep("features:mount"),
+        deps = {
+            "layer": ParseTimeDependency(dep = source, providers = [LayerInfo]),
+        },
+        kwargs = {
+            "host_source": None,
+            "is_directory": None,
+            "mountpoint": mountpoint,
+            "source_kind": "layer",
+        },
+    )
 
 def host_mount(
         *,
         source: str,
         is_directory: bool,
-        mountpoint: str | None = None,
-        _implicit_from_antlir1: bool = False) -> list[ParseTimeFeature]:
+        mountpoint: str | None = None) -> ParseTimeFeature:
     mountpoint = mountpoint or source
-    features = [ParseTimeFeature(
+    return ParseTimeFeature(
         feature_type = "mount",
         plugin = antlir2_dep("features:mount"),
         kwargs = {
@@ -59,18 +46,9 @@ def host_mount(
             "is_directory": is_directory,
             "mountpoint": mountpoint,
             "source_kind": "host",
-            "_implicit_from_antlir1": False,
         },
         deps = {},
-        exec_deps = {
-            "ensure_dir_exists_plugin": ParseTimeDependency(
-                dep = antlir2_dep("features:ensure_dir_exists"),
-                providers = [FeaturePluginInfo],
-            ),
-        },
-    )]
-
-    return features
+    )
 
 host_file_mount = partial(host_mount, is_directory = False)
 host_dir_mount = partial(host_mount, is_directory = True)
@@ -96,46 +74,54 @@ mount_record = record(
     host = [host_mount_record, None],
 )
 
-def mount_analyze(
-        mountpoint: str | None,
-        source_kind: str,
-        is_directory: bool | None,
-        host_source: str | None,
-        _implicit_from_antlir1: bool,
-        plugin: FeaturePluginInfo | Provider,
-        deps: dict[str, Dependency] = {},
-        exec_deps: dict[str, Dependency] = {}) -> list[FeatureAnalysis]:
-    features = []
-    if source_kind == "layer":
-        source = deps.pop("source")
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    if ctx.attrs.source_kind == "layer":
+        mountpoint = ctx.attrs.mountpoint
         if not mountpoint:
-            mountpoint = source[DefaultMountpointInfo].default_mountpoint
-        features.append(FeatureAnalysis(
-            feature_type = "mount",
-            data = mount_record(
-                layer = layer_mount_record(
-                    src = layer_dep_analyze(source),
-                    mountpoint = mountpoint,
+            mountpoint = ctx.attrs.layer[DefaultMountpointInfo].default_mountpoint
+        return [
+            DefaultInfo(),
+            FeatureAnalysis(
+                feature_type = "mount",
+                data = mount_record(
+                    layer = layer_mount_record(
+                        src = layer_dep_analyze(ctx.attrs.layer),
+                        mountpoint = mountpoint,
+                    ),
+                    host = None,
                 ),
-                host = None,
+                required_layers = [ctx.attrs.layer[LayerInfo]],
+                plugin = ctx.attrs.plugin[FeaturePluginInfo],
             ),
-            required_layers = [source[LayerInfo]],
-            plugin = plugin,
-        ))
-    elif source_kind == "host":
-        features.append(FeatureAnalysis(
-            feature_type = "mount",
-            data = mount_record(
-                host = host_mount_record(
-                    src = host_source,
-                    mountpoint = mountpoint,
-                    is_directory = is_directory,
+        ]
+    elif ctx.attrs.source_kind == "host":
+        return [
+            DefaultInfo(),
+            FeatureAnalysis(
+                feature_type = "mount",
+                data = mount_record(
+                    host = host_mount_record(
+                        src = ctx.attrs.host_source,
+                        mountpoint = ctx.attrs.mountpoint,
+                        is_directory = ctx.attrs.is_directory,
+                    ),
+                    layer = None,
                 ),
-                layer = None,
+                plugin = ctx.attrs.plugin[FeaturePluginInfo],
             ),
-            plugin = plugin,
-        ))
+        ]
     else:
-        fail("invalid source_kind '{}'".format(source_kind))
+        fail("invalid source_kind '{}'".format(ctx.attrs.source_kind))
 
-    return features
+mount_rule = rule(
+    impl = _impl,
+    attrs = {
+        "host_source": attrs.option(attrs.string()),
+        "is_directory": attrs.option(attrs.bool()),
+        "layer": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+        "mountpoint": attrs.option(attrs.string()),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "source_kind": attrs.enum(["layer", "host"]),
+        "_implicit_from_antlir1": attrs.bool(default = False),
+    },
+)
