@@ -186,6 +186,7 @@ image_python_test(
     name = "test-installed-binary",
     srcs = ["test_installed_binary.py"],
     layer = ":installed-binary",
+    supports_static_listing = False,
 )
 
 export_file(
