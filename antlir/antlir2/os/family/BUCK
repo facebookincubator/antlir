@@ -25,3 +25,9 @@ constraint_value(
     constraint_setting = ":family",
     visibility = ["PUBLIC"],
 )
+
+constraint_value(
+    name = "rhel",
+    constraint_setting = ":family",
+    visibility = ["PUBLIC"],
+)

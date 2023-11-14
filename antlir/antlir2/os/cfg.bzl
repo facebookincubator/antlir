@@ -11,6 +11,7 @@ _OS_REFS = {
     "os.centos9": "//antlir/antlir2/os:centos9",
     "os.eln": "//antlir/antlir2/os:eln",
     "os.none": "//antlir/antlir2/os:none",
+    "os.rhel8": "//antlir/antlir2/os:rhel8",
     "os_constraint": "//antlir/antlir2/os:os",
     "os_family_constraint": "//antlir/antlir2/os/family:family",
 }
