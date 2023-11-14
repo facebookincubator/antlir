@@ -360,9 +360,9 @@ def feature_attrs(
             inline_features_plugins[feature_key] = feat.plugin
 
             if feat.deps:
-                inline_features_deps[feature_key] = {k: dep for k, dep in feat.deps.items()}
+                inline_features_deps[feature_key] = feat.deps
             if feat.exec_deps:
-                inline_features_exec_deps[feature_key] = {k: dep for k, dep in feat.exec_deps.items()}
+                inline_features_exec_deps[feature_key] = feat.exec_deps
             if feat.deps_or_srcs:
                 inline_features_deps_or_srcs[feature_key] = feat.deps_or_srcs
             if feat.unnamed_deps_or_srcs:
