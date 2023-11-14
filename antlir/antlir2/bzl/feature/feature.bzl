@@ -46,9 +46,9 @@ just be a simple string that is a label (or path for plain source files), but by
 including it in the special maps in `ParseTimeFeature`, the `feature` rule is
 able to coerce those labels to concrete artifacts.
 
-Image features must also provide a function to convert the kwargs, sources and
-deps into a JSON struct readable by the compiler. This function must then be
-added to the `_analyze_feature` map in this file.
+Image features must also provide an anonymous rule implementation to convert the
+kwargs, sources and deps into a JSON struct readable by the compiler. This
+function must then be added to the `_anon_rules` map in this file.
 """
 
 load("@bazel_skylib//lib:types.bzl", "types")
@@ -70,7 +70,7 @@ load(":clone.bzl", "clone_rule")
 load(":dot_meta.bzl", "dot_meta_rule")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_rule")
 load(":extract.bzl", "extract_rule")
-load(":feature_info.bzl", "AnalyzeFeatureContext", "FeatureAnalysis", "MultiFeatureAnalysis", "Tools")
+load(":feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis")
 load(":genrule.bzl", "genrule_rule")
 load(":install.bzl", "install_rule")
 load(":mount.bzl", "mount_rule")
@@ -95,9 +95,6 @@ def _feature_as_json(feat: feature_record) -> struct:
         data = feat.analysis.data,
         plugin = feat.plugin,
     )
-
-_analyze_feature = {
-}
 
 _anon_rules = {
     "antlir1_no_equivalent": antlir1_no_equivalent_rule,
@@ -129,9 +126,6 @@ _anon_rules = {
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     # Merge inline features into a single JSON file
     inline_features = []
-    inline_artifacts = []
-    inline_run_infos = []
-    inline_layer_deps = []
     anon_features = []
     for key, inline in ctx.attrs.inline_features.items():
         feature_deps = ctx.attrs.inline_features_deps.get(key, None)
@@ -141,55 +135,25 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         feature_srcs = ctx.attrs.inline_features_srcs.get(key, None)
         feature_args = ctx.attrs.inline_features_args.get(key, None)
 
-        analyze_kwargs = inline["kwargs"]
+        anon_kwargs = inline["kwargs"]
         if feature_deps != None:
-            analyze_kwargs["deps"] = feature_deps
+            anon_kwargs.update(feature_deps)
         if feature_deps_or_srcs != None:
-            analyze_kwargs["deps_or_srcs"] = feature_deps_or_srcs
+            anon_kwargs.update(feature_deps_or_srcs)
         if feature_unnamed_deps_or_srcs != None:
-            analyze_kwargs["unnamed_deps_or_srcs"] = feature_unnamed_deps_or_srcs
+            anon_kwargs["unnamed_deps_or_srcs"] = feature_unnamed_deps_or_srcs
         if feature_exec_deps != None:
-            analyze_kwargs["exec_deps"] = feature_exec_deps
+            anon_kwargs.update(feature_exec_deps)
         if feature_srcs != None:
-            analyze_kwargs["srcs"] = feature_srcs
+            anon_kwargs.update(feature_srcs)
         if feature_args != None:
-            analyze_kwargs["args"] = feature_args
-        if inline.get("analyze_uses_context"):
-            analyze_kwargs["ctx"] = AnalyzeFeatureContext(
-                unique_action_identifier = key,
-                actions = ctx.actions,
-                tools = Tools(
-                    objcopy = ctx.attrs._objcopy,
-                ),
-                label = ctx.label,
-            )
-        analyze_kwargs["plugin"] = ctx.attrs.inline_features_plugins[key][FeaturePluginInfo]
+            anon_kwargs["args"] = feature_args
 
-        if inline["feature_type"] in _analyze_feature:
-            analysis = _analyze_feature[inline["feature_type"]](**analyze_kwargs)
-            for analysis in flatten.flatten(analysis):
-                inline_artifacts.extend(analysis.required_artifacts)
-                inline_run_infos.extend(analysis.required_run_infos)
-                inline_layer_deps.extend(analysis.required_layers)
-
-                feat = feature_record(
-                    feature_type = analysis.feature_type,
-                    label = ctx.label.raw_target(),
-                    analysis = analysis,
-                    plugin = analysis.plugin or ctx.attrs.inline_features_plugins[key][FeaturePluginInfo],
-                )
-                inline_features.append(feat)
-        else:
-            anon_args = analyze_kwargs
-            anon_args["plugin"] = ctx.attrs.inline_features_plugins[key]
-            anon_args.update(anon_args.pop("srcs", {}))
-            anon_args.update(anon_args.pop("deps", {}))
-            anon_args.update(anon_args.pop("deps_or_srcs", {}))
-            anon_args.update(anon_args.pop("exec_deps", {}))
-            anon_features.append(ctx.actions.anon_target(
-                _anon_rules[inline["feature_type"]],
-                analyze_kwargs,
-            ))
+        anon_kwargs["plugin"] = ctx.attrs.inline_features_plugins[key]
+        anon_features.append(ctx.actions.anon_target(
+            _anon_rules[inline["feature_type"]],
+            anon_kwargs,
+        ))
 
     def _with_anon_features(anon_features: list[ProviderCollection]) -> list[Provider]:
         flat = []
@@ -338,15 +302,9 @@ shared_features_attrs = {
     ),
 }
 
-_features_attrs = {
-    "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
-}
-
-_features_attrs.update(shared_features_attrs)
-
 feature_rule = rule(
     impl = _impl,
-    attrs = _features_attrs,
+    attrs = shared_features_attrs,
     cfg = feature_cfg,
 )
 
@@ -395,7 +353,6 @@ def feature_attrs(
             feature_key = _hash_key(feat)
 
             inline_features[feature_key] = {
-                "analyze_uses_context": feat.analyze_uses_context,
                 "feature_type": feat.feature_type,
                 "kwargs": feat.kwargs,
             }
@@ -403,10 +360,9 @@ def feature_attrs(
             inline_features_plugins[feature_key] = feat.plugin
 
             if feat.deps:
-                # TODO: record providers for later checking
-                inline_features_deps[feature_key] = {k: d.dep for k, d in feat.deps.items()}
+                inline_features_deps[feature_key] = {k: dep for k, dep in feat.deps.items()}
             if feat.exec_deps:
-                inline_features_exec_deps[feature_key] = {k: d.dep for k, d in feat.exec_deps.items()}
+                inline_features_exec_deps[feature_key] = {k: dep for k, dep in feat.exec_deps.items()}
             if feat.deps_or_srcs:
                 inline_features_deps_or_srcs[feature_key] = feat.deps_or_srcs
             if feat.unnamed_deps_or_srcs:

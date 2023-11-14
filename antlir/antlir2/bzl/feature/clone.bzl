@@ -7,7 +7,7 @@ load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
-load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def clone(
         *,
@@ -63,10 +63,7 @@ def clone(
         feature_type = "clone",
         plugin = antlir2_dep("features:clone"),
         deps = {
-            "src_layer": ParseTimeDependency(
-                dep = src_layer,
-                providers = [LayerInfo],
-            ),
+            "src_layer": src_layer,
         },
         kwargs = {
             "dst_path": dst_path,

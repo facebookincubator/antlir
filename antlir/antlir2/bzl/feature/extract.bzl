@@ -28,7 +28,7 @@ load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
-load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def extract_from_layer(
         layer: str | Select,
@@ -45,7 +45,7 @@ def extract_from_layer(
         feature_type = "extract",
         plugin = antlir2_dep("features:extract"),
         deps = {
-            "layer": ParseTimeDependency(dep = layer, providers = [LayerInfo]),
+            "layer": layer,
         },
         kwargs = {
             "binaries": binaries,
@@ -72,10 +72,10 @@ def extract_buck_binary(
         plugin = antlir2_dep("features:extract"),
         # include in deps so we can look at the providers
         deps = {
-            "src": ParseTimeDependency(dep = src, providers = [RunInfo]),
+            "src": src,
         },
         exec_deps = {
-            "_objcopy": ParseTimeDependency(dep = "fbsource//third-party/binutils:objcopy"),
+            "_objcopy": "fbsource//third-party/binutils:objcopy",
         } if _should_strip(strip) else {},
         kwargs = {
             "dst": dst,

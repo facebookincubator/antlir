@@ -99,7 +99,6 @@ def _implicit_image_test(subvol: Artifact, implicit_image_test: ExternalRunnerTe
 
 def _impl(ctx: AnalysisContext) -> Promise:
     feature_anon_kwargs = {key.removeprefix("_feature_"): getattr(ctx.attrs, key) for key in dir(ctx.attrs) if key.startswith("_feature_")}
-    feature_anon_kwargs["_objcopy"] = ctx.attrs._objcopy
     feature_anon_kwargs["name"] = str(ctx.label.raw_target())
     return ctx.actions.anon_target(
         feature_rule,
@@ -507,7 +506,6 @@ _layer_attrs = {
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
     ),
-    "_objcopy": attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy"),
     "_run_container": attrs.exec_dep(default = "//antlir/antlir2/container_subtarget:run"),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),

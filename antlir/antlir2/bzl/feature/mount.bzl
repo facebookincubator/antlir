@@ -8,7 +8,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/bzl:types.bzl", "types")
 load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
-load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeDependency", "ParseTimeFeature")
+load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 # IMO this is a misfeature, but it is used in many places throughout the legacy
 # antlir1 world so we need to keep it around for a while
@@ -22,7 +22,7 @@ def layer_mount(
         feature_type = "mount",
         plugin = antlir2_dep("features:mount"),
         deps = {
-            "layer": ParseTimeDependency(dep = source, providers = [LayerInfo]),
+            "layer": source,
         },
         kwargs = {
             "host_source": None,
