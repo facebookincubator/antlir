@@ -5,6 +5,7 @@
 
 # @oss-disable
 # @oss-disable
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
@@ -76,13 +77,23 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         is_executable = True,
         allow_args = True,
     )
+
+    env = dict(ctx.attrs.test[ExternalRunnerTestInfo].env)
+    if ctx.attrs._static_list_wrapper:
+        original = env.pop("STATIC_LIST_TESTS_BINARY", None)
+        if original:
+            env["STATIC_LIST_TESTS_BINARY"] = RunInfo(cmd_args(
+                ctx.attrs._static_list_wrapper[RunInfo],
+                cmd_args(original, format = "--wrap={}"),
+            ))
+
     return [
         ExternalRunnerTestInfo(
             command = [test_cmd],
             type = ctx.attrs.test[ExternalRunnerTestInfo].test_type,
             labels = ctx.attrs.labels + inner_labels,
             contacts = ctx.attrs.test[ExternalRunnerTestInfo].contacts,
-            env = ctx.attrs.test[ExternalRunnerTestInfo].env,
+            env = env,
             run_from_project_root = True,
         ),
         RunInfo(test_cmd),
@@ -131,6 +142,7 @@ _image_test = rule(
         "layer": attrs.dep(providers = [LayerInfo]),
         "run_as_user": attrs.string(default = "root"),
         "test": attrs.dep(providers = [ExternalRunnerTestInfo]),
+        "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
     } | cfg_attrs(),
     doc = "Run a test inside an image layer",
     cfg = layer_cfg,
@@ -156,6 +168,7 @@ def _implicit_image_test(
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         # @oss-disable
+        _static_list_wrapper: str | None = None,
         visibility: list[str] | None = None,
         **kwargs):
     test_rule(
@@ -199,13 +212,14 @@ def _implicit_image_test(
         allocate_loop_devices = allocate_loop_devices,
         default_os = default_os,
         # @oss-disable
+        _static_list_wrapper = _static_list_wrapper,
         visibility = visibility,
     )
 
 image_cpp_test = partial(
     _implicit_image_test,
     cpp_unittest,
-    supports_static_listing = False,
+    _static_list_wrapper = antlir2_dep("testing/image_test:static-list-cpp"),
     _add_outer_labels = ["tpx:optout-test-result-output-spec"],
 )
 
@@ -238,8 +252,8 @@ def image_python_test(
         test_rule = python_unittest,
         name = name,
         layer = test_layer,
-        supports_static_listing = False,
         default_os = default_os,
         # @oss-disable
+        _static_list_wrapper = antlir2_dep("testing/image_test:static-list-py"),
         **kwargs
     )

@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "export_file", "python_binary", "rust_binary", "rust_library")
 
 oncall("antlir")
 
@@ -37,5 +37,25 @@ rust_binary(
 
 export_file(
     name = "antlir2_image_test.service",
+    visibility = ["PUBLIC"],
+)
+
+python_binary(
+    name = "static-list",
+    srcs = ["static_list.py"],
+    main_function = "antlir.antlir2.testing.image_test.static_list.main",
+)
+
+buck_command_alias(
+    name = "static-list-cpp",
+    args = ["cpp"],
+    exe = ":static-list",
+    visibility = ["PUBLIC"],
+)
+
+buck_command_alias(
+    name = "static-list-py",
+    args = ["py"],
+    exe = ":static-list",
     visibility = ["PUBLIC"],
 )

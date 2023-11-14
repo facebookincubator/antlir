@@ -77,8 +77,8 @@ struct Boot {
     wants_units: Vec<String>,
 }
 
-#[derive(Parser, Debug)]
 /// Run a unit test inside an image layer.
+#[derive(Parser, Debug)]
 struct Args {
     #[clap(long)]
     spec: JsonFile<TestSpec>,
@@ -87,8 +87,6 @@ struct Args {
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
-
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::fmt::Layer::default()
@@ -101,6 +99,8 @@ fn main() -> Result<()> {
         )
         .with(tracing_subscriber::EnvFilter::from_default_env())
         .init();
+
+    let args = Args::parse();
 
     let repo = find_root::find_repo_root(
         &absolute_path::AbsolutePathBuf::canonicalize(
