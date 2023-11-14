@@ -387,6 +387,8 @@ def feature_new(
     # If we're on buck2, instantiate an antlir2 feature rule. This does not
     # conflict with the feature above, since antlir1 adds a "private" suffix to
     # all feature targets
+    if antlir2 != None and not antlir2:
+        return
     antlir2_shim.upgrade_or_shadow_feature(
         antlir2 = antlir2,
         name = name,
