@@ -61,6 +61,7 @@ def attrs_selected_by_cfg():
                     "//antlir/antlir2/os/facebook:rou-test": "//antlir/antlir2/facebook/flavor/eln-rou-untested:eln-rou-untested",
                 }),
                 "//antlir/antlir2/os:none": "//antlir/antlir2/flavor:none",
+                "//antlir/antlir2/os:rhel8": "//antlir/antlir2/facebook/flavor/rhel8:rhel8",
                 # TODO: in D49383768 this will be disallowed so that we can
                 # guarantee that we'll never end up building a layer without
                 # configuring the os
