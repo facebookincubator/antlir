@@ -24,7 +24,6 @@ _default_attrs = {
     "_antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
     "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
     "_dot_meta_feature": attrs.dep(default = "//antlir/antlir2/bzl/package:dot-meta"),
-    "_objcopy": attrs.default_only(attrs.exec_dep(default = "fbsource//third-party/binutils:objcopy")),
     "_run_container": attrs.exec_dep(default = "//antlir/antlir2/container_subtarget:run"),
     "_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
@@ -83,7 +82,6 @@ def _generic_impl(
             "name": str(ctx.label.raw_target()),
             "_antlir2": ctx.attrs._antlir2,
             "_dot_meta_feature": ctx.attrs._dot_meta_feature,
-            "_objcopy": ctx.attrs._objcopy,
             "_run_container": ctx.attrs._run_container,
             "_target_arch": ctx.attrs._target_arch,
         }).promise.map(partial(

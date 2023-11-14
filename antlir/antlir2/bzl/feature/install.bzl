@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
@@ -12,7 +13,6 @@ load("//antlir/bzl:stat.bzl", "stat")
 load(
     ":feature_info.bzl",
     "FeatureAnalysis",
-    "ParseTimeDependency",
     "ParseTimeFeature",
 )
 
@@ -48,7 +48,7 @@ def install(
         plugin = antlir2_dep("features:install"),
         deps_or_srcs = {"src": src},
         exec_deps = {
-            "_objcopy": ParseTimeDependency(dep = "fbsource//third-party/binutils:objcopy"),
+            "_objcopy": "fbsource//third-party/binutils:objcopy",
         },
         kwargs = {
             "dst": dst,
@@ -163,6 +163,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         DefaultInfo(),
         FeatureAnalysis(
             feature_type = "install",
+            build_phase = BuildPhase(ctx.attrs.build_phase),
             data = install_record(
                 src = src,
                 dst = ctx.attrs.dst,
@@ -180,6 +181,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 install_rule = rule(
     impl = _impl,
     attrs = {
+        "build_phase": attrs.enum(BuildPhase.values(), default = "compile"),
         "dst": attrs.option(attrs.string(), default = None),
         "group": attrs.string(default = "root"),
         "mode": attrs.option(attrs.int(), default = None),

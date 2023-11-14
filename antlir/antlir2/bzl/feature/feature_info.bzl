@@ -3,23 +3,20 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//utils:utils.bzl", "map_val")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 
-# A dependency of a feature that is not yet resolved. This is of very limited
-# use at parse time, but allows the feature definition to inform the rule what
-# providers must be found on the dependency before making it to feature
-# analysis.  This is analogous to a hard-coded `attrs.dep(providers=["foo"])`
-# but allows each feature to depend on different types of targets.
-ParseTimeDependency = record(
-    dep = [
-        str,
-        Select,
-        # @oss-disable
-    ],
-    # List of provider types.
-    providers = field(typing.Any, default = []),
-)
+# A dependency of a feature that is not yet resolved.
+# This is of very limited use at parse time, but allows the feature macro to
+# inform the rule what strings are actually dependencies that need to be
+# resolved.
+ParseTimeDependency = [
+    str,
+    Select,
+    # this gross combo is for path_actions_t @oss-disable
+    # @oss-disable
+]
 
 ParseTimeFeature = record(
     feature_type = str,
@@ -28,9 +25,9 @@ ParseTimeFeature = record(
     # Items in this list may be either raw source files, or dependencies
     # produced by another rule. If a dependency, the full provider set will be
     # made available to the analysis code for the feature.
-    deps_or_srcs = field([dict[str, [str, Select]], None], default = None),
+    deps_or_srcs = field([dict[str, ParseTimeDependency], None], default = None),
     # Items in this list must be coerce-able to an "artifact"
-    srcs = field([dict[str, [str, Select]], None], default = None),
+    srcs = field([dict[str, str | Select], None], default = None),
     # These items must be `deps` and will be validated early in analysis time to
     # contain the required providers
     deps = field([dict[str, ParseTimeDependency], None], default = None),
@@ -40,12 +37,11 @@ ParseTimeFeature = record(
     # Sources/deps that do not require named tracking between the parse and
     # analysis phases. Useful to support `select` in features that accept lists
     # of dependencies.
-    unnamed_deps_or_srcs = field([list[[str, Select]], None], default = None),
+    unnamed_deps_or_srcs = field([list[ParseTimeDependency], None], default = None),
     # attrs.arg values
     args = field(dict[str, str | Select] | Select | None, default = None),
     # Plain data that defines this feature, aside from input artifacts/dependencies
     kwargs = dict[str, typing.Any],
-    analyze_uses_context = field(bool, default = False),
     # Some features do mutations to the image filesystem that cannot be
     # discovered in the depgraph, so those features are grouped together in
     # hidden internal layer(s) that acts as the parent layer(s) for the final
@@ -87,44 +83,24 @@ MultiFeatureAnalysis = provider(fields = {
     "features": provider_field(list[FeatureAnalysis]),
 })
 
-Tools = record(
-    objcopy = Dependency,
-)
-
-AnalyzeFeatureContext = record(
-    label = Label,
-    unique_action_identifier = str,
-    actions = AnalysisActions,
-    tools = Tools,
-)
-
-def data_only_feature_analysis_fn(
-        record_type,
-        feature_type: str,
-        build_phase: BuildPhase = BuildPhase("compile")):
-    def inner(plugin: FeaturePluginInfo | Provider, **kwargs) -> FeatureAnalysis:
-        return FeatureAnalysis(
-            feature_type = feature_type,
-            data = record_type(**kwargs),
-            build_phase = build_phase,
-            plugin = plugin,
-        )
-
-    return inner
-
 def data_only_feature_rule(
         feature_attrs: dict[str, typing.Any],
         feature_type: str,
         build_phase: BuildPhase = BuildPhase("compile")):
+    default_build_phase = build_phase
+
     def _impl(ctx: AnalysisContext) -> list[Provider]:
+        attrs = {
+            key: getattr(ctx.attrs, key)
+            for key in feature_attrs
+        }
+        build_phase = map_val(BuildPhase, attrs.pop("build_phase", None)) or default_build_phase
+
         return [
             DefaultInfo(),
             FeatureAnalysis(
                 feature_type = feature_type,
-                data = struct(**{
-                    key: getattr(ctx.attrs, key)
-                    for key in feature_attrs
-                }),
+                data = struct(**attrs),
                 build_phase = build_phase,
                 plugin = ctx.attrs.plugin[FeaturePluginInfo],
             ),

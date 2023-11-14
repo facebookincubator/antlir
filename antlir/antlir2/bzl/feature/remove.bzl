@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn", "data_only_feature_rule")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def remove(
         *,
@@ -31,22 +31,10 @@ def remove(
         },
     )
 
-remove_record = record(
-    path = str,
-    must_exist = bool,
-    must_be_empty = bool,
-)
-
-# TODO: delete this when chef_solo is migrated to an anon rule
-remove_analyze = data_only_feature_analysis_fn(
-    remove_record,
-    feature_type = "remove",
-    build_phase = BuildPhase("remove"),
-)
-
 remove_rule = data_only_feature_rule(
     feature_type = "remove",
     feature_attrs = {
+        "build_phase": attrs.enum(BuildPhase.values(), default = "remove"),
         "must_be_empty": attrs.bool(),
         "must_exist": attrs.bool(),
         "path": attrs.string(),

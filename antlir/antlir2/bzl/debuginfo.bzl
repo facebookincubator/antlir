@@ -4,10 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//cxx:cxx_toolchain_types.bzl", "CxxToolchainInfo")
-load(
-    "//antlir/antlir2/bzl/feature:feature_info.bzl",
-    "AnalyzeFeatureContext",  # @unused Used as type
-)
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
 SplitBinaryInfo = provider(fields = [
@@ -170,7 +166,7 @@ split_binary = anon_rule(
 
 def split_binary_anon(
         *,
-        ctx: AnalysisContext | AnalyzeFeatureContext,
+        ctx: AnalysisContext,
         src: Dependency,
         objcopy: Dependency) -> AnonTarget:
     if RunInfo not in src:

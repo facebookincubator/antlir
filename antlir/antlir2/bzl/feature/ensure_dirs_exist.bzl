@@ -4,9 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/bzl:stat.bzl", "stat")
-load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_analysis_fn", "data_only_feature_rule")
+load(":feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 
 def ensure_subdirs_exist(
         *,
@@ -64,22 +65,10 @@ def ensure_dirs_exist(
         group = group,
     )
 
-ensure_dir_exists_record = record(
-    dir = str,
-    mode = int,
-    user = str,
-    group = str,
-)
-
-# TODO: delete this when chef_solo is migrated to an anon rule
-ensure_dir_exists_analyze = data_only_feature_analysis_fn(
-    ensure_dir_exists_record,
-    feature_type = "ensure_dir_exists",
-)
-
 ensure_dir_exists_rule = data_only_feature_rule(
     feature_type = "ensure_dir_exists",
     feature_attrs = {
+        "build_phase": attrs.enum(BuildPhase.values(), default = "compile"),
         "dir": attrs.string(),
         "group": attrs.string(),
         "mode": attrs.int(),
