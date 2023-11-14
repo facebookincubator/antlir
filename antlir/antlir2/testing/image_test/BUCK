@@ -21,6 +21,7 @@ rust_binary(
         "anyhow",
         "clap",
         "loopdev",
+        "serde",
         "tempfile",
         "tracing",
         "tracing-glog",

@@ -29,21 +29,28 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     boot_after_units = _default_list(ctx.attrs.boot_after_units, default = ["sysinit.target", "basic.target"])
     boot_wants_units = _default_list(ctx.attrs.boot_wants_units, default = ["default.target"])
 
-    mounts = ctx.actions.write_json("mounts.json", ctx.attrs.layer[LayerInfo].mounts)
+    spec = ctx.actions.write_json(
+        "spec.json",
+        {
+            "allocate_loop_devices": ctx.attrs.allocate_loop_devices,
+            "boot": {
+                "after_units": boot_after_units,
+                "requires_units": boot_requires_units,
+                "wants_units": boot_wants_units,
+            } if ctx.attrs.boot else None,
+            "hostname": ctx.attrs.hostname,
+            "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
+            "mounts": ctx.attrs.layer[LayerInfo].mounts,
+            "pass_env": ctx.attrs.test[ExternalRunnerTestInfo].env.keys(),
+            "user": ctx.attrs.run_as_user,
+        },
+        with_inputs = True,
+    )
 
     test_cmd = cmd_args(
         "sudo" if ctx.attrs.allocate_loop_devices else cmd_args(),
         ctx.attrs.image_test[RunInfo],
-        cmd_args(ctx.attrs.layer[LayerInfo].subvol_symlink, format = "--layer={}"),
-        cmd_args(ctx.attrs.run_as_user, format = "--user={}"),
-        cmd_args(ctx.attrs.hostname, format = "--hostname={}") if ctx.attrs.hostname else cmd_args(),
-        cmd_args("--boot") if ctx.attrs.boot else cmd_args(),
-        cmd_args(boot_requires_units, format = "--requires-unit={}") if ctx.attrs.boot else cmd_args(),
-        cmd_args(boot_after_units, format = "--after-unit={}") if ctx.attrs.boot else cmd_args(),
-        cmd_args(boot_wants_units, format = "--wants-unit={}") if ctx.attrs.boot else cmd_args(),
-        cmd_args(ctx.attrs.test[ExternalRunnerTestInfo].env.keys(), format = "--pass-env={}"),
-        cmd_args(mounts, format = "--mounts={}"),
-        cmd_args(str(ctx.attrs.allocate_loop_devices), format = "--allocate-loop-devices={}"),
+        cmd_args(spec, format = "--spec={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
         ctx.attrs.test[ExternalRunnerTestInfo].command,
     )
@@ -58,7 +65,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     script, _ = ctx.actions.write(
         "test.sh",
-        cmd_args("#!/bin/bash", cmd_args(test_cmd, delimiter = " \\\n  "), "\n"),
+        cmd_args(
+            "#!/bin/bash",
+            cmd_args(
+                test_cmd,
+                delimiter = " \\\n  ",
+            ),
+            "\n",
+        ),
         is_executable = True,
         allow_args = True,
     )
