@@ -27,7 +27,7 @@ pub fn RequiresProvides_provides(
     feature: &antlir2_features::Feature,
 ) -> std::result::Result<Vec<antlir2_depgraph::item::Item<'static>>, String> {
     let feature: Feature = serde_json::from_value(feature.data.clone())
-        .map_err(|e| format!("failed to convert to dserialize specific feature type: {e}"))?;
+        .map_err(|e| format!("failed to convert to deserialize specific feature type: {e}"))?;
     feature.provides()
 }
 
@@ -37,7 +37,7 @@ pub fn RequiresProvides_requires(
     feature: &antlir2_features::Feature,
 ) -> std::result::Result<Vec<antlir2_depgraph::requires_provides::Requirement<'static>>, String> {
     let feature: Feature = serde_json::from_value(feature.data.clone())
-        .map_err(|e| format!("failed to convert to dserialize specific feature type: {e}"))?;
+        .map_err(|e| format!("failed to convert to deserialize specific feature type: {e}"))?;
     feature.requires()
 }
 

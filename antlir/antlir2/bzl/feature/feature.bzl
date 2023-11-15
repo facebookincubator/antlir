@@ -69,7 +69,7 @@ load(":cfg.bzl", "feature_cfg")
 load(":clone.bzl", "clone_rule")
 load(":dot_meta.bzl", "dot_meta_rule")
 load(":ensure_dirs_exist.bzl", "ensure_dir_exists_rule")
-load(":extract.bzl", "extract_rule")
+load(":extract.bzl", "extract_buck_binary_rule", "extract_from_layer_rule")
 load(":feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis")
 load(":genrule.bzl", "genrule_rule")
 load(":install.bzl", "install_rule")
@@ -103,7 +103,8 @@ _anon_rules = {
     "ensure_dir_exists": ensure_dir_exists_rule,
     "ensure_dir_symlink": ensure_dir_symlink_rule,
     "ensure_file_symlink": ensure_file_symlink_rule,
-    "extract": extract_rule,
+    "extract_buck_binary": extract_buck_binary_rule,
+    "extract_from_layer": extract_from_layer_rule,
     # @oss-disable
     # @oss-disable
     # @oss-disable
