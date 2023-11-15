@@ -28,10 +28,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     link_info = ctx.attrs.lib[RustLinkInfo]
     lib_dir_map = {}
     for dep in link_info.exported_link_deps:
-        lib_dir_map.update({
-            soname: lib.lib.output
-            for soname, lib in dep[SharedLibraryInfo].set.value.libraries.items()
-        })
+        if dep[SharedLibraryInfo].set:
+            lib_dir_map.update({
+                soname: lib.lib.output
+                for soname, lib in dep[SharedLibraryInfo].set.value.libraries.items()
+            })
 
     ctx.actions.copied_dir(lib_dir, lib_dir_map)
 
