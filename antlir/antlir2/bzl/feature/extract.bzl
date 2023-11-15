@@ -27,7 +27,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load(":dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
+load(":dependency_layer_info.bzl", "layer_dep_analyze")
 load(":feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 
 def extract_from_layer(
@@ -42,14 +42,13 @@ def extract_from_layer(
     build error.
     """
     return ParseTimeFeature(
-        feature_type = "extract",
-        plugin = antlir2_dep("features/extract:extract"),
+        feature_type = "extract_from_layer",
+        plugin = antlir2_dep("features/extract:extract_from_layer"),
         deps = {
             "layer": layer,
         },
         kwargs = {
             "binaries": binaries,
-            "kind": "layer",
         },
     )
 
@@ -68,8 +67,8 @@ def extract_buck_binary(
     but the same conflict detection method as `extract_from_layer` is employed.
     """
     return ParseTimeFeature(
-        feature_type = "extract",
-        plugin = antlir2_dep("features/extract:extract"),
+        feature_type = "extract_buck_binary",
+        plugin = antlir2_dep("features/extract:extract_buck_binary"),
         # include in deps so we can look at the providers
         deps = {
             "src": src,
@@ -79,90 +78,66 @@ def extract_buck_binary(
         } if _should_strip(strip) else {},
         kwargs = {
             "dst": dst,
-            "kind": "buck",
             "strip": strip,
         },
     )
 
-extract_buck_record = record(
-    src = Artifact,
-    dst = str,
-)
-
-extract_layer_record = record(
-    layer = layer_dep,
-    binaries = list[str],
-)
-
-extract_record = record(
-    buck = [extract_buck_record, None],
-    layer = [extract_layer_record, None],
-)
-
-def _impl(ctx: AnalysisContext) -> list[Provider]:
-    if ctx.attrs.kind == "layer":
-        return [
-            DefaultInfo(),
-            FeatureAnalysis(
-                feature_type = "extract",
-                data = extract_record(
-                    layer = extract_layer_record(
-                        layer = layer_dep_analyze(ctx.attrs.layer),
-                        binaries = ctx.attrs.binaries,
-                    ),
-                    buck = None,
-                ),
-                required_layers = [ctx.attrs.layer[LayerInfo]],
-                plugin = ctx.attrs.plugin[FeaturePluginInfo],
+def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "extract_from_layer",
+            data = struct(
+                layer = layer_dep_analyze(ctx.attrs.layer),
+                binaries = ctx.attrs.binaries,
             ),
-        ]
-    elif ctx.attrs.kind == "buck":
-        src_runinfo = ctx.attrs.src[RunInfo]
+            required_layers = [ctx.attrs.layer[LayerInfo]],
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+        ),
+    ]
 
-        if _should_strip(ctx.attrs.strip):
-            split_anon_target = split_binary_anon(
-                ctx = ctx,
-                src = ctx.attrs.src,
-                objcopy = ctx.attrs._objcopy,
-            )
-            src = split_anon_target.artifact("src")
-        else:
-            src = ensure_single_output(ctx.attrs.src)
-
-        return [
-            DefaultInfo(),
-            FeatureAnalysis(
-                feature_type = "extract",
-                data = extract_record(
-                    buck = extract_buck_record(
-                        src = src,
-                        dst = ctx.attrs.dst,
-                    ),
-                    layer = None,
-                ),
-                required_artifacts = [src],
-                required_run_infos = [src_runinfo],
-                plugin = ctx.attrs.plugin[FeaturePluginInfo],
-            ),
-        ]
-    else:
-        fail("invalid extract kind '{}'".format(ctx.attrs.kind))
-
-extract_rule = rule(
-    impl = _impl,
+extract_from_layer_rule = rule(
+    impl = _extract_from_layer_impl,
     attrs = {
         "binaries": attrs.list(attrs.string(), default = []),
-        "dst": attrs.option(attrs.string(), default = None),
-        "kind": attrs.enum(["layer", "buck"]),
-        "layer": attrs.option(
-            attrs.dep(providers = [LayerInfo]),
-            default = None,
-        ),
+        "layer": attrs.dep(providers = [LayerInfo]),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
-        "src": attrs.option(
-            attrs.dep(providers = [RunInfo]),
-            default = None,
+    },
+)
+
+def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
+    src_runinfo = ctx.attrs.src[RunInfo]
+
+    if _should_strip(ctx.attrs.strip):
+        split_anon_target = split_binary_anon(
+            ctx = ctx,
+            src = ctx.attrs.src,
+            objcopy = ctx.attrs._objcopy,
+        )
+        src = split_anon_target.artifact("src")
+    else:
+        src = ensure_single_output(ctx.attrs.src)
+
+    return [
+        DefaultInfo(),
+        FeatureAnalysis(
+            feature_type = "extract_buck_binary",
+            data = struct(
+                src = src,
+                dst = ctx.attrs.dst,
+            ),
+            required_artifacts = [src],
+            required_run_infos = [src_runinfo],
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
+    ]
+
+extract_buck_binary_rule = rule(
+    impl = _extract_buck_binary_impl,
+    attrs = {
+        "dst": attrs.option(attrs.string(), default = None),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "src": attrs.dep(providers = [RunInfo]),
         "strip": attrs.bool(default = True),
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
     },

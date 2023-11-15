@@ -1,14 +1,35 @@
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+load("//antlir/bzl:build_defs.bzl", "rust_library")
 
 oncall("antlir")
 
-feature_impl(
+rust_library(
     name = "extract",
+    srcs = ["extract.rs"],
+    visibility = [],
     deps = [
+        "anyhow",
         "goblin",
         "once_cell",
         "regex",
+        "tracing",
         "twox-hash",
+        "//antlir/antlir2/antlir2_compile:antlir2_compile",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+    ],
+)
+
+feature_impl(
+    name = "extract_buck_binary",
+    deps = [
+        ":extract",
+    ],
+)
+
+feature_impl(
+    name = "extract_from_layer",
+    deps = [
+        ":extract",
+        ":extract_buck_binary.lib",
     ],
 )

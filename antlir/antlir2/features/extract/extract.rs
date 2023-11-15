@@ -6,7 +6,6 @@
  */
 
 use std::borrow::Cow;
-use std::collections::HashSet;
 use std::ffi::OsStr;
 use std::hash::Hasher;
 use std::path::Path;
@@ -14,18 +13,6 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_compile::util::copy_with_metadata;
-use antlir2_compile::Arch;
-use antlir2_compile::CompilerContext;
-use antlir2_depgraph::item::FileType;
-use antlir2_depgraph::item::FsEntry;
-use antlir2_depgraph::item::Item;
-use antlir2_depgraph::item::ItemKey;
-use antlir2_depgraph::item::Path as PathItem;
-use antlir2_depgraph::requires_provides::Requirement;
-use antlir2_depgraph::requires_provides::Validator;
-use antlir2_features::types::BuckOutSource;
-use antlir2_features::types::LayerInfo;
-use antlir2_features::types::PathInLayer;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
@@ -33,306 +20,9 @@ use anyhow::Result;
 use goblin::elf::Elf;
 use once_cell::sync::Lazy;
 use regex::Regex;
-use serde::de::Error;
-use serde::Deserialize;
-use serde::Serialize;
 use tracing::trace;
 use tracing::warn;
 use twox_hash::XxHash64;
-
-pub type Feature = Extract;
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
-#[serde(rename_all = "snake_case")]
-pub enum Extract {
-    Buck(ExtractBuckBinary),
-    Layer(ExtractLayerBinaries),
-}
-
-/// Buck2's `record` will always include `null` values, but serde's native enum
-/// deserialization will fail if there are multiple keys, even if the others are
-/// null.
-/// TODO(vmagro): make this general in the future (either codegen from `record`s
-/// or as a proc-macro)
-impl<'de> Deserialize<'de> for Extract {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct ExtractStruct {
-            buck: Option<ExtractBuckBinary>,
-            layer: Option<ExtractLayerBinaries>,
-        }
-
-        ExtractStruct::deserialize(deserializer).and_then(|s| match (s.buck, s.layer) {
-            (Some(v), None) => Ok(Self::Buck(v)),
-            (None, Some(v)) => Ok(Self::Layer(v)),
-            (_, _) => Err(D::Error::custom("exactly one of {buck, layer} must be set")),
-        })
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct ExtractBuckBinary {
-    pub src: BuckOutSource,
-    pub dst: PathInLayer,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-pub struct ExtractLayerBinaries {
-    pub layer: LayerInfo,
-    pub binaries: Vec<PathInLayer>,
-}
-
-impl antlir2_depgraph::requires_provides::RequiresProvides for Extract {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
-        // Intentionally provide only the direct files the user asked for,
-        // because we don't want to produce conflicts with all the transitive
-        // dependencies. However, we will check that any duplicated items are in
-        // fact identical, to prevent insane mismatches like this
-        // https://fb.workplace.com/groups/btrmeup/posts/5913570682055882
-        Ok(match self {
-            Self::Layer(l) => l
-                .binaries
-                .iter()
-                .map(|path| {
-                    Item::Path(PathItem::Entry(FsEntry {
-                        path: path.to_owned().into(),
-                        file_type: FileType::File,
-                        mode: 0o555,
-                    }))
-                })
-                .collect(),
-            Self::Buck(b) => {
-                vec![Item::Path(PathItem::Entry(FsEntry {
-                    path: b.dst.to_owned().into(),
-                    file_type: FileType::File,
-                    mode: 0o555,
-                }))]
-            }
-        })
-    }
-
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
-        Ok(match self {
-            Self::Layer(l) => l
-                .binaries
-                .iter()
-                .flat_map(|path| {
-                    vec![
-                        Requirement::ordered(
-                            ItemKey::Layer(l.layer.label.to_owned()),
-                            Validator::ItemInLayer {
-                                key: ItemKey::Path(path.to_owned().into()),
-                                // TODO(T153458901): for correctness, this
-                                // should be Validator::Executable, but some
-                                // depgraph validation is currently buggy and
-                                // produces false negatives
-                                validator: Box::new(Validator::Exists),
-                            },
-                        ),
-                        Requirement::ordered(
-                            ItemKey::Path(
-                                path.parent()
-                                    .expect("dst always has parent")
-                                    .to_owned()
-                                    .into(),
-                            ),
-                            Validator::FileType(FileType::Directory),
-                        ),
-                    ]
-                })
-                .collect(),
-            Self::Buck(b) => vec![Requirement::ordered(
-                ItemKey::Path(
-                    b.dst
-                        .parent()
-                        .expect("dst always has parent")
-                        .to_owned()
-                        .into(),
-                ),
-                Validator::FileType(FileType::Directory),
-            )],
-        })
-    }
-}
-
-impl antlir2_compile::CompileFeature for Extract {
-    #[tracing::instrument(name = "extract", skip(ctx), ret, err)]
-    fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        let default_interpreter = Path::new(match ctx.target_arch() {
-            Arch::X86_64 => "/usr/lib64/ld-linux-x86-64.so.2",
-            Arch::Aarch64 => "/lib/ld-linux-aarch64.so.1",
-        });
-        match self {
-            Self::Buck(buck) => {
-                let src = buck.src.canonicalize()?;
-                let deps = so_dependencies(buck.src.to_owned(), None, default_interpreter)?;
-                for dep in &deps {
-                    if let Ok(relpath) =
-                        dep.strip_prefix(src.parent().expect("src always has parent"))
-                    {
-                        tracing::debug!(
-                            relpath = relpath.display().to_string(),
-                            "installing library at path relative to dst"
-                        );
-                        copy_dep(
-                            dep,
-                            &ctx.dst_path(
-                                &buck
-                                    .dst
-                                    .parent()
-                                    .expect("dst always has parent")
-                                    .join(relpath),
-                            )?,
-                        )?;
-                    } else {
-                        copy_dep(dep, &ctx.dst_path(dep.strip_prefix("/").unwrap_or(dep))?)?;
-                    }
-                }
-                // don't copy the metadata from the buck binary, the owner will
-                // be wrong
-                trace!(
-                    "copying {} -> {}",
-                    buck.src.display(),
-                    ctx.dst_path(&buck.dst)?.display()
-                );
-                std::fs::copy(&buck.src, ctx.dst_path(&buck.dst)?)?;
-                Ok(())
-            }
-            Self::Layer(layer) => {
-                let src_layer = layer
-                    .layer
-                    .subvol_symlink
-                    .canonicalize()
-                    .context("while looking up abspath of src layer")?;
-                trace!("extract root = {}", src_layer.display());
-                let mut all_deps = HashSet::new();
-                for binary in &layer.binaries {
-                    let src = src_layer.join(binary.strip_prefix("/").unwrap_or(binary));
-                    let dst = ctx.dst_path(binary)?;
-
-                    let src_meta = std::fs::symlink_metadata(&src)
-                        .with_context(|| format!("while lstatting {}", src.display()))?;
-                    let real_src = if src_meta.is_symlink() {
-                        // If src is a symlink, the destination should also be
-                        // created as a symlink, and the target should be
-                        // processed as the real binary.
-
-                        let canonical_target = src
-                            .canonicalize()
-                            .with_context(|| format!("while canonicalizing {}", src.display()))?;
-
-                        if canonical_target
-                            .components()
-                            .any(|c| c.as_os_str() == OsStr::new("buck-out"))
-                        {
-                            warn!(
-                                "{} looks like a buck-built binary ({}). You should use feature.extract_buck_binary",
-                                src.display(),
-                                canonical_target.display(),
-                            );
-                            Self::Buck(ExtractBuckBinary {
-                                src: canonical_target.clone(),
-                                dst: binary.to_owned(),
-                            })
-                            .compile(ctx)
-                            .with_context(|| {
-                                format!(
-                                    "while extracting buck binary '{}'",
-                                    canonical_target.display()
-                                )
-                            })?;
-                            continue;
-                        }
-
-                        let canonical_target_rel = canonical_target
-                            .strip_prefix(&src_layer)
-                            .unwrap_or(canonical_target.as_path());
-                        let target_under_src = src_layer.join(
-                            canonical_target_rel
-                                .strip_prefix("/")
-                                .unwrap_or(canonical_target.as_path()),
-                        );
-                        if !target_under_src.exists() {
-                            return Err(anyhow::anyhow!(
-                                "symlink target {} ({} under src_layer) does not actually exist",
-                                canonical_target.display(),
-                                target_under_src.display()
-                            )
-                            .into());
-                        }
-
-                        copy_with_metadata(
-                            &target_under_src,
-                            &ctx.dst_path(canonical_target_rel)?,
-                            None,
-                            None,
-                        )
-                        .context("while copying target_under_src to canonical_target_rel")?;
-
-                        // use the exact same link target when recreating the
-                        // symlinkg (in other words, the same "relativeness")
-                        let target = std::fs::read_link(&src).with_context(|| {
-                            format!("while reading the link target of  {}", src.display())
-                        })?;
-
-                        std::os::unix::fs::symlink(&target, &dst).with_context(|| {
-                            format!("while symlinking {} -> {}", dst.display(), target.display())
-                        })?;
-
-                        canonical_target
-                    } else {
-                        // if the binary is a regular file, copy it directly
-                        copy_with_metadata(&src, &dst, None, None)?;
-                        binary.to_owned()
-                    };
-
-                    all_deps.extend(
-                        so_dependencies(
-                            real_src
-                                .strip_prefix(&src_layer)
-                                .unwrap_or(real_src.as_path()),
-                            Some(&src_layer),
-                            default_interpreter,
-                        )?
-                        .into_iter()
-                        .map(|path| ensure_usr(&path).to_path_buf()),
-                    );
-                }
-                let cwd = std::env::current_dir()?;
-                for dep in all_deps {
-                    let path_in_src_layer = src_layer.join(dep.strip_prefix("/").unwrap_or(&dep));
-                    // If the dep path within the container is under the current
-                    // cwd (aka, the repo), we need to get the file out of the
-                    // host instead of the container.
-                    let dep_copy_path = if dep.starts_with(&cwd) {
-                        // As a good safety check, we also ensure that the file
-                        // does not exist inside the container, to prevent any
-                        // unintended extractions from the build host's
-                        // non-deterministic environment. This check should
-                        // never pass unless something about the build
-                        // environment setup wildly changes, so we should return
-                        // an error immediately in case it does.
-                        if path_in_src_layer.exists() {
-                            return Err(anyhow::anyhow!(
-                                "'{}' exists but it seems like we should get it from the host",
-                                path_in_src_layer.display()
-                            )
-                            .into());
-                        }
-                        dep.clone()
-                    } else {
-                        path_in_src_layer
-                    };
-                    copy_dep(&dep_copy_path, &ctx.dst_path(&dep)?)?;
-                }
-                Ok(())
-            }
-        }
-    }
-}
 
 /// Simple regex to parse the output of `ld.so --list` which is used to resolve
 /// the dependencies of a binary.
@@ -343,19 +33,9 @@ static LDSO_RE: Lazy<Regex> = Lazy::new(|| {
         .expect("this is a valid regex")
 });
 
-/// In all the cases that we care about, a library will live under /lib64, but
-/// this directory will be a symlink to /usr/lib64. To avoid build conflicts with
-/// other image layers, replace it.
-fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
-    match path.starts_with("/lib") || path.starts_with("/lib64") {
-        false => Cow::Borrowed(path),
-        true => Cow::Owned(Path::new("/usr").join(path.strip_prefix("/").unwrap_or(path))),
-    }
-}
-
 /// Look up absolute paths to all (recursive) deps of this binary
 #[tracing::instrument]
-fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
+pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
     binary: S,
     sysroot: Option<&Path>,
     default_interpreter: &Path,
@@ -453,7 +133,7 @@ fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
 }
 
 #[tracing::instrument(err, ret)]
-fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
+pub fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
     // create the destination directory tree based on permissions in the source
     if !dst.parent().expect("dst always has parent").exists() {
         for dir in dst
