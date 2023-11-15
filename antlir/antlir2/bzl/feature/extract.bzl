@@ -43,7 +43,7 @@ def extract_from_layer(
     """
     return ParseTimeFeature(
         feature_type = "extract",
-        plugin = antlir2_dep("features:extract"),
+        plugin = antlir2_dep("features/extract:extract"),
         deps = {
             "layer": layer,
         },
@@ -69,7 +69,7 @@ def extract_buck_binary(
     """
     return ParseTimeFeature(
         feature_type = "extract",
-        plugin = antlir2_dep("features:extract"),
+        plugin = antlir2_dep("features/extract:extract"),
         # include in deps so we can look at the providers
         deps = {
             "src": src,

@@ -35,17 +35,6 @@ feature_impl(
 )
 
 feature_impl(
-    name = "extract",
-    deps = [
-        "goblin",
-        "once_cell",
-        "regex",
-        "twox-hash",
-        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
-    ],
-)
-
-feature_impl(
     name = "genrule",
     deps = [
         "derivative",

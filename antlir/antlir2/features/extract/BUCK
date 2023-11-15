@@ -1,0 +1,14 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "extract",
+    deps = [
+        "goblin",
+        "once_cell",
+        "regex",
+        "twox-hash",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+    ],
+)
