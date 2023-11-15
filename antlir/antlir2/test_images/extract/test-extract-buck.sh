@@ -6,10 +6,6 @@
 
 set -e
 
-if test-binary-installed ; then
-    echo "This should not work!"
-fi
-
 # This binary should work. If we cross compiled though, LSAN will pitch a fit,
 # so we really just need to make sure that the binary ran, not that it exited 0
 test-binary-extracted | grep "Hello world!"
