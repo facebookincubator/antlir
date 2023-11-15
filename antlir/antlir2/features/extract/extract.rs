@@ -13,6 +13,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_compile::util::copy_with_metadata;
+use antlir2_compile::Arch;
 use antlir2_isolate::isolate;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
@@ -197,4 +198,11 @@ pub fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
         copy_with_metadata(&dep, dst, None, None)?;
     }
     Ok(())
+}
+
+pub fn default_interpreter(target: Arch) -> &'static Path {
+    Path::new(match target {
+        Arch::X86_64 => "/usr/lib64/ld-linux-x86-64.so.2",
+        Arch::Aarch64 => "/lib/ld-linux-aarch64.so.1",
+    })
 }

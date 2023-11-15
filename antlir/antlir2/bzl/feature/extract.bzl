@@ -23,6 +23,7 @@ binaries without first installing them into a layer.
 
 load("//antlir/antlir2/bzl:debuginfo.bzl", "split_binary_anon")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
@@ -74,11 +75,16 @@ def extract_buck_binary(
             "src": src,
         },
         exec_deps = {
-            "_objcopy": "fbsource//third-party/binutils:objcopy",
-        } if _should_strip(strip) else {},
+            "_analyze": antlir2_dep("features/extract:extract-buck-binary-analyze"),
+        } | (
+            {
+                "_objcopy": "fbsource//third-party/binutils:objcopy",
+            } if _should_strip(strip) else {}
+        ),
         kwargs = {
             "dst": dst,
             "strip": strip,
+            "target_arch": arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         },
     )
 
@@ -106,8 +112,6 @@ extract_from_layer_rule = rule(
 )
 
 def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
-    src_runinfo = ctx.attrs.src[RunInfo]
-
     if _should_strip(ctx.attrs.strip):
         split_anon_target = split_binary_anon(
             ctx = ctx,
@@ -118,6 +122,22 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
     else:
         src = ensure_single_output(ctx.attrs.src)
 
+    manifest = ctx.actions.declare_output("manifest.json")
+    libs_dir = ctx.actions.declare_output("libs_dir", dir = True)
+    ctx.actions.run(
+        cmd_args(
+            ctx.attrs._analyze[RunInfo],
+            cmd_args(src, format = "--src={}"),
+            cmd_args(ctx.attrs.target_arch, format = "--target-arch={}"),
+            cmd_args(manifest.as_output(), format = "--manifest={}"),
+            cmd_args(libs_dir.as_output(), format = "--libs-dir={}"),
+        ).hidden(ctx.attrs.src[RunInfo]),
+        category = "extract_buck_binary",
+        # RE seems to not have aarch64 cross stuff set up, so for now just force
+        # aarch64 extracts to run locally
+        local_only = ctx.attrs.target_arch == "aarch64",
+    )
+
     return [
         DefaultInfo(),
         FeatureAnalysis(
@@ -125,9 +145,12 @@ def _extract_buck_binary_impl(ctx: AnalysisContext) -> list[Provider]:
             data = struct(
                 src = src,
                 dst = ctx.attrs.dst,
+                libs = struct(
+                    manifest = manifest,
+                    libs_dir = libs_dir,
+                ),
             ),
             required_artifacts = [src],
-            required_run_infos = [src_runinfo],
             plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
     ]
@@ -139,6 +162,8 @@ extract_buck_binary_rule = rule(
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "src": attrs.dep(providers = [RunInfo]),
         "strip": attrs.bool(default = True),
+        "target_arch": attrs.string(),
+        "_analyze": attrs.exec_dep(),
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
     },
 )

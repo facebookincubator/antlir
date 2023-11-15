@@ -32,15 +32,9 @@ rust_binary(
 image.layer(
     name = "extract-buck",
     features = [
-        feature.ensure_dirs_exist(dirs = "/usr/bin"),
         feature.extract_buck_binary(
             src = ":binary_1",
             dst = "/usr/bin/test-binary-extracted",
-        ),
-        feature.install(
-            src = ":binary_2",
-            dst = "/usr/bin/test-binary-installed",
-            mode = "a+rx",
         ),
     ],
     parent_layer = ":base",
@@ -92,14 +86,6 @@ image.layer(
                 "/usr/bin/systemctl",
             ],
             layer = ":binaries-clone-src",
-        ),
-        # TODO(T153572212): in the future this should be an error and require
-        # the use of feature.extract_buck_binary
-        feature.extract_from_layer(
-            binaries = [
-                "/usr/bin/test-binary-installed",
-            ],
-            layer = ":extract-buck",
         ),
     ],
     parent_layer = ":base",

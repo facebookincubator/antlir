@@ -25,11 +25,9 @@ use antlir2_features::types::PathInLayer;
 use anyhow::Context;
 use extract::copy_dep;
 use extract::so_dependencies;
-use extract_buck_binary::ExtractBuckBinary;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing::trace;
-use tracing::warn;
 
 pub type Feature = ExtractFromLayer;
 
@@ -134,23 +132,16 @@ impl antlir2_compile::CompileFeature for ExtractFromLayer {
                     .components()
                     .any(|c| c.as_os_str() == OsStr::new("buck-out"))
                 {
-                    warn!(
-                        "{} looks like a buck-built binary ({}). You should use feature.extract_buck_binary",
+                    // There is only a single use case of antlir1's
+                    // `extract.extract` that is using a buck-built binary
+                    // installed into an image so this can be a hard failure and
+                    // manually addressed when that user is migrated.
+                    // TODO(T153572212) Reword above comment when antlir1 is dead
+                    return Err(anyhow::anyhow!(
+                        "{} looks like a buck-built binary ({}). You must use feature.extract_buck_binary instead",
                         src.display(),
                         canonical_target.display(),
-                    );
-                    ExtractBuckBinary {
-                        src: canonical_target.clone(),
-                        dst: binary.to_owned(),
-                    }
-                    .compile(ctx)
-                    .with_context(|| {
-                        format!(
-                            "while extracting buck binary '{}'",
-                            canonical_target.display()
-                        )
-                    })?;
-                    continue;
+                    ).into());
                 }
 
                 let canonical_target_rel = canonical_target

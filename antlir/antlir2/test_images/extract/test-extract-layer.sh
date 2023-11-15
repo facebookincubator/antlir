@@ -7,7 +7,3 @@
 set -e
 
 systemctl --version
-
-# Simple exit status is not enough because on cross-compiled dev builds, LSAN
-# pitches a fit
-test-binary-installed | grep "Hello world!"
