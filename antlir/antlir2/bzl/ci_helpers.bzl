@@ -6,7 +6,7 @@
 load("@fbcode//target_determinator/macros:ci.bzl", "ci")
 
 def _no_aarch64():
-    parent = ci.package_get()
+    parent = ci.package_get_parent()
     labels = [label for label in parent if "aarch64" not in label]
     ci.package(
         labels,
