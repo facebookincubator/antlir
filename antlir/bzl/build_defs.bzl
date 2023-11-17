@@ -3,6 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//utils:selects.bzl", "selects")
+
 # This file redeclares (and potentially validates) JUST the part of the
 # fbcode macro API that is allowed within `antlir/`.  This way,
 # FB-internal contributors will be less likely to accidentally break
@@ -185,22 +187,23 @@ def _third_party_libraries(names, platform = None):
 
 def _rust_common(rule, **kwargs):
     rustc_flags = kwargs.pop("rustc_flags", [])
+    append = [
+        "--warn=clippy::unwrap_used",
+        # @oss-disable
+    ]
     if not kwargs.pop("allow_unused_crate_dependencies", False):
-        rustc_flags.append("--forbid=unused_crate_dependencies")
-    rustc_flags.append("--warn=clippy::unwrap_used")
-    # @oss-disable
+        append.append("--forbid=unused_crate_dependencies")
+    rustc_flags = selects.apply(rustc_flags, lambda rustc_flags: rustc_flags + append)
+    kwargs["rustc_flags"] = rustc_flags
 
     # always handled by the antlir macros themselves
     if rule != shim.rust_unittest and rule != shim.rust_python_extension and rule != shim.rust_bindgen_library:
         kwargs["unittests"] = False
 
     if shim.is_facebook:
-        rustc_flags.append("--cfg=facebook")
         kwargs["deps"] = list(kwargs.pop("deps", [])) + list(kwargs.pop("fb_deps", []))
         if kwargs.get("unittests", False):
             kwargs["test_deps"] = list(kwargs.pop("test_deps", [])) + list(kwargs.pop("fb_test_deps", []))
-
-    kwargs["rustc_flags"] = rustc_flags
 
     deps = [_normalize_rust_dep(d) for d in kwargs.pop("deps", [])]
     rule(deps = deps, **kwargs)
