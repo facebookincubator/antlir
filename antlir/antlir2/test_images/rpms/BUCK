@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
-load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_binary")
 load(":defs.bzl", "expected_t", "test_rpms")
 
@@ -384,4 +384,10 @@ test_rpms(
         ":test-deps",
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image_python_test(
+    name = "test-db-backend",
+    srcs = ["test_db_backend.py"],
+    layer = simple,
 )

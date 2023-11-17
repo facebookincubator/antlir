@@ -330,6 +330,23 @@ fn run_dnf_driver(
         layer_label: ctx.label().clone(),
     };
 
+    // We can have per-OS rpm macros to change the database backend that must be
+    // copied into the built image.
+    let ba_macros = Path::new("/etc/rpm/macros.db");
+    if ba_macros.exists() {
+        let db_macro_path = ctx.dst_path("/etc/rpm/macros.db")?;
+        // If the macros.db file already exists, just use it as-is. Most likely
+        // it will have come from antlir2 in a parent_layer, but we also want to
+        // allow images to override it if they want
+        if !db_macro_path.exists() {
+            std::fs::create_dir_all(db_macro_path.parent().expect("always has parent"))
+                .with_context(|| format!("while creating dir for {}", db_macro_path.display()))?;
+            std::fs::copy(ba_macros, &db_macro_path).with_context(|| {
+                format!("while installing db macro {}", db_macro_path.display())
+            })?;
+        }
+    }
+
     std::fs::create_dir_all(ctx.dst_path("/dev")?).context("while ensuring /dev exists")?;
     nix::mount::mount(
         Some("devtmpfs"),
