@@ -5,6 +5,7 @@
 
 # @oss-disable
 # @oss-disable
+load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
@@ -158,7 +159,7 @@ def _implicit_image_test(
         name: str,
         layer: str,
         run_as_user: str | None = None,
-        labels: list[str] | None = None,
+        labels: list[str] | Select | None = None,
         boot: bool = False,
         boot_requires_units: [list[str], None] = None,
         boot_after_units: [list[str], None] = None,
@@ -169,6 +170,7 @@ def _implicit_image_test(
         default_os: str | None = None,
         # @oss-disable
         _static_list_wrapper: str | None = None,
+        exec_compatible_with: list[str] | Select | None = None,
         visibility: list[str] | None = None,
         **kwargs):
     test_rule(
@@ -177,8 +179,10 @@ def _implicit_image_test(
         labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test"),
         **kwargs
     )
-    labels = list(labels) if labels else []
-    labels.extend(_add_outer_labels)
+    labels = selects.apply(
+        labels or [],
+        lambda labels: labels + _add_outer_labels,
+    )
 
     # @oss-disable
         # @oss-disable
@@ -213,6 +217,7 @@ def _implicit_image_test(
         default_os = default_os,
         # @oss-disable
         _static_list_wrapper = _static_list_wrapper,
+        exec_compatible_with = exec_compatible_with,
         visibility = visibility,
     )
 
