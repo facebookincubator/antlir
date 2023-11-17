@@ -142,7 +142,7 @@ _vm_host = rule(
         "append": attrs.option(
             attrs.string(),
             default = None,
-            doc = "additional kernel command line parameter",
+            doc = "kernel command line parameter when booting from initrd",
         ),
         "initrd": attrs.option(
             attrs.source(),

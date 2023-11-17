@@ -636,32 +636,23 @@ impl<S: Share> VM<S> {
 
     fn non_disk_boot_qemu_args(&self) -> Vec<OsString> {
         match &self.machine.non_disk_boot_opts {
-            Some(opts) => [
-                "-initrd",
-                &opts.initrd,
-                // kernel
-                "-kernel",
-                &opts.kernel,
-                "-append",
-                &[
-                    "console=ttyS0,115200",
-                    "panic=-1",
-                    "audit=0",
-                    "selinux=0",
-                    "systemd.hostname=vmtest",
-                    "net.ifnames=0",
-                    &format!("macaddress={}", self.nics[0].guest_mac()),
-                    "root=LABEL=/",
-                    // kernel args
-                    "rootflags=subvol=volume",
-                    "rootfstype=btrfs",
-                    &opts.append,
+            Some(opts) => {
+                let mut args: Vec<_> = [
+                    "-initrd",
+                    &opts.initrd,
+                    // kernel
+                    "-kernel",
+                    &opts.kernel,
                 ]
-                .join(" "),
-            ]
-            .iter()
-            .map(|x| x.into())
-            .collect(),
+                .iter()
+                .map(|x| x.into())
+                .collect();
+                if !opts.append.is_empty() {
+                    args.push("-append".into());
+                    args.push(opts.append.clone().into());
+                }
+                args
+            }
             None => vec![],
         }
     }
@@ -679,8 +670,6 @@ impl<S: Share> VM<S> {
 mod test {
     use std::net::Shutdown;
     use std::thread;
-
-    use regex::Regex;
 
     use super::*;
     use crate::runtime::set_runtime;
@@ -784,8 +773,7 @@ mod test {
         let args = qemu_args_to_string(&vm.non_disk_boot_qemu_args());
         assert!(args.contains("-initrd initrd"));
         assert!(args.contains("-kernel kernel"));
-        let re = Regex::new("-append .* whatever").expect("Failed to get regex");
-        assert!(re.is_match(&args));
+        assert!(args.contains("-append whatever"));
     }
 
     #[test]
