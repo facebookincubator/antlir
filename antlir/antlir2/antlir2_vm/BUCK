@@ -7,9 +7,6 @@ oncall("antlir")
 rust_binary(
     name = "antlir2_vm",
     srcs = glob(["src/**/*.rs"]),
-    test_deps = [
-        "regex",
-    ],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
