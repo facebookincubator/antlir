@@ -98,6 +98,7 @@ _TX_ACTION_TO_JSON = {
 # removed when the task is fixed.
 _RPMS_THAT_CAN_FAIL_POST_SCRIPTS = {
     "antlir2-failing-postscripts": "TODO(T166162108)",
+    "git-lfs": "TODO(T170621965)",
     "nsight-compute-2019.4.0": "TODO(T166170831)",
 }
 
