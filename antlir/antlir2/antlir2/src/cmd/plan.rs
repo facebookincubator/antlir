@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
-use std::ffi::OsStr;
 use std::path::PathBuf;
 
 use antlir2_compile::CompileFeature;
@@ -42,24 +40,6 @@ pub(super) struct PlanExternal {
     #[clap(long)]
     /// Output path for serialized compiler plan
     pub(super) plan: PathBuf,
-}
-
-impl Plan {
-    #[deny(unused_variables)]
-    pub(super) fn to_args<'a>(&'a self) -> Vec<Cow<'a, OsStr>> {
-        let Self {
-            compileish,
-            external: PlanExternal { plan },
-        } = self;
-        compileish
-            .to_args()
-            .into_iter()
-            .chain([
-                Cow::Borrowed(OsStr::new("--plan")),
-                Cow::Borrowed(plan.as_os_str()),
-            ])
-            .collect()
-    }
 }
 
 impl Plan {

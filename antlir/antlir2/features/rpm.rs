@@ -10,7 +10,6 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::io::Seek;
 use std::path::Path;
-use std::process::Command;
 use std::process::Stdio;
 
 use antlir2_compile::plan;
@@ -20,6 +19,8 @@ use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_features::types::BuckOutSource;
+use antlir2_isolate::isolate;
+use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
@@ -332,7 +333,7 @@ fn run_dnf_driver(
 
     // We can have per-OS rpm macros to change the database backend that must be
     // copied into the built image.
-    let ba_macros = Path::new("/etc/rpm/macros.db");
+    let ba_macros = ctx.build_appliance().join("etc/rpm/macros.db");
     if ba_macros.exists() {
         let db_macro_path = ctx.dst_path("/etc/rpm/macros.db")?;
         // If the macros.db file already exists, just use it as-is. Most likely
@@ -363,7 +364,24 @@ fn run_dnf_driver(
         .context("while serializing dnf-driver input")?;
     mfd.as_file().rewind()?;
 
-    let mut child = Command::new("/__antlir2__/dnf/driver")
+    let isol = IsolationContext::builder(ctx.build_appliance())
+        // Only needs to be ephemeral for input/output paths
+        // 1) spec.repos
+        // 2) spec.install_root
+        // If those are instead mounted into well-known paths that already
+        // exist, we could use a read-only copy of the ba and not have to
+        // snapshot it.
+        .ephemeral(true)
+        .inputs(ctx.dnf().repos())
+        // random buck-out paths that might be being used (for installing .rpms)
+        .inputs(std::env::current_dir()?)
+        .outputs(ctx.root())
+        .working_directory(std::env::current_dir()?)
+        .build();
+    let isol = isolate(isol)?;
+
+    let mut child = isol
+        .command("/__antlir2__/dnf/driver")?
         .stdin(mfd.into_file())
         .stdout(Stdio::piped())
         .spawn()
