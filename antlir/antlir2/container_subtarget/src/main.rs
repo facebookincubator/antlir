@@ -16,6 +16,7 @@ use antlir2_isolate::IsolationContext;
 use anyhow::anyhow;
 use anyhow::Context;
 use clap::Parser;
+use tracing::warn;
 use tracing_subscriber::filter;
 use tracing_subscriber::fmt::time::LocalTime;
 use tracing_subscriber::prelude::*;
@@ -29,6 +30,8 @@ struct Args {
     bind_mount_ro: Vec<PathBuf>,
     #[clap(long)]
     artifacts_require_repo: bool,
+    #[clap(long)]
+    via_equals_container_alias: Option<String>,
     /// `--user` run command as a given user
     #[clap(long, default_value = "root")]
     user: String,
@@ -49,6 +52,10 @@ fn init_logging() {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     init_logging();
+
+    if let Some(label) = args.via_equals_container_alias {
+        warn!("=container targets are deprecated, use 'buck2 run {label}[container]' instead");
+    }
 
     let repo_root = find_root::find_repo_root(
         &absolute_path::AbsolutePathBuf::canonicalize(
