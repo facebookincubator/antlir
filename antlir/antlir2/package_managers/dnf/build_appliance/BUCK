@@ -32,11 +32,6 @@ feature.new(
             dst = "/__antlir2__/dnf/plugins/antlir.py",
         ),
         feature.install(
-            src = "rpm2extents",
-            dst = "/__antlir2__/dnf/rpm2extents",
-            mode = "a+rx",
-        ),
-        feature.install(
             src = "empty-versionlock.json",
             dst = "/__antlir2__/dnf/versionlock.json",
             mode = "a+rx",

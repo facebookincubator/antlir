@@ -1,0 +1,26 @@
+load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "rust_binary")
+
+rust_binary(
+    name = "rpm2extents-in-ba.inner",
+    srcs = ["rpm2extents_in_ba.rs"],
+    crate = "rpm2extents_in_ba",
+    crate_root = "rpm2extents_in_ba.rs",
+    unittests = False,
+    visibility = [],
+    deps = [
+        "anyhow",
+        "clap",
+        "tracing",
+        "tracing-subscriber",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+    ],
+)
+
+buck_command_alias(
+    name = "rpm2extents-in-ba",
+    args = [
+        "--bwrap",
+        "$(exe fbsource//third-party/bubblewrap:bwrap)",
+    ],
+    exe = ":rpm2extents-in-ba.inner",
+)
