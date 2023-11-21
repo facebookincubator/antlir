@@ -20,9 +20,8 @@ load(
 # @oss-disable
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_command_alias", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 load("//antlir/bzl:types.bzl", "types")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
@@ -589,7 +588,7 @@ def layer(
             "//bot_generated/antlir/fbpkg/db/main_db/.buck:snapshotted_fbpkgs",
         )
 
-    default_target_platform = config.get_platform_for_current_buildfile().target_platform
+    kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
     # TODO(vmagro): remove this when antlir1 compat is no longer needed
     # This exists only because the implicit antlir2 conversion rules append a
@@ -598,20 +597,6 @@ def layer(
     alias(
         name = name + ".antlir2",
         actual = ":" + name,
-        default_target_platform = default_target_platform,
-        compatible_with = kwargs.get("compatible_with", None),
-        target_compatible_with = kwargs.get("target_compatible_with", None),
-        antlir_rule = "user-internal",
-        visibility = get_visibility(visibility),
-    )
-
-    buck_command_alias(
-        name = name + "=container",
-        exe = ":{}[container]".format(name),
-        args = ["--via-equals-container-alias", normalize_target(":" + name)],
-        default_target_platform = default_target_platform,
-        compatible_with = kwargs.get("compatible_with", None),
-        target_compatible_with = kwargs.get("target_compatible_with", None),
         antlir_rule = "user-internal",
         visibility = get_visibility(visibility),
     )
@@ -620,7 +605,6 @@ def layer(
         name = name,
         default_os = default_os,
         default_rou = default_rou,
-        default_target_platform = default_target_platform,
         visibility = get_visibility(visibility),
         _implicit_image_test = "//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
         **kwargs
