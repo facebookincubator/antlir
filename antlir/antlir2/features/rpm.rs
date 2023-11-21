@@ -10,6 +10,7 @@ use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::io::Seek;
 use std::path::Path;
+use std::path::PathBuf;
 use std::process::Stdio;
 
 use antlir2_compile::plan;
@@ -320,7 +321,7 @@ fn run_dnf_driver(
         .collect::<Vec<_>>();
     let spec = DriverSpec {
         repos: Some(ctx.dnf().repos()),
-        install_root: ctx.root(),
+        install_root: Path::new("/__antlir2__/root"),
         items: &items,
         mode,
         arch: ctx.target_arch(),
@@ -365,23 +366,24 @@ fn run_dnf_driver(
     mfd.as_file().rewind()?;
 
     let isol = IsolationContext::builder(ctx.build_appliance())
-        // Only needs to be ephemeral for input/output paths
-        // 1) spec.repos
-        // 2) spec.install_root
-        // If those are instead mounted into well-known paths that already
-        // exist, we could use a read-only copy of the ba and not have to
-        // snapshot it.
-        .ephemeral(true)
-        .inputs(ctx.dnf().repos())
+        .ephemeral(false)
+        .readonly()
         // random buck-out paths that might be being used (for installing .rpms)
-        .inputs(std::env::current_dir()?)
-        .outputs(ctx.root())
-        .working_directory(std::env::current_dir()?)
+        .inputs((
+            PathBuf::from("/__antlir2__/working_directory"),
+            std::env::current_dir()?,
+        ))
+        .working_directory(Path::new("/__antlir2__/working_directory"))
+        .outputs((Path::new("/__antlir2__/root"), ctx.root()))
+        .tmpfs(Path::new("/__antlir2__/dnf/cache"))
+        .tmpfs(Path::new("/var/log"))
         .build();
     let isol = isolate(isol)?;
 
-    let mut child = isol
-        .command("/__antlir2__/dnf/driver")?
+    let mut cmd = isol.command("/__antlir2__/dnf/driver")?;
+    trace!("dnf driver command: {cmd:#?}");
+
+    let mut child = cmd
         .stdin(mfd.into_file())
         .stdout(Stdio::piped())
         .spawn()

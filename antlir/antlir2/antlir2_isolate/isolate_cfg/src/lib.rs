@@ -44,6 +44,8 @@ pub struct IsolationContext<'a> {
     pub tmpfs: BTreeSet<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::hostname]
     pub hostname: Option<Cow<'a, str>>,
+    /// See [IsolationContextBuilder::readonly]
+    pub readonly: bool,
 }
 
 /// Controls how the container is spawned and how console is configured for the
@@ -87,6 +89,7 @@ impl<'a> IsolationContext<'a> {
                 ephemeral: true,
                 tmpfs: Default::default(),
                 hostname: None,
+                readonly: false,
             },
         }
     }
@@ -174,6 +177,12 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Set the hostname in the container
     pub fn hostname<S: Into<Cow<'a, str>>>(&mut self, hostname: S) -> &mut Self {
         self.ctx.hostname = Some(hostname.into());
+        self
+    }
+
+    /// Start the container with a readonly root.
+    pub fn readonly(&mut self) -> &mut Self {
+        self.ctx.readonly = true;
         self
     }
 
