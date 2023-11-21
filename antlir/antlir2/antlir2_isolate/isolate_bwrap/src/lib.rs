@@ -72,6 +72,7 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
         ephemeral,
         tmpfs,
         hostname,
+        readonly,
     } = ctx;
     assert_eq!(user, "root", "user != root unimplemented");
     assert!(!register, "register unimplemented");
@@ -137,7 +138,11 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
             rootless,
         })
     } else {
-        bwrap_args.push("--ro-bind".into());
+        if readonly {
+            bwrap_args.push("--ro-bind".into());
+        } else {
+            bwrap_args.push("--bind".into());
+        }
         bwrap_args.push(layer.as_ref().into());
         bwrap_args.push("/".into());
         None
