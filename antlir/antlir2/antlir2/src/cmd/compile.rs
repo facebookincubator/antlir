@@ -5,6 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::borrow::Cow;
+use std::ffi::OsStr;
+
 use antlir2_compile::plan::Plan;
 use antlir2_compile::CompileFeature;
 use clap::Parser;
@@ -31,6 +34,22 @@ pub(super) struct CompileExternal {
     #[clap(long)]
     /// Pre-computed plan for this compilation phase
     plan: Option<JsonFile<Plan>>,
+}
+
+impl Compile {
+    #[deny(unused_variables)]
+    pub(super) fn to_args<'a>(&'a self) -> Vec<Cow<'a, OsStr>> {
+        let Self {
+            compileish,
+            external: CompileExternal { plan },
+        } = self;
+        let mut args = compileish.to_args();
+        if let Some(plan) = plan {
+            args.push(Cow::Borrowed(OsStr::new("--plan")));
+            args.push(Cow::Borrowed(plan.path().as_os_str()));
+        }
+        args
+    }
 }
 
 impl Compile {
