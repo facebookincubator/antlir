@@ -15,19 +15,22 @@ REFLINK_FLAVORS = {
 
 def rpm2extents(
         ctx: AnalysisContext,
-        rpm2extents_in_ba: RunInfo,
+        antlir2_isolate: RunInfo,
         rpm: Artifact,
         extents: Artifact,
         build_appliance: LayerInfo,
         identifier: str | None = None):
     ctx.actions.run(
         cmd_args(
-            rpm2extents_in_ba,
-            cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
+            antlir2_isolate,
+            cmd_args(build_appliance.subvol_symlink),
             cmd_args(rpm, format = "--input={}"),
-            cmd_args(extents.as_output(), format = "--output={}"),
+            cmd_args(extents.as_output(), format = "--create-output-file={}"),
+            "--",
+            "/__antlir2__/dnf/rpm2extents",
+            rpm,
+            extents.as_output(),
         ),
-        env = {"RUST_LOG": "trace"},
         category = "rpm2extents",
         identifier = identifier,
         local_only = True,  # local subvolume required
