@@ -92,7 +92,6 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         ephemeral,
         tmpfs,
         hostname,
-        readonly,
     } = ctx;
     let mut nspawn_args = Vec::<OsString>::new();
     let mut env = HashMap::new();
@@ -123,10 +122,6 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
     if ephemeral {
         nspawn_args.push("--ephemeral".into());
         // run as many ephemeral containers as we want
-        env.insert("SYSTEMD_NSPAWN_LOCK".into(), "0".into());
-    }
-    if readonly {
-        nspawn_args.push("--read-only".into());
         env.insert("SYSTEMD_NSPAWN_LOCK".into(), "0".into());
     }
     match invocation_type {
