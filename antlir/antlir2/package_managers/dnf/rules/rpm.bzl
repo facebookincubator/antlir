@@ -85,7 +85,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         rpm = rpm_file,
         xml = xml,
         pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
-        rpm2extents_in_ba = ctx.attrs._rpm2extents_in_ba[RunInfo],
+        antlir2_isolate = ctx.attrs.antlir2_isolate[RunInfo],
         reflink_flavors = {name: dep[LayerInfo] for name, dep in ctx.attrs.reflink_flavors.items()},
     )
 
@@ -95,7 +95,7 @@ def common_impl(
         rpm: Artifact,
         xml: Artifact,
         pkgid: str,
-        rpm2extents_in_ba: RunInfo,
+        antlir2_isolate: RunInfo,
         reflink_flavors: dict[str, LayerInfo]) -> list[Provider]:
     # Produce an rpm2extents artifact for each flavor. This is tied specifically
     # to the version of `rpm` being used in the build appliance, and should be
@@ -113,13 +113,9 @@ def common_impl(
         for name in reflink_flavors
     }
     for name, appliance in reflink_flavors.items():
-        rpm2extents(ctx, rpm2extents_in_ba, rpm, extents[name], appliance, name)
+        rpm2extents(ctx, antlir2_isolate, rpm, extents[name], appliance, name)
     return [
         DefaultInfo(default_outputs = [rpm], sub_targets = {
-            "extents": [DefaultInfo(sub_targets = {
-                key: [DefaultInfo(artifact)]
-                for key, artifact in extents.items()
-            })],
             "xml": [DefaultInfo(xml)],
         }),
         RpmInfo(
@@ -134,6 +130,7 @@ def common_impl(
 rpm = rule(
     impl = _impl,
     attrs = {
+        "antlir2_isolate": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_isolate:cli")),
         "arch": attrs.string(),
         "epoch": attrs.int(),
         "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:makechunk")),
@@ -146,8 +143,5 @@ rpm = rule(
         "url": attrs.option(attrs.string(), default = None),
         "version": attrs.string(),
         "xml": attrs.option(attrs.source(doc = "all xml chunks"), default = None),
-        "_rpm2extents_in_ba": attrs.default_only(attrs.exec_dep(
-            default = "//antlir/antlir2/package_managers/dnf:rpm2extents-in-ba",
-        )),
     },
 )
