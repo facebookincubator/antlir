@@ -84,7 +84,6 @@ feature_impl(
         "memfd",
         "nix",
         "serde_json",
-        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/buck/buck_label:buck_label",
     ],
 )
