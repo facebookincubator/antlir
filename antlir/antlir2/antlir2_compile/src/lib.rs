@@ -104,6 +104,8 @@ pub struct CompilerContext {
     target_arch: Arch,
     /// Path to the root of the image being built
     root_path: PathBuf,
+    /// Build appliance tree with tools that might be necessary
+    build_appliance: PathBuf,
     /// Open fd to the image root directory
     #[serde(
         serialize_with = "CompilerContext::serialize_root",
@@ -174,6 +176,7 @@ impl CompilerContext {
         label: Label,
         target_arch: Arch,
         root: PathBuf,
+        build_appliance: PathBuf,
         dnf: DnfContext,
         plan: Option<plan::Plan>,
         #[cfg(facebook)] fbpkg: facebook::FbpkgContext,
@@ -185,6 +188,7 @@ impl CompilerContext {
             target_arch,
             root_path: root,
             root: root_fd,
+            build_appliance,
             dnf,
             plan,
             #[cfg(facebook)]
@@ -203,6 +207,10 @@ impl CompilerContext {
     /// Root directory for the image being built
     pub fn root(&self) -> &Path {
         &self.root_path
+    }
+
+    pub fn build_appliance(&self) -> &Path {
+        &self.build_appliance
     }
 
     pub fn dnf(&self) -> &DnfContext {

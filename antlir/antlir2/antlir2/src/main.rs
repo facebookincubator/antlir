@@ -8,7 +8,6 @@
 #![feature(iter_intersperse)]
 
 use std::fs::File;
-use std::path::Path;
 use std::path::PathBuf;
 use std::process::ExitStatus;
 
@@ -31,8 +30,6 @@ pub enum Error {
     #[error(transparent)]
     Btrfs(#[from] antlir2_btrfs::Error),
     #[error(transparent)]
-    Isolate(#[from] antlir2_isolate::Error),
-    #[error(transparent)]
     Rootless(#[from] antlir2_rootless::Error),
     #[error("{0:#?}")]
     Uncategorized(#[from] anyhow::Error),
@@ -49,24 +46,16 @@ struct Args {
 }
 
 #[derive(clap::Args, Debug)]
-#[group(multiple = false)]
 struct LogArgs {
     #[clap(long)]
     /// File to write logs to in addition to stdout
     logs: Option<PathBuf>,
-    #[clap(long = "append-logs")]
-    /// Append logs to this already-existing file
-    append: Option<PathBuf>,
 }
 
 impl LogArgs {
-    fn path(&self) -> Option<&Path> {
-        self.logs.as_deref().or(self.append.as_deref())
-    }
-
     fn file(&self) -> anyhow::Result<Option<File>> {
-        match (&self.logs, &self.append) {
-            (Some(path), None) => {
+        match &self.logs {
+            Some(path) => {
                 // This is not technically atomic, but does a good enough job to
                 // clean up after previous buck builds. We know that buck isn't
                 // going to run two concurrent processes with this same log file
@@ -88,14 +77,7 @@ impl LogArgs {
                         .context("while opening new logs file")?,
                 ))
             }
-            (None, Some(append_path)) => Ok(Some(
-                std::fs::OpenOptions::new()
-                    .append(true)
-                    .open(append_path)
-                    .context("while opening logs file for appending")?,
-            )),
-            (None, None) => Ok(None),
-            _ => unreachable!(),
+            None => Ok(None),
         }
     }
 }
@@ -125,7 +107,7 @@ fn main() -> Result<()> {
     let result = match args.subcommand {
         Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(x) => x.run(rootless),
-        Subcommand::Map(x) => x.run(args.log.path(), rootless),
+        Subcommand::Map(x) => x.run(rootless),
         Subcommand::Plan(x) => x.run(),
         Subcommand::Shell(x) => x.run(),
     };

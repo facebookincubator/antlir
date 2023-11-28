@@ -5,17 +5,17 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::collections::BTreeSet;
-use std::path::Path;
 use std::path::PathBuf;
 
 use antlir2_btrfs::Subvolume;
-use antlir2_isolate::isolate;
-use antlir2_isolate::IsolationContext;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::Context;
 use buck_label::Label;
 use clap::Parser;
+use nix::mount::mount;
+use nix::mount::MsFlags;
+use nix::sched::unshare;
+use nix::sched::CloneFlags;
 use tracing::debug;
 
 use super::compile::Compile;
@@ -83,26 +83,6 @@ enum Subcommand {
     },
 }
 
-impl Subcommand {
-    fn writable_outputs(&self) -> Result<BTreeSet<&Path>> {
-        match self {
-            Self::Plan {
-                compileish: _,
-                external,
-            } => {
-                std::fs::File::create(&external.plan).with_context(|| {
-                    format!(
-                        "while creating plan output file '{}'",
-                        external.plan.display()
-                    )
-                })?;
-                Ok(BTreeSet::from([external.plan.as_path()]))
-            }
-            _ => Ok(BTreeSet::new()),
-        }
-    }
-}
-
 impl Map {
     /// Create a new mutable subvolume based on the [SetupArgs].
     #[tracing::instrument(skip(self, rootless), ret, err)]
@@ -127,135 +107,86 @@ impl Map {
     }
 
     #[tracing::instrument(name = "map", skip_all, ret, err)]
-    pub(crate) fn run(
-        self,
-        log_path: Option<&Path>,
-        rootless: antlir2_rootless::Rootless,
-    ) -> Result<()> {
+    pub(crate) fn run(self, rootless: antlir2_rootless::Rootless) -> Result<()> {
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
         let mut subvol = self.create_new_subvol(&working_volume, rootless)?;
 
-        let repo = find_root::find_repo_root(
-            &absolute_path::AbsolutePathBuf::canonicalize(
-                std::env::current_exe().context("while getting argv[0]")?,
-            )
-            .context("argv[0] not absolute")?,
-        )
-        .context("while looking for repo root")?;
+        // Be careful to isolate this process from the host mount namespace in
+        // case anything weird is going on
+        rootless.as_root(|| {
+            unshare(CloneFlags::CLONE_NEWNS)?;
 
-        let mut writable_outputs = self
-            .subcommand
-            .writable_outputs()
-            .context("while preparing writable outputs")?;
-        writable_outputs.insert(working_volume.path());
-        if let Some(path) = log_path {
-            writable_outputs.insert(path);
-        }
+            // Remount / as private so that we don't let any changes escape back
+            // to the parent mount namespace (basically equivalent to `mount
+            // --make-rprivate /`)
+            mount(
+                None::<&str>,
+                "/",
+                None::<&str>,
+                MsFlags::MS_REC | MsFlags::MS_PRIVATE,
+                None::<&str>,
+            )?;
+            Ok::<_, anyhow::Error>(())
+        })??;
 
-        let mut isol = isolate(
-            IsolationContext::builder(&self.build_appliance)
-                // TODO(vmagro): running in a read-only copy of the BA would
-                // allow us to skip this snapshot, but that's easier said than
-                // done...
-                .ephemeral(true)
-                .platform([
-                    // compiler is built out of the repo, so it needs the
-                    // repo to be available
-                    repo.as_ref(),
-                    #[cfg(facebook)]
-                    Path::new("/usr/local/fbcode"),
-                    #[cfg(facebook)]
-                    Path::new("/mnt/gvfs"),
-                ])
-                .inputs([
-                    // image builds all require the repo for at least the
-                    // feature json paths coming from buck
-                    repo.as_ref(),
-                    self.setup.dnf.repos.as_path(),
-                    // layer dependencies require the working volume
-                    self.setup.working_dir.as_path(),
-                ])
-                .working_directory(std::env::current_dir().context("while getting cwd")?)
-                // TODO(vmagro): there are currently no tracing args, but
-                // there probably should be instead of relying on
-                // environment variables...
-                .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
-                .outputs(writable_outputs)
-                .build(),
-        )?
-        .command(std::env::current_exe().context("while getting argv[0]")?)?;
-        if let Some(path) = log_path {
-            isol.arg("--append-logs").arg(path);
-        }
-        match self.subcommand {
+        // TODO: don't do this as root, only escalate when actually necessary
+        // Running the whole subcommand as root matches the behavior we got when
+        // this was run inside the build appliance container.
+        // Soon this will run in a user namespace and won't need "real"
+        // privilege escalation.
+        rootless.as_root(|| match self.subcommand {
             Subcommand::Compile {
                 compileish,
                 external,
-            } => {
-                isol.arg("compile").args(
-                    Compile {
-                        compileish: Compileish {
-                            label: self.label,
-                            root: subvol.path().to_owned(),
-                            external: compileish,
-                            dnf: self.setup.dnf,
-                            #[cfg(facebook)]
-                            fbpkg: self.setup.fbpkg,
-                        },
-                        external,
-                    }
-                    .to_args(),
-                );
+            } => Compile {
+                compileish: Compileish {
+                    label: self.label,
+                    root: subvol.path().to_owned(),
+                    build_appliance: self.build_appliance,
+                    external: compileish,
+                    dnf: self.setup.dnf,
+                    #[cfg(facebook)]
+                    fbpkg: self.setup.fbpkg,
+                },
+                external,
             }
+            .run(),
             Subcommand::Plan {
                 compileish,
                 external,
-            } => {
-                isol.arg("plan").args(
-                    Plan {
-                        compileish: Compileish {
-                            label: self.label,
-                            root: subvol.path().to_owned(),
-                            external: compileish,
-                            dnf: self.setup.dnf,
-                            #[cfg(facebook)]
-                            fbpkg: self.setup.fbpkg,
-                        },
-                        external,
-                    }
-                    .to_args(),
-                );
+            } => Plan {
+                compileish: Compileish {
+                    label: self.label,
+                    root: subvol.path().to_owned(),
+                    build_appliance: self.build_appliance,
+                    external: compileish,
+                    dnf: self.setup.dnf,
+                    #[cfg(facebook)]
+                    fbpkg: self.setup.fbpkg,
+                },
+                external,
             }
-        }
-        debug!("isolated command: {:?}", isol);
-        let res = isol
-            .spawn()
-            .with_context(|| format!("while spawning isolated process {isol:?}"))?
-            .wait()
-            .context("while waiting for isolated process")?;
-        if !res.success() {
-            Err(anyhow::anyhow!("isolated command failed: {res}").into())
-        } else {
-            debug!("map finished, making subvol {subvol:?} readonly");
-            rootless.as_root(|| subvol.set_readonly(true).context("while making subvol r/o"))??;
-            debug!(
-                "linking {} -> {}",
-                self.setup.output.display(),
-                subvol.path().display(),
-            );
-            let _ = std::fs::remove_file(&self.setup.output);
-            std::os::unix::fs::symlink(subvol.path(), &self.setup.output)
-                .context("while making symlink")?;
+            .run(),
+        })??;
+        debug!("map finished, making subvol {subvol:?} readonly");
+        rootless.as_root(|| subvol.set_readonly(true).context("while making subvol r/o"))??;
+        debug!(
+            "linking {} -> {}",
+            self.setup.output.display(),
+            subvol.path().display(),
+        );
+        let _ = std::fs::remove_file(&self.setup.output);
+        std::os::unix::fs::symlink(subvol.path(), &self.setup.output)
+            .context("while making symlink")?;
 
-            working_volume
-                .keep_path_alive(subvol.path(), &self.setup.output)
-                .context("while setting up refcount")?;
-            working_volume
-                .collect_garbage()
-                .context("while garbage collecting old outputs")?;
+        working_volume
+            .keep_path_alive(subvol.path(), &self.setup.output)
+            .context("while setting up refcount")?;
+        working_volume
+            .collect_garbage()
+            .context("while garbage collecting old outputs")?;
 
-            Ok(())
-        }
+        Ok(())
     }
 }
