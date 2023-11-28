@@ -6,6 +6,7 @@
  */
 
 #![feature(let_chains)]
+use std::collections::HashMap;
 use std::fs::File;
 use std::fs::FileTimes;
 use std::fs::Permissions;
@@ -31,15 +32,16 @@ use antlir2_features::types::UserName;
 use antlir2_users::Id;
 use anyhow::Context;
 use anyhow::Result;
-use serde::de::Error;
+use serde::de::Deserializer;
+use serde::de::Error as _;
 use serde::Deserialize;
-use serde::Serialize;
 use tracing::debug;
 use walkdir::WalkDir;
+use xattr::FileExt;
 
 pub type Feature = Install;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Install {
     pub dst: PathInLayer,
     pub group: GroupName,
@@ -47,6 +49,7 @@ pub struct Install {
     pub src: BuckOutSource,
     pub user: UserName,
     pub binary_info: Option<BinaryInfo>,
+    pub xattrs: HashMap<String, XattrValue>,
 }
 
 impl Install {
@@ -55,7 +58,7 @@ impl Install {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 pub struct SplitBinaryMetadata {
     pub elf: bool,
     #[serde(default)]
@@ -68,7 +71,7 @@ pub enum BinaryInfo {
     Installed(InstalledBinary),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct InstalledBinary {
     pub debuginfo: BuckOutSource,
     pub metadata: SplitBinaryMetadata,
@@ -97,30 +100,6 @@ impl<'de> Deserialize<'de> for BinaryInfo {
                 "exactly one of {dev=True, installed} must be set",
             )),
         })
-    }
-}
-
-impl Serialize for BinaryInfo {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        #[derive(Serialize)]
-        struct Ser<'b> {
-            dev: Option<bool>,
-            installed: Option<&'b InstalledBinary>,
-        }
-        Ser {
-            dev: match self {
-                Self::Dev => Some(true),
-                _ => None,
-            },
-            installed: match self {
-                Self::Installed(installed) => Some(installed),
-                _ => None,
-            },
-        }
-        .serialize(serializer)
     }
 }
 
@@ -159,6 +138,27 @@ impl<'de> Deserialize<'de> for InstalledBinary {
                 },
             })
         })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct XattrValue(Vec<u8>);
+
+impl<'de> Deserialize<'de> for XattrValue {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        if let Some(hex_value) = s.strip_prefix("0x") {
+            let bytes = hex::decode(hex_value).map_err(D::Error::custom)?;
+            Ok(Self(bytes))
+        } else if let Some(b64) = s.strip_prefix("0s") {
+            let bytes = base64::decode(b64).map_err(D::Error::custom)?;
+            Ok(Self(bytes))
+        } else {
+            Ok(Self(s.into_bytes()))
+        }
     }
 }
 
@@ -322,6 +322,11 @@ impl antlir2_compile::CompileFeature for Install {
                     Some(gid.as_raw()),
                 )?;
             }
+
+            let dir_path = ctx.dst_path(&self.dst)?;
+            for (key, val) in self.xattrs.iter() {
+                xattr::set(&dir_path, key, &val.0)?;
+            }
         } else {
             if self.is_dir() {
                 return Err(antlir2_compile::Error::InstallDstIsDirectoryButNotSrc {
@@ -411,8 +416,32 @@ impl antlir2_compile::CompileFeature for Install {
                     .set_accessed(src_meta.accessed()?)
                     .set_modified(src_meta.modified()?);
                 dst_file.set_times(times)?;
+                for (key, val) in &self.xattrs {
+                    dst_file.set_xattr(key, &val.0)?;
+                }
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn decode_xattr() {
+        assert_eq!(
+            XattrValue(b"foo".to_vec()),
+            serde_json::from_str::<XattrValue>(r#""foo""#).expect("failed to deserialize")
+        );
+        assert_eq!(
+            XattrValue(b"bar".to_vec()),
+            serde_json::from_str::<XattrValue>(r#""0x626172""#).expect("failed to deserialize")
+        );
+        assert_eq!(
+            XattrValue(b"baz".to_vec()),
+            serde_json::from_str::<XattrValue>(r#""0sYmF6""#).expect("failed to deserialize")
+        );
     }
 }

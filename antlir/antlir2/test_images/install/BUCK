@@ -257,3 +257,51 @@ image_rust_test(
         "nix",
     ],
 )
+
+image.layer(
+    name = "install-file-xattr",
+    features = [
+        feature.install(
+            src = "hello.txt",
+            dst = "/hello",
+            mode = "a+rw",
+            xattrs = {
+                "user.bar": "0x626172",
+                "user.baz": "0sYmF6",
+                "user.foo": "foo",
+            },
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-install-file-xattr",
+    diff = "install-file-xattr.toml",
+    diff_type = "file",
+    layer = ":install-file-xattr",
+)
+
+image.layer(
+    name = "install-dir-xattr",
+    features = [
+        feature.install(
+            src = ":genrule-dir",
+            dst = "/installed-dir/",
+            mode = "a+rw,u+w",
+            xattrs = {
+                "user.bar": "0x626172",
+                "user.baz": "0sYmF6",
+                "user.foo": "foo",
+            },
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "test-install-dir-xattr",
+    diff = "install-dir-xattr.toml",
+    diff_type = "file",
+    layer = ":install-dir-xattr",
+)

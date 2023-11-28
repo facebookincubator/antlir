@@ -1,0 +1,16 @@
+[file.hello]
+op = "added"
+
+[file.hello.diff]
+mode = "u+rw,g+rw,o+rw"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+Hello world!
+"""
+
+[file.hello.diff.xattrs]
+"user.bar" = "bar"
+"user.baz" = "baz"
+"user.foo" = "foo"
