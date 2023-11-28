@@ -1,2 +1,0 @@
-#!/bin/bash
-exec rpm2extents SHA256 <"$1" >"$2"

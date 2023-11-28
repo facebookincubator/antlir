@@ -441,7 +441,7 @@ def driver(spec) -> None:
             if "key" in msg:
                 gpg_errors[pkg].append(msg)
             else:
-                raise e
+                raise AntlirError(f"failed to read {pkg.localPkg()}") from e
 
         # If the rpm is unsigned but there are gpg keys for the repo, block the installation
         if pkg.repo.gpgkey:
