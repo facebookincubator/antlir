@@ -391,3 +391,21 @@ image_python_test(
     srcs = ["test_db_backend.py"],
     layer = simple,
 )
+
+test_binaries_with_file_capabilities_layer = test_rpms(
+    name = "test-binaries-with-file-capabilities-layer",
+    expected = expected_t(installed = [
+        "antlir2-with-capability",
+    ]),
+    features = [feature.rpms_install(rpms = [
+        "libcap",  # getcap cli
+        "antlir2-with-capability",
+    ])],
+    parent_layer = simple,
+)
+
+image_python_test(
+    name = "test-binaries-with-file-capabilities",
+    srcs = ["test_binaries_with_file_capabilities.py"],
+    layer = test_binaries_with_file_capabilities_layer,
+)

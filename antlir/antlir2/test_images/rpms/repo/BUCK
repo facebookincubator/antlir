@@ -157,6 +157,31 @@ all_rpms.append(
     ),
 )
 
+image.layer(
+    name = "antlir2-with-capability-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/usr/bin/antlir2-with-capability",
+            xattrs = {
+                "security.capability": "0sAQAAAoAAAAAAAAAAAAAAAAAAAAA=",  #cap_setuid=ep
+            },
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-with-capability",
+        epoch = 0,
+        parent_layer = ":antlir2-with-capability-layer",
+        release = "1",
+        version = "1",
+    ),
+)
+
 repo(
     name = "test-repo",
     compress = "none",
