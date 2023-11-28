@@ -5,9 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-const {fbContent} = require('docusaurus-plugin-internaldocs-fb/internal');
-const lightCodeTheme = require('prism-react-renderer/themes/github');
-const darkCodeTheme = require('prism-react-renderer/themes/dracula');
+import {fbContent} from 'docusaurus-plugin-internaldocs-fb/internal';
+import {themes} from 'prism-react-renderer';
 
 // With JSDoc @type annotations, IDEs can provide config autocompletion
 /** @type {import('@docusaurus/types').DocusaurusConfig} */
@@ -121,8 +120,8 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
         copyright: `Copyright © ${new Date().getFullYear()} Meta Platforms, Inc. Built with Docusaurus.`,
       },
       prism: {
-        theme: lightCodeTheme,
-        darkTheme: darkCodeTheme,
+        theme: themes.github,
+        darkTheme: themes.darcula,
       },
     }),
 });
