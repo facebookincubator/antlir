@@ -8,10 +8,10 @@ sidebar_position: 3
 
 We take full snapshots of all available yum repositories and periodically update
 the in-repo copy.
-<InternalOnly>
-See <a href="../fb/fast-snapshot">fast-snapshot</a> for how this works internally.
-</InternalOnly>
 
+<FbInternalOnly>
+See <a href="../fb/fast-snapshot">fast-snapshot</a> for how this works internally.
+</FbInternalOnly>
 
 ### Buck targets
 
@@ -33,9 +33,7 @@ metadata.
 
 The `repo_set` rule contains zero or more `repo` dependencies, and serves as a
 convenient grouping to refer to all repos that are part of a distribution with a
-single buck target label.
-This rule does not build anything on its own.
-
+single buck target label. This rule does not build anything on its own.
 
 ## Installation
 
@@ -72,11 +70,11 @@ guaranteeing [reproducibility](../../reproducibility) almost impossible.
 But, we need to get these `.rpm`s materialized onto disk somehow so that `dnf`
 can install them.
 
-Luckily, `buck2` has [dynamic
-dependencies](https://buck2.build/docs/rule_authors/dynamic_dependencies/) which
-let an `image.layer` take a "dep" on every single rpm that's made available to
-it, but only selectively materialize the ones that are actually going to be
-installed in a transaction.
+Luckily, `buck2` has
+[dynamic dependencies](https://buck2.build/docs/rule_authors/dynamic_dependencies/)
+which let an `image.layer` take a "dep" on every single rpm that's made
+available to it, but only selectively materialize the ones that are actually
+going to be installed in a transaction.
 
 ### Installation
 
@@ -90,7 +88,8 @@ otherwise our safety guarantee of explicitly-installed rpms never being
 implicitly removed later on cannot be upheld.
 
 For example:
-* `foobarbaz` depends on `foobar` which depends on `foo`
-* child layer installs `foobar` for its own needs, and removes `foobarbaz`
-* later `image.layer` tries to remove `foo`
-  * this must fail
+
+- `foobarbaz` depends on `foobar` which depends on `foo`
+- child layer installs `foobar` for its own needs, and removes `foobarbaz`
+- later `image.layer` tries to remove `foo`
+  - this must fail

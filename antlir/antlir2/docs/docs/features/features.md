@@ -66,6 +66,6 @@ Remove RPMs by name or nevra if they are installed.
 
 Add a new user/group to `/etc/passwd` and friends.
 
-<InternalOnly>
+<FbInternalOnly>
 There are also some <a href="./fb">Meta-only internal features</a>
-</InternalOnly>
+</FbInternalOnly>
