@@ -6,6 +6,7 @@
  */
 
 use std::fmt::Write as _;
+use std::fs::File;
 use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
@@ -17,6 +18,7 @@ use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
 use itertools::Itertools;
+use libcap::FileExt as _;
 use serde::Deserialize;
 use tempfile::NamedTempFile;
 
@@ -66,7 +68,7 @@ impl PackageFormat for Rpm {
             .join("\n");
 
         let requires_post = self
-            .requires
+            .requires_post
             .iter()
             .map(|r| format!("Requires(post): {r}"))
             .join("\n");
@@ -168,6 +170,13 @@ License: {license}
                 if relpath == Path::new("/") {
                     continue;
                 }
+                if let Some(caps) = File::open(entry.path()).and_then(|f| f.get_capabilities())? {
+                    let caps = caps.to_text()?;
+                    spec.push_str("%caps(");
+                    spec.push_str(&caps);
+                    spec.push_str(") ");
+                }
+
                 spec.push_str(relpath.to_str().expect("our paths are always valid utf8"));
                 spec.push('\n');
             }

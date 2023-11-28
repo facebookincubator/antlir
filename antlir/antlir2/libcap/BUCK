@@ -1,0 +1,22 @@
+load("//antlir/bzl:build_defs.bzl", "rust_bindgen_library", "rust_library")
+
+oncall("antlir")
+
+rust_bindgen_library(
+    name = "libcap-sys",
+    cpp_deps = [
+        "third-party//libcap:cap",
+    ],
+    generate = ("types", "functions", "vars"),
+    header = "bridge.h",
+    visibility = [],
+)
+
+rust_library(
+    name = "libcap",
+    srcs = glob(["src/*.rs"]),
+    deps = [
+        "libc",
+        ":libcap-sys",
+    ],
+)
