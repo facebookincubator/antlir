@@ -30,8 +30,8 @@ pub enum Test {
         test_cmd: Vec<OsString>,
     },
     Pyunit {
-        #[clap(long)]
-        list_tests: Option<PathBuf>,
+        #[clap(long, default_value=None,default_missing_value=Some(""),num_args=0..=1)]
+        list_tests: Option<String>,
         #[clap(long)]
         output: Option<PathBuf>,
         #[clap(long)]
@@ -71,11 +71,14 @@ impl Test {
             } => {
                 let mut paths = HashSet::new();
                 if let Some(p) = list_tests {
-                    paths.insert(
-                        p.parent()
-                            .expect("output file always has parent")
-                            .to_owned(),
-                    );
+                    if !p.is_empty() {
+                        paths.insert(
+                            PathBuf::from(p)
+                                .parent()
+                                .expect("output file always has parent")
+                                .to_owned(),
+                        );
+                    }
                 }
                 if let Some(p) = output {
                     paths.insert(
@@ -111,7 +114,9 @@ impl Test {
             } => {
                 if let Some(list) = list_tests {
                     test_cmd.push("--list-tests".into());
-                    test_cmd.push(list.into());
+                    if !list.is_empty() {
+                        test_cmd.push(list.into());
+                    }
                 }
                 if let Some(out) = output {
                     test_cmd.push("--output".into());
@@ -258,6 +263,11 @@ mod test {
             arg.test.into_inner_cmd(),
             vec!["whatever", "--list-tests", "/a/here"]
         );
+
+        let arg = TestArgs::parse_from(["test", "pyunit", "whatever", "--list-tests"]);
+        assert!(arg.test.is_list_tests());
+        assert!(arg.test.output_dirs().is_empty());
+        assert_eq!(arg.test.into_inner_cmd(), vec!["whatever", "--list-tests"]);
     }
 
     #[test]
