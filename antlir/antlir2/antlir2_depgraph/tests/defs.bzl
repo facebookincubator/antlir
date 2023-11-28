@@ -22,7 +22,12 @@ def _make_test_cmd(ctx: AnalysisContext) -> cmd_args:
             if layer not in dependency_layers:
                 dependency_layers.append(layer)
 
-        hidden_deps.extend([feat.plugin.plugin, feat.plugin.libs])
+        hidden_deps.extend([
+            feat.plugin.plugin,
+            feat.plugin.libs,
+            feat.analysis.required_artifacts,
+            feat.analysis.required_run_infos,
+        ])
 
     return cmd_args(
         ctx.attrs.test_depgraph[RunInfo],
