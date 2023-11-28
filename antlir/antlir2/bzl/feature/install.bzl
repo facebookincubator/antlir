@@ -22,7 +22,8 @@ def install(
         dst: str | Select,
         mode: int | str | Select | None = None,
         user: str | Select = "root",
-        group: str | Select = "root") -> ParseTimeFeature:
+        group: str | Select = "root",
+        xattrs: dict[str, str] | Select = {}) -> ParseTimeFeature:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -56,6 +57,7 @@ def install(
             "mode": mode,
             "text": None,
             "user": user,
+            "xattrs": xattrs,
         },
     )
 
@@ -90,15 +92,6 @@ installed_binary = record(
 binary_record = record(
     dev = field([bool, None], default = None),
     installed = field([installed_binary, None], default = None),
-)
-
-install_record = record(
-    src = Artifact,
-    dst = str,
-    mode = int,
-    user = str,
-    group = str,
-    binary_info = field([binary_record, None], default = None),
 )
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -164,13 +157,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         FeatureAnalysis(
             feature_type = "install",
             build_phase = BuildPhase(ctx.attrs.build_phase),
-            data = install_record(
+            data = struct(
                 src = src,
                 dst = ctx.attrs.dst,
                 mode = mode,
                 user = ctx.attrs.user,
                 group = ctx.attrs.group,
                 binary_info = binary_info,
+                xattrs = ctx.attrs.xattrs,
             ),
             required_artifacts = [src] + required_artifacts,
             required_run_infos = required_run_infos,
@@ -193,6 +187,7 @@ install_rule = rule(
         ),
         "text": attrs.option(attrs.string(), default = None),
         "user": attrs.string(default = "root"),
+        "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
     },
 )

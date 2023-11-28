@@ -7,17 +7,16 @@
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
-use std::ffi::OsString;
 use std::fmt::Debug;
 use std::path::PathBuf;
 
-use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
 use similar::TextDiff;
 
 use crate::file_entry::FileEntry;
+use crate::file_entry::XattrData;
 use crate::rpm_entry::RpmEntry;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
@@ -133,85 +132,21 @@ impl FileEntryDiff {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
-struct XattrData(Vec<u8>);
-
-impl Serialize for XattrData {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match std::str::from_utf8(&self.0) {
-            Ok(text) => serializer.serialize_str(text),
-            Err(_) => self.0.serialize(serializer),
-        }
-    }
-}
-
-impl Debug for XattrData {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match std::str::from_utf8(&self.0) {
-            Ok(text) => f.debug_tuple("XattrData").field(&text).finish(),
-            Err(_) => f.debug_tuple("XattrData").field(&self.0).finish(),
-        }
-    }
-}
-
-struct XattrDataVisitor;
-
-impl<'de> Visitor<'de> for XattrDataVisitor {
-    type Value = XattrData;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a string or byte array")
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(XattrData(v.into_bytes()))
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(XattrData(v.as_bytes().to_vec()))
-    }
-
-    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(XattrData(v))
-    }
-}
-
-impl<'de> Deserialize<'de> for XattrData {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        deserializer.deserialize_str(XattrDataVisitor)
-    }
-}
-
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize, Serialize)]
 struct XattrDiff {
-    removed: BTreeSet<OsString>,
-    added: BTreeMap<OsString, XattrData>,
-    changed: BTreeMap<OsString, XattrData>,
+    removed: BTreeSet<String>,
+    added: BTreeMap<String, XattrData>,
+    changed: BTreeMap<String, XattrData>,
 }
 
 impl XattrDiff {
-    fn new(parent: &BTreeMap<OsString, Vec<u8>>, child: &BTreeMap<OsString, Vec<u8>>) -> Self {
+    fn new(parent: &BTreeMap<String, XattrData>, child: &BTreeMap<String, XattrData>) -> Self {
         let mut s = Self::default();
         for (key, val) in parent {
             match child.get(key) {
                 Some(c) => {
                     if c != val {
-                        s.changed.insert(key.clone(), XattrData(c.clone()));
+                        s.changed.insert(key.clone(), c.clone());
                     }
                 }
                 None => {
@@ -221,7 +156,7 @@ impl XattrDiff {
         }
         for (key, val) in child {
             if !parent.contains_key(key) {
-                s.added.insert(key.clone(), XattrData(val.clone()));
+                s.added.insert(key.clone(), val.clone());
             }
         }
         s

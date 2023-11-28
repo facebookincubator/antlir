@@ -57,8 +57,11 @@ feature_impl(
         "unix_chown",
     ],
     deps = [
+        "base64",
+        "hex",
         "serde_json",
         "walkdir",
+        "xattr",
         "//antlir/antlir2/antlir2_users:antlir2_users",
     ],
 )

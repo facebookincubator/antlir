@@ -6,7 +6,7 @@
  */
 
 use std::collections::BTreeMap;
-use std::ffi::OsString;
+use std::fmt::Debug;
 use std::fmt::Display;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::prelude::MetadataExt;
@@ -20,6 +20,7 @@ use anyhow::Context;
 use anyhow::Result;
 use md5::Digest;
 use md5::Md5;
+use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -42,7 +43,7 @@ pub(crate) struct FileEntry {
     #[serde(default)]
     pub(crate) content_hash: Option<String>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
-    pub(crate) xattrs: BTreeMap<OsString, Vec<u8>>,
+    pub(crate) xattrs: BTreeMap<String, XattrData>,
 }
 
 impl FileEntry {
@@ -89,10 +90,14 @@ impl FileEntry {
         };
         let xattrs = xattr::list(path)
             .context("while listing xattrs")?
+            .map(|name| {
+                name.into_string()
+                    .expect("all xattrs we care about are utf8")
+            })
             .filter_map(|name| {
                 xattr::get(path, &name)
                     .context("while reading xattr")
-                    .map(|value| value.map(|value| (name, value)))
+                    .map(|value| value.map(|value| (name, XattrData(value))))
                     .transpose()
             })
             .collect::<Result<_>>()?;
@@ -179,5 +184,69 @@ impl FromStr for FileType {
             "symlink" => Ok(Self::Symlink),
             _ => Err(format!("unknown filetype: '{s}'")),
         }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub(crate) struct XattrData(pub(crate) Vec<u8>);
+
+impl Serialize for XattrData {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match std::str::from_utf8(&self.0) {
+            Ok(text) => serializer.serialize_str(text),
+            Err(_) => self.0.serialize(serializer),
+        }
+    }
+}
+
+impl Debug for XattrData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match std::str::from_utf8(&self.0) {
+            Ok(text) => f.debug_tuple("XattrData").field(&text).finish(),
+            Err(_) => f.debug_tuple("XattrData").field(&self.0).finish(),
+        }
+    }
+}
+
+struct XattrDataVisitor;
+
+impl<'de> Visitor<'de> for XattrDataVisitor {
+    type Value = XattrData;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a string or byte array")
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(XattrData(v.into_bytes()))
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(XattrData(v.as_bytes().to_vec()))
+    }
+
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(XattrData(v))
+    }
+}
+
+impl<'de> Deserialize<'de> for XattrData {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        deserializer.deserialize_str(XattrDataVisitor)
     }
 }
