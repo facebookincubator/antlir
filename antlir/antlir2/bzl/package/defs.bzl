@@ -324,6 +324,7 @@ package = struct(
     sendstream_v2 = sendstream_v2,
     sendstream_zst = sendstream_zst,
     squashfs = _package_macro(_squashfs),
+    tar = _package_macro(_tar),
     tar_gz = _package_macro(_tar_gz),
     tar_zst = _package_macro(_tar_zst),
     vfat = _package_macro(_vfat),
