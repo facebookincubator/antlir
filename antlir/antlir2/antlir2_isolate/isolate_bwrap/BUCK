@@ -7,7 +7,6 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     visibility = ["//antlir/antlir2/antlir2_isolate:"],
     deps = [
-        "nix",
         "thiserror",
         "tracing",
         "uuid",

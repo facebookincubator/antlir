@@ -16,7 +16,6 @@ use std::process::Command;
 use antlir2_btrfs::Subvolume;
 use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
-use nix::unistd::Uid;
 use tracing::error;
 use tracing::trace;
 use uuid::Uuid;
@@ -79,14 +78,6 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
 
     let bwrap = bwrap.unwrap_or(OsStr::new("bwrap"));
     let mut bwrap_args = Vec::<OsString>::new();
-    let program = match Uid::effective().is_root() {
-        true => bwrap.into(),
-        false => {
-            // TODO(T157360448): don't use sudo when we don't actually need it
-            bwrap_args.push(bwrap.into());
-            "sudo".into()
-        }
-    };
 
     bwrap_args.push("--unshare-cgroup".into());
     bwrap_args.push("--unshare-ipc".into());
@@ -196,7 +187,7 @@ pub fn bwrap(ctx: IsolationContext, bwrap: Option<&OsStr>) -> Result<IsolatedCon
     trace!("bwrap args: {bwrap_args:?}");
 
     Ok(IsolatedContext {
-        program,
+        program: bwrap.into(),
         args: bwrap_args,
         env: Default::default(),
         ephemeral_subvol: ephemeral_root,
