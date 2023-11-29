@@ -1,0 +1,10 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "remove",
+    unstable_features = [
+        "io_error_more",
+    ],
+)

@@ -1,0 +1,251 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+load("//antlir/bzl:build_defs.bzl", "alias")
+
+oncall("antlir")
+
+image.layer(
+    name = "base",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/etc",
+        ),
+        feature.install_text(
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/fakeshell",
+            mode = "a+rx",
+        ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            username = "antlir",
+        ),
+        feature.group_add(
+            groupname = "antlir",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "clone-src",
+    features = [
+        feature.install(
+            src = "file-to-clone",
+            dst = "/f",
+            group = "antlir",
+            user = "antlir",
+        ),
+        feature.ensure_dirs_exist(
+            dirs = "/path/to/clone/dir",
+        ),
+        feature.ensure_subdirs_exist(
+            group = "antlir",
+            into_dir = "/path/to/clone/dir",
+            subdirs_to_create = "deeper/nesting",
+            user = "antlir",
+        ),
+        feature.install(
+            src = "file-to-clone",
+            dst = "/path/to/clone/dir/deeper/nesting/foo",
+        ),
+        feature.ensure_file_symlink(
+            link = "/path/to/clone/dir/cloned-symlink",
+            target = "/f",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image.layer(
+    name = "clone-file",
+    features = [
+        feature.clone(
+            dst_path = "/cloned-file",
+            src_layer = ":clone-src",
+            src_path = "/f",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "clone-file-test",
+    diff = "clone-file.toml",
+    diff_type = "file",
+    layer = ":clone-file",
+)
+
+alias(
+    name = "clone-src-alias",
+    actual = ":clone-src",
+)
+
+image.layer(
+    name = "clone-file-from-aliased-layer",
+    features = [
+        feature.clone(
+            dst_path = "/cloned-file",
+            src_layer = ":clone-src-alias",
+            src_path = "/f",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "clone-file-from-aliased-layer-test",
+    diff = "clone-file.toml",
+    diff_type = "file",
+    layer = ":clone-file-from-aliased-layer",
+)
+
+image.layer(
+    name = "clone-dir",
+    features = [
+        feature.clone(
+            dst_path = "/cloned",
+            src_layer = ":clone-src",
+            src_path = "/path/to/clone/dir",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "clone-dir-test",
+    diff = "clone-dir.toml",
+    diff_type = "file",
+    layer = ":clone-dir",
+)
+
+image.layer(
+    name = "clone-dir-omit-outer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/cloned"),
+        feature.clone(
+            dst_path = "/cloned/",
+            src_layer = ":clone-src",
+            src_path = "/path/to/clone/dir/",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "clone-dir-omit-outer-test",
+    # This is intentionally the same as ':clone-dir', see the comment in the
+    # toml file for details
+    diff = "clone-dir.toml",
+    diff_type = "file",
+    layer = ":clone-dir-omit-outer",
+)
+
+image.layer(
+    name = "clone-dir-pre-existing",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/clone/into/existing"),
+        feature.clone(
+            dst_path = "/clone/into/existing/",
+            src_layer = ":clone-src",
+            src_path = "/path/to/clone/dir",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "clone-dir-pre-existing-test",
+    diff = "clone-dir-pre-existing.toml",
+    diff_type = "file",
+    layer = ":clone-dir-pre-existing",
+)
+
+image.layer(
+    name = "base-ids-remap",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/etc",
+        ),
+        feature.install_text(
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/fakeshell",
+            mode = "a+rx",
+        ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            uid = 10,
+            username = "antlir",
+        ),
+        feature.group_add(
+            gid = 10,
+            groupname = "antlir",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "clone-file-remap-ids",
+    features = [
+        feature.clone(
+            dst_path = "/cloned-file",
+            src_layer = ":clone-src",
+            src_path = "/f",
+        ),
+    ],
+    parent_layer = ":base-ids-remap",
+)
+
+image_diff_test(
+    name = "clone-file-remap-ids-test",
+    # same user and group names but different ids
+    diff = "clone-file.toml",
+    diff_type = "file",
+    layer = ":clone-file-remap-ids",
+)
+
+image.layer(
+    name = "clone-file-chown-root",
+    features = [
+        feature.clone(
+            dst_path = "/cloned-file",
+            group = "root",
+            src_layer = ":clone-src",
+            src_path = "/f",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":base-ids-remap",
+)
+
+image_diff_test(
+    name = "clone-file-chown-root-test",
+    diff = "clone-file-root.toml",
+    diff_type = "file",
+    layer = ":clone-file-chown-root",
+)

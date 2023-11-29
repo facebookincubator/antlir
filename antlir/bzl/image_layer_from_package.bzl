@@ -4,8 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:compat.bzl?v2_only", antlir2_compat = "compat")
-load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
+load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
 load("//antlir/bzl:build_defs.bzl", "alias", "get_visibility", "is_buck2")
 load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
 load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")

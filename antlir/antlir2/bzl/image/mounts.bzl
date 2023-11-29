@@ -9,7 +9,7 @@ load(
     "LayerInfo",  # @unused Used as type
 )
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_record")
-load("//antlir/antlir2/bzl/feature:mount.bzl", "host_mount_record", "layer_mount_record", "mount_record")
+load("//antlir/antlir2/features/mount:mount.bzl", "host_mount_record", "layer_mount_record", "mount_record")
 load("//antlir/bzl:types.bzl", "types")
 
 types.lint_noop(feature_record)

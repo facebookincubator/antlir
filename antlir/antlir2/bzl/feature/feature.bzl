@@ -53,33 +53,35 @@ function must then be added to the `_anon_rules` map in this file.
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
-# @oss-disable
-# @oss-disable
-# @oss-disable
-# @oss-disable
-# @oss-disable
-# @oss-disable
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
-load("//antlir/antlir2/features/test_only_features:trace.bzl", "trace_rule")
+load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis")
+load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl", "antlir1_no_equivalent_rule")
+load("//antlir/antlir2/features/clone:clone.bzl", "clone_rule")
+load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta_rule")
+load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_dir_exists_rule")
+load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary_rule", "extract_from_layer_rule")
+# @oss-disable
+# @oss-disable
+# @oss-disable
+# @oss-disable
+# @oss-disable
+# @oss-disable
+load("//antlir/antlir2/features/genrule:genrule.bzl", "genrule_rule")
+load("//antlir/antlir2/features/group:group.bzl", "group_rule")
+load("//antlir/antlir2/features/install:install.bzl", "install_rule")
+load("//antlir/antlir2/features/mount:mount.bzl", "mount_rule")
+load("//antlir/antlir2/features/remove:remove.bzl", "remove_rule")
+load("//antlir/antlir2/features/requires:requires.bzl", "requires_rule")
+load("//antlir/antlir2/features/rpm:rpm.bzl", "rpms_record", "rpms_rule")
+load("//antlir/antlir2/features/symlink:symlink.bzl", "ensure_dir_symlink_rule", "ensure_file_symlink_rule")
+load("//antlir/antlir2/features/tarball:tarball.bzl", "tarball_rule")
+load("//antlir/antlir2/features/test_only_features/trace:trace.bzl", "trace_rule")
+load("//antlir/antlir2/features/user:user.bzl", "user_rule")
+load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod_rule")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/build_defs.bzl", "config")
-load(":antlir1_no_equivalent.bzl", "antlir1_no_equivalent_rule")
 load(":cfg.bzl", "feature_cfg")
-load(":clone.bzl", "clone_rule")
-load(":dot_meta.bzl", "dot_meta_rule")
-load(":ensure_dirs_exist.bzl", "ensure_dir_exists_rule")
-load(":extract.bzl", "extract_buck_binary_rule", "extract_from_layer_rule")
-load(":feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis")
-load(":genrule.bzl", "genrule_rule")
-load(":install.bzl", "install_rule")
-load(":mount.bzl", "mount_rule")
-load(":remove.bzl", "remove_rule")
-load(":requires.bzl", "requires_rule")
-load(":rpms.bzl", "rpms_record", "rpms_rule")
-load(":symlink.bzl", "ensure_dir_symlink_rule", "ensure_file_symlink_rule")
-load(":tarball.bzl", "tarball_rule")
-load(":usergroup.bzl", "group_rule", "user_rule", "usermod_rule")
 
 feature_record = record(
     feature_type = str,

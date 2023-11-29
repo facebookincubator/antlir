@@ -15,11 +15,11 @@ image.layer(
     # systemd-v253 is broken on aarch64 under qemu-user emulation
     dnf_additional_repos = select({
         "ovr_config//cpu:arm64": [
-            "//antlir/antlir2/test_images/rpms/repo:test-repo",
+            "//antlir/antlir2/features/rpm/tests/repo:test-repo",
             "fbcode//bot_generated/antlir/rpm/fast_snapshot/repos/centos/9/systemd-cd/aarch64:centos/9/systemd-cd/aarch64",
         ],
         "ovr_config//cpu:x86_64": [
-            "//antlir/antlir2/test_images/rpms/repo:test-repo",
+            "//antlir/antlir2/features/rpm/tests/repo:test-repo",
         ],
     }),
     dnf_versionlock = select({
@@ -88,7 +88,7 @@ image_python_test(
 
 image.layer(
     name = "foo-rpms",
-    dnf_available_repos = "//antlir/antlir2/test_images/rpms:test-repo-set",
+    dnf_available_repos = "//antlir/antlir2/features/rpm/tests:test-repo-set",
     features = [
         feature.rpms_install(rpms = ["foobarbaz"]),
     ],
@@ -162,7 +162,7 @@ test_that_should_fail(
 image.layer(
     name = "diff_test",
     dnf_additional_repos = [
-        "//antlir/antlir2/test_images/rpms/repo:test-repo",
+        "//antlir/antlir2/features/rpm/tests/repo:test-repo",
     ],
     features = [
         feature.ensure_dirs_exist(

@@ -1,0 +1,17 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "clone",
+    unstable_features = [
+        "io_error_more",
+        "io_error_other",
+        "unix_chown",
+    ],
+    deps = [
+        "serde_json",
+        "walkdir",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ],
+)

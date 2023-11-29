@@ -49,8 +49,8 @@ Read that target's docblock for more info, but in essence, that will:
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility", "is_buck2")
 load("//antlir/bzl:constants.bzl", "BZL_CONST")

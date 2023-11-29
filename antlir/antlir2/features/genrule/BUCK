@@ -1,0 +1,11 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "genrule",
+    deps = [
+        "derivative",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+    ],
+)

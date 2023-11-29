@@ -1,0 +1,19 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "install",
+    unstable_features = [
+        "file_set_times",
+        "unix_chown",
+    ],
+    deps = [
+        "base64",
+        "hex",
+        "serde_json",
+        "walkdir",
+        "xattr",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ],
+)

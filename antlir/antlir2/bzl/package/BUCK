@@ -1,5 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/feature:dot_meta.bzl", "dot_meta")
+load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta")
 
 oncall("antlir")
 

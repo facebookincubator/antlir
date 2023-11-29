@@ -1,0 +1,10 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "ensure_dir_exists",
+    unstable_features = [
+        "unix_chown",
+    ],
+)

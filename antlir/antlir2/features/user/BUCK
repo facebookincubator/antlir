@@ -1,0 +1,10 @@
+load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+
+oncall("antlir")
+
+feature_impl(
+    name = "user",
+    deps = [
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+    ],
+)
