@@ -260,6 +260,7 @@ fn shape(builder: &mut GlobalsBuilder) {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let options = args
             .iterate(eval.heap())
+            .map_err(starlark::Error::into_anyhow)
             .context("while collecting enum variants")?
             .map(|v| String::unpack_param(v).map(|s| s.into()))
             .collect::<Result<_>>()?;
@@ -328,8 +329,10 @@ fn shape(builder: &mut GlobalsBuilder) {
         #[starlark(args)] args: Value<'v>,
         #[starlark(require = named)] __thrift: Option<UnpackListOrTuple<u32>>,
         eval: &mut Evaluator<'v, '_>,
-    ) -> anyhow::Result<TypeId> {
-        let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
+    ) -> starlark::Result<TypeId> {
+        let mut reg = get_type_registry(eval)?
+            .try_borrow_mut()
+            .map_err(starlark::Error::new_other)?;
         let types: Vec<_> = args
             .iterate(eval.heap())?
             .enumerate()
@@ -340,10 +343,14 @@ fn shape(builder: &mut GlobalsBuilder) {
             .collect::<Result<_>>()?;
         let thrift_types = match __thrift {
             Some(t) => {
-                ensure!(
-                    t.items.len() == types.len(),
-                    "Mismatched number of fields. This would have already failed in Buck."
-                );
+                // Closure to convert the `anyhow` error to a `starlark::Error`
+                (|| {
+                    ensure!(
+                        t.items.len() == types.len(),
+                        "Mismatched number of fields. This would have already failed in Buck."
+                    );
+                    Ok(())
+                })()?;
                 Some(
                     t.into_iter()
                         .zip(&types)
