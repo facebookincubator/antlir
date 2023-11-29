@@ -3,14 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load(
-    "//antlir/antlir2/bzl:types.bzl",
-    "LayerInfo",  # @unused Used as type
-)
+load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
 REFLINK_FLAVORS = {
-    "centos8": "//antlir/antlir2/facebook/images/build_appliance/centos8:build-appliance",
-    "centos9": "//antlir/antlir2/facebook/images/build_appliance/centos9:build-appliance",
+    "centos8": "//antlir/antlir2/facebook/images/build_appliance/centos8:rpm2extents",
+    "centos9": "//antlir/antlir2/facebook/images/build_appliance/centos9:rpm2extents",
 }
 
 def rpm2extents(
@@ -18,18 +15,16 @@ def rpm2extents(
         rpm2extents_in_ba: RunInfo,
         rpm: Artifact,
         extents: Artifact,
-        build_appliance: LayerInfo,
+        build_appliance: Dependency,
         identifier: str | None = None):
     ctx.actions.run(
         cmd_args(
             rpm2extents_in_ba,
-            cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
+            cmd_args(ensure_single_output(build_appliance), format = "--build-appliance={}"),
             cmd_args(rpm, format = "--input={}"),
             cmd_args(extents.as_output(), format = "--output={}"),
         ),
         env = {"RUST_LOG": "trace"},
         category = "rpm2extents",
         identifier = identifier,
-        local_only = True,  # local subvolume required
-        allow_cache_upload = True,  # the actual produced artifact is fine to cache
     )

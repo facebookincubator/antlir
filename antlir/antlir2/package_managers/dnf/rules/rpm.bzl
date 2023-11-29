@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:reflink.bzl", "REFLINK_FLAVORS", "rpm2extents")
 load("//antlir/bzl:types.bzl", "types")
 
@@ -86,7 +85,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         xml = xml,
         pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
         rpm2extents_in_ba = ctx.attrs._rpm2extents_in_ba[RunInfo],
-        reflink_flavors = {name: dep[LayerInfo] for name, dep in ctx.attrs.reflink_flavors.items()},
+        reflink_flavors = ctx.attrs.reflink_flavors,
     )
 
 def common_impl(
@@ -96,7 +95,7 @@ def common_impl(
         xml: Artifact,
         pkgid: str,
         rpm2extents_in_ba: RunInfo,
-        reflink_flavors: dict[str, LayerInfo]) -> list[Provider]:
+        reflink_flavors: dict[str, Dependency]) -> list[Provider]:
     # Produce an rpm2extents artifact for each flavor. This is tied specifically
     # to the version of `rpm` being used in the build appliance, and should be
     # broadly compatible in practice, especially within os versions (eg if we
@@ -137,7 +136,7 @@ rpm = rule(
         "arch": attrs.string(),
         "epoch": attrs.int(),
         "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:makechunk")),
-        "reflink_flavors": attrs.dict(attrs.string(), attrs.dep(providers = [LayerInfo]), default = REFLINK_FLAVORS),
+        "reflink_flavors": attrs.dict(attrs.string(), attrs.dep(), default = REFLINK_FLAVORS),
         "release": attrs.string(),
         "rpm": attrs.option(attrs.source(), default = None),
         "rpm_name": attrs.string(),
