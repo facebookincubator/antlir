@@ -267,7 +267,8 @@ impl<'a> FileLoader for Loader<'a> {
 
         let src = std::fs::read_to_string(&file_path)
             .with_context(|| format!("while reading {}", file_path.display()))?;
-        let ast = AstModule::parse(&path, src, &Dialect::Extended)?;
+        let ast = AstModule::parse(&path, src, &Dialect::Extended)
+            .map_err(starlark::Error::into_anyhow)?;
 
         let module = Module::new();
         {

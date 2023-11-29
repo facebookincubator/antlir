@@ -376,7 +376,8 @@ impl FileLoader for Dependencies {
         // shape.bzl itself is an implicit dependency and comes with a native
         // implementation
         if load == "//antlir/bzl:shape.bzl" {
-            let ast = AstModule::parse("", "shape = shape_impl".to_string(), &Dialect::Standard)?;
+            let ast = AstModule::parse("", "shape = shape_impl".to_string(), &Dialect::Standard)
+                .map_err(starlark::Error::into_anyhow)?;
             let module = Module::new();
             {
                 let mut evaluator: Evaluator = Evaluator::new(&module);
@@ -483,7 +484,8 @@ fn main() -> Result<()> {
         enable_load_reexport: false,
         ..Dialect::Extended
     };
-    let ast = AstModule::parse_file(&opts.entrypoint, &dialect)?;
+    let ast =
+        AstModule::parse_file(&opts.entrypoint, &dialect).map_err(starlark::Error::into_anyhow)?;
     let (f, types) = eval_and_freeze_module(&opts.deps, ast)
         .with_context(|| format!("while processing {:?}", opts.entrypoint))?;
 
@@ -500,7 +502,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn simple_module() -> Result<()> {
+    fn simple_module() -> starlark::Result<()> {
         let ast = AstModule::parse(
             "simple_module",
             r#"load("//antlir/bzl:shape.bzl", "shape")
@@ -537,7 +539,7 @@ top = shape.shape(hello=str)
     }
 
     #[test]
-    fn ignores_irrelevant_top_level() -> Result<()> {
+    fn ignores_irrelevant_top_level() -> starlark::Result<()> {
         let ast = AstModule::parse(
             "simple_module",
             r#"load("//antlir/bzl:shape.bzl", "shape")
@@ -554,7 +556,7 @@ ty = shape.shape(hello=str)
     }
 
     #[test]
-    fn bad_enum_variant_type() -> Result<()> {
+    fn bad_enum_variant_type() -> starlark::Result<()> {
         let ast = AstModule::parse(
             "simple_module",
             r#"load("//antlir/bzl:shape.bzl", "shape")
@@ -574,7 +576,7 @@ shape.enum("a", "b", 3)
     }
 
     #[test]
-    fn bad_dict_key() -> Result<()> {
+    fn bad_dict_key() -> starlark::Result<()> {
         let ast = AstModule::parse(
             "simple_module",
             r#"load("//antlir/bzl:shape.bzl", "shape")
@@ -591,7 +593,7 @@ shape.dict(42, str)
     }
 
     #[test]
-    fn bad_dict_val() -> Result<()> {
+    fn bad_dict_val() -> starlark::Result<()> {
         let ast = AstModule::parse(
             "simple_module",
             r#"load("//antlir/bzl:shape.bzl", "shape")
@@ -608,7 +610,7 @@ shape.dict(str, 42)
     }
 
     #[test]
-    fn bad_union_item() -> Result<()> {
+    fn bad_union_item() -> starlark::Result<()> {
         let ast = AstModule::parse(
             "simple_module",
             r#"load("//antlir/bzl:shape.bzl", "shape")
