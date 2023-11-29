@@ -44,12 +44,16 @@ impl PackageFormat for Tar {
             .working_directory(std::env::current_dir().context("while getting cwd")?)
             .build();
 
+        // Sorted by name to ensure reproducibility, as well as predictable ordering when the tar
+        // is read as a byte stream. Some use cases require consumption of tar's contents with a
+        // known ordering, such as when the tar contains incremental btrfs snapshots.
         let tar_script = format!(
             "tar -c \
                 --sparse \
                 --one-file-system \
                 --acls \
                 --xattrs \
+                --sort=name \
                 --to-stdout \
                 -C \
                 {} \
