@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+extern crate loopdev_erikh as loopdev;
+
 use std::collections::BTreeMap;
 use std::fs::create_dir_all;
 use std::fs::File;
