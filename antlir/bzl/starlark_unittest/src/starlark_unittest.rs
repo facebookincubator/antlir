@@ -73,13 +73,16 @@ fn saving_fail(gb: &mut GlobalsBuilder) {
 #[starlark_module]
 fn unittest(gb: &mut GlobalsBuilder) {
     fn assert_eq<'v>(a: Value<'v>, b: Value<'v>, msg: Option<&str>) -> anyhow::Result<NoneType> {
-        if a.equals(b).with_context(|| {
-            format!(
-                "cannot compare equality of {} and {}",
-                a.to_repr(),
-                b.to_repr()
-            )
-        })? {
+        if a.equals(b)
+            .map_err(starlark::Error::into_anyhow)
+            .with_context(|| {
+                format!(
+                    "cannot compare equality of {} and {}",
+                    a.to_repr(),
+                    b.to_repr()
+                )
+            })?
+        {
             Ok(NoneType)
         } else {
             match msg {
@@ -90,13 +93,17 @@ fn unittest(gb: &mut GlobalsBuilder) {
     }
 
     fn assert_ne<'v>(a: Value<'v>, b: Value<'v>, msg: Option<&str>) -> anyhow::Result<NoneType> {
-        if !a.equals(b).with_context(|| {
-            format!(
-                "cannot compare equality of {} and {}",
-                a.to_repr(),
-                b.to_repr()
-            )
-        })? {
+        if !a
+            .equals(b)
+            .map_err(starlark::Error::into_anyhow)
+            .with_context(|| {
+                format!(
+                    "cannot compare equality of {} and {}",
+                    a.to_repr(),
+                    b.to_repr()
+                )
+            })?
+        {
             Ok(NoneType)
         } else {
             match msg {
