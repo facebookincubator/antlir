@@ -20,9 +20,9 @@ def rpm2extents(
     ctx.actions.run(
         cmd_args(
             rpm2extents_in_ba,
-            cmd_args(ensure_single_output(build_appliance), format = "--build-appliance={}"),
-            cmd_args(rpm, format = "--input={}"),
-            cmd_args(extents.as_output(), format = "--output={}"),
+            cmd_args(ensure_single_output(build_appliance)),
+            rpm,
+            extents.as_output(),
         ),
         env = {"RUST_LOG": "trace"},
         category = "rpm2extents",
