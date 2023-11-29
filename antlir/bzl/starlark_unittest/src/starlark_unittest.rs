@@ -274,7 +274,8 @@ impl<'a> FileLoader for Loader<'a> {
         {
             let mut eval = Evaluator::new(&module);
             eval.set_loader(self);
-            eval.eval_module(ast, &globals())?;
+            eval.eval_module(ast, &globals())
+                .map_err(starlark::Error::into_anyhow)?;
         }
         module.freeze()
     }

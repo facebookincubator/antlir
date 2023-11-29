@@ -85,7 +85,9 @@ fn eval_and_freeze_module(
         evaluator.disable_gc();
         evaluator.extra = Some(&registry);
 
-        evaluator.eval_module(ast, &globals)?;
+        evaluator
+            .eval_module(ast, &globals)
+            .map_err(starlark::Error::into_anyhow)?;
     }
     Ok((
         module.freeze().context("while freezing module")?,
@@ -382,7 +384,9 @@ impl FileLoader for Dependencies {
             {
                 let mut evaluator: Evaluator = Evaluator::new(&module);
                 let globals = bzl_globals().with_struct("shape_impl", shape).build();
-                evaluator.eval_module(ast, &globals)?;
+                evaluator
+                    .eval_module(ast, &globals)
+                    .map_err(starlark::Error::into_anyhow)?;
             }
             return module.freeze();
         }
