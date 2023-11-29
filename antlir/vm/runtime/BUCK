@@ -1,5 +1,4 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "third_party")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:hoist.bzl", "hoist")
 
@@ -10,7 +9,7 @@ oncall("antlir")
         name = paths.basename(binary),
         out = paths.basename(binary),
         executable = True,
-        layer = REPO_CFG.artifact["antlir.vm.runtime"],
+        layer = REPO_CFG.artifact["antlir.vm.runtime.rc"],
         path = "{}".format(binary),
         visibility = ["PUBLIC"],
     )
@@ -18,38 +17,15 @@ oncall("antlir")
         "/bin/swtpm",
         "/bin/qemu-img",
         "/bin/qemu-system-x86_64",
-        "/libexec/virtiofsd",
+        "/share/qemu/edk2-x86_64-code.fd",
     ]
 ]
-
-### NOTE: This is currently using the existing third_party.library
-# version of the edk2 firmware becuase of a bug with NVME devices
-# not being recognized with newer versions that was introduced
-# recently.  More details about this issue are here:
-# https://lf-net.org/blog/posts/2022-03-18_fixing_uefi/
-# Now, the weird thing is that this appears to have been fixed
-# by the latest (7.0.0 as of this comment) version of qemu +
-# EDK2 firmware, however it still doesn't work here. To unblock
-# users that are depending on other fixes, we'll use this older
-# firmware which works...
-buck_genrule(
-    name = "edk2-x86_64-code.fd",
-    out = "out",
-    cmd = "cp $(location {}) $OUT".format(
-        third_party.library(
-            "qemu",
-            "share/qemu/edk2-x86_64-code.fd",
-            platform = "genrule",
-        ),
-    ),
-    visibility = ["PUBLIC"],
-)
 
 # Just pull in all the roms
 hoist(
     name = "roms",
     force_dir = True,
-    layer = REPO_CFG.artifact["antlir.vm.runtime"],
+    layer = REPO_CFG.artifact["antlir.vm.runtime.rc"],
     path = "share/qemu/",
     selector = ["\\( -name '*.bin' -o -name '*.rom' \\)"],
     visibility = ["PUBLIC"],
