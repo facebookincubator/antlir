@@ -14,27 +14,27 @@ third_party.build(
     features = [
         feature.rpms_install([
             # build deps
-            "gcc",
             "autoconf",
             "autoconf-archive",
-            "libtool",
+            "expect",
+            "gcc",
+            "glib2-static",
             "libattr-devel",
             "libcap-ng-devel",
+            "libseccomp-devel",
+            "libtool",
             "libzstd-devel",
             "make",
+            "net-tools",
             "ninja-build",
             "numactl-devel",
-            "pixman-devel",
-            "python36",
-            "sed",
-            "net-tools",
-            "tpm-tools",
-            "expect",
-            "libseccomp-devel",
-            "socat",
             "openssl-devel",
-            # static
-            "glib2-static",
+            "pixman-devel",
+            "python39",
+            "sed",
+            "socat",
+            "sphinx",
+            "tpm-tools",
         ]),
     ],
     script = third_party.script(
@@ -47,20 +47,19 @@ export MAKEFLAGS=-j
     --target-list=x86_64-softmmu,aarch64-softmmu \\
     --prefix="${OUTPUT}" \\
     --without-default-features \\
+    --disable-download \\
     --enable-attr \\
+    --enable-avx2 \\
     --enable-cap-ng \\
     --enable-kvm \\
     --enable-numa \\
-    --enable-vhost-kernel \\
-    --enable-vhost-net \\
-    --enable-vhost-vsock \\
-    --enable-vhost-user \\
-    --enable-vhost-user-fs \\
-    --enable-virtfs \\
-    --enable-virtiofsd \\
     --enable-seccomp \\
     --enable-tools \\
     --enable-tpm \\
+    --enable-vhost-kernel \\
+    --enable-vhost-net \\
+    --enable-vhost-user \\
+    --enable-virtfs \\
     --enable-zstd
         """,
     ),
