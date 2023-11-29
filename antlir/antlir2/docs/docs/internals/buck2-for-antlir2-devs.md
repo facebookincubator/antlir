@@ -48,7 +48,7 @@ targets are especially interesting because they come with
 #### Target Label
 
 Targets have a canonical, qualified label that uniquely identifies them in the
-project (something like `fbcode//antlir/antlir2/test_images/rpms:simple`).
+project (something like `fbcode//antlir/antlir2/features/rpm/tests:simple`).
 
 Within the same [buildfile](#buildfile), targets can be referenced using just
 their name prefixed with a `:` (something like `":simple"`).

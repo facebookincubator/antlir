@@ -1,0 +1,411 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_binary")
+load(":defs.bzl", "expected_t", "test_rpms")
+
+oncall("antlir")
+
+repo_set(
+    name = "test-repo-set",
+    repo_sets = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9"],
+    repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
+    visibility = [
+        "//antlir/antlir2/bzl/feature/tests/rpm:",
+        "//antlir/antlir2/features/facebook/chef_solo/...",
+        "//antlir/antlir2/testing/tests:",
+    ],
+)
+
+feature.new(
+    name = "test-deps",
+    features = [
+        feature.rpms_install(rpms = [
+            "dnf",
+            "rpm",
+            # @oss-disable
+        ]),
+    ],
+)
+
+simple = test_rpms(
+    name = "simple",
+    expected = expected_t(
+        installed = [
+            "foo-2-1",
+            "foobar-2-1",
+            "foobarbaz-2-1",
+            "foo-epoch-3:1-1",
+        ],
+        installed_not_userinstalled = ["foobar"],
+        not_installed = ["foo-recommends-me"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                # the main rpm I am checking
+                "foo-2",
+                # this depends on 'foobar' and 'foobarbaz' should be removed when 'foobar' is
+                "foobarbaz",
+                # this has a nonzero epoch
+                "foo-epoch-3:1-1.noarch",
+            ],
+        ),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+python_binary(
+    name = "test-installed-rpms",
+    srcs = ["test_installed_rpms.py"],
+    main_module = "antlir.antlir2.features.rpm.tests.test_installed_rpms",
+    visibility = [],
+)
+
+test_rpms(
+    name = "remove",
+    expected = expected_t(not_installed = [
+        "foo",
+        # 'foobar' is not explicitly installed, so removing 'foo' will remove it
+        "foobar",
+        "foobarbaz",
+    ]),
+    features = [
+        feature.rpms_remove_if_exists(rpms = [
+            "foo",
+            "foobarbaz",
+        ]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "autoremove",
+    expected = expected_t(
+        installed = ["foo"],
+        not_installed = [
+            # 'foobar' is not explicitly installed, so removing 'foobarbaz' will
+            # remove it since the only thing depending on it is 'foobarbaz'
+            "foobar",
+            "foobarbaz",
+        ],
+    ),
+    features = [
+        feature.rpms_remove_if_exists(rpms = [
+            "foobarbaz",
+        ]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "upgrade-by-installing-nevra",
+    expected = expected_t(
+        installed = ["foo-3"],
+        not_installed = ["foo-2"],
+    ),
+    features = [
+        feature.rpms_install(rpms = ["foo-3"]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "upgrade",
+    dnf_versionlock = "//antlir:empty.json",
+    expected = expected_t(
+        installed = ["foo-3"],
+        not_installed = ["foo-2"],
+    ),
+    features = [
+        feature.rpms_upgrade(rpms = ["foo"]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "upgrade-respects-versionlock",
+    dnf_versionlock = ":versionlock.json",
+    expected = expected_t(
+        installed = ["foo-2"],
+        not_installed = ["foo-3"],
+    ),
+    features = [
+        feature.rpms_upgrade(rpms = ["foo"]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "downgrade",
+    expected = expected_t(
+        installed = ["foo-1"],
+        not_installed = ["foo-2"],
+    ),
+    features = [
+        feature.rpms_install(rpms = ["foo-1"]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "reinstalled-package-userinstalled",
+    expected = expected_t(
+        userinstalled = ["foobar"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                # This is already installed, but will not show as user-installed
+                # since it came from a dependency.
+                # If we install it now explicitly, dnf will no-op, but it should
+                # mark it as user-installed for later safety.
+                "foobar",
+            ],
+        ),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "userinstalled-package-upgraded-as-dep",
+    expected = expected_t(
+        userinstalled = ["foo"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                # This will trigger an upgrade of 'foo' which should still be
+                # recorded as a userinstalled package
+                "foobar-3",
+            ],
+        ),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "userinstalled-package-reinstalled-as-dep",
+    expected = expected_t(
+        userinstalled = ["foo"],
+    ),
+    features = [
+        feature.rpms_install(
+            rpms = [
+                # This may trigger a "reinstall" (no-oped) of 'foo' which should
+                # still be recorded as a userinstalled package
+                "foobar-3",
+            ],
+        ),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
+    name = "local-rpm-file",
+    expected = expected_t(installed = ["foo-2-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "//antlir/antlir2/features/rpm/tests/repo:foo-2-1.noarch",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "subjects-src",
+    expected = expected_t(installed = ["foo-2-1"]),
+    features = [
+        feature.rpms_install(subjects_src = "subjects-src"),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "remove-file-from-rpm",
+    expected = expected_t(installed = ["foo"]),
+    features = [
+        feature.rpms_install(
+            rpms = ["foo"],
+        ),
+        ":test-deps",
+        feature.remove(
+            must_exist = True,
+            path = "/foo",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+buck_genrule(
+    name = "versionlock.json",
+    out = "versionlock.json",
+    cmd = """
+        jq '.foo = "2-1"' < $(location //antlir/antlir2/test_images:test-image-flavor[default_versionlock]) > $OUT
+    """,
+)
+
+test_rpms(
+    name = "versionlock",
+    dnf_versionlock = ":versionlock.json",
+    expected = expected_t(installed = ["foo-2-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "foo",  # test rpm
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "versionlocked-dependency",
+    dnf_versionlock = ":versionlock.json",
+    expected = expected_t(installed = ["foo-2-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            # Only explicitly install 'foobar', which depends on 'foo'.
+            # Without versionlock (or if versionlock only worked on
+            # explicitly-requested packages), this would pull in 'foo-3-1', but
+            # when versionlock is applied to dependencies 'foo-2-1' will end up
+            # being installed.
+            "foobar",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+buck_genrule(
+    name = "versionlock-missing-version.json",
+    out = "versionlock.json",
+    cmd = """
+        jq '.foo = "99-1"' < $(location //antlir/antlir2/test_images:test-image-flavor[default_versionlock]) > $OUT
+    """,
+)
+
+test_rpms(
+    name = "versionlock-missing-version",
+    dnf_versionlock = ":versionlock-missing-version.json",
+    expected = expected_t(installed = ["foo-3-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "foo",  # test rpm
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "versionlock-missing-version-of-dependency",
+    dnf_versionlock = ":versionlock-missing-version.json",
+    expected = expected_t(installed = ["foo-3-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "requires-any-foo",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "nevra-overrides-versionlock",
+    dnf_versionlock = ":versionlock.json",
+    expected = expected_t(installed = ["foo-3-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "foo-3-1",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "versionlock-extend",
+    dnf_versionlock = ":versionlock.json",
+    dnf_versionlock_extend = {
+        "foo": "1-1",
+    },
+    expected = expected_t(installed = ["foo-1-1"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "foo",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+protected_installed = test_rpms(
+    name = "install-protected",
+    expected = expected_t(installed = ["dnf"]),
+    features = [
+        feature.rpms_install(rpms = [
+            "dnf",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+test_rpms(
+    name = "remove-protected",
+    expected = expected_t(not_installed = ["dnf"]),
+    features = [
+        feature.rpms_remove_if_exists(rpms = [
+            "dnf",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+    parent_layer = protected_installed,
+)
+
+image_sh_test(
+    name = "test-history",
+    layer = simple,
+    test = "test-history.sh",
+)
+
+test_rpms(
+    name = "allowlisted-failing-postscripts",
+    expected = expected_t(installed = [
+        "antlir2-failing-postscripts",
+    ]),
+    features = [
+        feature.rpms_install(rpms = [
+            "antlir2-failing-postscripts",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image_python_test(
+    name = "test-db-backend",
+    srcs = ["test_db_backend.py"],
+    layer = simple,
+)
+
+test_binaries_with_file_capabilities_layer = test_rpms(
+    name = "test-binaries-with-file-capabilities-layer",
+    expected = expected_t(installed = [
+        "antlir2-with-capability",
+    ]),
+    features = [feature.rpms_install(rpms = [
+        "libcap",  # getcap cli
+        "antlir2-with-capability",
+    ])],
+    parent_layer = simple,
+)
+
+image_python_test(
+    name = "test-binaries-with-file-capabilities",
+    srcs = ["test_binaries_with_file_capabilities.py"],
+    layer = test_binaries_with_file_capabilities_layer,
+)

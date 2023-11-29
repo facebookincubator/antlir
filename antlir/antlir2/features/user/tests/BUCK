@@ -1,0 +1,82 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+
+oncall("antlir")
+
+image.layer(
+    name = "base",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/etc",
+        ),
+        feature.install_text(
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\nantlir:x:1000:\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/fakeshell",
+            mode = "a+rx",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "add-user",
+    features = [
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            username = "antlir",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "add-user-test",
+    diff = "add-user.toml",
+    diff_type = "file",
+    layer = ":add-user",
+)
+
+image.layer(
+    name = "base-with-shadow",
+    features = [
+        feature.install_text(
+            dst = "/etc/shadow",
+            mode = "a+",
+            text = "root:!!:::::::\n",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image.layer(
+    name = "add-user-existing-shadow",
+    features = [
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            username = "antlir",
+        ),
+    ],
+    parent_layer = ":base-with-shadow",
+)
+
+image_diff_test(
+    name = "add-user-existing-shadow-test",
+    diff = "add-user-existing-shadow.toml",
+    diff_type = "file",
+    layer = ":add-user-existing-shadow",
+)

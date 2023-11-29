@@ -29,7 +29,7 @@ rust_binary(
         ":image_test_lib",
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
-        "//antlir/antlir2/features:mount.lib",
+        "//antlir/antlir2/features/mount:mount.lib",
         "//antlir/filesystem/absolute_path:absolute_path",
         "//antlir/util/cli/json_arg:json_arg",
     ],

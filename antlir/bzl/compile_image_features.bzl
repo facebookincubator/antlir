@@ -5,7 +5,7 @@
 
 # Implementation detail for `image/layer/layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
-load("//antlir/antlir2/bzl/feature:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
+load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")

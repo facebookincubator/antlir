@@ -146,13 +146,15 @@ bad_depgraph(
     error_regex = "^.*/fakeshell.*\\sdoes not satisfy the validation rules: Executable\\s.*",
     features = [
         feature.ensure_dirs_exist(dirs = "/etc"),
-        feature.install(
-            src = "//antlir/antlir2/test_images:passwd",
+        feature.install_text(
             dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
         ),
-        feature.install(
-            src = "//antlir/antlir2/test_images:group",
+        feature.install_text(
             dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
         ),
         feature.install(
             src = "//antlir:empty",
@@ -193,13 +195,15 @@ good_depgraph(
             dst = "/foo",
         ),
         feature.ensure_dirs_exist(dirs = "/etc"),
-        feature.install(
-            src = "//antlir/antlir2/test_images:passwd",
+        feature.install_text(
             dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
         ),
-        feature.install(
-            src = "//antlir/antlir2/test_images:group",
+        feature.install_text(
             dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
         ),
         feature.install(
             src = "//antlir:empty",
@@ -354,13 +358,15 @@ good_depgraph(
             username = "antlir",
         ),
         feature.ensure_dirs_exist(dirs = "/etc"),
-        feature.install(
-            src = "//antlir/antlir2/test_images:passwd",
+        feature.install_text(
             dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
         ),
-        feature.install(
-            src = "//antlir/antlir2/test_images:group",
+        feature.install_text(
             dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
@@ -387,13 +393,15 @@ good_depgraph(
             username = "antlir",
         ),
         feature.ensure_dirs_exist(dirs = "/etc"),
-        feature.install(
-            src = "//antlir/antlir2/test_images:passwd",
+        feature.install_text(
             dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
         ),
-        feature.install(
-            src = "//antlir/antlir2/test_images:group",
+        feature.install_text(
             dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
@@ -409,13 +417,15 @@ good_depgraph(
             mode = "a+rx",
         ),
         feature.ensure_dirs_exist(dirs = "/etc"),
-        feature.install(
-            src = "//antlir/antlir2/test_images:passwd",
+        feature.install_text(
             dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
         ),
-        feature.install(
-            src = "//antlir/antlir2/test_images:group",
+        feature.install_text(
             dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
         ),
         feature.ensure_dirs_exist(dirs = "/home"),
         feature.ensure_subdirs_exist(

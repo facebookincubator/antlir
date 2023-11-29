@@ -11,13 +11,13 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
+# @oss-disable
+# @oss-disable
 load(
-    "//antlir/antlir2/bzl/feature:mount.bzl",
+    "//antlir/antlir2/features/mount:mount.bzl",
     "DefaultMountpointInfo",
     "mount_record",  # @unused Used as type
 )
-# @oss-disable
-# @oss-disable
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")

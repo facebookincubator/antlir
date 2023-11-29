@@ -1,0 +1,196 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
+load(":defs.bzl", "test_rpm")
+
+oncall("antlir")
+
+image.layer(
+    name = "foo.layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/foo",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "foobar.layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+    ],
+    parent_layer = ":foo.layer",
+)
+
+image.layer(
+    name = "foobarbaz.layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/foo/bar"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/bar/baz",
+        ),
+    ],
+    parent_layer = ":foobar.layer",
+)
+
+image.layer(
+    name = "for-empty.layer",
+    features = [
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/empty-file-will-not-exist-in-rpm",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+_GEN_VERSIONS = [
+    1,
+    2,
+    3,
+]
+
+all_rpms = [
+    test_rpm(
+        name = "foo",
+        parent_layer = ":foo.layer",
+        recommends = ["foo-recommends-me == " + str(version)],
+        release = "1",
+        requires = ["foo-empty == " + str(version)],
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+]
+
+all_rpms.extend([
+    test_rpm(
+        name = "foo-empty",
+        parent_layer = ":for-empty.layer",
+        release = "1",
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
+
+all_rpms.extend([
+    test_rpm(
+        name = "foobar",
+        parent_layer = ":foobar.layer",
+        release = "1",
+        requires = ["foo == " + str(version)],
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
+
+all_rpms.extend([
+    test_rpm(
+        name = "foobarbaz",
+        parent_layer = ":foobarbaz.layer",
+        release = "1",
+        requires = ["foobar == " + str(version)],
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
+
+all_rpms.extend([
+    test_rpm(
+        name = "foo-recommends-me",
+        features = [feature.install(
+            src = "//antlir:empty",
+            dst = "/foo-recommends-me",
+        )],
+        release = "1",
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
+
+all_rpms.extend([
+    test_rpm(
+        name = "requires-any-foo",
+        features = [feature.install(
+            src = "//antlir:empty",
+            dst = "/foo-recommends-me",
+        )],
+        release = "1",
+        requires = ["foo"],
+        version = str(version),
+    )
+    for version in _GEN_VERSIONS
+])
+
+all_rpms.append(
+    test_rpm(
+        name = "foo-not-reflinked",
+        features = [feature.install(
+            src = "//antlir:empty",
+            dst = "/foo-recommends-me",
+        )],
+        release = "1",
+        version = "1",
+    ),
+)
+
+all_rpms.append(
+    test_rpm(
+        name = "foo-epoch",
+        epoch = 3,
+        release = "1",
+        version = "1",
+    ),
+)
+
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-failing-postscripts",
+        epoch = 0,
+        post_install_script = "echo antlir2-failing-postscripts && exit 1",
+        release = "1",
+        requires_post = ["/bin/sh"],
+        version = "1",
+    ),
+)
+
+image.layer(
+    name = "antlir2-with-capability-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/usr/bin"),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/usr/bin/antlir2-with-capability",
+            xattrs = {
+                "security.capability": "0sAQAAAoAAAAAAAAAAAAAAAAAAAAA=",  #cap_setuid=ep
+            },
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-with-capability",
+        epoch = 0,
+        parent_layer = ":antlir2-with-capability-layer",
+        release = "1",
+        version = "1",
+    ),
+)
+
+repo(
+    name = "test-repo",
+    compress = "none",
+    rpms = all_rpms,
+    timestamp = 0,
+    visibility = [
+        "//antlir/antlir2/antlir2_depgraph/tests/...",
+        "//antlir/antlir2/features/facebook/chef_solo/tests/...",
+        "//antlir/antlir2/features/rpm/tests/...",
+        "//antlir/antlir2/testing/...",
+    ],
+)

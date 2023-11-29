@@ -1,0 +1,42 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
+
+oncall("antlir")
+
+image.layer(
+    name = "base",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/etc",
+        ),
+        feature.install_text(
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\nantlir:x:1000:0::/:/fakeshell\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "add-group",
+    features = [
+        feature.group_add(
+            groupname = "antlir",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "add-group-test",
+    diff = "add-group.toml",
+    diff_type = "file",
+    layer = ":add-group",
+)

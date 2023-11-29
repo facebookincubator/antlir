@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "alias", "export_file")
+load("//antlir/bzl:build_defs.bzl", "alias")
 
 oncall("antlir")
 
@@ -6,12 +6,4 @@ alias(
     name = "test-image-flavor",
     actual = "//antlir/antlir2/facebook/flavor:centos-latest",
     visibility = ["//antlir/..."],
-)
-
-export_file(
-    name = "passwd",
-)
-
-export_file(
-    name = "group",
 )
