@@ -48,7 +48,7 @@ import {themes} from 'prism-react-renderer';
           baseDir: '.',
         },
         staticDocsProject: 'antlir2',
-        trackingFile: 'xplat/staticdocs/WATCHED_FILES',
+        trackingFile: 'fbcode/staticdocs/WATCHED_FILES',
         blog: {
           showReadingTime: true,
           editUrl: fbContent({
