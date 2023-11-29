@@ -179,6 +179,10 @@ def _implicit_image_test(
         labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test"),
         **kwargs
     )
+
+    # Allocating loop devices is very flaky since there is no atomic api
+    if allocate_loop_devices:
+        _add_outer_labels = list(_add_outer_labels) + ["serialize"]
     labels = selects.apply(
         labels or [],
         lambda labels: labels + _add_outer_labels,
