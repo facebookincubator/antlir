@@ -9,7 +9,7 @@ oncall("antlir")
         name = paths.basename(binary),
         out = paths.basename(binary),
         executable = True,
-        layer = REPO_CFG.artifact["antlir.vm.runtime.rc"],
+        layer = REPO_CFG.artifact["antlir.vm.runtime"],
         path = "{}".format(binary),
         visibility = ["PUBLIC"],
     )
@@ -25,7 +25,7 @@ oncall("antlir")
 hoist(
     name = "roms",
     force_dir = True,
-    layer = REPO_CFG.artifact["antlir.vm.runtime.rc"],
+    layer = REPO_CFG.artifact["antlir.vm.runtime"],
     path = "share/qemu/",
     selector = ["\\( -name '*.bin' -o -name '*.rom' \\)"],
     visibility = ["PUBLIC"],
