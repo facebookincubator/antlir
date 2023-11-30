@@ -422,6 +422,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     if not final_subvol:
         final_subvol = parent_layer
 
+    debug_sub_targets["depgraph"] = [DefaultInfo(final_depgraph)]
+
     sub_targets["subvol_symlink"] = [DefaultInfo(final_subvol)]
 
     parent_layer_info = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None

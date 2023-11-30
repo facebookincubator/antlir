@@ -284,6 +284,19 @@ good_depgraph(
             src = "//antlir:empty",
             dst = "/clone/src/dir/foo",
         ),
+        feature.rpms_install(rpms = [
+            "bash",
+            "coreutils",
+        ]),
+        # `ensure_file_symlink` doesn't allow relative symlinks
+        feature.genrule(
+            cmd = [
+                "bash",
+                "-c",
+                "mkdir -p /clone/src/dir && ln -s foo /clone/src/dir/bar",
+            ],
+            user = "root",
+        ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
@@ -307,6 +320,23 @@ bad_depgraph(
             dst = "/cloned/foo",
         ),
     ],
+)
+
+good_depgraph(
+    name = "clone-symlink",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/cloned"),
+        feature.clone(
+            dst_path = "/cloned/",
+            src_layer = ":clone-dir-src",
+            src_path = "/clone/src/dir/",
+        ),
+        feature.ensure_file_symlink(
+            link = "/to-sym",
+            target = "/cloned/bar",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 bad_depgraph(

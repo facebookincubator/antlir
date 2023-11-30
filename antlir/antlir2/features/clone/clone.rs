@@ -196,12 +196,24 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                             Cow::Borrowed(relpath)
                         };
                     let dst_path = self.dst_path.join(&relpath);
-                    if let Some(Item::Path(PathItem::Entry(entry))) = src_depgraph.get_item(key) {
-                        v.push(Item::Path(PathItem::Entry(FsEntry {
-                            path: dst_path.into(),
-                            file_type: entry.file_type,
-                            mode: entry.mode,
-                        })));
+                    if let Some(Item::Path(path_item)) = src_depgraph.get_item(key) {
+                        v.push(Item::Path(match path_item {
+                            PathItem::Entry(entry) => PathItem::Entry(FsEntry {
+                                path: dst_path.into(),
+                                file_type: entry.file_type,
+                                mode: entry.mode,
+                            }),
+                            PathItem::Symlink { link: _, target } => PathItem::Symlink {
+                                link: Cow::Owned(dst_path),
+                                target: Cow::Owned(target.to_path_buf()),
+                            },
+                            PathItem::Mount(_) => {
+                                return Err(format!(
+                                    "mount paths cannot be cloned: {}",
+                                    dst_path.display()
+                                ));
+                            }
+                        }));
                     }
                 }
             }
