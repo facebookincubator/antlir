@@ -49,14 +49,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     sendstream = ctx.actions.declare_output("image.sendstream")
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
 
-    incremental_parent = ctx.attrs.incremental_parent
-    if incremental_parent:
-        incremental_parent = _find_incremental_parent(
+    if ctx.attrs.incremental_parent:
+        incremental_parent_layer = _find_incremental_parent(
             layer = ctx.attrs.layer[LayerInfo],
-            parent_label = incremental_parent[SendstreamInfo].layer.label,
+            parent_label = ctx.attrs.incremental_parent[SendstreamInfo].layer.label,
         )
         expect_non_none(
-            incremental_parent,
+            incremental_parent_layer,
             "{} (aka {}) is not an ancestor of {}",
             ctx.attrs.incremental_parent.label.raw_target(),
             ctx.attrs.incremental_parent[SendstreamInfo].layer.label.raw_target(),
@@ -66,17 +65,17 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # this should be impossible, but let's be very careful
         expect(
             ctx.attrs.layer[LayerInfo].flavor.label.raw_target() ==
-            incremental_parent[LayerInfo].flavor.label.raw_target(),
+            incremental_parent_layer[LayerInfo].flavor.label.raw_target(),
             "flavor ({}) was different from incremental_parent's flavor ({})",
             ctx.attrs.layer[LayerInfo].flavor.label,
-            incremental_parent[LayerInfo].flavor.label,
+            incremental_parent_layer[LayerInfo].flavor.label,
         )
 
     spec = ctx.actions.write_json(
         "spec.json",
         {"sendstream": {
             "build_appliance": (ctx.attrs.build_appliance or ctx.attrs.layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
-            "incremental_parent": incremental_parent[LayerInfo].subvol_symlink if incremental_parent else None,
+            "incremental_parent": ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink if ctx.attrs.incremental_parent else None,
             "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
             "subvol_symlink": subvol_symlink.as_output(),
             "volume_name": ctx.attrs.volume_name,
@@ -115,6 +114,7 @@ def _v1_impl(ctx: AnalysisContext):
     return [
         DefaultInfo(
             anon_v1_sendstream(ctx = ctx).artifact("anon_v1_sendstream"),
+            sub_targets = {"layer": ctx.attrs.layer.providers},
         ),
     ]
 
@@ -163,7 +163,10 @@ def _zst_impl(ctx: AnalysisContext) -> Promise:
             local_only = True,  # zstd not available on RE
         )
         return [
-            DefaultInfo(sendstream_zst),
+            DefaultInfo(
+                sendstream_zst,
+                sub_targets = {"layer": ctx.attrs.layer.providers},
+            ),
             SendstreamInfo(
                 sendstream = sendstream_zst,
                 subvol_symlink = providers[SendstreamInfo].subvol_symlink,
@@ -204,7 +207,10 @@ def _v2_impl(ctx: AnalysisContext) -> Promise:
             prefer_local = True,
         )
         return [
-            DefaultInfo(sendstream_v2),
+            DefaultInfo(
+                sendstream_v2,
+                sub_targets = {"layer": ctx.attrs.layer.providers},
+            ),
             SendstreamInfo(
                 sendstream = sendstream_zst,
                 subvol_symlink = providers[SendstreamInfo].subvol_symlink,

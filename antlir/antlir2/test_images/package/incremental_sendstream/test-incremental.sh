@@ -19,14 +19,14 @@ pushd /mnt/recv
 # receiving the parent, otherwise we could fool ourselves into believing that
 # this works but in fact are relying on the parent subvolume still existing and
 # being usable somewhere on the build host.
-if btrfs receive . < /child.sendstream; then
+if btrfs receive -m /mnt/recv . < /child.sendstream; then
     echo "receive child should not have worked (yet)"
     exit 1
 fi
 
-btrfs receive . < /parent.sendstream
+btrfs receive -m /mnt/recv . < /parent.sendstream
 mkdir child
 pushd child
-btrfs receive . < /child.sendstream
+btrfs receive -m /mnt/recv . < /child.sendstream
 
 cat volume/foo volume/bar
