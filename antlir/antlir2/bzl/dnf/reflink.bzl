@@ -20,7 +20,7 @@ def rpm2extents(
     ctx.actions.run(
         cmd_args(
             rpm2extents_in_ba,
-            cmd_args(ensure_single_output(build_appliance)),
+            ensure_single_output(build_appliance),
             rpm,
             extents.as_output(),
         ),
