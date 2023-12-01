@@ -537,6 +537,11 @@ impl<S: Share> VM<S> {
             self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
         } else if !self.args.mode.container {
             let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+            if self.args.mode.command.is_none() {
+                // Force pseudo-terminal allocation for interactive use case. Or
+                // ssh hang instead because we add a bash command below.
+                ssh_cmd.arg("-t");
+            }
             self.args.command_envs.iter().for_each(|kv| {
                 ssh_cmd.arg(kv.to_os_string());
             });
