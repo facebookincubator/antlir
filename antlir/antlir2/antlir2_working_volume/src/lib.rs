@@ -235,7 +235,7 @@ impl WorkingVolume {
                 }
 
                 let keepalive_path = Self::keepalive_path(&entry.path());
-                let delete = match keepalive_path.metadata() {
+                let delete = match keepalive_path.symlink_metadata() {
                     Ok(meta) => Ok(meta.nlink() <= 1),
                     Err(e) => match e.kind() {
                         ErrorKind::NotFound => Ok(true),
