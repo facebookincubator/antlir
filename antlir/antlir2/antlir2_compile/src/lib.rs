@@ -8,7 +8,6 @@
 #![feature(file_set_times)]
 #![feature(io_error_more)]
 #![feature(io_error_other)]
-#![feature(unix_chown)]
 
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;

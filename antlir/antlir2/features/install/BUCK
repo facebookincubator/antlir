@@ -6,7 +6,6 @@ feature_impl(
     name = "install",
     unstable_features = [
         "file_set_times",
-        "unix_chown",
     ],
     deps = [
         "base64",
