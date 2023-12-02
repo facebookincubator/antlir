@@ -7,7 +7,6 @@ feature_impl(
     unstable_features = [
         "io_error_more",
         "io_error_other",
-        "unix_chown",
     ],
     deps = [
         "serde_json",

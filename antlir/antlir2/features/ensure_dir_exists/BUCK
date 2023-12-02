@@ -4,7 +4,4 @@ oncall("antlir")
 
 feature_impl(
     name = "ensure_dir_exists",
-    unstable_features = [
-        "unix_chown",
-    ],
 )
