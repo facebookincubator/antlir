@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(io_error_other)]
-
 use std::collections::BTreeMap;
 use std::collections::HashSet;
 use std::io::Error;

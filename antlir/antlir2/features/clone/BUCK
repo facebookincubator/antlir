@@ -6,7 +6,6 @@ feature_impl(
     name = "clone",
     unstable_features = [
         "io_error_more",
-        "io_error_other",
     ],
     deps = [
         "serde_json",
