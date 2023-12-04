@@ -168,7 +168,13 @@ pub fn copy_dep(dep: &Path, dst: &Path) -> Result<()> {
     // If the destination file already exists, make sure it's exactly the same
     // as what we're about to copy, to prevent issues like
     // https://fb.workplace.com/groups/btrmeup/posts/5913570682055882
-    if dst.exists() {
+    if dst.exists() &&
+    // We don't want to compare against files in /usr/local/fbcode, because the
+    // different RE containers these are pulled from might have slightly
+    // different versions of the fbcode platform, but the same thing could
+    // easily happen for builds so just let it slide.
+    !dep.display().to_string().contains("/usr/local/fbcode/")
+    {
         let dst_contents = std::fs::read(dst)
             .with_context(|| format!("while reading already-installed '{}'", dst.display()))?;
         let mut hasher = XxHash64::with_seed(0);
