@@ -3,14 +3,14 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "default_target_platform_kwargs")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
-load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":btrfs.bzl", "btrfs")
 load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource", "gpt")
+load(":macro.bzl", "package_macro")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
 
@@ -276,38 +276,20 @@ _ext3 = _new_package_rule(
     can_be_partition = True,
 )
 
-def _package_macro(buck_rule):
-    def _inner(
-            use_default_os_from_package: bool | None = None,
-            default_os: str | None = None,
-            **kwargs):
-        if use_default_os_from_package == None:
-            use_default_os_from_package = should_all_images_in_package_use_default_os()
-        if use_default_os_from_package:
-            # get_default_os_for_package reads the closest PACKAGE file, it has
-            # nothing to do with antlir2 output packages
-            default_os = default_os or get_default_os_for_package()
-        buck_rule(
-            default_os = default_os,
-            **(kwargs | default_target_platform_kwargs())
-        )
-
-    return _inner
-
 def _backwards_compatible_new(format: str, **kwargs):
     {
         "btrfs": btrfs,
-        "cpio.gz": _package_macro(_cpio_gz),
-        "cpio.zst": _package_macro(_cpio_zst),
-        "ext3": _package_macro(_ext3),
-        "rpm": _package_macro(_rpm),
+        "cpio.gz": package_macro(_cpio_gz),
+        "cpio.zst": package_macro(_cpio_zst),
+        "ext3": package_macro(_ext3),
+        "rpm": package_macro(_rpm),
         "sendstream": sendstream,
         "sendstream.v2": sendstream_v2,
         "sendstream.zst": sendstream_zst,
-        "squashfs": _package_macro(_squashfs),
-        "tar.gz": _package_macro(_tar_gz),
-        "tar.zst": _package_macro(_tar_zst),
-        "vfat": _package_macro(_vfat),
+        "squashfs": package_macro(_squashfs),
+        "tar.gz": package_macro(_tar_gz),
+        "tar.zst": package_macro(_tar_zst),
+        "vfat": package_macro(_vfat),
     }[format](
         **kwargs
     )
@@ -315,17 +297,17 @@ def _backwards_compatible_new(format: str, **kwargs):
 package = struct(
     backward_compatible_new = _backwards_compatible_new,
     btrfs = btrfs,
-    ext3 = _package_macro(_ext3),
-    cpio_gz = _package_macro(_cpio_gz),
-    cpio_zst = _package_macro(_cpio_zst),
+    ext3 = package_macro(_ext3),
+    cpio_gz = package_macro(_cpio_gz),
+    cpio_zst = package_macro(_cpio_zst),
     gpt = gpt,
-    rpm = _package_macro(_rpm),
+    rpm = package_macro(_rpm),
     sendstream = sendstream,
     sendstream_v2 = sendstream_v2,
     sendstream_zst = sendstream_zst,
-    squashfs = _package_macro(_squashfs),
-    tar = _package_macro(_tar),
-    tar_gz = _package_macro(_tar_gz),
-    tar_zst = _package_macro(_tar_zst),
-    vfat = _package_macro(_vfat),
+    squashfs = package_macro(_squashfs),
+    tar = package_macro(_tar),
+    tar_gz = package_macro(_tar_gz),
+    tar_zst = package_macro(_tar_zst),
+    vfat = package_macro(_vfat),
 )
