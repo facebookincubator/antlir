@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
@@ -44,6 +44,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     machine_json_args = ctx.actions.write_json(
         machine_json,
         {
+            "arch": ctx.attrs.arch,
             "cpus": ctx.attrs.cpus,
             "disks": [d[DiskInfo] for d in disks],
             "mem_mib": ctx.attrs.mem_mib,
@@ -124,6 +125,12 @@ _vm_host = rule(
     impl = _impl,
     attrs = {
         # Hardware parameters for the VM
+        "arch": attrs.default_only(
+            attrs.string(
+                default = arch_select(x86_64 = "x86_64", aarch64 = "aarch64"),
+            ),
+            doc = "ISA of the emulated machine",
+        ),
         "cpus": attrs.int(default = 1, doc = "number for CPUs for the VM"),
         "disks": attrs.list(
             attrs.dep(providers = [DiskInfo]),
@@ -167,10 +174,15 @@ _vm_host = rule(
     } | {
         # VM runtime. Genearlly shouldn't be overwritten
         "firmware": attrs.default_only(
-            attrs.source(default = antlir_dep("vm/runtime:edk2-x86_64-code.fd")),
+            attrs.source(
+                default = arch_select(
+                    aarch64 = antlir_dep("vm/runtime:edk2-aarch64-code.fd"),
+                    x86_64 = antlir_dep("vm/runtime:edk2-x86_64-code.fd"),
+                ),
+            ),
             doc = "firmware for the VM",
         ),
-        "image": attrs.dep(
+        "image": attrs.exec_dep(
             providers = [LayerInfo],
             default = antlir_dep("antlir2/antlir2_vm:container-image"),
             doc = "container image to execute the VM inside",
@@ -180,7 +192,12 @@ _vm_host = rule(
             doc = "qemu-img binary for manipulating disk images",
         ),
         "qemu_system": attrs.default_only(
-            attrs.exec_dep(default = antlir_dep("vm/runtime:qemu-system-x86_64")),
+            attrs.exec_dep(
+                default = arch_select(
+                    aarch64 = antlir_dep("vm/runtime:qemu-system-aarch64"),
+                    x86_64 = antlir_dep("vm/runtime:qemu-system-x86_64"),
+                ),
+            ),
             doc = "qemu-system binary that should match target arch",
         ),
         "roms_dir": attrs.default_only(
