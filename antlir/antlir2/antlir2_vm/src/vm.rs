@@ -47,6 +47,7 @@ use crate::ssh::GuestSSHCommand;
 use crate::ssh::GuestSSHError;
 use crate::tpm::TPMDevice;
 use crate::tpm::TPMError;
+use crate::types::CpuIsa;
 use crate::types::MachineOpts;
 use crate::types::ShareOpts;
 use crate::types::VMArgs;
@@ -587,6 +588,11 @@ impl<S: Share> VM<S> {
 
         args.append(
             &mut [
+                "-machine",
+                match self.machine.arch {
+                    CpuIsa::AARCH64 => "virt",
+                    CpuIsa::X86_64 => "pc",
+                },
                 // CPU & Memory
                 "-cpu",
                 "host",

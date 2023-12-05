@@ -12,6 +12,7 @@ use std::collections::HashSet;
 use std::env;
 use std::ffi::OsStr;
 use std::ffi::OsString;
+use std::fmt;
 use std::path::PathBuf;
 
 use clap::Args;
@@ -159,12 +160,32 @@ impl VMArgs {
     }
 }
 
+#[derive(Debug, Clone, Default, Deserialize)]
+pub(crate) enum CpuIsa {
+    #[serde(rename = "aarch64")]
+    AARCH64,
+    #[default]
+    #[serde(rename = "x86_64")]
+    X86_64,
+}
+
+impl fmt::Display for CpuIsa {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::X86_64 => write!(f, "x86_64"),
+            Self::AARCH64 => write!(f, "aarch64"),
+        }
+    }
+}
+
 /// Everything we need to create and run the VM
 #[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct MachineOpts {
-    /// number of cores
+    /// ISA of the emulated machine
+    pub(crate) arch: CpuIsa,
+    /// Number of cores
     pub(crate) cpus: usize,
-    /// memory size in MiB
+    /// Memory size in MiB
     pub(crate) mem_mib: usize,
     /// List of writable disks. We expect at least one disk and the first one
     /// would be the root disk.

@@ -16,7 +16,9 @@ oncall("antlir")
     for binary in [
         "/bin/swtpm",
         "/bin/qemu-img",
+        "/bin/qemu-system-aarch64",
         "/bin/qemu-system-x86_64",
+        "/share/qemu/edk2-aarch64-code.fd",
         "/share/qemu/edk2-x86_64-code.fd",
     ]
 ]
