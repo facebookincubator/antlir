@@ -14,10 +14,18 @@ use std::ffi::OsStr;
 use std::ffi::OsString;
 use std::fmt;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use clap::Args;
 use image_test_lib::KvPair;
 use serde::Deserialize;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub(crate) enum TypeError {
+    #[error("Failed to parse CpuIsa from string: {0}")]
+    InvalidCpuIsa(String),
+}
 
 /// Captures property of the disk specified by user to describe a writable disk
 #[derive(Debug, Clone, Default, Deserialize)]
@@ -160,7 +168,7 @@ impl VMArgs {
     }
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default, Deserialize, PartialEq)]
 pub(crate) enum CpuIsa {
     #[serde(rename = "aarch64")]
     AARCH64,
@@ -174,6 +182,18 @@ impl fmt::Display for CpuIsa {
         match self {
             Self::X86_64 => write!(f, "x86_64"),
             Self::AARCH64 => write!(f, "aarch64"),
+        }
+    }
+}
+
+impl FromStr for CpuIsa {
+    type Err = TypeError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "x86_64" => Ok(Self::X86_64),
+            "aarch64" => Ok(Self::AARCH64),
+            _ => Err(TypeError::InvalidCpuIsa(s.to_owned())),
         }
     }
 }

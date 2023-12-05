@@ -45,7 +45,7 @@ impl PCIBridge {
         vec![
             "-device".into(),
             format!(
-                "pci-bridge,id={},chassis_nr={}",
+                "pci-bridge,id={},chassis_nr={},shpc=off",
                 self.name(),
                 self.chassis_id
             )
@@ -68,7 +68,7 @@ mod test {
         assert_eq!(bridge.name(), "pci0");
         assert_eq!(
             &bridge.qemu_args().join(OsStr::new(" ")),
-            "-device pci-bridge,id=pci0,chassis_nr=1",
+            "-device pci-bridge,id=pci0,chassis_nr=1,shpc=off",
         )
     }
 }

@@ -20,6 +20,7 @@ use std::process::Child;
 use std::process::Command;
 use std::process::ExitStatus;
 use std::process::Stdio;
+use std::str::FromStr;
 use std::thread;
 use std::thread::JoinHandle;
 use std::time::Duration;
@@ -50,6 +51,7 @@ use crate::tpm::TPMError;
 use crate::types::CpuIsa;
 use crate::types::MachineOpts;
 use crate::types::ShareOpts;
+use crate::types::TypeError;
 use crate::types::VMArgs;
 use crate::utils::log_command;
 
@@ -92,6 +94,10 @@ pub(crate) enum VMError {
     SSHCommandError(#[from] GuestSSHError),
     #[error(transparent)]
     TPMError(#[from] TPMError),
+    #[error(transparent)]
+    TypeError(#[from] TypeError),
+    #[error("Failed to determine platform: {0}")]
+    PlatformDetectionError(String),
     #[error("Failed to spawn qemu process: `{0}`")]
     QemuProcessError(std::io::Error),
     #[error("Failed to open output file: {path}: {err}")]
@@ -356,7 +362,7 @@ impl<S: Share> VM<S> {
     /// Spawn qemu-system process. It won't immediately start running until we connect
     /// to the notify socket.
     fn spawn_vm(&self) -> Result<Child> {
-        let mut args = self.common_qemu_args();
+        let mut args = self.common_qemu_args()?;
         args.extend(self.non_disk_boot_qemu_args());
         args.extend(self.pci_bridge_qemu_args());
         args.extend(self.disk_qemu_args());
@@ -564,7 +570,32 @@ impl<S: Share> VM<S> {
         Ok(())
     }
 
-    fn common_qemu_args(&self) -> Vec<OsString> {
+    // Query current arch that's executing this binary.
+    fn current_arch(&self) -> Result<CpuIsa> {
+        let uname = Command::new("uname")
+            .arg("-m")
+            .output()
+            .map_err(|e| VMError::PlatformDetectionError(format!("uname command failed: {}", e)))?;
+        let output = String::from_utf8(uname.stdout).map_err(|e| {
+            VMError::PlatformDetectionError(format!("Failed to parse uname output: {}", e))
+        })?;
+        let arch = output.trim();
+        debug!("Detected current execution platform: {}", arch);
+        Ok(CpuIsa::from_str(arch)?)
+    }
+
+    // Some args depending on whether the execution platform is same as the
+    // platform being emulated.
+    fn arch_emulation_args(&self, current_arch: CpuIsa) -> Vec<OsString> {
+        let args = if current_arch == self.machine.arch {
+            vec!["-cpu", "host", "-enable-kvm"]
+        } else {
+            vec!["-cpu", "max"]
+        };
+        args.into_iter().map(|x| x.into()).collect()
+    }
+
+    fn common_qemu_args(&self) -> Result<Vec<OsString>> {
         let mut args = vec![];
         args.append(
             &mut [
@@ -588,14 +619,12 @@ impl<S: Share> VM<S> {
 
         args.append(
             &mut [
+                // Basic machine info
                 "-machine",
                 match self.machine.arch {
                     CpuIsa::AARCH64 => "virt",
                     CpuIsa::X86_64 => "pc",
                 },
-                // CPU & Memory
-                "-cpu",
-                "host",
                 "-smp",
                 &self.machine.cpus.to_string(),
                 "-m",
@@ -624,14 +653,13 @@ impl<S: Share> VM<S> {
                 // ROM
                 "-L",
                 &get_runtime().roms_dir,
-                // Assuming we won't bother without virtualization support
-                "-enable-kvm",
             ]
             .iter()
             .map(|x| x.into())
             .collect(),
         );
-        args
+        args.extend(self.arch_emulation_args(self.current_arch()?));
+        Ok(args)
     }
 
     fn pci_bridge_qemu_args(&self) -> Vec<OsString> {
@@ -722,7 +750,7 @@ mod test {
         set_runtime(RuntimeOpts {
             qemu_system: "qemu-system".to_string(),
             qemu_img: "qemu-img".to_string(),
-            firmware: "edk2-x86_64-code.fd".to_string(),
+            firmware: "edk2-arch-code.fd".to_string(),
             roms_dir: "roms".to_string(),
             swtpm: "swtpm".to_string(),
         })
@@ -730,25 +758,44 @@ mod test {
     }
 
     #[test]
+    fn test_arch_emulation_args() {
+        let mut vm = get_vm_no_disk();
+        vm.machine.arch = CpuIsa::AARCH64;
+        assert_eq!(
+            vm.arch_emulation_args(CpuIsa::AARCH64),
+            vec!["-cpu", "host", "-enable-kvm"],
+        );
+        assert_eq!(vm.arch_emulation_args(CpuIsa::X86_64), vec!["-cpu", "max"]);
+
+        vm.machine.arch = CpuIsa::X86_64;
+        assert_eq!(vm.arch_emulation_args(CpuIsa::AARCH64), vec!["-cpu", "max"]);
+        assert_eq!(
+            vm.arch_emulation_args(CpuIsa::X86_64),
+            vec!["-cpu", "host", "-enable-kvm"],
+        );
+    }
+
+    #[test]
     fn test_common_qemu_args() {
         let mut vm = get_vm_no_disk();
         set_bogus_runtime();
-        let common_args = qemu_args_to_string(&vm.common_qemu_args());
-        // Only checking fields affected by args
-        assert!(common_args.contains("-cpu host -smp 1"));
+        let common_args =
+            qemu_args_to_string(&vm.common_qemu_args().expect("Failed to build qemu args"));
+        assert!(common_args.contains("-cpu "));
+        assert!(common_args.contains("-smp 1"));
         assert!(common_args.contains("-m 1024M"));
         assert!(common_args.contains(&format!(
             "-chardev socket,path={}/vmtest_notify.sock,id=notify,server=on",
             vm.state_dir.to_str().expect("Invalid tempdir path"),
         )));
         assert!(
-            common_args
-                .contains("if=pflash,format=raw,unit=0,file=edk2-x86_64-code.fd,readonly=on")
+            common_args.contains("if=pflash,format=raw,unit=0,file=edk2-arch-code.fd,readonly=on")
         );
         assert!(common_args.contains("-L roms"));
 
         vm.machine.serial_index = 2;
-        let common_args = qemu_args_to_string(&vm.common_qemu_args());
+        let common_args =
+            qemu_args_to_string(&vm.common_qemu_args().expect("Failed to build qemu args"));
         assert!(common_args.contains("none -serial null -serial null -serial mon:stdio"));
     }
 
