@@ -7,6 +7,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_targ
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
+load("//antlir/linux/vm/console:defs.bzl", "TTY_NAME")
 load(":run_command.bzl", "vm_run_command")
 load(":test.bzl", "vm_cpp_test", "vm_python_test", "vm_rust_test", "vm_sh_test")
 load(":types.bzl", "DiskInfo", "VMHostInfo")
@@ -40,6 +41,10 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     else:
         disks = ctx.attrs.disks
 
+    # Format the tty name
+    append = ctx.attrs.append or ""
+    append = append.format(tty = ctx.attrs.tty_name)
+
     machine_json = ctx.actions.declare_output("machine.json")
     machine_json_args = ctx.actions.write_json(
         machine_json,
@@ -49,7 +54,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             "disks": [d[DiskInfo] for d in disks],
             "mem_mib": ctx.attrs.mem_mib,
             "non_disk_boot_opts": {
-                "append": ctx.attrs.append or "",
+                "append": append,
                 "initrd": ctx.attrs.initrd,
                 "kernel": ctx.attrs.kernel,
             } if ctx.attrs.initrd else None,
@@ -139,6 +144,10 @@ _vm_host = rule(
         "mem_mib": attrs.int(default = 4096, doc = "memory size in MiB"),
         "num_nics": attrs.int(default = 1),
         "serial_index": attrs.int(default = 0, doc = "index of the serial port"),
+        "tty_name": attrs.default_only(
+            attrs.string(default = TTY_NAME),
+            doc = "arch dependent name of the console device",
+        ),
         "use_legacy_share": attrs.bool(
             default = False,
             doc = "use 9p instead of virtiofs for sharing for older kernels",
