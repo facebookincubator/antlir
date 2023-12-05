@@ -43,7 +43,7 @@ impl GuestSSHCommand {
             options: [
                 ("UserKnownHostsFile", "/dev/null"),
                 ("StrictHostKeyChecking", "no"),
-                ("ConnectTimeout", "1"),
+                ("ConnectTimeout", "10"),
                 ("ConnectionAttempts", "3"),
                 ("StreamLocalBindUnlink", "yes"),
             ]
