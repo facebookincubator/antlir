@@ -3,10 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "cfg_attrs", "package_cfg")
 load(":gpt.bzl", "GptPartitionSource")
+load(":macro.bzl", "package_macro")
 load(":sendstream.bzl", "anon_v1_sendstream")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
@@ -87,7 +87,7 @@ _btrfs = rule(
     cfg = package_cfg,
 )
 
-btrfs = rule_with_default_target_platform(_btrfs)
+btrfs = package_macro(_btrfs)
 
 def BtrfsSubvol(
         layer: str | Select,

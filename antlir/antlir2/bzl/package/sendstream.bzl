@@ -4,9 +4,9 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:utils.bzl", "expect", "expect_non_none")
-load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
+load(":macro.bzl", "package_macro")
 
 SendstreamInfo = provider(fields = [
     "sendstream",  # 'artifact' that is the btrfs sendstream
@@ -124,7 +124,7 @@ _sendstream_v1 = rule(
     cfg = package_cfg,
 )
 
-sendstream = rule_with_default_target_platform(_sendstream_v1)
+sendstream = package_macro(_sendstream_v1)
 
 def anon_v1_sendstream(
         *,
@@ -184,7 +184,7 @@ _sendstream_zst = rule(
     cfg = package_cfg,
 )
 
-sendstream_zst = rule_with_default_target_platform(_sendstream_zst)
+sendstream_zst = package_macro(_sendstream_zst)
 
 def _v2_impl(ctx: AnalysisContext) -> Promise:
     sendstream_v2 = ctx.actions.declare_output("image.sendstream.v2")
@@ -229,4 +229,4 @@ _sendstream_v2 = rule(
     cfg = package_cfg,
 )
 
-sendstream_v2 = rule_with_default_target_platform(_sendstream_v2)
+sendstream_v2 = package_macro(_sendstream_v2)
