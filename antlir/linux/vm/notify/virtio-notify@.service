@@ -1,7 +1,7 @@
 [Unit]
 Description=Send a notification via a virtio port.
-After=sshd.service
-Requires=sshd.service
+After=sshd.service network-online.target
+Requires=sshd.service network-online.target
 ConditionPathExists=/dev/virtio-ports/%i
 
 [Service]
