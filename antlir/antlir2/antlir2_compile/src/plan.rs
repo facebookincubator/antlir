@@ -15,10 +15,12 @@ use crate::Result;
 
 #[derive(Debug, Clone, Default, Deserialize, Serialize)]
 pub struct Plan {
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) dnf_transaction: Option<DnfTransaction>,
-    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) fbpkg_transaction: Option<FbpkgTransaction>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub(crate) other: Vec<serde_json::Value>,
 }
 
 impl Plan {
@@ -47,6 +49,9 @@ impl Plan {
                     }
                     plan.fbpkg_transaction = Some(tx);
                 }
+                Item::Other(o) => {
+                    plan.other.push(o);
+                }
             }
         }
         Ok(plan)
@@ -58,6 +63,10 @@ impl Plan {
 
     pub fn fbpkg_transaction(&self) -> Option<&FbpkgTransaction> {
         self.fbpkg_transaction.as_ref()
+    }
+
+    pub fn others(&self) -> &[serde_json::Value] {
+        &self.other
     }
 }
 
@@ -115,4 +124,5 @@ pub struct FbpkgTransaction {
 pub enum Item {
     DnfTransaction(DnfTransaction),
     FbpkgTransaction(FbpkgTransaction),
+    Other(serde_json::Value),
 }
