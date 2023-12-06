@@ -71,7 +71,7 @@ fn bind_arg<'a>(dst: &'a Path, src: &'a Path) -> Cow<'a, OsStr> {
     } else {
         let mut arg = escape_bind(try_canonicalize(src).as_os_str()).into_owned();
         arg.push(":");
-        arg.push(escape_bind(try_canonicalize(dst).as_os_str()));
+        arg.push(escape_bind(dst.as_os_str()));
         Cow::Owned(arg)
     }
 }
