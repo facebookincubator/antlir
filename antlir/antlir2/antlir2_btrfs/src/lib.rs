@@ -301,9 +301,11 @@ impl Debug for Info {
 #[cfg(test)]
 #[allow(non_upper_case_globals)]
 mod tests {
+    #[cfg(not(unprivileged))]
     use std::collections::HashMap;
     use std::io::ErrorKind;
     use std::os::linux::fs::MetadataExt;
+    #[cfg(not(unprivileged))]
     use std::process::Command;
 
     use super::*;
