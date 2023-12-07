@@ -1,5 +1,7 @@
 load("//antlir/bzl:build_defs.bzl", "buck_sh_binary")
 
+oncall("antlir")
+
 buck_sh_binary(
     name = "rpm2extents-in-ba",
     main = "rpm2extents_in_ba.sh",
