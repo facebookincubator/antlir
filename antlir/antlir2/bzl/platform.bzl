@@ -24,3 +24,11 @@ def arch_select(aarch64: str, x86_64: str) -> Select:
         "ovr_config//cpu:arm64": aarch64,
         "ovr_config//cpu:x86_64": x86_64,
     })
+
+def arch_to_platform(arch: str) -> str:
+    """Helper for converting an arch string to platform name. Mostly useful for
+    compatible_with fields."""
+    return {
+        "aarch64": "ovr_config//cpu:arm64",
+        "x86_64": "ovr_config//cpu:x86_64",
+    }[arch]
