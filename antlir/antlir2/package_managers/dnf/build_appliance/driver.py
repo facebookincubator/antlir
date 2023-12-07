@@ -331,6 +331,10 @@ def _parse_gpg_keys(rawkey: str) -> List[bytes]:
     inblock = False
     block = ""
     for line in rawkey.splitlines():
+        # Some keys files include "Version:" or other Metadata lines that should be skipped.
+        if ":" in line:
+            continue
+
         if line == "-----BEGIN PGP PUBLIC KEY BLOCK-----":
             inblock = True
             block = ""
