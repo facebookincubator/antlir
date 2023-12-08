@@ -205,6 +205,7 @@ impl<'a> UserRecord<'a> {
             encrypted_password: Cow::Borrowed(match self.password {
                 Password::Shadow => "!!",
                 Password::Locked => "!!",
+                Password::Empty => "",
             }),
             last_password_change: None,
             minimum_password_age: None,
@@ -255,6 +256,7 @@ nobody:x:65534:65534:Kernel Overflow User:/:/sbin/nologin
 systemd-oom:x:999:999:systemd Userspace OOM Killer:/:/usr/sbin/nologin
 dbus:x:81:81:System message bus:/:/sbin/nologin
 tss:x:59:59:Account used for TPM access:/dev/null:/sbin/nologin
+pwdlesslogin::420:420:Passwordless login:/dev/null:/sbin/nologin
 "#;
         let passwd = EtcPasswd::parse(src).expect("failed to parse");
         // easy way to check that all the contents were parsed
