@@ -421,6 +421,16 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # for macro authors, so antlir2 should allow it.
     if not final_subvol:
         final_subvol = parent_layer
+    if not final_depgraph:
+        final_depgraph = build_depgraph(
+            ctx = ctx,
+            dependency_layers = [],
+            features_json = None,
+            format = "json",
+            identifier_prefix = "empty_layer_",
+            parent_depgraph = parent_depgraph,
+            subvol = final_subvol,
+        )
 
     debug_sub_targets["depgraph"] = [DefaultInfo(final_depgraph)]
 
