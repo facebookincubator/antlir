@@ -109,6 +109,7 @@ def _upgrade_or_shadow_feature(
         **kwargs) -> str | None:
     if _should_upgrade():
         fn(name = name, **kwargs)
+        return "upgrade"
     if _should_shadow(antlir2 = antlir2):
         fn(name = name, **kwargs)
     return None
