@@ -9,8 +9,6 @@ use std::ffi::OsStr;
 use std::process::Command;
 
 use derive_more::From;
-#[cfg(target_os = "linux")]
-pub use isolate_bwrap::bwrap;
 use isolate_cfg::IsolationContext;
 
 use crate::Result;
@@ -30,8 +28,6 @@ impl IsolatedContext {
 enum IsolatedContextInner {
     #[cfg(target_os = "linux")]
     Nspawn(isolate_nspawn::IsolatedContext),
-    #[cfg(target_os = "linux")]
-    Bwrap(isolate_bwrap::IsolatedContext),
 }
 
 impl IsolatedContextInner {
@@ -39,8 +35,6 @@ impl IsolatedContextInner {
         match self {
             #[cfg(target_os = "linux")]
             Self::Nspawn(ctx) => Ok(ctx.command(program)),
-            #[cfg(target_os = "linux")]
-            Self::Bwrap(ctx) => Ok(ctx.command(program)),
         }
     }
 }

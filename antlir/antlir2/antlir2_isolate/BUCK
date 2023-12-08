@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "buck_command_alias", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
 
 oncall("antlir")
 
@@ -8,7 +8,6 @@ rust_library(
     deps = [
         "derive_more",
         "thiserror",
-        "//antlir/antlir2/antlir2_isolate/isolate_bwrap:isolate_bwrap",
         "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
         "//antlir/antlir2/antlir2_isolate/isolate_nspawn:isolate_nspawn",
     ],
@@ -26,13 +25,4 @@ rust_binary(
         ":antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
-)
-
-buck_command_alias(
-    name = "cli-bwrap",
-    args = [
-        "--bwrap",
-        "$(exe fbsource//third-party/bubblewrap:bwrap)",
-    ],
-    exe = ":cli",
 )
