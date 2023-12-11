@@ -8,6 +8,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
 load("//antlir/bzl:build_defs.bzl", "is_buck2")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":antlir2_shim.bzl", "antlir2_shim")
 load(":compile_image_features.bzl", "compile_image_features")
 load(":container_opts.bzl", "normalize_container_opts")
@@ -69,7 +70,7 @@ def image_genrule_layer(
         container_opts = None,
         bind_repo_ro = False,
         boot = False,
-        antlir2_mount_platform = False,
+        antlir2_mount_platform = None,
         **image_layer_kwargs):
     """
 ### Danger! Danger! Danger!
@@ -111,6 +112,7 @@ Optional arguments:
         for supported, but less commonly used, kwargs.
     """
     antlir2 = image_layer_kwargs.pop("antlir2", None)
+    antlir2_mount_platform = antlir2_mount_platform or REPO_CFG.artifacts_require_repo
     if antlir2_shim.upgrade_or_shadow_layer(
         antlir2 = antlir2,
         name = name,
