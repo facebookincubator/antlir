@@ -9,7 +9,6 @@ rust_library(
         "cargo_toml_config": {
             "package": {
                 "description": "Easily parse structured CLI args",
-                "license": "MIT",
                 "repository": "https://github.com/facebookincubator/antlir/tree/main/antlir/util/cli/json_arg",
                 "version": "0.2.1",
             },
