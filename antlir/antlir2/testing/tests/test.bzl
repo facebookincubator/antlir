@@ -22,6 +22,7 @@ def test_variants(
                 env = {
                     "ANTLIR2_TEST": "1",
                     "BOOT": str(boot),
+                    "JSON_ENV": '{"foo": "bar"}',
                     "TEST_USER": user,
                 },
                 **kwargs

@@ -4,6 +4,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+import json
 import os
 import pwd
 import unittest
@@ -19,3 +20,6 @@ class Test(unittest.TestCase):
 
     def test_env_propagated(self) -> None:
         self.assertEqual("1", os.getenv("ANTLIR2_TEST"))
+
+    def test_json_env_quoting(self) -> None:
+        self.assertEqual({"foo": "bar"}, json.loads(os.getenv("JSON_ENV")))
