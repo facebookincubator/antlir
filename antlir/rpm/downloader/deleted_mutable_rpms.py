@@ -36,12 +36,18 @@ deleted_mutable_rpms = {
     # ("universe", Rpm.nevra()): {Checksum(...), Checksum(...)},
 }
 
+undeleted_mutable_rpms = {
+    # ("universe", Rpm.nevra()): {Checksum(...), Checksum(...)},
+}
+
 try:
     from antlir.rpm.downloader.facebook.deleted_mutable_rpms import (
         deleted_mutable_rpms as _fb_deleted_mutable_rpms,
+        undeleted_mutable_rpms as _fb_undeleted_mutable_rpms,
     )
 
     deleted_mutable_rpms.update(_fb_deleted_mutable_rpms)
+    undeleted_mutable_rpms.update(_fb_undeleted_mutable_rpms)
 except ImportError:  # pragma: no cover
     pass
 

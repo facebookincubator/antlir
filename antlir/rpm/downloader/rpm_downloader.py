@@ -28,7 +28,10 @@ from antlir.rpm.downloader.common import (
     timeit,
     verify_chunk_stream,
 )
-from antlir.rpm.downloader.deleted_mutable_rpms import deleted_mutable_rpms
+from antlir.rpm.downloader.deleted_mutable_rpms import (
+    deleted_mutable_rpms,
+    undeleted_mutable_rpms,
+)
 from antlir.rpm.repo_db import RpmTable
 from antlir.rpm.repo_objects import CANONICAL_HASH, Checksum, Rpm
 from antlir.rpm.repo_snapshot import (
@@ -106,11 +109,22 @@ def _detect_mutable_rpms(
         "but it still exists in repos"
     )
 
+    # There are some checksums conflicts that we can't resolve. For those we'll
+    # just ignore the conflicts (and accept the fact that dnf results may be
+    # non-deterministic).
+    undeleted_checksums_and_universes = set()
+    for u in all_snapshot_universes:
+        undeleted_checksums_and_universes.update(
+            (c, u) for c in undeleted_mutable_rpms.get((u, rpm_nevra), set())
+        )
+
     mutable_checksums_and_universes = (
         all_canonical_checksums_and_universes
         - my_checksums_and_universes
         - deleted_checksums_and_universes
+        - undeleted_checksums_and_universes
     )
+
     # If anything is left over, the repos have this NEVRA with multiple
     # variants of its contents, which means installing it would be
     # nondeterministic.  So, we will refuse to serve it from the snapshot.
