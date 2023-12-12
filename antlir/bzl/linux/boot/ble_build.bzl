@@ -41,7 +41,7 @@ def ble_build(
 
         features.extend([
             feature.install(
-                src = initrd(arch = kernel.arch, uname = kernel.uname),
+                src = initrd(kernel.uname),
                 dst = "/initrd-{}.img".format(kernel.uname),
             ),
             feature.install(

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-def initrd(arch: str, uname: str):
+def initrd(uname: str):
     """ Get the initrd target based on arch and uname. 
 
     Initrd data isn't really antlir's business, but some of our images need it.
@@ -12,4 +12,4 @@ def initrd(arch: str, uname: str):
     initrd, or we set this as a REPO_CFG so it's easier to specify where initrd
     targets live.
     """
-    return "//metalos/vm/initrd:vm-{}-{}-initrd".format(arch, uname)
+    return "//metalos/vm/initrd:vm-{}-initrd".format(uname)
