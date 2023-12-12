@@ -577,7 +577,7 @@ def layer(
         default_os = default_os or get_default_os_for_package()
 
     # TODO(vmagro): codemod existing callsites to use default_os directly
-    if "flavor" in kwargs and default_os:
+    if kwargs.get("flavor", None) and default_os:
         fail("default_os= is preferred, stop setting flavor=")
     if kwargs.get("flavor", None) and not default_rou:
         default_rou = compat.default_rou_from_antlir1_flavor(kwargs["flavor"])
