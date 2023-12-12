@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
+load("//antlir/antlir2/testing:image_rpms_test.bzl?v2_only", antlir2_rpm_names_test = "image_test_rpm_names")
+load(":antlir2_shim.bzl", "antlir2_shim")
 load(":build_defs.bzl", "buck_genrule")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":maybe_export_file.bzl", "maybe_export_file")
@@ -32,6 +34,20 @@ def image_test_rpm_names(
         rpm_list,
         flavor = None,
         antlir2 = None):
+    if antlir2_shim.upgrade_or_shadow_test(
+        antlir2 = antlir2,
+        fn = antlir2_rpm_names_test,
+        name = name,
+        src = rpm_list,
+        layer = layer + ".antlir2",
+        fake_buck1 = struct(
+            fn = antlir2_shim.fake_buck1_test,
+            name = name,
+            test = "sh",
+        ),
+    ) == "upgrade":
+        return
+
     fn_name = name.replace(".", "_")  # Future: if we must allow dashes, replace them here.
     if not fn_name.startswith("test_") or not sets.is_subset(
         _str_set(fn_name),
@@ -66,5 +82,5 @@ A Hilariously Unlikely Yet Cheeky Sigil
         resources = {maybe_export_file(rpm_list): "expected_rpm_names"},
         deps = ["//antlir/bzl/tests:check_rpm_names"],
         flavor = flavor,
-        antlir2 = antlir2 or None,
+        antlir2 = False,
     )
