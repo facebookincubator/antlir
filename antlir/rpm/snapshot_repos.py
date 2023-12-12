@@ -67,6 +67,7 @@ def _write_confs_get_repos(
     *,
     exclude_repos: FrozenSet[str],
     exclude_rpms: FrozenSet[str],
+    exclude_repo_rpms: FrozenSet[str],
 ) -> Iterable[YumDnfConfRepo]:
     assert not (exclude_repos & {"main", "DEFAULT"}), exclude_repos
     yum_dnf_repos = []
@@ -87,6 +88,9 @@ def _write_confs_get_repos(
                 cp["main"]["exclude"] = (
                     cp["main"].get("exclude", "") + " " + " ".join(exclude_rpms)
                 )
+            for repo_rpms in exclude_repo_rpms:  # pragma: no cover
+                repo, rpms = repo_rpms.split("=", 1)
+                cp[repo]["exclude"] = cp[repo].get("exclude", "") + " " + rpms
             with create_ro(dest / out_name, "w+") as out:
                 cp.write(out)
                 out.seek(0)
@@ -130,6 +134,7 @@ def snapshot_repos(
     gpg_key_allowlist_dir: str,
     exclude_repos: FrozenSet[str],
     exclude_rpms: FrozenSet[str],
+    exclude_repo_rpms: FrozenSet[str],
     threads: int,
     log_sample: Callable = lambda *_, **__: None,
 ):
@@ -141,6 +146,7 @@ def snapshot_repos(
         dnf_conf_content,
         exclude_repos=exclude_repos,
         exclude_rpms=exclude_rpms,
+        exclude_repo_rpms=exclude_repo_rpms,
     )
     os.mkdir(dest / "repos")
     repos_and_universes = [
@@ -230,6 +236,12 @@ def snapshot_repos_from_args(
         default=[],
         help="Additional rpms to excluded in the yum.conf.",
     )
+    parser.add_argument(
+        "--exclude-repo-rpms",
+        action="append",
+        default=[],
+        help="Additional rpms to excluded from a specific repo in the yum.conf.",
+    )
 
     universe_warning = (
         "Described in the `repo_db.py` docblock. In production, it is "
@@ -278,6 +290,7 @@ def snapshot_repos_from_args(
             gpg_key_allowlist_dir=args.gpg_key_allowlist_dir,
             exclude_repos=frozenset(args.exclude_repos),
             exclude_rpms=frozenset(args.exclude_rpms),
+            exclude_repo_rpms=frozenset(args.exclude_repo_rpms),
             threads=args.threads,
             log_sample=log_sample,
         )

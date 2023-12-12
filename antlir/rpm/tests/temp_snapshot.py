@@ -75,6 +75,7 @@ def make_temp_snapshot(
             gpg_key_allowlist_dir=gpg_key_allowlist_dir,
             exclude_repos=frozenset(),
             exclude_rpms=frozenset(),
+            exclude_repo_rpms=frozenset(),
             threads=4,
         )
 
