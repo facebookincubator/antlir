@@ -19,13 +19,13 @@ Notable benefits for VM test owners includes:
 - Use of virtiofsd for file sharing with better performance
 - All common benefits of antlir2, including faster builds and better cached
   artifacts
+- Enables automatic multi-arch testing
 
 For developers, there are additional benefits:
 
 - Antlir2 VM is written in Rust, and thus it's safer to iterate
 - Buck2 elimated a lot of hacks in antlir1, like cleaner dependency tracking
 - Data types are decoupled from buck, which makes it easier wrap a VM standalone
-- Enables multi-arch testing (still WIP)
 
 ## General Note for Examples
 
@@ -355,7 +355,6 @@ vm.metalos_host(
     # rootfs_layer = ...,
     # root_disk = ...,
     # extra_disks = ...,
-    # arch = ...,
     # uname = ...,
     # any other parameter that antlir's vm.host takes
 )
@@ -433,9 +432,9 @@ separate and have to co-exist for now. The kernel artifact is the same even
 though you might see a different kernel target.
 
 All APIs under `metalos/vm/*/defs.bzl` supports one or multiple `get*()`
-function that takes `arch` and kernel `uname`. So long as the arch and uname
-combination in the `versions.bzl`, the target can be used. For example, this
-turns the default VM into a different kernel.
+function that takes kernel `uname`. So long as the uname combination in the
+`versions.bzl`, the target can be used for compatible platform. For example,
+this turns the default VM into a different kernel.
 
 ```
 load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
@@ -445,7 +444,6 @@ vm.host(
     name = "disk-boot-5.19",
     compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.get_boot_disk(
-        arch = "x86_64",
         interface = "virtio-blk",
         uname = "5.19",
     )],
@@ -462,24 +460,14 @@ load("//metalos/vm/kernels:defs.bzl", "vm_kernel")
 
 vm.host(
     name = "nondisk-boot-5.19",
-    compatible_with = ["ovr_config//cpu:x86_64"],
     disks = [simple_disk.get_control_disk(
-        arch = "x86_64",
         interface = "virtio-blk",
         uname = "5.19",
     )],
-    initrd = initrd.get("x86_64", "5.19"),
-    kernel = vm_kernel.get("x86_64", "5.19").vmlinuz,
+    initrd = initrd.get("5.19"),
+    kernel = vm_kernel.get("5.19").vmlinuz,
 )
 ```
-
-Some of the details would change when we unify the kernel type later, and that
-means the parameters we use to fill the fields could change. Of course they can
-be customized to whatever buck target you want as well. In addition,
-`compatible_with` might need to be set given the image content is arch specific.
-This might look awkward now, but in the future when multi-arch support is fully
-ready, the various `get*()` will return `select()` to avoid the need of setting
-`compatible_with` or passing in `arch` entirely.
 
 ### Migrating from Antlir1 VM test
 
