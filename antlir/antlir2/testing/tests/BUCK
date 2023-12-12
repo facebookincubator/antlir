@@ -59,10 +59,16 @@ test_variants(
     crate_root = "test.rs",
     lang = "rust",
     test_rule = image_rust_test,
-    deps = [third_party.library(
-        "whoami",
-        platform = "rust",
-    )],
+    deps = [
+        third_party.library(
+            "whoami",
+            platform = "rust",
+        ),
+        third_party.library(
+            "serde_json",
+            platform = "rust",
+        ),
+    ],
 )
 
 test_variants(

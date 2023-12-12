@@ -114,24 +114,19 @@ fn main() -> Result<()> {
 
     let spec = args.spec.into_inner();
 
-    let mut setenv: BTreeMap<_, _> = spec
-        .setenv
-        .into_iter()
-        .map(|(k, v)| (k, OsString::from(v)))
-        .collect();
+    let mut setenv: BTreeMap<_, _> = spec.setenv.into_iter().map(|(k, v)| (k, v)).collect();
     // forward test runner env vars to the inner test
     for (key, val) in std::env::vars() {
         if key.starts_with("TEST_PILOT") {
-            setenv.insert(key, val.into());
+            setenv.insert(key, val);
         }
     }
     for key in spec.pass_env {
-        let var =
-            std::env::var_os(&key).with_context(|| format!("--pass-env var '{key}' missing"))?;
+        let var = std::env::var(&key).with_context(|| format!("--pass-env var '{key}' missing"))?;
 
         setenv.insert(key, var);
     }
-    if let Some(rust_log) = std::env::var_os("RUST_LOG") {
+    if let Ok(rust_log) = std::env::var("RUST_LOG") {
         setenv.insert("RUST_LOG".into(), rust_log);
     }
 
@@ -283,14 +278,20 @@ fn main() -> Result<()> {
             test_unit_dropin.write_all(b"\n")?;
 
             for (key, val) in &setenv {
-                write!(test_unit_dropin, "Environment=\"{key}=")?;
-                test_unit_dropin.write_all(val.as_bytes())?;
-                writeln!(test_unit_dropin, "\"")?;
+                writeln!(
+                    test_unit_dropin,
+                    "Environment=\"{key}={}\"",
+                    val.replace('"', "\\\"")
+                )?;
             }
             // forward test runner env vars to the inner test
             for (key, val) in std::env::vars() {
                 if key.starts_with("TEST_PILOT") {
-                    writeln!(test_unit_dropin, "Environment=\"{key}={val}\"")?;
+                    writeln!(
+                        test_unit_dropin,
+                        "Environment=\"{key}={}\"",
+                        val.replace('"', "\\\"")
+                    )?;
                 }
             }
             // wire the test output to the parent process's std{out,err}
