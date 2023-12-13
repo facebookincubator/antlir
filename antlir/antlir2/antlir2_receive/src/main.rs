@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_btrfs::Subvolume;
+use antlir2_cas_dir::CasDir;
 use antlir2_working_volume::WorkingVolume;
 use anyhow::anyhow;
 use anyhow::ensure;
@@ -43,6 +44,8 @@ pub(crate) struct Receive {
 pub enum Format {
     #[clap(name = "sendstream")]
     Sendstream,
+    #[clap(name = "cas_dir")]
+    CasDir,
 }
 
 #[derive(Parser, Debug)]
@@ -71,45 +74,56 @@ impl Receive {
             .context("while setting up WorkingVolume")?;
         let dst = self.prepare_dst(&working_volume)?;
 
-        let recv_tmp = tempfile::tempdir_in(&self.setup.working_dir)?;
-        // If there are more [Format]s here, we'll need to match on it to do
-        // different things
-        let mut cmd = Command::new("btrfs");
-        cmd.arg("--quiet")
-            .arg("receive")
-            .arg(recv_tmp.path())
-            .arg("-f")
-            .arg(&self.source);
-        trace!("receiving sendstream: {cmd:?}");
-        let res = cmd.spawn()?.wait()?;
-        ensure!(res.success(), "btrfs-receive failed");
-        let entries: Vec<_> = std::fs::read_dir(&recv_tmp)
-            .context("while reading tmp dir")?
-            .map(|r| {
-                r.map(|entry| entry.path())
-                    .context("while iterating tmp dir")
-            })
-            .collect::<Result<_>>()?;
-        if entries.len() != 1 {
-            return Err(anyhow!(
-                "did not get exactly one subvolume received: {entries:?}"
-            ));
-        }
+        match self.format {
+            Format::Sendstream => {
+                let recv_tmp = tempfile::tempdir_in(&self.setup.working_dir)?;
+                // If there are more [Format]s here, we'll need to match on it to do
+                // different things
+                let mut cmd = Command::new("btrfs");
+                cmd.arg("--quiet")
+                    .arg("receive")
+                    .arg(recv_tmp.path())
+                    .arg("-f")
+                    .arg(&self.source);
+                trace!("receiving sendstream: {cmd:?}");
+                let res = cmd.spawn()?.wait()?;
+                ensure!(res.success(), "btrfs-receive failed");
+                let entries: Vec<_> = std::fs::read_dir(&recv_tmp)
+                    .context("while reading tmp dir")?
+                    .map(|r| {
+                        r.map(|entry| entry.path())
+                            .context("while iterating tmp dir")
+                    })
+                    .collect::<Result<_>>()?;
+                if entries.len() != 1 {
+                    return Err(anyhow!(
+                        "did not get exactly one subvolume received: {entries:?}"
+                    ));
+                }
 
-        trace!("opening received subvol: {}", entries[0].display());
-        let mut subvol = Subvolume::open(&entries[0]).context("while opening subvol")?;
-        subvol
-            .set_readonly(false)
-            .context("while making subvol rw")?;
+                trace!("opening received subvol: {}", entries[0].display());
+                let mut subvol = Subvolume::open(&entries[0]).context("while opening subvol")?;
+                subvol
+                    .set_readonly(false)
+                    .context("while making subvol rw")?;
 
-        trace!(
-            "moving received subvol to right location {} -> {}",
-            subvol.path().display(),
-            dst.display()
-        );
-        std::fs::rename(subvol.path(), &dst).context("while renaming subvol")?;
-
+                trace!(
+                    "moving received subvol to right location {} -> {}",
+                    subvol.path().display(),
+                    dst.display()
+                );
+                std::fs::rename(subvol.path(), &dst).context("while renaming subvol")?;
+            }
+            Format::CasDir => {
+                let subvol = Subvolume::create(&dst).context("while creating subvol")?;
+                let cas_dir = CasDir::open(self.source).context("while opening CasDir")?;
+                cas_dir
+                    .hydrate_into(subvol.path())
+                    .context("while materializing CasDir")?;
+            }
+        };
         let mut subvol = Subvolume::open(&dst).context("while opening subvol")?;
+
         subvol
             .set_readonly(true)
             .context("while making subvol ro")?;

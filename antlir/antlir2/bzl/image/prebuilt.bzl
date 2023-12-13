@@ -37,8 +37,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     elif format == "sendstream.v2":
         # antlir2-receive treats them the same
         format = "sendstream"
-    else:
-        fail("unrecognized format='{}'".format(format))
 
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     ctx.actions.run(
@@ -86,7 +84,7 @@ _prebuilt = rule(
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_receive:antlir2-receive")),
         "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
-        "format": attrs.enum(["sendstream.v2", "sendstream", "sendstream.zst"]),
+        "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
     },
