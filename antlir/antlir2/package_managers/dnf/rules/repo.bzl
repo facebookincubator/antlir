@@ -56,10 +56,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             repodata.as_output(),
         ),
         category = "solv",
-        # Invokes a binary using system python3
-        local_only = True,
-        # This has to build locally, but the results are cacheable
-        allow_cache_upload = True,
     )
 
     # Create an artifact that is the _entire_ repository for completely offline
