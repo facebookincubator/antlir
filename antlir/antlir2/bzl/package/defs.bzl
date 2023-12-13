@@ -36,8 +36,11 @@ def _generic_impl_with_layer(
         ctx: AnalysisContext,
         format: str,
         rule_attr_keys: list[str],
-        can_be_partition: bool) -> list[Provider]:
+        can_be_partition: bool,
+        is_dir: bool,
+        sudo: bool) -> list[Provider]:
     extension = {
+        "cas_dir": "",
         "cpio": ".cpio",
         "ext3": ".ext3",
         "rpm": ".rpm",
@@ -45,7 +48,7 @@ def _generic_impl_with_layer(
         "tar": ".tar",
         "vfat": ".vfat",
     }[format]
-    package = ctx.actions.declare_output("package" + extension)
+    package = ctx.actions.declare_output("package" + extension, dir = is_dir)
 
     build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
     spec_opts = {
@@ -57,6 +60,7 @@ def _generic_impl_with_layer(
     spec = ctx.actions.write_json("spec.json", {format: spec_opts}, with_inputs = True)
     ctx.actions.run(
         cmd_args(
+            cmd_args("sudo") if sudo else cmd_args(),
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
             cmd_args(package.as_output(), format = "--out={}"),
@@ -74,7 +78,9 @@ def _generic_impl(
         format: str,
         rule_attr_keys: list[str],
         dot_meta: bool,
-        can_be_partition: bool):
+        can_be_partition: bool,
+        is_dir: bool,
+        sudo: bool):
     if dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
             "flavor": ctx.attrs.flavor,
@@ -90,6 +96,8 @@ def _generic_impl(
             format = format,
             rule_attr_keys = rule_attr_keys,
             can_be_partition = can_be_partition,
+            is_dir = is_dir,
+            sudo = sudo,
         ))
     else:
         return _generic_impl_with_layer(
@@ -98,6 +106,8 @@ def _generic_impl(
             format = format,
             rule_attr_keys = rule_attr_keys,
             can_be_partition = can_be_partition,
+            is_dir = is_dir,
+            sudo = sudo,
         )
 
 # Create a new buck2 rule that implements a specific package format.
@@ -105,7 +115,9 @@ def _new_package_rule(
         format: str,
         rule_attrs: dict[str, Attr] = {},
         dot_meta: bool = True,
-        can_be_partition = False):
+        can_be_partition = False,
+        is_dir = False,
+        sudo = False):
     return anon_rule(
         impl = partial(
             _generic_impl,
@@ -113,6 +125,8 @@ def _new_package_rule(
             rule_attr_keys = list(rule_attrs.keys()),
             dot_meta = dot_meta,
             can_be_partition = can_be_partition,
+            is_dir = is_dir,
+            sudo = sudo,
         ),
         attrs = _default_attrs | _common_attrs | rule_attrs,
         artifact_promise_mappings = {
@@ -195,6 +209,12 @@ def _new_compressed_package_rule(
         },
         cfg = package_cfg,
     )
+
+_cas_dir = _new_package_rule(
+    format = "cas_dir",
+    is_dir = True,
+    sudo = True,
+)
 
 _cpio = _new_package_rule(
     format = "cpio",
@@ -297,9 +317,10 @@ def _backwards_compatible_new(format: str, **kwargs):
 package = struct(
     backward_compatible_new = _backwards_compatible_new,
     btrfs = btrfs,
-    ext3 = package_macro(_ext3),
+    cas_dir = package_macro(_cas_dir),
     cpio_gz = package_macro(_cpio_gz),
     cpio_zst = package_macro(_cpio_zst),
+    ext3 = package_macro(_ext3),
     gpt = gpt,
     rpm = package_macro(_rpm),
     sendstream = sendstream,
