@@ -167,6 +167,21 @@ impl CasDir {
         })
     }
 
+    /// Open a previously [dehydrate]d [CasDir].
+    pub fn open(root: impl AsRef<Path>) -> Result<Self> {
+        let root = root.as_ref();
+        let manifest = std::fs::read_to_string(root.join("manifest.json"))
+            .context("while reading manifest.json")?;
+        let manifest: Manifest =
+            serde_json::from_str(&manifest).context("while deserializing manifest.json")?;
+        let contents_dir = root.join("contents");
+        Ok(Self {
+            path: root.to_owned(),
+            contents_dir,
+            manifest,
+        })
+    }
+
     pub fn path(&self) -> &Path {
         self.path.as_ref()
     }
@@ -246,8 +261,10 @@ mod tests {
     use super::*;
 
     fn dehydrate_and_hydrate(opts: CasDirOpts) -> CasDir {
-        let cas_dir = CasDir::dehydrate("/src", "/cas_dir".into(), opts)
+        let _cas_dir = CasDir::dehydrate("/src", "/cas_dir".into(), opts)
             .expect("failed to dehydrate from regular directory");
+        // unnecessary, but proves that `open()` works
+        let cas_dir = CasDir::open("/cas_dir").expect("failed to open hydrated directory");
         cas_dir
             .hydrate_into("/hydrated")
             .expect("failed to hydrate");
