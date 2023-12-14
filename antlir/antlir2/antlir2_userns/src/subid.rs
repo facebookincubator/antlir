@@ -10,7 +10,7 @@ use std::str::FromStr;
 
 use anyhow::anyhow;
 use anyhow::Context;
-use anyhow::Error;
+pub use anyhow::Error;
 use anyhow::Result;
 
 use crate::Id;
@@ -76,6 +76,13 @@ where
 
     pub fn len(&self) -> IdOffset {
         self.len
+    }
+
+    pub fn identity() -> Self {
+        Self {
+            start: 0.into(),
+            len: 65536.into(),
+        }
     }
 }
 
