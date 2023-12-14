@@ -3,8 +3,7 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_diff_test.bzl", "image_diff_test")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_rust_test")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_test", "export_file", "python_binary", "rust_binary")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary", "rust_binary")
 
 oncall("antlir")
 
@@ -211,6 +210,7 @@ image.layer(
         feature.install(
             src = ":deterministic-binary",
             dst = "/true",
+            never_use_dev_binary_symlink = True,
         ),
     ],
     parent_layer = ":base",
@@ -218,12 +218,9 @@ image.layer(
 
 image_diff_test(
     name = "test-deterministic-split-debuginfo",
-    diff = "deterministic-split-debuginfo.opt.toml",
+    diff = "deterministic-split-debuginfo.toml",
     diff_type = "file",
     layer = ":deterministic-split-debuginfo",
-) if not REPO_CFG.artifacts_require_repo else buck_sh_test(
-    name = "test-deterministic-split-debuginfo",
-    test = ":true-rs",
 )
 
 buck_genrule(
