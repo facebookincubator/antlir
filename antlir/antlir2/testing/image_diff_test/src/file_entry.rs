@@ -20,7 +20,7 @@ use anyhow::Context;
 use anyhow::Result;
 use md5::Digest;
 use md5::Md5;
-use serde::de::Visitor;
+use serde::de::Error as _;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -213,40 +213,20 @@ impl Debug for XattrData {
 
 struct XattrDataVisitor;
 
-impl<'de> Visitor<'de> for XattrDataVisitor {
-    type Value = XattrData;
-
-    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-        formatter.write_str("a string or byte array")
-    }
-
-    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(XattrData(v.into_bytes()))
-    }
-
-    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(XattrData(v.as_bytes().to_vec()))
-    }
-
-    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(XattrData(v))
-    }
-}
-
 impl<'de> Deserialize<'de> for XattrData {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
     {
-        deserializer.deserialize_str(XattrDataVisitor)
+        let s = String::deserialize(deserializer)?;
+        if let Some(hex_value) = s.strip_prefix("0x") {
+            let bytes = hex::decode(hex_value).map_err(D::Error::custom)?;
+            Ok(Self(bytes))
+        } else if let Some(b64) = s.strip_prefix("0s") {
+            let bytes = base64::decode(b64).map_err(D::Error::custom)?;
+            Ok(Self(bytes))
+        } else {
+            Ok(Self(s.into_bytes()))
+        }
     }
 }

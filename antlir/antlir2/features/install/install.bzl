@@ -25,7 +25,8 @@ def install(
         group: str | Select = "root",
         xattrs: dict[str, str] | Select = {},
         never_use_dev_binary_symlink: bool = False,
-        split_debuginfo: bool = True) -> ParseTimeFeature:
+        split_debuginfo: bool = True,
+        setcap: str | None = None) -> ParseTimeFeature:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -46,6 +47,9 @@ def install(
     # installed is a binary or not
     mode = stat.mode(mode) if mode != None else None
 
+    if setcap and not never_use_dev_binary_symlink:
+        fail("setcap does not work on dev mode binaries. You must set never_use_dev_binary_symlink=True")
+
     return ParseTimeFeature(
         feature_type = "install",
         plugin = antlir2_dep("features/install:install"),
@@ -58,6 +62,7 @@ def install(
             "group": group,
             "mode": mode,
             "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
+            "setcap": setcap,
             "split_debuginfo": split_debuginfo,
             "text": None,
             "user": user,
@@ -151,6 +156,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         else:
             src = ensure_single_output(src)
             binary_info = None
+            if ctx.attrs.setcap:
+                fail("install src {} is not a binary, setcap should not be used".format(ctx.attrs.src))
     elif type(src) == "artifact":
         # If the source is an artifact, that means it was given as an
         # `attrs.source()`, and is thus not a dependency.
@@ -171,6 +178,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 group = ctx.attrs.group,
                 binary_info = binary_info,
                 xattrs = ctx.attrs.xattrs,
+                setcap = ctx.attrs.setcap,
             ),
             required_artifacts = [src] + required_artifacts,
             required_run_infos = required_run_infos,
@@ -190,6 +198,7 @@ install_rule = rule(
             doc = "Always install as a regular file, even in @mode/dev",
         ),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "setcap": attrs.option(attrs.string(), default = None),
         "split_debuginfo": attrs.bool(default = True),
         "src": attrs.option(
             attrs.one_of(attrs.dep(), attrs.source()),

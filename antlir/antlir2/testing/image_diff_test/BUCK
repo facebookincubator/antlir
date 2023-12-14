@@ -7,7 +7,9 @@ rust_binary(
     srcs = glob(["src/**/*.rs"]),
     deps = [
         "anyhow",
+        "base64",
         "clap",
+        "hex",
         "md-5",
         "serde",
         "serde_with",
