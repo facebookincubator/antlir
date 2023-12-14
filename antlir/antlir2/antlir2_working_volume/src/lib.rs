@@ -5,17 +5,20 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::fmt::Debug;
+use std::collections::BTreeMap;
+use std::collections::HashSet;
+use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::ErrorKind;
+use std::io::Seek;
 use std::os::fd::AsRawFd;
-use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
-use std::time::Duration;
-use std::time::SystemTime;
 
 use antlir2_btrfs::Subvolume;
+use anyhow::Context;
+use fs2::FileExt as _;
 use nix::dir::Dir;
 use nix::errno::Errno;
 use nix::fcntl::flock;
@@ -23,8 +26,8 @@ use nix::fcntl::FlockArg;
 use nix::fcntl::OFlag;
 use nix::sys::stat::Mode;
 use serde::Deserialize;
+use serde::Serialize;
 use tracing::trace;
-use tracing::trace_span;
 use tracing::warn;
 use uuid::Uuid;
 
@@ -32,17 +35,16 @@ use uuid::Uuid;
 pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    #[error("failed to parse redirects from '{text}': {error:?}")]
-    ParseRedirects {
-        text: String,
-        error: Option<serde_json::Error>,
-    },
+    #[error(transparent)]
+    Btrfs(#[from] antlir2_btrfs::Error),
     #[error("failed to add redirect: {error}")]
     AddRedirect { error: String },
     #[error("failed to create working volume")]
     CreateWorkingVolume(std::io::Error),
     #[error("failed to check eden presence")]
     CheckEden(std::io::Error),
+    #[error("error tracking subvolumes: {0:#?}")]
+    Tracking(anyhow::Error),
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
@@ -50,27 +52,6 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[derive(Debug, Clone)]
 pub struct WorkingVolume {
     path: PathBuf,
-    eden: Option<EdenInfo>,
-}
-
-#[derive(Clone)]
-struct EdenInfo {
-    repo_root: PathBuf,
-    redirections: Vec<EdenRedirection>,
-}
-
-impl Debug for EdenInfo {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("EdenInfo")
-            .field("repo_root", &self.repo_root)
-            .finish_non_exhaustive()
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
-struct EdenRedirection {
-    repo_path: PathBuf,
-    target: Option<PathBuf>,
 }
 
 impl WorkingVolume {
@@ -100,42 +81,18 @@ impl WorkingVolume {
                         });
                     }
                 }
-                let res = Command::new("eden")
-                    .env("EDENFSCTL_ONLY_RUST", "1")
-                    .arg("redirect")
-                    .arg("list")
-                    .arg("--json")
-                    .output()?;
-                let stdout =
-                    std::str::from_utf8(&res.stdout).map_err(|_| Error::ParseRedirects {
-                        text: "<not utf8>".to_owned(),
-                        error: None,
-                    })?;
-                let redirections =
-                    serde_json::from_str(stdout).map_err(|e| Error::ParseRedirects {
-                        text: stdout.to_owned(),
-                        error: Some(e),
-                    })?;
-                trace!("parsed eden redirections: {redirections:?}");
-                let repo_root = std::fs::read_link(".eden/root")?;
-                Ok(Self {
-                    path,
-                    eden: Some(EdenInfo {
-                        repo_root,
-                        redirections,
-                    }),
-                })
+                Ok(Self { path })
             }
             Err(e) => match e {
                 Errno::ENOENT => {
                     trace!("no .eden: {e:?}");
                     if let Err(e) = std::fs::create_dir(&path) {
                         match e.kind() {
-                            ErrorKind::AlreadyExists => Ok(Self { path, eden: None }),
+                            ErrorKind::AlreadyExists => Ok(Self { path }),
                             _ => Err(Error::CreateWorkingVolume(e)),
                         }
                     } else {
-                        Ok(Self { path, eden: None })
+                        Ok(Self { path })
                     }
                 }
                 _ => Err(Error::CheckEden(std::io::Error::from(e))),
@@ -153,63 +110,17 @@ impl WorkingVolume {
         Ok(self.path.join(Uuid::new_v4().simple().to_string()))
     }
 
-    fn keepalive_path(path: &Path) -> PathBuf {
-        let mut filename = path.file_name().expect("cannot be /").to_owned();
-        filename.push(".keepalive");
-        path.parent().expect("cannot be /").join(filename)
+    fn tracked_subvols(&self) -> Result<SubvolsFile> {
+        SubvolsFile::open(&self.path.join("subvols.json"))
     }
 
     /// Increment a refcount using a file in buck-out to prevent the path in
     /// this [WorkingVolume] from being garbage collected
     pub fn keep_path_alive(&self, allocated_path: &Path, buck_out_path: &Path) -> Result<()> {
-        if no_gc() {
-            trace!("gc is disabled");
-            return Ok(());
-        }
-        let full_keepalive_path = self.resolve_redirection(&Self::keepalive_path(allocated_path));
-        trace!("incrementing refcount for {}", allocated_path.display());
-
-        let buck_parent = buck_out_path
-            .parent()
-            .expect("cannot be /")
-            .canonicalize()?;
-
-        // On Eden, we need to resolve redirects because hardlinks are not
-        // allowed across bind mounts (even within the same underlying
-        // filesystem). On non-Eden, buck-out and antlir2-out will be being
-        // created on the same filesystem without any bind-mount trickery.
-        let full_buck_out_path = self
-            .resolve_redirection(&buck_parent)
-            .join(buck_out_path.file_name().expect("cannot be /"));
-        trace!(
-            "hardlinking {} -> {}",
-            full_keepalive_path.display(),
-            full_buck_out_path.display(),
-        );
-        std::fs::hard_link(full_buck_out_path, full_keepalive_path)?;
+        let mut subvols = self.tracked_subvols()?;
+        subvols.track(allocated_path.to_owned(), buck_out_path.to_owned());
+        subvols.serialize().map_err(Error::Tracking)?;
         Ok(())
-    }
-
-    /// If path is under an eden redirection, resolve it to be under the target.
-    fn resolve_redirection(&self, path: &Path) -> PathBuf {
-        match &self.eden {
-            Some(eden) => {
-                for (repo_path, target) in eden.redirections.iter().filter_map(|redir| {
-                    redir
-                        .target
-                        .as_ref()
-                        .map(|target| (&redir.repo_path, target))
-                }) {
-                    for prefix in [repo_path, eden.repo_root.join(repo_path).as_path()] {
-                        if let Ok(relpath) = path.strip_prefix(prefix) {
-                            return target.join(relpath);
-                        }
-                    }
-                }
-                path.to_owned()
-            }
-            None => path.to_owned(),
-        }
     }
 
     /// Delete outputs that are no longer referenced by buck artifacts, but are
@@ -219,50 +130,28 @@ impl WorkingVolume {
             trace!("gc is disabled");
             return Ok(());
         }
-        for entry in std::fs::read_dir(&self.path)? {
-            let entry = entry?;
-            if entry.path().is_dir() {
-                let span =
-                    trace_span!("collect_garbage", path = entry.path().display().to_string());
-                let _guard = span.enter();
-                // skip outputs that are very new to avoid any race condition
-                // between creating the output and setting the keepalive
-                if let Ok(mtime) = entry.metadata().and_then(|meta| meta.modified()) {
-                    let elapsed = SystemTime::now().duration_since(mtime)?;
-                    if elapsed < Duration::from_secs(5 * 60) {
-                        continue;
-                    }
-                }
-
-                let keepalive_path = Self::keepalive_path(&entry.path());
-                let delete = match keepalive_path.symlink_metadata() {
-                    Ok(meta) => Ok(meta.nlink() <= 1),
-                    Err(e) => match e.kind() {
-                        ErrorKind::NotFound => Ok(true),
-                        _ => Err(e),
-                    },
-                }?;
-                if delete {
-                    trace!("subvol is no longer referenced");
-                    try_delete(&entry.path());
-                    if let Err(e) = std::fs::remove_file(&keepalive_path) {
-                        if e.kind() != std::io::ErrorKind::NotFound {
-                            warn!("failed to remove keepalive file: {e}");
-                        }
-                    }
-                }
+        let mut subvols = self.tracked_subvols()?;
+        for subvol in subvols.deletable_subvols() {
+            if delete(&subvol).is_ok() {
+                subvols.untrack(&subvol);
             }
         }
+        subvols
+            .serialize()
+            .context("while serializing subvols.json")?;
         Ok(())
     }
 }
 
 #[tracing::instrument]
-fn try_delete(path: &Path) {
+fn delete(path: &Path) -> Result<()> {
     match Subvolume::open(path) {
         Ok(subvol) => {
             if let Err((_subvol, e)) = subvol.delete() {
                 warn!("failed deleting subvol: {e}");
+                Err(e.into())
+            } else {
+                Ok(())
             }
         }
         Err(e) => {
@@ -271,55 +160,109 @@ fn try_delete(path: &Path) {
                 warn!("failed to rmdir: {e}");
                 if let Err(e) = std::fs::remove_file(path) {
                     warn!("failed to remove: {e}");
+                    Err(e.into())
+                } else {
+                    Ok(())
                 }
+            } else {
+                Ok(())
             }
         }
     }
 }
 
-/// We use hardlink refcounting for a garbage collection mechanism. But if we're
-/// on CI we're never even going to re-build the same thing twice anyway, so
-/// there's no point in keeping the refcounts around.
-/// Ideally we would keep doing this anyway, but there is some weird bind mount
-/// setup on CI that makes refcounting not work, so just ignore it (if it's
-/// never going to be used anyway!)
-fn no_gc() -> bool {
-    std::env::var_os("SANDCASTLE_INSTANCE_ID").is_some()
+/// Struct that is serialized to antlir2-out/subvols.json and used to keep track
+/// of where subvolumes are referenced.
+#[derive(Debug, Clone, PartialEq, Eq, Default, Deserialize, Serialize)]
+struct Subvols {
+    #[serde(default)]
+    subvols: BTreeMap<PathBuf, Vec<PathBuf>>,
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn resolve_redirection() {
-        let wv = WorkingVolume {
-            path: PathBuf::from("antlir2-out"),
-            eden: Some(EdenInfo {
-                repo_root: "/path/to/repo".into(),
-                redirections: vec![
-                    EdenRedirection {
-                        repo_path: "buck-out".into(),
-                        target: Some("/other/buck-out".into()),
-                    },
-                    EdenRedirection {
-                        repo_path: "foo".into(),
-                        target: None,
-                    },
-                ],
-            }),
-        };
-        assert_eq!(
-            Path::new("some/repo/file"),
-            wv.resolve_redirection(Path::new("some/repo/file"))
-        );
-        assert_eq!(
-            Path::new("/other/buck-out/redirected/file"),
-            wv.resolve_redirection(Path::new("buck-out/redirected/file"),)
-        );
-        assert_eq!(
-            Path::new("/other/buck-out/redirected/file"),
-            wv.resolve_redirection(Path::new("/path/to/repo/buck-out/redirected/file"),)
-        );
+impl Subvols {
+    fn deletable_subvols(&self) -> Vec<PathBuf> {
+        let mut result = Vec::new();
+        for (subvol, symlinks) in &self.subvols {
+            if let Ok(subvol_canonical) = subvol.canonicalize() {
+                // If none of the symlinks exist and point to the subvol, then it
+                // can safely be deleted.
+                let symlink_targets: HashSet<_> = symlinks
+                    .iter()
+                    .filter_map(|symlink| symlink.canonicalize().ok())
+                    .collect();
+                if symlink_targets.is_empty() || !symlink_targets.contains(&subvol_canonical) {
+                    result.push(subvol.clone());
+                }
+            }
+        }
+        result
     }
+
+    fn track(&mut self, subvol: PathBuf, buck_out: PathBuf) {
+        self.subvols.entry(subvol).or_default().push(buck_out);
+    }
+
+    fn untrack(&mut self, subvol: &Path) {
+        self.subvols.remove(subvol);
+    }
+}
+
+struct SubvolsFile {
+    subvols: Subvols,
+    file: File,
+}
+
+impl SubvolsFile {
+    fn open(path: &Path) -> Result<Self> {
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(path)
+            .context("while opening subvol.json")
+            .map_err(Error::Tracking)?;
+        file.lock_exclusive()
+            .context("while locking subvols.json")
+            .map_err(Error::Tracking)?;
+        let subvols: Subvols = if file
+            .metadata()
+            .context("while statting subvols.json")
+            .map_err(Error::Tracking)?
+            .len()
+            == 0
+        {
+            Default::default()
+        } else {
+            serde_json::from_reader(&mut file)
+                .context("while reading subvols.json")
+                .map_err(Error::Tracking)?
+        };
+        Ok(Self { subvols, file })
+    }
+
+    fn track(&mut self, subvol: PathBuf, buck_out: PathBuf) {
+        self.subvols.track(subvol, buck_out)
+    }
+
+    fn untrack(&mut self, subvol: &Path) {
+        self.subvols.untrack(subvol)
+    }
+
+    fn deletable_subvols(&self) -> Vec<PathBuf> {
+        self.subvols.deletable_subvols()
+    }
+
+    fn serialize(mut self) -> anyhow::Result<()> {
+        self.file.rewind().context("while rewinding")?;
+        self.file.set_len(0).context("while truncating")?;
+        serde_json::to_writer_pretty(&mut self.file, &self.subvols)
+            .context("while writing subvols.json")?;
+        Ok(())
+    }
+}
+
+/// If we're on CI we're never even going to re-build the same thing twice
+/// anyway, so there's no point in keeping the refcounts around.
+fn no_gc() -> bool {
+    std::env::var_os("SANDCASTLE_INSTANCE_ID").is_some()
 }
