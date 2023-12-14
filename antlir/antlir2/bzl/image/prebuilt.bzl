@@ -38,32 +38,45 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # antlir2-receive treats them the same
         format = "sendstream"
 
-    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
-    ctx.actions.run(
+    _make_recv_action = lambda rootless, out: ctx.actions.run(
         cmd_args(
-            "sudo",  # this requires privileged btrfs operations
+            # this usually requires privileged btrfs operations
+            "sudo" if not rootless else cmd_args(),
             ctx.attrs.antlir2_receive[RunInfo],
             "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
             cmd_args(format, format = "--format={}"),
             cmd_args(src, format = "--source={}"),
-            cmd_args(subvol_symlink.as_output(), format = "--output={}"),
+            cmd_args(out.as_output(), format = "--output={}"),
+            cmd_args("--rootless") if rootless else cmd_args(),
         ),
-        category = "antlir2_prebuilt_layer",
+        category = "antlir2_prebuilt_layer" + ("_rootless" if rootless else ""),
         # needs local subvolumes
         local_only = True,
         env = {
             "RUST_LOG": "antlir2=trace",
         },
     )
-    depgraph_output = build_depgraph(
+
+    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+    subvol_symlink_rootless = ctx.actions.declare_output("subvol_symlink_rootless")
+
+    _make_recv_action(False, subvol_symlink)
+    _make_recv_action(True, subvol_symlink_rootless)
+
+    _make_depgraph = lambda rootless, subvol: build_depgraph(
         ctx = ctx,
         parent_depgraph = None,
         features_json = None,
         format = "json",
-        subvol = subvol_symlink,
+        subvol = subvol,
         dependency_layers = [],
+        rootless = rootless,
     )
+
+    depgraph_output = _make_depgraph(False, subvol_symlink)
+    depgraph_output_rootless = _make_depgraph(True, subvol_symlink_rootless)
+
     if not ctx.attrs.antlir_internal_build_appliance and not ctx.attrs.flavor:
         fail("only build appliance images are allowed to be flavorless")
     return [
@@ -73,8 +86,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             subvol_symlink = subvol_symlink,
             mounts = [],
             flavor = ctx.attrs.flavor,
+            rootless = False,
         ),
-        DefaultInfo(subvol_symlink),
+        DefaultInfo(subvol_symlink, sub_targets = {
+            "rootless": [
+                DefaultInfo(subvol_symlink_rootless),
+                LayerInfo(
+                    label = ctx.label,
+                    depgraph = depgraph_output_rootless,
+                    subvol_symlink = subvol_symlink_rootless,
+                    mounts = [],
+                    flavor = ctx.attrs.flavor,
+                    rootless = True,
+                ),
+            ],
+        }),
     ]
 
 _prebuilt = rule(

@@ -18,6 +18,9 @@ use anyhow::Result;
 use buck_label::Label;
 use clap::Parser;
 use clap::ValueEnum;
+use nix::sched::unshare;
+use nix::sched::CloneFlags;
+use nix::unistd::Uid;
 use tracing::trace;
 use tracing_subscriber::prelude::*;
 
@@ -38,6 +41,9 @@ pub(crate) struct Receive {
     output: PathBuf,
     #[clap(flatten)]
     setup: SetupArgs,
+    #[clap(long)]
+    /// Use an unprivileged usernamespace
+    rootless: bool,
 }
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
@@ -72,6 +78,22 @@ impl Receive {
         trace!("setting up WorkingVolume");
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
+
+        let is_real_root = Uid::effective().is_root();
+
+        if self.rootless {
+            // It's actually surprisingly tricky to make the same code paths
+            // work when both unprivileged and running as real root, so just
+            // don't allow it.
+            ensure!(
+                !is_real_root,
+                "cannot be real root if --rootless is being used"
+            );
+
+            antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+            unshare(CloneFlags::CLONE_NEWNS).context("while unsharing mount")?;
+        }
+
         let dst = self.prepare_dst(&working_volume)?;
 
         match self.format {
