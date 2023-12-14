@@ -24,7 +24,8 @@ def install(
         user: str | Select = "root",
         group: str | Select = "root",
         xattrs: dict[str, str] | Select = {},
-        never_use_dev_binary_symlink: bool = False) -> ParseTimeFeature:
+        never_use_dev_binary_symlink: bool = False,
+        split_debuginfo: bool = True) -> ParseTimeFeature:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -57,6 +58,7 @@ def install(
             "group": group,
             "mode": mode,
             "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
+            "split_debuginfo": split_debuginfo,
             "text": None,
             "user": user,
             "xattrs": xattrs,
@@ -127,10 +129,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             required_run_infos.append(src[RunInfo])
 
             # dev mode binaries don't get stripped, they just get symlinked
-            if (ctx.attrs.skip_debuginfo_split or REPO_CFG.artifacts_require_repo) and not ctx.attrs.never_use_dev_binary_symlink:
-                src = ensure_single_output(src)
-                binary_info = binary_record(dev = REPO_CFG.artifacts_require_repo)
-            else:
+            if ctx.attrs.split_debuginfo and (not REPO_CFG.artifacts_require_repo or ctx.attrs.never_use_dev_binary_symlink):
                 split_anon_target = split_binary_anon(
                     ctx = ctx,
                     src = src,
@@ -144,6 +143,11 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 )
                 required_artifacts.extend([binary_info.installed.debuginfo, binary_info.installed.metadata])
                 src = split_anon_target.artifact("src")
+            else:
+                src = ensure_single_output(src)
+                binary_info = binary_record(dev = REPO_CFG.artifacts_require_repo)
+                if ctx.attrs.never_use_dev_binary_symlink:
+                    binary_info = None
         else:
             src = ensure_single_output(src)
             binary_info = None
@@ -186,7 +190,7 @@ install_rule = rule(
             doc = "Always install as a regular file, even in @mode/dev",
         ),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
-        "skip_debuginfo_split": attrs.bool(default = False),
+        "split_debuginfo": attrs.bool(default = True),
         "src": attrs.option(
             attrs.one_of(attrs.dep(), attrs.source()),
             default = None,
