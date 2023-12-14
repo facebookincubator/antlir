@@ -31,4 +31,5 @@ LayerInfo = provider(fields = [
     "mounts",  # List of mount features
     "parent",  # Dependency for the parent of the layer, if one exists
     "subvol_symlink",  # symlink pointing to the built subvol
+    "rootless",  # image was built with unprivileged user namespaces
 ])

@@ -16,12 +16,15 @@ def build_depgraph(
         format: str,
         subvol: Artifact | None,
         dependency_layers: list[LayerInfo],
-        identifier_prefix: str = "") -> Artifact:
+        identifier_prefix: str = "",
+        rootless: bool = False) -> Artifact:
+    if rootless:
+        identifier_prefix += "_rootless_"
     output = ctx.actions.declare_output(identifier_prefix + "depgraph." + format + (".pre" if not subvol else ""))
     ctx.actions.run(
         cmd_args(
             # Inspecting already-built images often requires root privileges
-            "sudo" if subvol else cmd_args(),
+            "sudo" if (subvol and not rootless) else cmd_args(),
             ctx.attrs.antlir2[RunInfo],
             "depgraph",
             cmd_args(str(ctx.label), format = "--label={}"),
@@ -31,6 +34,7 @@ def build_depgraph(
             cmd_args([li.depgraph for li in dependency_layers], format = "--image-dependency={}"),
             cmd_args(subvol, format = "--add-built-items={}") if subvol else cmd_args(),
             cmd_args(output.as_output(), format = "--out={}"),
+            cmd_args("--rootless") if rootless else cmd_args(),
         ),
         category = "antlir2_depgraph",
         identifier = identifier_prefix + format + ("/pre" if not subvol else ""),
