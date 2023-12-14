@@ -112,7 +112,8 @@ Optional arguments:
         for supported, but less commonly used, kwargs.
     """
     antlir2 = image_layer_kwargs.pop("antlir2", None)
-    antlir2_mount_platform = antlir2_mount_platform or REPO_CFG.artifacts_require_repo
+    if antlir2_mount_platform == None:
+        antlir2_mount_platform = antlir2_mount_platform or REPO_CFG.artifacts_require_repo
     if antlir2_shim.upgrade_or_shadow_layer(
         antlir2 = antlir2,
         name = name,
