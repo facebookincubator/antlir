@@ -27,6 +27,9 @@ struct Args {
     /// `--bind-mount-ro src dst` creates an RO bind-mount of src to dst in the subvol
     #[clap(long, num_args = 2)]
     bind_mount_ro: Vec<PathBuf>,
+    /// `--bind-mount-rw src dst` creates an RW bind-mount of src to dst in the subvol
+    #[clap(long, num_args = 2)]
+    bind_mount_rw: Vec<PathBuf>,
     #[clap(long)]
     artifacts_require_repo: bool,
     /// `--user` run command as a given user
@@ -66,13 +69,22 @@ fn main() -> anyhow::Result<()> {
         .chunks(2)
         .map(|pair| match pair {
             [src, dst] => Ok((dst.clone(), src.clone())),
-            _ => Err(anyhow!("Unrecognized --mount arg: {:?}", pair)),
+            _ => Err(anyhow!("Unrecognized mount arg: {:?}", pair)),
+        })
+        .collect::<anyhow::Result<HashMap<_, _>>>()?;
+    let bind_rw = args
+        .bind_mount_rw
+        .chunks(2)
+        .map(|pair| match pair {
+            [src, dst] => Ok((dst.clone(), src.clone())),
+            _ => Err(anyhow!("Unrecognized mount arg: {:?}", pair)),
         })
         .collect::<anyhow::Result<HashMap<_, _>>>()?;
     let mut cmd_builder = IsolationContext::builder(args.subvol);
     cmd_builder
         .user(&args.user)
         .inputs(bind_ro_inputs)
+        .outputs(bind_rw)
         .ephemeral(true)
         .invocation_type(InvocationType::Pid2Interactive);
     if args.artifacts_require_repo {
