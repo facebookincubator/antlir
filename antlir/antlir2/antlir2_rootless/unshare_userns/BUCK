@@ -1,0 +1,10 @@
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("antlir")
+
+rust_library(
+    name = "unshare_userns",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//antlir/antlir2/antlir2_rootless:"],
+    deps = ["nix"],
+)
