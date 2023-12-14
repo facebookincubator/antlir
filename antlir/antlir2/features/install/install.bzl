@@ -23,7 +23,8 @@ def install(
         mode: int | str | Select | None = None,
         user: str | Select = "root",
         group: str | Select = "root",
-        xattrs: dict[str, str] | Select = {}) -> ParseTimeFeature:
+        xattrs: dict[str, str] | Select = {},
+        never_use_dev_binary_symlink: bool = False) -> ParseTimeFeature:
     """
     `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
     `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
@@ -55,6 +56,7 @@ def install(
             "dst": dst,
             "group": group,
             "mode": mode,
+            "never_use_dev_binary_symlink": never_use_dev_binary_symlink,
             "text": None,
             "user": user,
             "xattrs": xattrs,
@@ -125,7 +127,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             required_run_infos.append(src[RunInfo])
 
             # dev mode binaries don't get stripped, they just get symlinked
-            if ctx.attrs.skip_debuginfo_split or REPO_CFG.artifacts_require_repo:
+            if (ctx.attrs.skip_debuginfo_split or REPO_CFG.artifacts_require_repo) and not ctx.attrs.never_use_dev_binary_symlink:
                 src = ensure_single_output(src)
                 binary_info = binary_record(dev = REPO_CFG.artifacts_require_repo)
             else:
@@ -179,6 +181,10 @@ install_rule = rule(
         "dst": attrs.option(attrs.string(), default = None),
         "group": attrs.string(default = "root"),
         "mode": attrs.option(attrs.int(), default = None),
+        "never_use_dev_binary_symlink": attrs.bool(
+            default = False,
+            doc = "Always install as a regular file, even in @mode/dev",
+        ),
         "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
         "skip_debuginfo_split": attrs.bool(default = False),
         "src": attrs.option(
