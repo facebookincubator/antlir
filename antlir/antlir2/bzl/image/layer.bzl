@@ -611,6 +611,7 @@ def layer(
         actual = ":" + name,
         antlir_rule = "user-internal",
         visibility = get_visibility(visibility),
+        target_compatible_with = target_compatible_with or None,
     )
 
     return layer_rule(
