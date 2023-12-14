@@ -28,7 +28,6 @@ feature.new(
     #
     # See https://fburl.com/workplace/hux7vro0 for discussion
     visibility = [
-        "//metalos/os/vm/...",
         "//provisioning/images/grasstile/...",
     ],
 )

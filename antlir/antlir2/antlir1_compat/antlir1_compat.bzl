@@ -23,7 +23,6 @@ load("//antlir/bzl/image/feature:defs.bzl", "feature")
 # YOU'RE DOING
 _ALLOWED_LABELS = (
     "fbcode//antlir/antlir2/antlir1_compat/tests:antlir1-layer",
-    "fbcode//metalos/os/vm:rootfs.antlir1",
     "fbcode//metalos/basesystem:c9.antlir1",
     "fbcode//metalos/basesystem:c8.antlir1",
 )
