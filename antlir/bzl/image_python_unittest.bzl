@@ -43,6 +43,7 @@ def image_python_unittest(
         boot = boot,
         run_as_user = run_as_user,
         boot_requires_units = ["dbus.socket"] if (boot and container_opts and container_opts.boot_await_dbus) else [],
+        hostname = hostname,
         fake_buck1 = struct(
             fn = antlir2_shim.fake_buck1_test,
             name = name,
