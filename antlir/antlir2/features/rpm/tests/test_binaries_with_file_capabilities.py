@@ -20,5 +20,5 @@ class TestBinariesWithFileCapabilities(unittest.TestCase):
                 text=True,
                 check=True,
             ).stdout.strip(),
-            "/usr/bin/antlir2-with-capability cap_setgid,cap_setuid=ep",
+            "/usr/bin/antlir2-with-capability cap_setuid=ep",
         )
