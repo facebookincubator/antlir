@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:build_defs.bzl", "export_file")
+load("//antlir/bzl:build_defs.bzl", "alias", "export_file")
 load(":antlir2_migration.bzl?v2_only", "antlir2_migration")
 load(":build_defs.bzl", "is_buck2", "python_unittest")
 load(":flavor.shape.bzl", "flavor_t")
@@ -92,6 +92,11 @@ def _upgrade_or_shadow(
         **kwargs) -> str | None:
     if _should_upgrade():
         fn(name = name, **kwargs)
+        alias(
+            name = name + ".antlir2",
+            actual = ":" + name,
+            antlir_rule = "user-internal",
+        )
         return "upgrade"
     if _should_shadow(antlir2 = antlir2):
         fn(name = name + ".antlir2", **kwargs)
