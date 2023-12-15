@@ -180,12 +180,15 @@ impl Map {
         std::os::unix::fs::symlink(subvol.path(), &self.setup.output)
             .context("while making symlink")?;
 
-        working_volume
-            .keep_path_alive(subvol.path(), &self.setup.output)
-            .context("while setting up refcount")?;
-        working_volume
-            .collect_garbage()
-            .context("while garbage collecting old outputs")?;
+        rootless.as_root(|| {
+            working_volume
+                .keep_path_alive(subvol.path(), &self.setup.output)
+                .context("while setting up refcount")?;
+            working_volume
+                .collect_garbage()
+                .context("while garbage collecting old outputs")?;
+            Ok::<_, anyhow::Error>(())
+        })??;
 
         Ok(())
     }
