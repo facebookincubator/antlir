@@ -18,6 +18,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         if label not in HIDE_TEST_LABELS
     ]
 
+    # Extend tpx timeout to 100 minutes if we exceed the default 10 min
+    # @oss-disable
+        # @oss-disable
+
     common_args = cmd_args(
         cmd_args(ctx.attrs.vm_host[VMHostInfo].image[LayerInfo].subvol_symlink, format = "--image={}"),
         cmd_args(ctx.attrs.vm_host[VMHostInfo].machine_spec, format = "--machine-spec={}"),
