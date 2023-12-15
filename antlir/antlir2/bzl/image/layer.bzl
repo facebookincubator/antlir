@@ -20,7 +20,7 @@ load(
 )
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
-load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:types.bzl", "types")
 # @oss-disable
@@ -601,17 +601,6 @@ def layer(
         )
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
-
-    # TODO(vmagro): remove this when antlir1 compat is no longer needed
-    # This exists only because the implicit antlir2 conversion rules append a
-    # '.antlir2' suffix wherever a layer is involved. When the source layer is
-    # antlir2, this suffixed layer will not exist so just make it an alias
-    alias(
-        name = name + ".antlir2",
-        actual = ":" + name,
-        antlir_rule = "user-internal",
-        visibility = get_visibility(visibility),
-    )
 
     return layer_rule(
         name = name,
