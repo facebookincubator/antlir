@@ -11,10 +11,8 @@ feature_impl(
         "base64",
         "hex",
         "serde_json",
-        "serde_with",
         "walkdir",
         "xattr",
         "//antlir/antlir2/antlir2_users:antlir2_users",
-        "//antlir/antlir2/libcap:libcap",
     ],
 )

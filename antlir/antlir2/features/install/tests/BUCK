@@ -325,27 +325,3 @@ image_diff_test(
     diff_type = "file",
     layer = ":install-dir-xattr",
 )
-
-image.layer(
-    name = "setcap",
-    features = [
-        feature.install(
-            src = ":deterministic-binary",
-            dst = "/caps",
-            never_use_dev_binary_symlink = True,
-            setcap = "cap_setuid,cap_setgid+ep",
-            split_debuginfo = False,
-        ),
-    ],
-    parent_layer = ":base",
-)
-
-image_diff_test(
-    name = "test-setcap",
-    diff = select({
-        "ovr_config//cpu:arm64": "setcap.aarch64.toml",
-        "ovr_config//cpu:x86_64": "setcap.x86_64.toml",
-    }),
-    diff_type = "file",
-    layer = ":setcap",
-)

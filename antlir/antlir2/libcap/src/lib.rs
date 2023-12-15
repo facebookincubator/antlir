@@ -6,13 +6,9 @@
  */
 
 use std::ffi::CStr;
-use std::ffi::CString;
-use std::fmt::Debug;
-use std::fmt::Display;
 use std::os::fd::AsRawFd;
 use std::os::raw::c_char;
 use std::os::raw::c_void;
-use std::str::FromStr;
 
 use libc::ENODATA;
 
@@ -22,7 +18,6 @@ pub struct Capabilities(libcap_sys::cap_t);
 
 pub trait FileExt {
     fn get_capabilities(&self) -> Result<Option<Capabilities>>;
-    fn set_capabilities(&self, capabilities: Option<&Capabilities>) -> Result<()>;
 }
 
 impl FileExt for std::fs::File {
@@ -37,21 +32,6 @@ impl FileExt for std::fs::File {
             }
         } else {
             Ok(Some(Capabilities(ret)))
-        }
-    }
-
-    fn set_capabilities(&self, capabilities: Option<&Capabilities>) -> Result<()> {
-        let ret = unsafe {
-            libcap_sys::cap_set_fd(
-                self.as_raw_fd(),
-                capabilities.map_or(std::ptr::null_mut(), |c| c.0),
-            )
-        };
-        if ret != 0 {
-            let err = std::io::Error::last_os_error();
-            Err(err)
-        } else {
-            Ok(())
         }
     }
 }
@@ -92,48 +72,3 @@ impl Capabilities {
             .map(|s| s.to_owned())
     }
 }
-
-impl FromStr for Capabilities {
-    type Err = std::io::Error;
-
-    fn from_str(s: &str) -> Result<Self> {
-        let cstr = CString::new(s).map_err(|_| {
-            std::io::Error::new(std::io::ErrorKind::Other, "string had interior NUL byte")
-        })?;
-        let cap = unsafe { libcap_sys::cap_from_text(cstr.as_ptr()) };
-        if cap.is_null() {
-            Err(std::io::Error::last_os_error())
-        } else {
-            Ok(Capabilities(cap))
-        }
-    }
-}
-
-impl Clone for Capabilities {
-    fn clone(&self) -> Self {
-        Self(unsafe { libcap_sys::cap_dup(self.0) })
-    }
-}
-
-impl Debug for Capabilities {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Capabilities")
-            .field(&self.to_text().map_err(|_| std::fmt::Error)?)
-            .finish()
-    }
-}
-
-impl Display for Capabilities {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_text().map_err(|_| std::fmt::Error)?)
-    }
-}
-
-impl PartialEq for Capabilities {
-    fn eq(&self, other: &Self) -> bool {
-        let cmp = unsafe { libcap_sys::cap_compare(self.0, other.0) };
-        cmp == 0
-    }
-}
-
-impl Eq for Capabilities {}

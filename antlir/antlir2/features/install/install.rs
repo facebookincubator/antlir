@@ -32,20 +32,15 @@ use antlir2_features::types::UserName;
 use antlir2_users::Id;
 use anyhow::Context;
 use anyhow::Result;
-use libcap::Capabilities;
-use libcap::FileExt as _;
 use serde::de::Deserializer;
 use serde::de::Error as _;
 use serde::Deserialize;
-use serde_with::serde_as;
-use serde_with::DisplayFromStr;
 use tracing::debug;
 use walkdir::WalkDir;
-use xattr::FileExt as _;
+use xattr::FileExt;
 
 pub type Feature = Install;
 
-#[serde_as]
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Install {
     pub dst: PathInLayer,
@@ -55,8 +50,6 @@ pub struct Install {
     pub user: UserName,
     pub binary_info: Option<BinaryInfo>,
     pub xattrs: HashMap<String, XattrValue>,
-    #[serde_as(as = "Option<DisplayFromStr>")]
-    pub setcap: Option<Capabilities>,
 }
 
 impl Install {
@@ -425,12 +418,6 @@ impl antlir2_compile::CompileFeature for Install {
                 dst_file.set_times(times)?;
                 for (key, val) in &self.xattrs {
                     dst_file.set_xattr(key, &val.0)?;
-                }
-                if let Some(cap) = self.setcap.as_ref() {
-                    // Technically we could just use self.setcap directly, but
-                    // then that would still result in a syscall to clear the
-                    // file capabilities (which won't even be there)
-                    dst_file.set_capabilities(Some(cap))?;
                 }
             }
         }
