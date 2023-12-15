@@ -219,14 +219,14 @@ impl SubvolsFile {
             .write(true)
             .create(true)
             .open(path)
-            .context("while opening subvol.json")
+            .context(format!("while opening subvol.json: {}", path.display()))
             .map_err(Error::Tracking)?;
         file.lock_exclusive()
-            .context("while locking subvols.json")
+            .context(format!("while locking subvols.json: {}", path.display()))
             .map_err(Error::Tracking)?;
         let subvols: Subvols = if file
             .metadata()
-            .context("while statting subvols.json")
+            .context(format!("while statting subvols.json: {}", path.display()))
             .map_err(Error::Tracking)?
             .len()
             == 0
