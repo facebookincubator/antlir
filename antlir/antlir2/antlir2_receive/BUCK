@@ -10,6 +10,7 @@ rust_binary(
         "anyhow",
         "clap",
         "nix",
+        "tar",
         "tempfile",
         "tracing",
         "tracing-glog",
