@@ -76,10 +76,12 @@ impl Receive {
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
         trace!("setting up WorkingVolume");
+        let is_real_root = Uid::effective().is_root();
+
+        let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
+
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
-
-        let is_real_root = Uid::effective().is_root();
 
         if self.rootless {
             // It's actually surprisingly tricky to make the same code paths
@@ -96,11 +98,11 @@ impl Receive {
 
         let dst = self.prepare_dst(&working_volume)?;
 
+        let root = rootless.escalate()?;
+
         match self.format {
             Format::Sendstream => {
                 let recv_tmp = tempfile::tempdir_in(&self.setup.working_dir)?;
-                // If there are more [Format]s here, we'll need to match on it to do
-                // different things
                 let mut cmd = Command::new("btrfs");
                 cmd.arg("--quiet")
                     .arg("receive")
@@ -150,18 +152,21 @@ impl Receive {
             .set_readonly(true)
             .context("while making subvol ro")?;
 
-        let _ = std::fs::remove_file(&self.output);
+        drop(root);
+
         std::os::unix::fs::symlink(subvol.path(), &self.output).context("while making symlink")?;
 
-        working_volume.keep_path_alive(&dst, &self.output)?;
-        trace!(
-            "marked path {} with keepalive {}",
-            dst.display(),
-            self.output.display()
-        );
-        working_volume
-            .collect_garbage()
-            .context("while garbage collecting old outputs")?;
+        rootless.as_root(|| {
+            working_volume.keep_path_alive(&dst, &self.output)?;
+            trace!(
+                "marked path {} with keepalive {}",
+                dst.display(),
+                self.output.display()
+            );
+            working_volume
+                .collect_garbage()
+                .context("while garbage collecting old outputs")
+        })??;
         Ok(())
     }
 }
