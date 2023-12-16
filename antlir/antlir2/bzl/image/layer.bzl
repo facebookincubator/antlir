@@ -510,6 +510,7 @@ _layer_attrs = {
         attrs.string(doc = "rpm evra"),
         default = {},
     ),
+    "labels": attrs.list(attrs.string(), default = []),
     "parent_layer": attrs.option(
         attrs.dep(providers = [LayerInfo]),
         default = None,
