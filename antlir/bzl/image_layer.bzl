@@ -157,6 +157,7 @@ def image_layer(
         dnf_excluded_rpms = ["aziot-identity-service"],
         default_mountpoint = antlir2_default_mountpoint,
         dnf_versionlock_extend = compat.flavor_config_override_to_versionlock_extend(flavor_config_override) if is_buck2() else None,
+        labels = image_layer_kwargs.get("labels", None),
         fake_buck1 = struct(
             fn = antlir2_shim.fake_buck1_layer,
             name = name,
