@@ -38,6 +38,27 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # antlir2-receive treats them the same
         format = "sendstream"
 
+    if format == "tar":
+        if ctx.attrs.src.basename.endswith("gz"):
+            src = ctx.actions.declare_output("uncompressed")
+            ctx.actions.run(
+                cmd_args(
+                    "bash",
+                    "-e",
+                    "-c",
+                    cmd_args(
+                        "zcat",
+                        ctx.attrs.src,
+                        cmd_args(src.as_output(), format = "> {}"),
+                        delimiter = " ",
+                    ),
+                ),
+                category = "decompress",
+                # we're going to need it to be locally available to extract it
+                # into an image, but it *can* be run remotely
+                prefer_local = True,
+            )
+
     _make_recv_action = lambda rootless, out: ctx.actions.run(
         cmd_args(
             # this usually requires privileged btrfs operations
@@ -110,7 +131,7 @@ _prebuilt = rule(
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_receive:antlir2-receive")),
         "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
-        "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst"]),
+        "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
     },

@@ -5,6 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fs::File;
+use std::io::BufReader;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -48,10 +50,10 @@ pub(crate) struct Receive {
 
 #[derive(Debug, Copy, Clone, ValueEnum)]
 pub enum Format {
-    #[clap(name = "sendstream")]
     Sendstream,
     #[clap(name = "cas_dir")]
     CasDir,
+    Tar,
 }
 
 #[derive(Parser, Debug)]
@@ -144,6 +146,16 @@ impl Receive {
                 cas_dir
                     .hydrate_into(subvol.path())
                     .context("while materializing CasDir")?;
+            }
+            Format::Tar => {
+                let subvol = Subvolume::create(&dst).context("while creating subvol")?;
+                let mut archive =
+                    tar::Archive::new(BufReader::new(File::open(&self.source).with_context(
+                        || format!("while opening source file {}", self.source.display()),
+                    )?));
+                archive
+                    .unpack(subvol.path())
+                    .context("while unpacking tar")?;
             }
         };
         let mut subvol = Subvolume::open(&dst).context("while opening subvol")?;
