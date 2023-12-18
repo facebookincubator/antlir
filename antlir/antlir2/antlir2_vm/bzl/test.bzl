@@ -5,7 +5,7 @@
 
 # @oss-disable
 # @oss-disable
-load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
@@ -157,7 +157,7 @@ def _implicit_vm_test(
         name: str,
         vm_host: str,
         run_as_bundle: bool = False,
-        timeout_secs: int = 300,
+        timeout_secs: None | int | Select = None,
         expect_failure: bool = False,
         postmortem: bool = False,
         labels: list[str] | None = None,
@@ -176,6 +176,10 @@ def _implicit_vm_test(
         should not be undone by the test fixture (ie, rebooting or setting
         a sysctl that cannot be undone for example).
     """
+
+    # We only execute aarch64 tests on x64 hosts for now and cross-platform
+    # emulation is slower. Give more buffer based on additional boot time.
+    timeout_secs = timeout_secs or arch_select(x86_64 = 300, aarch64 = 600)
     wrapper_labels = list(labels) if labels else []
     wrapper_labels.extend(_add_outer_labels)
     inner_labels = []
@@ -200,8 +204,6 @@ def _implicit_vm_test(
         timeout_secs = timeout_secs,
         expect_failure = expect_failure,
         postmortem = postmortem,
-        # VM is not ready for other arch yet
-        compatible_with = ["ovr_config//cpu:x86_64"],
     )
 
 vm_cpp_test = partial(
