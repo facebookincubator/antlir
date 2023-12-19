@@ -74,6 +74,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         category = "antlir2_prebuilt_layer" + ("_rootless" if rootless else ""),
         # needs local subvolumes
         local_only = True,
+        # the old output is used to clean up the local subvolume
+        no_outputs_cleanup = True,
         env = {
             "RUST_LOG": "antlir2=trace",
         },

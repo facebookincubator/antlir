@@ -1,7 +1,4 @@
-load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:build_defs.bzl", "rust_library")
 
 oncall("antlir")
 
@@ -9,79 +6,9 @@ rust_library(
     name = "antlir2_working_volume",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "anyhow",
         "nix",
-        "serde",
-        "serde_json",
         "thiserror",
         "tracing",
         "uuid",
-        "//antlir/antlir2/antlir2_btrfs:antlir2_btrfs",
-    ],
-)
-
-rust_binary(
-    name = "garbage-collect",
-    srcs = ["bin/garbage_collect.rs"],
-    deps = [
-        "anyhow",
-        "clap",
-        "tracing",
-        "tracing-subscriber",
-        ":antlir2_working_volume",
-    ],
-)
-
-image.layer(
-    name = "test-layer",
-    features = [
-        feature.ensure_dirs_exist(dirs = "/sbin"),
-        feature.install(
-            src = "//antlir:empty",
-            dst = "/sbin/nologin",
-            mode = "a+rx",
-        ),
-        feature.user_add(
-            home_dir = "/",
-            primary_group = "antlir",
-            uid = 1000,
-            username = "antlir",
-        ),
-        feature.group_add(
-            gid = 1000,
-            groupname = "antlir",
-        ),
-        feature.rpms_install(rpms = ["basesystem"]),
-        feature.ensure_dirs_exist(
-            dirs = "/empty_repo",
-            group = "antlir",
-            user = "antlir",
-        ),
-        feature.ensure_dirs_exist(
-            dirs = "/repo/antlir2-out",
-            group = "antlir",
-            user = "antlir",
-        ),
-        feature.ensure_dirs_exist(
-            dirs = "/links/",
-            group = "antlir",
-            user = "antlir",
-        ),
-    ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
-)
-
-image_rust_test(
-    name = "tests",
-    srcs = ["tests.rs"],
-    crate_root = "tests.rs",
-    layer = ":test-layer",
-    run_as_user = "antlir",
-    deps = [
-        ":antlir2_working_volume",
-        third_party.library(
-            "nix",
-            platform = "rust",
-        ),
     ],
 )
