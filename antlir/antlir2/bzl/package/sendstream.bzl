@@ -90,6 +90,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             cmd_args(sendstream.as_output(), format = "--out={}"),
         ),
         local_only = True,  # needs root and local subvol
+        # the old output is used to clean up the local subvolume
+        no_outputs_cleanup = True,
         category = "antlir2_package",
         env = {"RUST_LOG": "trace"},
     )

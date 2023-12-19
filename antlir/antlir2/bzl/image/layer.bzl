@@ -65,6 +65,8 @@ def _map_image(
         identifier = identifier,
         # needs local subvolumes
         local_only = True,
+        # the old output is used to clean up the local subvolume
+        no_outputs_cleanup = True,
     )
 
     return cmd, out

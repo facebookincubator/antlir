@@ -118,12 +118,29 @@ impl PackageFormat for Sendstream {
             Ok::<_, anyhow::Error>(subvol)
         })??;
 
+        if self.subvol_symlink.exists() {
+            trace!("removing existing output {}", self.subvol_symlink.display());
+            rootless.as_root(|| match Subvolume::open(&self.subvol_symlink) {
+                Ok(old_subvol) => {
+                    if let Err(e) = old_subvol.delete() {
+                        warn!(
+                            "couldn't delete old subvol '{}': {e:?}",
+                            self.subvol_symlink.display()
+                        );
+                    }
+                }
+                Err(e) => {
+                    warn!(
+                        "couldn't open old subvol '{}': {e:?}",
+                        self.subvol_symlink.display()
+                    );
+                }
+            })?;
+        }
+
+        let _ = std::fs::remove_file(&self.subvol_symlink);
         std::os::unix::fs::symlink(subvol.path(), &self.subvol_symlink)
             .context("while symlinking packaged subvol")?;
-
-        working_volume
-            .keep_path_alive(&final_path, out)
-            .context("while setting up gc refcount")?;
 
         Ok(())
     }

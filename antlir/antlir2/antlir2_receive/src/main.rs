@@ -24,6 +24,7 @@ use nix::sched::unshare;
 use nix::sched::CloneFlags;
 use nix::unistd::Uid;
 use tracing::trace;
+use tracing::warn;
 use tracing_subscriber::prelude::*;
 
 #[derive(Parser, Debug)]
@@ -72,6 +73,7 @@ impl Receive {
             .allocate_new_path()
             .context("while allocating new path for subvol")?;
         trace!("WorkingVolume gave us new path {}", dst.display());
+
         Ok(dst)
     }
 
@@ -166,19 +168,35 @@ impl Receive {
 
         drop(root);
 
+        if self.output.exists() {
+            trace!("removing existing output {}", self.output.display());
+            rootless.as_root(|| {
+                // Don't fail if the old subvol couldn't be deleted, just print
+                // a warning. We really don't want to fail someone's build if
+                // the only thing that went wrong is not being able to delete
+                // the last version of it.
+                match Subvolume::open(&self.output) {
+                    Ok(old_subvol) => {
+                        if let Err(e) = old_subvol.delete() {
+                            warn!(
+                                "couldn't delete old subvol '{}': {e:?}",
+                                self.output.display()
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        warn!(
+                            "couldn't open old subvol '{}': {e:?}",
+                            self.output.display()
+                        );
+                    }
+                }
+            })?;
+        }
+
+        let _ = std::fs::remove_file(&self.output);
         std::os::unix::fs::symlink(subvol.path(), &self.output).context("while making symlink")?;
 
-        rootless.as_root(|| {
-            working_volume.keep_path_alive(&dst, &self.output)?;
-            trace!(
-                "marked path {} with keepalive {}",
-                dst.display(),
-                self.output.display()
-            );
-            working_volume
-                .collect_garbage()
-                .context("while garbage collecting old outputs")
-        })??;
         Ok(())
     }
 }

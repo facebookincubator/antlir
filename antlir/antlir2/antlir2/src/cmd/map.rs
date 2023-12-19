@@ -17,6 +17,8 @@ use nix::mount::MsFlags;
 use nix::sched::unshare;
 use nix::sched::CloneFlags;
 use tracing::debug;
+use tracing::trace;
+use tracing::warn;
 
 use super::compile::Compile;
 use super::compile::CompileExternal;
@@ -171,6 +173,33 @@ impl Map {
         })??;
         debug!("map finished, making subvol {subvol:?} readonly");
         rootless.as_root(|| subvol.set_readonly(true).context("while making subvol r/o"))??;
+
+        if self.setup.output.exists() {
+            trace!("removing existing output {}", self.setup.output.display());
+            rootless.as_root(|| {
+                // Don't fail if the old subvol couldn't be deleted, just print
+                // a warning. We really don't want to fail someone's build if
+                // the only thing that went wrong is not being able to delete
+                // the last version of it.
+                match Subvolume::open(&self.setup.output) {
+                    Ok(old_subvol) => {
+                        if let Err(e) = old_subvol.delete() {
+                            warn!(
+                                "couldn't delete old subvol '{}': {e:?}",
+                                self.setup.output.display()
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        warn!(
+                            "couldn't open old subvol '{}': {e:?}",
+                            self.setup.output.display()
+                        );
+                    }
+                }
+            })?;
+        }
+
         debug!(
             "linking {} -> {}",
             self.setup.output.display(),
@@ -179,13 +208,6 @@ impl Map {
         let _ = std::fs::remove_file(&self.setup.output);
         std::os::unix::fs::symlink(subvol.path(), &self.setup.output)
             .context("while making symlink")?;
-
-        working_volume
-            .keep_path_alive(subvol.path(), &self.setup.output)
-            .context("while setting up refcount")?;
-        working_volume
-            .collect_garbage()
-            .context("while garbage collecting old outputs")?;
 
         Ok(())
     }
