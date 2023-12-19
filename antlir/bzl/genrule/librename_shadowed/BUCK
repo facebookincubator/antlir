@@ -20,7 +20,7 @@ cxx_genrule(
     name = "librename_shadowed_for_test.so",
     out = "unused",
     cmd = '''
-        $(cc) -shared -o "$OUT" -Wall -Werror -O2 \\
+        $(cc) -shared -o "$OUT" -Wno-unused-command-line-argument -Wall -Werror -O2 \\
             -ldl -fPIC $(location :rename_shadowed.c)
     ''',
 )
