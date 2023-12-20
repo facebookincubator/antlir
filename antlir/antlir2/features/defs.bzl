@@ -5,6 +5,7 @@
 
 load("@prelude//linking:shared_libraries.bzl", "SharedLibraryInfo")
 load("@prelude//rust:link_info.bzl", "RustLinkInfo")
+load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load("//antlir/bzl:build_defs.bzl", "rust_library")
 
@@ -53,13 +54,14 @@ def feature_impl(
         name: str,
         src: str | None = None,
         extra_srcs: list[str] = [],
-        deps: list[str] = [],
+        deps: list[str] | Select = [],
         unstable_features: list[str] = [],
         allow_unused_crate_dependencies: bool = False,
         lib_visibility: list[str] | None = None,
         plugin_visibility: list[str] | None = None,
         visibility: list[str] | None = None,
-        **kwargs):
+        rustc_flags: list[str] | Select | None = [],
+        features: list[str] | Select | None = []):
     lib_visibility = lib_visibility or visibility or [
         "//antlir/antlir2/...",
         "//tupperware/cm/antlir2/...",
@@ -69,20 +71,24 @@ def feature_impl(
         srcs = [src or name + ".rs"] + extra_srcs,
         crate = name,
         crate_root = src or name + ".rs",
-        rustc_flags = list(kwargs.pop("rustc_flags", [])) + [
+        rustc_flags = selects.apply(rustc_flags, lambda flags: flags + [
             "-Zcrate-attr=feature({})".format(feat)
             for feat in unstable_features
-        ],
+        ]),
         allow_unused_crate_dependencies = allow_unused_crate_dependencies,
         visibility = lib_visibility,
-        deps = deps + [
-            "anyhow",
-            "serde",
-            "tracing",
-            "//antlir/antlir2/antlir2_compile:antlir2_compile",
-            "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
-            "//antlir/antlir2/antlir2_features:antlir2_features",
-        ],
+        deps = selects.apply(
+            deps or [],
+            lambda deps: deps + [
+                "anyhow",
+                "serde",
+                "tracing",
+                "//antlir/antlir2/antlir2_compile:antlir2_compile",
+                "//antlir/antlir2/antlir2_depgraph:antlir2_depgraph",
+                "//antlir/antlir2/antlir2_features:antlir2_features",
+            ],
+        ),
+        features = features,
     )
     rust_library(
         name = name + ".linked",

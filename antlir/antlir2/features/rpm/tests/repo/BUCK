@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load(":defs.bzl", "test_rpm")
 
 oncall("antlir")
@@ -157,16 +158,22 @@ all_rpms.append(
     ),
 )
 
+buck_genrule(
+    name = "fake-executable",
+    out = "exe",
+    cmd = "touch $OUT",
+    executable = True,
+)
+
 image.layer(
     name = "antlir2-with-capability-layer",
     features = [
         feature.ensure_dirs_exist(dirs = "/usr/bin"),
         feature.install(
-            src = "//antlir:empty",
+            src = ":fake-executable",
             dst = "/usr/bin/antlir2-with-capability",
-            xattrs = {
-                "security.capability": "0sAQAAAoAAAAAAAAAAAAAAAAAAAAA=",  #cap_setuid=ep
-            },
+            never_use_dev_binary_symlink = True,
+            setcap = "cap_setuid,cap_setgid=ep",
         ),
     ],
     flavor = "//antlir/antlir2/test_images:test-image-flavor",

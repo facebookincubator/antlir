@@ -1,18 +1,34 @@
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
+load("//antlir/bzl:build_defs.bzl", "alias")
 
 oncall("antlir")
 
+_base_deps = [
+    "base64",
+    "hex",
+    "serde_json",
+    "serde_with",
+    "walkdir",
+    "xattr",
+    "//antlir/antlir2/antlir2_users:antlir2_users",
+]
+
+alias(
+    name = "no-setcap",
+    actual = "ovr_config//build_mode:arvr_mode",
+)
+
 feature_impl(
     name = "install",
+    features = select({
+        ":no-setcap": [],
+        "DEFAULT": ["setcap"],
+    }),
     unstable_features = [
         "file_set_times",
     ],
-    deps = [
-        "base64",
-        "hex",
-        "serde_json",
-        "walkdir",
-        "xattr",
-        "//antlir/antlir2/antlir2_users:antlir2_users",
-    ],
+    deps = select({
+        ":no-setcap": _base_deps,
+        "DEFAULT": _base_deps + ["//antlir/antlir2/libcap:libcap"],
+    }),
 )
