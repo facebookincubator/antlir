@@ -84,8 +84,8 @@ impl Label {
     }
 
     #[getter]
-    fn config(&self) -> Option<Self> {
-        self.0.config().map(|c| Self::new(c.to_owned()))
+    fn config(&self) -> Option<&str> {
+        self.0.config()
     }
 }
 
