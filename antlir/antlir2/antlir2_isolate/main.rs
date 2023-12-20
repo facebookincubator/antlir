@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use std::ffi::OsString;
 use std::path::PathBuf;
 
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolationContext;
 use anyhow::ensure;
 use anyhow::Context;
@@ -64,7 +64,7 @@ fn main() -> Result<()> {
         .outputs(cwd.clone())
         .working_directory(cwd)
         .build();
-    let ctx = isolate(ctx).context("while isolating")?;
+    let ctx = nspawn(ctx).context("while isolating")?;
     let res = ctx.command(args.program)?.args(args.args).spawn()?.wait()?;
     ensure!(res.success(), "isolated command failed");
     Ok(())

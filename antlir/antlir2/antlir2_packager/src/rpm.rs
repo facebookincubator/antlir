@@ -12,7 +12,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolationContext;
 use anyhow::ensure;
 use anyhow::Context;
@@ -207,7 +207,7 @@ License: {license}
         let isol_context = isol_context.build();
 
         run_cmd(
-            isolate(isol_context.clone())?
+            nspawn(isol_context.clone())?
                 .command("/bin/rpmbuild")?
                 .arg("-bb")
                 .arg("--define")
@@ -243,7 +243,7 @@ License: {license}
                 out = outputs[0].path().display(),
             );
             run_cmd(
-                isolate(isol_context)?
+                nspawn(isol_context)?
                     .command("bash")?
                     .arg("-c")
                     .arg(sign_script)

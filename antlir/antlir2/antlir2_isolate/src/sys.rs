@@ -40,7 +40,7 @@ impl IsolatedContextInner {
 }
 
 #[cfg(target_os = "linux")]
-pub fn isolate(ctx: IsolationContext) -> Result<IsolatedContext> {
+pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     Ok(isolate_nspawn::nspawn(ctx).into())
 }
 

@@ -10,7 +10,7 @@ use std::ffi::OsString;
 use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
 
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::anyhow;
@@ -95,7 +95,7 @@ fn main() -> anyhow::Result<()> {
     let mut cmd = args.cmd.into_iter();
     let program = cmd.next().unwrap_or(OsString::from("/bin/bash"));
 
-    Err(isolate(cmd_builder.build())?
+    Err(nspawn(cmd_builder.build())?
         .command(program)?
         .args(cmd)
         .exec()

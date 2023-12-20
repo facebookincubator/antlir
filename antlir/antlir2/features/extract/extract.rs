@@ -14,7 +14,7 @@ use std::process::Command;
 
 use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::Arch;
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
@@ -67,7 +67,7 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
     let mut cmd = Command::new(interpreter);
     if let Some(sysroot) = sysroot {
         let cwd = std::env::current_dir()?;
-        cmd = isolate(
+        cmd = nspawn(
             IsolationContext::builder(sysroot)
                 .ephemeral(true)
                 .platform([

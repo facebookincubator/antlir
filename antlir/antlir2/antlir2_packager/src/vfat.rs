@@ -13,7 +13,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
@@ -59,7 +59,7 @@ impl PackageFormat for Vfat {
             .build();
 
         // Build the vfat disk file first
-        let mut mkfs = isolate(isol_context.clone())?.command("/usr/sbin/mkfs.vfat")?;
+        let mut mkfs = nspawn(isol_context.clone())?.command("/usr/sbin/mkfs.vfat")?;
         if let Some(fat_size) = &self.fat_size {
             mkfs.arg(format!("-F{}", fat_size));
         }
@@ -78,7 +78,7 @@ impl PackageFormat for Vfat {
         }
 
         run_cmd(
-            isolate(isol_context)?
+            nspawn(isol_context)?
                 .command("/usr/bin/mcopy")?
                 .arg("-v")
                 .arg("-i")

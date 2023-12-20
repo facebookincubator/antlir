@@ -20,7 +20,7 @@ use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_features::types::BuckOutSource;
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Error;
@@ -378,7 +378,7 @@ fn run_dnf_driver(
         .tmpfs(Path::new("/__antlir2__/dnf/cache"))
         .tmpfs(Path::new("/var/log"))
         .build();
-    let isol = isolate(isol)?;
+    let isol = nspawn(isol)?;
 
     let mut cmd = isol.command("/__antlir2__/dnf/driver")?;
     trace!("dnf driver command: {cmd:#?}");

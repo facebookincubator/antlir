@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
@@ -56,7 +56,7 @@ impl PackageFormat for Cpio {
         );
 
         run_cmd(
-            isolate(isol_context)?
+            nspawn(isol_context)?
                 .command("/bin/bash")?
                 .arg("-c")
                 .arg(cpio_script)
