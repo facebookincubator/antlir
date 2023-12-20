@@ -201,11 +201,11 @@ def _rust_common(rule, **kwargs):
         kwargs["unittests"] = False
 
     if shim.is_facebook:
-        kwargs["deps"] = list(kwargs.pop("deps", [])) + list(kwargs.pop("fb_deps", []))
+        kwargs["deps"] = selects.apply(kwargs.pop("deps", []), lambda deps: deps + list(kwargs.pop("fb_deps", [])))
         if kwargs.get("unittests", False):
             kwargs["test_deps"] = list(kwargs.pop("test_deps", [])) + list(kwargs.pop("fb_test_deps", []))
 
-    deps = [_normalize_rust_dep(d) for d in kwargs.pop("deps", [])]
+    deps = selects.apply(kwargs.pop("deps", []), lambda deps: [_normalize_rust_dep(d) for d in deps])
     rule(deps = deps, **kwargs)
 
 def rust_python_extension(**kwargs):
