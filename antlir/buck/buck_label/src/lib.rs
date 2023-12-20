@@ -29,18 +29,14 @@ static LABEL_PATTERN: Lazy<String> = Lazy::new(|| {
     )
 });
 static LABEL_WITH_CONFIG_RE: Lazy<Regex> = Lazy::new(|| {
-    Regex::new(&format!(
-        r"^{}(?:\s+\((?:(?:<unspecified>)|(?:{}))\))?$",
-        *LABEL_PATTERN, *LABEL_PATTERN
-    ))
-    .expect("I know this works")
+    Regex::new(&format!(r"^{}(?:\s+\((.*)\))?$", *LABEL_PATTERN,)).expect("I know this works")
 });
 
 #[derive(Debug, Error, Clone, PartialEq, Eq)]
 pub enum Error {
     #[error("label '{0}' does not match the regex: '{1}")]
     NoMatch(String, String),
-    #[error("label config was not a valid label: '{0}'")]
+    #[error("label config was not a valid config: '{0}'")]
     InvalidConfig(Box<Error>),
 }
 
@@ -52,7 +48,7 @@ pub struct Label {
     cell: Range<usize>,
     package: Range<usize>,
     name: Range<usize>,
-    config: Option<Box<Label>>,
+    config: Option<Range<usize>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -60,7 +56,7 @@ pub struct Parts<'a> {
     cell: &'a str,
     package: &'a str,
     name: &'a str,
-    config: Option<Box<Parts<'a>>>,
+    config: Option<&'a str>,
 }
 
 impl<'a> Label {
@@ -70,30 +66,18 @@ impl<'a> Label {
             Some(cap) => {
                 assert_eq!(
                     cap.len(),
-                    7,
-                    "the regex matched, there must be exactly 7 groups"
+                    5,
+                    "the regex matched, there must be exactly 5 groups"
                 );
                 let cell = cap.get(1).expect("cell must exist").range();
                 let package = cap.get(2).expect("package must exist").range();
                 let name = cap.get(3).expect("name must exist").range();
-                // If group 4 (the cell of the config) participated in the
-                // match, then all the others parts of the config must have as
-                // well. This unintuitive condition is necessary because
-                // `cap.len()` always returns the total number of groups, even
-                // if they didn't participate in the match
-                let config = if let Some(cfg_cell) = cap.get(4) {
-                    let cfg_cell = cfg_cell.range();
-                    let cfg_package = cap.get(5).expect("cfg_package must exist").range();
-                    let cfg_name = cap.get(6).expect("cfg_name must exist").range();
-                    Some(Box::new(Self {
-                        full: full.to_owned(),
-                        cell: cfg_cell,
-                        package: cfg_package,
-                        name: cfg_name,
-                        config: None,
-                    }))
-                } else {
-                    None
+                let config = match cap.get(4) {
+                    Some(m) => match m.as_str() {
+                        "<unspecified>" => None,
+                        _ => Some(m.range()),
+                    },
+                    None => None,
                 };
                 Ok(Self {
                     full: full.to_owned(),
@@ -112,7 +96,7 @@ impl<'a> Label {
             cell: self.cell(),
             package: self.package(),
             name: self.name(),
-            config: self.config().map(Label::parts).map(Box::new),
+            config: self.config(),
         }
     }
 
@@ -135,8 +119,11 @@ impl<'a> Label {
         &self.full[self.name.clone()]
     }
 
-    pub fn config(&self) -> Option<&Label> {
-        self.config.as_deref()
+    pub fn config(&self) -> Option<&str> {
+        match &self.config {
+            Some(rng) => Some(&self.full[rng.clone()]),
+            None => None,
+        }
     }
 
     pub fn as_unconfigured(&self) -> Self {
@@ -155,7 +142,7 @@ impl<'a> Label {
             cell: self.cell.clone(),
             package: self.package.clone(),
             name: self.name.clone(),
-            config: self.config.as_deref().map(|b| Box::new(b.to_owned())),
+            config: self.config.clone(),
         }
     }
 }
@@ -200,7 +187,7 @@ impl std::fmt::Debug for Label {
 
 impl std::fmt::Display for Label {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match &self.config {
+        match &self.config() {
             Some(cfg) => {
                 write!(
                     f,
@@ -211,7 +198,7 @@ impl std::fmt::Display for Label {
                 )
             }
             None => {
-                write!(f, "{}//{}:{}", self.cell(), self.package(), self.name(),)
+                write!(f, "{}//{}:{}", self.cell(), self.package(), self.name())
             }
         }
     }
@@ -273,12 +260,7 @@ mod tests {
                 cell: "abc",
                 package: "path/to/target",
                 name: "label",
-                config: Some(Box::new(Parts {
-                    cell: "config",
-                    package: "path/to",
-                    name: "config",
-                    config: None
-                })),
+                config: Some("config//path/to:config"),
             },
             Label::new("abc//path/to/target:label (config//path/to:config)")
                 .expect("valid label")
@@ -292,6 +274,17 @@ mod tests {
                 config: None,
             },
             Label::new("abc//path/to/target:label[subtarget]")
+                .expect("valid label")
+                .parts(),
+        );
+        assert_eq!(
+            Parts {
+                cell: "abc",
+                package: "path/to/target",
+                name: "label",
+                config: Some("cfg:modifier"),
+            },
+            Label::new("abc//path/to/target:label (cfg:modifier)")
                 .expect("valid label")
                 .parts(),
         );

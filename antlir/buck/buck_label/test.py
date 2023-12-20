@@ -58,5 +58,4 @@ class Test(unittest.TestCase):
         self.assertEqual("path/to", l.package)
         self.assertEqual("target", l.name)
         self.assertEqual("cfg//a:b", l.config)
-        self.assertEqual(Label, type(l.config))
         self.assertIsNone(l.unconfigured.config)
