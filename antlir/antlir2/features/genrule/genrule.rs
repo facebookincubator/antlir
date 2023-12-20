@@ -11,7 +11,7 @@ use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_features::types::UserName;
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
@@ -89,7 +89,7 @@ impl antlir2_compile::CompileFeature for Genrule {
             isol.inputs(cwd.as_path()).working_directory(&cwd);
         }
         let mut cmd =
-            isolate(isol.build())?.command(inner_cmd.next().expect("must have argv[0]"))?;
+            nspawn(isol.build())?.command(inner_cmd.next().expect("must have argv[0]"))?;
         cmd.args(inner_cmd);
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;

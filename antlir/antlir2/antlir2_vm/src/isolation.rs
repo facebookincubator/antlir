@@ -11,7 +11,7 @@ use std::env;
 use std::path::PathBuf;
 use std::process::Command;
 
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::IsolatedContext;
 use antlir2_isolate::IsolationContext;
 use image_test_lib::KvPair;
@@ -108,7 +108,7 @@ pub(crate) fn isolated(
             .map(|p| (p.key, p.value))
             .collect::<BTreeMap<_, _>>(),
     );
-    Ok(isolate(builder.build())?)
+    Ok(nspawn(builder.build())?)
 }
 
 /// Basic check if current environment is isolated

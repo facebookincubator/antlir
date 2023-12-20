@@ -23,7 +23,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
-use antlir2_isolate::isolate;
+use antlir2_isolate::nspawn;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::ensure;
@@ -309,7 +309,7 @@ fn main() -> Result<()> {
             ctx.register(true);
 
             let mut isol =
-                isolate(ctx.build())?.command("systemd.unit=antlir2_image_test.service")?;
+                nspawn(ctx.build())?.command("systemd.unit=antlir2_image_test.service")?;
             isol.arg("systemd.journald.forward_to_console=1")
                 .arg("systemd.log_time=1")
                 .arg("systemd.setenv=ANTLIR2_IMAGE_TEST=1");
@@ -336,7 +336,7 @@ fn main() -> Result<()> {
             ctx.user(spec.user);
             let mut cmd = args.test.into_inner_cmd().into_iter();
             let mut isol =
-                isolate(ctx.build())?.command(cmd.next().expect("must have program arg"))?;
+                nspawn(ctx.build())?.command(cmd.next().expect("must have program arg"))?;
             isol.args(cmd);
             debug!("executing test in isolated container: {isol:?}");
             Err(anyhow::anyhow!("failed to exec test: {:?}", isol.exec()))
