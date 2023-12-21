@@ -190,6 +190,8 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         nspawn_args.push("--bind".into());
         nspawn_args.push(bind_arg(dst, out).into());
     }
+    nspawn_args.push("--capability=all".into());
+    env.insert("SYSTEMD_SECCOMP".into(), "0".into());
 
     IsolatedContext {
         program: program.into(),
