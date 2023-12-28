@@ -115,8 +115,9 @@ pub(crate) fn isolated(
 /// TODO: Linux specific
 pub(crate) fn is_isolated() -> Result<bool> {
     let mut command = Command::new("systemd-detect-virt");
+    command.arg("-c");
     let output = log_command(&mut command).output()?.stdout;
     let virt = std::str::from_utf8(&output)?.trim();
     debug!("systemd-detect-virt returned: {}", virt);
-    Ok(virt == "systemd-nspawn")
+    Ok(virt != "none")
 }
