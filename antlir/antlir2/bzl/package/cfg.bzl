@@ -34,7 +34,14 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
         )
 
     if is_facebook:
-        constraints = fb_transition(refs, attrs, constraints)
+        constraints = fb_transition(
+            refs,
+            attrs,
+            constraints,
+            # package should restart all configurations even if it's being
+            # installed into another image
+            overwrite = True,
+        )
 
     label = platform.label
 

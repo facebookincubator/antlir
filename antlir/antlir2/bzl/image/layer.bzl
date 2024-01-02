@@ -155,7 +155,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         dnf_available_repos = list(ctx.attrs.dnf_available_repos[RepoSetInfo].repo_infos)
     else:
         dnf_available_repos = list(flavor_info.dnf_info.default_repo_set[RepoSetInfo].repo_infos)
-    for repo in (ctx.attrs.dnf_additional_repos or []):
+    dnf_additional_repos = ctx.attrs.dnf_additional_repos + ctx.attrs._dnf_auto_additional_repos
+    for repo in dnf_additional_repos:
         if RepoSetInfo in repo:
             dnf_available_repos.extend(repo[RepoSetInfo].repo_infos)
         else:
@@ -518,6 +519,18 @@ _layer_attrs = {
         attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
+    "_dnf_auto_additional_repos": attrs.list(
+        attrs.one_of(
+            attrs.dep(providers = [RepoInfo]),
+            attrs.dep(providers = [RepoSetInfo]),
+        ),
+        # the true default is populated at the macro level
+        default = [],
+        doc = """
+            Equivalent to 'dnf_additional_repos' but selected only by internal
+            configurations (like systemd-cd).
+        """,
+    ),
     "_implicit_image_test": attrs.option(
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
@@ -602,6 +615,13 @@ def layer(
         kwargs.setdefault(
             "available_fbpkgs",
             "fbcode//bot_generated/antlir/fbpkg/db/main_db/.buck:snapshotted_fbpkgs",
+        )
+
+        # Likewise here, set it as a default in the macro layer so that it
+        # doesn't need to be set for anon layers
+        kwargs.setdefault(
+            "_dnf_auto_additional_repos",
+            fb_defaults["_dnf_auto_additional_repos"],
         )
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform

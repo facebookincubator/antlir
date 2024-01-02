@@ -6,6 +6,7 @@
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
 def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
@@ -23,7 +24,12 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
     )
 
     if is_facebook:
-        constraints = fb_transition(refs, attrs, constraints)
+        constraints = fb_transition(
+            refs = refs,
+            attrs = attrs,
+            constraints = constraints,
+            overwrite = True,
+        )
 
     return PlatformInfo(
         label = platform.label,
@@ -67,4 +73,16 @@ _configured_alias = rule(
     ),
 )
 
-antlir2_configured_alias = rule_with_default_target_platform(_configured_alias)
+_antlir2_configured_alias_macro = rule_with_default_target_platform(_configured_alias)
+
+def antlir2_configured_alias(
+        *,
+        name: str,
+        default_os: str | None = None,
+        **kwargs):
+    default_os = default_os or get_default_os_for_package()
+    _antlir2_configured_alias_macro(
+        name = name,
+        default_os = default_os,
+        **kwargs
+    )
