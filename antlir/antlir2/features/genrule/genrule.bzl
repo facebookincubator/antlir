@@ -17,7 +17,7 @@ def genrule(
         mount_platform: bool | Select = False) -> ParseTimeFeature:
     return ParseTimeFeature(
         feature_type = "genrule",
-        plugin = antlir2_dep("features/genrule:genrule"),
+        plugin = antlir2_dep("//antlir/antlir2/features/genrule:genrule"),
         kwargs = {
             "bind_repo_ro": bind_repo_ro,
             "boot": boot,

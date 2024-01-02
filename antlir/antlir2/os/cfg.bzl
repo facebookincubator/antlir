@@ -3,17 +3,18 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load(":defs.bzl", "OsVersionInfo")
 
 _OS_REFS = {
-    "os.centos8": "//antlir/antlir2/os:centos8",
-    "os.centos9": "//antlir/antlir2/os:centos9",
-    "os.eln": "//antlir/antlir2/os:eln",
-    "os.none": "//antlir/antlir2/os:none",
-    "os.rhel8": "//antlir/antlir2/os:rhel8",
-    "os_constraint": "//antlir/antlir2/os:os",
-    "os_family_constraint": "//antlir/antlir2/os/family:family",
+    "os.centos8": antlir2_dep("//antlir/antlir2/os:centos8"),
+    "os.centos9": antlir2_dep("//antlir/antlir2/os:centos9"),
+    "os.eln": antlir2_dep("//antlir/antlir2/os:eln"),
+    "os.none": antlir2_dep("//antlir/antlir2/os:none"),
+    "os.rhel8": antlir2_dep("//antlir/antlir2/os:rhel8"),
+    "os_constraint": antlir2_dep("//antlir/antlir2/os:os"),
+    "os_family_constraint": antlir2_dep("//antlir/antlir2/os/family:family"),
 }
 
 def os_transition_refs():

@@ -228,7 +228,7 @@ def _implicit_image_test(
 image_cpp_test = partial(
     _implicit_image_test,
     cpp_unittest,
-    _static_list_wrapper = antlir2_dep("testing/image_test:static-list-cpp"),
+    _static_list_wrapper = antlir2_dep("//antlir/antlir2/testing/image_test:static-list-cpp"),
     _add_outer_labels = ["tpx:optout-test-result-output-spec"],
 )
 
@@ -263,6 +263,6 @@ def image_python_test(
         layer = test_layer,
         default_os = default_os,
         # @oss-disable
-        _static_list_wrapper = antlir2_dep("testing/image_test:static-list-py"),
+        _static_list_wrapper = antlir2_dep("//antlir/antlir2/testing/image_test:static-list-py"),
         **kwargs
     )

@@ -32,7 +32,7 @@ def dot_meta(
     }
     return ParseTimeFeature(
         feature_type = "dot_meta",
-        plugin = antlir2_dep("features/dot_meta:dot_meta"),
+        plugin = antlir2_dep("//antlir/antlir2/features/dot_meta:dot_meta"),
         kwargs = {
             "build_info": build_info,
         },

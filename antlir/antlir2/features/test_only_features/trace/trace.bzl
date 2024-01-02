@@ -11,7 +11,7 @@ def trace(
         msg: str) -> ParseTimeFeature:
     return ParseTimeFeature(
         feature_type = "test_only_features/trace",
-        plugin = antlir2_dep("features/test_only_features/trace:trace"),
+        plugin = antlir2_dep("//antlir/antlir2/features/test_only_features/trace:trace"),
         kwargs = {
             "msg": msg,
         },

@@ -7,6 +7,7 @@ load("@prelude//utils:utils.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
@@ -33,7 +34,7 @@ def _map_image(
         ctx: AnalysisContext,
         cmd: cmd_args,
         identifier: str,
-        build_appliance: LayerInfo,
+        build_appliance: LayerInfo | Provider,
         parent: Artifact | None,
         logs: Artifact) -> (cmd_args, Artifact):
     """
@@ -471,7 +472,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     return providers
 
 _layer_attrs = {
-    "antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
+    "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
     "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
     "build_appliance": attrs.option(
         attrs.transition_dep(providers = [LayerInfo], cfg = remove_os_constraint),
@@ -521,7 +522,7 @@ _layer_attrs = {
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
     ),
-    "_run_container": attrs.exec_dep(default = "//antlir/antlir2/container_subtarget:run"),
+    "_run_container": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/container_subtarget:run")),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         doc = "CPU arch that this layer is being built for. This is always " +
@@ -600,7 +601,7 @@ def layer(
         # chef_solo feature itself, but that's trickier to accomplish
         kwargs.setdefault(
             "available_fbpkgs",
-            "//bot_generated/antlir/fbpkg/db/main_db/.buck:snapshotted_fbpkgs",
+            "fbcode//bot_generated/antlir/fbpkg/db/main_db/.buck:snapshotted_fbpkgs",
         )
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
@@ -610,6 +611,6 @@ def layer(
         default_os = default_os,
         default_rou = default_rou,
         visibility = get_visibility(visibility),
-        _implicit_image_test = "//antlir/antlir2/testing/implicit_image_test:implicit_image_test",
+        _implicit_image_test = antlir2_dep("//antlir/antlir2/testing/implicit_image_test:implicit_image_test"),
         **kwargs
     )

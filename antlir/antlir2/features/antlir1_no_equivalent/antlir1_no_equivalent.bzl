@@ -20,7 +20,7 @@ load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_onl
 
 def antlir1_no_equivalent(*, label: str, description: str) -> ParseTimeFeature:
     return ParseTimeFeature(
-        plugin = antlir2_dep("features/antlir1_no_equivalent:antlir1_no_equivalent"),
+        plugin = antlir2_dep("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent"),
         feature_type = "antlir1_no_equivalent",
         kwargs = {
             "description": description,
