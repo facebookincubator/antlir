@@ -27,7 +27,7 @@ def requires(
     """
     return ParseTimeFeature(
         feature_type = "requires",
-        plugin = antlir2_dep("features/requires:requires"),
+        plugin = antlir2_dep("//antlir/antlir2/features/requires:requires"),
         kwargs = {
             "files": files,
             "groups": groups,

@@ -19,7 +19,7 @@ def group_add(
     """
     return ParseTimeFeature(
         feature_type = "group",
-        plugin = antlir2_dep("features/group:group"),
+        plugin = antlir2_dep("//antlir/antlir2/features/group:group"),
         kwargs = {
             "gid": gid,
             "groupname": groupname,

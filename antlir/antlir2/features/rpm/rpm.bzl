@@ -61,7 +61,7 @@ def _install_common(
 
     return ParseTimeFeature(
         feature_type = "rpm",
-        plugin = antlir2_dep("features/rpm:rpm"),
+        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
         unnamed_deps_or_srcs = unnamed_deps_or_srcs,
         srcs = {
             "subjects_src": subjects_src,
@@ -71,7 +71,7 @@ def _install_common(
             "subjects": subjects,
         },
         target_compatible_with = [
-            "//antlir/antlir2/os/package_manager:dnf",
+            antlir2_dep("//antlir/antlir2/os/package_manager:dnf"),
         ],
     )
 
@@ -118,7 +118,7 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
     """
     return ParseTimeFeature(
         feature_type = "rpm",
-        plugin = antlir2_dep("features/rpm:rpm"),
+        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
         kwargs = {
             "action": "remove_if_exists",
             "subjects": rpms,
@@ -140,7 +140,7 @@ def rpms_remove(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
     """
     return ParseTimeFeature(
         feature_type = "rpm",
-        plugin = antlir2_dep("features/rpm:rpm"),
+        plugin = antlir2_dep("//antlir/antlir2/features/rpm:rpm"),
         kwargs = {
             "action": "remove",
             "subjects": rpms,

@@ -52,7 +52,7 @@ def user_add(
     """
     return ParseTimeFeature(
         feature_type = "user",
-        plugin = antlir2_dep("features/user:user"),
+        plugin = antlir2_dep("//antlir/antlir2/features/user:user"),
         kwargs = {
             "comment": comment,
             "home_dir": home_dir,

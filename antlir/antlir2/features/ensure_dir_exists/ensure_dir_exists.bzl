@@ -40,7 +40,7 @@ def ensure_subdirs_exist(
         dir = paths.join(dir, component)
         features.append(ParseTimeFeature(
             feature_type = "ensure_dir_exists",
-            plugin = antlir2_dep("features/ensure_dir_exists:ensure_dir_exists"),
+            plugin = antlir2_dep("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists"),
             kwargs = {
                 "dir": dir,
                 "group": group,

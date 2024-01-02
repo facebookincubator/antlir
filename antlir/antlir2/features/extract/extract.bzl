@@ -44,7 +44,7 @@ def extract_from_layer(
     """
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
-        plugin = antlir2_dep("features/extract:extract_from_layer"),
+        plugin = antlir2_dep("//antlir/antlir2/features/extract:extract_from_layer"),
         deps = {
             "layer": layer,
         },
@@ -69,13 +69,13 @@ def extract_buck_binary(
     """
     return ParseTimeFeature(
         feature_type = "extract_buck_binary",
-        plugin = antlir2_dep("features/extract:extract_buck_binary"),
+        plugin = antlir2_dep("//antlir/antlir2/features/extract:extract_buck_binary"),
         # include in deps so we can look at the providers
         deps = {
             "src": src,
         },
         exec_deps = {
-            "_analyze": antlir2_dep("features/extract:extract-buck-binary-analyze"),
+            "_analyze": antlir2_dep("//antlir/antlir2/features/extract:extract-buck-binary-analyze"),
         } | (
             {
                 "_objcopy": "fbsource//third-party/binutils:objcopy",

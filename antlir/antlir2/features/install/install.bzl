@@ -52,7 +52,7 @@ def install(
 
     return ParseTimeFeature(
         feature_type = "install",
-        plugin = antlir2_dep("features/install:install"),
+        plugin = antlir2_dep("//antlir/antlir2/features/install:install"),
         deps_or_srcs = {"src": src},
         exec_deps = {
             "_objcopy": "fbsource//third-party/binutils:objcopy",
@@ -83,7 +83,7 @@ def install_text(
 
     return ParseTimeFeature(
         feature_type = "install",
-        plugin = antlir2_dep("features/install:install"),
+        plugin = antlir2_dep("//antlir/antlir2/features/install:install"),
         kwargs = {
             "dst": dst,
             "group": group,

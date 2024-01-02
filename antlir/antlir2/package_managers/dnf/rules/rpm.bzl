@@ -14,7 +14,7 @@ nevra = record(
     arch = str,
 )
 
-def nevra_to_string(nevra: nevra) -> str:
+def nevra_to_string(nevra: nevra | typing.Any) -> str:
     return "{}-{}:{}-{}.{}".format(
         nevra.name,
         nevra.epoch,

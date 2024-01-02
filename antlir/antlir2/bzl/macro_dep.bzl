@@ -9,20 +9,21 @@
 def antlir2_dep(label):
     """
     Get a normalized target referring to a dependency under the root antlir2
-    directory. This helper should be used when adding deps on antlir2 from macro
-    layers.
+    directory. This helper should be used when adding deps on antlir2 from
+    Starlark macros.
 
     This should not be used for dependencies declared in TARGETS files.
     """
 
-    if "//" in label or label.startswith("/"):
-        fail(
-            "antlir_dep should be expressed as a label relative to the " +
-            "root antlir2 directory, e.g. instead of " +
-            "`$cell//antlir/antlir2/foo:bar` the dep should be expressed " +
-            "as `foo:bar`.",
-        )
+    prefix = "//antlir/antlir2"
 
-    if label.startswith(":"):
-        return "{}//antlir/antlir2{}".format(antlir2_cell, label)
-    return "{}//antlir/antlir2/{}".format(antlir2_cell, label)
+    # Technically passing the fbcode// cell will work, but will break OSS so
+    # let's fail here. In internal-only code that can safely use the full cell,
+    # antlir2_dep() is unnecessary.
+    if prefix.startswith("fbcode//antlir/antlir2"):
+        fail("label '{}' should not contain fbcode cell when used with antlir2_dep".format(label))
+
+    if not label.startswith(prefix):
+        fail("label '{}' should start with //antlir/antlir2 so that VSCode go-to-definition works".format(label))
+    label = label.removeprefix(prefix)
+    return "".join([antlir2_cell, prefix, label])

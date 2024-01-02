@@ -15,7 +15,7 @@ def usermod(
     """
     return ParseTimeFeature(
         feature_type = "user_mod",
-        plugin = antlir2_dep("features/usermod:usermod"),
+        plugin = antlir2_dep("//antlir/antlir2/features/usermod:usermod"),
         kwargs = {
             "add_supplementary_groups": add_supplementary_groups,
             "username": username,

@@ -42,26 +42,26 @@ def attrs_selected_by_cfg():
         "flavor": attrs.option(
             attrs.dep(providers = [FlavorInfo]),
             default = select({
-                "//antlir/antlir2/os:centos8": select({
-                    "//antlir/antlir2/os/facebook:rou-preparation": "//antlir/antlir2/facebook/flavor/centos8-rou-preparation:centos8-rou-preparation",
-                    "//antlir/antlir2/os/facebook:rou-rolling": "//antlir/antlir2/facebook/flavor/centos8-rou-rolling:centos8-rou-rolling",
-                    "//antlir/antlir2/os/facebook:rou-stable": "//antlir/antlir2/facebook/flavor/centos8:centos8",
-                    "//antlir/antlir2/os/facebook:rou-test": "//antlir/antlir2/facebook/flavor/centos8-rou-untested:centos8-rou-untested",
+                antlir2_dep("//antlir/antlir2/os:centos8"): select({
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-preparation"): "//antlir/antlir2/facebook/flavor/centos8-rou-preparation:centos8-rou-preparation",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-rolling"): "//antlir/antlir2/facebook/flavor/centos8-rou-rolling:centos8-rou-rolling",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-stable"): "//antlir/antlir2/facebook/flavor/centos8:centos8",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-test"): "//antlir/antlir2/facebook/flavor/centos8-rou-untested:centos8-rou-untested",
                 }),
-                "//antlir/antlir2/os:centos9": select({
-                    "//antlir/antlir2/os/facebook:rou-preparation": "//antlir/antlir2/facebook/flavor/centos9-rou-preparation:centos9-rou-preparation",
-                    "//antlir/antlir2/os/facebook:rou-rolling": "//antlir/antlir2/facebook/flavor/centos9-rou-rolling:centos9-rou-rolling",
-                    "//antlir/antlir2/os/facebook:rou-stable": "//antlir/antlir2/facebook/flavor/centos9:centos9",
-                    "//antlir/antlir2/os/facebook:rou-test": "//antlir/antlir2/facebook/flavor/centos9-rou-untested:centos9-rou-untested",
+                antlir2_dep("//antlir/antlir2/os:centos9"): select({
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-preparation"): "//antlir/antlir2/facebook/flavor/centos9-rou-preparation:centos9-rou-preparation",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-rolling"): "//antlir/antlir2/facebook/flavor/centos9-rou-rolling:centos9-rou-rolling",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-stable"): "//antlir/antlir2/facebook/flavor/centos9:centos9",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-test"): "//antlir/antlir2/facebook/flavor/centos9-rou-untested:centos9-rou-untested",
                 }),
-                "//antlir/antlir2/os:eln": select({
-                    "//antlir/antlir2/os/facebook:rou-preparation": "//antlir/antlir2/facebook/flavor/eln-rou-preparation:eln-rou-preparation",
-                    "//antlir/antlir2/os/facebook:rou-rolling": "//antlir/antlir2/facebook/flavor/eln-rou-rolling:eln-rou-rolling",
-                    "//antlir/antlir2/os/facebook:rou-stable": "//antlir/antlir2/facebook/flavor/eln:eln",
-                    "//antlir/antlir2/os/facebook:rou-test": "//antlir/antlir2/facebook/flavor/eln-rou-untested:eln-rou-untested",
+                antlir2_dep("//antlir/antlir2/os:eln"): select({
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-preparation"): "//antlir/antlir2/facebook/flavor/eln-rou-preparation:eln-rou-preparation",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-rolling"): "//antlir/antlir2/facebook/flavor/eln-rou-rolling:eln-rou-rolling",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-stable"): "//antlir/antlir2/facebook/flavor/eln:eln",
+                    antlir2_dep("//antlir/antlir2/os/facebook:rou-test"): "//antlir/antlir2/facebook/flavor/eln-rou-untested:eln-rou-untested",
                 }),
-                "//antlir/antlir2/os:none": "//antlir/antlir2/flavor:none",
-                "//antlir/antlir2/os:rhel8": "//antlir/antlir2/facebook/flavor/rhel8:rhel8",
+                antlir2_dep("//antlir/antlir2/os:none"): "//antlir/antlir2/flavor:none",
+                antlir2_dep("//antlir/antlir2/os:rhel8"): "//antlir/antlir2/facebook/flavor/rhel8:rhel8",
                 # TODO: in D49383768 this will be disallowed so that we can
                 # guarantee that we'll never end up building a layer without
                 # configuring the os
@@ -123,8 +123,8 @@ layer_cfg = transition(
     refs = {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
-        "package_manager_constraint": antlir2_dep("os/package_manager:package_manager"),
-        "package_manager_dnf": antlir2_dep("os/package_manager:dnf"),
+        "package_manager_constraint": antlir2_dep("//antlir/antlir2/os/package_manager:package_manager"),
+        "package_manager_dnf": antlir2_dep("//antlir/antlir2/os/package_manager:dnf"),
     } | (
         # @oss-disable
         # @oss-enable {}
@@ -152,9 +152,9 @@ def _remove_os_impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
 remove_os_constraint = transition(
     impl = _remove_os_impl,
     refs = {
-        "os_constraint": antlir2_dep("os:os"),
-        "os_family_constraint": antlir2_dep("os/family:family"),
-        "package_manager_constraint": antlir2_dep("os/package_manager:package_manager"),
+        "os_constraint": antlir2_dep("//antlir/antlir2/os:os"),
+        "os_family_constraint": antlir2_dep("//antlir/antlir2/os/family:family"),
+        "package_manager_constraint": antlir2_dep("//antlir/antlir2/os/package_manager:package_manager"),
         # @oss-disable
     },
 )
