@@ -102,7 +102,7 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
         constraints = remove_os_constraints(refs = refs, constraints = constraints)
 
     if is_facebook:
-        constraints = fb_transition(refs, attrs, constraints)
+        constraints = fb_transition(refs, attrs, constraints, overwrite = False)
 
     label = platform.label
 
