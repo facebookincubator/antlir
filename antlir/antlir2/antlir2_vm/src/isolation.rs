@@ -101,7 +101,7 @@ pub(crate) fn isolated(
     builder
         .register(true)
         .platform(Platform::get().clone())
-        .working_directory(&repo)
+        .working_directory(repo.clone())
         .outputs(outputs);
     builder.setenv(
         envs.into_iter()

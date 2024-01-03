@@ -1,0 +1,70 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("antlir")
+
+rust_library(
+    name = "isolate_unshare",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["//antlir/antlir2/antlir2_isolate:"],
+    deps = [
+        "thiserror",
+        "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
+        "//antlir/antlir2/antlir2_isolate/isolate_unshare/isolate_unshare_preexec:isolate_unshare_preexec",
+    ],
+)
+
+image.layer(
+    name = "isolated-root",
+    features = [
+        feature.rpms_install(rpms = [
+            "coreutils",
+            "bash",
+        ]),
+        feature.install_text(
+            dst = "/foo",
+            text = "foo\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/bar",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/baz",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = ["basesystem"]),
+        feature.layer_mount(
+            mountpoint = "/isolated",
+            source = ":isolated-root",
+        ),
+        feature.install_text(
+            dst = "/bar",
+            text = "bar\n",
+        ),
+        feature.install_text(
+            dst = "/baz",
+            text = "baz\n",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+image_rust_test(
+    name = "tests",
+    srcs = glob(["tests/**/*.rs"]),
+    crate_root = "tests/tests.rs",
+    layer = ":test-layer",
+    deps = [
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+    ],
+)

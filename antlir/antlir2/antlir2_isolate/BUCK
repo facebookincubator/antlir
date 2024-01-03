@@ -10,6 +10,7 @@ rust_library(
         "thiserror",
         "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
         "//antlir/antlir2/antlir2_isolate/isolate_nspawn:isolate_nspawn",
+        "//antlir/antlir2/antlir2_isolate/isolate_unshare:isolate_unshare",
     ],
 )
 

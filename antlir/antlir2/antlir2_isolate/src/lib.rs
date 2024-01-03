@@ -16,7 +16,10 @@
 pub mod sys;
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error {}
+pub enum Error {
+    #[error(transparent)]
+    Unshare(#[from] isolate_unshare::Error),
+}
 
 pub type Result<T> = std::result::Result<T, Error>;
 
@@ -24,6 +27,7 @@ pub use isolate_cfg::InvocationType;
 pub use isolate_cfg::IsolationContext;
 /// Set up an isolated environment to run a compilation process.
 pub use sys::nspawn;
+pub use sys::unshare;
 /// Dynamic information about the isolated environment that might be necessary
 /// for the image build.
 pub use sys::IsolatedContext;
