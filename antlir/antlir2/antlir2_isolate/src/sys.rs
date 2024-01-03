@@ -16,25 +16,29 @@ use crate::Result;
 #[derive(Debug, From)]
 #[from(forward)]
 #[repr(transparent)]
-pub struct IsolatedContext(IsolatedContextInner);
+pub struct IsolatedContext<'a>(IsolatedContextInner<'a>);
 
-impl IsolatedContext {
+impl<'a> IsolatedContext<'a> {
     pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Result<Command> {
         self.0.command(program)
     }
 }
 
 #[derive(Debug, From)]
-enum IsolatedContextInner {
+enum IsolatedContextInner<'a> {
     #[cfg(target_os = "linux")]
     Nspawn(isolate_nspawn::IsolatedContext),
+    #[cfg(target_os = "linux")]
+    Unshare(isolate_unshare::IsolatedContext<'a>),
 }
 
-impl IsolatedContextInner {
+impl<'a> IsolatedContextInner<'a> {
     pub fn command<S: AsRef<OsStr>>(&self, program: S) -> Result<Command> {
         match self {
             #[cfg(target_os = "linux")]
             Self::Nspawn(ctx) => Ok(ctx.command(program)),
+            #[cfg(target_os = "linux")]
+            Self::Unshare(ctx) => ctx.command(program).map_err(crate::Error::from),
         }
     }
 }
@@ -42,6 +46,11 @@ impl IsolatedContextInner {
 #[cfg(target_os = "linux")]
 pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     Ok(isolate_nspawn::nspawn(ctx).into())
+}
+
+#[cfg(target_os = "linux")]
+pub fn unshare(ctx: IsolationContext) -> Result<IsolatedContext> {
+    Ok(isolate_unshare::prepare(ctx).into())
 }
 
 #[cfg(not(target_os = "linux"))]
