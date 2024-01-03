@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//utils:utils.bzl", "expect")
+load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")

@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//utils:utils.bzl", "expect", "expect_non_none")
+load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
 load(":macro.bzl", "package_macro")
