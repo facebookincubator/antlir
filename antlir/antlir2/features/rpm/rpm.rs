@@ -20,14 +20,12 @@ use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_features::types::BuckOutSource;
-use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Error;
 use anyhow::Result;
 use buck_label::Label;
-use nix::mount::MntFlags;
-use nix::mount::MsFlags;
 use serde::de::Error as _;
 use serde::Deserialize;
 use serde::Serialize;
@@ -349,16 +347,6 @@ fn run_dnf_driver(
         }
     }
 
-    std::fs::create_dir_all(ctx.dst_path("/dev")?).context("while ensuring /dev exists")?;
-    nix::mount::mount(
-        Some("devtmpfs"),
-        &ctx.dst_path("/dev")?,
-        Some("devtmpfs"),
-        MsFlags::empty(),
-        None::<&str>,
-    )
-    .context("while mounting /dev in installroot")?;
-
     let opts = memfd::MemfdOptions::default().close_on_exec(false);
     let mfd = opts.create("input").context("while creating memfd")?;
     serde_json::to_writer(&mut mfd.as_file(), &spec)
@@ -377,8 +365,13 @@ fn run_dnf_driver(
         .outputs((Path::new("/__antlir2__/root"), ctx.root()))
         .tmpfs(Path::new("/__antlir2__/dnf/cache"))
         .tmpfs(Path::new("/var/log"))
+        .tmpfs(Path::new("/dev"))
+        .tmpfs(Path::new("/tmp"))
+        // TMPDIR might be set by buck2, be very explicit that it shouldn't be
+        // inherited
+        .setenv(("TMPDIR", "/tmp"))
         .build();
-    let isol = nspawn(isol)?;
+    let isol = unshare(isol)?;
 
     let mut cmd = isol.command("/__antlir2__/dnf/driver")?;
     trace!("dnf driver command: {cmd:#?}");
@@ -397,9 +390,6 @@ fn run_dnf_driver(
         events.push(event);
     }
     let result = child.wait().context("while waiting for dnf-driver")?;
-
-    nix::mount::umount2(&ctx.dst_path("/dev")?, MntFlags::empty())
-        .context("while unmounting /dev from installroot")?;
 
     if !result.success() {
         Err(Error::msg("dnf-driver failed"))
