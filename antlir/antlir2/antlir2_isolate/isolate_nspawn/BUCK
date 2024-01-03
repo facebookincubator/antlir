@@ -8,6 +8,7 @@ rust_library(
     visibility = ["//antlir/antlir2/antlir2_isolate:"],
     deps = [
         "nix",
+        "thiserror",
         "uuid",
         "//antlir/antlir2/antlir2_isolate/isolate_cfg:isolate_cfg",
     ],

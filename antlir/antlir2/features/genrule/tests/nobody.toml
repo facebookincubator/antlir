@@ -1,0 +1,13 @@
+[file."nobody-out/out"]
+op = "added"
+
+[file."nobody-out/out".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "nobody"
+group = "nobody"
+text = """
+I am
+nobody
+nobody
+"""

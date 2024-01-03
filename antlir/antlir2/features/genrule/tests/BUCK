@@ -142,3 +142,38 @@ image_diff_test(
     diff_type = "file",
     layer = ":genrule-with-platform",
 )
+
+image.layer(
+    name = "nobody-prep",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/nobody-out",
+            group = "nobody",
+            user = "nobody",
+        ),
+        feature.install(
+            src = "nobody.sh",
+            dst = "/nobody.sh",
+            mode = "a+rx",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image.layer(
+    name = "nobody",
+    features = [
+        feature.genrule(
+            bind_repo_ro = True,
+            cmd = ["/nobody.sh"],
+        ),
+    ],
+    parent_layer = ":nobody-prep",
+)
+
+image_diff_test(
+    name = "nobody-test",
+    diff = "nobody.toml",
+    diff_type = "file",
+    layer = ":nobody",
+)

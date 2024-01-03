@@ -42,6 +42,8 @@ pub struct IsolationContext<'a> {
     pub ephemeral: bool,
     /// See [IsolationContextBuilder::tmpfs]
     pub tmpfs: BTreeSet<Cow<'a, Path>>,
+    /// See [IsolationContextBuilder::devtmpfs]
+    pub devtmpfs: BTreeSet<Cow<'a, Path>>,
     /// See [IsolationContextBuilder::hostname]
     pub hostname: Option<Cow<'a, str>>,
     /// See [IsolationContextBuilder::readonly]
@@ -88,6 +90,7 @@ impl<'a> IsolationContext<'a> {
                 user: Cow::Borrowed("root"),
                 ephemeral: true,
                 tmpfs: Default::default(),
+                devtmpfs: Default::default(),
                 hostname: None,
                 readonly: false,
             },
@@ -171,6 +174,12 @@ impl<'a> IsolationContextBuilder<'a> {
     /// Path to mount a (unique) tmpfs into.
     pub fn tmpfs<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
         self.ctx.tmpfs.insert(path.into());
+        self
+    }
+
+    /// Path to mount a devtmpfs into.
+    pub fn devtmpfs<P: Into<Cow<'a, Path>>>(&mut self, path: P) -> &mut Self {
+        self.ctx.devtmpfs.insert(path.into());
         self
     }
 
