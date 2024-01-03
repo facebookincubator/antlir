@@ -386,6 +386,20 @@ test_rpms(
     flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
+test_rpms(
+    name = "postscript-tmpdir",
+    expected = expected_t(installed = [
+        "antlir2-postscript-tmpdir",
+    ]),
+    features = [
+        feature.rpms_install(rpms = [
+            "antlir2-postscript-tmpdir",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
 image_python_test(
     name = "test-db-backend",
     srcs = ["test_db_backend.py"],

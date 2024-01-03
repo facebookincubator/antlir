@@ -189,6 +189,20 @@ all_rpms.append(
     ),
 )
 
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-postscript-tmpdir",
+        epoch = 0,
+        post_install_script = "tmp=\"$(mktemp -d)\" && test -d \"$tmp\"",
+        release = "1",
+        requires_post = [
+            "/bin/sh",
+            "coreutils",
+        ],
+        version = "1",
+    ),
+)
+
 repo(
     name = "test-repo",
     compress = "none",
