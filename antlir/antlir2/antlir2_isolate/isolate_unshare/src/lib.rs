@@ -9,10 +9,12 @@
 compile_error!("only supported on linux");
 
 use std::ffi::OsStr;
+use std::io::ErrorKind;
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::Command;
 
+use antlir2_users::passwd::EtcPasswd;
 use isolate_cfg::InvocationType;
 use isolate_cfg::IsolationContext;
 use isolate_unshare_preexec::isolate_unshare_preexec;
@@ -23,6 +25,10 @@ pub enum Error {
     UnsupportedSetting(&'static str),
     #[error(transparent)]
     IO(#[from] std::io::Error),
+    #[error("parsing user database: {0}")]
+    UserDb(#[from] antlir2_users::Error),
+    #[error("user '{0}' not found in user database")]
+    MissingUser(String),
 }
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
@@ -45,6 +51,7 @@ impl<'a> IsolatedContext<'a> {
             user,
             ephemeral,
             tmpfs,
+            devtmpfs,
             hostname,
             readonly,
         } = &self.0;
@@ -54,9 +61,6 @@ impl<'a> IsolatedContext<'a> {
         // to *only* use systemd-nspawn
         if *ephemeral {
             return Err(Error::UnsupportedSetting("ephemeral"));
-        }
-        if user != "root" {
-            return Err(Error::UnsupportedSetting("user"));
         }
         if *invocation_type != InvocationType::Pid2Pipe {
             return Err(Error::UnsupportedSetting("invocation_type"));
@@ -107,6 +111,24 @@ impl<'a> IsolatedContext<'a> {
             }
         }
 
+        let (uid, gid) = if user == "root" {
+            (0, 0)
+        } else {
+            match std::fs::read_to_string(layer.join("etc/passwd")) {
+                Ok(contents) => {
+                    let user_db = EtcPasswd::parse(&contents).map_err(Error::UserDb)?;
+                    user_db
+                        .get_user_by_name(user)
+                        .ok_or_else(|| Error::MissingUser(user.clone().into()))
+                        .map(|u| (u.uid.into(), u.gid.into()))
+                }
+                Err(e) => match e.kind() {
+                    ErrorKind::NotFound => Err(Error::MissingUser(user.clone().into())),
+                    _ => Err(Error::IO(e)),
+                },
+            }?
+        };
+
         let args = isolate_unshare_preexec::Args {
             root: layer.clone().into(),
             root_ro: *readonly,
@@ -120,12 +142,22 @@ impl<'a> IsolatedContext<'a> {
                         .to_owned()
                 })
                 .collect(),
+            devtmpfs: devtmpfs
+                .iter()
+                .map(|t| {
+                    Path::new(isolate_unshare_preexec::NEWROOT)
+                        .join(t.strip_prefix("/").unwrap_or(&t))
+                        .to_owned()
+                })
+                .collect(),
             working_dir: working_directory
                 .as_ref()
                 .map(|wd| wd.clone().into())
                 .or_else(|| std::env::current_dir().ok())
                 .expect("no working dir set"),
             hostname: hostname.clone().map(|h| h.clone().into()),
+            uid,
+            gid,
         };
         // let args = Box::leak(args);
         unsafe {

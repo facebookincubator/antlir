@@ -45,7 +45,9 @@ impl<'a> IsolatedContextInner<'a> {
 
 #[cfg(target_os = "linux")]
 pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
-    Ok(isolate_nspawn::nspawn(ctx).into())
+    isolate_nspawn::nspawn(ctx)
+        .map(|n| n.into())
+        .map_err(crate::Error::from)
 }
 
 #[cfg(target_os = "linux")]

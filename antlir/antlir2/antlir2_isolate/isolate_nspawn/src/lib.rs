@@ -22,6 +22,14 @@ use isolate_cfg::IsolationContext;
 use nix::unistd::Uid;
 use uuid::Uuid;
 
+pub type Result<T, E = Error> = std::result::Result<T, E>;
+
+#[derive(Debug, thiserror::Error)]
+pub enum Error {
+    #[error("unsupported setting '{0}'")]
+    Unsupported(&'static str),
+}
+
 #[derive(Debug)]
 pub struct IsolatedContext {
     program: OsString,
@@ -78,7 +86,7 @@ fn bind_arg<'a>(dst: &'a Path, src: &'a Path) -> Cow<'a, OsStr> {
 
 /// Isolate the compiler process using `systemd-nspawn`.
 #[deny(unused_variables)]
-pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
+pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
     let IsolationContext {
         layer,
         working_directory,
@@ -91,9 +99,14 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
         user,
         ephemeral,
         tmpfs,
+        devtmpfs,
         hostname,
         readonly,
     } = ctx;
+    if !devtmpfs.is_empty() {
+        return Err(Error::Unsupported("devtmpfs"));
+    }
+
     let mut nspawn_args = Vec::<OsString>::new();
     let mut env = HashMap::new();
     let program = match Uid::effective().is_root() {
@@ -193,9 +206,9 @@ pub fn nspawn(ctx: IsolationContext) -> IsolatedContext {
     nspawn_args.push("--capability=all".into());
     env.insert("SYSTEMD_SECCOMP".into(), "0".into());
 
-    IsolatedContext {
+    Ok(IsolatedContext {
         program: program.into(),
         args: nspawn_args,
         env,
-    }
+    })
 }

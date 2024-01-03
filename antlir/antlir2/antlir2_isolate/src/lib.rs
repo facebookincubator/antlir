@@ -18,6 +18,8 @@ pub mod sys;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
+    Nspawn(#[from] isolate_nspawn::Error),
+    #[error(transparent)]
     Unshare(#[from] isolate_unshare::Error),
 }
 

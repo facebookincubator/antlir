@@ -46,8 +46,11 @@ pub struct Args {
     pub dir_binds: Vec<Bind>,
     pub file_binds: Vec<Bind>,
     pub tmpfs: Vec<PathBuf>,
+    pub devtmpfs: Vec<PathBuf>,
     pub working_dir: PathBuf,
     pub hostname: Option<String>,
+    pub uid: u32,
+    pub gid: u32,
 }
 
 pub struct Bind {
@@ -91,7 +94,12 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
         None::<&str>,
     )?;
 
-    for tmpfs in &args.tmpfs {
+    for (tmpfs, dev) in args
+        .tmpfs
+        .iter()
+        .map(|t| (t, false))
+        .chain(args.devtmpfs.iter().map(|t| (t, true)))
+    {
         match mkdir(tmpfs, Mode::S_IRWXU) {
             Ok(()) => Ok(()),
             Err(Errno::EEXIST) => Ok(()),
@@ -100,7 +108,7 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
         nix::mount::mount(
             None::<&str>,
             tmpfs,
-            Some("tmpfs"),
+            if dev { Some("devtmpfs") } else { Some("tmpfs") },
             MsFlags::empty(),
             None::<&str>,
         )?;
@@ -186,6 +194,9 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
 
     nix::unistd::chroot(NEWROOT)?;
     std::env::set_current_dir(&args.working_dir)?;
+
+    nix::unistd::setgid(args.gid.into())?;
+    nix::unistd::setuid(args.uid.into())?;
 
     Ok(())
 }

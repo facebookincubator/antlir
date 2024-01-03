@@ -6,12 +6,13 @@
  */
 
 use std::fmt::Debug;
+use std::path::Path;
 
 use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_features::types::UserName;
-use antlir2_isolate::nspawn;
+use antlir2_isolate::sys::unshare;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
@@ -73,6 +74,8 @@ impl antlir2_compile::CompileFeature for Genrule {
         let mut isol = IsolationContext::builder(ctx.root());
         isol.user(&self.user)
             .ephemeral(false)
+            .devtmpfs(Path::new("/dev"))
+            .setenv(("TMPDIR", "/tmp"))
             .invocation_type(match self.boot {
                 true => InvocationType::BootReadOnly,
                 false => InvocationType::Pid2Pipe,
@@ -87,9 +90,11 @@ impl antlir2_compile::CompileFeature for Genrule {
         }
         if self.bind_repo_ro {
             isol.inputs(cwd.as_path()).working_directory(&cwd);
+        } else {
+            isol.working_directory(Path::new("/"));
         }
         let mut cmd =
-            nspawn(isol.build())?.command(inner_cmd.next().expect("must have argv[0]"))?;
+            unshare(isol.build())?.command(inner_cmd.next().expect("must have argv[0]"))?;
         cmd.args(inner_cmd);
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;
