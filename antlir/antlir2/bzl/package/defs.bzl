@@ -88,6 +88,7 @@ def _generic_impl(
             "name": str(ctx.label.raw_target()),
             "_antlir2": ctx.attrs._antlir2,
             "_dot_meta_feature": ctx.attrs._dot_meta_feature,
+            "_rootless": False,
             "_run_container": ctx.attrs._run_container,
             "_target_arch": ctx.attrs._target_arch,
         }).promise.map(partial(

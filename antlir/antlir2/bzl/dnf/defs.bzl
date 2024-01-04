@@ -15,7 +15,9 @@ load(
     "package_href",
 )
 
-def repodata_only_local_repos(ctx: AnalysisContext, dnf_available_repos: list[RepoInfo | Provider]) -> Artifact:
+def repodata_only_local_repos(
+        ctx: AnalysisContext,
+        dnf_available_repos: list[RepoInfo | Provider]) -> Artifact:
     """
     Produce a directory that contains a local copy of the available RPM repo's
     repodata directories.

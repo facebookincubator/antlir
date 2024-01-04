@@ -15,6 +15,7 @@ use anyhow::Context;
 use clap::Parser;
 use colored::Colorize;
 use thiserror::Error;
+use tracing::error;
 use tracing_subscriber::prelude::*;
 
 mod cmd;
@@ -112,6 +113,7 @@ fn main() -> Result<()> {
         Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {
+        error!("{e:#?}");
         eprintln!("{}", format!("{e:#?}").red());
         eprintln!("{}", e.to_string().red());
         std::process::exit(1);

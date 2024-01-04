@@ -7,8 +7,6 @@
 This is a buck2 configuration transition that allows us to reconfigure the
 target platform for an image based on user-provided attributes, possibly
 distinct from the default target platform used by the `buck2 build`.
-
-Currently this supports reconfiguring the target cpu architecture.
 """
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
@@ -26,6 +24,7 @@ def cfg_attrs():
             For more details, see:
             https://www.internalfb.com/intern/staticdocs/antlir2/docs/recipes/multi-os-images/
         """),
+        "rootless": attrs.option(attrs.bool(), default = None),
         "target_arch": attrs.option(
             attrs.enum(["x86_64", "aarch64"]),
             default = None,
@@ -68,6 +67,11 @@ def attrs_selected_by_cfg():
                 "DEFAULT": None,
             }),
         ),
+        "_rootless": attrs.default_only(attrs.bool(default = select({
+            antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
+            antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
+            "DEFAULT": False,
+        }))),
     }
 
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
@@ -101,6 +105,18 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     if attrs.antlir_internal_build_appliance:
         constraints = remove_os_constraints(refs = refs, constraints = constraints)
 
+    rootless = refs.rootless[ConstraintValueInfo]
+    if attrs.rootless != None:
+        if attrs.rootless:
+            constraints[rootless.setting.label] = rootless
+        else:
+            constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
+    elif rootless.setting.label not in constraints:
+        # The default is rooted image builds. This is not strictly necessary,
+        # but does make it easier to `buck2 audit configurations` when debugging
+        # any failures
+        constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
+
     if is_facebook:
         constraints = fb_transition(refs, attrs, constraints, overwrite = False)
 
@@ -125,6 +141,8 @@ layer_cfg = transition(
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
         "package_manager_constraint": antlir2_dep("//antlir/antlir2/os/package_manager:package_manager"),
         "package_manager_dnf": antlir2_dep("//antlir/antlir2/os/package_manager:dnf"),
+        "rooted": antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"),
+        "rootless": antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"),
     } | (
         # @oss-disable
         # @oss-enable {}

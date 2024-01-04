@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
@@ -22,6 +23,13 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
         constraints = constraints,
         overwrite = True,
     )
+
+    if attrs.rootless != None:
+        rootless = refs.rootless[ConstraintValueInfo]
+        if attrs.rootless:
+            constraints[rootless.setting.label] = rootless
+        else:
+            constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
 
     if is_facebook:
         constraints = fb_transition(
@@ -44,11 +52,13 @@ _transition = transition(
     refs = {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
+        "rooted": antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"),
+        "rootless": antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"),
     } | (
         # @oss-disable
         # @oss-enable {}
     ) | os_transition_refs(),
-    attrs = ["default_os", "target_arch"] + (
+    attrs = ["default_os", "target_arch", "rootless"] + (
         # @oss-disable
         [] # @oss-enable
     ),
@@ -62,6 +72,7 @@ _configured_alias = rule(
     attrs = {
         "actual": attrs.transition_dep(cfg = _transition),
         "default_os": attrs.string(),
+        "rootless": attrs.option(attrs.bool(), default = None),
         "target_arch": attrs.option(
             attrs.enum(["x86_64", "aarch64"]),
             default = None,
