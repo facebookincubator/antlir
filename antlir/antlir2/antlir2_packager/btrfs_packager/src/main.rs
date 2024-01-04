@@ -10,9 +10,6 @@ extern crate loopdev_erikh as loopdev;
 use std::collections::BTreeMap;
 use std::fs::create_dir_all;
 use std::fs::File;
-use std::io::Seek;
-use std::io::SeekFrom;
-use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
@@ -31,10 +28,14 @@ use json_arg::JsonFile;
 use loopdev::LoopControl;
 use loopdev::LoopDevice;
 use nix::mount::MsFlags;
+use once_cell::sync::Lazy;
+use regex::Regex;
 use serde::Deserialize;
 use serde::Serialize;
 use tempfile::TempDir;
-use tracing_subscriber::prelude::*;
+use tracing::error;
+use tracing::info;
+use tracing::warn;
 
 // Otherwise, `mkfs.btrfs` fails with:
 //   ERROR: minimum size for each btrfs device is 114294784
@@ -43,6 +44,9 @@ pub const MIN_CREATE_BYTES: ByteSize = ByteSize::mib(109);
 // Btrfs requires at least this many bytes free in the filesystem
 // for metadata
 pub const MIN_FREE_BYTES: ByteSize = ByteSize::mib(81);
+
+// Btrfs will not shrink any filesystem below this size
+pub const MIN_SHRINK_BYTES: ByteSize = ByteSize::mib(256);
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -140,7 +144,7 @@ impl Drop for LdHandle {
     fn drop(&mut self) {
         if !self.closed {
             if let Err(e) = self.device.detach() {
-                eprintln!("failed to detach loopback {:?} {:#?}", self.ld_path, e);
+                error!("failed to detach loopback {:?} {:#?}", self.ld_path, e);
             }
             self.closed = true;
         }
@@ -168,59 +172,42 @@ pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
 }
 
 pub fn create_empty_file(output: &Path, size: ByteSize) -> Result<()> {
-    let mut file = File::create(output).context("failed to create output file")?;
-    file.seek(SeekFrom::Start(size.0))
-        .context("failed to seek output to specified size")?;
-    file.write_all(&[0])
-        .context("Failed to write dummy byte at end of file")?;
-    file.sync_all()
-        .context("Failed to sync output file to disk")?;
+    let file = File::create(output).context("failed to create output file")?;
+    file.set_len(size.as_u64())
+        .context("while setting file size")?;
 
     Ok(())
 }
 
-fn calculate_subvol_sizes(subvols: &BTreeMap<PathBuf, BtrfsSubvol>) -> Result<ByteSize> {
+/// Loose estimate of the amount of space that these subvols will take - the
+/// sendstrea size is only correlated to the actual required subvol size in the
+/// loopback for a few reasons:
+///  * sendstream has different metadata representations
+///  * compression levels are almost definitely different
+///  * potential deduplication
+///
+/// Nevertheless, it's a decent input to the estimate of the initial loopback
+/// size, since it's likely close to the lower bound of space needed, and
+/// overshooting the initial estimate will be rectified by the shrink step.
+fn estimate_subvol_size(subvols: &BTreeMap<PathBuf, BtrfsSubvol>) -> Result<ByteSize> {
     let mut total_size = ByteSize::b(0);
 
-    // TODO(vmagro): AFAICT, this size calculation assumes that the compression
-    // level of the build subvolume is on par with the compression level of the
-    // package. While this is largely true today, it does not seem that
-    // reliable. Probably better would be to compress a sendstream at the same
-    // level and using the size of that.
-    for (subvol_path, subvol) in subvols.iter() {
-        let du_out = run_cmd(
-            Command::new("du")
-                .arg("--block-size=1")
-                .arg("--summarize")
-                // Hack alert: `--one-file-system` works around the fact that we
-                // may have host mounts inside the image, which we shouldn't count.
-                .arg("--one-file-system")
-                .arg(&subvol.layer),
-        )
-        .context(format!("Failed to get size of subvol {:?}", subvol_path))?;
-
-        let du_str =
-            std::str::from_utf8(&du_out.stdout).context("Failed to parse du output as utf-8")?;
-        let size = ByteSize::b(match du_str.split_once('\t') {
-            Some((left, _)) => left
-                .parse()
-                .context(format!("Failed to parse du output to int: {}", left))?,
-            None => {
-                return Err(anyhow!("Unable to find tab in du output: {}", du_str));
-            }
-        });
-        total_size += size;
+    for subvol in subvols.values() {
+        let meta = subvol.sendstream.metadata().with_context(|| {
+            format!("while checking the size of {}", subvol.sendstream.display())
+        })?;
+        total_size += ByteSize::b(meta.len());
     }
 
     Ok(total_size)
 }
 
-fn calculate_new_fs_size(
+fn estimate_loopback_device_size(
     subvols: &BTreeMap<PathBuf, BtrfsSubvol>,
     extra_free_space: Option<ByteSize>,
 ) -> Result<ByteSize> {
     let subvol_size =
-        calculate_subvol_sizes(subvols).context("Failed to calculate size of subvolume layers")?;
+        estimate_subvol_size(subvols).context("Failed to calculate size of subvolume layers")?;
 
     let desired_size = match extra_free_space {
         // If we have been requested to add extra space do so. But we still need the
@@ -229,6 +216,14 @@ fn calculate_new_fs_size(
         // If we don't need extra free space only make room for the metadata
         None => subvol_size + MIN_FREE_BYTES,
     };
+
+    // Since the sendstream sizes are not always a good indicator of how much
+    // space it'll take in the loopback, overprovision the loopback a little bit
+    // so that we reduce the chance of out-of-space errors - the image will be
+    // shrunk as much as possible later on, so this won't really affect the size
+    // of the final package.
+    // Overprovision our estimate by 20%
+    let desired_size = desired_size + (desired_size.as_u64() / 5);
 
     // btrfs has a minimum size for a FS so we must make sure it's at least that big
     Ok(std::cmp::max(MIN_CREATE_BYTES, desired_size))
@@ -330,7 +325,7 @@ fn receive_subvol(
     Ok(renamed_subvol)
 }
 
-fn send_and_receive_subvols(
+fn receive_subvols(
     btrfs_root: &Path,
     subvols: BTreeMap<PathBuf, BtrfsSubvol>,
 ) -> Result<BTreeMap<PathBuf, (Subvolume, BtrfsSubvol)>> {
@@ -353,6 +348,107 @@ fn send_and_receive_subvols(
     Ok(built_subvols)
 }
 
+static MIN_DEV_SIZE_RE: Lazy<Regex> = Lazy::new(|| {
+    // reports something like
+    // 146145280 bytes (139.38MiB)
+    Regex::new(r#"^(?P<min_bytes>\d+)\s+bytes\s+"#).expect("regex failed to compile")
+});
+
+enum ShrinkResult {
+    ShrunkTo(ByteSize),
+    TooSmall,
+}
+
+fn shrink_fs_once(mountpoint: &Path, free_space: Option<ByteSize>) -> Result<ShrinkResult> {
+    let out = Command::new("btrfs")
+        .arg("inspect-internal")
+        .arg("min-dev-size")
+        .arg(mountpoint)
+        .output()
+        .context("failed to check size")?;
+    ensure!(
+        out.status.success(),
+        "btrfs inspect-internal min-dev-size failed"
+    );
+    let stdout = String::from_utf8_lossy(&out.stdout);
+    let cap = MIN_DEV_SIZE_RE
+        .captures(&stdout)
+        .context("while parsing btrfs output")?;
+    let min_dev_size = ByteSize::b(
+        cap.name("min_bytes")
+            .expect("min_bytes match must exist")
+            .as_str()
+            .parse::<u64>()
+            .expect("min_bytes must be integer"),
+    );
+
+    info!("btrfs reports minimum device size {min_dev_size}");
+
+    let new_size = match free_space {
+        Some(free_space) => {
+            info!("adding {free_space} as packager requested extra space");
+            min_dev_size + free_space
+        }
+        None => min_dev_size,
+    };
+
+    if new_size < MIN_SHRINK_BYTES {
+        warn!("fs is smaller than minimum {MIN_SHRINK_BYTES}, cannot shrink any further");
+        return Ok(ShrinkResult::TooSmall);
+    }
+
+    let new_size = std::cmp::max(MIN_SHRINK_BYTES, new_size);
+    info!("shrinking fs to {new_size}");
+
+    let out = Command::new("btrfs")
+        .arg("filesystem")
+        .arg("resize")
+        .arg(new_size.as_u64().to_string())
+        .arg(mountpoint)
+        .output()
+        .context("failed to run btrfs filesystem resize")?;
+    ensure!(
+        out.status.success(),
+        "btrfs filesystem resize failed\n{}\n{}",
+        String::from_utf8_lossy(&out.stdout),
+        String::from_utf8_lossy(&out.stderr)
+    );
+
+    Ok(ShrinkResult::ShrunkTo(new_size))
+}
+
+fn shrink_fs(mountpoint: &Path, free_space: Option<ByteSize>) -> Result<ShrinkResult> {
+    let mut iteration = 0;
+    let mut prev_size = None;
+    // 'btrfs filesystem resize' might end up being able to get us a smaller
+    // total size if we do it a few times, so we keep calling shrink_fs_once
+    // until the size stops changing
+    loop {
+        let span = tracing::trace_span!("shrink_fs", iteration = iteration);
+        let _enter = span.enter();
+        match shrink_fs_once(mountpoint, free_space)? {
+            ShrinkResult::ShrunkTo(new_new_size) => {
+                // as soon as we stop being able to shrink the fs further, we can say
+                // that this is the true minimum
+                if Some(new_new_size) == prev_size {
+                    info!("last iteration did not shrink smaller than {new_new_size}, stopping...");
+                    return Ok(ShrinkResult::ShrunkTo(new_new_size));
+                } else {
+                    info!("shrank to {new_new_size}, but fs might still be shrinking");
+                    prev_size = Some(new_new_size);
+                }
+            }
+            ShrinkResult::TooSmall => {
+                return Ok(match prev_size {
+                    Some(prev_size) => ShrinkResult::ShrunkTo(prev_size),
+                    None => ShrinkResult::TooSmall,
+                });
+            }
+        }
+        iteration += 1;
+    }
+}
+
 fn make_btrfs_package<M>(
     mounter: M,
     output_path: &Path,
@@ -366,8 +462,8 @@ fn make_btrfs_package<M>(
 where
     M: Mounter,
 {
-    let size = calculate_new_fs_size(&subvols, extra_free_space)
-        .context("Failed to calculate minimum size for new btrfs fs")?;
+    let size = estimate_loopback_device_size(&subvols, extra_free_space)
+        .context("Failed to calculate minimum size for loopback file")?;
 
     create_empty_file(output_path, size).context("Failed to create empty output file")?;
 
@@ -395,8 +491,8 @@ where
         )
         .context("Failed to mount output btrfs")?;
 
-    let subvols = send_and_receive_subvols(mount_handle.mountpoint(), subvols)
-        .context("failed to send/recv subvols")?;
+    let subvols =
+        receive_subvols(mount_handle.mountpoint(), subvols).context("failed to recv subvols")?;
 
     if let Some(default_subvol) = default_subvol {
         let default_subvol_id = if default_subvol == Path::new("/") {
@@ -427,6 +523,11 @@ where
     // unmounting the package
     drop(subvols);
 
+    // The loopback image is almost definitely far larger than it needs to be,
+    // so let's try to shrink it as much as possible.
+    let dev_size = shrink_fs(mount_handle.mountpoint(), extra_free_space)
+        .context("while shrinking loopback")?;
+
     mount_handle.umount(true).context("failed to umount")?;
 
     if seed_device {
@@ -436,23 +537,32 @@ where
 
     ld.detach().context("failed to detatch loopback device")?;
 
+    match dev_size {
+        ShrinkResult::ShrunkTo(dev_size) => {
+            info!("shrinking image file to {dev_size}");
+            let image = std::fs::OpenOptions::new()
+                .write(true)
+                .open(output_path)
+                .with_context(|| format!("while opening {}", output_path.display()))?;
+            image
+                .set_len(dev_size.as_u64())
+                .context("while truncating image file")?;
+        }
+        ShrinkResult::TooSmall => {
+            warn!(
+                "image file is possibly bigger than it needs to be, but btrfs won't let us shrink it below {MIN_SHRINK_BYTES}"
+            );
+        }
+    }
+
     Ok(())
 }
 
 fn main() -> Result<()> {
     let args = PackageArgs::parse();
 
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::Layer::default()
-                .event_format(
-                    tracing_glog::Glog::default()
-                        .with_span_context(true)
-                        .with_timer(tracing_glog::LocalTime::default()),
-                )
-                .fmt_fields(tracing_glog::GlogFields::default()),
-        )
-        .with(tracing_subscriber::EnvFilter::from_default_env())
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::TRACE)
         .init();
 
     let spec = args.spec.into_inner();
