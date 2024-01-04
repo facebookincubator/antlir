@@ -35,32 +35,39 @@ def cfg_attrs():
         # @oss-enable {}
     )
 
+def _flavor_name(base: str, rou: str) -> str:
+    if rou == "rou-stable":
+        return base
+
+    # unfortunate naming convention carried from antlir1
+    if rou == "rou-test":
+        return base + "-rou-untested"
+    return base + "-" + rou
+
+def _rou_flavor_sel(base_flavor: str) -> Select:
+    return select({
+        antlir2_dep("//antlir/antlir2/os/facebook:" + rou): antlir2_dep("//antlir/antlir2/facebook/flavor/{flavor}:{flavor}".format(
+            flavor = _flavor_name(base_flavor, rou),
+        ))
+        for rou in [
+            "rou-preparation",
+            "rou-rolling",
+            "rou-stable",
+            "rou-test",
+        ]
+    })
+
 def attrs_selected_by_cfg():
     return {
         # only attrs.option because it cannot be set on build appliance layers
         "flavor": attrs.option(
             attrs.dep(providers = [FlavorInfo]),
             default = select({
-                antlir2_dep("//antlir/antlir2/os:centos8"): select({
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-preparation"): "//antlir/antlir2/facebook/flavor/centos8-rou-preparation:centos8-rou-preparation",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-rolling"): "//antlir/antlir2/facebook/flavor/centos8-rou-rolling:centos8-rou-rolling",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-stable"): "//antlir/antlir2/facebook/flavor/centos8:centos8",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-test"): "//antlir/antlir2/facebook/flavor/centos8-rou-untested:centos8-rou-untested",
-                }),
-                antlir2_dep("//antlir/antlir2/os:centos9"): select({
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-preparation"): "//antlir/antlir2/facebook/flavor/centos9-rou-preparation:centos9-rou-preparation",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-rolling"): "//antlir/antlir2/facebook/flavor/centos9-rou-rolling:centos9-rou-rolling",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-stable"): "//antlir/antlir2/facebook/flavor/centos9:centos9",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-test"): "//antlir/antlir2/facebook/flavor/centos9-rou-untested:centos9-rou-untested",
-                }),
-                antlir2_dep("//antlir/antlir2/os:eln"): select({
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-preparation"): "//antlir/antlir2/facebook/flavor/eln-rou-preparation:eln-rou-preparation",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-rolling"): "//antlir/antlir2/facebook/flavor/eln-rou-rolling:eln-rou-rolling",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-stable"): "//antlir/antlir2/facebook/flavor/eln:eln",
-                    antlir2_dep("//antlir/antlir2/os/facebook:rou-test"): "//antlir/antlir2/facebook/flavor/eln-rou-untested:eln-rou-untested",
-                }),
-                antlir2_dep("//antlir/antlir2/os:none"): "//antlir/antlir2/flavor:none",
-                antlir2_dep("//antlir/antlir2/os:rhel8"): "//antlir/antlir2/facebook/flavor/rhel8:rhel8",
+                antlir2_dep("//antlir/antlir2/os:centos8"): _rou_flavor_sel("centos8"),
+                antlir2_dep("//antlir/antlir2/os:centos9"): _rou_flavor_sel("centos9"),
+                antlir2_dep("//antlir/antlir2/os:eln"): _rou_flavor_sel("eln"),
+                antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
+                antlir2_dep("//antlir/antlir2/os:rhel8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8:rhel8"),
                 # TODO: in D49383768 this will be disallowed so that we can
                 # guarantee that we'll never end up building a layer without
                 # configuring the os
