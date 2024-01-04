@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
@@ -59,19 +60,20 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 prefer_local = True,
             )
 
-    _make_recv_action = lambda rootless, out: ctx.actions.run(
+    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
+    ctx.actions.run(
         cmd_args(
             # this usually requires privileged btrfs operations
-            "sudo" if not rootless else cmd_args(),
+            "sudo" if not ctx.attrs._rootless else cmd_args(),
             ctx.attrs.antlir2_receive[RunInfo],
             "--working-dir=antlir2-out",
             cmd_args(str(ctx.label), format = "--label={}"),
             cmd_args(format, format = "--format={}"),
             cmd_args(src, format = "--source={}"),
-            cmd_args(out.as_output(), format = "--output={}"),
-            cmd_args("--rootless") if rootless else cmd_args(),
+            cmd_args(subvol_symlink.as_output(), format = "--output={}"),
+            cmd_args("--rootless") if ctx.attrs._rootless else cmd_args(),
         ),
-        category = "antlir2_prebuilt_layer" + ("_rootless" if rootless else ""),
+        category = "antlir2_prebuilt_layer",
         # needs local subvolumes
         local_only = True,
         # the old output is used to clean up the local subvolume
@@ -81,24 +83,15 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         },
     )
 
-    subvol_symlink = ctx.actions.declare_output("subvol_symlink")
-    subvol_symlink_rootless = ctx.actions.declare_output("subvol_symlink_rootless")
-
-    _make_recv_action(False, subvol_symlink)
-    _make_recv_action(True, subvol_symlink_rootless)
-
-    _make_depgraph = lambda rootless, subvol: build_depgraph(
+    depgraph_output = build_depgraph(
         ctx = ctx,
         parent_depgraph = None,
         features_json = None,
         format = "json",
-        subvol = subvol,
+        subvol = subvol_symlink,
         dependency_layers = [],
-        rootless = rootless,
+        rootless = ctx.attrs._rootless,
     )
-
-    depgraph_output = _make_depgraph(False, subvol_symlink)
-    depgraph_output_rootless = _make_depgraph(True, subvol_symlink_rootless)
 
     if not ctx.attrs.antlir_internal_build_appliance and not ctx.attrs.flavor:
         fail("only build appliance images are allowed to be flavorless")
@@ -109,21 +102,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             subvol_symlink = subvol_symlink,
             mounts = [],
             flavor = ctx.attrs.flavor,
-            rootless = False,
         ),
-        DefaultInfo(subvol_symlink, sub_targets = {
-            "rootless": [
-                DefaultInfo(subvol_symlink_rootless),
-                LayerInfo(
-                    label = ctx.label,
-                    depgraph = depgraph_output_rootless,
-                    subvol_symlink = subvol_symlink_rootless,
-                    mounts = [],
-                    flavor = ctx.attrs.flavor,
-                    rootless = True,
-                ),
-            ],
-        }),
+        DefaultInfo(subvol_symlink),
     ]
 
 _prebuilt = rule(
@@ -136,6 +116,11 @@ _prebuilt = rule(
         "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
+        "_rootless": attrs.default_only(attrs.bool(default = select({
+            antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
+            antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
+            "DEFAULT": False,
+        }))),
     },
 )
 

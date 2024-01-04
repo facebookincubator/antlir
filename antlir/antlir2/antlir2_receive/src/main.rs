@@ -80,7 +80,16 @@ impl Receive {
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
         trace!("setting up WorkingVolume");
-        let is_real_root = Uid::effective().is_root();
+        if self.rootless && Uid::effective().is_root() {
+            // It's actually surprisingly tricky to make the same code paths
+            // work when both unprivileged and running as real root, so just
+            // drop to an unprivileged user first.
+            let fbnodoby = nix::unistd::User::from_name("fbnobody")
+                .context("while looking up fbnobody")?
+                .context("no user fbnobody")?;
+            nix::unistd::setgid(fbnodoby.gid).context("while dropping to fbnobody")?;
+            nix::unistd::setuid(fbnodoby.uid).context("while dropping to fbnobody")?;
+        }
 
         let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
 
@@ -88,14 +97,6 @@ impl Receive {
             .context("while setting up WorkingVolume")?;
 
         if self.rootless {
-            // It's actually surprisingly tricky to make the same code paths
-            // work when both unprivileged and running as real root, so just
-            // don't allow it.
-            ensure!(
-                !is_real_root,
-                "cannot be real root if --rootless is being used"
-            );
-
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
             unshare(CloneFlags::CLONE_NEWNS).context("while unsharing mount")?;
         }

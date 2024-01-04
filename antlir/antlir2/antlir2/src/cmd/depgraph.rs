@@ -37,6 +37,8 @@ pub(crate) struct Depgraph {
     output: Output,
     #[clap(long, default_value = "-")]
     out: PathBuf,
+    #[clap(long)]
+    rootless: bool,
 }
 
 #[derive(Debug, ValueEnum, Copy, Clone)]
@@ -48,6 +50,17 @@ enum Output {
 impl Depgraph {
     #[tracing::instrument(name = "depgraph", skip(self))]
     pub(crate) fn run(self, rootless: antlir2_rootless::Rootless) -> Result<()> {
+        // This naming is a little confusing, but basically `rootless` exists to
+        // drop privileges when the process is invoked with `sudo`, and as such
+        // is not used if the entire build is running solely as an unprivileged
+        // user.
+        let rootless = if self.rootless {
+            antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+            None
+        } else {
+            Some(rootless)
+        };
+
         let mut depgraph = Graph::builder(self.label, self.parent.map(JsonFile::into_inner));
         for features in self.features {
             for f in features.into_inner() {
@@ -59,7 +72,7 @@ impl Depgraph {
         }
         let mut depgraph = depgraph.build()?;
         if let Some(dir) = &self.add_built_items {
-            let _root = rootless.escalate()?;
+            let _root_guard = rootless.map(|r| r.escalate()).transpose()?;
             depgraph
                 .populate_dynamic_items(dir)
                 .context("while adding dynamically built items")?;

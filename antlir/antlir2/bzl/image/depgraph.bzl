@@ -18,8 +18,6 @@ def build_depgraph(
         dependency_layers: list[LayerInfo],
         identifier_prefix: str = "",
         rootless: bool = False) -> Artifact:
-    if rootless:
-        identifier_prefix += "_rootless_"
     output = ctx.actions.declare_output(identifier_prefix + "depgraph." + format + (".pre" if not subvol else ""))
     ctx.actions.run(
         cmd_args(

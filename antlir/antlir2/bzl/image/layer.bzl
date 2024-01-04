@@ -26,7 +26,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:types.bzl", "types")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
-load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg", "remove_os_constraint")
+load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
 load(":mounts.bzl", "all_mounts", "container_mount_args")
 
@@ -36,7 +36,8 @@ def _map_image(
         identifier: str,
         build_appliance: LayerInfo | Provider,
         parent: Artifact | None,
-        logs: Artifact) -> (cmd_args, Artifact):
+        logs: Artifact,
+        rootless: bool) -> (cmd_args, Artifact):
     """
     Take the 'parent' image, and run some command through 'antlir2 map' to
     produce a new image.
@@ -45,7 +46,7 @@ def _map_image(
     antlir2 = ctx.attrs.antlir2[RunInfo]
     out = ctx.actions.declare_output("subvol-" + identifier)
     cmd = cmd_args(
-        "sudo",  # this requires privileged btrfs operations
+        cmd_args("sudo") if not rootless else cmd_args(),
         antlir2,
         cmd_args(logs.as_output(), format = "--logs={}"),
         "map",
@@ -55,6 +56,7 @@ def _map_image(
         cmd_args(identifier, format = "--identifier={}"),
         cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
         cmd_args(out.as_output(), format = "--output={}"),
+        cmd_args("--rootless") if rootless else cmd_args(),
         cmd,
     )
     ctx.actions.run(
@@ -108,6 +110,9 @@ def _impl(ctx: AnalysisContext) -> Promise:
         feature_anon_kwargs,
     ).promise.map(partial(_impl_with_features, ctx = ctx))
 
+def _identifier_prefix(prefix: str) -> str:
+    return prefix
+
 def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -> list[Provider]:
     flavor = None
     if ctx.attrs.parent_layer and ctx.attrs.flavor:
@@ -141,7 +146,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     # macros like image_rpms_test. Generally this should be accessed by the
     # provider, but that is unavailable at macro parse time.
     if build_appliance:
-        sub_targets["build_appliance"] = build_appliance.providers
+        sub_targets["build_appliance"] = build_appliance.providers if hasattr(build_appliance, "providers") else [
+            build_appliance[LayerInfo],
+            build_appliance[DefaultInfo],
+        ]
 
     if flavor:
         sub_targets["flavor"] = flavor.providers
@@ -214,7 +222,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         build_cmd = []
         logs = {}
 
-        identifier_prefix = phase.value + "_"
+        identifier_prefix = _identifier_prefix(phase.value + "_")
         features = [
             feat
             for feat in all_features
@@ -270,6 +278,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             identifier_prefix = identifier_prefix,
             parent_depgraph = parent_depgraph,
             subvol = None,
+            rootless = ctx.attrs._rootless,
         )
 
         target_arch = ctx.attrs._selected_target_arch
@@ -301,6 +310,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 identifier = identifier_prefix + "plan",
                 parent = parent_layer,
                 logs = logs["plan"],
+                rootless = ctx.attrs._rootless,
             )
             build_cmd.append(cmd)
 
@@ -366,6 +376,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             identifier = identifier_prefix + "compile",
             parent = parent_layer,
             logs = logs["compile"],
+            rootless = ctx.attrs._rootless,
         )
         build_cmd.append(cmd)
 
@@ -377,6 +388,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             identifier_prefix = identifier_prefix,
             parent_depgraph = depgraph_input,
             subvol = final_subvol,
+            rootless = ctx.attrs._rootless,
         )
 
         build_script = ctx.actions.write(
@@ -434,6 +446,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             identifier_prefix = "empty_layer_",
             parent_depgraph = parent_depgraph,
             subvol = final_subvol,
+            rootless = ctx.attrs._rootless,
         )
 
     debug_sub_targets["depgraph"] = [DefaultInfo(final_depgraph)]
@@ -476,7 +489,8 @@ _layer_attrs = {
     "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
     "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
     "build_appliance": attrs.option(
-        attrs.transition_dep(providers = [LayerInfo], cfg = remove_os_constraint),
+        # attrs.transition_dep(providers = [LayerInfo], cfg = remove_os_constraint),
+        attrs.dep(providers = [LayerInfo]),
         default = None,
     ),
     "default_mountpoint": attrs.option(attrs.string(), default = None),

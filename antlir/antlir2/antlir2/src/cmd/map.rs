@@ -40,6 +40,9 @@ pub(crate) struct Map {
     #[clap(long)]
     /// Path to mounted build appliance image
     build_appliance: PathBuf,
+    #[clap(long)]
+    /// Use an unprivileged usernamespace
+    rootless: bool,
     /// Arguments to pass to the isolated instance of 'antlir2'
     #[clap(subcommand)]
     subcommand: Subcommand,
@@ -87,18 +90,19 @@ enum Subcommand {
 
 impl Map {
     /// Create a new mutable subvolume based on the [SetupArgs].
-    #[tracing::instrument(skip(self, rootless), ret, err)]
+    #[tracing::instrument(skip(self), ret, err)]
     fn create_new_subvol(
         &self,
         working_volume: &WorkingVolume,
-        rootless: antlir2_rootless::Rootless,
+        rootless: &Option<antlir2_rootless::Rootless>,
     ) -> Result<Subvolume> {
         let dst = working_volume
             .allocate_new_path()
             .context("while allocating new path for subvol")?;
-        let _guard = rootless.escalate()?;
+        let _guard = rootless.map(|r| r.escalate()).transpose()?;
         let subvol = match &self.setup.parent {
             Some(parent) => {
+                trace!("snapshotting parent {parent:?}");
                 let parent = Subvolume::open(parent)?;
                 parent.snapshot(&dst, Default::default())?
             }
@@ -112,32 +116,36 @@ impl Map {
     pub(crate) fn run(self, rootless: antlir2_rootless::Rootless) -> Result<()> {
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
-        let mut subvol = self.create_new_subvol(&working_volume, rootless)?;
+        let rootless = match self.rootless {
+            true => None,
+            false => Some(rootless),
+        };
+
+        if self.rootless {
+            antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+        }
+
+        let mut subvol = self.create_new_subvol(&working_volume, &rootless)?;
+
+        let root_guard = rootless.map(|r| r.escalate()).transpose()?;
 
         // Be careful to isolate this process from the host mount namespace in
         // case anything weird is going on
-        rootless.as_root(|| {
-            unshare(CloneFlags::CLONE_NEWNS)?;
+        unshare(CloneFlags::CLONE_NEWNS).context("while unsharing mount")?;
 
-            // Remount / as private so that we don't let any changes escape back
-            // to the parent mount namespace (basically equivalent to `mount
-            // --make-rprivate /`)
-            mount(
-                None::<&str>,
-                "/",
-                None::<&str>,
-                MsFlags::MS_REC | MsFlags::MS_PRIVATE,
-                None::<&str>,
-            )?;
-            Ok::<_, anyhow::Error>(())
-        })??;
+        // Remount / as private so that we don't let any changes escape back
+        // to the parent mount namespace (basically equivalent to `mount
+        // --make-rprivate /`)
+        mount(
+            None::<&str>,
+            "/",
+            None::<&str>,
+            MsFlags::MS_REC | MsFlags::MS_PRIVATE,
+            None::<&str>,
+        )
+        .context("while making mount ns private")?;
 
-        // TODO: don't do this as root, only escalate when actually necessary
-        // Running the whole subcommand as root matches the behavior we got when
-        // this was run inside the build appliance container.
-        // Soon this will run in a user namespace and won't need "real"
-        // privilege escalation.
-        rootless.as_root(|| match self.subcommand {
+        match self.subcommand {
             Subcommand::Compile {
                 compileish,
                 external,
@@ -170,41 +178,44 @@ impl Map {
                 external,
             }
             .run(),
-        })??;
+        }?;
         debug!("map finished, making subvol {subvol:?} readonly");
-        rootless.as_root(|| subvol.set_readonly(true).context("while making subvol r/o"))??;
 
         if self.setup.output.exists() {
             trace!("removing existing output {}", self.setup.output.display());
-            rootless.as_root(|| {
-                // Don't fail if the old subvol couldn't be deleted, just print
-                // a warning. We really don't want to fail someone's build if
-                // the only thing that went wrong is not being able to delete
-                // the last version of it.
-                match Subvolume::open(&self.setup.output) {
-                    Ok(old_subvol) => {
-                        if let Err(e) = old_subvol.delete() {
-                            warn!(
-                                "couldn't delete old subvol '{}': {e:?}",
-                                self.setup.output.display()
-                            );
-                        }
-                    }
-                    Err(e) => {
+            // Don't fail if the old subvol couldn't be deleted, just print
+            // a warning. We really don't want to fail someone's build if
+            // the only thing that went wrong is not being able to delete
+            // the last version of it.
+            match Subvolume::open(&self.setup.output) {
+                Ok(old_subvol) => {
+                    if let Err(e) = old_subvol.delete() {
                         warn!(
-                            "couldn't open old subvol '{}': {e:?}",
+                            "couldn't delete old subvol '{}': {e:?}",
                             self.setup.output.display()
                         );
                     }
                 }
-            })?;
+                Err(e) => {
+                    warn!(
+                        "couldn't open old subvol '{}': {e:?}",
+                        self.setup.output.display()
+                    );
+                }
+            }
         }
+
+        subvol
+            .set_readonly(true)
+            .context("while making subvol r/o")?;
 
         debug!(
             "linking {} -> {}",
             self.setup.output.display(),
             subvol.path().display(),
         );
+        drop(root_guard);
+
         let _ = std::fs::remove_file(&self.setup.output);
         std::os::unix::fs::symlink(subvol.path(), &self.setup.output)
             .context("while making symlink")?;
