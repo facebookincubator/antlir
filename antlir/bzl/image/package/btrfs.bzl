@@ -4,6 +4,8 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:shell.bzl", "shell")
+load("//antlir/antlir2/bzl/package:btrfs.bzl?v2_only", antlir2_BtrfsSubvol = "BtrfsSubvol", antlir2_btrfs = "btrfs")
+load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
 load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
@@ -101,7 +103,50 @@ def _new_btrfs(
         antlir_rule = antlir_rule,
     )
 
+def _new_btrfs_shim(
+        name,
+        # Opts are required
+        opts,
+        # Buck `labels` to add to the resulting target; aka `tags` in fbcode.
+        labels = None,
+        visibility = None,
+        antlir_rule = "user-facing"):
+    if opts.loopback_opts.size_mb:
+        fail("size_mb not supported in btrfs")
+    if opts.loopback_opts.fat_size:
+        fail("fat_size not supported in btrfs")
+    opts_kwargs = {
+        "compression_level": opts.compression_level,
+        "default_subvol": opts.default_subvol,
+        "free_mb": opts.free_mb,
+        "label": opts.loopback_opts.label,
+        "labels": labels,
+        "seed_device": opts.seed_device,
+        "subvols": {
+            subvol_name: antlir2_BtrfsSubvol(
+                layer = subvol.layer,
+                writable = subvol.writable,
+            )
+            for subvol_name, subvol in opts.subvols.items()
+        },
+    }
+
+    if antlir2_shim.upgrade_or_shadow_package(
+        antlir2 = None,
+        name = name,
+        fn = antlir2_btrfs,
+        visibility = visibility,
+        fake_buck1 = struct(
+            fn = antlir2_shim.fake_buck1_target,
+            name = name,
+        ),
+        **opts_kwargs
+    ) == "upgrade":
+        return
+
+    _new_btrfs(name, opts, labels, visibility, antlir_rule)
+
 btrfs = struct(
-    new = _new_btrfs,
+    new = _new_btrfs_shim,
     opts = _btrfs_opts_api,
 )
