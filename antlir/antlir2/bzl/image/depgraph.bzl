@@ -13,12 +13,11 @@ def build_depgraph(
         ctx: AnalysisContext,
         parent_depgraph: Artifact | None,
         features_json: typing.Any,
-        format: str,
         subvol: Artifact | None,
         dependency_layers: list[LayerInfo],
         identifier_prefix: str = "",
         rootless: bool = False) -> Artifact:
-    output = ctx.actions.declare_output(identifier_prefix + "depgraph." + format + (".pre" if not subvol else ""))
+    output = ctx.actions.declare_output(identifier_prefix + "depgraph.json" + (".pre" if not subvol else ""))
     ctx.actions.run(
         cmd_args(
             # Inspecting already-built images often requires root privileges
@@ -26,7 +25,6 @@ def build_depgraph(
             ctx.attrs.antlir2[RunInfo],
             "depgraph",
             cmd_args(str(ctx.label), format = "--label={}"),
-            format,
             cmd_args(features_json, format = "--feature-json={}") if features_json else cmd_args(),
             cmd_args(parent_depgraph, format = "--parent={}") if parent_depgraph else cmd_args(),
             cmd_args([li.depgraph for li in dependency_layers], format = "--image-dependency={}"),
@@ -35,7 +33,7 @@ def build_depgraph(
             cmd_args("--rootless") if rootless else cmd_args(),
         ),
         category = "antlir2_depgraph",
-        identifier = identifier_prefix + format + ("/pre" if not subvol else ""),
+        identifier = identifier_prefix + ("/pre" if not subvol else ""),
         local_only = bool(subvol),
         env = {
             "RUST_LOG": "antlir2=trace",

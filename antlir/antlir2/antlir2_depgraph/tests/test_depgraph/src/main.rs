@@ -39,12 +39,9 @@ fn main() -> Result<()> {
     for dep in args.dependencies {
         builder.add_layer_dependency(dep.into_inner());
     }
-    let builder_dot = builder.to_dot();
-    // always print this for debuggability
-    eprintln!("{builder_dot:#?}");
     let result = builder.build();
     match result {
-        Ok(g) => Err(anyhow!("graph built successfully: {:#?}", g.to_dot())),
+        Ok(g) => Err(anyhow!("graph built successfully but shouldn't have")),
         Err(err) => {
             if !args.error_regex.is_match(&err.to_string()) {
                 Err(anyhow!("'{err}' did not match '{}'", args.error_regex))
