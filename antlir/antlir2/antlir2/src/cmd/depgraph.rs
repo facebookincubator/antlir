@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::io::BufWriter;
 use std::io::Write;
 use std::path::PathBuf;
 
@@ -12,7 +13,6 @@ use antlir2_depgraph::Graph;
 use anyhow::Context;
 use buck_label::Label;
 use clap::Parser;
-use clap::ValueEnum;
 use json_arg::JsonFile;
 
 use crate::Result;
@@ -33,18 +33,10 @@ pub(crate) struct Depgraph {
     #[clap(long)]
     /// Add dynamically built items from this built image
     add_built_items: Option<PathBuf>,
-    #[clap(value_enum)]
-    output: Output,
     #[clap(long, default_value = "-")]
     out: PathBuf,
     #[clap(long)]
     rootless: bool,
-}
-
-#[derive(Debug, ValueEnum, Copy, Clone)]
-enum Output {
-    Dot,
-    Json,
 }
 
 impl Depgraph {
@@ -78,22 +70,11 @@ impl Depgraph {
                 .context("while adding dynamically built items")?;
         }
 
-        let mut out = stdio_path::create(&self.out).context("while opening output")?;
+        let mut out =
+            BufWriter::new(stdio_path::create(&self.out).context("while opening output")?);
 
-        match self.output {
-            Output::Dot => {
-                let dot = depgraph.to_dot();
-                writeln!(out, "{:#?}", dot)
-            }
-            Output::Json => {
-                writeln!(
-                    out,
-                    "{}",
-                    serde_json::to_string_pretty(&depgraph).context("while serializing graph")?
-                )
-            }
-        }
-        .context("while writing output")?;
+        serde_json::to_writer_pretty(&mut out, &depgraph)
+            .context("while serializing graph to file")?;
         Ok(())
     }
 }

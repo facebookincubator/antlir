@@ -28,7 +28,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
 
-mod dot;
 pub mod item;
 use item::Item;
 use item::ItemKey;
@@ -226,10 +225,6 @@ impl<'a> GraphBuilder<'a> {
         self
     }
 
-    pub fn to_dot<'b>(&'b self) -> dot::Dot<'a, 'b> {
-        dot::Dot(&self.g)
-    }
-
     pub fn build(mut self) -> Result<'a, Graph<'a>> {
         // Add all the nodes provided by our pending features
         for feature_nx in self.pending_features.clone() {
@@ -292,13 +287,6 @@ impl<'a> GraphBuilder<'a> {
                 while let Some(nx) = dfs.next(&self.g) {
                     cycle.push(nx);
                     if self.g.neighbors(nx).contains(&node_in_cycle.node_id()) {
-                        // create a graph that just has the cycle so we can print a nice dot of it
-                        let mut new_g = self.g.clone();
-                        new_g.retain_nodes(|_, nx| cycle.contains(&nx));
-                        tracing::error!(
-                            "cycle detected: dot: {:#?}",
-                            petgraph::dot::Dot::new(&new_g)
-                        );
                         let mut cycle: Vec<_> = cycle
                             .into_iter()
                             .filter_map(|nx| match &self.g[nx] {
@@ -529,10 +517,6 @@ impl<'a> Graph<'a> {
 
     pub fn label(&self) -> &Label {
         &self.label
-    }
-
-    pub fn to_dot<'b>(&'b self) -> dot::Dot<'a, 'b> {
-        dot::Dot(&self.g)
     }
 
     pub fn get_all_features(&self) -> impl Iterator<Item = &Feature> {
