@@ -63,9 +63,10 @@ _btrfs = rule(
         "compression_level": attrs.int(default = 3),
         # used by transition
         "default_os": attrs.option(attrs.string(), default = None),
-        "default_subvol": attrs.option(attrs.string()),
+        "default_subvol": attrs.option(attrs.string(), default = None),
         "free_mb": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
+        "labels": attrs.list(attrs.string(), default = []),
         "seed_device": attrs.bool(default = False),
         "subvols": attrs.option(
             attrs.dict(
