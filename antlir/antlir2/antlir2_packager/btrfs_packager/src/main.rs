@@ -180,7 +180,7 @@ pub fn create_empty_file(output: &Path, size: ByteSize) -> Result<()> {
 }
 
 /// Loose estimate of the amount of space that these subvols will take - the
-/// sendstrea size is only correlated to the actual required subvol size in the
+/// sendstream size is only correlated to the actual required subvol size in the
 /// loopback for a few reasons:
 ///  * sendstream has different metadata representations
 ///  * compression levels are almost definitely different
