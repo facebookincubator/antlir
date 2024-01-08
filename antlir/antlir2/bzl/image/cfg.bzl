@@ -9,6 +9,7 @@ target platform for an image based on user-provided attributes, possibly
 distinct from the default target platform used by the `buck2 build`.
 """
 
+load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 # @oss-disable
@@ -24,7 +25,6 @@ def cfg_attrs():
             For more details, see:
             https://www.internalfb.com/intern/staticdocs/antlir2/docs/recipes/multi-os-images/
         """),
-        "rootless": attrs.option(attrs.bool(), default = None),
         "target_arch": attrs.option(
             attrs.enum(["x86_64", "aarch64"]),
             default = None,
@@ -33,7 +33,7 @@ def cfg_attrs():
     } | (
         # @oss-disable
         # @oss-enable {}
-    )
+    ) | rootless_cfg.attrs
 
 def _flavor_name(base: str, rou: str) -> str:
     if rou == "rou-stable":
@@ -74,11 +74,7 @@ def attrs_selected_by_cfg():
                 "DEFAULT": None,
             }),
         ),
-        "_rootless": attrs.default_only(attrs.bool(default = select({
-            antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
-            antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
-            "DEFAULT": False,
-        }))),
+        "_rootless": rootless_cfg.is_rootless_attr,
     }
 
 def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
@@ -112,17 +108,7 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     if attrs.antlir_internal_build_appliance:
         constraints = remove_os_constraints(refs = refs, constraints = constraints)
 
-    rootless = refs.rootless[ConstraintValueInfo]
-    if attrs.rootless != None:
-        if attrs.rootless:
-            constraints[rootless.setting.label] = rootless
-        else:
-            constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
-    elif rootless.setting.label not in constraints:
-        # The default is rooted image builds. This is not strictly necessary,
-        # but does make it easier to `buck2 audit configurations` when debugging
-        # any failures
-        constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
+    constraints = rootless_cfg.transition(refs = refs, attrs = attrs, constraints = constraints)
 
     if is_facebook:
         constraints = fb_transition(refs, attrs, constraints, overwrite = False)
