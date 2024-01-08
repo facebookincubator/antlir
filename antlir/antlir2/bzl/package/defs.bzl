@@ -66,10 +66,11 @@ def _generic_impl_with_layer(
     )
     ctx.actions.run(
         cmd_args(
-            cmd_args("sudo") if sudo else cmd_args(),
+            cmd_args("sudo", "--preserve-env=TMPDIR") if (sudo and not ctx.attrs._rootless) else cmd_args(),
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
             cmd_args(package.as_output(), format = "--out={}"),
+            "--rootless" if ctx.attrs._rootless else cmd_args(),
         ),
         local_only = True,
         category = "antlir2_package",
@@ -94,7 +95,7 @@ def _generic_impl(
             "name": str(ctx.label.raw_target()),
             "_antlir2": ctx.attrs._antlir2,
             "_dot_meta_feature": ctx.attrs._dot_meta_feature,
-            "_rootless": False,
+            "_rootless": ctx.attrs._rootless,
             "_run_container": ctx.attrs._run_container,
             "_target_arch": ctx.attrs._target_arch,
         }).promise.map(partial(

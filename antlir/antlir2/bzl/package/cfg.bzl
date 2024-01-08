@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", _cfg_attrs = "cfg_attrs")
 # @oss-disable
@@ -30,6 +31,18 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
             constraints = constraints,
         )
 
+    rootless = refs.rootless[ConstraintValueInfo]
+    if attrs.rootless != None:
+        if attrs.rootless:
+            constraints[rootless.setting.label] = rootless
+        else:
+            constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
+    elif rootless.setting.label not in constraints:
+        # The default is rooted image builds. This is not strictly necessary,
+        # but does make it easier to `buck2 audit configurations` when debugging
+        # any failures
+        constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
+
     if is_facebook:
         constraints = fb_transition(
             refs,
@@ -56,6 +69,8 @@ package_cfg = transition(
     refs = os_transition_refs() | {
         "arch.aarch64": "ovr_config//cpu/constraints:arm64",
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
+        "rooted": antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"),
+        "rootless": antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"),
     } | (
         # @oss-disable
         {} # @oss-enable

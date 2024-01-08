@@ -42,6 +42,8 @@ pub(crate) struct PackageArgs {
     #[clap(long)]
     /// Path to output the image
     out: PathBuf,
+    #[clap(long)]
+    rootless: bool,
 }
 
 pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
@@ -57,6 +59,10 @@ pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
 
 fn main() -> Result<()> {
     let args = PackageArgs::parse();
+
+    if args.rootless {
+        antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+    }
 
     tracing_subscriber::registry()
         .with(
