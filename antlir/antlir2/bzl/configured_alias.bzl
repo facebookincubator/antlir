@@ -7,7 +7,6 @@ load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
-load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
 def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
@@ -17,12 +16,13 @@ def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pla
         target_arch = getattr(refs, "arch." + attrs.target_arch)[ConstraintValueInfo]
         constraints[target_arch.setting.label] = target_arch
 
-    constraints = os_transition(
-        default_os = attrs.default_os,
-        refs = refs,
-        constraints = constraints,
-        overwrite = True,
-    )
+    if attrs.default_os:
+        constraints = os_transition(
+            default_os = attrs.default_os,
+            refs = refs,
+            constraints = constraints,
+            overwrite = True,
+        )
 
     if attrs.rootless != None:
         rootless = refs.rootless[ConstraintValueInfo]
@@ -71,7 +71,7 @@ _configured_alias = rule(
     impl = _configured_alias_impl,
     attrs = {
         "actual": attrs.transition_dep(cfg = _transition),
-        "default_os": attrs.string(),
+        "default_os": attrs.option(attrs.string(), default = None),
         "rootless": attrs.option(attrs.bool(), default = None),
         "target_arch": attrs.option(
             attrs.enum(["x86_64", "aarch64"]),
@@ -91,7 +91,6 @@ def antlir2_configured_alias(
         name: str,
         default_os: str | None = None,
         **kwargs):
-    default_os = default_os or get_default_os_for_package()
     _antlir2_configured_alias_macro(
         name = name,
         default_os = default_os,
