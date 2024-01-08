@@ -28,9 +28,6 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
             default_os = attrs.default_os,
             refs = refs,
             constraints = constraints,
-            # package should restart the os configuration even if it's being
-            # installed into another image
-            overwrite = True,
         )
 
     if is_facebook:
@@ -38,9 +35,6 @@ def _package_cfg_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> Pl
             refs,
             attrs,
             constraints,
-            # package should restart all configurations even if it's being
-            # installed into another image
-            overwrite = True,
         )
 
     label = platform.label

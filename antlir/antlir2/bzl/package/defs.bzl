@@ -48,16 +48,22 @@ def _generic_impl_with_layer(
         "tar": ".tar",
         "vfat": ".vfat",
     }[format]
-    package = ctx.actions.declare_output("package" + extension, dir = is_dir)
 
     build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
+
+    package = ctx.actions.declare_output("package" + extension, dir = is_dir)
     spec_opts = {
         "build_appliance": build_appliance[LayerInfo].subvol_symlink,
         "layer": layer[LayerInfo].subvol_symlink,
     }
     for key in rule_attr_keys:
         spec_opts[key] = getattr(ctx.attrs, key)
-    spec = ctx.actions.write_json("spec.json", {format: spec_opts}, with_inputs = True)
+
+    spec = ctx.actions.write_json(
+        "spec.json",
+        {format: spec_opts},
+        with_inputs = True,
+    )
     ctx.actions.run(
         cmd_args(
             cmd_args("sudo") if sudo else cmd_args(),
@@ -68,6 +74,7 @@ def _generic_impl_with_layer(
         local_only = True,
         category = "antlir2_package",
     )
+
     providers = [DefaultInfo(package)]
     if can_be_partition:
         providers.append(GptPartitionSource(src = package))
@@ -77,11 +84,10 @@ def _generic_impl(
         ctx: AnalysisContext,
         format: str,
         rule_attr_keys: list[str],
-        dot_meta: bool,
         can_be_partition: bool,
         is_dir: bool,
         sudo: bool):
-    if dot_meta:
+    if ctx.attrs.dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
             "flavor": ctx.attrs.flavor,
             "layer": ctx.attrs.layer,
@@ -119,20 +125,30 @@ def _new_package_rule(
         can_be_partition = False,
         is_dir = False,
         sudo = False):
-    return anon_rule(
-        impl = partial(
+    kwargs = {
+        "attrs": _default_attrs | _common_attrs | rule_attrs | {
+            "dot_meta": attrs.bool(default = dot_meta),
+        },
+        "impl": partial(
             _generic_impl,
             format = format,
             rule_attr_keys = list(rule_attrs.keys()),
-            dot_meta = dot_meta,
             can_be_partition = can_be_partition,
             is_dir = is_dir,
             sudo = sudo,
         ),
-        attrs = _default_attrs | _common_attrs | rule_attrs,
-        artifact_promise_mappings = {
-            "src": lambda x: ensure_single_output(x),
-        },
+    }
+    return (
+        rule(
+            cfg = package_cfg,
+            **kwargs
+        ),
+        anon_rule(
+            artifact_promise_mappings = {
+                "src": lambda x: ensure_single_output(x),
+            },
+            **kwargs
+        ),
     )
 
 def _compressed_impl(
@@ -211,29 +227,29 @@ def _new_compressed_package_rule(
         cfg = package_cfg,
     )
 
-_cas_dir = _new_package_rule(
+_cas_dir, _cas_dir_anon = _new_package_rule(
     format = "cas_dir",
     is_dir = True,
     sudo = True,
 )
 
-_cpio = _new_package_rule(
+_cpio, _cpio_anon = _new_package_rule(
     format = "cpio",
 )
 
 _cpio_gz = _new_compressed_package_rule(
     default_compression_level = 3,
-    uncompressed = _cpio,
+    uncompressed = _cpio_anon,
     compressor = "gzip",
 )
 
 _cpio_zst = _new_compressed_package_rule(
     default_compression_level = 15,
-    uncompressed = _cpio,
+    uncompressed = _cpio_anon,
     compressor = "zstd",
 )
 
-_rpm = _new_package_rule(
+_rpm, _rpm_anon = _new_package_rule(
     rule_attrs = {
         "arch": attrs.string(),
         "conflicts": attrs.list(attrs.string(), default = []),
@@ -256,7 +272,7 @@ _rpm = _new_package_rule(
     dot_meta = False,
 )
 
-_vfat = _new_package_rule(
+_vfat, _vfat_anon = _new_package_rule(
     rule_attrs = {
         "fat_size": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
@@ -266,29 +282,29 @@ _vfat = _new_package_rule(
     can_be_partition = True,
 )
 
-_squashfs = _new_package_rule(
+_squashfs, _squashfs_anon = _new_package_rule(
     rule_attrs = {},
     format = "squashfs",
     can_be_partition = True,
 )
 
-_tar = _new_package_rule(
+_tar, _tar_anon = _new_package_rule(
     format = "tar",
 )
 
 _tar_gz = _new_compressed_package_rule(
     default_compression_level = 3,
-    uncompressed = _tar,
+    uncompressed = _tar_anon,
     compressor = "gzip",
 )
 
 _tar_zst = _new_compressed_package_rule(
     default_compression_level = 15,
-    uncompressed = _tar,
+    uncompressed = _tar_anon,
     compressor = "zstd",
 )
 
-_ext3 = _new_package_rule(
+_ext3, _ext3_anon = _new_package_rule(
     format = "ext3",
     rule_attrs = {
         "label": attrs.option(attrs.string(), default = None),
