@@ -234,6 +234,12 @@ impl<'a> IntoBinds<'a> for (&'a str, &'a str) {
     }
 }
 
+impl<'a> IntoBinds<'a> for (&'a str, &'a Path) {
+    fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
+        HashMap::from([(Cow::Borrowed(Path::new(self.0)), Cow::Borrowed(self.1))])
+    }
+}
+
 impl<'a> IntoBinds<'a> for (PathBuf, PathBuf) {
     fn into_binds(self) -> HashMap<Cow<'a, Path>, Cow<'a, Path>> {
         HashMap::from([(Cow::Owned(self.0), Cow::Owned(self.1))])

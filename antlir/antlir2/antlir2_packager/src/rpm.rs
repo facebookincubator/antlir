@@ -12,7 +12,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
 use anyhow::ensure;
 use anyhow::Context;
@@ -56,11 +56,6 @@ pub struct Rpm {
 
 impl PackageFormat for Rpm {
     fn build(&self, out: &Path) -> Result<()> {
-        let layer_abspath = self
-            .layer
-            .canonicalize()
-            .with_context(|| format!("failed to build absolute path to layer {:?}", self.layer))?;
-
         let requires = self
             .requires
             .iter()
@@ -150,11 +145,7 @@ License: {license}
             != 0
         {
             spec.push_str("%install\n");
-            writeln!(
-                spec,
-                "cp -rp \"{layer}\"/* %{{buildroot}}/",
-                layer = layer_abspath.display()
-            )?;
+            writeln!(spec, "cp -rp \"/__antlir2__/root\"/* %{{buildroot}}/",)?;
             spec.push_str("%files\n");
             for entry in walkdir::WalkDir::new(&self.layer) {
                 let entry = entry.context("while walking layer")?;
@@ -198,21 +189,32 @@ License: {license}
 
         let mut isol_context = IsolationContext::builder(&self.build_appliance);
         isol_context
-            .inputs([rpm_spec_file.path(), self.layer.as_path()])
-            .outputs([output_dir.path()])
-            .working_directory(std::env::current_dir().context("while getting cwd")?);
-        if let Some(key) = &self.sign_with_private_key {
-            isol_context.inputs([key.as_path()]);
-        }
+            .ephemeral(false)
+            .readonly()
+            // random buck-out paths that might be being used (for installing .rpms)
+            .inputs((
+                PathBuf::from("/__antlir2__/working_directory"),
+                std::env::current_dir()?,
+            ))
+            .working_directory(Path::new("/__antlir2__/working_directory"))
+            .inputs((Path::new("/tmp/rpmspec"), rpm_spec_file.path()))
+            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .outputs((Path::new("/__antlir2__/out"), output_dir.path()))
+            .tmpfs(Path::new("/tmp"))
+            .devtmpfs(Path::new("/dev"));
         let isol_context = isol_context.build();
 
         run_cmd(
-            nspawn(isol_context.clone())?
+            unshare(isol_context.clone())?
                 .command("/bin/rpmbuild")?
                 .arg("-bb")
                 .arg("--define")
-                .arg(format!("_rpmdir {}", output_dir.path().display()))
-                .arg(rpm_spec_file.path())
+                .arg("_rpmdir /__antlir2__/out")
+                .arg("--define")
+                .arg("_topdir /tmp/rpmbuild/top")
+                .arg("--define")
+                .arg("_tmppath /tmp/rpmbuild/tmp")
+                .arg("/tmp/rpmspec")
                 .stdout(Stdio::piped()),
         )
         .context("Failed to build rpm")?;
@@ -230,23 +232,32 @@ License: {license}
             "expected exactly one output rpm file, got: {outputs:?}"
         );
 
-        if let Some(key) = &self.sign_with_private_key {
-            let sign_script = format!(
-                r#"
-                set -e
-
-                gpg --import {key}
-                keyid="$(gpg --show-keys --with-colons {key} | awk -F':' '$1=="fpr"{{print $10}}' | head -1)"
-                rpmsign --key-id "$keyid" --addsign {out}
-            "#,
-                key = key.display(),
-                out = outputs[0].path().display(),
-            );
+        if let Some(privkey) = &self.sign_with_private_key {
+            let rpm_path = outputs[0].path();
+            let mut isol_context = IsolationContext::builder(&self.build_appliance);
+            isol_context
+                .ephemeral(false)
+                .readonly()
+                .working_directory(Path::new("/__antlir2__/working_directory"))
+                .tmpfs(Path::new("/tmp"))
+                .inputs(("/tmp/privkey", privkey.as_path()))
+                .outputs(("/tmp/rpm", rpm_path.as_path()))
+                .devtmpfs(Path::new("/dev"));
+            let isol_context = isol_context.build();
             run_cmd(
-                nspawn(isol_context)?
+                unshare(isol_context)?
                     .command("bash")?
                     .arg("-c")
-                    .arg(sign_script)
+                    .arg(r#"
+                set -ex
+
+                export GNUPGHOME="/tmp/gpghome"
+                mkdir "$GNUPGHOME"
+
+                gpg --import /tmp/privkey
+                keyid="$(gpg --show-keys --with-colons /tmp/privkey | awk -F':' '$1=="fpr"{{print $10}}' | head -1)"
+                rpmsign --key-id "$keyid" --addsign /tmp/rpm
+                    "#)
                     .stdout(Stdio::piped()),
             )
             .context("failed to sign rpm")?;

@@ -28,6 +28,10 @@ feature.new(
             into_dir = "/__antlir2__",
             subdirs_to_create = "working_directory",
         ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/__antlir2__",
+            subdirs_to_create = "out",
+        ),
         "//antlir/antlir2/package_managers/dnf/build_appliance:features",
     ],
     visibility = ["//antlir/antlir2/..."],
