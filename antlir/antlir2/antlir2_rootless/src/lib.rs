@@ -13,6 +13,7 @@ use nix::unistd::Uid;
 use once_cell::sync::OnceCell;
 use tracing::error;
 use tracing::trace;
+use tracing::warn;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
@@ -149,8 +150,20 @@ pub fn init() -> Result<Rootless> {
     Rootless::init()
 }
 
+#[tracing::instrument]
 pub fn unshare_new_userns() -> Result<()> {
-    trace!("looking up best subid ranges");
+    let current_uid = Uid::current();
+
+    if current_uid.is_root() {
+        warn!("running as root, not using a user namespace");
+        return Ok(());
+    }
+
+    let current_name = nix::unistd::User::from_uid(current_uid)
+        .map_err(|e| Error::GetUsername(current_uid, e))?
+        .ok_or(Error::GetUsername(current_uid, nix::errno::Errno::ENOENT))?
+        .name;
+    trace!("looking up best subid ranges for {current_uid} ({current_name})");
 
     let uid_map: IdMap<antlir2_userns::Uid> = std::fs::read_to_string("/etc/subuid")
         .map_err(Error::SubidRead)?
@@ -160,20 +173,11 @@ pub fn unshare_new_userns() -> Result<()> {
         .map_err(Error::SubidRead)?
         .parse()
         .map_err(Error::Subid)?;
-    let current_uid = Uid::current();
-    let current_name = nix::unistd::User::from_uid(current_uid)
-        .map_err(|e| Error::GetUsername(current_uid, e))?
-        .ok_or(Error::GetUsername(current_uid, nix::errno::Errno::ENOENT))?
-        .name;
     let uid_range = uid_map
         .best(&antlir2_userns::subid::User::Id(
             current_uid.as_raw().into(),
         ))
         .or_else(|| uid_map.best(&antlir2_userns::subid::User::Name(current_name.clone())))
-        .or_else(|| match current_uid.is_root() {
-            true => Some(antlir2_userns::subid::Range::identity()),
-            false => None,
-        })
         .ok_or_else(|| {
             Error::Subid(antlir2_userns::subid::Error::msg(format!(
                 "no subid range for {}/{}",
@@ -185,10 +189,6 @@ pub fn unshare_new_userns() -> Result<()> {
             current_uid.as_raw().into(),
         ))
         .or_else(|| gid_map.best(&antlir2_userns::subid::User::Name(current_name.clone())))
-        .or_else(|| match current_uid.is_root() {
-            true => Some(antlir2_userns::subid::Range::identity()),
-            false => None,
-        })
         .ok_or_else(|| Error::Subid(antlir2_userns::subid::Error::msg("no subid range")))?;
 
     trace!("using uid range {uid_range:?} and gid range {gid_range:?}");

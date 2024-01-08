@@ -17,7 +17,7 @@ def _impl(ctx: AnalysisContext) -> Promise:
         "parent_layer": ctx.attrs.layer,
         "target_arch": ctx.attrs._target_arch,
         "_feature_feature_targets": [ctx.attrs._dot_meta_feature],
-        "_rootless": False,
+        "_rootless": ctx.attrs._rootless,
         "_run_container": ctx.attrs._run_container,
         "_selected_target_arch": ctx.attrs._target_arch,
     }).promise.map(lambda l: [l[LayerInfo], l[DefaultInfo]])

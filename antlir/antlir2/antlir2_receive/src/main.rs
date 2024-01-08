@@ -22,7 +22,6 @@ use clap::Parser;
 use clap::ValueEnum;
 use nix::sched::unshare;
 use nix::sched::CloneFlags;
-use nix::unistd::Uid;
 use tracing::trace;
 use tracing::warn;
 use tracing_subscriber::prelude::*;
@@ -80,30 +79,20 @@ impl Receive {
     #[tracing::instrument(name = "receive", skip(self))]
     pub(crate) fn run(self) -> Result<()> {
         trace!("setting up WorkingVolume");
-        if self.rootless && Uid::effective().is_root() {
-            // It's actually surprisingly tricky to make the same code paths
-            // work when both unprivileged and running as real root, so just
-            // drop to an unprivileged user first.
-            let fbnodoby = nix::unistd::User::from_name("fbnobody")
-                .context("while looking up fbnobody")?
-                .context("no user fbnobody")?;
-            nix::unistd::setgid(fbnodoby.gid).context("while dropping to fbnobody")?;
-            nix::unistd::setuid(fbnodoby.uid).context("while dropping to fbnobody")?;
-        }
-
-        let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
-
         let working_volume = WorkingVolume::ensure(self.setup.working_dir.clone())
             .context("while setting up WorkingVolume")?;
 
-        if self.rootless {
+        let rootless = if self.rootless {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
             unshare(CloneFlags::CLONE_NEWNS).context("while unsharing mount")?;
-        }
+            None
+        } else {
+            Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?)
+        };
 
         let dst = self.prepare_dst(&working_volume)?;
 
-        let root = rootless.escalate()?;
+        let root = rootless.map(|r| r.escalate()).transpose()?;
 
         match self.format {
             Format::Sendstream => {
@@ -167,33 +156,30 @@ impl Receive {
             .set_readonly(true)
             .context("while making subvol ro")?;
 
-        drop(root);
-
         if self.output.exists() {
             trace!("removing existing output {}", self.output.display());
-            rootless.as_root(|| {
-                // Don't fail if the old subvol couldn't be deleted, just print
-                // a warning. We really don't want to fail someone's build if
-                // the only thing that went wrong is not being able to delete
-                // the last version of it.
-                match Subvolume::open(&self.output) {
-                    Ok(old_subvol) => {
-                        if let Err(e) = old_subvol.delete() {
-                            warn!(
-                                "couldn't delete old subvol '{}': {e:?}",
-                                self.output.display()
-                            );
-                        }
-                    }
-                    Err(e) => {
+            // Don't fail if the old subvol couldn't be deleted, just print
+            // a warning. We really don't want to fail someone's build if
+            // the only thing that went wrong is not being able to delete
+            // the last version of it.
+            match Subvolume::open(&self.output) {
+                Ok(old_subvol) => {
+                    if let Err(e) = old_subvol.delete() {
                         warn!(
-                            "couldn't open old subvol '{}': {e:?}",
+                            "couldn't delete old subvol '{}': {e:?}",
                             self.output.display()
                         );
                     }
                 }
-            })?;
+                Err(e) => {
+                    warn!(
+                        "couldn't open old subvol '{}': {e:?}",
+                        self.output.display()
+                    );
+                }
+            }
         }
+        drop(root);
 
         let _ = std::fs::remove_file(&self.output);
         std::os::unix::fs::symlink(subvol.path(), &self.output).context("while making symlink")?;

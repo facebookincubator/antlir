@@ -128,8 +128,9 @@ impl CasDir {
                     std::fs::hard_link(already_copied, &dst_path)
                         .context("while hardlinking copy")?;
                 } else {
-                    std::fs::copy(entry.path(), &dst_path)
-                        .context("while copying file out of layer")?;
+                    std::fs::copy(entry.path(), &dst_path).with_context(|| {
+                        format!("while copying {} out of layer", entry.path().display())
+                    })?;
                     std::fs::set_permissions(&dst_path, Permissions::from_mode(0o444))
                         .context("while setting permissions")?;
                     inodes.insert(entry.ino(), dst_path.clone());
