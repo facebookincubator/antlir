@@ -271,6 +271,7 @@ _rpm, _rpm_anon = _new_package_rule(
     },
     format = "rpm",
     dot_meta = False,
+    sudo = True,
 )
 
 _vfat, _vfat_anon = _new_package_rule(

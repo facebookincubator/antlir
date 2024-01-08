@@ -53,7 +53,13 @@ pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
 
     match output.status.success() {
         true => Ok(output),
-        false => Err(anyhow!("failed to run command {:?}: {:?}", command, output)),
+        false => Err(anyhow!(
+            "failed to run command {:?} ({:?}): {}\n{}",
+            command,
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        )),
     }
 }
 
