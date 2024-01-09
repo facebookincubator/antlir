@@ -74,7 +74,9 @@ def _map_image(
 
     return cmd, out
 
-def _container_sub_target(binary: Dependency, subvol: Artifact, mounts: list[mount_record]) -> list[Provider]:
+def _container_sub_target(binary: Dependency | None, subvol: Artifact, mounts: list[mount_record]) -> list[Provider]:
+    if not binary:
+        return [DefaultInfo()]
     dev_mode_args = cmd_args()
     if REPO_CFG.artifacts_require_repo:
         dev_mode_args = cmd_args(
@@ -546,7 +548,7 @@ _layer_attrs = {
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
     ),
-    "_run_container": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/container_subtarget:run")),
+    "_run_container": attrs.option(attrs.exec_dep(), default = None),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
         doc = "CPU arch that this layer is being built for. This is always " +
@@ -643,5 +645,6 @@ def layer(
         default_rou = default_rou,
         visibility = get_visibility(visibility),
         _implicit_image_test = antlir2_dep("//antlir/antlir2/testing/implicit_image_test:implicit_image_test"),
+        _run_container = antlir2_dep("//antlir/antlir2/container_subtarget:run"),
         **kwargs
     )

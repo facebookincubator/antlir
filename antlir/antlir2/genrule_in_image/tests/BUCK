@@ -1,0 +1,80 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
+
+oncall("antlir")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.rpms_install(rpms = [
+            "bash",
+            "coreutils",
+        ]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+genrule_in_image(
+    name = "single-file",
+    out = "f",
+    bash = """
+        echo foo > $OUT
+        echo bar >> $OUT
+    """,
+    layer = ":layer",
+)
+
+dir_cmd = """
+    echo foo > $OUT/foo
+    mkdir $OUT/bar
+    echo baz > $OUT/bar/baz
+"""
+
+genrule_in_image(
+    name = "dot-dir",
+    out = ".",
+    bash = dir_cmd,
+    layer = ":layer",
+)
+
+genrule_in_image(
+    name = "named-dir",
+    out = "dir/",
+    bash = dir_cmd,
+    layer = ":layer",
+)
+
+genrule_in_image(
+    name = "named-outs",
+    outs = {
+        "bar": "bar",
+        "foo": "foo",
+    },
+    bash = dir_cmd,
+    layer = ":layer",
+)
+
+genrule_in_image(
+    name = "default-out",
+    outs = {
+        "bar": "bar",
+        "foo": "foo",
+    },
+    bash = dir_cmd,
+    default_out = "bar",
+    layer = ":layer",
+)
+
+python_unittest(
+    name = "test",
+    srcs = ["test.py"],
+    env = {
+        "DEFAULT_OUT": "$(location :default-out)",
+        "DOT_DIR": "$(location :dot-dir)",
+        "NAMED_DIR": "$(location :named-dir)",
+        "NAMED_OUTS": "$(location :named-outs)",
+        "SINGLE_FILE": "$(location :single-file)",
+    },
+)
