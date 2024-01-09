@@ -1,6 +1,77 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:build_defs.bzl", "export_file")
+load("//antlir/bzl:systemd.bzl", "systemd")
 
 oncall("antlir")
+
+# Configure ssh login for root using the generic VM public key. This is used
+# only for testing and should never be installed into a production image.
+feature.new(
+    name = "test-only-login",
+    features = [
+        feature.ensure_subdirs_exist(
+            group = "root",
+            into_dir = "/root",
+            mode = "u+rx",
+            subdirs_to_create = ".ssh",
+            user = "root",
+        ),
+        feature.install(
+            src = "id_ecdsa.pub",
+            dst = "/root/.ssh/authorized_keys",
+            group = "root",
+            mode = "u+r",
+            user = "root",
+        ),
+    ],
+    visibility = ["PUBLIC"],
+)
+
+# This section customizes the generation of ssh host keys to reduce the startup
+# time by ~2 full seconds by:
+#   - Generating only one host key and
+#   - Using /run/sshd to store the host key
+feature.new(
+    name = "hostkey",
+    features = [
+        feature.install(
+            src = "sshd.tmpfiles.conf",
+            dst = "/usr/lib/tmpfiles.d/sshd.tmpfiles.conf",
+        ),
+        feature.remove(
+            # sshd-keygen.service doesn't exist on centos9
+            must_exist = False,
+            path = "/usr/lib/systemd/system/sshd-keygen.service",
+        ),
+        # The tmpfiles.d provision.conf file on normal MetalOS image is a slightly modified
+        # version of standard systemd tmpfiles.d provision.conf file. It makes it so
+        # that /root/.ssh is a symlink to /run/fs/control/run/state/persistent/certs/root_ssh
+        # so t hat the generate root ssh key persists reboots and rootfs updates.
+        # VM images do not have persistent subvols so here we remove this file.
+        # More context in D50266692.
+        feature.remove(
+            must_exist = False,
+            path = "/usr/lib/tmpfiles.d/provision.conf",
+        ),
+        systemd.install_unit(
+            "sshd-keygen.service",
+            use_antlir2 = True,
+        ),
+        systemd.enable_unit(
+            "sshd-keygen.service",
+            "core-services.target",
+            use_antlir2 = True,
+        ),
+        # Install a drop-in that updates the cmd line to include the
+        # custom hostkey location.
+        systemd.install_dropin(
+            "sshd-hostkey.conf",
+            "sshd.service",
+            use_antlir2 = True,
+        ),
+    ],
+    visibility = ["PUBLIC"],
+)
 
 # This is the client ssh key used to connect to the virtual machine with SSH
 export_file(
@@ -13,16 +84,4 @@ export_file(
     name = "pubkey",
     src = "id_ecdsa.pub",
     visibility = ["PUBLIC"],
-)
-
-export_file(
-    name = "sshd-hostkey.conf",
-)
-
-export_file(
-    name = "sshd-keygen.service",
-)
-
-export_file(
-    name = "sshd.tmpfiles.conf",
 )
