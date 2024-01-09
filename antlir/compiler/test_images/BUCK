@@ -448,6 +448,7 @@ feature.new(
 
 feature.new(
     name = "feature_mount",
+    antlir2 = False,
     features = [
         feature.host_dir_mount("/etc", "/host_etc"),
         feature.host_file_mount("/dev/null", "/dev_null"),
@@ -644,6 +645,7 @@ image.layer(
 # Exercises `image.clone`, covering the 3 supported trailings / patterns.
 feature.new(
     name = "feature_clone",
+    antlir2 = False,
     features = [
         feature.clone(":installed-files", "/foo/bar", "/"),
         feature.clone(":installed-files", "/foo/bar", "/bar3"),
@@ -676,6 +678,7 @@ image.layer(
 #    something installed by an RPM, add T_REMOVE_PATHS to sample_items, etc
 feature.new(
     name = "feature_kitchen_sink",
+    antlir2 = False,
     features = [
         feature.remove("/path/to/remove"),
         feature.remove(

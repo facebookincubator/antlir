@@ -377,26 +377,20 @@ def feature_new(
         # If set, will be directly used as antlir2 features, else we'll attempt to
         # derive them implicitly from `features`
         antlir2_features = None):
+    if antlir2 == None:
+        antlir2 = True
+    if is_buck2() and antlir2:
+        antlir2_feature.new(
+            name = name,
+            features = antlir2_features or [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
+            visibility = get_visibility(visibility),
+        )
+        if antlir2_shim.should_upgrade_feature():
+            return
+
     private_feature_new(
         name,
         features,
         visibility,
         flavors,
-    )
-
-    # If we're on buck2, instantiate an antlir2 feature rule. This does not
-    # conflict with the feature above, since antlir1 adds a "private" suffix to
-    # all feature targets
-    if antlir2 != None and not antlir2:
-        return
-    antlir2_shim.upgrade_or_shadow_feature(
-        antlir2 = antlir2,
-        name = name,
-        fn = antlir2_shim.getattr_buck2(antlir2_feature, "new"),
-        features = antlir2_features or [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
-        visibility = get_visibility(visibility),
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_feature,
-            name = name,
-        ),
     )
