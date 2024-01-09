@@ -1,0 +1,15 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+
+oncall("antlir")
+
+# Install the `antlir.vm` mount generator for setting up 9p and other mounts
+# needed for testing images in vms.
+feature.new(
+    name = "mounts",
+    features = [feature.install(
+        src = "//antlir/vm:mount-generator",
+        dst = "/usr/lib/systemd/system-generators/mount-generator",
+        mode = "a+rx",
+    )],
+    visibility = ["PUBLIC"],
+)
