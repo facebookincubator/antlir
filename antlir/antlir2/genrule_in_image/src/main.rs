@@ -53,7 +53,8 @@ fn main() -> Result<()> {
             Path::new("/__genrule_in_image__/working_directory"),
             cwd.as_path(),
         ))
-        .working_directory(Path::new("/__genrule_in_image__/working_directory"));
+        .working_directory(Path::new("/__genrule_in_image__/working_directory"))
+        .tmpfs(Path::new("/tmp"));
 
     if args.out.dir {
         std::fs::create_dir_all(&args.out.out)?;
@@ -66,6 +67,9 @@ fn main() -> Result<()> {
     } else {
         std::fs::File::create(&args.out.out)?;
         builder
+            // some tools might uncontrollably attempt to put temporary files
+            // next to the output, so make it a tmpfs
+            .tmpfs(Path::new("/__genrule_in_image__/out"))
             .outputs((
                 Path::new("/__genrule_in_image__/out/single_file"),
                 args.out.out.as_path(),
