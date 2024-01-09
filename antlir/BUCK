@@ -537,7 +537,46 @@ python_binary(
 python_binary(
     name = "compiler",
     main_function = "antlir.compiler.compiler.main",
-    visibility = ["PUBLIC"],
+    visibility = [
+        "//antlir/...",
+        "//bot_generated/antlir/...",
+        # There are almost zero antlir1 images left, just a few stragglers.
+        #
+        # DO NOT ADD TO THIS LIST
+        # If you are creating a new directory with an image in it and it is not
+        # blocked by CVM, DO NOT add your directory to this list. Instead, use
+        # the new antlir2 APIs in your TARGETS/bzl files (load from
+        # //antlir/antlir2 instead of //antlir/bzl)
+        # If you're just calling a macro that uses the old antlir1 interface,
+        # just add this setting to a PACKAGE file in your new directory
+        # https://www.internalfb.com/intern/staticdocs/antlir2/docs/migration-guide/#the-fastest-way
+        #
+        # CVM issues due to incorrect assumption about buck target output always
+        # having the same checksum within a build (invalid because of different
+        # configurations)
+        # https://fb.workplace.com/groups/antlirusers/permalink/1822464761518641/
+        "//admarket/adtech/identity/prediction/service/tw:",
+        "//admarket/adtech/tee_aem/sandbox/tw_container_manifest:",
+        "//admarket/adtech/tee_aem/tw_container_manifest:",
+        "//crypto/keychain_service/tee:",
+        "//security/hsm/experimental/amd_tee/keychain_service:",
+        "//security/hsm/experimental/vesta_tee:",
+        "//security/ra/ssh/images:",
+        "//tazo/identity/sev_snp/tests/cogwheel:",
+        "//tee/snp/cogwheel:",
+        "//tee/snp/image:",
+        "//tee/snp/image/examples:",
+        "//virt/processvm/agent:",
+        # Kept available as base image for the stragglers
+        "//tupperware/image/base:",
+        "//tupperware/image/bzl/tests:",
+        # CMv1 tests that will be deleted when the CVM CMs are moved to antlir2
+        # and no antlir1 images are left
+        "//tupperware/cm/antlir/tests:",
+        "//tupperware/regtest/container_manifest:",
+        # IMPORTANT!!!! DO NOT ADD TO THIS LIST
+        # SEE COMMENT AT TOP OF THIS LIST
+    ],
     deps = ["//antlir/compiler:compiler"],
 )
 

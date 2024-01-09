@@ -53,12 +53,6 @@ def _should_upgrade() -> bool:
     package_mode = antlir2_migration.get_mode()
     return package_mode == antlir2_migration.mode_t("upgrade")
 
-# features are currently left with an antlir1 definition because it does not
-# conflict and features often have cross-package dependencies.
-# when migration closer to complete, this can use the same logic as above
-def _should_upgrade_feature(*args, **kwargs):
-    return False
-
 def _fake_buck1_layer(name):
     # export a target of the same name to make td happy
     _fake_buck1_target(name = name + ".antlir2")
@@ -131,7 +125,9 @@ antlir2_shim = struct(
     fake_buck1_target = _fake_buck1_target,
     fake_buck1_test = _fake_buck1_test,
     should_upgrade_layer = _should_upgrade,
+    should_upgrade_feature = _should_upgrade,
     should_shadow_layer = _should_shadow,
+    should_shadow_feature = _should_shadow,
     upgrade_or_shadow_layer = _upgrade_or_shadow,
     upgrade_or_shadow_feature = _upgrade_or_shadow_feature,
     upgrade_or_shadow_test = _upgrade_or_shadow,
