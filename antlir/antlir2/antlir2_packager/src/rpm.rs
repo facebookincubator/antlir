@@ -191,6 +191,7 @@ License: {license}
         isol_context
             .ephemeral(false)
             .readonly()
+            .hostname("antlir2")
             // random buck-out paths that might be being used (for installing .rpms)
             .inputs((
                 PathBuf::from("/__antlir2__/working_directory"),
@@ -201,7 +202,8 @@ License: {license}
             .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
             .outputs((Path::new("/__antlir2__/out"), output_dir.path()))
             .tmpfs(Path::new("/tmp"))
-            .devtmpfs(Path::new("/dev"));
+            .tmpfs(Path::new("/dev"))
+            .inputs(Path::new("/dev/null"));
         let isol_context = isol_context.build();
 
         run_cmd(
@@ -238,11 +240,13 @@ License: {license}
             isol_context
                 .ephemeral(false)
                 .readonly()
+                .hostname("antlir2")
                 .working_directory(Path::new("/__antlir2__/working_directory"))
                 .tmpfs(Path::new("/tmp"))
                 .inputs(("/tmp/privkey", privkey.as_path()))
                 .outputs(("/tmp/rpm", rpm_path.as_path()))
-                .devtmpfs(Path::new("/dev"));
+                .tmpfs(Path::new("/dev"))
+                .inputs(Path::new("/dev/null"));
             let isol_context = isol_context.build();
             run_cmd(
                 unshare(isol_context)?
