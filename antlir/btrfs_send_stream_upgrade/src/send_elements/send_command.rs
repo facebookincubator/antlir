@@ -1208,7 +1208,6 @@ impl SendCommand {
     /// This command is generated with the BTRFS_SEND_C_UPDATE_EXTENT type;
     /// since this command type is currently unused, a padded send stream should
     /// also apply cleanly when using a regular receive command.
-    ///
     pub fn generate_pad_command(
         &self,
         context: &mut SendStreamUpgradeContext,
