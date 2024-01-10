@@ -79,9 +79,10 @@ Now you can refer to a stable version of a package, represented as an
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/image/facebook:fbpkg_contents_layer.bzl?v2_only", antlir2_fbpkg_contents_layer = "fbpkg_contents_layer")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "is_buck2")
 load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
+load("//bot_generated/antlir/fbpkg/db:defs.bzl", "snapshotted_fbpkg_target")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer.bzl", "image_layer")
@@ -148,7 +149,7 @@ def fetched_package_layers_from_json_dir_db(
         _fetched_package_layer(
             package = package,
             tag = tag,
-            db_buck_prefix = "//" + native.package_name() + "/" + package_db_dir + ".buck",
+            db = package_db_dir.removesuffix("/"),
             name_suffix = layer_suffix,
             print_how_to_fetch_json = print_how_to_fetch_json,
             fetcher = fetcher,
@@ -186,7 +187,7 @@ def _print_how_to_fetch_json(how_to_fetch):
 def _fetched_package_layer(
         package,
         tag,
-        db_buck_prefix,
+        db,
         name_suffix,
         print_how_to_fetch_json,
         fetcher,  # `_PackageInfoFetcher`
@@ -239,15 +240,21 @@ def _fetched_package_layer(
     )
 
     if is_buck2():
-        antlir2_feature.new(
-            name = package_feature,
-            features = [
-                antlir2_feature.install(
-                    src = db_buck_prefix + "/" + package + ":" + tag,
-                    dst = "/",
-                ),
+        antlir2_fbpkg_contents_layer(
+            name = name + ".antlir2",
+            default_mountpoint = "/packages/" + package,
+            default_os = "none",
+            fbpkg = snapshotted_fbpkg_target(
+                name = package,
+                tag = tag,
+                db = db,
+            ),
+            # Useful for queries on leaf image layers to determine the packages
+            # being fetched throughout the image layer stack
+            labels = [
+                "antlir_fetched_package__name={}".format(package),
+                "antlir_fetched_package__tag={}".format(tag),
             ],
-            visibility = ["PUBLIC"],
         )
     else:
         # export a target of the same name to make td happy
@@ -284,7 +291,7 @@ def _fetched_package_layer(
             "antlir_fetched_package__name={}".format(package),
             "antlir_fetched_package__tag={}".format(tag),
         ],
-        antlir2_default_mountpoint = "/packages/" + package,
+        antlir2 = False,
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`
