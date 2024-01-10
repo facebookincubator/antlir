@@ -321,6 +321,11 @@ impl<T: Share> Shares<T> {
         })
     }
 
+    pub(crate) fn start_shares(&self) -> Result<()> {
+        self.shares.iter().try_for_each(|share| share.setup())?;
+        Ok(())
+    }
+
     /// Qemu args for 9p read-only share for antlir/vm/mount-generator. Keeping
     /// it backwards compatible for now to make migrating VMs easier. Once all
     /// VMs are migrated over, we can change mount-generator to do virtiofsd too.
