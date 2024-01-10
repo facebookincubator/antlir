@@ -8,7 +8,7 @@
 use std::collections::HashSet;
 use std::ffi::OsString;
 use std::fs;
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::BufRead;
 use std::io::BufReader;
 use std::io::ErrorKind;
@@ -154,6 +154,13 @@ impl<S: Share> VM<S> {
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
         self.sidecar_handles = self.spawn_sidecar_services();
+        if self.args.first_boot_command.is_some() {
+            info!("Booting VM for first boot command. It could take seconds to minutes...");
+            let proc = self.spawn_vm()?;
+            let ssh_first_boot_cmd = self.ssh_first_boot_command()?;
+            self.wait_for_vm(proc, ssh_first_boot_cmd, true)?;
+            thread::sleep(Duration::from_secs(1));
+        }
         info!("Booting VM. It could take seconds to minutes...");
         let proc = self.spawn_vm()?;
         let ssh_cmd = self.ssh_command()?;
@@ -289,6 +296,21 @@ impl<S: Share> VM<S> {
         Ok(ssh_cmd)
     }
 
+    fn ssh_first_boot_command(&self) -> Result<Command> {
+        let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+        self.args.command_envs.iter().for_each(|kv| {
+            ssh_cmd.arg(kv.to_os_string());
+        });
+
+        if let Some(command) = &self.args.first_boot_command {
+            let cmd_with_reboot = format!("{} && reboot", command);
+            ssh_cmd.arg(cmd_with_reboot.as_str());
+        }
+
+        info!("First boot command: {:?}", ssh_cmd);
+        Ok(ssh_cmd)
+    }
+
     /// The sidecar services will continue to run indefinitely until the outer
     /// container is torn down. Thus we just spawn them and forget.
     fn spawn_sidecar_services(&self) -> Vec<JoinHandle<Result<ExitStatus>>> {
@@ -368,7 +390,12 @@ impl<S: Share> VM<S> {
                     path: path.to_owned(),
                     err,
                 };
-                let file = File::create(path).map_err(map_err)?;
+                // Use append to not lose stdout/err from previous runs.
+                let file = OpenOptions::new()
+                    .append(true)
+                    .create(true)
+                    .open(path)
+                    .map_err(map_err)?;
                 command.stdout(file.try_clone().map_err(map_err)?);
                 command.stderr(file.try_clone().map_err(map_err)?);
             } else {
