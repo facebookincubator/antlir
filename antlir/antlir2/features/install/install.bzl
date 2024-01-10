@@ -190,7 +190,7 @@ install_rule = rule(
     impl = _impl,
     attrs = {
         "build_phase": attrs.enum(BuildPhase.values(), default = "compile"),
-        "dst": attrs.option(attrs.string(), default = None),
+        "dst": attrs.string(),
         "group": attrs.string(default = "root"),
         "mode": attrs.option(attrs.int(), default = None),
         "never_use_dev_binary_symlink": attrs.bool(

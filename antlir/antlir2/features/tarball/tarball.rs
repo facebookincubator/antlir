@@ -34,9 +34,9 @@ pub type Feature = Tarball;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 pub struct Tarball {
-    src: BuckOutSource,
-    into_dir: PathInLayer,
-    force_root_ownership: bool,
+    pub src: BuckOutSource,
+    pub into_dir: PathInLayer,
+    pub force_root_ownership: bool,
 }
 
 enum ArchiveReader<'a> {

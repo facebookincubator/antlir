@@ -90,7 +90,7 @@ feature_record = record(
     plugin = FeaturePluginInfo | Provider,
 )
 
-def _feature_as_json(feat: feature_record) -> struct:
+def feature_as_json(feat: feature_record) -> struct:
     return struct(
         feature_type = feat.feature_type,
         label = feat.label,
@@ -183,7 +183,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             deps = flatten.flatten(dep)
             for dep in deps:
                 features.extend(dep[FeatureInfo].features)
-        features_json = [_feature_as_json(f) for f in features]
+        features_json = [feature_as_json(f) for f in features]
 
         json_file = ctx.actions.write_json("features.json", features_json)
 

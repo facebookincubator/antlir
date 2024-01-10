@@ -91,5 +91,10 @@ metadata to a deterministic state, while the state of the on-disk metadata in
             src_layer = src_layer + ".antlir2",
             src_path = src_path,
             dst_path = dest_path,
+            # antlir1's clone always makes files owned by root:root
+            # antlir2 defaults to using the same user:group as the source, but
+            # that's not always possible
+            user = "root",
+            group = "root",
         ) if is_buck2() else None,
     )
