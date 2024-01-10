@@ -469,6 +469,35 @@ vm.host(
 )
 ```
 
+### Multi-arch (AARCH64) support
+
+Currently VM test supports x86_64 and aarch64. The support is implmented
+transparently through buck, which means almost no changes are necessary for
+tests in order to get aarch64 coverage. However, there are pre-requisites and
+differences that could need attention.
+
+Pre-requisites:
+
+- All layers used by VM must be Antlir2.
+- The rootfs and kernel must be aarch64 compatible. For Meta internal users,
+  this means:
+  - Rootfs layer must be CentOS 9 based or newer
+  - Kernel version >= 6.4
+
+Buck supports cross-platform build and execution, and thus the target platform
+might be different from execution platform for multi-arch VM test. For example,
+when one executes aarch64 VM test on a x86_64 host, the execution platform is
+x86_64 and the target platform is aarch64. This has a few implications.
+
+- Cross-platform emulation is slow and thus `timeout_secs` for the test might
+  need tuning. `select` allows different timeouts for different arch.
+- `$(exe)` vs `$(location)`
+  - While most of the target vs execution platform business is hidden from
+    users, we do expose `env`, `sidecar_services` and other VM or test
+    attributes that user can customize with executable. You need to use `$(exe)`
+    if the executable will be invoked outside the VM (execution platform), and
+    `$(location)` if inside (target platform).
+
 ### Migrating from Antlir1 VM test
 
 Make sure you've read the [MetalOS VM API](#metalos-vm-api) section first. That
