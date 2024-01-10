@@ -13,6 +13,7 @@ use std::io::BufRead;
 use std::io::BufReader;
 use std::io::ErrorKind;
 use std::io::Read;
+use std::net::Shutdown;
 use std::os::unix::net::UnixStream;
 use std::path::Path;
 use std::path::PathBuf;
@@ -114,6 +115,8 @@ pub(crate) enum VMError {
     RunError(String),
     #[error("VM timed out")]
     TimeOutError,
+    #[error("Failed to clean up: {desc}: `{err}`")]
+    CleanupError { desc: String, err: std::io::Error },
 }
 
 type Result<T> = std::result::Result<T, VMError>;
@@ -154,7 +157,7 @@ impl<S: Share> VM<S> {
         info!("Booting VM. It could take seconds to minutes...");
         let proc = self.spawn_vm()?;
         let ssh_cmd = self.ssh_command()?;
-        self.wait_for_vm(proc, ssh_cmd)?;
+        self.wait_for_vm(proc, ssh_cmd, false)?;
         Ok(())
     }
 
@@ -405,7 +408,7 @@ impl<S: Share> VM<S> {
     /// the thread exits.
     fn wait_for_timeout<T>(
         &self,
-        mut socket: UnixStream,
+        mut socket: &UnixStream,
         start_ts: Instant,
         thread_handle: Option<JoinHandle<T>>,
     ) -> Result<Option<T>> {
@@ -451,7 +454,7 @@ impl<S: Share> VM<S> {
     fn run_cmd_and_wait(
         &self,
         mut cmd: Command,
-        socket: UnixStream,
+        socket: &UnixStream,
         start_ts: Instant,
     ) -> Result<ExitStatus> {
         // Spawn command in a separate thread so that we can enforce timeout.
@@ -483,10 +486,88 @@ impl<S: Share> VM<S> {
         }
     }
 
+    /// We no longer expect / need the VM to be running. Let's clean up the process
+    fn cleanup_vm(
+        &mut self,
+        mut vm_proc: Child,
+        socket: &UnixStream,
+        cleanup_needed: bool,
+    ) -> Result<()> {
+        if !cleanup_needed {
+            // Do not clean up the VM resources if we are exiting in any case.
+            // Rely on the container / process exit instead. This reduces the
+            // risk of reporting errors after successful workload runs.
+            return Ok(());
+        }
+        // If the VM is still running, kill it
+        match vm_proc.try_wait() {
+            Ok(Some(_)) => {}
+            Ok(None) => {
+                vm_proc.kill().map_err(|err| VMError::CleanupError {
+                    desc: "Failed to kill the VM process".into(),
+                    err,
+                })?;
+                vm_proc.wait().map_err(|err| VMError::CleanupError {
+                    desc: "Failed to wait on the VM process".into(),
+                    err,
+                })?;
+            }
+            Err(err) => {
+                return Err(VMError::CleanupError {
+                    desc: "Error attempting to wait on the VM process".into(),
+                    err,
+                });
+            }
+        }
+
+        // We are done with the socket. Close it.
+        socket
+            .shutdown(Shutdown::Both)
+            .map_err(|err| VMError::CleanupError {
+                desc: "Failed to shutdown socket".into(),
+                err,
+            })?;
+
+        // Remove the notify file if it exists
+        match self.notify_file().try_exists() {
+            Ok(false) => {} // do nothing,
+            Ok(true) => {
+                // delete the file
+                match std::fs::remove_file(self.notify_file()) {
+                    Ok(_) => {}
+                    Err(err) => {
+                        return Err(VMError::CleanupError {
+                            desc: format!(
+                                "Unable to remove notify file {}",
+                                self.notify_file().to_str().expect("Invalid file name")
+                            ),
+                            err,
+                        });
+                    }
+                }
+            }
+            Err(err) => {
+                return Err(VMError::CleanupError {
+                    desc: format!(
+                        "Unable to access notify file {}",
+                        self.notify_file().to_str().expect("Invalid file name")
+                    ),
+                    err,
+                });
+            }
+        }
+        Ok(())
+    }
+
     /// Connect to the notify socket, wait for boot ready message and wait for the VM
     /// to terminate. If time out is specified, this function will return error
     /// upon timing out.
-    fn wait_for_vm(&mut self, mut vm_proc: Child, ssh_cmd: Command) -> Result<()> {
+    fn wait_for_vm(
+        &mut self,
+        mut vm_proc: Child,
+        ssh_cmd: Command,
+        cleanup_needed: bool,
+    ) -> Result<()> {
         let start_ts = Instant::now();
 
         // Wait for notify file to be created by qemu
@@ -528,7 +609,8 @@ impl<S: Share> VM<S> {
         if self.args.mode.container {
             let mut cmd = Command::new("/bin/bash");
             cmd.arg("-l");
-            self.run_cmd_and_wait(cmd, socket, start_ts)?;
+            self.run_cmd_and_wait(cmd, &socket, start_ts)?;
+            self.cleanup_vm(vm_proc, &socket, cleanup_needed)?;
             return Ok(());
         }
 
@@ -554,15 +636,16 @@ impl<S: Share> VM<S> {
             response.trim(),
             start_ts.elapsed().as_secs_f32()
         );
+        let socket = f.into_inner();
 
         // VM booted
         self.check_sidecar_services()?;
         let mut exit_status = None;
         if self.args.mode.console {
             // Just wait for the human that's trying to debug with console
-            self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
+            self.wait_for_timeout::<()>(&socket, start_ts, None)?;
         } else if !self.args.mode.container {
-            exit_status = Some(self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?);
+            exit_status = Some(self.run_cmd_and_wait(ssh_cmd, &socket, start_ts)?);
         }
         info!("VM executed for {} seconds", start_ts.elapsed().as_secs());
 
@@ -572,6 +655,7 @@ impl<S: Share> VM<S> {
                 return Err(VMError::SSHCommandResultError(status));
             }
         }
+        self.cleanup_vm(vm_proc, &socket, cleanup_needed)?;
         Ok(())
     }
 
@@ -847,7 +931,7 @@ mod test {
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
-            assert!(vm.wait_for_timeout::<()>(recv, start_ts, None).is_err());
+            assert!(vm.wait_for_timeout::<()>(&recv, start_ts, None).is_err());
         });
         thread::sleep(Duration::from_secs(1));
         assert!(!handle.is_finished());
@@ -863,7 +947,7 @@ mod test {
         let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let start_ts = Instant::now();
         let handle = thread::spawn(move || {
-            assert!(vm.wait_for_timeout::<()>(recv, start_ts, None).is_ok());
+            assert!(vm.wait_for_timeout::<()>(&recv, start_ts, None).is_ok());
         });
         thread::sleep(Duration::from_secs(1));
         assert!(!handle.is_finished());
@@ -881,7 +965,7 @@ mod test {
         let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let handle = thread::spawn(move || {
             assert!(
-                vm.wait_for_timeout::<()>(recv, Instant::now(), None)
+                vm.wait_for_timeout::<()>(&recv, Instant::now(), None)
                     .is_ok()
             );
         });
@@ -903,7 +987,7 @@ mod test {
         });
         let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         assert!(
-            vm.wait_for_timeout::<()>(recv, start_ts, Some(handle))
+            vm.wait_for_timeout::<()>(&recv, start_ts, Some(handle))
                 .is_ok()
         );
         let elapsed = Instant::now()
@@ -923,7 +1007,7 @@ mod test {
         });
         let (send, recv) = UnixStream::pair().expect("Failed to create sockets");
         assert!(
-            vm.wait_for_timeout::<()>(recv, start_ts, Some(handle))
+            vm.wait_for_timeout::<()>(&recv, start_ts, Some(handle))
                 .is_err()
         );
         assert!(elapsed > Duration::from_secs(3));
@@ -941,7 +1025,7 @@ mod test {
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let mut command = Command::new("/usr/bin/sleep");
         command.arg("5");
-        assert!(vm.run_cmd_and_wait(command, recv, Instant::now()).is_err());
+        assert!(vm.run_cmd_and_wait(command, &recv, Instant::now()).is_err());
 
         // reset timeout for all tests below that shouldn't timeout
         vm.args.timeout_secs = Some(5);
@@ -949,7 +1033,7 @@ mod test {
         // command completes with success
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let command = Command::new("/usr/bin/ls");
-        let result = vm.run_cmd_and_wait(command, recv, Instant::now());
+        let result = vm.run_cmd_and_wait(command, &recv, Instant::now());
         println!("{:?}", result);
         assert!(result.is_ok());
         assert!(result.expect("Already checked").success());
@@ -958,7 +1042,7 @@ mod test {
         let (_send, recv) = UnixStream::pair().expect("Failed to create sockets");
         let mut command = Command::new("/usr/bin/ls");
         command.arg("non_existent_file");
-        let result = vm.run_cmd_and_wait(command, recv, Instant::now());
+        let result = vm.run_cmd_and_wait(command, &recv, Instant::now());
         println!("{:?}", result);
         assert!(result.is_ok());
         assert!(!result.expect("Already checked").success());
