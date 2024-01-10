@@ -153,7 +153,8 @@ impl<S: Share> VM<S> {
         self.sidecar_handles = self.spawn_sidecar_services();
         info!("Booting VM. It could take seconds to minutes...");
         let proc = self.spawn_vm()?;
-        self.wait_for_vm(proc)?;
+        let ssh_cmd = self.ssh_command()?;
+        self.wait_for_vm(proc, ssh_cmd)?;
         Ok(())
     }
 
@@ -266,6 +267,24 @@ impl<S: Share> VM<S> {
 
     fn notify_file(&self) -> PathBuf {
         self.state_dir.join("vmtest_notify.sock")
+    }
+
+    fn ssh_command(&self) -> Result<Command> {
+        let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+        if self.args.mode.command.is_none() {
+            // Force pseudo-terminal allocation for interactive use case. Or
+            // ssh hang instead because we add a bash command below.
+            ssh_cmd.arg("-t");
+        }
+        self.args.command_envs.iter().for_each(|kv| {
+            ssh_cmd.arg(kv.to_os_string());
+        });
+        if let Some(command) = &self.args.mode.command {
+            ssh_cmd.args(command);
+        } else {
+            ssh_cmd.args(["/bin/bash", "-l"]);
+        }
+        Ok(ssh_cmd)
     }
 
     /// The sidecar services will continue to run indefinitely until the outer
@@ -467,7 +486,7 @@ impl<S: Share> VM<S> {
     /// Connect to the notify socket, wait for boot ready message and wait for the VM
     /// to terminate. If time out is specified, this function will return error
     /// upon timing out.
-    fn wait_for_vm(&mut self, mut vm_proc: Child) -> Result<()> {
+    fn wait_for_vm(&mut self, mut vm_proc: Child, ssh_cmd: Command) -> Result<()> {
         let start_ts = Instant::now();
 
         // Wait for notify file to be created by qemu
@@ -543,20 +562,6 @@ impl<S: Share> VM<S> {
             // Just wait for the human that's trying to debug with console
             self.wait_for_timeout::<()>(f.into_inner(), start_ts, None)?;
         } else if !self.args.mode.container {
-            let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
-            if self.args.mode.command.is_none() {
-                // Force pseudo-terminal allocation for interactive use case. Or
-                // ssh hang instead because we add a bash command below.
-                ssh_cmd.arg("-t");
-            }
-            self.args.command_envs.iter().for_each(|kv| {
-                ssh_cmd.arg(kv.to_os_string());
-            });
-            if let Some(command) = &self.args.mode.command {
-                ssh_cmd.args(command);
-            } else {
-                ssh_cmd.args(["/bin/bash", "-l"]);
-            }
             exit_status = Some(self.run_cmd_and_wait(ssh_cmd, f.into_inner(), start_ts)?);
         }
         info!("VM executed for {} seconds", start_ts.elapsed().as_secs());
