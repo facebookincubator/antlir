@@ -24,11 +24,17 @@ buck_genrule(
     name = "tar",
     out = "archive.tar",
     cmd = """
+        set -ex
+        fakeroot /bin/bash -e <<EOF
+
         mkdir $TMP/foo
         echo "I am bar" > $TMP/foo/bar
         mkdir $TMP/foo/baz
         echo "I am qux" > $TMP/foo/baz/qux
+        chmod u+s "$TMP/foo/bar"
         tar -cf $OUT -C $TMP foo
+
+EOF
     """,
 )
 
