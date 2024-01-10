@@ -86,6 +86,9 @@ pub(crate) struct VMArgs {
     /// Environment variables for the command
     #[clap(long)]
     pub(crate) command_envs: Vec<KvPair>,
+    /// Command requires first boot
+    #[clap(long)]
+    pub(crate) first_boot_command: Option<String>,
     /// Operation for VM to carry out
     #[clap(flatten)]
     pub(crate) mode: VMModeArgs,
@@ -129,6 +132,10 @@ impl VMArgs {
             kv_str.push(pair.value.clone());
             args.push(kv_str);
         });
+        if let Some(first_boot_command) = &self.first_boot_command {
+            args.push("--first-boot-command".into());
+            args.push(first_boot_command.into());
+        }
         self.output_dirs.iter().for_each(|dir| {
             args.push("--output-dirs".into());
             args.push(dir.clone().into());

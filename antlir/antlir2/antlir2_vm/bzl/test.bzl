@@ -35,6 +35,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         common_args,
         cmd_args(str(ctx.attrs.timeout_secs), format = "--timeout-secs={}"),
     )
+    if ctx.attrs.first_boot_command:
+        test_cmd = cmd_args(test_cmd, cmd_args(ctx.attrs.first_boot_command, format = "--first-boot-command={}"))
     if ctx.attrs.expect_failure:
         test_cmd = cmd_args(test_cmd, "--expect-failure")
     if ctx.attrs.postmortem:
@@ -106,6 +108,11 @@ _vm_test = rule(
         "expect_failure": attrs.bool(
             doc = "If true, VM is expected to timeout or fail early.",
         ),
+        "first_boot_command": attrs.option(
+            attrs.arg(doc = "Command to execute on first boot. The test \
+            will be executed at the second boot."),
+            default = None,
+        ),
         "postmortem": attrs.bool(
             doc = "If true, the test is run after VM is terminated and its console log is accessible \
             through env $CONSOLE_OUTPUT. This is usually combined with @expect_failure to validate \
@@ -158,6 +165,7 @@ def _implicit_vm_test(
         vm_host: str,
         run_as_bundle: bool = False,
         timeout_secs: None | int | Select = None,
+        first_boot_command: None | str = None,
         expect_failure: bool = False,
         postmortem: bool = False,
         labels: list[str] | None = None,
@@ -202,6 +210,7 @@ def _implicit_vm_test(
         test_labels = wrapper_labels,
         vm_host = vm_host,
         timeout_secs = timeout_secs,
+        first_boot_command = first_boot_command,
         expect_failure = expect_failure,
         postmortem = postmortem,
     )
