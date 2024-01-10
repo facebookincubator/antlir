@@ -117,7 +117,6 @@ struct ReadOnceBufferCacheMetadata {
 /// can end up deadlocking. Therefore, it is important to ensure that the
 /// maximum capacity of the cache is set to a value that is sufficently larger
 /// than the maximum size of a copy request.
-///
 pub struct ReadOnceBufferCache {
     /// A reader writer lock to protect the buffers
     robc_cache: RwLock<ReadOnceBufferCacheInternal>,

@@ -66,7 +66,6 @@ struct OrderedElementQueueInternal<T: OrderedElement> {
 ///
 /// Items might arrive at the queue out-of-order; the queue will block all
 /// consumers until the "next" item has been successfully enqueued.
-///
 pub struct OrderedElementQueue<T: OrderedElement> {
     /// A mutex to protect the internal queue
     oeq_mutex: Mutex<OrderedElementQueueInternal<T>>,
