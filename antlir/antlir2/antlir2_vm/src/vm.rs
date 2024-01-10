@@ -227,7 +227,6 @@ impl<S: Share> VM<S> {
             .enumerate()
             .map(|(i, opts)| -> Result<S> {
                 let share = S::new(opts, i, state_dir.to_path_buf());
-                share.setup()?;
                 Ok(share)
             })
             .collect();
@@ -384,6 +383,9 @@ impl<S: Share> VM<S> {
     /// Spawn qemu-system process. It won't immediately start running until we connect
     /// to the notify socket.
     fn spawn_vm(&self) -> Result<Child> {
+        // Start virtiofsd daemons now that we are about to launch QEMU
+        self.shares.start_shares()?;
+
         let mut args = self.common_qemu_args()?;
         args.extend(self.non_disk_boot_qemu_args());
         args.extend(self.pci_bridge_qemu_args());
