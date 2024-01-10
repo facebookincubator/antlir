@@ -22,7 +22,7 @@ content_hash = "0"
 op = "added"
 
 [file."tar/foo/bar".diff]
-mode = "u+rw,g+r,o+r"
+mode = "u+rws,g+r,o+r"
 file-type = "regular-file"
 user = "root"
 group = "root"
@@ -76,7 +76,7 @@ content_hash = "0"
 op = "added"
 
 [file."tar.gz/foo/bar".diff]
-mode = "u+rw,g+r,o+r"
+mode = "u+rws,g+r,o+r"
 file-type = "regular-file"
 user = "root"
 group = "root"
@@ -130,7 +130,7 @@ content_hash = "0"
 op = "added"
 
 [file."tar.zst/foo/bar".diff]
-mode = "u+rw,g+r,o+r"
+mode = "u+rws,g+r,o+r"
 file-type = "regular-file"
 user = "root"
 group = "root"

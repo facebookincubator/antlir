@@ -26,14 +26,16 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     # this is exclusively libbtrfsutil.so). This shouldn't really be necessary,
     # but when building in @mode/opt and on RE, the dependencies get dropped and
     # we get left with only the plugin .so and none of its dependencies
-    link_info = ctx.attrs.lib[RustLinkInfo]
     lib_dir_map = {}
-    for dep in link_info.exported_link_deps:
-        if dep[SharedLibraryInfo].set:
-            lib_dir_map.update({
-                soname: lib.lib.output
-                for soname, lib in dep[SharedLibraryInfo].set.value.libraries.items()
-            })
+    for rust_dep in [ctx.attrs.lib] + ctx.attrs.deps:
+        if RustLinkInfo not in rust_dep:
+            continue
+        for dep in rust_dep[RustLinkInfo].exported_link_deps:
+            for item in dep[SharedLibraryInfo].set.traverse():
+                lib_dir_map.update({
+                    soname: lib.lib.output
+                    for soname, lib in item.libraries.items()
+                })
 
     ctx.actions.copied_dir(lib_dir, lib_dir_map)
 
@@ -45,6 +47,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 feature_plugin = rule(
     impl = _impl,
     attrs = {
+        "deps": attrs.query(),
         "lib": attrs.dep(providers = [RustLinkInfo]),
     },
 )
@@ -127,5 +130,6 @@ def feature_impl(
     feature_plugin(
         name = name,
         lib = ":{}.linked".format(name),
+        deps = "deps(:{}.linked, 1)".format(name),
         visibility = plugin_visibility or visibility or ["PUBLIC"],
     )
