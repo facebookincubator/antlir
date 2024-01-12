@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "python_library", "python_unittest")
+load("//antlir/bzl:build_defs.bzl", "python_library")
 
 oncall("antlir")
 
@@ -56,22 +56,5 @@ python_library(
         ":repodata_downloader",
         ":repomd_downloader",
         ":rpm_downloader",
-    ],
-)
-
-python_unittest(
-    name = "test-repo-downloader",
-    srcs = ["tests/test_repo_downloader.py"],
-    # Because :temp_repos has a layer dep
-    labels = ["no_pyre"],
-    needed_coverage = [
-        (100, ":repo_downloader"),
-        (100, ":repodata_downloader"),
-        (100, ":repomd_downloader"),
-        (100, ":rpm_downloader"),
-    ],
-    deps = [
-        ":repo_downloader",
-        "//antlir/rpm:temp_repos",
     ],
 )

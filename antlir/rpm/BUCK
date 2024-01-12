@@ -1,6 +1,4 @@
 load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library", "third_party")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:layer_resource.bzl", "layer_resource")
 
 oncall("antlir")
 
@@ -57,25 +55,6 @@ python_library(
     name = "repo_objects",
     srcs = ["repo_objects.py"],
     deps = [":common"],
-)
-
-python_library(
-    name = "temp_repos",
-    srcs = ["tests/temp_repos.py"],
-    # Because we're taking a layer dep
-    labels = ["no_pyre"],
-    resources = {
-        third_party.library("busybox", "bin/busybox"): "tests/busybox",
-        layer_resource(flavor_helpers.get_build_appliance()): "tests/build-appliance",
-        "//antlir/rpm/tests/gpg_test_keypair:gpg-test-signing-key": "tests/signing_key",
-    },
-    deps = [
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir:testlib_layer_resource",
-        "//antlir/nspawn_in_subvol:args",
-        "//antlir/nspawn_in_subvol:nspawn",
-    ],
 )
 
 python_library(
@@ -210,51 +189,8 @@ python_binary(
     ],
 )
 
-python_binary(
-    name = "temp-snapshot",
-    srcs = ["tests/temp_snapshot.py"],
-    # Because :temp_repos has a layer dep
-    labels = ["no_pyre"],
-    main_function = "antlir.rpm.tests.temp_snapshot.main",
-    deps = [
-        ":common",
-        ":snapshot_repos",
-        ":temp_repos",
-        "//antlir:fs_utils",
-    ],
-)
-
 export_file(
     name = "tests/needs-carrot.spec",
-)
-
-python_library(
-    name = "snapshot_repos",
-    srcs = ["snapshot_repos.py"],
-    deps = [
-        ":common",
-        ":common_args",
-        ":gpg_keys",
-        ":repo_db",
-        ":repo_sizer",
-        ":repo_snapshot",
-        ":yum_dnf_conf",
-        "//antlir:common",
-        "//antlir:fs_utils",
-        "//antlir/rpm/downloader:common",
-        "//antlir/rpm/downloader:repo_downloader",
-        "//antlir/rpm/facebook:validate_universe_name",
-        "//antlir/rpm/storage:storage",
-    ],
-)
-
-python_binary(
-    name = "snapshot-repos",
-    main_function = "antlir.rpm.snapshot_repos.main",
-    deps = [
-        ":snapshot_repos",
-        "//antlir/rpm/facebook:db_connection",
-    ],
 )
 
 python_library(
