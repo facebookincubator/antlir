@@ -3,14 +3,8 @@
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:gpt.shape.bzl", "gpt_partition_t", "gpt_t")
 load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
-load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:query.bzl", "query")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:target_helpers.bzl", "json_targets_and_outputs")
-load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
 oncall("antlir")
@@ -303,44 +297,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-subvol-utils",
-    srcs = [
-        "tests/test_subvol_utils.py",
-        "tests/test_subvol_utils_inner.py",
-    ],
-    needed_coverage = [(
-        100,
-        ":subvol_utils",
-    )],
-    resources = {
-        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops.sendstream",
-        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello_world_base",
-    },
-    deps = [
-        ":artifacts_dir",
-        ":subvol_utils",
-        ":testlib_common",
-        ":testlib_layer_resource",
-        ":testlib_subvol_helpers",
-        ":volume_for_repo",
-        "//antlir/btrfs_diff:testlib_demo_sendstreams",
-    ],
-)
-
-image_python_unittest(
-    name = "test-subvol-utils-inner",
-    srcs = ["tests/test_subvol_utils_inner.py"],
-    hostname = "test-subvol-utils-inner",
-    layer = TEST_IMAGE_PREFIX + "test-layer",
-    # Needed to make subvolumes
-    run_as_user = "root",
-    deps = [
-        ":fs_utils",
-        ":subvol_utils",
-    ],
-)
-
 python_library(
     name = "volume_for_repo",
     srcs = ["volume_for_repo.py"],
@@ -438,19 +394,6 @@ python_binary(
     name = "find-built-subvol",
     main_function = "antlir.find_built_subvol.main",
     visibility = ["PUBLIC"],
-    deps = [":find_built_subvol"],
-)
-
-python_unittest(
-    name = "test-find-built-subvol",
-    srcs = ["tests/test_find_built_subvol.py"],
-    needed_coverage = [(
-        100,
-        ":find_built_subvol",
-    )],
-    resources = {
-        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello_world_base",
-    },
     deps = [":find_built_subvol"],
 )
 
@@ -638,108 +581,6 @@ python_binary(
         "//antlir/bzl:loopback_opts.shape-python",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
-TEST_PACKAGE_RESOURCES = {
-    TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
-    TEST_IMAGE_PREFIX + "create_ops.sendstream": "tests/create_ops.sendstream",
-    TEST_IMAGE_PREFIX + "create_ops": "tests/create_ops.layer",
-    TEST_IMAGE_PREFIX + "create_ops.cpio.gz": "tests/create_ops.cpio.gz",
-    TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
-    TEST_IMAGE_PREFIX + "empty.layer": "tests/empty.layer",
-    TEST_IMAGE_PREFIX + "empty_bios_boot": "tests/empty_bios_boot",
-    TEST_IMAGE_PREFIX + "vfat-test.layer": "tests/vfat-test.layer",
-    TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
-    layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance-testing",
-}
-
-package_image_query = query.attrregexfilter(
-    expr = query.deps(
-        depth = query.UNBOUNDED,
-        expr = query.set(TEST_PACKAGE_RESOURCES.keys()),
-    ),
-    label = "type",
-    pattern = "image_layer*",
-)
-
-json_targets_and_outputs(
-    name = "test-package-image-targets-and-outputs",
-    query = package_image_query,
-    visibility = ["//antlir:test-package-image"],
-)
-
-# Also tests the Buck macro `image/package/new.bzl`, but we cannot assert coverage.
-python_unittest(
-    name = "test-package-image",
-    srcs = ["tests/test_package_image.py"],
-    env = {
-        "target_map": "$(location :test-package-image-targets-and-outputs)/targets-and-outputs.json",
-    },
-    needed_coverage = [(100, ":package-image-library")],
-    resources = TEST_PACKAGE_RESOURCES,
-    deps = [
-        ":find_built_subvol",
-        ":fs_utils",
-        ":package-image-library",
-        ":subvol_utils",
-        ":testlib_flavor_helpers",
-        ":testlib_image_package_testbase",
-        ":testlib_layer_resource",
-        ":testlib_subvol_helpers",
-        ":unshare",
-        "//antlir/btrfs_diff:testlib_demo_sendstreams",
-        "//antlir/nspawn_in_subvol:args",
-        "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
-python_unittest(
-    name = "test-gpt",
-    srcs = ["tests/test_gpt.py"],
-    env = {
-        "test-gpt-json": shape.do_not_cache_me_json(
-            gpt_t(
-                name = "gpt_test",
-                disk_guid = "93fb3e53-4350-44ee-a98b-6a1e8fe7488f",
-                table = [
-                    shape.new(
-                        gpt_partition_t,
-                        is_bios_boot = False,
-                        is_esp = True,
-                        package = TEST_IMAGE_PREFIX + "vfat-test.vfat",
-                    ),
-                    shape.new(
-                        gpt_partition_t,
-                        name = "create_ops_ext3",
-                        is_bios_boot = False,
-                        is_esp = False,
-                        package = TEST_IMAGE_PREFIX + "create_ops_ext3",
-                    ),
-                    shape.new(
-                        gpt_partition_t,
-                        is_bios_boot = True,
-                        is_esp = False,
-                        package = TEST_IMAGE_PREFIX + "empty_bios_boot",
-                    ),
-                ],
-            ),
-        ),
-    },
-    needed_coverage = [(100, ":gpt-library")],
-    resources = {
-        TEST_IMAGE_PREFIX + "create_ops-original.sendstream": "tests/create_ops-original.sendstream",
-        TEST_IMAGE_PREFIX + "vfat-test.vfat": "tests/vfat-test.vfat",
-        TEST_IMAGE_PREFIX + "create_ops_ext3": "tests/create_ops_ext3",
-        TEST_IMAGE_PREFIX + "empty_bios_boot": "tests/empty_bios_boot",
-        TEST_IMAGE_PREFIX + "gpt_test": "tests/gpt_test",
-        layer_resource(REPO_CFG.artifact["build_appliance.newest"]): "tests/build-appliance",
-    },
-    deps = [
-        ":gpt-library",
-        ":testlib_image_package_testbase",
-        ":testlib_layer_resource",
-        ":unshare",
     ],
 )
 

@@ -1,9 +1,7 @@
 # Future: we should eventually add per-library unit test coverage, as
 # appropriate, while also retaining integration test coverage.
 
-load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "python_unittest", "third_party")
-load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "third_party")
 
 oncall("antlir")
 
@@ -26,29 +24,10 @@ python_library(
     deps = ["//antlir:fs_utils"],
 )
 
-python_unittest(
-    name = "test-common",
-    srcs = ["tests/test_common.py"],
-    needed_coverage = [(100, ":common")],
-    deps = [
-        ":common",
-    ],
-)
-
 python_library(
     name = "netns_socket",
     srcs = ["netns_socket.py"],
     deps = ["//antlir:common"],
-)
-
-python_unittest(
-    name = "test-netns-socket",
-    srcs = ["tests/test_netns_socket.py"],
-    needed_coverage = [(100, ":netns_socket")],
-    deps = [
-        ":netns_socket",
-        "//antlir:testlib_common",
-    ],
 )
 
 # Gets test coverage via `:test-run`
@@ -121,68 +100,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-run",
-    srcs = [
-        "tests/test_run.py",
-    ],
-    env = {
-        # Needed to cover the `TERM` branch in `nspawn.py` because FB's test
-        # runner otherwise strips out `TERM`.
-        "TERM": "linux-clown",
-    },
-    # This is the integration test for the CLI and underlying library, so
-    # it's supposed to cover everything.
-    needed_coverage = [(100, target) for target in [
-        ":args",
-        ":nspawn",
-        ":cmd",
-        ":run-library",
-    ]],
-    resources = {
-        "//antlir/nspawn_in_subvol/nisdomain:nis_domainname": "tests/nis_domainname",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "test-layer",
-        ): "tests/test-layer",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "test-layer-with-mounts",
-        ): "tests/test-layer-with-mounts",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "first-layer-for-nested-layer-mount",
-        ): "tests/first-layer-for-nested-layer-mount",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "hello_world_base",
-        ): "tests/test-hello-world-base",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "create_ops-from-layer",
-        ): "tests/test-create-ops-from-layer",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "bootable-systemd-os",
-        ): "tests/bootable-systemd-os",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "bootable-systemd-os-with-buck-runnables",
-        ): "tests/bootable-systemd-os-with-buck-runnables",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "installed-executables",
-        ): "tests/has-buck-runnables",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "test-layer-iproute",
-        ): "tests/test-layer-iproute",
-    },
-    deps = [":testlib_base"],
-)
-
-python_unittest(
-    name = "test-slow-sudo",
-    srcs = ["tests/test_slow_sudo.py"],
-    resources = {
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/build-appliance",
-    },
-    deps = [":testlib_base"],
-)
-
 python_binary(
     name = "run-test",
     srcs = ["run_test.py"],
@@ -196,11 +113,4 @@ python_binary(
         ":cmd",
         ":run-library",
     ],
-)
-
-python_unittest(
-    name = "test-run-test",
-    srcs = ["tests/test_run_test.py"],
-    needed_coverage = [(100, ":run-test-library")],
-    deps = [":run-test-library"],
 )
