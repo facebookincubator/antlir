@@ -21,7 +21,6 @@ feature.new(
         systemd.install_dropin(
             "require-udevd.conf",
             "systemd-networkd.service",
-            use_antlir2 = True,
         ),
         # empty resolv.conf since the only mechanism to refer to the host (by name) is via /etc/hosts
         ":resolvconf",

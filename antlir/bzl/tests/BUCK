@@ -1,157 +1,23 @@
-load("@fbsource//tools/build_defs/buck2:is_buck2.bzl", "is_buck2")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_binary", "python_library", "python_unittest")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:rpm_manifest.bzl", "extract_rpm_manifest")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/starlark_unittest:defs.bzl", "starlark_unittest")
-load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
-load(":test_hoist.bzl", "test_hoist")
 
 oncall("antlir")
-
-# Powers `image.test_rpm_names`
-python_library(
-    name = "check_rpm_names",
-    srcs = ["check_rpm_names.py"],
-    visibility = ["PUBLIC"],
-)
-
-# Useful together with `image.test_rpm_names`
-python_binary(
-    name = "rpms-with-reason",
-    srcs = ["rpms_with_reason.py"],
-    main_function = "antlir.bzl.tests.rpms_with_reason.main",
-    visibility = ["PUBLIC"],
-)
-
-python_library(
-    name = "coverage_test_helper",
-    srcs = ["coverage_test_helper.py"],
-)
-
-image.python_unittest(
-    name = "test-image-python-unittest",
-    srcs = ["test_image_python_unittest.py"],
-    container_opts = image.opts(internal_only_logs_tmpfs = True),
-    env = {"kitteh": "meow"},
-    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
-    needed_coverage = [(100, ":coverage_test_helper")],
-    deps = [":coverage_test_helper"],
-)
-
-image.python_unittest(
-    name = "test-boot-image-python-unittest",
-    srcs = ["test_image_python_unittest.py"],
-    boot = True,
-    container_opts = image.opts(internal_only_logs_tmpfs = True),
-    env = {"kitteh": "meow"},
-    layer = TEST_IMAGE_PREFIX + "test-layer-with-mounts",
-    needed_coverage = [(100, ":coverage_test_helper")],
-    deps = [":coverage_test_helper"],
-)
-
-# This doesn't have a C++ counterpart since the impl should be shared, and
-# duplicating tests across languages doesn't scale.
-image.python_unittest(
-    name = "test-image-unittest-repo-server",
-    srcs = ["test_image_unittest_repo_server.py"],
-    container_opts = image.opts(shadow_proxied_binaries = True),
-    layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
-    run_as_user = "root",
-    deps = [
-        "//antlir:fs_utils",
-        "//antlir:testlib_flavor_helpers",
-        "//antlir/rpm:find_snapshot",
-    ],
-)
-
-image.python_unittest(
-    name = "test-image-hostname-python",
-    srcs = ["test_image_hostname.py"],
-    hostname = "test-hostname.com",
-    layer = TEST_IMAGE_PREFIX + "test-layer",
-)
-
-image.cpp_unittest(
-    name = "test-image-cpp-unittest",
-    srcs = ["ImageCppUnittestTest.cpp"],
-    env = {"kitteh": "meow"},
-    layer = TEST_IMAGE_PREFIX + "test-layer",
-)
-
-image.cpp_unittest(
-    name = "test-boot-image-cpp-unittest",
-    srcs = ["ImageCppUnittestTest.cpp"],
-    boot = True,
-    env = {"kitteh": "meow"},
-    layer = TEST_IMAGE_PREFIX + "test-layer",
-)
-
-image.cpp_unittest(
-    name = "test-image-hostname-cpp",
-    srcs = ["ImageHostnameTest.cpp"],
-    env = {},
-    hostname = "test-hostname.com",
-    layer = TEST_IMAGE_PREFIX + "test-layer",
-)
-
-# Ensures that BUCK_BUILD_ID isn't just missing from the container tests by
-# accident, but rather that it's explicitly sanitized.
-python_unittest(
-    name = "test-unsanitized-env",
-    srcs = ["test_unsanitized_env.py"],
-    env = {
-        "IS_BUCK2": "",
-        "kitteh": "meow",
-    } if is_buck2() else {
-        "kitteh": "meow",
-    },
-)
-
-image.rust_unittest(
-    name = "test-image-rust-unittest",
-    srcs = ["image_rust_unittest.rs"],
-    crate_root = "image_rust_unittest.rs",
-    env = {
-        "dogsgo": "woof",
-        "kitteh": "meow",
-    },
-    layer = TEST_IMAGE_PREFIX + "test-layer",
-)
 
 # systemd unit features
 export_file(name = "cheese-export.service")
 
 export_file(name = "cheese-source.service")
 
-buck_genrule(
-    name = "cheese-generator",
-    bash = """
-    mkdir -p ${OUT}
-    cat > ${OUT}/cheese-generated.service <<'EOF'
-[Unit]
-Description=A generated cheese service.
-
-[Service]
-ExecStart=/bin/true
-EOF
-    """,
-)
-
 export_file(name = "cheese-dropin.conf")
-
-buck_genrule(
-    name = "cheese-dropin-generator",
-    bash = """
-    mkdir -p ${OUT}
-    cp $(location :cheese-dropin.conf) $OUT/
-    """,
-)
 
 image.layer(
     name = "systemd_feature-layer",
     features = [
+        feature.rpms_install(rpms = ["systemd"]),
         # A target with a dest
         systemd.install_unit(
             ":cheese-export.service",
@@ -185,25 +51,10 @@ image.layer(
             target = "example.target",
         ),
 
-        # Image source from a genrule, with a path
-        systemd.install_unit(image.source(
-            ":cheese-generator",
-            path = "cheese-generated.service",
-        )),
-        systemd.install_dropin(
-            image.source(
-                ":cheese-dropin-generator",
-                path = "cheese-dropin.conf",
-            ),
-            "cheese-generated.service",
-        ),
-
         # Image source with no path
-        systemd.install_unit(image.source(
-            ":cheese-source.service",
-        )),
+        systemd.install_unit(":cheese-source.service"),
         systemd.install_dropin(
-            image.source(":cheese-dropin.conf"),
+            ":cheese-dropin.conf",
             "cheese-source.service",
         ),
         # Mask a unit
@@ -219,37 +70,12 @@ image.layer(
         systemd.install_unit("cheese-template@.service"),
         systemd.enable_unit("cheese-template@foo.service"),
     ],
-    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
-image.python_unittest(
+image_python_test(
     name = "test-systemd-features",
     srcs = ["test_systemd_features.py"],
     layer = ":systemd_feature-layer",
-    deps = ["//antlir:fs_utils"],
-)
-
-python_unittest(
-    name = "test-fail-with-message",
-    srcs = ["test_fail_with_message.py"],
-    needed_coverage = [
-        (100, "//antlir/bzl:fail-with-message-library"),
-    ],
-    resources = {"//antlir/bzl:fail-with-message": "fail-with-message"},
-    deps = [
-        "//antlir/bzl:fail-with-message-library",
-    ],
-)
-
-extract_rpm_manifest(
-    name = "test-rpm-manifest-json",
-    layer = "//antlir/compiler/test_images:test-layer",
-)
-
-python_unittest(
-    name = "test-basic-rpm-manifest",
-    srcs = ["test_basic_rpm_manifest.py"],
-    resources = {"//antlir/bzl/tests:test-rpm-manifest-json": "rpm-manifest.json"},
     deps = ["//antlir:fs_utils"],
 )
 
@@ -268,8 +94,4 @@ starlark_unittest(
         "//antlir/bzl:stat.bzl",
         "@bazel_skylib//lib:types.bzl",
     ],
-)
-
-test_hoist(
-    name = "test-hoist",
 )

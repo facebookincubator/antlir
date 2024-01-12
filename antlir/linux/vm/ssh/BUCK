@@ -55,19 +55,16 @@ feature.new(
         ),
         systemd.install_unit(
             "sshd-keygen.service",
-            use_antlir2 = True,
         ),
         systemd.enable_unit(
             "sshd-keygen.service",
             "core-services.target",
-            use_antlir2 = True,
         ),
         # Install a drop-in that updates the cmd line to include the
         # custom hostkey location.
         systemd.install_dropin(
             "sshd-hostkey.conf",
             "sshd.service",
-            use_antlir2 = True,
         ),
     ],
     visibility = ["PUBLIC"],

@@ -6,7 +6,6 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 
 DEFAULT_APPLETS = sets.make([
     "basename",
@@ -103,7 +102,7 @@ DEFAULT_APPLETS = sets.make([
     "yes",
 ])
 
-def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/usr/sbin/busybox", use_antlir2 = False):
+def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/usr/sbin/busybox"):
     """
     Generate features to install a statically linked `busybox` binary
     from the supplied `src` layer into an `install_dir` (default `/usr/bin`)
@@ -112,26 +111,16 @@ def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/usr/sbi
     The `src` layer must have the `busybox` binary installed at the path `/busybox`.
     """
     applets = sets.to_list(applets or DEFAULT_APPLETS)
-    if use_antlir2:
-        return [
-            antlir2_feature.clone(
-                src_layer = src,
-                src_path = src_path,
-                dst_path = paths.join(install_dir, "busybox"),
-            ),
-        ] + [
-            antlir2_feature.ensure_file_symlink(
-                link = paths.join(install_dir, applet),
-                target = paths.join(install_dir, "busybox"),
-            )
-            for applet in applets
-        ]
     return [
-        antlir1_feature.clone(src, src_path, paths.join(install_dir, "busybox")),
+        antlir2_feature.clone(
+            src_layer = src,
+            src_path = src_path,
+            dst_path = paths.join(install_dir, "busybox"),
+        ),
     ] + [
-        antlir1_feature.ensure_file_symlink(
-            paths.join(install_dir, "busybox"),
-            paths.join(install_dir, applet),
+        antlir2_feature.ensure_file_symlink(
+            link = paths.join(install_dir, applet),
+            target = paths.join(install_dir, "busybox"),
         )
         for applet in applets
     ]

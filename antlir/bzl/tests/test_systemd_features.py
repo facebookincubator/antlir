@@ -54,7 +54,6 @@ unit_test_specs: List[SystemdUnitTestSpec] = [
         target_dep_type="wants",
         dropin_name="cheese-dropin-with-dest.conf",
     ),
-    SystemdUnitTestSpec("cheese-generated.service", dropin_name="cheese-dropin.conf"),
     SystemdUnitTestSpec(
         "cheese-source.service",
         dropin_name="cheese-dropin.conf",
@@ -132,12 +131,9 @@ class TestSystemdFeatures(unittest.TestCase):
             if unit.is_masked:
                 masked_unit = ADMIN_ROOT / unit.name
 
-                # Yes, systemd (at least in v243) is OK with a relative link
-                self.assertEqual(os.readlink(masked_unit), b"../../../dev/null")
+                self.assertEqual(os.readlink(masked_unit), b"/dev/null")
 
-        self.assertEqual(
-            os.readlink(TMPFILES_ROOT / "testconfig.conf"), b"../../dev/null"
-        )
+        self.assertEqual(os.readlink(TMPFILES_ROOT / "testconfig.conf"), b"/dev/null")
 
     def test_dropins(self) -> None:
         for unit in unit_test_specs:

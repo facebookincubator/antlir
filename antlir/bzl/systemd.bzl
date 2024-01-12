@@ -5,8 +5,7 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:types.bzl", "types")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load(":build_defs.bzl", "target_utils")
 load(":shape.bzl", "shape")
 load(":systemd.shape.bzl", "mount_t", "unit_t")
@@ -52,67 +51,47 @@ def _mask_impl(
         root,
         # Informational string that describes what is being masked. Prepended
         # to an error message on path verification failure.
-        description,
-        use_antlir2 = False):
+        description):
     symlink_actions = []
 
     for item in items:
         _fail_if_path(item, description)
 
-        if use_antlir2:
-            symlink_actions.append(
-                antlir2_feature.ensure_file_symlink(
-                    link = paths.join(root, item),
-                    target = "/dev/null",
-                ),
-            )
-        else:
-            symlink_actions.append(
-                antlir1_feature.ensure_file_symlink(
-                    "/dev/null",
-                    paths.join(root, item),
-                ),
-            )
-
+        symlink_actions.append(
+            feature.ensure_file_symlink(
+                link = paths.join(root, item),
+                target = "/dev/null",
+            ),
+        )
     return symlink_actions
 
 def _mask_tmpfiles(
         # List of tmpfiles.d configs to disable. This should be in the full form
         # of the base name of the config, ie: dbus.conf, portables.conf, etc.
-        configs,
-        use_antlir2 = False):
-    return _mask_impl(configs, TMPFILES_ROOT, "Mask tmpfiles.d config", use_antlir2 = use_antlir2)
+        configs):
+    return _mask_impl(configs, TMPFILES_ROOT, "Mask tmpfiles.d config")
 
 def _mask_units(
         # List of systemd units to mask (e.g. sshd.service). This should be in
         # the full form of the service, ie: unit.service, unit.mount,
         # unit.socket, etc..
-        units,
-        use_antlir2 = False):
-    return _mask_impl(units, ADMIN_ROOT, "Mask Unit", use_antlir2 = use_antlir2)
+        units):
+    return _mask_impl(units, ADMIN_ROOT, "Mask Unit")
 
 def _unmask_units(
         # list of systemd units to unmask (e.g. sshd.service). This should be in
         # the full form of the service, ie: unit.service, unit.mount,
         # unit.socket, etc..
-        units,
-        use_antlir2 = False):
+        units):
     remove_actions = []
     for unit in units:
         _fail_if_path(unit, "Unmask Unit")
 
-        if use_antlir2:
-            remove_actions.append(
-                antlir2_feature.remove(
-                    path = paths.join(ADMIN_ROOT, unit),
-                ),
-            )
-        else:
-            remove_actions.append(
-                antlir1_feature.remove(
-                    paths.join(ADMIN_ROOT, unit),
-                ),
-            )
+        remove_actions.append(
+            feature.remove(
+                path = paths.join(ADMIN_ROOT, unit),
+            ),
+        )
 
     return remove_actions
 
@@ -130,8 +109,7 @@ def _enable_impl(
         installed_root,
         # Informational string that describes what is being enabled. Prepended
         # to an error message on path verification failure.
-        description,
-        use_antlir2 = False):
+        description):
     _fail_if_path(unit, description)
     _assert_unit_suffix(unit)
     if dep_type not in ("wants", "requires"):
@@ -150,25 +128,15 @@ def _enable_impl(
     else:
         fail("unit contains too many @ characters: " + unit)
 
-    if use_antlir2:
-        return [
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = installed_root,
-                subdirs_to_create = target + "." + dep_type,
-                mode = 0o755,
-            ),
-            antlir2_feature.ensure_file_symlink(
-                link = paths.join(installed_root, target + "." + dep_type, unit),
-                target = paths.join(installed_root, link_target),
-            ),
-        ]
-
-    # the rest of this function is Antlir1 code
     return [
-        antlir1_feature.ensure_subdirs_exist(installed_root, target + "." + dep_type, mode = 0o755),
-        antlir1_feature.ensure_file_symlink(
-            paths.join(installed_root, link_target),
-            paths.join(installed_root, target + "." + dep_type, unit),
+        feature.ensure_subdirs_exist(
+            into_dir = installed_root,
+            subdirs_to_create = target + "." + dep_type,
+            mode = 0o755,
+        ),
+        feature.ensure_file_symlink(
+            link = paths.join(installed_root, target + "." + dep_type, unit),
+            target = paths.join(installed_root, link_target),
         ),
     ]
 
@@ -177,18 +145,16 @@ def _enable_unit(
         unit,
         target = "default.target",
         dep_type = "wants",
-        installed_root = PROVIDER_ROOT,
-        use_antlir2 = False):
-    return _enable_impl(unit, target, dep_type, installed_root, "Enable System Unit", use_antlir2 = use_antlir2)
+        installed_root = PROVIDER_ROOT):
+    return _enable_impl(unit, target, dep_type, installed_root, "Enable System Unit")
 
 # Image feature to enable a user unit
 def _enable_user_unit(
         unit,
         target = "default.target",
         dep_type = "wants",
-        installed_root = USER_PROVIDER_ROOT,
-        use_antlir2 = False):
-    return _enable_impl(unit, target, dep_type, installed_root, "Enable User Unit", use_antlir2 = use_antlir2)
+        installed_root = USER_PROVIDER_ROOT):
+    return _enable_impl(unit, target, dep_type, installed_root, "Enable User Unit")
 
 def _install_impl(
         # The source for the unit to be installed. This can be one of:
@@ -209,8 +175,7 @@ def _install_impl(
         # to an error message on path verification failure.
         description,
         # Remove an existing file that conflicts, if one exists
-        force = False,
-        use_antlir2 = False):
+        force = False):
     # We haven't been provided an explicit dest so let's try and derive one from the
     # source
     if dest == None:
@@ -237,44 +202,30 @@ def _install_impl(
     _fail_if_path(dest, description + " Dest")
     _assert_unit_suffix(dest)
 
-    if use_antlir2:
-        return [
-            antlir2_feature.install(
-                src = source,
-                dst = paths.join(install_root, dest),
-            ),
-        ] + ([antlir2_feature.remove(
-            path = paths.join(install_root, dest),
-            must_exist = False,
-        )] if force else [])
-
-    # the rest of this function is Antlir1 code
-    return [antlir1_feature.install(
-        source,
-        paths.join(install_root, dest),
-    )] + ([
-        antlir1_feature.remove(
-            paths.join(install_root, dest),
-            must_exist = False,
+    return [
+        feature.install(
+            src = source,
+            dst = paths.join(install_root, dest),
         ),
-    ] if force else [])
+    ] + ([feature.remove(
+        path = paths.join(install_root, dest),
+        must_exist = False,
+    )] if force else [])
 
 # Image feature to install a system unit
 def _install_unit(
         source,
         dest = None,
         install_root = PROVIDER_ROOT,
-        force = False,
-        use_antlir2 = False):
-    return _install_impl(source, dest, install_root, "Install System Unit", force = force, use_antlir2 = use_antlir2)
+        force = False):
+    return _install_impl(source, dest, install_root, "Install System Unit", force = force)
 
 # Image feature to install a user unit
 def _install_user_unit(
         source,
         dest = None,
-        install_root = USER_PROVIDER_ROOT,
-        use_antlir2 = False):
-    return _install_impl(source, dest, install_root, "Install User Unit", use_antlir2 = use_antlir2)
+        install_root = USER_PROVIDER_ROOT):
+    return _install_impl(source, dest, install_root, "Install User Unit")
 
 def _install_dropin(
         # The source for the unit to be installed. This can be one of:
@@ -289,8 +240,7 @@ def _install_dropin(
         # to be changed.
         install_root = PROVIDER_ROOT,
         # Remove an existing file that conflicts, if one exists
-        force = False,
-        use_antlir2 = False):
+        force = False):
     _assert_unit_suffix(unit)
 
     # We haven't been provided an explicit dest so let's try and derive one from the
@@ -327,29 +277,21 @@ def _install_dropin(
     _fail_if_path(dest, "Install Dropin Dest")
 
     dst_path = paths.join(install_root, unit + ".d", dest)
-    if use_antlir2:
-        features = [
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = install_root,
-                subdirs_to_create = unit + ".d",
-            ),
-            antlir2_feature.install(
-                src = source,
-                dst = dst_path,
-            ),
-        ]
-        if force:
-            features.append(antlir2_feature.remove(
-                path = dst_path,
-                must_exist = False,
-            ))
-    else:
-        features = [
-            antlir1_feature.ensure_subdirs_exist(install_root, unit + ".d"),
-            antlir1_feature.install(source, dst_path),
-        ]
-        if force:
-            features.append(antlir1_feature.remove(dst_path, must_exist = False))
+    features = [
+        feature.ensure_subdirs_exist(
+            into_dir = install_root,
+            subdirs_to_create = unit + ".d",
+        ),
+        feature.install(
+            src = source,
+            dst = dst_path,
+        ),
+    ]
+    if force:
+        features.append(feature.remove(
+            path = dst_path,
+            must_exist = False,
+        ))
     return features
 
 def _remove_dropin(
@@ -359,8 +301,7 @@ def _remove_dropin(
         dest,
         # The dir to install the dropin into. In most cases this doesn't need
         # to be changed.
-        install_root = PROVIDER_ROOT,
-        use_antlir2 = False):
+        install_root = PROVIDER_ROOT):
     _assert_unit_suffix(unit)
 
     # a user must give the right name
@@ -370,62 +311,35 @@ def _remove_dropin(
     _fail_if_path(dest, "Remove Dropin Dest")
 
     dst_path = paths.join(install_root, unit + ".d", dest)
-    if use_antlir2:
-        return [
-            antlir2_feature.remove(
-                path = dst_path,
-                must_exist = False,
-            ),
-        ]
-
-    # the rest of this function is Antlir1 code
     return [
-        antlir1_feature.remove(dst_path, must_exist = False),
+        feature.remove(
+            path = dst_path,
+            must_exist = False,
+        ),
     ]
 
 def _set_default_target(
         # An existing systemd target to be set as the default
         target,
         # Delete any default target that may already exist
-        force = False,
-        use_antlir2 = False):
-    if use_antlir2:
-        features = [
-            antlir2_feature.ensure_file_symlink(
-                link = paths.join(PROVIDER_ROOT, "default.target"),
-                target = paths.join(PROVIDER_ROOT, target),
-            ),
-        ]
-        if force:
-            features.append(antlir2_feature.remove(
-                path = paths.join(PROVIDER_ROOT, "default.target"),
-                must_exist = False,
-            ))
-    else:
-        features = [
-            antlir1_feature.ensure_file_symlink(
-                paths.join(PROVIDER_ROOT, target),
-                paths.join(PROVIDER_ROOT, "default.target"),
-            ),
-        ]
-        if force:
-            features.append(antlir1_feature.remove(
-                paths.join(PROVIDER_ROOT, "default.target"),
-                must_exist = False,
-            ))
+        force = False):
+    features = [
+        feature.ensure_file_symlink(
+            link = paths.join(PROVIDER_ROOT, "default.target"),
+            target = paths.join(PROVIDER_ROOT, target),
+        ),
+    ]
+    if force:
+        features.append(feature.remove(
+            path = paths.join(PROVIDER_ROOT, "default.target"),
+            must_exist = False,
+        ))
     return features
 
-def _alias(unit, alias, use_antlir2 = False):
-    if use_antlir2:
-        return antlir2_feature.ensure_file_symlink(
-            link = paths.join(ADMIN_ROOT, alias),
-            target = paths.join(PROVIDER_ROOT, unit),
-        )
-
-    # the rest of this function is Antlir1 code
-    return antlir1_feature.ensure_file_symlink(
-        paths.join(PROVIDER_ROOT, unit),
-        paths.join(ADMIN_ROOT, alias),
+def _alias(unit, alias):
+    return feature.ensure_file_symlink(
+        link = paths.join(ADMIN_ROOT, alias),
+        target = paths.join(PROVIDER_ROOT, unit),
     )
 
 _ALPHA = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -502,11 +416,11 @@ def _mount_unit_file(name, mount):
         template = "//antlir/bzl/linux/systemd:mount",
     )
 
-def _skip_unit(unit, force = False, use_antlir2 = False):
-    return _install_dropin("//antlir/bzl:99-skip-unit.conf", unit, force = force, use_antlir2 = use_antlir2)
+def _skip_unit(unit, force = False):
+    return _install_dropin("//antlir/bzl:99-skip-unit.conf", unit, force = force)
 
-def _unskip_unit(unit, use_antlir2 = False):
-    return _remove_dropin(unit, "99-skip-unit.conf", use_antlir2 = use_antlir2)
+def _unskip_unit(unit):
+    return _remove_dropin(unit, "99-skip-unit.conf")
 
 systemd = struct(
     alias = _alias,

@@ -1,20 +1,15 @@
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
-load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "alias")
 
 oncall("antlir")
 
 image.layer(
     name = "deps",
-    antlir2 = "skip-fbpkg-indirection",
     features = [
-        feature.rpms_install(["systemd-boot-unsigned"]),
+        feature.rpms_install(rpms = ["systemd-boot-unsigned"]),
     ],
-    flavor = flavor_helpers.get_antlir_linux_flavor(),
+    visibility = [],
 )
 
 # The base image.layer for a systemd boot partition
@@ -22,79 +17,48 @@ image.layer(
 # configured in this layer.
 image.layer(
     name = "base",
-    antlir2 = "no",
     features = [
-        feature.ensure_subdirs_exist("/", "EFI"),
-        feature.ensure_subdirs_exist("/EFI", "BOOT"),
-        feature.ensure_subdirs_exist("/EFI", "Linux"),
-        feature.ensure_subdirs_exist("/EFI", "systemd"),
-        feature.ensure_subdirs_exist("/", "loader"),
-        feature.ensure_subdirs_exist("/loader", "entries"),
+        feature.ensure_subdirs_exist(
+            into_dir = "/",
+            subdirs_to_create = "EFI",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/EFI",
+            subdirs_to_create = "BOOT",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/EFI",
+            subdirs_to_create = "Linux",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/EFI",
+            subdirs_to_create = "systemd",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/",
+            subdirs_to_create = "loader",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/loader",
+            subdirs_to_create = "entries",
+        ),
         feature.clone(
-            dest_path = "/EFI/systemd/systemd-bootx64.efi",
+            dst_path = "/EFI/systemd/systemd-bootx64.efi",
             src_layer = ":deps",
             src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
         ),
         feature.clone(
-            dest_path = "/EFI/BOOT/BOOTX64.efi",
+            dst_path = "/EFI/BOOT/BOOTX64.efi",
             src_layer = ":deps",
             src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
         ),
     ],
-    flavor = flavor_helpers.get_antlir_linux_flavor(),
     visibility = ["PUBLIC"],
 )
 
-[
-    antlir2_image.layer(
-        name = "deps.antlir2",
-        features = [
-            antlir2_feature.rpms_install(rpms = ["systemd-boot-unsigned"]),
-        ],
-        flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
-    ),
-    antlir2_image.layer(
-        name = "base.antlir2",
-        features = [
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = "/",
-                subdirs_to_create = "EFI",
-            ),
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = "/EFI",
-                subdirs_to_create = "BOOT",
-            ),
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = "/EFI",
-                subdirs_to_create = "Linux",
-            ),
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = "/EFI",
-                subdirs_to_create = "systemd",
-            ),
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = "/",
-                subdirs_to_create = "loader",
-            ),
-            antlir2_feature.ensure_subdirs_exist(
-                into_dir = "/loader",
-                subdirs_to_create = "entries",
-            ),
-            antlir2_feature.clone(
-                dst_path = "/EFI/systemd/systemd-bootx64.efi",
-                src_layer = ":deps.antlir2",
-                src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
-            ),
-            antlir2_feature.clone(
-                dst_path = "/EFI/BOOT/BOOTX64.efi",
-                src_layer = ":deps.antlir2",
-                src_path = "/usr/lib/systemd/boot/efi/systemd-bootx64.efi",
-            ),
-        ],
-        flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
-        visibility = ["PUBLIC"],
-    ),
-] if is_buck2() else [
-    antlir2_shim.fake_buck1_layer(name = "deps"),
-    antlir2_shim.fake_buck1_layer(name = "base"),
-]
+alias(
+    name = "base.antlir2",
+    actual = ":base",
+    antlir_rule = "user-internal",
+    visibility = ["PUBLIC"],
+)

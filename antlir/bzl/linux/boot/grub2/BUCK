@@ -1,18 +1,18 @@
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "alias")
 
 oncall("antlir")
 
 image.layer(
-    name = "_grub2",
+    name = "deps",
     features = [
-        feature.rpms_install([
+        feature.rpms_install(rpms = [
             "grub2-efi-x64",
             "grub2-efi-x64-modules",
         ]),
     ],
-    flavor = flavor_helpers.get_antlir_linux_flavor(),
+    visibility = [],
 )
 
 grub2_modules = [
@@ -26,32 +26,62 @@ grub2_modules = [
 image.layer(
     name = "base",
     features = [
-        feature.ensure_subdirs_exist("/", "EFI"),
-        feature.ensure_subdirs_exist("/EFI", "BOOT"),
-        feature.ensure_subdirs_exist("/EFI", "centos"),
-        feature.ensure_subdirs_exist("/", "grub2"),
-        feature.ensure_subdirs_exist("/grub2", "x86_64-efi"),
-        feature.ensure_subdirs_exist("/", "loader"),
-        feature.ensure_subdirs_exist("/loader", "entries"),
-        feature.clone(
-            ":_grub2",
-            "/boot/efi/EFI/centos/grubx64.efi",
-            "/EFI/centos/grubx64.efi",
+        feature.ensure_subdirs_exist(
+            into_dir = "/",
+            subdirs_to_create = "EFI",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/EFI",
+            subdirs_to_create = "BOOT",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/EFI",
+            subdirs_to_create = "centos",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/",
+            subdirs_to_create = "grub2",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/grub2",
+            subdirs_to_create = "x86_64-efi",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/",
+            subdirs_to_create = "loader",
+        ),
+        feature.ensure_subdirs_exist(
+            into_dir = "/loader",
+            subdirs_to_create = "entries",
         ),
         feature.clone(
-            ":_grub2",
-            "/boot/efi/EFI/centos/grubx64.efi",
-            "/EFI/BOOT/BOOTX64.efi",
+            dst_path = "/EFI/centos/grubx64.efi",
+            src_layer = ":deps",
+            src_path = "/boot/efi/EFI/centos/grubx64.efi",
         ),
-        feature.install("grub.cfg", "/EFI/BOOT/grub.cfg"),
+        feature.clone(
+            dst_path = "/EFI/BOOT/BOOTX64.efi",
+            src_layer = ":deps",
+            src_path = "/boot/efi/EFI/centos/grubx64.efi",
+        ),
+        feature.install(
+            src = "grub.cfg",
+            dst = "/EFI/BOOT/grub.cfg",
+        ),
     ] + [
         feature.clone(
-            ":_grub2",
-            "/usr/lib/grub/x86_64-efi/{}.mod".format(i),
-            "/grub2/x86_64-efi/{}.mod".format(i),
+            dst_path = "/grub2/x86_64-efi/{}.mod".format(i),
+            src_layer = ":deps",
+            src_path = "/usr/lib/grub/x86_64-efi/{}.mod".format(i),
         )
         for i in grub2_modules
     ],
-    flavor = flavor_helpers.get_antlir_linux_flavor(),
+    visibility = ["PUBLIC"],
+)
+
+alias(
+    name = "base.antlir2",
+    actual = ":base",
+    antlir_rule = "user-internal",
     visibility = ["PUBLIC"],
 )
