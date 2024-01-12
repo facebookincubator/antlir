@@ -1,38 +1,31 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 load("//antlir/bzl:build_defs.bzl", "third_party")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
 oncall("antlir")
 
-# The `busybox.install()` feature requires a source image.layer
-# from which to clone `/busybox` from.  These targets produce
-# image layers with `busybox` installed at `/`, one built from
-# the default Build Appliance and the other built from a
-# `third_party.library` target.
 image.layer(
     name = "busybox-src-from-img",
     features = [
-        feature.rpms_install(["busybox"]),
+        feature.rpms_install(rpms = ["busybox"]),
     ],
-    # TODO: change back to antlir_test when it's no longer c7: D45719236
-    flavor = "centos9",
 )
 
 image.layer(
     name = "busybox-src-from-third-party",
+    default_os = "none",
     features = [
         feature.install(
-            third_party.library(
+            src = third_party.library(
                 "busybox",
                 "bin/busybox",
                 platform = "genrule",
             ),
-            "/busybox",
+            dst = "/busybox",
         ),
     ],
-    flavor = "antlir_test",
 )
 
 # Now use the respective busybox source layers to construct
@@ -46,7 +39,6 @@ image.layer(
             src_path = "/usr/sbin/busybox",
         ),
     ],
-    flavor = "antlir_test",
 )
 
 image.layer(
@@ -58,17 +50,18 @@ image.layer(
             src_path = "/busybox",
         ),
     ],
-    flavor = "antlir_test",
 )
 
 # Time tests
 image.layer(
     name = "test-layer-timezone-utc",
-    features = [linux.time.timezone(zone = "UTC")],
-    parent_layer = flavor_helpers.get_build_appliance(),
+    features = [
+        feature.rpms_install(rpms = ["coreutils"]),
+        linux.time.timezone(zone = "UTC"),
+    ],
 )
 
-image.python_unittest(
+image_python_test(
     name = "test-timezone-utc",
     srcs = ["test_time.py"],
     env = {
@@ -79,11 +72,13 @@ image.python_unittest(
 
 image.layer(
     name = "test-layer-timezone-us-pacific",
-    features = [linux.time.timezone(zone = "US/Pacific")],
-    parent_layer = flavor_helpers.get_build_appliance(),
+    features = [
+        feature.rpms_install(rpms = ["coreutils"]),
+        linux.time.timezone(zone = "US/Pacific"),
+    ],
 )
 
-image.python_unittest(
+image_python_test(
     name = "test-timezone-us-pacific",
     srcs = ["test_time.py"],
     env = {
@@ -95,6 +90,7 @@ image.python_unittest(
 image.layer(
     name = "test-layer-os-release",
     features = [
+        feature.rpms_install(rpms = ["coreutils"]),
         linux.release.install(
             api_versions = {
                 "BAR": 22,
@@ -113,10 +109,9 @@ image.layer(
             variant = "Test",
         ),
     ],
-    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
-image.python_unittest(
+image_python_test(
     name = "test-os-release",
     srcs = ["test_os_release.py"],
     layer = ":test-layer-os-release",

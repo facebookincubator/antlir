@@ -2,7 +2,6 @@ load("//antlir/bzl:container_opts.shape.bzl", "shadow_path_t")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:rpm_repo_snapshot.bzl", "add_rpm_repo_snapshots_layer")
-load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:test_rpms.bzl", "test_rpms")
 load("//antlir/bzl:wrap_runtime_deps.bzl", "maybe_wrap_executable_target")
 load("//antlir/bzl/genrule/librename_shadowed:librename_shadowed.bzl", "image_build_librename_shadowed")
@@ -120,8 +119,6 @@ feature.new(
         feature.ensure_subdirs_exist("/etc/systemd", "system-generators"),
         feature.install_buck_runnable(":fake-systemd-generator", "/etc/systemd/system-generators/fake-systemd-generator"),
         feature.install_buck_runnable(":fake-service", "/fake-service"),
-        systemd.install_unit("fake-static.service"),
-        systemd.enable_unit("fake-static.service", "multi-user.target"),
     ],
     visibility = ["//antlir/vm/tests:"],
 )

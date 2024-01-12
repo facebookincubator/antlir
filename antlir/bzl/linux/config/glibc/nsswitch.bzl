@@ -3,10 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 load(":nsswitch.shape.bzl", "action_t", "conf_t", "database_t", "service_t")
 
 def _new(**kwargs):
@@ -19,7 +18,7 @@ def _render(name, instance):
         template = "//antlir/bzl/linux/config/glibc:nsswitch",
     )
 
-def _install(instance = None, use_antlir2 = False, **kwargs):
+def _install(instance = None, **kwargs):
     contents_hash = sha256_b64(str(kwargs))
     name = "nsswitch.conf--" + contents_hash
 
@@ -30,16 +29,9 @@ def _install(instance = None, use_antlir2 = False, **kwargs):
         name = name,
         instance = instance,
     )
-    if use_antlir2:
-        return antlir2_feature.install(
-            src = file,
-            dst = "/etc/nsswitch.conf",
-        )
-
-    # the rest of this function is Antlir1 code
-    return antlir1_feature.install(
-        file,
-        "/etc/nsswitch.conf",
+    return feature.install(
+        src = file,
+        dst = "/etc/nsswitch.conf",
     )
 
 # exported api to instantiate an nsswitch config

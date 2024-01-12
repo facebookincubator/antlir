@@ -382,7 +382,7 @@ def feature_new(
     if is_buck2() and antlir2:
         antlir2_feature.new(
             name = name,
-            features = antlir2_features or [f if types.is_string(f) else f.antlir2_feature for f in flatten.flatten(features)],
+            features = antlir2_features or [f if types.is_string(f) else getattr(f, "antlir2_feature", f) for f in flatten.flatten(features)],
             visibility = get_visibility(visibility),
         )
         if antlir2_shim.should_upgrade_feature():
