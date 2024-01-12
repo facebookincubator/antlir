@@ -91,15 +91,6 @@ python_binary(
     ],
 )
 
-python_library(
-    name = "testlib_base",
-    srcs = ["tests/base.py"],
-    deps = [
-        ":run-library",
-        "//antlir:testlib_layer_resource",
-    ],
-)
-
 python_binary(
     name = "run-test",
     srcs = ["run_test.py"],

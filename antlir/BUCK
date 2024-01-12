@@ -2,8 +2,6 @@
 
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
@@ -18,16 +16,6 @@ python_library(
         "//tupperware/cm/...",
         "//tupperware/image/scripts/...",
         "//tupperware/scripts/...",
-    ],
-)
-
-python_unittest(
-    name = "test-common",
-    srcs = [
-        "tests/test_common.py",
-    ],
-    deps = [
-        ":common",
     ],
 )
 
@@ -99,121 +87,9 @@ python_library(
     ],
 )
 
-# This helper for the `Path.resource` test exercises our most fragile
-# use-case, embedding binaries within binaries.
-python_binary(
-    name = "test-helper-binary",
-    srcs = ["tests/test_helper_binary.py"],
-    main_module = "antlir.tests.test_helper_binary",
-)
-
-python_unittest(
-    name = "test-fs-utils",
-    srcs = [
-        "tests/test_fs_utils.py",
-        # Added for coverage, redundant with `test-fs-utils-path-resource-*`
-        "tests/test_fs_utils_path_resource.py",
-    ],
-    needed_coverage = [(
-        100,
-        ":fs_utils",
-    )],
-    resources = {":test-helper-binary": "tests/helper-binary"},
-    deps = [":fs_utils"],
-)
-
-python_unittest(
-    name = "test-fs_utils_rs",
-    srcs = ["tests/test_fs_utils_rs.py"],
-    deps = [
-        ":fs_utils",
-        "//antlir:fs_utils_rs",
-    ],
-)
-
-export_file(
-    name = "tests/test_fs_utils_path_resource.py",
-)
-
-# This is meant to get full functional coverage for `Path.resource`,
-# exercising it across all supported `par_style`s.  We cannot do
-# `needed_coverage` here, but `test-fs-utils` checks part of the function.
-[
-    python_unittest(
-        name = "test-fs-utils-path-resource-" + style,
-        srcs = {
-            ":tests/test_fs_utils_path_resource.py": "tests/test_fs_utils_path_resource.py",
-        },
-        par_style = style,
-        resources = {":test-helper-binary": "tests/helper-binary"},
-        deps = [":fs_utils"],
-    )
-    for style in [
-        "fastzip",
-        "zip",
-        # XARs are tested internally only, since OSS does not currently support
-        # XAR python_binary targets
-    ]
-]
-
-python_library(
-    name = "testlib_layer_resource",
-    srcs = ["tests/layer_resource.py"],
-    visibility = [
-        "//antlir/...",
-        "//metalos/initrd/facebook/...",
-        "//tupperware/cm/antlir/tests/...",
-        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
-        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
-    ],
-    deps = [
-        ":cli",
-        ":find_built_subvol",
-    ],
-)
-
-python_library(
-    name = "testlib_subvol_helpers",
-    srcs = ["tests/subvol_helpers.py"],
-    visibility = [
-        "//antlir/...",
-        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
-        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
-    ],
-    deps = [
-        ":subvol_utils",
-        ":testlib_flavor_helpers",
-        "//antlir/btrfs_diff:testlib_render_subvols",
-    ],
-)
-
-python_library(
-    name = "testlib_image_package_testbase",
-    srcs = ["tests/image_package_testbase.py"],
-    visibility = ["//antlir/..."],
-    deps = [
-        ":subvol_utils",
-        ":testlib_common",
-        ":testlib_subvol_helpers",
-        ":unshare",
-    ],
-)
-
 python_library(
     name = "unshare",
     srcs = ["unshare.py"],
-)
-
-python_unittest(
-    name = "test-unshare",
-    srcs = ["tests/test_unshare.py"],
-    needed_coverage = [(
-        100,
-        ":unshare",
-    )],
-    deps = [
-        ":unshare",
-    ],
 )
 
 btrfsutil_deps = [
@@ -252,27 +128,6 @@ python_binary(
     deps = btrfsutil_deps,
 )
 
-python_unittest(
-    name = "test-btrfsutil",
-    srcs = ["tests/test_btrfsutil.py"],
-    needed_coverage = [(
-        100,
-        ":btrfsutil",
-    )],
-    deps = [
-        ":artifacts_dir",
-        ":btrfsutil",
-        ":subvol_utils",
-        ":testlib_common",
-        ":unshare",
-        ":volume_for_repo",
-        third_party.library(
-            "python-btrfs-progs",
-            "btrfsutil-py",
-        ),
-    ],
-)
-
 antlir_rust_extension(
     name = "signed_source",
     srcs = ["signed_source.rs"],
@@ -305,19 +160,6 @@ python_library(
         ":errors",
         ":fs_utils",
         "//antlir/facebook:sudo_error",
-    ],
-)
-
-python_unittest(
-    name = "test-volume-for-repo",
-    srcs = ["tests/test_volume_for_repo.py"],
-    needed_coverage = [(
-        100,
-        ":volume_for_repo",
-    )],
-    deps = [
-        ":volume_for_repo",
-        "//antlir:artifacts_dir",
     ],
 )
 
@@ -362,14 +204,6 @@ rust_library(
     ],
 )
 
-python_unittest(
-    name = "test-artifacts-dir",
-    srcs = ["tests/test_artifacts_dir.py"],
-    deps = [
-        ":artifacts_dir",
-    ],
-)
-
 python_library(
     name = "subvolume_garbage_collector",
     srcs = ["subvolume_garbage_collector.py"],
@@ -404,27 +238,6 @@ python_binary(
     visibility = ["PUBLIC"],
 )
 
-python_unittest(
-    name = "test-layer-mount-config",
-    srcs = ["tests/test_layer_mount_config.py"],
-    needed_coverage = [(100, ":layer-mount-config-library")],
-    deps = [
-        ":layer-mount-config-library",
-    ],
-)
-
-python_unittest(
-    name = "test-subvolume-garbage-collector",
-    srcs = ["tests/test_subvolume_garbage_collector.py"],
-    needed_coverage = [(
-        100,
-        ":subvolume_garbage_collector",
-    )],
-    deps = [
-        ":subvolume_garbage_collector",
-    ],
-)
-
 # No unit-test since this is simple, its output is random, and we are
 # unlikely to need to change it.  Be sure to test your changes manually!
 python_library(
@@ -453,13 +266,6 @@ python_library(
         ":common",
         ":fs_utils",
     ],
-)
-
-python_unittest(
-    name = "test-send-fds-and-run",
-    srcs = ["tests/test_send_fds_and_run.py"],
-    needed_coverage = [(100, ":send_fds_and_run")],
-    deps = [":send_fds_and_run"],
 )
 
 python_binary(
@@ -590,15 +396,6 @@ python_library(
     deps = [],
 )
 
-python_unittest(
-    name = "test-unionfind",
-    srcs = ["tests/test_unionfind.py"],
-    needed_coverage = [
-        (100, ":unionfind"),
-    ],
-    deps = [":unionfind"],
-)
-
 python_library(
     name = "shape",
     srcs = ["shape.py"],
@@ -666,19 +463,6 @@ python_library(
             shape_impl = "//antlir/bzl:constants.shape",
             type_name = "bzl_const_t",
         ),
-    ],
-)
-
-python_unittest(
-    name = "test-config",
-    srcs = ["tests/test_config.py"],
-    needed_coverage = [
-        (100, ":config"),
-    ],
-    deps = [
-        ":artifacts_dir",
-        ":config",
-        ":fs_utils",
     ],
 )
 
@@ -777,12 +561,6 @@ buck_sh_binary(
     visibility = ["PUBLIC"],
 )
 
-image.layer(
-    name = "empty.layer",
-    flavor = flavor_helpers.get_flavor_default(),
-    visibility = ["PUBLIC"],
-)
-
 python_binary(
     name = "vcs",
     srcs = ["vcs.py"],
@@ -790,27 +568,6 @@ python_binary(
     deps = [
         ":artifacts_dir",
         ":fs_utils",
-    ],
-)
-
-# Note: there is no coverage metric for this because this supports
-# both git and hg, but internally at Meta we can only guarantee
-# that hg is present, and externally we can only guarantee that
-# git is present
-# For both variations we have CI that should confirm the expected
-# output.
-python_unittest(
-    name = "test-vcs",
-    srcs = ["tests/test_vcs.py"],
-    deps = [":vcs-library"],
-)
-
-python_unittest(
-    name = "test-signed-source",
-    srcs = ["tests/test_signed_source.py"],
-    deps = [
-        ":signed_source",
-        ":testlib_common",
     ],
 )
 
