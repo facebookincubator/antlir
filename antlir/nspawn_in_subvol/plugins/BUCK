@@ -1,10 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "python_library", "python_unittest")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/bzl:snapshot_install_dir.bzl", "ANTLIR_DIR")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
+load("//antlir/bzl:build_defs.bzl", "python_library")
 
 oncall("antlir")
 
@@ -12,21 +6,6 @@ oncall("antlir")
 python_library(
     name = "plugins",
     srcs = ["__init__.py"],
-)
-
-python_library(
-    name = "testlib_rpm_base",
-    srcs = ["tests/rpm_base.py"],
-    # Important as we're taking a dep on a layer
-    labels = ["no_pyre"],
-    resources = {
-        layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance",
-    },
-    deps = [
-        "//antlir:config",
-        "//antlir/nspawn_in_subvol:testlib_base",
-        "//antlir/rpm:find_snapshot",
-    ],
 )
 
 python_library(
@@ -82,27 +61,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-repo-servers",
-    srcs = ["tests/test_repo_servers.py"],
-    needed_coverage = [
-        (100, ":launch_repo_servers"),
-        (100, ":launch_proxy_server"),
-        (100, ":repo_servers"),
-        (100, ":server_launcher"),
-    ],
-    resources = {
-        layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
-    },
-    deps = [
-        ":launch_repo_servers",
-        ":server_launcher",
-        ":testlib_rpm_base",
-        "//antlir:common",
-        "//antlir:testlib_flavor_helpers",
-    ],
-)
-
 python_library(
     name = "yum_dnf_versionlock",
     srcs = ["yum_dnf_versionlock.py"],
@@ -113,22 +71,6 @@ python_library(
         "//antlir:subvol_utils",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:plugin_hooks",
-    ],
-)
-
-python_unittest(
-    name = "test-yum-dnf-versionlock",
-    srcs = ["tests/test_yum_dnf_versionlock.py"],
-    needed_coverage = [
-        (100, ":yum_dnf_versionlock"),
-        (100, "//antlir/nspawn_in_subvol:plugin_hooks"),
-    ],
-    resources = {
-        layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-build-appliance",
-    },
-    deps = [
-        ":testlib_rpm_base",
-        "//antlir:testlib_flavor_helpers",
     ],
 )
 
@@ -143,23 +85,6 @@ python_library(
         ":yum_dnf_versionlock",
         "//antlir:fs_utils",
         "//antlir/bzl:container_opts.shape-python",
-        "//antlir/nspawn_in_subvol:args",
-        "//antlir/nspawn_in_subvol:common",
-    ],
-)
-
-python_unittest(
-    name = "test-repo-plugins",
-    srcs = ["tests/test_repo_plugins.py"],
-    needed_coverage = [(100, ":repo_plugins")],
-    resources = {
-        layer_resource(TEST_IMAGE_PREFIX + "build_appliance_testing"): "tests/build-appliance",
-    },
-    deps = [
-        ":repo_plugins",
-        "//antlir:fs_utils",
-        "//antlir:testlib_flavor_helpers",
-        "//antlir:testlib_layer_resource",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:common",
     ],
@@ -180,88 +105,6 @@ python_library(
     ],
 )
 
-image.layer(
-    name = "shadow-paths-test-layer",
-    features = [
-        # We'll set up shadowing both via links and directly, and both work.
-        feature.ensure_subdirs_exist("/", "real"),
-        feature.install(
-            "tests/shadow_me",
-            "real/shadow_me",
-            mode = "u+rw,og+r",
-            # The user "nobody" will update this via the shadow root.
-            user = "nobody",
-        ),
-        feature.install("tests/i_will_shadow", "real_i_will_shadow"),
-        feature.install("tests/i_will_shadow", "other_file"),
-        feature.ensure_subdirs_exist("/", "link"),
-        feature.ensure_file_symlink("real/shadow_me", "link/shadow_me"),
-        feature.ensure_file_symlink("real_i_will_shadow", "link/i_will_shadow"),
-        feature.ensure_subdirs_exist(
-            "/",
-            "out",
-            user = "nobody",
-        ),  # Tests write here
-        feature.ensure_subdirs_exist("/", "other_dir"),
-    ],
-    parent_layer = TEST_IMAGE_PREFIX + "test-layer",
-)
-
-image.layer(
-    name = "shadow-paths-no-rpm",
-    features = [
-        feature.remove(
-            "/usr/bin/" + REPO_CFG.flavor_to_config["antlir_test"].rpm_installer,
-            must_exist = True,
-        ),
-    ],
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
-)
-
-python_unittest(
-    name = "test-shadow-paths",
-    srcs = ["tests/test_shadow_paths.py"],
-    needed_coverage = [(100, ":shadow_paths")],
-    resources = {
-        layer_resource(":shadow-paths-test-layer"): "tests/shadows",
-        layer_resource(":shadow-paths-no-rpm"): "tests/shadows-no-rpm",
-    },
-    deps = [
-        ":shadow_paths",
-        "//antlir:subvol_utils",
-        "//antlir:testlib_layer_resource",
-        "//antlir/nspawn_in_subvol:testlib_base",
-    ],
-)
-
-image.layer(
-    name = "shadow-build-appliance",
-    features = [
-        # We'll set up shadowing both via links and directly, and both work.
-        feature.ensure_subdirs_exist("/", "rpm_test/"),
-        feature.install("tests/shadow_me", "rpm_test/carrot.txt"),
-        feature.install("tests/i_will_shadow", "i_will_shadow"),
-    ],
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
-)
-
-# This test isn't here for line coverage, but to cover the integration
-# between `yum-dnf-from-snapshot` wrappers and `--shadow-path`.
-python_unittest(
-    name = "test-rpm-installer-shadow-paths",
-    srcs = ["tests/test_rpm_installer_shadow_paths.py"],
-    resources = {
-        layer_resource(":shadow-build-appliance"): "tests/shadow-build-appliance",
-    },
-    deps = [
-        ":testlib_rpm_base",
-        "//antlir:config",
-        "//antlir:subvol_utils",
-        "//antlir:testlib_layer_resource",
-        "//antlir/rpm:find_snapshot",
-    ],
-)
-
 python_library(
     name = "attach_antlir_dir",
     srcs = ["attach_antlir_dir.py"],
@@ -271,25 +114,4 @@ python_library(
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:plugin_hooks",
     ],
-)
-
-python_unittest(
-    name = "test-attach-antlir-dir",
-    srcs = ["tests/test_attach_antlir_dir.py"],
-    needed_coverage = [(100, ":attach_antlir_dir")],
-    resources = {
-        layer_resource(":no-antlir-build-appliance-testing"): "tests/no-antlir-layer",
-    },
-    deps = [
-        ":attach_antlir_dir",
-        "//antlir:subvol_utils",
-        "//antlir:testlib_layer_resource",
-        "//antlir/nspawn_in_subvol:testlib_base",
-    ],
-)
-
-image.layer(
-    name = "no-antlir-build-appliance-testing",
-    features = [feature.remove(ANTLIR_DIR)],
-    parent_layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
 )

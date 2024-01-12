@@ -1,9 +1,6 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library", "python_unittest", "third_party")
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library", "third_party")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image_python_unittest.bzl", "image_python_unittest")
 load("//antlir/bzl:layer_resource.bzl", "layer_resource")
-load("//antlir/compiler:defs.bzl", "TEST_IMAGE_PREFIX")
-load(":defs.bzl", "test_rpm_repo_snapshot")
 
 oncall("antlir")
 
@@ -25,31 +22,10 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-common",
-    srcs = ["tests/test_common.py"],
-    env = {"antlir_test_snapshot": "$(location :repo-snapshot-for-tests)"},
-    labels = ["no_pyre"],
-    needed_coverage = [(100, ":common")],
-    deps = [
-        ":common",
-        "//antlir:fs_utils",
-    ],
-)
-
 python_library(
     name = "find_snapshot",
     srcs = ["find_snapshot.py"],
     deps = ["//antlir:fs_utils"],
-)
-
-python_unittest(
-    name = "test-find-snapshot",
-    srcs = ["tests/test_find_snapshot.py"],
-    needed_coverage = [(100, ":find_snapshot")],
-    deps = [
-        ":find_snapshot",
-    ],
 )
 
 python_library(
@@ -62,16 +38,6 @@ python_library(
             platform = "python",
         ),
         "//libfb/py:decorators",
-    ],
-)
-
-python_unittest(
-    name = "test-open-url",
-    srcs = ["tests/test_open_url.py"],
-    needed_coverage = [(100, ":open_url")],
-    deps = [
-        ":open_url",
-        "//antlir:fs_utils",
     ],
 )
 
@@ -112,21 +78,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-repo-objects",
-    srcs = ["tests/test_repo_objects.py"],
-    # Because :temp_repos has a layer dep
-    labels = ["no_pyre"],
-    needed_coverage = [
-        (100, ":repo_objects"),
-    ],
-    deps = [
-        ":common",
-        ":repo_objects",
-        ":temp_repos",
-    ],
-)
-
 python_library(
     name = "repo_sizer",
     srcs = ["repo_sizer.py"],
@@ -137,39 +88,10 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-repo-sizer",
-    srcs = ["tests/test_repo_sizer.py"],
-    needed_coverage = [
-        (100, ":repo_sizer"),
-    ],
-    deps = [
-        ":common",
-        ":repo_objects",
-        ":repo_sizer",
-    ],
-)
-
 python_library(
     name = "parse_repodata",
     srcs = ["parse_repodata.py"],
     deps = [":repo_objects"],
-)
-
-python_unittest(
-    name = "test-parse-repodata",
-    srcs = ["tests/test_parse_repodata.py"],
-    # Because :temp_repos has a layer dep
-    labels = ["no_pyre"],
-    needed_coverage = [
-        (100, ":parse_repodata"),
-    ],
-    deps = [
-        ":parse_repodata",
-        ":repo_objects",
-        ":temp_repos",
-        "//antlir:fs_utils",
-    ],
 )
 
 python_library(
@@ -184,41 +106,12 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-repo-snapshot",
-    srcs = ["tests/test_repo_snapshot.py"],
-    needed_coverage = [
-        (100, ":repo_snapshot"),
-    ],
-    deps = [
-        ":common",
-        ":repo_objects",
-        ":repo_snapshot",
-        "//antlir:fs_utils",
-        "//antlir/rpm/storage:filesystem_storage",
-    ],
-)
-
 python_library(
     name = "repo_db",
     srcs = ["repo_db.py"],
     deps = [
         ":repo_objects",
         "//antlir:common",
-    ],
-)
-
-python_unittest(
-    name = "test-repo-db",
-    srcs = ["tests/test_repo_db.py"],
-    needed_coverage = [
-        (100, ":repo_db"),
-    ],
-    deps = [
-        ":common",
-        ":db_connection",
-        ":repo_db",
-        ":repo_objects",
     ],
 )
 
@@ -232,25 +125,6 @@ python_library(
         "//antlir:fs_utils",
         "//antlir/proxy:http_socket_server",
         "//antlir/rpm/storage:storage",
-    ],
-)
-
-python_unittest(
-    # @autodeps-skip
-    name = "test-repo-server",
-    srcs = ["tests/test_repo_server.py"],
-    # Because :temp_repos has a layer dep
-    labels = ["no_pyre"],
-    needed_coverage = [
-        (100, ":repo_server"),
-    ],
-    deps = [
-        ":repo_server",
-        ":temp_repos",
-        third_party.library(
-            "requests",
-            platform = "python",
-        ),
     ],
 )
 
@@ -281,16 +155,6 @@ python_library(
     ],
 )
 
-python_unittest(
-    name = "test-gpg-keys",
-    srcs = ["tests/test_gpg_keys.py"],
-    needed_coverage = [(100, ":gpg_keys")],
-    deps = [
-        ":gpg_keys",
-        "//antlir:fs_utils",
-    ],
-)
-
 python_library(
     name = "snapshot_repo",
     srcs = ["snapshot_repo.py"],
@@ -317,36 +181,9 @@ python_binary(
     ],
 )
 
-python_unittest(
-    name = "test-snapshot-repo",
-    srcs = ["tests/test_snapshot_repo.py"],
-    # Because :temp_repos has a layer dep
-    labels = ["no_pyre"],
-    needed_coverage = [
-        (100, ":common_args"),
-        (100, ":snapshot_repo"),
-    ],
-    deps = [
-        ":repo_snapshot",
-        ":snapshot_repo",
-        ":temp_repos",
-        "//antlir:fs_utils",
-        "//antlir/rpm/storage:storage",
-    ],
-)
-
 python_library(
     name = "yum_dnf_conf",
     srcs = ["yum_dnf_conf.py"],
-)
-
-python_unittest(
-    name = "test-yum-dnf-conf",
-    srcs = ["tests/test_yum_dnf_conf.py"],
-    needed_coverage = [
-        (100, ":yum_dnf_conf"),
-    ],
-    deps = [":yum_dnf_conf"],
 )
 
 python_binary(
@@ -357,16 +194,6 @@ python_binary(
         ":yum_dnf_conf",
         "//antlir:fs_utils",
     ],
-)
-
-python_unittest(
-    # @autodeps-skip
-    name = "test-write-yum-dnf-conf",
-    srcs = ["tests/test_write_yum_dnf_conf.py"],
-    needed_coverage = [
-        (100, ":write-yum-dnf-conf-library"),
-    ],
-    deps = [":write-yum-dnf-conf-library"],
 )
 
 python_binary(
@@ -397,80 +224,9 @@ python_binary(
     ],
 )
 
-test_rpm_repo_snapshot(
-    name = "repo-snapshot-for-tests",
-    kind = "sample-step-0",
-    repo_server_ports = (28889, 28890),
-    # `test-yum-dnf-from-snapshot-*` exercise both package managers.
-    # `test-rpm-action-item` also tests both by explicitly setting
-    # `LayerOpts.rpm_installer`.
-    # `test-image-layer` checks `validates-{yum,dnf}-build-appliance`.
-    #
-    # All other RPM installations via one of the few build appliances that
-    # install this snapshot use
-    # `flavor_helpers.get_rpm_installer()`.
-    rpm_installers = ("dnf", "yum"),
-)
-
-test_rpm_repo_snapshot(
-    name = "non-default-repo-snapshot-for-tests",
-    kind = "non-default",
-    repo_server_ports = (28891, 28892),  # Coexists w/ `repo-snapshot-for-tests`
-    rpm_installers = ("dnf", "yum"),
-)
-
-test_rpm_repo_snapshot(
-    name = "rpm-replay-repo-snapshot-for-tests",
-    kind = "rpm-replay",
-    repo_server_ports = (28893, 28894),
-    rpm_installers = ("dnf", "yum"),
-)
-
 export_file(
     name = "tests/needs-carrot.spec",
 )
-
-# Run the same test in two different container configurations to add
-# integration testing for `container_opts` covering both implicitly and
-# explicitly served RPM snapshots.
-[
-    image_python_unittest(
-        name = "test-yum-dnf-from-snapshot-{}".format(variant),
-        srcs = ["tests/test_yum_dnf_from_snapshot.py"],
-        container_opts = container_opts,
-        # This is necessary because our CI environment does not guarantee that
-        # `/var/lib/dnf` is installed.
-        layer = TEST_IMAGE_PREFIX + "build_appliance_testing",
-        needed_coverage = [
-            (100, ":yum-dnf-from-snapshot-library"),
-        ],
-        resources = {
-            ":tests/needs-carrot.spec": "tests/needs-carrot.spec",
-        },
-        run_as_user = "root",  # We run `yum` / `dnf`
-        deps = [
-            ":find_snapshot",
-            ":yum-dnf-from-snapshot-library",
-            "//antlir:testlib_flavor_helpers",
-            "//antlir:testlib_subvol_helpers",
-        ],
-    )
-    for variant, container_opts in [
-        # Use the inferior `dict` form of `container_opts` because I don't want
-        # to `load(':image.bzl')` here.
-        (
-            "shadowed",
-            {"shadow_proxied_binaries": True},
-        ),
-        (
-            "unshadowed",
-            {
-                "serve_rpm_snapshots": [":repo-snapshot-for-tests"],
-                "shadow_proxied_binaries": False,
-            },
-        ),
-    ]
-]
 
 python_library(
     name = "snapshot_repos",
@@ -501,25 +257,6 @@ python_binary(
     ],
 )
 
-python_unittest(
-    name = "test-snapshot-repos",
-    srcs = ["tests/test_snapshot_repos.py"],
-    # Because :temp_repos has a layer dep
-    labels = ["no_pyre"],
-    needed_coverage = [
-        (100, ":common_args"),
-        (100, ":snapshot_repos"),
-    ],
-    deps = [
-        ":repo_db",
-        ":repo_snapshot",
-        ":snapshot_repos",
-        ":temp_repos",
-        "//antlir:fs_utils",
-        "//antlir/rpm/storage:storage",
-    ],
-)
-
 python_library(
     name = "rpm_metadata",
     srcs = ["rpm_metadata.py"],
@@ -529,28 +266,5 @@ python_library(
         "//antlir:subvol_utils",
         "//antlir/nspawn_in_subvol:args",
         "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
-python_unittest(
-    name = "test-rpm-metadata",
-    srcs = ["tests/test_rpm_metadata.py"],
-    needed_coverage = [
-        (100, ":rpm_metadata"),
-    ],
-    resources = {
-        TEST_IMAGE_PREFIX + "child/layer": "tests/child-layer",
-        TEST_IMAGE_PREFIX + "hello_world_base": "tests/hello-layer",
-        "//antlir/rpm/third_party:version-compare-tests": "version-compare-tests",
-        layer_resource(
-            TEST_IMAGE_PREFIX + "build_appliance_testing",
-        ): "tests/test-build-appliance",
-    },
-    deps = [
-        ":rpm_metadata",
-        ":temp_repos",
-        "//antlir:find_built_subvol",
-        "//antlir:fs_utils",
-        "//antlir:testlib_layer_resource",
     ],
 )

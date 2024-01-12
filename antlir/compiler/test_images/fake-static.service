@@ -1,5 +1,0 @@
-[Unit]
-Description=Static fake service from bootable-systemd-os-with-buck-runnables
-
-[Service]
-ExecStart=/fake-service static
