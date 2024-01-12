@@ -14,7 +14,7 @@ use std::process::Command;
 
 use antlir2_compile::util::copy_with_metadata;
 use antlir2_compile::Arch;
-use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
@@ -66,22 +66,26 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
 
     let mut cmd = Command::new(interpreter);
     if let Some(sysroot) = sysroot {
-        let cwd = std::env::current_dir()?;
-        cmd = nspawn(
+        let mut platform = vec![];
+        #[cfg(facebook)]
+        {
+            if sysroot.join("usr/local/fbcode").exists() {
+                platform.push(Path::new("/usr/local/fbcode"));
+            }
+            if sysroot.join("mnt/gvfs").exists() {
+                platform.push(Path::new("/mnt/gvfs"));
+            }
+        }
+        cmd = unshare(
             IsolationContext::builder(sysroot)
-                .ephemeral(true)
-                .platform([
-                    cwd.as_path(),
-                    #[cfg(facebook)]
-                    Path::new("/usr/local/fbcode"),
-                    #[cfg(facebook)]
-                    Path::new("/mnt/gvfs"),
-                ])
-                .working_directory(&cwd)
-                // There's a memory allocation bug under qemu-aarch64 when asking the linker to --list
-                // an elf binary.  This configures qemu-aarch64 to pre-allocate enough virtual address
-                // space to not exploded in this case.  This env var has no effect when running on the
-                // native host (x86_64 or aarch64).
+                .ephemeral(false)
+                .platform(platform.as_slice())
+                .working_directory(Path::new("/"))
+                // There's a memory allocation bug under qemu-aarch64 when
+                // asking the linker to --list an elf binary. This configures
+                // qemu-aarch64 to pre-allocate enough virtual address space to
+                // not explode in this case. This env var has no effect when
+                // running on the native host (x86_64 or aarch64).
                 // TODO: Remove this after the issue is found and fixed with qemu-aarch64.
                 .setenv(("QEMU_RESERVED_VA", "0x40000000"))
                 .build(),
@@ -91,17 +95,7 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
         cmd.env("QEMU_RESERVED_VA", "0x40000000");
     }
 
-    // Canonicalize the binary path before dealing with ld.so, because that does
-    // not correctly handle relative rpaths coming via symlinks (which we will
-    // see in @mode/dev binaries).
-    let binary = binary_as_seen_from_here.canonicalize().with_context(|| {
-        format!(
-            "while getting abspath of binary '{}'",
-            binary_as_seen_from_here.display()
-        )
-    })?;
-
-    cmd.arg("--list").arg(&binary);
+    cmd.arg("--list").arg(binary);
 
     trace!("running ld.so {cmd:?}");
 
