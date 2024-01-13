@@ -113,6 +113,7 @@ pub struct InstallFbpkg {
     pub dst: Option<PathBuf>,
     pub organize: bool,
     pub organize_alias: Option<String>,
+    pub canonical_uuid: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
