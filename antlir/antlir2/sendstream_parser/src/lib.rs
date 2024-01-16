@@ -33,46 +33,23 @@ use uuid::Uuid;
 
 #[cfg(feature = "serde")]
 mod ser;
-mod wire;
+pub mod wire;
 
 #[derive(Debug, thiserror::Error)]
-pub enum Error<'a> {
-    #[error("Parse error: {0:?}")]
-    Parse(nom::error::Error<&'a [u8]>),
+pub enum Error {
     #[error(
         "Sendstream had unexpected trailing data. This probably means the parser is broken: {0:?}"
     )]
     TrailingData(Vec<u8>),
     #[error("Sendstream is incomplete")]
     Incomplete,
+    #[error("IO error: {0:#}")]
+    IO(#[from] std::io::Error),
+    #[error("Sendstream contains unparsable bytes: {0}")]
+    Unparsable(String),
 }
 
-impl<'a> From<nom::error::Error<&'a [u8]>> for Error<'a> {
-    fn from(e: nom::error::Error<&'a [u8]>) -> Self {
-        Self::Parse(e)
-    }
-}
-
-pub type Result<'a, R> = std::result::Result<R, Error<'a>>;
-
-/// This is the main entrypoint of this crate. It provides access to the
-/// sequence of [Command]s that make up this sendstream.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
-pub struct Sendstream<'a> {
-    #[cfg_attr(feature = "serde", serde(borrow))]
-    commands: Vec<Command<'a>>,
-}
-
-impl<'a> Sendstream<'a> {
-    pub fn commands(&self) -> &[Command<'a>] {
-        &self.commands
-    }
-
-    pub fn into_commands(self) -> Vec<Command<'a>> {
-        self.commands
-    }
-}
+pub type Result<R> = std::result::Result<R, Error>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Deserialize, Serialize))]
@@ -628,36 +605,48 @@ pub struct Write<'a> {
 from_cmd!(Write);
 getters! {Write, [(path, Path, borrow), (offset, FileOffset, copy), (data, Data, borrow)]}
 
+#[allow(clippy::expect_used)]
 #[cfg(test)]
 mod tests {
     use std::collections::BTreeSet;
-    use std::ffi::OsString;
     use std::fmt::Write;
+    use std::io::Cursor;
 
     use similar_asserts::SimpleDiff;
 
     use super::*;
 
-    // serialize sendstream commands to diffable text
-    fn serialize_to_txt(sendstreams: &[Sendstream]) -> String {
-        let mut out = String::new();
-        for (i, s) in sendstreams.iter().enumerate() {
-            writeln!(out, "BEGIN SENDSTREAM {i}").unwrap();
-            for cmd in s.commands() {
-                writeln!(out, "{cmd:?}").unwrap();
+    fn serialize_cmd<'a>(idx: &mut u64, out: &mut String, cmd: &Command<'a>) {
+        match cmd {
+            Command::Subvol(_) | Command::Snapshot(_) => {
+                writeln!(out, "BEGIN SENDSTREAM {idx}").expect("while writing");
+                writeln!(out, "{cmd:?}").expect("while writing");
             }
-            writeln!(out, "END SENDSTREAM {i}").unwrap();
+            Command::End => {
+                writeln!(out, "{cmd:?}").expect("while writing");
+                writeln!(out, "END SENDSTREAM {idx}").expect("while writing");
+                *idx += 1;
+            }
+            _ => {
+                writeln!(out, "{cmd:?}").expect("while writing");
+            }
         }
-        out
     }
 
-    #[test]
-    fn parse_demo() {
-        let sendstreams = Sendstream::parse_all(include_bytes!("../testdata/demo.sendstream"))
-            .expect("failed to parse demo.sendstream");
-        let parsed_txt = serialize_to_txt(&sendstreams);
+    #[tokio::test]
+    async fn parse_demo() {
+        let data = include_bytes!("../testdata/demo.sendstream");
+        let cursor = Cursor::new(data);
+        let mut parsed_txt = String::new();
+        let mut sendstream_index = 0;
+        let num_cmds_parsed = wire::parse(cursor, |cmd| {
+            serialize_cmd(&mut sendstream_index, &mut parsed_txt, cmd);
+            wire::ParserControl::KeepGoing
+        })
+        .await
+        .expect("while parsing");
         if let Some(dst) = std::env::var_os("UPDATE_DEMO_TXT") {
-            std::fs::write(dst, serialize_to_txt(&sendstreams)).unwrap();
+            std::fs::write(dst, parsed_txt).expect("while writing to {dst}");
         } else {
             let good_txt = include_str!("../testdata/demo.txt");
             if parsed_txt != good_txt {
@@ -667,23 +656,52 @@ mod tests {
                 )
             }
         }
+        assert_eq!(num_cmds_parsed, 94);
     }
 
-    #[test]
-    fn sendstream_covers_all_commands() {
+    /// Demonstrate how we might eagerly abort parsing after collecting information embedded in an
+    /// early command.
+    #[tokio::test]
+    async fn partial_parse() {
+        let data = include_bytes!("../testdata/demo.sendstream");
+        let cursor = Cursor::new(data);
+        let mut uuid: Option<Uuid> = None;
+        let num_cmds_parsed = wire::parse(cursor, |cmd| {
+            if let Command::Subvol(sv) = cmd {
+                uuid = Some(sv.uuid());
+                return wire::ParserControl::Enough;
+            }
+            wire::ParserControl::KeepGoing
+        })
+        .await
+        .expect("while parsing");
+        assert_eq!(
+            uuid,
+            Some(
+                Uuid::parse_str("0fbf2b5f-ff82-a748-8b41-e35aec190b49")
+                    .expect("while parsing uuid")
+            )
+        );
+        assert_eq!(num_cmds_parsed, 1);
+    }
+
+    #[tokio::test]
+    async fn sendstream_covers_all_commands() {
         let all_cmds: BTreeSet<_> = wire::cmd::CommandType::iter()
             .filter(|c| *c != wire::cmd::CommandType::Unspecified)
             // update_extent is used for no-file-data sendstreams (`btrfs send
             // --no-data`), so it's not super useful to cover here
             .filter(|c| *c != wire::cmd::CommandType::UpdateExtent)
             .collect();
-        let sendstreams = Sendstream::parse_all(include_bytes!("../testdata/demo.sendstream"))
-            .expect("failed to parse demo.sendstream");
-        let seen_cmds = sendstreams
-            .iter()
-            .flat_map(|s| s.commands.iter().map(|c| c.command_type()))
-            .collect();
-
+        let data = include_bytes!("../testdata/demo.sendstream");
+        let cursor = Cursor::new(data);
+        let mut seen_cmds: BTreeSet<wire::cmd::CommandType> = BTreeSet::new();
+        wire::parse(cursor, |cmd| {
+            seen_cmds.insert(cmd.command_type());
+            wire::ParserControl::KeepGoing
+        })
+        .await
+        .expect("while parsing");
         if all_cmds != seen_cmds {
             let missing: BTreeSet<_> = all_cmds.difference(&seen_cmds).collect();
             panic!("sendstream did not include some commands: {:?}", missing,);

@@ -17,12 +17,14 @@ rust_library(
     test_features = ["serde"],
     test_srcs = glob(["testdata/*"]),
     deps = [
+        "bytes",
         "derive_more",
         "hex",
         "nix",
         "nom",
         "serde",
         "thiserror",
+        "tokio",
         "uuid",
     ],
 )
