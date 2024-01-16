@@ -57,13 +57,14 @@ pub struct Subvolume {
 }
 
 bitflags! {
-    #[derive(Default)]
+    #[derive(Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     pub struct SnapshotFlags: u64 {
         const READONLY = 1 << 1;
     }
 }
 
 bitflags! {
+    #[derive(PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Clone, Copy)]
     struct SubvolFlags: u64 {
         const READ_ONLY = 1 << 1;
     }

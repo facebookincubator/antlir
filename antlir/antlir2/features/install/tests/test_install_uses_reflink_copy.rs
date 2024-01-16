@@ -85,7 +85,7 @@ impl std::fmt::Debug for Extent {
 }
 
 bitflags::bitflags! {
-    #[derive(Default)]
+    #[derive(Default, Copy, Clone, Debug)]
     struct ExtentFlags: u32 {
       /// This is generally the last extent in the file. A mapping attempt
       /// past this extent may return nothing. Some implementations set this
