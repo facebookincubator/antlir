@@ -23,9 +23,9 @@ pub(crate) struct CommandHeader {
 
 impl CommandHeader {
     pub(crate) fn parse(input: &[u8]) -> IResult<&[u8], Self> {
-        let (input, len) = nom::number::complete::le_u32(input)?;
+        let (input, len) = nom::number::streaming::le_u32(input)?;
         let (input, ty) = CommandType::parse(input)?;
-        let (input, crc32) = nom::number::complete::le_u32(input)?;
+        let (input, crc32) = nom::number::streaming::le_u32(input)?;
         Ok((
             input,
             Self {
@@ -102,7 +102,7 @@ command_type!(
 
 impl CommandType {
     fn parse(input: &[u8]) -> IResult<&[u8], Self> {
-        let (input, ty) = nom::number::complete::le_u16(input)?;
+        let (input, ty) = nom::number::streaming::le_u16(input)?;
         Ok((input, Self::from_u16(ty)))
     }
 }
@@ -125,7 +125,7 @@ macro_rules! parse_subtypes {
 impl<'a> crate::Command<'a> {
     pub(crate) fn parse(input: &'a [u8]) -> IResult<&'a [u8], Self> {
         let (input, hdr) = CommandHeader::parse(input)?;
-        let (input, cmd_data) = nom::bytes::complete::take(hdr.len)(input)?;
+        let (input, cmd_data) = nom::bytes::streaming::take(hdr.len)(input)?;
         let (cmd_remaining, cmd): (_, crate::Command) = parse_subtypes!(
             hdr,
             cmd_data,

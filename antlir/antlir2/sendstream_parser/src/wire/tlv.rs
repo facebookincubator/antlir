@@ -37,18 +37,18 @@ where
     Attr: AttrTypeParam,
 {
     // guarantee that the tlv type is what we expected
-    let (input, _) = nom::bytes::complete::tag(Attr::attr().tag())(input)?;
+    let (input, _) = nom::bytes::streaming::tag(Attr::attr().tag())(input)?;
     match L {
         0 => {
-            let (input, len) = nom::number::complete::le_u16(input)?;
-            let (input, data) = nom::bytes::complete::take(len)(input)?;
+            let (input, len) = nom::number::streaming::le_u16(input)?;
+            let (input, data) = nom::bytes::streaming::take(len)(input)?;
             Ok((input, T::parse(data)))
         }
         _ => {
             // this will cause the parser to fail if the length is not
             // exactly L bytes
-            let (input, _) = nom::bytes::complete::tag((L as u16).to_le_bytes())(input)?;
-            let (input, data) = nom::bytes::complete::take(L)(input)?;
+            let (input, _) = nom::bytes::streaming::tag((L as u16).to_le_bytes())(input)?;
+            let (input, data) = nom::bytes::streaming::take(L)(input)?;
             Ok((
                 input,
                 #[allow(clippy::expect_used)]
