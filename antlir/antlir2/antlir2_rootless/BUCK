@@ -6,6 +6,10 @@ oncall("antlir")
 rust_library(
     name = "antlir2_rootless",
     srcs = glob(["src/**/*.rs"]),
+    visibility = [
+        "//antlir/...",
+        "//registry/builder/...",
+    ],
     deps = [
         "nix",
         "once_cell",
