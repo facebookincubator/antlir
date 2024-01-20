@@ -24,9 +24,6 @@ feature_impl(
         ":no-setcap": [],
         "DEFAULT": ["setcap"],
     }),
-    unstable_features = [
-        "file_set_times",
-    ],
     deps = select({
         ":no-setcap": _base_deps,
         "DEFAULT": _base_deps + ["//antlir/antlir2/libcap:libcap"],
