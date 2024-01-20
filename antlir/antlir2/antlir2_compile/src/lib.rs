@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(file_set_times)]
 #![feature(io_error_more)]
 
 use std::collections::BTreeMap;
