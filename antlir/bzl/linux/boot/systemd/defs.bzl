@@ -7,7 +7,7 @@ load("//antlir/bzl/linux/boot:ble_build.bzl", "ble_build")
 
 def _systemd_build(
         name,
-        # A list of kernel_t (from //antlir/vm/bzl:kernel.bzl) instances.
+        # A list of kernel_t (from //antlir/bzl:kernel_shim.bzl) instances.
         # Each referenced kernel will be inserted into this boot setup
         # with a unique BLS.
         kernels,
