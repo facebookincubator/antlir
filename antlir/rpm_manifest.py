@@ -98,10 +98,13 @@ def extract_rpm_manifest(argv) -> None:
         layer.path("usr/lib/sysimage/rpm"),
         layer.path("var/lib/rpm"),
     ]
-    for db_path_src in potential_rpm_db_paths:
-        if os.path.exists(db_path_src):
+    db_path_src = None
+    for candidate in potential_rpm_db_paths:
+        if os.path.exists(candidate):
+            db_path_src = candidate
             break
-    # pyre-fixme [61]: Local variable `db_path_src` is undefined, or not always defined
+    if db_path_src is None:
+        raise ValueError("RPM DB not found")
     if not os.path.exists(db_path_src):
         raise ValueError(f"RPM DB paths {potential_rpm_db_paths} do not exist")
     db_path_dst = generate_work_dir()
@@ -116,8 +119,6 @@ def extract_rpm_manifest(argv) -> None:
                 "--xml",
             ],
             layer=ba_layer,
-            # pyre-fixme [61]: Local variable `db_path_src` is undefined, or not always
-            # defined
             bindmount_ro=[(db_path_src, db_path_dst)],
             # this is totally unnecessary, but this short-circuits a condition
             # here https://fburl.com/code/61e71kx7 that makes this work when run
