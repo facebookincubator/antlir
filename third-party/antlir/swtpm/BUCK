@@ -1,8 +1,8 @@
 # (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
 load("@fbcode_macros//build_defs:export_files.bzl", "export_files")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:third_party.bzl", "third_party")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 # NOTE: this build script is similar to the one in public_tld
 # but it uses the gcc-toolset-9-binutils linker which is 2.32.
@@ -16,28 +16,45 @@ export_files(files = ["00_configure"])
 third_party.build(
     name = "swtpm",
     src = third_party.source("swtpm"),
+    compatible_with = [
+        "//antlir/antlir2/os:centos8",
+        "//antlir/antlir2/os:centos9",
+    ],
     features = [
-        feature.rpms_install([
+        feature.rpms_install(rpms = [
             # build deps
-            "gcc",
-            "gcc-toolset-9-binutils",
             "autoconf",
             "autoconf-archive",
+            "expect",
+            "file",
+            "findutils",
+            "gcc",
+            "libtasn1-devel",  # required but not for swtpm binary (ok with shared here)
             "libtool",
             "make",
-            "findutils",
             "net-tools",
-            "tpm-tools",
-            "expect",
+            "openssl-devel",
+            "patch",
+            "rpm",
             "socat",
-            "python38",
-            "libtasn1-devel",  # required but not for swtpm binary (ok with shared here)
+            "tpm-tools",
 
             # static deps
             "glibc-static",
             "glib2-static",
             "pcre-static",
         ]),
+        feature.rpms_install(
+            subjects = select({
+                "//antlir/antlir2/os:centos8": [
+                    "gcc-toolset-9-binutils",
+                    "python38",
+                ],
+                "//antlir/antlir2/os:centos9": [
+                    "python3",
+                ],
+            }),
+        ),
     ],
     script = third_party.script(
         build = """

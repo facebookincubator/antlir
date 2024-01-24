@@ -3,19 +3,25 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:third_party.bzl", "third_party")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 oncall("antlir")
 
 third_party.build(
     name = "qemu",
     src = third_party.source("qemu"),
+    compatible_with = [
+        "//antlir/antlir2/os:centos8",
+        "//antlir/antlir2/os:centos9",
+    ],
     features = [
-        feature.rpms_install([
+        feature.rpms_install(rpms = [
             # build deps
             "autoconf",
             "autoconf-archive",
+            "bzip2",
+            "diffutils",
             "expect",
             "gcc",
             "glib2-static",
@@ -33,9 +39,17 @@ third_party.build(
             "python39",
             "sed",
             "socat",
-            "sphinx",
             "tpm-tools",
         ]),
+        feature.rpms_install(
+            subjects = select({
+                "//antlir/antlir2/os:centos8": ["sphinx"],
+                "//antlir/antlir2/os:centos9": [
+                    "python3-sphinx",
+                    "python3-sphinx_rtd_theme",
+                ],
+            }),
+        ),
     ],
     script = third_party.script(
         build = "make",
