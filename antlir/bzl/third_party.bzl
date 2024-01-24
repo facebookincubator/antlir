@@ -4,10 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load(":build_defs.bzl", "buck_genrule", third_party_shim = "third_party")
-load(":flavor_helpers.bzl", "flavor_helpers")
-load(":image.bzl", "image")
 load(":third_party.shape.bzl", "dep_t", "script_t")
 
 PREFIX = "/third-party-build"
@@ -29,7 +29,7 @@ def _build(name, features, script, src, deps = None, **kwargs):
 cat > $TMP/out << 'EOF'
 #!/bin/bash
 
-set -ue
+set -uex
 set -o pipefail
 
 # unpack the source in build dir
@@ -66,61 +66,65 @@ chmod +x $OUT
 
     image.layer(
         name = name + "__setup_layer",
-        parent_layer = flavor_helpers.get_build_appliance(),
+        parent_layer = antlir2_dep("//antlir/third-party:build-base"),
         features = features + [
-            feature.ensure_dirs_exist(DEPS_DIR),
-            feature.ensure_dirs_exist(OUTPUT_DIR),
-            feature.ensure_dirs_exist(PATCHES_DIR),
-            feature.ensure_dirs_exist(SRC_DIR),
+            feature.ensure_dirs_exist(dirs = DEPS_DIR),
+            feature.ensure_dirs_exist(dirs = OUTPUT_DIR),
+            feature.ensure_dirs_exist(dirs = PATCHES_DIR),
+            feature.ensure_dirs_exist(dirs = SRC_DIR),
             feature.install(
-                src,
-                SRC_TGZ,
+                src = src,
+                dst = SRC_TGZ,
             ),
             feature.install(
-                ":" + name + "__build_script",
-                "/build.sh",
+                src = ":" + name + "__build_script",
+                dst = "/build.sh",
                 mode = "a+x",
             ),
-            feature.rpms_install([
+            feature.rpms_install(rpms = [
                 "tar",
             ]),
         ] + [
-            feature.layer_mount(
-                dep.source,
-                paths.join(DEPS_DIR, dep.name),
-            )
+            [
+                feature.ensure_dirs_exist(
+                    dirs = paths.join(DEPS_DIR, dep.name),
+                ),
+                # TODO(T174899613) use feature.layer_mount if/when it gets mounted
+                # in the feature.genrule environment
+                feature.clone(
+                    src_layer = dep.source,
+                    src_path = "/",
+                    dst_path = paths.join(DEPS_DIR, dep.name) + "/",
+                ),
+            ]
             for dep in deps
         ] + ([
-            feature.install(i, paths.join(PATCHES_DIR, i.split(":")[1]))
+            feature.install(src = i, dst = paths.join(PATCHES_DIR, i.split(":")[1]))
             for i in script.patches
         ] if script.patches else []),
-        flavor = flavor_helpers.get_flavor_from_build_appliance(
-            flavor_helpers.get_build_appliance(),
-        ),
     )
 
-    image.genrule_layer(
+    image.layer(
         name = name + "__build_layer",
         parent_layer = ":" + name + "__setup_layer",
-        rule_type = "third_party_build",
-        antlir_rule = "user-internal",
-        user = "root",
-        cmd = [
-            "/build.sh",
-        ],
         visibility = ["//antlir/..."],
+        features = [feature.genrule(
+            user = "root",
+            cmd = [
+                "/build.sh",
+            ],
+        )],
     )
 
     image.layer(
         name = name,
         features = [
             feature.clone(
-                ":" + name + "__build_layer",
-                OUTPUT_DIR + "/",
-                "/",
+                src_layer = ":" + name + "__build_layer",
+                src_path = OUTPUT_DIR + "/",
+                dst_path = "/",
             ),
         ],
-        flavor = flavor_helpers.get_antlir_linux_flavor(),
         **kwargs
     )
 

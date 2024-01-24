@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:third_party.bzl", "third_party")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 oncall("antlir")
 
@@ -12,7 +12,7 @@ third_party.build(
     name = "json-glib",
     src = third_party.source("json-glib"),
     features = [
-        feature.rpms_install([
+        feature.rpms_install(rpms = [
             # build deps
             "clang",
             "meson",

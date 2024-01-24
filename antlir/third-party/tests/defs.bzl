@@ -7,7 +7,7 @@ def hello_world_build_test(ver, msg, patches = None):
     third_party.build(
         name = "hello_world.{}.build".format(ver),
         src = ":hello_world.tgz",
-        features = [feature.rpms_install(["gcc"])],
+        features = [feature.rpms_install(["gcc", "patch"])],
         script = third_party.script(
             build = "gcc -o hello_world hello_world.c",
             install = "./hello_world > $OUTPUT/hello_world.out",

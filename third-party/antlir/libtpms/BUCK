@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:third_party.bzl", "third_party")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 oncall("antlir")
 
@@ -12,18 +12,19 @@ third_party.build(
     name = "libtpms",
     src = third_party.source("libtpms"),
     features = [
-        feature.rpms_install([
+        feature.rpms_install(rpms = [
             # build deps
-            "gcc",
             "autoconf",
             "autoconf-archive",
+            "expect",
+            "gcc",
             "libtool",
             "make",
-            "sed",
             "net-tools",
-            "tpm-tools",
-            "expect",
+            "openssl-devel",
+            "sed",
             "socat",
+            "tpm-tools",
             # static deps
             "glibc-static",
             "glib2-static",

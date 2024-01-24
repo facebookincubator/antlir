@@ -15,15 +15,15 @@ def antlir2_dep(label):
     This should not be used for dependencies declared in TARGETS files.
     """
 
-    prefix = "//antlir/antlir2"
+    prefix = "//antlir/"
 
     # Technically passing the fbcode// cell will work, but will break OSS so
     # let's fail here. In internal-only code that can safely use the full cell,
     # antlir2_dep() is unnecessary.
-    if prefix.startswith("fbcode//antlir/antlir2"):
+    if prefix.startswith("fbcode//antlir/"):
         fail("label '{}' should not contain fbcode cell when used with antlir2_dep".format(label))
 
     if not label.startswith(prefix):
-        fail("label '{}' should start with //antlir/antlir2 so that VSCode go-to-definition works".format(label))
+        fail("label '{}' should start with //antlir/ so that VSCode go-to-definition works".format(label))
     label = label.removeprefix(prefix)
     return "".join([antlir2_cell, prefix, label])
