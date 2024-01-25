@@ -41,7 +41,7 @@ fn main() -> Result<()> {
     }
     let result = builder.build();
     match result {
-        Ok(g) => Err(anyhow!("graph built successfully but shouldn't have")),
+        Ok(_) => Err(anyhow!("graph built successfully but shouldn't have")),
         Err(err) => {
             if !args.error_regex.is_match(&err.to_string()) {
                 Err(anyhow!("'{err}' did not match '{}'", args.error_regex))
