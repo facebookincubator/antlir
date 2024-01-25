@@ -10,7 +10,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::fs::FileTimes;
 use std::fs::Permissions;
-use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::fchown;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
@@ -65,7 +64,7 @@ pub struct Install {
 
 impl Install {
     pub fn is_dir(&self) -> bool {
-        self.dst.as_os_str().as_bytes().last().copied() == Some(b'/')
+        self.src.is_dir()
     }
 }
 
@@ -296,14 +295,8 @@ impl antlir2_compile::CompileFeature for Install {
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
         let uid = ctx.uid(&self.user)?;
         let gid = ctx.gid(&self.group)?;
-        if self.src.is_dir() {
+        if self.is_dir() {
             debug!("{:?} is a dir", self.src);
-            if !self.is_dir() {
-                return Err(antlir2_compile::Error::InstallSrcIsDirectoryButNotDst {
-                    src: self.src.clone(),
-                    dst: self.dst.clone(),
-                });
-            }
             for entry in WalkDir::new(&self.src) {
                 let entry = entry.map_err(std::io::Error::from)?;
                 let relpath = entry
@@ -339,12 +332,6 @@ impl antlir2_compile::CompileFeature for Install {
                 xattr::set(&dir_path, key, &val.0)?;
             }
         } else {
-            if self.is_dir() {
-                return Err(antlir2_compile::Error::InstallDstIsDirectoryButNotSrc {
-                    src: self.src.clone(),
-                    dst: self.dst.clone(),
-                });
-            }
             let dst = ctx.dst_path(&self.dst)?;
 
             let dst_file = match &self.binary_info {
