@@ -150,7 +150,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 src = split_anon_target.artifact("src")
             else:
                 src = ensure_single_output(src)
-                binary_info = binary_record(dev = REPO_CFG.artifacts_require_repo)
+                if REPO_CFG.artifacts_require_repo:
+                    binary_info = binary_record(
+                        dev = True,
+                    )
+                else:
+                    binary_info = None
                 if ctx.attrs.never_use_dev_binary_symlink:
                     binary_info = None
         else:
