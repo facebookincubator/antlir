@@ -49,10 +49,6 @@ pub enum Error {
     IO(#[from] std::io::Error),
     #[error("extract has conflict: want to install a different version of {0:?}")]
     ExtractConflict(PathBuf),
-    #[error("install src {src:?} is a directory, but {dst:?} is missing trailing /")]
-    InstallSrcIsDirectoryButNotDst { src: PathBuf, dst: PathBuf },
-    #[error("install dst {dst:?} is claiming to be a directory, but {src:?} is a file")]
-    InstallDstIsDirectoryButNotSrc { src: PathBuf, dst: PathBuf },
     #[error(transparent)]
     Feature(#[from] antlir2_features::Error),
     #[error(transparent)]
