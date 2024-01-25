@@ -6,7 +6,6 @@
  */
 
 use std::io::BufWriter;
-use std::io::Write;
 use std::path::PathBuf;
 
 use antlir2_depgraph::Graph;

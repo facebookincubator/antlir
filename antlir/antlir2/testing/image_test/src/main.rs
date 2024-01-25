@@ -10,7 +10,6 @@ extern crate loopdev_erikh as loopdev;
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
-use std::ffi::OsString;
 use std::fs::File;
 use std::fs::Permissions;
 use std::io::Write;
