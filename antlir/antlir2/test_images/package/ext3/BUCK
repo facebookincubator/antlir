@@ -1,0 +1,67 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest")
+
+oncall("antlir")
+
+buck_genrule(
+    name = "large-file",
+    out = "f",
+    cmd = "yes | head -c 256M > $OUT",
+)
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/test",
+            mode = "u+wrx",  # make sure only root can read it
+        ),
+        feature.install(
+            src = ":large-file",
+            dst = "/test/file",
+            mode = 0o000,  # make sure only root can read it
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+package.ext3(
+    name = "default.ext3",
+    layer = ":layer",
+)
+
+package.ext3(
+    name = "size_mb.ext3",
+    layer = ":layer",
+    size_mb = 1024,
+)
+
+package.ext3(
+    name = "free_mb.ext3",
+    free_mb = 256,
+    layer = ":layer",
+)
+
+image.layer(
+    name = "empty",
+    features = [],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+package.ext3(
+    name = "empty.ext3",
+    layer = ":empty",
+)
+
+python_unittest(
+    name = "test",
+    srcs = ["test.py"],
+    resources = {
+        ":default.ext3": "default.ext3",
+        ":empty.ext3": "empty.ext3",
+        ":free_mb.ext3": "free_mb.ext3",
+        ":size_mb.ext3": "size_mb.ext3",
+    },
+)
