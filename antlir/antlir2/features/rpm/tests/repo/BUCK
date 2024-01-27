@@ -210,6 +210,7 @@ repo(
     timestamp = 0,
     visibility = [
         "//antlir/antlir2/antlir2_depgraph/tests/...",
+        "//antlir/antlir2/antlir2_facts/tests/...",
         "//antlir/antlir2/features/facebook/chef_solo/tests/...",
         "//antlir/antlir2/features/rpm/tests/...",
         "//antlir/antlir2/testing/...",
