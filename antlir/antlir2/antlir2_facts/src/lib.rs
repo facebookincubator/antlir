@@ -22,21 +22,23 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-pub struct Database {
+pub struct Database<const RW: bool = false> {
     #[cfg(fbrocks)]
     db: rocksdb::Db,
 }
 
-impl Database {
+impl Database<true> {
     #[cfg(fbrocks)]
-    pub fn open_readwrite<P>(path: P, options: rocksdb::Options) -> Result<Self>
+    pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
     where
         P: AsRef<std::path::Path>,
     {
         let db = rocksdb::Db::open(path, options)?;
         Ok(Self { db })
     }
+}
 
+impl Database<false> {
     #[cfg(fbrocks)]
     pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
     where
@@ -46,6 +48,9 @@ impl Database {
         Ok(Self { db })
     }
 }
+
+pub type RwDatabase = Database<true>;
+pub type RoDatabase = Database<false>;
 
 fn key_prefix<'a, 'de, F>() -> Vec<u8>
 where
@@ -75,7 +80,7 @@ where
     rocks_key
 }
 
-impl Database {
+impl Database<true> {
     pub fn insert<'a, 'de, F>(&mut self, fact: &'a F) -> Result<()>
     where
         F: Fact<'a, 'de>,
@@ -85,7 +90,9 @@ impl Database {
         self.db.put(key, serde_json::to_vec(fact)?, &write_opts)?;
         Ok(())
     }
+}
 
+impl<const RW: bool> Database<{ RW }> {
     pub fn get<'a, F>(&self, key: <F as Fact<'a, '_>>::Key) -> Result<Option<F>>
     where
         F: for<'de> Fact<'a, 'de>,
@@ -169,11 +176,11 @@ mod tests {
     use super::*;
     use crate::fact::user::User;
 
-    impl Database {
+    impl RwDatabase {
         fn open_test_db(name: &str) -> (Self, TempDir) {
             let tmpdir = TempDir::new().expect("failed to create tempdir");
             (
-                Self::open_readwrite(
+                Self::open(
                     tmpdir.path().join(name),
                     rocksdb::Options::new().create_if_missing(true),
                 )
