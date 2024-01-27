@@ -52,6 +52,7 @@ pub struct Rpm {
     description: Option<String>,
     post_install_script: Option<String>,
     sign_with_private_key: Option<PathBuf>,
+    changelog: Option<String>,
 }
 
 impl PackageFormat for Rpm {
@@ -122,8 +123,9 @@ License: {license}
 %description
 {description}
 
-{post_install_script}
+{changelog}
 
+{post_install_script}
 "#,
             summary = self.summary.as_deref().unwrap_or(name.as_str()),
             requires = requires,
@@ -137,6 +139,11 @@ License: {license}
                 .post_install_script
                 .as_ref()
                 .map(|s| format!("%post\n{s}\n"))
+                .unwrap_or_default(),
+            changelog = self
+                .changelog
+                .as_ref()
+                .map(|c| format!("%changelog\n{c}\n"))
                 .unwrap_or_default(),
         );
         if std::fs::read_dir(&self.layer)

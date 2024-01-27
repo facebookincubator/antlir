@@ -14,6 +14,8 @@ rust_library(
         "tracing-test",
     ],
     deps = [
+        "once_cell",
+        "regex",
         "serde",
         "serde_json",
         "thiserror",
@@ -29,11 +31,13 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "itertools",
         "jwalk",
         "nix",
         "tracing",
         "tracing-subscriber",
         ":antlir2_facts",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_users:antlir2_users",
         # @oss-disable

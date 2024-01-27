@@ -396,6 +396,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
             subvol_symlink = final_subvol,
+            build_appliance = build_appliance[LayerInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = phase,
             rootless = ctx.attrs._rootless,
@@ -462,6 +463,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
             subvol_symlink = final_subvol,
+            build_appliance = build_appliance[LayerInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = None,
             rootless = False,

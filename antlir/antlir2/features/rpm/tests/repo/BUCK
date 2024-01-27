@@ -58,6 +58,9 @@ _GEN_VERSIONS = [
 all_rpms = [
     test_rpm(
         name = "foo",
+        changelog = """* Mon Jan 1 2024 Vinnie Magro <vmagro@meta.com> - 0.1-1
+- Example changelog
+- CVE-2024-0101""",
         parent_layer = ":foo.layer",
         recommends = ["foo-recommends-me == " + str(version)],
         release = "1",
@@ -199,6 +202,17 @@ all_rpms.append(
             "/bin/sh",
             "coreutils",
         ],
+        version = "1",
+    ),
+)
+
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-changelog",
+        changelog = """* Mon Jan 1 2024 Vinnie Magro <vmagro@meta.com> - 0.1-1
+- Example changelog
+- CVE-2024-0101""",
+        release = "1",
         version = "1",
     ),
 )

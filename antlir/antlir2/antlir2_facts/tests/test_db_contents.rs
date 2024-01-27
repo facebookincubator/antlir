@@ -5,9 +5,11 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::HashMap;
 use std::path::Path;
 
 use antlir2_facts::fact::dir_entry::DirEntry;
+use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
 use antlir2_facts::Database;
@@ -34,6 +36,22 @@ fn file() {
     assert_eq!(ent.uid(), 42);
     assert_eq!(ent.gid(), 43);
     assert_eq!(ent.mode(), 0o100444);
+    assert!(matches!(ent, DirEntry::RegularFile(_)));
+}
+
+#[test]
+#[traced_test]
+fn device_nodes() {
+    let db = open_db();
+
+    let ent = db
+        .get::<DirEntry>(DirEntry::key(Path::new("/dev/null")))
+        .expect("failed to get /dev/null")
+        .expect("/dev/null did not exist");
+    assert_eq!(ent.path(), Path::new("/dev/null"));
+    assert_eq!(ent.uid(), 0);
+    assert_eq!(ent.gid(), 0);
+    assert_eq!(ent.mode(), 0o100644);
     assert!(matches!(ent, DirEntry::RegularFile(_)));
 }
 
@@ -124,4 +142,37 @@ fn group() {
     assert_eq!(ent.name(), "antlir");
     assert_eq!(ent.id(), 43);
     assert_eq!(ent.members().collect::<Vec<_>>(), &["antlir"]);
+}
+
+#[test]
+#[traced_test]
+fn rpms() {
+    let db = open_db();
+
+    let rpms = db.iter::<Rpm>().collect::<Vec<_>>();
+    assert!(rpms.len() > 1, "multiple rpm facts should be found");
+    let rpms = rpms
+        .into_iter()
+        .map(|rpm| (rpm.name().to_owned(), rpm))
+        .collect::<HashMap<_, _>>();
+    assert!(
+        rpms.contains_key("foobar"),
+        "explicitly installed rpm should be recorded"
+    );
+    assert!(
+        rpms.contains_key("foo"),
+        "rpm installed as a dep should be recorded"
+    );
+    assert_eq!(rpms.get("foo").map(Rpm::epoch), Some(0), "foo has no epoch");
+    assert_eq!(
+        rpms.get("foo-epoch").map(Rpm::epoch),
+        Some(3),
+        "epoch should be recorded"
+    );
+    assert_eq!(
+        rpms.get("antlir2-changelog")
+            .expect("antlir2-changelog rpm missing")
+            .changelog(),
+        Some("- Example changelog\n- CVE-2024-0101"),
+    );
 }
