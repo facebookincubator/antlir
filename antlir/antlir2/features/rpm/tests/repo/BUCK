@@ -228,5 +228,6 @@ repo(
         "//antlir/antlir2/features/facebook/chef_solo/tests/...",
         "//antlir/antlir2/features/rpm/tests/...",
         "//antlir/antlir2/testing/...",
+        "//antlir/fbpkg/build/tw/tests:",
     ],
 )
