@@ -30,6 +30,8 @@ struct Args {
     root: PathBuf,
     #[clap(long)]
     db: PathBuf,
+    #[clap(long)]
+    rootless: bool,
 }
 
 fn populate(db: &mut Database, root: &Path) -> Result<()> {
@@ -104,7 +106,12 @@ fn main() -> Result<()> {
     let args = Args::parse();
     tracing_subscriber::fmt::init();
 
-    let rootless = antlir2_rootless::init().context("while dropping privileges")?;
+    let rootless = if args.rootless {
+        antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+        None
+    } else {
+        Some(antlir2_rootless::init().context("while dropping privileges")?)
+    };
 
     if args.db.exists() {
         bail!(
@@ -114,20 +121,21 @@ fn main() -> Result<()> {
     }
     let mut db = Database::open(&args.db, rocksdb::Options::new().create_if_missing(true))
         .with_context(|| format!("while opening db {}", args.db.display()))?;
-    rootless.as_root(|| populate(&mut db, &args.root))??;
 
-    // make sure all the output files are owned by the unprivileged user
     let uid = nix::unistd::Uid::effective().as_raw();
     let gid = nix::unistd::Gid::effective().as_raw();
-    rootless.as_root(|| {
-        for entry in jwalk::WalkDir::new(&args.db) {
-            let entry = entry?;
-            let path = entry.path();
-            std::os::unix::fs::lchown(&path, Some(uid), Some(gid))
-                .with_context(|| format!("while chowning {}", path.display()))?;
-        }
-        Ok::<_, anyhow::Error>(())
-    })??;
+
+    let root_guard = rootless.map(|r| r.escalate()).transpose()?;
+    populate(&mut db, &args.root)?;
+
+    // make sure all the output files are owned by the unprivileged user
+    for entry in jwalk::WalkDir::new(&args.db) {
+        let entry = entry?;
+        let path = entry.path();
+        std::os::unix::fs::lchown(&path, Some(uid), Some(gid))
+            .with_context(|| format!("while chowning {}", path.display()))?;
+    }
+    drop(root_guard);
 
     Ok(())
 }

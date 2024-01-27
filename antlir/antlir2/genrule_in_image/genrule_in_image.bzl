@@ -62,6 +62,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         "rootless": ctx.attrs._rootless,
         "target_arch": ctx.attrs._target_arch,
         "_feature_feature_targets": [ctx.attrs._prep_feature],
+        "_new_facts_db": ctx.attrs._new_facts_db,
         "_rootless": ctx.attrs._rootless,
         "_run_container": None,
         "_selected_target_arch": ctx.attrs._target_arch,
@@ -78,6 +79,7 @@ _genrule_in_image = rule(
         "outs": attrs.option(attrs.dict(attrs.string(), attrs.string()), default = None),
         "_genrule_in_image": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/genrule_in_image:genrule_in_image")),
         "_layer_antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
+        "_new_facts_db": attrs.exec_dep(default = "//antlir/antlir2/antlir2_facts:new-facts-db"),
         "_prep_feature": attrs.default_only(attrs.dep(default = "//antlir/antlir2/genrule_in_image:prep")),
         "_target_arch": attrs.default_only(attrs.string(
             default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
