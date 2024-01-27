@@ -18,7 +18,6 @@ rust_binary(
         "serde_json",
         "tempfile",
         "tracing",
-        "tracing-glog",
         "tracing-subscriber",
         "uuid",
         "walkdir",

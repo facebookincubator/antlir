@@ -313,10 +313,19 @@ _tar_zst = _new_compressed_package_rule(
 _ext3, _ext3_anon = _new_package_rule(
     format = "ext3",
     rule_attrs = {
+        "free_mb": attrs.int(
+            default = 0,
+            doc = "include at least this much free space in the image",
+        ),
         "label": attrs.option(attrs.string(), default = None),
-        "size_mb": attrs.int(),
+        "size_mb": attrs.option(
+            attrs.int(),
+            default = None,
+            doc = "absolute size of the image",
+        ),
     },
     can_be_partition = True,
+    sudo = True,
 )
 
 def _backwards_compatible_new(format: str, **kwargs):

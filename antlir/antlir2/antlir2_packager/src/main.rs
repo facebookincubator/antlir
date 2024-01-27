@@ -14,7 +14,6 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use json_arg::JsonFile;
-use tracing_subscriber::prelude::*;
 
 mod btrfs;
 mod cas_dir;
@@ -70,17 +69,8 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
 
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::Layer::default()
-                .event_format(
-                    tracing_glog::Glog::default()
-                        .with_span_context(true)
-                        .with_timer(tracing_glog::LocalTime::default()),
-                )
-                .fmt_fields(tracing_glog::GlogFields::default()),
-        )
-        .with(tracing_subscriber::EnvFilter::from_default_env())
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::TRACE)
         .init();
 
     match args.spec.into_inner() {
