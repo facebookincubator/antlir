@@ -1,0 +1,46 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+
+oncall("antlir")
+
+rust_library(
+    name = "antlir2_facts",
+    srcs = glob(["src/**/*.rs"]),
+    rustc_flags = [
+        # @oss-disable
+    ],
+    test_deps = [
+        "tempfile",
+        "tracing",
+        "tracing-test",
+    ],
+    deps = [
+        "serde",
+        "serde_json",
+        "thiserror",
+        # @oss-disable
+    ],
+)
+
+rust_binary(
+    name = "new-facts-db",
+    srcs = ["bin/new_facts_db.rs"],
+    crate_root = "bin/new_facts_db.rs",
+    test_deps = [
+        "libc",
+        "tempfile",
+        "tracing-test",
+    ],
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "jwalk",
+        "nix",
+        "tracing",
+        "tracing-subscriber",
+        ":antlir2_facts",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/antlir2/antlir2_users:antlir2_users",
+        # @oss-disable
+    ],
+)
