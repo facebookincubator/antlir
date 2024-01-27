@@ -6,7 +6,6 @@ oncall("antlir")
 rust_binary(
     name = "genrule_in_image",
     srcs = glob(["src/**/*.rs"]),
-    visibility = ["PUBLIC"],
     deps = [
         "anyhow",
         "clap",
