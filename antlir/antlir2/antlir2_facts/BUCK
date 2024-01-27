@@ -25,11 +25,6 @@ rust_binary(
     name = "new-facts-db",
     srcs = ["bin/new_facts_db.rs"],
     crate_root = "bin/new_facts_db.rs",
-    test_deps = [
-        "libc",
-        "tempfile",
-        "tracing-test",
-    ],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",

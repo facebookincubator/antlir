@@ -29,11 +29,20 @@ pub struct Database {
 
 impl Database {
     #[cfg(fbrocks)]
-    pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
+    pub fn open_readwrite<P>(path: P, options: rocksdb::Options) -> Result<Self>
     where
         P: AsRef<std::path::Path>,
     {
         let db = rocksdb::Db::open(path, options)?;
+        Ok(Self { db })
+    }
+
+    #[cfg(fbrocks)]
+    pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let db = rocksdb::Db::open_for_read_only(path, options, false)?;
         Ok(Self { db })
     }
 }
@@ -164,7 +173,7 @@ mod tests {
         fn open_test_db(name: &str) -> (Self, TempDir) {
             let tmpdir = TempDir::new().expect("failed to create tempdir");
             (
-                Self::open(
+                Self::open_readwrite(
                     tmpdir.path().join(name),
                     rocksdb::Options::new().create_if_missing(true),
                 )

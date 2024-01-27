@@ -1,0 +1,84 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "rust_unittest")
+
+oncall("antlir")
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = [
+            "coreutils",
+        ]),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/feature/foo",
+            group = "antlir",
+            user = "antlir",
+        ),
+        feature.ensure_dirs_exist(
+            dirs = "/feature/bar",
+            group = "antlir",
+            user = "antlir",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/feature/bar/baz",
+            group = "antlir",
+            user = "antlir",
+        ),
+        feature.ensure_file_symlink(
+            link = "/feature/bar/qux",
+            target = "/feature/bar/baz",
+        ),
+        feature.install_text(
+            dst = "/etc/passwd",
+            mode = "a+r,u+w",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/fakeshell",
+            mode = "a+rx",
+        ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            uid = 42,
+            username = "antlir",
+        ),
+        feature.group_add(
+            gid = 43,
+            groupname = "antlir",
+        ),
+        feature.genrule(
+            cmd = [
+                "ln",
+                "-s",
+                "target",
+                "/relative-symlink",
+            ],
+            user = "root",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+rust_unittest(
+    name = "test-db-contents",
+    srcs = ["test_db_contents.rs"],
+    env = {
+        "TEST_DB": "$(location :test-layer[debug][facts])",
+    },
+    deps = [
+        "tracing",
+        "tracing-test",
+        "//antlir/antlir2/antlir2_facts:antlir2_facts",
+    ],
+)
