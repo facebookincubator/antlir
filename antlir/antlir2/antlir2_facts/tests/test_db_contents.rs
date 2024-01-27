@@ -12,11 +12,11 @@ use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
-use antlir2_facts::Database;
+use antlir2_facts::RoDatabase;
 use tracing_test::traced_test;
 
-fn open_db() -> Database {
-    Database::open(
+fn open_db() -> RoDatabase {
+    RoDatabase::open(
         std::env::var_os("TEST_DB").expect("TEST_DB not set"),
         Default::default(),
     )

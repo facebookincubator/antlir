@@ -17,7 +17,7 @@ use antlir2_facts::fact::dir_entry::Symlink;
 use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
-use antlir2_facts::Database;
+use antlir2_facts::RwDatabase;
 use antlir2_isolate::sys::unshare;
 use antlir2_isolate::IsolationContext;
 use antlir2_users::group::EtcGroup;
@@ -44,7 +44,7 @@ struct Args {
     rootless: bool,
 }
 
-fn populate(db: &mut Database, root: &Path, build_appliance: &Path) -> Result<()> {
+fn populate(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Result<()> {
     let root = root.canonicalize().context("while canonicalizing root")?;
     populate_files(db, &root)?;
     populate_usergroups(db, &root)?;
@@ -52,7 +52,7 @@ fn populate(db: &mut Database, root: &Path, build_appliance: &Path) -> Result<()
     Ok(())
 }
 
-fn populate_files(db: &mut Database, root: &Path) -> Result<()> {
+fn populate_files(db: &mut RwDatabase, root: &Path) -> Result<()> {
     for entry in WalkDir::new(root) {
         let entry = entry?;
         let full_path = entry.path();
@@ -83,7 +83,7 @@ fn populate_files(db: &mut Database, root: &Path) -> Result<()> {
     Ok(())
 }
 
-fn populate_usergroups(db: &mut Database, root: &Path) -> Result<()> {
+fn populate_usergroups(db: &mut RwDatabase, root: &Path) -> Result<()> {
     let user_db: EtcPasswd = match std::fs::read_to_string(root.join("etc/passwd")) {
         Ok(contents) => contents.parse().context("while parsing /etc/passwd"),
         Err(e) => match e.kind() {
@@ -119,7 +119,7 @@ macro_rules! decode_rpm_field {
     }
 }
 
-fn populate_rpms(db: &mut Database, root: &Path, build_appliance: &Path) -> Result<()> {
+fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Result<()> {
     let isol = unshare(
         IsolationContext::builder(build_appliance)
             .ephemeral(false)
@@ -211,9 +211,8 @@ fn main() -> Result<()> {
             args.db.display()
         );
     }
-    let mut db =
-        Database::open_readwrite(&args.db, rocksdb::Options::new().create_if_missing(true))
-            .with_context(|| format!("while opening db {}", args.db.display()))?;
+    let mut db = RwDatabase::open(&args.db, rocksdb::Options::new().create_if_missing(true))
+        .with_context(|| format!("while opening db {}", args.db.display()))?;
 
     let uid = nix::unistd::Uid::effective().as_raw();
     let gid = nix::unistd::Gid::effective().as_raw();
