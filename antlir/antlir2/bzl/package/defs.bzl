@@ -256,6 +256,7 @@ _cpio_zst = _new_compressed_package_rule(
 _rpm, _rpm_anon = _new_package_rule(
     rule_attrs = {
         "arch": attrs.string(),
+        "changelog": attrs.option(attrs.string(), default = None),
         "conflicts": attrs.list(attrs.string(), default = []),
         "description": attrs.option(attrs.string(), default = None),
         "epoch": attrs.int(default = 0),

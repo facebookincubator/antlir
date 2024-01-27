@@ -6,9 +6,15 @@ oncall("antlir")
 
 image.layer(
     name = "test-layer",
+    dnf_additional_repos = [
+        "//antlir/antlir2/features/rpm/tests/repo:test-repo",
+    ],
     features = [
         feature.rpms_install(rpms = [
             "coreutils",
+            "foobar",
+            "foo-epoch",
+            "antlir2-changelog",
         ]),
         feature.install(
             src = "//antlir:empty",
