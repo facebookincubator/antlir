@@ -28,6 +28,7 @@ load("//antlir/bzl:types.bzl", "types")
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
+load(":facts.bzl", "facts")
 load(":mounts.bzl", "all_mounts", "container_mount_args")
 
 def _map_image(
@@ -211,6 +212,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     parent_depgraph = ctx.attrs.parent_layer[LayerInfo].depgraph if ctx.attrs.parent_layer else None
     final_subvol = None
     final_depgraph = None
+    final_facts_db = None
     debug_sub_targets = {}
 
     # Dirty hack to provide pre-computed dnf repos to multiple phases that
@@ -391,6 +393,14 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             rootless = ctx.attrs._rootless,
         )
 
+        final_facts_db = facts.new_facts_db(
+            actions = ctx.actions,
+            subvol_symlink = final_subvol,
+            new_facts_db = ctx.attrs._new_facts_db[RunInfo],
+            phase = phase,
+            rootless = ctx.attrs._rootless,
+        )
+
         build_script = ctx.actions.write(
             "{}_build.sh".format(identifier_prefix),
             cmd_args(
@@ -418,6 +428,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
                 sub_targets = {
                     "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
                     "container": _container_sub_target(ctx.attrs._run_container, final_subvol, mounts = phase_mounts),
+                    "facts": [DefaultInfo(final_facts_db)],
                     "features": [DefaultInfo(features_json_artifact)],
                     "logs": [DefaultInfo(all_logs, sub_targets = {
                         key: [DefaultInfo(artifact)]
@@ -447,8 +458,18 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             subvol = final_subvol,
             rootless = ctx.attrs._rootless,
         )
+    if not final_facts_db:
+        final_facts_db = facts.new_facts_db(
+            actions = ctx.actions,
+            subvol_symlink = final_subvol,
+            new_facts_db = ctx.attrs._new_facts_db[RunInfo],
+            phase = None,
+            rootless = False,
+        )
 
     debug_sub_targets["depgraph"] = [DefaultInfo(final_depgraph)]
+
+    debug_sub_targets["facts"] = [DefaultInfo(final_facts_db)]
 
     sub_targets["subvol_symlink"] = [DefaultInfo(final_subvol)]
 
@@ -463,6 +484,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         LayerInfo(
             build_appliance = build_appliance,
             depgraph = final_depgraph,
+            facts_db = final_facts_db,
             flavor = flavor,
             flavor_info = flavor_info,
             label = ctx.label,
@@ -548,6 +570,7 @@ _layer_attrs = {
         attrs.exec_dep(providers = [ExternalRunnerTestInfo]),
         default = None,
     ),
+    "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
     "_run_container": attrs.option(attrs.exec_dep(), default = None),
     "_selected_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
