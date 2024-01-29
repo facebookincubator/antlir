@@ -5,6 +5,7 @@
 
 
 import importlib.resources
+import subprocess
 import unittest
 
 
@@ -36,3 +37,10 @@ class Test(unittest.TestCase):
     def test_empty(self) -> None:
         with importlib.resources.path(__package__, "empty.ext3") as path:
             self.assertLess(path.stat().st_size, 2 * 1024 * 1024)
+
+    def test_contents(self) -> None:
+        with importlib.resources.path(__package__, "default.ext3") as path:
+            proc = subprocess.run(
+                ["strings", path], check=True, text=True, capture_output=True
+            )
+            self.assertIn("antlir2-large-file", proc.stdout)

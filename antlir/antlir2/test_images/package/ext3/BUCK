@@ -8,7 +8,7 @@ oncall("antlir")
 buck_genrule(
     name = "large-file",
     out = "f",
-    cmd = "yes | head -c 256M > $OUT",
+    cmd = "yes antlir2-large-file | head -c 256M > $OUT",
 )
 
 image.layer(
@@ -24,7 +24,6 @@ image.layer(
             mode = 0o000,  # make sure only root can read it
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 package.ext3(
@@ -47,7 +46,6 @@ package.ext3(
 image.layer(
     name = "empty",
     features = [],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 package.ext3(
