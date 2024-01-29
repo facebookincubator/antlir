@@ -16,7 +16,7 @@ def _new_facts_db(
         *,
         actions: AnalysisActions,
         subvol_symlink: Artifact,
-        build_appliance: LayerInfo,
+        build_appliance: LayerInfo | Provider,
         new_facts_db: RunInfo,
         phase: BuildPhase | None,
         rootless: bool) -> Artifact:
