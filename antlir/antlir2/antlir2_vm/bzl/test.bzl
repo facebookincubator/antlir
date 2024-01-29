@@ -18,7 +18,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         if label not in HIDE_TEST_LABELS
     ]
 
-    # Extend tpx timeout to 100 minutes if we exceed the default 10 min
+    # Extend tpx timeout to 100 minutes if we exceed the default 10 min plus buffer
     # @oss-disable
         # @oss-disable
 
