@@ -12,18 +12,33 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serde::Deserialize;
 use serde::Serialize;
+use typed_builder::TypedBuilder;
 
 use super::Fact;
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, TypedBuilder)]
 pub struct Rpm<'a> {
+    #[builder(setter(into))]
     name: Cow<'a, str>,
     #[serde(default, skip_serializing_if = "skip_epoch")]
+    #[builder(default)]
     epoch: u64,
+    #[builder(setter(into))]
     version: Cow<'a, str>,
+    #[builder(setter(into))]
     release: Cow<'a, str>,
+    #[builder(setter(into))]
     arch: Cow<'a, str>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
     changelog: Option<Cow<'a, str>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[builder(default)]
+    os: Option<Cow<'a, str>>,
+    #[builder(default)]
+    size: u64,
+    #[builder(setter(into))]
+    source_rpm: Cow<'a, str>,
 }
 
 fn skip_epoch(epoch: &u64) -> bool {
@@ -45,31 +60,6 @@ static CVE_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\bCVE-[0-9]{4}-[0-9]+\b").expect("valid regex"));
 
 impl<'a> Rpm<'a> {
-    pub fn new<N, V, R, A, C>(
-        name: N,
-        epoch: u64,
-        version: V,
-        release: R,
-        arch: A,
-        changelog: Option<C>,
-    ) -> Self
-    where
-        N: Into<Cow<'a, str>>,
-        V: Into<Cow<'a, str>>,
-        R: Into<Cow<'a, str>>,
-        A: Into<Cow<'a, str>>,
-        C: Into<Cow<'a, str>>,
-    {
-        Self {
-            name: name.into(),
-            epoch,
-            version: version.into(),
-            release: release.into(),
-            arch: arch.into(),
-            changelog: changelog.map(|c| c.into()),
-        }
-    }
-
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -106,6 +96,18 @@ impl<'a> Rpm<'a> {
                 .collect()
         })
     }
+
+    pub fn os(&self) -> Option<&str> {
+        self.os.as_deref()
+    }
+
+    pub fn size(&self) -> u64 {
+        self.size
+    }
+
+    pub fn source_rpm(&self) -> &str {
+        &self.source_rpm
+    }
 }
 
 impl<'a> std::fmt::Display for Rpm<'a> {
@@ -131,7 +133,14 @@ mod tests {
 
     #[test]
     fn cve_extraction() {
-        let rpm = Rpm::new("foo", 0, "1.2.3", "4", "x86_64", Some("- CVE-2024-1234"));
+        let rpm = Rpm::builder()
+            .name("foo")
+            .version("1.2.3")
+            .release("4")
+            .arch("x86_64")
+            .changelog(Some("- CVE-2024-1234".into()))
+            .source_rpm("foo.src.rpm")
+            .build();
         assert_eq!(rpm.patched_cves(), BTreeSet::from(["CVE-2024-1234"]));
     }
 }

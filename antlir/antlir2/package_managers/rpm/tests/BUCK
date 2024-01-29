@@ -1,0 +1,28 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/package_managers/rpm:rpm_manifest.bzl", "rpm_manifest")
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
+
+oncall("antlir")
+
+image.layer(
+    name = "rpm-manifest-layer",
+    dnf_additional_repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
+    features = [
+        feature.rpms_install(rpms = ["foobarbaz"]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+rpm_manifest(
+    name = "rpm-manifest",
+    layer = ":rpm-manifest-layer",
+)
+
+python_unittest(
+    name = "test-rpm-manifest",
+    srcs = ["test_rpm_manifest.py"],
+    resources = {
+        ":rpm-manifest": "manifest.json",
+    },
+)

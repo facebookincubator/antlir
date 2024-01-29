@@ -1,0 +1,17 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "rpm-manifest",
+    srcs = ["rpm_manifest.rs"],
+    crate_root = "rpm_manifest.rs",
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "serde",
+        "serde_json",
+        "//antlir/antlir2/antlir2_facts:antlir2_facts",
+    ],
+)
