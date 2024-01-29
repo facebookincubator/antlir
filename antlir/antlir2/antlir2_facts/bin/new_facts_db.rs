@@ -116,7 +116,16 @@ fn populate_usergroups(db: &mut RwDatabase, root: &Path) -> Result<()> {
 macro_rules! decode_rpm_field {
     ($id:ident) => {
         std::str::from_utf8($id).context(stringify!(while decoding $id))
-    }
+    };
+    ($id:ident, opt) => {
+        {
+            let s = std::str::from_utf8($id).context(stringify!(while decoding $id))?;
+            match s {
+                "(none)" => Ok::<_, anyhow::Error>(None),
+                _ => Ok(Some(s)),
+            }
+        }
+    };
 }
 
 fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Result<()> {
@@ -152,7 +161,7 @@ fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Re
         .arg("-qa")
         .arg("--queryformat")
         .arg(OsStr::from_bytes(
-            b"%{NAME}\xff%{EPOCH}\xff%{VERSION}\xff%{RELEASE}\xff%{ARCH}\xff%{CHANGELOGTEXT}\xff",
+            b"%{NAME}\xff%{EPOCH}\xff%{VERSION}\xff%{RELEASE}\xff%{ARCH}\xff%{CHANGELOGTEXT}\xff%{OS}\xff%{SIZE}\xff%{SOURCERPM}\xff",
         ))
         .output()
         .context("while querying installed rpms")?;
@@ -161,31 +170,37 @@ fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Re
         "rpm -qa failed: {}",
         String::from_utf8_lossy(&out.stderr)
     );
-    for (name, epoch, version, release, arch, changelog) in
+    for (name, epoch, version, release, arch, changelog, os, size, source_rpm) in
         out.stdout.split(|b| *b == 0xff).tuples()
     {
         let name = decode_rpm_field!(name)?;
-        let epoch = decode_rpm_field!(epoch)?;
+        let epoch = decode_rpm_field!(epoch, opt)?;
         let version = decode_rpm_field!(version)?;
         let release = decode_rpm_field!(release)?;
         let arch = decode_rpm_field!(arch)?;
-        let changelog = decode_rpm_field!(changelog)?;
-        let rpm = Rpm::new(
-            name,
-            match epoch {
-                "(none)" => 0,
-                e => e
+        let changelog = decode_rpm_field!(changelog, opt)?;
+        let os = decode_rpm_field!(os, opt)?;
+        let size = decode_rpm_field!(size)?;
+        let source_rpm = decode_rpm_field!(source_rpm)?;
+        let rpm = Rpm::builder()
+            .name(name)
+            .epoch(match epoch {
+                None => 0,
+                Some(e) => e
                     .parse()
                     .with_context(|| format!("while parsing epoch '{e}'"))?,
-            },
-            version,
-            release,
-            arch,
-            match changelog {
-                "(none)" => None,
-                c => Some(c),
-            },
-        );
+            })
+            .version(version)
+            .release(release)
+            .arch(arch)
+            .changelog(changelog.map(|s| s.into()))
+            .os(os.map(|s| s.into()))
+            .size(
+                size.parse()
+                    .with_context(|| format!("while parsing size '{size}'"))?,
+            )
+            .source_rpm(source_rpm)
+            .build();
         db.insert(&rpm)
             .with_context(|| format!("while inserting rpm '{rpm}'"))?;
     }
