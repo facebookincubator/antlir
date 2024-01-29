@@ -1,0 +1,22 @@
+load("//antlir/bzl:build_defs.bzl", "python_unittest")
+load(":defs.bzl", "outer")
+
+oncall("antlir")
+
+outer(
+    name = "defaults",
+)
+
+outer(
+    name = "override",
+    cpu = "foo",
+)
+
+python_unittest(
+    name = "tests",
+    srcs = ["tests.py"],
+    resources = {
+        ":defaults": "defaults",
+        ":override": "override",
+    },
+)
