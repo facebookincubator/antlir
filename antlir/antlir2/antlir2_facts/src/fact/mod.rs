@@ -10,6 +10,7 @@ use serde::Serialize;
 
 pub mod dir_entry;
 pub mod rpm;
+pub mod systemd;
 pub mod user;
 
 pub trait Fact<'a, 'de>: Serialize + Deserialize<'de> {

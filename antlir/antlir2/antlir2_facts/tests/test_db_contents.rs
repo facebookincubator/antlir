@@ -176,3 +176,16 @@ fn rpms() {
         Some("- Example changelog\n- CVE-2024-0101"),
     );
 }
+
+#[test]
+#[traced_test]
+fn systemd_unit_file() {
+    let db = open_db();
+
+    let ent = db
+        .get::<antlir2_systemd::UnitFile>("foo.service")
+        .expect("failed to get foo.service")
+        .expect("foo.service did not exist");
+    assert_eq!(ent.name(), "foo.service");
+    assert_eq!(ent.state(), antlir2_systemd::UnitFileState::Static);
+}
