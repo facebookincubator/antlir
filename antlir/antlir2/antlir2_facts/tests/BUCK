@@ -10,11 +10,13 @@ image.layer(
         "//antlir/antlir2/features/rpm/tests/repo:test-repo",
     ],
     features = [
+        ":user",
         feature.rpms_install(rpms = [
-            "coreutils",
             "foobar",
             "foo-epoch",
             "antlir2-changelog",
+            "coreutils",
+            "systemd",
         ]),
         feature.install(
             src = "//antlir:empty",
@@ -37,6 +39,28 @@ image.layer(
             link = "/feature/bar/qux",
             target = "/feature/bar/baz",
         ),
+        feature.genrule(
+            cmd = [
+                "ln",
+                "-s",
+                "target",
+                "/relative-symlink",
+            ],
+            user = "root",
+        ),
+        feature.install(
+            src = "foo.service",
+            dst = "/etc/systemd/system/foo.service",
+        ),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+# These features aren't that interesting, just some boilerplate to ensure that
+# the antlir user exists
+feature.new(
+    name = "user",
+    features = [
         feature.install_text(
             dst = "/etc/passwd",
             mode = "a+r,u+w",
@@ -63,17 +87,7 @@ image.layer(
             gid = 43,
             groupname = "antlir",
         ),
-        feature.genrule(
-            cmd = [
-                "ln",
-                "-s",
-                "target",
-                "/relative-symlink",
-            ],
-            user = "root",
-        ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 rust_unittest(
@@ -86,5 +100,6 @@ rust_unittest(
         "tracing",
         "tracing-test",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
+        "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
     ],
 )

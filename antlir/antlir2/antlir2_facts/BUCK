@@ -20,6 +20,7 @@ rust_library(
         "serde_json",
         "thiserror",
         "typed-builder",
+        "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
         # @oss-disable
     ],
 )
@@ -40,6 +41,7 @@ rust_binary(
         ":antlir2_facts",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+        "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
         "//antlir/antlir2/antlir2_users:antlir2_users",
         # @oss-disable
     ],

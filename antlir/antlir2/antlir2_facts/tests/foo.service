@@ -1,0 +1,6 @@
+[Unit]
+Description=foo service
+
+[Service]
+Type=oneshot
+ExecStart=true

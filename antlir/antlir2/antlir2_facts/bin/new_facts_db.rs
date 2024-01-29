@@ -204,6 +204,14 @@ fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Re
         db.insert(&rpm)
             .with_context(|| format!("while inserting rpm '{rpm}'"))?;
     }
+
+    for unit in
+        antlir2_systemd::list_unit_files(root).context("while listing systemd unit files")?
+    {
+        db.insert(&unit)
+            .with_context(|| format!("while inserting unit {unit:?}"))?;
+    }
+
     Ok(())
 }
 

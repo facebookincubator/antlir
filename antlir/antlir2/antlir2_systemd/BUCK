@@ -1,0 +1,75 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/testing:image_test.bzl", "image_rust_test")
+load("//antlir/bzl:build_defs.bzl", "rust_library")
+
+oncall("antlir")
+
+rust_library(
+    name = "antlir2_systemd",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "serde",
+        "serde_json",
+    ],
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        feature.rpms_install(rpms = ["systemd"]),
+        feature.layer_mount(
+            mountpoint = "/layer",
+            source = ":target-layer",
+        ),
+    ],
+)
+
+image.layer(
+    name = "target-layer",
+    features = [
+        feature.ensure_dirs_exist(dirs = "/etc/systemd/system"),
+        feature.install_text(
+            dst = "/etc/systemd/system/foo.service",
+            text = "[Unit]\nRequires=sysinit.target\n",
+        ),
+        feature.install_text(
+            dst = "/etc/systemd/system/bar@.service",
+            text = "\n",
+        ),
+        feature.ensure_file_symlink(
+            link = "/etc/systemd/system/bar@baz.service",
+            target = "/etc/systemd/system/bar@.service",
+        ),
+        feature.ensure_file_symlink(
+            link = "/etc/systemd/system/bar@qux.service",
+            target = "/etc/systemd/system/bar@.service",
+        ),
+        feature.install_text(
+            dst = "/etc/systemd/system/x.socket",
+            text = "\n",
+        ),
+        feature.install_text(
+            dst = "/etc/systemd/system/y.socket",
+            text = "\n",
+        ),
+        feature.ensure_dirs_exist(dirs = "/etc/systemd/system/default.target.wants"),
+        feature.ensure_file_symlink(
+            link = "/etc/systemd/system/default.target.wants/y.socket",
+            target = "/etc/systemd/system/y.socket",
+        ),
+    ],
+)
+
+image_rust_test(
+    name = "antlir2_systemd-image-unittest",
+    srcs = glob(["tests/**/*.rs"]),
+    crate_root = "tests/tests.rs",
+    layer = ":test-layer",
+    deps = [
+        "maplit",
+        "pretty_assertions",
+        ":antlir2_systemd",
+    ],
+)
