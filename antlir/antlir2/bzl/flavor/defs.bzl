@@ -14,6 +14,10 @@ _flavor_attrs = {
         attrs.string(),
         default = [],
     ),
+    "default_dnf_extra_repo_set": attrs.option(
+        attrs.dep(providers = [RepoSetInfo]),
+        default = None,
+    ),
     "default_dnf_repo_set": attrs.dep(providers = [RepoSetInfo]),
     "default_dnf_versionlock": attrs.option(
         attrs.source(),
@@ -28,6 +32,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             default_build_appliance = ctx.attrs.default_build_appliance,
             dnf_info = FlavorDnfInfo(
                 default_excluded_rpms = ctx.attrs.default_dnf_excluded_rpms,
+                default_extra_repo_set = ctx.attrs.default_dnf_extra_repo_set,
                 default_repo_set = ctx.attrs.default_dnf_repo_set,
                 default_versionlock = ctx.attrs.default_dnf_versionlock,
                 reflink_flavor = ctx.attrs.rpm_reflink_flavor,
@@ -59,6 +64,7 @@ def _child_flavor_impl(ctx: AnalysisContext) -> list[Provider]:
         default_build_appliance = _overridden_attr(ctx.attrs.default_build_appliance, parent.default_build_appliance),
         dnf_info = FlavorDnfInfo(
             default_excluded_rpms = _overridden_attr(ctx.attrs.default_dnf_excluded_rpms, parent.dnf_info.default_excluded_rpms),
+            default_extra_repo_set = _overridden_attr(ctx.attrs.default_dnf_extra_repo_set, parent.dnf_info.default_extra_repo_set),
             default_repo_set = _overridden_attr(ctx.attrs.default_dnf_repo_set, parent.dnf_info.default_repo_set),
             default_versionlock = _overridden_attr(ctx.attrs.default_dnf_versionlock, parent.dnf_info.default_versionlock),
             reflink_flavor = _overridden_attr(ctx.attrs.rpm_reflink_flavor, parent.dnf_info.reflink_flavor),
