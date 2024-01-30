@@ -21,7 +21,7 @@ def set_default_os_for_package(*, default_os: str):
     _write_package_value(_DEFAULT_OS_KEY, default_os, overwrite = True)
 
 def get_default_os_for_package() -> str:
-    return _read_package_value(_DEFAULT_OS_KEY)
+    return _read_package_value(_DEFAULT_OS_KEY) or "centos9"
 
 def all_images_in_package_use_default_os(yes: bool = True):
     _write_package_value(

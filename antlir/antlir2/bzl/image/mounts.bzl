@@ -20,7 +20,7 @@ def _mountpoint(mount: mount_record) -> str:
 def all_mounts(
         *,
         features: list[feature_record],
-        parent_layer: LayerInfo | None) -> list[mount_record]:
+        parent_layer: LayerInfo | Provider | None) -> list[mount_record]:
     """
     Find all the mounts that would need to be directly applied to this layer
     based on these features. This expands nested layer mounts so that they can
