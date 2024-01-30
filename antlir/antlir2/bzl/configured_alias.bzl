@@ -65,6 +65,7 @@ _configured_alias = rule(
     attrs = {
         "actual": attrs.transition_dep(cfg = _transition),
         "default_os": attrs.option(attrs.string(), default = None),
+        "labels": attrs.list(attrs.string(), default = []),
         "target_arch": attrs.option(
             attrs.enum(["x86_64", "aarch64"]),
             default = None,
