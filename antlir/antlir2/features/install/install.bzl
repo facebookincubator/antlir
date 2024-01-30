@@ -67,6 +67,12 @@ def install(
             "text": None,
             "user": user,
             "xattrs": xattrs,
+            "_binaries_require_repo": select({
+                "ovr_config//build_mode:dbg": True,
+                "ovr_config//build_mode:dbgo": False,
+                "ovr_config//build_mode:dev": True,
+                "ovr_config//build_mode:opt": False,
+            }),
         },
     )
 
@@ -134,7 +140,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             required_run_infos.append(src[RunInfo])
 
             # dev mode binaries don't get stripped, they just get symlinked
-            if ctx.attrs.split_debuginfo and (not REPO_CFG.artifacts_require_repo or ctx.attrs.never_use_dev_binary_symlink):
+            if ctx.attrs.split_debuginfo and (not ctx.attrs._binaries_require_repo or ctx.attrs.never_use_dev_binary_symlink):
                 split_anon_target = split_binary_anon(
                     ctx = ctx,
                     src = src,
@@ -150,7 +156,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 src = split_anon_target.artifact("src")
             else:
                 src = ensure_single_output(src)
-                if REPO_CFG.artifacts_require_repo:
+                if ctx.attrs._binaries_require_repo:
                     binary_info = binary_record(
                         dev = True,
                     )
@@ -212,6 +218,12 @@ install_rule = rule(
         "text": attrs.option(attrs.string(), default = None),
         "user": attrs.string(default = "root"),
         "xattrs": attrs.dict(attrs.string(), attrs.string(), default = {}),
+        "_binaries_require_repo": attrs.bool(
+            # TODO: when D53184737 lands and is used by all features, this
+            # default should be replaced with the select from above
+            default = REPO_CFG.artifacts_require_repo,
+            doc = "Binaries require the repo to run (so should be symlinks into the repo)",
+        ),
         "_objcopy": attrs.option(attrs.exec_dep(), default = None),
     },
 )
