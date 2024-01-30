@@ -7,6 +7,7 @@ load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
 RepoInfo = provider(fields = [
     "all_rpms",  # All RpmInfos contained in this repo
+    "logical_id",  # ID/Name of a Repo as in dnf.conf
     "base_url",  # Optional upstream URL that was used to populate this target
     "dnf_conf_json",  # JSON serialized dnf.conf KV for this repo
     "gpg_keys",  # Optional artifact against which signatures will be checked
@@ -104,6 +105,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         }),
         RepoInfo(
             id = repo_id,
+            logical_id = ctx.attrs.logical_id,
             repodata = repodata,
             gpg_keys = ctx.attrs.gpg_keys,
             offline = offline,
@@ -132,6 +134,7 @@ repo_attrs = {
     ),
     "dnf_conf": attrs.dict(attrs.string(), attrs.string(), default = {}),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
+    "logical_id": attrs.option(attrs.string(), doc = "repo name as in dnf.conf", default = None),
     "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),
     "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
