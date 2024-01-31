@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@bazel_skylib//lib:types.bzl", "types")
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
@@ -23,7 +24,6 @@ load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_al
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:types.bzl", "types")
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
@@ -116,6 +116,15 @@ def _impl(ctx: AnalysisContext) -> Promise:
 def _identifier_prefix(prefix: str) -> str:
     return prefix
 
+def _extra_repo_name_to_repo(repo_name: str, flavor_info: FlavorInfo) -> RepoInfo:
+    extra_repos = flavor_info.dnf_info.default_extra_repo_set[RepoSetInfo].repo_infos
+
+    for repo in extra_repos:
+        if repo.logical_id == repo_name:
+            return repo
+
+    fail("Unknown extra repo: {}. Possible choices are {}".format(repo_name, [repo.logical_id for repo in extra_repos]))
+
 def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -> list[Provider]:
     flavor = None
     if ctx.attrs.parent_layer and ctx.attrs.flavor:
@@ -167,18 +176,25 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     else:
         dnf_available_repos = list(flavor_info.dnf_info.default_repo_set[RepoSetInfo].repo_infos)
 
-    dnf_additional_repos = ctx.attrs.dnf_additional_repos + ctx.attrs._dnf_auto_additional_repos
-    dnf_additional_repos = dnf_additional_repos or []
+    dnf_additional_repos = ctx.attrs.dnf_additional_repos or []
+    if not types.is_list(dnf_additional_repos):
+        dnf_additional_repos = [dnf_additional_repos]
+
+    dnf_additional_repos = dnf_additional_repos + ctx.attrs._dnf_auto_additional_repos
 
     # TODO: In the next diff, stop doing this by default and only make extra repos available for images that actually need it
     if flavor_info != None and flavor_info.dnf_info.default_extra_repo_set != None:
         dnf_additional_repos.append(flavor_info.dnf_info.default_extra_repo_set)
 
     for repo in dnf_additional_repos:
-        if RepoSetInfo in repo:
+        if types.is_string(repo):
+            dnf_available_repos.append(_extra_repo_name_to_repo(repo, flavor_info))
+        elif RepoSetInfo in repo:
             dnf_available_repos.extend(repo[RepoSetInfo].repo_infos)
-        else:
+        elif RepoInfo in repo:
             dnf_available_repos.append(repo[RepoInfo])
+        else:
+            fail("Unknown type for repo {} in dnf_additional_repos: ".format(repo))
     dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
 
@@ -524,12 +540,13 @@ _layer_attrs = {
         default = None,
     ),
     "default_mountpoint": attrs.option(attrs.string(), default = None),
-    "dnf_additional_repos": attrs.list(
+    "dnf_additional_repos": attrs.option(
         attrs.one_of(
-            attrs.dep(providers = [RepoInfo]),
+            attrs.list(attrs.dep(providers = [RepoInfo])),
             attrs.dep(providers = [RepoSetInfo]),
+            attrs.list(attrs.string()),
         ),
-        default = [],
+        default = None,
         doc = """
             Make more dnf repos available while building this layer.
         """,
