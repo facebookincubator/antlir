@@ -50,6 +50,15 @@ impl Rootless {
         if let Some(i) = INSTANCE.get() {
             Ok(*i)
         } else {
+            // If this process is not root any sete*id calls will fail, but it
+            // doesn't matter since we can assume that we're already the correct
+            // user for this build environment.
+            if !Uid::effective().is_root() {
+                // SUDO_*ID env vars may have leaked from an outer `sudo`
+                // wrapper at some level so cannot be trusted
+                trace!("euid is not root, not checking SUDO_*ID env vars");
+                return Self::init_with_ids(None, None);
+            }
             let setuid = if let Ok(uid_str) = std::env::var("SUDO_UID") {
                 Some(Uid::from_raw(uid_str.parse()?))
             } else {
