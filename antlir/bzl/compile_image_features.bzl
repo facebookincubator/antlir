@@ -6,11 +6,11 @@
 # Implementation detail for `image/layer/layer.bzl`, see its docs.
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "is_buck2")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl/image/feature:new.bzl", "normalize_features", "private_feature_new")
-load(":constants.bzl", "BZL_CONST", "REPO_CFG", "version_set_override_name")
+load(":constants.bzl", "BZL_CONST", "REPO_CFG")
 load(":flavor_helpers.bzl", "flavor_helpers")
 load(":flavor_impl.bzl", "flavor_to_struct", "get_flavor_aliased_layer")
 load(":query.bzl", "layer_deps_query", "query")
@@ -37,25 +37,6 @@ def check_flavor(
 
 def vset_override_genrule(flavor_config, current_target):
     vset_override_name = None
-    if flavor_config and flavor_config.rpm_version_set_overrides:
-        vset_override_name = version_set_override_name(current_target)
-        buck_genrule(
-            name = vset_override_name,
-            antlir_rule = "user-internal",
-            bash = """
-cat > "$OUT" << 'EOF'
-{envra_file_contents}
-EOF
-            """.format(
-                envra_file_contents = "\n".join(["\t".join([
-                    nevra.epoch,
-                    nevra.name,
-                    nevra.version,
-                    nevra.release,
-                    nevra.arch,
-                ]) for nevra in flavor_config.rpm_version_set_overrides]),
-            ),
-        )
     return vset_override_name
 
 def compile_image_features_output(

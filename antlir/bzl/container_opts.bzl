@@ -6,19 +6,12 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:shape.bzl", "shape")
 load(":container_opts.shape.bzl", "container_opts_t")
-load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 
 def _new_container_opts_t(
-        # List of target or /__antlir__ paths, see `snapshot_install_dir` doc.
-        serve_rpm_snapshots = (),
         proxy_server_config = None,
         **kwargs):
     return container_opts_t(
-        serve_rpm_snapshots = [
-            snapshot_install_dir(s)
-            for s in serve_rpm_snapshots
-        ],
         proxy_server_config = proxy_server_config,
         **kwargs
     )

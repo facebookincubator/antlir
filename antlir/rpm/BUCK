@@ -135,32 +135,6 @@ python_library(
 )
 
 python_library(
-    name = "snapshot_repo",
-    srcs = ["snapshot_repo.py"],
-    deps = [
-        ":common_args",
-        ":gpg_keys",
-        ":repo_sizer",
-        ":repo_snapshot",
-        ":yum_dnf_conf",
-        "//antlir:common",
-        "//antlir:fs_utils",
-        "//antlir/rpm/downloader:common",
-        "//antlir/rpm/downloader:repo_downloader",
-        "//antlir/rpm/storage:storage",
-    ],
-)
-
-python_binary(
-    name = "snapshot-repo",
-    main_function = "antlir.rpm.snapshot_repo.main",
-    deps = [
-        ":snapshot_repo",
-        "//antlir/rpm/facebook:db_connection",
-    ],
-)
-
-python_library(
     name = "yum_dnf_conf",
     srcs = ["yum_dnf_conf.py"],
 )

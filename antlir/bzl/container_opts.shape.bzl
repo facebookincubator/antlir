@@ -22,7 +22,6 @@ container_opts_t = shape.shape(
     boot_await_dbus = shape.field(bool, default = True),
     boot_await_system_running = shape.field(bool, default = False),
     shadow_proxied_binaries = shape.field(bool, default = False),
-    serve_rpm_snapshots = shape.field(shape.list(shape.path), default = []),
     # See `--shadow-path` in `args.py`.
     shadow_paths = shape.field(
         shape.list(shadow_path_t),
