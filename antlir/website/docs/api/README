@@ -1,8 +1,0 @@
-This directory is for auto-generated documentation files that are parsed
-directly from the .bzl files in antlir/bzl
-
-The generation happens at docs site build time via `yarn build`.
-
-Non-generated files should be placed elsewhere, as the contents of this
-directory are ignored by default, so that generated docs do not have to be
-committed to source control.
