@@ -46,10 +46,28 @@ _is_rootless_select = select({
     "DEFAULT": False,
 })
 
+def _transition_impl(platform, refs, attrs):
+    constraints = platform.configuration.constraints
+    constraints = _transition(refs = refs, attrs = attrs, constraints = constraints)
+    return PlatformInfo(
+        label = platform.label,
+        configuration = ConfigurationInfo(
+            constraints = constraints,
+            values = platform.configuration.values,
+        ),
+    )
+
+_rule_cfg = transition(
+    impl = _transition_impl,
+    attrs = _attrs.keys(),
+    refs = _refs,
+)
+
 rootless_cfg = struct(
     refs = _refs,
     attrs = _attrs,
     transition = _transition,
     is_rootless_attr = attrs.default_only(attrs.bool(default = _is_rootless_select)),
     is_rootless_select = _is_rootless_select,
+    rule_cfg = _rule_cfg,
 )

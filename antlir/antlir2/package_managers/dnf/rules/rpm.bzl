@@ -136,7 +136,7 @@ rpm = rule(
         "arch": attrs.string(),
         "epoch": attrs.int(),
         "makechunk": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:makechunk")),
-        "reflink_flavors": attrs.dict(attrs.string(), attrs.dep(), default = REFLINK_FLAVORS),
+        "reflink_flavors": attrs.dict(attrs.string(), attrs.exec_dep(), default = REFLINK_FLAVORS),
         "release": attrs.string(),
         "rpm": attrs.option(attrs.source(), default = None),
         "rpm_name": attrs.string(),
