@@ -59,21 +59,11 @@ The reason for this is to avoid conflicts on .so files that were potentially alr
 exported by a parent layer which also includes an extract.extract feature.
 """
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
 load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:image.bzl", "image")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
-load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
-
-def _buck_binary_tmp_dst(real_dst):
-    if paths.is_absolute(real_dst):
-        real_dst = paths.normalize(real_dst)[1:]
-    return paths.join("/buck-binaries", real_dst.replace("/", "_"))
 
 def _extract(
         # The layer from which to extract the binary and deps
@@ -105,93 +95,14 @@ def _extract(
             fn = antlir2_shim.fake_buck1_feature,
             name = name,
         ),
-    ) == "upgrade":
-        return normalize_target(":" + name)
-
-    base_extract_layer = "image-extract-setup--{}".format(name)
-    image.layer(
-        name = base_extract_layer,
-        features = [
-            feature.ensure_dirs_exist("/output"),
-            feature.install_buck_runnable(
-                "//antlir/bzl/genrule/extractor:extract",
-                "/extract",
-                runs_in_build_steps_causes_slow_rebuilds = True,
-            ),
-        ],
-        parent_layer = source,
-        visibility = [],
-        antlir2 = "extract",
-    )
-    extract_parent_layer = ":" + base_extract_layer
-
-    binaries_args = []
-    for binary in binaries:
-        binaries_args.extend([
-            "--binary",
-            binary,
-        ])
-
-    work_layer = "image-extract-work--{}".format(name)
-    output_dir = "/output"
-    image.genrule_layer(
-        name = work_layer,
-        antlir_rule = "user-internal",
-        cmd = [
-            "/extract",
-            "--src-dir",
-            "/",
-            "--dst-dir",
-            dest,
-            "--output-dir",
-            output_dir,
-            "--target",
-            normalized_source,
-        ] + binaries_args,
-        parent_layer = extract_parent_layer,
-        rule_type = "extract",
-        user = "root",
-        antlir2 = "extract",
-    )
-
-    private_do_not_use_feature_json_genrule(
-        name = name,
-        output_feature_cmd = """
-# locate source layer path
-binary_path=( $(exe //antlir:find-built-subvol) )
-layer_loc="$(location {work_layer})"
-source_layer_path=\\$( "${{binary_path[@]}}" "$layer_loc" )
-cp "${{source_layer_path}}{output_dir}/feature.json" "$OUT"
-        """.format(
-            output_dir = output_dir,
-            work_layer = ":" + work_layer,
-        ),
-        visibility = [],
-        deps = ["//antlir/bzl/genrule/extractor:extract"],
-    )
+    ) != "upgrade":
+        fail("antlir1 is dead")
 
     return normalize_target(":" + name)
-
-# Helper to create a layer to use as 'source' for 'extract.extract', that
-# already has dependencies likely to be required by the binaries being
-# extracted.
-# NOTE: parent_layer is currently not allowed, because extracting a buck-built
-# fbcode binary while using any parent_layer with the /usr/local/fbcode host
-# mount is broken due to protected paths causing image.clone to fail. If this
-# is needed in the future, it can be resolved then.
-def _source_layer(name, **kwargs):
-    if "parent_layer" in kwargs:
-        fail("not allowed here, see above comment", attr = "parent_layer")
-    image.layer(
-        name = name,
-        parent_layer = REPO_CFG.artifact["extractor.common_deps"],
-        **kwargs
-    )
 
 # Eventually this would (hopefully) be provided as a top-level
 # api within `//antlir/bzl:image.bzl`, so lets start namespacing
 # here.
 extract = struct(
     extract = _extract,
-    source_layer = _source_layer,
 )

@@ -3,15 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/antlir2/bzl/package:btrfs.bzl?v2_only", antlir2_BtrfsSubvol = "BtrfsSubvol", antlir2_btrfs = "btrfs")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
-load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 load(":btrfs.shape.bzl", "btrfs_opts_t", "btrfs_subvol_t")
 
 def _new_btrfs_subvol(**kwargs):
@@ -47,61 +42,6 @@ _btrfs_opts_api = struct(
     subvol = _btrfs_subvol_api,
     t = btrfs_opts_t,
 )
-
-def _new_btrfs(
-        name,
-        # Opts are required
-        opts,
-        # Buck `labels` to add to the resulting target; aka `tags` in fbcode.
-        labels = None,
-        visibility = None,
-        antlir_rule = "user-facing"):
-    visibility = visibility or []
-
-    if not opts:
-        fail("`opts` is required for btrfs.new")
-
-    # For queries
-    _rule_type = "image-package-btrfs"
-
-    # All the layers being built
-    layers = []
-    for subvol_name, subvol in opts.subvols.items():
-        if not subvol_name.startswith("/"):
-            fail("Requested subvol names must be absolute paths: " + subvol_name)
-
-        layers.append(subvol.layer)
-
-    buck_genrule(
-        name = name,
-        out = "image.btrfs",
-        type = _rule_type,
-        bash = wrap_bash_build_in_common_boilerplate(
-            bash = '''
-            # Create the file as the build user first
-            touch "$OUT"
-            # Packaging currently requires root but to avoid
-            # sprinkling sudo calls through out we just run the
-            # entire packaging engine as root.  This makes it
-            # less fragile for future improvements when we can
-            # run this in a user namespace or container to avoid
-            # root execution on the build host.
-            sudo PYTHONDONTWRITEBYTECODE=1 \
-            unshare --mount --pid --fork \
-                $(exe {package_btrfs}) \
-                    --subvolumes-dir "$SUBVOLUMES_DIR" \
-                    --output-path "$OUT" \
-                    --opts {quoted_opts_json}
-            '''.format(
-                package_btrfs = antlir_dep("package:btrfs"),
-                quoted_opts_json = shell.quote(shape.do_not_cache_me_json(opts)),
-            ),
-            target_name = name,
-        ),
-        visibility = visibility,
-        labels = ["uses_sudo"] + (labels or []),
-        antlir_rule = antlir_rule,
-    )
 
 def _new_btrfs_shim(
         name,
@@ -141,10 +81,8 @@ def _new_btrfs_shim(
             name = name,
         ),
         **opts_kwargs
-    ) == "upgrade":
-        return
-
-    _new_btrfs(name, opts, labels, visibility, antlir_rule)
+    ) != "upgrade":
+        fail("antlir1 is dead")
 
 btrfs = struct(
     new = _new_btrfs_shim,

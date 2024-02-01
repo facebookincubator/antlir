@@ -3,12 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule")
-load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
+load("//antlir/bzl:build_defs.bzl", "alias")
 load(":antlir2_shim.bzl", "antlir2_shim")
-load(":constants.bzl", "BZL_CONST")
-load(":dummy_rule.bzl", "dummy_rule")
-load(":image_layer_runtime.bzl", "add_runtime_targets")
 
 """
 USE WITH CARE -- this was added to aid in implementing `released_layer`.
@@ -48,39 +44,5 @@ def image_layer_alias(name, layer, runtime = None, visibility = None, antlir2 = 
             name = name,
         ),
         visibility = visibility,
-    ) == "upgrade":
-        return
-
-    # IMPORTANT: If you touch this genrule, update `_image_layer_impl`.
-    buck_genrule(
-        name = name,
-        # This should definitely not count towards CI dependency distance
-        # between sources & build nodes.
-        antlir_rule = "user-internal",
-        # Caveats:
-        #   - This will break if some clever person adds dotfiles.
-        #     In that case, check out bash's `GLOBIGNORE` and `dotglob`.
-        bash = '''
-        set -ue -o pipefail
-        mkdir "$OUT"
-        for f in $(location {layer})/* ; do
-            ln "$f" "$OUT"/
-        done
-        '''.format(layer = layer),
-        cacheable = False,
-        type = "image_layer_alias",
-        visibility = visibility,
-    )
-
-    # Necessary because with the buck2 logic for passing flavors, child layers
-    # depend on their parent layer's feature.
-    #
-    # TODO: have layer alias feature collect flavor from `layer`
-    dummy_rule(
-        name = PRIVATE_DO_NOT_USE_feature_target_name(
-            name + BZL_CONST.layer_feature_suffix,
-        ),
-        visibility = ["PUBLIC"],
-    )
-
-    add_runtime_targets(name, runtime)
+    ) != "upgrade":
+        fail("antlir1 is dead")

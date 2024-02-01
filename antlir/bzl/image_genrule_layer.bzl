@@ -10,54 +10,6 @@ load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
 load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":antlir2_shim.bzl", "antlir2_shim")
-load(":compile_image_features.bzl", "compile_image_features")
-load(":container_opts.bzl", "normalize_container_opts")
-load(":flavor_impl.bzl", "flavor_to_struct")
-load(":genrule_layer.shape.bzl", "genrule_layer_t")
-load(":image_layer_utils.bzl", "image_layer_utils")
-load(":shape.bzl", "shape")
-load(":target_helpers.bzl", "normalize_target")
-load(":target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-
-def image_genrule_layer_helper(
-        name,
-        rule_type,
-        parent_layer,
-        flavor,
-        flavor_config_override,
-        container_opts,
-        features,
-        compile_image_features_fn,
-        image_layer_kwargs,
-        extra_deps = None):
-    flavor = flavor_to_struct(flavor)
-    if container_opts.internal_only_logs_tmpfs:
-        # The mountpoint directory would leak into the built images, and it
-        # doesn't even make sense for genrule layer construction.
-        fail("Genrule layers do not allow setting up a `/logs` tmpfs")
-
-    # This is not strictly needed since `image_layer_impl` lacks this kwarg.
-    if "features" in image_layer_kwargs:
-        fail("\"features\" are not supported in image.genrule_layer")
-
-    # Build a new layer. It may be empty.
-    _make_subvol_cmd, _deps_query = compile_image_features_fn(
-        name = name,
-        current_target = normalize_target(":" + name),
-        parent_layer = parent_layer,
-        features = features,
-        flavor = flavor,
-        flavor_config_override = flavor_config_override,
-        internal_only_is_genrule_layer = True,
-        extra_deps = extra_deps,
-    )
-    image_layer_utils.image_layer_impl(
-        _rule_type = "image_layer_genrule_" + rule_type,
-        _layer_name = name,
-        _make_subvol_cmd = _make_subvol_cmd,
-        _deps_query = _deps_query,
-        **image_layer_kwargs
-    )
 
 def image_genrule_layer(
         name,
@@ -134,45 +86,6 @@ Optional arguments:
             fn = antlir2_shim.fake_buck1_layer,
             name = name,
         ),
-    ) == "upgrade":
+    ) != "upgrade":
+        fail("antlir1 is dead")
         return
-
-    flavor = flavor_to_struct(flavor)
-    container_opts = normalize_container_opts(container_opts)
-
-    # This is not strictly needed since `image_layer_impl` lacks this kwarg.
-    target_tagger = new_target_tagger()
-    features = [target_tagger_to_feature(
-        target_tagger,
-        struct(genrule_layer = [
-            shape.as_target_tagged_dict(
-                target_tagger,
-                genrule_layer_t(
-                    cmd = cmd,
-                    user = user,
-                    container_opts = container_opts,
-                    bind_repo_ro = bind_repo_ro,
-                    boot = boot,
-                ),
-            ),
-        ]),
-        antlir2_feature = antlir2_feature.genrule(
-            cmd = cmd,
-            user = user,
-            mount_platform = antlir2_mount_platform,
-            bind_repo_ro = bind_repo_ro,
-            boot = boot,
-        ) if is_buck2() else None,
-    )]
-
-    image_genrule_layer_helper(
-        name,
-        rule_type,
-        parent_layer,
-        flavor,
-        flavor_config_override,
-        container_opts,
-        features,
-        compile_image_features,
-        image_layer_kwargs,
-    )

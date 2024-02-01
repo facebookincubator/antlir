@@ -8,16 +8,11 @@ The `package.new` rule serializes an `image_layer` target into one or more
 files, as described by the specified `format`.
 """
 
-load("@bazel_skylib//lib:shell.bzl", "shell")
 load("//antlir/antlir2/bzl/package:defs.bzl?v2_only", antlir2_package = "package")
 load("//antlir/bzl:antlir2_shim.bzl", "antlir2_shim")
-load("//antlir/bzl:bash.bzl", "wrap_bash_build_in_common_boilerplate")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "get_visibility")
-load("//antlir/bzl:loopback_opts.bzl", "normalize_loopback_opts")
-load("//antlir/bzl:query.bzl", "layer_deps_query")
+load("//antlir/bzl:build_defs.bzl", "get_visibility")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:structs.bzl", "structs")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "targets_and_outputs_arg_list")
 
 _IMAGE_PACKAGE = "image_package"
 
@@ -75,79 +70,6 @@ def package_new(
             name = name + ".antlir2",
         ),
         **opts_kwargs
-    ) == "upgrade":
+    ) != "upgrade":
+        fail("antlir1 is dead")
         return
-
-    loopback_opts = normalize_loopback_opts(loopback_opts)
-
-    buck_genrule(
-        name = name,
-        out = "layer." + format,
-        type = _IMAGE_PACKAGE,  # For queries
-        bash = wrap_bash_build_in_common_boilerplate(
-            # We don't need to hold any subvolume lock because we trust
-            # that (a) Buck will keep our input JSON alive, and (b) the
-            # existence of the JSON will keep the refcount above 1,
-            # preventing any concurrent image builds from
-            # garbage-collecting the subvolumes.
-            bash = '''
-            # NB: Using the `location` macro instead of `exe` would
-            # cause failures to rebuild on changes to `package-image` in
-            # `@mode/dev`, where the rule's "output" is just a symlink.
-            # On the other hand, `exe` does not expand to a single file,
-            # but rather to a shell snippet, so it's not always what one
-            # wants either.
-            $(exe {package_image}) \
-              --subvolumes-dir "$SUBVOLUMES_DIR" \
-              --layer-path $(query_outputs {layer}) \
-              --format {format} \
-              --output-path "$OUT" \
-              {targets_and_outputs} \
-              {maybe_loopback_opts} \
-              {maybe_subvol_name} \
-              {maybe_ba_tgt} \
-              {maybe_zstd_compression_level} \
-            '''.format(
-                format = format,
-                layer = layer,
-                # We build a list of targets -> outputs using the basic
-                # layer_deps_query to ensure that we can always find the
-                # build appliance that built the layer in the first place.
-                # This build appliance will be the one used to package the
-                # layer.
-                targets_and_outputs = " ".join(targets_and_outputs_arg_list(
-                    name = name,
-                    query = layer_deps_query(layer),
-                )),
-                maybe_loopback_opts = "--loopback-opts {}".format(
-                    shell.quote(shape.do_not_cache_me_json(loopback_opts)),
-                ) if loopback_opts else "",
-                maybe_subvol_name = "--subvol-name {}".format(
-                    shell.quote(subvol_name),
-                ) if subvol_name else "",
-                maybe_ba_tgt = "--ba-tgt {}".format(
-                    shell.quote(ba_tgt),
-                ) if ba_tgt else "",
-                maybe_zstd_compression_level = "--zstd-compression-level {}".format(
-                    zstd_compression_level,
-                ) if zstd_compression_level else "",
-                # Future: When adding support for incremental outputs,
-                # use something like this to obtain all the ancestors,
-                # so that the packager can verify that the specified
-                # base for the incremental computation is indeed an
-                # ancestor:
-                #     --ancestor-jsons $(query_outputs "attrfilter( \
-                #       type, image_layer, deps({layer}))")
-                # This could replace `--subvolume-json`, though also
-                # specifying it would make `get_subvolume_on_disk_stack`
-                # more efficient.
-                # NOTE: With the addition of `targets_and_outputs`
-                # we now have this ancestor history available.
-                package_image = antlir_dep(":package-image"),
-            ),
-            target_name = name,
-        ),
-        visibility = visibility,
-        labels = ["uses_sudo"] + (labels or []),
-        antlir_rule = antlir_rule,
-    )

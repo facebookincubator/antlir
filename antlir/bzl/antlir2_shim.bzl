@@ -4,54 +4,20 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:build_defs.bzl", "alias", "export_file")
-load(":antlir2_migration.bzl?v2_only", "antlir2_migration")
 load(":build_defs.bzl", "is_buck2", "python_unittest")
 load(":flavor.shape.bzl", "flavor_t")
-load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep")
 load(":types.bzl", "types")
 
 types.lint_noop(flavor_t)
 
-def _antlir2_setting_buck1(x):
-    return x
-
-# @lint-ignore BUCKLINT
-antlir2_setting = native.enum(
-    "yes",  # enable antlir2 shadow
-    "no",  # disable antlir2 without a recorded reason
-    "chef",  # disable antlir2 because chef is natively supported
-    "debuginfo",  # antlir2 natively supports this
-    "extract",  # native antlir2 feature
-    "rpmbuild",  # antlir2 does not allow rpm installation during a genrule
-    # user wants to explicitly alias a built layer instead of downloading it from fbpkg
-    "skip-fbpkg-indirection",
-    # tests are natively supported and do not require the same antlir1 indirections
-    "test",
-) if is_buck2() else _antlir2_setting_buck1
-
-def _should_shadow(antlir2: str | bool | None) -> bool:
-    if not is_buck2():
-        return False
-
-    if antlir2 == None and is_buck2():
-        package_mode = antlir2_migration.get_mode()
-        return package_mode == antlir2_migration.mode_t("shadow")
-
-    # otherwise, PACKAGE value takes a back-seat to the explicit 'antlir2' flag
-
-    if types.is_bool(antlir2):
-        antlir2 = antlir2_setting("yes" if antlir2 else "no")
-    else:
-        antlir2 = antlir2_setting(antlir2) if antlir2 else None
-
-    return antlir2 == antlir2_setting("yes")
+def _should_shadow(*args, **kwargs) -> bool:
+    return False
 
 def _should_upgrade() -> bool:
     if not is_buck2():
         return False
-    package_mode = antlir2_migration.get_mode()
-    return package_mode == antlir2_migration.mode_t("upgrade")
+    return True
 
 def _fake_buck1_layer(name):
     # export a target of the same name to make td happy
@@ -92,12 +58,6 @@ def _upgrade_or_shadow(
             antlir_rule = "user-internal",
         )
         return "upgrade"
-    if _should_shadow(antlir2 = antlir2):
-        fn(name = name + ".antlir2", **kwargs)
-        if not is_buck2():
-            fake = structs.to_dict(fake_buck1)
-            fake_fn = fake.pop("fn")
-            fake_fn(**fake)
     return None
 
 def _upgrade_or_shadow_feature(
@@ -109,8 +69,6 @@ def _upgrade_or_shadow_feature(
     if _should_upgrade():
         fn(name = name, **kwargs)
         return "upgrade"
-    if _should_shadow(antlir2 = antlir2):
-        fn(name = name, **kwargs)
     return None
 
 def _getattr_buck2(val, attr):

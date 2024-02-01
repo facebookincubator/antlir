@@ -6,9 +6,6 @@
 load("@bazel_skylib//lib:new_sets.bzl", "sets")
 load("//antlir/antlir2/testing:image_rpms_test.bzl?v2_only", antlir2_rpm_names_test = "image_test_rpm_names")
 load(":antlir2_shim.bzl", "antlir2_shim")
-load(":build_defs.bzl", "buck_genrule")
-load(":image_python_unittest.bzl", "image_python_unittest")
-load(":maybe_export_file.bzl", "maybe_export_file")
 
 def _str_set(s):
     return sets.make([s[i] for i in range(len(s))])
@@ -45,42 +42,5 @@ def image_test_rpm_names(
             name = name,
             test = "sh",
         ),
-    ) == "upgrade":
-        return
-
-    fn_name = name.replace(".", "_")  # Future: if we must allow dashes, replace them here.
-    if not fn_name.startswith("test_") or not sets.is_subset(
-        _str_set(fn_name),
-        _VALID_PYTHON_IDENTIFIER,
-    ):
-        fail(
-            "Must be a valid Python identifier starting 'with `test_`",
-            "name",
-        )
-
-    py_name = fn_name + ".py"
-    buck_genrule(
-        name = py_name,
-        bash = """\
-cat > "$OUT" <<'A Hilariously Unlikely Yet Cheeky Sigil'
-import unittest
-
-from antlir.bzl.tests.check_rpm_names import check_rpm_names
-
-class TestRpmNames(unittest.TestCase):
-    def {fn_name}(self):
-        check_rpm_names(self, __package__, 'expected_rpm_names')
-A Hilariously Unlikely Yet Cheeky Sigil
-""".format(fn_name = fn_name),
-        antlir_rule = "user-internal",
-    )
-
-    image_python_unittest(
-        name = name,
-        layer = layer,
-        srcs = {":" + py_name: py_name},
-        resources = {maybe_export_file(rpm_list): "expected_rpm_names"},
-        deps = ["//antlir/bzl/tests:check_rpm_names"],
-        flavor = flavor,
-        antlir2 = False,
-    )
+    ) != "upgrade":
+        fail("antlir1 is dead")
