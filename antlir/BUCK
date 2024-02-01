@@ -512,21 +512,6 @@ python_binary(
     ],
 )
 
-python_binary(
-    name = "rpm-manifest",
-    srcs = ["rpm_manifest.py"],
-    main_function = "antlir.rpm_manifest.main",
-    visibility = ["PUBLIC"],
-    deps = [
-        ":common",
-        ":find_built_subvol",
-        ":fs_utils",
-        ":subvol_utils",
-        "//antlir/nspawn_in_subvol:args",
-        "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
 python_library(
     name = "testlib_flavor_helpers",
     srcs = ["tests/flavor_helpers.py"],
