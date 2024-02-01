@@ -93,12 +93,7 @@ load("//antlir/antlir2/bzl:compat.bzl?v2_only", "compat")
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
 load(":antlir2_shim.bzl", "antlir2_shim")
 load(":build_defs.bzl", "get_visibility", "is_buck2")
-load(":compile_image_features.bzl", "compile_image_features")
 load(":flavor.shape.bzl", "flavor_t")
-load(":flavor_helpers.bzl", "flavor_helpers")
-load(":flavor_impl.bzl", "flavor_to_struct")
-load(":image_layer_utils.bzl", "image_layer_utils")
-load(":target_helpers.bzl", "normalize_target")
 load(":types.bzl", "types")
 
 _OPTIONAL_LABEL_T = types.optional(types.label)
@@ -162,28 +157,6 @@ def image_layer(
             fn = antlir2_shim.fake_buck1_layer,
             name = name,
         ),
-    ) == "upgrade":
+    ) != "upgrade":
+        fail("antlir1 is dead")
         return
-
-    flavor = flavor_to_struct(flavor)
-    if not flavor and parent_layer:
-        flavor = flavor_helpers.maybe_get_tgt_flavor(parent_layer)
-
-    # Build a new layer. It may be empty.
-    _make_subvol_cmd, _deps_query = compile_image_features(
-        name = name,
-        current_target = normalize_target(":" + name),
-        parent_layer = parent_layer,
-        features = (features or []) + antlir1_features,
-        extra_deps = extra_deps,
-        flavor = flavor,
-        flavor_config_override = flavor_config_override,
-    )
-    image_layer_utils.image_layer_impl(
-        _rule_type = "image_layer",
-        _layer_name = name,
-        _make_subvol_cmd = _make_subvol_cmd,
-        _deps_query = _deps_query,
-        antlir_rule = types.antlir_rule(antlir_rule) if types.is_string(antlir_rule) else antlir_rule,
-        **image_layer_kwargs
-    )

@@ -11,11 +11,9 @@ load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
 load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 load("//antlir/bzl/image/feature:new.bzl", "PRIVATE_DO_NOT_USE_feature_target_name")
 load(":antlir2_shim.bzl", "antlir2_shim")
-load(":compile_image_features.bzl", "compile_image_features")
 load(":constants.bzl", "use_rc_target")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":image_layer_alias.bzl", "image_layer_alias")
-load(":image_layer_utils.bzl", "image_layer_utils")
 load(":target_helpers.bzl", "normalize_target")
 load(":target_tagger.bzl", "extract_tagged_target", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
 load(":target_tagger.shape.bzl", "target_tagged_image_source_t")
@@ -28,7 +26,6 @@ def image_layer_from_package_helper(
         antlir_rule,
         rc_layer,
         features,
-        compile_image_features_fn,
         image_layer_kwargs,
         antlir2_src):
     flavor = flavor_to_struct(flavor)
@@ -55,63 +52,19 @@ def image_layer_from_package_helper(
         fail("{}'s rc build was requested but `rc_layer` is unset!".format(target))
 
     if use_rc_target(target = target) and rc_layer != None:
-        if antlir2_upgrade:
-            alias(
-                name = name,
-                antlir_rule = "user-internal",
-                layer = rc_layer,
-                visibility = get_visibility(image_layer_kwargs.get("visibility")),
-            )
-        else:
-            image_layer_alias(
-                name = name,
-                layer = rc_layer,
-                antlir2 = antlir2,
-            )
-            if antlir2:
-                alias(
-                    name = name + ".antlir2",
-                    antlir_rule = "user-internal",
-                    layer = rc_layer + ".antlir2",
-                    visibility = get_visibility(image_layer_kwargs.get("visibility")),
-                )
-    else:
-        _make_subvol_cmd, _deps_query = compile_image_features_fn(
+        alias(
             name = name,
-            current_target = normalize_target(":" + name),
-            features = features,
-            flavor = flavor,
-            flavor_config_override = flavor_config_override,
-            parent_layer = None,
+            antlir_rule = "user-internal",
+            layer = rc_layer,
+            visibility = get_visibility(image_layer_kwargs.get("visibility")),
         )
-
-        if antlir2_upgrade:
-            antlir2_image.prebuilt(
-                name = name,
-                src = antlir2_src,
-                flavor = antlir2_compat.from_antlir1_flavor(flavor),
-                format = format,
-                visibility = get_visibility(image_layer_kwargs.get("visibility")),
-            )
-            return
-        elif antlir2:
-            if is_buck2():
-                antlir2_image.prebuilt(
-                    name = name + ".antlir2",
-                    src = antlir2_src,
-                    flavor = antlir2_compat.from_antlir1_flavor(flavor),
-                    format = format,
-                    visibility = get_visibility(image_layer_kwargs.get("visibility")),
-                )
-            else:
-                antlir2_shim.fake_buck1_target(name + ".antlir2")
-        image_layer_utils.image_layer_impl(
-            _rule_type = "image_layer_from_package",
-            _layer_name = name,
-            _make_subvol_cmd = _make_subvol_cmd,
-            _deps_query = _deps_query,
-            antlir_rule = antlir_rule,
-            **image_layer_kwargs
+    else:
+        antlir2_image.prebuilt(
+            name = name,
+            src = antlir2_src,
+            flavor = antlir2_compat.from_antlir1_flavor(flavor),
+            format = format,
+            visibility = get_visibility(image_layer_kwargs.get("visibility")),
         )
 
 # See the `_image_layer_impl` signature (in `image_layer_utils.bzl`) for all
@@ -179,7 +132,6 @@ def image_layer_from_package(
         antlir_rule,
         rc_layer,
         features,
-        compile_image_features,
         image_layer_kwargs,
         antlir2_src = buck2_src,
     )
