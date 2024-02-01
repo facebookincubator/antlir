@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library", "third_party")
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "third_party")
 
 oncall("antlir")
 
@@ -161,10 +161,6 @@ python_binary(
         "//antlir:fs_utils",
         "//antlir/nspawn_in_subvol/plugins:shadow_paths",
     ],
-)
-
-export_file(
-    name = "tests/needs-carrot.spec",
 )
 
 python_library(
