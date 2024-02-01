@@ -80,14 +80,9 @@ load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@bazel_skylib//lib:shell.bzl", "shell")
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl/image/facebook:fbpkg_contents_layer.bzl?v2_only", antlir2_fbpkg_contents_layer = "fbpkg_contents_layer")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "is_buck2")
-load("//antlir/bzl/image/feature:new.bzl", "private_do_not_use_feature_json_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility")
 load("//bot_generated/antlir/fbpkg/db:defs.bzl", "snapshotted_fbpkg_target")
-load(":flavor_helpers.bzl", "flavor_helpers")
-load(":flavor_impl.bzl", "flavor_to_struct")
-load(":image_layer.bzl", "image_layer")
 load(":structs.bzl", "structs")
-load(":target_helpers.bzl", "antlir_dep", "normalize_target")
 
 _PackageFetcherInfo = provider(fields = [
     # This executable target downloads the package to $1 and
@@ -151,8 +146,6 @@ def fetched_package_layers_from_json_dir_db(
             tag = tag,
             db = package_db_dir.removesuffix("/"),
             name_suffix = layer_suffix,
-            print_how_to_fetch_json = print_how_to_fetch_json,
-            fetcher = fetcher,
             visibility = visibility,
         )
         if nondeterministic_fs_metadata_suffix != None:
@@ -189,109 +182,25 @@ def _fetched_package_layer(
         tag,
         db,
         name_suffix,
-        print_how_to_fetch_json,
-        fetcher,  # `_PackageInfoFetcher`
         visibility):
-    flavor = flavor_to_struct(flavor_helpers.get_antlir_linux_flavor())
     name = package + "/" + tag + name_suffix
     visibility = get_visibility(visibility)
 
-    fetched_pkg_target_name = name + "-fetched-package"
-    buck_genrule(
-        name = fetched_pkg_target_name,
-        out = "out",
-        # Uncacheable for the same reasons as _fetched_package_with_nondeterministic_fs_metadata
-        cacheable = False,
-        bash = """
-        set -ue -o pipefail
-        mkdir -p "$OUT"/pkg
-        printf "pkg/" > "$OUT"/fetched_pkg_name.txt
-        {print_how_to_fetch_json} |
-            $(exe {fetch_package}) {quoted_package} "$OUT"/pkg >> "$OUT"/fetched_pkg_name.txt
-        """.format(
-            fetch_package = fetcher.fetch_package,
-            print_how_to_fetch_json = print_how_to_fetch_json,
-            quoted_package = shell.quote(package),
+    antlir2_fbpkg_contents_layer(
+        name = name + ".antlir2",
+        default_mountpoint = "/packages/" + package,
+        default_os = "none",
+        fbpkg = snapshotted_fbpkg_target(
+            name = package,
+            tag = tag,
+            db = db,
         ),
-        antlir_rule = "user-internal",
-        labels = ["uses_fbpkg"],
-    )
-
-    package_feature = name + "-fetched-package-feature"
-    private_do_not_use_feature_json_genrule(
-        name = package_feature,
-        deps = [
-            ":" + fetched_pkg_target_name,
-        ],
-        output_feature_cmd = """
-        {print_how_to_fetch_json} |
-            $(exe {print_package_feature}) \
-                {quoted_package} {quoted_target} \
-                $(location {fetched_pkg_target}) \
-                {fetched_pkg_target} > "$OUT"
-        """.format(
-            print_package_feature = fetcher.print_package_feature,
-            quoted_package = shell.quote(package),
-            quoted_target = shell.quote(normalize_target(":" + name)),
-            print_how_to_fetch_json = print_how_to_fetch_json,
-            fetched_pkg_target = shell.quote(normalize_target(":" + fetched_pkg_target_name)),
-        ),
-        visibility = visibility,
-    )
-
-    if is_buck2():
-        antlir2_fbpkg_contents_layer(
-            name = name + ".antlir2",
-            default_mountpoint = "/packages/" + package,
-            default_os = "none",
-            fbpkg = snapshotted_fbpkg_target(
-                name = package,
-                tag = tag,
-                db = db,
-            ),
-            # Useful for queries on leaf image layers to determine the packages
-            # being fetched throughout the image layer stack
-            labels = [
-                "antlir_fetched_package__name={}".format(package),
-                "antlir_fetched_package__tag={}".format(tag),
-            ],
-        )
-    else:
-        # export a target of the same name to make td happy
-        export_file(
-            name = package_feature,
-            src = antlir_dep(":empty"),
-            antlir_rule = "user-internal",
-        )
-
-    mount_config = name + "-fetched-package-mount-config"
-    buck_genrule(
-        name = mount_config,
-        bash = '''
-        {print_how_to_fetch_json} |
-            $(exe {print_mount_config}) {quoted_package} {quoted_tag} > "$OUT"
-        '''.format(
-            print_mount_config = fetcher.print_mount_config,
-            quoted_package = shell.quote(package),
-            quoted_tag = shell.quote(tag),
-            print_how_to_fetch_json = print_how_to_fetch_json,
-        ),
-        antlir_rule = "user-internal",
-    )
-
-    image_layer(
-        name = name,
-        flavor = flavor,
-        features = [":" + package_feature],
-        mount_config = ":" + mount_config,
-        visibility = visibility,
         # Useful for queries on leaf image layers to determine the packages
         # being fetched throughout the image layer stack
         labels = [
             "antlir_fetched_package__name={}".format(package),
             "antlir_fetched_package__tag={}".format(tag),
         ],
-        antlir2 = False,
     )
 
 # Deliberately not usable stand-alone, use `fetched_package_layers_from_db`

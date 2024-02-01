@@ -12,7 +12,6 @@ load(":flavor.shape.bzl", "flavor_t")
 load(":image_layer.bzl", "image_layer")
 load(":image_layer_runtime.bzl", "container_target_name", "systemd_target_name")
 load(":query.bzl", "layer_deps_query")
-load(":snapshot_install_dir.bzl", "snapshot_install_dir")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "normalize_target", "targets_and_outputs_arg_list")
 load(":types.bzl", "types")
@@ -83,11 +82,6 @@ def _nspawn_wrapper_properties(
     # Future: we could potentially relax this since some odd applications
     # might want to just talk to the repo-server, and not install RPMs.
     if run_as_user != "root":
-        if container_opts.serve_rpm_snapshots:
-            fail(
-                'Needs `run_as_user = "root"` to install RPMs',
-                "container_opts.serve_rpm_snapshots",
-            )
         if container_opts.shadow_proxied_binaries:
             fail(
                 "All binaries now shadowed by `shadow_proxied_binaries` " +
@@ -106,7 +100,6 @@ def _nspawn_wrapper_properties(
             "boot_await_dbus",
             "boot_await_system_running",
             "internal_only_logs_tmpfs",
-            "serve_rpm_snapshots",
             "shadow_paths",
             "shadow_proxied_binaries",
             "proxy_server_config",
@@ -201,10 +194,6 @@ def nspawn_in_subvol_args():
         *[{maybe_hostname}],
         {maybe_logs_tmpfs}
         {maybe_no_shadow_proxied_binaries}
-        *[
-            '--serve-rpm-snapshot={{}}'.format(s)
-                for s in {serve_rpm_snapshots_repr}
-        ],
         *[{shadow_paths_repr}],
         *{targets_and_outputs},
         '--append-console',
@@ -240,10 +229,6 @@ mv $TMP/out "$OUT"
                 "'--bind-artifacts-dir-rw'," if container_opts.internal_only_bind_artifacts_dir_rw else ""
             ),
             pass_through_env_repr = repr(outer_test_kwargs.get("env", [])),
-            serve_rpm_snapshots_repr = repr([
-                snapshot_install_dir(s)
-                for s in container_opts.serve_rpm_snapshots
-            ]),
             shadow_paths_repr = ", ".join([
                 "'--shadow-paths', {}, {}".format(repr(sp.dst), repr(sp.src))
                 for sp in container_opts.shadow_paths

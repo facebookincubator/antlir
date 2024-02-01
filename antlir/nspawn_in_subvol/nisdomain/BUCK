@@ -1,18 +1,17 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "export_file")
-load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 oncall("antlir")
 
 image.layer(
     name = "setup",
+    default_os = "centos9",
     features = [
-        feature.rpms_install([
+        feature.rpms_install(rpms = [
             "hostname",
         ]),
     ],
-    parent_layer = flavor_helpers.get_build_appliance(),
 )
 
 # Rebuild this file with:
@@ -26,31 +25,3 @@ export_file(
     # All =container targets take a direct dep on this.
     visibility = ["PUBLIC"],
 )
-
-image.layer(
-    name = "test-layer",
-    features = [
-        feature.ensure_dirs_exist("/build"),
-        feature.install(
-            ":nis_domainname",
-            "/build/nis_domainname",
-            mode = "a+rx",
-        ),
-    ],
-    parent_layer = ":setup",
-)
-
-# Exercise both the "booted" and "unbooted" code paths, they differ slightly
-[
-    image.python_unittest(
-        name = "test-nis-domainname-" + ("booted" if boot else "unbooted"),
-        srcs = ["test_nis_domainname.py"],
-        boot = boot,
-        layer = ":test-layer",
-        run_as_user = "root",
-    )
-    for boot in [
-        False,
-        True,
-    ]
-]

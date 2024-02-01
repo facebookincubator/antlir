@@ -6,112 +6,13 @@
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
 load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
-load("//antlir/bzl:flavor_impl.bzl", "flavors_to_structs", "get_unaliased_flavors")
 load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
-load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:target_tagger.bzl", "image_source_as_target_tagged_t", "new_target_tagger", "tag_target", "target_tagger_to_feature")
-load("//antlir/bzl/image/feature:rpm_install_info_dummy_action_item.bzl", "RPM_INSTALL_INFO_DUMMY_ACTION_ITEM")
-load(":rpms.shape.bzl", "rpm_action_item_t")
+load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 
-def _rpm_name_or_source(name_source):
-    # Normal RPM names cannot have a colon, whereas target paths
-    # ALWAYS have a colon. `image.source` is a struct.
-    if not types.is_string(name_source) or ":" in name_source:
-        return "source"
-    else:
-        return "name"
-
-# It'd be a bit expensive to do any kind of validation of RPM
-# names at this point, since we'd need the repo snapshot to decide
-# whether the names are valid, and whether they contain a
-# version or release number.  That'll happen later in the build.
 def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feature, antlir1_i_know_what_im_doing_arch = None, subjects_src = None):
-    flavors = flavors_to_structs(flavors)
-    if rpmlist and subjects_src:
-        fail("incompatible parameters specified: `rpmlist` and `subjects_src`")
-
-    target_tagger = new_target_tagger()
-
-    res_rpms = []
-    if action == "install":
-        # We have a dummy rpm so that we consider empty lists when
-        # we check coverage of all flavors in a feature.
-        #
-        # ```
-        # feature.new(
-        #     name = "test",
-        #     features=[
-        #         feature.rpms_install([], flavors=["only-relevant-on-centos9"]),
-        #         feature.rpms_install([], flavors=["only-relevant-on-centos8"]),
-        #     ],
-        #     flavors = ["centos9", "centos8"],
-        # )
-        # ```
-        #
-        # should not throw an error.
-        res_rpms.append(
-            rpm_action_item_t(
-                name = RPM_INSTALL_INFO_DUMMY_ACTION_ITEM,
-                action = action,
-                flavor_to_version_set = {flavor.name: BZL_CONST.version_set_allow_all_versions for flavor in flavors},
-                antlir1_i_know_what_im_doing_arch = antlir1_i_know_what_im_doing_arch,
-            ),
-        )
-
-    for path in rpmlist:
-        source = None
-        name = None
-        vs_name = None
-        if _rpm_name_or_source(path) == "source":
-            source = image_source_as_target_tagged_t(target_tagger, path)
-        else:
-            name = path
-            if needs_version_set:
-                vs_name = name
-
-        flavor_to_version_set = {}
-        for flavor in flavors or get_unaliased_flavors(REPO_CFG.flavor_to_config.keys()):
-            vs_path_prefix = REPO_CFG.flavor_to_config[flavor.name].version_set_path
-
-            # We just add the version set for user given flavors, even
-            # if they are invalid. We will add them as dependencies in
-            # `_normalize_feature_and_get_deps` where we have information
-            # about the flavors that the layer needs.
-            if vs_path_prefix != BZL_CONST.version_set_allow_all_versions and vs_name:
-                flavor_to_version_set[flavor.name] = tag_target(
-                    target_tagger,
-                    vs_path_prefix + "/rpm:" + vs_name,
-                )
-            else:
-                flavor_to_version_set[flavor.name] = BZL_CONST.version_set_allow_all_versions
-
-        rpm_action_item = rpm_action_item_t(
-            action = action,
-            flavor_to_version_set = flavor_to_version_set,
-            source = source,
-            name = name,
-            antlir1_i_know_what_im_doing_arch = antlir1_i_know_what_im_doing_arch,
-        )
-        res_rpms.append(rpm_action_item)
-    if subjects_src:
-        res_rpms.append(rpm_action_item_t(
-            action = action,
-            flavor_to_version_set = {
-                flavor.name: BZL_CONST.version_set_allow_all_versions
-                for flavor in flavors or get_unaliased_flavors(REPO_CFG.flavor_to_config.keys())
-            },
-            source = None,
-            name = None,
-            antlir1_i_know_what_im_doing_arch = antlir1_i_know_what_im_doing_arch,
-            subjects_src = image_source_as_target_tagged_t(
-                target_tagger,
-                maybe_export_file(subjects_src),
-            ),
-        ))
     return target_tagger_to_feature(
-        target_tagger = target_tagger,
-        items = struct(rpms = res_rpms),
+        target_tagger = new_target_tagger(),
+        items = struct(rpms = []),
         antlir2_feature = antlir2_feature,
     )
 
