@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
@@ -27,47 +27,40 @@ pub struct Tar {
 
 impl PackageFormat for Tar {
     fn build(&self, out: &Path) -> Result<()> {
-        File::create(&out).context("failed to create output file")?;
-
-        let layer_abs_path = self
-            .layer
-            .canonicalize()
-            .context("failed to build absolute path to layer")?;
-
-        let output_abs_path = out
-            .canonicalize()
-            .context("failed to build abs path to output")?;
+        File::create(out).context("failed to create output file")?;
 
         let isol_context = IsolationContext::builder(&self.build_appliance)
-            .inputs([layer_abs_path.as_path()])
-            .outputs([output_abs_path.as_path()])
-            .working_directory(std::env::current_dir().context("while getting cwd")?)
+            .ephemeral(false)
+            .readonly()
+            .tmpfs(Path::new("/__antlir2__/out"))
+            .outputs(("/__antlir2__/out/tar", out))
+            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((
+                PathBuf::from("/__antlir2__/working_directory"),
+                std::env::current_dir()?,
+            ))
+            .working_directory(Path::new("/__antlir2__/working_directory"))
             .build();
 
-        // Sorted by name to ensure reproducibility, as well as predictable ordering when the tar
-        // is read as a byte stream. Some use cases require consumption of tar's contents with a
-        // known ordering, such as when the tar contains incremental btrfs snapshots.
-        let tar_script = format!(
-            "tar -c \
-                --sparse \
-                --one-file-system \
-                --acls \
-                --xattrs \
-                --sort=name \
-                --to-stdout \
-                -C \
-                {} \
-                . \
-                > {}",
-            layer_abs_path.display(),
-            output_abs_path.as_path().display(),
-        );
-
         run_cmd(
-            nspawn(isol_context)?
-                .command("/bin/bash")?
+            unshare(isol_context)?
+                .command("tar")?
+                .arg("--sparse")
+                .arg("--one-file-system")
+                .arg("--acls")
+                .arg("--xattrs")
+                // Sorted by name to ensure reproducibility, as well as
+                // predictable ordering when the tar is read as a byte stream.
+                // Some use cases require consumption of tar's contents with a
+                // known ordering, such as when the tar contains incremental
+                // btrfs snapshots that may be opportunistically skipped.
+                .arg("--sort=name")
+                .arg("-C")
+                .arg("/__antlir2__/root")
                 .arg("-c")
-                .arg(tar_script)
+                .arg("-f")
+                .arg("/__antlir2__/out/tar")
+                .arg(".")
                 .stdout(Stdio::piped()),
         )
         .context("Failed to build tar")?;
