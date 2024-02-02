@@ -87,14 +87,10 @@ def _extract(
         features = [
             antlir2_feature.extract_from_layer(
                 binaries = binaries,
-                layer = source + ".antlir2",
+                layer = source,
             ) if is_buck2() else None,
         ],
         visibility = [],
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_feature,
-            name = name,
-        ),
     ) != "upgrade":
         fail("antlir1 is dead")
 

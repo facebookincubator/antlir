@@ -39,10 +39,6 @@ def image_layer_alias(name, layer, runtime = None, visibility = None, antlir2 = 
         fn = alias,
         actual = layer,
         antlir_rule = "user-internal",
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_target,
-            name = name,
-        ),
         visibility = visibility,
     ) != "upgrade":
         fail("antlir1 is dead")

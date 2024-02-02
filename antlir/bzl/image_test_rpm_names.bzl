@@ -36,11 +36,6 @@ def image_test_rpm_names(
         fn = antlir2_rpm_names_test,
         name = name,
         src = rpm_list,
-        layer = layer + ".antlir2",
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_test,
-            name = name,
-            test = "sh",
-        ),
+        layer = layer,
     ) != "upgrade":
         fail("antlir1 is dead")

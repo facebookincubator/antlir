@@ -24,15 +24,11 @@ def image_cpp_unittest(
         antlir2 = antlir2,
         fn = antlir2_image_cpp_test,
         name = name,
-        layer = layer + ".antlir2",
+        layer = layer,
         boot = boot,
         run_as_user = run_as_user,
         boot_requires_units = ["dbus.socket"] if (boot and container_opts and container_opts.boot_await_dbus) else [],
         hostname = hostname,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_test,
-            name = name,
-        ),
         **cpp_unittest_kwargs
     ) != "upgrade":
         fail("antlir1 is dead")

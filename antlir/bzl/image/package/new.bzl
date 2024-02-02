@@ -62,13 +62,9 @@ def package_new(
         antlir2 = antlir2,
         name = name,
         fn = antlir2_shim.getattr_buck2(antlir2_package, "backward_compatible_new"),
-        layer = layer + ".antlir2",
+        layer = layer,
         format = format,
         visibility = visibility,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_target,
-            name = name + ".antlir2",
-        ),
         **opts_kwargs
     ) != "upgrade":
         fail("antlir1 is dead")

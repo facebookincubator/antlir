@@ -187,7 +187,7 @@ def _fetched_package_layer(
     visibility = get_visibility(visibility)
 
     antlir2_fbpkg_contents_layer(
-        name = name + ".antlir2",
+        name = name,
         default_mountpoint = "/packages/" + package,
         default_os = "none",
         fbpkg = snapshotted_fbpkg_target(

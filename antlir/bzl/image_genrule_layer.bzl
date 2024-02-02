@@ -70,7 +70,7 @@ Optional arguments:
         antlir2 = antlir2,
         name = name,
         fn = antlir2_shim.getattr_buck2(antlir2_image, "layer"),
-        parent_layer = parent_layer + ".antlir2" if parent_layer else None,
+        parent_layer = parent_layer,
         flavor = flavor,
         features = [
             antlir2_feature.genrule(
@@ -82,10 +82,6 @@ Optional arguments:
             ) if is_buck2() else None,
         ],
         implicit_antlir2 = True,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_layer,
-            name = name,
-        ),
     ) != "upgrade":
         fail("antlir1 is dead")
         return
