@@ -20,7 +20,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     partitions = []
     for src, type, label, _token in ctx.attrs.partitions:
         partitions.append({
-            "label": label,
+            "name": label,
             "src": src[GptPartitionSource].src,
             "type": type,
         })
