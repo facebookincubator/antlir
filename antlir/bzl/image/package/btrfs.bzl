@@ -76,10 +76,6 @@ def _new_btrfs_shim(
         name = name,
         fn = antlir2_btrfs,
         visibility = visibility,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_target,
-            name = name,
-        ),
         **opts_kwargs
     ) != "upgrade":
         fail("antlir1 is dead")

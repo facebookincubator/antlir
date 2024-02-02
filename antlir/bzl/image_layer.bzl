@@ -143,7 +143,7 @@ def image_layer(
         antlir2 = image_layer_kwargs.pop("antlir2", None),
         fn = antlir2_shim.getattr_buck2(antlir2_image, "layer"),
         flavor = flavor,
-        parent_layer = parent_layer + ".antlir2" if parent_layer else None,
+        parent_layer = parent_layer,
         features = (features or []) + antlir2_features,
         implicit_antlir2 = True,
         compatible_with = antlir2_compatible_with,
@@ -153,10 +153,6 @@ def image_layer(
         default_mountpoint = antlir2_default_mountpoint,
         dnf_versionlock_extend = compat.flavor_config_override_to_versionlock_extend(flavor_config_override) if is_buck2() else None,
         labels = image_layer_kwargs.get("labels", None),
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_layer,
-            name = name,
-        ),
     ) != "upgrade":
         fail("antlir1 is dead")
         return

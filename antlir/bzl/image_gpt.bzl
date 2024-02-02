@@ -36,9 +36,5 @@ def image_gpt(
         ],
         disk_guid = disk_guid,
         visibility = visibility,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_target,
-            name = name,
-        ),
     ) != "upgrade":
         fail("antlir1 is dead")

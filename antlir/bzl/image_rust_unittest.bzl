@@ -22,16 +22,12 @@ def image_rust_unittest(
         antlir2 = antlir2,
         fn = antlir2_image_rust_test,
         name = name,
-        layer = layer + ".antlir2",
+        layer = layer,
         boot = boot,
         run_as_user = run_as_user,
         boot_requires_units = ["dbus.socket"] if (boot and container_opts and container_opts.boot_await_dbus) else [],
         crate = rust_unittest_kwargs.pop("crate", name + "_unittest"),
         hostname = hostname,
-        fake_buck1 = struct(
-            fn = antlir2_shim.fake_buck1_test,
-            name = name,
-        ),
         **rust_unittest_kwargs
     ) != "upgrade":
         fail("antlir1 is dead")
