@@ -296,6 +296,7 @@ _squashfs, _squashfs_anon = _new_package_rule(
 
 _tar, _tar_anon = _new_package_rule(
     format = "tar",
+    sudo = True,
 )
 
 _tar_gz = _new_compressed_package_rule(
