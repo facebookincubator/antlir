@@ -11,6 +11,7 @@ rust_library(
         "serde_json",
         "static_assertions",
     ],
+    visibility = ["PUBLIC"],
     deps = [
         "once_cell",
         "regex",
