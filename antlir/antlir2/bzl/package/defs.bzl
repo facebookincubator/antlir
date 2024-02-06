@@ -282,7 +282,7 @@ _vfat, _vfat_anon = _new_package_rule(
     rule_attrs = {
         "fat_size": attrs.option(attrs.int(), default = None),
         "label": attrs.option(attrs.string(), default = None),
-        "size_mb": attrs.option(attrs.int(), default = None),
+        "size_mb": attrs.int(),
     },
     format = "vfat",
     can_be_partition = True,

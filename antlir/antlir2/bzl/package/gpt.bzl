@@ -31,8 +31,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.block_size not in (512, 4096):
         fail("invalid block size: {}".format(ctx.attrs.block_size))
 
+    spec_json = ctx.actions.declare_output("spec.json")
     spec = ctx.actions.write_json(
-        "spec.json",
+        spec_json,
         {
             "gpt": {
                 "block_size": str(ctx.attrs.block_size),
@@ -52,7 +53,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         category = "antlir2_gpt",
         local_only = True,  # local subvol for ba
     )
-    return [DefaultInfo(out)]
+    return [DefaultInfo(
+        out,
+        sub_targets = {
+            "spec.json": [DefaultInfo(spec_json)],
+        },
+    )]
 
 _gpt = rule(
     impl = _impl,
