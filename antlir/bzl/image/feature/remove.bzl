@@ -4,9 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load(":remove.shape.bzl", "remove_paths_t")
 
 def feature_remove(dest, must_exist = True):
     """
@@ -21,16 +18,8 @@ not to conflict with each other.
 By default, it is an error if the specified path is missing from the image,
 though this can be avoided by setting `must_exist` to `False`.
     """
-    remove_spec = remove_paths_t(
+
+    return antlir2.remove(
         path = dest,
         must_exist = must_exist,
-    )
-
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(remove_paths = [remove_spec]),
-        antlir2_feature = antlir2.remove(
-            path = dest,
-            must_exist = must_exist,
-        ) if is_buck2() else None,
     )

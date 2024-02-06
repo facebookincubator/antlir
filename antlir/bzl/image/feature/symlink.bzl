@@ -4,20 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load(":symlink.shape.bzl", "symlink_t")
-
-def _build_symlink_feature(link_target, link_name, symlinks_to_arg, antlir2_feature):
-    symlink_spec = symlink_t(
-        dest = link_name,
-        source = link_target,
-    )
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(**{symlinks_to_arg: [symlink_spec]}),
-        antlir2_feature = antlir2_feature,
-    )
 
 def feature_ensure_dir_symlink(link_target, link_name):
     """
@@ -50,14 +36,9 @@ Both arguments are mandatory:
 This item is indempotent: it is a no-op if a symlink already exists that
 matches the spec.
     """
-    return _build_symlink_feature(
-        link_target,
-        link_name,
-        "symlinks_to_dirs",
-        antlir2_feature = antlir2.ensure_dir_symlink(
-            link = link_name,
-            target = link_target,
-        ) if is_buck2() else None,
+    return antlir2.ensure_dir_symlink(
+        link = link_name,
+        target = link_target,
     )
 
 def feature_ensure_file_symlink(link_target, link_name):
@@ -91,12 +72,7 @@ Both arguments are mandatory:
 This item is indempotent: it is a no-op if a symlink already exists that
 matches the spec.
     """
-    return _build_symlink_feature(
-        link_target,
-        link_name,
-        "symlinks_to_files",
-        antlir2_feature = antlir2.ensure_file_symlink(
-            link = link_name,
-            target = link_target,
-        ) if is_buck2() else None,
+    return antlir2.ensure_file_symlink(
+        link = link_name,
+        target = link_target,
     )

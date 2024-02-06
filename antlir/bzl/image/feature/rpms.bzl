@@ -5,16 +5,7 @@
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-
-def _build_rpm_feature(rpmlist, action, needs_version_set, flavors, antlir2_feature, antlir1_i_know_what_im_doing_arch = None, subjects_src = None):
-    return target_tagger_to_feature(
-        target_tagger = new_target_tagger(),
-        items = struct(rpms = []),
-        antlir2_feature = antlir2_feature,
-    )
 
 def feature_rpms_install(
         rpmlist,
@@ -95,15 +86,7 @@ operation successful even if the binary fails.
         for r in rpmlist
     ]
 
-    return _build_rpm_feature(
-        rpmlist,
-        "install",
-        needs_version_set = True,
-        flavors = flavors,
-        antlir1_i_know_what_im_doing_arch = antlir1_i_know_what_im_doing_arch,
-        antlir2_feature = antlir2.rpms_install(rpms = antlir2_rpms) if is_buck2() else None,
-        subjects_src = subjects_src,
-    )
+    return antlir2.rpms_install(rpms = antlir2_rpms)
 
 def feature_rpms_remove_if_exists(rpmlist, flavors = None):
     """
@@ -113,10 +96,4 @@ Note that removals may only be applied against the parent layer -- if your
 current layer includes features both removing and installing the same
 package, this will cause a build failure.
     """
-    return _build_rpm_feature(
-        rpmlist,
-        "remove_if_exists",
-        needs_version_set = False,
-        flavors = flavors,
-        antlir2_feature = antlir2.rpms_remove_if_exists(rpms = rpmlist) if is_buck2() else None,
-    )
+    return antlir2.rpms_remove_if_exists(rpms = rpmlist)
