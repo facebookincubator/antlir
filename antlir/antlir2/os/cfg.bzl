@@ -13,6 +13,7 @@ _OS_REFS = {
     "os.eln": antlir2_dep("//antlir/antlir2/os:eln"),
     "os.none": antlir2_dep("//antlir/antlir2/os:none"),
     "os.rhel8": antlir2_dep("//antlir/antlir2/os:rhel8"),
+    "os.rhel8.8": antlir2_dep("//antlir/antlir2/os:rhel8.8"),
     "os_constraint": antlir2_dep("//antlir/antlir2/os:os"),
     "os_family_constraint": antlir2_dep("//antlir/antlir2/os/family:family"),
 }

@@ -37,3 +37,9 @@ os_version(
     family = "//antlir/antlir2/os/family:rhel",
     package_manager = "//antlir/antlir2/os/package_manager:dnf",
 )
+
+os_version(
+    name = "rhel8.8",
+    family = "//antlir/antlir2/os/family:rhel",
+    package_manager = "//antlir/antlir2/os/package_manager:dnf",
+)
