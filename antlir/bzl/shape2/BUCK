@@ -1,5 +1,4 @@
 load("//antlir/bzl:build_defs.bzl", "buck_filegroup", "rust_binary", "rust_library")
-load("//antlir/bzl:tool.bzl", "antlir_tool")
 
 oncall("antlir")
 
@@ -15,13 +14,14 @@ rust_library(
     ],
 )
 
-antlir_tool(
-    rust_binary,
+rust_binary(
     name = "bzl2ir",
     srcs = ["bzl2ir.rs"],
     crate = "bzl2ir",
     test_deps = ["maplit"],
-    visibility = ["PUBLIC"],
+    visibility = [
+        "PUBLIC", # @oss-enable
+    ],
     deps = [
         "allocative",
         "anyhow",
