@@ -27,7 +27,6 @@ image.layer(
             text = "foo\n",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 package.sendstream_v2(
@@ -83,7 +82,6 @@ image.layer(
             dst = "/child.sendstream",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image_sh_test(
