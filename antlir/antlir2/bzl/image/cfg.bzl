@@ -68,6 +68,7 @@ def attrs_selected_by_cfg():
                 antlir2_dep("//antlir/antlir2/os:eln"): _rou_flavor_sel("eln"),
                 antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
                 antlir2_dep("//antlir/antlir2/os:rhel8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8:rhel8"),
+                antlir2_dep("//antlir/antlir2/os:rhel8.8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8.8:rhel8.8"),
                 # TODO: in D49383768 this will be disallowed so that we can
                 # guarantee that we'll never end up building a layer without
                 # configuring the os
