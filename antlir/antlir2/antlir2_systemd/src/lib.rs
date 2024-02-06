@@ -77,6 +77,7 @@ pub enum UnitFileState {
     /// enabled.
     Indirect,
     Generated,
+    Bad,
 }
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone, Deserialize, Serialize)]

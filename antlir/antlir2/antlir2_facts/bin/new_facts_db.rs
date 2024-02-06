@@ -180,7 +180,7 @@ fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Re
         let arch = decode_rpm_field!(arch)?;
         let changelog = decode_rpm_field!(changelog, opt)?;
         let os = decode_rpm_field!(os, opt)?;
-        let size = decode_rpm_field!(size)?;
+        let size = decode_rpm_field!(size, opt)?;
         let source_rpm = decode_rpm_field!(source_rpm)?;
         let rpm = Rpm::builder()
             .name(name)
@@ -195,10 +195,10 @@ fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Re
             .arch(arch)
             .changelog(changelog.map(|s| s.into()))
             .os(os.map(|s| s.into()))
-            .size(
-                size.parse()
-                    .with_context(|| format!("while parsing size '{size}'"))?,
-            )
+            .size(size.map_or(Ok(0), |s| {
+                s.parse()
+                    .with_context(|| format!("while parsing size '{s}'"))
+            })?)
             .source_rpm(source_rpm)
             .build();
         db.insert(&rpm)
