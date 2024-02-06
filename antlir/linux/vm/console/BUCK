@@ -1,6 +1,4 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
-load("//antlir/bzl:build_defs.bzl", "alias")
-load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 
 oncall("antlir")
 
@@ -27,45 +25,4 @@ feature.new(
         ]
     ],
     visibility = ["PUBLIC"],
-)
-
-antlir1_feature.new(
-    name = "autologin.antlir1",
-    antlir2 = False,
-    features = [
-        [
-            antlir1_feature.install(
-                dest = "/usr/lib/systemd/system/serial-getty@{}.service.d/autologin-root.conf".format(tty),
-                source = "autologin-root.conf",
-            ),
-            antlir1_feature.ensure_subdirs_exist(
-                into_dir = "/usr/lib/systemd/system",
-                mode = "a+rx,u+w",
-                subdirs_to_create = "serial-getty@{}.service.d".format(tty),
-            ),
-        ]
-        # Let's spam on all potential console names as we are only adding a
-        # drop-in.
-        for tty in [
-            "ttyS0",
-            "ttyAMA0",
-        ]
-    ],
-    visibility = [
-        "//admarket/adtech/tee_aem/sandbox/image:",
-        "//admarket/adtech/tee_aem/tw_container_manifest:",
-        "//tee/snp/image/...",
-    ],
-)
-
-# Insanity... This alias exists to support PACKAGE-based shadow/upgrade layers
-# that depend on :autologin.antlir1
-alias(
-    name = "autologin.antlir1",
-    actual = ":autologin",
-    visibility = [
-        "//admarket/adtech/tee_aem/sandbox/image:",
-        "//admarket/adtech/tee_aem/tw_container_manifest:",
-        "//tee/snp/image/...",
-    ],
 )

@@ -4,12 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "is_buck2")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
-load("//antlir/bzl/image/feature:defs.bzl", antlir1_feature = "feature")
 load(":release.buck2.bzl?v2_only", buck2_release_file = "release_file")
 
-def _install(path, layer, os_name, variant, os_version = "9", os_version_id = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}, use_antlir2 = False):
+def _install(path, layer, os_name, variant, os_version = "9", os_version_id = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}):
     """
     Build an `os-release` file and install it at the provided `path` location.
     See https://www.freedesktop.org/software/systemd/man/os-release.html
@@ -55,45 +53,28 @@ def _install(path, layer, os_name, variant, os_version = "9", os_version_id = "9
 
     name = layer[1:] + "__os-release"
 
-    if not is_buck2():
-        buck_genrule(
-            name = name,
-            out = "unused",
-            cmd = """
-                echo "not supported on buck1"
-                exit 1
-            """,
-        )
-    else:
-        buck2_release_file(
-            name = name,
-            ansi_color = ansi_color,
-            api_versions = api_versions,
-            layer = layer,
-            os_id = os_id,
-            os_name = os_name,
-            os_version = os_version,
-            os_version_id = os_version_id,
-            variant = variant,
-            visibility = ["PUBLIC"],
-        )
+    buck2_release_file(
+        name = name,
+        ansi_color = ansi_color,
+        api_versions = api_versions,
+        layer = layer,
+        os_id = os_id,
+        os_name = os_name,
+        os_version = os_version,
+        os_version_id = os_version_id,
+        variant = variant,
+        visibility = ["PUBLIC"],
+    )
 
-    if use_antlir2:
-        return [
-            antlir2_feature.remove(
-                path = path,
-                must_exist = False,
-            ),
-            antlir2_feature.install(
-                src = normalize_target(":" + name),
-                dst = path,
-            ),
-        ]
-
-    # the rest of this function is Antlir1 code
     return [
-        antlir1_feature.remove(path, must_exist = False),
-        antlir1_feature.install(normalize_target(":" + name), path),
+        antlir2_feature.remove(
+            path = path,
+            must_exist = False,
+        ),
+        antlir2_feature.install(
+            src = normalize_target(":" + name),
+            dst = path,
+        ),
     ]
 
 # Exported API

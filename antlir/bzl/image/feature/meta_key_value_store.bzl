@@ -4,9 +4,6 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
-load(":meta_key_value_store.shape.bzl", "meta_key_value_store_item_t", "remove_meta_key_value_store_item_t")
 
 def feature_meta_store(key, value, require_keys = None, store_if_not_exists = False):
     """
@@ -28,21 +25,9 @@ def feature_meta_store(key, value, require_keys = None, store_if_not_exists = Fa
   The argument `store_if_not_exists` only adds the value if the key doesn't exist. If the key
   exists, this is a no-op.
     """
-    require_keys = require_keys or []
-
-    item = meta_key_value_store_item_t(
-        key = key,
-        value = value,
-        require_keys = require_keys,
-        store_if_not_exists = store_if_not_exists,
-    )
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(meta_key_value_store = [item]),
-        antlir2_feature = antlir1_no_equivalent(
-            label = "unknown",
-            description = "meta_key_value_store is not used on antlir2",
-        ) if is_buck2() else None,
+    return antlir1_no_equivalent(
+        label = "unknown",
+        description = "meta_key_value_store is not used on antlir2",
     )
 
 def feature_remove_meta_store(key):
@@ -53,15 +38,7 @@ def feature_remove_meta_store(key):
   The argument `key` is the value to remove.
     """
 
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(remove_meta_key_value_store = [
-            remove_meta_key_value_store_item_t(
-                key = key,
-            ),
-        ]),
-        antlir2_feature = antlir1_no_equivalent(
-            label = "unknown",
-            description = "meta_key_value_store is not used on antlir2",
-        ) if is_buck2() else None,
+    return antlir1_no_equivalent(
+        label = "unknown",
+        description = "meta_key_value_store is not used on antlir2",
     )

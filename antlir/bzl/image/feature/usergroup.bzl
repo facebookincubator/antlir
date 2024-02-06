@@ -5,11 +5,8 @@
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "target_tagger_to_feature")
 load("//antlir/bzl:types.bzl", "types")
 load(":ensure_dirs_exist.bzl", "feature_ensure_subdirs_exist")
-load(":usergroup.shape.bzl", "group_t", "user_t", "usermod_t")
 
 types.lint_noop()
 
@@ -54,27 +51,14 @@ def feature_user_add(
     - `home_dir` should exist, but this item does not ensure/depend on it to avoid
     a circular dependency on directory's owner user.
     """
-    user = user_t(
-        name = username,
-        id = uid,
+    return antlir2.user_add(
+        username = username,
+        uid = uid,
         primary_group = primary_group,
         supplementary_groups = supplementary_groups or [],
         shell = shell,
         home_dir = home_dir,
         comment = comment,
-    )
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(users = [user]),
-        antlir2_feature = antlir2.user_add(
-            username = username,
-            uid = uid,
-            primary_group = primary_group,
-            supplementary_groups = supplementary_groups or [],
-            shell = shell,
-            home_dir = home_dir,
-            comment = comment,
-        ) if is_buck2() else None,
     )
 
 def feature_group_add(groupname, gid = None):
@@ -89,15 +73,9 @@ def feature_group_add(groupname, gid = None):
     It is also recommended to always reference groupnames and not GIDs; since GIDs
     are auto-assigned, they may change if underlying layers add/remove groups.
     """
-    group = group_t(name = groupname, id = gid)
-
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(groups = [group]),
-        antlir2_feature = antlir2.group_add(
-            groupname = groupname,
-            gid = gid,
-        ) if is_buck2() else None,
+    return antlir2.group_add(
+        groupname = groupname,
+        gid = gid,
     )
 
 _ADD_SUPPLEMENTARY_GROUPS_T = types.list(types.str)
@@ -105,17 +83,9 @@ _ADD_SUPPLEMENTARY_GROUPS_T = types.list(types.str)
 types.lint_noop(_ADD_SUPPLEMENTARY_GROUPS_T)
 
 def feature_usermod(username: types.str, add_supplementary_groups: _ADD_SUPPLEMENTARY_GROUPS_T = []):
-    usermod = usermod_t(
+    return antlir2.usermod(
         username = username,
         add_supplementary_groups = add_supplementary_groups,
-    )
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(usermod = [usermod]),
-        antlir2_feature = antlir2.usermod(
-            username = username,
-            add_supplementary_groups = add_supplementary_groups,
-        ) if is_buck2() else None,
     )
 
 def feature_setup_standard_user(user, group, homedir = None, shell = SHELL_BASH, uid = None, gid = None):

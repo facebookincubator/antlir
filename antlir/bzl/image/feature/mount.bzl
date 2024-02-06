@@ -45,23 +45,6 @@ layers.
 """
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:target_tagger.bzl", "new_target_tagger", "tag_target", "target_tagger_to_feature")
-load(":mount.shape.bzl", "build_source_t", "mount_config_t", "mount_spec_t")
-
-def _feature_host_mount(source, mountpoint, is_directory):
-    return mount_spec_t(
-        mount_config = mount_config_t(
-            build_source = build_source_t(
-                source = source,
-                type = "host",
-            ),
-            default_mountpoint = source if mountpoint == None else mountpoint,
-            is_directory = is_directory,
-        ),
-        mountpoint = None,
-        target = None,
-    )
 
 def feature_host_dir_mount(source, mountpoint = None):
     """
@@ -69,19 +52,10 @@ def feature_host_dir_mount(source, mountpoint = None):
 `/path/foo` into the container at `/path/foo`. Another image item must
 provide the parent `/path`, but this item will create the mount-point.
     """
-    mount_spec = _feature_host_mount(
-        source,
-        mountpoint,
+    return antlir2_feature.host_mount(
+        source = source,
+        mountpoint = mountpoint or source,
         is_directory = True,
-    )
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(mounts = [mount_spec]),
-        antlir2_feature = antlir2_feature.host_mount(
-            source = source,
-            mountpoint = mountpoint or source,
-            is_directory = True,
-        ) if is_buck2() else None,
     )
 
 def feature_host_file_mount(source, mountpoint = None):
@@ -89,19 +63,10 @@ def feature_host_file_mount(source, mountpoint = None):
 `feature.host_file_mount("/path/bar", "/baz")` bind-mounts the file `/path/bar`
 into the container at `/baz`.
     """
-    mount_spec = _feature_host_mount(
-        source,
-        mountpoint,
+    return antlir2_feature.host_mount(
+        source = source,
+        mountpoint = mountpoint,
         is_directory = False,
-    )
-    return target_tagger_to_feature(
-        new_target_tagger(),
-        items = struct(mounts = [mount_spec]),
-        antlir2_feature = antlir2_feature.host_mount(
-            source = source,
-            mountpoint = mountpoint,
-            is_directory = False,
-        ) if is_buck2() else None,
     )
 
 def feature_layer_mount(source, mountpoint = None, antlir2_mountpoint = None):
@@ -111,18 +76,7 @@ inside the container available at the "default_mountpoint" provided by the
 layer in its config. That fails if the layer lacks a default mountpoint, but
 then you can pass an explicit `mountpoint` argument.
     """
-    target_tagger = new_target_tagger()
-    mount_spec = mount_spec_t(
-        mount_config = None,
-        mountpoint = mountpoint,
-        target = tag_target(target_tagger, source),
-    )
-
-    return target_tagger_to_feature(
-        target_tagger = target_tagger,
-        items = struct(mounts = [mount_spec]),
-        antlir2_feature = antlir2_feature.layer_mount(
-            source = source,
-            mountpoint = antlir2_mountpoint or mountpoint,
-        ) if is_buck2() else None,
+    return antlir2_feature.layer_mount(
+        source = source,
+        mountpoint = antlir2_mountpoint or mountpoint,
     )

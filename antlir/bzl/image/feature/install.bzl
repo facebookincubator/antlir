@@ -56,59 +56,7 @@ directory output by a Buck-runnable target, then you should use
 """
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:build_defs.bzl", "is_buck2")
-load("//antlir/bzl:dummy_rule.bzl", "dummy_rule")
 load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
-load("//antlir/bzl:maybe_export_file.bzl", "maybe_export_file")
-load("//antlir/bzl:stat.bzl", "stat")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "wrap_target")
-load(
-    "//antlir/bzl:target_tagger.bzl",
-    "extract_tagged_target",
-    "image_source_as_target_tagged_dict",
-    "new_target_tagger",
-    "tag_and_maybe_wrap_executable_target",
-    "target_tagger_to_feature",
-)
-load("//antlir/bzl:target_tagger.shape.bzl", "target_tagged_image_source_t")
-load(":install.shape.bzl", "install_files_t")
-
-_BUCK_RUNNABLE_WRAP_SUFFIX = "install_buck_runnable_wrap_source"
-
-def _forbid_layer_source(source_dict):
-    if source_dict["layer"] != None:
-        fail(
-            "Cannot use image.source(layer=...) with `feature.install*` " +
-            "actions: {}".format(source_dict),
-        )
-
-def _generate_shape(source_dict, dest, mode, user, group, separate_debug_symbols):
-    return install_files_t(
-        dest = dest,
-        source = target_tagged_image_source_t(**source_dict),
-        mode = stat.mode(mode) if mode else None,
-        user = user,
-        group = group,
-        separate_debug_symbols = separate_debug_symbols,
-    )
-
-def _install_target_tagger(
-        dest,
-        target_tagger,
-        unwrapped_target,
-        unwrapped_shape,
-        wrapped_target,
-        wrapped_shape,
-        antlir2_feature):
-    return target_tagger_to_feature(
-        target_tagger,
-        items = struct(install_files = [wrapped_shape if wrapped_shape else unwrapped_shape]),
-        antlir2_feature = antlir2_feature,
-    )
-
-# KEEP IN SYNC with its partial copy in `compiler/tests/sample_items.py`
-def TEST_ONLY_wrap_buck_runnable(target, path_in_output):
-    return wrap_target(target, _BUCK_RUNNABLE_WRAP_SUFFIX + path_in_output)[1]
 
 def feature_install_buck_runnable(
         source,
@@ -141,55 +89,14 @@ build-time error requesting it.  This flag allows the target being wrapped
 to be executed in an Antlir container as part of a Buck build step.  It
 defaults to `False` to speed up incremental rebuilds.
     """
-    target_tagger = new_target_tagger()
-
-    # Normalize to the `image.source` interface
-    tagged_source = image_source_as_target_tagged_dict(target_tagger, maybe_export_file(source))
-    _forbid_layer_source(tagged_source)
-
-    unwrapped_target = extract_tagged_target(tagged_source["source"])
-    unwrapped_shape = _generate_shape(tagged_source, dest, mode, user, group, separate_debug_symbols)
-
-    # NB: We don't have to wrap executables because they already come from a
-    # layer, which would have wrapped them if needed.
-    if tagged_source["source"]:
-        was_wrapped, tagged_source["source"] = tag_and_maybe_wrap_executable_target(
-            target_tagger = target_tagger,
-            # Peel back target tagging since this helper expects untagged.
-            target = extract_tagged_target(tagged_source.pop("source")),
-            wrap_suffix = _BUCK_RUNNABLE_WRAP_SUFFIX + (tagged_source.get("path") or ""),
-            visibility = None,
-            # NB: Buck makes it hard to execute something out of an
-            # output that is a directory, but it is possible so long as
-            # the rule outputting the directory is marked executable
-            # (see e.g. `print-ok-too` in `feature_install_files`).
-            path_in_output = tagged_source.get("path", None),
-            runs_in_build_steps_causes_slow_rebuilds = runs_in_build_steps_causes_slow_rebuilds,
-        )
-        if was_wrapped:
-            # The wrapper above has resolved `tagged_source["path"]`, so the
-            # compiler does not have to.
-            tagged_source["path"] = None
-
-    wrapped_target = extract_tagged_target(tagged_source["source"])
-    wrapped_shape = _generate_shape(tagged_source, dest, mode, user, group, separate_debug_symbols)
-
     buck2_src = image_source_to_buck2_src(source)
 
-    return _install_target_tagger(
-        dest,
-        target_tagger,
-        unwrapped_target,
-        unwrapped_shape,
-        wrapped_target,
-        wrapped_shape,
-        antlir2.install(
-            src = buck2_src,
-            dst = dest,
-            mode = mode,
-            user = user,
-            group = group,
-        ) if is_buck2() else None,
+    return antlir2.install(
+        src = buck2_src,
+        dst = dest,
+        mode = mode,
+        user = user,
+        group = group,
     )
 
 def feature_install(
@@ -232,44 +139,12 @@ The argument `wrap_as_buck_runnable` is only present because the Buck2
 implementation uses that argument, and adding it here makes it easier to
 integrate with that logic. It can be ignored.
     """
-    target_tagger = new_target_tagger()
-    source_dict = image_source_as_target_tagged_dict(
-        target_tagger,
-        maybe_export_file(source),
-    )
-    _forbid_layer_source(source_dict)
-
-    unwrapped_target = extract_tagged_target(source_dict["source"])
-    unwrapped_shape = _generate_shape(source_dict, dest, mode, user, group, separate_debug_symbols)
-
-    wrapped_target = dummy_rule(
-        wrap_target(unwrapped_target, _BUCK_RUNNABLE_WRAP_SUFFIX + (source_dict.get("path") or ""))[1],
-        deps = [
-            antlir_dep(":repo-root"),
-            unwrapped_target,
-        ],
-    )
-
     buck2_src = image_source_to_buck2_src(source)
 
-    # Future: We might use a Buck macro that enforces that the target is
-    # non-executable, as I suggested on Q15839. This should probably go in
-    # `tag_required_target_key` to ensure that we avoid "unwrapped executable"
-    # bugs everywhere.  A possible reason NOT to do this is that it would
-    # require fixes to `install` invocations that extract non-executable
-    # contents out of a directory target that is executable.
-    return _install_target_tagger(
-        dest,
-        target_tagger,
-        unwrapped_target,
-        unwrapped_shape,
-        wrapped_target,
-        None,
-        antlir2.install(
-            src = buck2_src,
-            dst = dest,
-            mode = mode,
-            user = user,
-            group = group,
-        ) if is_buck2() else None,
+    return antlir2.install(
+        src = buck2_src,
+        dst = dest,
+        mode = mode,
+        user = user,
+        group = group,
     )
