@@ -12,7 +12,6 @@ image.layer(
         feature.ensure_dirs_exist(dirs = "/btrfs_test_1"),
         feature.ensure_dirs_exist(dirs = "/btrfs_test_2_mnt"),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -20,7 +19,6 @@ image.layer(
     features = [
         feature.ensure_dirs_exist(dirs = "/btrfs_test_2"),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -28,7 +26,6 @@ image.layer(
     features = [
         feature.ensure_dirs_exist(dirs = "/btrfs_test_3"),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -41,7 +38,6 @@ image.layer(
             mode = "a+rx",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 package.vfat(
@@ -131,7 +127,6 @@ image.layer(
             text = "foo",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 package.sendstream_v2(
