@@ -229,5 +229,6 @@ repo(
         "//antlir/antlir2/features/rpm/tests/...",
         "//antlir/antlir2/package_managers/rpm/tests/...",
         "//antlir/antlir2/testing/...",
+        "//antlir/fbpkg/build/tw/tests:",
     ],
 )
