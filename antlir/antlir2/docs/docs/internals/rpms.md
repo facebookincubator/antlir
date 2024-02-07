@@ -93,3 +93,20 @@ For example:
 - child layer installs `foobar` for its own needs, and removes `foobarbaz`
 - later `image.layer` tries to remove `foo`
   - this must fail
+
+### DNF Repository Selection
+
+By default `image.layer` gets access only to a set of main DNF repositories that inclues base
+CentOS repos, Hyperscale repo and EPEL repo. Additional repositores can be added using `dnf_additional_repos`
+API parameter of `image.layer` macro. For example if you want to install Cuda rpms you need to set that
+parameter to `["nvidia"]`. You can use following Buck query to find which repo includes a given rpm:
+
+```
+$NAME=cuda
+$ buck2 uquery --output-attribute='logical_id' 'kind(repo, rdeps(fbcode//bot_generated/antlir/rpm/fast_snapshot/repos/..., attrregexfilter(nevra_name, "^%s$", fbcode//bot_generated/antlir/rpm/fast_snapshot/rpms/...), 1))' $NAME | jq -r '.[] | .logical_id' | sort -u
+Buck UI: https://www.internalfb.com/buck2/0981a319-9282-4347-a028-08af7ee8f54b
+Network: Up: 0B  Down: 0B
+Jobs completed: 15680. Time elapsed: 59.6s.
+[2024-02-07T12:28:10.360-08:00] Network: Up: 0B  Down: 0B
+nvidia
+```
