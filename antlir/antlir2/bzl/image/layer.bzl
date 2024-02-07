@@ -182,10 +182,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     dnf_additional_repos = dnf_additional_repos + ctx.attrs._dnf_auto_additional_repos
 
-    # TODO: In the next diff, stop doing this by default and only make extra repos available for images that actually need it
-    if flavor_info != None and flavor_info.dnf_info.default_extra_repo_set != None:
-        dnf_additional_repos.append(flavor_info.dnf_info.default_extra_repo_set)
-
     for repo in dnf_additional_repos:
         if types.is_string(repo):
             dnf_available_repos.append(_extra_repo_name_to_repo(repo, flavor_info))
