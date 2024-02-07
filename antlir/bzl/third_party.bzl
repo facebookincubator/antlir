@@ -17,8 +17,11 @@ SRC_DIR = paths.join(PREFIX, "src")
 DEPS_DIR = paths.join(PREFIX, "deps")
 OUTPUT_DIR = "/output"
 
-def _build(name, features, script, src, deps = None, **kwargs):
+def _build(name, features, script, src, deps = None, dnf_additional_repos = None, **kwargs):
     deps = deps or []
+
+    # Lots of third-part rpms have dependencies in the `crb` repo.
+    dnf_additional_repos = dnf_additional_repos or ["crb"]
 
     OUTPUT_DIR = paths.join(DEPS_DIR, name)
 
@@ -67,6 +70,7 @@ chmod +x $OUT
     image.layer(
         name = name + "__setup_layer",
         parent_layer = antlir2_dep("//antlir/third-party:build-base"),
+        dnf_additional_repos = dnf_additional_repos,
         features = features + [
             feature.ensure_dirs_exist(dirs = DEPS_DIR),
             feature.ensure_dirs_exist(dirs = OUTPUT_DIR),

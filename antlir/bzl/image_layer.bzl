@@ -151,6 +151,7 @@ def image_layer(
         # Antlir1 provisioning images explicitly install package-devel stub, we need to allow them here.
         dnf_excluded_rpms = ["aziot-identity-service"],
         default_mountpoint = antlir2_default_mountpoint,
+        dnf_additional_repos = image_layer_kwargs.pop("dnf_additional_repos", None),
         dnf_versionlock_extend = compat.flavor_config_override_to_versionlock_extend(flavor_config_override) if is_buck2() else None,
         labels = image_layer_kwargs.get("labels", None),
     ) != "upgrade":
