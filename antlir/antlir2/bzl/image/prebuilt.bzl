@@ -41,9 +41,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         # antlir2-receive treats them the same
         format = "sendstream"
 
-    if format == "sendstream" and native.read_config("sandcastle", "is_ondemand_machine", False):
-        fail("sendstream images cannot yet be received in OnDemand")
-
     if format == "tar":
         if ctx.attrs.src.basename.endswith("gz"):
             src = ctx.actions.declare_output("uncompressed")
