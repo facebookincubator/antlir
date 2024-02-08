@@ -10,7 +10,6 @@ python_library(
     deps = [
         ":common",
         ":phases_provide",
-        "//antlir/bzl/image/feature:clone.shape-python",
     ],
 )
 
@@ -37,7 +36,6 @@ python_library(
     srcs = ["group.py"],
     deps = [
         ":common",
-        "//antlir/bzl/image/feature:usergroup.shape-python",
     ],
 )
 
@@ -56,7 +54,6 @@ python_library(
     srcs = ["requires.py"],
     deps = [
         ":common",
-        "//antlir/bzl/image/feature:requires.shape-python",
     ],
 )
 
@@ -66,7 +63,6 @@ python_library(
     deps = [
         ":common",
         "//antlir:bzl_const",
-        "//antlir/bzl/image/feature:rpms.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:repo_plugins",
         "//antlir/rpm:find_snapshot",
@@ -80,7 +76,6 @@ python_library(
     deps = [
         ":common",
         "//antlir:fs_utils",
-        "//antlir/bzl:genrule_layer.shape-python",
         "//antlir/nspawn_in_subvol:nspawn",
         "//antlir/nspawn_in_subvol/plugins:repo_plugins",
     ],
@@ -92,7 +87,6 @@ python_library(
     deps = [
         ":common",
         ":stat_options",
-        "//antlir/bzl/image/feature:ensure_subdirs_exist.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/compiler:subvolume_on_disk",
         "//antlir/nspawn_in_subvol:nspawn",
@@ -153,7 +147,6 @@ python_library(
     name = "tarball",
     srcs = ["tarball.py"],
     deps = [
-        "//antlir/bzl/image/feature:tarball.shape-python",
     ],
 )
 
@@ -165,7 +158,6 @@ python_library(
     deps = [
         ":common",
         "//antlir:bzl_const",
-        "//antlir/bzl/image/feature:symlink.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/nspawn_in_subvol:nspawn",
         third_party.library(
@@ -183,7 +175,6 @@ python_library(
         ":stat_options",
         "//antlir:fs_utils",
         "//antlir:subvol_utils",
-        "//antlir/bzl/image/feature:install.shape-python",
         "//antlir/compiler:requires_provides",
         "//antlir/nspawn_in_subvol:nspawn",
         third_party.library(
@@ -200,7 +191,6 @@ python_library(
         ":common",
         "//antlir:errors",
         "//antlir:subvol_utils",
-        "//antlir/bzl/image/feature:remove.shape-python",
     ],
 )
 
@@ -232,7 +222,6 @@ python_library(
     deps = [
         ":common",
         ":group",
-        "//antlir/bzl/image/feature:usergroup.shape-python",
     ],
 )
 
@@ -241,7 +230,6 @@ python_library(
     srcs = ["meta_key_value_store.py"],
     deps = [
         ":common",
-        "//antlir/bzl/image/feature:meta_key_value_store.shape-python",
         "//antlir/compiler:requires_provides",
     ],
 )

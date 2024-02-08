@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "python_binary", "python_library", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "export_file", "python_library", "rust_library")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
@@ -6,24 +6,11 @@ oncall("antlir")
 
 shape.impl(
     name = "container_opts.shape",
-    deps = ["//antlir/bzl:proxy_server_config.shape"],
 )
 
 shape.impl(
     name = "image_source.shape",
     deps = ["//antlir/bzl:target.shape"],
-)
-
-export_file(name = "target_tagger_helper.bzl")
-
-shape.impl(
-    name = "genrule_layer.shape",
-    deps = [":container_opts.shape"],
-)
-
-shape.impl(
-    name = "from_package.shape",
-    deps = ["//antlir/bzl:target_tagger.shape"],
 )
 
 export_file(name = "shape.bzl")
@@ -36,17 +23,6 @@ export_file(
     name = "99-skip-unit.conf",
     src = "files/99-skip-unit.conf",
     visibility = ["PUBLIC"],
-)
-
-python_binary(
-    name = "fail-with-message",
-    srcs = ["fail_with_message.py"],
-    main_function = "antlir.bzl.fail_with_message.main",
-    visibility = ["PUBLIC"],
-    deps = [
-        "//antlir:cli",
-        "//antlir:common",
-    ],
 )
 
 ####
@@ -106,15 +82,6 @@ shape.impl(
 
 shape.impl(
     name = "gpt.shape",
-    deps = ["//antlir/bzl:target.shape"],
-)
-
-shape.impl(
-    name = "target_tagger.shape",
-)
-
-shape.impl(
-    name = "proxy_server_config.shape",
     deps = ["//antlir/bzl:target.shape"],
 )
 

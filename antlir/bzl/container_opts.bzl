@@ -8,11 +8,8 @@ load("//antlir/bzl:shape.bzl", "shape")
 load(":container_opts.shape.bzl", "container_opts_t")
 load(":structs.bzl", "structs")
 
-def _new_container_opts_t(
-        proxy_server_config = None,
-        **kwargs):
+def _new_container_opts_t(**kwargs):
     return container_opts_t(
-        proxy_server_config = proxy_server_config,
         **kwargs
     )
 

@@ -16,7 +16,6 @@ from antlir.bzl.tests.shapes.shape_bzl import (
     struct,
     structs,
 )
-from antlir.bzl.tests.shapes.target_tagger_helper_bzl import target_tagger_helper
 
 
 TestUnionType = shape.union_t(bool, int)
@@ -241,41 +240,6 @@ class TestShapeBzl(unittest.TestCase):
                 # and not cache the results
                 json.loads(shape.do_not_cache_me_json(i))
 
-    def test_as_dict_for_target_tagger(self) -> None:
-        targ_t = shape.shape(inner=target_t)
-        t = shape.shape(num=int, targ=targ_t)
-        i = t(num=5, targ=shape.new(targ_t, inner="//foo:bar"))
-        self.assertEqual(
-            i,
-            expected_shape(
-                num=5,
-                targ=expected_shape(inner="//foo:bar", __shape__=targ_t),
-                __shape__=t,
-            ),
-        )
-        self.assertEqual(
-            shape.DEPRECATED_as_dict_for_target_tagger(i),
-            # Preserves target paths, but removes `__shape__`.
-            {"num": 5, "targ": {"inner": "//foo:bar"}},
-        )
-
-    def test_as_target_tagged_dict(self) -> None:
-        shape_with_target = shape.shape(target=target_t)
-        target = shape_with_target(
-            target="//example:target",
-        )
-
-        self.assertEqual(
-            shape.as_target_tagged_dict(
-                target_tagger_helper.new_target_tagger(), target
-            ),
-            {
-                "target": {
-                    "path": {"__BUCK_TARGET": "//example:target"},
-                }
-            },
-        )
-
     def test_as_dict_collect_deps(self) -> None:
         shape_with_target = shape.shape(target=target_t)
         target = shape_with_target(
@@ -413,50 +377,6 @@ class TestShapeBzl(unittest.TestCase):
     def test_target_and_path_unsupported(self) -> None:
         with self.assertRaisesRegex(Fail, "no longer supported"):
             shape.path()
-
-    # Tetst for target_tagger_helper to get full coverage
-    def test_extract_tagged_target(self) -> None:
-        self.assertEqual(
-            target_tagger_helper.extract_tagged_target(
-                {"__BUCK_TARGET": "buck_target"}
-            ),
-            "buck_target",
-        )
-        self.assertEqual(
-            target_tagger_helper.extract_tagged_target(
-                {"__BUCK_LAYER_TARGET": "buck_layer_target"}
-            ),
-            "buck_layer_target",
-        )
-
-    def test_tag_required_target_key(self) -> None:
-        tagger = target_tagger_helper.new_target_tagger()
-
-        target = {"target": "target_path"}
-        target_tagger_helper.tag_required_target_key(tagger, target, "target", False)
-        self.assertEqual(
-            target,
-            {"target": {"__BUCK_TARGET": "target_path"}},
-        )
-
-        layer = {"layer": "layer_path"}
-        target_tagger_helper.tag_required_target_key(tagger, layer, "layer", True)
-        self.assertEqual(
-            layer,
-            {"layer": {"__BUCK_LAYER_TARGET": "layer_path"}},
-        )
-
-        self.assertEqual(tagger.targets, {"target_path": 1, "layer_path": 1})
-
-    def test_target_tagger_to_feature(self) -> None:
-        self.assertEqual(
-            target_tagger_helper.target_tagger_to_feature(
-                target_tagger_helper.new_target_tagger(),
-                items=["item"],
-                extra_deps=["extra_deps"],
-            ),
-            struct(items=["item"], deps=["extra_deps"], antlir2_feature=None),
-        )
 
     def test_default_value_sentinel(self) -> None:
         t = shape.shape(value_with_default=shape.field(int, default=42))

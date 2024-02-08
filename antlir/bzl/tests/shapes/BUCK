@@ -165,17 +165,10 @@ template(
 # shape.bzl as a valid python source file
 
 bzl_to_py(
-    name = "target_tagger_helper_bzl.py",
-    bzl_target = "//antlir/bzl:target_tagger_helper.bzl",
-    imports = ["from .shape_bzl_shims import *"],
-)
-
-bzl_to_py(
     name = "shape_bzl.py",
     bzl_target = "//antlir/bzl:shape.bzl",
     imports = [
         "from .shape_bzl_shims import *",
-        "from .target_tagger_helper_bzl import target_tagger_helper",
         "from .sha256 import sha256_b64",
     ],
 )
@@ -184,7 +177,6 @@ python_library(
     name = "shape_bzl",
     srcs = {
         ":shape_bzl.py": "shape_bzl.py",
-        ":target_tagger_helper_bzl.py": "target_tagger_helper_bzl.py",
         "sha256.py": "sha256.py",
         "shape_bzl_shims.py": "shape_bzl_shims.py",
     },
