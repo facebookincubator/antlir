@@ -1,7 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
-load("//antlir/bzl:build_defs.bzl", "third_party")
 load("//antlir/bzl/linux:defs.bzl", "linux")
 
 oncall("antlir")
@@ -10,21 +9,6 @@ image.layer(
     name = "busybox-src-from-img",
     features = [
         feature.rpms_install(rpms = ["busybox"]),
-    ],
-)
-
-image.layer(
-    name = "busybox-src-from-third-party",
-    default_os = "none",
-    features = [
-        feature.install(
-            src = third_party.library(
-                "busybox",
-                "bin/busybox",
-                platform = "genrule",
-            ),
-            dst = "/busybox",
-        ),
     ],
 )
 
@@ -37,17 +21,6 @@ image.layer(
         linux.busybox.install(
             src = ":busybox-src-from-img",
             src_path = "/usr/sbin/busybox",
-        ),
-    ],
-)
-
-image.layer(
-    name = "test-linux-busybox-from-third-party",
-    features = [
-        linux.filesystem.install(),
-        linux.busybox.install(
-            src = ":busybox-src-from-third-party",
-            src_path = "/busybox",
         ),
     ],
 )
