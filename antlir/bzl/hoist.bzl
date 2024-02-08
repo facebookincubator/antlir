@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:hoist.bzl?v2_only", antlir2_hoist = "hoist")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 
 def hoist(
@@ -10,13 +11,11 @@ def hoist(
         layer,
         path,
         *,
-        selector = None,
         force_dir = False,
-        out = "out",
         executable = False,
-        visibility = None,
-        ignore_missing = False,
-        **kwargs):
+        selector = None,
+        out = None,
+        visibility = None):
     """
     Creates a rule to lift an artifact out of the image it was built in.
 
@@ -40,44 +39,27 @@ def hoist(
     # get a single folder:
     # output: "folder/1.rpm folder/2"
     >>> hoist("target", layer = ":layer", path = "src_folder")
-
-    # get files with selector:
-    # output: "1.rpm 2"
-    >>> hoist("target", layer = ":layer", path = "src_folder", selector = ["-maxdepth 1"], force_dir = True)
-
-    # get a flat structure with files:
-    # output: "other_file.rpm 1.rpm"
-    >>> hoist("target", layer = ":layer", path = "src_folder", selector = ["-name '*.rpm'"], force_dir = True)
     """
-
-    cp = "cp -r --reflink=auto --no-clobber \"$subvol/{}\" \"$OUT\"".format(path)
+    antlir2_hoist_name = name
     if selector:
-        cp = "find \"$subvol/{path}\" {selector} -print0".format(
-            path = path,
-            selector = " ".join(selector),
-        ) + " | xargs -0 -I% cp -r --reflink=auto --no-clobber \"%\" \"$OUT\""
+        antlir2_hoist_name = name + "--before-selector"
+        buck_genrule(
+            name = name,
+            out = out,
+            cmd = "find $(location :{hoisted})/ {selector} -print0".format(
+                hoisted = antlir2_hoist_name,
+                selector = " ".join(selector),
+            ) + " | xargs -0 -I% cp -r --reflink=auto --no-clobber \"%\" \"$OUT\"",
+            antlir_rule = "user-facing",
+            visibility = visibility,
+        )
 
-    if ignore_missing:
-        cp = "({}) || true".format(cp)
-
-    if force_dir:
-        out = "."
-
-    buck_genrule(
-        name = name,
-        out = out,
-        bash = '''
-            binary_path=( $(exe //antlir:find-built-subvol) )
-            layer_loc="$(location {layer})"
-            subvol=\\$( "${{binary_path[@]}}" "$layer_loc" )
-
-            {cp}
-        '''.format(
-            layer = layer,
-            cp = cp,
-        ),
-        visibility = visibility,
+    antlir2_hoist(
+        name = antlir2_hoist_name,
+        dir = force_dir,
         executable = executable,
-        antlir_rule = "user-internal",
-        **kwargs
+        layer = layer,
+        path = path,
+        out = out,
+        visibility = visibility,
     )

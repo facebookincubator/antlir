@@ -1,16 +1,16 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:hoist.bzl", "hoist")
 
 oncall("antlir")
 
 [
     hoist(
         name = paths.basename(binary),
-        out = paths.basename(binary),
         executable = True,
         layer = REPO_CFG.artifact["antlir.vm.runtime"],
-        path = "{}".format(binary),
+        path = binary,
         visibility = ["PUBLIC"],
     )
     for binary in [
@@ -23,12 +23,20 @@ oncall("antlir")
     ]
 ]
 
-# Just pull in all the roms
 hoist(
-    name = "roms",
-    force_dir = True,
+    name = "share-qemu",
+    dir = True,
     layer = REPO_CFG.artifact["antlir.vm.runtime"],
-    path = "share/qemu/",
-    selector = ["\\( -name '*.bin' -o -name '*.rom' \\)"],
+    path = "share/qemu",
+    visibility = ["PUBLIC"],
+)
+
+# Just pull in all the roms
+buck_genrule(
+    name = "roms",
+    out = ".",
+    cmd = """
+        find $(location :share-qemu) \\( -name '*.bin' -o -name '*.rom' \\) -exec cp {} $OUT/ \\;
+    """,
     visibility = ["PUBLIC"],
 )
