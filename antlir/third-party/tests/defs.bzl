@@ -17,7 +17,6 @@ def hello_world_build_test(ver, msg, patches = None):
 
     hoist(
         name = "hello_world.{}.out".format(ver),
-        cacheable = False,
         layer = ":hello_world.{}.build".format(ver),
         path = "/hello_world.out",
     )

@@ -8,7 +8,10 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load(":types.bzl", "LayerInfo")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    out = ctx.actions.declare_output(paths.basename(ctx.attrs.path), dir = ctx.attrs.dir)
+    out = ctx.actions.declare_output(
+        ctx.attrs.out or paths.basename(ctx.attrs.path) or ctx.attrs.name,
+        dir = ctx.attrs.dir,
+    )
     ctx.actions.run(
         cmd_args(
             "cp",
@@ -25,14 +28,16 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     )
     return [
         DefaultInfo(out),
-    ]
+    ] + ([RunInfo(cmd_args(out))] if ctx.attrs.executable else [])
 
 _hoist = rule(
     impl = _impl,
     attrs = {
         "dir": attrs.bool(default = False),
+        "executable": attrs.bool(default = False),
         "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
+        "out": attrs.option(attrs.string(doc = "rename output file"), default = None),
         "path": attrs.string(),
     },
 )

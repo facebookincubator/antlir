@@ -229,7 +229,7 @@ python_library(
 python_binary(
     name = "find-built-subvol",
     main_function = "antlir.find_built_subvol.main",
-    visibility = ["PUBLIC"],
+    visibility = ["//antlir/..."],
     deps = [":find_built_subvol"],
 )
 
