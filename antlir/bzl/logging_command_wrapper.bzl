@@ -70,6 +70,5 @@ cp --preserve=all --reflink=always "$TARGET_PATH" "$OUT" ||
         # Don't pollute the distributed Buck caches with a copy of the input.
         cacheable = False,
         # Do not count this log wrapper for the purposes of "CI dep distance".
-        antlir_rule = "user-internal",
     )
     return ":" + wrapper_name

@@ -470,12 +470,10 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
         fail("shape.impl target must be named with a .shape suffix")
     export_file(
         name = name + ".bzl",
-        antlir_rule = "user-internal",
     )
 
     buck_genrule(
         name = name,
-        antlir_rule = "user-internal",
         cmd = """
             $(exe {}) {} $(location :{}.bzl) {} > $OUT
         """.format(
@@ -493,7 +491,6 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
         buck_genrule(
             name = "{}.py".format(name),
             cmd = "{} pydantic $(location :{}) > $OUT".format(ir2code_prefix, name),
-            antlir_rule = "user-internal",
         )
         python_library(
             name = "{}-python".format(name),
@@ -501,13 +498,11 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
             base_module = native.package_name() + "." + name.replace(".shape", ""),
             deps = [antlir_dep(":shape")] + ["{}-python".format(d) for d in deps],
             visibility = visibility,
-            antlir_rule = "user-facing",
             **{k.replace("python_", ""): v for k, v in kwargs.items() if k.startswith("python_")}
         )
         buck_genrule(
             name = "{}.rs".format(name),
             cmd = "{} rust $(location :{}) > $OUT".format(ir2code_prefix, name),
-            antlir_rule = "user-internal",
         )
         rust_library(
             name = "{}-rust".format(name),
@@ -524,7 +519,6 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
                 platform = "rust",
             ),
             visibility = visibility,
-            antlir_rule = "user-facing",
             unittests = False,
             allow_unused_crate_dependencies = True,
             **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
@@ -679,7 +673,6 @@ def _json_file(name, instance, visibility = None):  # pragma: no cover
         name = name,
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
-        antlir_rule = "user-internal",
         cmd = "echo {} | $(exe {}) - - > $OUT".format(
             shell.quote(_do_not_cache_me_json(instance)),
             antlir_dep("bzl/shape2:serialize-shape"),
@@ -701,7 +694,6 @@ def _render_template(name, instance, template, visibility = None):  # pragma: no
 
     buck_genrule(
         name = name,
-        antlir_rule = "user-internal",
         cmd = "$(exe {}-render) <$(location :{}--data.json) > $OUT".format(template, name),
         visibility = visibility,
     )
@@ -751,7 +743,6 @@ def _python_data(
         name = "{}.py".format(name),
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
-        antlir_rule = "user-internal",
         cmd = '''
             echo "from {module} import {type_name}" > $OUT
             echo {data_start} >> $OUT
@@ -774,7 +765,6 @@ def _python_data(
         deps = [shape_impl + "-python"],
         # Antlir users should not directly use `shape`, but we do use it
         # as an implementation detail of "builder" / "publisher" targets.
-        antlir_rule = "user-internal",
         **python_library_kwargs
     )
     return normalize_target(":" + name)

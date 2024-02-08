@@ -139,7 +139,7 @@ def fetched_package_layers_from_json_dir_db(
         if not p.startswith(package_db_prefix) or not p.endswith(suffix):
             fail("Bug: {} was not {}*/*{}".format(p, package_db_prefix, suffix))
         package, tag = p[len(package_db_prefix):-len(suffix)].split("/")
-        export_file(name = p, antlir_rule = "user-internal", visibility = ["PUBLIC"])
+        export_file(name = p, visibility = ["PUBLIC"])
         print_how_to_fetch_json = _print_how_to_fetch_json(":" + p)
         _fetched_package_layer(
             package = package,
@@ -235,7 +235,6 @@ def _fetched_package_with_nondeterministic_fs_metadata(
         ),
         type = "fetched_package_with_nondeterministic_fs_metadata",
         visibility = get_visibility(visibility),
-        antlir_rule = "user-internal",
         labels = ["uses_fbpkg"],
     )
 
@@ -250,5 +249,4 @@ def _in_repo_uuid(
         ),
         type = "in_repo_uuid",
         visibility = get_visibility(visibility),
-        antlir_rule = "user-internal",
     )

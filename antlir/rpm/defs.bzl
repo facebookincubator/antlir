@@ -20,7 +20,6 @@ def test_rpm_repo_snapshot(name, kind, rpm_installers, repo_server_ports):
             --gpg-keypair-dir "$keypair_dir" \
             &> "$logfile" || (cat "$logfile" 1>&2 ; exit 1)
         """.format(quoted_kind = shell.quote(kind)),
-        antlir_rule = "user-internal",
     )
     rpm_repo_snapshot(
         name = name,

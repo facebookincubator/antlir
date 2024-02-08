@@ -23,7 +23,6 @@ def test_hoist(name):
         name = name + "-test-layer",
         parent_layer = ":{}-base-layer".format(name),
         rule_type = "build",
-        antlir_rule = "user-internal",
         user = "root",
         cmd = [
             "bash",

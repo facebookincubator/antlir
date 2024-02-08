@@ -87,20 +87,16 @@ def test_that_should_fail(
 cpp_test_that_should_fail = partial(
     test_that_should_fail,
     cpp_unittest,
-    antlir_rule = "user-internal",
 )
 python_test_that_should_fail = partial(
     test_that_should_fail,
     python_unittest,
-    antlir_rule = "user-internal",
 )
 rust_test_that_should_fail = partial(
     test_that_should_fail,
     rust_unittest,
-    antlir_rule = "user-internal",
 )
 sh_test_that_should_fail = partial(
     test_that_should_fail,
     buck_sh_test,
-    antlir_rule = "user-internal",
 )

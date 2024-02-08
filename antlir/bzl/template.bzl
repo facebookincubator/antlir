@@ -39,7 +39,6 @@ root template from JSON data provided on stdin.
         export_file(
             name = raw_src,
             src = src,
-            antlir_rule = "user-internal",
         )
         compiled_src = "{}__{}.py".format(name, src)
         python_file_name = "tmpl_{}".format(paths.replace_extension(src, ".py"))
@@ -47,7 +46,6 @@ root template from JSON data provided on stdin.
         buck_genrule(
             name = compiled_src,
             cmd = "$(exe //antlir:compile-template) $(location :{}) {} > $OUT".format(raw_src, src),
-            antlir_rule = "user-internal",
             out = python_file_name,
         )
         compiled_srcs[":" + compiled_src] = python_file_name
@@ -59,7 +57,6 @@ root template from JSON data provided on stdin.
         srcs = compiled_srcs,
         base_module = "antlir.__compiled_templates__",
         deps = deps,
-        antlir_rule = "user-facing",
         visibility = get_visibility(visibility),
     )
 
@@ -71,7 +68,6 @@ root template from JSON data provided on stdin.
     buck_genrule(
         name = root_template_target,
         cmd = "printf {} > $OUT".format(shell.quote(paths.replace_extension(root, ""))),
-        antlir_rule = "user-internal",
         visibility = [],
     )
 
@@ -86,6 +82,5 @@ root template from JSON data provided on stdin.
         resources = {
             ":" + root_template_target: "__root_template_name__",
         },
-        antlir_rule = "user-internal",
         visibility = get_visibility(visibility),
     )

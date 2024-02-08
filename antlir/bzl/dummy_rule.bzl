@@ -25,7 +25,6 @@ def dummy_rule(name, deps = None, visibility = None, **kwargs):
                 ]),
             ),
             visibility = visibility,
-            antlir_rule = "user-internal",
             **kwargs
         )
 

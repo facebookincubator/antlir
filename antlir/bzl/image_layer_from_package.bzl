@@ -20,7 +20,6 @@ def image_layer_from_package_helper(
         format,
         flavor,
         flavor_config_override,
-        antlir_rule,
         rc_layer,
         features,
         image_layer_kwargs,
@@ -55,7 +54,7 @@ def image_layer_from_package(
         flavor_config_override = None,
         # A sendstream layer does not add any build logic on top of the
         # input, so we treat it as internal to improve CI coverage.
-        antlir_rule = "user-internal",
+
         # The target path of the rc-layer implementation that built this
         # packaged layer.  Used in conjunction with the `-c antlir.rc.layers`
         # config to test changes to packaged layers.
@@ -107,7 +106,6 @@ def image_layer_from_package(
         format,
         flavor,
         flavor_config_override,
-        antlir_rule,
         rc_layer,
         features,
         image_layer_kwargs,

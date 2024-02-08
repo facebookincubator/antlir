@@ -25,7 +25,7 @@ def package_new(
         # Since `package` produces a real Buck-visible build artifact,
         # "user-facing" is the only sane default.  See comments in
         # `build_defs.bzl` for how this works.
-        antlir_rule = "user-facing",
+
         # The format to use
         # For supported formats, see `--format` here:
         #     buck run //antlir:package-image -- --help

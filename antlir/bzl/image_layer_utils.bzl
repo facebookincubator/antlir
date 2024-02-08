@@ -16,9 +16,6 @@ def _image_layer_impl(
         _layer_name,
         _make_subvol_cmd,
         _deps_query,
-        # For now, layer implementations mark this explicitly.  I doubt that
-        # "antlir-private" is a sensible default here.
-        antlir_rule,
         # Layers can be used in the `mounts` field of an `feature`.
         # This setting affects how **this** layer may be mounted inside
         # others.
@@ -156,7 +153,6 @@ def _image_layer_impl(
         # keep our output JSON out of the distributed Buck cache.  See
         # the docs for BuildRule::isCacheable.
         cacheable = False,
-        antlir_rule = antlir_rule,
         labels = ["image_layer", "uses_sudo"] + (labels or []),
         type = _rule_type,  # For queries
         visibility = visibility,

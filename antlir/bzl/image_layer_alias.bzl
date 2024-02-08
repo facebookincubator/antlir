@@ -38,7 +38,6 @@ def image_layer_alias(name, layer, runtime = None, visibility = None, antlir2 = 
         name = name,
         fn = alias,
         actual = layer,
-        antlir_rule = "user-internal",
         visibility = visibility,
     ) != "upgrade":
         fail("antlir1 is dead")

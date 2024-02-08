@@ -155,13 +155,11 @@ def _nspawn_wrapper_properties(
     # For ergonomics, export the debug targets from the test's layer on the test
     buck_command_alias(
         name = container_target_name(name),
-        antlir_rule = "user-internal",
         exe = ":" + container_target_name(test_layer),
     )
     if boot:
         buck_command_alias(
             name = systemd_target_name(name),
-            antlir_rule = "user-internal",
             exe = ":" + systemd_target_name(test_layer),
         )
 
@@ -245,7 +243,6 @@ mv $TMP/out "$OUT"
             ),
         ),
         visibility = visibility,
-        antlir_rule = "user-internal",
         cacheable = False,
     )
 
@@ -272,7 +269,6 @@ mv $TMP/out "$OUT"
         deps = ["//antlir/nspawn_in_subvol:run-test-library"],
         resources = {":" + test_layer: "nspawn-in-test-subvol-layer"},
         srcs = {":" + test_spec_py: "__image_python_unittest_spec__.py"},
-        antlir_rule = "user-internal",
         tags = ["no_pyre"],
     )
 

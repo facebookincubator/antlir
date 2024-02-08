@@ -128,7 +128,7 @@ echo -n '{query}' > "$OUT/query"
             default_cell = repository_name()[1:],
             query = query,
         ),
-        antlir_rule = "user-internal",
+
         # This cannot be cacheable because it is generating machine
         # specific paths.
         cacheable = False,

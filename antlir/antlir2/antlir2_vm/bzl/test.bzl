@@ -199,7 +199,6 @@ def _implicit_vm_test(
     inner_test_name = name + "_vm_test_inner"
     test_rule(
         name = inner_test_name,
-        antlir_rule = "user-internal",
         labels = inner_labels,
         **kwargs
     )

@@ -81,6 +81,5 @@ def image_build_librename_shadowed(
         parent_layer = ":" + setup_layer,
         rule_type = "build_librename_shadowed",
         user = user,
-        antlir_rule = "user-internal",
         **kwargs
     )
