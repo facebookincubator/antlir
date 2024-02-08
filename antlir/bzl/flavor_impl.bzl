@@ -5,7 +5,6 @@
 
 load(":constants.bzl", "REPO_CFG")
 load(":flavor.shape.bzl", "flavor_t")
-load(":flavor_alias.bzl", "alias_flavor")
 load(":target_helpers.bzl", "normalize_target")
 load(":types.bzl", "types")
 
@@ -30,7 +29,7 @@ def flavor_to_struct(flavor):
         if ":" in flavor:
             _, flavor = flavor.rsplit(":")
         flavor = flavor_t(
-            name = alias_flavor(flavor),
+            name = flavor,
             unaliased_name = flavor,
         )
 
@@ -88,5 +87,5 @@ def get_flavor_aliased_layer(layer, flavor):
     nlayer = normalize_target(layer)
     if nlayer not in build_appliances:
         return layer
-    flavor = alias_flavor(build_appliances[nlayer])
+    flavor = build_appliances[nlayer]
     return REPO_CFG.flavor_to_config[flavor].build_appliance

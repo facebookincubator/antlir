@@ -20,9 +20,7 @@ def _add(rpmlist):
     - `rpmslist`: The list of test rpms to wrap in `rpms_install` with flavor `antlir_test`.
     """
     return [
-        feature.rpms_install(rpmlist, flavors = ["antlir_test"]),
-    ] + [
-        feature.rpms_install([], flavors = REPO_CFG.flavor_available),
+        feature.rpms_install(rpmlist),
     ]
 
 def _remove(rpmlist):

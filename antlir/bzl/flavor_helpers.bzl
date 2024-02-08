@@ -8,75 +8,15 @@ This provides helpers useful for working with flavors. For more
 information check out [the flavor docs](/docs/concepts/rpms/overview).
 """
 
-load("//antlir/bzl:build_defs.bzl", "use_antlir2")
-load(":check_flavor_exists.bzl", "check_flavor_exists")
-load(":constants.bzl", "REPO_CFG", "new_flavor_config")
-load(":flavor_alias.bzl", "alias_flavor")
+load(":constants.bzl", "REPO_CFG")
 load(":flavor_impl.bzl", "flavor_to_struct", "get_unaliased_flavor")
-load(":shape.bzl", "shape")
-load(":structs.bzl", "structs")
-load(":target_helpers.bzl", "normalize_target")
 
-def _get_flavor_config(
-        flavor,
-        flavor_config_override = None,
-        # TODO(T139523690) when flavors are always targets, this check will be
-        # completely unnecessary
-        assume_flavor_exists = False):
-    """
-    Arguments
-    - `flavor`: The name of the flavor to fetch the config.
-    - `flavor_config_override`: An opts that contains any overrides for
-    the default config of a flavor that will be applied.
-
-    Example usage:
-    ```
-    load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
-
-    flavor_config = flavor_helpers.get_flavor_config(flavor, flavor_config_override)
-    build_appliance = flavor_config["build_appliance"]
-    ```
-    """
-    if not flavor and flavor_config_override:
-        fail("Please specify the flavor when overriding the flavor config")
-
-    flavor = flavor_to_struct(flavor)
-    if not assume_flavor_exists:
-        check_flavor_exists(flavor)
-
-    flavor_config = shape.as_dict_shallow(REPO_CFG.flavor_to_config[flavor.name])
-    overrides = structs.to_dict(flavor_config_override) if flavor_config_override else {}
-
-    # This override is forbidden because vset paths are currently consumed
-    # in `image/feature/new.bzl`, where per-layer overrides are NOT available.
-    if "version_set_path" in overrides:
-        fail("Cannot override `version_set_path`", "flavor_config_override")
-
-    if "rpm_installer" in overrides and not "rpm_repo_snapshot" in overrides:
-        fail(
-            "Please override the `rpm_repo_snapshot` as well to make sure it " +
-            "matches `rpm_installer`. Set it to `None` to use the default snapshot.",
-        )
-    flavor_config.update(overrides)
-
-    return new_flavor_config(**flavor_config)
-
+# TODO(vmagro): delete this
 def _get_flavor_default():
-    #
-    # Technically we don't need to call alias_flavor() here (since it's
-    # already been invoked for this REPO_CFG variable), but we do it
-    # anyway to support `fail-on-flavor-aliasing` testing. Basically,
-    # alias_flavor() will fail() if flavor aliasing is disabled and we
-    # try to return an aliased flavor.
-    #
-    return alias_flavor(REPO_CFG.flavor_default)
+    return "centos8"
 
 def _get_antlir_linux_flavor():
-    if use_antlir2():
-        return "//antlir/antlir2/facebook/flavor:centos9"
-
-    # See the comment above in _get_flavor_default().
-    return alias_flavor(REPO_CFG.antlir_linux_flavor)
+    return REPO_CFG.antlir_linux_flavor
 
 def _get_build_appliance(flavor = None):
     """
@@ -86,35 +26,6 @@ def _get_build_appliance(flavor = None):
     flavor = flavor_to_struct(flavor or _get_flavor_default())
     return REPO_CFG.flavor_to_config[flavor.name].build_appliance
 
-def _get_rpm_installer(flavor = None):
-    """
-    Arguments
-    - `flavor`: The flavor of the rpm installer to return.
-    """
-    flavor = flavor_to_struct(flavor or _get_flavor_default())
-    return REPO_CFG.flavor_to_config[flavor.name].rpm_installer
-
-def _get_rpm_installers_supported():
-    """
-    Returns all possible rpm installers in `REPO_CFG.flavor_to_config` deduplicated.
-    """
-    rpm_installers = {}
-    for _, config in REPO_CFG.flavor_to_config.items():
-        if config.rpm_installer:
-            rpm_installers[config.rpm_installer] = 1
-    return rpm_installers.keys()
-
-def _get_flavor_from_build_appliance(build_appliance):
-    build_appliance = normalize_target(build_appliance)
-    return REPO_CFG.ba_to_flavor[build_appliance]
-
-def _maybe_get_tgt_flavor(tgt):
-    tgt = normalize_target(tgt)
-    return REPO_CFG.ba_to_flavor.get(
-        tgt,
-        REPO_CFG.buck1_tgts_to_flavors.get(tgt, None),
-    )
-
 def _get_shortname(flavor):
     # Flavor shortnames are commonly used in target and fbpkg names,
     # where we generally don't want flavor aliasing to be used.
@@ -123,12 +34,7 @@ def _get_shortname(flavor):
 
 flavor_helpers = struct(
     get_build_appliance = _get_build_appliance,
-    get_flavor_from_build_appliance = _get_flavor_from_build_appliance,
     get_flavor_default = _get_flavor_default,
     get_antlir_linux_flavor = _get_antlir_linux_flavor,
-    get_flavor_config = _get_flavor_config,
     get_shortname = _get_shortname,
-    get_rpm_installer = _get_rpm_installer,
-    get_rpm_installers_supported = _get_rpm_installers_supported,
-    maybe_get_tgt_flavor = _maybe_get_tgt_flavor,
 )
