@@ -8,14 +8,12 @@ Antlir1 vmtests are no longer supported. Use Antlir2 vmtest instead. Check
 antlir2/antlir2_vm/bzl/defs.bzl.
 """
 
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
-
 vm = struct(
     # This nested structure is for looking up the default set of artifacts
     # used for this subsystem.
     artifacts = struct(
         rootfs = struct(
-            layer = REPO_CFG.artifact["vm.rootfs.layer"],
+            layer = "fbcode//metalos/vm/os:rootfs",
         ),
     ),
 )

@@ -101,10 +101,6 @@ REPO_CFG = repo_config_t(
         (native.read_config("python", "package_style") == "inplace")
     ) and native.read_config("antlir", "require_repo", "true") == "true",
 
-    # This is a dictionary that allow for looking up configurable artifact
-    # targets by a key.
-    artifact = _get_artifact_key_to_path(),
-
     # Enumerates host mounts required to execute FB binaries in @mode/dev.
     #
     # This is turned into json and loaded by the python side of the

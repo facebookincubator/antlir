@@ -1,7 +1,6 @@
 load("@bazel_skylib//lib:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
 oncall("antlir")
 
@@ -9,7 +8,7 @@ oncall("antlir")
     hoist(
         name = paths.basename(binary),
         executable = True,
-        layer = REPO_CFG.artifact["antlir.vm.runtime"],
+        layer = "fbcode//antlir/vm/runtime/facebook:qemu-tools",
         path = binary,
         visibility = ["PUBLIC"],
     )
@@ -26,7 +25,7 @@ oncall("antlir")
 hoist(
     name = "share-qemu",
     dir = True,
-    layer = REPO_CFG.artifact["antlir.vm.runtime"],
+    layer = "fbcode//antlir/vm/runtime/facebook:qemu-tools",
     path = "share/qemu",
     visibility = ["PUBLIC"],
 )
