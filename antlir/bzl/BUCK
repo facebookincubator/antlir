@@ -60,7 +60,6 @@ python_library(
     srcs = {
         "shape2/target.py": "__init__.py",
     },
-    antlir_rule = "user-facing",
     base_module = "antlir.bzl.target",
     visibility = ["PUBLIC"],
     deps = [
@@ -74,7 +73,6 @@ rust_library(
     srcs = [
         "shape2/target.rs",
     ],
-    antlir_rule = "user-facing",
     crate = "target",
     crate_root = "shape2/target.rs",
     visibility = ["PUBLIC"],

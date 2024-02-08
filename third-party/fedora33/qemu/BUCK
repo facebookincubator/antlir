@@ -90,7 +90,6 @@ image.layer(
 
 image.genrule_layer(
     name = "build",
-    antlir_rule = "user-internal",
     cmd = [
         "/_temp_qemu/build.sh",
         qemu["version"],

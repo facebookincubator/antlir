@@ -22,10 +22,7 @@ def _check_args(rule, args, kwargs, allowed_kwargs):
             ))
 
 def _make_rule_kwargs_dict(lst):
-    # `antlir_rule` is forwarded to build_defs_impl.bzl and is used to mark
-    # rules as "antlir-private", "user-internal", or "user-facing".  Read
-    # the comments in that file for the detailed rationale.
-    return {k: 1 for k in lst + ["antlir_rule"]}
+    return {k: 1 for k in lst}
 
 _CPP_BINARY_KWARGS = _make_rule_kwargs_dict(
     [

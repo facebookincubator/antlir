@@ -31,7 +31,6 @@ def _add_run_in_subvol_target(name, kind, extra_args = None):
             name = target,
             query = layer_deps_query(layer = normalize_target(":" + name)),
         ),
-        antlir_rule = "user-internal",
     )
 
 def add_runtime_targets(layer, runtime):

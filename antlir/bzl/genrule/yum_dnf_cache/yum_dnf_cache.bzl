@@ -57,6 +57,5 @@ def image_yum_dnf_make_snapshot_cache(
             # We need to write to the snapshots' directories.
             internal_only_unprotect_antlir_dir = True,
         ),
-        antlir_rule = "user-internal",
         **image_layer_kwargs
     )

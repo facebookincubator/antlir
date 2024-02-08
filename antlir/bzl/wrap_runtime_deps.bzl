@@ -151,7 +151,6 @@ def _maybe_wrap_runtime_deps_as_build_time_deps(
         buck_genrule(
             name = name,
             bash = 'touch "$OUT"',
-            antlir_rule = "user-internal",
         )
         return False, target
 
@@ -199,7 +198,6 @@ fi
         # Whatever we wrap was executable, so the wrapper might as well be, too
         executable = True,
         visibility = get_visibility(visibility),
-        antlir_rule = "user-internal",
     )
 
     return True, ":" + name

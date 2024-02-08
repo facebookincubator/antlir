@@ -175,7 +175,6 @@ def _implicit_image_test(
         **kwargs):
     test_rule(
         name = name + "_image_test_inner",
-        antlir_rule = "user-internal",
         labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test"),
         **kwargs
     )

@@ -50,7 +50,6 @@ def hoist(
                 hoisted = antlir2_hoist_name,
                 selector = " ".join(selector),
             ) + " | xargs -0 -I% cp -r --reflink=auto --no-clobber \"%\" \"$OUT\"",
-            antlir_rule = "user-facing",
             visibility = visibility,
         )
 

@@ -100,9 +100,8 @@ _OPTIONAL_LABEL_T = types.optional(types.label)
 _EXTRA_DEPS_T = types.optional(types.list(types.label))
 _FLAVOR_T = types.optional(types.union(types.str, types.shape(flavor_t)))
 _FLAVOR_CONFIG_OVERRIDE_T = types.optional(types.struct)
-_ANTLIR_RULE_T = types.union(types.antlir_rule.type, types.str) if is_buck2() else None
 
-types.lint_noop(_OPTIONAL_LABEL_T, _EXTRA_DEPS_T, _FLAVOR_T, _FLAVOR_CONFIG_OVERRIDE_T, _ANTLIR_RULE_T)
+types.lint_noop(_OPTIONAL_LABEL_T, _EXTRA_DEPS_T, _FLAVOR_T, _FLAVOR_CONFIG_OVERRIDE_T)
 
 def image_layer(
         name: types.str,
@@ -111,7 +110,6 @@ def image_layer(
         extra_deps: _EXTRA_DEPS_T = None,
         flavor: _FLAVOR_T = None,
         flavor_config_override: _FLAVOR_CONFIG_OVERRIDE_T = None,
-        antlir_rule: _ANTLIR_RULE_T = types.antlir_rule("user-internal"),
         antlir2_compatible_with = None,
         antlir2_features = [],
         antlir1_features = [],

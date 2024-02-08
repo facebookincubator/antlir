@@ -49,8 +49,7 @@ def _new_btrfs_shim(
         opts,
         # Buck `labels` to add to the resulting target; aka `tags` in fbcode.
         labels = None,
-        visibility = None,
-        antlir_rule = "user-facing"):
+        visibility = None):
     if opts.loopback_opts.size_mb:
         fail("size_mb not supported in btrfs")
     if opts.loopback_opts.fat_size:

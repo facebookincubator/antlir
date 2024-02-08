@@ -64,7 +64,6 @@ chmod +x $OUT
             src_dir = SRC_DIR,
             output_dir = OUTPUT_DIR,
         ),
-        antlir_rule = "user-internal",
     )
 
     image.layer(

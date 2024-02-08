@@ -38,7 +38,6 @@ def layer_resource(target):
             cacheable = False,
             type = "wrapped_layer_resource",
             visibility = [],
-            antlir_rule = "user-internal",
         )
 
     return ":" + wrapped_target
