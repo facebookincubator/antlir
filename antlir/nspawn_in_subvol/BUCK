@@ -14,7 +14,6 @@ python_library(
         "//antlir:find_built_subvol",
         "//antlir:fs_utils",
         "//antlir/bzl:container_opts.shape-python",
-        "//antlir/bzl:proxy_server_config.shape-python",
     ],
 )
 

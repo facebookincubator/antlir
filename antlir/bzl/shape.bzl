@@ -117,7 +117,6 @@ load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_libra
 load(":sha256.bzl", "sha256_b64")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
-load(":target_tagger_helper.bzl", "target_tagger_helper")
 
 _NO_DEFAULT = struct(no_default = True)
 
@@ -571,19 +570,12 @@ def _recursive_copy_transform(val, t, opts):
                 path = "$(location {})".format(val),
                 __I_AM_TARGET__ = True,
             )
-        elif opts.on_target_fields == "tag_targets":
-            if (opts.target_tagger == None):  # pragma: no cover
-                fail("`target_tagger` is a required parameter for `tag_targets`")
-
-            return {
-                "path": target_tagger_helper.tag_target(opts.target_tagger, val),
-            }
         elif opts.on_target_fields == "collect_deps":
             opts.deps[val] = 1
             return {
                 "path": {"__BUCK_TARGET": normalize_target(val)},
             }
-        elif opts.on_target_fields == "preserve":
+        elif opts.on_target_fields == "preserve":  # pragma: no cover
             return val
         fail(
             # pragma: no cover
@@ -642,7 +634,7 @@ def _safe_to_serialize_instance(instance):
     return _recursive_copy_transform(
         instance,
         instance.__shape__,
-        struct(include_dunder_shape = False, on_target_fields = "fail", target_tagger = None),
+        struct(include_dunder_shape = False, on_target_fields = "fail"),
     )
 
 def _do_not_cache_me_json(instance):
@@ -659,7 +651,6 @@ def _do_not_cache_me_json(instance):
         struct(
             include_dunder_shape = False,
             on_target_fields = "location",
-            target_tagger = None,
         ),
     ))
 
@@ -778,42 +769,6 @@ def _python_data(
 def _as_serializable_dict(instance):
     return _as_dict_deep(_safe_to_serialize_instance(instance))
 
-# Do not use this outside of `target_tagger.bzl`.  Eventually, target tagger
-# should be replaced by shape, so this is meant as a temporary shim.
-#
-# Unlike `as_serializable_dict`, does not fail on "Buck target" fields. Instead,
-# these get represented as the target path (avoiding cacheability issues).
-#
-# target_tagger.bzl is the original form of matching target paths with their
-# corresponding `$(location)`.  Ideally, we should fold this functionality
-# into shape.  In the current implementation, it just needs to get the raw
-# target path out of the shape, and nothing else.
-# This function is DEPRECATED in favor of _as_target_tagged_dict.
-# ToDo: get rid of it
-def _as_dict_for_target_tagger(instance):
-    return structs.to_dict(_recursive_copy_transform(
-        instance,
-        instance.__shape__,
-        struct(
-            include_dunder_shape = False,
-            on_target_fields = "preserve",
-            target_tagger = None,
-        ),
-    ))
-
-# Returns instance in which all target_t shapes get converted to the tagged targets.
-# Result might need to be converted to a feature by the caller later on.
-def _as_target_tagged_dict(target_tagger, instance):
-    return structs.to_dict(_recursive_copy_transform(
-        instance,
-        instance.__shape__,
-        struct(
-            include_dunder_shape = False,
-            on_target_fields = "tag_targets",
-            target_tagger = target_tagger,
-        ),
-    ))
-
 # Collects targets from shape and converts them to tagged targets. Returns
 # list of dependencies in shape and shape converted to dict. Used in buck2
 # implementation of `genrule_layer`.
@@ -825,7 +780,6 @@ def _as_dict_collect_deps(instance):
         struct(
             include_dunder_shape = False,
             on_target_fields = "collect_deps",
-            target_tagger = None,
             deps = deps,
         ),
     ))
@@ -873,7 +827,6 @@ def _as_dict_deep(val, on_target_fields = "preserve"):
             struct(
                 include_dunder_shape = False,
                 on_target_fields = on_target_fields,
-                target_tagger = None,
             ),
         )
     if structs.is_struct(val):
@@ -929,11 +882,9 @@ shape = struct(
     impl = _impl,
     DEFAULT_VALUE = _DEFAULT_VALUE,
     # output target macros and other conversion helpers
-    DEPRECATED_as_dict_for_target_tagger = _as_dict_for_target_tagger,
     as_dict_collect_deps = _as_dict_collect_deps,
     as_dict_shallow = _as_dict_shallow,
     as_serializable_dict = _as_serializable_dict,
-    as_target_tagged_dict = _as_target_tagged_dict,
     dict = _dict,
     do_not_cache_me_json = _do_not_cache_me_json,
     enum = _enum,

@@ -39,13 +39,6 @@ def load(_file, *_symbols) -> None:
     pass
 
 
-def provider(fields):
-    return dataclasses.make_dataclass(
-        "provider",
-        fields=fields,
-    )
-
-
 def normalize_target(target: str) -> str:
     return target
 
@@ -104,7 +97,3 @@ class collections:
     @staticmethod
     def uniq(it):
         return list(set(it))
-
-
-def is_buck2():
-    return False

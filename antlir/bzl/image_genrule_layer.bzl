@@ -12,14 +12,13 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load(":antlir2_shim.bzl", "antlir2_shim")
 
 def image_genrule_layer(
+        *,
         name,
         rule_type,
         cmd,
         user = "nobody",
         parent_layer = None,
         flavor = None,
-        flavor_config_override = None,
-        container_opts = None,
         bind_repo_ro = False,
         boot = False,
         antlir2_mount_platform = None,

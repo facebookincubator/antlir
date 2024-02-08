@@ -5,23 +5,17 @@
 
 load("//antlir/antlir2/bzl:compat.bzl?v2_only", antlir2_compat = "compat")
 load("//antlir/antlir2/bzl/image:defs.bzl?v2_only", antlir2_image = "image")
-load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl?v2_only", "antlir1_no_equivalent")
-load("//antlir/bzl:build_defs.bzl", "alias", "get_visibility", "is_buck2")
-load("//antlir/bzl:from_package.shape.bzl", "layer_from_package_t")
+load("//antlir/bzl:build_defs.bzl", "alias", "get_visibility")
 load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 load(":constants.bzl", "use_rc_target")
 load(":flavor_impl.bzl", "flavor_to_struct")
 load(":target_helpers.bzl", "normalize_target")
-load(":target_tagger.bzl", "extract_tagged_target", "image_source_as_target_tagged_dict", "new_target_tagger", "target_tagger_to_feature")
-load(":target_tagger.shape.bzl", "target_tagged_image_source_t")
 
 def image_layer_from_package_helper(
         name,
         format,
         flavor,
-        flavor_config_override,
         rc_layer,
-        features,
         image_layer_kwargs,
         antlir2_src):
     target = normalize_target(":" + name)
@@ -51,7 +45,6 @@ def image_layer_from_package(
         format,
         source = None,
         flavor = None,
-        flavor_config_override = None,
         # A sendstream layer does not add any build logic on top of the
         # input, so we treat it as internal to improve CI coverage.
 
@@ -77,27 +70,6 @@ def image_layer_from_package(
     if rc_layer == "__unset__":
         fail("rc_layer must be specified or explicitly set to None")
     flavor = flavor_to_struct(flavor)
-    target_tagger = new_target_tagger()
-    source_dict = image_source_as_target_tagged_dict(
-        target_tagger,
-        source,
-    )
-
-    feature_shape = layer_from_package_t(
-        format = format,
-        source = target_tagged_image_source_t(**source_dict),
-    )
-    source_target = extract_tagged_target(
-        source_dict["source" if source_dict["source"] else "layer"],
-    )
-
-    features = [target_tagger_to_feature(
-        target_tagger,
-        struct(
-            layer_from_package = [feature_shape],
-        ),
-        antlir2_feature = antlir1_no_equivalent(description = "image_layer_from_package", label = normalize_target(":" + name)) if is_buck2() else None,
-    )]
 
     buck2_src = image_source_to_buck2_src(source)
 
@@ -105,9 +77,7 @@ def image_layer_from_package(
         name,
         format,
         flavor,
-        flavor_config_override,
         rc_layer,
-        features,
         image_layer_kwargs,
         antlir2_src = buck2_src,
     )
