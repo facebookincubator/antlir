@@ -5,13 +5,6 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 
-bzl_const_t = shape.shape(
-    layer_feature_suffix = str,
-    PRIVATE_feature_suffix = str,
-    version_set_allow_all_versions = str,
-    hostname_for_compiler_in_ba = str,
-)
-
 nevra_t = shape.shape(
     name = shape.field(str),
     # TODO: Codemod all callsites and update this to be `int`.
@@ -71,18 +64,10 @@ flavor_config_t = shape.shape(
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
     artifact = shape.dict(str, str),
-    host_mounts_allowed_in_targets = shape.list(shape.path),
     host_mounts_for_repo_artifacts = shape.list(shape.path),
-    # This holds the default flavors that a feature should cover.
-    # Compared to `flavor_to_config`, it does not contain the
-    # `antlir_test` flavor, which shouldn't be always defined.
-    flavor_available = shape.list(str),
-    flavor_default = str,
     flavor_to_config = shape.dict(str, flavor_config_t),
-    ba_to_flavor = shape.dict(str, str),
     antlir_linux_flavor = str,
     antlir_cell_name = str,
     rc_targets = shape.list(str),
-    buck1_tgts_to_flavors = shape.dict(str, str),
     flavor_alias = shape.field(str, optional = True),
 )

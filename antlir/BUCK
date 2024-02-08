@@ -1,7 +1,7 @@
 # @noautodeps
 
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
-load("//antlir/bzl:constants.bzl", "BZL_CONST", "REPO_CFG")
+load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
@@ -458,14 +458,8 @@ rust_binary(
 python_library(
     name = "bzl_const",
     srcs = ["bzl_const.py"],
-    deps = [
-        shape.python_data(
-            name = "bzl_const_t",
-            instance = BZL_CONST,
-            shape_impl = "//antlir/bzl:constants.shape",
-            type_name = "bzl_const_t",
-        ),
-    ],
+    # BZL_CONST is gone so this target is broken, but untangling the web of
+    # dependencies is left for a later diff
 )
 
 python_library(

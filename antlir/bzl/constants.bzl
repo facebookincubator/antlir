@@ -4,27 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
-load("//antlir/bzl:flavor_alias.bzl", "alias_flavor")
-load("//antlir/bzl:sha256.bzl", "sha256_b64")
-load(":constants.shape.bzl", "bzl_const_t", "flavor_config_t", "nevra_t", "repo_config_t")
+load(":constants.shape.bzl", "flavor_config_t", "nevra_t", "repo_config_t")
 load(":target_helpers.bzl", "normalize_target")
 
-DO_NOT_USE_BUILD_APPLIANCE = "__DO_NOT_USE_BUILD_APPLIANCE__"
 CONFIG_KEY = "antlir"
-
-BZL_CONST = bzl_const_t(
-    layer_feature_suffix = "__layer-feature",
-    # Do NOT use this outside of Antlir internals.  See "Why are `feature`s
-    # forbidden as dependencies?" in `bzl/image/feature/new.bzl` for a
-    # detailed explanation.
-    PRIVATE_feature_suffix = "_IF_YOU_REFER_TO_THIS_RULE_YOUR_DEPENDENCIES_WILL_BE_BROKEN",
-    version_set_allow_all_versions = "__VERSION_SET_ALLOW_ALL_VERSIONS__",
-    # hostnames can't contain underscores.
-    hostname_for_compiler_in_ba = "INTERNAL-ONLY-HOSTNAME-FOR-COMPILER-IN-BA",
-)
-
-def version_set_override_name(current_target):
-    return "vset-override-" + sha256_b64(current_target)
 
 # Use `_get_str_cfg` or `_get_str_list_cfg` instead.
 def _do_not_use_directly_get_cfg(name, default = None):
@@ -57,19 +40,6 @@ def _get_str_list_cfg(name, separator = " ", default = None):
     return s.split(separator) if s else (default or [])
 
 # Defaults to the empty list if the config is not set
-def _get_version_set_to_path():
-    lst = _get_str_list_cfg("version_set_to_path")
-    vs_to_path = dict(zip(lst[::2], lst[1::2]))
-
-    if 2 * len(vs_to_path) != len(lst):
-        fail("antlir.version_set_to_path is a space-separated dict: k1 v1 k2 v2")
-
-    # A layer can turn off version locking
-    # via `version_set = BZL_CONST.version_set_allow_all_versions`.
-    vs_to_path[BZL_CONST.version_set_allow_all_versions] = "TROLLING TROLLING TROLLING"
-    return vs_to_path
-
-# Defaults to the empty list if the config is not set
 def _get_artifact_key_to_path():
     lst = _get_str_list_cfg("artifact_key_to_path")
     key_to_path = dict(zip(lst[::2], lst[1::2]))
@@ -78,12 +48,6 @@ def _get_artifact_key_to_path():
         fail("antlir.artifact_key_to_path is a space-separated dict: k1 v1 k2 v2")
 
     return key_to_path
-
-def _get_buck1_tgts_to_flavors():
-    return {
-        tgt: alias_flavor(flavor, required = True)
-        for tgt, flavor in do_not_use_repo_cfg.get("buck1_tgts_to_flavors").items()
-    }
 
 def new_nevra(**kwargs):
     return nevra_t(**kwargs)
@@ -120,18 +84,6 @@ def _get_flavor_to_config():
     for flavor, orig_flavor_config in do_not_use_repo_cfg.get("flavor_to_config", {}).items():
         flavor_config = {"name": flavor}
         flavor_config.update(orig_flavor_config)  # we'll mutate a copy
-
-        # Apply `buck -c` overrides.
-        #
-        # Buck has a notion of flavors that is separate from Antlir's but
-        # similar in spirit.  It uses # as the delimiter for per-flavor
-        # config options, so we follow that pattern.
-        config_key = CONFIG_KEY + "#" + flavor
-        for key, v in flavor_config.items():
-            val = native.read_config(config_key, key, None)
-            if val != None:
-                flavor_config[key] = val
-
         flavor_to_config[flavor] = new_flavor_config(**flavor_config)
 
     return flavor_to_config
@@ -153,11 +105,6 @@ REPO_CFG = repo_config_t(
     # targets by a key.
     artifact = _get_artifact_key_to_path(),
 
-    # At FB, the Antlir team tightly controls the usage of host mounts,
-    # since they are a huge footgun, and are a terrible idea for almost
-    # every application.  To create an easy-to-review code bottleneck, any
-    # feature target using a host-mount must be listed in this config.
-    host_mounts_allowed_in_targets = _get_str_list_cfg("host_mounts_allowed_in_targets"),
     # Enumerates host mounts required to execute FB binaries in @mode/dev.
     #
     # This is turned into json and loaded by the python side of the
@@ -167,10 +114,7 @@ REPO_CFG = repo_config_t(
     host_mounts_for_repo_artifacts = _get_str_list_cfg(
         "host_mounts_for_repo_artifacts",
     ),
-    flavor_available = _get_str_list_cfg("flavor_available"),
-    flavor_default = _get_str_cfg("flavor_default"),
     flavor_to_config = _get_flavor_to_config(),
-    ba_to_flavor = _get_str_cfg("ba_to_flavor"),
     # KEEP THIS DICTIONARY SMALL.
     #
     # For each `feature`, we have to emit as many targets as there are
@@ -184,5 +128,4 @@ REPO_CFG = repo_config_t(
         for t in _get_str_list_cfg("rc_targets", separator = ",")
     ],
     flavor_alias = _get_str_cfg("flavor-alias", allow_none = True),
-    buck1_tgts_to_flavors = _get_buck1_tgts_to_flavors(),
 )

@@ -1,7 +1,6 @@
 # This file is intended to become a collection of utility features commonly
 # used in constructing images.
 
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 oncall("antlir")
@@ -50,6 +49,5 @@ feature.new(
         ),
         feature.install("empty-machine-id", "/etc/machine-id"),
     ],
-    flavors = REPO_CFG.flavor_available + ["antlir_test"],
     visibility = ["PUBLIC"],
 )
