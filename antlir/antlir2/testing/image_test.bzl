@@ -202,6 +202,7 @@ def _implicit_image_test(
             ],
             default_os = default_os,
             default_rou = default_rou,
+            labels = ["antlir2-implicit-layer=image_test_boot"],
         )
         layer = ":{}--bootable-layer".format(name)
 
@@ -253,6 +254,7 @@ def image_python_test(
             visibility = [":" + name],
             default_os = default_os,
             # @oss-disable
+            labels = ["antlir2-implicit-layer=image_test_xarexec"],
         )
         test_layer = ":{}".format(test_layer)
 
