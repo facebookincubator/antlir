@@ -63,7 +63,6 @@ flavor_config_t = shape.shape(
 # Don't be careless.
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
-    artifact = shape.dict(str, str),
     host_mounts_for_repo_artifacts = shape.list(shape.path),
     flavor_to_config = shape.dict(str, flavor_config_t),
     antlir_linux_flavor = str,
