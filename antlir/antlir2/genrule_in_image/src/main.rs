@@ -54,7 +54,9 @@ fn main() -> Result<()> {
             cwd.as_path(),
         ))
         .working_directory(Path::new("/__genrule_in_image__/working_directory"))
-        .tmpfs(Path::new("/tmp"));
+        .tmpfs(Path::new("/tmp"))
+        // TODO(vmagro): make this a devtmpfs after resolving permissions issues
+        .tmpfs(Path::new("/dev"));
 
     if args.out.dir {
         std::fs::create_dir_all(&args.out.out)?;
