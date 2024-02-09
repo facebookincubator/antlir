@@ -116,6 +116,7 @@ fn run(args: &RunCmdArgs) -> Result<()> {
     debug!("MachineOpts: {:?}", args.machine_spec);
     debug!("VMArgs: {:?}", args.vm_args);
 
+    let mut vm_args = args.vm_args.clone();
     if args.postmortem {
         if args.vm_args.console_output_file.is_none() {
             bail!("Console output file must be specified to run command after VM termination.");
@@ -123,15 +124,18 @@ fn run(args: &RunCmdArgs) -> Result<()> {
         if args.vm_args.mode.command.is_none() {
             bail!("Expected to run command after VM termination but no command specified.");
         }
+        // Don't run the test command inside the VM. Hijack it with our stub so we shut it down as
+        // soon as default target is reached.
+        vm_args.mode.command = Some(vec!["exit".into()]);
     }
 
     set_runtime(args.runtime_spec.clone().into_inner())
         .map_err(|_| anyhow!("Failed to set runtime"))?;
     let machine_opts = args.machine_spec.clone().into_inner();
     let result = if machine_opts.use_legacy_share {
-        VM::<NinePShare>::new(machine_opts, args.vm_args.clone())?.run()
+        VM::<NinePShare>::new(machine_opts, vm_args)?.run()
     } else {
-        VM::<VirtiofsShare>::new(machine_opts, args.vm_args.clone())?.run()
+        VM::<VirtiofsShare>::new(machine_opts, vm_args)?.run()
     };
 
     if !args.expect_failure {
