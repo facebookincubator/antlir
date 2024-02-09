@@ -30,11 +30,15 @@ struct Args {
     /// `--bind-mount-rw src dst` creates an RW bind-mount of src to dst in the subvol
     #[clap(long, num_args = 2)]
     bind_mount_rw: Vec<PathBuf>,
-    #[clap(long)]
+    #[clap(long, overrides_with = "artifacts_require_repo")]
     artifacts_require_repo: bool,
     /// `--user` run command as a given user
     #[clap(long, default_value = "root")]
     user: String,
+    #[clap(long)]
+    pipe: bool,
+    #[clap(long)]
+    chdir: Option<PathBuf>,
     #[clap(last = true)]
     cmd: Vec<OsString>,
 }
@@ -86,10 +90,16 @@ fn main() -> anyhow::Result<()> {
         .inputs(bind_ro_inputs)
         .outputs(bind_rw)
         .ephemeral(true)
-        .invocation_type(InvocationType::Pid2Interactive);
+        .invocation_type(match args.pipe {
+            true => InvocationType::Pid2Pipe,
+            false => InvocationType::Pid2Interactive,
+        });
     if args.artifacts_require_repo {
         cmd_builder.inputs(repo_root.into_path_buf());
         cmd_builder.inputs(PathBuf::from("/usr/local/fbcode"));
+    }
+    if let Some(chdir) = &args.chdir {
+        cmd_builder.working_directory(chdir);
     }
 
     let mut cmd = args.cmd.into_iter();
