@@ -74,6 +74,7 @@ python_library(
     visibility = [
         "//antlir/...",
         "//fbpkg/caf/...",
+        "//kernel/kernels:test_selection_lib",
         "//metalos/initrd/facebook/...",
         "//registry/builder/fbpkg/tests/...",
         "//syseng/yard/installer/...",
