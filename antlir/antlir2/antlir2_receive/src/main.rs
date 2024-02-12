@@ -26,6 +26,9 @@ use tracing::trace;
 use tracing::warn;
 use tracing_subscriber::prelude::*;
 
+#[cfg(facebook)]
+mod caf;
+
 #[derive(Parser, Debug)]
 /// Receive a pre-built image package into the local working volume.
 pub(crate) struct Receive {
@@ -54,6 +57,8 @@ pub enum Format {
     #[clap(name = "cas_dir")]
     CasDir,
     Tar,
+    #[cfg(facebook)]
+    Caf,
 }
 
 #[derive(Parser, Debug)]
@@ -148,6 +153,10 @@ impl Receive {
                 archive
                     .unpack(subvol.path())
                     .context("while unpacking tar")?;
+            }
+            #[cfg(facebook)]
+            Format::Caf => {
+                caf::recv_caf(&self.source, &dst).context("while receiving caf")?;
             }
         };
         let mut subvol = Subvolume::open(&dst).context("while opening subvol")?;

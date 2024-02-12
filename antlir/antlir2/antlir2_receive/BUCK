@@ -10,6 +10,8 @@ rust_binary(
         "anyhow",
         "clap",
         "nix",
+        # @oss-disable
+        # @oss-disable
         "tar",
         "tempfile",
         "tracing",
