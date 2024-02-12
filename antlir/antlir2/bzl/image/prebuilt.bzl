@@ -62,6 +62,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 prefer_local = True,
             )
 
+    if format == "caf":
+        warning("{}: CAF prebuilts may lose xattrs! https://fb.workplace.com/groups/279514141750091/posts/3609421132674735".format(ctx.label))
+
     subvol_symlink = ctx.actions.declare_output("subvol_symlink")
     ctx.actions.run(
         cmd_args(
@@ -114,7 +117,7 @@ _prebuilt = rule(
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_receive:antlir2-receive")),
         "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
-        "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar"]),
+        "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
         "_rootless": attrs.default_only(attrs.bool(default = select({
