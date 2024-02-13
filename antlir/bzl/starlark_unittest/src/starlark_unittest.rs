@@ -12,8 +12,6 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
-use absolute_path::AbsolutePath;
-use absolute_path::AbsolutePathBuf;
 use anyhow::anyhow;
 use anyhow::bail;
 use anyhow::Context;
@@ -36,7 +34,6 @@ use starlark::syntax::Dialect;
 use starlark::values::none::NoneType;
 use starlark::values::OwnedFrozenValue;
 use starlark::values::Value;
-use targets_and_outputs::TargetsAndOutputs;
 use test::test::ShouldPanic;
 use test::test::TestDesc;
 use test::test::TestDescAndFn;
@@ -218,7 +215,10 @@ impl TestModule {
 }
 
 #[derive(Debug)]
-struct Loader<'a>(TargetsAndOutputs<'a>);
+struct Loader {
+    deps: PathBuf,
+    default_cell: String,
+}
 
 fn globals() -> Globals {
     GlobalsBuilder::extended_by(&[
@@ -242,35 +242,17 @@ fn globals() -> Globals {
     .build()
 }
 
-impl<'a> FileLoader for Loader<'a> {
+impl FileLoader for Loader {
     fn load(&self, path: &str) -> Result<FrozenModule> {
         let path = path.trim_start_matches('@');
         if path.starts_with(':') {
             bail!("relative loads not allowed: {path}")
         }
         let path = match path.starts_with("//") {
-            true => format!("{}{}", self.0.default_cell(), path),
+            true => format!("{}{}", self.default_cell, path),
             false => path.into(),
         };
-        let file_path = match path.parse() {
-            Ok(label) => {
-                let relpath = self
-                    .0
-                    .path(&label)
-                    .with_context(|| format!("'{}' is not a dep", label))?;
-                let repo_root = find_root::find_repo_root(
-                    AbsolutePath::new(
-                        &std::env::current_exe().expect("current_exe is always here"),
-                    )
-                    .expect("current_exe must be absolute"),
-                )
-                .context("could not find repo root")?;
-                repo_root.join(relpath)
-            }
-            // hopefully it's just a path
-            Err(_) => AbsolutePathBuf::new(path.clone().into())
-                .with_context(|| format!("'{}' is neither a label nor a path", path))?,
-        };
+        let file_path = self.deps.join(path.replace("//", "/"));
 
         let src = std::fs::read_to_string(&file_path)
             .with_context(|| format!("while reading {}", file_path.display()))?;
@@ -291,26 +273,25 @@ impl<'a> FileLoader for Loader<'a> {
 #[derive(Parser, Debug)]
 struct Args {
     #[clap(long)]
-    targets_and_outputs: PathBuf,
-    test_srcs: PathBuf,
+    test: Vec<PathBuf>,
+    #[clap(long)]
+    deps: PathBuf,
+    #[clap(long)]
+    default_cell: String,
     test_args: Vec<String>,
 }
 
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let deps = std::fs::read(&args.targets_and_outputs)
-        .with_context(|| format!("while reading {}", args.targets_and_outputs.display()))?;
-    let deps = serde_json::from_slice(&deps)
-        .with_context(|| format!("while parsing {}", args.targets_and_outputs.display()))
-        .map(Loader)?;
+    let loader = Loader {
+        deps: args.deps,
+        default_cell: args.default_cell,
+    };
 
     let mut modules = vec![];
-    for entry in std::fs::read_dir(&args.test_srcs)
-        .with_context(|| format!("while looking for sources in {}", args.test_srcs.display()))?
-    {
-        let path = entry?.path().to_path_buf();
-        let module = TestModule::load(path, &deps)?;
+    for src in args.test {
+        let module = TestModule::load(src, &loader)?;
         modules.push(module);
     }
 

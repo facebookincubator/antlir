@@ -11,11 +11,7 @@ rust_binary(
         "clap-3",
         "hex",
         "regex",
-        "serde_json",
         "sha2",
         "starlark",
-        "//antlir:find_root",
-        "//antlir/buck/targets_and_outputs:targets_and_outputs",
-        "//antlir/filesystem/absolute_path:absolute_path",
     ],
 )
