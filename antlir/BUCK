@@ -140,6 +140,22 @@ antlir_rust_extension(
 )
 
 python_library(
+    name = "subvol_utils",
+    srcs = ["subvol_utils.py"],
+    labels = ["uses_sudo"],
+    deps = [
+        ":artifacts_dir",
+        ":btrfsutil",
+        ":common",
+        ":fs_utils",
+        ":unshare",
+        "//antlir/btrfs_diff:freeze",
+        "//antlir/bzl:loopback_opts.shape-python",
+        "//antlir/compiler:subvolume_on_disk",
+    ],
+)
+
+python_library(
     name = "volume_for_repo",
     srcs = ["volume_for_repo.py"],
     deps = [
@@ -189,6 +205,33 @@ rust_library(
         "thiserror",
         "//antlir/filesystem/absolute_path:absolute_path",
     ],
+)
+
+python_library(
+    name = "subvolume_garbage_collector",
+    srcs = ["subvolume_garbage_collector.py"],
+    deps = [
+        ":fs_utils",
+        ":subvol_utils",
+    ],
+)
+
+python_library(
+    name = "find_built_subvol",
+    srcs = ["find_built_subvol.py"],
+    deps = [
+        ":artifacts_dir",
+        ":find_built_subvol_rs",
+        ":fs_utils",
+        ":subvol_utils",
+    ],
+)
+
+python_binary(
+    name = "find-built-subvol",
+    main_function = "antlir.find_built_subvol.main",
+    visibility = ["//antlir/..."],
+    deps = [":find_built_subvol"],
 )
 
 python_binary(
@@ -244,6 +287,59 @@ python_binary(
 )
 
 python_binary(
+    name = "compiler",
+    main_function = "antlir.compiler.compiler.main",
+    visibility = [
+        "//antlir/...",
+        "//bot_generated/antlir/...",
+        # There are almost zero antlir1 images left, just a few stragglers.
+        #
+        # DO NOT ADD TO THIS LIST
+        # If you are creating a new directory with an image in it and it is not
+        # blocked by CVM, DO NOT add your directory to this list. Instead, use
+        # the new antlir2 APIs in your TARGETS/bzl files (load from
+        # //antlir/antlir2 instead of //antlir/bzl)
+        # If you're just calling a macro that uses the old antlir1 interface,
+        # just add this setting to a PACKAGE file in your new directory
+        # https://www.internalfb.com/intern/staticdocs/antlir2/docs/migration-guide/#the-fastest-way
+        #
+        # CVM issues due to incorrect assumption about buck target output always
+        # having the same checksum within a build (invalid because of different
+        # configurations)
+        # https://fb.workplace.com/groups/antlirusers/permalink/1822464761518641/
+        "//admarket/adtech/identity/prediction/service/tw:",
+        "//admarket/adtech/tee_aem/sandbox/tw_container_manifest:",
+        "//admarket/adtech/tee_aem/tw_container_manifest:",
+        "//crypto/keychain_service/tee:",
+        "//security/hsm/experimental/amd_tee/keychain_service:",
+        "//security/hsm/experimental/vesta_tee:",
+        "//security/ra/ssh/images:",
+        "//tazo/identity/sev_snp/tests/cogwheel:",
+        "//tee/snp/cogwheel:",
+        "//tee/snp/image:",
+        "//tee/snp/image/examples:",
+        "//virt/processvm/agent:",
+        # Kept available as base image for the stragglers
+        "//tupperware/image/base:",
+        "//tupperware/image/bzl/tests:",
+        # CMv1 tests that will be deleted when the CVM CMs are moved to antlir2
+        # and no antlir1 images are left
+        "//tupperware/cm/antlir/tests:",
+        "//tupperware/regtest/container_manifest:",
+        # IMPORTANT!!!! DO NOT ADD TO THIS LIST
+        # SEE COMMENT AT TOP OF THIS LIST
+    ],
+    deps = ["//antlir/compiler:compiler"],
+)
+
+python_binary(
+    name = "subvolume-garbage-collector",
+    main_function = "antlir.subvolume_garbage_collector.main",
+    visibility = ["PUBLIC"],
+    deps = [":subvolume_garbage_collector"],
+)
+
+python_binary(
     name = "subvolume-version",
     main_module = "antlir.subvolume_version",
     visibility = ["PUBLIC"],
@@ -277,6 +373,24 @@ python_unittest(
     srcs = ["tests/test_update_package_db.py"],
     needed_coverage = [(100, ":update_package_db")],
     deps = [":update_package_db"],
+)
+
+python_binary(
+    name = "package-image",
+    srcs = ["package_image.py"],
+    main_function = "antlir.package_image.main",
+    resources = {
+        "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade": "btrfs-send-stream-upgrade",
+    },
+    visibility = ["PUBLIC"],
+    deps = [
+        ":find_built_subvol",
+        ":subvol_utils",
+        "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade",
+        "//antlir/bzl:loopback_opts.shape-python",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
+    ],
 )
 
 python_library(
@@ -378,6 +492,21 @@ python_binary(
     ],
 )
 
+python_binary(
+    name = "gpt",
+    srcs = ["gpt.py"],
+    main_function = "antlir.gpt.main",
+    visibility = ["PUBLIC"],
+    deps = [
+        ":common",
+        ":find_built_subvol",
+        ":subvol_utils",
+        "//antlir/bzl:gpt.shape-python",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:nspawn",
+    ],
+)
+
 python_library(
     name = "testlib_flavor_helpers",
     srcs = ["tests/flavor_helpers.py"],
@@ -464,6 +593,20 @@ rust_library(
             "//antlir:find_root",
             "//antlir/filesystem/absolute_path:absolute_path",
         ],
+)
+
+antlir_rust_extension(
+    name = "find_built_subvol_rs",
+    srcs = ["find_built_subvol_rs.rs"],
+    crate_root = "find_built_subvol_rs.rs",
+    typestub = "find_built_subvol_rs.pyi",
+    deps = [
+        ":artifacts_dir_rs-rust",
+        ":find_built_subvol_rust_lib",
+        ":find_root",
+        ":fs_utils_rs-rust",
+        "//antlir/filesystem/absolute_path:absolute_path",
+    ],
 )
 
 python_binary(

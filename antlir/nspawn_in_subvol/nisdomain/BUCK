@@ -1,0 +1,27 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/bzl:build_defs.bzl", "export_file")
+
+oncall("antlir")
+
+image.layer(
+    name = "setup",
+    default_os = "centos9",
+    features = [
+        feature.rpms_install(rpms = [
+            "hostname",
+        ]),
+    ],
+)
+
+# Rebuild this file with:
+# clang -static -o nis_domainname nis_domainname.c
+#
+# Yeah, checking in a binary is awful, but this absolutely needs to be a FULLY
+# static binary and building it in an antlir layer is really really slow and
+# takes on a circular dependency that is hard to break.
+export_file(
+    name = "nis_domainname",
+    # All =container targets take a direct dep on this.
+    visibility = ["PUBLIC"],
+)

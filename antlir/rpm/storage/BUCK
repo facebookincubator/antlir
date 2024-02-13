@@ -1,0 +1,104 @@
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "python_unittest", "third_party")
+
+oncall("antlir")
+
+# NB: For anything that runs at Facebook, depend on `facebook:storage`, but
+# import the outer `rpm.storage` module.
+python_library(
+    name = "base_storage",
+    srcs = ["storage.py"],
+    deps = ["//antlir/rpm:pluggable"],
+)
+
+python_library(
+    name = "cli_object_storage",
+    srcs = ["cli_object_storage.py"],
+    deps = ["//antlir/rpm:common"],
+)
+
+python_library(
+    name = "filesystem_storage",
+    srcs = ["filesystem_storage.py"],
+    deps = ["//antlir:fs_utils"],
+)
+
+python_library(
+    # @autodeps-skip
+    name = "s3_storage",
+    srcs = ["s3_storage.py"],
+    deps = [
+        "//antlir/rpm:open_url",
+        third_party.library(
+            "boto3",
+            "boto3",
+            platform = "python",
+        ),
+    ],
+)
+
+# Depend on this rather than on e.g. :base_storage or :filesystem_storage above
+python_library(
+    name = "storage",
+    srcs = ["__init__.py"],
+    deps = [
+        ":base_storage",
+        ":cli_object_storage",
+        ":filesystem_storage",
+        ":s3_storage",
+    ],
+)
+
+python_library(
+    name = "testlib_storage_base_test",
+    srcs = ["tests/storage_base_test.py"],
+    deps = [":storage"],
+)
+
+python_library(
+    name = "testlib_cli_object_storage_base_test",
+    srcs = ["tests/cli_object_storage_base_test.py"],
+    deps = [":testlib_storage_base_test"],
+)
+
+python_unittest(
+    name = "test-filesystem-storage",
+    srcs = ["tests/test_filesystem_storage.py"],
+    needed_coverage = [
+        (100, ":storage"),
+        (100, ":base_storage"),
+        (100, ":filesystem_storage"),
+    ],
+    deps = [":testlib_storage_base_test"],
+)
+
+python_unittest(
+    name = "test-s3-storage",
+    srcs = ["tests/test_s3_storage.py"],
+    needed_coverage = [
+        (100, ":storage"),
+        (100, ":base_storage"),
+        (100, ":s3_storage"),
+    ],
+    deps = [
+        ":testlib_cli_object_storage_base_test",
+    ],
+)
+
+python_binary(
+    name = "cli",
+    srcs = ["cli.py"],
+    main_function = "antlir.rpm.storage.cli.invoke_main",
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir/rpm:common",
+        "//antlir/rpm/storage:storage",
+    ],
+)
+
+python_unittest(
+    name = "test-cli",
+    srcs = ["tests/test_cli.py"],
+    needed_coverage = [(100, ":cli-library")],
+    deps = [":cli-library"],
+)

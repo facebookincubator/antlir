@@ -1,0 +1,258 @@
+#!/usr/bin/env python3
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+import os
+import shutil
+import stat
+import subprocess
+import tempfile
+from dataclasses import dataclass
+from typing import Iterable, NamedTuple, Union
+
+from antlir.bzl.image.feature.install import install_files_t
+
+from antlir.compiler.items.common import ImageItem, LayerOpts, make_path_normal_relative
+from antlir.compiler.items.stat_options import build_stat_options
+from antlir.compiler.requires_provides import (
+    ProvidesDirectory,
+    ProvidesFile,
+    RequireDirectory,
+    RequireGroup,
+    RequireUser,
+)
+from antlir.fs_utils import Path
+
+from antlir.fs_utils_rs import copy_file
+from antlir.subvol_utils import Subvol
+from pydantic import PrivateAttr
+
+
+# Default permissions, must match the docs in `install.bzl`.
+_DIR_MODE = 0o755  # u+rwx,og+rx
+_EXE_MODE = 0o555  # a+rx
+_DATA_MODE = 0o444  # a+r
+
+
+class _InstallablePath(NamedTuple):
+    source: Path
+    provides: Union[ProvidesDirectory, ProvidesFile]
+    mode: int
+
+
+def _recurse_into_source(
+    source_dir: Path,
+    dest_dir: Path,
+    *,
+    dir_mode: int,
+    exe_mode: int,
+    data_mode: int,
+) -> Iterable[_InstallablePath]:
+    "Yields paths in top-down order, making recursive copying easy."
+    yield _InstallablePath(
+        source=source_dir,
+        provides=ProvidesDirectory(path=dest_dir),
+        mode=dir_mode,
+    )
+    with os.scandir(source_dir) as it:
+        for e in it:
+            source = source_dir / e.name
+            dest = dest_dir / e.name
+            if e.is_dir(follow_symlinks=False):
+                yield from _recurse_into_source(
+                    source,
+                    dest,
+                    dir_mode=dir_mode,
+                    exe_mode=exe_mode,
+                    data_mode=data_mode,
+                )
+            elif e.is_file(follow_symlinks=False):
+                yield _InstallablePath(
+                    source=source,
+                    provides=ProvidesFile(path=dest),
+                    # Same `os.access` rationale as in `customize_fields`.
+                    mode=exe_mode if os.access(source, os.X_OK) else data_mode,
+                )
+            else:
+                raise RuntimeError(f"{source}: neither a file nor a directory")
+
+
+# Future enhancement notes:
+#
+#  (1) If we ever need to support layer sources, generalize
+#      `PhasesProvideItem` -- we would need to do the same traversal,
+#      but disallowing non-regular files.
+# pyre-fixme[13]: Attribute `source` is never initialized.
+@dataclass(init=False, repr=False, eq=False, frozen=True)
+class InstallFileItem(install_files_t, ImageItem):
+
+    source: Path
+    separate_debug_symbols: bool = True
+
+    _paths: Iterable[_InstallablePath] = PrivateAttr()
+
+    def __init__(self, **kwargs) -> None:
+        source = Path(kwargs["source"])
+        dest = Path(make_path_normal_relative(kwargs.pop("dest")))
+
+        # The 3 separate `*_mode` arguments must be set instead of `mode` for
+        # directory sources.
+        popped_args = ["mode", "exe_mode", "data_mode", "dir_mode"]
+        mode, dir_mode, exe_mode, data_mode = (kwargs.pop(a, None) for a in popped_args)
+
+        st_source = os.stat(str(source), follow_symlinks=False)
+        if stat.S_ISDIR(st_source.st_mode):
+            assert mode is None, "Cannot use `mode` for directory sources."
+            paths = tuple(
+                _recurse_into_source(
+                    source,
+                    dest,
+                    dir_mode=dir_mode or _DIR_MODE,
+                    exe_mode=exe_mode or _EXE_MODE,
+                    data_mode=data_mode or _DATA_MODE,
+                )
+            )
+        elif stat.S_ISREG(st_source.st_mode):
+            assert {dir_mode, exe_mode, data_mode} == {
+                None
+            }, "Cannot use `{dir,exe,data}_mode` for file sources."
+            if mode is None:
+                # This tests whether the build repo user can execute the
+                # file.  This is a very natural test for build artifacts,
+                # and files in the repo.  Note that this can be affected if
+                # the ambient umask is pathological, which is why
+                # `compiler.py` checks the umask.
+                mode = _EXE_MODE if os.access(source, os.X_OK) else _DATA_MODE
+            paths = (
+                _InstallablePath(
+                    source=source, provides=ProvidesFile(path=dest), mode=mode
+                ),
+            )
+        else:
+            raise RuntimeError(
+                f"{source} must be a regular file or directory, got {st_source}"
+            )
+        object.__setattr__(self, "_paths", paths)
+
+        super().__init__(dest=dest, **kwargs)
+
+    def provides(self):
+        for i in self._paths:
+            yield i.provides
+
+    def requires(self):
+        yield RequireDirectory(path=self.dest.dirname())
+        yield RequireUser(self.user)
+        yield RequireGroup(self.group)
+
+    def build(self, subvol: Subvol, layer_opts: LayerOpts) -> None:
+        dest = subvol.path(self.dest)
+
+        if stat.S_ISDIR(os.stat(self.source).st_mode):
+            shutil.copytree(
+                str(self.source),
+                str(dest),
+                copy_function=lambda src, dst: copy_file(Path(src), Path(dst)),
+            )
+        else:
+            with open(self.source, mode="rb") as src_f:
+                first_4 = src_f.read(4)
+                is_elf = first_4 == b"\x7fELF"
+            # covered by image build '//antlir/compiler/test_images:with-stripped-binary'
+            if is_elf and self.separate_debug_symbols:  # pragma: no cover
+                with tempfile.TemporaryDirectory(dir=subvol.path()) as tmpdir:
+                    tmpdir = Path(tmpdir)
+                    tmp_src = tmpdir / self.dest.basename()
+                    tmp_src_dbg = Path(tmp_src + b".debug")
+                    copy_file(self.source, tmp_src)
+                    # save (only) debug symbols to a separate file
+                    subprocess.run(
+                        [
+                            "objcopy",
+                            "--only-keep-debug",
+                            self.source,
+                            tmp_src_dbg,
+                        ],
+                        check=True,
+                    )
+                    # remove debug symbols from the "primary" binary file
+                    subprocess.run(
+                        [
+                            "objcopy",
+                            "--strip-debug",
+                            "--remove-section=.pseudo_probe",
+                            "--remove-section=.pseudo_probe_desc",
+                            tmp_src,
+                        ],
+                        check=True,
+                    )
+                    # Find the BuildID of the binary. This determines where it
+                    # should go for gdb to look it up under /usr/lib/debug
+                    # https://sourceware.org/gdb/onlinedocs/gdb/Separate-Debug-Files.html
+                    build_id = subprocess.run(
+                        [
+                            "objcopy",
+                            "--dump-section",
+                            ".note.gnu.build-id=/dev/stdout",
+                            tmp_src,
+                        ],
+                        capture_output=True,
+                        check=True,
+                    ).stdout
+                    dbg_dst_by_path = Path("/usr/lib/debug") / (
+                        self.dest.strip_leading_slashes() + b".debug"
+                    )
+                    os.makedirs(subvol.path(dbg_dst_by_path.dirname()), exist_ok=True)
+                    # Prefer to install the debug info by BuildID since it does
+                    # not require another objcopy invocation and is more
+                    # standard
+                    if build_id:
+                        build_id = build_id[len(build_id) - 20 :].hex()
+                        dbg_dst = (
+                            Path("/usr/lib/debug/.build-id")
+                            / build_id[:2]
+                            / (build_id[2:] + ".debug")
+                        )
+                        os.makedirs(subvol.path(dbg_dst.dirname()), exist_ok=True)
+                        # install the debug symbols file into /usr/lib/debug
+                        copy_file(tmp_src_dbg, subvol.path(dbg_dst))
+                        # be nice and symlink to it from the path in case anyone
+                        # goes looking for it by hand
+                        os.symlink(
+                            dbg_dst.relpath(dbg_dst_by_path.dirname()),
+                            subvol.path(dbg_dst_by_path),
+                        )
+                    # We might not be able to get the BuildID if this is a
+                    # dev-mode binary, so fallback to installing the debug file
+                    # by filename
+                    else:
+                        subprocess.run(
+                            [
+                                "objcopy",
+                                "--add-gnu-debuglink",
+                                dbg_dst_by_path.basename(),
+                                tmp_src,
+                            ],
+                            cwd=tmpdir,
+                            check=True,
+                        )
+                        # install the debug symbols file into /usr/lib/debug
+                        copy_file(tmp_src_dbg, subvol.path(dbg_dst_by_path))
+
+                    # Finally, install the binary without debug symbols to the chosen location
+                    copy_file(tmp_src, dest)
+            else:
+                copy_file(self.source, dest)
+
+        build_stat_options(
+            self,
+            subvol,
+            dest,
+            do_not_set_mode=True,
+            build_appliance=layer_opts.build_appliance,
+        )
+
+        for i in self._paths:
+            os.chmod(subvol.path(i.provides.path()), i.mode)
