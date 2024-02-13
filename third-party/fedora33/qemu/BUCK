@@ -1,6 +1,6 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "http_file")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 load(":hoist.bzl", "hoist")
 
 package(name = "twimage")
@@ -52,7 +52,7 @@ http_file(
 image.layer(
     name = "base",
     features = [
-        feature.rpms_install([
+        feature.rpms_install(rpms = [
             # build dependencies
             "git",
             "bzip2",
@@ -76,29 +76,45 @@ image.layer(
 image.layer(
     name = "setup",
     features = [
-        feature.ensure_dirs_exist("/_temp_qemu"),
-        feature.ensure_dirs_exist("/output"),
+        feature.ensure_dirs_exist(dirs = "/_temp_qemu"),
+        feature.ensure_dirs_exist(dirs = "/output"),
         # put sources and build script in the base layer
-        feature.install("build.sh", "/_temp_qemu/build.sh"),
-        feature.install("meson.build.patch", "/_temp_qemu/meson.build.patch"),
-        feature.install(":source", "/_temp_qemu/source.tar.xz"),
-        feature.install(":pixman", "/_temp_qemu/pixman.tar.gz"),
-        feature.install(":libcap-ng", "/_temp_qemu/libcap-ng.tar.gz"),
+        feature.install(
+            src = "build.sh",
+            dst = "/_temp_qemu/build.sh",
+        ),
+        feature.install(
+            src = "meson.build.patch",
+            dst = "/_temp_qemu/meson.build.patch",
+        ),
+        feature.install(
+            src = ":source",
+            dst = "/_temp_qemu/source.tar.xz",
+        ),
+        feature.install(
+            src = ":pixman",
+            dst = "/_temp_qemu/pixman.tar.gz",
+        ),
+        feature.install(
+            src = ":libcap-ng",
+            dst = "/_temp_qemu/libcap-ng.tar.gz",
+        ),
     ],
     parent_layer = ":base",
 )
 
-image.genrule_layer(
+image.layer(
     name = "build",
-    cmd = [
-        "/_temp_qemu/build.sh",
-        qemu["version"],
-        pixman["version"],
-        libcap_ng["version"],
-    ],
+    features = [feature.genrule(
+        cmd = [
+            "/_temp_qemu/build.sh",
+            qemu["version"],
+            pixman["version"],
+            libcap_ng["version"],
+        ],
+        user = "root",
+    )],
     parent_layer = ":setup",
-    rule_type = "build",
-    user = "root",
 )
 
 vm_visibility = [

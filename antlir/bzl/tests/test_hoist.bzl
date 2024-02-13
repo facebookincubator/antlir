@@ -3,31 +3,32 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:compat.bzl", "compat")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "python_unittest")
 load("//antlir/bzl:flavor_helpers.bzl", "flavor_helpers")
 load("//antlir/bzl:hoist.bzl", "hoist")
-load("//antlir/bzl:image.bzl", "image")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def test_hoist(name):
     image.layer(
         name = "{}-base-layer".format(name),
-        flavor = flavor_helpers.get_antlir_linux_flavor(),
-        features = [feature.rpms_install([
+        flavor = compat.from_antlir1_flavor(flavor_helpers.get_antlir_linux_flavor()),
+        features = [feature.rpms_install(rpms = [
             "coreutils",
             "findutils",
         ])],
     )
 
-    image.genrule_layer(
+    image.layer(
         name = name + "-test-layer",
         parent_layer = ":{}-base-layer".format(name),
-        rule_type = "build",
-        user = "root",
-        cmd = [
-            "bash",
-            "-uec",
-            """
+        features = [feature.genrule(
+            user = "root",
+            cmd = [
+                "bash",
+                "-uec",
+                """
             set -eo pipefail
 
             cd /
@@ -41,7 +42,8 @@ def test_hoist(name):
             touch folder1/file1.rpm
             touch folder1/file2
             """,
-        ],
+            ],
+        )],
     )
 
     hoist(
