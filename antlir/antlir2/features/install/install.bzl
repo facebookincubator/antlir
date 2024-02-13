@@ -82,7 +82,8 @@ def install_text(
         dst: str | Select,
         mode: int | str | Select | None = None,
         user: str | Select = "root",
-        group: str | Select = "root") -> ParseTimeFeature:
+        group: str | Select = "root",
+        xattrs: dict[str, str] | Select = {}) -> ParseTimeFeature:
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
     mode = stat.mode(mode) if mode != None else None
@@ -96,6 +97,7 @@ def install_text(
             "mode": mode,
             "text": text,
             "user": user,
+            "xattrs": xattrs,
         },
     )
 
