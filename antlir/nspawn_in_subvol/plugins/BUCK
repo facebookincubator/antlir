@@ -1,0 +1,116 @@
+load("//antlir/bzl:build_defs.bzl", "python_library")
+
+oncall("antlir")
+
+# No test coverage because it has no logic.
+python_library(
+    name = "plugins",
+    srcs = ["__init__.py"],
+)
+
+python_library(
+    name = "server_launcher",
+    srcs = ["server_launcher.py"],
+    deps = [
+        "//antlir:common",
+        "//antlir:fs_utils",
+    ],
+)
+
+# Gets test coverage via `:test-repo-servers`
+python_library(
+    name = "launch_repo_servers",
+    srcs = ["launch_repo_servers.py"],
+    deps = [
+        ":server_launcher",
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir/fbpkg/db:constants",
+    ],
+)
+
+python_library(
+    name = "launch_proxy_server",
+    srcs = ["launch_proxy_server.py"],
+    resources = {
+        "//antlir/proxy/facebook:proxy-server": "proxy-server",
+    },
+    deps = [
+        ":server_launcher",
+        "//antlir:common",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_library(
+    name = "repo_servers",
+    srcs = ["repo_servers.py"],
+    # Future: bring this back, a comment in the `.py` file explains how.
+    # resources = {"//antlir/rpm:repo-server": "repo-server"},
+    deps = [
+        ":launch_proxy_server",
+        ":launch_repo_servers",
+        ":plugins",
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:netns_socket",
+        "//antlir/nspawn_in_subvol:plugin_hooks",
+    ],
+)
+
+python_library(
+    name = "yum_dnf_versionlock",
+    srcs = ["yum_dnf_versionlock.py"],
+    deps = [
+        ":plugins",
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:plugin_hooks",
+    ],
+)
+
+python_library(
+    name = "repo_plugins",
+    srcs = ["repo_plugins.py"],
+    deps = [
+        ":attach_antlir_dir",
+        ":plugins",
+        ":repo_servers",
+        ":shadow_paths",
+        ":yum_dnf_versionlock",
+        "//antlir:fs_utils",
+        "//antlir/bzl:container_opts.shape-python",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:common",
+    ],
+)
+
+python_library(
+    name = "shadow_paths",
+    srcs = ["shadow_paths.py"],
+    deps = [
+        ":plugins",
+        "//antlir:common",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir/bzl:container_opts.shape-python",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:common",
+        "//antlir/nspawn_in_subvol:plugin_hooks",
+    ],
+)
+
+python_library(
+    name = "attach_antlir_dir",
+    srcs = ["attach_antlir_dir.py"],
+    deps = [
+        ":plugins",
+        "//antlir:fs_utils",
+        "//antlir/nspawn_in_subvol:args",
+        "//antlir/nspawn_in_subvol:plugin_hooks",
+    ],
+)
