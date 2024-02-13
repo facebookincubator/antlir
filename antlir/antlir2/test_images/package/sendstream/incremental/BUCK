@@ -1,8 +1,10 @@
+load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
+load("//antlir/antlir2/antlir2_vm/bzl:disk.bzl", "disk")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
-load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest")
+load("//metalos/vm/disks:simple.bzl", "simple_disk")
 
 oncall("antlir")
 
@@ -10,6 +12,8 @@ buck_genrule(
     name = "parent_large_file",
     out = "parent_large_file",
     cmd = """
+        # it's important that this is properly random so that we don't have to
+        # account for compression
         head -c 100M </dev/urandom >$OUT
     """,
     visibility = [],
@@ -38,6 +42,8 @@ buck_genrule(
     name = "child_large_file",
     out = "child_large_file",
     cmd = """
+        # it's important that this is properly random so that we don't have to
+        # account for compression
         head -c 10M </dev/urandom >$OUT
     """,
     visibility = [],
@@ -65,36 +71,42 @@ package.sendstream_v2(
 )
 
 image.layer(
-    name = "test-layer",
+    name = "foo",
     features = [
-        feature.rpms_install(rpms = [
-            "bash",
-            "btrfs-progs",
-            "coreutils",
-            "util-linux-core",
-        ]),
-        feature.install(
-            src = ":parent.sendstream",
-            dst = "/parent.sendstream",
-        ),
-        feature.install(
-            src = ":child.sendstream",
-            dst = "/child.sendstream",
+        feature.install_text(
+            dst = "/foo",
+            text = "foo",
         ),
     ],
 )
 
-image_sh_test(
-    name = "test-incremental",
-    allocate_loop_devices = 1,
-    # aarch64 user emulation does not support BTRFS_IOC_SET_RECEIVED_SUBVOL
-    compatible_with = ["ovr_config//cpu:x86_64"],
-    layer = ":test-layer",
-    test = "test-incremental.sh",
+vm.host(
+    name = "vm",
+    disks = [
+        simple_disk.default_boot_disk,
+        disk.create_empty_disk(
+            name = "scratch-disk",
+            size_mib = 1024,
+        ),
+    ],
 )
 
-image_python_test(
+vm.python_test(
+    name = "test-incremental",
+    srcs = ["test-incremental.py"],
+    compatible_with = ["ovr_config//cpu:x86_64"],
+    resources = {
+        ":child.sendstream": "child.sendstream",
+        ":parent.sendstream": "parent.sendstream",
+    },
+    vm_host = ":vm",
+)
+
+python_unittest(
     name = "test-incremental-size",
     srcs = ["test_incremental_size.py"],
-    layer = ":test-layer",
+    resources = {
+        ":child.sendstream": "child.sendstream",
+        ":parent.sendstream": "parent.sendstream",
+    },
 )
