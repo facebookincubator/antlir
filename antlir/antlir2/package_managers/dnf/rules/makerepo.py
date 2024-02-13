@@ -10,14 +10,13 @@ import json
 import shutil
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Optional
 
 import click
 import createrepo_c as cr
 
 
-# pyre-fixme[5]: Global expression must be annotated.
-_COMPRESSION_MODES = {
+_COMPRESSION_MODES: Dict[str, int] = {
     "none": ("", cr.NO_COMPRESSION),
     "gzip": (".gz", cr.GZ_COMPRESSION),
 }
