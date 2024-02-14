@@ -33,7 +33,7 @@ def build_depgraph(
             cmd_args("--rootless") if rootless else cmd_args(),
         ),
         category = "antlir2_depgraph",
-        identifier = identifier_prefix + ("/pre" if not subvol else ""),
+        identifier = identifier_prefix.removesuffix("_") + ("/pre" if not subvol else ""),
         local_only = bool(subvol),
         env = {
             "RUST_LOG": "antlir2=trace",
