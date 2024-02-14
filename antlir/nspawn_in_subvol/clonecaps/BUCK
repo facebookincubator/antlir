@@ -1,9 +1,0 @@
-load("//antlir/bzl:build_defs.bzl", "cpp_binary")
-
-oncall("antlir")
-
-cpp_binary(
-    name = "clonecaps",
-    srcs = ["clonecaps.c"],
-    external_deps = [("libcap-ng", None, "cap-ng")],
-)
