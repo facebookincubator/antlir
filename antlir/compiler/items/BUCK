@@ -4,15 +4,6 @@ load("//antlir/bzl:build_defs.bzl", "python_library", "third_party")
 
 oncall("antlir")
 
-python_library(
-    name = "clone",
-    srcs = ["clone.py"],
-    deps = [
-        ":common",
-        ":phases_provide",
-    ],
-)
-
 # Needs dedicated test coverage. For now, is covered by `test-items`.
 python_library(
     name = "common",
@@ -21,9 +12,6 @@ python_library(
         ":mount_utils",
         "//antlir:config",
         "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir/compiler:procfs_serde",
-        "//antlir/rpm:yum_dnf_conf",
         third_party.library(
             "pydantic",
             platform = "python",
@@ -31,73 +19,10 @@ python_library(
     ],
 )
 
-python_library(
-    name = "group",
-    srcs = ["group.py"],
-    deps = [
-        ":common",
-    ],
-)
-
-python_library(
-    name = "phases_provide",
-    srcs = ["phases_provide.py"],
-    deps = [
-        ":common",
-        ":group",
-        ":user",
-    ],
-)
-
-python_library(
-    name = "requires",
-    srcs = ["requires.py"],
-    deps = [
-        ":common",
-    ],
-)
-
-python_library(
-    name = "rpm_action",
-    srcs = ["rpm_action.py"],
-    deps = [
-        ":common",
-        "//antlir:bzl_const",
-        "//antlir/nspawn_in_subvol:nspawn",
-        "//antlir/nspawn_in_subvol/plugins:repo_plugins",
-        "//antlir/rpm:find_snapshot",
-        "//antlir/rpm:rpm_metadata",
-    ],
-)
-
-python_library(
-    name = "genrule_layer",
-    srcs = ["genrule_layer.py"],
-    deps = [
-        ":common",
-        "//antlir:fs_utils",
-        "//antlir/nspawn_in_subvol:nspawn",
-        "//antlir/nspawn_in_subvol/plugins:repo_plugins",
-    ],
-)
-
-python_library(
-    name = "ensure_dirs_exist",
-    srcs = ["ensure_dirs_exist.py"],
-    deps = [
-        ":common",
-        ":stat_options",
-        "//antlir/compiler:requires_provides",
-        "//antlir/compiler:subvolume_on_disk",
-        "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
 # Covered by `test-items`. Future: separate test & coverage.
 python_library(
     name = "mount_utils",
     srcs = ["mount_utils.py"],
-    deps = ["//antlir:subvol_utils"],
 )
 
 python_library(
@@ -112,124 +37,6 @@ python_library(
         ":common",
         ":mount_utils",
         "//antlir:bzl_const",
-        "//antlir:find_built_subvol",
-        "//antlir:subvol_utils",
         "//antlir/buck/buck_label:buck_label_py",
-        "//antlir/compiler:requires_provides",
-    ],
-)
-
-python_library(
-    name = "make_subvol",
-    srcs = ["make_subvol.py"],
-    deps = [
-        ":common",
-        ":mount_utils",
-        ":tarball",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-    ],
-)
-
-python_library(
-    name = "stat_options",
-    srcs = ["stat_options.py"],
-    deps = [
-        ":group",
-        ":user",
-        "//antlir:subvol_utils",
-        "//antlir/nspawn_in_subvol:args",
-        "//antlir/nspawn_in_subvol:nspawn",
-    ],
-)
-
-python_library(
-    name = "tarball",
-    srcs = ["tarball.py"],
-    deps = [
-    ],
-)
-
-python_library(
-    name = "symlink",
-    srcs = [
-        "symlink.py",
-    ],
-    deps = [
-        ":common",
-        "//antlir:bzl_const",
-        "//antlir/compiler:requires_provides",
-        "//antlir/nspawn_in_subvol:nspawn",
-        third_party.library(
-            "pydantic",
-            platform = "python",
-        ),
-    ],
-)
-
-python_library(
-    name = "install_file",
-    srcs = ["install_file.py"],
-    deps = [
-        ":common",
-        ":stat_options",
-        "//antlir:fs_utils",
-        "//antlir:subvol_utils",
-        "//antlir/compiler:requires_provides",
-        "//antlir/nspawn_in_subvol:nspawn",
-        third_party.library(
-            "pydantic",
-            platform = "python",
-        ),
-    ],
-)
-
-python_library(
-    name = "remove_path",
-    srcs = ["remove_path.py"],
-    deps = [
-        ":common",
-        "//antlir:errors",
-        "//antlir:subvol_utils",
-    ],
-)
-
-# `items_for_features` and `sample_items` always depend on ~all items.
-python_library(
-    name = "all-items",
-    deps = [
-        ":clone",
-        ":ensure_dirs_exist",
-        ":genrule_layer",
-        ":group",
-        ":install_file",
-        ":make_subvol",
-        ":meta_key_value_store",
-        ":mount",
-        ":phases_provide",
-        ":remove_path",
-        ":requires",
-        ":rpm_action",
-        ":symlink",
-        ":tarball",
-        ":user",
-    ],
-)
-
-python_library(
-    name = "user",
-    srcs = ["user.py"],
-    deps = [
-        ":common",
-        ":group",
-    ],
-)
-
-python_library(
-    name = "meta_key_value_store",
-    srcs = ["meta_key_value_store.py"],
-    deps = [
-        ":common",
-        "//antlir/compiler:requires_provides",
     ],
 )
