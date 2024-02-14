@@ -1,0 +1,33 @@
+load("//antlir/bzl/image/feature:defs.bzl", "feature")
+
+oncall("antlir")
+
+feature.new(
+    name = "maybe_mark_non_build_step",
+    features = [
+        feature.ensure_subdirs_exist("/usr/libexec", "antlir-vmtest"),
+        feature.install(
+            "//antlir/nspawn_in_subvol/nisdomain:nis_domainname",
+            "/usr/libexec/antlir-vmtest/nis_domainname",
+            mode = "a+rx",
+        ),
+        feature.ensure_subdirs_exist("/etc/systemd", "system-generators"),
+        # This is a generator to run as early as possible, so that any
+        # subsequent units that use `install_buck_runnable` can run without
+        # the costly `runs_in_build_steps_causes_slow_rebuilds` flag.
+        feature.install(
+            "maybe-mark-non-build-step",
+            "/etc/systemd/system-generators/antlir-maybe-mark-non-build-step",
+            mode = "a+rx",
+        ),
+    ],
+    # Do NOT use this target outside of:
+    #
+    # * MetalOS vmtest image.
+    # * Grasstile builds
+    #
+    # See https://fburl.com/workplace/hux7vro0 for discussion
+    visibility = [
+        "//provisioning/images/grasstile/...",
+    ],
+)

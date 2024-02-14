@@ -1,0 +1,94 @@
+# NB: There is no binary here because the image compiler does not get built
+# by Buck, it is executed in-place using the system Python.
+
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library")
+
+oncall("antlir")
+
+python_library(
+    name = "subvolume_on_disk",
+    srcs = ["subvolume_on_disk.py"],
+    deps = [
+        "//antlir:btrfsutil",
+        "//antlir:fs_utils",
+    ],
+)
+
+python_library(
+    name = "procfs_serde",
+    srcs = ["procfs_serde.py"],
+    deps = ["//antlir:fs_utils"],
+)
+
+python_library(
+    name = "requires_provides",
+    srcs = ["requires_provides.py"],
+    deps = ["//antlir:fs_utils"],
+)
+
+python_library(
+    name = "dep_graph",
+    srcs = ["dep_graph.py"],
+    # NB: Don't use `all-items` here, just use the ones we need.
+    deps = [
+        "//antlir:errors",
+        "//antlir:fs_utils",
+        "//antlir/compiler/items:genrule_layer",
+        "//antlir/compiler/items:make_subvol",
+        "//antlir/compiler/items:phases_provide",
+    ],
+)
+
+python_library(
+    name = "items_for_features",
+    srcs = ["items_for_features.py"],
+    visibility = [
+        "//antlir/...",
+        "//tupperware/cm/antlir/...",
+    ],
+    deps = ["//antlir/compiler/items:all-items"],
+)
+
+python_library(
+    name = "compiler",
+    srcs = ["compiler.py"],
+    deps = [
+        ":dep_graph",
+        ":helpers",
+        ":items_for_features",
+        ":subvolume_on_disk",
+        "//antlir:cli",
+        "//antlir:config",
+        "//antlir:errors",
+        "//antlir:fs_utils",
+        "//antlir/buck/buck_label:buck_label_py",
+        "//antlir/bzl:constants.shape-python",
+    ],
+)
+
+python_library(
+    name = "helpers",
+    srcs = ["helpers.py"],
+    visibility = [
+        # Modify this with caution! See docblock for `compile_items_to_subvol`.
+        "//antlir/compiler:compile-items-to-subvol-bin",
+        "//antlir/compiler:compiler",
+        "//antlir/compiler/tests/...",
+    ],
+    deps = [
+        ":dep_graph",
+        ":items_for_features",
+        "//antlir:cli",
+        "//antlir:config",
+        "//antlir:errors",
+        "//antlir:fs_utils",
+        "//antlir/bzl:constants.shape-python",
+    ],
+)
+
+python_binary(
+    name = "compile-items-to-subvol-bin",
+    main_function = "antlir.compiler.helpers.main",
+    visibility = ["PUBLIC"],
+    deps = [":helpers"],
+)

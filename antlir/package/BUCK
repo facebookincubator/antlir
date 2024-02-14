@@ -1,0 +1,22 @@
+load("//antlir/bzl:build_defs.bzl", "python_binary")
+
+oncall("antlir")
+
+python_binary(
+    name = "btrfs",
+    srcs = [
+        "btrfs.py",
+    ],
+    main_function = "antlir.package.btrfs.main",
+    visibility = ["PUBLIC"],
+    deps = [
+        "//antlir:btrfsutil",
+        "//antlir:common",
+        "//antlir:errors",
+        "//antlir:find_built_subvol",
+        "//antlir:fs_utils",
+        "//antlir:subvol_utils",
+        "//antlir:unshare",
+        "//antlir/bzl/image/package:btrfs.shape-python",
+    ],
+)
