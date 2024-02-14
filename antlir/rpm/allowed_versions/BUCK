@@ -1,0 +1,66 @@
+load("//antlir/bzl:build_defs.bzl", "python_binary", "python_library", "python_unittest")
+
+oncall("antlir")
+
+python_library(
+    name = "envra",
+    srcs = ["envra.py"],
+    deps = ["//antlir/rpm:rpm_metadata"],
+)
+
+python_unittest(
+    name = "test-envra",
+    srcs = ["tests/test_envra.py"],
+    needed_coverage = [(100, ":envra")],
+    deps = [
+        ":envra",
+    ],
+)
+
+# To use this, add `facebook:package_group` to your `deps`, but import this
+# outer `.package_group` module.
+python_library(
+    name = "package_group",
+    srcs = ["package_group.py"],
+    deps = [
+        "//antlir:fs_utils",
+        "//antlir/rpm:pluggable",
+    ],
+)
+
+# To use this, add `facebook:version_policy` to your `deps`, but import this
+# outer `.version_policy` module.
+python_library(
+    name = "version_policy",
+    srcs = ["version_policy.py"],
+    deps = [
+        ":envra",
+        "//antlir:fs_utils",
+        "//antlir/rpm:pluggable",
+    ],
+)
+
+python_binary(
+    name = "update-allowed-versions",
+    srcs = ["update_allowed_versions.py"],
+    main_function = "antlir.rpm.allowed_versions.update_allowed_versions.main",
+    deps = [
+        ":envra",
+        "//antlir/rpm:common",
+        "//antlir/rpm/allowed_versions:package_group",
+        "//antlir/rpm/allowed_versions:version_policy",
+        "//antlir/rpm/allowed_versions/facebook:package_group",
+        "//antlir/rpm/allowed_versions/facebook:version_policy",
+    ],
+)
+
+python_unittest(
+    name = "test-update-allowed-versions",
+    srcs = ["tests/test_update_allowed_versions.py"],
+    needed_coverage = [(100, ":update-allowed-versions-library")],
+    deps = [
+        ":update-allowed-versions-library",
+        "//antlir/rpm:repo_snapshot",
+        "//antlir/rpm/allowed_versions/facebook/tests:mock_snapshots",
+    ],
+)
