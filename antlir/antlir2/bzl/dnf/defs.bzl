@@ -4,10 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@bazel_skylib//lib:paths.bzl", "paths")
-load(
-    "//antlir/antlir2/package_managers/dnf/rules:repo.bzl",
-    "RepoInfo",  # @unused Used as type
-)
+load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo")
 load(
     "//antlir/antlir2/package_managers/dnf/rules:rpm.bzl",
     "RpmInfo",  # @unused Used as type
@@ -15,19 +12,21 @@ load(
     "package_href",
 )
 
-def repodata_only_local_repos(
-        ctx: AnalysisContext,
-        dnf_available_repos: list[RepoInfo | Provider]) -> Artifact:
+LocalReposInfo = provider(fields = {
+    "repos_dir": Artifact,
+})
+
+def _repodata_only_local_repos_impl(ctx: AnalysisContext) -> list[Provider]:
     """
     Produce a directory that contains a local copy of the available RPM repo's
     repodata directories.
     This directory is used during dnf resolution while forming the compiler
     plan, so it's ok that the Packages/ directory will be missing.
     """
-    dir = ctx.actions.declare_output("dnf_repodatas", dir = True)
 
     tree = {}
-    for repo_info in dnf_available_repos:
+    for repo in ctx.attrs.repos:
+        repo_info = repo[RepoInfo]
         tree[paths.join(repo_info.id, "repodata")] = repo_info.repodata
         for key in repo_info.gpg_keys:
             tree[paths.join(repo_info.id, "gpg-keys", key.basename)] = key
@@ -35,13 +34,25 @@ def repodata_only_local_repos(
 
     # copied_dir instead of symlink_dir so that this can be directly bind
     # mounted into the container
-    ctx.actions.copied_dir(dir, tree)
-    return dir
+    repos_dir = ctx.actions.copied_dir("repodatas", tree)
+    return [
+        DefaultInfo(repos_dir),
+        LocalReposInfo(repos_dir = repos_dir),
+    ]
+
+repodata_only_local_repos = anon_rule(
+    impl = _repodata_only_local_repos_impl,
+    attrs = {
+        "repos": attrs.list(attrs.dep(providers = [RepoInfo])),
+    },
+    artifact_promise_mappings = {
+        "repodatas": lambda x: x[LocalReposInfo].repos_dir,
+    },
+)
 
 def _best_rpm_artifact(
         *,
         rpm_info: RpmInfo | Provider,
-        repo: RepoInfo | Provider,
         reflink_flavor: str | None) -> Artifact:
     if not reflink_flavor:
         return rpm_info.raw_rpm
@@ -116,7 +127,6 @@ def compiler_plan_to_local_repos(
                     tree[paths.join(repo_i.id, package_href(install["nevra"], rpm_i.pkgid))] = _best_rpm_artifact(
                         rpm_info = rpm_i,
                         reflink_flavor = reflink_flavor,
-                        repo = repo_i,
                     )
                     found = True
 

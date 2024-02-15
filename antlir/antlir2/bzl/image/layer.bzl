@@ -116,14 +116,17 @@ def _impl(ctx: AnalysisContext) -> Promise:
 def _identifier_prefix(prefix: str) -> str:
     return prefix
 
-def _extra_repo_name_to_repo(repo_name: str, flavor_info: FlavorInfo) -> RepoInfo:
-    extra_repos = flavor_info.dnf_info.default_extra_repo_set[RepoSetInfo].repo_infos
+def _extra_repo_name_to_repo(repo_name: str, flavor_info: FlavorInfo) -> Dependency:
+    extra_repos = flavor_info.dnf_info.default_extra_repo_set[RepoSetInfo].repos
 
     for repo in extra_repos:
-        if repo.logical_id == repo_name:
+        if repo[RepoInfo].logical_id == repo_name:
             return repo
 
-    fail("Unknown extra repo: {}. Possible choices are {}".format(repo_name, [repo.logical_id for repo in extra_repos]))
+    fail("Unknown extra repo: {}. Possible choices are {}".format(
+        repo_name,
+        [repo[RepoInfo].logical_id for repo in extra_repos],
+    ))
 
 def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -> list[Provider]:
     flavor = None
@@ -170,11 +173,11 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     dnf_available_repos = []
     if types.is_list(ctx.attrs.dnf_available_repos):
-        dnf_available_repos = [r[RepoInfo] for r in ctx.attrs.dnf_available_repos]
+        dnf_available_repos = ctx.attrs.dnf_available_repos
     elif ctx.attrs.dnf_available_repos != None:
-        dnf_available_repos = list(ctx.attrs.dnf_available_repos[RepoSetInfo].repo_infos)
+        dnf_available_repos = list(ctx.attrs.dnf_available_repos[RepoSetInfo].repos)
     else:
-        dnf_available_repos = list(flavor_info.dnf_info.default_repo_set[RepoSetInfo].repo_infos)
+        dnf_available_repos = list(flavor_info.dnf_info.default_repo_set[RepoSetInfo].repos)
 
     dnf_additional_repos = ctx.attrs.dnf_additional_repos or []
     if not types.is_list(dnf_additional_repos):
@@ -186,12 +189,14 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         if types.is_string(repo):
             dnf_available_repos.append(_extra_repo_name_to_repo(repo, flavor_info))
         elif RepoSetInfo in repo:
-            dnf_available_repos.extend(repo[RepoSetInfo].repo_infos)
+            dnf_available_repos.extend(repo[RepoSetInfo].repos)
         elif RepoInfo in repo:
-            dnf_available_repos.append(repo[RepoInfo])
+            dnf_available_repos.append(repo)
         else:
             fail("Unknown type for repo {} in dnf_additional_repos: ".format(repo))
-    dnf_repodatas = repodata_only_local_repos(ctx, dnf_available_repos)
+    dnf_repodatas = ctx.actions.anon_target(repodata_only_local_repos, {
+        "repos": dnf_available_repos,
+    }).artifact("repodatas")
     dnf_versionlock = ctx.attrs.dnf_versionlock or flavor_info.dnf_info.default_versionlock
 
     dnf_excluded_rpms = list(ctx.attrs.dnf_excluded_rpms) if ctx.attrs.dnf_excluded_rpms != None else list(flavor_info.dnf_info.default_excluded_rpms)
@@ -341,10 +346,11 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             # and mount in a pre-built directory of all repositories for
             # completely-offline dnf installation (which is MUCH faster and more
             # reliable)
+            # TODO(T179081948): this should also be an anon_target
             dnf_repos_dir = compiler_plan_to_local_repos(
                 ctx,
                 identifier_prefix,
-                dnf_available_repos,
+                [r[RepoInfo] for r in dnf_available_repos],
                 plan,
                 flavor_info.dnf_info.reflink_flavor,
             )

@@ -156,46 +156,52 @@ repo = rule(
     attrs = repo_attrs,
 )
 
-RepoSetInfo = provider(fields = ["repo_infos", "proxy_cmd"])
+RepoSetInfo = provider(fields = ["repos", "proxy_cmd"])
 
 def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
     combined_repodatas = ctx.actions.declare_output("repodatas")
-    all_repos = {}
+    repos = {}
     for repo in ctx.attrs.repos:
         repo_info = repo[RepoInfo]
-        if repo_info.id in all_repos:
+        if repo_info.id in repos:
             fail("repo id '{}' found twice".format(repo_info.id))
-        all_repos[repo_info.id] = repo_info
+        repos[repo_info.id] = repo
     for set in ctx.attrs.repo_sets:
-        for repo_info in set[RepoSetInfo].repo_infos:
-            if repo_info.id in all_repos:
+        for repo in set[RepoSetInfo].repos:
+            repo_info = repo[RepoInfo]
+            if repo_info.id in repos:
                 fail("repo id '{}' found twice".format(repo_info.id))
-            all_repos[repo_info.id] = repo_info
+            repos[repo_info.id] = repo
 
-    ctx.actions.copied_dir(combined_repodatas, {id: repo_info.repodata for id, repo_info in all_repos.items()})
+    ctx.actions.copied_dir(
+        combined_repodatas,
+        {
+            id: repo[RepoInfo].repodata
+            for id, repo in repos.items()
+        },
+    )
 
     proxy_config = ctx.actions.write_json(
         "proxy_config.json",
         {
-            id: repo_info.proxy_config
-            for id, repo_info in all_repos.items()
+            id: repo[RepoInfo].proxy_config
+            for id, repo in repos.items()
         },
     )
 
     proxy_cmd = (
         cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", proxy_config)
-            .hidden([repo_info.repodata for repo_info in all_repos.values()])
+            .hidden([repo[RepoInfo].repodata for repo in repos.values()])
             .hidden(
             # repos that are offline_only (not backed by a remote store &
             # urlgen) must be materialized locally before serving this repo_set
-            [repo_info.offline for repo_info in all_repos.values() if repo_info.proxy_config["offline_only"]],
+            [repo[RepoInfo].offline for repo in repos.values() if repo[RepoInfo].proxy_config["offline_only"]],
         )
     )
-    # .hidden([offline] if offline_only_repo else []),
 
     return [
         RepoSetInfo(
-            repo_infos = all_repos.values(),
+            repos = repos.values(),
             proxy_cmd = proxy_cmd,
         ),
         DefaultInfo(
