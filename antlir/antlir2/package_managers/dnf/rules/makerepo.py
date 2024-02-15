@@ -6,6 +6,12 @@
 
 # pyre-strict
 
+# This is a workaround for what seems to be a buck2 caching bug:
+# https://fb.workplace.com/groups/buck2users/posts/3596082313981457/
+#
+# This change invalidates buck2 artifact caching for all repos, and D53763979
+# prevent caching going forward.
+
 import json
 import shutil
 import time
