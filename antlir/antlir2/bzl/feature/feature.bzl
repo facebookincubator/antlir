@@ -69,6 +69,7 @@ load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary_rule"
 load("//antlir/antlir2/features/genrule:genrule.bzl", "genrule_rule")
 load("//antlir/antlir2/features/group:group.bzl", "group_rule")
 load("//antlir/antlir2/features/install:install.bzl", "install_rule")
+load("//antlir/antlir2/features/mknod:mknod.bzl", "mknod_rule")
 load("//antlir/antlir2/features/mount:mount.bzl", "mount_rule")
 load("//antlir/antlir2/features/remove:remove.bzl", "remove_rule")
 load("//antlir/antlir2/features/requires:requires.bzl", "requires_rule")
@@ -115,6 +116,7 @@ _anon_rules = {
     "genrule": genrule_rule,
     "group": group_rule,
     "install": install_rule,
+    "mknod": mknod_rule,
     "mount": mount_rule,
     "remove": remove_rule,
     "requires": requires_rule,
