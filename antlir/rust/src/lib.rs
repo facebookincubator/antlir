@@ -36,6 +36,7 @@ macro_rules! submodule {
 mod register_modules;
 
 #[pymodule]
+#[pyo3(name = "native_antlir_impl")]
 fn native(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     register_modules::register_modules(py, m)?;
     Ok(())
