@@ -11,11 +11,11 @@ oncall("antlir")
 python_library(
     name = "rust",
     srcs = ["__init__.py"],
-    deps = [":native"],
+    deps = [":native_antlir_impl"],
 )
 
 rust_python_extension(
-    name = "native",
+    name = "native_antlir_impl",
     srcs = ["src/lib.rs"],
     mapped_srcs = {
         ":register_modules.rs": "src/register_modules.rs",

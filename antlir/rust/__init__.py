@@ -9,4 +9,4 @@
 # antlir/rust, otherwise Buck will generate an __init__.py in this directory
 # that would make the Rust extension effectively invisible to Python.
 
-from antlir.rust.native import *  # noqa
+from antlir.rust.native_antlir_impl import *  # noqa
