@@ -1,0 +1,18 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "makerepo",
+    srcs = glob(["src/**/*.rs"]),
+    deps = [
+        "anyhow",
+        "clap",
+        "flate2",
+        "hex",
+        "quick-xml",
+        "serde",
+        "serde_json",
+        "sha2",
+    ],
+)

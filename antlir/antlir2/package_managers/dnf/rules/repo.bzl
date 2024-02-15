@@ -51,8 +51,8 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         local_only = True,
     )
 
-    # On the local host (because we need system python3 with dnf), pre-build
-    # .solv(x) files so that dnf installation is substantially faster
+    # Pre-build .solv(x) files so that dnf installation is substantially faster
+    # TODO: use repomdxml2solv from libsolv-tools instead of this sketchiness
     repodata = ctx.actions.declare_output("repodata_with_solv", dir = True)
     ctx.actions.run(
         cmd_args(
@@ -106,6 +106,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     return [
         DefaultInfo(default_outputs = [repodata], sub_targets = {
             "offline": [DefaultInfo(default_outputs = [offline])],
+            "plain_repodata": [DefaultInfo(default_outputs = [plain_repodata])],
             "repodata": [DefaultInfo(default_outputs = [repodata])],
             "serve": [DefaultInfo(), RunInfo(
                 args = cmd_args(ctx.attrs.repo_proxy[RunInfo], "--repos-json", combined_proxy_config)
@@ -145,7 +146,7 @@ repo_attrs = {
     "dnf_conf": attrs.dict(attrs.string(), attrs.string(), default = {}),
     "gpg_keys": attrs.list(attrs.source(doc = "GPG keys that packages are signed with"), default = []),
     "logical_id": attrs.option(attrs.string(), doc = "repo name as in dnf.conf", default = None),
-    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules:makerepo")),
+    "makerepo": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/package_managers/dnf/rules/makerepo:makerepo")),
     "module_md": attrs.option(attrs.source(), default = None),
     "repo_proxy": attrs.default_only(attrs.exec_dep(default = "//antlir/rpm/repo_proxy:repo-proxy")),
     "rpms": attrs.list(
