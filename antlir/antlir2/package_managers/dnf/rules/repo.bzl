@@ -44,11 +44,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             optional_args,
         ),
         category = "repodata",
-        # This is terrible, but causing some serious issues with RPM
-        # availability. Remove when this is addressed.
-        # https://fb.workplace.com/groups/buck2users/posts/3596082313981457
-        allow_cache_upload = False,
-        local_only = True,
     )
 
     # Pre-build .solv(x) files so that dnf installation is substantially faster
@@ -62,11 +57,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             repodata.as_output(),
         ),
         category = "solv",
-        # This is terrible, but causing some serious issues with RPM
-        # availability. Remove when this is addressed.
-        # https://fb.workplace.com/groups/buck2users/posts/3596082313981457
-        allow_cache_upload = False,
-        local_only = True,
     )
 
     # Create an artifact that is the _entire_ repository for completely offline
