@@ -96,7 +96,7 @@ _TX_ACTION_TO_JSON = {
 # (which also has an example of how to investigate _why_ a script is broken)
 # Use TODO(Txxxx) so that this entry can be easily tracked in the tasks tool and
 # removed when the task is fixed.
-_RPMS_THAT_CAN_FAIL_POST_SCRIPTS = {
+_RPMS_THAT_CAN_FAIL_SCRIPTS = {
     "antlir2-failing-postscripts": "TODO(T166162108)",
     "git-lfs": "TODO(T170621965)",
     "nsight-compute-2019.4.0": "TODO(T166170831)",
@@ -104,10 +104,10 @@ _RPMS_THAT_CAN_FAIL_POST_SCRIPTS = {
 
 
 class TransactionProgress(dnf.callback.TransactionProgress):
-    def __init__(self, out, ignore_postin_script_error: bool = False):
+    def __init__(self, out, ignore_scriptlet_errors: bool = False):
         self.out = out
         self._sent = defaultdict(set)
-        self._ignore_postin_script_error = ignore_postin_script_error
+        self._ignore_scriptlet_errors = ignore_scriptlet_errors
 
     def scriptout(self, msgs):
         """Hook for reporting an rpm scriptlet output.
@@ -125,16 +125,14 @@ class TransactionProgress(dnf.callback.TransactionProgress):
     def error(self, message):
         with self.out as out:
             key = "tx_error"
-            if self._ignore_postin_script_error and message.startswith(
-                "Error in POSTIN scriptlet"
-            ):
-                key = "tx_warning"
             match = re.match(
                 r"^Error in (?:.*) scriptlet in rpm package (.*)$", message
             )
-            if match and match.group(1):
+            if match:
+                if self._ignore_scriptlet_errors:
+                    key = "tx_warning"
                 rpm_name = match.group(1)
-                if rpm_name in _RPMS_THAT_CAN_FAIL_POST_SCRIPTS:
+                if rpm_name in _RPMS_THAT_CAN_FAIL_SCRIPTS:
                     key = "tx_warning"
             json.dump({key: message}, out)
             out.write("\n")
@@ -487,7 +485,7 @@ def driver(spec) -> None:
     # dnf go brrr
     base.do_transaction(
         TransactionProgress(
-            out, ignore_postin_script_error=spec["ignore_postin_script_error"]
+            out, ignore_scriptlet_errors=spec["ignore_scriptlet_errors"]
         )
     )
     base.close()

@@ -130,7 +130,7 @@ pub struct Rpm {
 )]
 pub struct InternalOnlyOptions {
     #[serde(default)]
-    pub ignore_postin_script_error: bool,
+    pub ignore_scriptlet_errors: bool,
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Rpm {
@@ -201,7 +201,7 @@ struct DriverSpec<'a> {
     versionlock: &'a BTreeMap<String, String>,
     excluded_rpms: Option<&'a BTreeSet<String>>,
     resolved_transaction: Option<DnfTransaction>,
-    ignore_postin_script_error: bool,
+    ignore_scriptlet_errors: bool,
     layer_label: Label,
 }
 
@@ -281,6 +281,8 @@ enum DriverEvent {
         operation: TransactionOperation,
     },
     TxError(String),
+    // TODO(T179574053) figure out some way to propagate this back for the user
+    // to see...
     TxWarning(String),
     GpgError {
         package: Package,
@@ -326,7 +328,7 @@ fn run_dnf_driver(
         versionlock: ctx.dnf().versionlock(),
         excluded_rpms: Some(ctx.dnf().excluded_rpms()),
         resolved_transaction,
-        ignore_postin_script_error: internal_only_options.ignore_postin_script_error,
+        ignore_scriptlet_errors: internal_only_options.ignore_scriptlet_errors,
         layer_label: ctx.label().clone(),
     };
 
