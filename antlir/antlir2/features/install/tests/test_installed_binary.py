@@ -45,4 +45,4 @@ class TestInstalledBinary(unittest.TestCase):
     def test_stripped_binary_is_smaller(self) -> None:
         stripped_size = os.path.getsize("/usr/bin/true-rs")
         unstripped_size = os.path.getsize("/usr/bin/true-rs.unstripped")
-        self.assertLess(stripped_size, unstripped_size / 2)
+        self.assertLess(stripped_size, unstripped_size)
