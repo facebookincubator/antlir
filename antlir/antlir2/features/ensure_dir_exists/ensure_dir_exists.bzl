@@ -17,19 +17,19 @@ def ensure_subdirs_exist(
         user: str | Select = "root",
         group: str | Select = "root") -> list[ParseTimeFeature]:
     """
-    `ensure_subdirs_exist("/w/x", "y/z")` creates the directories `/w/x/y` and
-    `/w/x/y/z` in the image, if they do not exist. `/w/x` must have already been
-    created by another image feature. If any dirs to be created already exist in
-    the image, their attributes will be checked to ensure they match the
-    attributes provided here. If any do not match, the build will fail.
+    Ensure directories exist in the image (analogous to `mkdir -p`).
 
-    The argument `mode` changes file mode bits of all directories in
-    `subdirs_to_create`. It can be an integer fully specifying the bits or a
-    symbolic string like `u+rx`. In the latter case, the changes are applied on
-    top of mode 0.
+    Args:
+        into_dir: Parent directory (must already exist)
+        subdirs_to_create: Subdirectories to create under `into_dir`
 
-    The arguments `user` and `group` change file owner and group of all
-    directories in `subdirs_to_create`.
+            These subdirectories may already exist in the image. If so, they
+            will be checked to ensure that the `mode` and `user:group` matches
+            what is declared here.
+
+        mode: set file mode bits of the newly-created directories
+        user: set owning user of the newly-created directories
+        group: set owning group of the newly-created directories
     """
     mode = stat.mode(mode) if mode else None
     features = []

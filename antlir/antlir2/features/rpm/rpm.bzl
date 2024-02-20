@@ -75,36 +75,51 @@ def _install_common(
         ],
     )
 
-def rpms_install(*args, **kwargs) -> ParseTimeFeature:
+def rpms_install(
+        *,
+        rpms: list[str] = [],
+        subjects: list[str | Select] | Select = [],
+        deps: list[str | Select] | Select = [],
+        subjects_src: str | Select | None = None) -> ParseTimeFeature:
     """
     Install RPMs by identifier or .rpm src
 
-    Elements in `rpms` can be an rpm name like 'systemd', a NEVR like
-    'systemd-251.4-1.2.hs+fb.el8' (or anything that resolves as a DNF subject -
-    see
-    https://dnf.readthedocs.io/en/latest/command_ref.html#specifying-packages-label)
-    or a buck target that produces a .rpm artifact.
+    Elements in `rpms` can be an rpm name like `"systemd"`, a NEVR like
+    `"systemd-251.4-1.2.hs+fb.el8"` (or anything that resolves as a [DNF
+    subject](https://dnf.readthedocs.io/en/latest/command_ref.html#specifying-packages-label))
+    or a buck target that produces a `.rpm` artifact.
 
-    To ergonomically use `select`, callers must disambiguate between rpm names
-    (or, more accurately, dnf subjects)
+    If you want to `select` RPMs, you must explicitly use `subjects` (for DNF
+    subjects) or `deps` (for buck targets).
     """
-    return _install_common("install", *args, **kwargs)
+    return _install_common(
+        "install",
+        rpms = rpms,
+        subjects = subjects,
+        deps = deps,
+        subjects_src = subjects_src,
+    )
 
-def rpms_upgrade(*args, **kwargs) -> ParseTimeFeature:
+def rpms_upgrade(
+        *,
+        rpms: list[str] = [],
+        subjects: list[str | Select] | Select = [],
+        deps: list[str | Select] | Select = [],
+        subjects_src: str | Select | None = None) -> ParseTimeFeature:
     """
     Force an upgrade (if possible, which includes respecting versionlock!) of
     these rpms.
 
-    Elements in `rpms` can be an rpm name like 'systemd', a NEVR like
-    'systemd-251.4-1.2.hs+fb.el8' (or anything that resolves as a DNF subject -
-    see
-    https://dnf.readthedocs.io/en/latest/command_ref.html#specifying-packages-label)
-    or a buck target that produces a .rpm artifact.
-
-    To ergonomically use `select`, callers must disambiguate between rpm names
-    (or, more accurately, dnf subjects)
+    See [`feature.rpms_install`](#featurerpms_install) for explanations of each
+    argument.
     """
-    return _install_common("upgrade", *args, **kwargs)
+    return _install_common(
+        "upgrade",
+        rpms = rpms,
+        subjects = subjects,
+        deps = deps,
+        subjects_src = subjects_src,
+    )
 
 def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
     """
@@ -112,9 +127,12 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
 
     Elements in `rpms` can be any rpm specifier (name, NEVR, etc). If the rpm is
     not installed, this feature is a no-op.
-    Note that dependencies of these rpms can also be removed, but only if no
+
+    :::note
+    Dependencies of these rpms may also be removed, but only if no
     explicitly-installed RPM depends on them (in this case, the goal cannot be
     solved and the image build will fail unless you remove those rpms as well).
+    :::
     """
     return ParseTimeFeature(
         feature_type = "rpm",
@@ -130,13 +148,16 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
 
 def rpms_remove(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
     """
-    Remove RPMs if they are installed, fail if they are not
+    Remove RPMs if they are installed, fail if they are not installed.
 
     Elements in `rpms` can be any rpm specifier (name, NEVR, etc). If the rpm is
     not installed, this feature will fail.
-    Note that dependencies of these rpms can also be removed, but only if no
+
+    :::note
+    Dependencies of these rpms may also be removed, but only if no
     explicitly-installed RPM depends on them (in this case, the goal cannot be
     solved and the image build will fail unless you remove those rpms as well).
+    :::
     """
     return ParseTimeFeature(
         feature_type = "rpm",

@@ -28,19 +28,31 @@ def install(
         split_debuginfo: bool = True,
         setcap: str | None = None) -> ParseTimeFeature:
     """
-    `install("//path/fs:data", "dir/bar")` installs file or directory `data` to
-    `dir/bar` in the image. `dir/bar` must not exist, otherwise the operation
-    fails.
+    Install a file or directory into the image.
 
-    `src` is either a regular file or a directory. If it is a directory, it must
-    contain only regular files and directories (recursively).
+    Arguments:
+        src: source file or buck target
+        mode: mode to set on the installed file
 
-    `mode` can be automatically determined if `src` is a buck binary, but in all
-    other cases is required to be explicitly set by the user.
+            In most cases this can be left unset and antlir2 will choose the
+            most reasonable default based on the source.
+            Buck-built binaries will automatically be marked as executable.
 
-    See `stat.bzl` for information about how `mode` is interpreted.
+        user: owner of the installed contents
+        group: owner of the installed contents
+        xattrs: extended attributes to set on the installed contents
+        never_use_dev_binary_symlink: always install a binary as a regular file
 
-    The arguments `user` and `group` change file owner and group of `dst`
+            In most cases this means that your binary will not be runnable in
+            `@mode/dev` builds, but it guarantees that the binary will always be
+            a regular file and never a symlink.
+
+        split_debuginfo: strip debuginfo from the binary and place it into
+            `/usr/lib/debug`
+
+        setcap: add file capabilities to the installed file
+
+            Specified in the form described in `cap_from_text(3)`.
     """
 
     # the default mode is determined later, after we know if the thing being

@@ -1,0 +1,28 @@
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load(":register_templates_src.bzl", "register_templates_src")
+
+oncall("antlir")
+
+register_templates_src(
+    name = "register_templates.rs",
+    templates = glob(["templates/**/*"]),
+)
+
+rust_binary(
+    name = "gen_api",
+    srcs = glob([
+        "src/**/*.rs",
+        "templates/**/*",
+    ]),
+    mapped_srcs = {
+        ":register_templates.rs": "src/register_templates.rs",
+    },
+    deps = [
+        "anyhow",
+        "clap",
+        "serde",
+        "serde_json",
+        "tera",
+        "//antlir/buck/buck_label:buck_label",
+    ],
+)
