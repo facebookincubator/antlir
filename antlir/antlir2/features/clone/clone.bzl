@@ -20,12 +20,13 @@ def clone(
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.
 
+
     ### Trailing slashes on both paths are significant
 
     The three supported cases are:
-    - "s/rc" -> "dest/" creates "dest/rc"
-    - "s/rc/" -> "dest/" creates "dest/(children of rc)"
-    - "s/rc" -> "dest" creates "dest"
+    - `s/rc` -> `dest/` creates `dest/rc`
+    - `s/rc/` -> `dest/` creates `dest/(children of rc)`
+    - `s/rc` -> `dest` creates `dest`
 
     More explicitly:
     - A trailing slash in `src_path` means "use the `rsync` convention":
@@ -34,8 +35,8 @@ def clone(
     - A trailing slash in `dst_path` means that it's a
         pre-existing directory (e.g.  made by `ensure_dirs_exist`), and
         `clone` will only write to:
-        * `dst/(basename of src_path)` if `src_path` lacks a trailing /
-        * `dst/(children of src_path)` if `src_path` has a trailing /
+        * `dst/(basename of src_path)` if `src_path` lacks a trailing `/`
+        * `dst/(children of src_path)` if `src_path` has a trailing `/`
 
     ### Known deviations from perfect cloning
 
@@ -46,18 +47,34 @@ def clone(
     `src_layer` and the destination layer must have the same user/group _names_
     available, but those names do not need to map to the same ids. uid/gids will
     be remapped to the appropriate numeric id of that user/group in the
-    destination layer
+    destination layer.
 
     ### When to use this?
 
-    Often, instead of using this, you should prefer `layer_mount`, which allows
-    you to compose independent pieces of the filesystem at *runtime*, without
-    incurring the cost of publishing images with a lot of duplicated content.
+    Often, instead of using this, you should prefer
+    [`layer_mount`](#featurelayer_mount), which allows you to compose
+    independent pieces of the filesystem at *runtime*, without incurring the
+    cost of publishing images with a lot of duplicated content.
 
     If you're trying to copy the output of a regular Buck target, instead use
-    `install` or `install_buck_runnable`. These rewrite filesystem metadata to a
-    deterministic state, while the state of the on-disk metadata in `buck-out`
-    is undefined.
+    [`feature.install`](#featureinstall).
+
+    Args:
+        src_layer: Buck target pointing to source `image.layer`.
+
+            This image must contain the contents to be cloned
+
+        src_path: Root path to clone from in `src_layer`
+        dst_path: Root path to clone into in the layer being built
+        user: Set owning user on all files and directories
+
+            If not set, the same username is used between `src_layer` and the
+            layer being built
+
+        group: Set owning group on all files and directories
+
+            If not set, the same group name is used between `src_layer` and the
+            layer being built
     """
     return ParseTimeFeature(
         feature_type = "clone",

@@ -35,12 +35,26 @@ def extract_from_layer(
         layer: str | Select,
         binaries: list[str | Select] | Select) -> ParseTimeFeature:
     """
-    Extract binaries that are installed into `layer`, most commonly by RPMs.
+    Extract a binary and all of its runtime dependencies from `layer` into the
+    target layer.
 
-    This copies the binary as well as any `.so` dependencies that `ld.so --list`
-    reports. All the dependencies are copied from within `layer`. Any conflicts
-    (same path, different file hash) caused by the extractor will result in a
-    build error.
+    This copies the binary and all of it's `.so` dependencies from the host
+    filesystem. Any mismatched contents in these dependencies will cause an
+    image build failure.
+
+    :::warning You almost definitely **do NOT** want this
+
+    This feature exists only for building *extremely* stripped down environments
+    like initrds, where things like the fbcode runtime is unavailable.
+
+    In 99% of cases you actually just want to use
+    [`feature.install`](#featureinstall) or
+    [`feature.rpms_install`](#featurerpms_install)
+    :::
+
+    Arguments:
+        layer: antlir2 layer target to extract from
+        binaries: list of file paths to extract
     """
     return ParseTimeFeature(
         feature_type = "extract_from_layer",
@@ -62,10 +76,26 @@ def extract_buck_binary(
         dst: str | Select,
         strip: bool | Select = True) -> ParseTimeFeature:
     """
-    Extract a binary built by buck into the target layer.
+    Extract a buck-built binary and all of its runtime dependencies into the
+    target layer.
 
-    The `.so` dependencies in this case will be copied from the host filesystem,
-    but the same conflict detection method as `extract_from_layer` is employed.
+    This copies the binary and all of it's `.so` dependencies from the host
+    filesystem. Any mismatched contents in these dependencies will cause an
+    image build failure.
+
+    :::warning You almost definitely **do NOT** want this
+
+    This feature exists only for building *extremely* stripped down environments
+    like initrds, where things like the fbcode runtime is unavailable.
+
+    In 99% of cases you actually want to just give your binary to
+    [`feature.install`](#featureinstall)
+    :::
+
+    Arguments:
+        src: binary target
+        dst: path to install it to in the image
+        strip: strip debug info from the binary and discard it
     """
     return ParseTimeFeature(
         feature_type = "extract_buck_binary",

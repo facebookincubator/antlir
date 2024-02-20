@@ -11,6 +11,7 @@ use std::cmp::Ordering;
 use std::cmp::PartialOrd;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::ops::Deref;
 use std::ops::Range;
 
 use once_cell::sync::Lazy;
@@ -230,6 +231,26 @@ impl Serialize for Label {
         S: Serializer,
     {
         serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl Deref for Label {
+    type Target = str;
+
+    fn deref(&self) -> &Self::Target {
+        &self.full
+    }
+}
+
+impl AsRef<str> for Label {
+    fn as_ref(&self) -> &str {
+        &self.full
+    }
+}
+
+impl AsRef<std::ffi::OsStr> for Label {
+    fn as_ref(&self) -> &std::ffi::OsStr {
+        self.full.as_ref()
     }
 }
 

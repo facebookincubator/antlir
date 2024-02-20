@@ -1,0 +1,40 @@
+---
+title: "Features"
+sidebar_position: 2
+---
+{% for id, func in funcs %}
+## feature.{{id}}
+
+{% if func.docs %}
+
+{{func.docs.summary}}
+
+{% endif %}
+
+<details open>
+    <summary>Parameters</summary>
+    {%- for param in func.params %}
+
+    {%if param.kind != "arg" %}{%continue%}{%endif%}
+    {% if param.name is starting_with("_") %}{%continue%}{%endif%}
+
+**{{param.name}}**: _{{param.ty | format_ty}}_{%if param.default_value%} = `{{param.default_value}}`{%endif%}{% if param.docs %}
+
+{{param.docs.summary}}
+
+{% if param.docs.details %}
+{{param.docs.details}}
+{% endif %}
+{% endif %}
+
+    {%- endfor %}
+
+</details>
+
+{% if func.docs.details -%}
+
+{{func.docs.details}}
+
+{% endif %}
+
+{% endfor %}
