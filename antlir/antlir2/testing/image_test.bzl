@@ -34,7 +34,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     spec = ctx.actions.write_json(
         "spec.json",
         {
-            "allocate_loop_devices": ctx.attrs.allocate_loop_devices,
             "boot": {
                 "after_units": boot_after_units,
                 "requires_units": boot_requires_units,
@@ -50,7 +49,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     )
 
     test_cmd = cmd_args(
-        "sudo" if ctx.attrs.allocate_loop_devices else cmd_args(),
         ctx.attrs.image_test[RunInfo],
         cmd_args(spec, format = "--spec={}"),
         ctx.attrs.test[ExternalRunnerTestInfo].test_type,
@@ -110,7 +108,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _image_test = rule(
     impl = _impl,
     attrs = {
-        "allocate_loop_devices": attrs.int(default = 0),
         "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False), doc = "read by cfg.bzl"),
         "boot": attrs.bool(
             default = False,
@@ -165,7 +162,6 @@ def _implicit_image_test(
         boot_after_units: [list[str], None] = None,
         boot_wants_units: [list[str], None] = None,
         hostname: str | None = None,
-        allocate_loop_devices: int | None = None,
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         # @oss-disable
@@ -179,9 +175,6 @@ def _implicit_image_test(
         **kwargs
     )
 
-    # Allocating loop devices is very flaky since there is no atomic api
-    if allocate_loop_devices:
-        _add_outer_labels = list(_add_outer_labels) + ["serialize"]
     labels = selects.apply(
         labels or [],
         lambda labels: labels + _add_outer_labels,
@@ -217,7 +210,6 @@ def _implicit_image_test(
         boot_after_units = boot_after_units,
         boot_wants_units = boot_wants_units,
         hostname = hostname,
-        allocate_loop_devices = allocate_loop_devices,
         default_os = default_os,
         # @oss-disable
         _static_list_wrapper = _static_list_wrapper,

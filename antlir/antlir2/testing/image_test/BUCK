@@ -20,7 +20,6 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
-        "loopdev",
         "serde",
         "tempfile",
         "tracing",
