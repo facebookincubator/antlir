@@ -5,46 +5,19 @@
 # LICENSE file in the root directory of this source tree.
 
 "Utilities to make Python systems programming more palatable."
-import array
-import asyncio
 import inspect
 import logging
 import os
 import platform
-import random
-import re
-import socket
-import subprocess
 import sys
-import tempfile
 import time
-from contextlib import contextmanager
 from functools import wraps
-from typing import (
-    AnyStr,
-    Awaitable,
-    Callable,
-    Iterable,
-    Iterator,
-    List,
-    NamedTuple,
-    Optional,
-    Tuple,
-    TypeVar,
-    Union,
-)
+from typing import Callable, Iterable, Optional, TypeVar
 
 
 T = TypeVar("T")
 _mockable_retry_fn_sleep = time.sleep
 _mockable_platform_release = platform.release
-
-
-# Bite me, Python3.
-def byteme(s: AnyStr) -> bytes:
-    "Byte literals are tiring, just promote strings as needed."
-    # pyre-fixme[16]: `bytes` has no attribute `encode`.
-    return s.encode() if isinstance(s, str) else s
 
 
 # It's possible that `get_logger` is obtained, **and** logs, before
@@ -106,117 +79,6 @@ def get_logger():
 
 
 log = get_logger()
-
-
-def check_popen_returncode(proc: subprocess.Popen) -> None:
-    if proc.returncode != 0:  # pragma: no cover
-        # Providing a meaningful coverage test for this is annoying, so I just
-        # tested manually:
-        #   >>> import subprocess
-        #   >>> raise subprocess.CalledProcessError(returncode=5, cmd=['a'])
-        #   Traceback (most recent call last):
-        #     File "<stdin>", line 1, in <module>
-        #   subprocess.CalledProcessError: Command '['a']' returned non-zero
-        #   exit status 5.
-        raise subprocess.CalledProcessError(returncode=proc.returncode, cmd=proc.args)
-
-
-def set_new_key(d, k, v) -> None:
-    "`d[k] = v` that raises if it would it would overwrite an existing value"
-    if k in d:
-        raise KeyError(f"{k} was already set to {d[k]}, new value: {v}")
-    d[k] = v
-
-
-def shuffled(it: Iterable[T]) -> List[T]:
-    l = list(it)
-    random.shuffle(l)
-    return l
-
-
-@contextmanager
-def listen_temporary_unix_socket() -> Iterator[Tuple[str, socket.socket]]:
-    # Hardcoding /tmp is ugly, but Buck sets $TMP to fairly long paths,
-    # which can cause `AF_UNIX path too long`.
-    with tempfile.TemporaryDirectory(dir="/tmp") as td, socket.socket(
-        socket.AF_UNIX, socket.SOCK_STREAM
-    ) as lsock:
-        sock_path = os.path.join(td, "sock")
-        lsock.bind(sock_path)
-        lsock.listen()
-        yield sock_path, lsock
-
-
-def recv_fds(sock, msglen, maxfds, inheritable: bool = False):
-    """
-    Receives via a Unix domain socket a message of at most `msglen` bytes,
-    with at most `maxfds` file descriptors in the ancillary data.  The file
-    descriptors will be marked O_CLOEXEC unless inheritable is set to False.
-    """
-    fds = array.array("i")
-    msg, ancdata, msg_flags, _addr = sock.recvmsg(
-        msglen,
-        maxfds * socket.CMSG_SPACE(fds.itemsize),
-        0 if inheritable else socket.MSG_CMSG_CLOEXEC,
-    )
-    assert not (msg_flags & socket.MSG_TRUNC), msg_flags
-    assert not (msg_flags & socket.MSG_CTRUNC), msg_flags
-    assert not (msg_flags & socket.MSG_ERRQUEUE), msg_flags
-    for cmsg_level, cmsg_type, cmsg_data in ancdata:
-        assert cmsg_level == socket.SOL_SOCKET, cmsg_level
-        assert cmsg_type == socket.SCM_RIGHTS, cmsg_type
-        assert len(cmsg_data) % fds.itemsize == 0, cmsg_data
-        fds.frombytes(cmsg_data)
-    return msg, list(fds)
-
-
-# Don't wait forever if the `send_fds` side crashes.  This is 2.5 minutes so
-# we still make progress on overloaded hosts.
-FD_UNIX_SOCK_TIMEOUT = 150
-
-
-def recv_fds_from_unix_sock(sock_path, max_fds):
-    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as conn_sock:
-        # Don't wait forever if the `send_fds` side crashes.  This is 3
-        # minutes so we still make progress on overloaded hosts.
-        conn_sock.settimeout(FD_UNIX_SOCK_TIMEOUT)
-        conn_sock.connect(sock_path)
-        ignored_msg_len = 128
-        _msg, fds = recv_fds(conn_sock, ignored_msg_len, max_fds)
-        return fds
-
-
-def run_stdout_to_err(
-    args: Iterable[Union[str, bytes]], *, stdout: None = None, **kwargs
-) -> subprocess.CompletedProcess:
-    """
-    Use this instead of `subprocess.{run,call,check_call}()` to prevent
-    subprocesses from accidentally polluting stdout.
-    """
-    assert stdout is None, "run_stdout_to_err does not take a stdout kwarg"
-    # pyre-fixme[6]: Expected `Union[os.PathLike[bytes], os.PathLike[str],
-    #  typing.Sequence[typing.Union[os.PathLike[bytes], os.PathLike[str], bytes,
-    #  str]], bytes, str]` for 1st param but got `Iterable[Variable[AnyStr <:
-    #  [str, bytes]]]`.
-    return subprocess.run(args, **kwargs, stdout=2)  # Redirect to stderr
-
-
-@contextmanager
-def pipe():
-    r_fd, w_fd = os.pipe2(os.O_CLOEXEC)
-    with os.fdopen(r_fd, "rb") as r, os.fdopen(w_fd, "wb") as w:
-        yield r, w
-
-
-@contextmanager
-def open_fd(path: AnyStr, flags) -> Iterator[int]:
-    # If you ever need **NOT** to set one of these very sane defaults, add a
-    # clearly named keyword-only arg.
-    fd = os.open(path, flags=flags | os.O_NOCTTY | os.O_CLOEXEC)
-    try:
-        yield fd
-    finally:
-        os.close(fd)
 
 
 def not_none(var: Optional[T], var_name: str = "", detail: Optional[str] = None) -> T:
@@ -362,89 +224,3 @@ def async_retryable(
         return decorated
 
     return wrapper
-
-
-def kernel_version() -> Tuple[int, int]:
-    """
-    Parse the current running kernel version and return a tuple representing
-    the (MAJOR, MINOR) version.
-    """
-    m = re.match(r"(\d+)\.(\d+)\.\d+.*", _mockable_platform_release())
-    if not m or len(m.groups()) != 2:
-        raise ValueError(f"Invalid kernel version format '{platform.release()}'")
-    return int(m.group(1)), int(m.group(2))
-
-
-class AsyncCompletedProc(NamedTuple):
-    args: Union[List[Union[str, bytes]], Union[str, bytes]]
-    returncode: int
-    stdout: Optional[bytes]
-    stderr: Optional[bytes]
-
-    def check_returncode(self) -> None:
-        if self.returncode != 0:
-            raise subprocess.CalledProcessError(
-                returncode=self.returncode,
-                cmd=self.args,
-            )
-
-
-async def _async_run_impl(
-    run_fn: Callable[[], Awaitable[asyncio.subprocess.Process]],
-    cmd: Union[List[Union[str, bytes]], str, bytes],
-    input: Optional[bytes] = None,
-    check: bool = True,
-    **kwargs,
-):
-    if input is not None:
-        assert kwargs.get("stdin") == asyncio.subprocess.PIPE, (
-            "You must set `stdin=asyncio.subprocess.PIPE` for the provided "
-            "`input` to be sent to the process' stdin."
-        )
-    proc = await run_fn()
-    stdout, stderr = await proc.communicate(input)
-    ret = AsyncCompletedProc(
-        args=cmd,
-        returncode=not_none(proc.returncode),
-        stdout=stdout,
-        stderr=stderr,
-    )
-    if check:
-        ret.check_returncode()
-    return ret
-
-
-async def async_run(
-    cmd: List[Union[str, bytes]],
-    input: Optional[bytes] = None,
-    check: bool = True,
-    **kwargs,
-) -> AsyncCompletedProc:
-    """Helper function to run an async subprocess and report the result in a
-    canonical format.
-    """
-    return await _async_run_impl(
-        lambda: asyncio.create_subprocess_exec(*cmd, **kwargs),
-        cmd=cmd,
-        input=input,
-        check=check,
-        **kwargs,
-    )
-
-
-async def async_run_shell(
-    cmd: Union[str, bytes],
-    input: Optional[bytes] = None,
-    check: bool = True,
-    **kwargs,
-) -> AsyncCompletedProc:
-    """Helper function to run an async subprocess shell command and report the
-    result in a canonical format.
-    """
-    return await _async_run_impl(
-        lambda: asyncio.create_subprocess_shell(cmd, **kwargs),
-        cmd=cmd,
-        input=input,
-        check=check,
-        **kwargs,
-    )

@@ -9,33 +9,10 @@ import argparse
 import os
 import sys
 from contextlib import contextmanager
-from typing import Iterable, Iterator, Optional, Union
+from typing import Iterable, Iterator, Optional
 
-from antlir.buck.targets_and_outputs.targets_and_outputs_py import TargetsAndOutputs
 from antlir.common import init_logging
-from antlir.config import repo_config
 from antlir.fs_utils import MehStr, Path
-
-
-def normalize_buck_path(bucked: Union[MehStr, Path]) -> Path:
-    parsed = Path.from_argparse(str(bucked))
-    if not parsed.startswith(b"/"):
-        parsed = repo_config().repo_root / parsed
-    return parsed
-
-
-def add_targets_and_outputs_arg(
-    parser: argparse.ArgumentParser, *, action=None, suppress_help: bool = False
-) -> None:
-    parser.add_argument(
-        "--targets-and-outputs",
-        type=lambda path: TargetsAndOutputs.from_argparse(normalize_buck_path(path)),
-        help=argparse.SUPPRESS
-        if suppress_help
-        else "Load and parse a json document containing a mapping"
-        "of targets -> on disk outputs",
-        action=action,
-    )
 
 
 def add_antlir_debug_arg(parser: argparse.ArgumentParser) -> None:

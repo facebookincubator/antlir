@@ -39,10 +39,6 @@ def load(_file, *_symbols) -> None:
     pass
 
 
-def normalize_target(target: str) -> str:
-    return target
-
-
 class Fail(Exception):
     pass
 

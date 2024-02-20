@@ -10,8 +10,6 @@ load(":image_cpp_unittest.bzl", "image_cpp_unittest")
 load(":image_genrule_layer.bzl", "image_genrule_layer")
 load(":image_gpt.bzl", "image_gpt", "image_gpt_partition")
 load(":image_layer.bzl", "image_layer")
-load(":image_layer_alias.bzl", "image_layer_alias")
-load(":image_layer_from_package.bzl", "image_layer_from_package")
 load(":image_python_unittest.bzl", "image_python_unittest")
 load(":image_rust_unittest.bzl", "image_rust_unittest")
 load(":image_source.bzl", "image_source")
@@ -22,8 +20,6 @@ image = struct(
     rust_unittest = image_rust_unittest,
     genrule_layer = image_genrule_layer,
     layer = image_layer,
-    layer_alias = image_layer_alias,
-    layer_from_package = image_layer_from_package,
     opts = struct,
     python_unittest = image_python_unittest,
     rpm = struct(nevra = new_nevra),

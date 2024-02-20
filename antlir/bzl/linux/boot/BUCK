@@ -1,12 +1,6 @@
-load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
 
 oncall("antlir")
-
-shape.impl(
-    name = "boot_loader_entry.shape",
-    deps = ["//antlir/bzl:target.shape"],
-)
 
 template(
     name = "loader",

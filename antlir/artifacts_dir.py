@@ -6,10 +6,8 @@
 
 "DANGER: The resulting PAR will not work if copied outside of buck-out."
 import os
-import stat
 import subprocess
 import sys
-import textwrap
 from typing import Optional
 
 # for re-export
@@ -22,7 +20,7 @@ from antlir.artifacts_dir_rs import (  # noqa: F401
 from antlir.bzl.buck_isolation.buck_isolation import is_buck_using_isolation
 
 from antlir.errors import UserError
-from antlir.fs_utils import Path, populate_temp_file_and_rename
+from antlir.fs_utils import Path
 
 
 def _is_edenfs(repo_root: Path) -> bool:
@@ -101,7 +99,6 @@ def ensure_per_repo_artifacts_dir_exists(
 ) -> Path:
     "See `find_buck_cell_root`'s docblock to understand `path_in_repo`"
     repo_root = find_repo_root(path_in_repo=path_in_repo)
-    buck_cell_root = find_buck_cell_root(path_in_repo=path_in_repo)
     artifacts_dir = find_artifacts_dir(path_in_repo=path_in_repo)
 
     # On Facebook infra, the repo might be hosted on an Eden filesystem,
@@ -120,64 +117,7 @@ def ensure_per_repo_artifacts_dir_exists(
         except FileExistsError:
             pass  # We might race with another instance
 
-    _ensure_clean_sh_exists(
-        artifacts_dir,
-        buck_cell_root,
-        is_eden_repo=maybe_edenfs,
-    )
     return artifacts_dir
-
-
-def _ensure_clean_sh_exists(
-    artifacts_dir: Path,
-    buck_cell_root: Path,
-    is_eden_repo: bool,
-) -> None:
-    # Ensure these are abs
-    buck_cell_root = buck_cell_root.realpath()
-    artifacts_dir = artifacts_dir.realpath()
-
-    buck_cmd = os.getenv("ANTLIR_BUCK", None)
-    assert (
-        buck_cmd is not None
-    ), "ANTLIR_BUCK must be set in the environment for this utility."
-    clean_sh_path = artifacts_dir / "clean.sh"
-
-    with populate_temp_file_and_rename(clean_sh_path, overwrite=True, mode="w") as f:
-        # We do not want to remove image_build.log because the potential
-        # debugging value far exceeds the disk waste
-        # @oss-disable
-        # @oss-enable cell = "antlir"
-        f.write(
-            textwrap.dedent(
-                f"""\
-                #!/bin/bash
-                set -ue -o pipefail
-
-                # We must clean buck first to reset the state
-                echo "Cleansing with Buck..."
-                pushd {buck_cell_root} >/dev/null
-                {buck_cmd} clean
-
-                echo "Removing Btrfs Build Volume..."
-                {buck_cmd} run {cell}//antlir:delete-subvolume-recursive -- "{artifacts_dir}/volume"
-            """
-            )
-            + textwrap.dedent(
-                f"""\
-                # Deal with eden checkoutsa
-                echo "Removing all Antlir managed Eden checkouts..."
-                REPOS="$(basename {artifacts_dir})/eden/repos"
-                edenfsctl list | grep "$REPOS" | xargs -n1 -r edenfsctl rm -y
-            """
-            )
-            if is_eden_repo
-            else ""
-        )
-    os.chmod(
-        clean_sh_path,
-        os.stat(clean_sh_path).st_mode | (stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH),
-    )
 
 
 def main() -> None:

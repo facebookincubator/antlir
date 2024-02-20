@@ -1,8 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_binary", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
-load("//antlir/bzl:constants.bzl", "REPO_CFG")
-load("//antlir/bzl:shape.bzl", "shape")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
 oncall("antlir")
@@ -46,9 +44,7 @@ python_library(
     ],
     deps = [
         ":common",
-        ":config",
         ":fs_utils",
-        "//antlir/buck/targets_and_outputs:targets_and_outputs_py",
     ],
 )
 
@@ -95,59 +91,12 @@ python_library(
     srcs = ["unshare.py"],
 )
 
-btrfsutil_deps = [
-    ":common",
-    ":fs_utils",
-    ":unshare",
-    third_party.library(
-        "python-btrfs-progs",
-        "btrfsutil-py",
-    ),
-]
-
-python_library(
-    name = "btrfsutil",
-    srcs = [
-        "btrfsutil.py",
-    ],
-    labels = ["uses_sudo"],
-    resources = {
-        ":btrfsutil-bin": "btrfsutil-bin",
-    },
-    type_stubs = [
-        "btrfsutil.pyi",
-    ],
-    deps = btrfsutil_deps,
-)
-
-# the btrfsutil wrapper is also packaged as a python_binary so that it can be
-# fallen back to with `sudo` in the case of permissions errors in the main
-# calling process
-python_binary(
-    name = "btrfsutil-bin",
-    srcs = ["btrfsutil.py"],
-    main_function = "antlir.btrfsutil.main",
-    visibility = ["//antlir:btrfsutil"],
-    deps = btrfsutil_deps,
-)
-
 antlir_rust_extension(
     name = "signed_source",
     srcs = ["signed_source.rs"],
     crate_root = "signed_source.rs",
     typestub = "signed_source.pyi",
     deps = ["//antlir/signedsource:signedsource"],
-)
-
-python_library(
-    name = "volume_for_repo",
-    srcs = ["volume_for_repo.py"],
-    deps = [
-        ":btrfsutil",
-        ":errors",
-        ":fs_utils",
-        "//antlir/facebook:sudo_error",
-    ],
 )
 
 antlir_rust_extension(
@@ -191,49 +140,6 @@ rust_library(
     ],
 )
 
-python_binary(
-    name = "layer-mount-config",
-    srcs = ["layer_mount_config.py"],
-    main_function = "antlir.layer_mount_config.invoke_main",
-    visibility = ["PUBLIC"],
-)
-
-# No unit-test since this is simple, its output is random, and we are
-# unlikely to need to change it.  Be sure to test your changes manually!
-python_library(
-    name = "subvolume_version",
-    srcs = ["subvolume_version.py"],
-)
-
-# These binaries are basically a work-around for the fact that `sudo -C`
-# is forbidden by default :/
-
-python_binary(
-    name = "recv-fds-and-run",
-    srcs = ["recv_fds_and_run.py"],
-    main_function = "antlir.recv_fds_and_run.main",
-    deps = [
-        ":common",
-        ":fs_utils",
-    ],
-)
-
-python_library(
-    name = "send_fds_and_run",
-    srcs = ["send_fds_and_run.py"],
-    resources = {":recv-fds-and-run": "recv-fds-and-run"},
-    deps = [
-        ":common",
-        ":fs_utils",
-    ],
-)
-
-python_binary(
-    name = "send-fds-and-run",
-    main_function = "antlir.send_fds_and_run.main",
-    deps = [":send_fds_and_run"],
-)
-
 # These binaries are used by `image_layer.py` as build-time helpers.
 
 python_binary(
@@ -241,20 +147,6 @@ python_binary(
     main_function = "antlir.artifacts_dir.main",
     visibility = ["PUBLIC"],
     deps = [":artifacts_dir"],
-)
-
-python_binary(
-    name = "subvolume-version",
-    main_module = "antlir.subvolume_version",
-    visibility = ["PUBLIC"],
-    deps = [":subvolume_version"],
-)
-
-python_binary(
-    name = "volume-for-repo",
-    main_function = "antlir.volume_for_repo.main",
-    visibility = ["PUBLIC"],
-    deps = [":volume_for_repo"],
 )
 
 python_library(
@@ -280,12 +172,6 @@ python_unittest(
 )
 
 python_library(
-    name = "unionfind",
-    srcs = ["unionfind.py"],
-    deps = [],
-)
-
-python_library(
     name = "shape",
     srcs = ["shape.py"],
     visibility = ["PUBLIC"],
@@ -299,39 +185,6 @@ python_library(
     ],
 )
 
-python_library(
-    name = "config",
-    srcs = ["config.py"],
-    resources = {
-        ":revision_time_iso8601": "revision_time_iso8601",
-        ":revision_timestamp": "revision_timestamp",
-        ":vcs_revision": "vcs_revision",
-    },
-    deps = [
-        ":artifacts_dir",
-        ":fs_utils",
-        ":vcs-library",
-        shape.python_data(
-            name = "repo_config_t",
-            instance = REPO_CFG,
-            shape_impl = "//antlir/bzl:constants.shape",
-            type_name = "repo_config_t",
-        ),
-    ],
-)
-
-python_binary(
-    name = "print-config",
-    main_function = "antlir.config.main",
-    deps = [":config"],
-)
-
-buck_genrule(
-    name = "config.json",
-    out = "config.json",
-    cmd = "$(exe :print-config) > $OUT",
-)
-
 rust_binary(
     name = "repo-root",
     srcs = ["repo_root.rs"],
@@ -340,13 +193,6 @@ rust_binary(
     deps = [
         ":find_root",
     ],
-)
-
-python_library(
-    name = "bzl_const",
-    srcs = ["bzl_const.py"],
-    # BZL_CONST is gone so this target is broken, but untangling the web of
-    # dependencies is left for a later diff
 )
 
 python_library(
@@ -376,17 +222,6 @@ python_binary(
             platform = "python",
         ),
     ],
-)
-
-python_library(
-    name = "testlib_flavor_helpers",
-    srcs = ["tests/flavor_helpers.py"],
-    visibility = [
-        "//antlir/...",
-        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg",
-        "//tupperware/image/bzl/tests:test-tw-image-install-fbpkg-library",
-    ],
-    deps = [":config"],
 )
 
 # Some rust dependencies are only used in OSS, add this target to be able to easily
@@ -427,50 +262,6 @@ python_binary(
 python_library(
     name = "errors",
     srcs = ["errors.py"],
-)
-
-# Generate a vcs hash file and make it public.
-buck_genrule(
-    name = "vcs_revision",
-    cmd = "$(exe :vcs) --rev >$OUT",
-    visibility = ["PUBLIC"],
-)
-
-# Generate UNIX timestamp of the current revision and make it public.
-buck_genrule(
-    name = "revision_timestamp",
-    cmd = "$(exe :vcs) --revision_timestamp >$OUT",
-    visibility = ["PUBLIC"],
-)
-
-# Generate iso8601 datetime of the current revision and make it public.
-buck_genrule(
-    name = "revision_time_iso8601",
-    cmd = "$(exe :vcs) --revision_time_iso8601 >$OUT",
-    visibility = ["PUBLIC"],
-)
-
-rust_library(
-    name = "find_built_subvol_rust_lib",
-    srcs = ["find_built_subvol_lib.rs"],
-    crate_root = "find_built_subvol_lib.rs",
-    visibility = ["PUBLIC"],
-    deps =
-        [
-            "anyhow",
-            "serde",
-            "serde_json",
-            "thiserror",
-            "//antlir:find_root",
-            "//antlir/filesystem/absolute_path:absolute_path",
-        ],
-)
-
-python_binary(
-    name = "delete-subvolume-recursive",
-    srcs = ["delete_subvolume_recursive.py"],
-    main_function = "antlir.delete_subvolume_recursive.main",
-    deps = [":btrfsutil"],
 )
 
 # Keep around until D53708598 pushes to Sandcastle

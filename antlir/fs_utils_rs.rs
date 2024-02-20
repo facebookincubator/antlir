@@ -105,20 +105,5 @@ pub fn fs_utils_rs(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
         p.extract()
     }
 
-    /// copy_file(src, dst)
-    /// --
-    ///
-    /// Copy file `src` to `dst`, as fast as possible, which means:
-    ///   1) first try copy_file_range(2) for true cow
-    ///   2) if that fails on cross-device files, use sendfile(2) for no cow but
-    ///      still in-kernel copies
-    ///   3) lastly, do a slow read(2)+write(2)
-    #[pyfn(m)]
-    fn copy_file(src: AntlirPath, dst: AntlirPath) -> PyResult<()> {
-        // Rust's std::fs::copy does all the perf optimizations above, whereas
-        // Python only does sendfile(2), so it's worth exporting from Rust
-        std::fs::copy(src, dst).map_err(PyErr::from).map(|_| ())
-    }
-
     Ok(())
 }

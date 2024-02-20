@@ -147,7 +147,7 @@ class TestShape(unittest.TestCase):
             "weapon=shape("
             + (
                 "color=GREEN, "
-                "target=target_t("
+                "target=shape("
                 "name=':luke-lightsaber', path=b'/static/target/path'"
                 ")"
             )
