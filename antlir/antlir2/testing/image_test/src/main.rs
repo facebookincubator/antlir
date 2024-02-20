@@ -5,8 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-extern crate loopdev_erikh as loopdev;
-
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
@@ -31,7 +29,6 @@ use anyhow::Result;
 use clap::Parser;
 use image_test_lib::Test;
 use json_arg::JsonFile;
-use loopdev::LoopControl;
 use mount::Mount;
 use serde::Deserialize;
 use tempfile::NamedTempFile;
@@ -63,9 +60,6 @@ struct TestSpec {
     #[serde(default)]
     /// Mounts required by the layer-under-test
     mounts: BTreeSet<Mount>,
-    #[serde(default)]
-    /// Allocate N loopback devices and bind them into the container
-    allocate_loop_devices: u8,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -180,21 +174,6 @@ fn main() -> Result<()> {
     for path in args.test.output_dirs() {
         std::fs::set_permissions(&path, Permissions::from_mode(0o777))
             .with_context(|| format!("while making {} world-writable", path.display()))?;
-    }
-
-    // hang on to open fds of loop devices so they don't get closed
-    let mut loop_devices = Vec::new();
-
-    if spec.allocate_loop_devices > 0 {
-        let lc = LoopControl::open().context("while opening loop control")?;
-        for i in 0..spec.allocate_loop_devices {
-            let ld = lc.next_free().context("while allocating loop device")?;
-            let path = std::fs::read_link(format!("/proc/self/fd/{}", ld.as_raw_fd()))
-                .context("while getting path of loopdev")?;
-            ctx.setenv((format!("ANTLIR2_LOOPDEV_{i}"), path.clone()));
-            ctx.outputs(path);
-            loop_devices.push(ld);
-        }
     }
 
     match spec.boot {
