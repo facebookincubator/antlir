@@ -543,40 +543,22 @@ _SERIALIZING_LOCATION_MSG = (
 #
 #   - `opts.on_target_fields` has 3 possible values:
 #
-#     * "preserve": Leave the field as a `//target:path` string.
-#
 #     * "fail": Fails at Buck parse-time. Used for scenarios that cannot
 #       reasonably support target -> buck output path resolution, like
 #       `shape.json_file()`.  But, in the future, we should be able to
 #       migrate these to a `target_tagger.bzl`-style approach.
-#
-#     * "location"`, this will replace fields of type `Target` with a struct
-#       that has the target name and its on-disk path generated via a
-#       `$(location)` macro. This is safe to be cached if it is serialized with
-#       shape.json_file.
-#
-#     * "tag_targets", this will replace fields of type `Target` with a struct
-#       produced by `target_tagger.tag_target` function. That structure can be
-#       converted to a `feature` later on for safe passing to the antlir `compiler`.
 #
 
 def _recursive_copy_transform(val, t, opts):
     if hasattr(t, "__I_AM_TARGET__"):
         if opts.on_target_fields == "fail":
             fail(_SERIALIZING_LOCATION_MSG)
-        elif opts.on_target_fields == "location":
-            return struct(
-                name = val,
-                path = "$(location {})".format(val),
-                __I_AM_TARGET__ = True,
-            )
-        elif opts.on_target_fields == "collect_deps":
-            opts.deps[val] = 1
-            return {
-                "path": {"__BUCK_TARGET": normalize_target(val)},
-            }
-        elif opts.on_target_fields == "preserve":  # pragma: no cover
-            return val
+
+        return struct(
+            name = val,
+            path = "$(location {})".format(val),
+            __I_AM_TARGET__ = True,
+        )
         fail(
             # pragma: no cover
             "Unknown on_target_fields: {}".format(opts.on_target_fields),
@@ -769,55 +751,6 @@ def _python_data(
 def _as_serializable_dict(instance):
     return _as_dict_deep(_safe_to_serialize_instance(instance))
 
-# Collects targets from shape and converts them to tagged targets. Returns
-# list of dependencies in shape and shape converted to dict. Used in buck2
-# implementation of `genrule_layer`.
-def _as_dict_collect_deps(instance):
-    deps = {}
-    shape_as_dict = _as_dict_deep(_recursive_copy_transform(
-        instance,
-        instance.__shape__,
-        struct(
-            include_dunder_shape = False,
-            on_target_fields = "collect_deps",
-            deps = deps,
-        ),
-    ))
-
-    return shape_as_dict, list(deps.keys())
-
-# Converts `shape.new(foo_t, x='a', y=shape.new(bar_t, z=3))` to
-# `{'x': 'a', 'y': shape.new(bar_t, z=3)}`.
-#
-# The primary use-case is unpacking a shape in order to construct a modified
-# variant.  E.g.
-#
-#   def new_foo(a, b=3):
-#       if (a + b) % 1:
-#           fail("a + b must be even, got {} + {}".format(a, b))
-#       return shape.new(_foo_t, a=a, b=b, c=a+b)
-#
-#   def modify_foo(foo, ... some overrides ...):
-#       d = shape.as_dict_shallow(instance)
-#       d.update(... some overrides ...)
-#       d.pop('c')
-#       return new_foo(**d)
-#
-# Notes:
-#   - This dict is NOT intended for serialization, since nested shape remain
-#     as shapes, and are not converted to `dict`.
-#   - There is no special treament for `shape.target` fields, they remain as
-#     `//target:path` strings.
-#   - `shape.new` is the mathematical inverse of `_as_dict_shallow`.  On the
-#     other hand, we do not yet provide `_as_dict_deep`.  The latter would
-#     NOT be invertible, since `shape` does not yet have a way of
-#     recursively converting nested dicts into nested shapes.
-def _as_dict_shallow(instance):
-    return {
-        field: getattr(instance, field)
-        for field in instance.__shape__.fields
-    }
-
 # Recursively converts nested shapes and structs to dicts. Used in shape.hash.
 def _as_dict_deep(val, on_target_fields = "preserve"):
     if _is_any_instance(val):
@@ -882,8 +815,6 @@ shape = struct(
     impl = _impl,
     DEFAULT_VALUE = _DEFAULT_VALUE,
     # output target macros and other conversion helpers
-    as_dict_collect_deps = _as_dict_collect_deps,
-    as_dict_shallow = _as_dict_shallow,
     as_serializable_dict = _as_serializable_dict,
     dict = _dict,
     do_not_cache_me_json = _do_not_cache_me_json,

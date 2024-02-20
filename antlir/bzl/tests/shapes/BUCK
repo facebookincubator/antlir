@@ -11,7 +11,9 @@ oncall("antlir")
 shape.impl(
     name = "test.shape",
     rust_crate = "test_shape",
-    deps = ["//antlir/bzl:target.shape"],
+    deps = [
+        "//antlir/bzl:target.shape",
+    ],
 )
 
 buck_genrule(
@@ -152,7 +154,6 @@ python_unittest(
             shape_impl = ":test.shape",
             type_name = "hashable_t",
         ),
-        "//antlir/bzl:target.shape",
     ],
 )
 

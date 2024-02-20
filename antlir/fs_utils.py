@@ -6,25 +6,17 @@
 
 "Utilities to make Python systems programming more palatable."
 import argparse
-import base64
-import ctypes
 import errno
 import importlib.resources
-import json
 import os
 import shlex
 import shutil
-import signal
-import stat
 import subprocess
 import tempfile
-import time
-import urllib.parse
-import uuid
 from contextlib import contextmanager
-from typing import Any, AnyStr, Generator, IO, Iterable, Iterator, List, Union
+from typing import AnyStr, Generator, IO, Iterable, Iterator, List, Union
 
-from antlir.common import byteme, check_popen_returncode, get_logger
+from antlir.common import get_logger
 
 
 log = get_logger()
@@ -35,12 +27,11 @@ log = get_logger()
 MehStr = Union[str, bytes, "Path"]
 
 
-class _OpenHow(ctypes.Structure):
-    _fields_ = [
-        ("flags", ctypes.c_uint64),
-        ("mode", ctypes.c_uint64),
-        ("resolve", ctypes.c_uint64),
-    ]
+# Bite me, Python3.
+def byteme(s: AnyStr) -> bytes:
+    "Byte literals are tiring, just promote strings as needed."
+    # pyre-fixme[16]: `bytes` has no attribute `encode`.
+    return s.encode() if isinstance(s, str) else s
 
 
 # `pathlib` refuses to operate on `bytes`, which is the only sane way on Linux.
@@ -65,9 +56,7 @@ class Path(bytes):
 
     Additionally, it has integration with these commonly used tools:
       - `argparse`: `from_argparse` and `parse_args`
-      - `json`: `json_load` and `json_loads`
       - `Optional[Path]`: `or_none`
-      - `urllib`: `file_url`
     """
 
     def __new__(cls, arg, *args, **kwargs):
@@ -100,12 +89,6 @@ class Path(bytes):
         return super().__hash__()
 
     @classmethod
-    def or_none(cls, arg, *args, **kwargs):
-        if arg is None:
-            return None
-        return cls(arg, *args, **kwargs)
-
-    @classmethod
     # pyre-fixme[14]: `join` overrides method defined in `bytes` inconsistently.
     def join(cls, *paths) -> "Path":
         if not paths:
@@ -127,20 +110,6 @@ class Path(bytes):
             return True
         except FileNotFoundError:
             return False
-
-    def wait_for(self, timeout_ms: int = 5000) -> int:
-        start_ms = int(time.monotonic() * 1000)
-        elapsed_ms = 0
-        while elapsed_ms < timeout_ms:
-            if self.exists(raise_permission_error=False):
-                return elapsed_ms
-            time.sleep(0.1)
-            elapsed_ms = int(time.monotonic() * 1000) - start_ms
-
-        raise FileNotFoundError(self)
-
-    def file_url(self) -> str:
-        return "file://" + urllib.parse.quote(self.abspath())
 
     def abspath(self) -> "Path":
         return Path(os.path.abspath(self))
@@ -179,125 +148,6 @@ class Path(bytes):
     # on $PWD tends to be fragile, and we don't want to make it implicit.
     def relpath(self, start: AnyStr) -> "Path":
         return Path(os.path.relpath(self, byteme(start)))
-
-    def _resolve_altroot_path(self, path: "Path") -> "Path":
-        """
-        Resolve a path relative to an alternate root. Useful when said path
-        may contain symlinks that point to absolute paths.
-        """
-
-        # Normalize altroot path.
-        altroot = self.realpath()
-
-        # Constants from headers
-        __NR_openat2 = 437
-        __RESOLVE_IN_ROOT = 0x10
-
-        #
-        # Define openat2(2) syscall wrapper. Note, glibc does not provide
-        # a wrapper for openat2() so we must use of syscall(2). The
-        # function signature is:
-        #
-        #     long syscall(SYS_openat2, int dirfd, const char *pathname,
-        #         struct open_how *how, size_t size);
-        #
-        _openat2 = ctypes.CDLL(None).syscall
-        _openat2.restype = ctypes.c_long
-        _openat2.argtypes = (
-            ctypes.c_long,
-            ctypes.c_uint,
-            ctypes.c_char_p,
-            ctypes.POINTER(_OpenHow),
-            ctypes.c_size_t,
-        )
-        altroot_fd = os.open(altroot, os.O_RDONLY)
-        open_how = _OpenHow(flags=0, mode=0, resolve=__RESOLVE_IN_ROOT)
-        fd = _openat2(__NR_openat2, altroot_fd, path, open_how, ctypes.sizeof(open_how))
-        errno = ctypes.get_errno()
-        os.close(altroot_fd)
-        if fd == -1:
-            # It's possible this is a non-existent path, in which case return
-            # it as is.
-            log.debug(
-                f"Failed to resolve path '{path}'"
-                + f"within altroot '{self}' (errno: {errno})"
-            )
-            return self / path.lstrip(b"/")
-        resolved_path = Path(os.readlink(f"/proc/self/fd/{fd}"))
-        os.close(fd)
-        assert resolved_path.startswith(altroot)
-        return self / resolved_path[len(altroot) :].lstrip(b"/")
-
-    def normalized_subpath(
-        self,
-        path: AnyStr,
-        *,
-        no_dereference_leaf: bool = False,
-        resolve_links: bool = False,
-    ) -> "Path":
-        """
-        Returns a normalized path to `path` interpreted as a child of the
-        directory `self`, raising if the actual path points outside `self`.
-        We check for two risks:
-          - `path` is relative, and goes above `self` via '..'.
-          - Some component of the path is a symlink, and this symlink, when
-            interpreted by a non-chrooted tool, will attempt to access
-            something outside of `self`.
-        If `path` is absolute, the leading `/` is ignored.
-
-        The above check fail on attempting to traverse an symlink within
-        `self` that is an absolute path to another directory within the `self`
-        -- i.e.  if you think of `self` as the root of another filesystem,
-        absolute symlinks won't work.
-
-        Such absolute symlinks are not supported by default because at
-        present, I believe that the right idiom is to encourage image authors
-        to manipulate the "real" locations of files, and not to manipulate
-        paths through symlinks.
-
-        In certain cases, we do want to resolve links relative to to 'self'
-        (treated as an alternative root). This behavior can be enabled via the
-        `resolve_links` option. If the link path can be resolved (within the
-        context of the alternate root), the fully resolved (not normalized)
-        path is returned. (This is done so that other callers can use the
-        returned path without having to jump through special altroot path
-        resolution hoops.) If the link path can't be resolved, it is returned
-        as is.
-
-        In the rare case that you need to manipulate a symlink itself (e.g.
-        remove or rename), you will want to pass `no_dereference_leaf`.
-
-        Future: consider using a file descriptor to refer to the base
-        directory to better mitigate races due to renames in its path.
-        """
-
-        # Can't have both no_dereference_leaf and resolve_links
-        assert not no_dereference_leaf or not resolve_links, (
-            "Error: no_dereference_leaf and resolve_links are incompatible."
-            + " The former disables link resolution, while the latter"
-            + " attempts to enable it."
-        )
-
-        if resolve_links:
-            return self._resolve_altroot_path(Path(path))
-
-        # Without the lstrip, we would lose the `self` prefix if the
-        # supplied path is absolute.
-        result_path = (self / (Path(path).lstrip(b"/"))).normpath()
-
-        # Paranoia: Make sure that, despite any symlinks in the path, the
-        # resulting path is not outside of `self`.
-        if (
-            (
-                (result_path.dirname().realpath() / result_path.basename())
-                if no_dereference_leaf
-                else result_path.realpath()
-            )
-            .relpath(self.realpath())
-            .has_leading_dot_dot()
-        ):
-            raise AssertionError(f"{path} is outside of {self}")
-        return Path(result_path)
 
     # Returns `str` because shell scripts are normally strings, not bytes.
     # Also, shlex.quote doesn't support bytes (see Python Issue #25567).
@@ -405,14 +255,6 @@ class Path(bytes):
                     os.chmod(td / name, 0o755)
                 yield td / name
 
-    # Future: Consider if we actually want something like
-    # `relative_outside_base`, which is `.normpath().has_leading_dot_dot()`.
-    def has_leading_dot_dot(self) -> bool:
-        return self == b".." or self.startswith(b"../")
-
-    def strip_leading_slashes(self) -> "Path":
-        return Path(self.lstrip(b"/"))
-
     def touch(self) -> "Path":
         with self.open(mode="a"):
             pass
@@ -420,19 +262,6 @@ class Path(bytes):
 
     def unlink(self) -> None:
         return os.unlink(self)
-
-    @classmethod
-    def json_dumps(cls, *args, **kwargs) -> str:
-        "Use instead of `json.dumps` to serializing `Path` values."
-        assert "cls" not in kwargs
-        return json.dumps(*args, **kwargs, cls=_PathJSONEncoder)
-
-    @classmethod
-    def json_dump(cls, *args, **kwargs) -> str:
-        "Use instead of `json.dump` to allow serializing `Path` values."
-        assert "cls" not in kwargs
-        # pyre-fixme[7]: Expected `str` but got `None`.
-        return json.dump(*args, **kwargs, cls=_PathJSONEncoder)
 
     def __format__(self, spec: str) -> str:
         "Allow usage of `Path` in f-strings."
@@ -443,107 +272,10 @@ class Path(bytes):
         return self.decode(errors="surrogateescape")
 
 
-# This path is off-limits to regular image operations, it exists only to
-# record image metadata and configuration.  This is at the root, instead of
-# in `etc` because that means that `FilesystemRoot` does not have to provide
-# `etc` and determine its permissions.  In other words, a top-level ".meta"
-# directory makes the compiler less opinionated about other image content.
-#
-# NB: The trailing slash is significant, making this a protected directory,
-# not a protected file.
-META_DIR = Path(".meta/")
-
-# Keep in sync with `snapshot_install_dir.bzl`
-RPM_DEFAULT_SNAPSHOT_FOR_INSTALLER_DIR = Path(
-    "/__antlir__/rpm/default-snapshot-for-installer/"
-)
-
-# Contains data needed to run the package manager in images.
-ANTLIR_DIR = Path("/__antlir__")
-
-# The name of the flavor file in the meta directory
-META_FLAVOR_FILE: Path = META_DIR / "flavor"
-
-# The name of the build directory in the meta directory
-META_BUILD_DIR: Path = META_DIR / "build"
-
-
-# Future: If it becomes necessary to serialize dict keys that are `Path`,
-# the `json` module currently does not support custom key serialization.  In
-# that case, we would delete this and replace it with an explicit recursive
-# traversal on the input that returns a new structure.  Yay, `json`.
-class _PathJSONEncoder(json.JSONEncoder):
-    "Implementation detail for `Path.json_dump` & `Path.json_dumps`."
-
-    # pyre-fixme[14]: `default` overrides method defined in `JSONEncoder`
-    #  inconsistently.
-    def default(self, obj: Path) -> str:
-        if isinstance(obj, Path):
-            return obj.decode(errors="surrogateescape")
-        return super().default(self, obj)
-
-
 @contextmanager
 def temp_dir(**kwargs) -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory(**kwargs) as td:
         yield Path(td)
-
-
-def generate_work_dir() -> Path:
-    return Path(
-        b"/work"
-        + base64.urlsafe_b64encode(
-            uuid.uuid4().bytes  # base64 instead of hex saves 10 bytes
-        ).strip(b"=")
-    )
-
-
-@contextmanager
-def open_for_read_decompress(
-    path: Path, zstd_threads: int = 0
-) -> Generator[Any, Any, Any]:
-    'Wraps `open(path, "rb")` to add transparent `.zst` or `.gz` decompression.'
-    path = Path(path)
-    if path.endswith(b".zst"):
-        decompress_cmd = ["zstd", f"--threads={zstd_threads}"]
-    elif path.endswith(b".gz") or path.endswith(b".tgz"):
-        decompress_cmd = ["gzip"]
-    else:
-        with path.open(mode="rb") as f:
-            yield f
-        return
-    with subprocess.Popen(
-        decompress_cmd + ["--decompress", "--stdout", path],
-        stdout=subprocess.PIPE,
-    ) as proc:
-        yield proc.stdout
-    # If the caller does not consume all of `proc.stdout`, the decompressor
-    # program can get a SIGPIPE as it tries to write to a closed pipe.
-    #
-    # Rationale for just ignoring the signal -- I considered adding a
-    # mandatory `must_read_all_data` boolean arg , but decided it against it:
-    #   - Adding this in the no-compression case feels artificial.
-    #   - This is not typical behavior for Python file context managers -- it
-    #     should likely be provided as a wrapper, not as part of the API --
-    #     if it's even desirable.
-    #   - The extra API complexity is of dubious utility.
-    if proc.returncode == -signal.SIGPIPE:
-        log.error(f"Ignoring SIGPIPE exit of child `{decompress_cmd[0]}` for `{path}`")
-    else:
-        check_popen_returncode(proc)
-
-
-def create_ro(path, mode):
-    "`open` that creates (and never overwrites) a file with mode `a+r`."
-
-    def ro_opener(path, flags):
-        return os.open(
-            path,
-            (flags & ~os.O_TRUNC) | os.O_CREAT | os.O_EXCL | os.O_CLOEXEC,
-            mode=stat.S_IRUSR | stat.S_IRGRP | stat.S_IROTH,
-        )
-
-    return open(path, mode, opener=ro_opener)
 
 
 @contextmanager
@@ -644,29 +376,3 @@ def populate_temp_file_and_rename(
         except BaseException:  # Clean up even on Ctrl-C
             os.unlink(tf.name)
             raise
-
-
-# This list contains the arguments needed to make a btrfs reflink from a
-# different file.
-#
-# Option rationales:
-#   - The compiler should have detected any collisons on the destination, so
-#     `--no-clobber` is just a failsafe.
-#   - `--no-dereference` is needed since our contract is to copy each
-#     symlink's destination text verbatim.  Not doing this would also risk
-#     following absolute symlinks, reaching OUTSIDE of the source subvolume!
-#   - `--reflink=always` aids efficiency and, more importantly, preserves
-#     "cloned extent" relationships that existed within the source subtree.
-#   - `--sparse=auto` is implied by `--reflink=always`.  The two together
-#     ought to preserve the original sparseness layout,
-#   - `--preserve=all` keeps as much original metadata as possible,
-#     including hardlinks.
-CP_CLONE_CMD = [
-    "cp",
-    "--recursive",
-    "--no-clobber",
-    "--no-dereference",
-    "--reflink=always",
-    "--sparse=auto",
-    "--preserve=all",
-]

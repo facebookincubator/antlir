@@ -1,17 +1,7 @@
-load("//antlir/bzl:build_defs.bzl", "export_file", "python_library", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
 oncall("antlir")
-
-shape.impl(
-    name = "container_opts.shape",
-)
-
-shape.impl(
-    name = "image_source.shape",
-    deps = ["//antlir/bzl:target.shape"],
-)
 
 export_file(name = "shape.bzl")
 
@@ -25,67 +15,6 @@ export_file(
     visibility = ["PUBLIC"],
 )
 
-####
-# Here lies a custom implementation of the target.shape backing code.
-# You almost certainly _DO NOT_ want to copy this behavior anywhere
-# else.  This is very specific to this shape and not for general use.
-####
-python_library(
-    # @autodeps-skip
-    name = "target.shape-python",
-    srcs = {
-        "shape2/target.py": "__init__.py",
-    },
-    base_module = "antlir.bzl.target",
-    visibility = ["PUBLIC"],
-    deps = [
-        antlir_dep(":shape"),
-        antlir_dep(":cli"),
-    ],
-)
-
-rust_library(
-    name = "target.shape-rust",
-    srcs = [
-        "shape2/target.rs",
-    ],
-    crate = "target",
-    crate_root = "shape2/target.rs",
-    visibility = ["PUBLIC"],
-    deps = [
-        antlir_dep("bzl/shape2:shape"),
-        "anyhow",
-        "fbthrift",
-        "serde",
-    ],
-)
-
 shape.impl(
     name = "target.shape",
-    expert_only_custom_impl = True,
-)
-####
-# End dumb shit
-####
-
-shape.impl(
-    name = "constants.shape",
-    visibility = [
-        "//antlir/...",
-        "//tupperware/cm/antlir/...",
-    ],
-)
-
-shape.impl(
-    name = "loopback_opts.shape",
-)
-
-shape.impl(
-    name = "gpt.shape",
-    deps = ["//antlir/bzl:target.shape"],
-)
-
-shape.impl(
-    name = "flavor.shape",
-    deps = ["//antlir/bzl:target.shape"],
 )
