@@ -45,4 +45,3 @@ def image_python_unittest(
         **python_unittest_kwargs
     ) != "upgrade":
         fail("antlir1 is dead")
-        return

@@ -83,4 +83,3 @@ Optional arguments:
         implicit_antlir2 = True,
     ) != "upgrade":
         fail("antlir1 is dead")
-        return

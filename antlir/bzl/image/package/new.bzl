@@ -68,4 +68,3 @@ def package_new(
         **opts_kwargs
     ) != "upgrade":
         fail("antlir1 is dead")
-        return

@@ -154,4 +154,3 @@ def image_layer(
         labels = image_layer_kwargs.get("labels", None),
     ) != "upgrade":
         fail("antlir1 is dead")
-        return
