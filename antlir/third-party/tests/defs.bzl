@@ -1,5 +1,5 @@
 load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule", "buck_sh_test")
-load("//antlir/bzl:hoist.bzl", "hoist")
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:third_party.bzl", "third_party")
 load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
