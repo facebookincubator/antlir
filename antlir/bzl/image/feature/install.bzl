@@ -56,7 +56,6 @@ directory output by a Buck-runnable target, then you should use
 """
 
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 
 def feature_install_buck_runnable(
         source,
@@ -89,10 +88,8 @@ build-time error requesting it.  This flag allows the target being wrapped
 to be executed in an Antlir container as part of a Buck build step.  It
 defaults to `False` to speed up incremental rebuilds.
     """
-    buck2_src = image_source_to_buck2_src(source)
-
     return antlir2.install(
-        src = buck2_src,
+        src = source,
         dst = dest,
         mode = mode,
         user = user,
@@ -139,10 +136,8 @@ The argument `wrap_as_buck_runnable` is only present because the Buck2
 implementation uses that argument, and adding it here makes it easier to
 integrate with that logic. It can be ignored.
     """
-    buck2_src = image_source_to_buck2_src(source)
-
     return antlir2.install(
-        src = buck2_src,
+        src = source,
         dst = dest,
         mode = mode,
         user = user,
