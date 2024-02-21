@@ -116,12 +116,17 @@ def _impl(ctx: AnalysisContext) -> Promise:
 def _identifier_prefix(prefix: str) -> str:
     return prefix
 
-def _extra_repo_name_to_repo(repo_name: str, flavor_info: FlavorInfo) -> Dependency:
+def _extra_repo_name_to_repo(repo_name: str, flavor_info: FlavorInfo) -> Dependency | None:
+    default_repos = flavor_info.dnf_info.default_repo_set[RepoSetInfo].repos
     extra_repos = flavor_info.dnf_info.default_extra_repo_set[RepoSetInfo].repos
 
     for repo in extra_repos:
         if repo[RepoInfo].logical_id == repo_name:
             return repo
+
+    for repo in default_repos:
+        if repo[RepoInfo].logical_id == repo_name:
+            return None
 
     fail("Unknown extra repo: {}. Possible choices are {}".format(
         repo_name,
@@ -187,7 +192,9 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
     for repo in dnf_additional_repos:
         if types.is_string(repo):
-            dnf_available_repos.append(_extra_repo_name_to_repo(repo, flavor_info))
+            extra_repo = _extra_repo_name_to_repo(repo, flavor_info)
+            if extra_repo != None:
+                dnf_available_repos.append(extra_repo)
         elif RepoSetInfo in repo:
             dnf_available_repos.extend(repo[RepoSetInfo].repos)
         elif RepoInfo in repo:
