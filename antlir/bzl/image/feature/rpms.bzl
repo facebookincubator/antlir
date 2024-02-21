@@ -3,9 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2 = "feature")
-load("//antlir/bzl:image_source.bzl", "image_source_to_buck2_src")
 
 def feature_rpms_install(
         rpmlist,
@@ -80,13 +78,7 @@ operation successful even if the binary fails.
     if rpmlist and subjects_src:
         fail("incompatible parameters specified: `rpmlist` and `subjects_src`")
 
-    # this has to happen outside of the is_buck2 conditional or td will break
-    antlir2_rpms = [
-        r if types.is_string(r) else image_source_to_buck2_src(r)
-        for r in rpmlist
-    ]
-
-    return antlir2.rpms_install(rpms = antlir2_rpms)
+    return antlir2.rpms_install(rpms = rpmlist)
 
 def feature_rpms_remove_if_exists(rpmlist, flavors = None):
     """

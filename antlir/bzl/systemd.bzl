@@ -180,25 +180,17 @@ def _install_impl(
     # We haven't been provided an explicit dest so let's try and derive one from the
     # source
     if dest == None:
-        if types.is_string(source):
-            if ":" in source:
-                # `source` appears to be a target, lets see if we can derive the base
-                # filename from it and use it as dest.
-                dest = target_utils.parse_target(source).name
-            else:
-                # If it's not a buck target name but it's a string, then we
-                # must assume it's a file path that will ulimately be exported
-                # as a target via `maybe_export_file`.
-                dest = paths.basename(source)
-
-        elif source.path != None:
-            # use the `path` part of what should be an `image.source`
-            dest = paths.basename(source.path)
-        elif source.source != None:
-            # use the `source` part of what should be an `image.source`
-            dest = target_utils.parse_target(source.source).name
-        else:
+        if not types.is_string(source):
             fail("Unable to derive `dest` from source: " + source)
+        if ":" in source:
+            # `source` appears to be a target, lets see if we can derive the base
+            # filename from it and use it as dest.
+            dest = target_utils.parse_target(source).name
+        else:
+            # If it's not a buck target name but it's a string, then we
+            # must assume it's a file path that will ulimately be exported
+            # as a target via `maybe_export_file`.
+            dest = paths.basename(source)
 
     _fail_if_path(dest, description + " Dest")
     _assert_unit_suffix(dest)
@@ -247,25 +239,17 @@ def _install_dropin(
     # We haven't been provided an explicit dest so let's try and derive one from the
     # source
     if dest == None:
-        if types.is_string(source):
-            if ":" in source:
-                # `source` appears to be a target, lets see if we can derive the base
-                # filename from it and use it as dest.
-                dest = target_utils.parse_target(source).name
-            else:
-                # If it's not a buck target name but it's a string, then we
-                # must assume it's a file path that will ulimately be exported
-                # as a target via `maybe_export_file`.
-                dest = paths.basename(source)
-
-        elif source.path != None:
-            # use the `path` part of what should be an `image.source`
-            dest = paths.basename(source.path)
-        elif source.source != None:
-            # use the `source` part of what should be an `image.source`
-            dest = target_utils.parse_target(source.source).name
-        else:
+        if not types.is_string(source):
             fail("Unable to derive `dest` from source: " + source)
+        if ":" in source:
+            # `source` appears to be a target, lets see if we can derive the base
+            # filename from it and use it as dest.
+            dest = target_utils.parse_target(source).name
+        else:
+            # If it's not a buck target name but it's a string, then we
+            # must assume it's a file path that will ulimately be exported
+            # as a target via `maybe_export_file`.
+            dest = paths.basename(source)
 
         # for the auto determined dest name, append the right suffix
         if not dest.endswith(".conf"):
