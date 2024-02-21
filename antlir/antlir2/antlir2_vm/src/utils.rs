@@ -101,11 +101,9 @@ pub(crate) fn create_tpx_logs(
 pub(crate) fn env_names_to_kvpairs(env_names: Vec<String>) -> Vec<KvPair> {
     let mut names: HashSet<_> = env_names.into_iter().collect();
     // If these env exist, always pass them through.
-    ["RUST_LOG", "RUST_BACKTRACE", "ANTLIR_BUCK"]
-        .iter()
-        .for_each(|name| {
-            names.insert(name.to_string());
-        });
+    ["RUST_LOG", "RUST_BACKTRACE"].iter().for_each(|name| {
+        names.insert(name.to_string());
+    });
     names
         .iter()
         .filter_map(|name| match std::env::var(name) {
@@ -151,13 +149,7 @@ mod test {
         result: HashMap<String, OsString>,
     }
 
-    const ALLOWED_ENV_NAMES: &[&str] = &[
-        "RUST_LOG",
-        "RUST_BACKTRACE",
-        "ANTLIR_BUCK",
-        "TEST_PILOT_A",
-        "OTHER",
-    ];
+    const ALLOWED_ENV_NAMES: &[&str] = &["RUST_LOG", "RUST_BACKTRACE", "TEST_PILOT_A", "OTHER"];
 
     impl EnvTest {
         fn new(
@@ -203,21 +195,16 @@ mod test {
         [
             EnvTest::new(vec![], vec![], vec![]),
             // Reads nothing
-            EnvTest::new(
-                vec![],
-                vec!["RUST_LOG", "ANTLIR_BUCK", "TEST_PILOT_A", "OTHER"],
-                vec![],
-            ),
+            EnvTest::new(vec![], vec!["RUST_LOG", "TEST_PILOT_A", "OTHER"], vec![]),
             // Always pass through
             EnvTest::new(
                 vec![
                     ("RUST_LOG", "info"),
-                    ("ANTLIR_BUCK", "1"),
                     ("TEST_PILOT_A", "A"),
                     ("OTHER", "other"),
                 ],
                 vec![],
-                vec![("RUST_LOG", "info"), ("ANTLIR_BUCK", "1")],
+                vec![("RUST_LOG", "info")],
             ),
             // Selection
             EnvTest::new(
