@@ -10,7 +10,7 @@ target_t = shape.shape(
     name = shape.field(str),
     path = shape.path,
     __thrift = {
-        0: "name",
-        1: "path",
+        1: "name",
+        2: "path",
     },
 )
