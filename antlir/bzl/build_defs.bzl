@@ -249,7 +249,6 @@ def _normalize_rust_dep(dep):
         return dep
     return shim.third_party.library(dep, platform = "rust")
 
-antlir_buck_env = shim.antlir_buck_env
 buck_command_alias = shim.buck_command_alias
 buck_filegroup = shim.buck_filegroup
 buck_genrule = shim.buck_genrule
