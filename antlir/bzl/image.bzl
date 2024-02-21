@@ -9,7 +9,6 @@ load(":constants.bzl", "new_nevra")
 load(":image_genrule_layer.bzl", "image_genrule_layer")
 load(":image_gpt.bzl", "image_gpt", "image_gpt_partition")
 load(":image_layer.bzl", "image_layer")
-load(":image_source.bzl", "image_source")
 load(":image_test_rpm_names.bzl", "image_test_rpm_names")
 
 image = struct(
@@ -17,7 +16,6 @@ image = struct(
     layer = image_layer,
     opts = struct,
     rpm = struct(nevra = new_nevra),
-    source = image_source,
     test_rpm_names = image_test_rpm_names,
     gpt = image_gpt,
     gpt_partition = image_gpt_partition,
