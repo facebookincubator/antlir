@@ -5,6 +5,7 @@ oncall("antlir")
 rust_library(
     name = "absolute_path",
     srcs = ["src/absolute_path.rs"],
+    visibility = ["PUBLIC"],
     deps = [
         "ref-cast",
         "serde",
