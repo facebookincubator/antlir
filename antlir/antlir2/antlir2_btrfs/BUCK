@@ -17,6 +17,9 @@ deps = [
 rust_library(
     name = "antlir2_btrfs",
     srcs = glob(["src/*.rs"]),
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     unittests = False,
     visibility = [
         "//antlir/...",
@@ -43,6 +46,9 @@ image.layer(
 image_rust_test(
     name = "antlir2_btrfs-image-test",
     srcs = glob(["src/*.rs"]),
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     layer = ":test-layer",
     deps = deps,
 )
@@ -50,6 +56,9 @@ image_rust_test(
 image_rust_test(
     name = "antlir2_btrfs-image-test-unprivileged",
     srcs = glob(["src/*.rs"]),
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     layer = ":test-layer",
     run_as_user = "nobody",
     rustc_flags = ["--cfg=unprivileged"],
@@ -59,6 +68,9 @@ image_rust_test(
 rust_binary(
     name = "delete",
     srcs = ["delete.rs"],
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     unittests = False,
     deps = [
         "anyhow",

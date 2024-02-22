@@ -271,6 +271,9 @@ image.layer(
 image_rust_test(
     name = "test-install-uses-reflink-copy",
     srcs = ["test_install_uses_reflink_copy.rs"],
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     crate_root = "test_install_uses_reflink_copy.rs",
     layer = ":reflink-test-layer",
     deps = [

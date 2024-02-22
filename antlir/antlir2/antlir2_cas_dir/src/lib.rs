@@ -214,7 +214,10 @@ impl CasDir {
                 })?;
                 continue;
             }
+            #[cfg(not(target_os = "macos"))]
             let sflag = SFlag::from_bits_truncate(entry.mode);
+            #[cfg(target_os = "macos")]
+            let sflag = SFlag::from_bits_truncate(entry.mode as u16);
             if sflag.contains(SFlag::S_IFDIR) {
                 std::fs::create_dir(&received_path).with_context(|| {
                     format!("while creating directory {}", received_path.display())

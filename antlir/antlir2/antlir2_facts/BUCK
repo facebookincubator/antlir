@@ -5,6 +5,11 @@ oncall("antlir")
 rust_library(
     name = "antlir2_facts",
     srcs = glob(["src/**/*.rs"]),
+    compatible_with = [
+        "ovr_config//os:freebsd",
+        "ovr_config//os:linux",
+        "ovr_config//os:macos",
+    ],
     rustc_flags = [
         # @oss-disable
     ],
@@ -28,6 +33,11 @@ rust_library(
 rust_binary(
     name = "new-facts-db",
     srcs = ["bin/new_facts_db.rs"],
+    compatible_with = [
+        "ovr_config//os:freebsd",
+        "ovr_config//os:linux",
+        "ovr_config//os:macos",
+    ],
     crate_root = "bin/new_facts_db.rs",
     visibility = ["PUBLIC"],
     deps = [

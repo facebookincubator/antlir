@@ -5,6 +5,11 @@ oncall("antlir")
 rust_library(
     name = "antlir2_working_volume",
     srcs = glob(["src/**/*.rs"]),
+    compatible_with = [
+        "ovr_config//os:freebsd",
+        "ovr_config//os:linux",
+        "ovr_config//os:macos",
+    ],
     deps = [
         "nix",
         "thiserror",

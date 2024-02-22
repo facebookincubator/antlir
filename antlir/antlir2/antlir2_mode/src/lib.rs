@@ -13,6 +13,7 @@
 use std::borrow::Cow;
 use std::fmt::Debug;
 use std::fmt::Display;
+#[cfg(unix)]
 use std::os::unix::fs::PermissionsExt;
 use std::str::FromStr;
 
@@ -38,6 +39,7 @@ impl Mode {
         Self(mode & 0o7777)
     }
 
+    #[cfg(unix)]
     #[inline]
     pub fn as_permissions(&self) -> std::fs::Permissions {
         (*self).into()
@@ -302,12 +304,14 @@ impl From<Mode> for u32 {
     }
 }
 
+#[cfg(unix)]
 impl From<Mode> for std::fs::Permissions {
     fn from(m: Mode) -> Self {
         Self::from_mode(m.0)
     }
 }
 
+#[cfg(unix)]
 impl From<std::fs::Permissions> for Mode {
     fn from(p: std::fs::Permissions) -> Self {
         Self::new(p.mode())
