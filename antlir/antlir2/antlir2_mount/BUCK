@@ -5,6 +5,10 @@ oncall("metalos")
 rust_library(
     name = "antlir_mount",
     srcs = ["src/lib.rs"],
+    compatible_with = [
+        "ovr_config//os:freebsd",
+        "ovr_config//os:linux",
+    ],
     visibility = ["PUBLIC"],
     deps = [
         "mockall",

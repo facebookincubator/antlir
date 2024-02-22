@@ -10,6 +10,9 @@ rust_library(
             "test": True,
         },
     },
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     features = ["serde"],
     test_deps = [
         "similar-asserts",

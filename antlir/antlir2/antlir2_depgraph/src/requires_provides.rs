@@ -103,7 +103,10 @@ impl<'a> Validator<'a> {
             },
             Self::Executable => match item {
                 Item::Path(Path::Entry(e)) => {
+                    #[cfg(not(target_os = "macos"))]
                     let mode = Mode::from_bits_truncate(e.mode);
+                    #[cfg(target_os = "macos")]
+                    let mode = Mode::from_bits_truncate(e.mode as u16);
                     (e.file_type == FileType::File)
                         && (mode.intersects(Mode::S_IXUSR | Mode::S_IXGRP | Mode::S_IXOTH))
                 }

@@ -8,6 +8,9 @@ oncall("antlir")
 rust_library(
     name = "isolate_unshare",
     srcs = glob(["src/**/*.rs"]),
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     visibility = ["//antlir/antlir2/antlir2_isolate:"],
     deps = [
         "thiserror",

@@ -4,6 +4,9 @@ oncall("antlir")
 
 rust_bindgen_library(
     name = "libcap-sys",
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     cpp_deps = [
         "third-party//libcap:cap",
     ],

@@ -17,6 +17,11 @@ python_library(
 rust_python_extension(
     name = "native_antlir_impl",
     srcs = ["src/lib.rs"],
+    compatible_with = [
+        "ovr_config//os:freebsd",
+        "ovr_config//os:linux",
+        "ovr_config//os:macos",
+    ],
     mapped_srcs = {
         ":register_modules.rs": "src/register_modules.rs",
     },
