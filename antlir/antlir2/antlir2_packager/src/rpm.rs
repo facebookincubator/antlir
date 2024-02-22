@@ -52,6 +52,7 @@ pub struct Rpm {
     description: Option<String>,
     post_install_script: Option<String>,
     sign_with_private_key: Option<PathBuf>,
+    sign_digest_algo: Option<String>,
     changelog: Option<String>,
 }
 
@@ -259,16 +260,18 @@ License: {license}
                 unshare(isol_context)?
                     .command("bash")?
                     .arg("-c")
-                    .arg(r#"
+                    .arg(format!(r#"
                 set -ex
 
                 export GNUPGHOME="/tmp/gpghome"
                 mkdir "$GNUPGHOME"
 
                 gpg --import /tmp/privkey
-                keyid="$(gpg --show-keys --with-colons /tmp/privkey | awk -F':' '$1=="fpr"{{print $10}}' | head -1)"
-                rpmsign --key-id "$keyid" --addsign /tmp/rpm
-                    "#)
+                keyid="$(gpg --show-keys --with-colons /tmp/privkey | awk -F':' '$1=="fpr"{{{{print $10}}}}' | head -1)"
+                rpmsign --key-id "$keyid" {maybe_digest_algo} --addsign /tmp/rpm
+                    "#,
+                    maybe_digest_algo = self.sign_digest_algo.as_ref().map(|a| format!("--digest-algo {a}")).unwrap_or_default(),
+                ))
                     .stdout(Stdio::piped()),
             )
             .context("failed to sign rpm")?;
