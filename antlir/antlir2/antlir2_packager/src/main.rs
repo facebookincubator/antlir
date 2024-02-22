@@ -26,6 +26,7 @@ mod spec;
 mod squashfs;
 mod tar;
 mod vfat;
+mod xar;
 use spec::Spec;
 
 pub(crate) trait PackageFormat {
@@ -84,5 +85,6 @@ fn main() -> Result<()> {
         Spec::Squashfs(p) => p.build(&args.out),
         Spec::Tar(p) => p.build(&args.out),
         Spec::Vfat(p) => p.build(&args.out),
+        Spec::Xar(p) => p.build(&args.out),
     }
 }

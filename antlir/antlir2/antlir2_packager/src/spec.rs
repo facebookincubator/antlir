@@ -20,4 +20,5 @@ pub enum Spec {
     Squashfs(crate::squashfs::Squashfs),
     Tar(crate::tar::Tar),
     Vfat(crate::vfat::Vfat),
+    Xar(crate::xar::Xar),
 }

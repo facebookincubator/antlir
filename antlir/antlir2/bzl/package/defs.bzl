@@ -14,6 +14,7 @@ load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":macro.bzl", "package_macro")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
+load(":xar.bzl", "xar")
 
 # Attrs that are required by all packages
 _common_attrs = {
@@ -43,13 +44,7 @@ def _generic_impl_with_layer(
         sudo: bool) -> list[Provider]:
     extension = {
         "cas_dir": "",
-        "cpio": ".cpio",
-        "ext3": ".ext3",
-        "rpm": ".rpm",
-        "squashfs": ".squashfs",
-        "tar": ".tar",
-        "vfat": ".vfat",
-    }[format]
+    }.get(format, "." + format)
 
     build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
 
@@ -364,4 +359,5 @@ package = struct(
     tar_gz = package_macro(_tar_gz),
     tar_zst = package_macro(_tar_zst),
     vfat = package_macro(_vfat),
+    xar = xar,
 )
