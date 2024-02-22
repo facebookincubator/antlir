@@ -19,10 +19,6 @@ OUTPUT_DIR = "/output"
 
 def _build(name, features, script, src, deps = None, dnf_additional_repos = None, **kwargs):
     deps = deps or []
-
-    # Lots of third-part rpms have dependencies in the `crb` repo.
-    dnf_additional_repos = dnf_additional_repos or ["crb"]
-
     OUTPUT_DIR = paths.join(DEPS_DIR, name)
 
     buck_genrule(
