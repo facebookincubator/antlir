@@ -559,10 +559,6 @@ def _recursive_copy_transform(val, t, opts):
             path = "$(location {})".format(val),
             __I_AM_TARGET__ = True,
         )
-        fail(
-            # pragma: no cover
-            "Unknown on_target_fields: {}".format(opts.on_target_fields),
-        )
     elif _is_shape(t):
         error = _check_type(val, t)
         if error:  # pragma: no cover -- an internal invariant, not a user error
