@@ -18,6 +18,7 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
             ctx.attrs.src,
             "--",
             "--layer=/layer",
+            cmd_args("--not-installed") if ctx.attrs.not_installed else cmd_args(),
         )),
     ]
 
@@ -26,6 +27,7 @@ _rpm_names_test = rule(
     attrs = {
         "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False), doc = "read by cfg.bzl"),
         "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
+        "not_installed": attrs.bool(default = False),
         "src": attrs.source(),
     } | cfg_attrs(),
     cfg = layer_cfg,
@@ -36,6 +38,7 @@ def image_test_rpm_names(
         src: str | Select,
         layer: str,
         default_os: str | None = None,
+        not_installed: bool = False,
         **kwargs):
     cfg_kwargs = {"flavor": layer + "[flavor]"}
     if default_os or should_all_images_in_package_use_default_os():
@@ -63,6 +66,7 @@ def image_test_rpm_names(
     _rpm_names_test(
         name = name + "--script",
         src = src,
+        not_installed = not_installed,
         **cfg_kwargs
     )
 
