@@ -107,6 +107,21 @@ image_test_rpm_names(
     layer = ":foo-rpms",
 )
 
+image.layer(
+    name = "foo-rpms-not-installed",
+    features = [
+        feature.rpms_remove(rpms = ["foobarbaz"]),
+    ],
+    parent_layer = ":foo-rpms",
+)
+
+image_test_rpm_names(
+    name = "test-foo-rpms-not-installed",
+    src = "foo-rpms-not-installed.txt",
+    layer = ":foo-rpms-not-installed",
+    not_installed = True,
+)
+
 image_test_rpm_integrity(
     name = "test-foo-rpm-integrity",
     layer = ":foo-rpms",
