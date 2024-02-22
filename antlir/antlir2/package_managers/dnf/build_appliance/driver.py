@@ -329,32 +329,6 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
             json.dump({"tx_error": str(e)}, o)
 
 
-def _parse_gpg_keys(rawkey: str) -> List[bytes]:
-    rawkey = rawkey.replace("\r\n", "\n").replace("\r", "\n")
-    keys = []
-    inblock = False
-    block = ""
-    for line in rawkey.splitlines():
-        # Some keys files include "Version:" or other Metadata lines that should be skipped.
-        if ":" in line:
-            continue
-
-        if line == "-----BEGIN PGP PUBLIC KEY BLOCK-----":
-            inblock = True
-            block = ""
-        elif inblock:
-            if line == "-----END PGP PUBLIC KEY BLOCK-----":
-                inblock = False
-                keys.append(base64.b64decode(block))
-                continue
-            if line.startswith("Version:"):
-                continue
-            if line.startswith("="):
-                continue
-            block += line.strip()
-    return keys
-
-
 def driver(spec) -> None:
     out = LockedOutput(sys.stdout)
     mode = spec["mode"]
@@ -421,16 +395,27 @@ def driver(spec) -> None:
     for keyfile, pkgs in import_keys.items():
         uri = urlparse(keyfile)
         keyfile = os.path.abspath(os.path.join(uri.netloc, uri.path))
-        with open(keyfile, "r") as f:
-            keytext = f.read()
-            keys = _parse_gpg_keys(keytext)
-        for key in keys:
-            ret = base._ts.pgpImportPubkey(key)
-            if ret != 0:
-                for pkg in pkgs:
-                    gpg_errors[pkg].append(
-                        f"failed to import pubkey ({keyfile}): {ret}"
-                    )
+        import_result = subprocess.run(
+            [
+                "rpmkeys",
+                "--import",
+                "--verbose",
+                "--root",
+                spec["install_root"],
+                keyfile,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            encoding="utf8",
+            universal_newlines=True,
+            check=False,
+        )
+
+        if import_result.returncode != 0:
+            for pkg in pkgs:
+                gpg_errors[pkg].append(
+                    f"failed to import gpg key ({keyfile}): {import_result.stderr.lower()}"
+                )
 
     for pkg in base.transaction.install_set:
         # If the package comes from a repo without a GPG key, don't bother
