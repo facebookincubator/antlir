@@ -268,11 +268,17 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
         else:
             raise RuntimeError(f"unknown action '{action}'")
 
+    excluded_rpms = set(spec.get("excluded_rpms", []))
+    # A user explicitly installing an rpm overrides the exclusion policy.
+    # In other words, excluded_rpms only applies to RPMs installed as
+    # dependencies, where it's not obvious that they were intended.
+    excluded_rpms = excluded_rpms - explicitly_installed_package_names
+
     antlir2_dnf_base.versionlock_sack(
         sack=base.sack,
         versionlock=versionlock,
         explicitly_installed_package_names=explicitly_installed_package_names,
-        excluded_rpms=spec.get("excluded_rpms", []),
+        excluded_rpms=excluded_rpms,
     )
 
     base.resolve(allow_erasing=True)

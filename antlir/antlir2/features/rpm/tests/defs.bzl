@@ -27,7 +27,8 @@ def test_rpms(
         flavor: str | None = None,
         dnf_additional_repos: list[str] = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
         dnf_versionlock: str | None = None,
-        dnf_versionlock_extend: dict[str, str] | None = None):
+        dnf_versionlock_extend: dict[str, str] | None = None,
+        dnf_excluded_rpms: list[str] | None = None):
     buck_command_alias(
         name = name + "--script",
         exe = "//antlir/antlir2/features/rpm/tests:test-installed-rpms",
@@ -44,6 +45,7 @@ def test_rpms(
         dnf_additional_repos = dnf_additional_repos,
         dnf_versionlock = dnf_versionlock,
         dnf_versionlock_extend = dnf_versionlock_extend,
+        dnf_excluded_rpms = dnf_excluded_rpms,
     )
     image_sh_test(
         name = name,
