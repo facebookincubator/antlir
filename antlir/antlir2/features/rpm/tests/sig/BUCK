@@ -44,6 +44,18 @@ package.rpm(
     version = "0",
 )
 
+package.rpm(
+    name = "signed-sha512.rpm",
+    arch = "noarch",
+    layer = ":empty",
+    license = "NONE",
+    release = "0",
+    rpm_name = "signed-sha512",
+    sign_digest_algo = "sha512",
+    sign_with_private_key = "key.priv",
+    version = "0",
+)
+
 rpm(
     name = "signed",
     arch = "noarch",
@@ -51,6 +63,17 @@ rpm(
     release = "0",
     rpm = ":signed.rpm",
     rpm_name = "signed",
+    sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+    version = "0",
+)
+
+rpm(
+    name = "signed-sha512",
+    arch = "noarch",
+    epoch = 0,
+    release = "0",
+    rpm = ":signed-sha512.rpm",
+    rpm_name = "signed-sha512",
     sha256 = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
     version = "0",
 )
@@ -88,6 +111,7 @@ repo(
         ":unsigned",
         ":signed",
         ":signed-with-wrong-key",
+        ":signed-sha512",
     ],
     timestamp = 0,
     visibility = [
@@ -169,6 +193,15 @@ image_rust_test(
     srcs = ["test_install_signed_imported_keys.rs"],
     crate_root = "test_install_signed_imported_keys.rs",
     layer = ":test-install-signed-imported-keys-layer",
+)
+
+image.layer(
+    name = "install-signed-sha512",
+    dnf_available_repos = [":repo"],
+    features = [
+        feature.rpms_install(rpms = ["signed-sha512"]),
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 # TODO(T166070409) These images correctly fail to build, but until that task is
