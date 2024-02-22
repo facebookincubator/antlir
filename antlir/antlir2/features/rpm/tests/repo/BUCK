@@ -217,6 +217,14 @@ all_rpms.append(
     ),
 )
 
+all_rpms.append(
+    test_rpm(
+        name = "antlir2-excluded",
+        release = "1",
+        version = "1",
+    ),
+)
+
 repo(
     name = "test-repo",
     compress = "none",

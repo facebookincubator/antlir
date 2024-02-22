@@ -423,3 +423,18 @@ image_python_test(
     srcs = ["test_binaries_with_file_capabilities.py"],
     layer = test_binaries_with_file_capabilities_layer,
 )
+
+test_rpms(
+    name = "explicitly-install-excluded-rpm",
+    dnf_excluded_rpms = ["antlir2-excluded"],  # this would normally come from the flavor
+    expected = expected_t(installed = [
+        "antlir2-excluded",
+    ]),
+    features = [
+        feature.rpms_install(rpms = [
+            "antlir2-excluded",
+        ]),
+        ":test-deps",
+    ],
+    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
