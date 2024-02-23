@@ -181,7 +181,7 @@ bad_depgraph(
         # change the src so that two exactly-identical features don't get
         # deduped
         feature.install(
-            src = "TARGETS",
+            src = "defs.bzl",
             dst = "/foo",
         ),
     ],

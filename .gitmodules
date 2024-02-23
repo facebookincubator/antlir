@@ -10,3 +10,6 @@
   path = generated
   url = https://github.com/facebookincubator/antlir.git
   ignore = untracked
+[submodule "prelude"]
+	path = prelude
+	url = https://github.com/facebook/buck2-prelude.git

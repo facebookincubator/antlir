@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # @oss-disable
-# @oss-enable antlir2_cell = "antlir2"
+antlir2_cell = "antlir2" # @oss-enable
 
 def antlir2_dep(label):
     """

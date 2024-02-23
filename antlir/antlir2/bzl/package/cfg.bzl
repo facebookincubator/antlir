@@ -6,6 +6,8 @@
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", _cfg_attrs = "cfg_attrs")
+
+load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
