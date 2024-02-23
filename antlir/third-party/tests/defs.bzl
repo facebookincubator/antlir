@@ -1,13 +1,13 @@
 load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule", "buck_sh_test")
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:third_party.bzl", "third_party")
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
 
 def hello_world_build_test(ver, msg, patches = None):
     third_party.build(
         name = "hello_world.{}.build".format(ver),
         src = ":hello_world.tgz",
-        features = [feature.rpms_install(["gcc", "patch"])],
+        features = [feature.rpms_install(rpms = ["gcc", "patch"])],
         script = third_party.script(
             build = "gcc -o hello_world hello_world.c",
             install = "./hello_world > $OUTPUT/hello_world.out",

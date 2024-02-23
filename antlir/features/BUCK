@@ -1,7 +1,7 @@
 # This file is intended to become a collection of utility features commonly
 # used in constructing images.
 
-load("//antlir/bzl/image/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 
 oncall("antlir")
 
@@ -15,12 +15,12 @@ feature.new(
     antlir2 = True,
     features = [
         feature.remove(
-            "/var/cache/yum",
             must_exist = False,
+            path = "/var/cache/yum",
         ),
         feature.remove(
-            "/var/cache/dnf",
             must_exist = False,
+            path = "/var/cache/dnf",
         ),
     ],
     visibility = ["PUBLIC"],
@@ -44,10 +44,13 @@ feature.new(
     # We should truncate it here and ship an empty file instead.
     features = [
         feature.remove(
-            "/etc/machine-id",
             must_exist = False,
+            path = "/etc/machine-id",
         ),
-        feature.install("empty-machine-id", "/etc/machine-id"),
+        feature.install(
+            src = "empty-machine-id",
+            dst = "/etc/machine-id",
+        ),
     ],
     visibility = ["PUBLIC"],
 )
