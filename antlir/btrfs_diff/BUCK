@@ -1,8 +1,0 @@
-load("//antlir/bzl:build_defs.bzl", "python_library")
-
-oncall("antlir")
-
-python_library(
-    name = "freeze",
-    srcs = ["freeze.py"],
-)

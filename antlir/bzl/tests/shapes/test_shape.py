@@ -8,12 +8,18 @@ import importlib
 import unittest
 from typing import Mapping, Optional, Sequence, Tuple
 
-from antlir.btrfs_diff.freeze import frozendict
 from antlir.bzl.target import target_t
 
 # TODO remove all references to hashable and just use characters once
 # read-only dicts land
-from antlir.bzl.tests.shapes.test import character_collection_t, character_t, hashable_t
+from antlir.bzl.tests.shapes.test import (
+    character_collection_t,
+    character_t,
+    friend_t,
+    hashable_t,
+)
+
+from antlir.freeze import frozendict
 from antlir.fs_utils import Path
 from antlir.shape import Shape
 
@@ -165,6 +171,16 @@ class TestShape(unittest.TestCase):
     def test_immutable_fields(self):
         with self.assertRaises(TypeError):
             characters[0].name = "Darth Vader's son"
+        # immutability is a property at any level of nesting
+        with self.assertRaises(TypeError):
+            characters[0].friends[0].name = "R2-D2"
+        # shouldn't be able to add to any lists
+        new_friend = friend_t(name="R2-D2")
+        with self.assertRaises(AttributeError):
+            characters[0].friends.append(new_friend)
+        # or dictionaries
+        with self.assertRaises(TypeError):
+            characters[0].metadata["favorite-food"] = "Blue Milk"
 
     def test_subclass(self):
         """

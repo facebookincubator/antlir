@@ -181,8 +181,14 @@ python_library(
             "pydantic",
             platform = "python",
         ),
-        "//antlir/btrfs_diff:freeze",
+        ":freeze",
     ],
+)
+
+python_library(
+    name = "freeze",
+    srcs = ["freeze.py"],
+    visibility = [":shape"],
 )
 
 rust_binary(
