@@ -25,6 +25,7 @@ pub struct Symlink {
     pub link: PathInLayer,
     pub target: PathInLayer,
     pub is_directory: bool,
+    pub unsafe_dangling_symlink: bool,
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
@@ -63,7 +64,8 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
         // /dev/null will reasonably always exist
         // /run will almost certainly be a tmpfs at runtime (but
         // TODO(T152984868) to ensure that)
-        if absolute_target != std::path::Path::new("/dev/null")
+        if !self.unsafe_dangling_symlink
+            && absolute_target != std::path::Path::new("/dev/null")
             && !absolute_target.starts_with("/run")
         {
             // the symlink action itself does not really care if the target
