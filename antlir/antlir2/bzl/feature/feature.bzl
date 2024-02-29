@@ -55,7 +55,6 @@ load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis")
-load("//antlir/antlir2/features/antlir1_no_equivalent:antlir1_no_equivalent.bzl", "antlir1_no_equivalent_rule")
 load("//antlir/antlir2/features/clone:clone.bzl", "clone_rule")
 load("//antlir/antlir2/features/dot_meta:dot_meta.bzl", "dot_meta_rule")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_dir_exists_rule")
@@ -100,7 +99,6 @@ def feature_as_json(feat: feature_record) -> struct:
     )
 
 _anon_rules = {
-    "antlir1_no_equivalent": antlir1_no_equivalent_rule,
     "clone": clone_rule,
     "dot_meta": dot_meta_rule,
     "ensure_dir_exists": ensure_dir_exists_rule,
