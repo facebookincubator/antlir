@@ -57,9 +57,7 @@ _source_kind = enum("layer", "host")
 types.lint_noop(_source_kind)
 
 layer_mount_record = record(
-    # TODO: this is only nullable because implicit conversions from antlir1
-    # don't correctly set this in many cases
-    mountpoint = [str, None],
+    mountpoint = str,
     src = layer_dep,
 )
 

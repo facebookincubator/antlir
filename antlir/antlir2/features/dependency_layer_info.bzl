@@ -10,9 +10,6 @@ layer_dep = record(
     depgraph = [Artifact, None],
     subvol_symlink = [Artifact, None],
     mounts = [list["mount_record"], None],
-    # We can't do anything useful with this, but if recording that this appears
-    # to be an antlir1 layer will be useful for ripping this out later
-    appears_to_be_antlir1_layer = [bool, None],
 )
 
 def layer_dep_analyze(layer: Dependency) -> layer_dep:
@@ -29,5 +26,4 @@ def layer_dep_analyze(layer: Dependency) -> layer_dep:
         label = info.label,
         subvol_symlink = info.subvol_symlink,
         mounts = info.mounts,
-        appears_to_be_antlir1_layer = False,
     )
