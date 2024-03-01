@@ -59,9 +59,6 @@ impl<'a> IsolatedContext<'a> {
         // TODO: remove these settings entirely when we get rid of
         // systemd-nspawn / move the things that require this (like image_test)
         // to *only* use systemd-nspawn
-        if *ephemeral {
-            return Err(Error::UnsupportedSetting("ephemeral"));
-        }
         if *invocation_type != InvocationType::Pid2Pipe {
             return Err(Error::UnsupportedSetting("invocation_type"));
         }
@@ -158,8 +155,8 @@ impl<'a> IsolatedContext<'a> {
             hostname: hostname.clone().map(|h| h.clone().into()),
             uid,
             gid,
+            ephemeral: *ephemeral,
         };
-        // let args = Box::leak(args);
         unsafe {
             cmd.pre_exec(move || isolate_unshare_preexec(&args).map_err(std::io::Error::from));
         }

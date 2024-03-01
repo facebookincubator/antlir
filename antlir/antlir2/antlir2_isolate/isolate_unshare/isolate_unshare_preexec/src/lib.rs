@@ -51,6 +51,7 @@ pub struct Args {
     pub hostname: Option<String>,
     pub uid: u32,
     pub gid: u32,
+    pub ephemeral: bool,
 }
 
 pub struct Bind {
@@ -82,17 +83,40 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
     )?;
     create_dir_all(NEWROOT)?;
 
-    let mut root_flags = MsFlags::MS_BIND | MsFlags::MS_REC;
-    if args.root_ro {
-        root_flags |= MsFlags::MS_RDONLY;
+    if args.ephemeral {
+        create_dir("/tmp/__antlir2__/ephemeral_upper")?;
+        create_dir("/tmp/__antlir2__/ephemeral_work")?;
+        create_dir("/tmp/__antlir2__/ephemeral_lower")?;
+        mount(
+            Some(&args.root),
+            "/tmp/__antlir2__/ephemeral_lower",
+            None::<&str>,
+            MsFlags::MS_BIND | MsFlags::MS_REC,
+            None::<&str>,
+        )?;
+        mount(
+            Some("overlay"),
+            NEWROOT,
+            Some("overlay"),
+            MsFlags::empty(),
+            Some(
+                "lowerdir=/tmp/__antlir2__/ephemeral_lower,upperdir=/tmp/__antlir2__/ephemeral_upper,workdir=/tmp/__antlir2__/ephemeral_work",
+            ),
+        )?;
+    } else {
+        let mut root_flags = MsFlags::MS_BIND | MsFlags::MS_REC;
+        if args.root_ro {
+            root_flags |= MsFlags::MS_RDONLY;
+        }
+
+        mount(
+            Some(&args.root),
+            NEWROOT,
+            None::<&str>,
+            root_flags,
+            None::<&str>,
+        )?;
     }
-    mount(
-        Some(&args.root),
-        NEWROOT,
-        None::<&str>,
-        root_flags,
-        None::<&str>,
-    )?;
 
     for (tmpfs, dev) in args
         .tmpfs
