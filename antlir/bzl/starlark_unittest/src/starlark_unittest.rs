@@ -115,7 +115,7 @@ fn unittest(gb: &mut GlobalsBuilder) {
     fn assert_fails<'v>(
         func: Value<'v>,
         message_regex: &str,
-        eval: &mut Evaluator<'v, '_>,
+        eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<NoneType> {
         match eval.eval_function(func, &[], &[]) {
             Ok(_) => Err(anyhow!("function did not fail")),

@@ -208,7 +208,7 @@ fn shape(builder: &mut GlobalsBuilder) {
     fn shape<'v>(
         #[starlark(require = named)] __thrift: Option<DictOf<'v, u32, &'v str>>,
         #[starlark(kwargs)] kwargs: DictOf<'v, &'v str, Value<'v>>,
-        eval: &mut Evaluator<'v, '_>,
+        eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let fields: BTreeMap<ir::FieldName, Arc<ir::Field>> = kwargs
@@ -255,7 +255,7 @@ fn shape(builder: &mut GlobalsBuilder) {
 
     fn r#enum<'v>(
         #[starlark(args)] args: Value<'v>,
-        eval: &mut Evaluator<'v, '_>,
+        eval: &mut Evaluator<'v, '_, '_>,
     ) -> anyhow::Result<TypeId> {
         let mut reg = get_type_registry(eval)?.try_borrow_mut()?;
         let options = args
@@ -328,7 +328,7 @@ fn shape(builder: &mut GlobalsBuilder) {
     fn union<'v>(
         #[starlark(args)] args: Value<'v>,
         #[starlark(require = named)] __thrift: Option<UnpackListOrTuple<u32>>,
-        eval: &mut Evaluator<'v, '_>,
+        eval: &mut Evaluator<'v, '_, '_>,
     ) -> starlark::Result<TypeId> {
         let mut reg = get_type_registry(eval)?
             .try_borrow_mut()
