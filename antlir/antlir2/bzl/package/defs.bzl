@@ -41,14 +41,15 @@ def _generic_impl_with_layer(
         rule_attr_keys: list[str],
         can_be_partition: bool,
         is_dir: bool,
-        sudo: bool) -> list[Provider]:
-    extension = {
-        "cas_dir": "",
-    }.get(format, "." + format)
-
+        sudo: bool,
+        force_extension: str | None) -> list[Provider]:
     build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
 
-    package = ctx.actions.declare_output("package" + extension, dir = is_dir)
+    output_name = ctx.label.name
+    if force_extension and not output_name.endswith("." + force_extension):
+        output_name += "." + force_extension
+
+    package = ctx.actions.declare_output(output_name, dir = is_dir)
     spec_opts = {
         "build_appliance": build_appliance[LayerInfo].subvol_symlink,
         "layer": layer[LayerInfo].subvol_symlink,
@@ -84,7 +85,8 @@ def _generic_impl(
         rule_attr_keys: list[str],
         can_be_partition: bool,
         is_dir: bool,
-        sudo: bool):
+        sudo: bool,
+        force_extension: str | None):
     if ctx.attrs.dot_meta:
         return ctx.actions.anon_target(stamp_buildinfo_rule, {
             "flavor": ctx.attrs.flavor,
@@ -104,6 +106,7 @@ def _generic_impl(
             can_be_partition = can_be_partition,
             is_dir = is_dir,
             sudo = sudo,
+            force_extension = force_extension,
         ))
     else:
         return _generic_impl_with_layer(
@@ -114,6 +117,7 @@ def _generic_impl(
             can_be_partition = can_be_partition,
             is_dir = is_dir,
             sudo = sudo,
+            force_extension = force_extension,
         )
 
 # Create a new buck2 rule that implements a specific package format.
@@ -121,9 +125,10 @@ def _new_package_rule(
         format: str,
         rule_attrs: dict[str, Attr] = {},
         dot_meta: bool = True,
-        can_be_partition = False,
-        is_dir = False,
-        sudo = False):
+        can_be_partition: bool = False,
+        is_dir: bool = False,
+        sudo: bool = False,
+        force_extension: str | None = None):
     kwargs = {
         "attrs": _default_attrs | _common_attrs | rule_attrs | {
             "dot_meta": attrs.bool(default = dot_meta),
@@ -135,6 +140,7 @@ def _new_package_rule(
             can_be_partition = can_be_partition,
             is_dir = is_dir,
             sudo = sudo,
+            force_extension = force_extension,
         ),
     }
     return (
@@ -163,11 +169,7 @@ def _compressed_impl(
             "name": str(ctx.label.raw_target()),
         } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys},
     ).artifact("src")
-    extension = {
-        "gzip": ".gz",
-        "zstd": ".zst",
-    }[compressor]
-    package = ctx.actions.declare_output("package" + extension)
+    package = ctx.actions.declare_output(ctx.label.name)
 
     if compressor == "gzip":
         compress_cmd = cmd_args(
@@ -272,6 +274,7 @@ _rpm, _rpm_anon = _new_package_rule(
     format = "rpm",
     dot_meta = False,
     sudo = True,
+    force_extension = "rpm",
 )
 
 _vfat, _vfat_anon = _new_package_rule(
