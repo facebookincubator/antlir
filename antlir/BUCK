@@ -1,6 +1,6 @@
 # @noautodeps
 
-load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file", "python_binary", "python_library", "python_unittest", "rust_binary", "rust_library", "third_party")
+load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file", "python_binary", "python_library", "rust_binary", "rust_library", "third_party")
 load("//antlir/rust:defs.bzl", "antlir_rust_extension")
 
 oncall("antlir")
@@ -147,28 +147,6 @@ python_binary(
     main_function = "antlir.artifacts_dir.main",
     visibility = ["PUBLIC"],
     deps = [":artifacts_dir"],
-)
-
-python_library(
-    name = "update_package_db",
-    srcs = ["update_package_db.py"],
-    visibility = [
-        "//antlir/...",
-        "//tupperware/cm/antlir/...",
-        "//tupperware/image/scripts/...",
-    ],
-    deps = [
-        ":common",
-        ":fs_utils",
-        ":signed_source",
-    ],
-)
-
-python_unittest(
-    name = "test-update-package-db",
-    srcs = ["tests/test_update_package_db.py"],
-    needed_coverage = [(100, ":update_package_db")],
-    deps = [":update_package_db"],
 )
 
 python_library(
