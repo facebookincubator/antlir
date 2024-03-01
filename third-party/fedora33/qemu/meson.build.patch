@@ -1,8 +1,0 @@
-404,406c404,406
-<   libcap_ng = cc.find_library('cap-ng', has_headers: ['cap-ng.h'],
-<                               required: get_option('cap_ng'),
-<                               kwargs: static_kwargs)
----
->   libcap_ng = dependency('libcap-ng',
->                          required: get_option('cap_ng'),
->                          kwargs: static_kwargs)

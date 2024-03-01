@@ -1,8 +1,6 @@
-# buck stuff
+antlir2-out
 buck-out
-buck-image-out
 .buckd/
-.tools/
 
 **/*.swp
 .vscode/

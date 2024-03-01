@@ -1,0 +1,21 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+#
+# This source code is licensed under the MIT license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Starlark checks lots of code before running (unlike Python), so hiding broken
+# code beneath an `if` that's guaranteed to evaluate `False` in OSS is not
+# enough to satisfy buck2.
+#
+# This bzl file is provided to make split internal/oss loads a little easier
+#
+
+def ret_none(*args, **kwargs):
+    return None
+
+def ret_empty_list(*args, **kwargs):
+    return []
+
+empty_dict = {}
+
+none = None

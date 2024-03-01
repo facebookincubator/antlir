@@ -1,65 +1,20 @@
 [repositories]
-  bazel_skylib = third-party/bazel-skylib
-  config = config
+antlir = .
+prelude = prelude
+toolchains = toolchains
+none = none
+bazel_skylib = third-party/bazel-skylib
 
-# SKYLARK is the future of Buck, and (perhaps more importantly) does not
-# require a system to have python2 to interpret .bzl/BUCK files
+[repository_aliases]
+config = prelude
+ovr_config = prelude
+fbcode = none
+fbsource = none
+fbcode_macros = none
+buck = none
+
 [parser]
-  default_build_file_syntax = SKYLARK
-  # force usage of oss_shim.bzl which applies all the correct visibility logic
-  # and more closely mimics the internal macros
-  disable_implicit_native_rules = true
-
-  # This defines what the default target platform is.  Since we only support
-  # linux running on x86_64 architectures, that's what we set this to.
-  target_platform_detector_spec = target://...->config//platform:linux-x86_64
-
-  # The default host platform defines what the platform should be when
-  # compiling targets that should run on the host.
-  default_host_platform = config//platform:linux-x86_64
-
-# There is only one python platform we support, and that is python3 with
-# standalone packages.  This will be expanded in the future to support
-# inplace python binaries in local dev mode, but it will always be python3.
-[python]
-  interpreter = /usr/bin/python3
-  package_style = inplace
-  # NOTE: this assumes that the system on which we are running this
-  # python_binary is "new enough" (at the time of this writing, >=3.7)
-  # In practice, this is true for the environments that we care about, and
-  # avoids issues with mismatches between the build host and container
-  # environments.
-  pex_flags = --python-shebang="/usr/bin/env python3"
-
-[cxx]
-  gtest_dep = //third-party/cxx:gtest
-  should_remap_host_platform = true
-
-[rust]
-  default_edition = 2021
-  compiler = //tools/build:rustc
-  rustc_flags = -Zunstable-options
+target_platform_detector_spec = target:antlir//...->prelude//platforms:default
 
 [project]
-  ignore = .git, .hg, buck-image-out
-  # The separates built artifacts into a subdir for each target platform
-  # they are built against.
-  buck_out_include_target_config_hash = true
-
-[download]
-  in_build = true
-
-[test]
-  # This is needed to ensure that the test runner only executes the
-  # 'in image' unittest targets, and not the `IGNORE-ME*` wrapper tests
-  # (see antlir/bzl/image_*_unittest.bzl for more crazy implementation
-  #  details).
-  #
-  # Note, because buck doesn't have a config to always ignore
-  # these excluded labels you must run `buck test` with the `--always-exclude`
-  # option.
-  # ie:  `buck test //antlir/rpm:test-yum-dnf-from-snapshot --always-exclude`
-  excluded_labels = exclude_test_if_transitive_dep, disabled
-
-[project]
-  package_boundary_exceptions = antlir, metalos
+ignore = .git

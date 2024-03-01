@@ -12,6 +12,8 @@ distinct from the default target platform used by the `buck2 build`.
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
+
+load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs", "remove_os_constraints")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
@@ -32,7 +34,7 @@ def cfg_attrs():
         ),
     } | (
         # @oss-disable
-        # @oss-enable {}
+        {} # @oss-enable
     ) | rootless_cfg.attrs
 
 def _flavor_name(base: str, rou: str) -> str:
@@ -139,7 +141,7 @@ layer_cfg = transition(
         "rootless": antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"),
     } | (
         # @oss-disable
-        # @oss-enable {}
+        {} # @oss-enable
     ) | os_transition_refs(),
     attrs = cfg_attrs().keys() + [
         # Build appliances are very low level and cannot depend on a flavor, so

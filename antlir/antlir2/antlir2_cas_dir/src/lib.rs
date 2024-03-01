@@ -278,14 +278,14 @@ mod tests {
     #[test]
     fn hardlinks() {
         // antlir2 doesn't provide a hardlink api, so do it here
-        std::fs::hard_link("/src/TARGETS", "/src/TARGETS.link").expect("failed to hardlink");
+        std::fs::hard_link("/src/empty", "/src/empty.link").expect("failed to hardlink");
         let cas_dir = dehydrate_and_hydrate(CasDirOpts::default());
         {
-            let ino = std::fs::metadata(cas_dir.contents_dir.join("TARGETS"))
-                .expect("failed to stat TARGETS")
+            let ino = std::fs::metadata(cas_dir.contents_dir.join("empty"))
+                .expect("failed to stat empty")
                 .ino();
-            let ino2 = std::fs::metadata(cas_dir.contents_dir.join("TARGETS.link"))
-                .expect("failed to stat TARGETS.link")
+            let ino2 = std::fs::metadata(cas_dir.contents_dir.join("empty.link"))
+                .expect("failed to stat empty.link")
                 .ino();
             assert_eq!(
                 ino, ino2,
@@ -293,11 +293,11 @@ mod tests {
             );
         }
         {
-            let ino = std::fs::metadata("/hydrated/TARGETS")
-                .expect("failed to stat /hydrated/TARGETS")
+            let ino = std::fs::metadata("/hydrated/empty")
+                .expect("failed to stat /hydrated/empty")
                 .ino();
-            let ino2 = std::fs::metadata("/hydrated/TARGETS.link")
-                .expect("failed to stat /hydrated/TARGETS.link")
+            let ino2 = std::fs::metadata("/hydrated/empty.link")
+                .expect("failed to stat /hydrated/empty.link")
                 .ino();
             assert_eq!(
                 ino, ino2,
@@ -309,39 +309,37 @@ mod tests {
     #[test]
     fn symlink() {
         // antlir2 doesn't provide a relative symlink api, so do it here
-        std::os::unix::fs::symlink("TARGETS", "/src/subdir/TARGETS.symlink.rel")
+        std::os::unix::fs::symlink("empty", "/src/subdir/empty.symlink.rel")
             .expect("failed to make relative symlink");
         let cas_dir = dehydrate_and_hydrate(CasDirOpts::default());
         {
-            let target =
-                std::fs::read_link(cas_dir.contents_dir.join("subdir/TARGETS.symlink.abs"))
-                    .expect("failed to read abs link");
+            let target = std::fs::read_link(cas_dir.contents_dir.join("subdir/empty.symlink.abs"))
+                .expect("failed to read abs link");
             assert_eq!(
-                Path::new("/src/subdir/TARGETS"),
+                Path::new("/src/subdir/empty"),
                 target,
                 "abs symlink should have been preserved during dehydration"
             );
-            let target =
-                std::fs::read_link(cas_dir.contents_dir.join("subdir/TARGETS.symlink.rel"))
-                    .expect("failed to read rel link");
+            let target = std::fs::read_link(cas_dir.contents_dir.join("subdir/empty.symlink.rel"))
+                .expect("failed to read rel link");
             assert_eq!(
-                Path::new("TARGETS"),
+                Path::new("empty"),
                 target,
                 "rel symlink should have been preserved during dehydration"
             );
         }
         {
-            let target = std::fs::read_link("/hydrated/subdir/TARGETS.symlink.abs")
+            let target = std::fs::read_link("/hydrated/subdir/empty.symlink.abs")
                 .expect("failed to read hydrated abs link");
             assert_eq!(
-                Path::new("/src/subdir/TARGETS"),
+                Path::new("/src/subdir/empty"),
                 target,
                 "abs symlink should have been preserved during hydration"
             );
-            let target = std::fs::read_link("/hydrated/subdir/TARGETS.symlink.rel")
+            let target = std::fs::read_link("/hydrated/subdir/empty.symlink.rel")
                 .expect("failed to read hydrated rel link");
             assert_eq!(
-                Path::new("TARGETS"),
+                Path::new("empty"),
                 target,
                 "rel symlink should have been preserved during hydration"
             );

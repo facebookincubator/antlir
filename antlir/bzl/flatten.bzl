@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbsource//tools/build_defs/buck2:is_buck2.bzl", "is_buck2")
+load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:types.bzl", "types")
 
 def _flatten_any(lst):

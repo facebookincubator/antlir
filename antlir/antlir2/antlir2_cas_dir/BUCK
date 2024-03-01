@@ -30,17 +30,17 @@ image.layer(
         feature.ensure_dirs_exist(dirs = "/src"),
         feature.ensure_dirs_exist(dirs = "/hydrated"),
         feature.install(
-            src = "TARGETS",
-            dst = "/src/TARGETS",
+            src = "//antlir:empty",
+            dst = "/src/empty",
         ),
         feature.ensure_dirs_exist(dirs = "/src/subdir"),
         feature.install(
-            src = "TARGETS",
-            dst = "/src/subdir/TARGETS",
+            src = "//antlir:empty",
+            dst = "/src/subdir/empty",
         ),
         feature.ensure_file_symlink(
-            link = "/src/subdir/TARGETS.symlink.abs",
-            target = "/src/subdir/TARGETS",
+            link = "/src/subdir/empty.symlink.abs",
+            target = "/src/subdir/empty",
         ),
     ],
 )

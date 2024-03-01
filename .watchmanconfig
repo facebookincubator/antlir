@@ -1,3 +1,3 @@
 {
-    "ignore_dirs": ["buck-image-out", "buck-out", ".buckd"]
+    "ignore_dirs": ["antlir2-out", "buck-out", ".buckd"]
 }

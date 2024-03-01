@@ -49,7 +49,7 @@ _transition = transition(
         "arch.x86_64": "ovr_config//cpu/constraints:x86_64",
     } | (
         # @oss-disable
-        # @oss-enable {}
+        {} # @oss-enable
     ) | os_transition_refs() | rootless_cfg.refs,
     attrs = ["default_os", "target_arch", "rootless"] + (
         # @oss-disable
@@ -73,7 +73,7 @@ _configured_alias = rule(
         ),
     } | (
         # @oss-disable
-        # @oss-enable {}
+        {} # @oss-enable
     ) | rootless_cfg.attrs,
 )
 
