@@ -37,37 +37,15 @@ def cfg_attrs():
         {} # @oss-enable
     ) | rootless_cfg.attrs
 
-def _flavor_name(base: str, rou: str) -> str:
-    if rou == "rou-stable":
-        return base
-
-    # unfortunate naming convention carried from antlir1
-    if rou == "rou-test":
-        return base + "-rou-untested"
-    return base + "-" + rou
-
-def _rou_flavor_sel(base_flavor: str) -> Select:
-    return select({
-        antlir2_dep("//antlir/antlir2/os/facebook:" + rou): antlir2_dep("//antlir/antlir2/facebook/flavor/{flavor}:{flavor}".format(
-            flavor = _flavor_name(base_flavor, rou),
-        ))
-        for rou in [
-            "rou-preparation",
-            "rou-rolling",
-            "rou-stable",
-            "rou-test",
-        ]
-    })
-
 def attrs_selected_by_cfg():
     return {
         # only attrs.option because it cannot be set on build appliance layers
         "flavor": attrs.option(
             attrs.dep(providers = [FlavorInfo]),
             default = select({
-                antlir2_dep("//antlir/antlir2/os:centos8"): _rou_flavor_sel("centos8"),
-                antlir2_dep("//antlir/antlir2/os:centos9"): _rou_flavor_sel("centos9"),
-                antlir2_dep("//antlir/antlir2/os:eln"): _rou_flavor_sel("eln"),
+                antlir2_dep("//antlir/antlir2/os:centos8"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos8:centos8"),
+                antlir2_dep("//antlir/antlir2/os:centos9"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos9:centos9"),
+                antlir2_dep("//antlir/antlir2/os:eln"): antlir2_dep("//antlir/antlir2/facebook/flavor/eln:eln"),
                 antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
                 antlir2_dep("//antlir/antlir2/os:rhel8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8:rhel8"),
                 antlir2_dep("//antlir/antlir2/os:rhel8.8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8.8:rhel8.8"),
