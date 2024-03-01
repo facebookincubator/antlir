@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -13,9 +14,12 @@ def _diff_test_impl(ctx: AnalysisContext) -> list[Provider]:
         fail("image_diff_test only works for layers with parents")
 
     test_cmd = cmd_args(
-        cmd_args("sudo") if not ctx.attrs.running_in_image else cmd_args(),
+        cmd_args("sudo") if (
+            not ctx.attrs._rootless and not ctx.attrs.running_in_image
+        ) else cmd_args(),
         ctx.attrs.image_diff_test[RunInfo],
         cmd_args("--") if ctx.attrs.running_in_image else cmd_args(),
+        cmd_args("--rootless") if ctx.attrs._rootless else cmd_args(),
         cmd_args(ctx.attrs.exclude, format = "--exclude={}"),
         cmd_args(ctx.attrs.diff_type, format = "--diff-type={}"),
         cmd_args(ctx.attrs.diff, format = "--expected={}"),
@@ -53,6 +57,7 @@ _image_diff_test = rule(
         "image_diff_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_diff_test:image-diff-test")),
         "layer": attrs.dep(providers = [LayerInfo]),
         "running_in_image": attrs.bool(),
+        "_rootless": rootless_cfg.is_rootless_attr,
     },
     doc = "Test that the only changes between a layer and it's parent is what you expect",
 )

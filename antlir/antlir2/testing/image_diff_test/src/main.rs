@@ -53,6 +53,8 @@ struct Args {
     /// Diff type to generete: file, rpm, or all
     #[clap(long, value_enum, value_parser, default_value_t=DiffType::All)]
     diff_type: DiffType,
+    #[clap(long)]
+    rootless: bool,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -214,6 +216,10 @@ fn generate_rpm_diff(args: &Args) -> Result<BTreeMap<String, RpmDiff>> {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+
+    if args.rootless {
+        antlir2_rootless::unshare_new_userns().context("while unsharing userns")?;
+    }
 
     let (file_diff, rpm_diff) = match args.diff_type {
         DiffType::File => (Some(generate_file_diff(&args)?), None),
