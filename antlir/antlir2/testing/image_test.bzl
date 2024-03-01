@@ -7,6 +7,7 @@
 # @oss-disable
 # @oss-disable
 load("@prelude//utils:selects.bzl", "selects")
+load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
@@ -46,6 +47,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
             "mounts": ctx.attrs.layer[LayerInfo].mounts,
             "pass_env": ctx.attrs.test[ExternalRunnerTestInfo].env.keys(),
+            "rootless": ctx.attrs._rootless,
             "user": ctx.attrs.run_as_user,
         },
         with_inputs = True,
@@ -143,6 +145,7 @@ _image_test = rule(
         "layer": attrs.dep(providers = [LayerInfo]),
         "run_as_user": attrs.string(default = "root"),
         "test": attrs.dep(providers = [ExternalRunnerTestInfo]),
+        "_rootless": rootless_cfg.is_rootless_attr,
         "_static_list_wrapper": attrs.option(attrs.exec_dep(), default = None),
     } | cfg_attrs(),
     doc = "Run a test inside an image layer",

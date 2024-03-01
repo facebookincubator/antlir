@@ -21,6 +21,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::ensure;
@@ -60,6 +61,8 @@ struct TestSpec {
     #[serde(default)]
     /// Mounts required by the layer-under-test
     mounts: BTreeSet<Mount>,
+    /// Run the test in an unprivileged user namespace
+    rootless: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -106,6 +109,10 @@ fn main() -> Result<()> {
     .context("while looking for repo root")?;
 
     let spec = args.spec.into_inner();
+
+    if spec.rootless {
+        antlir2_rootless::unshare_new_userns().context("while unsharing userns")?;
+    }
 
     let mut setenv: BTreeMap<_, _> = spec.setenv.into_iter().map(|(k, v)| (k, v)).collect();
     // forward test runner env vars to the inner test
@@ -313,8 +320,11 @@ fn main() -> Result<()> {
         None => {
             ctx.user(spec.user);
             let mut cmd = args.test.into_inner_cmd().into_iter();
-            let mut isol =
-                nspawn(ctx.build())?.command(cmd.next().expect("must have program arg"))?;
+            let program = cmd.next().expect("must have program arg");
+            let mut isol = match spec.rootless {
+                false => nspawn(ctx.build())?.command(program)?,
+                true => unshare(ctx.build())?.command(program)?,
+            };
             isol.args(cmd);
             debug!("executing test in isolated container: {isol:?}");
             Err(anyhow::anyhow!("failed to exec test: {:?}", isol.exec()))
