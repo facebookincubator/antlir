@@ -313,10 +313,6 @@ bad_depgraph(
         ),
         feature.install(
             src = "//antlir:empty",
-            dst = "/cloned/bar",
-        ),
-        feature.install(
-            src = "//antlir:empty",
             dst = "/cloned/foo",
         ),
     ],
