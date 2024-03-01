@@ -5,6 +5,7 @@
 
 # @oss-disable
 # @oss-disable
+# @oss-disable
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
@@ -171,7 +172,10 @@ def _implicit_image_test(
         **kwargs):
     test_rule(
         name = name + "_image_test_inner",
-        labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test"),
+        labels = add_test_framework_label(HIDE_TEST_LABELS, "test-framework=7:antlir_image_test") + [
+            # never schedule any CI on this inner target
+            # @oss-disable
+        ],
         **kwargs
     )
 
