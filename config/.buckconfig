@@ -1,5 +1,0 @@
-[parser]
-  default_build_file_syntax = SKYLARK
-
-[repositories]
-  config = .

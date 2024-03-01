@@ -1,1 +1,0 @@
-kind(.*_test, //...) - kind(cxx_test, //...) - set(//antlir/bzl/genrule/locale/...) - set(//antlir/rpm/replay/tests:test-subvol-rpm-compare) - attrfilter(labels, vmtest, //...) - set(//antlir/vm/...) - set(//metalos/...)

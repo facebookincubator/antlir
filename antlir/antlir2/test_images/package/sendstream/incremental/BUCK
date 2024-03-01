@@ -1,10 +1,7 @@
-load("//antlir/antlir2/antlir2_vm/bzl:defs.bzl", "vm")
-load("//antlir/antlir2/antlir2_vm/bzl:disk.bzl", "disk")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest")
-load("//metalos/vm/disks:simple.bzl", "simple_disk")
 
 oncall("antlir")
 
@@ -78,28 +75,6 @@ image.layer(
             text = "foo",
         ),
     ],
-)
-
-vm.host(
-    name = "vm",
-    disks = [
-        simple_disk.default_boot_disk,
-        disk.create_empty_disk(
-            name = "scratch-disk",
-            size_mib = 1024,
-        ),
-    ],
-)
-
-vm.python_test(
-    name = "test-incremental",
-    srcs = ["test-incremental.py"],
-    compatible_with = ["ovr_config//cpu:x86_64"],
-    resources = {
-        ":child.sendstream": "child.sendstream",
-        ":parent.sendstream": "parent.sendstream",
-    },
-    vm_host = ":vm",
 )
 
 python_unittest(

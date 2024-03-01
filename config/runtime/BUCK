@@ -1,8 +1,0 @@
-config_setting(
-    name = "linux-x86_64",
-    constraint_values = [
-        "//cpu/constraints:x86_64",
-        "//os/constraints:linux",
-    ],
-    visibility = ["PUBLIC"],
-)

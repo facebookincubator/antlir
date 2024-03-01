@@ -2,11 +2,6 @@
   path = third-party/bazel-skylib
   url = https://github.com/bazelbuild/bazel-skylib.git
   ignore = untracked
-[submodule "third-party/cxx/googletest"]
-  path = third-party/cxx/googletest
-  url = https://github.com/google/googletest.git
-  ignore = untracked
-[submodule "generated"]
-  path = generated
-  url = https://github.com/facebookincubator/antlir.git
-  ignore = untracked
+[submodule "prelude"]
+	path = prelude
+	url = https://github.com/facebook/buck2-prelude.git

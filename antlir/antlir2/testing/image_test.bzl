@@ -19,6 +19,8 @@ load("//antlir/bzl:systemd.bzl", "systemd")
 
 HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
+special_tags = struct(enable_artifact_reporting = "enable-artifact-reporting") # @oss-enable
+
 def _default_list(maybe_value: list[str] | None, default: list[str]) -> list[str]:
     if maybe_value == None:
         return default
@@ -198,7 +200,7 @@ def _implicit_image_test(
                 ),
             ],
             default_os = default_os,
-            default_rou = default_rou,
+            # @oss-disable
             labels = ["antlir2-implicit-layer=image_test_boot"],
         )
         layer = ":{}--bootable-layer".format(name)

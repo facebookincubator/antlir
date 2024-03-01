@@ -44,7 +44,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             "default_versionlock": [DefaultInfo(ctx.attrs.default_dnf_versionlock)],
         }),
     # @oss-disable
-    # @oss-enable ]
+    ] # @oss-enable
 
 _flavor = rule(
     impl = _impl,
@@ -77,7 +77,7 @@ def _child_flavor_impl(ctx: AnalysisContext) -> list[Provider]:
             "default_versionlock": [DefaultInfo(flavor.dnf_info.default_versionlock)],
         }),
     # @oss-disable
-    # @oss-enable ]
+    ] # @oss-enable
 
 _child_flavor = rule(
     impl = _child_flavor_impl,

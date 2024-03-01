@@ -13,7 +13,11 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
+
+load("//antlir/bzl:oss_shim.bzl", all_fbpkg_mounts = "ret_empty_list") # @oss-enable
 # @oss-disable
+
+load("//antlir/bzl:oss_shim.bzl", fb_attrs = "empty_dict", fb_defaults = "empty_dict") # @oss-enable
 # @oss-disable
 load(
     "//antlir/antlir2/features/mount:mount.bzl",
@@ -24,6 +28,8 @@ load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_al
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+
+load("//antlir/bzl:oss_shim.bzl", SnapshottedFbpkgSetInfo = "none", compiler_plan_to_chef_fbpkgs = "ret_none") # @oss-enable
 # @oss-disable
 load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
@@ -700,7 +706,7 @@ def layer(
     return layer_rule(
         name = name,
         default_os = default_os,
-        default_rou = default_rou,
+        # @oss-disable
         visibility = get_visibility(visibility),
         _implicit_image_test = antlir2_dep("//antlir/antlir2/testing/implicit_image_test:implicit_image_test"),
         _run_container = antlir2_dep("//antlir/antlir2/container_subtarget:run"),
