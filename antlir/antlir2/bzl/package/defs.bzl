@@ -176,6 +176,8 @@ def _compressed_impl(
             "compressor=\"$(which pigz || which gzip)\"",
             cmd_args(
                 "$compressor",
+                # Anonymous inputs may already have .gz suffix since they have a name determined by the outer rule
+                cmd_args("--force"),
                 cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
                 src,
                 cmd_args(package.as_output(), format = "--stdout > {}"),
