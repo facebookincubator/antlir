@@ -23,11 +23,11 @@ _common_attrs = {
 
 # Attrs that will only ever be used as default_only
 _default_attrs = {
-    "_antlir2": attrs.exec_dep(default = "//antlir/antlir2/antlir2:antlir2"),
-    "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
-    "_dot_meta_feature": attrs.dep(default = "//antlir/antlir2/bzl/package:dot-meta"),
+    "_antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
+    "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
+    "_dot_meta_feature": attrs.dep(default = antlir2_dep("//antlir/antlir2/bzl/package:dot-meta")),
     "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
-    "_run_container": attrs.exec_dep(default = "//antlir/antlir2/container_subtarget:run"),
+    "_run_container": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/container_subtarget:run")),
     "_target_arch": attrs.default_only(attrs.string(
         default = arch_select(aarch64 = "aarch64", x86_64 = "x86_64"),
     )),

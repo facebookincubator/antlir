@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:expect.bzl", "expect", "expect_non_none")
+load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs", "package_cfg")
 load(":macro.bzl", "package_macro")
@@ -19,7 +20,7 @@ _base_sendstream_args_defaults = {
 }
 
 _base_sendstream_args = {
-    "antlir2_packager": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/antlir2_packager:antlir2-packager")),
+    "antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
     "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
     "incremental_parent": attrs.option(
         attrs.dep(
@@ -226,7 +227,7 @@ _sendstream_v2 = rule(
     impl = _v2_impl,
     attrs = {
         "compression_level": attrs.int(default = 3),
-        "sendstream_upgrader": attrs.default_only(attrs.exec_dep(default = "//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade")),
+        "sendstream_upgrader": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/btrfs_send_stream_upgrade:btrfs_send_stream_upgrade"))),
     } | _base_sendstream_args | layer_attrs,
     cfg = package_cfg,
 )
