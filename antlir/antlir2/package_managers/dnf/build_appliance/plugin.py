@@ -34,6 +34,7 @@ class AntlirPlugin(dnf.Plugin):
         antlir2_dnf_base.configure_base(
             base=self.base, set_persistdir_under_installroot=False
         )
+
         # Patch the base download_packages function so that it does not do
         # anything. For local repositories all it does is check checksums, but
         # we've already verified the checksum with buck2, and possibly changed
