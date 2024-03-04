@@ -352,6 +352,7 @@ package = struct(
     backward_compatible_new = _backwards_compatible_new,
     btrfs = btrfs,
     cas_dir = package_macro(_cas_dir),
+    cpio = package_macro(_cpio),
     cpio_gz = package_macro(_cpio_gz),
     cpio_zst = package_macro(_cpio_zst),
     ext3 = package_macro(_ext3),
