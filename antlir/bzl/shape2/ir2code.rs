@@ -14,8 +14,8 @@ use std::path::PathBuf;
 use anyhow::anyhow;
 use anyhow::Context as _;
 use anyhow::Result;
-use clap::ArgEnum;
 use clap::Parser;
+use clap::ValueEnum;
 use derive_more::AsRef;
 use derive_more::Deref;
 use derive_more::From;
@@ -36,7 +36,7 @@ use itertools::Itertools;
 use serde::Serialize;
 use serde_json::Value;
 
-#[derive(Debug, Clone, ArgEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 enum RenderFormat {
     // classic style shapes with very limited type safety
     Pydantic,

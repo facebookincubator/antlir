@@ -41,7 +41,7 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
-        "clap-3",
+        "clap",
         "derive_more",
         "handlebars",
         "itertools",
@@ -74,7 +74,7 @@ rust_binary(
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
-        "clap-3",
+        "clap",
         "serde_json",
         "//antlir:find_root",
         "//antlir/filesystem/absolute_path:absolute_path",
