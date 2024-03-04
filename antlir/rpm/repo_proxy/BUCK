@@ -34,7 +34,7 @@ rust_binary(
     srcs = ["bin/main.rs"],
     deps = [
         "anyhow",
-        "clap-3",
+        "clap",
         "serde_json",
         "tokio",
         "tracing-glog",

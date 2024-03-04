@@ -306,7 +306,7 @@ mod tests {
 
     use super::*;
 
-    #[derive(Debug, PartialEq, Deserialize, Serialize)]
+    #[derive(Debug, Clone, PartialEq, Deserialize, Serialize)]
     struct Example {
         foo: String,
         bar: u32,
