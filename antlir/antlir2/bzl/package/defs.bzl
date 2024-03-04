@@ -19,6 +19,7 @@ load(":xar.bzl", "xar")
 # Attrs that are required by all packages
 _common_attrs = {
     "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
+    "out": attrs.option(attrs.string(doc = "Output filename"), default = None),
 } | layer_attrs
 
 # Attrs that will only ever be used as default_only
@@ -45,7 +46,7 @@ def _generic_impl_with_layer(
         force_extension: str | None) -> list[Provider]:
     build_appliance = ctx.attrs.build_appliance or layer[LayerInfo].build_appliance
 
-    output_name = ctx.label.name
+    output_name = ctx.attrs.out or ctx.label.name
     if force_extension and not output_name.endswith("." + force_extension):
         output_name += "." + force_extension
 
@@ -167,6 +168,7 @@ def _compressed_impl(
         {
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
+            "out": "uncompressed",
         } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys},
     ).artifact("src")
     package = ctx.actions.declare_output(ctx.label.name)
@@ -176,8 +178,6 @@ def _compressed_impl(
             "compressor=\"$(which pigz || which gzip)\"",
             cmd_args(
                 "$compressor",
-                # Anonymous inputs may already have .gz suffix since they have a name determined by the outer rule
-                cmd_args("--force"),
                 cmd_args(str(ctx.attrs.compression_level), format = "-{}"),
                 src,
                 cmd_args(package.as_output(), format = "--stdout > {}"),
