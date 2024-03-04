@@ -8,12 +8,14 @@ load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:target_helpers.bzl", "antlir_dep")
 
 def antlir_rust_extension(
+        *,
         name,
         srcs,
         typestub,
         deps = (),
         labels = (),
         rust_visibility = (),
+        visibility = (),
         **kwargs):
     deps = list(deps)
     deps.append("pyo3")
@@ -41,4 +43,5 @@ def antlir_rust_extension(
             typestub: name + ".pyi",
         },
         deps = [antlir_dep("rust:rust")],
+        visibility = visibility,
     )
