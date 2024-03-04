@@ -22,13 +22,10 @@ pub fn ensure_path_in_repo(
 ) -> PyResult<AbsolutePathBuf> {
     let maybe_relpath = match path_in_repo {
         Some(p) => p,
-        None => match std::env::var_os("ANTLIR_PATH_IN_REPO") {
-            Some(p) => p.into(),
-            None => {
-                let argv0: String = py.import("sys")?.getattr("argv")?.get_item(0)?.extract()?;
-                argv0.into()
-            }
-        },
+        None => {
+            let argv0: String = py.import("sys")?.getattr("argv")?.get_item(0)?.extract()?;
+            argv0.into()
+        }
     };
     AbsolutePathBuf::absolutize(&maybe_relpath).map_err(|e| match e {
         absolute_path::Error::Canonicalize(p, e) => match e.kind() {
@@ -43,7 +40,7 @@ pub fn ensure_path_in_repo(
 }
 
 #[pymodule]
-pub fn artifacts_dir_rs(py: Python<'_>, m: &PyModule) -> PyResult<()> {
+pub fn artifacts_dir(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add("SigilNotFound", py.get_type::<SigilNotFound>())?;
 
     /// find_repo_root($self, path_in_repo = None)

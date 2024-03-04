@@ -72,6 +72,7 @@ python_library(
         "//fbpkg/caf/...",
         "//kernel/kernels:test_selection_lib",
         "//metalos/initrd/facebook/...",
+        "//metalos/os/tests:gen-bind-antlir-dirs-library",
         "//registry/builder/fbpkg/tests/...",
         "//syseng/yard/installer/...",
         "//ti/platform/edgeos/...",
@@ -100,28 +101,16 @@ antlir_rust_extension(
 )
 
 antlir_rust_extension(
-    name = "artifacts_dir_rs",
-    srcs = ["artifacts_dir_rs.rs"],
-    crate_root = "artifacts_dir_rs.rs",
+    name = "artifacts_dir",
+    srcs = ["artifacts_dir.rs"],
+    crate_root = "artifacts_dir.rs",
     rust_visibility = ["//antlir/..."],
-    typestub = "artifacts_dir_rs.pyi",
+    typestub = "artifacts_dir.pyi",
+    visibility = ["PUBLIC"],
     deps = [
         ":fs_utils_rs-rust",
         "//antlir:find_root",
         "//antlir/filesystem/absolute_path:absolute_path",
-    ],
-)
-
-python_library(
-    name = "artifacts_dir",
-    srcs = ["artifacts_dir.py"],
-    visibility = ["PUBLIC"],
-    deps = [
-        ":artifacts_dir_rs",
-        ":common",
-        ":errors",
-        ":fs_utils",
-        "//antlir/bzl/buck_isolation:buck_isolation",
     ],
 )
 
@@ -138,15 +127,6 @@ rust_library(
         "thiserror",
         "//antlir/filesystem/absolute_path:absolute_path",
     ],
-)
-
-# These binaries are used by `image_layer.py` as build-time helpers.
-
-python_binary(
-    name = "artifacts-dir",
-    main_function = "antlir.artifacts_dir.main",
-    visibility = ["PUBLIC"],
-    deps = [":artifacts_dir"],
 )
 
 python_library(
