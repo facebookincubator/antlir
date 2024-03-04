@@ -238,6 +238,7 @@ _cas_dir, _cas_dir_anon = _new_package_rule(
 
 _cpio, _cpio_anon = _new_package_rule(
     format = "cpio",
+    sudo = True,
 )
 
 _cpio_gz = _new_compressed_package_rule(
