@@ -365,6 +365,13 @@ fn test(args: &IsolateCmdArgs) -> Result<()> {
     }?;
     let status = log_command(&mut command).status()?;
     if !status.success() {
+        #[cfg(facebook)]
+        bail!(
+            "VM run failed: {:?}. Check {} for tips of debugging VM specific test failures.",
+            status,
+            "https://www.internalfb.com/intern/staticdocs/antlir2/docs/internals/fb/vm-tests/",
+        );
+        #[cfg(not(facebook))]
         bail!("VM run failed: {:?}", status);
     }
     Ok(())
