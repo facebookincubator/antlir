@@ -140,7 +140,7 @@ def prebuilt(*args, **kwargs):
     labels = selects.apply(labels, lambda labels: labels + select({
         "//antlir/antlir2/antlir2_rootless:rooted": ["uses_sudo"],
         "//antlir/antlir2/antlir2_rootless:rootless": [],
-        "DEFAULT": [],
+        "DEFAULT": ["uses_sudo"],
     }))
     kwargs["labels"] = labels
     _prebuilt_macro(
