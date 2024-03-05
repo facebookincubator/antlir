@@ -6,20 +6,12 @@
 
 "Utilities to make Python systems programming more palatable."
 import argparse
-import errno
 import importlib.resources
 import os
 import shlex
-import shutil
-import subprocess
 import tempfile
 from contextlib import contextmanager
 from typing import AnyStr, Generator, IO, Iterable, Iterator, List, Union
-
-from antlir.common import get_logger
-
-
-log = get_logger()
 
 
 # We need this for lists that can contain a combination of `str` and `bytes`,
@@ -28,7 +20,7 @@ MehStr = Union[str, bytes, "Path"]
 
 
 # Bite me, Python3.
-def byteme(s: AnyStr) -> bytes:
+def _byteme(s: AnyStr) -> bytes:
     "Byte literals are tiring, just promote strings as needed."
     # pyre-fixme[16]: `bytes` has no attribute `encode`.
     return s.encode() if isinstance(s, str) else s
@@ -60,7 +52,7 @@ class Path(bytes):
     """
 
     def __new__(cls, arg, *args, **kwargs):
-        return super().__new__(cls, byteme(arg), *args, **kwargs)
+        return super().__new__(cls, _byteme(arg), *args, **kwargs)
 
     @classmethod
     def __get_validators__(cls):
@@ -94,13 +86,13 @@ class Path(bytes):
         if not paths:
             # pyre-fixme[7]: Expected `Path` but got `None`.
             return None
-        return Path(os.path.join(byteme(paths[0]), *(byteme(p) for p in paths[1:])))
+        return Path(os.path.join(_byteme(paths[0]), *(_byteme(p) for p in paths[1:])))
 
     def __truediv__(self, right: AnyStr) -> "Path":
-        return Path(os.path.join(self, byteme(right)))
+        return Path(os.path.join(self, _byteme(right)))
 
     def __rtruediv__(self, left: AnyStr) -> "Path":
-        return Path(os.path.join(byteme(left), self))
+        return Path(os.path.join(_byteme(left), self))
 
     def exists(self, raise_permission_error: bool = False) -> bool:
         if not raise_permission_error:
@@ -147,7 +139,7 @@ class Path(bytes):
     # `start` does NOT default to the current directory because code relying
     # on $PWD tends to be fragile, and we don't want to make it implicit.
     def relpath(self, start: AnyStr) -> "Path":
-        return Path(os.path.relpath(self, byteme(start)))
+        return Path(os.path.relpath(self, _byteme(start)))
 
     # Returns `str` because shell scripts are normally strings, not bytes.
     # Also, shlex.quote doesn't support bytes (see Python Issue #25567).
@@ -276,103 +268,3 @@ class Path(bytes):
 def temp_dir(**kwargs) -> Generator[Path, None, None]:
     with tempfile.TemporaryDirectory(**kwargs) as td:
         yield Path(td)
-
-
-@contextmanager
-def populate_temp_dir_and_rename(
-    dest_path, *, overwrite: bool = False
-) -> Iterator[Path]:
-    """
-    Returns a Path to a temporary directory. The context block may populate
-    this directory, which will then be renamed to `dest_path`, optionally
-    deleting any preexisting directory (if `overwrite=True`).
-
-    If the context block throws, the partially populated temporary directory
-    is removed, while `dest_path` is left alone.
-
-    By writing to a brand-new temporary directory before renaming, we avoid
-    the problems of partially writing files, or overwriting some files but
-    not others.  Moreover, populate-temporary-and-rename is robust to
-    concurrent writers, and tends to work on broken NFSes unlike `flock`.
-    """
-    dest_path = os.path.normpath(dest_path)  # Trailing / breaks `os.rename()`
-    # Putting the temporary directory as a sibling minimizes permissions
-    # issues, and maximizes the chance that we're on the same filesystem
-    base_dir = os.path.dirname(dest_path)
-    td = tempfile.mkdtemp(dir=base_dir)
-    try:
-        yield Path(td)
-
-        # Delete+rename is racy, but EdenFS lacks RENAME_EXCHANGE (t34057927)
-        # Retry if we raced with another writer -- i.e., last-to-run wins.
-        while True:
-            if overwrite and os.path.isdir(dest_path):
-                with tempfile.TemporaryDirectory(dir=base_dir) as del_dir:
-                    try:
-                        os.rename(dest_path, del_dir)
-                    except FileNotFoundError:  # pragma: no cover
-                        continue  # retry, another writer deleted first?
-            try:
-                os.rename(td, dest_path)
-            except OSError as ex:
-                if not (
-                    overwrite
-                    and ex.errno
-                    in [
-                        # Different kernels have different error codes when the
-                        # target already exists and is a nonempty directory.
-                        errno.ENOTEMPTY,
-                        errno.EEXIST,
-                    ]
-                ):
-                    raise
-                log.exception(  # pragma: no cover
-                    f"Retrying deleting {dest_path}, another writer raced us"
-                )
-            # We won the race
-            break  # pragma: no cover
-    except BaseException:
-        shutil.rmtree(td)
-        raise
-
-
-@contextmanager
-def populate_temp_file_and_rename(
-    dest_path: Path, *, overwrite: bool = False, mode: str = "w"
-):
-    """
-    Opens a temporary file for writing in the same directory as the desired
-    file `dest_path`. Yields a `file`-like object to be populated inside
-    the context.
-
-    On successfully exiting the with-block, one of two things will happen:
-
-    1. Default: If `overwrite` is not set, then the temporary file will
-       attempt to be renamed to the `dest_path`. If `dest_path` already
-       exists (determined through a race-prone `os.path.exists` check),
-       the temporary file will be removed and an `FileExistsError` will
-       be raised. If `dest_path` does not exist, the renaming will be an
-       atomic operation (this is a POSIX requirement).
-    2. If `overwrite` is set, then the temporary file will replace any
-       file existing at `dest_path` and all of its content.
-
-    If the with-block is exited unsuccessfully, the temporary file
-    will be deleted. If the dest_path specifies a directory, it will
-    fail to replace the directory. This behaviour is regardless of
-    the `overwrite` value provided and is subject to change (should not
-    be relied on).
-    """
-    with tempfile.NamedTemporaryFile(
-        mode=mode, dir=dest_path.dirname(), delete=False
-    ) as tf:
-        try:
-            yield tf
-            if not overwrite and os.path.exists(dest_path):
-                # Race prone to check to determine if file exists.
-                # If eliminating the possibility of a race is important
-                # look into using `renameat2` via `ctypes`
-                raise FileExistsError
-            os.rename(tf.name, dest_path)
-        except BaseException:  # Clean up even on Ctrl-C
-            os.unlink(tf.name)
-            raise
