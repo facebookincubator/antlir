@@ -82,7 +82,6 @@ python_library(
         "//tupperware/scripts/...",
     ],
     deps = [
-        ":common",
         ":fs_utils_rs",
     ],
 )
