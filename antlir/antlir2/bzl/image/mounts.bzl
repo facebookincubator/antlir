@@ -19,7 +19,7 @@ def _mountpoint(mount: mount_record) -> str:
 
 def all_mounts(
         *,
-        features: list[feature_record],
+        features: list[feature_record | typing.Any],
         parent_layer: LayerInfo | Provider | None) -> list[mount_record]:
     """
     Find all the mounts that would need to be directly applied to this layer

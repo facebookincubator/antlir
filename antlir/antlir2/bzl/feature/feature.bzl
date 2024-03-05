@@ -90,7 +90,7 @@ feature_record = record(
     plugin = FeaturePluginInfo | Provider,
 )
 
-def feature_as_json(feat: feature_record) -> struct:
+def feature_as_json(feat: feature_record | typing.Any) -> struct:
     return struct(
         feature_type = feat.feature_type,
         label = feat.label,
