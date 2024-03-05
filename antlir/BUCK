@@ -19,21 +19,6 @@ python_library(
 )
 
 python_library(
-    name = "testlib_common",
-    srcs = ["tests/common.py"],
-    visibility = [
-        "//antlir/...",
-        "//blockchain/custody/vault/os/...",
-        "//metalos/initrd/facebook/...",
-        "//ti/platform/edgeos/...",
-        "//tupperware/cm/...",
-        "//tupperware/image/scripts/...",
-        "//tupperware/scripts/...",
-        "//virt/processvm/agent/...",
-    ],
-)
-
-python_library(
     name = "cli",
     srcs = ["cli.py"],
     visibility = [
