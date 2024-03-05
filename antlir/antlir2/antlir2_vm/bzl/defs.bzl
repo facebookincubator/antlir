@@ -74,10 +74,10 @@ def _runtime_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
     runtime_json_args = ctx.actions.write_json(
         runtime_json,
         {
-            "firmware": ctx.attrs.firmware,
+            "firmware": ensure_single_output(ctx.attrs.firmware),
             "qemu_img": ensure_single_output(ctx.attrs.qemu_img),
             "qemu_system": ensure_single_output(ctx.attrs.qemu_system),
-            "roms_dir": ctx.attrs.roms_dir,
+            "roms_dir": ensure_single_output(ctx.attrs.roms_dir),
             "swtpm": ensure_single_output(ctx.attrs.swtpm),
         },
         with_inputs = True,
@@ -183,7 +183,7 @@ _vm_host = rule(
     } | {
         # VM runtime. Genearlly shouldn't be overwritten
         "firmware": attrs.default_only(
-            attrs.source(
+            attrs.exec_dep(
                 default = arch_select(
                     aarch64 = antlir_dep("vm/runtime:edk2-aarch64-code.fd"),
                     x86_64 = antlir_dep("vm/runtime:edk2-x86_64-code.fd"),
@@ -210,7 +210,7 @@ _vm_host = rule(
             doc = "qemu-system binary that should match target arch",
         ),
         "roms_dir": attrs.default_only(
-            attrs.source(default = antlir_dep("vm/runtime:roms")),
+            attrs.exec_dep(default = antlir_dep("vm/runtime:roms")),
             doc = "ROMs for the VM",
         ),
         "swtpm": attrs.default_only(
