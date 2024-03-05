@@ -86,11 +86,6 @@ python_library(
     ],
 )
 
-python_library(
-    name = "unshare",
-    srcs = ["unshare.py"],
-)
-
 antlir_rust_extension(
     name = "signed_source",
     srcs = ["signed_source.rs"],
