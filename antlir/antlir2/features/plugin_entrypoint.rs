@@ -25,7 +25,7 @@ static_assertions::assert_impl_all!(
 #[no_mangle]
 pub fn RequiresProvides_provides(
     feature: &antlir2_features::Feature,
-) -> std::result::Result<Vec<antlir2_depgraph::item::Item<'static>>, String> {
+) -> std::result::Result<Vec<antlir2_depgraph::item::Item>, String> {
     let feature: Feature = serde_json::from_value(feature.data.clone())
         .map_err(|e| format!("failed to convert to deserialize specific feature type: {e}"))?;
     feature.provides()
@@ -35,7 +35,7 @@ pub fn RequiresProvides_provides(
 #[no_mangle]
 pub fn RequiresProvides_requires(
     feature: &antlir2_features::Feature,
-) -> std::result::Result<Vec<antlir2_depgraph::requires_provides::Requirement<'static>>, String> {
+) -> std::result::Result<Vec<antlir2_depgraph::requires_provides::Requirement>, String> {
     let feature: Feature = serde_json::from_value(feature.data.clone())
         .map_err(|e| format!("failed to convert to deserialize specific feature type: {e}"))?;
     feature.requires()

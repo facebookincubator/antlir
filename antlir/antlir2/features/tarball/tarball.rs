@@ -83,7 +83,7 @@ impl Tarball {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Tarball {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         let mut provides = Vec::new();
         let mut archive = self.open_archive().map_err(|e| format!("{e:#?}"))?;
         for entry in archive
@@ -142,7 +142,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Tarball {
         Ok(provides)
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         // It would be great to assert requirements on the users referenced in
         // this tarball, but tars almost never use the name of a user, and we
         // can't do anything meaningful with only a uid, so just let it slide...

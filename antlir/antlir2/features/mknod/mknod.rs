@@ -56,7 +56,7 @@ impl Mknod {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Mknod {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Path(PathItem::Entry(FsEntry {
             path: self.dst.to_owned().into(),
             file_type: self.file_type(),
@@ -64,7 +64,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Mknod {
         }))])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = vec![
             Requirement::ordered(ItemKey::User(self.user.clone().into()), Validator::Exists),
             Requirement::ordered(ItemKey::Group(self.group.clone().into()), Validator::Exists),

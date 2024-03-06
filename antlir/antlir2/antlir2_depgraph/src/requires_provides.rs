@@ -18,22 +18,21 @@ use crate::item::ItemKey;
 use crate::item::Path;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Requirement<'a> {
-    pub(crate) key: ItemKey<'a>,
-    pub(crate) validator: Validator<'a>,
+pub struct Requirement {
+    pub(crate) key: ItemKey,
+    pub(crate) validator: Validator,
     /// This [Requirement] necessitates ordered running of the features
     /// involved. If false, the compiler is free to run the features in any
     /// order.
     pub(crate) ordered: bool,
 }
 
-impl<'a> Requirement<'a> {
+impl Requirement {
     /// Hard build dependencies (eg: parent dir exists before install) should
     /// use this function. The compiler will not attempt to build the feature
     /// that has this [Requirement] until the feature that provides it has been
     /// built.
-    pub fn ordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
+    pub fn ordered(key: ItemKey, validator: Validator) -> Self {
         Self {
             key,
             validator,
@@ -46,7 +45,7 @@ impl<'a> Requirement<'a> {
     /// [Requirement] before the feature that provides it, which is useful for
     /// avoiding ordering cycles for purely logical "this has to happen by the
     /// time the layer is done" requirements.
-    pub fn unordered(key: ItemKey<'a>, validator: Validator<'a>) -> Self {
+    pub fn unordered(key: ItemKey, validator: Validator) -> Self {
         Self {
             key,
             validator,
@@ -63,8 +62,8 @@ impl<'a> Requirement<'a> {
 /// instead [Validator]s can be added in a Requires edge and checked when
 /// finalizing the graph.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-pub enum Validator<'a> {
+#[serde(rename_all = "snake_case")]
+pub enum Validator {
     /// Always succeeds. Existence of the provider edge is validated when
     /// finalizing the graph.
     Exists,
@@ -73,22 +72,22 @@ pub enum Validator<'a> {
     /// requirement is a [crate::Node::MissingItem].
     DoesNotExist,
     /// ANDs all of the contained [Validator]s.
-    All(Vec<Validator<'a>>),
+    All(Vec<Validator>),
     /// ORs all of the contained [Validator]s.
-    Any(Vec<Validator<'a>>),
+    Any(Vec<Validator>),
     /// Assert an [Item] is of a certain [FileType].
     FileType(FileType),
     /// Asserts an [Item] is an executable file.
     Executable,
     /// Assert that an [ItemKey] within another layer matches some [Validator]
     ItemInLayer {
-        key: ItemKey<'a>,
-        validator: Box<Validator<'a>>,
+        key: ItemKey,
+        validator: Box<Validator>,
     },
 }
 
-impl<'a> Validator<'a> {
-    pub(crate) fn satisfies(&self, item: &Item<'_>) -> bool {
+impl Validator {
+    pub(crate) fn satisfies(&self, item: &Item) -> bool {
         match self {
             Self::Exists => true,
             Self::DoesNotExist => match item {
@@ -124,8 +123,8 @@ impl<'a> Validator<'a> {
 }
 
 pub trait RequiresProvides {
-    fn provides(&self) -> std::result::Result<Vec<Item<'static>>, String>;
-    fn requires(&self) -> std::result::Result<Vec<Requirement<'static>>, String>;
+    fn provides(&self) -> std::result::Result<Vec<Item>, String>;
+    fn requires(&self) -> std::result::Result<Vec<Requirement>, String>;
 }
 
 /// PluginExt indirects the implementation of [RequiresProvides] through a .so
@@ -135,26 +134,24 @@ pub trait RequiresProvides {
 trait PluginExt {
     fn provides_fn(
         &self,
-    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Item<'static>>, String>>, String>;
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Item>, String>>, String>;
 
     fn requires_fn(
         &self,
-    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Requirement<'static>>, String>>, String>;
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Requirement>, String>>, String>;
 }
 
 impl PluginExt for antlir2_features::Plugin {
     fn provides_fn(
         &self,
-    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Item<'static>>, String>>, String>
-    {
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Item>, String>>, String> {
         self.get_symbol(b"RequiresProvides_provides\0")
             .map_err(|e| format!("failed to get provides fn: {e}"))
     }
 
     fn requires_fn(
         &self,
-    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Requirement<'static>>, String>>, String>
-    {
+    ) -> Result<libloading::Symbol<fn(&Feature) -> Result<Vec<Requirement>, String>>, String> {
         self.get_symbol(b"RequiresProvides_requires\0")
             .map_err(|e| format!("failed to get provides fn: {e}"))
     }
@@ -162,12 +159,12 @@ impl PluginExt for antlir2_features::Plugin {
 
 impl RequiresProvides for Feature {
     #[tracing::instrument]
-    fn provides(&self) -> std::result::Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> std::result::Result<Vec<Item>, String> {
         self.plugin().map_err(|e| e.to_string())?.provides_fn()?(self)
     }
 
     #[tracing::instrument]
-    fn requires(&self) -> std::result::Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> std::result::Result<Vec<Requirement>, String> {
         self.plugin().map_err(|e| e.to_string())?.requires_fn()?(self)
     }
 }

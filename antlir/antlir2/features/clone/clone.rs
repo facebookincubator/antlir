@@ -52,7 +52,7 @@ pub struct CloneUserGroup {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = vec![Requirement::ordered(
             ItemKey::Layer(self.src_layer.label.to_owned()),
             Validator::ItemInLayer {
@@ -125,7 +125,8 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                             .get_user_by_id(uid.into())
                             .expect("this layer could not have been built if this uid is missing")
                             .name
-                            .clone(),
+                            .clone()
+                            .into_owned(),
                     ),
                     Validator::Exists,
                 ));
@@ -137,7 +138,8 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                             .get_group_by_id(gid.into())
                             .expect("this layer could not have been built if this gid is missing")
                             .name
-                            .clone(),
+                            .clone()
+                            .into_owned(),
                     ),
                     Validator::Exists,
                 ));
@@ -146,12 +148,12 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
         Ok(v)
     }
 
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         let src_layer_depgraph_path: &Path = self.src_layer.depgraph.as_ref();
         let src_layer = std::fs::read(src_layer_depgraph_path)
             .context("while reading src_layer depgraph")
             .map_err(|e| e.to_string())?;
-        let src_depgraph: Graph<'_> = serde_json::from_slice(&src_layer)
+        let src_depgraph: Graph = serde_json::from_slice(&src_layer)
             .context("while parsing src_layer depgraph")
             .map_err(|e| e.to_string())?;
         let mut v = Vec::new();
@@ -186,15 +188,12 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                     //   clone(src=path/to/src, dst=/into/dir/)
                     // produces files like /into/dir/src/foo
                     // instead of /into/dir/foo
-                    let relpath: Cow<'_, std::path::Path> =
-                        if self.pre_existing_dest && !self.omit_outer_dir {
-                            Cow::Owned(
-                                Path::new(self.src_path.file_name().expect("must have file_name"))
-                                    .join(relpath),
-                            )
-                        } else {
-                            Cow::Borrowed(relpath)
-                        };
+                    let relpath = if self.pre_existing_dest && !self.omit_outer_dir {
+                        Path::new(self.src_path.file_name().expect("must have file_name"))
+                            .join(relpath)
+                    } else {
+                        relpath.to_owned()
+                    };
                     let dst_path = self.dst_path.join(&relpath);
                     if let Some(Item::Path(path_item)) = src_depgraph.get_item(key) {
                         v.push(Item::Path(match path_item {
@@ -204,8 +203,8 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                                 mode: entry.mode,
                             }),
                             PathItem::Symlink { link: _, target } => PathItem::Symlink {
-                                link: Cow::Owned(dst_path),
-                                target: Cow::Owned(target.to_path_buf()),
+                                link: dst_path,
+                                target: target.to_owned(),
                             },
                             PathItem::Mount(_) => {
                                 return Err(format!(

@@ -5,9 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
 use std::hash::Hash;
 use std::os::unix::fs::FileTypeExt;
+use std::path::PathBuf;
 
 use buck_label::Label;
 use derivative::Derivative;
@@ -28,16 +28,15 @@ use serde::Serialize;
     Serialize
 )]
 #[serde(rename_all = "snake_case")]
-pub enum Item<'a> {
-    Path(Path<'a>),
-    User(User<'a>),
-    Group(Group<'a>),
+pub enum Item {
+    Path(Path),
+    User(User),
+    Group(Group),
     /// A complete graph from a dependent layer. Note that items from the chain
     /// of parent layers will appear in this graph, and this is for things like
     /// [antlir2_features::Clone] that have dependencies on (potentially) completely
     /// disconnected layers.
-    #[serde(borrow)]
-    Layer(Layer<'a>),
+    Layer(Layer),
 }
 
 #[derive(
@@ -52,15 +51,15 @@ pub enum Item<'a> {
     Serialize
 )]
 #[serde(rename_all = "snake_case")]
-pub enum ItemKey<'a> {
-    Path(Cow<'a, std::path::Path>),
-    User(Cow<'a, str>),
-    Group(Cow<'a, str>),
+pub enum ItemKey {
+    Path(PathBuf),
+    User(String),
+    Group(String),
     Layer(Label),
 }
 
-impl<'a> Item<'a> {
-    pub fn key(&self) -> ItemKey<'a> {
+impl Item {
+    pub fn key(&self) -> ItemKey {
         match self {
             Self::Path(p) => match p {
                 Path::Entry(e) => ItemKey::Path(e.path.clone()),
@@ -86,13 +85,10 @@ impl<'a> Item<'a> {
     Serialize
 )]
 #[serde(rename_all = "snake_case")]
-pub enum Path<'a> {
-    Entry(FsEntry<'a>),
-    Symlink {
-        link: Cow<'a, std::path::Path>,
-        target: Cow<'a, std::path::Path>,
-    },
-    Mount(Mount<'a>),
+pub enum Path {
+    Entry(FsEntry),
+    Symlink { link: PathBuf, target: PathBuf },
+    Mount(Mount),
 }
 
 #[derive(
@@ -106,8 +102,8 @@ pub enum Path<'a> {
     Deserialize,
     Serialize
 )]
-pub struct FsEntry<'a> {
-    pub path: Cow<'a, std::path::Path>,
+pub struct FsEntry {
+    pub path: PathBuf,
     pub file_type: FileType,
     pub mode: u32,
 }
@@ -123,12 +119,12 @@ pub struct FsEntry<'a> {
     Deserialize,
     Serialize
 )]
-pub struct Mount<'a> {
-    pub path: Cow<'a, std::path::Path>,
+pub struct Mount {
+    pub path: PathBuf,
     pub file_type: FileType,
     pub mode: u32,
     /// Human readable description of where this mount comes from
-    pub source_description: Cow<'a, str>,
+    pub source_description: String,
 }
 
 #[derive(
@@ -192,8 +188,8 @@ impl From<std::fs::FileType> for FileType {
     Deserialize,
     Serialize
 )]
-pub struct User<'a> {
-    pub name: Cow<'a, str>,
+pub struct User {
+    pub name: String,
     // there is more information available about users, but it's not necessary
     // for the depgraph
 }
@@ -209,40 +205,39 @@ pub struct User<'a> {
     Deserialize,
     Serialize
 )]
-pub struct Group<'a> {
-    pub name: Cow<'a, str>,
+pub struct Group {
+    pub name: String,
 }
 
 #[derive(Clone, Derivative, Deserialize, Serialize)]
 #[derivative(Debug)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub struct Layer<'a> {
+pub struct Layer {
     pub(crate) label: Label,
     #[derivative(Debug = "ignore")]
-    pub(crate) graph: crate::Graph<'a>,
+    pub(crate) graph: crate::Graph,
 }
 
-impl<'a> PartialEq for Layer<'a> {
+impl PartialEq for Layer {
     fn eq(&self, other: &Self) -> bool {
         self.label == other.label
     }
 }
 
-impl<'a> Eq for Layer<'a> {}
+impl Eq for Layer {}
 
-impl<'a> Hash for Layer<'a> {
+impl Hash for Layer {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         self.label.hash(state)
     }
 }
 
-impl<'a> PartialOrd for Layer<'a> {
+impl PartialOrd for Layer {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         self.label.partial_cmp(&other.label)
     }
 }
 
-impl<'a> Ord for Layer<'a> {
+impl Ord for Layer {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.label.cmp(&other.label)
     }

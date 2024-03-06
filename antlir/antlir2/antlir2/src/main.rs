@@ -25,7 +25,7 @@ pub enum Error {
     #[error(transparent)]
     Compile(#[from] antlir2_compile::Error),
     #[error(transparent)]
-    Depgraph(#[from] antlir2_depgraph::Error<'static>),
+    Depgraph(#[from] antlir2_depgraph::Error),
     #[error("subprocess exited with {0}")]
     Subprocess(ExitStatus),
     #[error(transparent)]

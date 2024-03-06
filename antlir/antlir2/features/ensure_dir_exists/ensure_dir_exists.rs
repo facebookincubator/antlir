@@ -36,7 +36,7 @@ pub struct EnsureDirExists {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for EnsureDirExists {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Path(Path::Entry(FsEntry {
             path: self.dir.clone().into(),
             file_type: FileType::Directory,
@@ -44,7 +44,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for EnsureDirExists {
         }))])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = vec![
             Requirement::ordered(ItemKey::User(self.user.clone().into()), Validator::Exists),
             Requirement::ordered(ItemKey::Group(self.group.clone().into()), Validator::Exists),

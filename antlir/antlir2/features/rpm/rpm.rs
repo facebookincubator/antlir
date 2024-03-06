@@ -134,11 +134,11 @@ pub struct InternalOnlyOptions {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Rpm {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         Ok(Default::default())
     }
 }

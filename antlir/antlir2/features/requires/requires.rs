@@ -32,12 +32,12 @@ pub struct Requires {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Requires {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
     }
 
     #[deny(unused_variables)]
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let Self {
             files,
             users,

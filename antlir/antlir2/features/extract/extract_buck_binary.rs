@@ -74,7 +74,7 @@ pub enum LibDstPath {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractBuckBinary {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         // Intentionally provide only the direct files the user asked for,
         // because we don't want to produce conflicts with all the transitive
         // dependencies. However, we will check that any duplicated items are in
@@ -87,7 +87,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractBuckBinary
         }))])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         Ok(vec![Requirement::ordered(
             ItemKey::Path(
                 self.dst

@@ -28,11 +28,11 @@ pub struct UserMod {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for UserMod {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(Default::default())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = vec![Requirement::ordered(
             ItemKey::User(self.username.to_owned().into()),
             Validator::Exists,

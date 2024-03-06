@@ -23,24 +23,24 @@ use crate::item::ItemKey;
 use crate::Edge;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-pub enum Node<'a> {
+#[serde(rename_all = "snake_case")]
+pub enum Node {
     /// A Feature that is to be compiled in this layer.
     PendingFeature(Feature),
     /// An item provided by the parent layer or a feature in this layer.
-    Item(Item<'a>),
+    Item(Item),
     /// An item that is required by a feature, but does not exist in the graph.
     /// Distinct from a [Node::Item] without any [Edge::Provides] edges because
     /// not enough information is known about missing dependencies to construct
     /// the full [Item].
-    MissingItem(ItemKey<'a>),
+    MissingItem(ItemKey),
     /// A Feature that was provided by a layer in the parent chain.
     ParentFeature(Feature),
     /// Root node, starting point for image build
     Root(()),
 }
 
-impl<'a> Node<'a> {
+impl Node {
     pub(crate) fn as_feature(&self) -> Option<&Feature> {
         match &self {
             Self::PendingFeature(f) | Self::ParentFeature(f) => Some(f),
@@ -51,22 +51,22 @@ impl<'a> Node<'a> {
 
 #[derive(Serialize, Deserialize)]
 #[serde(transparent)]
-pub(crate) struct TypedNodeIndex<'a, N>(NodeIndex<DefaultIx>, PhantomData<&'a N>)
+pub(crate) struct TypedNodeIndex<N>(NodeIndex<DefaultIx>, PhantomData<N>)
 where
-    N: NodeMapper<'a>;
+    N: NodeMapper;
 
-impl<'a, N> TypedNodeIndex<'a, N>
+impl<N> TypedNodeIndex<N>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
     pub fn into_untyped(self) -> NodeIndex<DefaultIx> {
         self.0
     }
 }
 
-impl<'a, N> Deref for TypedNodeIndex<'a, N>
+impl<N> Deref for TypedNodeIndex<N>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
     type Target = NodeIndex<DefaultIx>;
 
@@ -75,88 +75,88 @@ where
     }
 }
 
-impl<'a, N> Debug for TypedNodeIndex<'a, N>
+impl<N> Debug for TypedNodeIndex<N>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         Debug::fmt(&self.0, f)
     }
 }
-impl<'a, N> Copy for TypedNodeIndex<'a, N> where N: NodeMapper<'a> {}
-impl<'a, N> Clone for TypedNodeIndex<'a, N>
+impl<N> Copy for TypedNodeIndex<N> where N: NodeMapper {}
+impl<N> Clone for TypedNodeIndex<N>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
     fn clone(&self) -> Self {
         Self(self.0, PhantomData)
     }
 }
 
-impl<'a, N> Index<TypedNodeIndex<'a, N>> for StableGraph<Node<'a>, Edge<'a>>
+impl<N> Index<TypedNodeIndex<N>> for StableGraph<Node, Edge>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
-    type Output = <N as NodeMapper<'a>>::Inner;
+    type Output = <N as NodeMapper>::Inner;
 
-    fn index(&self, index: TypedNodeIndex<'a, N>) -> &Self::Output {
+    fn index(&self, index: TypedNodeIndex<N>) -> &Self::Output {
         N::as_inner(&self[index.0]).expect("TypedNodeIndex type did not match")
     }
 }
 
-impl<'a, N> IndexMut<TypedNodeIndex<'a, N>> for StableGraph<Node<'a>, Edge<'a>>
+impl<N> IndexMut<TypedNodeIndex<N>> for StableGraph<Node, Edge>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
-    fn index_mut(&mut self, index: TypedNodeIndex<'a, N>) -> &mut Self::Output {
+    fn index_mut(&mut self, index: TypedNodeIndex<N>) -> &mut Self::Output {
         N::as_inner_mut(&mut self[index.0]).expect("TypedNodeIndex type did not match")
     }
 }
 
-pub(crate) trait GraphExt<'a, N>
+pub(crate) trait GraphExt<N>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
-    fn add_node_typed(&mut self, inner: N::Inner) -> TypedNodeIndex<'a, N>;
+    fn add_node_typed(&mut self, inner: N::Inner) -> TypedNodeIndex<N>;
 }
 
-impl<'a, N> GraphExt<'a, N> for StableGraph<Node<'a>, Edge<'a>>
+impl<N> GraphExt<N> for StableGraph<Node, Edge>
 where
-    N: NodeMapper<'a>,
+    N: NodeMapper,
 {
-    fn add_node_typed(&mut self, inner: N::Inner) -> TypedNodeIndex<'a, N> {
+    fn add_node_typed(&mut self, inner: N::Inner) -> TypedNodeIndex<N> {
         let nx = self.add_node(N::into_node(inner));
         TypedNodeIndex(nx, PhantomData)
     }
 }
 
-pub(crate) trait NodeMapper<'a> {
+pub(crate) trait NodeMapper {
     type Inner;
 
-    fn into_node(i: Self::Inner) -> Node<'a>;
-    fn as_inner<'b>(n: &'b Node<'a>) -> Option<&'b Self::Inner>;
-    fn as_inner_mut<'b>(n: &'b mut Node<'a>) -> Option<&'b mut Self::Inner>;
+    fn into_node(i: Self::Inner) -> Node;
+    fn as_inner<'b>(n: &'b Node) -> Option<&'b Self::Inner>;
+    fn as_inner_mut<'b>(n: &'b mut Node) -> Option<&'b mut Self::Inner>;
 }
 
 macro_rules! node_mapper {
     ($mapper:ident, $variant:ident, $inner:ty) => {
         pub struct $mapper;
 
-        impl<'a> NodeMapper<'a> for $mapper {
+        impl NodeMapper for $mapper {
             type Inner = $inner;
 
-            fn into_node(i: Self::Inner) -> Node<'a> {
+            fn into_node(i: Self::Inner) -> Node {
                 Node::$variant(i)
             }
 
-            fn as_inner<'b>(node: &'b Node<'a>) -> Option<&'b Self::Inner> {
+            fn as_inner<'b>(node: &'b Node) -> Option<&'b Self::Inner> {
                 match node {
                     Node::$variant(i) => Some(i),
                     _ => None,
                 }
             }
 
-            fn as_inner_mut<'b>(node: &'b mut Node<'a>) -> Option<&'b mut Self::Inner> {
+            fn as_inner_mut<'b>(node: &'b mut Node) -> Option<&'b mut Self::Inner> {
                 match node {
                     Node::$variant(i) => Some(i),
                     _ => None,
@@ -169,14 +169,14 @@ macro_rules! node_mapper {
 macro_rules! typed_node_index {
     (a, $name:ident, $mapper:ident, $variant:ident, $inner:ty) => {
         #[allow(dead_code)]
-        pub(crate) type $name<'a> = TypedNodeIndex<'a, $mapper>;
+        pub(crate) type $name = TypedNodeIndex<$mapper>;
 
         node_mapper!($mapper, $variant, $inner);
     };
 
     ($name:ident, $mapper:ident, $variant:ident, $inner:ty) => {
         #[allow(dead_code)]
-        pub(crate) type $name = TypedNodeIndex<'static, $mapper>;
+        pub(crate) type $name = TypedNodeIndex<$mapper>;
 
         node_mapper!($mapper, $variant, $inner);
     };
@@ -190,13 +190,13 @@ typed_node_index!(
     antlir2_features::Feature
 );
 
-typed_node_index!(a, ItemNodeIndex, ItemNodeIndexMapper, Item, Item<'a>);
+typed_node_index!(a, ItemNodeIndex, ItemNodeIndexMapper, Item, Item);
 typed_node_index!(
     a,
     MissingItemNodeIndex,
     MissingItemNodeIndexMapper,
     MissingItem,
-    ItemKey<'a>
+    ItemKey
 );
 
 typed_node_index!(

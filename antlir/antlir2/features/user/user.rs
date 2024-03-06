@@ -40,13 +40,13 @@ pub struct User {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for User {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::User(UserItem {
             name: self.username.to_owned().into(),
         })])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = vec![
             Requirement::unordered(
                 ItemKey::Path(self.home_dir.to_owned().into()),
