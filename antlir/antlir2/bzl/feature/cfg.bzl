@@ -9,9 +9,18 @@ dnf.
 """
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
+load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 
-def _impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
+def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     constraints = platform.configuration.constraints
+
+    if attrs.default_os:
+        constraints = os_transition(
+            default_os = attrs.default_os,
+            refs = refs,
+            constraints = constraints,
+            overwrite = False,
+        )
 
     # If there is no package manager configuration, this means we're using the
     # old-style flavor inheritance mechanism which implies dnf
@@ -29,7 +38,8 @@ def _impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
 
 feature_cfg = transition(
     impl = _impl,
+    attrs = ["default_os"],
     refs = {
         "package_manager_dnf": antlir2_dep("//antlir/antlir2/os/package_manager:dnf"),
-    },
+    } | os_transition_refs(),
 )
