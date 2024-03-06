@@ -27,14 +27,14 @@ def user_add(
     Example usage:
 
     ```
-    feature.group_add("myuser")
+    feature.group_add(groupname = "myuser")
     feature.user_add(
-        "myuser",
+        username = "myuser",
         primary_group = "myuser",
         home_dir = "/home/myuser",
     )
     feature.ensure_dirs_exist(
-        "/home/myuser",
+        dirs = "/home/myuser",
         mode = 0o755,
         user = "myuser",
         group = "myuser",
