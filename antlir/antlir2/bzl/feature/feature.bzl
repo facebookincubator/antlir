@@ -53,6 +53,7 @@ function must then be added to the `_anon_rules` map in this file.
 
 load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
+load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "MultiFeatureAnalysis")
 load("//antlir/antlir2/features/clone:clone.bzl", "clone_rule")
@@ -307,7 +308,7 @@ shared_features_attrs = {
 
 feature_rule = rule(
     impl = _impl,
-    attrs = shared_features_attrs,
+    attrs = shared_features_attrs | cfg_attrs(),
     cfg = feature_cfg,
 )
 
