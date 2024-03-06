@@ -25,10 +25,10 @@ pub(crate) struct Depgraph {
     features: Vec<JsonFile<Vec<antlir2_features::Feature>>>,
     #[clap(long = "parent")]
     /// Path to depgraph for the parent layer
-    parent: Option<JsonFile<Graph<'static>>>,
+    parent: Option<JsonFile<Graph>>,
     #[clap(long = "image-dependency")]
     /// Path to depgraphs for image dependencies
-    dependencies: Vec<JsonFile<Graph<'static>>>,
+    dependencies: Vec<JsonFile<Graph>>,
     #[clap(long)]
     /// Add dynamically built items from this built image
     add_built_items: Option<PathBuf>,

@@ -29,14 +29,14 @@ pub struct Symlink {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Path(Path::Symlink {
             link: self.link.to_owned().into(),
             target: self.target.to_owned().into(),
         })])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut requires = vec![Requirement::ordered(
             ItemKey::Path(
                 self.link

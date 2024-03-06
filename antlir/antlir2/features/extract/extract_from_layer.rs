@@ -48,7 +48,7 @@ fn ensure_usr<'a>(path: &'a Path) -> Cow<'a, Path> {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractFromLayer {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         // Intentionally provide only the direct files the user asked for,
         // because we don't want to produce conflicts with all the transitive
         // dependencies. However, we will check that any duplicated items are in
@@ -67,7 +67,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractFromLayer 
             .collect())
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         Ok(self
             .binaries
             .iter()

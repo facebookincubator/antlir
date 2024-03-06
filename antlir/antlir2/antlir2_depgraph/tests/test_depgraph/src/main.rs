@@ -21,10 +21,10 @@ struct Args {
     #[clap(long = "feature-json")]
     features: Vec<JsonFile<Vec<Feature>>>,
     #[clap(long)]
-    parent: Option<JsonFile<Graph<'static>>>,
+    parent: Option<JsonFile<Graph>>,
     #[clap(long = "image-dependency")]
     /// Path to depgraphs for image dependencies
-    dependencies: Vec<JsonFile<Graph<'static>>>,
+    dependencies: Vec<JsonFile<Graph>>,
     #[clap(long)]
     error_regex: Regex,
 }

@@ -92,7 +92,7 @@ struct CompileishExternal {
     pub(crate) target_arch: Arch,
     #[clap(long = "depgraph-json")]
     /// Path to input depgraph json file with features to include in this image
-    pub(crate) depgraph: JsonFile<Graph<'static>>,
+    pub(crate) depgraph: JsonFile<Graph>,
     #[clap(long = "image-dependency")]
     pub(crate) image_dependencies: Vec<PathBuf>,
 }

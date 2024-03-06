@@ -29,13 +29,13 @@ pub struct Group {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Group {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Group(GroupItem {
             name: self.groupname.to_owned().into(),
         })])
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         Ok(vec![Requirement::ordered(
             ItemKey::Path(std::path::Path::new("/etc/group").into()),
             Validator::Exists,

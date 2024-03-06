@@ -173,7 +173,7 @@ impl<'de> Deserialize<'de> for XattrValue {
 }
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
-    fn provides(&self) -> Result<Vec<Item<'static>>, String> {
+    fn provides(&self) -> Result<Vec<Item>, String> {
         if self.is_dir() {
             let mut v = vec![Item::Path(PathItem::Entry(FsEntry {
                 path: self.dst.to_owned().into(),
@@ -266,7 +266,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
         }
     }
 
-    fn requires(&self) -> Result<Vec<Requirement<'static>>, String> {
+    fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut requires = vec![
             Requirement::ordered(
                 ItemKey::User(self.user.to_owned().into()),

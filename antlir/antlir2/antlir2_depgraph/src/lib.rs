@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
 use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::collections::HashSet;
@@ -39,13 +38,12 @@ use node::GraphExt;
 pub use node::Node;
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'a"))]
-pub enum Edge<'a> {
+pub enum Edge {
     /// This feature provides an item
     Provides,
     /// This feature requires a provided item, and requires additional
     /// validation
-    Requires(Validator<'a>),
+    Requires(Validator),
     /// Simple ordering edge that does not require any additional checks
     After,
 }
@@ -64,26 +62,23 @@ impl Display for Cycle {
 }
 
 #[derive(Debug, Clone, thiserror::Error, PartialEq, Eq, Deserialize, Serialize)]
-#[serde(rename_all = "snake_case", bound(deserialize = "'de: 'a"))]
-pub enum Error<'a> {
+#[serde(rename_all = "snake_case")]
+pub enum Error {
     #[error("cycle in dependency graph:\n{0}")]
     Cycle(Cycle),
     #[error("{item:?} is provided by multiple features: {features:#?}")]
     Conflict {
-        item: Item<'a>,
+        item: Item,
         features: BTreeSet<Feature>,
     },
     #[error("{key:?} is required by {required_by:#?} but was never provided")]
-    MissingItem {
-        key: ItemKey<'a>,
-        required_by: Feature,
-    },
+    MissingItem { key: ItemKey, required_by: Feature },
     #[error(
         "{item:?} does not satisfy the validation rules: {validator:?} as required by {required_by:#?}"
     )]
     Unsatisfied {
-        item: Item<'a>,
-        validator: Validator<'a>,
+        item: Item,
+        validator: Validator,
         required_by: Feature,
     },
     #[error("failure determining 'provides': {0}")]
@@ -92,19 +87,19 @@ pub enum Error<'a> {
     Requires(String),
 }
 
-pub type Result<'a, T> = std::result::Result<T, Error<'a>>;
+pub type Result<T> = std::result::Result<T, Error>;
 
 #[derive(Debug)]
-pub struct GraphBuilder<'a> {
-    g: StableGraph<Node<'a>, Edge<'a>, Directed, DefaultIx>,
+pub struct GraphBuilder {
+    g: StableGraph<Node, Edge, Directed, DefaultIx>,
     root: node::RootNodeIndex,
-    pending_features: Vec<node::PendingFeatureNodeIndex<'a>>,
-    items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
+    pending_features: Vec<node::PendingFeatureNodeIndex>,
+    items: HashMap<ItemKey, node::ItemNodeIndex>,
     label: Label,
 }
 
-impl<'a> GraphBuilder<'a> {
-    pub fn new(label: Label, parent: Option<Graph<'a>>) -> Self {
+impl GraphBuilder {
+    pub fn new(label: Label, parent: Option<Graph>) -> Self {
         let mut g = StableGraph::new();
         let mut items = HashMap::new();
 
@@ -163,7 +158,7 @@ impl<'a> GraphBuilder<'a> {
         s
     }
 
-    fn item(&self, key: &ItemKey<'_>) -> Option<node::ItemNodeIndex<'a>> {
+    fn item(&self, key: &ItemKey) -> Option<node::ItemNodeIndex> {
         match self.items.get(key) {
             Some(i) => Some(*i),
             None => {
@@ -171,7 +166,7 @@ impl<'a> GraphBuilder<'a> {
                     // if any of the ancestor directory paths are actually
                     // symlinks, resolve them
                     for ancestor in path.ancestors().skip(1) {
-                        if let Some(nx) = self.items.get(&ItemKey::Path(Cow::Borrowed(ancestor))) {
+                        if let Some(nx) = self.items.get(&ItemKey::Path(ancestor.into())) {
                             if let Item::Path(item::Path::Symlink { target, link }) = &self.g[*nx] {
                                 // target may be a relative path, in which
                                 // case we need to resolve it relative to
@@ -199,7 +194,7 @@ impl<'a> GraphBuilder<'a> {
         }
     }
 
-    fn add_item(&mut self, item: Item<'a>) -> node::ItemNodeIndex<'a> {
+    fn add_item(&mut self, item: Item) -> node::ItemNodeIndex {
         let key = item.key();
         *self
             .items
@@ -207,7 +202,7 @@ impl<'a> GraphBuilder<'a> {
             .or_insert_with(|| self.g.add_node_typed(item))
     }
 
-    pub fn add_layer_dependency(&mut self, graph: Graph<'a>) -> &mut Self {
+    pub fn add_layer_dependency(&mut self, graph: Graph) -> &mut Self {
         self.add_item(Item::Layer(item::Layer {
             label: graph.label().clone(),
             graph,
@@ -225,7 +220,7 @@ impl<'a> GraphBuilder<'a> {
         self
     }
 
-    pub fn build(mut self) -> Result<'a, Graph<'a>> {
+    pub fn build(mut self) -> Result<Graph> {
         // Add all the nodes provided by our pending features
         for feature_nx in self.pending_features.clone() {
             let f = &self.g[feature_nx];
@@ -500,18 +495,17 @@ impl<'a> GraphBuilder<'a> {
 
 #[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct Graph<'a> {
+pub struct Graph {
     label: Label,
-    #[serde(borrow)]
-    g: StableGraph<Node<'a>, Edge<'a>>,
+    g: StableGraph<Node, Edge>,
     root: node::RootNodeIndex,
     #[serde_as(as = "Vec<(_, _)>")]
-    items: HashMap<ItemKey<'a>, node::ItemNodeIndex<'a>>,
+    items: HashMap<ItemKey, node::ItemNodeIndex>,
     topo: Vec<NodeIndex<DefaultIx>>,
 }
 
-impl<'a> Graph<'a> {
-    pub fn builder(label: Label, parent: Option<Self>) -> GraphBuilder<'a> {
+impl Graph {
+    pub fn builder(label: Label, parent: Option<Self>) -> GraphBuilder {
         GraphBuilder::new(label, parent)
     }
 
@@ -534,14 +528,14 @@ impl<'a> Graph<'a> {
         })
     }
 
-    pub fn get_item(&self, key: &ItemKey<'_>) -> Option<&Item<'a>> {
+    pub fn get_item(&self, key: &ItemKey) -> Option<&Item> {
         match self.items.get(key) {
             Some(nx) => Some(&self.g[*nx]),
             None => None,
         }
     }
 
-    pub fn items_keys(&self) -> impl Iterator<Item = &ItemKey<'_>> {
+    pub fn items_keys(&self) -> impl Iterator<Item = &ItemKey> {
         self.items.keys()
     }
 
@@ -582,7 +576,7 @@ impl<'a> Graph<'a> {
         self.g.retain_nodes(|graph, nx| match &graph[nx] {
             Node::Item(item) => {
                 if let ItemKey::Path(p) = item.key() {
-                    seen_paths.contains(p.as_ref())
+                    seen_paths.contains(p.as_path())
                 } else {
                     true
                 }
@@ -590,7 +584,7 @@ impl<'a> Graph<'a> {
             _ => true,
         });
         self.items.retain(|key, _val| match key {
-            ItemKey::Path(p) => seen_paths.contains(p.as_ref()),
+            ItemKey::Path(p) => seen_paths.contains(p.as_path()),
             _ => true,
         });
 
@@ -604,11 +598,11 @@ impl<'a> Graph<'a> {
         };
         for user in passwd.into_records() {
             if let std::collections::hash_map::Entry::Vacant(e) =
-                self.items.entry(ItemKey::User(user.name.clone()))
+                self.items.entry(ItemKey::User(user.name.clone().into()))
             {
-                let nx = self
-                    .g
-                    .add_node_typed(Item::User(item::User { name: user.name }));
+                let nx = self.g.add_node_typed(Item::User(item::User {
+                    name: user.name.into(),
+                }));
                 e.insert(nx);
             }
         }
@@ -622,11 +616,11 @@ impl<'a> Graph<'a> {
         };
         for group in groups.into_records() {
             if let std::collections::hash_map::Entry::Vacant(e) =
-                self.items.entry(ItemKey::Group(group.name.clone()))
+                self.items.entry(ItemKey::Group(group.name.clone().into()))
             {
-                let nx = self
-                    .g
-                    .add_node_typed(Item::Group(item::Group { name: group.name }));
+                let nx = self.g.add_node_typed(Item::Group(item::Group {
+                    name: group.name.into(),
+                }));
                 e.insert(nx);
             }
         }
