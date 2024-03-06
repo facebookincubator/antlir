@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
@@ -133,15 +132,7 @@ _prebuilt_macro = rule_with_default_target_platform(_prebuilt)
 
 def prebuilt(*args, **kwargs):
     labels = kwargs.pop("labels", [])
-
-    # To be perfectly correct, we really should add this on all layer targets,
-    # but in practice we've only ever put it on the build appliance layers since
-    # they are required for all image builds, and uses_sudo is infectious
-    labels = selects.apply(labels, lambda labels: labels + select({
-        "//antlir/antlir2/antlir2_rootless:rooted": ["uses_sudo"],
-        "//antlir/antlir2/antlir2_rootless:rootless": [],
-        "DEFAULT": ["uses_sudo"],
-    }))
+    labels.append("uses_sudo")
     kwargs["labels"] = labels
     _prebuilt_macro(
         *args,
