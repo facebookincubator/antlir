@@ -303,7 +303,7 @@ good_depgraph(
 
 bad_depgraph(
     name = "clone-conflict-inside-dir",
-    error_regex = "^Path\\(Entry\\(FsEntry \\{ path: \"/cloned/foo\", file_type: File, mode: 292 \\}\\)\\) is provided by multiple features",
+    error_regex = "^Path\\(Entry\\(FsEntry \\{ path: \"/cloned/foo\", file_type: File, mode: 33060 \\}\\)\\) is provided by multiple features",
     features = [
         feature.ensure_dirs_exist(dirs = "/cloned"),
         feature.clone(
