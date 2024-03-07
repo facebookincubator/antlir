@@ -6,7 +6,6 @@ rust_library(
     name = "antlir2_depgraph",
     srcs = glob(["src/**/*.rs"]),
     deps = [
-        "derivative",
         "itertools",
         "libloading",
         "nix",

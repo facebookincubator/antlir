@@ -53,7 +53,7 @@ fn populate(db: &mut RwDatabase, root: &Path, build_appliance: Option<&Path>) ->
 }
 
 fn populate_files(db: &mut RwDatabase, root: &Path) -> Result<()> {
-    for entry in WalkDir::new(root) {
+    for entry in WalkDir::new(root).skip_hidden(false) {
         let entry = entry?;
         let full_path = entry.path();
         let relpath = full_path

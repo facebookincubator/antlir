@@ -79,11 +79,6 @@ pub enum Validator {
     FileType(FileType),
     /// Asserts an [Item] is an executable file.
     Executable,
-    /// Assert that an [ItemKey] within another layer matches some [Validator]
-    ItemInLayer {
-        key: ItemKey,
-        validator: Box<Validator>,
-    },
 }
 
 impl Validator {
@@ -109,13 +104,6 @@ impl Validator {
                     (e.file_type == FileType::File)
                         && (mode.intersects(Mode::S_IXUSR | Mode::S_IXGRP | Mode::S_IXOTH))
                 }
-                _ => false,
-            },
-            Self::ItemInLayer { key, validator } => match item {
-                Item::Layer(layer) => match layer.graph.get_item(key) {
-                    Some(item_in_layer) => validator.satisfies(item_in_layer),
-                    None => &Self::DoesNotExist == validator.as_ref(),
-                },
                 _ => false,
             },
         }

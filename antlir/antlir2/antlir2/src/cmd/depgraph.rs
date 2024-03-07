@@ -26,9 +26,6 @@ pub(crate) struct Depgraph {
     #[clap(long = "parent")]
     /// Path to depgraph for the parent layer
     parent: Option<JsonFile<Graph>>,
-    #[clap(long = "image-dependency")]
-    /// Path to depgraphs for image dependencies
-    dependencies: Vec<JsonFile<Graph>>,
     #[clap(long)]
     /// Add dynamically built items from this built image
     add_built_items: Option<PathBuf>,
@@ -57,9 +54,6 @@ impl Depgraph {
             for f in features.into_inner() {
                 depgraph.add_feature(f);
             }
-        }
-        for dep in self.dependencies {
-            depgraph.add_layer_dependency(dep.into_inner());
         }
         let mut depgraph = depgraph.build()?;
         if let Some(dir) = &self.add_built_items {

@@ -93,7 +93,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         parent_depgraph = None,
         features_json = None,
         subvol = subvol_symlink,
-        dependency_layers = [],
         rootless = ctx.attrs._rootless,
     )
 

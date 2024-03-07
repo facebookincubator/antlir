@@ -294,16 +294,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             with_inputs = True,
         )
 
-        # Features in this phase may depend on other image layers, or may
-        # require artifacts to be materialized on disk.
-        # Layers are deduped because it can accidentaly trigger some expensive
-        # work if the same layer is passed many times as cli args
-        dependency_layers = []
-        for feat in features:
-            for layer in feat.analysis.required_layers:
-                if layer not in dependency_layers:
-                    dependency_layers.append(layer)
-
         # deps that are needed for compiling the features, but not for depgraph
         # analysis, so are not included in `features_json`
         compile_feature_hidden_deps = [
@@ -313,7 +303,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         depgraph_input = build_depgraph(
             ctx = ctx,
-            dependency_layers = dependency_layers,
             features_json = features_json,
             identifier_prefix = identifier_prefix,
             parent_depgraph = parent_depgraph,
@@ -326,7 +315,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         compileish_args = cmd_args(
             cmd_args(target_arch, format = "--target-arch={}"),
             cmd_args(depgraph_input, format = "--depgraph-json={}"),
-            cmd_args([li.depgraph for li in dependency_layers], format = "--image-dependency={}"),
         )
 
         if lazy.any(lambda feat: feat.analysis.requires_planning, features):
@@ -423,7 +411,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
         final_depgraph = build_depgraph(
             ctx = ctx,
-            dependency_layers = dependency_layers,
             features_json = None,
             identifier_prefix = identifier_prefix,
             parent_depgraph = depgraph_input,
@@ -490,7 +477,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     if not final_depgraph:
         final_depgraph = build_depgraph(
             ctx = ctx,
-            dependency_layers = [],
             features_json = None,
             identifier_prefix = "empty_layer_",
             parent_depgraph = parent_depgraph,

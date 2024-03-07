@@ -54,19 +54,7 @@ pub struct CloneUserGroup {
 
 impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
     fn requires(&self) -> Result<Vec<Requirement>, String> {
-        let mut v = vec![Requirement::ordered(
-            ItemKey::Layer(self.src_layer.label.to_owned()),
-            Validator::ItemInLayer {
-                key: ItemKey::Path(self.src_path.to_owned()),
-                validator: Box::new(if self.omit_outer_dir {
-                    Validator::FileType(FileType::Directory)
-                } else {
-                    // If 'omit_outer_dir' is false, it doesn't matter if
-                    // src_path is a file or directory, just that it exists
-                    Validator::Exists
-                }),
-            },
-        )];
+        let mut v = Vec::new();
         if self.pre_existing_dest {
             v.push(Requirement::ordered(
                 ItemKey::Path(self.dst_path.to_owned()),
@@ -83,6 +71,44 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                 Validator::FileType(FileType::Directory),
             ));
         }
+        let src_facts =
+            antlir2_facts::RoDatabase::open(&self.src_layer.facts_db, Default::default())
+                .context("while opening src_layer facts db")
+                .map_err(|e| format!("{e:#?}"))?;
+
+        let root_lookup = self
+            .src_path
+            .to_str()
+            .expect("all our paths are utf8")
+            .trim_end_matches('/');
+        let root_lookup = if root_lookup.is_empty() {
+            "/"
+        } else {
+            root_lookup
+        };
+        if let Some(root) = src_facts
+            .get::<DirEntry>(DirEntry::key(Path::new(root_lookup)))
+            .with_context(|| format!("while looking up src path '{}'", self.src_path.display()))
+            .map_err(|e| format!("{e:#?}"))?
+        {
+            // If 'omit_outer_dir' is false, it doesn't matter if src_path is a
+            // file or directory, just that it exists
+            if self.omit_outer_dir {
+                if !matches!(root, DirEntry::Directory(_)) {
+                    return Err(format!(
+                        "src path '{}' is a file, but omit_outer_dir is true so it should be a directory",
+                        self.src_path.display()
+                    ));
+                }
+            }
+        } else {
+            return Err(format!(
+                "src path '{}' does not exist in {}",
+                self.src_path.display(),
+                self.src_layer.label,
+            ));
+        }
+
         if let Some(usergroup) = &self.usergroup {
             v.push(Requirement::ordered(
                 ItemKey::User(usergroup.user.clone()),
@@ -93,10 +119,6 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                 Validator::Exists,
             ));
         } else {
-            let src_facts =
-                antlir2_facts::RoDatabase::open(&self.src_layer.facts_db, Default::default())
-                    .context("while opening src_layer facts db")
-                    .map_err(|e| format!("{e:#?}"))?;
             // Files we clone will usually be owned by root:root, but not always! To
             // be safe we have to make sure that all discovered users and groups
             // exist in this destination layer

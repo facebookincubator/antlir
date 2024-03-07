@@ -107,24 +107,15 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Mount {
     }
 
     fn requires(&self) -> Result<Vec<Requirement>, String> {
-        let mut v = vec![Requirement::ordered(
+        Ok(vec![Requirement::ordered(
             ItemKey::Path(
                 self.mountpoint()
                     .parent()
                     .unwrap_or(std::path::Path::new("/"))
-                    .to_owned()
-                    .into(),
+                    .to_owned(),
             ),
             Validator::FileType(FileType::Directory),
-        )];
-        match self {
-            Self::Layer(l) => v.push(Requirement::ordered(
-                ItemKey::Layer(l.src.label.to_owned()),
-                Validator::Exists,
-            )),
-            Self::Host(_) => (),
-        }
-        Ok(v)
+        )])
     }
 }
 

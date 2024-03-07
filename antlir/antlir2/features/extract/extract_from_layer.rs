@@ -59,7 +59,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractFromLayer 
             .iter()
             .map(|path| {
                 Item::Path(PathItem::Entry(FsEntry {
-                    path: path.to_owned().into(),
+                    path: path.to_owned(),
                     file_type: FileType::File,
                     mode: 0o555,
                 }))
@@ -72,28 +72,10 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractFromLayer 
             .binaries
             .iter()
             .flat_map(|path| {
-                vec![
-                    Requirement::ordered(
-                        ItemKey::Layer(self.layer.label.to_owned()),
-                        Validator::ItemInLayer {
-                            key: ItemKey::Path(path.to_owned().into()),
-                            // TODO(T153458901): for correctness, this
-                            // should be Validator::Executable, but some
-                            // depgraph validation is currently buggy and
-                            // produces false negatives
-                            validator: Box::new(Validator::Exists),
-                        },
-                    ),
-                    Requirement::ordered(
-                        ItemKey::Path(
-                            path.parent()
-                                .expect("dst always has parent")
-                                .to_owned()
-                                .into(),
-                        ),
-                        Validator::FileType(FileType::Directory),
-                    ),
-                ]
+                vec![Requirement::ordered(
+                    ItemKey::Path(path.parent().expect("dst always has parent").to_owned()),
+                    Validator::FileType(FileType::Directory),
+                )]
             })
             .collect())
     }
