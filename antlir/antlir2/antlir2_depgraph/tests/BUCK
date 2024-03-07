@@ -265,7 +265,7 @@ bad_depgraph(
 
 bad_depgraph(
     name = "clone-with-missing-src",
-    error_regex = "does not satisfy the validation rules: ItemInLayer \\{ key: Path\\(\"/bar\"\\), validator: Exists \\}",
+    error_regex = "src path '/bar' does not exist",
     features = [
         feature.ensure_dirs_exist(dirs = "/cloned"),
         feature.clone(

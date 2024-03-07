@@ -22,9 +22,6 @@ struct Args {
     features: Vec<JsonFile<Vec<Feature>>>,
     #[clap(long)]
     parent: Option<JsonFile<Graph>>,
-    #[clap(long = "image-dependency")]
-    /// Path to depgraphs for image dependencies
-    dependencies: Vec<JsonFile<Graph>>,
     #[clap(long)]
     error_regex: Regex,
 }
@@ -35,9 +32,6 @@ fn main() -> Result<()> {
     for feature in args.features.into_iter().flat_map(JsonFile::into_inner) {
         eprintln!("adding feature {feature:?}");
         builder.add_feature(feature);
-    }
-    for dep in args.dependencies {
-        builder.add_layer_dependency(dep.into_inner());
     }
     let result = builder.build();
     match result {

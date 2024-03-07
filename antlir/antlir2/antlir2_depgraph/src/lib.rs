@@ -202,14 +202,6 @@ impl GraphBuilder {
             .or_insert_with(|| self.g.add_node_typed(item))
     }
 
-    pub fn add_layer_dependency(&mut self, graph: Graph) -> &mut Self {
-        self.add_item(Item::Layer(item::Layer {
-            label: graph.label().clone(),
-            graph,
-        }));
-        self
-    }
-
     pub fn add_feature(&mut self, feature: Feature) -> &mut Self {
         let feature_nx = self.g.add_node_typed(feature);
 
@@ -526,17 +518,6 @@ impl Graph {
             Node::PendingFeature(f) => Some(f),
             _ => None,
         })
-    }
-
-    pub fn get_item(&self, key: &ItemKey) -> Option<&Item> {
-        match self.items.get(key) {
-            Some(nx) => Some(&self.g[*nx]),
-            None => None,
-        }
-    }
-
-    pub fn items_keys(&self) -> impl Iterator<Item = &ItemKey> {
-        self.items.keys()
     }
 
     /// There are many image features that produce items that we cannot

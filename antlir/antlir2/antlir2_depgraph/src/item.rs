@@ -9,8 +9,6 @@ use std::hash::Hash;
 use std::os::unix::fs::FileTypeExt;
 use std::path::PathBuf;
 
-use buck_label::Label;
-use derivative::Derivative;
 use nix::sys::stat::SFlag;
 use serde::Deserialize;
 use serde::Serialize;
@@ -33,11 +31,6 @@ pub enum Item {
     Path(Path),
     User(User),
     Group(Group),
-    /// A complete graph from a dependent layer. Note that items from the chain
-    /// of parent layers will appear in this graph, and this is for things like
-    /// [antlir2_features::Clone] that have dependencies on (potentially) completely
-    /// disconnected layers.
-    Layer(Layer),
 }
 
 #[derive(
@@ -56,7 +49,6 @@ pub enum ItemKey {
     Path(PathBuf),
     User(String),
     Group(String),
-    Layer(Label),
 }
 
 impl Item {
@@ -69,7 +61,6 @@ impl Item {
             },
             Self::User(u) => ItemKey::User(u.name.clone()),
             Self::Group(g) => ItemKey::Group(g.name.clone()),
-            Self::Layer(l) => ItemKey::Layer(l.label.clone()),
         }
     }
 }
@@ -231,38 +222,4 @@ pub struct User {
 )]
 pub struct Group {
     pub name: String,
-}
-
-#[derive(Clone, Derivative, Deserialize, Serialize)]
-#[derivative(Debug)]
-pub struct Layer {
-    pub(crate) label: Label,
-    #[derivative(Debug = "ignore")]
-    pub(crate) graph: crate::Graph,
-}
-
-impl PartialEq for Layer {
-    fn eq(&self, other: &Self) -> bool {
-        self.label == other.label
-    }
-}
-
-impl Eq for Layer {}
-
-impl Hash for Layer {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.label.hash(state)
-    }
-}
-
-impl PartialOrd for Layer {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.label.partial_cmp(&other.label)
-    }
-}
-
-impl Ord for Layer {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.label.cmp(&other.label)
-    }
 }

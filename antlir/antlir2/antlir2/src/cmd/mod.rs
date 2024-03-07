@@ -93,8 +93,6 @@ struct CompileishExternal {
     #[clap(long = "depgraph-json")]
     /// Path to input depgraph json file with features to include in this image
     pub(crate) depgraph: JsonFile<Graph>,
-    #[clap(long = "image-dependency")]
-    pub(crate) image_dependencies: Vec<PathBuf>,
 }
 
 impl Compileish {

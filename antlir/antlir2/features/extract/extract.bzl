@@ -127,7 +127,6 @@ def _extract_from_layer_impl(ctx: AnalysisContext) -> list[Provider]:
                 layer = layer_dep_analyze(ctx.attrs.layer),
                 binaries = ctx.attrs.binaries,
             ),
-            required_layers = [ctx.attrs.layer[LayerInfo]],
             plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
     ]
