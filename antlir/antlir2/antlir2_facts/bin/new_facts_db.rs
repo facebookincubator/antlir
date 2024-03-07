@@ -37,14 +37,14 @@ struct Args {
     #[clap(long)]
     root: PathBuf,
     #[clap(long)]
-    build_appliance: PathBuf,
+    build_appliance: Option<PathBuf>,
     #[clap(long)]
     db: PathBuf,
     #[clap(long)]
     rootless: bool,
 }
 
-fn populate(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Result<()> {
+fn populate(db: &mut RwDatabase, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
     let root = root.canonicalize().context("while canonicalizing root")?;
     populate_files(db, &root)?;
     populate_usergroups(db, &root)?;
@@ -128,43 +128,60 @@ macro_rules! decode_rpm_field {
     };
 }
 
-fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: &Path) -> Result<()> {
-    let isol = unshare(
-        IsolationContext::builder(build_appliance)
-            .ephemeral(false)
-            .inputs(("/__antlir2__/root", root))
-            .working_directory(Path::new("/"))
-            .build(),
-    )
-    .context("while preparing rpm unshare")?;
-    let out = isol
-        .command("rpm")?
-        .arg("--root")
-        .arg("/__antlir2__/root")
-        .arg("-E")
-        .arg("%{_dbpath}")
-        .output()
-        .context("while getting rpm db path")?;
-    let out = std::str::from_utf8(&out.stdout).context("while decoding rpm db path")?;
-    let dbpath = Path::new(out.trim());
-    if !root
-        .join(dbpath.strip_prefix("/").unwrap_or(dbpath))
-        .exists()
-    {
-        warn!("rpm db does not exist in image {}", root.display());
-        return Ok(());
-    }
-    let out = isol
-        .command("rpm")?
-        .arg("--root")
-        .arg("/__antlir2__/root")
+fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
+    let mut list_cmd = match build_appliance {
+        Some(build_appliance) => {
+            let isol = unshare(
+                IsolationContext::builder(build_appliance)
+                    .ephemeral(false)
+                    .inputs(("/__antlir2__/root", root))
+                    .working_directory(Path::new("/"))
+                    .build(),
+            )
+            .context("while preparing rpm unshare")?;
+            let out = isol
+                .command("rpm")?
+                .arg("--root")
+                .arg("/__antlir2__/root")
+                .arg("-E")
+                .arg("%{_dbpath}")
+                .output()
+                .context("while getting rpm db path")?;
+            let out = std::str::from_utf8(&out.stdout).context("while decoding rpm db path")?;
+            let dbpath = Path::new(out.trim());
+            if !root
+                .join(dbpath.strip_prefix("/").unwrap_or(dbpath))
+                .exists()
+            {
+                warn!("rpm db does not exist in image {}", root.display());
+                return Ok(());
+            }
+            let mut cmd = isol.command("rpm")?;
+            cmd.arg("--root").arg("/__antlir2__/root");
+            cmd
+        }
+        None => {
+            let isol = unshare(
+                IsolationContext::builder(root)
+                    .ephemeral(false)
+                    .working_directory(Path::new("/"))
+                    .build(),
+            )
+            .context("while preparing rpm unshare")?;
+            isol.command("rpm")?
+        }
+    };
+    let out = list_cmd
         .arg("-qa")
         .arg("--queryformat")
         .arg(OsStr::from_bytes(
             b"%{NAME}\xff%{EPOCH}\xff%{VERSION}\xff%{RELEASE}\xff%{ARCH}\xff%{CHANGELOGTEXT}\xff%{OS}\xff%{SIZE}\xff%{SOURCERPM}\xff",
         ))
-        .output()
-        .context("while querying installed rpms")?;
+        .output();
+    if matches!(out, Err(ref e) if e.kind() == ErrorKind::NotFound) {
+        return Ok(Default::default());
+    }
+    let out = out.context("while querying installed rpms")?;
     ensure!(
         out.status.success(),
         "rpm -qa failed: {}",
@@ -241,7 +258,7 @@ fn main() -> Result<()> {
     let gid = nix::unistd::Gid::effective().as_raw();
 
     let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-    populate(&mut db, &args.root, &args.build_appliance)?;
+    populate(&mut db, &args.root, args.build_appliance.as_deref())?;
 
     // make sure all the output files are owned by the unprivileged user
     for entry in jwalk::WalkDir::new(&args.db) {
