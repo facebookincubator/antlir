@@ -6,8 +6,8 @@
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 
 REFLINK_FLAVORS = {
-    "centos8": "//antlir/antlir2/facebook/images/build_appliance/centos8:rpm2extents",
-    "centos9": "//antlir/antlir2/facebook/images/build_appliance/centos9:rpm2extents",
+    # @oss-disable
+    # @oss-disable
 }
 
 def rpm2extents(

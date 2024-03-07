@@ -220,17 +220,25 @@ def _rust_library(*, name: str, **kwargs):
     kwargs.pop("autocargo", None)
     _wrap_internal(native.rust_library, [], kwargs)
 
-def _rust_bindgen_library(*args, **kwargs):
+def _rust_bindgen_library(name: str, **kwargs):
+    native.alias(
+        name = name,
+        actual = "//antlir:empty",
+    )
     print("TODO: rust_bindgen_library")
 
-def _rust_python_extension(*args, **kwargs):
+def _rust_python_extension(name: str, **kwargs):
+    native.alias(
+        name = name,
+        actual = "//antlir:empty",
+    )
     print("TODO: rust_python_extension")
 
 def _thrift_library(**kwargs):
     fail("not implemented")
 
 def _get_antlir_cell_name():
-    return "fbcode"
+    return "antlir"
 
 # TODO(vmagro): delete this
 def _get_default_flavor():

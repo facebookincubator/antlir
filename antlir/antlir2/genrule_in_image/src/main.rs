@@ -41,12 +41,8 @@ fn main() -> Result<()> {
 
     let mut builder = IsolationContext::builder(&args.layer);
     builder.ephemeral(false);
-    builder.platform([
-        #[cfg(facebook)]
-        "/usr/local/fbcode",
-        #[cfg(facebook)]
-        "/mnt/gvfs",
-    ]);
+    #[cfg(facebook)]
+    builder.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
     let cwd = std::env::current_dir()?;
     builder
         .inputs((

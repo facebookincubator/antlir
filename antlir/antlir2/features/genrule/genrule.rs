@@ -81,12 +81,8 @@ impl antlir2_compile::CompileFeature for Genrule {
                 false => InvocationType::Pid2Pipe,
             });
         if self.mount_platform {
-            isol.platform([
-                #[cfg(facebook)]
-                "/usr/local/fbcode",
-                #[cfg(facebook)]
-                "/mnt/gvfs",
-            ]);
+            #[cfg(facebook)]
+            isol.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
         }
         if self.bind_repo_ro {
             isol.inputs(cwd.as_path()).working_directory(&cwd);

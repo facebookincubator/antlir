@@ -1,5 +1,5 @@
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
-load("//antlir/bzl:build_defs.bzl", "alias")
+load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
 
 oncall("antlir")
 
@@ -16,16 +16,16 @@ _base_deps = [
 alias(
     name = "no-setcap",
     actual = "ovr_config//build_mode:arvr_mode",
-)
+) if is_facebook else None
 
 feature_impl(
     name = "install",
     features = select({
-        ":no-setcap": [],
+        # @oss-disable
         "DEFAULT": ["setcap"],
     }),
     deps = select({
-        ":no-setcap": _base_deps,
+        # @oss-disable
         "DEFAULT": _base_deps + ["//antlir/antlir2/libcap:libcap"],
     }),
 )
