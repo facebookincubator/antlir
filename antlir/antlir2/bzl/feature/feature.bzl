@@ -304,6 +304,7 @@ shared_features_attrs = {
         ),
         default = {},
     ),
+    "labels": attrs.list(attrs.string(), default = []),
 }
 
 feature_rule = rule(
@@ -412,7 +413,7 @@ def feature(
     return feature_rule(
         name = name,
         visibility = visibility,
-        **attrs
+        **kwargs
     )
 
 # We need a way to disambiguate inline features so that deps/sources can be
