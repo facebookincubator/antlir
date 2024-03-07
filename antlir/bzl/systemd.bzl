@@ -3,12 +3,12 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_skylib//lib:types.bzl", "types")
+load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load(":build_defs.bzl", "target_utils")
 load(":shape.bzl", "shape")
 load(":systemd.shape.bzl", "mount_t", "unit_t")
+load(":types.bzl", "types")
 
 USER_PROVIDER_ROOT = "/usr/lib/systemd/user"
 PROVIDER_ROOT = "/usr/lib/systemd/system"

@@ -3,11 +3,10 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:new_sets.bzl", "sets")
-load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", antlir2_feature = "feature")
 
-DEFAULT_APPLETS = sets.make([
+DEFAULT_APPLETS = [
     "basename",
     "blkid",
     "blockdev",
@@ -100,9 +99,14 @@ DEFAULT_APPLETS = sets.make([
     "xargs",
     "xxd",
     "yes",
-])
+]
 
-def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/usr/sbin/busybox"):
+def _install(
+        *,
+        src,
+        applets: list[str] = DEFAULT_APPLETS,
+        install_dir = "/usr/bin",
+        src_path = "/usr/sbin/busybox"):
     """
     Generate features to install a statically linked `busybox` binary
     from the supplied `src` layer into an `install_dir` (default `/usr/bin`)
@@ -110,7 +114,6 @@ def _install(src, applets = None, install_dir = "/usr/bin", src_path = "/usr/sbi
 
     The `src` layer must have the `busybox` binary installed at the path `/busybox`.
     """
-    applets = sets.to_list(applets or DEFAULT_APPLETS)
     return [
         antlir2_feature.clone(
             src_layer = src,

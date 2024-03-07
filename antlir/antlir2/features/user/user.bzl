@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
 load("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists.bzl", "ensure_subdirs_exist")

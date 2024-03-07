@@ -3,7 +3,6 @@ antlir = .
 prelude = prelude
 toolchains = toolchains
 none = none
-bazel_skylib = third-party/bazel-skylib
 
 [repository_aliases]
 config = prelude

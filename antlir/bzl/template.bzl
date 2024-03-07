@@ -3,9 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
-load("@bazel_skylib//lib:shell.bzl", "shell")
+load("@prelude//:paths.bzl", "paths")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "get_visibility", "python_binary", "python_library")
+load(":shell.bzl", "shell")
 
 def template(
         name,

@@ -92,6 +92,6 @@ starlark_unittest(
     srcs = ["test_stat.bzl"],
     deps = [
         "//antlir/bzl:stat.bzl",
-        "@bazel_skylib//lib:types.bzl",
+        "//antlir/bzl:types.bzl",
     ],
 )

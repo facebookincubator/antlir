@@ -51,7 +51,6 @@ kwargs, sources and deps into a JSON struct readable by the compiler. This
 function must then be added to the `_anon_rules` map in this file.
 """
 
-load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
@@ -81,6 +80,7 @@ load("//antlir/antlir2/features/user:user.bzl", "user_rule")
 load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod_rule")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
+load("//antlir/bzl:types.bzl", "types")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":cfg.bzl", "feature_cfg")
 

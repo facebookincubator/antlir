@@ -11,7 +11,7 @@ entirely, but for now this is required to keep buck1 code evaluating.
 # We use recursion and `native.` so ignore those lints
 # @lint-ignore-every BUCKLINT
 
-load("@bazel_skylib//lib:types.bzl", skylib_types = "types")
+load("@prelude//utils:type_defs.bzl", prelude_types = "type_utils")
 load(":build_defs.bzl", "is_buck2")
 load(":structs.bzl", "structs")
 
@@ -81,18 +81,21 @@ def _optional(ty):
 def _shape(_shape_type):
     return native.struct if is_buck2() else "struct"
 
-# re-export the bazel_skylib types api to avoid annoying imports when both of
+# re-export the prelude types api to avoid annoying imports when both of
 # these are needed
-_skylib_reexport = struct(
-    is_list = skylib_types.is_list,
-    is_string = skylib_types.is_string,
-    is_bool = skylib_types.is_bool,
-    is_none = skylib_types.is_none,
-    is_int = skylib_types.is_int,
-    is_tuple = skylib_types.is_tuple,
-    is_dict = skylib_types.is_dict,
-    is_function = skylib_types.is_function,
+_prelude_reexport = struct(
+    is_list = prelude_types.is_list,
+    is_string = prelude_types.is_string,
+    is_bool = prelude_types.is_bool,
+    is_int = prelude_types.is_number,
+    is_number = prelude_types.is_number,
+    is_tuple = prelude_types.is_tuple,
+    is_dict = prelude_types.is_dict,
+    is_function = prelude_types.is_function,
 )
+
+def _is_none(x) -> bool:
+    return x == None
 
 types = struct(
     # primitive types
@@ -126,5 +129,7 @@ types = struct(
     union = _union,
     # other stuff
     lint_noop = _lint_noop,
-    **structs.to_dict(_skylib_reexport)
+    # runtime type checking
+    is_none = _is_none,
+    **structs.to_dict(_prelude_reexport)
 )

@@ -12,8 +12,8 @@ https://buck.build/function/string_parameter_macros.html for more detail
 about the specific expressions.
 """
 
-load("@bazel_skylib//lib:types.bzl", "types")
 load(":target_helpers.bzl", "normalize_target")
+load(":types.bzl", "types")
 
 _UNBOUNDED = -1
 
