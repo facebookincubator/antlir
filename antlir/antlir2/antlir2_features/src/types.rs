@@ -31,7 +31,7 @@ pub type PathInLayer = PathBuf;
 pub struct LayerInfo {
     pub label: Label,
     pub subvol_symlink: PathBuf,
-    pub depgraph: PathBuf,
+    pub facts_db: PathBuf,
 }
 
 pub type UserName = String;

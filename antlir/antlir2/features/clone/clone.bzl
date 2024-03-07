@@ -137,6 +137,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 usergroup = usergroup,
             ),
             required_layers = [ctx.attrs.src_layer[LayerInfo]],
+            required_artifacts = [ctx.attrs.src_layer[LayerInfo].facts_db],
             plugin = ctx.attrs.plugin[FeaturePluginInfo],
         ),
     ]

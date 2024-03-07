@@ -47,6 +47,14 @@ impl Database<false> {
         let db = rocksdb::Db::open_for_read_only(path, options, false)?;
         Ok(Self { db })
     }
+
+    #[cfg(fbrocks)]
+    pub fn open_read_only<P>(path: P, options: rocksdb::Options) -> Result<Self>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        Self::open(path, options)
+    }
 }
 
 pub type RwDatabase = Database<true>;

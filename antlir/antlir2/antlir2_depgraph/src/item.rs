@@ -11,6 +11,7 @@ use std::path::PathBuf;
 
 use buck_label::Label;
 use derivative::Derivative;
+use nix::sys::stat::SFlag;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -174,6 +175,29 @@ impl From<std::fs::FileType> for FileType {
             return Self::File;
         }
         unreachable!("{f:?}")
+    }
+}
+
+impl FileType {
+    pub fn from_mode(mode: u32) -> Option<Self> {
+        let sflag = SFlag::from_bits_truncate(mode);
+        if sflag.contains(SFlag::S_IFDIR) {
+            Some(Self::Directory)
+        } else if sflag.contains(SFlag::S_IFLNK) {
+            Some(Self::Symlink)
+        } else if sflag.contains(SFlag::S_IFSOCK) {
+            Some(Self::Socket)
+        } else if sflag.contains(SFlag::S_IFIFO) {
+            Some(Self::Fifo)
+        } else if sflag.contains(SFlag::S_IFCHR) {
+            Some(Self::CharDevice)
+        } else if sflag.contains(SFlag::S_IFBLK) {
+            Some(Self::BlockDevice)
+        } else if sflag.contains(SFlag::S_IFREG) {
+            Some(Self::File)
+        } else {
+            None
+        }
     }
 }
 

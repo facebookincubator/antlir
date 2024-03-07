@@ -7,9 +7,11 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 
 layer_dep = record(
     label = Label,
-    depgraph = [Artifact, None],
-    subvol_symlink = [Artifact, None],
-    mounts = [list["mount_record"], None],
+    facts_db = Artifact,
+    subvol_symlink = Artifact,
+    mounts = list["mount_record"],
+    # TODO(vmagro): remove when cm bzl_actions is bumped
+    depgraph = str,
 )
 
 def layer_dep_analyze(layer: Dependency) -> layer_dep:
@@ -22,8 +24,9 @@ def layer_dep_analyze(layer: Dependency) -> layer_dep:
         fail("'{}' is not an antlir2 image layer".format(layer.label))
     info = layer[LayerInfo]
     return layer_dep(
-        depgraph = info.depgraph,
         label = info.label,
+        facts_db = info.facts_db,
         subvol_symlink = info.subvol_symlink,
         mounts = info.mounts,
+        depgraph = "no-longer-provided",
     )
