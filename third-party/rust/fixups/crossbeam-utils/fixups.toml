@@ -1,0 +1,4 @@
+cargo_env = ["CARGO_PKG_NAME"]
+
+[[buildscript]]
+[buildscript.rustc_flags]
