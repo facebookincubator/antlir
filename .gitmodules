@@ -1,7 +1,3 @@
-[submodule "third-party/bazel-skylib"]
-  path = third-party/bazel-skylib
-  url = https://github.com/bazelbuild/bazel-skylib.git
-  ignore = untracked
 [submodule "prelude"]
   path = prelude
   url = https://github.com/facebook/buck2-prelude.git

@@ -110,13 +110,12 @@ mount = mount_t(
 See tests/shape_test.bzl for full example usage and selftests.
 """
 
-load("@bazel_skylib//lib:collections.bzl", "collections")
-load("@bazel_skylib//lib:shell.bzl", "shell")
-load("@bazel_skylib//lib:types.bzl", "types")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_library", "rust_library", "target_utils", "third_party")
 load(":sha256.bzl", "sha256_b64")
+load(":shell.bzl", "shell")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
+load(":types.bzl", "types")
 
 _NO_DEFAULT = struct(no_default = True)
 
@@ -337,6 +336,9 @@ def _is_enum(t):
 def _path(**_field_kwargs):
     fail("shape.path() is no longer supported, use `shape.path` directly, or wrap in `shape.field()`")
 
+def _uniq(iterable):
+    return {el: None for el in iterable}.keys()
+
 def _shape(__thrift = None, **fields):
     """
     Define a new shape type with the fields as given by the kwargs.
@@ -374,8 +376,8 @@ def _shape(__thrift = None, **fields):
     )
 
     if __thrift != None:
-        thrift_names = collections.uniq(__thrift.values())
-        if thrift_names != collections.uniq(fields.keys()):
+        thrift_names = _uniq(__thrift.values())
+        if thrift_names != _uniq(fields.keys()):
             fail("thrift mapping field names must match exactly with field names ({} != {})".format(fields.keys(), thrift_names))
 
         # It would be even better if we could recursively check that all the

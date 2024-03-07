@@ -1,4 +1,4 @@
-load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/bzl:build_defs.bzl", "buck_genrule")
 

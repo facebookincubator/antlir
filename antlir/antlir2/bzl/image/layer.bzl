@@ -3,7 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:types.bzl", "types")
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
@@ -28,6 +27,7 @@ load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_al
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
+load("//antlir/bzl:types.bzl", "types")
 
 load("//antlir/bzl:oss_shim.bzl", SnapshottedFbpkgSetInfo = "none", compiler_plan_to_chef_fbpkgs = "ret_none") # @oss-enable
 # @oss-disable

@@ -3,8 +3,8 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
 load("@fbcode_macros//build_defs:fully_qualified_test_name_rollout.bzl", "NAMING_ROLLOUT_LABEL", "fully_qualified_test_name_rollout")
+load("@prelude//:paths.bzl", "paths")
 
 def _dir_snapshot_test_impl(ctx: AnalysisContext) -> list[Provider]:
     inputs = ctx.actions.declare_output("inputs", dir = True)

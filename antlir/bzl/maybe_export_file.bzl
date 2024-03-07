@@ -28,8 +28,8 @@ refer to these export targets (e.g.  `image.exported_file`), but it is
 probably better if they just type `export_file("their/file")` instead.
 """
 
-load("@bazel_skylib//lib:types.bzl", "types")
 load(":build_defs.bzl", "export_file")
+load(":types.bzl", "types")
 
 def maybe_export_file(source):
     if source == None or not types.is_string(source) or ":" in source:

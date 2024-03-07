@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@bazel_skylib//lib:paths.bzl", "paths")
+load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo")
 load(
     "//antlir/antlir2/package_managers/dnf/rules:rpm.bzl",
