@@ -8,6 +8,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
+load("//antlir/bzl:oss_shim.bzl", fb_transition = "ret_none") # @oss-enable
 
 def _transition_impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     constraints = platform.configuration.constraints

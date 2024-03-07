@@ -67,7 +67,8 @@ def install(
         plugin = antlir2_dep("//antlir/antlir2/features/install:install"),
         deps_or_srcs = {"src": src},
         exec_deps = {
-            "_objcopy": "fbsource//third-party/binutils:objcopy",
+            # @oss-disable
+            # @oss-enable "_objcopy": "toolchains//:objcopy",
         },
         kwargs = {
             "dst": dst,
@@ -80,10 +81,11 @@ def install(
             "user": user,
             "xattrs": xattrs,
             "_binaries_require_repo": select({
-                "ovr_config//build_mode:dbg": True,
-                "ovr_config//build_mode:dbgo": False,
-                "ovr_config//build_mode:dev": True,
-                "ovr_config//build_mode:opt": False,
+                "DEFAULT": True,  # @oss-enable
+                # @oss-disable
+                # @oss-disable
+                # @oss-disable
+                # @oss-disable
             }),
         },
     )
