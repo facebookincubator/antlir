@@ -8,6 +8,7 @@ load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
+load(":facts.bzl", "facts")
 
 PrebuiltImageInfo = provider(fields = [
     "format",  # format of the image file
@@ -96,17 +97,31 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         rootless = ctx.attrs._rootless,
     )
 
+    facts_db = facts.new_facts_db(
+        actions = ctx.actions,
+        subvol_symlink = subvol_symlink,
+        build_appliance = None,
+        new_facts_db = ctx.attrs._new_facts_db[RunInfo],
+        phase = None,
+        rootless = ctx.attrs._rootless,
+    )
+
     if not ctx.attrs.antlir_internal_build_appliance and not ctx.attrs.flavor:
         fail("only build appliance images are allowed to be flavorless")
     return [
         LayerInfo(
             label = ctx.label,
+            facts_db = facts_db,
             depgraph = depgraph_output,
             subvol_symlink = subvol_symlink,
             mounts = [],
             flavor = ctx.attrs.flavor,
         ),
-        DefaultInfo(subvol_symlink),
+        DefaultInfo(subvol_symlink, sub_targets = {
+            "debug": [DefaultInfo(sub_targets = {
+                "facts": [DefaultInfo(facts_db)],
+            })],
+        }),
     ]
 
 _prebuilt = rule(
@@ -119,6 +134,7 @@ _prebuilt = rule(
         "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),
         "src": attrs.source(doc = "source file of the image"),
+        "_new_facts_db": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_facts:new-facts-db")),
         "_rootless": attrs.default_only(attrs.bool(default = select({
             antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
             antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,

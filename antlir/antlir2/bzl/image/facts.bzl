@@ -16,7 +16,7 @@ def _new_facts_db(
         *,
         actions: AnalysisActions,
         subvol_symlink: Artifact,
-        build_appliance: LayerInfo | Provider,
+        build_appliance: LayerInfo | Provider | None,
         new_facts_db: RunInfo,
         phase: BuildPhase | None,
         rootless: bool) -> Artifact:
@@ -35,7 +35,7 @@ def _new_facts_db(
             "sudo" if not rootless else cmd_args(),
             new_facts_db,
             cmd_args(subvol_symlink, format = "--root={}"),
-            cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
+            cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}") if build_appliance else cmd_args(),
             cmd_args(output.as_output(), format = "--db={}"),
             "--rootless" if rootless else cmd_args(),
         ),
