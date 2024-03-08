@@ -498,6 +498,35 @@ x86_64 and the target platform is aarch64. This has a few implications.
     if the executable will be invoked outside the VM (execution platform), and
     `$(location)` if inside (target platform).
 
+### Postmortem test
+
+To test failure behavior, sometimes we need to fail the VM and assert its state
+afterwards. We provide limited support for such use case through `postmortem`
+and `expect_failure` flags. When `expect_failure` flag is set, we will assert
+that VM failed to boot or had premature shutdown, the opposite of what we
+usually assert for the VM exit code. When `postmortem` is set, the test binary
+will not be run inside the VM, but after VM terminates. The test has access to
+env `$CONSOLE_OUTPUT` that contains full content of console log to evaluate
+whether the failure behaved as expected. More VM artifacts (e.g. root disk) can
+be potentially exposed for the test, but they are not implemented for now until
+there is a real use case.
+
+We do not provide a triggering mechanism, because the trigger can be rather
+diverse. The easiest way to introduce a failure is by adding or modifying a
+systemd unit in the VM images. Antlir provides various tools to do this through
+`antlir/bzl/systemd.bzl`, which allows you to install units and dropins.
+
+### Reboot test
+
+We provide `first_boot_command` for reboot tests. When this flag is set, VM will
+boot once to execute `first_boot_command`, shutdown and then boot again to
+execute the test. `first_boot_command` will always be executed inside the VM.
+Test execution is also inside VM by default but honors `postmortem` if it's set.
+
+Note: The default VMs come with MetalOS that doesn't persist rootfs on reboot.
+To use reboot test feature, you need to supply your own VM that would persist
+rootfs content on reboot.
+
 ### Migrating from Antlir1 VM test
 
 Make sure you've read the [MetalOS VM API](#metalos-vm-api) section first. That
