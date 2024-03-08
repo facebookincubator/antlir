@@ -234,6 +234,7 @@ repo(
         "//antlir/antlir2/antlir2_depgraph/tests/...",
         "//antlir/antlir2/antlir2_facts/tests/...",
         "//antlir/antlir2/features/facebook/chef_solo/tests/...",
+        "//antlir/antlir2/features/facebook/slowroll_rpm/tests/...",
         "//antlir/antlir2/features/rpm/tests/...",
         "//antlir/antlir2/package_managers/rpm/tests/...",
         "//antlir/antlir2/testing/...",
