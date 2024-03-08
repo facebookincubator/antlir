@@ -10,8 +10,6 @@ layer_dep = record(
     facts_db = Artifact,
     subvol_symlink = Artifact,
     mounts = list["mount_record"],
-    # TODO(vmagro): remove when cm bzl_actions is bumped
-    depgraph = str,
 )
 
 def layer_dep_analyze(layer: Dependency) -> layer_dep:
@@ -28,5 +26,4 @@ def layer_dep_analyze(layer: Dependency) -> layer_dep:
         facts_db = info.facts_db,
         subvol_symlink = info.subvol_symlink,
         mounts = info.mounts,
-        depgraph = "no-longer-provided",
     )
