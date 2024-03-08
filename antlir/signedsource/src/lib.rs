@@ -27,11 +27,12 @@ pub fn sign(src: &str) -> Result<String> {
     Ok(src.replace(TOKEN, &md5hex))
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub enum Comment {
     Hash,
     Python,
     Rust,
+    Arbitrary(String),
 }
 
 impl std::fmt::Display for Comment {
@@ -42,6 +43,7 @@ impl std::fmt::Display for Comment {
             match self {
                 Self::Hash | Self::Python => "#",
                 Self::Rust => "//",
+                Self::Arbitrary(s) => s,
             }
         )
     }

@@ -36,5 +36,14 @@ pub fn signed_source(py: Python<'_>, m: &PyModule) -> PyResult<()> {
         Ok(signedsource::TOKEN)
     }
 
+    #[pyfn(m)]
+    #[pyo3(signature = (src, comment = "#"))]
+    fn sign_with_generated_header(src: &str, comment: &str) -> String {
+        signedsource::sign_with_generated_header(
+            signedsource::Comment::Arbitrary(comment.to_owned()),
+            src,
+        )
+    }
+
     Ok(())
 }
