@@ -53,6 +53,10 @@ ParseTimeFeature = record(
 
 # Produced by the feature implementation, this tells the rule how to build it
 FeatureAnalysis = provider(fields = {
+    # Arbitrary data that is available during buck2 analysis but is not
+    # serialized to JSON for the compiler (so artifacts referenced here will not
+    # be accidentally materialized)
+    "buck_only_data": provider_field(typing.Any, default = None),
     # Some features do mutations to the image filesystem that cannot be
     # discovered in the depgraph, so those features are grouped together in
     # hidden internal layer(s) that acts as the parent layer(s) for the final
@@ -69,8 +73,6 @@ FeatureAnalysis = provider(fields = {
     # feature implementations must always specify it exactly (this prevents
     # building things unnecessarily)
     "required_artifacts": provider_field(list[Artifact], default = []),
-    # Other image layers that are required to build this feature.
-    "required_layers": provider_field(list["LayerInfo"], default = []),
     # Runnable binaries required to build this feature.
     "required_run_infos": provider_field(list[RunInfo], default = []),
     # This feature requires running 'antlir2' binaries to inform buck of dynamic
