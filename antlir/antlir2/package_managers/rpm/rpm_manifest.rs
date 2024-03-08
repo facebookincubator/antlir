@@ -53,8 +53,8 @@ struct Nevra {
     arch: String,
 }
 
-impl From<Rpm<'_>> for ManifestRpm {
-    fn from(rpm: Rpm<'_>) -> Self {
+impl From<Rpm> for ManifestRpm {
+    fn from(rpm: Rpm) -> Self {
         Self {
             name: rpm.name().to_owned(),
             nevra: Nevra {

@@ -8,11 +8,11 @@
 use antlir2_systemd::UnitFile;
 
 use super::Fact;
+use super::Key;
 
-impl<'a> Fact<'a, '_> for UnitFile {
-    type Key = &'a str;
-
-    fn key(&'a self) -> Self::Key {
-        self.name()
+#[typetag::serde]
+impl Fact for UnitFile {
+    fn key(&self) -> Key {
+        self.name().as_bytes().into()
     }
 }
