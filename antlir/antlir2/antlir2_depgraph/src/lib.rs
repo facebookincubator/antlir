@@ -20,7 +20,6 @@ use petgraph::graph::DefaultIx;
 use petgraph::graph::NodeIndex;
 use petgraph::stable_graph::StableGraph;
 use petgraph::visit::Dfs;
-use petgraph::visit::IntoNodeReferences;
 use petgraph::Directed;
 use petgraph::Direction;
 use serde::Deserialize;
@@ -499,16 +498,6 @@ pub struct Graph {
 impl Graph {
     pub fn builder(label: Label, parent: Option<Self>) -> GraphBuilder {
         GraphBuilder::new(label, parent)
-    }
-
-    pub fn label(&self) -> &Label {
-        &self.label
-    }
-
-    pub fn get_all_features(&self) -> impl Iterator<Item = &Feature> {
-        self.g
-            .node_references()
-            .flat_map(|(_nix, node)| node.as_feature())
     }
 
     /// Iterate over features in topographical order (dependencies sorted before the
