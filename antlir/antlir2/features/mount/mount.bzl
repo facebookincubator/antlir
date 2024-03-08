@@ -88,7 +88,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                     ),
                     host = None,
                 ),
-                required_layers = [ctx.attrs.layer[LayerInfo]],
+                buck_only_data = struct(
+                    layer = ctx.attrs.layer,
+                ),
                 plugin = ctx.attrs.plugin[FeaturePluginInfo],
             ),
         ]
