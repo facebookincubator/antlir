@@ -5,35 +5,33 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
-
 use serde::Deserialize;
 use serde::Serialize;
 
 use super::Fact;
+use super::Key;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct User<'a> {
-    name: Cow<'a, str>,
+pub struct User {
+    name: String,
     id: u32,
 }
 
-impl<'a> Fact<'a, '_> for User<'a> {
-    type Key = &'a str;
-
-    fn key(&'a self) -> Self::Key {
-        &self.name
+#[typetag::serde]
+impl Fact for User {
+    fn key(&self) -> Key {
+        self.name.as_str().into()
     }
 }
 
-impl<'a> User<'a> {
-    pub fn key<'k>(name: &'k str) -> <User as Fact>::Key {
-        name
+impl User {
+    pub fn key(name: &str) -> Key {
+        name.into()
     }
 
     pub fn new<N>(name: N, id: u32) -> Self
     where
-        N: Into<Cow<'a, str>>,
+        N: Into<String>,
     {
         Self {
             name: name.into(),
@@ -51,30 +49,29 @@ impl<'a> User<'a> {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
-pub struct Group<'a> {
-    name: Cow<'a, str>,
+pub struct Group {
+    name: String,
     id: u32,
-    members: Vec<Cow<'a, str>>,
+    members: Vec<String>,
 }
 
-impl<'a> Fact<'a, '_> for Group<'a> {
-    type Key = &'a str;
-
-    fn key(&'a self) -> Self::Key {
-        &self.name
+#[typetag::serde]
+impl Fact for Group {
+    fn key(&self) -> Key {
+        self.name.as_str().into()
     }
 }
 
-impl<'a> Group<'a> {
-    pub fn key<'k>(name: &'k str) -> <Group as Fact>::Key {
-        name
+impl Group {
+    pub fn key(name: &str) -> Key {
+        name.into()
     }
 
     pub fn new<N, I, M>(name: N, id: u32, members: I) -> Self
     where
-        N: Into<Cow<'a, str>>,
+        N: Into<String>,
         I: IntoIterator<Item = M>,
-        M: Into<Cow<'a, str>>,
+        M: Into<String>,
     {
         Self {
             name: name.into(),

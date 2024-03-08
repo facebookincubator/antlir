@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use std::borrow::Cow;
 use std::collections::BTreeSet;
 
 use once_cell::sync::Lazy;
@@ -15,51 +14,51 @@ use serde::Serialize;
 use typed_builder::TypedBuilder;
 
 use super::Fact;
+use super::Key;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize, TypedBuilder)]
-pub struct Rpm<'a> {
+pub struct Rpm {
     #[builder(setter(into))]
-    name: Cow<'a, str>,
+    name: String,
     #[serde(default, skip_serializing_if = "skip_epoch")]
     #[builder(default)]
     epoch: u64,
     #[builder(setter(into))]
-    version: Cow<'a, str>,
+    version: String,
     #[builder(setter(into))]
-    release: Cow<'a, str>,
+    release: String,
     #[builder(setter(into))]
-    arch: Cow<'a, str>,
+    arch: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    changelog: Option<Cow<'a, str>>,
+    changelog: Option<String>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[builder(default)]
-    os: Option<Cow<'a, str>>,
+    os: Option<String>,
     #[builder(default)]
     size: u64,
     #[builder(setter(into))]
-    source_rpm: Cow<'a, str>,
+    source_rpm: String,
 }
 
 fn skip_epoch(epoch: &u64) -> bool {
     *epoch == 0
 }
 
-impl<'a> Fact<'a, '_> for Rpm<'a> {
-    type Key = String;
-
-    fn key(&'a self) -> Self::Key {
+#[typetag::serde]
+impl Fact for Rpm {
+    fn key(&self) -> Key {
         // It would be great to just use the name as the key, but a small set of
         // rpms can have multiple concurrently-installed versions, so just give
         // the full nevra as the key.
-        self.nevra()
+        self.nevra().into()
     }
 }
 
 static CVE_REGEX: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"\bCVE-[0-9]{4}-[0-9]+\b").expect("valid regex"));
 
-impl<'a> Rpm<'a> {
+impl Rpm {
     pub fn name(&self) -> &str {
         &self.name
     }
@@ -110,7 +109,7 @@ impl<'a> Rpm<'a> {
     }
 }
 
-impl<'a> std::fmt::Display for Rpm<'a> {
+impl std::fmt::Display for Rpm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.epoch {
             0 => write!(

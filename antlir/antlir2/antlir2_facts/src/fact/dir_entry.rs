@@ -6,7 +6,6 @@
  */
 
 use std::fs::Metadata;
-use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::MetadataExt;
 use std::path::Component;
 use std::path::Path;
@@ -16,6 +15,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use super::Fact;
+use super::Key;
 
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
 pub enum DirEntry {
@@ -24,14 +24,13 @@ pub enum DirEntry {
     RegularFile(RegularFile),
 }
 
-impl<'a> Fact<'a, '_> for DirEntry {
-    type Key = &'a [u8];
-
-    fn key(&'a self) -> Self::Key {
+#[typetag::serde]
+impl Fact for DirEntry {
+    fn key(&self) -> Key {
         match self {
-            Self::Directory(d) => d.common.path.as_os_str().as_bytes(),
-            Self::Symlink(s) => s.common.path.as_os_str().as_bytes(),
-            Self::RegularFile(f) => f.common.path.as_os_str().as_bytes(),
+            Self::Directory(d) => d.common.path.as_path().into(),
+            Self::Symlink(s) => s.common.path.as_path().into(),
+            Self::RegularFile(f) => f.common.path.as_path().into(),
         }
     }
 }
@@ -61,8 +60,8 @@ macro_rules! proxy_file_common {
 }
 
 impl DirEntry {
-    pub fn key(path: &Path) -> <Self as Fact>::Key {
-        path.as_os_str().as_bytes()
+    pub fn key(path: &Path) -> Key {
+        path.into()
     }
 
     fn common(&self) -> &FileCommon {

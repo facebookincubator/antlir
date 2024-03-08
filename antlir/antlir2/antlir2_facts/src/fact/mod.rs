@@ -5,20 +5,25 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-use serde::Deserialize;
-use serde::Serialize;
+use std::any::Any;
 
 pub mod dir_entry;
 pub mod rpm;
 pub mod systemd;
 pub mod user;
 
-pub trait Fact<'a, 'de>: Serialize + Deserialize<'de> {
-    type Key: AsRef<[u8]>;
+use super::Key;
 
-    fn kind() -> &'static str {
+#[typetag::serde]
+pub trait Fact: Any {
+    fn kind() -> &'static str
+    where
+        Self: Sized,
+    {
         std::any::type_name::<Self>()
     }
 
-    fn key(&'a self) -> Self::Key;
+    fn key(&self) -> Key;
 }
+
+static_assertions::assert_obj_safe!(Fact);
