@@ -32,6 +32,7 @@ pub enum Comment {
     Hash,
     Python,
     Rust,
+    Starlark,
     Arbitrary(String),
 }
 
@@ -41,7 +42,7 @@ impl std::fmt::Display for Comment {
             f,
             "{}",
             match self {
-                Self::Hash | Self::Python => "#",
+                Self::Hash | Self::Python | Self::Starlark => "#",
                 Self::Rust => "//",
                 Self::Arbitrary(s) => s,
             }
