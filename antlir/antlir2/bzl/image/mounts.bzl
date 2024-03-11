@@ -4,15 +4,27 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//:paths.bzl", "paths")
-load(
-    "//antlir/antlir2/bzl:types.bzl",
-    "LayerInfo",  # @unused Used as type
-)
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_record")
-load("//antlir/antlir2/features/mount:mount.bzl", "host_mount_record", "layer_mount_record", "mount_record")
 load("//antlir/bzl:types.bzl", "types")
 
 types.lint_noop(feature_record)
+
+layer_mount_record = record(
+    mountpoint = str,
+    subvol_symlink = Artifact,
+)
+
+host_mount_record = record(
+    mountpoint = str,
+    src = str,
+    is_directory = bool,
+)
+
+mount_record = record(
+    layer = layer_mount_record | None,
+    host = host_mount_record | None,
+)
 
 def _mountpoint(mount: mount_record) -> str:
     return mount.layer.mountpoint if mount.layer else mount.host.mountpoint
@@ -31,19 +43,27 @@ def all_mounts(
     for feat in features:
         if feat.feature_type == "mount":
             mount = feat.analysis.data
-            mounts.append(mount)
 
             # Layer mounts may lead to nested mounts
-            if mount.layer:
+            if hasattr(mount, "layer"):
+                layer_mount = feat.analysis.buck_only_data
+                mounts.append(mount_record(
+                    layer = layer_mount_record(
+                        mountpoint = mount.layer.mountpoint,
+                        subvol_symlink = layer_mount.layer[LayerInfo].subvol_symlink,
+                    ),
+                    host = None,
+                ))
+
                 # However, we only need to propagate up a flat list of mounts,
                 # since any necessary recursion will already have been expanded
                 # at the previous layer
-                for nested in mount.layer.src.mounts:
+                for nested in layer_mount.layer[LayerInfo].mounts:
                     new_mountpoint = paths.join(mount.layer.mountpoint, _mountpoint(nested).lstrip("/"))
                     mounts.append(mount_record(
                         layer = layer_mount_record(
                             mountpoint = new_mountpoint,
-                            src = nested.layer.src,
+                            subvol_symlink = nested.layer.subvol_symlink,
                         ) if nested.layer else None,
                         host = host_mount_record(
                             mountpoint = new_mountpoint,
@@ -51,12 +71,23 @@ def all_mounts(
                             is_directory = nested.host.is_directory,
                         ) if nested.host else None,
                     ))
+            elif hasattr(mount, "host"):
+                mounts.append(mount_record(
+                    host = host_mount_record(
+                        mountpoint = mount.host.mountpoint,
+                        src = mount.host.src,
+                        is_directory = mount.host.is_directory,
+                    ),
+                    layer = None,
+                ))
+            else:
+                fail("no other mount types exist")
 
     return mounts
 
 def container_mount_args(mount: mount_record) -> cmd_args:
     if mount.layer:
-        return cmd_args("--bind-mount-ro", mount.layer.src.subvol_symlink, mount.layer.mountpoint)
+        return cmd_args("--bind-mount-ro", mount.layer.subvol_symlink, mount.layer.mountpoint)
     elif mount.host:
         return cmd_args("--bind-mount-ro", mount.host.src, mount.host.mountpoint)
     else:

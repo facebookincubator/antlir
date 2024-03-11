@@ -15,45 +15,19 @@ use antlir2_depgraph::item::ItemKey;
 use antlir2_depgraph::item::Path;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_depgraph::requires_provides::Validator;
-use antlir2_features::types::LayerInfo;
 use antlir2_features::types::PathInLayer;
 use anyhow::Result;
-use serde::de::Error;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing as _;
 
 pub type Feature = Mount;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Mount {
     Host(HostMount),
     Layer(LayerMount),
-}
-
-/// Buck2's `record` will always include `null` values, but serde's native enum
-/// deserialization will fail if there are multiple keys, even if the others are
-/// null.
-/// TODO(vmagro): make this general in the future (either codegen from `record`s
-/// or as a proc-macro)
-impl<'de> Deserialize<'de> for Mount {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        #[derive(Deserialize)]
-        struct MountStruct {
-            host: Option<HostMount>,
-            layer: Option<LayerMount>,
-        }
-
-        MountStruct::deserialize(deserializer).and_then(|s| match (s.host, s.layer) {
-            (Some(v), None) => Ok(Self::Host(v)),
-            (None, Some(v)) => Ok(Self::Layer(v)),
-            (_, _) => Err(D::Error::custom("exactly one of {host, layer} must be set")),
-        })
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
@@ -67,7 +41,6 @@ pub struct HostMount {
 #[serde(rename_all = "snake_case")]
 pub struct LayerMount {
     pub mountpoint: PathInLayer,
-    pub src: LayerInfo,
 }
 
 impl Mount {

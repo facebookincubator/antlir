@@ -6,7 +6,6 @@
  */
 
 use std::collections::BTreeMap;
-use std::collections::BTreeSet;
 use std::collections::HashMap;
 use std::fs::File;
 use std::fs::Permissions;
@@ -30,7 +29,6 @@ use anyhow::Result;
 use clap::Parser;
 use image_test_lib::Test;
 use json_arg::JsonFile;
-use mount::Mount;
 use serde::Deserialize;
 use tempfile::NamedTempFile;
 use tracing::debug;
@@ -60,7 +58,7 @@ struct TestSpec {
     pass_env: Vec<String>,
     #[serde(default)]
     /// Mounts required by the layer-under-test
-    mounts: BTreeSet<Mount>,
+    mounts: HashMap<PathBuf, PathBuf>,
     /// Run the test in an unprivileged user namespace
     rootless: bool,
 }
@@ -153,15 +151,7 @@ fn main() -> Result<()> {
         true => InvocationType::BootReadOnly,
         false => InvocationType::Pid2Pipe,
     });
-    ctx.inputs(
-        spec.mounts
-            .into_iter()
-            .map(|mount| match mount {
-                Mount::Host(m) => (m.mountpoint, m.src),
-                Mount::Layer(m) => (m.mountpoint, m.src.subvol_symlink),
-            })
-            .collect::<HashMap<_, _>>(),
-    );
+    ctx.inputs(spec.mounts);
     ctx.setenv(("ANTLIR2_IMAGE_TEST", "1"));
 
     // XARs need /dev/fuse to run. Ideally we could just have this created
