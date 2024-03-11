@@ -35,6 +35,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     boot_after_units = _default_list(ctx.attrs.boot_after_units, default = ["sysinit.target", "basic.target"])
     boot_wants_units = _default_list(ctx.attrs.boot_wants_units, default = ["default.target"])
 
+    mounts = {}
+    for mount in ctx.attrs.layer[LayerInfo].mounts:
+        if mount.layer:
+            mounts[mount.layer.mountpoint] = mount.layer.subvol_symlink
+        if mount.host:
+            mounts[mount.host.mountpoint] = mount.host.src
     spec = ctx.actions.write_json(
         "spec.json",
         {
@@ -45,7 +51,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             } if ctx.attrs.boot else None,
             "hostname": ctx.attrs.hostname,
             "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
-            "mounts": ctx.attrs.layer[LayerInfo].mounts,
+            "mounts": mounts,
             "pass_env": ctx.attrs.test[ExternalRunnerTestInfo].env.keys(),
             "rootless": ctx.attrs._rootless,
             "user": ctx.attrs.run_as_user,

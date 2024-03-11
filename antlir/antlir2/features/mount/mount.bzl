@@ -6,7 +6,6 @@
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
-load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep", "layer_dep_analyze")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load("//antlir/bzl:types.bzl", "types")
 
@@ -56,22 +55,6 @@ host_dir_mount = partial(host_mount, is_directory = True)
 _source_kind = enum("layer", "host")
 types.lint_noop(_source_kind)
 
-layer_mount_record = record(
-    mountpoint = str,
-    src = layer_dep,
-)
-
-host_mount_record = record(
-    mountpoint = str,
-    src = str,
-    is_directory = bool,
-)
-
-mount_record = record(
-    layer = [layer_mount_record, None],
-    host = [host_mount_record, None],
-)
-
 def _impl(ctx: AnalysisContext) -> list[Provider]:
     if ctx.attrs.source_kind == "layer":
         mountpoint = ctx.attrs.mountpoint
@@ -81,12 +64,10 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             DefaultInfo(),
             FeatureAnalysis(
                 feature_type = "mount",
-                data = mount_record(
-                    layer = layer_mount_record(
-                        src = layer_dep_analyze(ctx.attrs.layer),
+                data = struct(
+                    layer = struct(
                         mountpoint = mountpoint,
                     ),
-                    host = None,
                 ),
                 buck_only_data = struct(
                     layer = ctx.attrs.layer,
@@ -99,13 +80,12 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             DefaultInfo(),
             FeatureAnalysis(
                 feature_type = "mount",
-                data = mount_record(
-                    host = host_mount_record(
+                data = struct(
+                    host = struct(
                         src = ctx.attrs.host_source,
                         mountpoint = ctx.attrs.mountpoint,
                         is_directory = ctx.attrs.is_directory,
                     ),
-                    layer = None,
                 ),
                 plugin = ctx.attrs.plugin[FeaturePluginInfo],
             ),

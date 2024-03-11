@@ -21,7 +21,6 @@ load("//antlir/bzl:oss_shim.bzl", fb_attrs = "empty_dict", fb_defaults = "empty_
 load(
     "//antlir/antlir2/features/mount:mount.bzl",
     "DefaultMountpointInfo",
-    "mount_record",  # @unused Used as type
 )
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoInfo", "RepoSetInfo")
@@ -35,7 +34,12 @@ load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
 load(":facts.bzl", "facts")
-load(":mounts.bzl", "all_mounts", "container_mount_args")
+load(
+    ":mounts.bzl",
+    "all_mounts",
+    "container_mount_args",
+    "mount_record",  # @unused Used as type
+)
 
 def _map_image(
         ctx: AnalysisContext,
