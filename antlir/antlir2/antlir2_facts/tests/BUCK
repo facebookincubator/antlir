@@ -93,13 +93,14 @@ feature.new(
 rust_unittest(
     name = "test-db-contents",
     srcs = ["test_db_contents.rs"],
-    env = {
-        "TEST_DB": "$(location :test-layer[debug][facts])",
+    resources = {
+        "test_db": ":test-layer[debug][facts]",
     },
     deps = [
         "tracing",
         "tracing-test",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
+        "//common/rust/buck_resources:buck_resources",
     ],
 )

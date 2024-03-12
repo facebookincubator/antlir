@@ -17,7 +17,8 @@ use tracing_test::traced_test;
 
 fn open_db() -> RoDatabase {
     RoDatabase::open(
-        std::env::var_os("TEST_DB").expect("TEST_DB not set"),
+        buck_resources::get("antlir/antlir2/antlir2_facts/tests/test_db")
+            .expect("test_db resource not set"),
         Default::default(),
     )
     .expect("failed to open db")
