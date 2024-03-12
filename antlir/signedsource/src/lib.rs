@@ -51,7 +51,7 @@ impl std::fmt::Display for Comment {
 }
 
 pub fn sign_with_generated_header(comment: Comment, src: &str) -> String {
-    let mut s = format!("{} @{} {}\n", comment, "generated", TOKEN);
+    let mut s = format!("{} \x40generated {}\n", comment, TOKEN);
     s.push_str(src);
     sign(&s).expect("token is definitely there")
 }
@@ -59,7 +59,7 @@ pub fn sign_with_generated_header(comment: Comment, src: &str) -> String {
 /// If the first line of the src is a generated header from this library, remove
 /// it. Otherwise src is returned untouched.
 pub fn strip_generated_header(comment: Comment, src: &str) -> &str {
-    if src.starts_with(&format!("{} @{} SignedSource<<", comment, "generated")) {
+    if src.starts_with(&format!("{} \x40generated SignedSource<<", comment)) {
         if let Some(first_line_index) = src.find('\n') {
             return &src[first_line_index + 1..];
         }
