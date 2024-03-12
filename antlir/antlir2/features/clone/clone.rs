@@ -132,14 +132,15 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                 .collect();
             let mut need_users = HashSet::new();
             let mut need_groups = HashSet::new();
-            for entry in src_facts.iter::<DirEntry>() {
-                if entry.path().starts_with(&self.src_path) {
-                    if let Some(name) = all_user_names.remove(&entry.uid()) {
-                        need_users.insert(name);
-                    }
-                    if let Some(name) = all_group_names.remove(&entry.gid()) {
-                        need_groups.insert(name);
-                    }
+            for entry in src_facts
+                .iter_from::<DirEntry>(&DirEntry::key(&self.src_path))
+                .take_while(|entry| entry.path().starts_with(&self.src_path))
+            {
+                if let Some(name) = all_user_names.remove(&entry.uid()) {
+                    need_users.insert(name);
+                }
+                if let Some(name) = all_group_names.remove(&entry.gid()) {
+                    need_groups.insert(name);
                 }
             }
             v.extend(
@@ -182,39 +183,47 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
             // the unsatisfied validator will be much clearer to the user
         }
         // find any files or directories that appear underneath the clone source
-        for entry in src_facts.iter::<DirEntry>() {
+        for (relpath, entry) in src_facts
+            .iter_from::<DirEntry>(&DirEntry::key(&self.src_path))
+            .map_while(|entry| {
+                entry
+                    .path()
+                    .strip_prefix(&self.src_path)
+                    .map(|relpath| relpath.to_owned())
+                    .map(|relpath| (relpath, entry))
+                    .ok()
+            })
+        {
             if self.omit_outer_dir && entry.path() == self.src_path.as_path() {
                 continue;
             }
-            if let Ok(relpath) = entry.path().strip_prefix(&self.src_path) {
-                // If we are cloning a directory without a trailing / into a
-                // directory with a trailing /, we need to prepend the name of the
-                // directory to the relpath of each entry in that src directory, so
-                // that a clone like:
-                //   clone(src=path/to/src, dst=/into/dir/)
-                // produces files like /into/dir/src/foo
-                // instead of /into/dir/foo
-                let relpath = if self.pre_existing_dest && !self.omit_outer_dir {
-                    Path::new(self.src_path.file_name().expect("must have file_name")).join(relpath)
-                } else {
-                    relpath.to_owned()
-                };
-                let dst_path = self.dst_path.join(&relpath);
-                let file_type = FileType::from_mode(entry.mode())
-                    .expect("file mode bits can always be mapped to a FileType");
+            // If we are cloning a directory without a trailing / into a
+            // directory with a trailing /, we need to prepend the name of the
+            // directory to the relpath of each entry in that src directory, so
+            // that a clone like:
+            //   clone(src=path/to/src, dst=/into/dir/)
+            // produces files like /into/dir/src/foo
+            // instead of /into/dir/foo
+            let relpath = if self.pre_existing_dest && !self.omit_outer_dir {
+                Path::new(self.src_path.file_name().expect("must have file_name")).join(relpath)
+            } else {
+                relpath.to_owned()
+            };
+            let dst_path = self.dst_path.join(&relpath);
+            let file_type = FileType::from_mode(entry.mode())
+                .expect("file mode bits can always be mapped to a FileType");
 
-                v.push(Item::Path(match entry {
-                    DirEntry::Directory(_) | DirEntry::RegularFile(_) => PathItem::Entry(FsEntry {
-                        path: dst_path.clone(),
-                        file_type,
-                        mode: entry.mode(),
-                    }),
-                    DirEntry::Symlink(symlink) => PathItem::Symlink {
-                        link: dst_path,
-                        target: symlink.raw_target().to_owned(),
-                    },
-                }));
-            }
+            v.push(Item::Path(match entry {
+                DirEntry::Directory(_) | DirEntry::RegularFile(_) => PathItem::Entry(FsEntry {
+                    path: dst_path.clone(),
+                    file_type,
+                    mode: entry.mode(),
+                }),
+                DirEntry::Symlink(symlink) => PathItem::Symlink {
+                    link: dst_path,
+                    target: symlink.raw_target().to_owned(),
+                },
+            }));
         }
 
         Ok(v)
