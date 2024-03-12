@@ -15,6 +15,7 @@
 # ensure that we're using the same python that dnf itself is using
 
 import base64
+import copy
 import importlib.util
 import json
 import os
@@ -329,10 +330,7 @@ def resolve(out, spec, base, local_rpms, explicitly_installed_package_names):
             json.dump({"tx_error": str(e)}, o)
 
 
-def driver(spec) -> None:
-    out = LockedOutput(sys.stdout)
-    mode = spec["mode"]
-
+def base_init(spec):
     base = dnf_base(spec)
     antlir2_dnf_base.add_repos(base=base, repos_dir=spec["repos"])
 
@@ -355,9 +353,50 @@ def driver(spec) -> None:
             packages = base.add_remote_rpms([os.path.realpath(rpm["src"])])
             local_rpms[rpm["src"]] = packages[0]
 
+    return (base, local_rpms)
+
+
+def driver(spec) -> None:
+    spec_backup = copy.deepcopy(spec)
+    out = LockedOutput(sys.stdout)
+    mode = spec["mode"]
+    base, local_rpms = base_init(spec)
     explicitly_installed_package_names = _explicitly_installed_package_names(
         spec, local_rpms
     )
+
+    # If we have a request to install an already installed rpm, that becomes a
+    # no-op within this transaction. At the end of this transaction, we'll make
+    # sure to mark the rpm as user installed to prevent it from being
+    # implicitly uninstalled by a future rpm removal. But if that rpm was
+    # implicitly installed as a dependency of another rpm which is removed in
+    # this trasaction, then we'll remove that rpm in this transaction even
+    # though it's been explicitly requsested. To avoid this we'll mark any
+    # pre-installed rpms as user requested at the start of this trasaction.
+    set_user_installed = [
+        pkg
+        for name in explicitly_installed_package_names
+        for pkg in dnf.subject.Subject(name)
+        .get_best_query(base.sack, forms=[hawkey.FORM_NAME])
+        .installed()
+        if REASON_FROM_STRING[pkg.reason]
+        != libdnf.transaction.TransactionItemReason_USER
+    ]
+    if set_user_installed:
+        old = base.history.last()
+        if old is None:
+            rpmdb_version = base._ts.dbCookie()
+        else:
+            rpmdb_version = old.end_rpmdb_version
+        for pkg in set_user_installed:
+            base.history.set_reason(pkg, libdnf.transaction.TransactionItemReason_USER)
+        base.history.beg(
+            rpmdb_version, [], [], "antlir2: correct installed reasons, pre-install"
+        )
+        base.history.end(rpmdb_version)
+        base.close()
+        spec = spec_backup
+        base, local_rpms = base_init(spec)
 
     if mode == "resolve":
         return resolve(out, spec, base, local_rpms, explicitly_installed_package_names)
@@ -531,7 +570,9 @@ def driver(spec) -> None:
             base.history.set_reason(pkg, reason)
     # commit that change to the db
     rpmdb_version = base.history.last().end_rpmdb_version
-    base.history.beg(rpmdb_version, [], [], "antlir2: correct installed reasons")
+    base.history.beg(
+        rpmdb_version, [], [], "antlir2: correct installed reasons, post-install"
+    )
     base.history.end(rpmdb_version)
 
 
