@@ -1,11 +1,6 @@
-load("//antlir/bzl:build_defs.bzl", "buck_sh_binary", "export_file")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 
 oncall("antlir")
-
-buck_sh_binary(
-    name = "rpm2extents-in-ba",
-    main = "rpm2extents_in_ba.sh",
-)
 
 export_file(
     name = "rpm2extents-xar-entrypoint",

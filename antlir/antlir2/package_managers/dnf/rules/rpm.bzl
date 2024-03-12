@@ -84,7 +84,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         rpm = rpm_file,
         xml = xml,
         pkgid = ctx.attrs.sha256 or ctx.attrs.sha1,
-        rpm2extents_in_ba = ctx.attrs._rpm2extents_in_ba[RunInfo],
         reflink_flavors = ctx.attrs.reflink_flavors,
     )
 
@@ -94,7 +93,6 @@ def common_impl(
         rpm: Artifact,
         xml: Artifact,
         pkgid: str,
-        rpm2extents_in_ba: RunInfo,
         reflink_flavors: dict[str, Dependency]) -> list[Provider]:
     # Produce an rpm2extents artifact for each flavor. This is tied specifically
     # to the version of `rpm` being used in the build appliance, and should be
@@ -112,7 +110,13 @@ def common_impl(
         for name in reflink_flavors
     }
     for name, appliance in reflink_flavors.items():
-        rpm2extents(ctx, rpm2extents_in_ba, rpm, extents[name], appliance, name)
+        rpm2extents(
+            ctx = ctx,
+            appliance = appliance,
+            rpm = rpm,
+            extents = extents[name],
+            identifier = name,
+        )
     return [
         DefaultInfo(default_outputs = [rpm], sub_targets = {
             "extents": [DefaultInfo(sub_targets = {
@@ -145,8 +149,5 @@ rpm = rule(
         "url": attrs.option(attrs.string(), default = None),
         "version": attrs.string(),
         "xml": attrs.option(attrs.source(doc = "all xml chunks"), default = None),
-        "_rpm2extents_in_ba": attrs.default_only(attrs.exec_dep(
-            default = "//antlir/antlir2/package_managers/dnf:rpm2extents-in-ba",
-        )),
     },
 )
