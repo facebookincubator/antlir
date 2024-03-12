@@ -100,6 +100,37 @@ test_rpms(
 )
 
 test_rpms(
+    name = "reinstall-dep-as-userinstalled-prevents-autoremove",
+    expected = expected_t(
+        installed = [
+            "foo",
+            "foobar",
+        ],
+        not_installed = [
+            # 'foobar' is not explicitly installed, so removing 'foobarbaz' will
+            # remove it since the only thing depending on it is 'foobarbaz'
+            "foobarbaz",
+        ],
+        userinstalled = [
+            "foo",
+            "foobar",
+        ],
+    ),
+    features = [
+        feature.rpms_install(rpms = [
+            # "foobar" has already been implicitly installed. But now we'll
+            # explicitly install it to make sure it gets marked as installed
+            # and isn't isn't implicitly removed.
+            "foobar",
+        ]),
+        feature.rpms_remove_if_exists(rpms = [
+            "foobarbaz",
+        ]),
+    ],
+    parent_layer = simple,
+)
+
+test_rpms(
     name = "upgrade-by-installing-nevra",
     expected = expected_t(
         installed = ["foo-3"],
