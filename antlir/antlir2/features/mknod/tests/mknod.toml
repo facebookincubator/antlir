@@ -25,43 +25,41 @@ file-type = "block-device"
 user = "root"
 group = "root"
 
-# not all device types are allowed by sandcastle, lets limit the test to allowed ones
-#
-# [file.tpm0]
-# op = "added"
+[file.tpm0]
+op = "added"
 
-# [file.tpm0.diff]
-# mode = ""
-# file-type = "character-device"
-# user = "antlir"
-# group = "antlir_group"
+[file.tpm0.diff]
+mode = ""
+file-type = "character-device"
+user = "antlir"
+group = "antlir_group"
 
-# [file.tty]
-# op = "added"
+[file.tty]
+op = "added"
 
-# [file.tty.diff]
-# mode = ""
-# file-type = "character-device"
-# user = "antlir"
-# group = "antlir_group"
+[file.tty.diff]
+mode = ""
+file-type = "character-device"
+user = "antlir"
+group = "antlir_group"
 
-# [file.ttyS0]
-# op = "added"
+[file.ttyS0]
+op = "added"
 
-# [file.ttyS0.diff]
-# mode = ""
-# file-type = "character-device"
-# user = "antlir"
-# group = "antlir_group"
+[file.ttyS0.diff]
+mode = ""
+file-type = "character-device"
+user = "antlir"
+group = "antlir_group"
 
-# [file.ttyS1]
-# op = "added"
+[file.ttyS1]
+op = "added"
 
-# [file.ttyS1.diff]
-# mode = ""
-# file-type = "character-device"
-# user = "antlir"
-# group = "antlir_group"
+[file.ttyS1.diff]
+mode = ""
+file-type = "character-device"
+user = "antlir"
+group = "antlir_group"
 
 [file.urandom]
 op = "added"
