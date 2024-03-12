@@ -97,7 +97,7 @@ where
 }
 
 impl Database<true> {
-    pub fn insert<'a, 'de, F>(&mut self, fact: &'a F) -> Result<()>
+    pub fn insert<'a, F>(&mut self, fact: &'a F) -> Result<()>
     where
         F: Fact,
     {
@@ -146,6 +146,24 @@ impl<const RW: bool> Database<{ RW }> {
         FactIter {
             iter,
             key_prefix,
+            first: true,
+            phantom: PhantomData,
+        }
+    }
+
+    pub fn iter_from<F>(&self, key: &Key) -> FactIter<F>
+    where
+        F: Fact,
+    {
+        let read_opts = rocksdb::ReadOptions::new();
+        let start_key = fact_key_to_rocks::<F>(key.as_ref());
+        let iter = self.db.iterator(
+            rocksdb::IteratorMode::From(&start_key, rocksdb::Direction::Forward),
+            &read_opts,
+        );
+        FactIter {
+            iter,
+            key_prefix: key_prefix::<F>(),
             first: true,
             phantom: PhantomData,
         }
@@ -267,7 +285,7 @@ mod tests {
 
     #[test]
     #[traced_test]
-    fn test_storage() {
+    fn test_get() {
         let (mut db, _tmpdir) = Database::open_test_db("_test_storage");
 
         db.insert(&User::new("alice", 1))
@@ -279,9 +297,36 @@ mod tests {
                 .name(),
             "alice"
         );
+    }
+
+    #[test]
+    #[traced_test]
+    fn test_iter() {
+        let (mut db, _tmpdir) = Database::open_test_db("_test_iter");
+
+        db.insert(&User::new("alice", 1))
+            .expect("failed to insert alice");
 
         let users: Vec<User> = db.iter().collect();
         assert_eq!(users.len(), 1);
         assert_eq!(users[0].name(), "alice");
+    }
+
+    #[test]
+    #[traced_test]
+    fn test_iter_from() {
+        let (mut db, _tmpdir) = Database::open_test_db("_test_iter_from");
+
+        db.insert(&User::new("alice", 1))
+            .expect("failed to insert alice");
+        db.insert(&User::new("bob", 1))
+            .expect("failed to insert bob");
+        db.insert(&User::new("charlie", 1))
+            .expect("failed to insert charlie");
+
+        let users: Vec<User> = db.iter_from(&User::key("bob")).collect();
+        assert_eq!(users.len(), 2);
+        assert_eq!(users[0].name(), "bob");
+        assert_eq!(users[1].name(), "charlie");
     }
 }
