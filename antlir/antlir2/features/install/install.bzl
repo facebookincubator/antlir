@@ -81,7 +81,9 @@ def install(
             "user": user,
             "xattrs": xattrs,
             "_binaries_require_repo": select({
-                "DEFAULT": True,  # @oss-enable
+                # For unknown build modes, we don't know if the repo is
+                # required, so err on the side of caution and include it.
+                "DEFAULT": True,
                 # @oss-disable
                 # @oss-disable
                 # @oss-disable
