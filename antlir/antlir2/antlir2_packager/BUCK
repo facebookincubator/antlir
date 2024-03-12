@@ -5,6 +5,9 @@ oncall("antlir")
 rust_binary(
     name = "antlir2-packager",
     srcs = glob(["src/**/*.rs"]),
+    compatible_with = [
+        "ovr_config//os:linux",
+    ],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
