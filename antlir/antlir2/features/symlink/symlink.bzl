@@ -23,7 +23,11 @@ def _symlink_feature(
         },
     )
 
-def ensure_file_symlink(*, link: str, target: str, unsafe_dangling_symlink: bool = False) -> ParseTimeFeature:
+def ensure_file_symlink(
+        *,
+        link: str | Select,
+        target: str | Select,
+        unsafe_dangling_symlink: bool = False) -> ParseTimeFeature:
     """
     Create a symlink to a file.
 
@@ -31,7 +35,11 @@ def ensure_file_symlink(*, link: str, target: str, unsafe_dangling_symlink: bool
     """
     return _symlink_feature(feature_type = "ensure_file_symlink", link = link, target = target, unsafe_dangling_symlink = unsafe_dangling_symlink)
 
-def ensure_dir_symlink(*, link: str, target: str, unsafe_dangling_symlink: bool = False) -> ParseTimeFeature:
+def ensure_dir_symlink(
+        *,
+        link: str | Select,
+        target: str | Select,
+        unsafe_dangling_symlink: bool = False) -> ParseTimeFeature:
     """
     Create a symlink to a directory.
 
