@@ -17,6 +17,7 @@ use antlir2_isolate::IsolationContext;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use chrono::prelude::*;
 use itertools::Itertools;
 use libcap::FileExt as _;
 use serde::Deserialize;
@@ -32,8 +33,8 @@ pub struct Rpm {
     #[serde(rename = "rpm_name")]
     name: String,
     epoch: i32,
-    version: String,
-    release: String,
+    version: Option<String>,
+    release: Option<String>,
     arch: String,
     license: String,
     summary: Option<String>,
@@ -104,6 +105,7 @@ impl PackageFormat for Rpm {
             ..
         } = self;
 
+        let localtime: DateTime<Local> = Local::now();
         let mut spec = format!(
             r#"Name: {name}
 Epoch: {epoch}
@@ -129,6 +131,12 @@ License: {license}
 {post_install_script}
 "#,
             summary = self.summary.as_deref().unwrap_or(name.as_str()),
+            version = version
+                .as_deref()
+                .unwrap_or(&localtime.format("%Y%m%d").to_string()),
+            release = release
+                .as_deref()
+                .unwrap_or(&localtime.format("%H%M%S").to_string()),
             requires = requires,
             requires_post = requires_post,
             recommends = recommends,

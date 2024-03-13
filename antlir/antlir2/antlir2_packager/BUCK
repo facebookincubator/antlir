@@ -12,6 +12,7 @@ rust_binary(
     deps = [
         "anyhow",
         "bytesize",
+        "chrono",
         "clap",
         "gpt",
         "itertools",
