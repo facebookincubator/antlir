@@ -255,7 +255,10 @@ _cpio_zst = _new_compressed_package_rule(
 
 _rpm, _rpm_anon = _new_package_rule(
     rule_attrs = {
-        "arch": attrs.string(),
+        "arch": attrs.enum(
+            ["x86_64", "aarch64", "noarch"],
+            default = arch_select(x86_64 = "x86_64", aarch64 = "aarch64"),
+        ),
         "changelog": attrs.option(attrs.string(), default = None),
         "conflicts": attrs.list(attrs.string(), default = []),
         "description": attrs.option(attrs.string(), default = None),
@@ -264,7 +267,7 @@ _rpm, _rpm_anon = _new_package_rule(
         "post_install_script": attrs.option(attrs.string(), default = None),
         "provides": attrs.list(attrs.string(), default = []),
         "recommends": attrs.list(attrs.string(), default = []),
-        "release": attrs.string(),
+        "release": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime YYYYMMDD"),
         "requires": attrs.list(attrs.string(), default = []),
         "requires_post": attrs.list(attrs.string(), default = []),
         "rpm_name": attrs.string(),
@@ -272,7 +275,7 @@ _rpm, _rpm_anon = _new_package_rule(
         "sign_with_private_key": attrs.option(attrs.source(), default = None),
         "summary": attrs.option(attrs.string(), default = None),
         "supplements": attrs.list(attrs.string(), default = []),
-        "version": attrs.string(),
+        "version": attrs.option(attrs.string(), default = None, doc = "If unset, defaults to current datetime HHMMSS"),
     },
     format = "rpm",
     dot_meta = False,
