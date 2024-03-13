@@ -22,6 +22,7 @@ use petgraph::stable_graph::StableGraph;
 use petgraph::visit::Dfs;
 use petgraph::Directed;
 use petgraph::Direction;
+use rayon::prelude::*;
 use serde::Deserialize;
 use serde::Serialize;
 use serde_with::serde_as;
@@ -213,27 +214,38 @@ impl GraphBuilder {
 
     pub fn build(mut self) -> Result<Graph> {
         // Add all the nodes provided by our pending features
-        for feature_nx in self.pending_features.clone() {
-            let f = &self.g[feature_nx];
-            tracing::trace!("adding provides from {f:?}");
-            let provides = f.provides().map_err(Error::Provides)?;
+        for (feature_nx, provides) in self
+            .pending_features
+            .par_iter()
+            .map(|feature_nx| {
+                let f = &self.g[*feature_nx];
+                tracing::trace!("getting provides from {f:?}");
+                let provides = f.provides().map_err(Error::Provides)?;
+                Ok((*feature_nx, provides))
+            })
+            .collect::<Result<Vec<_>>>()?
+        {
             for prov in provides {
                 let prov_nx = self.add_item(prov);
                 self.g.update_edge(*feature_nx, *prov_nx, Edge::Provides);
             }
         }
 
+        let requires: Vec<_> = self
+            .pending_features
+            .par_iter()
+            .map(|feature_nx| {
+                let f = &self.g[*feature_nx];
+                tracing::trace!("getting requires from {f:?}");
+                let reqs = f.requires().map_err(Error::Requires)?;
+                Ok((*feature_nx, reqs))
+            })
+            .collect::<Result<_>>()?;
         // Add all the ordered requirements edges after all provided items are
         // added so that we know if a required item is missing or just not
         // encountered yet.
-        for feature_nx in &self.pending_features {
-            let f = &self.g[*feature_nx];
-            for req in f
-                .requires()
-                .map_err(Error::Requires)?
-                .into_iter()
-                .filter(|r| r.ordered)
-            {
+        for (feature_nx, requires) in &requires {
+            for req in requires.iter().filter(|r| r.ordered) {
                 let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
                     None => {
@@ -242,7 +254,7 @@ impl GraphBuilder {
                     }
                 };
                 self.g
-                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator));
+                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator.clone()));
             }
         }
 
@@ -306,14 +318,8 @@ impl GraphBuilder {
         // (unlikely, since we don't really care if it's truly a DAG after
         // toposort) we can come up with some other way to represent "weak"
         // edges like these.
-        for feature_nx in &self.pending_features {
-            let f = &self.g[*feature_nx];
-            for req in f
-                .requires()
-                .map_err(Error::Requires)?
-                .into_iter()
-                .filter(|r| !r.ordered)
-            {
+        for (feature_nx, requires) in &requires {
+            for req in requires.iter().filter(|r| !r.ordered) {
                 let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
                     None => {
@@ -322,7 +328,7 @@ impl GraphBuilder {
                     }
                 };
                 self.g
-                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator));
+                    .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator.clone()));
             }
         }
 

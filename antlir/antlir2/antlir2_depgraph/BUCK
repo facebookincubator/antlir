@@ -10,6 +10,7 @@ rust_library(
         "libloading",
         "nix",
         "petgraph",
+        "rayon",
         "serde",
         "serde_with",
         "thiserror",

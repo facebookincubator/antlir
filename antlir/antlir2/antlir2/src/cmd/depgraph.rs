@@ -50,10 +50,8 @@ impl Depgraph {
         };
 
         let mut depgraph = Graph::builder(self.label, self.parent.map(JsonFile::into_inner));
-        for features in self.features {
-            for f in features.into_inner() {
-                depgraph.add_feature(f);
-            }
+        for f in self.features.into_iter().flat_map(JsonFile::into_inner) {
+            depgraph.add_feature(f);
         }
         let mut depgraph = depgraph.build()?;
         if let Some(dir) = &self.add_built_items {
