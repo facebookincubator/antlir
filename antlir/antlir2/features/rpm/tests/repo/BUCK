@@ -39,7 +39,7 @@ image.layer(
 )
 
 image.layer(
-    name = "for-empty.layer",
+    name = "foo-empty.layer",
     features = [
         feature.install(
             src = "//antlir:empty",
@@ -73,7 +73,7 @@ all_rpms = [
 all_rpms.extend([
     test_rpm(
         name = "foo-empty",
-        parent_layer = ":for-empty.layer",
+        parent_layer = ":foo-empty.layer",
         release = "1",
         version = str(version),
     )
