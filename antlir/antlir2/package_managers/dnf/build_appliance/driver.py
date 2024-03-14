@@ -101,6 +101,7 @@ _RPMS_THAT_CAN_FAIL_SCRIPTS = {
     "antlir2-failing-postscripts": "TODO(T166162108)",
     "git-lfs": "TODO(T170621965)",
     "nsight-compute-2019.4.0": "TODO(T166170831)",
+    "coreutils-common": "TODO(T182347179)",
 }
 
 
