@@ -377,6 +377,30 @@ cargo.rust_library(
     visibility = [],
 )
 
+alias(
+    name = "bytesize",
+    actual = ":bytesize-1.3.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "bytesize-1.3.0.crate",
+    sha256 = "a3e368af43e418a04d52505cf3dbc23dda4e3407ae2fa99fd0e4f308ce546acc",
+    strip_prefix = "bytesize-1.3.0",
+    urls = ["https://crates.io/api/v1/crates/bytesize/1.3.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "bytesize-1.3.0",
+    srcs = [":bytesize-1.3.0.crate"],
+    crate = "bytesize",
+    crate_root = "bytesize-1.3.0.crate/src/lib.rs",
+    edition = "2015",
+    features = ["default"],
+    visibility = [],
+)
+
 http_archive(
     name = "cfg-if-1.0.0.crate",
     sha256 = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd",
@@ -707,6 +731,41 @@ cargo.rust_library(
     srcs = [":cpufeatures-0.2.12.crate"],
     crate = "cpufeatures",
     crate_root = "cpufeatures-0.2.12.crate/src/lib.rs",
+    edition = "2018",
+    visibility = [],
+)
+
+http_archive(
+    name = "crc-3.0.1.crate",
+    sha256 = "86ec7a15cbe22e59248fc7eadb1907dab5ba09372595da4d73dd805ed4417dfe",
+    strip_prefix = "crc-3.0.1",
+    urls = ["https://crates.io/api/v1/crates/crc/3.0.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "crc-3.0.1",
+    srcs = [":crc-3.0.1.crate"],
+    crate = "crc",
+    crate_root = "crc-3.0.1.crate/src/lib.rs",
+    edition = "2018",
+    visibility = [],
+    deps = [":crc-catalog-2.4.0"],
+)
+
+http_archive(
+    name = "crc-catalog-2.4.0.crate",
+    sha256 = "19d374276b40fb8bbdee95aef7c7fa6b5316ec764510eb64b8dd0e2ed0d7e7f5",
+    strip_prefix = "crc-catalog-2.4.0",
+    urls = ["https://crates.io/api/v1/crates/crc-catalog/2.4.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "crc-catalog-2.4.0",
+    srcs = [":crc-catalog-2.4.0.crate"],
+    crate = "crc_catalog",
+    crate_root = "crc-catalog-2.4.0.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
 )
@@ -1225,6 +1284,25 @@ cargo.rust_library(
 )
 
 http_archive(
+    name = "erased-serde-0.4.4.crate",
+    sha256 = "2b73807008a3c7f171cc40312f37d95ef0396e048b5848d775f54b1a4dd4a0d3",
+    strip_prefix = "erased-serde-0.4.4",
+    urls = ["https://crates.io/api/v1/crates/erased-serde/0.4.4/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "erased-serde-0.4.4",
+    srcs = [":erased-serde-0.4.4.crate"],
+    crate = "erased_serde",
+    crate_root = "erased-serde-0.4.4.crate/src/lib.rs",
+    edition = "2021",
+    features = ["alloc"],
+    visibility = [],
+    deps = [":serde-1.0.197"],
+)
+
+http_archive(
     name = "errno-0.3.8.crate",
     sha256 = "a258e46cdc063eb8519c00b9fc845fc47bcfca4130e2f08e88665ceda8474245",
     strip_prefix = "errno-0.3.8",
@@ -1270,6 +1348,32 @@ cargo.rust_library(
         "std",
     ],
     visibility = [],
+)
+
+http_archive(
+    name = "filetime-0.2.23.crate",
+    sha256 = "1ee447700ac8aa0b2f2bd7bc4462ad686ba06baa6727ac149a2d6277f0d240fd",
+    strip_prefix = "filetime-0.2.23",
+    urls = ["https://crates.io/api/v1/crates/filetime/0.2.23/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "filetime-0.2.23",
+    srcs = [":filetime-0.2.23.crate"],
+    crate = "filetime",
+    crate_root = "filetime-0.2.23.crate/src/lib.rs",
+    edition = "2018",
+    platform = {
+        "linux-x86_64": dict(
+            deps = [":libc-0.2.153"],
+        ),
+        "macos": dict(
+            deps = [":libc-0.2.153"],
+        ),
+    },
+    visibility = [],
+    deps = [":cfg-if-1.0.0"],
 )
 
 http_archive(
@@ -1706,6 +1810,7 @@ cargo.rust_library(
     crate = "getrandom",
     crate_root = "getrandom-0.2.12.crate/src/lib.rs",
     edition = "2018",
+    features = ["std"],
     platform = {
         "linux-x86_64": dict(
             deps = [":libc-0.2.153"],
@@ -1733,6 +1838,35 @@ cargo.rust_library(
     crate_root = "glob-0.3.1.crate/src/lib.rs",
     edition = "2015",
     visibility = [],
+)
+
+alias(
+    name = "gpt",
+    actual = ":gpt-3.1.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "gpt-3.1.0.crate",
+    sha256 = "8283e7331b8c93b9756e0cfdbcfb90312852f953c6faf9bf741e684cc3b6ad69",
+    strip_prefix = "gpt-3.1.0",
+    urls = ["https://crates.io/api/v1/crates/gpt/3.1.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "gpt-3.1.0",
+    srcs = [":gpt-3.1.0.crate"],
+    crate = "gpt",
+    crate_root = "gpt-3.1.0.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [
+        ":bitflags-2.4.2",
+        ":crc-3.0.1",
+        ":log-0.4.21",
+        ":uuid-1.7.0",
+    ],
 )
 
 http_archive(
@@ -2119,6 +2253,23 @@ cargo.rust_library(
         ":hashbrown-0.14.3",
         ":serde-1.0.197",
     ],
+)
+
+http_archive(
+    name = "inventory-0.3.15.crate",
+    sha256 = "f958d3d68f4167080a18141e10381e7634563984a537f2a49a30fd8e53ac5767",
+    strip_prefix = "inventory-0.3.15",
+    urls = ["https://crates.io/api/v1/crates/inventory/0.3.15/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "inventory-0.3.15",
+    srcs = [":inventory-0.3.15.crate"],
+    crate = "inventory",
+    crate_root = "inventory-0.3.15.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
 )
 
 alias(
@@ -3134,6 +3285,27 @@ cargo.rust_library(
     visibility = [],
 )
 
+http_archive(
+    name = "ppv-lite86-0.2.17.crate",
+    sha256 = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de",
+    strip_prefix = "ppv-lite86-0.2.17",
+    urls = ["https://crates.io/api/v1/crates/ppv-lite86/0.2.17/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "ppv-lite86-0.2.17",
+    srcs = [":ppv-lite86-0.2.17.crate"],
+    crate = "ppv_lite86",
+    crate_root = "ppv-lite86-0.2.17.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "simd",
+        "std",
+    ],
+    visibility = [],
+)
+
 alias(
     name = "pretty_assertions",
     actual = ":pretty_assertions-1.4.0",
@@ -3214,27 +3386,34 @@ buildscript_run(
 
 alias(
     name = "quick-xml",
-    actual = ":quick-xml-0.31.0",
+    actual = ":quick-xml-0.23.1",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "quick-xml-0.31.0.crate",
-    sha256 = "1004a344b30a54e2ee58d66a71b32d2db2feb0a31f9a2d302bf0536f15de2a33",
-    strip_prefix = "quick-xml-0.31.0",
-    urls = ["https://crates.io/api/v1/crates/quick-xml/0.31.0/download"],
+    name = "quick-xml-0.23.1.crate",
+    sha256 = "11bafc859c6815fbaffbbbf4229ecb767ac913fecb27f9ad4343662e9ef099ea",
+    strip_prefix = "quick-xml-0.23.1",
+    urls = ["https://crates.io/api/v1/crates/quick-xml/0.23.1/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "quick-xml-0.31.0",
-    srcs = [":quick-xml-0.31.0.crate"],
+    name = "quick-xml-0.23.1",
+    srcs = [":quick-xml-0.23.1.crate"],
     crate = "quick_xml",
-    crate_root = "quick-xml-0.31.0.crate/src/lib.rs",
-    edition = "2021",
-    features = ["default"],
+    crate_root = "quick-xml-0.23.1.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "serde",
+        "serialize",
+    ],
     visibility = [],
-    deps = [":memchr-2.7.1"],
+    deps = [
+        ":memchr-2.7.1",
+        ":serde-1.0.197",
+    ],
 )
 
 http_archive(
@@ -3257,6 +3436,89 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [":proc-macro2-1.0.78"],
+)
+
+http_archive(
+    name = "rand-0.8.5.crate",
+    sha256 = "34af8d1a0e25924bc5b7c43c079c942339d8f0a8b57c39049bef581b46327404",
+    strip_prefix = "rand-0.8.5",
+    urls = ["https://crates.io/api/v1/crates/rand/0.8.5/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "rand-0.8.5",
+    srcs = [":rand-0.8.5.crate"],
+    crate = "rand",
+    crate_root = "rand-0.8.5.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "alloc",
+        "default",
+        "getrandom",
+        "libc",
+        "rand_chacha",
+        "std",
+        "std_rng",
+    ],
+    platform = {
+        "linux-x86_64": dict(
+            deps = [":libc-0.2.153"],
+        ),
+        "macos": dict(
+            deps = [":libc-0.2.153"],
+        ),
+    },
+    visibility = [],
+    deps = [
+        ":rand_chacha-0.3.1",
+        ":rand_core-0.6.4",
+    ],
+)
+
+http_archive(
+    name = "rand_chacha-0.3.1.crate",
+    sha256 = "e6c10a63a0fa32252be49d21e7709d4d4baf8d231c2dbce1eaa8141b9b127d88",
+    strip_prefix = "rand_chacha-0.3.1",
+    urls = ["https://crates.io/api/v1/crates/rand_chacha/0.3.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "rand_chacha-0.3.1",
+    srcs = [":rand_chacha-0.3.1.crate"],
+    crate = "rand_chacha",
+    crate_root = "rand_chacha-0.3.1.crate/src/lib.rs",
+    edition = "2018",
+    features = ["std"],
+    visibility = [],
+    deps = [
+        ":ppv-lite86-0.2.17",
+        ":rand_core-0.6.4",
+    ],
+)
+
+http_archive(
+    name = "rand_core-0.6.4.crate",
+    sha256 = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c",
+    strip_prefix = "rand_core-0.6.4",
+    urls = ["https://crates.io/api/v1/crates/rand_core/0.6.4/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "rand_core-0.6.4",
+    srcs = [":rand_core-0.6.4.crate"],
+    crate = "rand_core",
+    crate_root = "rand_core-0.6.4.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "alloc",
+        "getrandom",
+        "std",
+    ],
+    visibility = [],
+    deps = [":getrandom-0.2.12"],
 )
 
 http_archive(
@@ -3558,6 +3820,35 @@ cargo.rust_library(
 )
 
 alias(
+    name = "retry",
+    actual = ":retry-1.3.1",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "retry-1.3.1.crate",
+    sha256 = "ac95c60a949a63fd2822f4964939662d8f2c16c4fa0624fd954bc6e703b9a3f6",
+    strip_prefix = "retry-1.3.1",
+    urls = ["https://crates.io/api/v1/crates/retry/1.3.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "retry-1.3.1",
+    srcs = [":retry-1.3.1.crate"],
+    crate = "retry",
+    crate_root = "retry-1.3.1.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "rand",
+        "random",
+    ],
+    visibility = [],
+    deps = [":rand-0.8.5"],
+)
+
+alias(
     name = "rstest",
     actual = ":rstest-0.18.2",
     visibility = ["PUBLIC"],
@@ -3649,12 +3940,14 @@ cargo.rust_binary(
         ":anyhow-1.0.80",
         ":base64-0.22.0",
         ":bitflags-2.4.2",
+        ":bytesize-1.3.0",
         ":clap-4.5.1",
         ":colored-2.1.0",
         ":configparser-3.0.4",
         ":derivative-2.2.0",
         ":derive_more-0.99.17",
         ":flate2-1.0.28",
+        ":gpt-3.1.0",
         ":hex-0.4.3",
         ":http-1.0.0",
         ":hyper-1.2.0",
@@ -3671,9 +3964,10 @@ cargo.rust_binary(
         ":openat2-0.1.2",
         ":petgraph-0.6.4",
         ":pretty_assertions-1.4.0",
-        ":quick-xml-0.31.0",
+        ":quick-xml-0.23.1",
         ":ref-cast-1.0.22",
         ":regex-1.10.3",
+        ":retry-1.3.1",
         ":rstest-0.18.2",
         ":serde-1.0.197",
         ":serde_json-1.0.114",
@@ -3683,6 +3977,7 @@ cargo.rust_binary(
         ":similar-asserts-1.5.0",
         ":sl-0.0.0",
         ":static_assertions-1.1.0",
+        ":tar-0.4.40",
         ":tempfile-3.10.1",
         ":thiserror-1.0.57",
         ":tokio-1.36.0",
@@ -3694,6 +3989,7 @@ cargo.rust_binary(
         ":tracing-subscriber-0.3.18",
         ":tracing-test-0.2.4",
         ":typed-builder-0.18.1",
+        ":typetag-0.2.16",
         ":url-2.5.0",
         ":uuid-1.7.0",
         ":walkdir-2.5.0",
@@ -4696,6 +4992,48 @@ cargo.rust_library(
 )
 
 alias(
+    name = "tar",
+    actual = ":tar-0.4.40",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "tar-0.4.40.crate",
+    sha256 = "b16afcea1f22891c49a00c751c7b63b2233284064f11a200fc624137c51e2ddb",
+    strip_prefix = "tar-0.4.40",
+    urls = ["https://crates.io/api/v1/crates/tar/0.4.40/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "tar-0.4.40",
+    srcs = [":tar-0.4.40.crate"],
+    crate = "tar",
+    crate_root = "tar-0.4.40.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "xattr",
+    ],
+    platform = {
+        "linux-x86_64": dict(
+            deps = [
+                ":libc-0.2.153",
+                ":xattr-1.3.1",
+            ],
+        ),
+        "macos": dict(
+            deps = [
+                ":libc-0.2.153",
+                ":xattr-1.3.1",
+            ],
+        ),
+    },
+    visibility = [],
+    deps = [":filetime-0.2.23"],
+)
+
+alias(
     name = "tempfile",
     actual = ":tempfile-3.10.1",
     visibility = ["PUBLIC"],
@@ -5568,6 +5906,59 @@ buildscript_run(
     buildscript_rule = ":typenum-1.17.0-build-script-main",
     features = ["force_unix_path_separator"],
     version = "1.17.0",
+)
+
+alias(
+    name = "typetag",
+    actual = ":typetag-0.2.16",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "typetag-0.2.16.crate",
+    sha256 = "661d18414ec032a49ece2d56eee03636e43c4e8d577047ab334c0ba892e29aaf",
+    strip_prefix = "typetag-0.2.16",
+    urls = ["https://crates.io/api/v1/crates/typetag/0.2.16/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "typetag-0.2.16",
+    srcs = [":typetag-0.2.16.crate"],
+    crate = "typetag",
+    crate_root = "typetag-0.2.16.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [
+        ":erased-serde-0.4.4",
+        ":inventory-0.3.15",
+        ":once_cell-1.19.0",
+        ":serde-1.0.197",
+        ":typetag-impl-0.2.16",
+    ],
+)
+
+http_archive(
+    name = "typetag-impl-0.2.16.crate",
+    sha256 = "ac73887f47b9312552aa90ef477927ff014d63d1920ca8037c6c1951eab64bb1",
+    strip_prefix = "typetag-impl-0.2.16",
+    urls = ["https://crates.io/api/v1/crates/typetag-impl/0.2.16/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "typetag-impl-0.2.16",
+    srcs = [":typetag-impl-0.2.16.crate"],
+    crate = "typetag_impl",
+    crate_root = "typetag-impl-0.2.16.crate/src/lib.rs",
+    edition = "2021",
+    proc_macro = True,
+    visibility = [],
+    deps = [
+        ":proc-macro2-1.0.78",
+        ":quote-1.0.35",
+        ":syn-2.0.52",
+    ],
 )
 
 http_archive(
