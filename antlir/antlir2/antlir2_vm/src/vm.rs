@@ -153,18 +153,19 @@ impl<S: Share> VM<S> {
 
     /// Run the VM and wait for it to finish
     pub(crate) fn run(&mut self) -> Result<()> {
+        let start_ts = Instant::now();
         self.sidecar_handles = self.spawn_sidecar_services();
         if self.args.first_boot_command.is_some() {
             info!("Booting VM for first boot command. It could take seconds to minutes...");
             let proc = self.spawn_vm()?;
             let ssh_first_boot_cmd = self.ssh_first_boot_command()?;
-            self.wait_for_vm(proc, ssh_first_boot_cmd, true)?;
+            self.wait_for_vm(proc, ssh_first_boot_cmd, true, start_ts)?;
             thread::sleep(Duration::from_secs(1));
         }
         info!("Booting VM. It could take seconds to minutes...");
         let proc = self.spawn_vm()?;
         let ssh_cmd = self.ssh_command()?;
-        self.wait_for_vm(proc, ssh_cmd, false)?;
+        self.wait_for_vm(proc, ssh_cmd, false, start_ts)?;
         Ok(())
     }
 
@@ -612,9 +613,8 @@ impl<S: Share> VM<S> {
         mut vm_proc: Child,
         ssh_cmd: Command,
         cleanup_needed: bool,
+        start_ts: Instant,
     ) -> Result<()> {
-        let start_ts = Instant::now();
-
         // Wait for notify file to be created by qemu
         debug!("Waiting for notify file to be created");
         while !self.time_left(start_ts)?.is_zero() {
