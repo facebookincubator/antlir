@@ -31,7 +31,9 @@ probably better if they just type `export_file("their/file")` instead.
 load(":build_defs.bzl", "export_file")
 load(":types.bzl", "types")
 
-def maybe_export_file(source):
+def maybe_export_file(source, labels = None):
+    labels = labels or []
+
     if source == None or not types.is_string(source) or ":" in source:
         return source
 
@@ -45,5 +47,6 @@ def maybe_export_file(source):
         name = buck_target_name,
         src = source,
         visibility = ["//visibility:private"],
+        labels = labels,
     )
     return ":" + buck_target_name
