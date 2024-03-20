@@ -634,12 +634,13 @@ def _do_not_cache_me_json(instance):
         ),
     ))
 
-def _json_file(name, instance, visibility = None):  # pragma: no cover
+def _json_file(name, instance, visibility = None, labels = None):  # pragma: no cover
     """
     Serialize the given shape instance to a JSON file that can be used in the
     `resources` section of a `python_binary` or a `$(location)` macro in a
     `buck_genrule`.
     """
+    labels = labels or []
     buck_genrule(
         name = name,
         # Antlir users should not directly use `shape`, but we do use it
@@ -649,6 +650,7 @@ def _json_file(name, instance, visibility = None):  # pragma: no cover
             antlir_dep("bzl/shape2:serialize-shape"),
         ),
         visibility = visibility,
+        labels = labels,
     )
     return normalize_target(":" + name)
 
