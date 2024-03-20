@@ -303,11 +303,16 @@ impl<S: Share> VM<S> {
         });
 
         if let Some(command) = &self.args.first_boot_command {
-            let cmd_with_reboot = format!("{} && reboot", command);
-            ssh_cmd.arg(cmd_with_reboot.as_str());
+            ssh_cmd.arg(command);
         }
 
         info!("First boot command: {:?}", ssh_cmd);
+        Ok(ssh_cmd)
+    }
+
+    fn ssh_poweroff_command(&self) -> Result<Command> {
+        let mut ssh_cmd = GuestSSHCommand::new()?.ssh_cmd();
+        ssh_cmd.arg("nohup shutdown 1 &> /dev/null &disown");
         Ok(ssh_cmd)
     }
 
@@ -516,11 +521,13 @@ impl<S: Share> VM<S> {
     }
 
     /// We no longer expect / need the VM to be running. Let's clean up the process
+    /// within the allowed timeout window.
     fn cleanup_vm(
         &mut self,
         mut vm_proc: Child,
         socket: &UnixStream,
         cleanup_needed: bool,
+        start_ts: Instant,
     ) -> Result<()> {
         if !cleanup_needed {
             // Do not clean up the VM resources if we are exiting in any case.
@@ -528,24 +535,33 @@ impl<S: Share> VM<S> {
             // risk of reporting errors after successful workload runs.
             return Ok(());
         }
-        // If the VM is still running, kill it
-        match vm_proc.try_wait() {
-            Ok(Some(_)) => {}
-            Ok(None) => {
-                vm_proc.kill().map_err(|err| VMError::CleanupError {
-                    desc: "Failed to kill the VM process".into(),
-                    err,
-                })?;
-                vm_proc.wait().map_err(|err| VMError::CleanupError {
-                    desc: "Failed to wait on the VM process".into(),
-                    err,
-                })?;
-            }
-            Err(err) => {
-                return Err(VMError::CleanupError {
-                    desc: "Error attempting to wait on the VM process".into(),
-                    err,
-                });
+        // If the VM is still running, shut it down
+        if vm_proc
+            .try_wait()
+            .map_err(|err| VMError::CleanupError {
+                desc: "Error attempting to wait on the VM process".into(),
+                err,
+            })?
+            .is_none()
+        {
+            let poweroff = self.ssh_poweroff_command()?;
+            self.run_cmd_and_wait(poweroff, socket, start_ts)?;
+
+            while !self.time_left(start_ts)?.is_zero() {
+                match vm_proc.try_wait() {
+                    Ok(Some(_)) => {
+                        break;
+                    }
+                    Ok(None) => {
+                        thread::sleep(Duration::from_millis(100));
+                    }
+                    Err(err) => {
+                        return Err(VMError::CleanupError {
+                            desc: "Error attempting to wait on the VM process".into(),
+                            err,
+                        });
+                    }
+                }
             }
         }
 
@@ -639,7 +655,7 @@ impl<S: Share> VM<S> {
             let mut cmd = Command::new("/bin/bash");
             cmd.arg("-l");
             self.run_cmd_and_wait(cmd, &socket, start_ts)?;
-            self.cleanup_vm(vm_proc, &socket, cleanup_needed)?;
+            self.cleanup_vm(vm_proc, &socket, cleanup_needed, start_ts)?;
             return Ok(());
         }
 
@@ -684,7 +700,7 @@ impl<S: Share> VM<S> {
                 return Err(VMError::SSHCommandResultError(status));
             }
         }
-        self.cleanup_vm(vm_proc, &socket, cleanup_needed)?;
+        self.cleanup_vm(vm_proc, &socket, cleanup_needed, start_ts)?;
         Ok(())
     }
 
