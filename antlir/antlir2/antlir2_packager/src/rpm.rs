@@ -55,6 +55,10 @@ pub struct Rpm {
     sign_with_private_key: Option<PathBuf>,
     sign_digest_algo: Option<String>,
     changelog: Option<String>,
+    #[serde(default)]
+    extra_files: Vec<String>,
+    #[serde(default)]
+    python_bytecompile: bool,
 }
 
 impl PackageFormat for Rpm {
@@ -155,6 +159,11 @@ License: {license}
                 .map(|c| format!("%changelog\n{c}\n"))
                 .unwrap_or_default(),
         );
+
+        if !self.python_bytecompile {
+            spec.push_str("%define __brp_python_bytecompile %{nil}\n");
+        }
+
         if std::fs::read_dir(&self.layer)
             .context("failed to list layer contents")?
             .count()
@@ -189,6 +198,10 @@ License: {license}
             }
         } else {
             spec.push_str("%files\n");
+        }
+        for extra_file in &self.extra_files {
+            spec.push_str(extra_file);
+            spec.push('\n');
         }
         let mut rpm_spec_file =
             NamedTempFile::new().context("failed to create tempfile for rpm spec")?;
