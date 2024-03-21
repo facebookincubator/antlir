@@ -5,54 +5,60 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fs::File;
+use std::fs::Permissions;
+use std::io::BufWriter;
+use std::io::Seek;
+use std::io::SeekFrom;
+use std::io::Write;
+use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::path::PathBuf;
-use std::process::Command;
-use std::process::Stdio;
+use std::time::SystemTime;
 
-use anyhow::Context;
 use anyhow::Result;
 use serde::Deserialize;
-use tempfile::TempDir;
+use uuid::Uuid;
 
-use crate::run_cmd;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Xar {
-    make_xar: Vec<String>,
-    layer: PathBuf,
+    squashfs: PathBuf,
     executable: PathBuf,
+    target_name: String,
 }
+
+const SQUASHFS_OFFSET: u64 = 4096;
 
 impl PackageFormat for Xar {
     fn build(&self, out: &Path) -> Result<()> {
-        let layer_canonical = self.layer.canonicalize().with_context(|| {
-            format!("failed to canonicalize layer path {}", self.layer.display())
-        })?;
-
-        let tmpdir = TempDir::new_in("/tmp").context("while making tmp dir")?;
-
-        let mut make_xar_cmd = self.make_xar.iter();
-        let make_xar = make_xar_cmd.next().context("make_xar command empty")?;
-        run_cmd(
-            Command::new(make_xar)
-                .args(make_xar_cmd)
-                .arg("--output")
-                .arg(out)
-                .arg("--raw")
-                .arg(&layer_canonical)
-                .arg("--raw-executable")
-                .arg(
-                    self.executable
-                        .strip_prefix("/")
-                        .unwrap_or(&self.executable),
-                )
-                .env("TMPDIR", tmpdir.path())
-                .stdout(Stdio::piped()),
-        )
-        .context("while running make_xar")?;
-
+        let mut out = BufWriter::new(File::create(out)?);
+        writeln!(out, "#!/usr/bin/env xarexec_fuse")?;
+        writeln!(
+            out,
+            "OFFSET=\"{SQUASHFS_OFFSET}\"\n\
+            UUID=\"{uuid}\"\n\
+            VERSION=\"{timestamp}\"\n\
+            DEPENDENCIES=\"\"\n\
+            XAREXEC_TARGET=\"{executable}\"\n\
+            XAREXEC_TRAMPOLINE_NAMES=\"'{target_name}' 'invoke_xar_via_trampoline'\"\n\
+            #xar_stop\n\
+            echo This XAR file should not be executed by sh\n\
+            exit 1\n\
+            # Actual squashfs file begins at {SQUASHFS_OFFSET}",
+            executable = self.executable.display(),
+            uuid = &Uuid::new_v4().to_string()[..8],
+            timestamp = SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)?
+                .as_secs(),
+            target_name = self.target_name,
+        )?;
+        out.seek(SeekFrom::Start(SQUASHFS_OFFSET))?;
+        let mut squashfs = File::open(&self.squashfs)?;
+        std::io::copy(&mut squashfs, &mut out)?;
+        out.into_inner()?
+            .set_permissions(Permissions::from_mode(0o755))?;
         Ok(())
     }
 }

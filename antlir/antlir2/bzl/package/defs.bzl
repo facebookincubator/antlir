@@ -14,16 +14,15 @@ load(":gpt.bzl", "GptPartitionSource", "gpt")
 load(":macro.bzl", "package_macro")
 load(":sendstream.bzl", "sendstream", "sendstream_v2", "sendstream_zst")
 load(":stamp_buildinfo.bzl", "stamp_buildinfo_rule")
-load(":xar.bzl", "xar")
 
 # Attrs that are required by all packages
-_common_attrs = {
+common_attrs = {
     "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
     "out": attrs.option(attrs.string(doc = "Output filename"), default = None),
 } | layer_attrs
 
 # Attrs that will only ever be used as default_only
-_default_attrs = {
+default_attrs = {
     "_antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
     "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
     "_dot_meta_feature": attrs.dep(default = antlir2_dep("//antlir/antlir2/bzl/package:dot-meta")),
@@ -131,7 +130,7 @@ def _new_package_rule(
         sudo: bool = False,
         force_extension: str | None = None):
     kwargs = {
-        "attrs": _default_attrs | _common_attrs | rule_attrs | {
+        "attrs": default_attrs | common_attrs | rule_attrs | {
             "dot_meta": attrs.bool(default = dot_meta),
         },
         "impl": partial(
@@ -151,7 +150,7 @@ def _new_package_rule(
         ),
         anon_rule(
             artifact_promise_mappings = {
-                "src": lambda x: ensure_single_output(x),
+                "package": lambda x: ensure_single_output(x),
             },
             **kwargs
         ),
@@ -164,13 +163,13 @@ def _compressed_impl(
         compressor: str) -> list[Provider]:
     src = ctx.actions.anon_target(
         uncompressed,
-        {key: getattr(ctx.attrs, key) for key in _default_attrs.keys()} |
+        {key: getattr(ctx.attrs, key) for key in default_attrs.keys()} |
         {
             "layer": ctx.attrs.layer,
             "name": str(ctx.label.raw_target()),
             "out": "uncompressed",
         } | {key: getattr(ctx.attrs, key) for key in rule_attr_keys},
-    ).artifact("src")
+    ).artifact("package")
     package = ctx.actions.declare_output(ctx.label.name)
 
     if compressor == "gzip":
@@ -224,7 +223,7 @@ def _new_compressed_package_rule(
             rule_attr_keys = list(rule_attrs.keys()),
             compressor = compressor,
         ),
-        attrs = _default_attrs | _common_attrs | rule_attrs | {
+        attrs = default_attrs | common_attrs | rule_attrs | {
             "compression_level": attrs.int(default = default_compression_level),
         },
         cfg = package_cfg,
@@ -293,7 +292,7 @@ _vfat, _vfat_anon = _new_package_rule(
     can_be_partition = True,
 )
 
-_squashfs, _squashfs_anon = _new_package_rule(
+_squashfs, squashfs_anon = _new_package_rule(
     rule_attrs = {},
     format = "squashfs",
     can_be_partition = True,
@@ -351,5 +350,4 @@ package = struct(
     tar_gz = package_macro(_tar_gz),
     tar_zst = package_macro(_tar_zst),
     vfat = package_macro(_vfat),
-    xar = xar,
 )
