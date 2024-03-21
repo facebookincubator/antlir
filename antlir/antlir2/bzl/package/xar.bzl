@@ -3,19 +3,22 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs")
+load(":defs.bzl", "common_attrs", "default_attrs", "squashfs_anon")
 load(":macro.bzl", "package_macro")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
-    out = ctx.actions.declare_output(ctx.label.name + ".xar")
+    out = ctx.actions.declare_output(ctx.label.name)
+    squash = ctx.actions.anon_target(squashfs_anon, {
+        k: getattr(ctx.attrs, k)
+        for k in list(layer_attrs) + list(common_attrs) + list(default_attrs)
+    }).artifact("package")
     spec = ctx.actions.write_json(
         "spec.json",
         {"xar": {
             "executable": ctx.attrs.executable,
-            "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
-            "make_xar": ctx.attrs._make_xar[RunInfo],
+            "squashfs": squash,
+            "target_name": ctx.label.name,
         }},
         with_inputs = True,
     )
@@ -37,9 +40,7 @@ _xar = rule(
     impl = _impl,
     attrs = {
         "executable": attrs.string(doc = "Executable within the XAR root that serves as the entrypoint"),
-        "_antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
-        "_make_xar": attrs.default_only(attrs.exec_dep(default = "//tools/xar:make_xar")),
-    } | layer_attrs,
+    } | layer_attrs | default_attrs | common_attrs,
 )
 
 xar = package_macro(_xar)

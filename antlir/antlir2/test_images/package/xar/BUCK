@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/antlir2/bzl/package:defs.bzl", "package")
+load("//antlir/antlir2/bzl/package:xar.bzl", "xar")
 load("//antlir/bzl:build_defs.bzl", "python_unittest")
 
 oncall("antlir")
@@ -20,7 +20,7 @@ image.layer(
     ],
 )
 
-package.xar(
+xar(
     name = "test.xar",
     executable = "/entrypoint",
     layer = ":layer",
