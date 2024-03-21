@@ -62,6 +62,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 # into an image, but it *can* be run remotely
                 prefer_local = True,
             )
+        if ctx.attrs.src.basename.endswith("zst"):
+            src = ctx.actions.declare_output("uncompressed")
+            ctx.actions.run(
+                cmd_args(
+                    "zstd",
+                    "-d",
+                    ctx.attrs.src,
+                    "-o",
+                    src.as_output(),
+                ),
+                category = "decompress",
+                # we're going to need it to be locally available to extract it
+                # into an image, but it *can* be run remotely
+                prefer_local = True,
+            )
 
     if format == "caf":
         warning("{}: CAF prebuilts may lose xattrs! https://fb.workplace.com/groups/279514141750091/posts/3609421132674735".format(ctx.label))
