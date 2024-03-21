@@ -35,8 +35,10 @@ struct Args {
     /// `--user` run command as a given user
     #[clap(long, default_value = "root")]
     user: String,
-    #[clap(long)]
+    #[clap(long, conflicts_with = "boot")]
     pipe: bool,
+    #[clap(long, conflicts_with = "pipe")]
+    boot: bool,
     #[clap(long)]
     chdir: Option<PathBuf>,
     #[clap(last = true)]
@@ -90,9 +92,11 @@ fn main() -> anyhow::Result<()> {
         .inputs(bind_ro_inputs)
         .outputs(bind_rw)
         .ephemeral(true)
-        .invocation_type(match args.pipe {
-            true => InvocationType::Pid2Pipe,
-            false => InvocationType::Pid2Interactive,
+        .invocation_type(match (args.boot, args.pipe) {
+            (true, false) => InvocationType::BootReadOnly,
+            (true, true) => unreachable!("--boot and --pipe are mutually exclusive"),
+            (false, true) => InvocationType::Pid2Pipe,
+            (false, false) => InvocationType::Pid2Interactive,
         });
     if args.artifacts_require_repo {
         cmd_builder.inputs(repo_root.into_path_buf());
@@ -100,6 +104,9 @@ fn main() -> anyhow::Result<()> {
     }
     if let Some(chdir) = &args.chdir {
         cmd_builder.working_directory(chdir);
+    }
+    if args.boot {
+        cmd_builder.register(true);
     }
 
     let mut cmd = args.cmd.into_iter();
