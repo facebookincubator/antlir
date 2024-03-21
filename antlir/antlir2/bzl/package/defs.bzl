@@ -334,26 +334,7 @@ _ext3, _ext3_anon = _new_package_rule(
     sudo = True,
 )
 
-def _backwards_compatible_new(format: str, **kwargs):
-    {
-        "btrfs": btrfs,
-        "cpio.gz": package_macro(_cpio_gz),
-        "cpio.zst": package_macro(_cpio_zst),
-        "ext3": package_macro(_ext3),
-        "rpm": package_macro(_rpm),
-        "sendstream": sendstream,
-        "sendstream.v2": sendstream_v2,
-        "sendstream.zst": sendstream_zst,
-        "squashfs": package_macro(_squashfs),
-        "tar.gz": package_macro(_tar_gz),
-        "tar.zst": package_macro(_tar_zst),
-        "vfat": package_macro(_vfat),
-    }[format](
-        **kwargs
-    )
-
 package = struct(
-    backward_compatible_new = _backwards_compatible_new,
     btrfs = btrfs,
     cas_dir = package_macro(_cas_dir),
     cpio = package_macro(_cpio),
