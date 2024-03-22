@@ -30,10 +30,13 @@ pub fn find_repo_root(path_in_repo: &AbsolutePath) -> Result<AbsolutePathBuf, Fi
         Some(path) => Ok(path),
         None => match first_parent_containing_sigil(path_in_repo, ".git", true) {
             Some(path) => Ok(path),
-            None => Err(FindRootError::SigilNotFound(
-                ".hg or .git",
-                path_in_repo.into(),
-            )),
+            None => match first_parent_containing_sigil(path_in_repo, ".sl", true) {
+                Some(path) => Ok(path),
+                None => Err(FindRootError::SigilNotFound(
+                    ".hg, .git or .sl",
+                    path_in_repo.into(),
+                )),
+            },
         },
     }
 }
