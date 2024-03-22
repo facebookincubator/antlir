@@ -33,7 +33,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         for dep in rust_dep[RustLinkInfo].exported_link_deps:
             for item in dep[SharedLibraryInfo].set.traverse():
                 lib_dir_map.update({
-                    shlib.soname.ensure_str(): shlib.lib.output
+                    shlib.soname: shlib.lib.output
                     for shlib in item.libraries
                 })
 
