@@ -1,9 +1,8 @@
+#!/usr/bin/env python3
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
-
-#!/usr/bin/env python3
 
 # Generate a set of TARGETS files for upstream repos. This *DOES NOT* do
 # anything to ensure that the contents are preserved, so should only be used
@@ -93,6 +92,10 @@ def snapshot_repo(args, base_url: ParseResult) -> str:
             xml_files["other"].name,
         ):
             target_name = pkg.nevra().replace("^", "").replace(":", "/")
+            url = urljoin(base_url, pkg.location_href)
+            pkg.location_href = str(
+                Path("Packages") / pkg.pkgId / (pkg.nevra() + ".rpm")
+            )
             targets.append(
                 xml(
                     name=target_name + "--xml",
@@ -109,7 +112,7 @@ def snapshot_repo(args, base_url: ParseResult) -> str:
                     version=pkg.version,
                     release=pkg.release,
                     arch=pkg.arch,
-                    url=urljoin(base_url, pkg.location_href),
+                    url=url,
                     xml=":" + target_name + "--xml",
                     **{pkg.checksum_type: pkg.pkgId}
                 )
@@ -117,7 +120,7 @@ def snapshot_repo(args, base_url: ParseResult) -> str:
             rpm_target_names.append(":" + target_name)
 
     targets = sorted(repr(t) for t in targets)
-    source = """
+    source = """# \x40generated
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
 load("//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
 load("//antlir/antlir2/package_managers/dnf/rules:xml.bzl", "xml")
@@ -145,6 +148,7 @@ def main(args) -> None:
         repo_id = base_url.path.strip("/").replace("/", "_")
         repos[base_url.path.strip("/")] = repo_id
     with open(args.dst / "BUCK", "w") as f:
+        f.write("# \x40generated\n")
         f.write(
             'load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")\n\n'
         )
