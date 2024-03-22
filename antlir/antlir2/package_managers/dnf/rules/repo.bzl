@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/bzl:build_defs.bzl", "is_facebook")
 load(":rpm.bzl", "RpmInfo", "nevra_to_string", "package_href")
 
 RepoInfo = provider(fields = [
@@ -46,18 +47,21 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         category = "repodata",
     )
 
-    # Pre-build .solv(x) files so that dnf installation is substantially faster
-    # TODO: use repomdxml2solv from libsolv-tools instead of this sketchiness
-    repodata = ctx.actions.declare_output("repodata_with_solv", dir = True)
-    ctx.actions.run(
-        cmd_args(
-            ctx.attrs.build_solv[RunInfo],
-            repo_id,
-            plain_repodata,
-            repodata.as_output(),
-        ),
-        category = "solv",
-    )
+    if is_facebook:
+        # Pre-build .solv(x) files so that dnf installation is substantially faster
+        # TODO: use repomdxml2solv from libsolv-tools instead of this sketchiness
+        repodata = ctx.actions.declare_output("repodata_with_solv", dir = True)
+        ctx.actions.run(
+            cmd_args(
+                ctx.attrs.build_solv[RunInfo],
+                repo_id,
+                plain_repodata,
+                repodata.as_output(),
+            ),
+            category = "solv",
+        )
+    else:
+        repodata = plain_repodata
 
     # Create an artifact that is the _entire_ repository for completely offline
     # usage

@@ -9,6 +9,7 @@
 # ensure that we're using the same python that dnf itself is using
 
 import json
+import logging
 import os.path
 import platform
 import shutil
@@ -18,6 +19,8 @@ from typing import ContextManager, Dict, Mapping, Optional, Set
 
 import dnf
 import hawkey
+
+log = logging.getLogger("antlir2_dnf_base")
 
 
 class AntlirError(Exception):
@@ -137,14 +140,22 @@ def add_repos(*, base: dnf.Base, repos_dir: Path) -> None:
         repo = dnf.repo.Repo(id, conf)
         repo.baseurl = [basedir.as_uri()]
         base.repos.add(repo)
-        shutil.copyfile(
-            basedir / "repodata" / f"{id}.solv",
-            Path(base.conf.cachedir) / f"{id}.solv",
-        )
-        shutil.copyfile(
-            basedir / "repodata" / f"{id}-filenames.solvx",
-            Path(base.conf.cachedir) / f"{id}-filenames.solvx",
-        )
+        try:
+            shutil.copyfile(
+                basedir / "repodata" / f"{id}.solv",
+                Path(base.conf.cachedir) / f"{id}.solv",
+            )
+            shutil.copyfile(
+                basedir / "repodata" / f"{id}-filenames.solvx",
+                Path(base.conf.cachedir) / f"{id}-filenames.solvx",
+            )
+        except FileNotFoundError as e:
+            log.warning(
+                f"could not copy .solv files, dnf will be substantially slower! {e}"
+            )
+            # Forcibly crash internally since this is such a huge performance
+            # regression - if it stops working we need to know immediately
+            # @oss-disable
 
 
 def _versionlock_query(
