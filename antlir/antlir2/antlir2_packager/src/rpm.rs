@@ -6,7 +6,6 @@
  */
 
 use std::fmt::Write as _;
-use std::fs::File;
 use std::io::Write as _;
 use std::path::Path;
 use std::path::PathBuf;
@@ -19,6 +18,7 @@ use anyhow::Context;
 use anyhow::Result;
 use chrono::prelude::*;
 use itertools::Itertools;
+#[cfg(libcap)]
 use libcap::FileExt as _;
 use serde::Deserialize;
 use tempfile::NamedTempFile;
@@ -186,7 +186,10 @@ License: {license}
                 if relpath == Path::new("/") {
                     continue;
                 }
-                if let Some(caps) = File::open(entry.path()).and_then(|f| f.get_capabilities())? {
+                #[cfg(libcap)]
+                if let Some(caps) =
+                    std::fs::File::open(entry.path()).and_then(|f| f.get_capabilities())?
+                {
                     let caps = caps.to_text()?;
                     spec.push_str("%caps(");
                     spec.push_str(&caps);

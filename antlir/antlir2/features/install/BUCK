@@ -1,5 +1,5 @@
 load("//antlir/antlir2/features:defs.bzl", "feature_impl")
-load("//antlir/bzl:build_defs.bzl", "alias", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "alias", "internal_external", "is_facebook")
 
 oncall("antlir")
 
@@ -20,12 +20,18 @@ alias(
 
 feature_impl(
     name = "install",
-    features = select({
-        # @oss-disable
-        "DEFAULT": ["setcap"],
-    }),
-    deps = select({
-        # @oss-disable
-        "DEFAULT": _base_deps + ["//antlir/antlir2/libcap:libcap"],
-    }),
+    features = internal_external(
+        fb = select({
+            ":no-setcap": [],
+            "DEFAULT": ["setcap"],
+        }),
+        oss = [],
+    ),
+    deps = internal_external(
+        fb = select({
+            ":no-setcap": _base_deps,
+            "DEFAULT": _base_deps + ["//antlir/antlir2/libcap:libcap"],
+        }),
+        oss = _base_deps,
+    ),
 )

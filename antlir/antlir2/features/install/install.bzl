@@ -13,6 +13,7 @@ load(
     "ParseTimeFeature",
 )
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:stat.bzl", "stat")
 
@@ -67,8 +68,10 @@ def install(
         plugin = antlir2_dep("//antlir/antlir2/features/install:install"),
         deps_or_srcs = {"src": src},
         exec_deps = {
-            # @oss-disable
-            # @oss-enable "_objcopy": "toolchains//:objcopy",
+            "_objcopy": internal_external(
+                fb = "fbsource//third-party/binutils:objcopy",
+                oss = "toolchains//:objcopy",
+            ),
         },
         kwargs = {
             "dst": dst,
