@@ -1,6 +1,11 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary")
+load("//antlir/bzl:build_defs.bzl", "internal_external", "rust_binary")
 
 oncall("antlir")
+
+have_libcap = internal_external(
+    fb = True,
+    oss = False,
+)
 
 rust_binary(
     name = "antlir2-packager",
@@ -8,6 +13,7 @@ rust_binary(
     compatible_with = [
         "ovr_config//os:linux",
     ],
+    rustc_flags = ["--cfg=libcap"] if have_libcap else [],
     visibility = ["PUBLIC"],
     deps = [
         "anyhow",
@@ -30,7 +36,6 @@ rust_binary(
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_working_volume:antlir2_working_volume",
-        "//antlir/antlir2/libcap:libcap",
         "//antlir/util/cli/json_arg:json_arg",
-    ],
+    ] + (["//antlir/antlir2/libcap:libcap"] if have_libcap else []),
 )
