@@ -1,21 +1,3 @@
 [repositories]
 antlir = ../
-prelude = ../prelude
-toolchains = ../toolchains
-none = none
 generated = .
-
-[repository_aliases]
-config = prelude
-ovr_config = prelude
-fbcode = none
-fbsource = none
-fbcode_macros = none
-buck = none
-
-[parser]
-target_platform_detector_spec = target:generated//...->prelude//platforms:default
-
-[project]
-ignore = .git
-
