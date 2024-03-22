@@ -213,6 +213,10 @@ def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
                         args = proxy_cmd,
                     ),
                 ],
+                "repo": [DefaultInfo(sub_targets = {
+                    repo[RepoInfo].logical_id or repo[RepoInfo].id: repo.providers
+                    for repo in repos.values()
+                })],
             },
         ),
     ]
