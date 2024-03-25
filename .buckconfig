@@ -3,6 +3,7 @@ antlir = .
 prelude = prelude
 toolchains = toolchains
 none = none
+generated = generated
 
 [repository_aliases]
 config = prelude

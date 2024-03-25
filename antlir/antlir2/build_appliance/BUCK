@@ -1,4 +1,5 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 
 oncall("antlir")
 
@@ -34,5 +35,10 @@ feature.new(
         ),
         "//antlir/antlir2/package_managers/dnf/build_appliance:features",
     ],
-    visibility = ["//antlir/antlir2/..."],
+    visibility = [
+        internal_external(
+            fb = "//antlir/antlir2/...",
+            oss = "PUBLIC",
+        ),
+    ],
 )
