@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
@@ -27,38 +27,33 @@ pub struct Squashfs {
 
 impl PackageFormat for Squashfs {
     fn build(&self, out: &Path) -> Result<()> {
-        File::create(&out).context("failed to create output file")?;
-
-        let layer_abs_path = self
-            .layer
-            .canonicalize()
-            .context("failed to build absolute path to layer")?;
-
-        let output_abs_path = out
-            .canonicalize()
-            .context("failed to build abs path to output")?;
+        File::create(out).context("failed to create output file")?;
 
         let isol_context = IsolationContext::builder(&self.build_appliance)
-            .inputs([layer_abs_path.as_path()])
-            .outputs([output_abs_path.as_path()])
-            .working_directory(std::env::current_dir().context("while getting cwd")?)
+            .ephemeral(false)
+            .readonly()
+            .tmpfs(Path::new("/__antlir2__/out"))
+            .outputs(("/__antlir2__/out/squashfs", out))
+            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((
+                PathBuf::from("/__antlir2__/working_directory"),
+                std::env::current_dir()?,
+            ))
+            .working_directory(Path::new("/__antlir2__/working_directory"))
             .build();
 
-        let squashfs_script = format!(
-            "set -ue -o pipefail; \
-                /usr/sbin/mksquashfs {} {} -comp zstd -noappend -one-file-system",
-            layer_abs_path.as_path().display(),
-            output_abs_path.as_path().display()
-        );
-
         run_cmd(
-            nspawn(isol_context)?
-                .command("/bin/bash")?
-                .arg("-c")
-                .arg(squashfs_script)
+            unshare(isol_context)?
+                .command("/usr/sbin/mksquashfs")?
+                .arg("/__antlir2__/root")
+                .arg("/__antlir2__/out/squashfs")
+                .arg("-comp")
+                .arg("zstd")
+                .arg("-noappend")
+                .arg("-one-file-system")
                 .stdout(Stdio::piped()),
         )
-        .context("Failed to build cpio archive")?;
+        .context("Failed to build squashfs")?;
 
         Ok(())
     }
