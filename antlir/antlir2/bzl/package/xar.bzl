@@ -3,7 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl/package:cfg.bzl", "layer_attrs")
+load(":cfg.bzl", "layer_attrs", "package_cfg")
 load(":defs.bzl", "common_attrs", "default_attrs", "squashfs_anon")
 load(":macro.bzl", "package_macro")
 
@@ -41,6 +41,7 @@ _xar = rule(
     attrs = {
         "executable": attrs.string(doc = "Executable within the XAR root that serves as the entrypoint"),
     } | layer_attrs | default_attrs | common_attrs,
+    cfg = package_cfg,
 )
 
 xar = package_macro(_xar)
