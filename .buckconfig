@@ -17,4 +17,4 @@ buck = none
 target_platform_detector_spec = target:antlir//...->prelude//platforms:default
 
 [project]
-ignore = .git
+ignore = antlir2-out .git .sl

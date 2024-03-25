@@ -1,3 +1,0 @@
-{
-    "ignore_dirs": ["antlir2-out", "buck-out", ".buckd"]
-}
