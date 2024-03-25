@@ -1,9 +1,12 @@
-load("//antlir/bzl:build_defs.bzl", "alias")
+load("//antlir/bzl:build_defs.bzl", "alias", "internal_external")
 
 oncall("antlir")
 
 alias(
     name = "test-image-flavor",
-    actual = "//antlir/antlir2/facebook/flavor:centos-latest",
+    actual = internal_external(
+        fb = "//antlir/antlir2/facebook/flavor:centos-latest",
+        oss = "//flavor/centos9:centos9",
+    ),
     visibility = ["//antlir/..."],
 )

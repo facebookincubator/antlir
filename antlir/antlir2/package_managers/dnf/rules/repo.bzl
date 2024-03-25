@@ -163,7 +163,7 @@ repo = rule(
 RepoSetInfo = provider(fields = ["repos", "proxy_cmd"])
 
 def _repo_set_impl(ctx: AnalysisContext) -> list[Provider]:
-    combined_repodatas = ctx.actions.declare_output("repodatas")
+    combined_repodatas = ctx.actions.declare_output("repodatas", dir = True)
     repos = {}
     for repo in ctx.attrs.repos:
         repo_info = repo[RepoInfo]

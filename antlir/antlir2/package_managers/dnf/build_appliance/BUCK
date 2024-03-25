@@ -1,6 +1,7 @@
 load("//antlir/antlir2/bzl:json_file.bzl", "json_file")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 
 oncall("antlir")
 
@@ -37,16 +38,31 @@ feature.new(
             mode = "a+rx",
         ),
     ],
-    visibility = ["//antlir/antlir2/build_appliance:features"],
+    visibility = [
+        internal_external(
+            fb = "//antlir/antlir2/build_appliance:features",
+            oss = "PUBLIC",
+        ),
+    ],
 )
 
 repo_set(
     name = "empty-dnf-reposet",
-    visibility = ["//antlir/antlir2/..."],
+    visibility = [
+        internal_external(
+            fb = "//antlir/antlir2/...",
+            oss = "PUBLIC",
+        ),
+    ],
 )
 
 json_file(
     name = "empty-dnf-versionlock.json",
     obj = {},
-    visibility = ["//antlir/antlir2/..."],
+    visibility = [
+        internal_external(
+            fb = "//antlir/antlir2/...",
+            oss = "PUBLIC",
+        ),
+    ],
 )

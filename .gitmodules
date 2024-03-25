@@ -1,3 +1,6 @@
 [submodule "prelude"]
   path = prelude
   url = https://github.com/facebook/buck2-prelude.git
+[submodule "generated"]
+  path = generated
+  url = https://github.com/facebookincubator/antlir.git
