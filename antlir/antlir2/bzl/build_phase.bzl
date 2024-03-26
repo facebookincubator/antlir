@@ -59,3 +59,15 @@ if list(BuildPhase.values()) != [
     "buildinfo_stamp",
 ]:
     fail("BuildPhase.values() is no longer in order. This will produce incorrect image builds.")
+
+def verify_build_phases(build_phases: list[BuildPhase | typing.Any]) -> None:
+    if (
+        native.read_config("antlir", "strict-type-checks") == None and
+        native.read_config("antlir", "strict-build-phase-type-checks") == None
+    ):
+        return
+
+    def _assert_build_phase(_: BuildPhase):
+        pass
+
+    [_assert_build_phase(i) for i in build_phases]  # buildifier: disable=no-effect

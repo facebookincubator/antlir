@@ -5,7 +5,7 @@
 
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
-load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_record")
+load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_record", "verify_feature_records")
 load("//antlir/bzl:types.bzl", "types")
 
 types.lint_noop(feature_record)
@@ -39,6 +39,7 @@ def all_mounts(
     be easily handled without having to recursively look up mounts required by
     other mounted-in layers.
     """
+    verify_feature_records(features)
     mounts = list(parent_layer.mounts) if parent_layer else []
     for feat in features:
         if feat.feature_type == "mount":
