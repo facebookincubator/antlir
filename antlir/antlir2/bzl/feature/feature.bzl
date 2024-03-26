@@ -91,7 +91,20 @@ feature_record = record(
     plugin = FeaturePluginInfo | Provider,
 )
 
+def verify_feature_records(features: list[feature_record | typing.Any]) -> None:
+    if (
+        native.read_config("antlir", "strict-type-checks") == None and
+        native.read_config("antlir", "strict-feature-record-type-checks") == None
+    ):
+        return
+
+    def _assert_feature_record(_: feature_record):
+        pass
+
+    [_assert_feature_record(i) for i in features]  # buildifier: disable=no-effect
+
 def feature_as_json(feat: feature_record | typing.Any) -> struct:
+    verify_feature_records([feat])
     return struct(
         feature_type = feat.feature_type,
         label = feat.label,
@@ -423,7 +436,7 @@ def feature(
 def _hash_key(x) -> str:
     return sha256(repr(x))
 
-def regroup_features(label: Label, features: list[feature_record]) -> list[feature_record]:
+def regroup_features(label: Label, features: list[feature_record | typing.Any]) -> list[feature_record | typing.Any]:
     """
     Some features must be grouped at buck time so that the compiler can act on
     them as a single unit for performance reasons.
@@ -432,6 +445,7 @@ def regroup_features(label: Label, features: list[feature_record]) -> list[featu
     any future package managers as well.
     """
     ungrouped_features = []
+    verify_feature_records(features)
 
     # keep all the extra junk (like run_info) attached to the rpm feature
     any_rpm_feature = None

@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:expect.bzl", "expect")
-load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
+load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
 load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
@@ -185,7 +185,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         sub_targets["flavor"] = flavor.providers
 
     all_features = features[FeatureInfo].features
-
     dnf_available_repos = []
     if types.is_list(ctx.attrs.dnf_available_repos):
         dnf_available_repos = ctx.attrs.dnf_available_repos
@@ -268,10 +267,13 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         logs = {}
 
         identifier_prefix = _identifier_prefix(phase.value + "_")
+
+        # Cross-cell enum type comparisons can fail, so compare .value
+        verify_build_phases([i.analysis.build_phase for i in all_features])
         features = [
             feat
             for feat in all_features
-            if feat.analysis.build_phase == phase
+            if feat.analysis.build_phase.value == phase.value
         ]
 
         # Build phase can be skipped if it doesn't contain any features, but if
