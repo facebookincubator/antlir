@@ -41,16 +41,6 @@ pub fn find_repo_root(path_in_repo: &AbsolutePath) -> Result<AbsolutePathBuf, Fi
     }
 }
 
-pub fn find_buck_cell_root(path_in_repo: &AbsolutePath) -> Result<AbsolutePathBuf, FindRootError> {
-    match first_parent_containing_sigil(path_in_repo, ".buckconfig", false) {
-        Some(path) => Ok(path),
-        None => Err(FindRootError::SigilNotFound(
-            ".buckconfig",
-            path_in_repo.into(),
-        )),
-    }
-}
-
 fn first_parent_containing_sigil(
     path: &AbsolutePath,
     sigil_name: &str,
@@ -214,69 +204,6 @@ mod tests {
         assert_eq!(
             find_repo_root(abspath(&deep_dir))
                 .expect("We should be able to find a repo root for in hg subdir"),
-            shallow_dir,
-        );
-
-        // This is optional but it gives us a way to see if the delete failed.
-        tmp_dir.close().expect("Failed to delete tmp directory");
-    }
-
-    #[test]
-    fn test_buck_cell_root() {
-        let tmp_dir = make_tmp_dir().expect("Failed to create tmp dir for test");
-        let path = tmp_dir.path();
-
-        // Before we create our sigil we should find no repo root
-        assert!(find_buck_cell_root(abspath(path)).is_err());
-
-        let buck_root = path.join("buck");
-        create_dir(buck_root.clone()).expect("failed to create subdir");
-
-        // Having a directory buck should still fail both outside and within it
-        assert!(find_buck_cell_root(abspath(path)).is_err());
-        assert!(find_buck_cell_root(abspath(&buck_root)).is_err());
-
-        // Now creating our sigil directory the root should still fail but it should
-        // pass from inside now
-        File::create(buck_root.join(".buckconfig")).expect("Failed to make testing file");
-
-        assert!(find_buck_cell_root(abspath(path)).is_err());
-        assert_eq!(
-            find_buck_cell_root(abspath(&buck_root))
-                .expect("We should be able to find a repo root for in buck subdir"),
-            buck_root,
-        );
-
-        // Test a deeply nested dir
-        let shallow_dir = buck_root.join("i/am");
-        let mid_dir = shallow_dir.join("a/subdir");
-        let deep_dir = mid_dir.join("of/the/repo");
-
-        create_dir_all(&deep_dir).expect("Failed to make deep directory");
-        assert_eq!(
-            find_buck_cell_root(abspath(&deep_dir))
-                .expect("We should be able to find a repo root for in buck subdir"),
-            buck_root,
-        );
-
-        File::create(shallow_dir.join(".buckconfig"))
-            .expect("Failed to create buckconfig in shallow_dir");
-        assert_eq!(
-            find_buck_cell_root(abspath(&shallow_dir))
-                .expect("We should be able to find a repo root for in buck subdir"),
-            shallow_dir,
-        );
-        assert_eq!(
-            find_buck_cell_root(abspath(&deep_dir))
-                .expect("We should be able to find a repo root for in buck subdir"),
-            shallow_dir,
-        );
-
-        // Creating a directory half way down shouldn't get mistaken for the sigil
-        create_dir(mid_dir.join(".buckconfig")).expect("Failed to make testing directory");
-        assert_eq!(
-            find_buck_cell_root(abspath(&deep_dir))
-                .expect("We should be able to find a repo root for in buck subdir"),
             shallow_dir,
         );
 

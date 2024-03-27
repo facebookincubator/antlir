@@ -46,39 +46,11 @@ pub fn artifacts_dir(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     /// find_repo_root($self, path_in_repo = None)
     /// --
     ///
-    /// Find the path of the VCS repository root.  This could be the same thing
-    /// as `find_buck_cell_root` but importantly, it might not be.  Buck has the
-    /// concept of cells, of which many can be contained within a single VCS
-    /// repository.  When you need to know the actual root of the VCS repo, use
-    /// this method.
+    /// Find the path of the VCS repository root.
     #[pyfn(m)]
     fn find_repo_root(py: Python<'_>, path_in_repo: Option<AntlirPath>) -> PyResult<AntlirPath> {
         let path_in_repo = ensure_path_in_repo(py, path_in_repo.map(|p| p.into()))?;
         match find_root::find_repo_root(&path_in_repo) {
-            Ok(path) => Ok(path.into_path_buf().into()),
-            Err(e) => Err(SigilNotFound::new_err(e.to_string())),
-        }
-    }
-
-    /// find_buck_cell_root($self, path_in_repo = None)
-    /// --
-    ///
-    /// Find the root of the buck cell we're currently in.
-    /// If the caller does not provide a path known to be in the repo, a reasonable
-    /// default of sys.argv[0] will be used. This is reasonable as binaries/tests
-    /// calling this library are also very likely to be in repo.
-    /// This is intended to work:
-    ///  - under Buck's internal macro interpreter, and
-    ///  - using the system python from `facebookincubator/antlir`.
-    /// This is functionally equivalent to `buck root`, but we opt to do it here as
-    /// `buck root` takes >2s to execute (due to CLI startup time).
-    #[pyfn(m)]
-    fn find_buck_cell_root(
-        py: Python<'_>,
-        path_in_repo: Option<AntlirPath>,
-    ) -> PyResult<AntlirPath> {
-        let path_in_repo = ensure_path_in_repo(py, path_in_repo.map(|p| p.into()))?;
-        match find_root::find_buck_cell_root(&path_in_repo) {
             Ok(path) => Ok(path.into_path_buf().into()),
             Err(e) => Err(SigilNotFound::new_err(e.to_string())),
         }
