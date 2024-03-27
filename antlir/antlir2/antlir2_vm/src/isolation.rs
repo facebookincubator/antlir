@@ -49,10 +49,7 @@ impl Platform {
     /// Get repo root
     pub(crate) fn repo_root() -> Result<PathBuf> {
         let repo = find_root::find_repo_root(
-            &absolute_path::AbsolutePathBuf::canonicalize(
-                env::current_exe().map_err(|e| IsolationError::RepoRootError(e.to_string()))?,
-            )
-            .map_err(|e| IsolationError::RepoRootError(e.to_string()))?,
+            env::current_exe().map_err(|e| IsolationError::RepoRootError(e.to_string()))?,
         )
         .map_err(|e| IsolationError::RepoRootError(e.to_string()))?;
         Ok(PathBuf::from(repo))

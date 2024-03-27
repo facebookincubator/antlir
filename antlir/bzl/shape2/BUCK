@@ -77,7 +77,6 @@ rust_binary(
         "clap",
         "serde_json",
         "//antlir:find_root",
-        "//antlir/filesystem/absolute_path:absolute_path",
         "//antlir/filesystem/stdio_path:stdio_path",
     ],
 )

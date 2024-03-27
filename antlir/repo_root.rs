@@ -8,11 +8,10 @@
 use find_root::find_repo_root;
 
 fn main() {
-    let current = std::env::current_exe().unwrap();
-    let current = current
-        .as_path()
-        .try_into()
-        .unwrap_or_else(|_| panic!("{:?} is not absolute", current));
-    let repo_root = find_repo_root(current).unwrap();
+    let current = std::env::current_exe().expect("while getting argv[0]");
+    let repo_root = find_repo_root(current)
+        .expect("not in repo")
+        .canonicalize()
+        .expect("failed to canonicalize repo root dir");
     println!("{}", repo_root.display());
 }

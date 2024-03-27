@@ -10,7 +10,6 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
 
-use absolute_path::AbsolutePathBuf;
 use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::types::PyBytes;
@@ -40,12 +39,6 @@ impl From<PathBuf> for AntlirPath {
 impl From<AntlirPath> for PathBuf {
     fn from(p: AntlirPath) -> PathBuf {
         p.0
-    }
-}
-
-impl From<AbsolutePathBuf> for AntlirPath {
-    fn from(p: AbsolutePathBuf) -> AntlirPath {
-        Self(p.into())
     }
 }
 
