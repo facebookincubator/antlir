@@ -98,13 +98,10 @@ fn main() -> Result<()> {
 
     let args = Args::parse();
 
-    let repo = find_root::find_repo_root(
-        &absolute_path::AbsolutePathBuf::canonicalize(
-            std::env::current_exe().context("while getting argv[0]")?,
-        )
-        .context("argv[0] not absolute")?,
-    )
-    .context("while looking for repo root")?;
+    let repo = find_root::find_repo_root(std::env::current_exe().context("while getting argv[0]")?)
+        .context("while looking for repo root")?
+        .canonicalize()
+        .context("while canonicalizing repo root")?;
 
     let spec = args.spec.into_inner();
 
@@ -142,7 +139,7 @@ fn main() -> Result<()> {
     ])
     .inputs([
         // tests often read resource files from the repo
-        repo.as_ref(),
+        repo.as_path(),
     ])
     .working_directory(&working_directory)
     .setenv(setenv.clone())

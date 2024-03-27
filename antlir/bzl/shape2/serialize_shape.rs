@@ -14,7 +14,6 @@ use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
 
-use absolute_path::AbsolutePathBuf;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -66,11 +65,11 @@ fn main() -> Result<()> {
     let outfile = stdio_path::create(&args.output).context("while opening output")?;
     let shape: Value = serde_json::from_reader(infile).context("while deserializing shape")?;
 
-    let project_root = find_root::find_repo_root(
-        &AbsolutePathBuf::new(std::env::current_exe().expect("could not get argv[0]"))
-            .expect("argv[0] was not absolute"),
-    )
-    .context("while looking for repo root")?;
+    let project_root =
+        find_root::find_repo_root(std::env::current_exe().context("could not get argv[0]")?)
+            .context("while looking for repo root")?
+            .canonicalize()
+            .context("while canonicalizing repo root")?;
 
     let shape = rewrite_locations(&project_root, shape);
 

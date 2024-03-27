@@ -13,6 +13,5 @@ rust_binary(
         "tracing-subscriber",
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
-        "//antlir/filesystem/absolute_path:absolute_path",
     ],
 )

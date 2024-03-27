@@ -59,13 +59,9 @@ fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     init_logging();
 
-    let repo_root = find_root::find_repo_root(
-        &absolute_path::AbsolutePathBuf::canonicalize(
-            std::env::current_exe().context("while getting argv[0]")?,
-        )
-        .context("argv[0] not absolute")?,
-    )
-    .context("while looking for repo root")?;
+    let repo_root =
+        find_root::find_repo_root(std::env::current_exe().context("while getting argv[0]")?)
+            .context("while looking for repo root")?;
 
     // antlir2_isolate re-parses these into --bind-ro args and escapes any colons, so we
     // instead take an explicit pair to not have to deal with the added complexity of
@@ -99,7 +95,7 @@ fn main() -> anyhow::Result<()> {
             (false, false) => InvocationType::Pid2Interactive,
         });
     if args.artifacts_require_repo {
-        cmd_builder.inputs(repo_root.into_path_buf());
+        cmd_builder.inputs(repo_root);
         cmd_builder.inputs(PathBuf::from("/usr/local/fbcode"));
     }
     if let Some(chdir) = &args.chdir {

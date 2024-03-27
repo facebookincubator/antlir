@@ -44,9 +44,6 @@ antlir_rust_extension(
     crate_root = "fs_utils_rs.rs",
     rust_visibility = ["//antlir/..."],
     typestub = "fs_utils_rs.pyi",
-    deps = [
-        "//antlir/filesystem/absolute_path:absolute_path",
-    ],
 )
 
 python_library(
@@ -89,7 +86,6 @@ antlir_rust_extension(
     deps = [
         ":fs_utils_rs-rust",
         "//antlir:find_root",
-        "//antlir/filesystem/absolute_path:absolute_path",
     ],
 )
 
@@ -104,7 +100,6 @@ rust_library(
     visibility = ["PUBLIC"],
     deps = [
         "thiserror",
-        "//antlir/filesystem/absolute_path:absolute_path",
     ],
 )
 

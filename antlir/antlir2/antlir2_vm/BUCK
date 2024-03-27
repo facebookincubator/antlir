@@ -22,7 +22,6 @@ rust_binary(
         "//antlir:find_root",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/testing/image_test:image_test_lib",
-        "//antlir/filesystem/absolute_path:absolute_path",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )
