@@ -149,6 +149,13 @@ def add_repos(*, base: dnf.Base, repos_dir: Path) -> None:
                 basedir / "repodata" / f"{id}-filenames.solvx",
                 Path(base.conf.cachedir) / f"{id}-filenames.solvx",
             )
+            # copy repomd.xml and any other repodata files into dnf's cache dir
+            # so that we can use `fill_sack_from_repos_in_cache` to force usage
+            # of pre-built solv caches
+            repo_cache_dir = Path(repo._repo.getCachedir())
+            os.makedirs(repo_cache_dir / "repodata", exist_ok=True)
+            for f in (basedir / "repodata").iterdir():
+                shutil.copy(f, repo_cache_dir / "repodata" / f.name)
         except FileNotFoundError as e:
             log.warning(
                 f"could not copy .solv files, dnf will be substantially slower! {e}"

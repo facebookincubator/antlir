@@ -338,11 +338,10 @@ def base_init(spec):
     # Load .solv files to determine available repos and rpms. This will re-parse
     # repomd.xml, but does not require re-loading all the other large xml blobs,
     # since the .solv{x} files are copied into the cache dir immediately before
-    # this. Ideally we could use `fill_sack_from_repos_in_cache`, but that
-    # requires knowing the dnf cache key (like /antlir/dnf-cache/repo-HEXSTRING)
-    # which is based on the base url. We don't have a persistent baseurl, but
-    # this is incredibly fast anyway.
-    base.fill_sack()
+    # this. `fill_sack_from_repos_in_cache` will force dnf to use the cached
+    # solv files.
+    # @oss-disable
+    base.fill_sack() # @oss-enable
 
     # Local rpm files must be added before anything is added to the transaction goal
     # They also don't appear in the recorded transaction resolution, so are
@@ -529,7 +528,8 @@ def driver(spec) -> None:
     # 2) installation of a dependency in a pre-resolved transaction will be
     #    marked as "user" installed rather than "dependency"
     base = dnf_base(spec)
-    base.fill_sack()
+    # @oss-disable
+    base.fill_sack() # @oss-enable
 
     set_reasons = []
     for install in spec["resolved_transaction"]["install"]:
