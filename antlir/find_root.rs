@@ -20,24 +20,19 @@ pub fn find_repo_root(path_in_repo: impl AsRef<Path>) -> Result<PathBuf, FindRoo
     if let Ok("1") = std::env::var("INSIDE_RE_WORKER").as_deref() {
         return Ok("/re_cwd".into());
     }
-    // Technically there is a bug here where we will return the first hg
-    // repo found even if there is a git repo inside that hg repo.
-    //
-    // We are keeping this the same because this impl is trying to match the
-    // artifacts_dir.py which has this bug.
-    match first_parent_containing_sigil(path_in_repo.as_ref(), ".hg", true) {
-        Some(path) => Ok(path),
-        None => match first_parent_containing_sigil(path_in_repo.as_ref(), ".git", true) {
-            Some(path) => Ok(path),
-            None => match first_parent_containing_sigil(path_in_repo.as_ref(), ".sl", true) {
-                Some(path) => Ok(path),
-                None => Err(FindRootError::SigilNotFound(
-                    ".hg, .git or .sl",
-                    path_in_repo.as_ref().to_owned(),
-                )),
-            },
-        },
+    for path in path_in_repo.as_ref().ancestors() {
+        for sigil in [".hg", ".git", ".sl"] {
+            if let Ok(meta) = std::fs::metadata(path.join(sigil)) {
+                if meta.is_dir() {
+                    return Ok(path.to_owned());
+                }
+            }
+        }
     }
+    Err(FindRootError::SigilNotFound(
+        ".hg, .git or .sl",
+        path_in_repo.as_ref().to_owned(),
+    ))
 }
 
 fn first_parent_containing_sigil(path: &Path, sigil_name: &str, is_dir: bool) -> Option<PathBuf> {
@@ -72,31 +67,21 @@ mod tests {
         let tmp_dir = TempDir::with_prefix("find_root_tests.")?;
         let path = tmp_dir.path();
 
-        if let Some(p) = first_parent_containing_sigil(path, ".hg", true) {
-            return Err(anyhow!(
-                "Our temporary directory ({}) was created under an hg repo: {}",
-                path.display(),
-                p.display(),
-            ));
+        for parent in path.ancestors() {
+            for sigil in [".hg", ".git", ".sl", ".buckconfig"] {
+                if parent.join(sigil).exists() {
+                    return Err(anyhow!(
+                        "Our temporary directory ({}) was created under a repo: found {sigil}",
+                        path.display(),
+                    ));
+                }
+            }
         }
-        if let Some(p) = first_parent_containing_sigil(path, ".git", true) {
-            return Err(anyhow!(
-                "Our temporary directory ({}) was created under a git repo: {}",
-                path.display(),
-                p.display(),
-            ));
-        }
-        if let Some(p) = first_parent_containing_sigil(path, ".buckconfig", false) {
-            return Err(anyhow!(
-                "Our temporary directory ({}) was created under a buck repo: {}",
-                path.display(),
-                p.display(),
-            ));
-        }
+
         Ok(tmp_dir)
     }
 
-    fn test_git_hg_common(sigil: &str) {
+    fn test_scm_common(sigil: &str) {
         let dot_sigil = format!(".{}", sigil);
         let tmp_dir = make_tmp_dir().expect("Failed to create tmp dir for test");
         let path = tmp_dir.path();
@@ -160,41 +145,16 @@ mod tests {
 
     #[test]
     fn test_hg_repo_root() {
-        test_git_hg_common("hg")
+        test_scm_common("hg")
     }
 
     #[test]
     fn test_git_repo_root() {
-        test_git_hg_common("git")
+        test_scm_common("git")
     }
 
     #[test]
-    fn test_git_hg_interop() {
-        let tmp_dir = make_tmp_dir().expect("Failed to create tmp dir for test");
-        let path = tmp_dir.path();
-
-        let shallow_dir = path.join("i/am");
-        let mid_dir = shallow_dir.join("a/subdir");
-        let deep_dir = mid_dir.join("of/the/repo");
-        create_dir_all(&deep_dir).expect("Failed to make deep directory");
-
-        create_dir(shallow_dir.join(".hg")).expect("failed to create .hg in shallow_dir");
-        assert_eq!(
-            find_repo_root(&shallow_dir)
-                .expect("We should be able to find a repo root for in .hg subdir"),
-            shallow_dir,
-        );
-
-        // Finally we should test to confirm that higher up .hg files take priority over lower .git
-        // ones to match the bug in artifacts_dir python impl.
-        create_dir(deep_dir.join(".git")).expect("failed to create .git in deep_dir");
-        assert_eq!(
-            find_repo_root(&deep_dir)
-                .expect("We should be able to find a repo root for in hg subdir"),
-            shallow_dir,
-        );
-
-        // This is optional but it gives us a way to see if the delete failed.
-        tmp_dir.close().expect("Failed to delete tmp directory");
+    fn test_sapling_repo_root() {
+        test_scm_common("sl")
     }
 }
