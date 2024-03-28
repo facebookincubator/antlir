@@ -1,0 +1,28 @@
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:build_defs.bzl", "rust_binary")
+
+oncall("antlir")
+
+rust_binary(
+    name = "command_alias",
+    srcs = glob(["src/**/*.rs"]),
+    visibility = ["PUBLIC"],
+    deps = [
+        "anyhow",
+        "clap",
+        "tracing",
+        "tracing-subscriber",
+        "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
+        "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
+    ],
+)
+
+# Prep feature so that we can make some modifications to the layer target so
+# that we can just run the command in a read-only copy of layer.
+feature.new(
+    name = "prep",
+    features = [
+        # @oss-disable
+    ],
+    visibility = ["PUBLIC"],
+)

@@ -10,6 +10,8 @@ rust_binary(
     deps = [
         "anyhow",
         "clap",
+        "tracing",
+        "tracing-subscriber",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
     ],
