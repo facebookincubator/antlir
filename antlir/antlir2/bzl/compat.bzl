@@ -39,19 +39,6 @@ def _from_antlir1_flavor(
 
     return flavor
 
-def _flavor_config_override_to_versionlock_extend(flavor_config_override):
-    versionlock_extend = None
-    if flavor_config_override and hasattr(flavor_config_override, "rpm_version_set_overrides") and flavor_config_override.rpm_version_set_overrides:
-        versionlock_extend = {}
-        for nevra in flavor_config_override.rpm_version_set_overrides:
-            versionlock_extend[nevra.name] = "{}:{}-{}.{}".format(
-                nevra.epoch,
-                nevra.version,
-                nevra.release,
-                nevra.arch,
-            )
-    return versionlock_extend
-
 def _default_rou_from_antlir1_flavor(flavor: str | typing.Any) -> str:
     if not types.is_string(flavor):
         flavor = flavor.unaliased_name
@@ -66,6 +53,5 @@ def _default_rou_from_antlir1_flavor(flavor: str | typing.Any) -> str:
 
 compat = struct(
     from_antlir1_flavor = _from_antlir1_flavor,
-    flavor_config_override_to_versionlock_extend = _flavor_config_override_to_versionlock_extend,
     default_rou_from_antlir1_flavor = _default_rou_from_antlir1_flavor,
 )
