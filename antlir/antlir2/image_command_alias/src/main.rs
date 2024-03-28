@@ -5,8 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::fs;
+use std::path::Component;
 use std::path::Path;
 use std::path::PathBuf;
+use std::thread::sleep;
+use std::time::Duration;
 
 use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
@@ -19,23 +23,12 @@ use clap::Parser;
 struct Args {
     #[clap(long)]
     layer: PathBuf,
-    #[clap(flatten)]
-    out: Out,
-    #[clap(last(true))]
-    command: String,
-}
-
-#[derive(Debug, Parser)]
-struct Out {
-    #[clap(long)]
-    out: PathBuf,
-
-    #[clap(long)]
-    dir: bool,
+    #[clap(required(true), trailing_var_arg(true), allow_hyphen_values(true))]
+    command: Vec<String>,
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
+    let mut args = Args::parse();
     tracing_subscriber::fmt()
         .with_writer(std::io::stderr)
         .with_max_level(tracing::Level::TRACE)
@@ -44,44 +37,37 @@ fn main() -> Result<()> {
     antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
 
     let mut builder = IsolationContext::builder(&args.layer);
-    builder.ephemeral(false);
+    builder.ephemeral(true);
     #[cfg(facebook)]
     builder.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
     let cwd = std::env::current_dir()?;
+
+    // We need to bind mount buck-out into the target layer. Since we're
+    // running as part of a build our cwd should be inside buck-out, so find
+    // the shortest cwd path prefix that doesn't exist in the layer and bind
+    // mount that in.
+    let cwd_vec = cwd.components().collect::<Vec<_>>();
+    if cwd_vec.len() > 1 {
+        let layer_root = fs::canonicalize(&args.layer)?;
+        for i in 1..=(cwd_vec.len() - 1) {
+            let cwd_prefix = cwd_vec[1..=i].iter().collect::<PathBuf>();
+            if !layer_root.join(&cwd_prefix).exists() {
+                builder.inputs(Path::new(&Component::RootDir).join(cwd_prefix));
+                break;
+            }
+        }
+    }
+
     builder
-        .inputs((
-            Path::new("/__genrule_in_image__/working_directory"),
-            cwd.as_path(),
-        ))
-        .working_directory(Path::new("/__genrule_in_image__/working_directory"))
+        .working_directory(cwd.as_path())
         .tmpfs(Path::new("/tmp"))
         // TODO(vmagro): make this a devtmpfs after resolving permissions issues
         .tmpfs(Path::new("/dev"));
 
-    if args.out.dir {
-        std::fs::create_dir_all(&args.out.out)?;
-        builder
-            .outputs((
-                Path::new("/__genrule_in_image__/out"),
-                args.out.out.as_path(),
-            ))
-            .setenv(("OUT", "/__genrule_in_image__/out"));
-    } else {
-        std::fs::File::create(&args.out.out)?;
-        builder
-            // some tools might uncontrollably attempt to put temporary files
-            // next to the output, so make it a tmpfs
-            .tmpfs(Path::new("/__genrule_in_image__/out"))
-            .outputs((
-                Path::new("/__genrule_in_image__/out/single_file"),
-                args.out.out.as_path(),
-            ))
-            .setenv(("OUT", "/__genrule_in_image__/out/single_file"));
-    }
-
     let isol = unshare(builder.build())?;
-    let mut cmd = isol.command("bash")?;
-    cmd.arg("-e").arg("-c").arg(&args.command);
+    let mut cmd = isol.command(args.command.remove(0))?;
+    cmd.args(args.command);
+    sleep(Duration::from_secs(0));
     let out = cmd
         .spawn()
         .context(format!("spawn() failed for {:#?}", cmd))?

@@ -1,0 +1,112 @@
+load("@fbcode_macros//build_defs:export_files.bzl", "export_file")
+load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule", "buck_sh_test")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
+
+oncall("antlir")
+
+export_file(name = "check-command-alias-out.sh")
+
+image.layer(
+    name = "layer",
+    features = [
+        feature.ensure_file_symlink(
+            link = "/bin/command-alias-echo",
+            target = "echo",
+        ),
+        feature.install_text(
+            dst = "/bin/command-alias-write",
+            mode = "a+rx",
+            text = """#!/bin/bash
+set -ue -o pipefail
+
+# Last argument is the output file.
+out_file=$(echo "${@: -1}")
+
+# Remove the last argument.
+set -- "${@:1:$(($#-1))}"
+
+# Write remaining arguments to output file.
+echo $@ > $out_file
+""",
+        ),
+        feature.rpms_install(rpms = [
+            "coreutils",  # Provides /bin/echo
+        ]),
+    ],
+)
+
+image_command_alias(
+    name = "command-alias-echo",
+    args = [
+        "hello",
+        "world",
+    ],
+    exe = "/bin/command-alias-echo",
+    layer = ":layer",
+)
+
+buck_genrule(
+    name = "run-command-alias-echo",
+    out = "out-file",
+    cmd = "$(exe :command-alias-echo) goodbye world > $OUT",
+    # Since we require local execution (to access antlir-out), limit target
+    # compatibility to the local machine.
+    compatible_with = ["ovr_config//cpu:arm64" if host_info().arch.is_aarch64 else "ovr_config//cpu:x86_64"],
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:arm64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # Our command alias points to antlir2-out, so force local execution.
+    labels = ["writes_to_buck_out"],
+)
+
+# Test running a command in an image and capturing its stdout
+buck_sh_test(
+    name = "test-command-alias-echo",
+    args = ["$(location :run-command-alias-echo)"],
+    # Since we require local execution (to access antlir-out), limit target
+    # compatibility to the local machine.
+    compatible_with = ["ovr_config//cpu:arm64" if host_info().arch.is_aarch64 else "ovr_config//cpu:x86_64"],
+    # Our command alias points to antlir2-out, so force local execution.
+    labels = ["writes_to_buck_out"],
+    test = ":check-command-alias-out.sh",
+)
+
+image_command_alias(
+    name = "command-alias-write",
+    args = [
+        "hello",
+        "world",
+    ],
+    exe = "/bin/command-alias-write",
+    layer = ":layer",
+)
+
+buck_genrule(
+    name = "run-command-alias-write",
+    out = "out-file",
+    cmd = "$(exe :command-alias-write) goodbye world $OUT",
+    # Since we require local execution (to access antlir-out), limit target
+    # compatibility to the local machine.
+    compatible_with = ["ovr_config//cpu:arm64" if host_info().arch.is_aarch64 else "ovr_config//cpu:x86_64"],
+    exec_compatible_with = select({
+        "ovr_config//cpu:arm64": ["ovr_config//cpu:x86_64"],
+        "ovr_config//cpu:x86_64": ["ovr_config//cpu:x86_64"],
+    }),
+    # Our command alias points to antlir2-out, so force local execution.
+    labels = ["writes_to_buck_out"],
+)
+
+# Test running a command in an image and having it write directly to buck-out
+buck_sh_test(
+    name = "test-command-alias-write",
+    args = ["$(location :run-command-alias-write)"],
+    # Since we require local execution (to access antlir-out), limit target
+    # compatibility to the local machine.
+    compatible_with = ["ovr_config//cpu:arm64" if host_info().arch.is_aarch64 else "ovr_config//cpu:x86_64"],
+    # Our command alias points to antlir2-out, so force local execution.
+    labels = ["writes_to_buck_out"],
+    test = ":check-command-alias-out.sh",
+)
