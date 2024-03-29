@@ -5,7 +5,6 @@
 
 load("@prelude//utils:expect.bzl", "expect")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
-load("//antlir/antlir2/bzl:compat.bzl", "compat")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
@@ -656,8 +655,6 @@ def layer(
     # TODO(vmagro): codemod existing callsites to use default_os directly
     if kwargs.get("flavor", None) and default_os:
         fail("default_os= is preferred, stop setting flavor=")
-    if kwargs.get("flavor", None) and not default_rou:
-        default_rou = compat.default_rou_from_antlir1_flavor(kwargs["flavor"])
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
