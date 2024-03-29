@@ -26,6 +26,15 @@ image.layer(
         feature.install_text(
             dst = "/foo",
             text = "foo\n",
+            xattrs = {
+                "user.bar": "bar",
+                "user.foo": "foo",
+            },
+        ),
+        feature.ensure_dirs_exist(dirs = "/to-be-removed"),
+        feature.install_text(
+            dst = "/to-be-removed/file",
+            text = "hello\n",
         ),
     ],
 )
@@ -56,6 +65,20 @@ image.layer(
         feature.install_text(
             dst = "/bar",
             text = "bar\n",
+        ),
+        feature.remove(
+            path = "/to-be-removed",
+        ),
+        feature.remove(
+            path = "/foo",
+        ),
+        feature.install_text(
+            dst = "/foo",
+            text = "foo\nbar\n",
+            xattrs = {
+                "user.baz": "baz",
+                "user.foo": "qux",
+            },
         ),
     ],
     parent_layer = ":parent",
