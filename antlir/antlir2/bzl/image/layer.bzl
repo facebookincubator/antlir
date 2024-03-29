@@ -641,9 +641,6 @@ def layer(
         # TODO: remove this flag when all images are using this new mechanism
         use_default_os_from_package: bool | None = None,
         default_rou: str | None = None,
-        # We'll implicitly forward some users to antlir2, so any hacks for them
-        # should be confined behind this flag
-        implicit_antlir2: bool = False,
         visibility: list[str] | None = None,
         **kwargs):
     """
@@ -651,12 +648,6 @@ def layer(
 
     Build a new image layer from the given `features` and `parent_layer`.
     """
-    if implicit_antlir2:
-        flavor = kwargs.pop("flavor", None)
-        kwargs["flavor"] = compat.from_antlir1_flavor(flavor) if flavor else None
-        if is_facebook:
-            default_rou = compat.default_rou_from_antlir1_flavor(flavor) if flavor else None
-
     if use_default_os_from_package == None:
         use_default_os_from_package = should_all_images_in_package_use_default_os()
     if use_default_os_from_package:
