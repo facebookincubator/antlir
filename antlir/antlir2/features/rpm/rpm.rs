@@ -382,6 +382,7 @@ fn run_dnf_driver(
         .stdin(mfd.into_file())
         .stdout(Stdio::piped())
         .spawn()
+        .inspect_err(|e| trace!("Spawning dnf-driver failed: {e}"))
         .context("while spawning dnf-driver")?;
 
     let deser = Deserializer::from_reader(child.stdout.take().expect("this is a pipe"));
