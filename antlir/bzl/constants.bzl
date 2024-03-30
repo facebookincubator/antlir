@@ -70,7 +70,6 @@ REPO_CFG = repo_config_t(
     # elements in this list, because we do not know the version set that the
     # including `image.layer` will use.  This would be fixable if Buck
     # supported providers like Bazel does.
-    antlir_linux_flavor = _get_str_cfg("antlir_linux_flavor", allow_none = True),
     antlir_cell_name = config.get_antlir_cell_name(),
     rc_targets = [
         (t if t == "all" else normalize_target(t))

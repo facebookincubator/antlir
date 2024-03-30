@@ -321,7 +321,6 @@ shim = struct(
     # These `fbcode`-specific configs are not in `.buckconfig` because of
     # https://fb.prod.workplace.com/groups/fbcode/permalink/3264530036917146/
     do_not_use_repo_cfg = {
-        "antlir_linux_flavor": "centos8",
         "host_mounts_for_repo_artifacts": " ".join([
             "/mnt/gvfs",
         ]),

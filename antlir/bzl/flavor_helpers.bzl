@@ -8,9 +8,6 @@ This provides helpers useful for working with flavors. For more
 information check out [the flavor docs](/docs/concepts/rpms/overview).
 """
 
-def _get_antlir_linux_flavor():
-    return "centos8"
-
 def _get_shortname(flavor):
     shortname = getattr(flavor, "shortname", None)
     return shortname or {
@@ -19,6 +16,5 @@ def _get_shortname(flavor):
     }.get(flavor, flavor)
 
 flavor_helpers = struct(
-    get_antlir_linux_flavor = _get_antlir_linux_flavor,
     get_shortname = _get_shortname,
 )
