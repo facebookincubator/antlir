@@ -17,6 +17,7 @@ use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_depgraph::requires_provides::Validator;
 use antlir2_features::types::PathInLayer;
 use anyhow::Result;
+use buck_label::Label;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing as _;
@@ -41,6 +42,7 @@ pub struct HostMount {
 #[serde(rename_all = "snake_case")]
 pub struct LayerMount {
     pub mountpoint: PathInLayer,
+    pub label: Label,
 }
 
 impl Mount {
