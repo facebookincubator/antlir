@@ -240,10 +240,6 @@ def _thrift_library(**kwargs):
 def _get_antlir_cell_name():
     return "antlir"
 
-# TODO(vmagro): delete this
-def _get_default_flavor():
-    return "centos8"
-
 ### BEGIN COPY-PASTA (@fbcode_macros//build_defs/lib:target_utils.bzl)
 def _parse_target(target, default_repo = None, default_base_path = None):
     if target.count(":") != 1:
@@ -325,12 +321,7 @@ shim = struct(
     # These `fbcode`-specific configs are not in `.buckconfig` because of
     # https://fb.prod.workplace.com/groups/fbcode/permalink/3264530036917146/
     do_not_use_repo_cfg = {
-        #
-        # TARGETS/bzl should not access `REPO_CFG.antlir_linux_flavor` directly,
-        # instead they should use `flavor_helpers.get_antlir_linux_flavor()`.
-        #
-        "antlir_linux_flavor": _get_default_flavor(),
-        "flavor_to_config": {},
+        "antlir_linux_flavor": "centos8",
         "host_mounts_for_repo_artifacts": " ".join([
             "/mnt/gvfs",
         ]),

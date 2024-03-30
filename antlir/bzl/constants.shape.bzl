@@ -14,14 +14,6 @@ nevra_t = shape.shape(
     arch = shape.field(str),
 )
 
-# These are configuration keys that can be grouped under a specific common
-# name called flavor.  This way, during run-time, we can choose default
-# values for set of configuration keys based on selected flavor name.
-flavor_config_t = shape.shape(
-    name = shape.field(str),
-    shortname = shape.field(str),
-)
-
 #
 # These are repo-specific configuration keys, which can be overridden via
 # the Buck CLI for debugging / development purposes.
@@ -59,7 +51,6 @@ flavor_config_t = shape.shape(
 repo_config_t = shape.shape(
     artifacts_require_repo = bool,
     host_mounts_for_repo_artifacts = shape.list(shape.path),
-    flavor_to_config = shape.dict(str, flavor_config_t),
     antlir_linux_flavor = str,
     antlir_cell_name = str,
     rc_targets = shape.list(str),
