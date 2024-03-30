@@ -9,7 +9,7 @@ information check out [the flavor docs](/docs/concepts/rpms/overview).
 """
 
 load(":constants.bzl", "REPO_CFG")
-load(":flavor_impl.bzl", "flavor_to_struct", "get_unaliased_flavor")
+load(":flavor_impl.bzl", "get_unaliased_flavor")
 
 # TODO(vmagro): delete this
 def _get_flavor_default():
@@ -18,14 +18,6 @@ def _get_flavor_default():
 def _get_antlir_linux_flavor():
     return REPO_CFG.antlir_linux_flavor
 
-def _get_build_appliance(flavor = None):
-    """
-    Arguments
-    - `flavor`: The flavor of the build appliance to return.
-    """
-    flavor = flavor_to_struct(flavor or _get_flavor_default())
-    return REPO_CFG.flavor_to_config[flavor.name].build_appliance
-
 def _get_shortname(flavor):
     # Flavor shortnames are commonly used in target and fbpkg names,
     # where we generally don't want flavor aliasing to be used.
@@ -33,7 +25,6 @@ def _get_shortname(flavor):
     return REPO_CFG.flavor_to_config[flavor.name].shortname
 
 flavor_helpers = struct(
-    get_build_appliance = _get_build_appliance,
     get_flavor_default = _get_flavor_default,
     get_antlir_linux_flavor = _get_antlir_linux_flavor,
     get_shortname = _get_shortname,
