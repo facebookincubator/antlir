@@ -19,11 +19,6 @@ nevra_t = shape.shape(
 # values for set of configuration keys based on selected flavor name.
 flavor_config_t = shape.shape(
     name = shape.field(str),
-    # FIXME: Ideally, remove `optional = True`.  This field is not optional,
-    # per `new_flavor_config` below, but expressing that requires changing
-    # the wire format for `DO_NOT_USE_BUILD_APPLIANCE` to be a string
-    # instead of `None` -- see `new_flavor_config`. This needs a Python fix.
-    build_appliance = shape.field(str, optional = True),
     shortname = shape.field(str),
 )
 
