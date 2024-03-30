@@ -54,28 +54,14 @@ def new_nevra(**kwargs):
 
 def new_flavor_config(
         name,
-        build_appliance,
         **kwargs):
     """
     Arguments
 
     - `name`: The name of the flavor
-    - `build_appliance`: Path to a layer target of a build appliance,
-    containing an installed `rpm_repo_snapshot()`, plus an OS image
-    with other image build tools like `btrfs`, `dnf`, `yum`, `tar`, `ln`, ...
     """
-    if build_appliance == None:
-        fail(
-            "Must be a target path, or a value from `constants.bzl`",
-            "build_appliance",
-        )
-
-    if build_appliance:
-        build_appliance = normalize_target(build_appliance)
-
     return flavor_config_t(
         name = name,
-        build_appliance = build_appliance,
         **kwargs
     )
 
