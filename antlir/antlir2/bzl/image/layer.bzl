@@ -40,6 +40,8 @@ load(
     "mount_record",  # @unused Used as type
 )
 
+BuildApplianceInfo = provider(fields = {})
+
 def _map_image(
         ctx: AnalysisContext,
         cmd: cmd_args,
@@ -155,6 +157,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             )
     if ctx.attrs.parent_layer:
         flavor = ctx.attrs.parent_layer[LayerInfo].flavor
+        if BuildApplianceInfo in ctx.attrs.parent_layer:
+            fail("cannot use a build appliance as parent_layer")
     if not flavor:
         flavor = ctx.attrs.flavor
     if not ctx.attrs.antlir_internal_build_appliance and not flavor:
@@ -531,6 +535,9 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         providers.append(
             _implicit_image_test(final_subvol, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
         )
+
+    if ctx.attrs.antlir_internal_build_appliance:
+        providers.append(BuildApplianceInfo())
 
     if ctx.attrs.default_mountpoint:
         providers.append(DefaultMountpointInfo(default_mountpoint = ctx.attrs.default_mountpoint))
