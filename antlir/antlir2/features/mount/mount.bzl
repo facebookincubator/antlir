@@ -67,6 +67,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 data = struct(
                     layer = struct(
                         mountpoint = mountpoint,
+                        label = ctx.attrs.layer.label,
                     ),
                 ),
                 buck_only_data = struct(

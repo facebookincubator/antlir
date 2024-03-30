@@ -383,7 +383,7 @@ impl GraphBuilder {
                             }
                             if feature_items.len() > 1 {
                                 tracing::error!(
-                                    "diretory items are not identical: {feature_items:?}"
+                                    "directory items are not identical: {feature_items:?}"
                                 );
                                 return Err(Error::Conflict {
                                     item: item.clone(),
