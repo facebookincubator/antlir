@@ -41,6 +41,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     def _with_anon_layer(layer) -> list[Provider]:
         ctx.actions.run(
             cmd_args(
+                "sudo" if not ctx.attrs._rootless else cmd_args(),
                 ctx.attrs._genrule_in_image[RunInfo],
                 cmd_args(layer[LayerInfo].subvol_symlink, format = "--layer={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
