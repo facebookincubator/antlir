@@ -179,13 +179,13 @@ image.layer(
 image.layer(
     name = "test-install-signed-imported-keys-layer",
     features = [
+        feature.rpms_install(rpms = ["rpm"]),
         feature.layer_mount(
             mountpoint = "/layer",
             source = ":install-signed",
         ),
     ],
     flavor = ":install-signed[flavor]",
-    parent_layer = ":install-signed[build_appliance]",
 )
 
 image_rust_test(

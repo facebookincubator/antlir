@@ -84,9 +84,9 @@ def image_diff_test(
 
         image.layer(
             name = name + "--test-appliance",
-            parent_layer = layer + "[build_appliance]",
             flavor = layer + "[flavor]",
             features = [
+                feature.rpms_install(rpms = ["rpm"]),
                 feature.layer_mount(
                     source = layer,
                     mountpoint = "/layer",

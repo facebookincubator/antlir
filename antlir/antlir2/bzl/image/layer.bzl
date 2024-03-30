@@ -148,10 +148,10 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         parent_flavor = ctx.attrs.parent_layer[LayerInfo].flavor
         if parent_flavor:
             expect(
-                ctx.attrs.flavor.label.raw_target() == parent_flavor.label.raw_target(),
+                ctx.attrs.flavor[FlavorInfo].label.raw_target() == parent_flavor[FlavorInfo].label.raw_target(),
                 "flavor ({}) was different from parent_layer's flavor ({})",
-                ctx.attrs.flavor.label.raw_target(),
-                parent_flavor.label.raw_target(),
+                ctx.attrs.flavor[FlavorInfo].label.raw_target(),
+                parent_flavor[FlavorInfo].label.raw_target(),
             )
     if ctx.attrs.parent_layer:
         flavor = ctx.attrs.parent_layer[LayerInfo].flavor
@@ -655,6 +655,11 @@ def layer(
     # TODO(vmagro): codemod existing callsites to use default_os directly
     if kwargs.get("flavor", None) and default_os:
         fail("default_os= is preferred, stop setting flavor=")
+
+    force_flavor = kwargs.pop("force_flavor", None)
+    if force_flavor:
+        kwargs["flavor"] = force_flavor
+        kwargs.pop("default_os", None)
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
