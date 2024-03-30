@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/bzl:build_defs.bzl", "config", "do_not_use_repo_cfg")
-load(":constants.shape.bzl", "flavor_config_t", "nevra_t", "repo_config_t")
+load(":constants.shape.bzl", "nevra_t", "repo_config_t")
 load(":target_helpers.bzl", "normalize_target")
 
 CONFIG_KEY = "antlir"
@@ -39,40 +39,8 @@ def _get_str_list_cfg(name, separator = " ", default = None):
     s = _do_not_use_directly_get_cfg(name)
     return s.split(separator) if s else (default or [])
 
-# Defaults to the empty list if the config is not set
-def _get_artifact_key_to_path():
-    lst = _get_str_list_cfg("artifact_key_to_path")
-    key_to_path = dict(zip(lst[::2], lst[1::2]))
-
-    if 2 * len(key_to_path) != len(lst):
-        fail("antlir.artifact_key_to_path is a space-separated dict: k1 v1 k2 v2")
-
-    return key_to_path
-
 def new_nevra(**kwargs):
     return nevra_t(**kwargs)
-
-def new_flavor_config(
-        name,
-        **kwargs):
-    """
-    Arguments
-
-    - `name`: The name of the flavor
-    """
-    return flavor_config_t(
-        name = name,
-        **kwargs
-    )
-
-def _get_flavor_to_config():
-    flavor_to_config = {}
-    for flavor, orig_flavor_config in do_not_use_repo_cfg.get("flavor_to_config", {}).items():
-        flavor_config = {"name": flavor}
-        flavor_config.update(orig_flavor_config)  # we'll mutate a copy
-        flavor_to_config[flavor] = new_flavor_config(**flavor_config)
-
-    return flavor_to_config
 
 def use_rc_target(*, target, exact_match = False):
     target = normalize_target(target)
@@ -96,7 +64,6 @@ REPO_CFG = repo_config_t(
     host_mounts_for_repo_artifacts = _get_str_list_cfg(
         "host_mounts_for_repo_artifacts",
     ),
-    flavor_to_config = _get_flavor_to_config(),
     # KEEP THIS DICTIONARY SMALL.
     #
     # For each `feature`, we have to emit as many targets as there are
