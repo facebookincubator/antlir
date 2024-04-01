@@ -26,6 +26,7 @@ def _lint_noop(*_args):
     """
     pass
 
+_any = native.typing.Any if is_buck2() else ""
 _bool = bool if is_buck2() else "bool"
 _function = native.typing.Callable if is_buck2() else "function"
 _int = int if is_buck2() else "int"
@@ -116,7 +117,10 @@ types = struct(
     enum = _enum,
     # TODO: can antlir features be better typed with records and unions?
     # Now a feature can be either a struct or target label
-    antlir_feature = [_struct, _str, "InlineFeatureInfo", "record", "ParseTimeFeature"],
+    # TODO(nga): this list also had
+    #   "InlineFeatureInfo", I have not found references to it
+    #   "ParseTimeFeature", which cannot be used easily because of import cycle
+    antlir_feature = [_struct, _str, _any],
 
     # TODO: when we're all buck2, this can enforce the presence of providers.
     # For now it's just a human-readable hint that only enforces on a string.
