@@ -176,7 +176,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
     fn provides(&self) -> Result<Vec<Item>, String> {
         if self.is_dir() {
             let mut v = vec![Item::Path(PathItem::Entry(FsEntry {
-                path: self.dst.to_owned().into(),
+                path: self.dst.to_owned(),
                 file_type: FileType::Directory,
                 mode: self.mode.as_raw(),
             }))];
@@ -193,13 +193,13 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
                 }
                 if entry.file_type().is_file() {
                     v.push(Item::Path(PathItem::Entry(FsEntry {
-                        path: self.dst.join(relpath).into(),
+                        path: self.dst.join(relpath),
                         file_type: FileType::File,
                         mode: 0o444,
                     })))
                 } else if entry.file_type().is_dir() {
                     v.push(Item::Path(PathItem::Entry(FsEntry {
-                        path: self.dst.join(relpath).into(),
+                        path: self.dst.join(relpath),
                         file_type: FileType::Directory,
                         mode: 0o755,
                     })))
@@ -210,15 +210,15 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
                         })
                         .map_err(|e| e.to_string())?;
                     v.push(Item::Path(PathItem::Symlink {
-                        link: self.dst.join(relpath).into(),
-                        target: target.into(),
+                        link: self.dst.join(relpath),
+                        target,
                     }));
                 }
             }
             Ok(v)
         } else {
             let mut provides = vec![Item::Path(PathItem::Entry(FsEntry {
-                path: self.dst.to_owned().into(),
+                path: self.dst.to_owned(),
                 file_type: FileType::File,
                 mode: self.mode.as_raw(),
             }))];
@@ -245,11 +245,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
                             }
                             .with_extension("debug");
                             provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                path: debuginfo_dst
-                                    .parent()
-                                    .expect("must have parent")
-                                    .to_owned()
-                                    .into(),
+                                path: debuginfo_dst.parent().expect("must have parent").to_owned(),
                                 file_type: FileType::Directory,
                                 mode: 0o555,
                             })));
@@ -268,21 +264,15 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
 
     fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut requires = vec![
-            Requirement::ordered(
-                ItemKey::User(self.user.to_owned().into()),
-                Validator::Exists,
-            ),
-            Requirement::ordered(
-                ItemKey::Group(self.group.to_owned().into()),
-                Validator::Exists,
-            ),
+            Requirement::ordered(ItemKey::User(self.user.to_owned()), Validator::Exists),
+            Requirement::ordered(ItemKey::Group(self.group.to_owned()), Validator::Exists),
         ];
         // For relative dest paths (or `/`), parent() could be the empty string
         if let Some(parent) = self.dst.parent()
             && !parent.as_os_str().is_empty()
         {
             requires.push(Requirement::ordered(
-                ItemKey::Path(parent.to_owned().into()),
+                ItemKey::Path(parent.to_owned()),
                 Validator::FileType(FileType::Directory),
             ));
         }
