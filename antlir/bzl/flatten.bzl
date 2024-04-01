@@ -3,6 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+# This does incorrect modifications.
+# @lint-ignore-every FBCODEBZLADDLOADS
+
 load("//antlir/bzl:build_defs.bzl", "is_buck2")
 load("//antlir/bzl:types.bzl", "types")
 
@@ -30,9 +33,7 @@ def _typed_flattener(item_type) -> types.function:
 
     return _flatten
 
-# TODO(nga): "function" is for example "str" which acts as type.
-#   Add a type of type to starlark.
-_ITEM_T = types.optional(types.union(types.str, types.function, types.list(types.union(types.str, types.function))))
+_ITEM_T = types.optional(types.union(types.str, type, types.list(types.union(types.str, type))))
 
 types.lint_noop(_ITEM_T)
 

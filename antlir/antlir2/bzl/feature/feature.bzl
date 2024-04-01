@@ -81,13 +81,14 @@ load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod_rule")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:types.bzl", "types")
+load("//antlir/antlir2/features/feature_info.bzl", "ParseTimeFeature")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":cfg.bzl", "feature_cfg")
 
 feature_record = record(
     feature_type = str,
     label = TargetLabel,
-    analysis = "FeatureAnalysis",
+    analysis = FeatureAnalysis,
     plugin = FeaturePluginInfo | Provider,
 )
 
@@ -348,7 +349,7 @@ def feature_attrs(
 
     # This is already flat but this will enforce the type checking again after
     # the antlir1-compat-promotion above
-    features = flatten.flatten(features, item_type = ["ParseTimeFeature", str, "selector"])
+    features = flatten.flatten(features, item_type = [ParseTimeFeature, str, Select])
 
     inline_features = {}
     feature_targets = []
