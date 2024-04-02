@@ -25,8 +25,13 @@ use uuid::Uuid;
 pub enum Error {
     #[error(transparent)]
     Io(#[from] std::io::Error),
-    #[error("failed to add redirect: {error}")]
-    AddRedirect { error: String },
+    #[error("Failed to add redirect.\n{msg}: {cmd}\nError:\n{error}\nDebug info:\n{debug_info}")]
+    AddRedirect {
+        cmd: String,
+        debug_info: String,
+        error: String,
+        msg: String,
+    },
     #[error("failed to create working volume")]
     CreateWorkingVolume(std::io::Error),
     #[error("failed to check eden presence")]
@@ -40,6 +45,27 @@ pub struct WorkingVolume {
     path: PathBuf,
 }
 
+fn get_debug_info() -> String {
+    let mut cmd = Command::new("eden");
+    let res = cmd
+        .arg("rage")
+        .arg("--dry-run")
+        .output()
+        .map_err(|_| Some("None".to_string()))
+        .expect("a string");
+    format!(
+        "\
+        Eden doctor command: {cmd}\n\
+        Eden doctor stdout:\n\
+        {stdout}\n\
+        Eden doctor stderr:\n\
+        {stderr}",
+        cmd = format_args!("{:?}", cmd),
+        stdout = String::from_utf8_lossy(&res.stdout).into_owned(),
+        stderr = String::from_utf8_lossy(&res.stderr).into_owned(),
+    )
+}
+
 impl WorkingVolume {
     /// Ensure this [WorkingVolume] exists and is set up correctly.
     pub fn ensure(path: PathBuf) -> Result<Self> {
@@ -51,7 +77,8 @@ impl WorkingVolume {
                 // redirects, take an exclusive lock before adding
                 flock(dir.as_raw_fd(), FlockArg::LockExclusive).map_err(std::io::Error::from)?;
                 if !path.exists() {
-                    let res = Command::new("eden")
+                    let mut cmd = Command::new("eden");
+                    let res = cmd
                         .env("EDENFSCTL_ONLY_RUST", "1")
                         .arg("redirect")
                         .arg("add")
@@ -59,11 +86,17 @@ impl WorkingVolume {
                         .arg("bind")
                         .output()
                         .map_err(|e| Error::AddRedirect {
+                            cmd: format!("{:?}", cmd),
+                            debug_info: get_debug_info(),
                             error: e.to_string(),
+                            msg: "Failed to run command".to_string(),
                         })?;
                     if !res.status.success() {
                         return Err(Error::AddRedirect {
+                            cmd: format!("{:?}", cmd),
+                            debug_info: get_debug_info(),
                             error: String::from_utf8_lossy(&res.stderr).into_owned(),
+                            msg: "Command failed".to_string(),
                         });
                     }
                 }
