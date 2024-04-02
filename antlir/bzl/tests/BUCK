@@ -4,6 +4,7 @@ load("//antlir/antlir2/testing:image_test.bzl", "image_python_test")
 load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl/starlark_unittest:defs.bzl", "starlark_unittest")
+load(":test_stat.bzl", "test_parse", "test_simple_parse")
 
 oncall("antlir")
 
@@ -87,11 +88,7 @@ starlark_unittest(
     ],
 )
 
-starlark_unittest(
-    name = "test-stat",
-    srcs = ["test_stat.bzl"],
-    deps = [
-        "//antlir/bzl:stat.bzl",
-        "//antlir/bzl:types.bzl",
-    ],
-)
+# These tests are for Starlark code so they run on load for any target here
+test_simple_parse()
+
+test_parse()
