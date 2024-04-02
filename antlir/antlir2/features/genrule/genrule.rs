@@ -28,7 +28,6 @@ pub type Feature = Genrule;
 pub struct Genrule {
     pub cmd: Vec<ResolvedMacro>,
     pub user: UserName,
-    pub boot: bool,
     pub bind_repo_ro: bool,
     pub mount_platform: bool,
 }
@@ -66,9 +65,6 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Genrule {
 impl antlir2_compile::CompileFeature for Genrule {
     #[tracing::instrument(name = "genrule", skip(ctx), ret, err)]
     fn compile(&self, ctx: &CompilerContext) -> antlir2_compile::Result<()> {
-        if self.boot {
-            unimplemented!("boot is not yet implemented");
-        }
         let cwd = std::env::current_dir()?;
         let mut inner_cmd = self.cmd_iter();
         let mut isol = IsolationContext::builder(ctx.root());
@@ -76,10 +72,7 @@ impl antlir2_compile::CompileFeature for Genrule {
             .ephemeral(false)
             .devtmpfs(Path::new("/dev"))
             .setenv(("TMPDIR", "/tmp"))
-            .invocation_type(match self.boot {
-                true => InvocationType::BootReadOnly,
-                false => InvocationType::Pid2Pipe,
-            });
+            .invocation_type(InvocationType::Pid2Pipe);
         if self.mount_platform {
             #[cfg(facebook)]
             isol.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
