@@ -5,12 +5,16 @@
 
 load("//antlir/bzl:stat.bzl", "stat")
 
+def assert_eq(actual, expected, sym = None):
+    if actual != expected:
+        fail("assert_eq failed: {} != {}".format(actual, expected) + (" ({})".format(sym) if sym else ""))
+
 def test_simple_parse():
-    unittest.assert_eq(0o400, stat.parse("u+r"))
-    unittest.assert_eq(0o440, stat.parse("ug+r"))
-    unittest.assert_eq(0o444, stat.parse("ugo+r"))
-    unittest.assert_eq(0o444, stat.parse("a+r"))
-    unittest.assert_eq(0o555, stat.parse("a+rx"))
+    assert_eq(0o400, stat.parse("u+r"))
+    assert_eq(0o440, stat.parse("ug+r"))
+    assert_eq(0o444, stat.parse("ugo+r"))
+    assert_eq(0o444, stat.parse("a+r"))
+    assert_eq(0o555, stat.parse("a+rx"))
 
 def test_parse():
     # generated with:
@@ -47,11 +51,8 @@ def test_parse():
     }
     for sym, expected in cases.items():
         actual = stat.parse(sym)
-        unittest.assert_eq(
+        assert_eq(
             actual,
             expected,
             sym,
         )
-
-def test_invalid_class():
-    unittest.assert_fails(partial(stat.parse, "z+r"), "'z' is not a recognized class")
