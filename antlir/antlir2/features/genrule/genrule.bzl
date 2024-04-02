@@ -10,11 +10,14 @@ load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTime
 
 def genrule(
         *,
-        cmd: list[str | Select] | Select,
+        cmd: list[str | Select] | Select | None = None,
+        bash: str | Select | None = None,
         user: str | Select = "nobody",
         boot: bool | Select = False,
         bind_repo_ro: bool | Select = False,
         mount_platform: bool | Select = False) -> ParseTimeFeature:
+    if int(bool(cmd)) + int(bool(bash)) != 1:
+        fail("Must provide exactly one of `cmd` or `bash`")
     return ParseTimeFeature(
         feature_type = "genrule",
         plugin = antlir2_dep("//antlir/antlir2/features/genrule:genrule"),
@@ -26,12 +29,14 @@ def genrule(
         },
         args = {
             "cmd_" + str(idx): cmd
-            for idx, cmd in enumerate(cmd)
-        },
+            for idx, cmd in enumerate(cmd or [])
+        } | ({
+            "bash": bash,
+        } if bash else {}),
     )
 
 genrule_record = record(
-    cmd = list[ResolvedStringWithMacros],
+    cmd = list[ResolvedStringWithMacros | list[str]],
     user = str,
     boot = bool,
     bind_repo_ro = bool,
@@ -39,8 +44,12 @@ genrule_record = record(
 )
 
 def _genrule_impl(ctx: AnalysisContext) -> list[Provider]:
-    cmd = {int(key.removeprefix("cmd_")): val for key, val in ctx.attrs.args.items() if key.startswith("cmd_")}
-    cmd = [val for _key, val in sorted(cmd.items())]
+    bash = ctx.attrs.args.pop("bash", None)
+    if bash:
+        cmd = [["/bin/bash", "-c"], bash]
+    else:
+        cmd = {int(key.removeprefix("cmd_")): val for key, val in ctx.attrs.args.items() if key.startswith("cmd_")}
+        cmd = [val for _key, val in sorted(cmd.items())]
     return [DefaultInfo(), FeatureAnalysis(
         feature_type = "genrule",
         data = genrule_record(

@@ -74,6 +74,27 @@ image_diff_test(
 )
 
 image.layer(
+    name = "genrule-bash",
+    features = [
+        feature.genrule(
+            bash = """
+                /genrule.sh $(location //antlir:empty)
+            """,
+            bind_repo_ro = True,
+            user = "root",
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "genrule-bash-test",
+    diff = "genrule.toml",
+    diff_type = "file",
+    layer = ":genrule-bash",
+)
+
+image.layer(
     name = "genrule-with-repo",
     features = [
         feature.genrule(
