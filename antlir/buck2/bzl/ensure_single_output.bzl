@@ -8,7 +8,7 @@ def ensure_single_output(
         optional: bool = False) -> Artifact | None:
     if type(dep) == "artifact":
         return dep
-    elif type(dep) == DefaultInfo.type:
+    elif isinstance(dep, DefaultInfo):
         default_outputs = dep.default_outputs
     else:
         default_outputs = dep[DefaultInfo].default_outputs
