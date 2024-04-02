@@ -1,3 +1,4 @@
+load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -8,8 +9,9 @@ oncall("antlir")
 image.layer(
     name = "parent",
     features = [
+        feature.ensure_dirs_exist(dirs = "/arch"),
         feature.install_text(
-            dst = "/arch.parent",
+            dst = "/arch/parent",
             text = arch_select(
                 aarch64 = "aarch64",
                 x86_64 = "x86_64",
@@ -22,8 +24,9 @@ image.layer(
 image.layer(
     name = "child.x86_64",
     features = [
+        feature.ensure_dirs_exist(dirs = "/arch"),
         feature.install_text(
-            dst = "/arch.child",
+            dst = "/arch/child",
             text = arch_select(
                 aarch64 = "aarch64",
                 x86_64 = "x86_64",
@@ -37,8 +40,9 @@ image.layer(
 image.layer(
     name = "child.aarch64",
     features = [
+        feature.ensure_dirs_exist(dirs = "/arch"),
         feature.install_text(
-            dst = "/arch.child",
+            dst = "/arch/child",
             text = arch_select(
                 aarch64 = "aarch64",
                 x86_64 = "x86_64",
@@ -49,12 +53,26 @@ image.layer(
     target_arch = "aarch64",
 )
 
+hoist(
+    name = "data.x86_64",
+    dir = True,
+    layer = ":child.x86_64",
+    path = "/arch",
+)
+
+hoist(
+    name = "data.aarch64",
+    dir = True,
+    layer = ":child.aarch64",
+    path = "/arch",
+)
+
 python_unittest(
     name = "test-child.x86_64",
     srcs = ["test.py"],
     env = {
         "ARCH": "x86_64",
-        "LAYER": "$(location :child.x86_64)",
+        "DATA": "$(location :data.x86_64)",
     },
 )
 
@@ -63,6 +81,6 @@ python_unittest(
     srcs = ["test.py"],
     env = {
         "ARCH": "aarch64",
-        "LAYER": "$(location :child.aarch64)",
+        "DATA": "$(location :data.aarch64)",
     },
 )
