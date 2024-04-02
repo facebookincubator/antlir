@@ -17,14 +17,14 @@ class Test(unittest.TestCase):
         return os.environ["ARCH"]
 
     def layer(self) -> Path:
-        return Path(os.environ["LAYER"])
+        return Path(os.environ["DATA"])
 
     def test_parent_arch(self) -> None:
-        with open(self.layer() / "arch.parent") as f:
+        with open(self.layer() / "parent") as f:
             parent = f.read()
         self.assertEqual(parent, self.arch())
 
     def test_child_arch(self) -> None:
-        with open(self.layer() / "arch.child") as f:
+        with open(self.layer() / "child") as f:
             child = f.read()
         self.assertEqual(child, self.arch())
