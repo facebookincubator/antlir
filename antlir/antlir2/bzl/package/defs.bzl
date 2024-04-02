@@ -298,6 +298,7 @@ _squashfs, squashfs_anon = _new_package_rule(
     rule_attrs = {},
     format = "squashfs",
     can_be_partition = True,
+    sudo = True,
 )
 
 _tar, _tar_anon = _new_package_rule(
