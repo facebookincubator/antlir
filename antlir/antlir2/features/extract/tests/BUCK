@@ -14,7 +14,6 @@ image.layer(
             "util-linux",
         ]),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 rust_binary(
@@ -55,7 +54,6 @@ image.layer(
             target = "/usr/bin/systemctl",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(

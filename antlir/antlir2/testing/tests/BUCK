@@ -38,7 +38,6 @@ image.layer(
             target = "default.target",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_variants(
@@ -98,7 +97,6 @@ image.layer(
     features = [
         feature.rpms_install(rpms = ["foobarbaz"]),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image_test_rpm_names(

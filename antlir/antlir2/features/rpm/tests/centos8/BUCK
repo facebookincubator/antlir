@@ -33,7 +33,6 @@ test_rpms(
             ] + _RPM_DEPS_OF_TEST,
         ),
     ],
-    flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8",
 )
 
 image.layer(
@@ -41,7 +40,6 @@ image.layer(
     features = [
         feature.rpms_install(rpms = _RPM_DEPS_OF_TEST),
     ],
-    flavor = "//antlir/antlir2/facebook/flavor/centos8:centos8",
 )
 
 image_python_test(

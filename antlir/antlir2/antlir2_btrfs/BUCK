@@ -40,7 +40,6 @@ image.layer(
             mode = 0o777,
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image_rust_test(

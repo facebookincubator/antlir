@@ -1,7 +1,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "python_binary")
 load(":defs.bzl", "expected_t", "test_rpms")
 
 oncall("antlir")
@@ -53,7 +53,6 @@ simple = test_rpms(
         ),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 python_binary(
@@ -242,7 +241,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -252,7 +250,6 @@ test_rpms(
         feature.rpms_install(subjects_src = "subjects-src"),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -268,15 +265,30 @@ test_rpms(
             path = "/foo",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
+)
+
+alias(
+    name = "flavor-versionlock",
+    actual = select({
+        "//antlir/antlir2/os:centos8": "//antlir/antlir2/facebook/flavor/centos8:centos8[default_versionlock]",
+        "//antlir/antlir2/os:centos9": "//antlir/antlir2/facebook/flavor/centos9:centos9[default_versionlock]",
+    }),
+    compatible_with = [
+        "//antlir/antlir2/os:centos8",
+        "//antlir/antlir2/os:centos9",
+    ],
 )
 
 buck_genrule(
     name = "versionlock.json",
     out = "versionlock.json",
     cmd = """
-        jq '.foo = "2-1"' < $(location //antlir/antlir2/test_images:test-image-flavor[default_versionlock]) > $OUT
+        jq '.foo = "2-1"' < $(location :flavor-versionlock) > $OUT
     """,
+    compatible_with = [
+        "//antlir/antlir2/os:centos8",
+        "//antlir/antlir2/os:centos9",
+    ],
 )
 
 test_rpms(
@@ -289,7 +301,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -307,15 +318,18 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 buck_genrule(
     name = "versionlock-missing-version.json",
     out = "versionlock.json",
     cmd = """
-        jq '.foo = "99-1"' < $(location //antlir/antlir2/test_images:test-image-flavor[default_versionlock]) > $OUT
+        jq '.foo = "99-1"' < $(location :flavor-versionlock) > $OUT
     """,
+    compatible_with = [
+        "//antlir/antlir2/os:centos8",
+        "//antlir/antlir2/os:centos9",
+    ],
 )
 
 test_rpms(
@@ -328,7 +342,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -341,7 +354,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -354,7 +366,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -370,7 +381,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 protected_installed = test_rpms(
@@ -382,7 +392,6 @@ protected_installed = test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -393,7 +402,6 @@ test_rpms(
             "dnf",
         ]),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
     parent_layer = protected_installed,
 )
 
@@ -414,7 +422,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 test_rpms(
@@ -428,7 +435,6 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image_python_test(
@@ -467,5 +473,4 @@ test_rpms(
         ]),
         ":test-deps",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )

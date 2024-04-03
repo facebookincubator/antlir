@@ -48,6 +48,5 @@ image.layer(
         ),
         feature.ensure_dirs_exist(dirs = "/antlir"),
     ],
-    flavor = "//antlir/antlir2/facebook/flavor/centos9:centos9",
     visibility = ["PUBLIC"],
 )

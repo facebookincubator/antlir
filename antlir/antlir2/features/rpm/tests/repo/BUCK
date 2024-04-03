@@ -15,7 +15,6 @@ image.layer(
             dst = "/foo/foo",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -46,7 +45,6 @@ image.layer(
             dst = "/empty-file-will-not-exist-in-rpm",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 _GEN_VERSIONS = [
@@ -179,7 +177,6 @@ image.layer(
             setcap = "cap_setuid,cap_setgid=ep",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 all_rpms.append(

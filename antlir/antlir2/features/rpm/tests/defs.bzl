@@ -24,7 +24,6 @@ def test_rpms(
         expected: expected_t,
         features: list[types.antlir_feature] = [],
         parent_layer: str | None = None,
-        flavor: str | None = None,
         dnf_additional_repos: list[str] = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
         dnf_versionlock: str | None = None,
         dnf_versionlock_extend: dict[str, str] | None = None,
@@ -37,7 +36,6 @@ def test_rpms(
     image.layer(
         name = name + "--layer",
         parent_layer = parent_layer,
-        flavor = flavor,
         features = features + [
             feature.remove(path = "/etc/dnf/dnf.conf", must_exist = False),
             feature.install(src = "//antlir:empty", dst = "/etc/dnf/dnf.conf"),

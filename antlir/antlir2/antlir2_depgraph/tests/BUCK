@@ -41,7 +41,6 @@ good_depgraph(
             dst = "/foo",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 # `feature.remove` and `feature.install` cannot be composed within the same
@@ -97,7 +96,6 @@ good_depgraph(
             dst = "/foo/baz",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 bad_depgraph(
@@ -127,7 +125,6 @@ good_depgraph(
         # already created as subdirectory of installed `/foo/bar`
         feature.ensure_dirs_exist(dirs = "/foo/bar/qux"),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 bad_depgraph(
@@ -224,7 +221,6 @@ good_depgraph(
             user = "antlir",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 good_depgraph(
@@ -298,7 +294,6 @@ good_depgraph(
             user = "root",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 bad_depgraph(
@@ -332,7 +327,6 @@ good_depgraph(
             target = "/cloned/bar",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 bad_depgraph(
@@ -353,7 +347,6 @@ good_depgraph(
         feature.ensure_dirs_exist(dirs = "/foo/bar/baz"),
         ":external-feature-overlapping-dirs",
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 feature.new(
@@ -395,7 +388,6 @@ good_depgraph(
             text = "root:x:0:\n",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 good_depgraph(
@@ -430,7 +422,6 @@ good_depgraph(
             text = "root:x:0:\n",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 good_depgraph(
@@ -470,7 +461,6 @@ good_depgraph(
             groupname = "antlir",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 good_depgraph(
@@ -490,17 +480,14 @@ good_depgraph(
             dst = "/symlink/foo",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
     name = "mount-a",
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
     name = "mount-b",
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 bad_depgraph(

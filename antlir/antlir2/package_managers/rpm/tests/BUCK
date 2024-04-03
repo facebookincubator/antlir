@@ -11,7 +11,6 @@ image.layer(
     features = [
         feature.rpms_install(rpms = ["foobarbaz"]),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 rpm_manifest(

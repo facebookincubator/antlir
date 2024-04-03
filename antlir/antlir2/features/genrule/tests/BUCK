@@ -48,7 +48,6 @@ image.layer(
             dst = "/is-facebook",
         ),
     ] if is_facebook else []),
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(

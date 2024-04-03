@@ -17,7 +17,6 @@ image.layer(
             mode = "a+rx",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 buck_genrule(

@@ -19,7 +19,6 @@ image.layer(
             dst = "/b/c",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -75,7 +74,6 @@ image.layer(
             target = "/foo",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -104,7 +102,6 @@ image.layer(
             dst = "/foo/bar/qux",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(

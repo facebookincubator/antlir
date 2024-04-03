@@ -13,7 +13,6 @@ image.layer(
             mode = "a+rx",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -30,7 +29,6 @@ image.layer(
             source = ":src",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(

@@ -13,7 +13,6 @@ image.layer(
             "coreutils",
         ]),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 genrule_in_image(

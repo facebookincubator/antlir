@@ -32,10 +32,7 @@ def _from_antlir1_flavor(
             else:
                 flavor = flavor[:-len("-untested")]
 
-        if flavor == "antlir_test":
-            flavor = antlir2_dep("//antlir/antlir2/test_images:test-image-flavor")
-        else:
-            flavor = antlir2_dep("//antlir/antlir2/facebook/flavor/{flavor}:{flavor}".format(flavor = flavor))
+        flavor = antlir2_dep("//antlir/antlir2/facebook/flavor/{flavor}:{flavor}".format(flavor = flavor))
 
     return flavor
 
