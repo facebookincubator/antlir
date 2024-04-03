@@ -11,7 +11,6 @@ oncall("antlir")
 image.layer(
     name = "base",
     features = [],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -179,7 +178,6 @@ image.layer(
             dst = "/usr/bin/true-py",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image_python_test(
@@ -265,7 +263,6 @@ image.layer(
             dst = "/installed",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image_rust_test(

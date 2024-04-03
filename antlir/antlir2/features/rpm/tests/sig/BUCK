@@ -9,7 +9,6 @@ oncall("antlir")
 
 image.layer(
     name = "empty",
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 package.rpm(
@@ -127,7 +126,6 @@ image.layer(
             dst = "/key.pub",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -173,7 +171,6 @@ image.layer(
     features = [
         feature.rpms_install(rpms = ["signed"]),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -185,7 +182,6 @@ image.layer(
             source = ":install-signed",
         ),
     ],
-    flavor = ":install-signed[flavor]",
 )
 
 image_rust_test(
@@ -201,7 +197,6 @@ image.layer(
     features = [
         feature.rpms_install(rpms = ["signed-sha512"]),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 # TODO(T166070409) These images correctly fail to build, but until that task is
@@ -215,7 +210,6 @@ image.layer(
         features = [
             feature.rpms_install(rpms = ["signed-with-wrong-key"]),
         ],
-        flavor = "//antlir/antlir2/test_images:test-image-flavor",
     ),
     image.layer(
         name = "install-unsigned",
@@ -223,6 +217,5 @@ image.layer(
         features = [
             feature.rpms_install(rpms = ["unsigned"]),
         ],
-        flavor = "//antlir/antlir2/test_images:test-image-flavor",
     ),
 ] if read_config("antlir2", "rpm_sig_broken_images", False) else None

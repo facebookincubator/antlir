@@ -18,7 +18,6 @@ image.layer(
             ),
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(

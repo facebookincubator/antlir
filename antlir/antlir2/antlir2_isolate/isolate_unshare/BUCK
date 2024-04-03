@@ -40,7 +40,6 @@ image.layer(
             dst = "/baz",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -60,7 +59,6 @@ image.layer(
             text = "baz\n",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image_rust_test(

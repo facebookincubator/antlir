@@ -9,7 +9,6 @@ image.layer(
     features = [
         trace(msg = "This feature-internal trace should appear in log files"),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 python_unittest(

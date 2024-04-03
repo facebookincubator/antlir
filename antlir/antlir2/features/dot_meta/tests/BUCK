@@ -15,7 +15,6 @@ image.layer(
     features = [
         dot_meta(),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -39,7 +38,6 @@ image_diff_test(
 
 image.layer(
     name = "unstamped",
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 package.cpio_gz(

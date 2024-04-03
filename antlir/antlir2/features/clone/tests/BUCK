@@ -36,7 +36,6 @@ image.layer(
             groupname = "antlir",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(
@@ -206,7 +205,6 @@ image.layer(
             groupname = "antlir",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(

@@ -21,7 +21,6 @@ image.layer(
             text = "root:x:0:\nantlir:x:1000:antlir\n",
         ),
     ],
-    flavor = "//antlir/antlir2/test_images:test-image-flavor",
 )
 
 image.layer(

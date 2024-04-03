@@ -28,7 +28,6 @@ def test_rpm(
     image.layer(
         name = target_name + "--layer",
         features = features,
-        flavor = "//antlir/antlir2/test_images:test-image-flavor",
         parent_layer = parent_layer,
         visibility = [":{}--package".format(target_name)],
     )
