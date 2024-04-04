@@ -33,11 +33,11 @@ load("//antlir/bzl/build_defs.bzl", "config", "get_visibility")
 load(":cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load(":depgraph.bzl", "build_depgraph")
 load(":facts.bzl", "facts")
+load(":mount_types.bzl", "mount_record")  # @unused Used as type
 load(
     ":mounts.bzl",
     "all_mounts",
     "container_mount_args",
-    "mount_record",  # @unused Used as type
 )
 
 BuildApplianceInfo = provider(fields = {})

@@ -7,24 +7,9 @@ load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_record", "verify_feature_records")
 load("//antlir/bzl:types.bzl", "types")
+load(":mount_types.bzl", "host_mount_record", "layer_mount_record", "mount_record")
 
 types.lint_noop(feature_record)
-
-layer_mount_record = record(
-    mountpoint = str,
-    subvol_symlink = Artifact,
-)
-
-host_mount_record = record(
-    mountpoint = str,
-    src = str,
-    is_directory = bool,
-)
-
-mount_record = record(
-    layer = layer_mount_record | None,
-    host = host_mount_record | None,
-)
 
 def _mountpoint(mount: mount_record) -> str:
     return mount.layer.mountpoint if mount.layer else mount.host.mountpoint
