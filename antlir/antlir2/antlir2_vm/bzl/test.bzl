@@ -90,6 +90,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
             sub_targets = {
                 "console": [DefaultInfo(test_script), RunInfo(console_cmd)],
                 "container": [DefaultInfo(test_script), RunInfo(container_cmd)],
+                "inner_test": ctx.attrs.test.providers,
                 "shell": [DefaultInfo(test_script), RunInfo(shell_cmd)],
             },
         ),
