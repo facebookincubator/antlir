@@ -4,12 +4,13 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl/image:mount_types.bzl", "mount_record")
 
 layer_dep = record(
     label = Label,
     facts_db = Artifact,
     subvol_symlink = Artifact,
-    mounts = list["mount_record"],
+    mounts = list[mount_record],
 )
 
 def layer_dep_analyze(layer: Dependency) -> layer_dep:
