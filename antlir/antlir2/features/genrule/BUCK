@@ -6,6 +6,7 @@ feature_impl(
     name = "genrule",
     deps = [
         "derivative",
+        "itertools",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
     ],
 )

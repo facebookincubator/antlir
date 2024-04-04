@@ -5,7 +5,12 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+#![feature(io_error_more)]
+
+use std::collections::HashSet;
 use std::fmt::Debug;
+use std::io::ErrorKind;
+use std::os::unix::fs::MetadataExt;
 use std::path::Path;
 
 use antlir2_compile::CompilerContext;
@@ -18,6 +23,7 @@ use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
 use derivative::Derivative;
+use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -82,8 +88,27 @@ impl antlir2_compile::CompileFeature for Genrule {
         } else {
             isol.working_directory(Path::new("/"));
         }
-        let mut cmd =
-            unshare(isol.build())?.command(inner_cmd.next().expect("must have argv[0]"))?;
+        let isol = isol.build();
+        // find all the mountpoints (and their ancestors) that did not exist
+        // before setting up the genrule environment, and remove them after the
+        // genrule is done, asssuming they are all empty
+        let mounts_to_cleanup: HashSet<_> = isol
+            .inputs
+            .keys()
+            .chain(isol.platform.keys())
+            .flat_map(|p| p.ancestors())
+            .filter_map(|p| match ctx.dst_path(p) {
+                Ok(real) => {
+                    if !real.exists() {
+                        Some(real)
+                    } else {
+                        None
+                    }
+                }
+                Err(_) => None,
+            })
+            .collect();
+        let mut cmd = unshare(isol)?.command(inner_cmd.next().expect("must have argv[0]"))?;
         cmd.args(inner_cmd);
         tracing::trace!("executing genrule with isolated command: {cmd:?}");
         let res = cmd.output().context("while running cmd")?;
@@ -98,6 +123,28 @@ impl antlir2_compile::CompileFeature for Genrule {
                 std::str::from_utf8(&res.stderr).unwrap_or("<invalid utf8>"),
             )
             .into());
+        }
+        // clean up any paths that existed solely for mountpoints of genrule
+        // inputs, unless they are empty
+        for path in mounts_to_cleanup
+            .into_iter()
+            .sorted_by_key(|p| p.components().count())
+            .rev()
+        {
+            let meta = path.metadata()?;
+            if meta.is_dir() {
+                if let Err(e) = std::fs::remove_dir(&path) {
+                    if e.kind() != ErrorKind::DirectoryNotEmpty {
+                        return Err(anyhow::anyhow!(
+                            "could not remove seemingly-unnecessary mountpoint '{}': {e:#?}",
+                            path.display()
+                        )
+                        .into());
+                    }
+                }
+            } else if meta.is_file() && meta.size() == 0 {
+                std::fs::remove_file(&path)?;
+            }
         }
         Ok(())
     }

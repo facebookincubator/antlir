@@ -7,22 +7,3 @@ file-type = "regular-file"
 user = "root"
 group = "root"
 text = "hello world!"
-
-# TODO(T160514321) these should not persist
-[file."mnt/gvfs"]
-op = "added"
-
-[file."mnt/gvfs".diff]
-mode = "u+rwx,g+rx,o+rx"
-file-type = "directory"
-user = "root"
-group = "root"
-
-[file."usr/local/fbcode"]
-op = "added"
-
-[file."usr/local/fbcode".diff]
-mode = "u+rwx,g+rx,o+rx"
-file-type = "directory"
-user = "root"
-group = "root"
