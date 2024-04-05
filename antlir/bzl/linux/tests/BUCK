@@ -60,6 +60,18 @@ image_python_test(
     layer = ":test-layer-timezone-us-pacific",
 )
 
+linux.release.file(
+    name = "release-vcs",
+    layer = ":test-layer-os-release",
+    os_id = "centos",
+    os_name = "AntlirTest",
+    os_version = "9",
+    os_version_id = "9",
+    variant = "Test",
+    vcs_rev = "6efad6997e43d402e3a5fd3b92d0e8bea8f8c879",
+    vcs_rev_time = 1712265328,
+)
+
 image.layer(
     name = "test-layer-os-release",
     features = [
@@ -80,6 +92,10 @@ image.layer(
             }),
             path = "/usr/lib/os-release",
             variant = "Test",
+        ),
+        feature.install(
+            src = ":release-vcs",
+            dst = "/usr/lib/os-release-vcs",
         ),
     ],
 )

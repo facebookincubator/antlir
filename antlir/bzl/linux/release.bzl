@@ -5,27 +5,40 @@
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", "feature")
-load("//antlir/bzl:target_helpers.bzl", "antlir_dep", "normalize_target")
+load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
 def _release_file_impl(ctx: AnalysisContext) -> list[Provider]:
     for key in ctx.attrs.api_versions.keys():
         if not key.isupper():
             fail("api_versions keys must be UPPER ({})".format(key))
 
-    vcs_info = ctx.actions.declare_output("vcs.json")
-    ctx.actions.run(
-        cmd_args(
-            ctx.attrs._vcs[RunInfo],
-            cmd_args(vcs_info.as_output(), format = "--json={}"),
-        ),
-        category = "vcs_info",
-        local_only = True,  # uses hg
-    )
+    rev_time = ctx.actions.declare_output("rev_time.txt")
+    if ctx.attrs.vcs_rev_time:
+        ctx.actions.run(
+            cmd_args(
+                "bash",
+                "-c",
+                cmd_args(
+                    "date",
+                    "--rfc-3339=seconds",
+                    "--utc",
+                    "--date",
+                    "@" + str(ctx.attrs.vcs_rev_time),
+                    ">",
+                    rev_time.as_output(),
+                    delimiter = " ",
+                ),
+            ),
+            category = "vcs_format_timestamp",
+        )
+    else:
+        ctx.actions.write(rev_time, "1969-12-31 16:00:00-08:00")
 
     contents_out = ctx.actions.declare_output("os-release")
 
-    def _dyn(ctx, artifacts, outputs, vcs_info = vcs_info, contents_out = contents_out):
-        vcs_info = artifacts[vcs_info].read_json()
+    def _dyn(ctx, artifacts, outputs, rev_time = rev_time, contents_out = contents_out):
+        date, time = artifacts[rev_time].read_string().strip().split(" ")
+        rev_time = "{}T{}".format(date, time)
 
         api_vers = [
             "API_VER_{key}=\"{val}\"".format(key = key, val = val)
@@ -56,14 +69,14 @@ ANSI_COLOR="{ansi_color}"
             ansi_color = ctx.attrs.ansi_color,
             image_id = native.read_config("build_info", "target_path", "local"),
             target = ctx.attrs.layer.raw_target(),
-            rev = vcs_info["rev_id"],
-            rev_time = vcs_info["rev_timestamp_iso8601"],
+            rev = ctx.attrs.vcs_rev,
+            rev_time = rev_time,
             api_vers = "\n".join(api_vers),
         ).strip() + "\n"
 
         ctx.actions.write(outputs[contents_out], contents)
 
-    ctx.actions.dynamic_output(dynamic = [vcs_info], inputs = [], outputs = [contents_out], f = _dyn)
+    ctx.actions.dynamic_output(dynamic = [rev_time], inputs = [], outputs = [contents_out], f = _dyn)
 
     return [
         DefaultInfo(contents_out),
@@ -76,6 +89,7 @@ _release_file = rule(
         "api_versions": attrs.dict(
             attrs.string(),
             attrs.int(),
+            default = {},
             doc = """
                 A means of expressing the (preferably monotonically increasing)
                 API version for various MetalOS features embedded in the image.
@@ -100,7 +114,14 @@ _release_file = rule(
         "os_version": attrs.string(),
         "os_version_id": attrs.string(),
         "variant": attrs.string(),
-        "_vcs": attrs.default_only(attrs.exec_dep(default = antlir_dep(":vcs"))),
+        "vcs_rev": attrs.option(
+            attrs.string(doc = "SCM revision this is being built on"),
+            default = None,
+        ),
+        "vcs_rev_time": attrs.option(
+            attrs.int(doc = "Unix timestamp of the commit time"),
+            default = None,
+        ),
     },
     doc = """
         Build an `os-release` file.
@@ -123,7 +144,18 @@ _release_file = rule(
 
 _release_file_macro = rule_with_default_target_platform(_release_file)
 
-def _install(path, layer, os_name, variant, os_version = "9", os_version_id = "9", os_id = "centos", ansi_color = "0;34", api_versions = {}):
+def _install(
+        path,
+        layer,
+        os_name,
+        variant,
+        os_version = "9",
+        os_version_id = "9",
+        os_id = "centos",
+        ansi_color = "0;34",
+        api_versions = {},
+        vcs_rev: str | None = None,
+        vcs_rev_time: int | None = None):
     """
     Build an `os-release` file and install it at the provided `path` location.
     See https://www.freedesktop.org/software/systemd/man/os-release.html
@@ -179,6 +211,8 @@ def _install(path, layer, os_name, variant, os_version = "9", os_version_id = "9
         os_version = os_version,
         os_version_id = os_version_id,
         variant = variant,
+        vcs_rev = vcs_rev or native.read_config("build_info", "revision", "local"),
+        vcs_rev_time = vcs_rev_time or int(native.read_config("build_info", "revision_epochtime", 0)),
         visibility = ["PUBLIC"],
     )
 
