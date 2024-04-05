@@ -16,8 +16,6 @@ class OsReleaseTest(unittest.TestCase):
     def test_os_release(self) -> None:
         """Verify that the os-release file properly built."""
 
-        rev_id_regex = r"\b([a-f0-9]{40})\b"
-
         with Path("/usr/lib/os-release").open() as f:
             reader = csv.reader(f, delimiter="=")
             os_release = dict(reader)
@@ -38,18 +36,38 @@ class OsReleaseTest(unittest.TestCase):
             os_release["VARIANT"],
             "Test",
         )
-        # Validate the Pretty Name has the names + a valid vcs rev
-        self.assertTrue(
-            re.match(
-                rf"AntlirTest\ 9\ Test\ \({rev_id_regex}\)",
-                os_release["PRETTY_NAME"],
-            )
+        # Validate the Pretty Name has the name and says it's a local rev
+        self.assertEqual(
+            os_release["PRETTY_NAME"],
+            "AntlirTest 9 Test (local)",
         )
 
         # For tests we will never have build_info properly provided
         self.assertEqual(
             os_release["IMAGE_ID"],
             "local",
+        )
+
+        # Validate the API Version rendering
+        self.assertEqual(os_release["API_VER_BAR"], "22")
+        self.assertEqual(os_release["API_VER_FOO_QUX"], "7")
+
+    def test_vcs(self) -> None:
+        """Verify that VCS info is correctly included"""
+
+        rev_id_regex = r"\b([a-f0-9]{40})\b"
+
+        with Path("/usr/lib/os-release-vcs").open() as f:
+            reader = csv.reader(f, delimiter="=")
+            os_release = dict(reader)
+
+        # Validate the Pretty Name has the names + a valid vcs rev
+        self.assertTrue(
+            re.match(
+                rf"AntlirTest 9 Test \({rev_id_regex}\)",
+                os_release["PRETTY_NAME"],
+            ),
+            os_release["PRETTY_NAME"],
         )
 
         # Validate the second part of the BUILD_ID is a vcs rev
@@ -61,7 +79,3 @@ class OsReleaseTest(unittest.TestCase):
             self.fail(
                 f"Can't parse revision_time_iso8601 {os_release['IMAGE_VCS_REV_TIME']} as date: {e}"
             )
-
-        # Validate the API Version rendering
-        self.assertEqual(os_release["API_VER_BAR"], "22")
-        self.assertEqual(os_release["API_VER_FOO_QUX"], "7")
