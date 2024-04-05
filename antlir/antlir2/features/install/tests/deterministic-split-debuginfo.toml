@@ -62,3 +62,13 @@ file-type = "regular-file"
 user = "root"
 group = "root"
 content-hash = "d299324457ed9ce850b4d62546ae3487"
+
+[file."usr/lib/debug/.build-id/cd/ede5c8d904566a5cd33f0fdaff40eab44cdcd3.debug.dwp"]
+op = "added"
+
+[file."usr/lib/debug/.build-id/cd/ede5c8d904566a5cd33f0fdaff40eab44cdcd3.debug.dwp".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = ""

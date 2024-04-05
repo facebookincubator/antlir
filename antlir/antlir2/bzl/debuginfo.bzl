@@ -10,6 +10,7 @@ SplitBinaryInfo = provider(fields = [
     "stripped",
     "debuginfo",
     "metadata",
+    "dwp",
 ])
 
 def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -17,8 +18,14 @@ def _split_binary_impl(ctx: AnalysisContext) -> list[Provider]:
 
     src = ensure_single_output(ctx.attrs.src)
 
+    src_dwp = None
+    maybe_dwp = ctx.attrs.src[DefaultInfo].sub_targets.get("dwp")
+    if maybe_dwp:
+        src_dwp = ensure_single_output(maybe_dwp[DefaultInfo])
+
     stripped = ctx.actions.declare_output("stripped")
     debuginfo = ctx.actions.declare_output("debuginfo")
+    dwp_out = ctx.actions.declare_output("dwp")
     metadata = ctx.actions.declare_output("metadata.json")
 
     # objcopy needs a temporary file that it can write to. use a buck2 output
@@ -38,8 +45,10 @@ from pathlib import Path
 parser = argparse.ArgumentParser()
 parser.add_argument("--objcopy", required=True)
 parser.add_argument("--binary", required=True, type=Path)
+parser.add_argument("--binary-dwp", type=Path)
 parser.add_argument("--stripped", required=True, type=Path)
 parser.add_argument("--debuginfo", required=True, type=Path)
+parser.add_argument("--dwp", required=True, type=Path)
 parser.add_argument("--metadata", required=True, type=Path)
 parser.add_argument("--objcopy-tmp", required=True, type=Path)
 
@@ -51,6 +60,12 @@ args.objcopy_tmp.touch()
 with open(args.binary, mode="rb") as src_f:
     first_4 = src_f.read(4)
     is_elf = first_4 == b"\x7fELF"
+
+if args.binary_dwp:
+    shutil.copyfile(args.binary_dwp, args.dwp)
+else:
+    with open(args.dwp, "w") as _f:
+        pass
 
 # If this is not an ELF binary, it can't be stripped so just copy the original
 if not is_elf:
@@ -129,9 +144,11 @@ else:
             split,
             cmd_args(objcopy, format = "--objcopy={}"),
             cmd_args(src, format = "--binary={}"),
+            (cmd_args(src_dwp, format = "--binary-dwp={}") if src_dwp else []),
             cmd_args(stripped.as_output(), format = "--stripped={}"),
             cmd_args(debuginfo.as_output(), format = "--debuginfo={}"),
             cmd_args(metadata.as_output(), format = "--metadata={}"),
+            cmd_args(dwp_out.as_output(), format = "--dwp={}"),
             cmd_args(objcopy_tmp.as_output(), format = "--objcopy-tmp={}"),
         ),
         category = "split",
@@ -140,6 +157,7 @@ else:
     return [
         DefaultInfo(sub_targets = {
             "debuginfo": [DefaultInfo(debuginfo)],
+            "dwp": [DefaultInfo(dwp_out)],
             "metadata": [DefaultInfo(metadata)],
             "stripped": [DefaultInfo(stripped)],
         }),
@@ -147,6 +165,7 @@ else:
             stripped = stripped,
             debuginfo = debuginfo,
             metadata = metadata,
+            dwp = dwp_out,
         ),
     ]
 
@@ -159,6 +178,7 @@ split_binary = anon_rule(
     },
     artifact_promise_mappings = {
         "debuginfo": lambda x: x[SplitBinaryInfo].debuginfo,
+        "dwp": lambda x: x[SplitBinaryInfo].dwp,
         "metadata": lambda x: x[SplitBinaryInfo].metadata,
         "src": lambda x: x[SplitBinaryInfo].stripped,
     },
