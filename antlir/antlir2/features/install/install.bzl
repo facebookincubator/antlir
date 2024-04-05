@@ -122,6 +122,7 @@ def install_text(
 
 installed_binary = record(
     debuginfo = field([Artifact, None], default = None),
+    dwp = field([Artifact, None], default = None),
     metadata = field([Artifact, None], default = None),
 )
 
@@ -171,9 +172,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                     installed = installed_binary(
                         debuginfo = split_anon_target.artifact("debuginfo"),
                         metadata = split_anon_target.artifact("metadata"),
+                        dwp = split_anon_target.artifact("dwp"),
                     ),
                 )
-                required_artifacts.extend([binary_info.installed.debuginfo, binary_info.installed.metadata])
+                required_artifacts.extend([
+                    binary_info.installed.debuginfo,
+                    binary_info.installed.metadata,
+                    binary_info.installed.dwp,
+                ])
                 src = split_anon_target.artifact("src")
             else:
                 src = ensure_single_output(src)

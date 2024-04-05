@@ -84,6 +84,7 @@ pub enum BinaryInfo {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct InstalledBinary {
     pub debuginfo: BuckOutSource,
+    pub dwp: Option<BuckOutSource>,
     pub metadata: SplitBinaryMetadata,
 }
 
@@ -121,6 +122,7 @@ impl<'de> Deserialize<'de> for InstalledBinary {
         #[derive(Deserialize)]
         struct Deser {
             debuginfo: BuckOutSource,
+            dwp: Option<BuckOutSource>,
             metadata: Metadata,
         }
 
@@ -133,6 +135,7 @@ impl<'de> Deserialize<'de> for InstalledBinary {
 
         Deser::deserialize(deserializer).and_then(|s| {
             Ok(Self {
+                dwp: s.dwp,
                 debuginfo: s.debuginfo,
                 metadata: match s.metadata {
                     Metadata::Path(path) => {
@@ -233,6 +236,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
                     }
                     BinaryInfo::Installed(InstalledBinary {
                         debuginfo: _,
+                        dwp: _,
                         metadata,
                     }) => {
                         if metadata.elf {
@@ -250,7 +254,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
                                 mode: 0o555,
                             })));
                             provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                path: debuginfo_dst.into(),
+                                path: debuginfo_dst,
                                 file_type: FileType::File,
                                 mode: 0o444,
                             })));
@@ -348,10 +352,11 @@ impl antlir2_compile::CompileFeature for Install {
                         None
                     }
                     BinaryInfo::Installed(InstalledBinary {
+                        dwp,
                         debuginfo,
                         metadata,
                     }) => {
-                        if metadata.elf {
+                        let debuginfo_dst = if metadata.elf {
                             let debuginfo_dst = ctx
                                 .dst_path(match metadata.buildid.as_ref() {
                                     Some(buildid) => Path::new("/usr/lib/debug/.build-id")
@@ -371,6 +376,20 @@ impl antlir2_compile::CompileFeature for Install {
                                 &debuginfo_dst,
                                 Some(uid.as_raw()),
                                 Some(gid.as_raw()),
+                            )?;
+                            Some(debuginfo_dst)
+                        } else {
+                            None
+                        };
+                        if let Some(dwp) = dwp {
+                            // We want dwps to live alongside the split *.debug file as
+                            // *.debug.dwp such that it's discoverable by lldb
+                            std::fs::copy(
+                                dwp,
+                                debuginfo_dst
+                                    .as_ref()
+                                    .unwrap_or(&dst)
+                                    .with_extension("debug.dwp"),
                             )?;
                         }
                         copy_with_metadata(
