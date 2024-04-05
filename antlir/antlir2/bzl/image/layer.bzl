@@ -8,7 +8,7 @@ load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases"
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
-load("//antlir/antlir2/bzl:types.bzl", "FeatureInfo", "FlavorInfo", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FeatureInfo", "FlavorInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/dnf:defs.bzl", "compiler_plan_to_local_repos", "repodata_only_local_repos")
 load("//antlir/antlir2/bzl/feature:feature.bzl", "feature_attrs", "feature_rule", "regroup_features", "shared_features_attrs")
 
@@ -40,13 +40,11 @@ load(
     "container_mount_args",
 )
 
-BuildApplianceInfo = provider(fields = {})
-
 def _map_image(
         ctx: AnalysisContext,
         cmd: cmd_args,
         identifier: str,
-        build_appliance: LayerInfo | Provider,
+        build_appliance: BuildApplianceInfo | Provider,
         parent: Artifact | None,
         logs: Artifact,
         rootless: bool) -> (cmd_args, Artifact):
@@ -157,7 +155,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             )
     if ctx.attrs.parent_layer:
         flavor = ctx.attrs.parent_layer[LayerInfo].flavor
-        if BuildApplianceInfo in ctx.attrs.parent_layer:
+        if BuildApplianceInfo in ctx.attrs.parent_layer and not ctx.attrs.antlir_internal_build_appliance:
             fail("cannot use a build appliance as parent_layer")
     if not flavor:
         flavor = ctx.attrs.flavor
@@ -330,7 +328,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             plan = ctx.actions.declare_output(identifier_prefix + "plan.json")
             logs["plan"] = ctx.actions.declare_output(identifier_prefix + "plan.log")
             cmd, _ = _map_image(
-                build_appliance = build_appliance[LayerInfo],
+                build_appliance = build_appliance[BuildApplianceInfo],
                 cmd = cmd_args(
                     cmd_args(dnf_repodatas, format = "--dnf-repos={}"),
                     cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
@@ -397,7 +395,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             compile_feature_hidden_deps.append(resolved_fbpkgs_dir)
 
         cmd, final_subvol = _map_image(
-            build_appliance = build_appliance[LayerInfo],
+            build_appliance = build_appliance[BuildApplianceInfo],
             cmd = cmd_args(
                 cmd_args(dnf_repos_dir, format = "--dnf-repos={}"),
                 cmd_args(dnf_versionlock, format = "--dnf-versionlock={}") if dnf_versionlock else cmd_args(),
@@ -430,7 +428,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
             subvol_symlink = final_subvol,
-            build_appliance = build_appliance[LayerInfo],
+            build_appliance = build_appliance[BuildApplianceInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = phase,
             rootless = ctx.attrs._rootless,
@@ -496,7 +494,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         final_facts_db = facts.new_facts_db(
             actions = ctx.actions,
             subvol_symlink = final_subvol,
-            build_appliance = build_appliance[LayerInfo],
+            build_appliance = build_appliance[BuildApplianceInfo],
             new_facts_db = ctx.attrs._new_facts_db[RunInfo],
             phase = None,
             rootless = False,
@@ -537,7 +535,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         )
 
     if ctx.attrs.antlir_internal_build_appliance:
-        providers.append(BuildApplianceInfo())
+        providers.append(BuildApplianceInfo(subvol_symlink = final_subvol))
 
     if ctx.attrs.default_mountpoint:
         providers.append(DefaultMountpointInfo(default_mountpoint = ctx.attrs.default_mountpoint))
@@ -548,8 +546,7 @@ _layer_attrs = {
     "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
     "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
     "build_appliance": attrs.option(
-        # attrs.transition_dep(providers = [LayerInfo], cfg = remove_os_constraint),
-        attrs.dep(providers = [LayerInfo]),
+        attrs.dep(providers = [BuildApplianceInfo]),
         default = None,
     ),
     "default_mountpoint": attrs.option(attrs.string(), default = None),

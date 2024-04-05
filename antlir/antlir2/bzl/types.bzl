@@ -34,3 +34,7 @@ LayerInfo = provider(fields = [
     "parent",  # Dependency for the parent of the layer, if one exists
     "subvol_symlink",  # symlink pointing to the built subvol
 ])
+
+BuildApplianceInfo = provider(fields = {
+    "subvol_symlink": Artifact,
+})
