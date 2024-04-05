@@ -7,7 +7,7 @@ load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
 load(":facts.bzl", "facts")
 
@@ -137,7 +137,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "facts": [DefaultInfo(facts_db)],
             })],
         }),
-    ]
+    ] + (
+        [BuildApplianceInfo(subvol_symlink = subvol_symlink)] if ctx.attrs.antlir_internal_build_appliance else []
+    )
 
 _prebuilt = rule(
     impl = _impl,

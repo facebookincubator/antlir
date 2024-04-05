@@ -9,14 +9,14 @@ load(
 )
 load(
     "//antlir/antlir2/bzl:types.bzl",
-    "LayerInfo",  # @unused Used as type
+    "BuildApplianceInfo",  # @unused Used as type
 )
 
 def _new_facts_db(
         *,
         actions: AnalysisActions,
         subvol_symlink: Artifact,
-        build_appliance: LayerInfo | Provider | None,
+        build_appliance: BuildApplianceInfo | Provider | None,
         new_facts_db: RunInfo,
         phase: BuildPhase | None,
         rootless: bool) -> Artifact:
