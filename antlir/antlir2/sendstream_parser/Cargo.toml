@@ -15,7 +15,7 @@ name = "sendstream_parser"
 path = "src/lib.rs"
 
 [dependencies]
-bytes = { version = "1.1", features = ["serde"] }
+bytes = { version = "1.6.0", features = ["serde"] }
 derive_more = "0.99.17"
 hex = "0.4.3"
 nix = "0.25"
