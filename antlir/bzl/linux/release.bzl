@@ -3,8 +3,9 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl/feature:defs.bzl?v2_only", "feature")
+load("//antlir/antlir2/bzl:platform.bzl", "default_target_platform_kwargs")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
+load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:target_helpers.bzl", "normalize_target")
 
 def _release_file_impl(ctx: AnalysisContext) -> list[Provider]:
@@ -69,7 +70,7 @@ ANSI_COLOR="{ansi_color}"
             ansi_color = ctx.attrs.ansi_color,
             image_id = native.read_config("build_info", "target_path", "local"),
             target = ctx.attrs.layer.raw_target(),
-            rev = ctx.attrs.vcs_rev,
+            rev = ctx.attrs.vcs_rev or "local",
             rev_time = rev_time,
             api_vers = "\n".join(api_vers),
         ).strip() + "\n"
@@ -147,20 +148,42 @@ _release_file = rule(
     """,
 )
 
-_release_file_macro = rule_with_default_target_platform(_release_file)
+def _release_file_macro(
+        name: str,
+        **kwargs):
+    kwargs.setdefault("os_id", selects.or_({
+        ("//antlir/antlir2/os:centos8", "//antlir/antlir2/os:centos9"): "centos",
+        "//antlir/antlir2/os:eln": "fedora",
+    }))
+    kwargs.setdefault("os_name", selects.or_({
+        ("//antlir/antlir2/os:centos8", "//antlir/antlir2/os:centos9"): "CentOS Stream",
+        "//antlir/antlir2/os:eln": "Fedora Linux",
+    }))
+    eln_version = "40"
+    kwargs.setdefault("os_version", select({
+        "//antlir/antlir2/os:centos8": "8",
+        "//antlir/antlir2/os:centos9": "9",
+        "//antlir/antlir2/os:eln": eln_version,
+    }))
+    kwargs.setdefault("os_version_id", select({
+        "//antlir/antlir2/os:centos8": "8",
+        "//antlir/antlir2/os:centos9": "9",
+        "//antlir/antlir2/os:eln": eln_version,
+    }))
+
+    _release_file(
+        name = name,
+        **(default_target_platform_kwargs() | kwargs)
+    )
 
 def _install(
+        *,
         path,
         layer,
-        os_name,
         variant,
-        os_version = "9",
-        os_version_id = "9",
-        os_id = "centos",
-        ansi_color = "0;34",
-        api_versions = {},
         vcs_rev: str | None = None,
-        vcs_rev_time: int | None = None):
+        vcs_rev_time: int | None = None,
+        **kwargs):
     """
     Build an `os-release` file and install it at the provided `path` location.
     See https://www.freedesktop.org/software/systemd/man/os-release.html
@@ -206,19 +229,21 @@ def _install(
 
     name = layer[1:] + "__os-release"
 
+    kwargs.setdefault("ansi_color", "0;34")
+
     _release_file_macro(
         name = name,
-        ansi_color = ansi_color,
-        api_versions = api_versions,
         layer = layer,
-        os_id = os_id,
-        os_name = os_name,
-        os_version = os_version,
-        os_version_id = os_version_id,
         variant = variant,
         vcs_rev = vcs_rev or native.read_config("build_info", "revision", "local"),
         vcs_rev_time = vcs_rev_time or int(native.read_config("build_info", "revision_epochtime", 0)),
+        compatible_with = [
+            "//antlir/antlir2/os:centos8",
+            "//antlir/antlir2/os:centos9",
+            "//antlir/antlir2/os:eln",
+        ],
         visibility = ["PUBLIC"],
+        **kwargs
     )
 
     return [
@@ -235,5 +260,5 @@ def _install(
 # Exported API
 release = struct(
     install = _install,
-    file = _release_file,
+    file = _release_file_macro,
 )
