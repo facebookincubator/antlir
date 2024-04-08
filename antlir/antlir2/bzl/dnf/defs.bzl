@@ -159,7 +159,7 @@ def compiler_plan_to_local_repos(
         inputs = inputs,
         # to produce this, a directory that contains a (partial, but complete
         # for the transaction) copy of the repos needed to do the installation
-        outputs = [dir],
+        outputs = [dir.as_output()],
         f = _dyn,
     )
     return dir
