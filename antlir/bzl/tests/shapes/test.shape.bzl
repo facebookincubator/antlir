@@ -103,7 +103,7 @@ thrift_old = shape.shape(
 thrift_new = shape.shape(
     foo = int,
     # before full rollout, a new field must be optional
-    baz = shape.field(str, optional = True),
+    baz = shape.field(str, optional = True, default = "baz"),
     qux = shape.field(bool, optional = True),
     __thrift = {
         0: "foo",

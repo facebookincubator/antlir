@@ -113,7 +113,7 @@ fn thrift_compat() {
     assert_eq!(
         thrift_new {
             foo: 42,
-            baz: None,
+            baz: Some("baz".into()),
             qux: None
         },
         fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(&thrift_old {
