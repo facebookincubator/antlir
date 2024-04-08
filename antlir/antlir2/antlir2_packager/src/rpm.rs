@@ -163,6 +163,10 @@ License: {license}
         if !self.python_bytecompile {
             spec.push_str("%define __brp_python_bytecompile %{nil}\n");
         }
+        // rpmbuild may silently change shebangs from /bin/bash to /usr/bin/bash (see
+        // https://asamalik.fedorapeople.org/tmp-docs-preview/packaging-guidelines/#_shebang_lines).
+        // This breaks PARs, so we want to disable it.
+        spec.push_str("%undefine __brp_mangle_shebangs\n");
 
         if std::fs::read_dir(&self.layer)
             .context("failed to list layer contents")?
