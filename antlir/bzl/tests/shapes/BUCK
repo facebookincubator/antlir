@@ -170,7 +170,6 @@ bzl_to_py(
     bzl_target = "//antlir/bzl:shape.bzl",
     imports = [
         "from .shape_bzl_shims import *",
-        "from .sha256 import sha256_b64",
     ],
 )
 
@@ -178,7 +177,6 @@ python_library(
     name = "shape_bzl",
     srcs = {
         ":shape_bzl.py": "shape_bzl.py",
-        "sha256.py": "sha256.py",
         "shape_bzl_shims.py": "shape_bzl_shims.py",
     },
 )
