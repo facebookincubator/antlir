@@ -383,17 +383,6 @@ class TestShapeBzl(unittest.TestCase):
             "{'items':['two','one','item_with_new_line\\n'],'v1':null,'v2':123,'v3':false}",
         )
 
-    def test_hash(self) -> None:
-        a = shape.shape(x=int)
-        b = shape.shape(
-            y=shape.dict(str, shape.list(int)),
-            z=a,
-        )
-
-        test_1 = shape.hash(b(y={"c": [6, 5, 4], "d": [1, 3, 2]}, z=a(x=5)))
-        test_2 = shape.hash(b(y={"c": [5, 6, 4], "d": [3, 1, 2]}, z=a(x=5)))
-        self.assertEqual(test_1, test_2)
-
     def test_thrift(self) -> None:
         shape.shape(x=int, __thrift={1: "x"})
         # wrong field name

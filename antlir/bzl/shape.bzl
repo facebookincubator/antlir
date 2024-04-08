@@ -111,7 +111,6 @@ See tests/shape_test.bzl for full example usage and selftests.
 """
 
 load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file", "python_library", "rust_library", "target_utils", "third_party")
-load(":sha256.bzl", "sha256_b64")
 load(":shell.bzl", "shell")
 load(":structs.bzl", "structs")
 load(":target_helpers.bzl", "antlir_dep", "normalize_target")
@@ -794,18 +793,6 @@ def _stable_json(instance):
 def _is_any_instance(instance):
     return structs.is_struct(instance) and hasattr(instance, "__shape__")
 
-def _hash_helper(val):  # pragma: no cover
-    if types.is_dict(val):
-        return sorted([(k, _hash_helper(v)) for k, v in val.items()])
-    if types.is_list(val):
-        return sorted([_hash_helper(v) for v in val])
-    return val
-
-# Generates a deterministic hash of a shape by recursively sorting every nested
-# dict/list and hashing the resulting string.
-def _hash(instance):  # pragma: no cover
-    return sha256_b64(str(_hash_helper(_as_dict_deep(instance))))
-
 shape = struct(
     # generate implementation of various client libraries
     impl = _impl,
@@ -816,7 +803,6 @@ shape = struct(
     do_not_cache_me_json = _do_not_cache_me_json,
     enum = _enum,
     field = _field,
-    hash = _hash,
     is_any_instance = _is_any_instance,
     is_instance = _is_instance,
     is_shape = _is_shape,
