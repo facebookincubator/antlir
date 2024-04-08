@@ -364,25 +364,6 @@ class TestShapeBzl(unittest.TestCase):
             expected_shape(value_with_default=42, __shape__=t),
         )
 
-    def test_stable_json(self) -> None:
-        json_shape = shape.shape(
-            items=shape.list(str),
-            v1=shape.field(int, optional=True),
-            v2=shape.field(int),
-            v3=shape.field(bool),
-        )
-        instance = json_shape(
-            v2=123,
-            v3=False,
-            v1=None,
-            items=["two", "one", "item_with_new_line\n"],
-        )
-        instance_json = shape.stable_json(instance)
-        self.assertEqual(
-            instance_json,
-            "{'items':['two','one','item_with_new_line\\n'],'v1':null,'v2':123,'v3':false}",
-        )
-
     def test_thrift(self) -> None:
         shape.shape(x=int, __thrift={1: "x"})
         # wrong field name
