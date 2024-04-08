@@ -1,3 +1,4 @@
+# @oss-disable
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -184,6 +185,34 @@ image_python_test(
     name = "test-installed-binary",
     srcs = ["test_installed_binary.py"],
     layer = ":installed-binary",
+    supports_static_listing = False,
+)
+
+image.layer(
+    name = "installed-binary-with-gnu-debuglink",
+    features = [
+        feature.rpms_install(
+            rpms = [
+                "bash",
+                "binutils",
+                # @oss-disable
+            ],
+        ),
+        feature.ensure_dirs_exist(dirs = "/foo"),
+        feature.install(
+            src = ":true-rs",
+            always_use_gnu_debuglink = True,
+            dst = "/foo/true-rs",
+            split_debuginfo = True,
+        ),
+    ],
+)
+
+image_python_test(
+    name = "test-installed-gnu-debuglink",
+    srcs = ["test_installed_gnu_debuglink.py"],
+    # @oss-disable
+    layer = ":installed-binary-with-gnu-debuglink",
     supports_static_listing = False,
 )
 

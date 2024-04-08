@@ -73,7 +73,7 @@ if not is_elf:
     with open(args.debuginfo, "w") as _f:
         pass
     with open(args.metadata, "w") as f:
-        json.dump({"elf": False}, f)
+        json.dump({}, f)
     sys.exit(0)
 
 # Save debug symbols to a separate debuginfo file
@@ -115,28 +115,17 @@ buildid = subprocess.run(
     check=True,
 ).stdout
 
+
 # Prefer to install the debug info by BuildID since it does not require another
 # objcopy invocation and is more standard
-if buildid:
-    buildid = buildid[len(buildid) - 20 :].hex()
-    with open(args.metadata, "w") as f:
-        json.dump({"elf": True, "buildid": buildid}, f)
-else:
-    # We might not be able to get the BuildID if this is a dev-mode binary, so
-    # fallback to setting the debuglink section in the stripped binary.
-    # This tells the debugger that there is a debug file available, and records
-    # the hash of the debuginfo file so that it can be loaded correctly.
-    subprocess.run(
-        [
-            os.path.abspath(args.objcopy),
-            f"--add-gnu-debuglink={args.debuginfo.name}",
-            args.stripped.resolve(),
-        ],
-        cwd=args.stripped.parent,
-        check=True,
-    )
-    with open(args.metadata, "w") as f:
-        json.dump({"elf": True, "buildid": None}, f)
+with open(args.metadata, "w") as f:
+    if buildid := buildid[len(buildid) - 20 :].hex():
+        json.dump({"buildid": buildid}, f)
+    else:
+        # Can't setup debuglink here as we don't reliably know the location the binary
+        # will end up being placed under, which debuglink relies on, so opt to no-op
+        # here and linking will ultimately be handled in the install feature.
+        json.dump({}, f)
     """, is_executable = True)
 
     ctx.actions.run(

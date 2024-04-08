@@ -27,6 +27,7 @@ def install(
         xattrs: dict[str, str] | Select = {},
         never_use_dev_binary_symlink: bool = False,
         split_debuginfo: bool = True,
+        always_use_gnu_debuglink: bool = False,
         setcap: str | None = None) -> ParseTimeFeature:
     """
     Install a file or directory into the image.
@@ -63,6 +64,9 @@ def install(
     if setcap and not never_use_dev_binary_symlink:
         fail("setcap does not work on dev mode binaries. You must set never_use_dev_binary_symlink=True")
 
+    if always_use_gnu_debuglink and not split_debuginfo:
+        fail("always_use_gnu_debuglink requires split_debuginfo=True")
+
     return ParseTimeFeature(
         feature_type = "install",
         plugin = antlir2_dep("//antlir/antlir2/features/install:install"),
@@ -74,6 +78,7 @@ def install(
             ),
         },
         kwargs = {
+            "always_use_gnu_debuglink": always_use_gnu_debuglink,
             "dst": dst,
             "group": group,
             "mode": mode,
@@ -217,6 +222,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 binary_info = binary_info,
                 xattrs = ctx.attrs.xattrs,
                 setcap = ctx.attrs.setcap,
+                always_use_gnu_debuglink = ctx.attrs.always_use_gnu_debuglink,
             ),
             required_artifacts = [src] + required_artifacts,
             required_run_infos = required_run_infos,
@@ -227,6 +233,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 install_rule = rule(
     impl = _impl,
     attrs = {
+        "always_use_gnu_debuglink": attrs.bool(default = True),
         "build_phase": attrs.enum(BuildPhase.values(), default = "compile"),
         "dst": attrs.string(),
         "group": attrs.string(default = "root"),

@@ -28,7 +28,9 @@ use antlir2_features::types::BuckOutSource;
 use antlir2_features::types::GroupName;
 use antlir2_features::types::PathInLayer;
 use antlir2_features::types::UserName;
+use antlir2_users::GroupId;
 use antlir2_users::Id;
+use antlir2_users::UserId;
 use anyhow::Context;
 use anyhow::Result;
 #[cfg(feature = "setcap")]
@@ -60,6 +62,7 @@ pub struct Install {
     #[cfg(feature = "setcap")]
     #[serde_as(as = "Option<DisplayFromStr>")]
     pub setcap: Option<Capabilities>,
+    pub always_use_gnu_debuglink: bool,
 }
 
 impl Install {
@@ -70,7 +73,6 @@ impl Install {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
 pub struct SplitBinaryMetadata {
-    pub elf: bool,
     #[serde(default)]
     pub buildid: Option<String>,
 }
@@ -236,28 +238,45 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Install {
                     }
                     BinaryInfo::Installed(InstalledBinary {
                         debuginfo: _,
-                        dwp: _,
+                        dwp,
                         metadata,
                     }) => {
-                        if metadata.elf {
-                            let debuginfo_dst = match metadata.buildid.as_ref() {
-                                Some(buildid) => Path::new("/usr/lib/debug/.build-id")
-                                    .join(&buildid[..2])
-                                    .join(&buildid[2..]),
-                                None => Path::new("/usr/lib/debug")
-                                    .join(self.dst.strip_prefix("/").unwrap_or(&self.dst)),
-                            }
-                            .with_extension("debug");
+                        if self.always_use_gnu_debuglink {
+                            let debug_dst = self.dst.with_extension("debug");
                             provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                path: debuginfo_dst.parent().expect("must have parent").to_owned(),
+                                path: debug_dst.to_owned(),
+                                file_type: FileType::File,
+                                mode: 0o444,
+                            })));
+                            if dwp.is_some() {
+                                provides.push(Item::Path(PathItem::Entry(FsEntry {
+                                    path: debug_dst.with_extension("debug.dwp"),
+                                    file_type: FileType::File,
+                                    mode: 0o444,
+                                })));
+                            }
+                        } else if let Some(buildid) = &metadata.buildid {
+                            let debug_dst = Path::new("/usr/lib/debug/.build-id")
+                                .join(&buildid[..2])
+                                .join(&buildid[2..])
+                                .with_extension("debug");
+                            provides.push(Item::Path(PathItem::Entry(FsEntry {
+                                path: debug_dst.parent().expect("must have parent").to_owned(),
                                 file_type: FileType::Directory,
                                 mode: 0o555,
                             })));
                             provides.push(Item::Path(PathItem::Entry(FsEntry {
-                                path: debuginfo_dst,
+                                path: debug_dst.to_owned(),
                                 file_type: FileType::File,
                                 mode: 0o444,
                             })));
+                            if dwp.is_some() {
+                                provides.push(Item::Path(PathItem::Entry(FsEntry {
+                                    path: debug_dst.with_extension("debug.dwp"),
+                                    file_type: FileType::File,
+                                    mode: 0o444,
+                                })));
+                            }
                         }
                     }
                 }
@@ -356,48 +375,39 @@ impl antlir2_compile::CompileFeature for Install {
                         debuginfo,
                         metadata,
                     }) => {
-                        let debuginfo_dst = if metadata.elf {
-                            let debuginfo_dst = ctx
-                                .dst_path(match metadata.buildid.as_ref() {
-                                    Some(buildid) => Path::new("/usr/lib/debug/.build-id")
-                                        .join(&buildid[..2])
-                                        .join(&buildid[2..]),
-                                    None => Path::new("/usr/lib/debug")
-                                        .join(self.dst.strip_prefix("/").unwrap_or(&self.dst)),
-                                })?
-                                .with_extension("debug");
-                            std::fs::create_dir_all(
-                                debuginfo_dst
-                                    .parent()
-                                    .expect("debuginfo_dst will always have parent"),
-                            )?;
+                        if self.always_use_gnu_debuglink {
+                            let debug_dst = dst.with_extension("debug");
+                            cp_debug_symbols(debuginfo, &debug_dst, dwp, uid, gid)?;
                             copy_with_metadata(
-                                debuginfo,
-                                &debuginfo_dst,
+                                &self.src,
+                                &dst,
                                 Some(uid.as_raw()),
                                 Some(gid.as_raw()),
                             )?;
-                            Some(debuginfo_dst)
-                        } else {
-                            None
-                        };
-                        if let Some(dwp) = dwp {
-                            // We want dwps to live alongside the split *.debug file as
-                            // *.debug.dwp such that it's discoverable by lldb
-                            std::fs::copy(
-                                dwp,
-                                debuginfo_dst
-                                    .as_ref()
-                                    .unwrap_or(&dst)
-                                    .with_extension("debug.dwp"),
+                            add_gnu_debuglink(&dst, &debug_dst)?;
+                        } else if let Some(buildid) = &metadata.buildid {
+                            let debug_dst = ctx
+                                .dst_path(
+                                    Path::new("/usr/lib/debug/.build-id")
+                                        .join(&buildid[..2])
+                                        .join(&buildid[2..]),
+                                )?
+                                .with_extension("debug");
+                            cp_debug_symbols(debuginfo, &debug_dst, dwp, uid, gid)?;
+                            copy_with_metadata(
+                                &self.src,
+                                &dst,
+                                Some(uid.as_raw()),
+                                Some(gid.as_raw()),
                             )?;
-                        }
-                        copy_with_metadata(
-                            &self.src,
-                            &dst,
-                            Some(uid.as_raw()),
-                            Some(gid.as_raw()),
-                        )?;
+                        } else {
+                            copy_with_metadata(
+                                &self.src,
+                                &dst,
+                                Some(uid.as_raw()),
+                                Some(gid.as_raw()),
+                            )?;
+                        };
                         let dst_file = File::options().write(true).open(&dst)?;
                         Some(dst_file)
                     }
@@ -439,6 +449,39 @@ impl antlir2_compile::CompileFeature for Install {
     }
 }
 
+fn cp_debug_symbols(
+    debug_src: &Path,
+    debug_dst: &Path,
+    maybe_dwp: &Option<BuckOutSource>,
+    uid: UserId,
+    gid: GroupId,
+) -> anyhow::Result<()> {
+    std::fs::create_dir_all(
+        debug_dst
+            .parent()
+            .expect("debug_dst will always have parent"),
+    )?;
+
+    copy_with_metadata(debug_src, debug_dst, Some(uid.as_raw()), Some(gid.as_raw()))?;
+    if let Some(dwp) = maybe_dwp {
+        // We want dwps to live alongside the split *.debug file as *.debug.dwp such
+        // that it's discoverable by lldb
+        copy_with_metadata(
+            dwp,
+            &debug_dst.with_extension("debug.dwp"),
+            Some(uid.as_raw()),
+            Some(gid.as_raw()),
+        )?;
+    }
+    Ok(())
+}
+
+fn add_gnu_debuglink(src: &Path, debug: &Path) -> anyhow::Result<()> {
+    let mut objcopy = std::process::Command::new("objcopy");
+    objcopy.arg("--add-gnu-debuglink").arg(debug).arg(src);
+    objcopy.status()?;
+    Ok(())
+}
 #[cfg(test)]
 mod tests {
     use super::*;
