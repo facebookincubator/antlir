@@ -6,8 +6,6 @@
  */
 
 use std::collections::BTreeSet;
-use std::collections::HashMap;
-use std::collections::HashSet;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::os::unix::fs::MetadataExt;
@@ -23,9 +21,10 @@ use petgraph::visit::Dfs;
 use petgraph::Directed;
 use petgraph::Direction;
 use rayon::prelude::*;
+use rustc_hash::FxHashMap;
+use rustc_hash::FxHashSet;
 use serde::Deserialize;
 use serde::Serialize;
-use serde_with::serde_as;
 
 pub mod item;
 use item::Item;
@@ -94,14 +93,14 @@ pub struct GraphBuilder {
     g: StableGraph<Node, Edge, Directed, DefaultIx>,
     root: node::RootNodeIndex,
     pending_features: Vec<node::PendingFeatureNodeIndex>,
-    items: HashMap<ItemKey, node::ItemNodeIndex>,
+    items: FxHashMap<ItemKey, node::ItemNodeIndex>,
     label: Label,
 }
 
 impl GraphBuilder {
     pub fn new(label: Label, parent: Option<Graph>) -> Self {
         let mut g = StableGraph::new();
-        let mut items = HashMap::new();
+        let mut items = FxHashMap::default();
 
         // Some items are always available, since they are a property of the
         // operating system. Add them to the graph now so that the dependency
@@ -134,7 +133,7 @@ impl GraphBuilder {
         };
 
         if let Some(parent) = parent {
-            let mut new_nodes = HashMap::new();
+            let mut new_nodes = FxHashMap::default();
             for nx in parent.g.node_indices() {
                 let new_nx = match &parent.g[nx] {
                     Node::Item(i) => Some(s.add_item(i.clone()).into_untyped()),
@@ -359,7 +358,7 @@ impl GraphBuilder {
                             tracing::trace!(
                                 "directory item is provided by multiple features: {features_that_provide:?}"
                             );
-                            let mut feature_items = HashSet::new();
+                            let mut feature_items = FxHashSet::default();
                             for feat in features_that_provide
                                 .iter()
                                 // Only pending features need to be checked.
@@ -490,15 +489,54 @@ impl GraphBuilder {
     }
 }
 
-#[serde_as]
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Graph {
     label: Label,
     g: StableGraph<Node, Edge>,
     root: node::RootNodeIndex,
-    #[serde_as(as = "Vec<(_, _)>")]
-    items: HashMap<ItemKey, node::ItemNodeIndex>,
+    #[serde(with = "serde_items")]
+    items: FxHashMap<ItemKey, node::ItemNodeIndex>,
     topo: Vec<NodeIndex<DefaultIx>>,
+}
+
+mod serde_items {
+    use rustc_hash::FxHasher;
+    use serde::de::Deserializer;
+    use serde::ser::SerializeSeq;
+    use serde::ser::Serializer;
+
+    use super::*;
+
+    pub fn deserialize<'de, D>(
+        deserializer: D,
+    ) -> std::result::Result<FxHashMap<ItemKey, node::ItemNodeIndex>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let vec: Vec<(ItemKey, node::ItemNodeIndex)> = Deserialize::deserialize(deserializer)?;
+        let mut items = FxHashMap::with_capacity_and_hasher(
+            vec.len(),
+            std::hash::BuildHasherDefault::<FxHasher>::default(),
+        );
+        for (key, nx) in vec {
+            items.insert(key, nx);
+        }
+        Ok(items)
+    }
+
+    pub fn serialize<S>(
+        items: &FxHashMap<ItemKey, node::ItemNodeIndex>,
+        serializer: S,
+    ) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut seq = serializer.serialize_seq(Some(items.len()))?;
+        for (key, nx) in items {
+            seq.serialize_element(&(key, nx))?;
+        }
+        seq.end()
+    }
 }
 
 impl Graph {
@@ -521,7 +559,7 @@ impl Graph {
     /// filesystem and add it to the end of the graph since we don't know where
     /// it came from.
     pub fn populate_dynamic_items(&mut self, root: &Path) -> std::io::Result<()> {
-        let mut seen_paths = HashSet::new();
+        let mut seen_paths = FxHashSet::default();
         for entry in walkdir::WalkDir::new(root) {
             let entry = entry?;
             let path =
