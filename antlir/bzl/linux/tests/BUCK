@@ -62,14 +62,27 @@ image_python_test(
 
 linux.release.file(
     name = "release-vcs",
+    compatible_with = [
+        "//antlir/antlir2/os:centos8",
+        "//antlir/antlir2/os:centos9",
+        "//antlir/antlir2/os:eln",
+    ],
     layer = ":test-layer-os-release",
-    os_id = "centos",
-    os_name = "AntlirTest",
-    os_version = "9",
-    os_version_id = "9",
     variant = "Test",
     vcs_rev = "6efad6997e43d402e3a5fd3b92d0e8bea8f8c879",
     vcs_rev_time = 1712265328,
+)
+
+linux.release.file(
+    name = "release-custom-name",
+    compatible_with = [
+        "//antlir/antlir2/os:centos8",
+        "//antlir/antlir2/os:centos9",
+        "//antlir/antlir2/os:eln",
+    ],
+    layer = ":test-layer-os-release",
+    os_name = "Antlir Test",
+    variant = "Foo",
 )
 
 image.layer(
@@ -82,14 +95,6 @@ image.layer(
                 "FOO_QUX": 7,
             },
             layer = ":test-layer-os-release",
-            os_id = "centos",
-            os_name = "AntlirTest",
-            # dummy select to ensure that selects are resolved instead of just
-            # being dumped with 'repr'
-            os_version = select({
-                "ovr_config//cpu:arm64": "9",
-                "ovr_config//cpu:x86_64": "9",
-            }),
             path = "/usr/lib/os-release",
             variant = "Test",
         ),
@@ -97,12 +102,29 @@ image.layer(
             src = ":release-vcs",
             dst = "/usr/lib/os-release-vcs",
         ),
+        feature.install(
+            src = ":release-custom-name",
+            dst = "/usr/lib/os-release-name",
+        ),
     ],
 )
 
 image_python_test(
     name = "test-os-release",
     srcs = ["test_os_release.py"],
+    default_os = "centos9",
+    env = {"CENTOS": "9"},
+    layer = ":test-layer-os-release",
+    deps = [
+        "//antlir:fs_utils",
+    ],
+)
+
+image_python_test(
+    name = "test-os-release-c8",
+    srcs = ["test_os_release.py"],
+    default_os = "centos8",
+    env = {"CENTOS": "8"},
     layer = ":test-layer-os-release",
     deps = [
         "//antlir:fs_utils",

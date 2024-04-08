@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:selects.bzl", _prelude_selects = "selects")
+load("//antlir/bzl:types.bzl", "types")
 
 # Copied from tools/build_defs/selects.bzl but needs to be copied to be public for OSS
 def _tie_n_impl_inner(objs, pvals, val):
@@ -38,7 +39,22 @@ def _join(**selects):
 
     return _prelude_selects.apply(_tie_n(*[item[1] for item in lst]), _map_to_struct)
 
+def _or(branches):
+    """
+    Create a `select` that allows multiple values for a single key, that get
+    ORed together.
+    """
+    sel = {}
+    for k, v in branches.items():
+        if types.is_list(k) or types.is_tuple(k):
+            for k in k:
+                sel[k] = v
+        else:
+            sel[k] = v
+    return select(sel)
+
 selects = struct(
     apply = _prelude_selects.apply,
     join = _join,
+    or_ = _or,
 )
