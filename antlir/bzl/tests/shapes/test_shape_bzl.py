@@ -346,10 +346,8 @@ class TestShapeBzl(unittest.TestCase):
             )
 
     def test_optional_with_default(self) -> None:
-        with self.assertRaisesRegex(
-            Fail, "default_value must not be specified with optional"
-        ):
-            shape.field(str, optional=True, default="def")
+        t = shape.shape(f=shape.field(str, optional=True, default="def"))
+        self.assertEqual(t().f, "def")
 
     def test_target_and_path_unsupported(self) -> None:
         with self.assertRaisesRegex(Fail, "no longer supported"):

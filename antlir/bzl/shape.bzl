@@ -247,13 +247,9 @@ def _check_collection_type(x, t):
     return "unsupported collection type {}".format(t.collection)  # pragma: no cover
 
 def _field(type, optional = False, default = _NO_DEFAULT):
-    # there isn't a great reason to have a runtime language type be
-    # `typing.Optional[T]` or `Option<T>`, while still having a default value,
-    # and it makes code generation have more weird branches to keep track of, so
-    # make that explicitly unsupported
-    if optional and default != _NO_DEFAULT:
-        fail("default_value must not be specified with optional")
-    if optional:
+    # Optional fields may be given a non-None default value, but if not, it will
+    # be defaulted to None
+    if optional and default == _NO_DEFAULT:
         default = None
 
     type = _normalize_type(type)

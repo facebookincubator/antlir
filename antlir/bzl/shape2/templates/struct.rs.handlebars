@@ -13,7 +13,7 @@ pub struct {{name}} {
     {{#if (eq (type type) "i64")}}
     #[serde(default, deserialize_with = "::shape::deserialize_optional_i64")]
     {{/if}}
-    pub r#{{@key}}: Option<{{type type}}>,
+    pub r#{{@key}}: ::std::option::Option<{{type type}}>,
     {{/if}}
     {{/each}}
 }
@@ -21,7 +21,13 @@ pub struct {{name}} {
 impl {{name}} {
     {{#each fields}}
     {{#if (has-default-value this)}}
-    fn default_{{@key}}() -> {{type type}} {
+    fn default_{{@key}}() ->
+    {{#if required}}
+        {{type type}}
+    {{else}}
+        ::std::option::Option<{{type type}}>
+    {{/if}}
+    {
         serde_json::from_str(r###"{{json default_value}}"###).expect("default json is always good")
     }
     {{/if}}
@@ -62,7 +68,11 @@ where
     fn read(p: &mut P) -> ::anyhow::Result<Self> {
         {{#each thrift_fields}}
         {{#if (has-default-value this.1)}}
+        {{#if this.1.required}}
         let mut r#field_{{this.0}} = ::std::option::Option::Some({{../name}}::default_{{this.0}}());
+        {{else}}
+        let mut r#field_{{this.0}} = {{../name}}::default_{{this.0}}();
+        {{/if}}
         {{else}}
         let mut r#field_{{this.0}} = ::std::option::Option::None;
         {{/if}}
