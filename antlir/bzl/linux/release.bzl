@@ -76,7 +76,12 @@ ANSI_COLOR="{ansi_color}"
 
         ctx.actions.write(outputs[contents_out], contents)
 
-    ctx.actions.dynamic_output(dynamic = [rev_time], inputs = [], outputs = [contents_out], f = _dyn)
+    ctx.actions.dynamic_output(
+        dynamic = [rev_time],
+        inputs = [],
+        outputs = [contents_out.as_output()],
+        f = _dyn,
+    )
 
     return [
         DefaultInfo(contents_out),
