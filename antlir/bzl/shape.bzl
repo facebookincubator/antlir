@@ -534,28 +534,25 @@ _SERIALIZING_LOCATION_MSG = (
 #
 # `opts` changes the output as follows:
 #
-#   - Set `opts.include_dunder_shape == False` to strip `__shape__` from the
-#     resulting instance structs.  This is desirable when serializing,
-#     because that field will e.g. fail with `structs.as_json()`.
-#
-#   - `opts.on_target_fields` has 3 possible values:
+#   - `opts.on_target_fields` has 2 possible values:
 #
 #     * "fail": Fails at Buck parse-time. Used for scenarios that cannot
 #       reasonably support target -> buck output path resolution, like
-#       `shape.json_file()`.  But, in the future, we should be able to
-#       migrate these to a `target_tagger.bzl`-style approach.
+#       `shape.json_file()`.
 #
-
+#     * "location": Serializes targets as $(location) macros
 def _recursive_copy_transform(val, t, opts):
     if hasattr(t, "__I_AM_TARGET__"):
         if opts.on_target_fields == "fail":
             fail(_SERIALIZING_LOCATION_MSG)
-
-        return struct(
-            name = val,
-            path = "$(location {})".format(val),
-            __I_AM_TARGET__ = True,
-        )
+        elif opts.on_target_fields == "location":
+            return struct(
+                name = val,
+                path = "$(location {})".format(val),
+                __I_AM_TARGET__ = True,
+            )
+        else:  # pragma: no cover
+            fail("Unknown on_target_fields value {}".format(opts.on_target_fields))
     elif _is_shape(t):
         error = _check_type(val, t)
         if error:  # pragma: no cover -- an internal invariant, not a user error
@@ -568,13 +565,6 @@ def _recursive_copy_transform(val, t, opts):
                 field,
                 opts,
             )
-        if opts.include_dunder_shape:
-            if val.__shape__ != t:  # pragma: no cover
-                fail("__shape__ {} didn't match type {}".format(
-                    _pretty(val.__shape__),
-                    _pretty(t),
-                ))
-            new["__shape__"] = t
         return struct(**new)
     elif _is_field(t):
         if t.optional and val == None:
@@ -605,13 +595,6 @@ def _recursive_copy_transform(val, t, opts):
         "Unknown type {} for {}".format(_pretty(t), _pretty(val)),
     )
 
-def _safe_to_serialize_instance(instance):
-    return _recursive_copy_transform(
-        instance,
-        instance.__shape__,
-        struct(include_dunder_shape = False, on_target_fields = "fail"),
-    )
-
 def _do_not_cache_me_json(instance):
     """
     Serialize the given shape instance to a JSON string. This is only safe to be
@@ -624,7 +607,6 @@ def _do_not_cache_me_json(instance):
         instance,
         instance.__shape__,
         struct(
-            include_dunder_shape = False,
             on_target_fields = "location",
         ),
     ))
@@ -744,16 +726,20 @@ def _python_data(
 # values are scalars & collections as in the shape -- and nested shapes are
 # also dicts).
 def _as_serializable_dict(instance):
-    return _as_dict_deep(_safe_to_serialize_instance(instance))
+    return _as_dict_deep(_recursive_copy_transform(
+        instance,
+        instance.__shape__,
+        struct(on_target_fields = "fail"),
+    ))
 
-# Recursively converts nested shapes and structs to dicts. Used in shape.hash.
-def _as_dict_deep(val, on_target_fields = "preserve"):
+# Recursively converts nested shapes and structs to dicts. Used in
+# _as_serializable_dict
+def _as_dict_deep(val, on_target_fields = "fail"):
     if _is_any_instance(val):
         val = _recursive_copy_transform(
             val,
             val.__shape__,
             struct(
-                include_dunder_shape = False,
                 on_target_fields = on_target_fields,
             ),
         )

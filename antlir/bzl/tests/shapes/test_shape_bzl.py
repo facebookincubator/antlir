@@ -105,20 +105,6 @@ class TestShapeBzl(unittest.TestCase):
         actual = t(answer=42)
         expected = expected_shape(answer=42, __shape__=t)
         self.assertEqual(actual, expected)
-        # Test the `include_dunder_shape=True` branch.  It isn't actually
-        # used for anything (yet), but the `opts` field exists for the sake
-        # of making the API clear.
-        self.assertEqual(
-            _recursive_copy_transform(
-                actual,
-                shape_from_ctor(t),
-                struct(
-                    include_dunder_shape=True,
-                    on_target_fields="fail",
-                ),
-            ),
-            expected,
-        )
 
     def test_nested_simple_shape(self) -> None:
         nested = shape.shape(answer=int)
