@@ -87,3 +87,7 @@ class types:
     @staticmethod
     def is_tuple(x):
         return type(x) == tuple
+
+
+def normalize_target(target):
+    return "cell//path/to:" + target.lstrip(":")

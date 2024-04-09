@@ -108,6 +108,7 @@ python_unittest(
         (100, "//antlir:shape"),
     ],
     resources = {
+        ":characters.json": "characters.json",
         shape.json_file(
             name = "data.json",
             instance = hashable_t(
