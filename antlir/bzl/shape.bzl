@@ -749,16 +749,13 @@ def _is_any_instance(instance):
 shape = struct(
     # generate implementation of various client libraries
     impl = _impl,
-    DEFAULT_VALUE = _DEFAULT_VALUE,
     # output target macros and other conversion helpers
     as_serializable_dict = _as_serializable_dict,
     dict = _dict,
     do_not_cache_me_json = _do_not_cache_me_json,
     enum = _enum,
     field = _field,
-    is_any_instance = _is_any_instance,
     is_instance = _is_instance,
-    is_shape = _is_shape,
     json_file = _json_file,
     list = _list,
     path = _path,
@@ -767,5 +764,4 @@ shape = struct(
     render_template = _render_template,
     shape = _shape,
     union = _union,
-    union_t = _union_type,
 )
