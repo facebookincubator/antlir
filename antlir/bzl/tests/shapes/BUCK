@@ -128,10 +128,7 @@ python_unittest(
                     6,
                 ],
                 friends = [
-                    shape.new(
-                        friend_t,
-                        name = name,
-                    )
+                    friend_t(name = name)
                     for name in [
                         "Vader",
                         "Palpatine",

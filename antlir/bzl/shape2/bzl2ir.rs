@@ -109,7 +109,19 @@ impl std::fmt::Display for TypeId {
 }
 starlark_simple_value!(TypeId);
 #[starlark_value(type = "TypeId")]
-impl<'v> StarlarkValue<'v> for TypeId {}
+impl<'v> StarlarkValue<'v> for TypeId {
+    fn invoke(
+        &self,
+        _me: Value<'v>,
+        args: &starlark::eval::Arguments<'v, '_>,
+        eval: &mut Evaluator<'v, '_, '_>,
+    ) -> starlark::Result<Value<'v>> {
+        args.no_positional_args(eval.heap())?;
+        // no need to type-check, since it will already be done at buck parse
+        // time, and will also be done when loading the json
+        Ok(eval.heap().alloc(AllocStruct(args.names_map()?)))
+    }
+}
 
 #[derive(Debug, ProvidesStaticType, Default, Deref)]
 struct TypeRegistryRefCell(RefCell<TypeRegistry>);
