@@ -537,7 +537,7 @@ def _recursive_copy_transform(val, t, opts):
             fail(_SERIALIZING_LOCATION_MSG)
         elif opts.on_target_fields == "location":
             return struct(
-                name = val,
+                name = normalize_target(val),
                 path = "$(location {})".format(val),
                 __I_AM_TARGET__ = True,
             )

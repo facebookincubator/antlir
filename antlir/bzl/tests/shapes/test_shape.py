@@ -28,6 +28,9 @@ from antlir.shape import Shape
 lightsaber_t = character_t.types.weapon.__args__[0]
 characters = character_collection_t.from_env("characters").characters
 
+# @oss-disable
+TARGET_PATH = "antlir//antlir/bzl/tests/shapes" # @oss-enable
+
 
 class TestShape(unittest.TestCase):
     def setUp(self):
@@ -59,7 +62,7 @@ class TestShape(unittest.TestCase):
             lightsaber_t(
                 color=lightsaber_t.types.color.GREEN,
                 target=target_t(
-                    name=":luke-lightsaber",
+                    name=f"{TARGET_PATH}:luke-lightsaber",
                     path=b"/static/target/path",
                 ),
             ),
@@ -83,6 +86,13 @@ class TestShape(unittest.TestCase):
 
         self.assertEqual(imp, res)
         self.assertTrue(isinstance(imp, hashable_t))
+
+    def test_json_file_targets_paths(self):
+        with importlib.resources.path(__package__, "characters.json") as path:
+            c = character_collection_t.load(path)
+        target = c.characters[0].weapon.target
+        self.assertEqual(target.name, f"{TARGET_PATH}:luke-lightsaber")
+        self.assertRegexpMatches(target.path, rb"^buck-out/.*")
 
     def test_hash(self):
         trooper1 = hashable_t(
@@ -154,7 +164,7 @@ class TestShape(unittest.TestCase):
             + (
                 "color=GREEN, "
                 "target=shape("
-                "name=':luke-lightsaber', path=b'/static/target/path'"
+                f"name='{TARGET_PATH}:luke-lightsaber', path=b'/static/target/path'"
                 ")"
             )
             + "))",

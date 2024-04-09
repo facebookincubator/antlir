@@ -21,6 +21,9 @@ use test_shape::union_old;
 use test_shape::weapon_t;
 use test_shape::with_optional_int;
 
+// @oss-disable
+const TARGET_PREFIX: &str = "antlir//antlir/bzl/tests/shapes"; // @oss-enable
+
 #[test]
 fn load() -> Result<()> {
     let characters_str = std::env::var("characters").context("missing 'characters' env var")?;
@@ -93,7 +96,7 @@ fn thrift() -> Result<()> {
                 "lightsaber_t":{
                     "color": "green",
                     "target":{
-                        "name": ":luke-lightsaber",
+                        "name": format!("{TARGET_PREFIX}:luke-lightsaber"),
                         "path": path,
                     }
                 }
