@@ -10,15 +10,13 @@ import unittest
 from antlir.bzl.tests.shapes.shape_bzl import (
     _as_dict_deep,
     _check_type,
-    _recursive_copy_transform,
+    _is_shape,
     Fail,
     shape,
     struct,
     structs,
 )
 
-
-TestUnionType = shape.union_t(bool, int)
 
 target_t = shape.shape(
     __I_AM_TARGET__=True,
@@ -60,8 +58,6 @@ class TestShapeBzl(unittest.TestCase):
             (":rule", target_t),
             (1, shape.union(str, int)),
             ("hello", shape.union(str, int)),
-            ("hello", shape.union_t(str, int)),
-            ("hello", shape.field(shape.union_t(str, int))),
             ("hello", shape.union(str, int, optional=True)),
             (None, shape.union(str, int, optional=True)),
         ):
@@ -182,9 +178,7 @@ class TestShapeBzl(unittest.TestCase):
             shape.union()
 
     def test_nested_union(self) -> None:
-        t = shape.shape(
-            nested=shape.union_t(shape.union_t(str, int), shape.union_t(bool))
-        )
+        t = shape.shape(nested=shape.union(shape.union(str, int), shape.union(bool)))
         for v in ("hi", 1, True):
             t(nested=v)
 
@@ -259,7 +253,7 @@ class TestShapeBzl(unittest.TestCase):
 
     def test_target_is_shape(self) -> None:
         t = shape.shape(__I_AM_TARGET__=True)
-        self.assertTrue(shape.is_shape(t))
+        self.assertTrue(_is_shape(t))
 
     def test_is_instance(self) -> None:
         y_t = shape.shape(z=int)
@@ -267,9 +261,7 @@ class TestShapeBzl(unittest.TestCase):
         i = t(x="a", y=y_t(z=3))
 
         # Good cases
-        self.assertTrue(shape.is_any_instance(i))
         self.assertTrue(shape.is_instance(i, t))
-        self.assertTrue(shape.is_any_instance(i.y))
         self.assertTrue(shape.is_instance(i.y, y_t))
 
         # Evil twins of `i`
@@ -280,7 +272,6 @@ class TestShapeBzl(unittest.TestCase):
 
         # Not a shape instance
         for not_i in [None, d, s, t, y_t]:
-            self.assertFalse(shape.is_any_instance(not_i))
             self.assertFalse(shape.is_instance(not_i, t))
 
         # Instance of the wrong shape
@@ -290,17 +281,6 @@ class TestShapeBzl(unittest.TestCase):
         # Second argument is not a shape
         with self.assertRaisesRegex(Fail, " is not a shape"):
             shape.is_instance(i.y, i.y)
-
-    def test_unionT_typedef(self) -> None:
-        self.assertIsNone(_check_type(True, TestUnionType))
-        self.assertIsNone(_check_type(False, TestUnionType))
-        self.assertIsNone(_check_type(0, TestUnionType))
-        self.assertIsNone(_check_type(1, TestUnionType))
-        self.assertEqual(
-            "foo not matched in union (<class 'bool'>, <class 'int'>): "
-            + "expected bool, got foo; expected int, got foo",
-            _check_type("foo", TestUnionType),
-        )
 
     def test_no_underscore_fields(self) -> None:
         shape.shape(ohai=int)  # this is fine
@@ -338,17 +318,6 @@ class TestShapeBzl(unittest.TestCase):
     def test_target_and_path_unsupported(self) -> None:
         with self.assertRaisesRegex(Fail, "no longer supported"):
             shape.path()
-
-    def test_default_value_sentinel(self) -> None:
-        t = shape.shape(value_with_default=shape.field(int, default=42))
-        self.assertEqual(
-            t(value_with_default=3),
-            expected_shape(value_with_default=3, __shape__=t),
-        )
-        self.assertEqual(
-            t(value_with_default=shape.DEFAULT_VALUE),
-            expected_shape(value_with_default=42, __shape__=t),
-        )
 
     def test_thrift(self) -> None:
         shape.shape(x=int, __thrift={1: "x"})
