@@ -48,8 +48,7 @@ character_t = shape.shape(
     ),
     affiliations = shape.field(
         affiliations_t,
-        default = shape.new(
-            affiliations_t,
+        default = affiliations_t(
             faction = "Rebellion",
         ),
     ),

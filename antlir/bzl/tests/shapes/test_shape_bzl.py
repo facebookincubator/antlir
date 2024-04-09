@@ -112,9 +112,9 @@ class TestShapeBzl(unittest.TestCase):
         for answer in ("hello", True, {"a": "b"}):
             with self.subTest(answer=answer):
                 with self.assertRaises(Fail):
-                    t(nested=shape.new(nested, answer=answer))
+                    t(nested=nested(answer=answer))
         self.assertEqual(
-            t(nested=shape.new(nested, answer=42)),
+            t(nested=nested(answer=42)),
             expected_shape(
                 nested=expected_shape(answer=42, __shape__=nested),
                 __shape__=t,
@@ -148,7 +148,7 @@ class TestShapeBzl(unittest.TestCase):
         item_type = shape.shape(answer=int)
         t = shape.shape(lst=shape.list(item_type))
         self.assertEqual(
-            t(lst=[shape.new(item_type, answer=42)]),
+            t(lst=[item_type(answer=42)]),
             expected_shape(
                 lst=[expected_shape(__shape__=item_type, answer=42)],
                 __shape__=t,
@@ -159,7 +159,7 @@ class TestShapeBzl(unittest.TestCase):
         val_type = shape.shape(answer=int)
         t = shape.shape(dct=shape.dict(str, val_type))
         self.assertEqual(
-            t(dct={"a": shape.new(val_type, answer=42)}),
+            t(dct={"a": val_type(answer=42)}),
             expected_shape(
                 dct={"a": expected_shape(__shape__=val_type, answer=42)},
                 __shape__=t,
@@ -170,7 +170,7 @@ class TestShapeBzl(unittest.TestCase):
         bottom = shape.shape(answer=int)
         t = shape.shape(dct=shape.dict(str, shape.list(bottom)))
         self.assertEqual(
-            t(dct={"a": [shape.new(bottom, answer=42)]}),
+            t(dct={"a": [bottom(answer=42)]}),
             expected_shape(
                 dct={"a": [expected_shape(answer=42, __shape__=bottom)]},
                 __shape__=t,
@@ -229,7 +229,7 @@ class TestShapeBzl(unittest.TestCase):
     def test_as_dict_deep(self) -> None:
         y = shape.shape(z=int)
         t = shape.shape(x=str, y=y)
-        i = t(x="a", y=shape.new(y, z=3))
+        i = t(x="a", y=y(z=3))
         self.assertEqual({"x": "a", "y": {"z": 3}}, _as_dict_deep(i))
 
     def test_as_serializable_dict(self) -> None:
@@ -251,8 +251,8 @@ class TestShapeBzl(unittest.TestCase):
                 shape.as_serializable_dict(
                     t(
                         x="a",
-                        y=shape.new(y, z=z),
-                        lst=[shape.new(s, z=z), shape.new(s, z=1)],
+                        y=y(z=z),
+                        lst=[s(z=z), s(z=1)],
                     )
                 ),
             )
@@ -264,7 +264,7 @@ class TestShapeBzl(unittest.TestCase):
     def test_is_instance(self) -> None:
         y_t = shape.shape(z=int)
         t = shape.shape(x=str, y=y_t)
-        i = t(x="a", y=shape.new(y_t, z=3))
+        i = t(x="a", y=y_t(z=3))
 
         # Good cases
         self.assertTrue(shape.is_any_instance(i))
@@ -321,7 +321,7 @@ class TestShapeBzl(unittest.TestCase):
             ),
             outer_t(
                 is_out="/a/path",
-                nested=shape.new(inner_t, is_in={"hello": "world"}),
+                nested=inner_t(is_in={"hello": "world"}),
             ),
         )
         with self.assertRaisesRegex(Fail, " is not an instance of "):

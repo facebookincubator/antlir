@@ -41,43 +41,37 @@ nsswitch = struct(
     install = _install,
     default = conf_t(
         databases = [
-            shape.new(
-                database_t,
+            database_t(
                 name = "passwd",
                 services = [
-                    shape.new(service_t, name = "files"),
-                    shape.new(service_t, name = "systemd"),
+                    service_t(name = "files"),
+                    service_t(name = "systemd"),
                 ],
             ),
-            shape.new(
-                database_t,
+            database_t(
                 name = "group",
                 services = [
-                    shape.new(
-                        service_t,
+                    service_t(
                         name = "files",
-                        action = shape.new(
-                            action_t,
+                        action = action_t(
                             status = "success",
                             action = "merge",
                         ),
                     ),
-                    shape.new(service_t, name = "systemd"),
+                    service_t(name = "systemd"),
                 ],
             ),
-            shape.new(
-                database_t,
+            database_t(
                 name = "shadow",
                 services = [
-                    shape.new(service_t, name = "files"),
+                    service_t(name = "files"),
                 ],
             ),
-            shape.new(
-                database_t,
+            database_t(
                 name = "hosts",
                 services = [
-                    shape.new(service_t, name = "files"),
-                    shape.new(service_t, name = "dns"),
+                    service_t(name = "files"),
+                    service_t(name = "dns"),
                 ],
             ),
         ],

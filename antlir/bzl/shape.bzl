@@ -428,17 +428,7 @@ def _new_shape(shape, **fields):
     """
     Type check and instantiate a struct of the given shape type using the
     values from the **fields kwargs.
-
-    Example usage:
-    ```
-    example_t = shape.shape(hello=str)
-    example = shape.new(example_t, hello="world")
-    ```
     """
-
-    # if this looks like the new constructor api, call it as a function
-    if _is_shape_constructor(shape):
-        return shape(**fields)
 
     with_defaults = _shape_defaults_dict(shape)
 
@@ -771,7 +761,6 @@ shape = struct(
     is_shape = _is_shape,
     json_file = _json_file,
     list = _list,
-    new = _new_shape,
     path = _path,
     pretty = _pretty,
     python_data = _python_data,
