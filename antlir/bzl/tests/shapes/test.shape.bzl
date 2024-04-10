@@ -113,3 +113,21 @@ thrift_new = shape.shape(
 
 union_old = shape.union(str, int, __thrift = [0, 1])
 union_new = shape.union(int, bool, __thrift = [1, 2])
+
+inner = shape.shape(
+    a = shape.field(str, optional = True, default = "def"),
+    __thrift = {
+        0: "a",
+    },
+)
+
+with_default_trait = shape.shape(
+    a = shape.field(str, optional = True, default = "abc"),
+    b = shape.field(bool, default = True),
+    c = shape.field(inner, default = inner()),
+    __thrift = {
+        0: "a",
+        1: "b",
+        2: "c",
+    },
+)

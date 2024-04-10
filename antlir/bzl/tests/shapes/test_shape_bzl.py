@@ -17,7 +17,6 @@ from antlir.bzl.tests.shapes.shape_bzl import (
     structs,
 )
 
-
 target_t = shape.shape(
     __I_AM_TARGET__=True,
     name=str,

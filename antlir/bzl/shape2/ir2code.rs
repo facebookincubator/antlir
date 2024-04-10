@@ -7,9 +7,11 @@
 
 #![deny(warnings)]
 
+use std::collections::BTreeMap;
 use std::fs::File;
 use std::ops::Deref;
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use anyhow::anyhow;
 use anyhow::Context as _;
@@ -25,6 +27,7 @@ use handlebars::Handlebars;
 use ir::ComplexType;
 use ir::Enum;
 use ir::Field;
+use ir::FieldName;
 use ir::Module;
 use ir::Primitive;
 use ir::Struct;
@@ -152,6 +155,7 @@ where
     handlebars.set_strict_mode(true);
     handlebars.register_escape_fn(no_escape);
     handlebars.register_helper("has-default-value", Box::new(has_default_value));
+    handlebars.register_helper("can-default", Box::new(can_default));
     handlebars.register_helper("json", Box::new(json_helper));
     handlebars.register_helper("upper", Box::new(upper_helper));
     handlebars.register_helper("ident", Box::new(ident_helper));
@@ -173,6 +177,7 @@ where
 
 handlebars_helper!(upper_helper: |x: String| x.to_uppercase());
 handlebars_helper!(ident_helper: |x: String| x.replace('-', "_"));
+handlebars_helper!(can_default: |x: BTreeMap<FieldName, Arc<Field>>| x.values().all(|v| !v.required || v.default_value.is_some()));
 
 trait ModuleExt<T>
 where
@@ -242,8 +247,7 @@ impl TargetExt for Target {
 
     fn python_module(&self) -> String {
         self.base_target()
-            .replace("/", ".")
-            .replace(":", ".")
+            .replace(['/', ':'], ".")
             .trim_start_matches('.')
             .to_owned()
     }

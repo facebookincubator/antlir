@@ -112,6 +112,22 @@ where
 }
 {{/if}}
 
+{{#if (can-default fields)}}
+impl Default for {{name}} {
+    fn default() -> Self {
+        Self {
+        {{#each fields}}
+        {{#if (has-default-value this)}}
+            r#{{@key}}: {{../name}}::default_{{@key}}(),
+        {{ else }}
+            r#{{@key}}: None,
+        {{/if}}
+        {{/each}}
+        }
+    }
+}
+{{/if}}
+
 impl ::pyo3::conversion::IntoPy<::pyo3::PyObject> for &{{name}} {
     fn into_py(self, py: ::pyo3::Python<'_>) -> ::pyo3::PyObject {
         let json_str = ::serde_json::to_string(self)
