@@ -92,7 +92,7 @@ class TestShape(unittest.TestCase):
             c = character_collection_t.load(path)
         target = c.characters[0].weapon.target
         self.assertEqual(target.name, f"{TARGET_PATH}:luke-lightsaber")
-        self.assertRegexpMatches(target.path, rb"^buck-out/.*")
+        self.assertRegex(target.path, rb"^buck-out/.*")
 
     def test_hash(self):
         trooper1 = hashable_t(
