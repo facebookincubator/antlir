@@ -181,3 +181,22 @@ fn default_trait() -> Result<()> {
 
     Ok(())
 }
+
+#[test]
+fn default_builder() -> Result<()> {
+    let with_default = with_default_trait::builder()
+        .a(Some("test".to_string()))
+        .build();
+
+    assert_eq!(
+        with_default,
+        with_default_trait {
+            a: Some("test".to_string()),
+            b: true,
+            c: inner {
+                a: Some("def".to_string())
+            }
+        }
+    );
+    Ok(())
+}

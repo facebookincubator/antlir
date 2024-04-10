@@ -1,8 +1,9 @@
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, TypedBuilder, PartialEq, Eq)]
 pub struct {{name}} {
     {{#each fields}}
     {{#if (has-default-value this)}}
     #[serde(default = "{{../name}}::default_{{@key}}")]
+    #[builder(default_code = r###"{{../name}}::default_{{@key}}()"###)]
     {{/if}}
     {{#if required}}
     {{#if (eq (type type) "i64")}}
