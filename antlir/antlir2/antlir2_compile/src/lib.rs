@@ -24,12 +24,8 @@ use nix::sys::stat::Mode;
 use openat2::openat2;
 use openat2::OpenHow;
 use openat2::ResolveFlags;
-use serde::de::Error as _;
-use serde::ser::Error as _;
 use serde::Deserialize;
-use serde::Deserializer;
 use serde::Serialize;
-use serde::Serializer;
 
 #[cfg(facebook)]
 pub mod facebook;
@@ -59,7 +55,7 @@ pub enum Error {
 
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Arch {
     Aarch64,
@@ -87,8 +83,7 @@ impl Display for Arch {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(bound(deserialize = "'de: 'static"))]
+#[derive(Debug)]
 pub struct CompilerContext {
     /// Buck label of the image being built
     label: Label,
@@ -100,10 +95,6 @@ pub struct CompilerContext {
     /// Build appliance tree with tools that might be necessary
     build_appliance: PathBuf,
     /// Open fd to the image root directory
-    #[serde(
-        serialize_with = "CompilerContext::serialize_root",
-        deserialize_with = "CompilerContext::deserialize_root"
-    )]
     root: Dir,
     /// Setup information for dnf repos
     dnf: DnfContext,
@@ -114,7 +105,7 @@ pub struct CompilerContext {
     fbpkg: facebook::FbpkgContext,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub struct DnfContext {
     /// Root directory where dnf repos are mounted
     repos: PathBuf,
@@ -321,31 +312,6 @@ impl CompilerContext {
             .get_group_by_name(name)
             .map(|g| g.gid)
             .ok_or_else(|| Error::NoSuchGroup(name.to_owned()))
-    }
-
-    fn serialize_root<S>(dir: &Dir, s: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        let path = std::fs::read_link(format!("/proc/self/fd/{}", dir.as_raw_fd()))
-            .map_err(|e| {
-                format!(
-                    "failed to get path from /proc/self/fd/{}: {e}",
-                    dir.as_raw_fd()
-                )
-            })
-            .map_err(S::Error::custom)?;
-        path.serialize(s)
-    }
-
-    fn deserialize_root<'de, D>(d: D) -> Result<Dir, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let path = <PathBuf>::deserialize(d)?;
-        Dir::open(&path, OFlag::O_PATH, Mode::empty())
-            .map_err(|e| format!("failed to open '{}': {e}", path.display()))
-            .map_err(D::Error::custom)
     }
 }
 
