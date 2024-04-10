@@ -95,6 +95,8 @@ enum Subcommand {
 fn main() -> Result<()> {
     let args = Args::parse();
 
+    let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
+
     tracing_subscriber::registry()
         .with(tracing_subscriber::fmt::Layer::default().with_ansi(false))
         .with(args.log.file()?.map(|file| {
@@ -104,7 +106,6 @@ fn main() -> Result<()> {
         }))
         .init();
 
-    let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
     let result = match args.subcommand {
         Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(x) => x.run(rootless),
