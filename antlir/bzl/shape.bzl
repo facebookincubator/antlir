@@ -501,6 +501,7 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
                     "pyo3",
                     "serde",
                     "serde_json",
+                    "typed-builder",
                 ],
                 platform = "rust",
             ),
