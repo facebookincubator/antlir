@@ -14,11 +14,13 @@ use anyhow::Result;
 use test_shape::character_collection_t;
 use test_shape::character_t;
 use test_shape::friend_t;
+use test_shape::inner;
 use test_shape::thrift_new;
 use test_shape::thrift_old;
 use test_shape::union_new;
 use test_shape::union_old;
 use test_shape::weapon_t;
+use test_shape::with_default_trait;
 use test_shape::with_optional_int;
 
 // @oss-disable
@@ -159,5 +161,23 @@ fn optional_int() -> Result<()> {
     let s: with_optional_int =
         serde_json::from_str(r#"{"foo": "bar"}"#).context("failed to deser")?;
     assert_eq!(s, with_optional_int { optint: None });
+    Ok(())
+}
+
+#[test]
+fn default_trait() -> Result<()> {
+    let with_default: with_default_trait = Default::default();
+
+    assert_eq!(
+        with_default,
+        with_default_trait {
+            a: Some("abc".to_string()),
+            b: true,
+            c: inner {
+                a: Some("def".to_string())
+            }
+        }
+    );
+
     Ok(())
 }
