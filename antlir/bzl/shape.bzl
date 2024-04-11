@@ -511,39 +511,14 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
             **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
         )
 
-_SERIALIZING_LOCATION_MSG = (
-    "shapes with layer/target fields cannot safely be serialized in the" +
-    " output of a buck target.\n" +
-    "For buck_genrule uses, consider passing an argument with the (shell quoted)" +
-    " result of 'shape.do_not_cache_me_json'\n" +
-    "For unit tests, consider setting an environment variable with the same" +
-    " JSON string"
-)
-
 # Does a recursive (deep) copy of `val` which is expected to be of type
 # `t` (in the `shape` sense of type compatibility).
-#
-# `opts` changes the output as follows:
-#
-#   - `opts.on_target_fields` has 2 possible values:
-#
-#     * "fail": Fails at Buck parse-time. Used for scenarios that cannot
-#       reasonably support target -> buck output path resolution, like
-#       `shape.json_file()`.
-#
-#     * "location": Serializes targets as $(location) macros
-def _recursive_copy_transform(val, t, opts):
+def _recursive_copy_transform(val, t):
     if hasattr(t, "__I_AM_TARGET__"):
-        if opts.on_target_fields == "fail":
-            fail(_SERIALIZING_LOCATION_MSG)
-        elif opts.on_target_fields == "location":
-            return struct(
-                name = normalize_target(val),
-                path = "$(location {})".format(val),
-                __I_AM_TARGET__ = True,
-            )
-        else:  # pragma: no cover
-            fail("Unknown on_target_fields value {}".format(opts.on_target_fields))
+        return struct(
+            name = normalize_target(val),
+            path = "",
+        )
     elif _is_shape(t):
         error = _check_type(val, t)
         if error:  # pragma: no cover -- an internal invariant, not a user error
@@ -554,22 +529,21 @@ def _recursive_copy_transform(val, t, opts):
                 # The `_is_instance` above will ensure that `getattr` succeeds
                 getattr(val, name),
                 field,
-                opts,
             )
         return struct(**new)
     elif _is_field(t):
         if t.optional and val == None:
             return None
-        return _recursive_copy_transform(val, t.type, opts)
+        return _recursive_copy_transform(val, t.type)
     elif _is_collection(t):
         if t.collection == dict:
             return {
-                k: _recursive_copy_transform(v, t.item_type[1], opts)
+                k: _recursive_copy_transform(v, t.item_type[1])
                 for k, v in val.items()
             }
         elif t.collection == list:
             return [
-                _recursive_copy_transform(v, t.item_type, opts)
+                _recursive_copy_transform(v, t.item_type)
                 for v in val
             ]
 
@@ -578,7 +552,7 @@ def _recursive_copy_transform(val, t, opts):
         matched_type, error = _find_union_type(val, t)
         if error:  # pragma: no cover
             fail(error)
-        return _recursive_copy_transform(val, matched_type, opts)
+        return _recursive_copy_transform(val, matched_type)
     elif t == int or t == bool or t == str or t == _path or _is_enum(t):
         return val
     fail(
@@ -586,20 +560,13 @@ def _recursive_copy_transform(val, t, opts):
         "Unknown type {} for {}".format(_pretty(t), _pretty(val)),
     )
 
-def _do_not_cache_me_json(instance):
+def _json_string(instance):
     """
-    Serialize the given shape instance to a JSON string. This is only safe to be
-    cached if used by shape.json_file or shape.python_data.
-
-    Warning: Do not ever (manually) put this into a target that can be cached,
-    it should only be used in cmdline args or environment variables.
+    Serialize the given shape instance to a JSON string.
     """
     return structs.as_json(_recursive_copy_transform(
         instance,
         instance.__shape__,
-        struct(
-            on_target_fields = "location",
-        ),
     ))
 
 def _json_file(name, instance, visibility = None, labels = None):  # pragma: no cover
@@ -608,26 +575,17 @@ def _json_file(name, instance, visibility = None, labels = None):  # pragma: no 
     `resources` section of a `python_binary` or a `$(location)` macro in a
     `buck_genrule`.
     """
-    labels = labels or []
     buck_genrule(
         name = name,
-        # Antlir users should not directly use `shape`, but we do use it
-        # as an implementation detail of "builder" / "publisher" targets.
-        cmd = "echo {} | $(exe {}) - - > $OUT".format(
-            shell.quote(_do_not_cache_me_json(instance)),
-            antlir_dep("bzl/shape2:serialize-shape"),
-        ),
+        cmd = "echo {} > $OUT".format(shell.quote(_json_string(instance))),
         visibility = visibility,
-        labels = labels,
+        labels = labels or [],
     )
     return normalize_target(":" + name)
 
 def _render_template(name, instance, template, visibility = None):  # pragma: no cover
     """
     Render the given Jinja2 template with the shape instance data to a file.
-
-    Warning: this will fail to serialize any shape type that contains a
-    reference to a target location, as that cannot be safely cached by buck.
     """
     if native.rule_exists(name + "--data.json"):
         return normalize_target(":" + name)
@@ -687,15 +645,14 @@ def _python_data(
         cmd = '''
             echo "from {module} import {type_name}" > $OUT
             echo {data_start} >> $OUT
-            echo {json} | $(exe {serialize}) - - >> $OUT
+            echo {json} >> $OUT
             echo '""")' >> $OUT
         '''.format(
             data_start = shell.quote('data = {classname}.parse_raw("""'.format(
                 classname = type_name,
             )),
-            json = shell.quote(_do_not_cache_me_json(instance)),
+            json = shell.quote(_json_string(instance)),
             module = shape_module,
-            serialize = antlir_dep("bzl/shape2:serialize-shape"),
             type_name = type_name,
         ),
     )
@@ -710,9 +667,6 @@ def _python_data(
     )
     return normalize_target(":" + name)
 
-# Asserts that there are no "Buck target" in the shape.  Contrast with
-# `do_not_cache_me_json`.
-#
 # Converts a shape to a dict, as you would expected (field names are keys,
 # values are scalars & collections as in the shape -- and nested shapes are
 # also dicts).
@@ -720,19 +674,15 @@ def _as_serializable_dict(instance):
     return _as_dict_deep(_recursive_copy_transform(
         instance,
         instance.__shape__,
-        struct(on_target_fields = "fail"),
     ))
 
 # Recursively converts nested shapes and structs to dicts. Used in
 # _as_serializable_dict
-def _as_dict_deep(val, on_target_fields = "fail"):
+def _as_dict_deep(val):
     if _is_any_instance(val):
         val = _recursive_copy_transform(
             val,
             val.__shape__,
-            struct(
-                on_target_fields = on_target_fields,
-            ),
         )
     if structs.is_struct(val):
         val = structs.to_dict(val)
@@ -753,7 +703,7 @@ shape = struct(
     # output target macros and other conversion helpers
     as_serializable_dict = _as_serializable_dict,
     dict = _dict,
-    do_not_cache_me_json = _do_not_cache_me_json,
+    json_string = _json_string,
     enum = _enum,
     field = _field,
     is_instance = _is_instance,

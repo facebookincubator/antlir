@@ -67,16 +67,3 @@ rust_library(
         "serde",
     ],
 )
-
-rust_binary(
-    name = "serialize-shape",
-    srcs = ["serialize_shape.rs"],
-    visibility = ["PUBLIC"],
-    deps = [
-        "anyhow",
-        "clap",
-        "serde_json",
-        "//antlir:find_root",
-        "//antlir/filesystem/stdio_path:stdio_path",
-    ],
-)

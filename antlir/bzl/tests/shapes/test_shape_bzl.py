@@ -20,7 +20,6 @@ from antlir.bzl.tests.shapes.shape_bzl import (
 target_t = shape.shape(
     __I_AM_TARGET__=True,
     name=str,
-    path=shape.path,
 )
 
 
@@ -193,31 +192,44 @@ class TestShapeBzl(unittest.TestCase):
         ):
             t(u=v)
 
-    def test_location_serialization(self) -> None:
+    def test_target_serialization(self) -> None:
         shape_with_target = shape.shape(target=target_t)
-        target = shape_with_target(target="//example:target")
-        for i in [
-            target,
-            shape.shape(nested=shape_with_target)(nested=target),
-            shape.shape(lst=shape.list(shape_with_target))(
-                lst=[target],
+        target = shape_with_target(target="cell//example:target")
+        self.assertEqual(
+            shape.as_serializable_dict(target),
+            {"target": {"name": "cell//example:target", "path": ""}},
+        )
+        self.assertEqual(
+            shape.as_serializable_dict(
+                shape.shape(nested=shape_with_target)(nested=target)
             ),
-            shape.shape(dct=shape.dict(str, shape_with_target))(
-                dct={"a": target},
+            {"nested": {"target": {"name": "cell//example:target", "path": ""}}},
+        )
+        self.assertEqual(
+            shape.as_serializable_dict(
+                shape.shape(lst=shape.list(shape_with_target))(
+                    lst=[target],
+                ),
             ),
-            shape.shape(uni=shape.union(int, shape_with_target))(
-                uni=target,
+            {"lst": [{"target": {"name": "cell//example:target", "path": ""}}]},
+        )
+        self.assertEqual(
+            shape.as_serializable_dict(
+                shape.shape(dct=shape.dict(str, shape_with_target))(
+                    dct={"a": target},
+                )
             ),
-        ]:
-            with self.subTest(instance=i):
-                ser_err = "cannot safely be serialized"
-                # serializing directly to files should be blocked
-                with self.assertRaisesRegex(Fail, ser_err):
-                    shape.as_serializable_dict(i)
-                # serializing to a json string is allowed as the user is
-                # implicitly acknowledging that they will do the right thing
-                # and not cache the results
-                json.loads(shape.do_not_cache_me_json(i))
+            {"dct": {"a": {"target": {"name": "cell//example:target", "path": ""}}}},
+        )
+        self.assertEqual(
+            shape.as_serializable_dict(
+                shape.shape(uni=shape.union(int, shape_with_target))(
+                    uni=target,
+                )
+            ),
+            {"uni": {"target": {"name": "cell//example:target", "path": ""}}},
+            None,
+        )
 
     def test_as_dict_deep(self) -> None:
         y = shape.shape(z=int)
@@ -335,3 +347,7 @@ class TestShapeBzl(unittest.TestCase):
             shape.union(int, str, __thrift=[1])
         with self.assertRaises(Fail):
             shape.union(int, str, __thrift=[1, 2, 3])
+
+    def test_json_string(self) -> None:
+        t = shape.shape(x=str)
+        self.assertEqual(json.loads(shape.json_string(t(x="hello"))), {"x": "hello"})

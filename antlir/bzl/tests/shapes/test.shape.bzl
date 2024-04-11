@@ -133,3 +133,15 @@ with_default_trait = shape.shape(
         3: "d",
     },
 )
+
+# This is the old version of target_t that includes a path. It is used in a
+# thrift compatibility test to ensure that it's forwards and backwards
+# compatible
+target_with_path_t = shape.shape(
+    name = shape.field(str),
+    path = shape.field(shape.path),
+    __thrift = {
+        1: "name",
+        2: "path",
+    },
+)

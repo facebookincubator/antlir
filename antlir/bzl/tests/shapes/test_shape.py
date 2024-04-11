@@ -45,25 +45,13 @@ class TestShape(unittest.TestCase):
         self.assertEqual(
             [f.name for f in c.friends], ["Han Solo", "Leia Organa", "C-3PO"]
         )
-        # The target's on disk path is specific to the host that the test runs
-        # on. So we need a static value that we can reliably test.  Since
-        # models are immutable, we'll make a deep copy and udpate with a static
-        # value.
-        lightsaber_target_fixed = c.weapon.target.copy(
-            update={"path": b"/static/target/path"}
-        )
-        lightsaber_fixed = c.weapon.copy(
-            update={
-                "target": lightsaber_target_fixed,
-            },
-        )
         self.assertEqual(
-            lightsaber_fixed,
+            c.weapon,
             lightsaber_t(
                 color=lightsaber_t.types.color.GREEN,
                 target=target_t(
                     name=f"{TARGET_PATH}:luke-lightsaber",
-                    path=b"/static/target/path",
+                    path=b"",
                 ),
             ),
         )
@@ -87,12 +75,11 @@ class TestShape(unittest.TestCase):
         self.assertEqual(imp, res)
         self.assertTrue(isinstance(imp, hashable_t))
 
-    def test_json_file_targets_paths(self):
+    def test_json_file_targets(self):
         with importlib.resources.path(__package__, "characters.json") as path:
             c = character_collection_t.load(path)
         target = c.characters[0].weapon.target
         self.assertEqual(target.name, f"{TARGET_PATH}:luke-lightsaber")
-        self.assertRegex(target.path, rb"^buck-out/.*")
 
     def test_hash(self):
         trooper1 = hashable_t(
@@ -129,24 +116,11 @@ class TestShape(unittest.TestCase):
         self.assertEqual(expected, {k: v for k, v in hints.items() if k in expected})
 
     def test_instance_repr(self):
-        # The on-disk path for resolved targets will be different between
-        # environments, so we assign a static value so that we can compare
-        # the repr properly.
-        lightsaber_target_fixed = characters[0].weapon.target.copy(
-            update={"path": b"/static/target/path"}
-        )
-        lightsaber_fixed = characters[0].weapon.copy(
-            deep=True,
-            update={
-                "target": lightsaber_target_fixed,
-            },
-        )
-
         # Shapes don't always have nice classnames, so the repr is customized to
         # be human-readable. While this has no functional impact on the code, it
         # is critical for usability, so ensure there are unit tests.
         self.assertEqual(
-            repr(characters[0].copy(update={"weapon": lightsaber_fixed})),
+            repr(characters[0]),
             "shape("
             "affiliations=shape(faction='Rebellion'), "
             "appears_in=(4, 5, 6), "
@@ -164,7 +138,8 @@ class TestShape(unittest.TestCase):
             + (
                 "color=GREEN, "
                 "target=shape("
-                f"name='{TARGET_PATH}:luke-lightsaber', path=b'/static/target/path'"
+                f"name='{TARGET_PATH}:luke-lightsaber', "
+                "path=b''"
                 ")"
             )
             + "))",
