@@ -66,6 +66,14 @@ pub(crate) fn run_cmd(command: &mut Command) -> Result<std::process::Output> {
 fn main() -> Result<()> {
     let args = PackageArgs::parse();
 
+    let need_to_reescalate = nix::unistd::Uid::effective().is_root();
+
+    let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
+
+    if !matches!(args.spec.as_inner(), Spec::CasDir(_)) {
+        std::fs::File::create(&args.out)?;
+    }
+
     if args.rootless {
         antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
     }
@@ -73,6 +81,12 @@ fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::TRACE)
         .init();
+
+    let _root_guard = if need_to_reescalate {
+        Some(rootless.escalate()?)
+    } else {
+        None
+    };
 
     match args.spec.into_inner() {
         Spec::Btrfs(p) => p.build(&args.out),
