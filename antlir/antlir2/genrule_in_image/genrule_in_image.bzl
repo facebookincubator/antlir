@@ -8,6 +8,7 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_targ
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
+load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     out = None
@@ -90,4 +91,17 @@ _genrule_in_image = rule(
     cfg = layer_cfg,
 )
 
-genrule_in_image = rule_with_default_target_platform(_genrule_in_image)
+_genrule_in_image_macro = rule_with_default_target_platform(_genrule_in_image)
+
+def genrule_in_image(
+        *,
+        name: str,
+        default_os: str | None = None,
+        **kwargs):
+    if should_all_images_in_package_use_default_os():
+        default_os = default_os or get_default_os_for_package()
+    _genrule_in_image_macro(
+        name = name,
+        default_os = default_os,
+        **kwargs
+    )
