@@ -85,10 +85,8 @@ impl LogArgs {
 
 #[derive(Parser, Debug)]
 enum Subcommand {
-    Compile(cmd::Compile),
     Depgraph(cmd::Depgraph),
     Map(cmd::Map),
-    Plan(cmd::Plan),
     Shell(cmd::Shell),
 }
 
@@ -107,10 +105,8 @@ fn main() -> Result<()> {
         .init();
 
     let result = match args.subcommand {
-        Subcommand::Compile(x) => x.run(),
         Subcommand::Depgraph(x) => x.run(rootless),
         Subcommand::Map(x) => x.run(rootless),
-        Subcommand::Plan(x) => x.run(),
         Subcommand::Shell(x) => x.run(),
     };
     if let Err(e) = result {
