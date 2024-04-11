@@ -91,7 +91,7 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
             Some(&args.root),
             "/tmp/__antlir2__/ephemeral_lower",
             None::<&str>,
-            MsFlags::MS_BIND | MsFlags::MS_REC,
+            MsFlags::MS_BIND | MsFlags::MS_REC | MsFlags::MS_RDONLY,
             None::<&str>,
         )?;
         mount(

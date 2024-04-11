@@ -28,6 +28,8 @@ mod tar;
 mod vfat;
 mod xar;
 use spec::Spec;
+mod build_appliance;
+pub(crate) use build_appliance::BuildAppliance;
 
 pub(crate) trait PackageFormat {
     fn build(&self, out: &Path) -> Result<()>;

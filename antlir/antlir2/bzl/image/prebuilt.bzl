@@ -123,6 +123,30 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     if not ctx.attrs.antlir_internal_build_appliance and not ctx.attrs.flavor:
         fail("only build appliance images are allowed to be flavorless")
+
+    ba_info = None
+    if ctx.attrs.antlir_internal_build_appliance:
+        if format != "cas_dir":
+            cas_dir = ctx.actions.declare_output("cas_dir", dir = True)
+            ctx.actions.run(
+                cmd_args(
+                    "sudo" if not ctx.attrs._rootless else cmd_args(),
+                    ctx.attrs.antlir2[RunInfo],
+                    "cas-dir",
+                    "--rootless" if ctx.attrs._rootless else cmd_args(),
+                    "dehydrate",
+                    cmd_args(subvol_symlink, format = "--subvol={}"),
+                    cmd_args(cas_dir.as_output(), format = "--out={}"),
+                ),
+                category = "cas_dir",
+                local_only = True,  # for now, this requires reading out of the local subvol
+            )
+        else:
+            cas_dir = ctx.attrs.src
+        ba_info = BuildApplianceInfo(
+            cas_dir = cas_dir,
+        )
+
     return [
         LayerInfo(
             label = ctx.label,
@@ -137,9 +161,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "facts": [DefaultInfo(facts_db)],
             })],
         }),
-    ] + (
-        [BuildApplianceInfo(subvol_symlink = subvol_symlink)] if ctx.attrs.antlir_internal_build_appliance else []
-    )
+    ] + ([ba_info] if ba_info else [])
 
 _prebuilt = rule(
     impl = _impl,

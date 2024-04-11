@@ -10,6 +10,7 @@ use std::io::ErrorKind;
 use std::os::unix::ffi::OsStrExt;
 use std::path::Path;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use antlir2_facts::fact::dir_entry::DirEntry;
 use antlir2_facts::fact::dir_entry::FileCommon;
@@ -37,11 +38,22 @@ struct Args {
     #[clap(long)]
     root: PathBuf,
     #[clap(long)]
-    build_appliance: Option<PathBuf>,
+    build_appliance: Option<BuildApplianceArg>,
     #[clap(long)]
     db: PathBuf,
     #[clap(long)]
     rootless: bool,
+}
+
+#[derive(Debug, Clone)]
+struct BuildApplianceArg(antlir2_cas_dir::CasDir);
+
+impl FromStr for BuildApplianceArg {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        Ok(Self(antlir2_cas_dir::CasDir::open(s)?))
+    }
 }
 
 fn populate(db: &mut RwDatabase, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
@@ -258,7 +270,13 @@ fn main() -> Result<()> {
     let gid = nix::unistd::Gid::effective().as_raw();
 
     let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-    populate(&mut db, &args.root, args.build_appliance.as_deref())?;
+    populate(
+        &mut db,
+        &args.root,
+        args.build_appliance
+            .as_ref()
+            .map(|ba| ba.0.unreliable_metadata_contents_path()),
+    )?;
 
     // make sure all the output files are owned by the unprivileged user
     for entry in jwalk::WalkDir::new(&args.db) {

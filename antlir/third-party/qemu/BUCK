@@ -58,7 +58,7 @@ third_party.build(
 export MAKEFLAGS=-j
 
 ./configure \\
-    --target-list=x86_64-softmmu,aarch64-softmmu \\
+    --target-list=x86_64-softmmu,aarch64-softmmu,aarch64-linux-user \\
     --prefix="${OUTPUT}" \\
     --without-default-features \\
     --disable-download \\

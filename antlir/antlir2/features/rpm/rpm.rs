@@ -334,7 +334,10 @@ fn run_dnf_driver(
 
     // We can have per-OS rpm macros to change the database backend that must be
     // copied into the built image.
-    let ba_macros = ctx.build_appliance().join("etc/rpm/macros.db");
+    let ba_macros = ctx
+        .build_appliance()
+        .unreliable_metadata_contents_path()
+        .join("etc/rpm/macros.db");
     if ba_macros.exists() {
         let db_macro_path = ctx.dst_path("/etc/rpm/macros.db")?;
         // If the macros.db file already exists, just use it as-is. Most likely
@@ -355,7 +358,7 @@ fn run_dnf_driver(
         .context("while serializing dnf-driver input")?;
     mfd.as_file().rewind()?;
 
-    let isol = IsolationContext::builder(ctx.build_appliance())
+    let isol = IsolationContext::builder(ctx.build_appliance().unreliable_metadata_contents_path())
         .ephemeral(false)
         .readonly()
         // random buck-out paths that might be being used (for installing .rpms)
@@ -372,6 +375,9 @@ fn run_dnf_driver(
         // TMPDIR might be set by buck2, be very explicit that it shouldn't be
         // inherited
         .setenv(("TMPDIR", "/tmp"))
+        // even though the build appliance is mounted readonly, python is still
+        // somehow writing .pyc cache files, just ban it
+        .setenv(("PYTHONDONTWRITEBYTECODE", "1"))
         .build();
     let isol = unshare(isol)?;
 
