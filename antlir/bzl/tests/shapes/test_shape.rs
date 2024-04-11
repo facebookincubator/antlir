@@ -175,7 +175,8 @@ fn default_trait() -> Result<()> {
             b: true,
             c: inner {
                 a: Some("def".to_string())
-            }
+            },
+            d: None,
         }
     );
 
@@ -195,7 +196,8 @@ fn default_builder() -> Result<()> {
             b: true,
             c: inner {
                 a: Some("def".to_string())
-            }
+            },
+            d: None,
         }
     );
     Ok(())

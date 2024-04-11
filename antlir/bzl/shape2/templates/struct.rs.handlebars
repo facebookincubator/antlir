@@ -4,6 +4,10 @@ pub struct {{name}} {
     {{#if (has-default-value this)}}
     #[serde(default = "{{../name}}::default_{{@key}}")]
     #[builder(default_code = r###"{{../name}}::default_{{@key}}()"###)]
+    {{else}}
+    {{#unless required}}
+    #[builder(default = None)]
+    {{/unless}}
     {{/if}}
     {{#if required}}
     {{#if (eq (type type) "i64")}}

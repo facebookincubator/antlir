@@ -125,9 +125,11 @@ with_default_trait = shape.shape(
     a = shape.field(str, optional = True, default = "abc"),
     b = shape.field(bool, default = True),
     c = shape.field(inner, default = inner()),
+    d = shape.field(str, optional = True),
     __thrift = {
         0: "a",
         1: "b",
         2: "c",
+        3: "d",
     },
 )
