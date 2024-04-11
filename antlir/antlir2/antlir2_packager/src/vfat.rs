@@ -13,7 +13,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::process::Stdio;
 
-use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
@@ -42,24 +42,23 @@ impl PackageFormat for Vfat {
             .context("Failed to sync output file to disk")?;
         drop(file);
 
-        let input = self
-            .layer
-            .canonicalize()
-            .context("failed to build abs path to layer")?;
-
-        let output = out
-            .canonicalize()
-            .context("failed to build abs path to output")?;
-
         let isol_context = IsolationContext::builder(&self.build_appliance)
-            .inputs(input.as_path())
-            .outputs(output.as_path())
+            .ephemeral(false)
+            .readonly()
+            .tmpfs(Path::new("/__antlir2__/out"))
+            .outputs(("/__antlir2__/out/vfat", out))
+            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((
+                PathBuf::from("/__antlir2__/working_directory"),
+                std::env::current_dir()?,
+            ))
+            .working_directory(Path::new("/__antlir2__/working_directory"))
             .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
             .setenv(("MTOOLS_SKIP_CHECK", "1"))
             .build();
 
         // Build the vfat disk file first
-        let mut mkfs = nspawn(isol_context.clone())?.command("/usr/sbin/mkfs.vfat")?;
+        let mut mkfs = unshare(isol_context.clone())?.command("/usr/sbin/mkfs.vfat")?;
         if let Some(fat_size) = &self.fat_size {
             mkfs.arg(format!("-F{}", fat_size));
         }
@@ -68,21 +67,25 @@ impl PackageFormat for Vfat {
         }
         mkfs.arg("-S").arg("4096");
 
-        run_cmd(mkfs.arg(&output).stdout(Stdio::piped())).context("failed to mkfs.vfat")?;
+        run_cmd(mkfs.arg("/__antlir2__/out/vfat").stdout(Stdio::piped()))
+            .context("failed to mkfs.vfat")?;
 
         // mcopy all the files from the input layer directly into the vfat image.
-        let paths = std::fs::read_dir(&input).context("Failed to list input directory")?;
+        let paths = std::fs::read_dir(&self.layer).context("Failed to list input directory")?;
         let mut sources = Vec::new();
         for path in paths {
-            sources.push(path.context("failed to read next input path")?.path());
+            sources.push(
+                Path::new("/__antlir2__/root")
+                    .join(path.context("failed to read next input path")?.file_name()),
+            );
         }
 
         run_cmd(
-            nspawn(isol_context)?
+            unshare(isol_context)?
                 .command("/usr/bin/mcopy")?
                 .arg("-v")
                 .arg("-i")
-                .arg(&output)
+                .arg("/__antlir2__/out/vfat")
                 .arg("-sp")
                 .args(sources)
                 .arg("::")

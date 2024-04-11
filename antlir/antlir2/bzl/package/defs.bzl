@@ -291,6 +291,7 @@ _vfat, _vfat_anon = _new_package_rule(
         "size_mb": attrs.int(),
     },
     format = "vfat",
+    sudo = True,
     can_be_partition = True,
 )
 
