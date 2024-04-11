@@ -98,7 +98,7 @@ python_unittest(
     name = "test-shape",
     srcs = ["test_shape.py"],
     env = {
-        "characters": shape.do_not_cache_me_json(
+        "characters": shape.json_string(
             character_collection_t(
                 characters = characters,
             ),
@@ -197,7 +197,7 @@ rust_unittest(
     srcs = ["test_shape.rs"],
     crate_root = "test_shape.rs",
     env = {
-        "characters": shape.do_not_cache_me_json(
+        "characters": shape.json_string(
             character_collection_t(
                 characters = characters,
             ),
@@ -208,5 +208,7 @@ rust_unittest(
         "fbthrift",
         "serde_json",
         ":test.shape-rust",
+        "//antlir/bzl:target.shape-rust",
+        "//antlir/bzl/shape2:shape",
     ],
 )

@@ -11,10 +11,13 @@
 //! everything else that can be done with shapes are safe.
 use anyhow::Context;
 use anyhow::Result;
+use shape::ShapePath;
+use target::target_t;
 use test_shape::character_collection_t;
 use test_shape::character_t;
 use test_shape::friend_t;
 use test_shape::inner;
+use test_shape::target_with_path_t;
 use test_shape::thrift_new;
 use test_shape::thrift_old;
 use test_shape::union_new;
@@ -75,11 +78,6 @@ fn thrift() -> Result<()> {
         fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(&luke))?;
     assert_eq!(luke, after_roundtrip);
 
-    let path = match &luke.weapon {
-        Some(weapon_t::lightsaber_t(l)) => l.target.as_ref().unwrap().path.clone(),
-        _ => panic!("luke has a lightsaber"),
-    };
-
     assert_eq!(
         serde_json::json!({
             "name":"Luke Skywalker",
@@ -99,7 +97,7 @@ fn thrift() -> Result<()> {
                     "color": "green",
                     "target":{
                         "name": format!("{TARGET_PREFIX}:luke-lightsaber"),
-                        "path": path,
+                        "path": "",
                     }
                 }
             }
@@ -121,7 +119,7 @@ fn thrift_compat() {
             baz: Some("baz".into()),
             qux: None
         },
-        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(&thrift_old {
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(thrift_old {
             foo: 42,
             bar: Some("hello-bar".into()),
         }))
@@ -129,7 +127,7 @@ fn thrift_compat() {
     );
     assert_eq!(
         thrift_old { foo: 42, bar: None },
-        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(&thrift_new {
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(thrift_new {
             foo: 42,
             baz: Some("hello-baz".into()),
             qux: Some(true),
@@ -201,4 +199,39 @@ fn default_builder() -> Result<()> {
         }
     );
     Ok(())
+}
+
+#[test]
+fn target_forwards_compatible() {
+    let new_from_old: target_t = fbthrift::binary_protocol::deserialize(
+        fbthrift::binary_protocol::serialize(target_with_path_t {
+            name: "foo//bar:baz".into(),
+            path: ShapePath::new("lorem/ipsum/dolor".to_owned()),
+        }),
+    )
+    .expect("failed to deserialize new_from_old");
+    assert_eq!(
+        new_from_old,
+        target_t {
+            name: "foo//bar:baz".into(),
+            path: Some(ShapePath::new("lorem/ipsum/dolor".into()))
+        }
+    );
+}
+
+#[test]
+fn target_backwards_compatible() {
+    let old_from_new: target_with_path_t =
+        fbthrift::binary_protocol::deserialize(fbthrift::binary_protocol::serialize(target_t {
+            name: "foo//bar:baz".into(),
+            path: Some(ShapePath::new("".to_owned())),
+        }))
+        .expect("failed to deserialize old_from_new");
+    assert_eq!(
+        old_from_new,
+        target_with_path_t {
+            name: "foo//bar:baz".into(),
+            path: ShapePath::new("".to_owned()),
+        }
+    );
 }

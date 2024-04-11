@@ -90,4 +90,4 @@ class types:
 
 
 def normalize_target(target):
-    return "cell//path/to:" + target.lstrip(":")
+    return target
