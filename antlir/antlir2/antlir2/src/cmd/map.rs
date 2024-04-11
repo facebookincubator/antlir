@@ -145,6 +145,8 @@ impl Map {
         )
         .context("while making mount ns private")?;
 
+        drop(root_guard);
+
         match self.subcommand {
             Subcommand::Compile {
                 compileish,
@@ -161,7 +163,7 @@ impl Map {
                 },
                 external,
             }
-            .run(),
+            .run(rootless),
             Subcommand::Plan {
                 compileish,
                 external,
@@ -177,9 +179,11 @@ impl Map {
                 },
                 external,
             }
-            .run(),
+            .run(rootless),
         }?;
         debug!("map finished, making subvol {subvol:?} readonly");
+
+        let root_guard = rootless.map(|r| r.escalate()).transpose()?;
 
         if self.setup.output.exists() {
             trace!("removing existing output {}", self.setup.output.display());

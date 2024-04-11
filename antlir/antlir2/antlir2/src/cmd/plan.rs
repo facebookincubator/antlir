@@ -8,6 +8,7 @@
 use std::path::PathBuf;
 
 use antlir2_compile::CompileFeature;
+use antlir2_rootless::Rootless;
 use anyhow::Context;
 use clap::Parser;
 use itertools::Itertools;
@@ -44,9 +45,10 @@ pub(super) struct PlanExternal {
 
 impl Plan {
     #[tracing::instrument(name = "plan", skip(self))]
-    pub(crate) fn run(self) -> Result<()> {
+    pub(crate) fn run(self, rootless: Option<Rootless>) -> Result<()> {
         let ctx = self.compileish.compiler_context(None)?;
 
+        let root_guard = rootless.map(|r| r.escalate()).transpose()?;
         let items: Vec<_> = self
             .compileish
             .external
@@ -55,6 +57,8 @@ impl Plan {
             .map(|f| f.plan(&ctx).map_err(Error::Compile))
             .flatten_ok()
             .collect::<Result<_>>()?;
+        drop(root_guard);
+
         let plan = antlir2_compile::plan::Plan::from_items(items)?;
 
         let f = std::fs::File::create(&self.external.plan).context("while creating plan file")?;

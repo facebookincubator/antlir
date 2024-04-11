@@ -7,6 +7,7 @@
 
 use antlir2_compile::plan::Plan;
 use antlir2_compile::CompileFeature;
+use antlir2_rootless::Rootless;
 use clap::Parser;
 use json_arg::JsonFile;
 
@@ -35,13 +36,15 @@ pub(super) struct CompileExternal {
 
 impl Compile {
     #[tracing::instrument(name = "compile", skip(self), ret, err)]
-    pub(crate) fn run(self) -> Result<()> {
+    pub(crate) fn run(self, rootless: Option<Rootless>) -> Result<()> {
         let ctx = self
             .compileish
             .compiler_context(self.external.plan.map(JsonFile::into_inner))?;
+        let root_guard = rootless.map(|r| r.escalate()).transpose()?;
         for feature in self.compileish.external.depgraph.pending_features() {
             feature.compile(&ctx)?;
         }
+        drop(root_guard);
         Ok(())
     }
 }
