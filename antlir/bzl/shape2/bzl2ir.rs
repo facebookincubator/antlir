@@ -112,14 +112,29 @@ starlark_simple_value!(TypeId);
 impl<'v> StarlarkValue<'v> for TypeId {
     fn invoke(
         &self,
-        _me: Value<'v>,
+        me: Value<'v>,
         args: &starlark::eval::Arguments<'v, '_>,
         eval: &mut Evaluator<'v, '_, '_>,
     ) -> starlark::Result<Value<'v>> {
-        args.no_positional_args(eval.heap())?;
-        // no need to type-check, since it will already be done at buck parse
-        // time, and will also be done when loading the json
-        Ok(eval.heap().alloc(AllocStruct(args.names_map()?)))
+        let reg = get_type_registry(eval)?
+            .try_borrow()
+            .map_err(starlark::Error::new_other)?;
+        let ty = me.try_to_type(&reg)?;
+        match ty.as_ref() {
+            ir::Type::Complex(ir::ComplexType::Struct(_)) => {
+                args.no_positional_args(eval.heap())?;
+                // no need to type-check, since it will already be done at buck parse
+                // time, and will also be done when loading the json
+                Ok(eval.heap().alloc(AllocStruct(args.names_map()?)))
+            }
+            ir::Type::Complex(ir::ComplexType::Enum(_)) => {
+                args.no_named_args()?;
+                args.positional1(eval.heap())
+            }
+            _ => Err(starlark::Error::new(starlark::ErrorKind::Other(anyhow!(
+                "only structs and enums are callable, not ({ty:#?})"
+            )))),
+        }
     }
 }
 
