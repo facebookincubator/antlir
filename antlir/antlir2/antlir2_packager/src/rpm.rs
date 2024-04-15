@@ -24,11 +24,12 @@ use serde::Deserialize;
 use tempfile::NamedTempFile;
 
 use crate::run_cmd;
+use crate::BuildAppliance;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Rpm {
-    build_appliance: PathBuf,
+    build_appliance: BuildAppliance,
     layer: PathBuf,
     #[serde(rename = "rpm_name")]
     name: String,
@@ -223,7 +224,8 @@ License: {license}
         std::fs::create_dir(output_dir.path().join(&self.arch))
             .context("while creating output dir")?;
 
-        let mut isol_context = IsolationContext::builder(&self.build_appliance);
+        let mut isol_context =
+            IsolationContext::builder(self.build_appliance.unreliable_metadata_contents_path());
         isol_context
             .ephemeral(false)
             .readonly()
@@ -272,7 +274,8 @@ License: {license}
 
         if let Some(privkey) = &self.sign_with_private_key {
             let rpm_path = outputs[0].path();
-            let mut isol_context = IsolationContext::builder(&self.build_appliance);
+            let mut isol_context =
+                IsolationContext::builder(self.build_appliance.unreliable_metadata_contents_path());
             isol_context
                 .ephemeral(false)
                 .readonly()

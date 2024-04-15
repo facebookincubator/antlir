@@ -18,6 +18,7 @@ rust_library(
         "thiserror",
         "tracing",
         "xattr",
+        "//antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir",
         "//antlir/antlir2/antlir2_features:antlir2_features",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_users:antlir2_users",

@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("@prelude//utils:expect.bzl", "expect")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
@@ -123,6 +124,14 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 
     if not ctx.attrs.antlir_internal_build_appliance and not ctx.attrs.flavor:
         fail("only build appliance images are allowed to be flavorless")
+
+    ba_info = None
+    if ctx.attrs.antlir_internal_build_appliance:
+        expect(format == "cas_dir", "all build appliances should be in the cas_dir format")
+        ba_info = BuildApplianceInfo(
+            cas_dir = ctx.attrs.src,
+        )
+
     return [
         LayerInfo(
             label = ctx.label,
@@ -137,9 +146,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "facts": [DefaultInfo(facts_db)],
             })],
         }),
-    ] + (
-        [BuildApplianceInfo(subvol_symlink = subvol_symlink)] if ctx.attrs.antlir_internal_build_appliance else []
-    )
+    ] + ([ba_info] if ba_info else [])
 
 _prebuilt = rule(
     impl = _impl,

@@ -8,6 +8,7 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
+use std::str::FromStr;
 
 use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
@@ -21,6 +22,7 @@ use json_arg::JsonFile;
 use crate::Error;
 use crate::Result;
 
+mod cas_dir;
 mod compile;
 mod depgraph;
 mod map;
@@ -28,10 +30,9 @@ mod plan;
 mod shell;
 #[cfg(facebook)]
 use antlir2_compile::facebook::FbpkgContext;
-pub(crate) use compile::Compile;
+pub(crate) use cas_dir::CasDir;
 pub(crate) use depgraph::Depgraph;
 pub(crate) use map::Map;
-pub(crate) use plan::Plan;
 pub(crate) use shell::Shell;
 
 /// Args that are common to "compileish" commands (for now, 'compile' and
@@ -46,8 +47,7 @@ struct Compileish {
     /// empty or as a snapshot of a parent layer)
     pub(crate) root: PathBuf,
     #[clap(long)]
-    /// Path to mounted build appliance image
-    pub(crate) build_appliance: PathBuf,
+    pub(crate) build_appliance: BuildApplianceArg,
     #[clap(flatten)]
     pub(crate) external: CompileishExternal,
     #[clap(flatten)]
@@ -111,7 +111,7 @@ impl Compileish {
             self.label.clone(),
             self.external.target_arch,
             self.root.clone(),
-            self.build_appliance.clone(),
+            self.build_appliance.clone().0,
             DnfContext::new(
                 self.dnf.repos.clone(),
                 dnf_versionlock,
@@ -127,5 +127,16 @@ impl Compileish {
             FbpkgContext::new(self.fbpkg.resolved_fbpkgs.clone().map(JsonFile::into_inner)),
         )
         .map_err(Error::Compile)
+    }
+}
+
+#[derive(Debug, Clone)]
+struct BuildApplianceArg(antlir2_cas_dir::CasDir);
+
+impl FromStr for BuildApplianceArg {
+    type Err = anyhow::Error;
+
+    fn from_str(s: &str) -> anyhow::Result<Self> {
+        Ok(Self(antlir2_cas_dir::CasDir::open(s)?))
     }
 }

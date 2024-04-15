@@ -16,6 +16,7 @@ use std::path::PathBuf;
 use anyhow::ensure;
 use anyhow::Context;
 use anyhow::Result;
+use nix::sys::stat::Mode;
 use nix::sys::stat::SFlag;
 use nix::unistd::Gid;
 use nix::unistd::Uid;
@@ -25,7 +26,7 @@ use tracing::trace;
 use walkdir::DirEntryExt;
 use walkdir::WalkDir;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 /// [CasDir] is a directory that can represent a filesystem with all of its
 /// contents and metadata in a directory that is still owned by a single,
 /// unprivileged user.
@@ -39,7 +40,7 @@ pub struct CasDir {
     manifest: Manifest,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 struct Manifest {
     paths: BTreeMap<PathBuf, PathEntry>,
 }
@@ -131,8 +132,17 @@ impl CasDir {
                     std::fs::copy(entry.path(), &dst_path).with_context(|| {
                         format!("while copying {} out of layer", entry.path().display())
                     })?;
-                    std::fs::set_permissions(&dst_path, Permissions::from_mode(0o444))
-                        .context("while setting permissions")?;
+                    // if the file is executable, preserve only that information
+                    // in the mode bits
+                    if Mode::from_bits_truncate(meta.permissions().mode())
+                        .intersects(Mode::S_IXUSR | Mode::S_IXGRP | Mode::S_IXOTH)
+                    {
+                        std::fs::set_permissions(&dst_path, Permissions::from_mode(0o555))
+                            .context("while setting permissions")?;
+                    } else {
+                        std::fs::set_permissions(&dst_path, Permissions::from_mode(0o444))
+                            .context("while setting permissions")?;
+                    }
                     inodes.insert(entry.ino(), dst_path.clone());
                 }
             } else {
@@ -168,7 +178,8 @@ impl CasDir {
         })
     }
 
-    /// Open a previously [dehydrate]d [CasDir].
+    /// Open a previously [dehydrate](CasDir::dehydrate)d [CasDir]. This does
+    /// not automatically rehydrate the contents.
     pub fn open(root: impl AsRef<Path>) -> Result<Self> {
         let root = root.as_ref();
         let manifest = std::fs::read_to_string(root.join("manifest.json"))
@@ -185,6 +196,15 @@ impl CasDir {
 
     pub fn path(&self) -> &Path {
         self.path.as_ref()
+    }
+
+    /// Get the path of the contents directory. Metadata (as reported by `stat`)
+    /// of this directory is unreliable - it's highly likely that ownership will
+    /// be wrong, xattrs missing, etc.
+    /// However, if your use case only requires the file contents and very basic
+    /// metadata (like executable bits) then this can be far more performant.
+    pub fn unreliable_metadata_contents_path(&self) -> &Path {
+        &self.contents_dir
     }
 
     /// Hydrate the [CasDir] into a regular directory with all the filesystem

@@ -121,6 +121,18 @@ impl Rootless {
             setgid: self.setgid,
         })
     }
+
+    pub fn unprivileged_ids(&self) -> (Option<Uid>, Option<Gid>) {
+        (self.setuid, self.setgid)
+    }
+
+    pub fn unprivileged_uid(&self) -> Option<Uid> {
+        self.setuid
+    }
+
+    pub fn unprivileged_gid(&self) -> Option<Gid> {
+        self.setgid
+    }
 }
 
 /// As long as this [EscalationGuard] is in scope, the process will be running

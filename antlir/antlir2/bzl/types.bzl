@@ -36,5 +36,8 @@ LayerInfo = provider(fields = [
 ])
 
 BuildApplianceInfo = provider(fields = {
-    "subvol_symlink": Artifact,
+    # For Build Appliance images, exact ownership and other fs metadata (aside
+    # from executable bits, which RE will preserve) doesn't matter, so we can
+    # directly use a plain directory as the build appliance.
+    "cas_dir": Artifact,
 })
