@@ -59,7 +59,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
 
     return ctx.actions.anon_target(layer_rule, {
         "antlir2": ctx.attrs._layer_antlir2,
-        "antlir_internal_build_appliance": False,
         "flavor": ctx.attrs.flavor,
         "parent_layer": ctx.attrs.layer,
         "rootless": ctx.attrs._rootless,
@@ -74,7 +73,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
 _genrule_in_image = rule(
     impl = _impl,
     attrs = {
-        "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False, doc = "for transition")),
         "bash": attrs.arg(),
         "default_out": attrs.option(attrs.string(), default = None),
         "layer": attrs.dep(providers = [LayerInfo]),

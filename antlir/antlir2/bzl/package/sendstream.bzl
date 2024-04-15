@@ -21,7 +21,6 @@ _base_sendstream_args_defaults = {
 
 _base_sendstream_args = {
     "antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
-    "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
     "incremental_parent": attrs.option(
         attrs.dep(
             providers = [SendstreamInfo],
@@ -75,7 +74,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
     spec = ctx.actions.write_json(
         "spec.json",
         {"sendstream": {
-            "build_appliance": (ctx.attrs.build_appliance or ctx.attrs.layer[LayerInfo].build_appliance)[LayerInfo].subvol_symlink,
             "incremental_parent": ctx.attrs.incremental_parent[SendstreamInfo].subvol_symlink if ctx.attrs.incremental_parent else None,
             "layer": ctx.attrs.layer[LayerInfo].subvol_symlink,
             "subvol_symlink": subvol_symlink.as_output(),
@@ -132,16 +130,13 @@ sendstream = package_macro(_sendstream_v1)
 def anon_v1_sendstream(
         *,
         ctx: AnalysisContext,
-        layer: Dependency | None = None,
-        build_appliance: Dependency | None = None) -> AnonTarget:
+        layer: Dependency | None = None) -> AnonTarget:
     attrs = {
         key: getattr(ctx.attrs, key, _base_sendstream_args_defaults.get(key, None))
         for key in _base_sendstream_args
     }
     if layer:
         attrs["layer"] = layer
-    if build_appliance:
-        attrs["build_appliance"] = build_appliance
     attrs["name"] = str(attrs["layer"].label.raw_target()) + ".sendstream"
     return ctx.actions.anon_target(
         _sendstream,

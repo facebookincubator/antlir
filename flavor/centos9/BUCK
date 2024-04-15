@@ -32,7 +32,6 @@ image.prebuilt(
     name = "build-appliance.prebuilt",
     src = ":build-appliance.tar.zst",
     format = "tar",
-    antlir_internal_build_appliance = True,
 )
 
 image.layer(
@@ -45,5 +44,4 @@ image.layer(
     dnf_available_repos = "//antlir/antlir2/package_managers/dnf/build_appliance:empty-dnf-reposet",
     dnf_versionlock = "//antlir/antlir2/package_managers/dnf/build_appliance:empty-dnf-versionlock.json",
     dnf_excluded_rpms = [],
-    antlir_internal_build_appliance = True,
 )

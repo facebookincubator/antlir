@@ -15,7 +15,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
-load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs", "remove_os_constraints")
+load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
 load("//antlir/bzl:build_defs.bzl", "is_facebook")
 
 def cfg_attrs():
@@ -84,11 +84,6 @@ def _impl(platform: PlatformInfo, refs: struct, attrs: struct) -> PlatformInfo:
     if package_manager_dnf.setting.label not in constraints:
         constraints[package_manager_dnf.setting.label] = package_manager_dnf
 
-    # If a build appliance is being built, we must remove the OS configuration
-    # constraints to avoid circular dependencies.
-    if attrs.antlir_internal_build_appliance:
-        constraints = remove_os_constraints(refs = refs, constraints = constraints)
-
     constraints = rootless_cfg.transition(refs = refs, attrs = attrs, constraints = constraints)
 
     if is_facebook:
@@ -121,32 +116,5 @@ layer_cfg = transition(
         # @oss-disable
         {} # @oss-enable
     ) | os_transition_refs(),
-    attrs = cfg_attrs().keys() + [
-        # Build appliances are very low level and cannot depend on a flavor, so
-        # they are just not transitioned to an os configuration
-        "antlir_internal_build_appliance",
-    ],
-)
-
-def _remove_os_impl(platform: PlatformInfo, refs: struct) -> PlatformInfo:
-    constraints = remove_os_constraints(
-        refs = refs,
-        constraints = platform.configuration.constraints,
-    )
-    return PlatformInfo(
-        label = platform.label,
-        configuration = ConfigurationInfo(
-            constraints = constraints,
-            values = platform.configuration.values,
-        ),
-    )
-
-remove_os_constraint = transition(
-    impl = _remove_os_impl,
-    refs = {
-        "os_constraint": antlir2_dep("//antlir/antlir2/os:os"),
-        "os_family_constraint": antlir2_dep("//antlir/antlir2/os/family:family"),
-        "package_manager_constraint": antlir2_dep("//antlir/antlir2/os/package_manager:package_manager"),
-        # @oss-disable
-    },
+    attrs = cfg_attrs().keys(),
 )

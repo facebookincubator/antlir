@@ -30,7 +30,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                         "sendstream": anon_v1_sendstream(
                             ctx = ctx,
                             layer = subvol["layer"],
-                            build_appliance = ctx.attrs.build_appliance,
                         ).artifact("anon_v1_sendstream"),
                         "writable": subvol.get("writable"),
                     }
@@ -60,7 +59,6 @@ _btrfs = rule(
     attrs = {
         "antlir2_packager": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_packager:antlir2-packager"))),
         "btrfs_packager": attrs.default_only(attrs.exec_dep(providers = [RunInfo], default = antlir2_dep("//antlir/antlir2/antlir2_packager/btrfs_packager:btrfs-packager"))),
-        "build_appliance": attrs.option(attrs.dep(providers = [LayerInfo]), default = None),
         "compression_level": attrs.int(default = 3),
         # used by transition
         "default_os": attrs.option(attrs.string(), default = None),

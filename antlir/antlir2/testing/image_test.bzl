@@ -119,7 +119,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
 _image_test = rule(
     impl = _impl,
     attrs = {
-        "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False), doc = "read by cfg.bzl"),
         "boot": attrs.bool(
             default = False,
             doc = "boot the container with /init as pid1 before running the test",

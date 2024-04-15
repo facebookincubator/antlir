@@ -25,7 +25,6 @@ def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
 _rpm_names_test = rule(
     impl = _rpm_names_test_impl,
     attrs = {
-        "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False), doc = "read by cfg.bzl"),
         "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
         "not_installed": attrs.bool(default = False),
         "src": attrs.source(),

@@ -14,7 +14,6 @@
 # /usr/bin/dnf itself uses /usr/libexec/platform-python, so by using that we can
 # ensure that we're using the same python that dnf itself is using
 
-import base64
 import copy
 import importlib.util
 import json
@@ -24,7 +23,6 @@ import subprocess
 import sys
 import threading
 from collections import defaultdict
-from typing import List
 from urllib.parse import urlparse
 
 import dnf
