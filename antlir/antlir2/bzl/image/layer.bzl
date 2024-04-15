@@ -61,7 +61,7 @@ def _map_image(
         cmd_args(logs.as_output(), format = "--logs={}"),
         "map",
         "--working-dir=antlir2-out",
-        cmd_args(build_appliance.subvol_symlink, format = "--build-appliance={}"),
+        cmd_args(build_appliance.cas_dir, format = "--build-appliance={}"),
         cmd_args(str(ctx.label), format = "--label={}"),
         cmd_args(identifier, format = "--identifier={}"),
         cmd_args(parent, format = "--parent={}") if parent else cmd_args(),
@@ -513,7 +513,27 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
-    providers = [
+    providers = []
+    if ctx.attrs.antlir_internal_build_appliance:
+        cas_dir = ctx.actions.declare_output("cas_dir", dir = True)
+        ctx.actions.run(
+            cmd_args(
+                cmd_args("sudo") if not ctx.attrs._rootless else cmd_args(),
+                ctx.attrs.antlir2[RunInfo],
+                "cas-dir",
+                "--rootless" if ctx.attrs._rootless else cmd_args(),
+                "dehydrate",
+                cmd_args(final_subvol, format = "--subvol={}"),
+                cmd_args(cas_dir.as_output(), format = "--out={}"),
+            ),
+            category = "cas_dir",
+            local_only = True,  # for now, this requires reading out of the local subvol
+        )
+        providers.append(BuildApplianceInfo(cas_dir = cas_dir))
+        sub_targets["cas_dir"] = [DefaultInfo(cas_dir)]
+
+    providers.append(DefaultInfo(final_subvol, sub_targets = sub_targets))
+    providers.append(
         LayerInfo(
             build_appliance = build_appliance,
             depgraph = final_depgraph,
@@ -526,16 +546,12 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             subvol_symlink = final_subvol,
             features = all_features,
         ),
-        DefaultInfo(final_subvol, sub_targets = sub_targets),
-    ]
+    )
 
     if ctx.attrs._implicit_image_test:
         providers.append(
             _implicit_image_test(final_subvol, ctx.attrs._implicit_image_test[ExternalRunnerTestInfo]),
         )
-
-    if ctx.attrs.antlir_internal_build_appliance:
-        providers.append(BuildApplianceInfo(subvol_symlink = final_subvol))
 
     if ctx.attrs.default_mountpoint:
         providers.append(DefaultMountpointInfo(default_mountpoint = ctx.attrs.default_mountpoint))

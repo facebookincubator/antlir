@@ -15,6 +15,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::str::FromStr;
 
+use antlir2_cas_dir::CasDir;
 use antlir2_features::Feature;
 use buck_label::Label;
 use nix::dir::Dir;
@@ -93,7 +94,7 @@ pub struct CompilerContext {
     /// Path to the root of the image being built
     root_path: PathBuf,
     /// Build appliance tree with tools that might be necessary
-    build_appliance: PathBuf,
+    build_appliance: CasDir,
     /// Open fd to the image root directory
     root: Dir,
     /// Setup information for dnf repos
@@ -160,7 +161,7 @@ impl CompilerContext {
         label: Label,
         target_arch: Arch,
         root: PathBuf,
-        build_appliance: PathBuf,
+        build_appliance: CasDir,
         dnf: DnfContext,
         plan: Option<plan::Plan>,
         #[cfg(facebook)] fbpkg: facebook::FbpkgContext,
@@ -193,7 +194,7 @@ impl CompilerContext {
         &self.root_path
     }
 
-    pub fn build_appliance(&self) -> &Path {
+    pub fn build_appliance(&self) -> &CasDir {
         &self.build_appliance
     }
 

@@ -24,6 +24,7 @@ use super::compile::Compile;
 use super::compile::CompileExternal;
 use super::plan::Plan;
 use super::plan::PlanExternal;
+use super::BuildApplianceArg;
 use super::Compileish;
 use super::CompileishExternal;
 use crate::Result;
@@ -38,8 +39,7 @@ pub(crate) struct Map {
     #[clap(flatten)]
     setup: SetupArgs,
     #[clap(long)]
-    /// Path to mounted build appliance image
-    build_appliance: PathBuf,
+    build_appliance: BuildApplianceArg,
     #[clap(long)]
     /// Use an unprivileged usernamespace
     rootless: bool,

@@ -20,11 +20,12 @@ use anyhow::Result;
 use serde::Deserialize;
 
 use crate::run_cmd;
+use crate::BuildAppliance;
 use crate::PackageFormat;
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Vfat {
-    build_appliance: PathBuf,
+    build_appliance: BuildAppliance,
     layer: PathBuf,
     fat_size: Option<u16>,
     label: Option<String>,
@@ -33,7 +34,7 @@ pub struct Vfat {
 
 impl PackageFormat for Vfat {
     fn build(&self, out: &Path) -> Result<()> {
-        let mut file = File::create(&out).context("failed to create output file")?;
+        let mut file = File::create(out).context("failed to create output file")?;
         file.seek(SeekFrom::Start(self.size_mb * 1024 * 1024))
             .context("failed to seek output to specified size")?;
         file.write_all(&[0])
@@ -42,20 +43,21 @@ impl PackageFormat for Vfat {
             .context("Failed to sync output file to disk")?;
         drop(file);
 
-        let isol_context = IsolationContext::builder(&self.build_appliance)
-            .ephemeral(false)
-            .readonly()
-            .tmpfs(Path::new("/__antlir2__/out"))
-            .outputs(("/__antlir2__/out/vfat", out))
-            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
-            .inputs((
-                PathBuf::from("/__antlir2__/working_directory"),
-                std::env::current_dir()?,
-            ))
-            .working_directory(Path::new("/__antlir2__/working_directory"))
-            .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
-            .setenv(("MTOOLS_SKIP_CHECK", "1"))
-            .build();
+        let isol_context =
+            IsolationContext::builder(self.build_appliance.unreliable_metadata_contents_path())
+                .ephemeral(false)
+                .readonly()
+                .tmpfs(Path::new("/__antlir2__/out"))
+                .outputs(("/__antlir2__/out/vfat", out))
+                .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+                .inputs((
+                    PathBuf::from("/__antlir2__/working_directory"),
+                    std::env::current_dir()?,
+                ))
+                .working_directory(Path::new("/__antlir2__/working_directory"))
+                .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
+                .setenv(("MTOOLS_SKIP_CHECK", "1"))
+                .build();
 
         // Build the vfat disk file first
         let mut mkfs = unshare(isol_context.clone())?.command("/usr/sbin/mkfs.vfat")?;

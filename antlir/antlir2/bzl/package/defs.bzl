@@ -5,7 +5,7 @@
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
-load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "LayerInfo")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "attrs_selected_by_cfg")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
 load(":btrfs.bzl", "btrfs")
@@ -51,7 +51,7 @@ def _generic_impl_with_layer(
 
     package = ctx.actions.declare_output(output_name, dir = is_dir)
     spec_opts = {
-        "build_appliance": build_appliance[LayerInfo].subvol_symlink,
+        "build_appliance": build_appliance[BuildApplianceInfo].cas_dir,
         "layer": layer[LayerInfo].subvol_symlink,
     }
     for key in rule_attr_keys:
