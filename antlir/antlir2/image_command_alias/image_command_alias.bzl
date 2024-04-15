@@ -12,7 +12,6 @@ load("//antlir/antlir2/bzl/image:layer.bzl", "layer_rule")
 def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     _anon_layer = ctx.actions.anon_target(layer_rule, {
         "antlir2": ctx.attrs._layer_antlir2,
-        "antlir_internal_build_appliance": False,
         "flavor": ctx.attrs.flavor,
         "parent_layer": ctx.attrs.layer,
         "rootless": ctx.attrs._rootless,
@@ -42,7 +41,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
 _image_command_alias = rule(
     impl = _impl,
     attrs = {
-        "antlir_internal_build_appliance": attrs.default_only(attrs.bool(default = False, doc = "for transition")),
         "args": attrs.list(attrs.string(), default = []),
         "exe": attrs.arg(),
         "layer": attrs.dep(providers = [LayerInfo]),

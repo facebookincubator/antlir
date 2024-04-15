@@ -3,12 +3,11 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@prelude//utils:expect.bzl", "expect")
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorInfo", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo", "LayerInfo")
 load(":depgraph.bzl", "build_depgraph")
 load(":facts.bzl", "facts")
 
@@ -122,16 +121,6 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         rootless = ctx.attrs._rootless,
     )
 
-    if not ctx.attrs.antlir_internal_build_appliance and not ctx.attrs.flavor:
-        fail("only build appliance images are allowed to be flavorless")
-
-    ba_info = None
-    if ctx.attrs.antlir_internal_build_appliance:
-        expect(format == "cas_dir", "all build appliances should be in the cas_dir format")
-        ba_info = BuildApplianceInfo(
-            cas_dir = ctx.attrs.src,
-        )
-
     return [
         LayerInfo(
             label = ctx.label,
@@ -146,14 +135,13 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
                 "facts": [DefaultInfo(facts_db)],
             })],
         }),
-    ] + ([ba_info] if ba_info else [])
+    ]
 
 _prebuilt = rule(
     impl = _impl,
     attrs = {
         "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
         "antlir2_receive": attrs.default_only(attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2_receive:antlir2-receive"))),
-        "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
         "flavor": attrs.option(attrs.dep(providers = [FlavorInfo]), default = None),
         "format": attrs.enum(["cas_dir", "sendstream.v2", "sendstream", "sendstream.zst", "tar", "caf"]),
         "labels": attrs.list(attrs.string(), default = []),

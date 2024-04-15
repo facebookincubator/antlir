@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("@prelude//utils:expect.bzl", "expect")
+load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
@@ -155,12 +156,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             )
     if ctx.attrs.parent_layer:
         flavor = ctx.attrs.parent_layer[LayerInfo].flavor
-        if BuildApplianceInfo in ctx.attrs.parent_layer and not ctx.attrs.antlir_internal_build_appliance:
-            fail("cannot use a build appliance as parent_layer")
     if not flavor:
         flavor = ctx.attrs.flavor
-    if not ctx.attrs.antlir_internal_build_appliance and not flavor:
-        fail("`flavor` is required")
     flavor_info = flavor[FlavorInfo] if flavor else None
     build_appliance = ctx.attrs.build_appliance or flavor_info.default_build_appliance
 
@@ -513,27 +510,8 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, final_subvol, mounts)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
-    providers = []
-    if ctx.attrs.antlir_internal_build_appliance:
-        cas_dir = ctx.actions.declare_output("cas_dir", dir = True)
-        ctx.actions.run(
-            cmd_args(
-                cmd_args("sudo") if not ctx.attrs._rootless else cmd_args(),
-                ctx.attrs.antlir2[RunInfo],
-                "cas-dir",
-                "--rootless" if ctx.attrs._rootless else cmd_args(),
-                "dehydrate",
-                cmd_args(final_subvol, format = "--subvol={}"),
-                cmd_args(cas_dir.as_output(), format = "--out={}"),
-            ),
-            category = "cas_dir",
-            local_only = True,  # for now, this requires reading out of the local subvol
-        )
-        providers.append(BuildApplianceInfo(cas_dir = cas_dir))
-        sub_targets["cas_dir"] = [DefaultInfo(cas_dir)]
-
-    providers.append(DefaultInfo(final_subvol, sub_targets = sub_targets))
-    providers.append(
+    providers = [
+        DefaultInfo(final_subvol, sub_targets = sub_targets),
         LayerInfo(
             build_appliance = build_appliance,
             depgraph = final_depgraph,
@@ -546,7 +524,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             subvol_symlink = final_subvol,
             features = all_features,
         ),
-    )
+    ]
 
     if ctx.attrs._implicit_image_test:
         providers.append(
@@ -560,7 +538,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
 
 _layer_attrs = {
     "antlir2": attrs.exec_dep(default = antlir2_dep("//antlir/antlir2/antlir2:antlir2")),
-    "antlir_internal_build_appliance": attrs.bool(default = False, doc = "mark if this image is a build appliance and is allowed to not have a flavor"),
     "build_appliance": attrs.option(
         attrs.dep(providers = [BuildApplianceInfo]),
         default = None,
@@ -707,6 +684,13 @@ def layer(
         )
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
+
+    if not kwargs.get("rootless", False):
+        kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + select({
+            "//antlir/antlir2/antlir2_rootless:rooted": ["uses_sudo"],
+            "//antlir/antlir2/antlir2_rootless:rootless": [],
+            "DEFAULT": [],
+        }))
 
     return layer_rule(
         name = name,

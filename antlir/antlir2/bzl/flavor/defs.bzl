@@ -4,12 +4,12 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
-load("//antlir/antlir2/bzl:types.bzl", "FlavorDnfInfo", "FlavorInfo", "LayerInfo")
+load("//antlir/antlir2/bzl:types.bzl", "BuildApplianceInfo", "FlavorDnfInfo", "FlavorInfo")
 # @oss-disable
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "RepoSetInfo")
 
 _flavor_attrs = {
-    "default_build_appliance": attrs.dep(providers = [LayerInfo]),
+    "default_build_appliance": attrs.dep(providers = [BuildApplianceInfo]),
     "default_dnf_excluded_rpms": attrs.list(
         attrs.string(),
         default = [],
