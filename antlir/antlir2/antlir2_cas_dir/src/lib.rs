@@ -26,7 +26,7 @@ use tracing::trace;
 use walkdir::DirEntryExt;
 use walkdir::WalkDir;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 /// [CasDir] is a directory that can represent a filesystem with all of its
 /// contents and metadata in a directory that is still owned by a single,
 /// unprivileged user.
@@ -40,7 +40,15 @@ pub struct CasDir {
     manifest: Manifest,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+impl std::fmt::Debug for CasDir {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+        f.debug_struct("CasDir")
+            .field("path", &self.path)
+            .finish_non_exhaustive()
+    }
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
 struct Manifest {
     paths: BTreeMap<PathBuf, PathEntry>,
 }
