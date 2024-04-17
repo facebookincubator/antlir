@@ -66,10 +66,21 @@ genrule_in_image(
     layer = ":layer",
 )
 
+genrule_in_image(
+    name = "buck-scratch-path",
+    out = "f",
+    bash = """
+        echo $BUCK_SCRATCH_PATH > $OUT
+        touch $BUCK_SCRATCH_PATH/foo
+    """,
+    layer = ":layer",
+)
+
 python_unittest(
     name = "test",
     srcs = ["test.py"],
     env = {
+        "BUCK_SCRATCH_PATH": "$(location :buck-scratch-path)",
         "DEFAULT_OUT": "$(location :default-out)",
         "DOT_DIR": "$(location :dot-dir)",
         "NAMED_DIR": "$(location :named-dir)",
