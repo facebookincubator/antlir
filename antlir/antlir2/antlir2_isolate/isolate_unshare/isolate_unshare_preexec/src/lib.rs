@@ -37,6 +37,7 @@ use nix::sched::CloneFlags;
 use nix::sys::stat::Mode;
 use nix::unistd::mkdir;
 
+static SCRATCH: &str = "/tmp/__antlir2__";
 pub static NEWROOT: &str = "/tmp/__antlir2__/newroot";
 static NEWROOT_PROC: &str = "/tmp/__antlir2__/newroot/proc";
 
@@ -73,10 +74,10 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
         None::<&str>,
     )?;
 
-    create_dir_all("/tmp/__antlir2__")?;
+    create_dir_all(SCRATCH)?;
     mount(
         None::<&str>,
-        "/tmp/__antlir2__",
+        SCRATCH,
         Some("tmpfs"),
         MsFlags::empty(),
         None::<&str>,
@@ -150,13 +151,7 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
             Some(&bind.src),
             &bind.dst,
             None::<&str>,
-            MsFlags::MS_BIND
-                | MsFlags::MS_REC
-                | (if bind.ro {
-                    MsFlags::MS_RDONLY
-                } else {
-                    MsFlags::empty()
-                }),
+            MsFlags::MS_BIND | MsFlags::MS_REC,
             None::<&str>,
         )?;
     }
@@ -185,14 +180,32 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
             Some(&bind.src),
             &bind.dst,
             None::<&str>,
-            MsFlags::MS_BIND
-                | (if bind.ro {
-                    MsFlags::MS_RDONLY
-                } else {
-                    MsFlags::empty()
-                }),
+            MsFlags::MS_BIND,
             None::<&str>,
         )?;
+        if bind.ro {}
+    }
+    // MS_BIND ignores MS_RDONLY, so let's go try to make all the readonly binds actually readonly
+    // TODO(T185979228) we should also check for any recursive bind mounts
+    // brought in by the first bind mount (since it necessarily has MS_REC)
+    for bind in args.dir_binds.iter().chain(&args.file_binds) {
+        if bind.ro {
+            if let Err(e) = mount(
+                Some("none"),
+                &bind.dst,
+                None::<&str>,
+                MsFlags::MS_REMOUNT | MsFlags::MS_BIND | MsFlags::MS_REC | MsFlags::MS_RDONLY,
+                None::<&str>,
+            ) {
+                if e != Errno::EPERM {
+                    return Err(e.into());
+                }
+                // If we failed to make it readonly, carry on anyway. We can't
+                // gain any new privileges here accidentally, so it's OK to
+                // ignore the fact that some mounts like /mnt/gvfs cannot be
+                // made readonly for whatever reason
+            }
+        }
     }
 
     if let Some(hostname) = &args.hostname {

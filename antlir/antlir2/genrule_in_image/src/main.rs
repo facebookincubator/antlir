@@ -63,6 +63,13 @@ fn main() -> Result<()> {
             Path::new("/__genrule_in_image__/working_directory"),
             cwd.as_path(),
         ))
+        // TODO(T185979228) we really should make all submounts recursively
+        // readonly, but that's hard and for now we should at least make sure
+        // that buck-out is readonly
+        .inputs((
+            Path::new("/__genrule_in_image__/working_directory/buck-out"),
+            cwd.join("buck-out"),
+        ))
         .working_directory(Path::new("/__genrule_in_image__/working_directory"))
         .tmpfs(Path::new("/tmp"))
         // TODO(vmagro): make this a devtmpfs after resolving permissions issues
