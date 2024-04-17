@@ -19,6 +19,8 @@ use clap::Parser;
 struct Args {
     #[clap(long)]
     layer: PathBuf,
+    #[clap(long)]
+    rootless: bool,
     #[clap(flatten)]
     out: Out,
     #[clap(last(true))]
@@ -41,7 +43,15 @@ fn main() -> Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+    let rootless = match args.rootless {
+        true => None,
+        false => Some(antlir2_rootless::init().context("while setting up antlir2_rootless")?),
+    };
+    if args.rootless {
+        antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
+    }
+
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
     let mut builder = IsolationContext::builder(&args.layer);
     builder.ephemeral(false);
@@ -93,12 +103,29 @@ fn main() -> Result<()> {
     let isol = unshare(builder.build())?;
     let mut cmd = isol.command("bash")?;
     cmd.arg("-e").arg("-c").arg(&args.command);
+
+    let _root_guard = rootless.map(|r| r.escalate()).transpose()?;
     let out = cmd
         .spawn()
         .context(format!("spawn() failed for {:#?}", cmd))?
         .wait()
         .context(format!("wait() failed for {:#?}", cmd))?;
     ensure!(out.success(), "command failed");
+
+    if args.out.dir {
+        if let Some((uid, gid)) = rootless.map(|r| r.unprivileged_ids()) {
+            for entry in walkdir::WalkDir::new(&args.out.out)
+                .into_iter()
+                .filter_map(Result::ok)
+            {
+                std::os::unix::fs::chown(
+                    entry.path(),
+                    uid.map(|u| u.as_raw()),
+                    gid.map(|g| g.as_raw()),
+                )?;
+            }
+        }
+    }
 
     Ok(())
 }
