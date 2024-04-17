@@ -16,7 +16,7 @@ load("//antlir/antlir2/bzl:types.bzl", "FlavorInfo")
 load("//antlir/bzl:oss_shim.bzl", fb_cfg_attrs = "empty_dict", fb_refs = "empty_dict", fb_transition = "ret_none") # @oss-enable
 # @oss-disable
 load("//antlir/antlir2/os:cfg.bzl", "os_transition", "os_transition_refs")
-load("//antlir/bzl:build_defs.bzl", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "internal_external", "is_facebook")
 
 def cfg_attrs():
     return {
@@ -43,17 +43,24 @@ def attrs_selected_by_cfg():
         "flavor": attrs.option(
             attrs.dep(providers = [FlavorInfo]),
             default = select({
-                antlir2_dep("//antlir/antlir2/os:centos8"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos8:centos8"),
-                antlir2_dep("//antlir/antlir2/os:centos9"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos9:centos9"),
-                antlir2_dep("//antlir/antlir2/os:eln"): antlir2_dep("//antlir/antlir2/facebook/flavor/eln:eln"),
-                antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
-                antlir2_dep("//antlir/antlir2/os:rhel8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8:rhel8"),
-                antlir2_dep("//antlir/antlir2/os:rhel8.8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8.8:rhel8.8"),
-                # TODO: in D49383768 this will be disallowed so that we can
-                # guarantee that we'll never end up building a layer without
-                # configuring the os
-                "DEFAULT": None,
-            }),
+                antlir2_dep("//antlir/antlir2/os:centos9"): internal_external(
+                    fb = antlir2_dep("//antlir/antlir2/facebook/flavor/centos9:centos9"),
+                    oss = "//flavor/centos9:centos9",
+                ),
+            } | internal_external(
+                fb = {
+                    antlir2_dep("//antlir/antlir2/os:centos8"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos8:centos8"),
+                    antlir2_dep("//antlir/antlir2/os:eln"): antlir2_dep("//antlir/antlir2/facebook/flavor/eln:eln"),
+                    antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
+                    antlir2_dep("//antlir/antlir2/os:rhel8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8:rhel8"),
+                    antlir2_dep("//antlir/antlir2/os:rhel8.8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8.8:rhel8.8"),
+                    # TODO: in D49383768 this will be disallowed so that we can
+                    # guarantee that we'll never end up building a layer without
+                    # configuring the os
+                    "DEFAULT": None,
+                },
+                oss = {},
+            )),
         ),
         "_rootless": rootless_cfg.is_rootless_attr,
     }
