@@ -1,10 +1,11 @@
 # @noautodeps
 
-load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_library", "python_unittest", "rust_unittest")
-load("//antlir/bzl:defs.bzl", "bzl_to_py")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "python_unittest", "rust_unittest")
+load("//antlir/bzl:make_target_t.bzl", "make_target_t")
 load("//antlir/bzl:shape.bzl", "shape")
 load("//antlir/bzl:template.bzl", "template")
-load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t", "friend_t", "hashable_t", "lightsaber_t")
+load(":test.shape.bzl", "affiliations_t", "character_collection_t", "character_t", "color_t", "friend_t", "hashable_t", "lightsaber_t")
+load(":test_shape_bzl.bzl", "test_shape_bzl")
 
 oncall("antlir")
 
@@ -48,8 +49,8 @@ characters = [
         ],
         personnel_file = "/rebellion/luke_skywalker.txt",
         weapon = lightsaber_t(
-            color = "green",
-            target = ":luke-lightsaber",
+            color = color_t("green"),
+            target = make_target_t(":luke-lightsaber"),
         ),
     ),
     character_t(
@@ -64,8 +65,8 @@ characters = [
         ],
         friends = [],
         weapon = lightsaber_t(
-            color = "red",
-            target = ":vader-lightsaber",
+            color = color_t("red"),
+            target = make_target_t(":vader-lightsaber"),
         ),
     ),
     character_t(
@@ -160,38 +161,6 @@ template(
     srcs = ["template.jinja2"],
 )
 
-# construct files with some shims to allow the python_unittest below to import
-# shape.bzl as a valid python source file
-
-bzl_to_py(
-    name = "shape_bzl.py",
-    bzl_target = "//antlir/bzl:shape.bzl",
-    imports = [
-        "from .shape_bzl_shims import *",
-    ],
-)
-
-python_library(
-    name = "shape_bzl",
-    srcs = {
-        ":shape_bzl.py": "shape_bzl.py",
-        "shape_bzl_shims.py": "shape_bzl_shims.py",
-    },
-)
-
-python_unittest(
-    name = "test-shape-bzl",
-    srcs = [
-        "test_shape_bzl.py",
-    ],
-    needed_coverage = [
-        (100, ":shape_bzl"),
-    ],
-    deps = [
-        ":shape_bzl",
-    ],
-)
-
 rust_unittest(
     name = "test-shape-rs",
     srcs = ["test_shape.rs"],
@@ -212,3 +181,5 @@ rust_unittest(
         "//antlir/bzl/shape2:shape",
     ],
 )
+
+test_shape_bzl()
