@@ -118,215 +118,70 @@ load(":types.bzl", "types")
 
 _NO_DEFAULT = struct(no_default = True)
 
-_DEFAULT_VALUE = struct(__default_value_sentinel__ = True)
+_shape_field = record(
+    ty = typing.Any,
+    default = typing.Any,
+)
 
-# Poor man's debug pretty-printing. Better version coming on a stack.
-def _pretty(x):
-    return structs.to_dict(x) if structs.is_struct(x) else x
+_union_rec = record(
+    ty = typing.Any,
+    __thrift = field(list[int] | None, default = None),
+)
 
-# Returns True iff `instance` is a `shape.new(shape, ...)`.
-def _is_instance(instance, shape):
-    if _is_shape_constructor(shape):
-        shape = shape(__internal_get_shape = True)
-    if not _is_shape(shape):
-        fail("Checking if {} is a shape instance, but {} is not a shape".format(
-            _pretty(instance),
-            _pretty(shape),
-        ))
-    return (
-        structs.is_struct(instance) and
-        getattr(instance, "__shape__", None) == shape
-    )
+def _normalize_type(typ):
+    if typ == _path:
+        return str
 
-def _get_is_instance_error(val, t):
-    if not _is_instance(val, t):
-        return (
-            (
-                "{} is not an instance of {} -- note that structs & dicts " +
-                "are NOT currently automatically promoted to shape"
-            ).format(
-                _pretty(val),
-                _pretty(t),
-            ),
-        )
-    return None
+    return typ
 
-def _check_type(x, t):
-    """Check that x is an instance of t.
-    This is a little more complicated than `isinstance(x, t)`, and supports
-    more use cases. _check_type handles primitive types (bool, int, str),
-    shapes and collections (dict, list).
-
-    Return: None if successful, otherwise a str to be passed to `fail` at a
-                site that has more context for the user
-    """
-    if t == int:
-        if types.is_int(x):
-            return None
-        return "expected int, got {}".format(x)
-    if t == bool:
-        if types.is_bool(x):
-            return None
-        return "expected bool, got {}".format(x)
-    if t == str:
-        if types.is_string(x):
-            return None
-        return "expected str, got {}".format(x)
-    if _is_enum(t):
-        if x in t.enum:
-            return None
-        return "expected one of {}, got {}".format(t.enum, x)
-    if t == _path:
-        return _check_type(x, str)
-    if hasattr(t, "__I_AM_TARGET__"):
-        type_error = _check_type(x, str)
-        if not type_error:
-            if x.count(":") != 1:
-                return "expected exactly one ':'"
-            if x.count("//") > 1:
-                return "expected at most one '//'"
-            if x.startswith(":"):
-                return None
-            if x.count("//") != 1:
-                return "expected to start with ':', or contain exactly one '//'"
-            return None
-        else:
-            return type_error
-    if _is_field(t):
-        if t.optional and x == None:
-            return None
-        return _check_type(x, t.type)
-    if _is_shape(t):
-        # Don't need type-check the internals of `x` because we trust it to
-        # have been type-checked at the time of construction.
-        return _get_is_instance_error(x, t)
-    if _is_collection(t):
-        return _check_collection_type(x, t)
-    if _is_union(t):
-        _matched_type, error = _find_union_type(x, t)
-        return error
-    return "unsupported type {}".format(t)  # pragma: no cover
-
-# Returns a mutually exclusive tuple:
-#   ("matched type" or None, "error if no type matched" or None)
-def _find_union_type(x, t):
-    type_errors = []
-    for union_t in t.union_types:
-        type_error = _check_type(x, union_t)
-        if type_error == None:
-            return union_t, None
-        type_errors.append(type_error)
-    return None, "{} not matched in union {}: {}".format(
-        x,
-        t.union_types,
-        "; ".join(type_errors),
-    )
-
-def _check_collection_type(x, t):
-    if t.collection == dict:
-        if not types.is_dict(x):
-            return "{} is not dict".format(x)
-        key_type, val_type = t.item_type
-        for key, val in x.items():
-            key_type_error = _check_type(key, key_type)
-            if key_type_error:
-                return "key: " + key_type_error
-            val_type_error = _check_type(val, val_type)
-            if val_type_error:
-                return "val: " + val_type_error
-        return None
-    if t.collection == list:
-        if not types.is_list(x) and not types.is_tuple(x):
-            return "{} is not list".format(x)
-        for i, val in enumerate(x):
-            type_error = _check_type(val, t.item_type)
-            if type_error:
-                return "item {}: {}".format(i, type_error)
-        return None
-    return "unsupported collection type {}".format(t.collection)  # pragma: no cover
-
-def _field(type, optional = False, default = _NO_DEFAULT):
+def _field(typ, optional = False, default = _NO_DEFAULT) -> _shape_field:
     # Optional fields may be given a non-None default value, but if not, it will
     # be defaulted to None
     if optional and default == _NO_DEFAULT:
         default = None
 
-    type = _normalize_type(type)
-    return struct(
-        default = default,
-        optional = optional,
-        type = type,
-    )
+    typ = _normalize_type(typ)
 
-def _is_field(x):
-    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["type", "optional", "default"])
+    if isinstance(typ, _union_rec):
+        typ = typ.ty
+
+    if optional:
+        typ = typ | None
+    return _shape_field(
+        ty = typ,
+        default = default,
+    )
 
 def _dict(key_type, val_type, **field_kwargs):
-    return _field(
-        type = struct(
-            collection = dict,
-            item_type = (_normalize_type(key_type), _normalize_type(val_type)),
-        ),
-        **field_kwargs
-    )
+    typ = dict[_normalize_type(key_type), _normalize_type(val_type)]
+    if field_kwargs:
+        return _field(
+            typ = typ,
+            **field_kwargs
+        )
+    return typ
 
 def _list(item_type, **field_kwargs):
-    return _field(
-        type = struct(
-            collection = list,
-            item_type = _normalize_type(item_type),
-        ),
-        **field_kwargs
+    typ = list[_normalize_type(item_type)]
+    if field_kwargs:
+        return _field(
+            typ = typ,
+            **field_kwargs
+        )
+    return typ
+
+def _union(*union_types, __thrift = None):
+    union_types = list(union_types)
+    union = union_types.pop()
+    for t in union_types:
+        union = union | t
+    return _union_rec(
+        ty = union,
+        __thrift = __thrift,
     )
 
-def _is_collection(x):
-    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["collection", "item_type"])
-
-def _is_union(x):
-    return structs.is_struct(x) and sorted(structs.to_dict(x).keys()) == sorted(["union_types"])
-
-def _union_type(*union_types, __thrift = None):
-    """
-    Define a new union type that can be used when defining a field. Most
-    useful when a union type is meant to be typedef'd and reused. To define
-    a shape field directly, see shape.union.
-
-    Example usage:
-    ```
-    mode_t = shape.union_t(int, str)  # could be 0o644 or "a+rw"
-
-    type_a = shape.shape(mode=mode_t)
-    type_b = shape.shape(mode=shape.field(mode_t, optional=True))
-    ```
-    """
-    if len(union_types) == 0:
-        fail("union must specify at least one type")
-    if __thrift != None and (len(union_types) != len(__thrift)):
-        fail("if using thrift, must have same number of types")
-    return struct(
-        union_types = tuple([_normalize_type(t) for t in union_types]),
-    )
-
-def _union(*union_types, __thrift = None, **field_kwargs):
-    return _field(
-        type = _union_type(__thrift = __thrift, *union_types),
-        **field_kwargs
-    )
-
-def _enum(*values, **field_kwargs):
-    # since enum values go into class member names, they must be strings
-    for val in values:
-        if not types.is_string(val):
-            fail("all enum values must be strings, got {}".format(_pretty(val)))
-    return _field(
-        type = struct(
-            enum = tuple(values),
-        ),
-        **field_kwargs
-    )
-
-def _is_enum(t):
-    return structs.is_struct(t) and sorted(structs.to_dict(t).keys()) == sorted(["enum"])
+def _enum(*values):
+    return enum(*values)
 
 def _path(**_field_kwargs):
     fail("shape.path() is no longer supported, use `shape.path` directly, or wrap in `shape.field()`")
@@ -343,32 +198,25 @@ def _shape(__thrift = None, **fields):
     shape.shape(hello=str)
     ```
     """
-    for name, f in fields.items():
-        if name == "__I_AM_TARGET__":
-            continue
 
+    for name, f in fields.items():
         # Avoid colliding with `__shape__`. Also, in Python, `_name` is "private".
         if name.startswith("_"):
             fail("Shape field name {} must not start with _: {}".format(
                 name,
-                _pretty(fields),
             ))
 
         # transparently convert fields that are just a type have no options to
         # the rich field type for internal use
-        if not hasattr(f, "type") or _is_union(f):
-            fields[name] = _field(f)
+        if not isinstance(f, _shape_field):
+            f = _field(f)
 
-    if "__I_AM_TARGET__" in fields:
-        fields.pop("__I_AM_TARGET__", None)
-        return struct(
-            __I_AM_TARGET__ = True,
-            fields = fields,
+        fields[name] = field(
+            f.ty,
+            **(
+                {"default": f.default} if f.default != _NO_DEFAULT else {}
+            )
         )
-
-    shape_struct = struct(
-        fields = fields,
-    )
 
     if __thrift != None:
         thrift_names = _uniq(__thrift.values())
@@ -380,76 +228,7 @@ def _shape(__thrift = None, **fields):
         # starlark and the rust compilation will fail fast enough, and prevent
         # the implementation from being unsafe in the first place
 
-    # the name of this function is important and makes the
-    # backwards-compatibility hack in _new_shape work!
-    def shape_constructor_function(
-            __internal_get_shape = False,
-            **kwargs):
-        # starlark does not allow attaching arbitrary data to a function object,
-        # so we have to make these internal parameters to return it
-        if __internal_get_shape:
-            return shape_struct
-        return _new_shape(shape_struct, **kwargs)
-
-    return shape_constructor_function
-
-def _is_shape_constructor(x):
-    """Check if input x is a shape constructor function"""
-
-    # starlark doesn't have callable() so we have to do this
-    if ((repr(x).endswith("antlir/bzl/shape.bzl.shape_constructor_function")) or  # buck2
-        (repr(x) == "<function shape_constructor_function>") or  # buck1
-        repr(x).startswith("<function _shape.<locals>.shape_constructor_function")):  # python mock
-        return True
-    return False
-
-def _normalize_type(x):
-    if _is_shape_constructor(x):
-        return x(__internal_get_shape = True)
-    return x
-
-def _is_shape(x):
-    if not structs.is_struct(x):
-        return False
-    if not hasattr(x, "fields"):
-        return False
-    if hasattr(x, "__I_AM_TARGET__"):
-        return True
-    return list(structs.to_dict(x).keys()) == ["fields"]
-
-def _shape_defaults_dict(shape):
-    defaults = {}
-    for key, field in shape.fields.items():
-        if field.default != _NO_DEFAULT:
-            defaults[key] = field.default
-    return defaults
-
-def _new_shape(shape, **fields):
-    """
-    Type check and instantiate a struct of the given shape type using the
-    values from the **fields kwargs.
-    """
-
-    with_defaults = _shape_defaults_dict(shape)
-
-    # shape.bzl uses often pass shape fields around as kwargs, which makes
-    # us likely to pass in `None` for a shape field with a default, provide
-    # `shape.DEFAULT_VALUE` as a sentinel to make functions wrapping shape
-    # construction easier to manage
-    fields = {k: v for k, v in fields.items() if v != _DEFAULT_VALUE}
-    with_defaults.update(fields)
-
-    for field, value in fields.items():
-        if field not in shape.fields:
-            fail("field `{}` is not defined in the shape".format(field))
-        error = _check_type(value, shape.fields[field])
-        if error:
-            fail("field {}, value {}: {}".format(field, value, error))
-
-    return struct(
-        __shape__ = shape,
-        **with_defaults
-    )
+    return record(**fields)
 
 def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, **kwargs):  # pragma: no cover
     if not name.endswith(".shape"):
@@ -511,63 +290,11 @@ def _impl(name, deps = (), visibility = None, expert_only_custom_impl = False, *
             **{k.replace("rust_", ""): v for k, v in kwargs.items() if k.startswith("rust_")}
         )
 
-# Does a recursive (deep) copy of `val` which is expected to be of type
-# `t` (in the `shape` sense of type compatibility).
-def _recursive_copy_transform(val, t):
-    if hasattr(t, "__I_AM_TARGET__"):
-        return struct(
-            name = normalize_target(val),
-            path = "",
-        )
-    elif _is_shape(t):
-        error = _check_type(val, t)
-        if error:  # pragma: no cover -- an internal invariant, not a user error
-            fail(error)
-        new = {}
-        for name, field in t.fields.items():
-            new[name] = _recursive_copy_transform(
-                # The `_is_instance` above will ensure that `getattr` succeeds
-                getattr(val, name),
-                field,
-            )
-        return struct(**new)
-    elif _is_field(t):
-        if t.optional and val == None:
-            return None
-        return _recursive_copy_transform(val, t.type)
-    elif _is_collection(t):
-        if t.collection == dict:
-            return {
-                k: _recursive_copy_transform(v, t.item_type[1])
-                for k, v in val.items()
-            }
-        elif t.collection == list:
-            return [
-                _recursive_copy_transform(v, t.item_type)
-                for v in val
-            ]
-
-        # fall through to fail
-    elif _is_union(t):
-        matched_type, error = _find_union_type(val, t)
-        if error:  # pragma: no cover
-            fail(error)
-        return _recursive_copy_transform(val, matched_type)
-    elif t == int or t == bool or t == str or t == _path or _is_enum(t):
-        return val
-    fail(
-        # pragma: no cover
-        "Unknown type {} for {}".format(_pretty(t), _pretty(val)),
-    )
-
 def _json_string(instance):
     """
     Serialize the given shape instance to a JSON string.
     """
-    return structs.as_json(_recursive_copy_transform(
-        instance,
-        instance.__shape__,
-    ))
+    return json.encode(_as_dict_deep(instance))
 
 def _json_file(name, instance, visibility = None, labels = None):  # pragma: no cover
     """
@@ -670,20 +397,13 @@ def _python_data(
 # Converts a shape to a dict, as you would expected (field names are keys,
 # values are scalars & collections as in the shape -- and nested shapes are
 # also dicts).
-def _as_serializable_dict(instance):
-    return _as_dict_deep(_recursive_copy_transform(
-        instance,
-        instance.__shape__,
-    ))
-
-# Recursively converts nested shapes and structs to dicts. Used in
-# _as_serializable_dict
 def _as_dict_deep(val):
-    if _is_any_instance(val):
-        val = _recursive_copy_transform(
-            val,
-            val.__shape__,
-        )
+    if type(val) == "record":
+        d = {
+            k: _as_dict_deep(getattr(val, k))
+            for k in dir(val)
+        }
+        return d
     if structs.is_struct(val):
         val = structs.to_dict(val)
     if types.is_dict(val):
@@ -693,24 +413,18 @@ def _as_dict_deep(val):
 
     return val
 
-# Returns True iff `instance` is a shape instance of any type.
-def _is_any_instance(instance):
-    return structs.is_struct(instance) and hasattr(instance, "__shape__")
-
 shape = struct(
     # generate implementation of various client libraries
     impl = _impl,
     # output target macros and other conversion helpers
-    as_serializable_dict = _as_serializable_dict,
+    as_serializable_dict = _as_dict_deep,
     dict = _dict,
     json_string = _json_string,
     enum = _enum,
     field = _field,
-    is_instance = _is_instance,
     json_file = _json_file,
     list = _list,
     path = _path,
-    pretty = _pretty,
     python_data = _python_data,
     render_template = _render_template,
     shape = _shape,

@@ -6,7 +6,7 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/bzl:sha256.bzl", "sha256_b64")
 load("//antlir/bzl:shape.bzl", "shape")
-load(":nsswitch.shape.bzl", "action_t", "conf_t", "database_t", "service_t")
+load(":nsswitch.shape.bzl", "action_enum_t", "action_t", "conf_t", "database_name_t", "database_t", "service_t", "status_t")
 
 def _new(**kwargs):
     return conf_t(**kwargs)
@@ -42,33 +42,33 @@ nsswitch = struct(
     default = conf_t(
         databases = [
             database_t(
-                name = "passwd",
+                name = database_name_t("passwd"),
                 services = [
                     service_t(name = "files"),
                     service_t(name = "systemd"),
                 ],
             ),
             database_t(
-                name = "group",
+                name = database_name_t("group"),
                 services = [
                     service_t(
                         name = "files",
                         action = action_t(
-                            status = "success",
-                            action = "merge",
+                            status = status_t("success"),
+                            action = action_enum_t("merge"),
                         ),
                     ),
                     service_t(name = "systemd"),
                 ],
             ),
             database_t(
-                name = "shadow",
+                name = database_name_t("shadow"),
                 services = [
                     service_t(name = "files"),
                 ],
             ),
             database_t(
-                name = "hosts",
+                name = database_name_t("hosts"),
                 services = [
                     service_t(name = "files"),
                     service_t(name = "dns"),

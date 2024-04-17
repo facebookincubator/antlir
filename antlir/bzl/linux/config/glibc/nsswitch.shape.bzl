@@ -5,9 +5,12 @@
 
 load("//antlir/bzl:shape.bzl", "shape")
 
+status_t = shape.enum("success", "notfound", "unavail", "tryagain")
+action_enum_t = shape.enum("return", "continue", "merge")
+
 action_t = shape.shape(
-    status = shape.enum("success", "notfound", "unavail", "tryagain"),
-    action = shape.enum("return", "continue", "merge"),
+    status = status_t,
+    action = action_enum_t,
 )
 
 service_t = shape.shape(
@@ -15,9 +18,11 @@ service_t = shape.shape(
     action = shape.field(action_t, optional = True),
 )
 
+# not an exhaustive list, but does contain the things we care about
+database_name_t = shape.enum("group", "hosts", "passwd", "shadow")
+
 database_t = shape.shape(
-    # not an exhaustive list, but does contain the things we care about
-    name = shape.enum("group", "hosts", "passwd", "shadow"),
+    name = database_name_t,
     services = shape.list(service_t),
 )
 
