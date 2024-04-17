@@ -37,3 +37,8 @@ class Test(unittest.TestCase):
         self.assertTrue(f.exists())
         self.assertTrue(f.is_dir())
         self.assertEqual((f / "baz").read_text(), "baz\n")
+
+    def test_buck_scratch_path(self) -> None:
+        f = Path(os.getenv("BUCK_SCRATCH_PATH"))
+        self.assertTrue(f.exists())
+        self.assertEqual(f.read_text(), "/__genrule_in_image__/buck_scratch_path\n")

@@ -79,6 +79,17 @@ fn main() -> Result<()> {
             .setenv(("OUT", "/__genrule_in_image__/out/single_file"));
     }
 
+    if let Some(scratch) = std::env::var_os("BUCK_SCRATCH_PATH") {
+        builder.outputs((
+            Path::new("/__genrule_in_image__/buck_scratch_path"),
+            PathBuf::from(scratch.clone()),
+        ));
+        builder.setenv((
+            "BUCK_SCRATCH_PATH",
+            "/__genrule_in_image__/buck_scratch_path",
+        ));
+    }
+
     let isol = unshare(builder.build())?;
     let mut cmd = isol.command("bash")?;
     cmd.arg("-e").arg("-c").arg(&args.command);
