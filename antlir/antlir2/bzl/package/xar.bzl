@@ -32,7 +32,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider]:
         local_only = True,  # requires local subvol
     )
     return [
-        DefaultInfo(out),
+        DefaultInfo(out, sub_targets = {"squashfs": [DefaultInfo(squash)]}),
         RunInfo(cmd_args(out)),
     ]
 
