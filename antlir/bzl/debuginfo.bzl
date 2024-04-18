@@ -8,20 +8,14 @@ load("//antlir/antlir2/bzl/image:defs.bzl", antlir2_image = "image")
 load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package", "should_all_images_in_package_use_default_os")
 load(":build_defs.bzl", "target_utils")
 load(":target_helpers.bzl", "normalize_target")
-load(":types.bzl", "types")
-
-_STR_OPT = types.optional(types.str)
-_VISIBILITY_OPT = types.optional(types.visibility)
-
-types.lint_noop(_STR_OPT, _VISIBILITY_OPT)
 
 def _split(
-        layer: types.label,
-        stripped_name: _STR_OPT = None,
-        debuginfo_name: _STR_OPT = None,
-        flavor: _STR_OPT = None,
+        layer: str,
+        stripped_name: str | None = None,
+        debuginfo_name: str | None = None,
+        flavor: str | None = None,
         default_os: str | None = None,
-        visibility: _VISIBILITY_OPT = None) -> types.struct:
+        visibility: list[str] | None = None) -> struct:
     """
     Given an OS-like image layer, split it into two images, one of which
     contains the original layer minus any debug symbols and the other _only_ the
