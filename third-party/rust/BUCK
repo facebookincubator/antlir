@@ -433,7 +433,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -1108,7 +1108,7 @@ cargo.rust_library(
         ":heck-0.5.0",
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -1763,7 +1763,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -3081,7 +3081,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -3296,7 +3296,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -5721,7 +5721,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -6069,7 +6069,7 @@ cargo.rust_library(
         ":pest_meta-2.7.9",
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -6745,7 +6745,7 @@ cargo.rust_library(
         ":proc-macro2-1.0.81",
         ":pyo3-macros-backend-0.20.3",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -6769,7 +6769,7 @@ cargo.rust_library(
         ":proc-macro2-1.0.81",
         ":pyo3-build-config-0.20.3",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -7104,7 +7104,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -7397,7 +7397,7 @@ cargo.rust_library(
         ":quote-1.0.36",
         ":regex-1.10.4",
         ":relative-path-1.9.2",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
         ":unicode-ident-1.0.12",
     ],
 )
@@ -7899,7 +7899,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -8054,7 +8054,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -8149,7 +8149,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -9059,23 +9059,23 @@ buildscript_run(
 
 alias(
     name = "syn",
-    actual = ":syn-2.0.59",
+    actual = ":syn-2.0.60",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "syn-2.0.59.crate",
-    sha256 = "4a6531ffc7b071655e4ce2e04bd464c4830bb585a61cabb96cf808f05172615a",
-    strip_prefix = "syn-2.0.59",
-    urls = ["https://static.crates.io/crates/syn/2.0.59/download"],
+    name = "syn-2.0.60.crate",
+    sha256 = "909518bc7b1c9b779f1bbf07f2929d35af9f0f37e47c6e9ef7f9dddc1e1821f3",
+    strip_prefix = "syn-2.0.60",
+    urls = ["https://static.crates.io/crates/syn/2.0.60/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "syn-2.0.59",
-    srcs = [":syn-2.0.59.crate"],
+    name = "syn-2.0.60",
+    srcs = [":syn-2.0.60.crate"],
     crate = "syn",
-    crate_root = "syn-2.0.59.crate/src/lib.rs",
+    crate_root = "syn-2.0.60.crate/src/lib.rs",
     edition = "2021",
     features = [
         "clone-impls",
@@ -9535,7 +9535,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -9790,7 +9790,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -10016,7 +10016,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
@@ -10397,7 +10397,7 @@ cargo.rust_library(
     deps = [
         ":proc-macro2-1.0.81",
         ":quote-1.0.36",
-        ":syn-2.0.59",
+        ":syn-2.0.60",
     ],
 )
 
