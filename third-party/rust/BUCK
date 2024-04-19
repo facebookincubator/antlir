@@ -9895,7 +9895,7 @@ cargo.rust_library(
         ":serde-1.0.198",
         ":serde_spanned-0.6.5",
         ":toml_datetime-0.6.5",
-        ":toml_edit-0.22.9",
+        ":toml_edit-0.22.11",
     ],
 )
 
@@ -9919,18 +9919,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "toml_edit-0.22.9.crate",
-    sha256 = "8e40bb779c5187258fd7aad0eb68cb8706a0a81fa712fbea808ab43c4b8374c4",
-    strip_prefix = "toml_edit-0.22.9",
-    urls = ["https://static.crates.io/crates/toml_edit/0.22.9/download"],
+    name = "toml_edit-0.22.11.crate",
+    sha256 = "fb686a972ccef8537b39eead3968b0e8616cb5040dbb9bba93007c8e07c9215f",
+    strip_prefix = "toml_edit-0.22.11",
+    urls = ["https://static.crates.io/crates/toml_edit/0.22.11/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "toml_edit-0.22.9",
-    srcs = [":toml_edit-0.22.9.crate"],
+    name = "toml_edit-0.22.11",
+    srcs = [":toml_edit-0.22.11.crate"],
     crate = "toml_edit",
-    crate_root = "toml_edit-0.22.9.crate/src/lib.rs",
+    crate_root = "toml_edit-0.22.11.crate/src/lib.rs",
     edition = "2021",
     features = [
         "display",
