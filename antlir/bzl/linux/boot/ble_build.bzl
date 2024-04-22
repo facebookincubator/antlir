@@ -7,7 +7,6 @@ load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/bzl/package:defs.bzl", "package")
 load("//antlir/bzl:shape.bzl", "shape")
-load("//antlir/vm/bzl:initrd.bzl", "initrd")
 load(":boot_loader_entry.shape.bzl", "boot_loader_entry_t")
 
 def ble_build(
@@ -41,7 +40,7 @@ def ble_build(
 
         features.extend([
             feature.install(
-                src = initrd(kernel.uname),
+                src = "//metalos/vm/initrd:vm-{}-initrd".format(kernel.uname),
                 dst = "/initrd-{}.img".format(kernel.uname),
             ),
             feature.install(
