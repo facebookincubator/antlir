@@ -5,7 +5,6 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-#![feature(mutex_unlock)]
 /*
  * With rust 1.62, it appears that the thread sanitizer has been completely
  * broken for Linux because of the move of Mutex and other synchronization

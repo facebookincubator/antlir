@@ -179,7 +179,7 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
             self.oeq_cv.notify_one();
         }
         // Drop the lock before doing any checks
-        Mutex::unlock(queue);
+        drop(queue);
         // Check that the item has the expected correct last id
         anyhow::ensure!(
             item.get_first_id() == current_key,
