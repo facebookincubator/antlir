@@ -21,6 +21,8 @@ struct Args {
     layer: PathBuf,
     #[clap(long)]
     rootless: bool,
+    #[clap(long)]
+    ephemeral: bool,
     #[clap(flatten)]
     out: Out,
     #[clap(last(true))]
@@ -54,7 +56,7 @@ fn main() -> Result<()> {
     std::thread::sleep(std::time::Duration::from_secs(10));
 
     let mut builder = IsolationContext::builder(&args.layer);
-    builder.ephemeral(false);
+    builder.ephemeral(args.ephemeral);
     #[cfg(facebook)]
     builder.platform(["/usr/local/fbcode", "/mnt/gvfs"]);
     let cwd = std::env::current_dir()?;
