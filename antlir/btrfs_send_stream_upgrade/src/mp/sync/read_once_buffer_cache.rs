@@ -211,7 +211,7 @@ impl ReadOnceBufferCache {
         }
         // We should have something to read now
         // Drop the lock on the metadata so that we can grab an RW lock
-        Mutex::unlock(metadata);
+        drop(metadata);
 
         let cache = match self.robc_cache.read() {
             Ok(cache) => cache,
@@ -334,7 +334,7 @@ impl ReadOnceBufferCache {
         let key = (*metadata).robcm_next_key_to_fetch;
         (*metadata).robcm_next_key_to_fetch += 1;
         // Drop the lock
-        Mutex::unlock(metadata);
+        drop(metadata);
 
         // Populate the buffer and return it
         // Do this after the lock is dropped
@@ -393,7 +393,7 @@ impl ReadOnceBufferCache {
         }
         // Drop the lock on the metadata so that we can grab an RW lock if
         // necessary
-        Mutex::unlock(metadata);
+        drop(metadata);
 
         if new_value == 0 {
             // Grab a write lock to garbage collect the page
