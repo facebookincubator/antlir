@@ -48,6 +48,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
                 cmd_args(layer[LayerInfo].subvol_symlink, format = "--layer={}"),
                 cmd_args(out.as_output(), format = "--out={}"),
                 "--dir" if out_is_dir else cmd_args(),
+                "--ephemeral" if ctx.attrs.ephemeral_root else cmd_args(),
                 "--",
                 ctx.attrs.bash,
             ),
@@ -76,6 +77,7 @@ _genrule_in_image = rule(
     attrs = {
         "bash": attrs.arg(),
         "default_out": attrs.option(attrs.string(), default = None),
+        "ephemeral_root": attrs.bool(default = False),
         "layer": attrs.dep(providers = [LayerInfo]),
         "out": attrs.option(attrs.string(), default = None),
         "outs": attrs.option(attrs.dict(attrs.string(), attrs.string()), default = None),
