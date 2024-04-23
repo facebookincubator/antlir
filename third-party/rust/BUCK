@@ -887,7 +887,7 @@ cargo.rust_library(
     },
     visibility = [],
     deps = [
-        ":jobserver-0.1.30",
+        ":jobserver-0.1.31",
         ":once_cell-1.19.0",
     ],
 )
@@ -2836,16 +2836,16 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "windows-gnu": dict(
             deps = [":windows-sys-0.48.0"],
@@ -4382,18 +4382,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "jobserver-0.1.30.crate",
-    sha256 = "685a7d121ee3f65ae4fddd72b25a04bb36b6af81bc0828f7d5434c0fe60fa3a2",
-    strip_prefix = "jobserver-0.1.30",
-    urls = ["https://static.crates.io/crates/jobserver/0.1.30/download"],
+    name = "jobserver-0.1.31.crate",
+    sha256 = "d2b099aaa34a9751c5bf0878add70444e1ed2dd73f347be99003d4577277de6e",
+    strip_prefix = "jobserver-0.1.31",
+    urls = ["https://static.crates.io/crates/jobserver/0.1.31/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "jobserver-0.1.30",
-    srcs = [":jobserver-0.1.30.crate"],
+    name = "jobserver-0.1.31",
+    srcs = [":jobserver-0.1.31.crate"],
     crate = "jobserver",
-    crate_root = "jobserver-0.1.30.crate/src/lib.rs",
+    crate_root = "jobserver-0.1.31.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "linux-arm64": dict(
@@ -4949,7 +4949,7 @@ cargo.rust_library(
     crate_root = "memfd-0.6.4.crate/src/lib.rs",
     edition = "2018",
     visibility = [],
-    deps = [":rustix-0.38.33"],
+    deps = [":rustix-0.38.34"],
 )
 
 alias(
@@ -7756,23 +7756,24 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "rustix-0.38.33.crate",
-    sha256 = "e3cc72858054fcff6d7dea32df2aeaee6a7c24227366d7ea429aada2f26b16ad",
-    strip_prefix = "rustix-0.38.33",
-    urls = ["https://static.crates.io/crates/rustix/0.38.33/download"],
+    name = "rustix-0.38.34.crate",
+    sha256 = "70dc5ec042f7a43c4a73241207cecc9873a06d45debb38b329f8541d85c2730f",
+    strip_prefix = "rustix-0.38.34",
+    urls = ["https://static.crates.io/crates/rustix/0.38.34/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "rustix-0.38.33",
-    srcs = [":rustix-0.38.33.crate"],
+    name = "rustix-0.38.34",
+    srcs = [":rustix-0.38.34.crate"],
     crate = "rustix",
-    crate_root = "rustix-0.38.33.crate/src/lib.rs",
+    crate_root = "rustix-0.38.34.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
         "default",
         "fs",
+        "libc-extra-traits",
         "std",
         "termios",
         "use-libc-auxv",
@@ -9487,16 +9488,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "windows-gnu": dict(
             deps = [":windows-sys-0.52.0"],
@@ -9673,16 +9674,16 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "linux-arm64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "linux-x86_64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "macos-arm64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "macos-x86_64": dict(
-            deps = [":rustix-0.38.33"],
+            deps = [":rustix-0.38.34"],
         ),
         "windows-gnu": dict(
             deps = [":windows-sys-0.48.0"],
@@ -11582,7 +11583,7 @@ cargo.rust_library(
         ),
     },
     visibility = [],
-    deps = [":rustix-0.38.33"],
+    deps = [":rustix-0.38.34"],
 )
 
 http_archive(
