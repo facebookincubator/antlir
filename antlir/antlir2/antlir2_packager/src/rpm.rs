@@ -224,8 +224,7 @@ License: {license}
         std::fs::create_dir(output_dir.path().join(&self.arch))
             .context("while creating output dir")?;
 
-        let mut isol_context =
-            IsolationContext::builder(self.build_appliance.unreliable_metadata_contents_path());
+        let mut isol_context = IsolationContext::builder(self.build_appliance.path());
         isol_context
             .ephemeral(false)
             .readonly()
@@ -274,8 +273,7 @@ License: {license}
 
         if let Some(privkey) = &self.sign_with_private_key {
             let rpm_path = outputs[0].path();
-            let mut isol_context =
-                IsolationContext::builder(self.build_appliance.unreliable_metadata_contents_path());
+            let mut isol_context = IsolationContext::builder(self.build_appliance.path());
             isol_context
                 .ephemeral(false)
                 .readonly()

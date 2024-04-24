@@ -8,7 +8,6 @@
 use std::collections::BTreeMap;
 use std::collections::BTreeSet;
 use std::path::PathBuf;
-use std::str::FromStr;
 
 use antlir2_compile::Arch;
 use antlir2_compile::CompilerContext;
@@ -47,7 +46,7 @@ struct Compileish {
     /// empty or as a snapshot of a parent layer)
     pub(crate) root: PathBuf,
     #[clap(long)]
-    pub(crate) build_appliance: BuildApplianceArg,
+    pub(crate) build_appliance: PathBuf,
     #[clap(flatten)]
     pub(crate) external: CompileishExternal,
     #[clap(flatten)]
@@ -111,7 +110,7 @@ impl Compileish {
             self.label.clone(),
             self.external.target_arch,
             self.root.clone(),
-            self.build_appliance.clone().0,
+            self.build_appliance.clone(),
             DnfContext::new(
                 self.dnf.repos.clone(),
                 dnf_versionlock,
@@ -127,16 +126,5 @@ impl Compileish {
             FbpkgContext::new(self.fbpkg.resolved_fbpkgs.clone().map(JsonFile::into_inner)),
         )
         .map_err(Error::Compile)
-    }
-}
-
-#[derive(Debug, Clone)]
-struct BuildApplianceArg(antlir2_cas_dir::CasDir);
-
-impl FromStr for BuildApplianceArg {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> anyhow::Result<Self> {
-        Ok(Self(antlir2_cas_dir::CasDir::open(s)?))
     }
 }

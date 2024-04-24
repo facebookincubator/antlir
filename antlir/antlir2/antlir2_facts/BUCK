@@ -51,7 +51,6 @@ rust_binary(
         "tracing",
         "tracing-subscriber",
         ":antlir2_facts",
-        "//antlir/antlir2/antlir2_cas_dir:antlir2_cas_dir",
         "//antlir/antlir2/antlir2_isolate:antlir2_isolate",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",

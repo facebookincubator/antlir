@@ -334,10 +334,7 @@ fn run_dnf_driver(
 
     // We can have per-OS rpm macros to change the database backend that must be
     // copied into the built image.
-    let ba_macros = ctx
-        .build_appliance()
-        .unreliable_metadata_contents_path()
-        .join("etc/rpm/macros.db");
+    let ba_macros = ctx.build_appliance().join("etc/rpm/macros.db");
     if ba_macros.exists() {
         let db_macro_path = ctx.dst_path("/etc/rpm/macros.db")?;
         // If the macros.db file already exists, just use it as-is. Most likely
@@ -358,7 +355,7 @@ fn run_dnf_driver(
         .context("while serializing dnf-driver input")?;
     mfd.as_file().rewind()?;
 
-    let isol = IsolationContext::builder(ctx.build_appliance().unreliable_metadata_contents_path())
+    let isol = IsolationContext::builder(ctx.build_appliance())
         .ephemeral(false)
         .readonly()
         // random buck-out paths that might be being used (for installing .rpms)
