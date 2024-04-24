@@ -25,6 +25,7 @@ mod sendstream;
 mod spec;
 mod squashfs;
 mod tar;
+mod unprivileged_dir;
 mod vfat;
 mod xar;
 use spec::Spec;
@@ -41,6 +42,8 @@ pub(crate) struct PackageArgs {
     #[clap(long)]
     /// Specifications for the packaging
     spec: JsonFile<Spec>,
+    #[clap(long)]
+    dir: bool,
     #[clap(long)]
     /// Path to output the image
     out: PathBuf,
@@ -72,7 +75,7 @@ fn main() -> Result<()> {
 
     let rootless = antlir2_rootless::init().context("while setting up antlir2_rootless")?;
 
-    if !matches!(args.spec.as_inner(), Spec::CasDir(_)) {
+    if !args.dir {
         std::fs::File::create(&args.out)?;
     }
 
@@ -84,7 +87,7 @@ fn main() -> Result<()> {
         .with_max_level(tracing::Level::TRACE)
         .init();
 
-    let _root_guard = if need_to_reescalate {
+    let root_guard = if need_to_reescalate {
         Some(rootless.escalate()?)
     } else {
         None
@@ -100,6 +103,7 @@ fn main() -> Result<()> {
         Spec::Sendstream(p) => p.build(&args.out),
         Spec::Squashfs(p) => p.build(&args.out),
         Spec::Tar(p) => p.build(&args.out),
+        Spec::UnprivilegedDir(p) => p.build(&args.out, root_guard),
         Spec::Vfat(p) => p.build(&args.out),
         Spec::Xar(p) => p.build(&args.out),
     }

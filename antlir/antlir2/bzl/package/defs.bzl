@@ -67,6 +67,7 @@ def _generic_impl_with_layer(
             cmd_args("sudo", "--preserve-env=TMPDIR") if (sudo and not ctx.attrs._rootless) else cmd_args(),
             ctx.attrs._antlir2_packager[RunInfo],
             cmd_args(spec, format = "--spec={}"),
+            "--dir" if is_dir else cmd_args(),
             cmd_args(package.as_output(), format = "--out={}"),
             "--rootless" if ctx.attrs._rootless else cmd_args(),
         ),
@@ -337,6 +338,12 @@ _ext3, _ext3_anon = _new_package_rule(
     sudo = True,
 )
 
+_unprivileged_dir, _unprivileged_dir_anon = _new_package_rule(
+    format = "unprivileged_dir",
+    is_dir = True,
+    sudo = True,
+)
+
 package = struct(
     btrfs = btrfs,
     cas_dir = package_macro(_cas_dir),
@@ -353,5 +360,6 @@ package = struct(
     tar = package_macro(_tar),
     tar_gz = package_macro(_tar_gz),
     tar_zst = package_macro(_tar_zst),
+    unprivileged_dir = package_macro(_unprivileged_dir),
     vfat = package_macro(_vfat),
 )

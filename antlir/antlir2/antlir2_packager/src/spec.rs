@@ -19,6 +19,7 @@ pub enum Spec {
     Sendstream(crate::sendstream::Sendstream),
     Squashfs(crate::squashfs::Squashfs),
     Tar(crate::tar::Tar),
+    UnprivilegedDir(crate::unprivileged_dir::UnprivilegedDir),
     Vfat(crate::vfat::Vfat),
     Xar(crate::xar::Xar),
 }
