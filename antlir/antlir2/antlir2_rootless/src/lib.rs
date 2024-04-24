@@ -143,6 +143,16 @@ pub struct EscalationGuard {
     setgid: Option<Gid>,
 }
 
+impl EscalationGuard {
+    pub fn unprivileged_uid(&self) -> Option<Uid> {
+        self.setuid
+    }
+
+    pub fn unprivileged_gid(&self) -> Option<Gid> {
+        self.setgid
+    }
+}
+
 impl Drop for EscalationGuard {
     fn drop(&mut self) {
         trace!("dropping privileges");
