@@ -4085,10 +4085,10 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
     },
     visibility = [],
@@ -7993,10 +7993,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
     },
     visibility = [],
@@ -9612,10 +9612,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
     },
     visibility = [],
@@ -11135,10 +11135,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.6"],
+            deps = [":winapi-util-0.1.7"],
         ),
     },
     visibility = [],
@@ -11223,11 +11223,9 @@ cargo.rust_library(
         "std",
         "stringapiset",
         "synchapi",
-        "sysinfoapi",
         "winbase",
         "wincon",
         "winerror",
-        "winnt",
         "winuser",
     ],
     platform = {
@@ -11239,25 +11237,25 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "winapi-util-0.1.6.crate",
-    sha256 = "f29e6f9198ba0d26b4c9f07dbe6f9ed633e1f3d5b8b414090084349e46a52596",
-    strip_prefix = "winapi-util-0.1.6",
-    urls = ["https://static.crates.io/crates/winapi-util/0.1.6/download"],
+    name = "winapi-util-0.1.7.crate",
+    sha256 = "134306a13c5647ad6453e8deaec55d3a44d6021970129e6188735e74bf546697",
+    strip_prefix = "winapi-util-0.1.7",
+    urls = ["https://static.crates.io/crates/winapi-util/0.1.7/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "winapi-util-0.1.6",
-    srcs = [":winapi-util-0.1.6.crate"],
+    name = "winapi-util-0.1.7",
+    srcs = [":winapi-util-0.1.7.crate"],
     crate = "winapi_util",
-    crate_root = "winapi-util-0.1.6.crate/src/lib.rs",
+    crate_root = "winapi-util-0.1.7.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-0.3.9"],
+            deps = [":windows-sys-0.52.0"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-0.3.9"],
+            deps = [":windows-sys-0.52.0"],
         ),
     },
     visibility = [],
@@ -11370,6 +11368,7 @@ cargo.rust_library(
         "Win32_System_Diagnostics_Debug",
         "Win32_System_IO",
         "Win32_System_Memory",
+        "Win32_System_SystemInformation",
         "Win32_System_Threading",
         "Win32_System_WindowsProgramming",
         "Win32_UI",
