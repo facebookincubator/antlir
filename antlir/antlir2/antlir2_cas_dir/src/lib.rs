@@ -206,15 +206,6 @@ impl CasDir {
         self.path.as_ref()
     }
 
-    /// Get the path of the contents directory. Metadata (as reported by `stat`)
-    /// of this directory is unreliable - it's highly likely that ownership will
-    /// be wrong, xattrs missing, etc.
-    /// However, if your use case only requires the file contents and very basic
-    /// metadata (like executable bits) then this can be far more performant.
-    pub fn unreliable_metadata_contents_path(&self) -> &Path {
-        &self.contents_dir
-    }
-
     /// Hydrate the [CasDir] into a regular directory with all the filesystem
     /// metadata being reproduced. The directory must already exist and be
     /// empty.

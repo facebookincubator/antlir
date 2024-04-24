@@ -62,7 +62,7 @@ def _map_image(
         cmd_args(logs.as_output(), format = "--logs={}"),
         "map",
         "--working-dir=antlir2-out",
-        cmd_args(build_appliance.cas_dir, format = "--build-appliance={}"),
+        cmd_args(build_appliance.dir, format = "--build-appliance={}"),
         cmd_args(str(ctx.label), format = "--label={}"),
         cmd_args(identifier, format = "--identifier={}"),
         cmd_args(parent, format = "--parent={}") if parent else cmd_args(),

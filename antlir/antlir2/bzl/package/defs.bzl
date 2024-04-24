@@ -51,7 +51,7 @@ def _generic_impl_with_layer(
 
     package = ctx.actions.declare_output(output_name, dir = is_dir)
     spec_opts = {
-        "build_appliance": build_appliance[BuildApplianceInfo].cas_dir,
+        "build_appliance": build_appliance[BuildApplianceInfo].dir,
         "layer": layer[LayerInfo].subvol_symlink,
     }
     for key in rule_attr_keys:

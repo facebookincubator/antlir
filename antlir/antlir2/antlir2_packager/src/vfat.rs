@@ -43,21 +43,20 @@ impl PackageFormat for Vfat {
             .context("Failed to sync output file to disk")?;
         drop(file);
 
-        let isol_context =
-            IsolationContext::builder(self.build_appliance.unreliable_metadata_contents_path())
-                .ephemeral(false)
-                .readonly()
-                .tmpfs(Path::new("/__antlir2__/out"))
-                .outputs(("/__antlir2__/out/vfat", out))
-                .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
-                .inputs((
-                    PathBuf::from("/__antlir2__/working_directory"),
-                    std::env::current_dir()?,
-                ))
-                .working_directory(Path::new("/__antlir2__/working_directory"))
-                .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
-                .setenv(("MTOOLS_SKIP_CHECK", "1"))
-                .build();
+        let isol_context = IsolationContext::builder(self.build_appliance.path())
+            .ephemeral(false)
+            .readonly()
+            .tmpfs(Path::new("/__antlir2__/out"))
+            .outputs(("/__antlir2__/out/vfat", out))
+            .inputs((Path::new("/__antlir2__/root"), self.layer.as_path()))
+            .inputs((
+                PathBuf::from("/__antlir2__/working_directory"),
+                std::env::current_dir()?,
+            ))
+            .working_directory(Path::new("/__antlir2__/working_directory"))
+            .setenv(("RUST_LOG", std::env::var_os("RUST_LOG").unwrap_or_default()))
+            .setenv(("MTOOLS_SKIP_CHECK", "1"))
+            .build();
 
         // Build the vfat disk file first
         let mut mkfs = unshare(isol_context.clone())?.command("/usr/sbin/mkfs.vfat")?;
