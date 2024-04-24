@@ -42,7 +42,7 @@ impl Depgraph {
         // drop privileges when the process is invoked with `sudo`, and as such
         // is not used if the entire build is running solely as an unprivileged
         // user.
-        let rootless = if self.rootless {
+        let rootless = if self.rootless && self.add_built_items.is_some() {
             antlir2_rootless::unshare_new_userns().context("while setting up userns")?;
             None
         } else {
