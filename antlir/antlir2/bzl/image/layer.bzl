@@ -85,7 +85,11 @@ def _map_image(
 
     return cmd, out
 
-def _container_sub_target(binary: Dependency | None, subvol: Artifact, mounts: list[mount_record]) -> list[Provider]:
+def _container_sub_target(
+        binary: Dependency | None,
+        subvol: Artifact,
+        mounts: list[mount_record],
+        rootless: bool) -> list[Provider]:
     if not binary:
         return [DefaultInfo()]
     dev_mode_args = cmd_args()
@@ -97,8 +101,9 @@ def _container_sub_target(binary: Dependency | None, subvol: Artifact, mounts: l
     return [
         DefaultInfo(),
         RunInfo(cmd_args(
-            "sudo",
+            "sudo" if not rootless else cmd_args(),
             binary[RunInfo],
+            "--rootless" if rootless else cmd_args(),
             cmd_args(subvol, format = "--subvol={}"),
             cmd_args([container_mount_args(mount) for mount in mounts]),
             dev_mode_args,
@@ -457,7 +462,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             DefaultInfo(
                 sub_targets = {
                     "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
-                    "container": _container_sub_target(ctx.attrs._run_container, final_subvol, mounts = phase_mounts),
+                    "container": _container_sub_target(ctx.attrs._run_container, final_subvol, mounts = phase_mounts, rootless = ctx.attrs._rootless),
                     "facts": [DefaultInfo(final_facts_db)],
                     "features": [DefaultInfo(features_json_artifact)],
                     "logs": [DefaultInfo(all_logs, sub_targets = {
@@ -507,7 +512,7 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
     mounts = all_mounts(features = all_features, parent_layer = parent_layer_info)
     # @oss-disable
 
-    sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, final_subvol, mounts)
+    sub_targets["container"] = _container_sub_target(ctx.attrs._run_container, final_subvol, mounts, ctx.attrs._rootless)
     sub_targets["debug"] = [DefaultInfo(sub_targets = debug_sub_targets)]
 
     providers = [
