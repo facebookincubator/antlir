@@ -4085,10 +4085,10 @@ cargo.rust_library(
     edition = "2021",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
     },
     visibility = [],
@@ -7993,10 +7993,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
     },
     visibility = [],
@@ -9612,10 +9612,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
     },
     visibility = [],
@@ -11135,10 +11135,10 @@ cargo.rust_library(
     edition = "2018",
     platform = {
         "windows-gnu": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
         "windows-msvc": dict(
-            deps = [":winapi-util-0.1.7"],
+            deps = [":winapi-util-0.1.8"],
         ),
     },
     visibility = [],
@@ -11237,18 +11237,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "winapi-util-0.1.7.crate",
-    sha256 = "134306a13c5647ad6453e8deaec55d3a44d6021970129e6188735e74bf546697",
-    strip_prefix = "winapi-util-0.1.7",
-    urls = ["https://static.crates.io/crates/winapi-util/0.1.7/download"],
+    name = "winapi-util-0.1.8.crate",
+    sha256 = "4d4cc384e1e73b93bafa6fb4f1df8c41695c8a91cf9c4c64358067d15a7b6c6b",
+    strip_prefix = "winapi-util-0.1.8",
+    urls = ["https://static.crates.io/crates/winapi-util/0.1.8/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "winapi-util-0.1.7",
-    srcs = [":winapi-util-0.1.7.crate"],
+    name = "winapi-util-0.1.8",
+    srcs = [":winapi-util-0.1.8.crate"],
     crate = "winapi_util",
-    crate_root = "winapi-util-0.1.7.crate/src/lib.rs",
+    crate_root = "winapi-util-0.1.8.crate/src/lib.rs",
     edition = "2021",
     platform = {
         "windows-gnu": dict(
