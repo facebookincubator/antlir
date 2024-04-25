@@ -11,6 +11,7 @@ use std::os::unix::process::CommandExt;
 use std::path::PathBuf;
 
 use antlir2_isolate::nspawn;
+use antlir2_isolate::unshare;
 use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::anyhow;
@@ -24,6 +25,8 @@ use tracing_subscriber::prelude::*;
 struct Args {
     #[clap(long)]
     subvol: PathBuf,
+    #[clap(long)]
+    rootless: bool,
     /// `--bind-mount-ro src dst` creates an RO bind-mount of src to dst in the subvol
     #[clap(long, num_args = 2)]
     bind_mount_ro: Vec<PathBuf>,
@@ -35,9 +38,9 @@ struct Args {
     /// `--user` run command as a given user
     #[clap(long, default_value = "root")]
     user: String,
-    #[clap(long, conflicts_with = "boot")]
+    #[clap(long, conflicts_with_all = ["boot", "rootless"])]
     pipe: bool,
-    #[clap(long, conflicts_with = "pipe")]
+    #[clap(long, conflicts_with_all = ["pipe", "rootless"])]
     boot: bool,
     #[clap(long)]
     chdir: Option<PathBuf>,
@@ -58,6 +61,10 @@ fn init_logging() {
 fn main() -> anyhow::Result<()> {
     let args = Args::parse();
     init_logging();
+
+    if args.rootless {
+        antlir2_rootless::unshare_new_userns().context("while unsharing userns")?;
+    }
 
     let repo_root =
         find_root::find_repo_root(std::env::current_exe().context("while getting argv[0]")?)
@@ -87,13 +94,15 @@ fn main() -> anyhow::Result<()> {
         .user(&args.user)
         .inputs(bind_ro_inputs)
         .outputs(bind_rw)
-        .ephemeral(true)
-        .invocation_type(match (args.boot, args.pipe) {
+        .ephemeral(true);
+    if !args.rootless {
+        cmd_builder.invocation_type(match (args.boot, args.pipe) {
             (true, false) => InvocationType::BootReadOnly,
             (true, true) => unreachable!("--boot and --pipe are mutually exclusive"),
             (false, true) => InvocationType::Pid2Pipe,
             (false, false) => InvocationType::Pid2Interactive,
         });
+    }
     if args.artifacts_require_repo {
         cmd_builder.inputs(repo_root);
         cmd_builder.inputs(PathBuf::from("/usr/local/fbcode"));
@@ -108,9 +117,10 @@ fn main() -> anyhow::Result<()> {
     let mut cmd = args.cmd.into_iter();
     let program = cmd.next().unwrap_or(OsString::from("/bin/bash"));
 
-    Err(nspawn(cmd_builder.build())?
-        .command(program)?
-        .args(cmd)
-        .exec()
-        .into())
+    let mut command = match args.rootless {
+        true => unshare(cmd_builder.build())?.command(program)?,
+        false => nspawn(cmd_builder.build())?.command(program)?,
+    };
+
+    Err(command.args(cmd).exec().into())
 }
