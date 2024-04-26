@@ -1,0 +1,48 @@
+load("@prelude//:rules.bzl", "git_fetch")
+load("//antlir/antlir2/bzl:selects.bzl", "selects")
+load("//antlir/antlir2/genrule_in_image:genrule_in_image.bzl", "genrule_in_image")
+load("//antlir/bzl:build_defs.bzl", "export_file")
+
+oncall("antlir")
+
+git_fetch(
+    name = "kernel.git",
+    repo = "ssh://git-ro.vip.facebook.com/data/gitrepos/kernel/linux.git",
+    rev = "44ec95f7d7f400b9cdc16e0eea5dec91618f65c9",
+)
+
+export_file(
+    name = "kernelconfig.x86_64",
+)
+
+export_file(
+    name = "kernelconfig.aarch64",
+)
+
+genrule_in_image(
+    name = "kernel",
+    out = "vmlinuz",
+    bash = selects.apply(
+        selects.join(
+            out = select({
+                "ovr_config//cpu:arm64": "arch/arm64/boot/Image.gz",
+                "ovr_config//cpu:x86_64": "arch/x86/boot/bzImage",
+            }),
+            config = select({
+                "ovr_config//cpu:arm64": ":kernelconfig.aarch64",
+                "ovr_config//cpu:x86_64": ":kernelconfig.x86_64",
+            }),
+        ),
+        lambda sel: """
+            odir=`realpath $BUCK_SCRATCH_PATH`
+            cp $(location {config}) "$odir/.config"
+            make O="$odir" -C $(location :kernel.git) -j`nproc`
+            cp "$odir/{out}" $OUT
+        """.format(
+            out = sel.out,
+            config = sel.config,
+        ),
+    ),
+    layer = "//kernel/build/image:_appliance.layer",
+    rootless = True,
+)
