@@ -41,6 +41,12 @@ static SCRATCH: &str = "/tmp/__antlir2__";
 pub static NEWROOT: &str = "/tmp/__antlir2__/newroot";
 static NEWROOT_PROC: &str = "/tmp/__antlir2__/newroot/proc";
 
+/// MS_NOSYMFOLLOW (since Linux 5.10)
+/// Do not follow symbolic links when resolving paths.  Symbolic links can still
+/// be created, and readlink(1), readlink(2), realpath(1), and realpath(3) all
+/// still work properly.
+static MS_NOSYMFOLLOW: MsFlags = unsafe { MsFlags::from_bits_unchecked(256) };
+
 pub struct Args {
     pub root: PathBuf,
     pub root_ro: bool,
@@ -170,7 +176,11 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
             Ok(_) => Ok(()),
             Err(e) => match e.kind() {
                 ErrorKind::AlreadyExists => Ok(()),
-                // we get ROFS even if the file already exists, so maybe the
+                // The target path could already exist but be a broken symlink
+                // in which case this will return ENOENT, but since we use
+                // MS_NOSYMFOLLOW the mount call might still succeed.
+                ErrorKind::NotFound => Ok(()),
+                // We get ROFS even if the file already exists, so maybe the
                 // following mount still has a chance of working
                 ErrorKind::ReadOnlyFilesystem => Ok(()),
                 _ => Err(e),
@@ -180,10 +190,9 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
             Some(&bind.src),
             &bind.dst,
             None::<&str>,
-            MsFlags::MS_BIND,
+            MsFlags::MS_BIND | MS_NOSYMFOLLOW,
             None::<&str>,
         )?;
-        if bind.ro {}
     }
     // MS_BIND ignores MS_RDONLY, so let's go try to make all the readonly binds actually readonly
     // TODO(T185979228) we should also check for any recursive bind mounts
