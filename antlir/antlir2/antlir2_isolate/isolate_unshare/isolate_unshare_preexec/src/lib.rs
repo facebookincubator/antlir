@@ -27,15 +27,19 @@ use std::fs::create_dir_all;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::io::Result;
+use std::os::fd::AsRawFd;
 use std::path::PathBuf;
 
+use nix::dir::Dir;
 use nix::errno::Errno;
+use nix::fcntl::OFlag;
 use nix::mount::mount;
 use nix::mount::MsFlags;
 use nix::sched::unshare;
 use nix::sched::CloneFlags;
 use nix::sys::stat::Mode;
 use nix::unistd::mkdir;
+use nix::unistd::symlinkat;
 
 static SCRATCH: &str = "/tmp/__antlir2__";
 pub static NEWROOT: &str = "/tmp/__antlir2__/newroot";
@@ -139,10 +143,14 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
         nix::mount::mount(
             None::<&str>,
             tmpfs,
-            if dev { Some("devtmpfs") } else { Some("tmpfs") },
+            Some("tmpfs"),
             MsFlags::empty(),
             None::<&str>,
         )?;
+        if dev {
+            let dir = Dir::open(tmpfs, OFlag::O_DIRECTORY, Mode::empty())?;
+            symlinkat("/proc/self/fd", Some(dir.as_raw_fd()), "fd")?;
+        }
     }
 
     for bind in &args.dir_binds {

@@ -113,6 +113,17 @@ impl<'a> IsolatedContext<'a> {
                 });
             }
         }
+        for devtmpfs in devtmpfs {
+            for dev in ["null", "random", "urandom"] {
+                file_binds.push(isolate_unshare_preexec::Bind {
+                    src: Path::new("/dev").join(dev),
+                    dst: Path::new(isolate_unshare_preexec::NEWROOT)
+                        .join(devtmpfs.strip_prefix("/").unwrap_or(devtmpfs))
+                        .join(dev),
+                    ro: false,
+                });
+            }
+        }
 
         let (uid, gid) = if user == "root" {
             (0, 0)
