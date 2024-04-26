@@ -90,7 +90,13 @@ impl<'a> IsolatedContext<'a> {
             .chain(outputs.iter().map(|(dst, src)| (dst, src, false)))
         {
             let ft = src.metadata()?.file_type();
-            let dst = dst.canonicalize().unwrap_or_else(|_| dst.clone().into());
+            let dst = if let Ok(target) =
+                std::fs::read_link(layer.join(dst.strip_prefix("/").unwrap_or(dst)))
+            {
+                dst.parent().unwrap_or(dst).join(target)
+            } else {
+                dst.clone().into_owned()
+            };
             let dst = Path::new(isolate_unshare_preexec::NEWROOT)
                 .join(dst.strip_prefix("/").unwrap_or(&dst));
             if ft.is_dir() {
