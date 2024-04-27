@@ -206,7 +206,7 @@ cargo.rust_library(
     edition = "2018",
     features = ["default"],
     visibility = [],
-    deps = [":unicode-width-0.1.11"],
+    deps = [":unicode-width-0.1.12"],
 )
 
 alias(
@@ -1367,7 +1367,7 @@ cargo.rust_library(
         ":bitflags-1.3.2",
         ":strsim-0.8.0",
         ":textwrap-0.11.0",
-        ":unicode-width-0.1.11",
+        ":unicode-width-0.1.12",
         ":vec_map-0.8.2",
     ],
 )
@@ -1502,7 +1502,7 @@ cargo.rust_library(
         ":strsim-0.11.1",
         ":terminal_size-0.3.0",
         ":unicase-2.7.0",
-        ":unicode-width-0.1.11",
+        ":unicode-width-0.1.12",
     ],
 )
 
@@ -1648,7 +1648,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":termcolor-1.4.1",
-        ":unicode-width-0.1.11",
+        ":unicode-width-0.1.12",
     ],
 )
 
@@ -1797,7 +1797,7 @@ cargo.rust_library(
     deps = [
         ":lazy_static-1.4.0",
         ":libc-0.2.153",
-        ":unicode-width-0.1.11",
+        ":unicode-width-0.1.12",
     ],
 )
 
@@ -3468,23 +3468,23 @@ cargo.rust_library(
 
 alias(
     name = "flate2",
-    actual = ":flate2-1.0.28",
+    actual = ":flate2-1.0.29",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "flate2-1.0.28.crate",
-    sha256 = "46303f565772937ffe1d394a4fac6f411c6013172fadde9dcdb1e147a086940e",
-    strip_prefix = "flate2-1.0.28",
-    urls = ["https://static.crates.io/crates/flate2/1.0.28/download"],
+    name = "flate2-1.0.29.crate",
+    sha256 = "4556222738635b7a3417ae6130d8f52201e45a0c4d1a907f0826383adb5f85e7",
+    strip_prefix = "flate2-1.0.29",
+    urls = ["https://static.crates.io/crates/flate2/1.0.29/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "flate2-1.0.28",
-    srcs = [":flate2-1.0.28.crate"],
+    name = "flate2-1.0.29",
+    srcs = [":flate2-1.0.29.crate"],
     crate = "flate2",
-    crate_root = "flate2-1.0.28.crate/src/lib.rs",
+    crate_root = "flate2-1.0.29.crate/src/lib.rs",
     edition = "2018",
     features = [
         "any_impl",
@@ -9544,7 +9544,7 @@ cargo.rust_library(
         ":radix_trie-0.2.1",
         ":rustyline-derive-0.8.0",
         ":unicode-segmentation-1.11.0",
-        ":unicode-width-0.1.11",
+        ":unicode-width-0.1.12",
     ],
 )
 
@@ -11826,7 +11826,7 @@ cargo.rust_library(
     crate_root = "textwrap-0.11.0.crate/src/lib.rs",
     edition = "2015",
     visibility = [],
-    deps = [":unicode-width-0.1.11"],
+    deps = [":unicode-width-0.1.12"],
 )
 
 alias(
@@ -11861,7 +11861,7 @@ cargo.rust_library(
         ":smawk-0.3.2",
         ":terminal_size-0.2.6",
         ":unicode-linebreak-0.1.5",
-        ":unicode-width-0.1.11",
+        ":unicode-width-0.1.12",
     ],
 )
 
@@ -12405,7 +12405,7 @@ cargo.rust_library(
         ":serde-1.0.198",
         ":serde_spanned-0.6.5",
         ":toml_datetime-0.6.5",
-        ":winnow-0.6.6",
+        ":winnow-0.6.7",
     ],
 )
 
@@ -13210,24 +13210,24 @@ cargo.rust_library(
 
 alias(
     name = "unicode-width",
-    actual = ":unicode-width-0.1.11",
+    actual = ":unicode-width-0.1.12",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "unicode-width-0.1.11.crate",
-    sha256 = "e51733f11c9c4f72aa0c160008246859e340b00807569a0da0e7a1079b27ba85",
-    strip_prefix = "unicode-width-0.1.11",
-    urls = ["https://static.crates.io/crates/unicode-width/0.1.11/download"],
+    name = "unicode-width-0.1.12.crate",
+    sha256 = "68f5e5f3158ecfd4b8ff6fe086db7c8467a2dfdac97fe420f2b7c4aa97af66d6",
+    strip_prefix = "unicode-width-0.1.12",
+    urls = ["https://static.crates.io/crates/unicode-width/0.1.12/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "unicode-width-0.1.11",
-    srcs = [":unicode-width-0.1.11.crate"],
+    name = "unicode-width-0.1.12",
+    srcs = [":unicode-width-0.1.12.crate"],
     crate = "unicode_width",
-    crate_root = "unicode-width-0.1.11.crate/src/lib.rs",
-    edition = "2015",
+    crate_root = "unicode-width-0.1.12.crate/src/lib.rs",
+    edition = "2021",
     features = ["default"],
     visibility = [],
 )
@@ -14091,18 +14091,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "winnow-0.6.6.crate",
-    sha256 = "f0c976aaaa0e1f90dbb21e9587cdaf1d9679a1cde8875c0d6bd83ab96a208352",
-    strip_prefix = "winnow-0.6.6",
-    urls = ["https://static.crates.io/crates/winnow/0.6.6/download"],
+    name = "winnow-0.6.7.crate",
+    sha256 = "14b9415ee827af173ebb3f15f9083df5a122eb93572ec28741fb153356ea2578",
+    strip_prefix = "winnow-0.6.7",
+    urls = ["https://static.crates.io/crates/winnow/0.6.7/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "winnow-0.6.6",
-    srcs = [":winnow-0.6.6.crate"],
+    name = "winnow-0.6.7",
+    srcs = [":winnow-0.6.7.crate"],
     crate = "winnow",
-    crate_root = "winnow-0.6.6.crate/src/lib.rs",
+    crate_root = "winnow-0.6.7.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
