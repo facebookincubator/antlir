@@ -2583,7 +2583,7 @@ cargo.rust_library(
     visibility = [],
     deps = [
         ":cfg-if-1.0.0",
-        ":hashbrown-0.14.3",
+        ":hashbrown-0.14.5",
         ":lock_api-0.4.12",
         ":once_cell-1.19.0",
         ":parking_lot_core-0.9.10",
@@ -4342,23 +4342,23 @@ cargo.rust_library(
 
 alias(
     name = "hashbrown",
-    actual = ":hashbrown-0.14.3",
+    actual = ":hashbrown-0.14.5",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "hashbrown-0.14.3.crate",
-    sha256 = "290f1a1d9242c78d09ce40a5e87e7554ee637af1351968159f4952f028f75604",
-    strip_prefix = "hashbrown-0.14.3",
-    urls = ["https://static.crates.io/crates/hashbrown/0.14.3/download"],
+    name = "hashbrown-0.14.5.crate",
+    sha256 = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1",
+    strip_prefix = "hashbrown-0.14.5",
+    urls = ["https://static.crates.io/crates/hashbrown/0.14.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "hashbrown-0.14.3",
-    srcs = [":hashbrown-0.14.3.crate"],
+    name = "hashbrown-0.14.5",
+    srcs = [":hashbrown-0.14.5.crate"],
     crate = "hashbrown",
-    crate_root = "hashbrown-0.14.3.crate/src/lib.rs",
+    crate_root = "hashbrown-0.14.5.crate/src/lib.rs",
     edition = "2021",
     features = [
         "ahash",
@@ -4930,7 +4930,7 @@ cargo.rust_library(
     deps = [
         ":arbitrary-1.3.2",
         ":equivalent-1.0.1",
-        ":hashbrown-0.14.3",
+        ":hashbrown-0.14.5",
         ":rayon-1.10.0",
         ":serde-1.0.199",
     ],
