@@ -178,6 +178,7 @@ def _implicit_image_test(
         # @oss-disable
         _static_list_wrapper: str | None = None,
         exec_compatible_with: list[str] | Select | None = None,
+        target_compatible_with: list[str] | Select | None = None,
         visibility: list[str] | None = None,
         **kwargs):
     test_rule(
@@ -228,6 +229,7 @@ def _implicit_image_test(
         # @oss-disable
         _static_list_wrapper = _static_list_wrapper,
         exec_compatible_with = exec_compatible_with,
+        target_compatible_with = target_compatible_with,
         visibility = visibility,
     )
 
