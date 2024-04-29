@@ -170,6 +170,10 @@ fn main() -> Result<()> {
             .with_context(|| format!("while making {} world-writable", path.display()))?;
     }
 
+    if spec.rootless {
+        ctx.devtmpfs(Path::new("/dev"));
+    }
+
     match spec.boot {
         Some(boot) => {
             let container_stdout = container_stdout_file()?;
