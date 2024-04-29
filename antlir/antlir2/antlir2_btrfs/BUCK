@@ -45,22 +45,24 @@ image.layer(
 image_rust_test(
     name = "antlir2_btrfs-image-test",
     srcs = glob(["src/*.rs"]),
-    compatible_with = [
-        "ovr_config//os:linux",
-    ],
     layer = ":test-layer",
+    target_compatible_with = [
+        "ovr_config//os:linux",
+        "//antlir/antlir2/antlir2_rootless:rooted",
+    ],
     deps = deps,
 )
 
 image_rust_test(
     name = "antlir2_btrfs-image-test-unprivileged",
     srcs = glob(["src/*.rs"]),
-    compatible_with = [
-        "ovr_config//os:linux",
-    ],
     layer = ":test-layer",
     run_as_user = "nobody",
     rustc_flags = ["--cfg=unprivileged"],
+    target_compatible_with = [
+        "ovr_config//os:linux",
+        "//antlir/antlir2/antlir2_rootless:rooted",
+    ],
     deps = deps,
 )
 
