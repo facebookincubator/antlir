@@ -8,6 +8,7 @@
 use std::collections::HashMap;
 use std::ffi::OsString;
 use std::os::unix::process::CommandExt;
+use std::path::Path;
 use std::path::PathBuf;
 
 use antlir2_isolate::nspawn;
@@ -102,6 +103,8 @@ fn main() -> anyhow::Result<()> {
             (false, true) => InvocationType::Pid2Pipe,
             (false, false) => InvocationType::Pid2Interactive,
         });
+    } else {
+        cmd_builder.devtmpfs(Path::new("/dev"));
     }
     if args.artifacts_require_repo {
         cmd_builder.inputs(repo_root);
