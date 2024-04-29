@@ -32,10 +32,13 @@ class TestInstalledBinaryGnuDebuglink(unittest.TestCase):
             ],
             os.listdir("/foo"),
         )
-        readelf_out = subprocess.check_output(
+        readelf_out = subprocess.run(
             ["readelf", "--string-dump=.gnu_debuglink", "/foo/true-rs", "-wk"],
             text=True,
-        )
+            capture_output=True,
+            check=True,
+            errors="ignore",
+        ).stdout
         match = re.search(r"Separate debug info file: (.+)", readelf_out)
         if not match or not match.group(1):
             self.fail(f"Could not find debuglink in binary: {readelf_out}")
