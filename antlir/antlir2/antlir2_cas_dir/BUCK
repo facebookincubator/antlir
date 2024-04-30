@@ -24,9 +24,12 @@ rust_library(
 )
 
 image.layer(
-    name = "test-layer",
+    name = "test-layer-setup",
     features = [
-        feature.rpms_install(rpms = ["bash"]),
+        feature.rpms_install(rpms = [
+            "bash",
+            "coreutils",
+        ]),
         feature.ensure_dirs_exist(dirs = "/src"),
         feature.ensure_dirs_exist(dirs = "/hydrated"),
         feature.install(
@@ -43,6 +46,18 @@ image.layer(
             target = "/src/subdir/empty",
         ),
     ],
+)
+
+image.layer(
+    name = "test-layer",
+    features = [
+        # antlir2 does not provide an api to do a hardlink
+        feature.genrule(
+            bash = "ln /src/empty /src/empty.link",
+            user = "root",
+        ),
+    ],
+    parent_layer = ":test-layer-setup",
 )
 
 image_rust_test(
