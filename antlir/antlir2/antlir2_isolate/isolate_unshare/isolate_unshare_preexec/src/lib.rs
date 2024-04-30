@@ -180,7 +180,12 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
             }?;
         }
 
-        match File::create(&bind.dst) {
+        match File::options()
+            .create(true)
+            .truncate(false)
+            .write(true)
+            .open(&bind.dst)
+        {
             Ok(_) => Ok(()),
             Err(e) => match e.kind() {
                 ErrorKind::AlreadyExists => Ok(()),
