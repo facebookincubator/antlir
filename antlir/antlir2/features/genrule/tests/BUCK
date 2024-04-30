@@ -197,3 +197,22 @@ image_diff_test(
     diff_type = "file",
     layer = ":nobody",
 )
+
+image.layer(
+    name = "devices",
+    features = [
+        feature.genrule(
+            bash = """
+                echo "foo" > /dev/null
+            """,
+            user = "root",
+        ),
+        feature.genrule(
+            bash = """
+                echo "foo" > /dev/null
+            """,
+            user = "nobody",
+        ),
+    ],
+    parent_layer = ":base",
+)
