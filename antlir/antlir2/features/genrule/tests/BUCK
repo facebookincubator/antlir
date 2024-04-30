@@ -203,13 +203,13 @@ image.layer(
     features = [
         feature.genrule(
             bash = """
-                echo "foo" > /dev/null
+                echo foo | tee -a /dev/null
             """,
             user = "root",
         ),
         feature.genrule(
             bash = """
-                echo "foo" > /dev/null
+                echo foo | tee -a /dev/null
             """,
             user = "nobody",
         ),

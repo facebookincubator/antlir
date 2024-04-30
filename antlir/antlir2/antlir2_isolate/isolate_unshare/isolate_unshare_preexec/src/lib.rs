@@ -145,7 +145,7 @@ pub fn isolate_unshare_preexec(args: &Args) -> Result<()> {
             tmpfs,
             Some("tmpfs"),
             MsFlags::empty(),
-            None::<&str>,
+            if dev { Some("mode=0755") } else { None },
         )?;
         if dev {
             let dir = Dir::open(tmpfs, OFlag::O_DIRECTORY, Mode::empty())?;
