@@ -296,8 +296,18 @@ mod tests {
 
     #[test]
     fn hardlinks() {
-        // antlir2 doesn't provide a hardlink api, so do it here
-        std::fs::hard_link("/src/empty", "/src/empty.link").expect("failed to hardlink");
+        {
+            let ino = std::fs::metadata("/src/empty")
+                .expect("failed to stat /src/empty")
+                .ino();
+            let ino2 = std::fs::metadata("/src/empty.link")
+                .expect("failed to stat /src/empty.link")
+                .ino();
+            assert_eq!(
+                ino, ino2,
+                "hardlinks should have same ino before cas_dir gets involved"
+            );
+        }
         let cas_dir = dehydrate_and_hydrate(CasDirOpts::default());
         {
             let ino = std::fs::metadata(cas_dir.contents_dir.join("empty"))
