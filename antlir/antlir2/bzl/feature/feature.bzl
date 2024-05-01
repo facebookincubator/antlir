@@ -311,6 +311,10 @@ def feature_attrs(
     features_attr = []
     features_target_compatible_with = []
     for feat in features:
+        if not feat:
+            # for ergonomics, select() can return None so just skip any None
+            # elements
+            continue
         if types.is_string(feat):
             features_attr.append(feat)
         elif type(feat) == "selector":
