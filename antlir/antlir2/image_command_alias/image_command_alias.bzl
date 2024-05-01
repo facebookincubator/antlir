@@ -16,7 +16,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         "parent_layer": ctx.attrs.layer,
         "rootless": ctx.attrs._rootless,
         "target_arch": ctx.attrs._target_arch,
-        "_feature_feature_targets": [ctx.attrs._prep_feature],
+        "_feature_features": [ctx.attrs._prep_feature],
         "_new_facts_db": ctx.attrs._new_facts_db,
         "_rootless": ctx.attrs._rootless,
         "_run_container": None,

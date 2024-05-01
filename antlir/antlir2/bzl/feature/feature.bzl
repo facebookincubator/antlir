@@ -80,7 +80,6 @@ load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod_rule")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:types.bzl", "types")
-load("//antlir/antlir2/features/feature_info.bzl", "ParseTimeFeature")
 load("//antlir/bzl/build_defs.bzl", "config")
 load(":cfg.bzl", "feature_cfg")
 
@@ -143,31 +142,28 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
     # Merge inline features into a single JSON file
     inline_features = []
     anon_features = []
-    for key, inline in ctx.attrs.inline_features.items():
-        feature_deps = ctx.attrs.inline_features_deps.get(key, None)
-        feature_deps_or_srcs = ctx.attrs.inline_features_deps_or_srcs.get(key, None)
-        feature_unnamed_deps_or_srcs = ctx.attrs.inline_features_unnamed_deps_or_srcs.get(key, None)
-        feature_exec_deps = ctx.attrs.inline_features_exec_deps.get(key, None)
-        feature_srcs = ctx.attrs.inline_features_srcs.get(key, None)
-        feature_args = ctx.attrs.inline_features_args.get(key, None)
+    feature_deps = []
+    for feat in ctx.attrs.features:
+        # select() can return None for some branches
+        if not feat:
+            continue
+        if type(feat) == "dependency":
+            feature_deps.append(feat)
+            continue
 
-        anon_kwargs = inline["kwargs"]
-        if feature_deps != None:
-            anon_kwargs.update(feature_deps)
-        if feature_deps_or_srcs != None:
-            anon_kwargs.update(feature_deps_or_srcs)
-        if feature_unnamed_deps_or_srcs != None:
-            anon_kwargs["unnamed_deps_or_srcs"] = feature_unnamed_deps_or_srcs
-        if feature_exec_deps != None:
-            anon_kwargs.update(feature_exec_deps)
-        if feature_srcs != None:
-            anon_kwargs.update(feature_srcs)
-        if feature_args != None:
-            anon_kwargs["args"] = feature_args
+        feature_type, plugin, kwargs, deps_or_srcs, srcs, deps, exec_deps, unnamed_deps_or_srcs, args = feat
 
-        anon_kwargs["plugin"] = ctx.attrs.inline_features_plugins[key]
+        anon_kwargs = kwargs | deps_or_srcs | srcs | deps | exec_deps
+        anon_kwargs["plugin"] = plugin
+
+        # TODO: make args consistent with the other types
+        if args:
+            anon_kwargs["args"] = args
+        if unnamed_deps_or_srcs:
+            anon_kwargs["unnamed_deps_or_srcs"] = unnamed_deps_or_srcs
+
         anon_features.append(ctx.actions.anon_target(
-            _anon_rules[inline["feature_type"]],
+            _anon_rules[feature_type],
             anon_kwargs,
         ))
 
@@ -189,10 +185,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             for af in flat
         ]
         features = anon_features + inline_features
-        for dep in ctx.attrs.feature_targets:
-            # select() can return None for some branches
-            if not dep:
-                continue
+        for dep in feature_deps:
             deps = flatten.flatten(dep)
             for dep in deps:
                 features.extend(dep[FeatureInfo].features)
@@ -236,86 +229,57 @@ _nestable_value = attrs.one_of(
 nestable_value = _nestable_value
 
 shared_features_attrs = {
-    # feature targets are instances of `_feature` rules that are merged into
-    # the output of this rule
-    "feature_targets": attrs.list(
-        attrs.one_of(
-            # optional so that a `select` can return `None` for some configurations
-            attrs.option(
-                attrs.dep(providers = [FeatureInfo]),
-            ),
-            attrs.list(attrs.dep(providers = [FeatureInfo])),
-        ),
-        default = [],
-    ),
-    # inline features are direct calls to a feature macro inside a layer()
-    # or feature() rule instance
-    "inline_features": attrs.dict(
-        # Unique index for this feature - matched up with all the other
-        # inline_features_* attrs
-        attrs.string(),
-        attrs.dict(
-            # top level kwargs
-            attrs.string(),  # kwarg name
-            _nestable_value,
-        ),
-        default = {},
-    ),
-    # Map "feature key" -> "feature attrs.arg"
-    "inline_features_args": attrs.dict(
-        attrs.string(),
-        attrs.option(attrs.dict(attrs.string(), attrs.arg(anon_target_compatible = True))),
-        default = {},
-    ),
-    # Features need a way to coerce strings to sources or dependencies.
-    # Map "feature key" -> "feature deps"
-    "inline_features_deps": attrs.dict(
-        attrs.string(),
+    "features": attrs.list(
+        # allow None to be intermixed in the features list so that a `select` is
+        # able to do nothing for certain configurations
         attrs.option(
-            attrs.dict(
-                attrs.string(),
-                attrs.one_of(
-                    attrs.dep(),
-                    # @oss-disable
+            attrs.one_of(
+                attrs.dep(providers = [FeatureInfo], doc = "feature targets to include"),
+                attrs.tuple(
+                    attrs.string(doc = "ParseTimeFeature.feature_type"),
+                    attrs.exec_dep(
+                        providers = [FeaturePluginInfo],
+                        doc = "ParseTimeFeature.plugin",
+                    ),
+                    attrs.dict(attrs.string(), _nestable_value, doc = "kwargs"),
+                    attrs.dict(
+                        attrs.string(),
+                        attrs.one_of(attrs.dep(), attrs.source()),
+                        doc = "ParseTimeFeature.deps_or_srcs",
+                    ),
+                    attrs.dict(
+                        attrs.string(),
+                        attrs.source(),
+                        doc = "ParseTimeFeature.srcs",
+                    ),
+                    attrs.dict(
+                        attrs.string(),
+                        attrs.one_of(
+                            attrs.dep(),
+                            # @oss-disable
+                        ),
+                        doc = "ParseTimeFeature.deps",
+                    ),
+                    attrs.dict(
+                        attrs.string(),
+                        attrs.exec_dep(),
+                        doc = "ParseTimeFeature.exec_deps",
+                    ),
+                    attrs.list(
+                        attrs.one_of(attrs.dep(), attrs.source()),
+                        doc = "ParseTimeFeature.unnamed_deps_or_srcs",
+                    ),
+                    attrs.dict(
+                        attrs.string(),
+                        attrs.arg(anon_target_compatible = True),
+                        doc = "ParseTimeFeature.args",
+                    ),
+                    doc = "inline feature definition",
                 ),
             ),
+            default = None,
         ),
-        default = {},
-    ),
-    # Map "feature key" -> "feature dep/source"
-    "inline_features_deps_or_srcs": attrs.dict(
-        attrs.string(),
-        attrs.dict(
-            attrs.string(),
-            attrs.one_of(attrs.dep(), attrs.source()),
-        ),
-        default = {},
-    ),
-    # Map "feature key" -> "feature exec_dep"
-    "inline_features_exec_deps": attrs.dict(
-        attrs.string(),
-        attrs.option(attrs.dict(attrs.string(), attrs.exec_dep())),
-        default = {},
-    ),
-    # Map "feature key" -> "feature impl binary"
-    "inline_features_plugins": attrs.dict(
-        attrs.string(),
-        attrs.exec_dep(providers = [FeaturePluginInfo]),
-        default = {},
-    ),
-    # Map "feature key" -> "feature srcs"
-    "inline_features_srcs": attrs.dict(
-        attrs.string(),
-        attrs.option(attrs.dict(attrs.string(), attrs.source())),
-        default = {},
-    ),
-    # Map "feature key" -> "feature dep/source"
-    "inline_features_unnamed_deps_or_srcs": attrs.dict(
-        attrs.string(),
-        attrs.list(
-            attrs.one_of(attrs.dep(), attrs.source()),
-        ),
-        default = {},
+        default = [],
     ),
     "labels": attrs.list(attrs.string(), default = []),
 }
@@ -339,68 +303,38 @@ def feature_attrs(
         - inline (aka unnamed) features created with macros like `install()`
         - labels referring to other `feature` targets
     """
-    features = flatten.flatten(features)
+    if types.is_list(features):
+        features = flatten.flatten(features)
+    if type(features) == "selector":
+        return {"features": features}
 
-    # Some antlir1 features may have crept in here because it's hard to refactor
-    # tons of bzl at once, so if it has a .antlir2_feature attribute, we'll be
-    # nice and allow it
-    features = [f.antlir2_feature if hasattr(f, "antlir2_feature") else f for f in features]
-
-    # This is already flat but this will enforce the type checking again after
-    # the antlir1-compat-promotion above
-    features = flatten.flatten(features, item_type = [ParseTimeFeature, str, Select])
-
-    inline_features = {}
-    feature_targets = []
-    inline_features_plugins = {}
-    inline_features_deps = {}
-    inline_features_deps_or_srcs = {}
-    inline_features_srcs = {}
-    inline_features_exec_deps = {}
-    inline_features_unnamed_deps_or_srcs = {}
-    inline_features_args = {}
+    features_attr = []
     features_target_compatible_with = []
-    for feature_key, feat in enumerate(features):
-        feature_key = str(feature_key)
+    for feat in features:
         if types.is_string(feat):
-            feature_targets.append(feat)
+            features_attr.append(feat)
         elif type(feat) == "selector":
             # select() only works to choose between feature targets, not inline features
-            feature_targets.append(feat)
+            features_attr.append(feat)
         else:
             # type(feat) will show 'record' but we can assume its a ParseTimeFeature
-            inline_features[feature_key] = {
-                "feature_type": feat.feature_type,
-                "kwargs": feat.kwargs,
-            }
+            features_attr.append((
+                feat.feature_type,
+                feat.plugin,
+                feat.kwargs,
+                feat.deps_or_srcs or {},
+                feat.srcs or {},
+                feat.deps or {},
+                feat.exec_deps or {},
+                feat.unnamed_deps_or_srcs or [],
+                feat.args or {},
+            ))
 
-            inline_features_plugins[feature_key] = feat.plugin
-
-            if feat.deps:
-                inline_features_deps[feature_key] = feat.deps
-            if feat.exec_deps:
-                inline_features_exec_deps[feature_key] = feat.exec_deps
-            if feat.deps_or_srcs:
-                inline_features_deps_or_srcs[feature_key] = feat.deps_or_srcs
-            if feat.unnamed_deps_or_srcs:
-                inline_features_unnamed_deps_or_srcs[feature_key] = feat.unnamed_deps_or_srcs
-            if feat.args:
-                inline_features_args[feature_key] = feat.args
-            if feat.srcs:
-                inline_features_srcs[feature_key] = feat.srcs
             if feat.target_compatible_with:
                 features_target_compatible_with.extend(feat.target_compatible_with)
 
     return {
-        "feature_targets": feature_targets,
-        "inline_features": inline_features,
-        "inline_features_args": inline_features_args,
-        "inline_features_deps": inline_features_deps,
-        "inline_features_deps_or_srcs": inline_features_deps_or_srcs,
-        "inline_features_exec_deps": inline_features_exec_deps,
-        "inline_features_plugins": inline_features_plugins,
-        "inline_features_srcs": inline_features_srcs,
-        "inline_features_unnamed_deps_or_srcs": inline_features_unnamed_deps_or_srcs,
+        "features": features_attr,
         "target_compatible_with": features_target_compatible_with,
     }
 
