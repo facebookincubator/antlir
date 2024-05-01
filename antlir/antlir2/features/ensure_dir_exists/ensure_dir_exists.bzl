@@ -6,7 +6,13 @@
 load("@prelude//:paths.bzl", "paths")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_only_feature_rule")
+load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
+load(
+    "//antlir/antlir2/features:feature_info.bzl",
+    "FeatureAnalysis",
+    "MultiFeatureAnalysis",
+    "ParseTimeFeature",
+)
 load("//antlir/bzl:stat.bzl", "stat")
 
 def ensure_subdirs_exist(
@@ -15,7 +21,7 @@ def ensure_subdirs_exist(
         subdirs_to_create: str | Select,
         mode: int | str | Select = 0o755,
         user: str | Select = "root",
-        group: str | Select = "root") -> list[ParseTimeFeature]:
+        group: str | Select = "root") -> ParseTimeFeature:
     """
     Ensure directories exist in the image (analogous to `mkdir -p`).
 
@@ -31,31 +37,24 @@ def ensure_subdirs_exist(
         user: set owning user of the newly-created directories
         group: set owning group of the newly-created directories
     """
-    mode = stat.mode(mode) if mode else None
-    features = []
-    dir = into_dir
-    for component in subdirs_to_create.split("/"):
-        if not component:
-            continue
-        dir = paths.join(dir, component)
-        features.append(ParseTimeFeature(
-            feature_type = "ensure_dir_exists",
-            plugin = antlir2_dep("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists"),
-            kwargs = {
-                "dir": dir,
-                "group": group,
-                "mode": mode,
-                "user": user,
-            },
-        ))
-    return features
+    return ParseTimeFeature(
+        feature_type = "ensure_dir_exists",
+        plugin = antlir2_dep("//antlir/antlir2/features/ensure_dir_exists:ensure_dir_exists"),
+        kwargs = {
+            "group": group,
+            "into_dir": into_dir,
+            "mode": mode,
+            "subdirs_to_create": subdirs_to_create,
+            "user": user,
+        },
+    )
 
 def ensure_dirs_exist(
         *,
         dirs: str,
         mode: int | str = 0o755,
         user: str = "root",
-        group: str = "root") -> list[ParseTimeFeature]:
+        group: str = "root") -> ParseTimeFeature:
     """Equivalent to `ensure_subdirs_exist("/", dirs, ...)`."""
     return ensure_subdirs_exist(
         into_dir = "/",
@@ -65,13 +64,42 @@ def ensure_dirs_exist(
         group = group,
     )
 
-ensure_dir_exists_rule = data_only_feature_rule(
-    feature_type = "ensure_dir_exists",
-    feature_attrs = {
+def _impl(ctx: AnalysisContext) -> list[Provider]:
+    mode = stat.mode(ctx.attrs.mode) if ctx.attrs.mode else None
+    features = []
+    dir = ctx.attrs.into_dir
+    for component in ctx.attrs.subdirs_to_create.split("/"):
+        if not component:
+            continue
+        dir = paths.join(dir, component)
+
+        features.append(FeatureAnalysis(
+            feature_type = "ensure_dir_exists",
+            data = struct(
+                dir = dir,
+                mode = mode,
+                user = ctx.attrs.user,
+                group = ctx.attrs.group,
+            ),
+            plugin = ctx.attrs.plugin[FeaturePluginInfo],
+            build_phase = BuildPhase(ctx.attrs.build_phase),
+        ))
+    return [
+        DefaultInfo(),
+        MultiFeatureAnalysis(
+            features = features,
+        ),
+    ]
+
+ensure_dir_exists_rule = rule(
+    impl = _impl,
+    attrs = {
         "build_phase": attrs.enum(BuildPhase.values(), default = "compile"),
-        "dir": attrs.string(),
         "group": attrs.string(),
-        "mode": attrs.int(),
+        "into_dir": attrs.string(),
+        "mode": attrs.one_of(attrs.string(), attrs.int()),
+        "plugin": attrs.exec_dep(providers = [FeaturePluginInfo]),
+        "subdirs_to_create": attrs.string(),
         "user": attrs.string(),
     },
 )
