@@ -1085,18 +1085,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "cc-1.0.95.crate",
-    sha256 = "d32a725bc159af97c3e629873bb9f88fb8cf8a4867175f76dc987815ea07c83b",
-    strip_prefix = "cc-1.0.95",
-    urls = ["https://static.crates.io/crates/cc/1.0.95/download"],
+    name = "cc-1.0.96.crate",
+    sha256 = "065a29261d53ba54260972629f9ca6bffa69bac13cd1fed61420f7fa68b9f8bd",
+    strip_prefix = "cc-1.0.96",
+    urls = ["https://static.crates.io/crates/cc/1.0.96/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "cc-1.0.95",
-    srcs = [":cc-1.0.95.crate"],
+    name = "cc-1.0.96",
+    srcs = [":cc-1.0.96.crate"],
     crate = "cc",
-    crate_root = "cc-1.0.95.crate/src/lib.rs",
+    crate_root = "cc-1.0.96.crate/src/lib.rs",
     edition = "2018",
     features = [
         "jobserver",
@@ -2310,7 +2310,7 @@ cargo.rust_binary(
     ],
     visibility = [],
     deps = [
-        ":cc-1.0.95",
+        ":cc-1.0.96",
         ":cxxbridge-flags-1.0.121",
     ],
 )
