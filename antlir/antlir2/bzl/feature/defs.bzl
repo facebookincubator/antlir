@@ -13,7 +13,6 @@ load("//antlir/antlir2/features/extract:extract.bzl", "extract_buck_binary", "ex
 load("//antlir/antlir2/features/genrule:genrule.bzl", "genrule")
 load("//antlir/antlir2/features/group:group.bzl", "group_add")
 load("//antlir/antlir2/features/install:install.bzl", "install", "install_text")
-load("//antlir/antlir2/features/mknod:mknod.bzl", "mknod")
 load("//antlir/antlir2/features/mount:mount.bzl", "host_mount", "layer_mount")
 load("//antlir/antlir2/features/remove:remove.bzl", "remove")
 load("//antlir/antlir2/features/requires:requires.bzl", "requires")
@@ -38,7 +37,6 @@ feature = struct(
     host_mount = host_mount,
     remove = remove,
     requires = requires,
-    mknod = mknod,
     rpms_install = rpms_install,
     rpms_remove = rpms_remove,
     rpms_remove_if_exists = rpms_remove_if_exists,

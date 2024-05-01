@@ -58,7 +58,7 @@ _image_diff_test = rule(
         "layer": attrs.dep(providers = [LayerInfo]),
         "running_in_image": attrs.bool(),
         "_rootless": rootless_cfg.is_rootless_attr,
-    },
+    } | rootless_cfg.attrs,
     doc = "Test that the only changes between a layer and it's parent is what you expect",
 )
 
