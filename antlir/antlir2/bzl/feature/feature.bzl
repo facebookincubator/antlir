@@ -251,7 +251,8 @@ shared_features_attrs = {
     # inline features are direct calls to a feature macro inside a layer()
     # or feature() rule instance
     "inline_features": attrs.dict(
-        # Unique key for this feature (see _hash_key below)
+        # Unique index for this feature - matched up with all the other
+        # inline_features_* attrs
         attrs.string(),
         attrs.dict(
             # top level kwargs
@@ -359,7 +360,8 @@ def feature_attrs(
     inline_features_unnamed_deps_or_srcs = {}
     inline_features_args = {}
     features_target_compatible_with = []
-    for feat in features:
+    for feature_key, feat in enumerate(features):
+        feature_key = str(feature_key)
         if types.is_string(feat):
             feature_targets.append(feat)
         elif type(feat) == "selector":
@@ -367,8 +369,6 @@ def feature_attrs(
             feature_targets.append(feat)
         else:
             # type(feat) will show 'record' but we can assume its a ParseTimeFeature
-            feature_key = _hash_key(feat)
-
             inline_features[feature_key] = {
                 "feature_type": feat.feature_type,
                 "kwargs": feat.kwargs,
@@ -427,13 +427,6 @@ def feature(
         visibility = visibility,
         **kwargs
     )
-
-# We need a way to disambiguate inline features so that deps/sources can be
-# passed back to them to convert to compiler json. This isn't persisted anywhere
-# and does not end up in any target labels, so it does not need to be stable,
-# just unique for a single evaluation of the target graph.
-def _hash_key(x) -> str:
-    return sha256(repr(x))
 
 def regroup_features(label: Label, features: list[feature_record | typing.Any]) -> list[feature_record | typing.Any]:
     """

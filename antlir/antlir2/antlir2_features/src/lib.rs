@@ -6,6 +6,7 @@
  */
 
 use std::cmp::Ordering;
+use std::hash::Hash;
 use std::path::Path;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -41,7 +42,27 @@ pub struct Feature {
     plugin: OnceCell<Arc<Plugin>>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize, Serialize)]
+// TODO(T177933397): this hash implementation is inefficient and should be
+// removed when we can correctly ban identical features from being included
+// multiple times in a single layer.
+impl Hash for Feature {
+    #[deny(unused_variables)]
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        let Self {
+            label,
+            feature_type,
+            data,
+            plugin_json,
+            plugin: _,
+        } = self;
+        label.hash(state);
+        feature_type.hash(state);
+        data.to_string().hash(state);
+        plugin_json.hash(state);
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 struct PluginJson {
     plugin: PathBuf,

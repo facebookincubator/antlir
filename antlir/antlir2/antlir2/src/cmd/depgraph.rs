@@ -5,6 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+use std::collections::HashSet;
 use std::io::BufWriter;
 use std::path::PathBuf;
 
@@ -22,7 +23,7 @@ pub(crate) struct Depgraph {
     #[clap(long)]
     label: Label,
     #[clap(long = "feature-json")]
-    features: Vec<JsonFile<Vec<antlir2_features::Feature>>>,
+    features: Vec<JsonFile<HashSet<antlir2_features::Feature>>>,
     #[clap(long = "parent")]
     /// Path to depgraph for the parent layer
     parent: Option<JsonFile<Graph>>,
