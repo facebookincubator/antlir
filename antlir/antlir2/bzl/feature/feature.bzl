@@ -187,9 +187,7 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
         ]
         features = anon_features + inline_features
         for dep in feature_deps:
-            deps = flatten.flatten(dep)
-            for dep in deps:
-                features.extend(dep[FeatureInfo].features)
+            features.extend(dep[FeatureInfo].features)
         features_json = [feature_as_json(f) for f in features]
 
         json_file = ctx.actions.write_json("features.json", features_json)
@@ -304,9 +302,7 @@ feature_rule = rule(
     cfg = feature_cfg,
 )
 
-def feature_attrs(
-        # No type hint here, but it is validated by flatten_features
-        features) -> dict[str, typing.Any]:
+def feature_attrs(features) -> dict[str, typing.Any]:
     """
     Create a dict suitable to pass to the _feature rule.
 
@@ -319,47 +315,13 @@ def feature_attrs(
     """
     if types.is_list(features):
         features = flatten.flatten(features)
-    if type(features) == "selector":
-        return {"features": features}
-
-    features_attr = []
-    features_target_compatible_with = []
-    for feat in features:
-        if not feat:
-            # for ergonomics, select() can return None so just skip any None
-            # elements
-            continue
-        if types.is_string(feat):
-            features_attr.append(feat)
-        elif type(feat) == "selector":
-            # select() only works to choose between feature targets, not inline features
-            features_attr.append(feat)
-        else:
-            # type(feat) will show 'record' but we can assume its a ParseTimeFeature
-            features_attr.append((
-                feat.feature_type,
-                feat.plugin,
-                feat.kwargs,
-                feat.deps_or_srcs or {},
-                feat.srcs or {},
-                feat.deps or {},
-                feat.exec_deps or {},
-                feat.antlir2_configured_deps or {},
-                feat.unnamed_deps_or_srcs or [],
-                feat.args or {},
-            ))
-
-            if feat.target_compatible_with:
-                features_target_compatible_with.extend(feat.target_compatible_with)
 
     return {
-        "features": features_attr,
-        "target_compatible_with": features_target_compatible_with,
+        "features": features,
     }
 
 def feature(
         name: str,
-        # No type hint here, but it is validated by flatten_features
         features,
         visibility = None,
         **kwargs):

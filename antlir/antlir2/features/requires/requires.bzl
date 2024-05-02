@@ -10,7 +10,7 @@ def requires(
         *,
         files: list[str] = [],
         groups: list[str] = [],
-        users: list[str] = []) -> ParseTimeFeature:
+        users: list[str] = []):
     """
     Add rule-level requirements on image layers.
 

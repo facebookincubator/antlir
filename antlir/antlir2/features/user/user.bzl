@@ -20,7 +20,7 @@ def user_add(
         shell: str | Select = SHELL_NOLOGIN,
         uid: int | Select | None = None,
         supplementary_groups: list[str | Select] | Select = [],
-        comment: str | None = None) -> ParseTimeFeature:
+        comment: str | None = None):
     """
     Add a user entry to /etc/passwd.
 
@@ -71,7 +71,7 @@ def standard_user(
         shell: str = SHELL_BASH,
         uid: int | None = None,
         gid: int | None = None,
-        supplementary_groups: list[str] = []) -> list[ParseTimeFeature | list[ParseTimeFeature]]:
+        supplementary_groups: list[str] = []):
     """
     A convenient function that wraps `group_add`, `user_add`,
     and home dir creation logic.

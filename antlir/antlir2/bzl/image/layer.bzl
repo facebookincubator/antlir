@@ -665,11 +665,6 @@ def layer(
 
     kwargs.update({"_feature_" + key: val for key, val in feature_attrs(features).items()})
 
-    target_compatible_with = kwargs.pop("target_compatible_with", []) or []
-    target_compatible_with.extend(kwargs.pop("_feature_target_compatible_with", []))
-    if target_compatible_with:
-        kwargs["target_compatible_with"] = target_compatible_with
-
     if is_facebook:
         # available_fbpkgs is logically an optional dep, but to make it truly
         # optional for using layers in anon_targets, we must just set the

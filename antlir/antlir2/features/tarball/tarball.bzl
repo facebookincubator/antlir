@@ -11,7 +11,7 @@ def tarball(
         *,
         src: str,
         into_dir: str,
-        force_root_ownership: bool = False) -> ParseTimeFeature:
+        force_root_ownership: bool = False):
     return ParseTimeFeature(
         feature_type = "tarball",
         plugin = antlir2_dep("//antlir/antlir2/features/tarball:tarball"),

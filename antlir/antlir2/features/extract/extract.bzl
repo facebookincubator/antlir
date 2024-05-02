@@ -33,7 +33,7 @@ load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
 def extract_from_layer(
         layer: str | Select,
-        binaries: list[str | Select] | Select) -> ParseTimeFeature:
+        binaries: list[str | Select] | Select):
     """
     Extract a binary and all of its runtime dependencies from `layer` into the
     target layer.
@@ -74,7 +74,7 @@ def _should_strip(strip_attr: bool) -> bool:
 def extract_buck_binary(
         src: str | Select,
         dst: str | Select,
-        strip: bool | Select = True) -> ParseTimeFeature:
+        strip: bool | Select = True):
     """
     Extract a buck-built binary and all of its runtime dependencies into the
     target layer.

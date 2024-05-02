@@ -28,7 +28,7 @@ def _install_common(
         rpms: list[str] = [],
         subjects: list[str | Select] | Select = [],
         deps: list[str | Select] | Select = [],
-        subjects_src: str | Select | None = None) -> ParseTimeFeature:
+        subjects_src: str | Select | None = None):
     """
     Install RPMs by identifier or .rpm src
 
@@ -70,9 +70,6 @@ def _install_common(
             "action": action,
             "subjects": subjects,
         },
-        target_compatible_with = [
-            antlir2_dep("//antlir/antlir2/os/package_manager:dnf"),
-        ],
     )
 
 def rpms_install(
@@ -80,7 +77,7 @@ def rpms_install(
         rpms: list[str] = [],
         subjects: list[str | Select] | Select = [],
         deps: list[str | Select] | Select = [],
-        subjects_src: str | Select | None = None) -> ParseTimeFeature:
+        subjects_src: str | Select | None = None):
     """
     Install RPMs by identifier or .rpm src
 
@@ -105,7 +102,7 @@ def rpms_upgrade(
         rpms: list[str] = [],
         subjects: list[str | Select] | Select = [],
         deps: list[str | Select] | Select = [],
-        subjects_src: str | Select | None = None) -> ParseTimeFeature:
+        subjects_src: str | Select | None = None):
     """
     Force an upgrade (if possible, which includes respecting versionlock!) of
     these rpms.
@@ -121,7 +118,7 @@ def rpms_upgrade(
         subjects_src = subjects_src,
     )
 
-def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
+def rpms_remove_if_exists(*, rpms: list[str | Select] | Select):
     """
     Remove RPMs if they are installed
 
@@ -141,12 +138,9 @@ def rpms_remove_if_exists(*, rpms: list[str | Select] | Select) -> ParseTimeFeat
             "action": "remove_if_exists",
             "subjects": rpms,
         },
-        target_compatible_with = [
-            "//antlir/antlir2/os/package_manager:dnf",
-        ],
     )
 
-def rpms_remove(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
+def rpms_remove(*, rpms: list[str | Select] | Select):
     """
     Remove RPMs if they are installed, fail if they are not installed.
 
@@ -166,9 +160,6 @@ def rpms_remove(*, rpms: list[str | Select] | Select) -> ParseTimeFeature:
             "action": "remove",
             "subjects": rpms,
         },
-        target_compatible_with = [
-            "//antlir/antlir2/os/package_manager:dnf",
-        ],
     )
 
 action_enum = enum(

@@ -12,7 +12,7 @@ def dot_meta(
         *,
         revision: [str, None] = None,
         package_name: [str, None] = None,
-        package_version: [str, None] = None) -> ParseTimeFeature:
+        package_version: [str, None] = None):
     """
     Stamp build info into /.meta in the built layer
     """
