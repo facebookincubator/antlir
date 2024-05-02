@@ -34,6 +34,14 @@ ParseTimeFeature = record(
     # Deps resolved for the execution platform. These should not be installed
     # into images because they are produced only to be run on the build worker
     exec_deps = field([dict[str, ParseTimeDependency], None], default = None),
+    # These are `deps` that should retain the antlir2 configuration (OS, ROU,
+    # etc). Use this for layer deps (or anything else where this makes sense to
+    # be important) only, so that antlir2 can be used in other parts of the
+    # dependency graph according to whatever a user says the default is. For
+    # example, an fbpkg should be able to include the result of a `package.*`
+    # target, without that being reconfigured for `os="none"` like fbpkgs are
+    # normally configured.
+    antlir2_configured_deps = field([dict[str, ParseTimeDependency], None], default = None),
     # Sources/deps that do not require named tracking between the parse and
     # analysis phases. Useful to support `select` in features that accept lists
     # of dependencies.

@@ -4,7 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
-load("//antlir/bzl:build_defs.bzl", "is_facebook")
+load("//antlir/bzl:build_defs.bzl", "internal_external", "is_facebook")
 load(":defs.bzl", "OsVersionInfo")
 
 _OS_REFS = {
@@ -16,7 +16,13 @@ _OS_REFS = {
     "os.rhel8.8": antlir2_dep("//antlir/antlir2/os:rhel8.8"),
     "os_constraint": antlir2_dep("//antlir/antlir2/os:os"),
     "os_family_constraint": antlir2_dep("//antlir/antlir2/os/family:family"),
-}
+    "package_manager_constraint": antlir2_dep("//antlir/antlir2/os/package_manager:package_manager"),
+} | internal_external(
+    fb = {
+        "rou_constraint": antlir2_dep("//antlir/antlir2/os/facebook:rou"),  # @
+    },
+    oss = {},
+)
 
 def os_transition_refs():
     return _OS_REFS
@@ -39,10 +45,22 @@ def os_transition(
 
     return constraints
 
-def remove_os_constraints(*, constraints, refs):
+def _remove_os_transition_impl(platform, refs):
+    constraints = platform.configuration.constraints
     constraints.pop(refs.os_constraint[ConstraintSettingInfo].label, None)
     constraints.pop(refs.os_family_constraint[ConstraintSettingInfo].label, None)
     constraints.pop(refs.package_manager_constraint[ConstraintSettingInfo].label, None)
     if is_facebook:
         constraints.pop(refs.rou_constraint[ConstraintSettingInfo].label, None)
-    return constraints
+    return PlatformInfo(
+        label = platform.label,
+        configuration = ConfigurationInfo(
+            constraints = constraints,
+            values = platform.configuration.values,
+        ),
+    )
+
+remove_os_transition = transition(
+    impl = _remove_os_transition_impl,
+    refs = _OS_REFS,
+)
