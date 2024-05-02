@@ -77,6 +77,7 @@ load("//antlir/antlir2/features/tarball:tarball.bzl", "tarball_rule")
 load("//antlir/antlir2/features/test_only_features/trace:trace.bzl", "trace_rule")
 load("//antlir/antlir2/features/user:user.bzl", "user_rule")
 load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod_rule")
+load("//antlir/antlir2/os:cfg.bzl", "remove_os_transition")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:types.bzl", "types")
@@ -151,9 +152,9 @@ def _impl(ctx: AnalysisContext) -> list[Provider] | Promise:
             feature_deps.append(feat)
             continue
 
-        feature_type, plugin, kwargs, deps_or_srcs, srcs, deps, exec_deps, unnamed_deps_or_srcs, args = feat
+        feature_type, plugin, kwargs, deps_or_srcs, srcs, deps, exec_deps, antlir2_configured_deps, unnamed_deps_or_srcs, args = feat
 
-        anon_kwargs = kwargs | deps_or_srcs | srcs | deps | exec_deps
+        anon_kwargs = kwargs | deps_or_srcs | srcs | deps | exec_deps | antlir2_configured_deps
         anon_kwargs["plugin"] = plugin
 
         # TODO: make args consistent with the other types
@@ -244,7 +245,15 @@ shared_features_attrs = {
                     attrs.dict(attrs.string(), _nestable_value, doc = "kwargs"),
                     attrs.dict(
                         attrs.string(),
-                        attrs.one_of(attrs.dep(), attrs.source()),
+                        attrs.one_of(
+                            attrs.transition_dep(cfg = remove_os_transition),
+                            # Need a non-transition dep to fallback on since
+                            # this is also used in anonymous targets. The
+                            # transition_dep must be first so that it's used at
+                            # the top-level for correct configuration.
+                            attrs.dep(),
+                            attrs.source(),
+                        ),
                         doc = "ParseTimeFeature.deps_or_srcs",
                     ),
                     attrs.dict(
@@ -264,6 +273,11 @@ shared_features_attrs = {
                         attrs.string(),
                         attrs.exec_dep(),
                         doc = "ParseTimeFeature.exec_deps",
+                    ),
+                    attrs.dict(
+                        attrs.string(),
+                        attrs.dep(),
+                        doc = "ParseTimeFeature.antlir2_configured_deps",
                     ),
                     attrs.list(
                         attrs.one_of(attrs.dep(), attrs.source()),
@@ -330,6 +344,7 @@ def feature_attrs(
                 feat.srcs or {},
                 feat.deps or {},
                 feat.exec_deps or {},
+                feat.antlir2_configured_deps or {},
                 feat.unnamed_deps_or_srcs or [],
                 feat.args or {},
             ))

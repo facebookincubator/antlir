@@ -79,7 +79,7 @@ def clone(
     return ParseTimeFeature(
         feature_type = "clone",
         plugin = antlir2_dep("//antlir/antlir2/features/clone:clone"),
-        deps = {
+        antlir2_configured_deps = {
             "src_layer": src_layer,
         },
         kwargs = {
