@@ -309,6 +309,8 @@ fn main() -> Result<()> {
             }
         }
         None => {
+            // some systems-y tests want to read /sys
+            ctx.inputs(Path::new("/sys"));
             ctx.user(spec.user);
             let mut cmd = args.test.into_inner_cmd().into_iter();
             let program = cmd.next().expect("must have program arg");
