@@ -15,7 +15,7 @@ def clone(
         src_path: str | Select,
         dst_path: str | Select,
         user: str | None = None,
-        group: str | None = None) -> ParseTimeFeature:
+        group: str | None = None):
     """
     Copies a subtree of an existing layer into the one under construction. To
     the extent possible, filesystem metadata are preserved.

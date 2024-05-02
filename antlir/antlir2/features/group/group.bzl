@@ -9,7 +9,7 @@ load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_onl
 def group_add(
         *,
         groupname: str | Select,
-        gid: int | Select | None = None) -> ParseTimeFeature:
+        gid: int | Select | None = None):
     """
     Add a group entry to /etc/group
 

@@ -7,57 +7,51 @@ load("@prelude//utils:utils.bzl", "map_val")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase")
 load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 
-# A dependency of a feature that is not yet resolved.
-# This is of very limited use at parse time, but allows the feature macro to
-# inform the rule what strings are actually dependencies that need to be
-# resolved.
-ParseTimeDependency = [
-    str,
-    Select,
-    # this gross combo is for path_actions_t @oss-disable
-    # @oss-disable
-]
-
-ParseTimeFeature = record(
-    feature_type = str,
-    # Plugin that implements this feature
-    plugin = str,
-    # Items in this list may be either raw source files, or dependencies
-    # produced by another rule. If a dependency, the full provider set will be
-    # made available to the analysis code for the feature.
-    deps_or_srcs = field([dict[str, ParseTimeDependency], None], default = None),
-    # Items in this list must be coerce-able to an "artifact"
-    srcs = field([dict[str, str | Select], None], default = None),
-    # These items must be `deps` and will be validated early in analysis time to
-    # contain the required providers
-    deps = field([dict[str, ParseTimeDependency], None], default = None),
-    # Deps resolved for the execution platform. These should not be installed
-    # into images because they are produced only to be run on the build worker
-    exec_deps = field([dict[str, ParseTimeDependency], None], default = None),
-    # These are `deps` that should retain the antlir2 configuration (OS, ROU,
-    # etc). Use this for layer deps (or anything else where this makes sense to
-    # be important) only, so that antlir2 can be used in other parts of the
-    # dependency graph according to whatever a user says the default is. For
-    # example, an fbpkg should be able to include the result of a `package.*`
-    # target, without that being reconfigured for `os="none"` like fbpkgs are
-    # normally configured.
-    antlir2_configured_deps = field([dict[str, ParseTimeDependency], None], default = None),
-    # Sources/deps that do not require named tracking between the parse and
-    # analysis phases. Useful to support `select` in features that accept lists
-    # of dependencies.
-    unnamed_deps_or_srcs = field([list[ParseTimeDependency], None], default = None),
-    # attrs.arg values
-    args = field(dict[str, str | Select] | Select | None, default = None),
-    # Plain data that defines this feature, aside from input artifacts/dependencies
-    kwargs = dict[str, typing.Any],
-    # Some features do mutations to the image filesystem that cannot be
-    # discovered in the depgraph, so those features are grouped together in
-    # hidden internal layer(s) that acts as the parent layer(s) for the final
-    # image.
-    build_phase = field(BuildPhase, default = BuildPhase("compile")),
-    # Set `target_compatible_with` on the feature / layer target
-    target_compatible_with = field(list[str] | None, default = None),
-)
+def ParseTimeFeature(
+        *,
+        feature_type: str,
+        # Plugin that implements this feature
+        plugin: str,
+        # Items in this list may be either raw source files, or dependencies
+        # produced by another rule. If a dependency, the full provider set will be
+        # made available to the analysis code for the feature.
+        deps_or_srcs: dict[str, typing.Any] | None = None,
+        # Items in this list must be coerce-able to an "artifact"
+        srcs: dict[str, typing.Any] | None = None,
+        # These items must be `deps` and will be validated early in analysis time to
+        # contain the required providers
+        deps: dict[str, typing.Any] | None = None,
+        # Deps resolved for the execution platform. These should not be installed
+        # into images because they are produced only to be run on the build worker
+        exec_deps: dict[str, typing.Any] | None = None,
+        # These are `deps` that should retain the antlir2 configuration (OS, ROU,
+        # etc). Use this for layer deps (or anything else where this makes sense to
+        # be important) only, so that antlir2 can be used in other parts of the
+        # dependency graph according to whatever a user says the default is. For
+        # example, an fbpkg should be able to include the result of a `package.*`
+        # target, without that being reconfigured for `os="none"` like fbpkgs are
+        # normally configured.
+        antlir2_configured_deps: dict[str, typing.Any] | None = None,
+        # Sources/deps that do not require named tracking between the parse and
+        # analysis phases. Useful to support `select` in features that accept lists
+        # of dependencies.
+        unnamed_deps_or_srcs: list[typing.Any] | None = None,
+        # attrs.arg values
+        args: dict[str, typing.Any] | None = None,
+        # Plain data that defines this feature, aside from input artifacts/dependencies
+        kwargs = dict[str, typing.Any]):
+    return (
+        feature_type,
+        plugin,
+        kwargs,
+        deps_or_srcs or {},
+        srcs or {},
+        deps or {},
+        exec_deps or {},
+        antlir2_configured_deps or {},
+        unnamed_deps_or_srcs or [],
+        args or {},
+    )
 
 # Produced by the feature implementation, this tells the rule how to build it
 FeatureAnalysis = provider(fields = {

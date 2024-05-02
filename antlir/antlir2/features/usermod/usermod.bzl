@@ -9,7 +9,7 @@ load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_onl
 def usermod(
         *,
         username: str | Select,
-        add_supplementary_groups: list[str | Select] | Select = []) -> ParseTimeFeature:
+        add_supplementary_groups: list[str | Select] | Select = []):
     """
     Modify an existing entry in the /etc/passwd and /etc/group databases
     """

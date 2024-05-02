@@ -11,8 +11,8 @@ load("//antlir/bzl:types.bzl", "types")
 
 def _flatten_any(lst):
     flat = []
-    for item in lst if types.is_list(lst) or types.is_tuple(lst) else [lst]:
-        if types.is_list(item) or types.is_tuple(item):
+    for item in lst:
+        if types.is_list(item):
             flat.extend(_flatten_any(item))
         else:
             flat.append(item)
@@ -44,8 +44,4 @@ def _flatten_with_inline_hint(
 
 flatten = struct(
     flatten = _flatten_with_inline_hint,
-    typed = _typed_flattener,
-    # The most common use-case of flattening will be antlir features, so expose
-    # that as its own thing
-    antlir_features = _typed_flattener(types.antlir_feature),
 )

@@ -21,7 +21,7 @@ def ensure_subdirs_exist(
         subdirs_to_create: str | Select,
         mode: int | str | Select = 0o755,
         user: str | Select = "root",
-        group: str | Select = "root") -> ParseTimeFeature:
+        group: str | Select = "root"):
     """
     Ensure directories exist in the image (analogous to `mkdir -p`).
 
@@ -54,7 +54,7 @@ def ensure_dirs_exist(
         dirs: str,
         mode: int | str = 0o755,
         user: str = "root",
-        group: str = "root") -> ParseTimeFeature:
+        group: str = "root"):
     """Equivalent to `ensure_subdirs_exist("/", dirs, ...)`."""
     return ensure_subdirs_exist(
         into_dir = "/",

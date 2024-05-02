@@ -8,7 +8,7 @@ load("//antlir/antlir2/features:feature_info.bzl", "ParseTimeFeature", "data_onl
 
 def trace(
         *,
-        msg: str) -> ParseTimeFeature:
+        msg: str):
     return ParseTimeFeature(
         feature_type = "test_only_features/trace",
         plugin = antlir2_dep("//antlir/antlir2/features/test_only_features/trace:trace"),

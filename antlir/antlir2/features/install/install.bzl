@@ -28,7 +28,7 @@ def install(
         never_use_dev_binary_symlink: bool = False,
         split_debuginfo: bool = True,
         always_use_gnu_debuglink: bool = False,
-        setcap: str | None = None) -> ParseTimeFeature:
+        setcap: str | None = None):
     """
     Install a file or directory into the image.
 
@@ -107,7 +107,7 @@ def install_text(
         mode: int | str | Select | None = None,
         user: str | Select = "root",
         group: str | Select = "root",
-        xattrs: dict[str, str] | Select = {}) -> ParseTimeFeature:
+        xattrs: dict[str, str] | Select = {}):
     # the default mode is determined later, after we know if the thing being
     # installed is a binary or not
     mode = stat.mode(mode) if mode != None else None

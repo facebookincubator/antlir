@@ -14,7 +14,7 @@ def genrule(
         bash: str | Select | None = None,
         user: str | Select = "nobody",
         bind_repo_ro: bool | Select = False,
-        mount_platform: bool | Select = False) -> ParseTimeFeature:
+        mount_platform: bool | Select = False):
     if int(bool(cmd)) + int(bool(bash)) != 1:
         fail("Must provide exactly one of `cmd` or `bash`")
     return ParseTimeFeature(

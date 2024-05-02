@@ -22,7 +22,7 @@ expected_t = record(
 def test_rpms(
         name: str,
         expected: expected_t,
-        features: list[types.antlir_feature] = [],
+        features: list[typing.Any] = [],
         parent_layer: str | None = None,
         dnf_additional_repos: list[str] = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
         dnf_versionlock: str | None = None,

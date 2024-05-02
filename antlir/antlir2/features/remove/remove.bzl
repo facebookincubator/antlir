@@ -11,7 +11,7 @@ def remove(
         *,
         path: str,
         must_exist: bool = True,
-        must_be_empty: bool = False) -> ParseTimeFeature:
+        must_be_empty: bool = False):
     """
     Recursively remove a file or directory
 

@@ -49,7 +49,6 @@ def _remove_os_transition_impl(platform, refs):
     constraints = platform.configuration.constraints
     constraints.pop(refs.os_constraint[ConstraintSettingInfo].label, None)
     constraints.pop(refs.os_family_constraint[ConstraintSettingInfo].label, None)
-    constraints.pop(refs.package_manager_constraint[ConstraintSettingInfo].label, None)
     if is_facebook:
         constraints.pop(refs.rou_constraint[ConstraintSettingInfo].label, None)
     return PlatformInfo(
