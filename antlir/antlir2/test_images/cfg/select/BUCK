@@ -35,6 +35,35 @@ image_diff_test(
     layer = ":select-inside-feature",
 )
 
+image.layer(
+    name = "select-inline-feature",
+    features = [
+        # this is obviously not how people should write features, but it should
+        # work anyway
+        arch_select(
+            aarch64 = feature.install(
+                src = "src.aarch64",
+                dst = "/arch",
+            ),
+            x86_64 = feature.install(
+                src = "src.x86_64",
+                dst = "/arch",
+            ),
+        ),
+    ],
+    parent_layer = ":base",
+)
+
+image_diff_test(
+    name = "select-inline-feature-test",
+    diff = arch_select(
+        aarch64 = "select.aarch64.toml",
+        x86_64 = "select.x86_64.toml",
+    ),
+    diff_type = "file",
+    layer = ":select-inline-feature",
+)
+
 feature.new(
     name = "install.aarch64",
     features = [
