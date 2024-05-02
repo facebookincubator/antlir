@@ -28,9 +28,13 @@ _base_sendstream_args = {
         ),
         default = None,
     ),
+    "labels": attrs.list(attrs.string(), default = []),
     "layer": attrs.dep(providers = [LayerInfo]),
     "volume_name": attrs.string(default = _base_sendstream_args_defaults["volume_name"]),
 }
+
+def _sendstream_package_macro(rule):
+    return package_macro(rule, always_needs_root = True)
 
 def _find_incremental_parent(*, layer: LayerInfo, parent_label: Label) -> Dependency | None:
     if not layer.parent:
@@ -125,7 +129,7 @@ _sendstream_v1 = rule(
     cfg = package_cfg,
 )
 
-sendstream = package_macro(_sendstream_v1)
+sendstream = _sendstream_package_macro(_sendstream_v1)
 
 def anon_v1_sendstream(
         *,
@@ -182,7 +186,7 @@ _sendstream_zst = rule(
     cfg = package_cfg,
 )
 
-sendstream_zst = package_macro(_sendstream_zst)
+sendstream_zst = _sendstream_package_macro(_sendstream_zst)
 
 def _v2_impl(ctx: AnalysisContext) -> Promise:
     sendstream_v2 = ctx.actions.declare_output("image.sendstream.v2")
@@ -227,4 +231,4 @@ _sendstream_v2 = rule(
     cfg = package_cfg,
 )
 
-sendstream_v2 = package_macro(_sendstream_v2)
+sendstream_v2 = _sendstream_package_macro(_sendstream_v2)

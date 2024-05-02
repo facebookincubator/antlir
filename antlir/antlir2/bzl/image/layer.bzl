@@ -690,12 +690,8 @@ def layer(
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
-    if not kwargs.get("rootless", False):
-        kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + select({
-            "//antlir/antlir2/antlir2_rootless:rooted": ["uses_sudo"],
-            "//antlir/antlir2/antlir2_rootless:rootless": [],
-            "DEFAULT": [],
-        }))
+    if not kwargs.get("rootless", True):
+        kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
 
     return layer_rule(
         name = name,

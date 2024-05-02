@@ -11,7 +11,7 @@ _refs = {
 }
 
 _attrs = {
-    "rootless": attrs.option(attrs.bool(), default = None),
+    "rootless": attrs.bool(default = True),
 }
 
 def _transition(*, refs, attrs, constraints):
@@ -43,7 +43,7 @@ def _transition(*, refs, attrs, constraints):
 _is_rootless_select = select({
     antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
     antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
-    "DEFAULT": False,
+    "DEFAULT": True,
 })
 
 def _transition_impl(platform, refs, attrs):
