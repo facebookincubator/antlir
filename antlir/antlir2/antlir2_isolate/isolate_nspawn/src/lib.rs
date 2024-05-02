@@ -103,7 +103,7 @@ pub fn nspawn(ctx: IsolationContext) -> Result<IsolatedContext> {
         hostname,
         readonly,
     } = ctx;
-    if !devtmpfs.is_empty() {
+    if !devtmpfs.is_empty() && devtmpfs.len() > 1 && !devtmpfs.contains(Path::new("/dev")) {
         return Err(Error::Unsupported("devtmpfs"));
     }
 

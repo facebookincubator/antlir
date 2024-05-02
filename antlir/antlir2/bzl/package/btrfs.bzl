@@ -87,7 +87,7 @@ _btrfs = rule(
     cfg = package_cfg,
 )
 
-btrfs = package_macro(_btrfs)
+btrfs = package_macro(_btrfs, always_needs_root = True)
 
 def BtrfsSubvol(
         layer: str | Select,

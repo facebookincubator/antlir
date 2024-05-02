@@ -176,6 +176,7 @@ def _implicit_image_test(
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         # @oss-disable
+        rootless: bool = True,
         _static_list_wrapper: str | None = None,
         exec_compatible_with: list[str] | Select | None = None,
         target_compatible_with: list[str] | Select | None = None,
@@ -210,9 +211,20 @@ def _implicit_image_test(
             ],
             default_os = default_os,
             # @oss-disable
+            rootless = rootless,
             labels = ["antlir2-implicit-layer=image_test_boot"],
         )
         layer = ":{}--bootable-layer".format(name)
+
+        # TODO(T187078382): booted tests still must go through systemd-nspawn
+        rootless = False
+
+    if rootless == False:
+        target_compatible_with = selects.apply(
+            target_compatible_with or [],
+            lambda tcw: tcw + [antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted")],
+        )
+        labels = selects.apply(labels, lambda labels: labels + ["uses_sudo"])
 
     image_test(
         name = name,
@@ -227,6 +239,7 @@ def _implicit_image_test(
         hostname = hostname,
         default_os = default_os,
         # @oss-disable
+        rootless = rootless,
         _static_list_wrapper = _static_list_wrapper,
         exec_compatible_with = exec_compatible_with,
         target_compatible_with = target_compatible_with,
