@@ -77,7 +77,6 @@ load("//antlir/antlir2/features/tarball:tarball.bzl", "tarball_rule")
 load("//antlir/antlir2/features/test_only_features/trace:trace.bzl", "trace_rule")
 load("//antlir/antlir2/features/user:user.bzl", "user_rule")
 load("//antlir/antlir2/features/usermod:usermod.bzl", "usermod_rule")
-load("//antlir/antlir2/os:cfg.bzl", "remove_os_transition")
 load("//antlir/bzl:flatten.bzl", "flatten")
 load("//antlir/bzl:structs.bzl", "structs")
 load("//antlir/bzl:types.bzl", "types")
@@ -244,11 +243,6 @@ shared_features_attrs = {
                     attrs.dict(
                         attrs.string(),
                         attrs.one_of(
-                            attrs.transition_dep(cfg = remove_os_transition),
-                            # Need a non-transition dep to fallback on since
-                            # this is also used in anonymous targets. The
-                            # transition_dep must be first so that it's used at
-                            # the top-level for correct configuration.
                             attrs.dep(),
                             attrs.source(),
                         ),
