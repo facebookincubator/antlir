@@ -39,7 +39,7 @@ struct Args {
     /// `--user` run command as a given user
     #[clap(long, default_value = "root")]
     user: String,
-    #[clap(long, conflicts_with_all = ["boot", "rootless"])]
+    #[clap(long, conflicts_with_all = ["boot"])]
     pipe: bool,
     #[clap(long, conflicts_with_all = ["pipe", "rootless"])]
     boot: bool,
