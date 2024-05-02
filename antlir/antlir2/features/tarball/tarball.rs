@@ -167,7 +167,7 @@ impl antlir2_compile::CompileFeature for Tarball {
         let mut archive = self.open_archive().context("while opening archive")?;
         archive.set_preserve_mtime(true);
         archive.set_preserve_permissions(true);
-        archive.set_preserve_ownerships(true);
+        archive.set_preserve_ownerships(!self.force_root_ownership);
         archive.set_unpack_xattrs(true);
         archive.unpack(ctx.dst_path(&self.into_dir)?)?;
         Ok(())

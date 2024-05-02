@@ -8,6 +8,18 @@ oncall("antlir")
 image.layer(
     name = "base",
     features = [
+        feature.rpms_install(rpms = ["bash"]),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/bin/bash",
+            uid = 1042,
+            username = "antlir",
+        ),
+        feature.group_add(
+            gid = 1043,
+            groupname = "antlir",
+        ),
         feature.ensure_dirs_exist(
             dirs = "/dir",
         ),
@@ -31,6 +43,8 @@ buck_genrule(
         mkdir $TMP/foo/baz
         echo "I am qux" > $TMP/foo/baz/qux
         chmod u+s "$TMP/foo/bar"
+        echo "I'm owned by antlir" > $TMP/foo/owned
+        chown 1042:1043 $TMP/foo/owned
         tar -cf $OUT -C $TMP foo
 
 EOF
@@ -67,6 +81,11 @@ image.layer(
         feature.tarball(
             src = ":tar.zst",
             into_dir = "/tar.zst",
+        ),
+        feature.tarball(
+            src = ":tar",
+            force_root_ownership = True,
+            into_dir = "/tar_force_root_ownership",
         ),
     ],
     parent_layer = ":base",

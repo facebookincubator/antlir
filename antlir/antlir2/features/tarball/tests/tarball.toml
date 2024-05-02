@@ -52,6 +52,18 @@ text = """
 I am qux
 """
 
+[file."tar/foo/owned"]
+op = "added"
+
+[file."tar/foo/owned".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "antlir"
+group = "antlir"
+text = """
+I'm owned by antlir
+"""
+
 [file."tar.gz"]
 op = "added"
 
@@ -106,6 +118,18 @@ text = """
 I am qux
 """
 
+[file."tar.gz/foo/owned"]
+op = "added"
+
+[file."tar.gz/foo/owned".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "antlir"
+group = "antlir"
+text = """
+I'm owned by antlir
+"""
+
 [file."tar.zst"]
 op = "added"
 
@@ -158,4 +182,79 @@ user = "root"
 group = "root"
 text = """
 I am qux
+"""
+
+[file."tar.zst/foo/owned"]
+op = "added"
+
+[file."tar.zst/foo/owned".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "antlir"
+group = "antlir"
+text = """
+I'm owned by antlir
+"""
+
+[file.tar_force_root_ownership]
+op = "added"
+
+[file.tar_force_root_ownership.diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."tar_force_root_ownership/foo"]
+op = "added"
+
+[file."tar_force_root_ownership/foo".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."tar_force_root_ownership/foo/bar"]
+op = "added"
+
+[file."tar_force_root_ownership/foo/bar".diff]
+mode = "u+rws,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+I am bar
+"""
+
+[file."tar_force_root_ownership/foo/baz"]
+op = "added"
+
+[file."tar_force_root_ownership/foo/baz".diff]
+mode = "u+rwx,g+rx,o+rx"
+file-type = "directory"
+user = "root"
+group = "root"
+
+[file."tar_force_root_ownership/foo/baz/qux"]
+op = "added"
+
+[file."tar_force_root_ownership/foo/baz/qux".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+I am qux
+"""
+
+[file."tar_force_root_ownership/foo/owned"]
+op = "added"
+
+[file."tar_force_root_ownership/foo/owned".diff]
+mode = "u+rw,g+r,o+r"
+file-type = "regular-file"
+user = "root"
+group = "root"
+text = """
+I'm owned by antlir
 """
