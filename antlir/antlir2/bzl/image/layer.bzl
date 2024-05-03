@@ -436,22 +436,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
             rootless = ctx.attrs._rootless,
         )
 
-        build_script = ctx.actions.write(
-            "{}_build.sh".format(identifier_prefix),
-            cmd_args(
-                "#!/bin/bash",
-                "set -e",
-                "export RUST_LOG=\"antlir2=trace\"",
-                cmd_args(
-                    [cmd_args(cmd, delimiter = " ", quote = "shell") for cmd in build_cmd],
-                    delimiter = "\n\n",
-                ),
-                "\n",
-                delimiter = "\n",
-            ),
-            is_executable = True,
-        )
-
         phase_mounts = all_mounts(
             features = features,
             parent_layer = ctx.attrs.parent_layer[LayerInfo] if ctx.attrs.parent_layer else None,
@@ -461,7 +445,6 @@ def _impl_with_features(features: ProviderCollection, *, ctx: AnalysisContext) -
         debug_sub_targets[phase.value] = [
             DefaultInfo(
                 sub_targets = {
-                    "build": [DefaultInfo(build_script), RunInfo(cmd_args(build_script))],
                     "container": _container_sub_target(ctx.attrs._run_container, final_subvol, mounts = phase_mounts, rootless = ctx.attrs._rootless),
                     "facts": [DefaultInfo(final_facts_db)],
                     "features": [DefaultInfo(features_json_artifact)],
