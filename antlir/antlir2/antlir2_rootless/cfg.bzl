@@ -11,7 +11,7 @@ _refs = {
 }
 
 _attrs = {
-    "rootless": attrs.bool(default = True),
+    "rootless": attrs.option(attrs.bool(), default = None),
 }
 
 def _transition(*, refs, attrs, constraints):
@@ -22,21 +22,8 @@ def _transition(*, refs, attrs, constraints):
         else:
             constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
     elif rootless.setting.label not in constraints:
-        default_is_rootless = (
-            native.read_config("antlir2", "rootless", False) or
-            # OnDemand image builds have been completely broken forever, so
-            # attempting to turn it on is fine even while many antlir2 features
-            # still require sudo/root
-            native.read_config("sandcastle", "is_ondemand_machine", False)
-        )
-
-        if default_is_rootless:
-            constraints[rootless.setting.label] = rootless
-        else:
-            # Adding the 'rooted' constraint to the configuration is not strictly
-            # necessary, but does make it easier to debug when it shows up in `buck2
-            # audit configurations`
-            constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
+        # default now is always rootless
+        constraints[rootless.setting.label] = rootless
 
     return constraints
 
