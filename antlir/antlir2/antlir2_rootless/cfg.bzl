@@ -22,8 +22,7 @@ def _transition(*, refs, attrs, constraints):
         else:
             constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
     elif rootless.setting.label not in constraints:
-        # default now is always rootless
-        constraints[rootless.setting.label] = rootless
+        constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
 
     return constraints
 
