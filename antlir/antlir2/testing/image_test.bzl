@@ -176,7 +176,7 @@ def _implicit_image_test(
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         # @oss-disable
-        rootless: bool = True,
+        rootless: bool = False,
         _static_list_wrapper: str | None = None,
         exec_compatible_with: list[str] | Select | None = None,
         target_compatible_with: list[str] | Select | None = None,
