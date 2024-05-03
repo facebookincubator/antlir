@@ -9,9 +9,39 @@ oncall("antlir")
 image.layer(
     name = "foo",
     features = [
+        feature.ensure_dirs_exist(
+            dirs = "/etc",
+        ),
+        feature.install_text(
+            dst = "/etc/passwd",
+            text = "root:x:0:0:root:/root:/bin/bash\n",
+        ),
+        feature.install_text(
+            dst = "/etc/group",
+            mode = "a+r,u+w",
+            text = "root:x:0:\n",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/fakeshell",
+            mode = "a+rx",
+        ),
+        feature.user_add(
+            home_dir = "/",
+            primary_group = "antlir",
+            shell = "/fakeshell",
+            uid = 42,
+            username = "antlir",
+        ),
+        feature.group_add(
+            gid = 43,
+            groupname = "antlir",
+        ),
         feature.install_text(
             dst = "/foo",
+            group = "antlir",
             text = "foo",
+            user = "antlir",
         ),
     ],
 )
