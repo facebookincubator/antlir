@@ -101,7 +101,7 @@ cargo.rust_library(
     deps = [
         ":cfg-if-1.0.0",
         ":getrandom-0.2.14",
-        ":zerocopy-0.7.32",
+        ":zerocopy-0.7.33",
     ],
 )
 
@@ -4280,7 +4280,7 @@ cargo.rust_library(
         ":indexmap-2.2.6",
         ":slab-0.4.9",
         ":tokio-1.37.0",
-        ":tokio-util-0.7.10",
+        ":tokio-util-0.7.11",
         ":tracing-0.1.40",
     ],
 )
@@ -12299,23 +12299,23 @@ cargo.rust_library(
 
 alias(
     name = "tokio-util",
-    actual = ":tokio-util-0.7.10",
+    actual = ":tokio-util-0.7.11",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "tokio-util-0.7.10.crate",
-    sha256 = "5419f34732d9eb6ee4c3578b7989078579b7f039cbbb9ca2c4da015749371e15",
-    strip_prefix = "tokio-util-0.7.10",
-    urls = ["https://static.crates.io/crates/tokio-util/0.7.10/download"],
+    name = "tokio-util-0.7.11.crate",
+    sha256 = "9cf6b47b3771c49ac75ad09a6162f53ad4b8088b76ac60e8ec1455b31a189fe1",
+    strip_prefix = "tokio-util-0.7.11",
+    urls = ["https://static.crates.io/crates/tokio-util/0.7.11/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "tokio-util-0.7.10",
-    srcs = [":tokio-util-0.7.10.crate"],
+    name = "tokio-util-0.7.11",
+    srcs = [":tokio-util-0.7.11.crate"],
     crate = "tokio_util",
-    crate_root = "tokio-util-0.7.10.crate/src/lib.rs",
+    crate_root = "tokio-util-0.7.11.crate/src/lib.rs",
     edition = "2021",
     features = [
         "codec",
@@ -12331,7 +12331,6 @@ cargo.rust_library(
         "rt",
         "slab",
         "time",
-        "tracing",
     ],
     visibility = [],
     deps = [
@@ -12343,7 +12342,6 @@ cargo.rust_library(
         ":pin-project-lite-0.2.14",
         ":slab-0.4.9",
         ":tokio-1.37.0",
-        ":tracing-0.1.40",
     ],
 )
 
@@ -14148,21 +14146,21 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "zerocopy-0.7.32.crate",
-    sha256 = "74d4d3961e53fa4c9a25a8637fc2bfaf2595b3d3ae34875568a5cf64787716be",
-    strip_prefix = "zerocopy-0.7.32",
-    urls = ["https://static.crates.io/crates/zerocopy/0.7.32/download"],
+    name = "zerocopy-0.7.33.crate",
+    sha256 = "087eca3c1eaf8c47b94d02790dd086cd594b912d2043d4de4bfdd466b3befb7c",
+    strip_prefix = "zerocopy-0.7.33",
+    urls = ["https://static.crates.io/crates/zerocopy/0.7.33/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "zerocopy-0.7.32",
-    srcs = [":zerocopy-0.7.32.crate"],
+    name = "zerocopy-0.7.33",
+    srcs = [":zerocopy-0.7.33.crate"],
     crate = "zerocopy",
-    crate_root = "zerocopy-0.7.32.crate/src/lib.rs",
+    crate_root = "zerocopy-0.7.33.crate/src/lib.rs",
     edition = "2018",
     env = {
-        "CARGO_PKG_VERSION": "0.7.32",
+        "CARGO_PKG_VERSION": "0.7.33",
     },
     features = ["simd"],
     visibility = [],
