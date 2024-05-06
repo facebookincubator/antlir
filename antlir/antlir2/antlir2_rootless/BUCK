@@ -9,6 +9,7 @@ rust_library(
     visibility = [
         "//antlir/...",
         "//registry/builder/...",
+        "//tupperware/cm/antlir2/bzl:",
     ],
     deps = [
         "nix",
