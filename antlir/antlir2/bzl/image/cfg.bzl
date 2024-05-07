@@ -47,6 +47,11 @@ def attrs_selected_by_cfg():
                     fb = antlir2_dep("//antlir/antlir2/facebook/flavor/centos9:centos9"),
                     oss = "//flavor/centos9:centos9",
                 ),
+                # We always need to provide a DEFAULT branch that resolves to
+                # None since this is an attrs.option(). When everything is
+                # default_os (TODO(T168220644)) and this is not an option, this
+                # can be removed.
+                "DEFAULT": None,
             } | internal_external(
                 fb = {
                     antlir2_dep("//antlir/antlir2/os:centos8"): antlir2_dep("//antlir/antlir2/facebook/flavor/centos8:centos8"),
@@ -54,10 +59,6 @@ def attrs_selected_by_cfg():
                     antlir2_dep("//antlir/antlir2/os:none"): antlir2_dep("//antlir/antlir2/flavor:none"),
                     antlir2_dep("//antlir/antlir2/os:rhel8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8:rhel8"),
                     antlir2_dep("//antlir/antlir2/os:rhel8.8"): antlir2_dep("//antlir/antlir2/facebook/flavor/rhel8.8:rhel8.8"),
-                    # TODO: in D49383768 this will be disallowed so that we can
-                    # guarantee that we'll never end up building a layer without
-                    # configuring the os
-                    "DEFAULT": None,
                 },
                 oss = {},
             )),
