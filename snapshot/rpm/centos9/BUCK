@@ -1,6 +1,4 @@
 # @generated
 load("@antlir//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 
-repo_set(name='repos',
-         repos=['//snapshot/rpm/centos9/centos-composes/9/CentOS-Stream-9-20240311.0/compose/BaseOS/x86_64/os:centos-composes_9_CentOS-Stream-9-20240311.0_compose_BaseOS_x86_64_os'],
-         visibility=['PUBLIC'])
+repo_set(name='repos', repos=['//snapshot/rpm/centos9/centos-composes/9/CentOS-Stream-9-20240506.0/compose/BaseOS/x86_64/os:centos-composes_9_CentOS-Stream-9-20240506.0_compose_BaseOS_x86_64_os', '//snapshot/rpm/centos9/centos-composes/9/CentOS-Stream-9-20240506.0/compose/AppStream/x86_64/os:centos-composes_9_CentOS-Stream-9-20240506.0_compose_AppStream_x86_64_os', '//snapshot/rpm/centos9/centos-composes/9/CentOS-Stream-9-20240506.0/compose/CRB/x86_64/os:centos-composes_9_CentOS-Stream-9-20240506.0_compose_CRB_x86_64_os'], visibility=['PUBLIC'])
