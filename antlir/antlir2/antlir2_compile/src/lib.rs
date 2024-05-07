@@ -166,7 +166,7 @@ impl CompilerContext {
         #[cfg(facebook)] fbpkg: facebook::FbpkgContext,
     ) -> Result<Self> {
         let root_fd =
-            Dir::open(&root, OFlag::O_PATH, Mode::empty()).map_err(|e| Error::IO(e.into()))?;
+            Dir::open(&root, OFlag::O_DIRECTORY, Mode::empty()).map_err(|e| Error::IO(e.into()))?;
         Ok(Self {
             label,
             target_arch,

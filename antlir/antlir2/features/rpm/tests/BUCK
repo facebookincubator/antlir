@@ -1,14 +1,17 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")
 load("//antlir/antlir2/testing:image_test.bzl", "image_python_test", "image_sh_test")
-load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "python_binary")
+load("//antlir/bzl:build_defs.bzl", "alias", "buck_genrule", "internal_external", "python_binary")
 load(":defs.bzl", "expected_t", "test_rpms")
 
 oncall("antlir")
 
 repo_set(
     name = "test-repo-set",
-    repo_sets = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9"],
+    repo_sets = internal_external(
+        fb = ["//bot_generated/antlir/rpm/fast_snapshot/by_flavor:centos9"],
+        oss = ["generated//snapshot/rpm/centos9:repos"],
+    ),
     repos = ["//antlir/antlir2/features/rpm/tests/repo:test-repo"],
     visibility = [
         "//antlir/antlir2/bzl/feature/tests/rpm:",
@@ -22,6 +25,7 @@ feature.new(
     features = [
         feature.rpms_install(rpms = [
             "dnf",
+            "python3",
             "rpm",
             # @oss-disable
         ]),
@@ -269,10 +273,15 @@ test_rpms(
 
 alias(
     name = "flavor-versionlock",
-    actual = select({
-        "//antlir/antlir2/os:centos8": "//antlir/antlir2/facebook/flavor/centos8:centos8[default_versionlock]",
-        "//antlir/antlir2/os:centos9": "//antlir/antlir2/facebook/flavor/centos9:centos9[default_versionlock]",
-    }),
+    actual = internal_external(
+        fb = select({
+            "//antlir/antlir2/os:centos8": "//antlir/antlir2/facebook/flavor/centos8:centos8[default_versionlock]",
+            "//antlir/antlir2/os:centos9": "//antlir/antlir2/facebook/flavor/centos9:centos9[default_versionlock]",
+        }),
+        oss = select({
+            "//antlir/antlir2/os:centos9": "//flavor/centos9:centos9[default_versionlock]",
+        }),
+    ),
     compatible_with = [
         "//antlir/antlir2/os:centos8",
         "//antlir/antlir2/os:centos9",
@@ -452,12 +461,20 @@ test_binaries_with_file_capabilities_layer = test_rpms(
         "libcap",  # getcap cli
         "antlir2-with-capability",
     ])],
+    labels = internal_external(
+        fb = [],
+        oss = ["disabled"],
+    ),
     parent_layer = simple,
 )
 
 image_python_test(
     name = "test-binaries-with-file-capabilities",
     srcs = ["test_binaries_with_file_capabilities.py"],
+    labels = internal_external(
+        fb = [],
+        oss = ["disabled"],
+    ),
     layer = test_binaries_with_file_capabilities_layer,
 )
 

@@ -1,8 +1,7 @@
-load("@fbcode_macros//build_defs:export_files.bzl", "export_file")
-load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule", "buck_sh_test")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/antlir2/image_command_alias:image_command_alias.bzl", "image_command_alias")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "buck_sh_test", "export_file")
 
 oncall("antlir")
 
