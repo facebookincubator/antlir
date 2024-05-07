@@ -2,7 +2,7 @@ load("//antlir/antlir2/bzl:hoist.bzl", "hoist")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:build_defs.bzl", "python_unittest")
+load("//antlir/bzl:build_defs.bzl", "python_unittest", "rust_binary")
 
 oncall("antlir")
 
@@ -36,6 +36,13 @@ image.layer(
     target_arch = "x86_64",
 )
 
+rust_binary(
+    name = "test",
+    srcs = [
+        "main.rs",
+    ],
+)
+
 image.layer(
     name = "child.aarch64",
     features = [
@@ -46,6 +53,10 @@ image.layer(
                 aarch64 = "aarch64",
                 x86_64 = "x86_64",
             ),
+        ),
+        feature.install(
+            src = ":test",
+            dst = "/test",
         ),
     ],
     parent_layer = ":parent",
