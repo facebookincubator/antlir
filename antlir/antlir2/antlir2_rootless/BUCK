@@ -8,6 +8,7 @@ rust_library(
     srcs = glob(["src/**/*.rs"]),
     visibility = [
         "//antlir/...",
+        "//externals_builder/bzl/tools/...",
         "//registry/builder/...",
         "//tupperware/cm/antlir2/bzl:",
     ],
