@@ -1,13 +1,16 @@
 load("//antlir/antlir2/bzl/flavor:defs.bzl", "flavor")
 load("//antlir/bzl:build_defs.bzl", "http_file")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
+load("//antlir/antlir2/bzl/image:build_appliance.bzl", "build_appliance")
 
 flavor(
     name = "centos9",
-    default_build_appliance = ":build-appliance",
+    default_build_appliance = ":build-appliance.prebuilt",
     default_dnf_repo_set = "generated//snapshot/rpm/centos9:repos",
     visibility = ["PUBLIC"],
 )
+
+hash = "38f1ee19700466ff1a86e5cda92234c2a6ecd11d262ff39a429039b2d1ca97e1"
 
 # Hand-built with. Will replace with a self-hosting antlir image after
 # bootstrapping using this hand-built image
@@ -20,18 +23,18 @@ flavor(
 # baseurl=https://mirror.facebook.net/centos-composes/9/CentOS-Stream-9-20240311.0/compose/BaseOS/x86_64/os/
 #
 # $ sudo dnf -c dnf.conf --installroot $(pwd)/root install dnf python3-dnf
-http_file(
+http_archive(
     name = "build-appliance.tar.zst",
     urls = [
-        "https://antlir.s3.us-east-2.amazonaws.com/build_appliance/centos9_58f93714e56f61b8bcbabd9c6198c8317d9860080b63b678cbec48f00e26f3a2.tar.zst",
+        "https://antlir.s3.us-east-2.amazonaws.com/build_appliance/" +
+        "centos9_{}.tar.zst".format(hash)
     ],
-    sha256 = "58f93714e56f61b8bcbabd9c6198c8317d9860080b63b678cbec48f00e26f3a2",
+    sha256 = hash,
 )
 
-image.prebuilt(
+build_appliance(
     name = "build-appliance.prebuilt",
     src = ":build-appliance.tar.zst",
-    format = "tar",
 )
 
 image.layer(
