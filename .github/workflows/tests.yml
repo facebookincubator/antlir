@@ -1,0 +1,23 @@
+name: Tests
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+      - uses: facebook/install-dotslash@latest
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: nightly
+      - name: BTRFS-ify antlir2-out
+        run: |
+          mkdir antlir2-out
+          truncate -s 100G ${{ runner.temp }}/image.btrfs
+          mkfs.btrfs ${{ runner.temp }}/image.btrfs
+          sudo mount ${{ runner.temp }}/image.btrfs antlir2-out
+      - name: Build layer with RPMs
+        run: |
+          ./buck2 build antlir//antlir/antlir2/features/rpm/tests:simple--layer
