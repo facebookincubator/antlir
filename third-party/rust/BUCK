@@ -1267,14 +1267,65 @@ cargo.rust_library(
     crate = "chrono_tz",
     crate_root = "chrono-tz-0.8.6.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :chrono-tz-0.8.6-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    rustc_flags = ["@$(location :chrono-tz-0.8.6-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [
+        ":chrono-0.4.38",
+        ":phf-0.11.2",
+    ],
+)
+
+cargo.rust_binary(
+    name = "chrono-tz-0.8.6-build-script-build",
+    srcs = [":chrono-tz-0.8.6.crate"],
+    crate = "build_script_build",
+    crate_root = "chrono-tz-0.8.6.crate/build.rs",
+    edition = "2021",
     features = [
         "default",
         "std",
     ],
     visibility = [],
+    deps = [":chrono-tz-build-0.2.1"],
+)
+
+buildscript_run(
+    name = "chrono-tz-0.8.6-build-script-run",
+    package_name = "chrono-tz",
+    buildscript_rule = ":chrono-tz-0.8.6-build-script-build",
+    features = [
+        "default",
+        "std",
+    ],
+    version = "0.8.6",
+)
+
+http_archive(
+    name = "chrono-tz-build-0.2.1.crate",
+    sha256 = "433e39f13c9a060046954e0592a8d0a4bcb1040125cbf91cb8ee58964cfb350f",
+    strip_prefix = "chrono-tz-build-0.2.1",
+    urls = ["https://static.crates.io/crates/chrono-tz-build/0.2.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "chrono-tz-build-0.2.1",
+    srcs = [":chrono-tz-build-0.2.1.crate"],
+    crate = "chrono_tz_build",
+    crate_root = "chrono-tz-build-0.2.1.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
     deps = [
-        ":chrono-0.4.38",
+        ":parse-zoneinfo-0.3.1",
         ":phf-0.11.2",
+        ":phf_codegen-0.11.2",
     ],
 )
 
@@ -1298,6 +1349,43 @@ cargo.rust_library(
     crate = "clang_sys",
     crate_root = "clang-sys-1.7.0.crate/src/lib.rs",
     edition = "2015",
+    env = {
+        "OUT_DIR": "$(location :clang-sys-1.7.0-build-script-run[out_dir])",
+    },
+    features = [
+        "clang_10_0",
+        "clang_11_0",
+        "clang_12_0",
+        "clang_3_5",
+        "clang_3_6",
+        "clang_3_7",
+        "clang_3_8",
+        "clang_3_9",
+        "clang_4_0",
+        "clang_5_0",
+        "clang_6_0",
+        "clang_7_0",
+        "clang_8_0",
+        "clang_9_0",
+        "libloading",
+        "runtime",
+        "static",
+    ],
+    rustc_flags = ["@$(location :clang-sys-1.7.0-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [
+        ":glob-0.3.1",
+        ":libc-0.2.154",
+        ":libloading-0.8.3",
+    ],
+)
+
+cargo.rust_binary(
+    name = "clang-sys-1.7.0-build-script-build",
+    srcs = [":clang-sys-1.7.0.crate"],
+    crate = "build_script_build",
+    crate_root = "clang-sys-1.7.0.crate/build.rs",
+    edition = "2015",
     features = [
         "clang_10_0",
         "clang_11_0",
@@ -1318,11 +1406,33 @@ cargo.rust_library(
         "static",
     ],
     visibility = [],
-    deps = [
-        ":glob-0.3.1",
-        ":libc-0.2.154",
-        ":libloading-0.8.3",
+    deps = [":glob-0.3.1"],
+)
+
+buildscript_run(
+    name = "clang-sys-1.7.0-build-script-run",
+    package_name = "clang-sys",
+    buildscript_rule = ":clang-sys-1.7.0-build-script-build",
+    features = [
+        "clang_10_0",
+        "clang_11_0",
+        "clang_12_0",
+        "clang_3_5",
+        "clang_3_6",
+        "clang_3_7",
+        "clang_3_8",
+        "clang_3_9",
+        "clang_4_0",
+        "clang_5_0",
+        "clang_6_0",
+        "clang_7_0",
+        "clang_8_0",
+        "clang_9_0",
+        "libloading",
+        "runtime",
+        "static",
     ],
+    version = "1.7.0",
 )
 
 http_archive(
@@ -2184,11 +2294,42 @@ cargo.rust_library(
     crate = "crossbeam_utils",
     crate_root = "crossbeam-utils-0.8.19.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "CARGO_PKG_NAME": "crossbeam-utils",
+    },
+    features = [
+        "default",
+        "std",
+    ],
+    rustc_flags = ["@$(location :crossbeam-utils-0.8.19-build-script-run[rustc_flags])"],
+    visibility = [],
+)
+
+cargo.rust_binary(
+    name = "crossbeam-utils-0.8.19-build-script-build",
+    srcs = [":crossbeam-utils-0.8.19.crate"],
+    crate = "build_script_build",
+    crate_root = "crossbeam-utils-0.8.19.crate/build.rs",
+    edition = "2021",
+    env = {
+        "CARGO_PKG_NAME": "crossbeam-utils",
+    },
     features = [
         "default",
         "std",
     ],
     visibility = [],
+)
+
+buildscript_run(
+    name = "crossbeam-utils-0.8.19-build-script-run",
+    package_name = "crossbeam-utils",
+    buildscript_rule = ":crossbeam-utils-0.8.19-build-script-build",
+    features = [
+        "default",
+        "std",
+    ],
+    version = "0.8.19",
 )
 
 http_archive(
@@ -3288,18 +3429,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "errno-0.3.8.crate",
-    sha256 = "a258e46cdc063eb8519c00b9fc845fc47bcfca4130e2f08e88665ceda8474245",
-    strip_prefix = "errno-0.3.8",
-    urls = ["https://static.crates.io/crates/errno/0.3.8/download"],
+    name = "errno-0.3.9.crate",
+    sha256 = "534c5cf6194dfab3db3242765c03bbe257cf92f22b38f6bc0c58d59108a820ba",
+    strip_prefix = "errno-0.3.9",
+    urls = ["https://static.crates.io/crates/errno/0.3.9/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "errno-0.3.8",
-    srcs = [":errno-0.3.8.crate"],
+    name = "errno-0.3.9",
+    srcs = [":errno-0.3.9.crate"],
     crate = "errno",
-    crate_root = "errno-0.3.8.crate/src/lib.rs",
+    crate_root = "errno-0.3.9.crate/src/lib.rs",
     edition = "2018",
     features = ["std"],
     platform = {
@@ -5261,7 +5402,7 @@ cargo.rust_library(
         ":is-terminal-0.4.12",
         ":itertools-0.10.5",
         ":lalrpop-util-0.19.12",
-        ":petgraph-0.6.4",
+        ":petgraph-0.6.5",
         ":pico-args-0.4.2",
         ":regex-1.10.4",
         ":regex-syntax-0.6.29",
@@ -5299,7 +5440,7 @@ cargo.rust_binary(
         ":itertools-0.10.5",
         ":lalrpop-0.19.12",
         ":lalrpop-util-0.19.12",
-        ":petgraph-0.6.4",
+        ":petgraph-0.6.5",
         ":pico-args-0.4.2",
         ":regex-1.10.4",
         ":regex-syntax-0.6.29",
@@ -5584,13 +5725,48 @@ cargo.rust_library(
     crate = "libz_sys",
     crate_root = "libz-sys-1.1.16.crate/src/lib.rs",
     edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :libz-sys-1.1.16-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "libc",
+        "stock-zlib",
+    ],
+    rustc_flags = ["@$(location :libz-sys-1.1.16-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [":libc-0.2.154"],
+)
+
+cargo.rust_binary(
+    name = "libz-sys-1.1.16-build-script-build",
+    srcs = [":libz-sys-1.1.16.crate"],
+    crate = "build_script_build",
+    crate_root = "libz-sys-1.1.16.crate/build.rs",
+    edition = "2018",
     features = [
         "default",
         "libc",
         "stock-zlib",
     ],
     visibility = [],
-    deps = [":libc-0.2.154"],
+    deps = [
+        ":cc-1.0.97",
+        ":pkg-config-0.3.30",
+        ":vcpkg-0.2.15",
+    ],
+)
+
+buildscript_run(
+    name = "libz-sys-1.1.16-build-script-run",
+    package_name = "libz-sys",
+    buildscript_rule = ":libz-sys-1.1.16-build-script-build",
+    features = [
+        "default",
+        "libc",
+        "stock-zlib",
+    ],
+    version = "1.1.16",
 )
 
 http_archive(
@@ -6377,6 +6553,9 @@ cargo.rust_library(
     crate = "native_tls",
     crate_root = "native-tls-0.2.11.crate/src/lib.rs",
     edition = "2015",
+    env = {
+        "OUT_DIR": "$(location :native-tls-0.2.11-build-script-run[out_dir])",
+    },
     platform = {
         "linux-arm64": dict(
             deps = [
@@ -6419,7 +6598,24 @@ cargo.rust_library(
             deps = [":schannel-0.1.23"],
         ),
     },
+    rustc_flags = ["@$(location :native-tls-0.2.11-build-script-run[rustc_flags])"],
     visibility = [],
+)
+
+cargo.rust_binary(
+    name = "native-tls-0.2.11-build-script-build",
+    srcs = [":native-tls-0.2.11.crate"],
+    crate = "build_script_build",
+    crate_root = "native-tls-0.2.11.crate/build.rs",
+    edition = "2015",
+    visibility = [],
+)
+
+buildscript_run(
+    name = "native-tls-0.2.11-build-script-run",
+    package_name = "native-tls",
+    buildscript_rule = ":native-tls-0.2.11-build-script-build",
+    version = "0.2.11",
 )
 
 http_archive(
@@ -6720,12 +6916,35 @@ cargo.rust_library(
     crate = "num_bigint",
     crate_root = "num-bigint-0.2.6.crate/src/lib.rs",
     edition = "2015",
+    env = {
+        "OUT_DIR": "$(location :num-bigint-0.2.6-build-script-run[out_dir])",
+    },
     features = ["std"],
+    rustc_flags = ["@$(location :num-bigint-0.2.6-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":num-integer-0.1.46",
         ":num-traits-0.2.19",
     ],
+)
+
+cargo.rust_binary(
+    name = "num-bigint-0.2.6-build-script-build",
+    srcs = [":num-bigint-0.2.6.crate"],
+    crate = "build_script_build",
+    crate_root = "num-bigint-0.2.6.crate/build.rs",
+    edition = "2015",
+    features = ["std"],
+    visibility = [],
+    deps = [":autocfg-1.3.0"],
+)
+
+buildscript_run(
+    name = "num-bigint-0.2.6-build-script-run",
+    package_name = "num-bigint",
+    buildscript_rule = ":num-bigint-0.2.6-build-script-build",
+    features = ["std"],
+    version = "0.2.6",
 )
 
 alias(
@@ -6907,12 +7126,43 @@ cargo.rust_library(
     crate = "num_traits",
     crate_root = "num-traits-0.2.19.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :num-traits-0.2.19-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "i128",
+        "std",
+    ],
+    rustc_flags = ["@$(location :num-traits-0.2.19-build-script-run[rustc_flags])"],
+    visibility = [],
+)
+
+cargo.rust_binary(
+    name = "num-traits-0.2.19-build-script-build",
+    srcs = [":num-traits-0.2.19.crate"],
+    crate = "build_script_build",
+    crate_root = "num-traits-0.2.19.crate/build.rs",
+    edition = "2021",
     features = [
         "default",
         "i128",
         "std",
     ],
     visibility = [],
+    deps = [":autocfg-1.3.0"],
+)
+
+buildscript_run(
+    name = "num-traits-0.2.19-build-script-run",
+    package_name = "num-traits",
+    buildscript_rule = ":num-traits-0.2.19-build-script-build",
+    features = [
+        "default",
+        "i128",
+        "std",
+    ],
+    version = "0.2.19",
 )
 
 alias(
@@ -7125,8 +7375,33 @@ cargo.rust_library(
     crate = "openssl_sys",
     crate_root = "openssl-sys-0.9.102.crate/src/lib.rs",
     edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :openssl-sys-0.9.102-build-script-main-run[out_dir])",
+    },
+    rustc_flags = ["@$(location :openssl-sys-0.9.102-build-script-main-run[rustc_flags])"],
     visibility = [],
     deps = [":libc-0.2.154"],
+)
+
+cargo.rust_binary(
+    name = "openssl-sys-0.9.102-build-script-main",
+    srcs = [":openssl-sys-0.9.102.crate"],
+    crate = "build_script_main",
+    crate_root = "openssl-sys-0.9.102.crate/build/main.rs",
+    edition = "2018",
+    visibility = [],
+    deps = [
+        ":cc-1.0.97",
+        ":pkg-config-0.3.30",
+        ":vcpkg-0.2.15",
+    ],
+)
+
+buildscript_run(
+    name = "openssl-sys-0.9.102-build-script-main-run",
+    package_name = "openssl-sys",
+    buildscript_rule = ":openssl-sys-0.9.102-build-script-main",
+    version = "0.9.102",
 )
 
 alias(
@@ -7322,6 +7597,24 @@ buildscript_run(
     package_name = "parking_lot_core",
     buildscript_rule = ":parking_lot_core-0.9.10-build-script-build",
     version = "0.9.10",
+)
+
+http_archive(
+    name = "parse-zoneinfo-0.3.1.crate",
+    sha256 = "1f2a05b18d44e2957b88f96ba460715e295bc1d7510468a2f3d3b44535d26c24",
+    strip_prefix = "parse-zoneinfo-0.3.1",
+    urls = ["https://static.crates.io/crates/parse-zoneinfo/0.3.1/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "parse-zoneinfo-0.3.1",
+    srcs = [":parse-zoneinfo-0.3.1.crate"],
+    crate = "parse_zoneinfo",
+    crate_root = "parse-zoneinfo-0.3.1.crate/src/lib.rs",
+    edition = "2021",
+    visibility = [],
+    deps = [":regex-1.10.4"],
 )
 
 http_archive(
@@ -7537,23 +7830,23 @@ cargo.rust_library(
 
 alias(
     name = "petgraph",
-    actual = ":petgraph-0.6.4",
+    actual = ":petgraph-0.6.5",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "petgraph-0.6.4.crate",
-    sha256 = "e1d3afd2628e69da2be385eb6f2fd57c8ac7977ceeff6dc166ff1657b0e386a9",
-    strip_prefix = "petgraph-0.6.4",
-    urls = ["https://static.crates.io/crates/petgraph/0.6.4/download"],
+    name = "petgraph-0.6.5.crate",
+    sha256 = "b4c5cc86750666a3ed20bdaf5ca2a0344f9c67674cae0515bec2da16fbaa47db",
+    strip_prefix = "petgraph-0.6.5",
+    urls = ["https://static.crates.io/crates/petgraph/0.6.5/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "petgraph-0.6.4",
-    srcs = [":petgraph-0.6.4.crate"],
+    name = "petgraph-0.6.5",
+    srcs = [":petgraph-0.6.5.crate"],
     crate = "petgraph",
-    crate_root = "petgraph-0.6.4.crate/src/lib.rs",
+    crate_root = "petgraph-0.6.5.crate/src/lib.rs",
     edition = "2018",
     features = [
         "default",
@@ -7780,6 +8073,23 @@ cargo.rust_library(
     visibility = [],
 )
 
+http_archive(
+    name = "pkg-config-0.3.30.crate",
+    sha256 = "d231b230927b5e4ad203db57bbcbee2802f6bce620b1e4a9024a07d94e2907ec",
+    strip_prefix = "pkg-config-0.3.30",
+    urls = ["https://static.crates.io/crates/pkg-config/0.3.30/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "pkg-config-0.3.30",
+    srcs = [":pkg-config-0.3.30.crate"],
+    crate = "pkg_config",
+    crate_root = "pkg-config-0.3.30.crate/src/lib.rs",
+    edition = "2015",
+    visibility = [],
+)
+
 alias(
     name = "plain",
     actual = ":plain-0.2.3",
@@ -7823,11 +8133,39 @@ cargo.rust_library(
     crate = "portable_atomic",
     crate_root = "portable-atomic-1.6.0.crate/src/lib.rs",
     edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :portable-atomic-1.6.0-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "fallback",
+    ],
+    rustc_flags = ["@$(location :portable-atomic-1.6.0-build-script-run[rustc_flags])"],
+    visibility = [],
+)
+
+cargo.rust_binary(
+    name = "portable-atomic-1.6.0-build-script-build",
+    srcs = [":portable-atomic-1.6.0.crate"],
+    crate = "build_script_build",
+    crate_root = "portable-atomic-1.6.0.crate/build.rs",
+    edition = "2018",
     features = [
         "default",
         "fallback",
     ],
     visibility = [],
+)
+
+buildscript_run(
+    name = "portable-atomic-1.6.0-build-script-run",
+    package_name = "portable-atomic",
+    buildscript_rule = ":portable-atomic-1.6.0-build-script-build",
+    features = [
+        "default",
+        "fallback",
+    ],
+    version = "1.6.0",
 )
 
 http_archive(
@@ -8073,11 +8411,15 @@ cargo.rust_library(
     crate = "proc_macro_error",
     crate_root = "proc-macro-error-1.0.4.crate/src/lib.rs",
     edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :proc-macro-error-1.0.4-build-script-run[out_dir])",
+    },
     features = [
         "default",
         "syn",
         "syn-error",
     ],
+    rustc_flags = ["@$(location :proc-macro-error-1.0.4-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [
         ":proc-macro-error-attr-1.0.4",
@@ -8085,6 +8427,33 @@ cargo.rust_library(
         ":quote-1.0.36",
         ":syn-1.0.109-syn1",
     ],
+)
+
+cargo.rust_binary(
+    name = "proc-macro-error-1.0.4-build-script-build",
+    srcs = [":proc-macro-error-1.0.4.crate"],
+    crate = "build_script_build",
+    crate_root = "proc-macro-error-1.0.4.crate/build.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "syn",
+        "syn-error",
+    ],
+    visibility = [],
+    deps = [":version_check-0.9.4"],
+)
+
+buildscript_run(
+    name = "proc-macro-error-1.0.4-build-script-run",
+    package_name = "proc-macro-error",
+    buildscript_rule = ":proc-macro-error-1.0.4-build-script-build",
+    features = [
+        "default",
+        "syn",
+        "syn-error",
+    ],
+    version = "1.0.4",
 )
 
 http_archive(
@@ -8129,13 +8498,43 @@ cargo.rust_library(
     crate = "proc_macro2",
     crate_root = "proc-macro2-1.0.82.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :proc-macro2-1.0.82-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "proc-macro",
+        "span-locations",
+    ],
+    rustc_flags = ["@$(location :proc-macro2-1.0.82-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [":unicode-ident-1.0.12"],
+)
+
+cargo.rust_binary(
+    name = "proc-macro2-1.0.82-build-script-build",
+    srcs = [":proc-macro2-1.0.82.crate"],
+    crate = "build_script_build",
+    crate_root = "proc-macro2-1.0.82.crate/build.rs",
+    edition = "2021",
     features = [
         "default",
         "proc-macro",
         "span-locations",
     ],
     visibility = [],
-    deps = [":unicode-ident-1.0.12"],
+)
+
+buildscript_run(
+    name = "proc-macro2-1.0.82-build-script-run",
+    package_name = "proc-macro2",
+    buildscript_rule = ":proc-macro2-1.0.82-build-script-build",
+    features = [
+        "default",
+        "proc-macro",
+        "span-locations",
+    ],
+    version = "1.0.82",
 )
 
 alias(
@@ -8770,8 +9169,28 @@ cargo.rust_library(
     crate = "ref_cast",
     crate_root = "ref-cast-1.0.23.crate/src/lib.rs",
     edition = "2021",
+    env = {
+        "OUT_DIR": "$(location :ref-cast-1.0.23-build-script-run[out_dir])",
+    },
+    rustc_flags = ["@$(location :ref-cast-1.0.23-build-script-run[rustc_flags])"],
     visibility = [],
     deps = [":ref-cast-impl-1.0.23"],
+)
+
+cargo.rust_binary(
+    name = "ref-cast-1.0.23-build-script-build",
+    srcs = [":ref-cast-1.0.23.crate"],
+    crate = "build_script_build",
+    crate_root = "ref-cast-1.0.23.crate/build.rs",
+    edition = "2021",
+    visibility = [],
+)
+
+buildscript_run(
+    name = "ref-cast-1.0.23-build-script-run",
+    package_name = "ref-cast",
+    buildscript_rule = ":ref-cast-1.0.23-build-script-build",
+    version = "1.0.23",
 )
 
 http_archive(
@@ -9299,25 +9718,25 @@ cargo.rust_library(
         ),
         "macos-arm64": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":libc-0.2.154"],
         ),
         "macos-x86_64": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":libc-0.2.154"],
         ),
         "windows-gnu": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":windows-sys-0.48.0"],
         ),
         "windows-msvc": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":windows-sys-0.48.0"],
         ),
@@ -9391,7 +9810,7 @@ cargo.rust_library(
     platform = {
         "linux-arm64": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [
                 ":libc-0.2.154",
@@ -9400,7 +9819,7 @@ cargo.rust_library(
         ),
         "linux-x86_64": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [
                 ":libc-0.2.154",
@@ -9409,25 +9828,25 @@ cargo.rust_library(
         ),
         "macos-arm64": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":libc-0.2.154"],
         ),
         "macos-x86_64": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":libc-0.2.154"],
         ),
         "windows-gnu": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":windows-sys-0.52.0"],
         ),
         "windows-msvc": dict(
             named_deps = {
-                "libc_errno": ":errno-0.3.8",
+                "libc_errno": ":errno-0.3.9",
             },
             deps = [":windows-sys-0.52.0"],
         ),
@@ -11060,47 +11479,45 @@ cargo.rust_library(
 
 alias(
     name = "strum",
-    actual = ":strum-0.24.1",
+    actual = ":strum-0.26.2",
     visibility = ["PUBLIC"],
 )
 
 http_archive(
-    name = "strum-0.24.1.crate",
-    sha256 = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f",
-    strip_prefix = "strum-0.24.1",
-    urls = ["https://static.crates.io/crates/strum/0.24.1/download"],
+    name = "strum-0.26.2.crate",
+    sha256 = "5d8cec3501a5194c432b2b7976db6b7d10ec95c253208b45f83f7136aa985e29",
+    strip_prefix = "strum-0.26.2",
+    urls = ["https://static.crates.io/crates/strum/0.26.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "strum-0.24.1",
-    srcs = [":strum-0.24.1.crate"],
+    name = "strum-0.26.2",
+    srcs = [":strum-0.26.2.crate"],
     crate = "strum",
-    crate_root = "strum-0.24.1.crate/src/lib.rs",
+    crate_root = "strum-0.26.2.crate/src/lib.rs",
     edition = "2018",
     features = [
-        "default",
         "derive",
-        "std",
         "strum_macros",
     ],
     visibility = [],
-    deps = [":strum_macros-0.24.3"],
+    deps = [":strum_macros-0.26.2"],
 )
 
 http_archive(
-    name = "strum_macros-0.24.3.crate",
-    sha256 = "1e385be0d24f186b4ce2f9982191e7101bb737312ad61c1f2f984f34bcf85d59",
-    strip_prefix = "strum_macros-0.24.3",
-    urls = ["https://static.crates.io/crates/strum_macros/0.24.3/download"],
+    name = "strum_macros-0.26.2.crate",
+    sha256 = "c6cf59daf282c0a494ba14fd21610a0325f9f90ec9d1231dea26bcb1d696c946",
+    strip_prefix = "strum_macros-0.26.2",
+    urls = ["https://static.crates.io/crates/strum_macros/0.26.2/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "strum_macros-0.24.3",
-    srcs = [":strum_macros-0.24.3.crate"],
+    name = "strum_macros-0.26.2",
+    srcs = [":strum_macros-0.26.2.crate"],
     crate = "strum_macros",
-    crate_root = "strum_macros-0.24.3.crate/src/lib.rs",
+    crate_root = "strum_macros-0.26.2.crate/src/lib.rs",
     edition = "2018",
     proc_macro = True,
     visibility = [],
@@ -11109,7 +11526,7 @@ cargo.rust_library(
         ":proc-macro2-1.0.82",
         ":quote-1.0.36",
         ":rustversion-1.0.16",
-        ":syn-1.0.109-syn1",
+        ":syn-2.0.61",
     ],
 )
 
@@ -12106,12 +12523,40 @@ cargo.rust_library(
     crate = "tiny_keccak",
     crate_root = "tiny-keccak-2.0.2.crate/src/lib.rs",
     edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :tiny-keccak-2.0.2-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "sha3",
+    ],
+    rustc_flags = ["@$(location :tiny-keccak-2.0.2-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [":crunchy-0.2.2"],
+)
+
+cargo.rust_binary(
+    name = "tiny-keccak-2.0.2-build-script-build",
+    srcs = [":tiny-keccak-2.0.2.crate"],
+    crate = "build_script_build",
+    crate_root = "tiny-keccak-2.0.2.crate/build.rs",
+    edition = "2018",
     features = [
         "default",
         "sha3",
     ],
     visibility = [],
-    deps = [":crunchy-0.2.2"],
+)
+
+buildscript_run(
+    name = "tiny-keccak-2.0.2-build-script-run",
+    package_name = "tiny-keccak",
+    buildscript_rule = ":tiny-keccak-2.0.2-build-script-build",
+    features = [
+        "default",
+        "sha3",
+    ],
+    version = "2.0.2",
 )
 
 http_archive(
@@ -13495,6 +13940,23 @@ cargo.rust_library(
     ],
 )
 
+http_archive(
+    name = "vcpkg-0.2.15.crate",
+    sha256 = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426",
+    strip_prefix = "vcpkg-0.2.15",
+    urls = ["https://static.crates.io/crates/vcpkg/0.2.15/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "vcpkg-0.2.15",
+    srcs = [":vcpkg-0.2.15.crate"],
+    crate = "vcpkg",
+    crate_root = "vcpkg-0.2.15.crate/src/lib.rs",
+    edition = "2015",
+    visibility = [],
+)
+
 alias(
     name = "vec_map",
     actual = ":vec_map-0.8.2",
@@ -14241,6 +14703,29 @@ cargo.rust_library(
     crate = "zstd_safe",
     crate_root = "zstd-safe-7.1.0.crate/src/lib.rs",
     edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :zstd-safe-7.1.0-build-script-run[out_dir])",
+    },
+    features = [
+        "arrays",
+        "default",
+        "experimental",
+        "legacy",
+        "std",
+        "zdict_builder",
+        "zstdmt",
+    ],
+    rustc_flags = ["@$(location :zstd-safe-7.1.0-build-script-run[rustc_flags])"],
+    visibility = [],
+    deps = [":zstd-sys-2.0.10+zstd.1.5.6"],
+)
+
+cargo.rust_binary(
+    name = "zstd-safe-7.1.0-build-script-build",
+    srcs = [":zstd-safe-7.1.0.crate"],
+    crate = "build_script_build",
+    crate_root = "zstd-safe-7.1.0.crate/build.rs",
+    edition = "2018",
     features = [
         "arrays",
         "default",
@@ -14251,13 +14736,113 @@ cargo.rust_library(
         "zstdmt",
     ],
     visibility = [],
-    deps = [":zstd-sys-2.0.10+zstd.1.5.6"],
+)
+
+buildscript_run(
+    name = "zstd-safe-7.1.0-build-script-run",
+    package_name = "zstd-safe",
+    buildscript_rule = ":zstd-safe-7.1.0-build-script-build",
+    features = [
+        "arrays",
+        "default",
+        "experimental",
+        "legacy",
+        "std",
+        "zdict_builder",
+        "zstdmt",
+    ],
+    version = "7.1.0",
 )
 
 http_archive(
     name = "zstd-sys-2.0.10+zstd.1.5.6.crate",
     sha256 = "c253a4914af5bafc8fa8c86ee400827e83cf6ec01195ec1f1ed8441bf00d65aa",
     strip_prefix = "zstd-sys-2.0.10+zstd.1.5.6",
+    sub_targets = [
+        "zdict.h",
+        "zstd.h",
+        "zstd/lib/common/bitstream.h",
+        "zstd/lib/common/compiler.h",
+        "zstd/lib/common/cpu.h",
+        "zstd/lib/common/debug.c",
+        "zstd/lib/common/debug.h",
+        "zstd/lib/common/entropy_common.c",
+        "zstd/lib/common/error_private.c",
+        "zstd/lib/common/error_private.h",
+        "zstd/lib/common/fse.h",
+        "zstd/lib/common/fse_decompress.c",
+        "zstd/lib/common/huf.h",
+        "zstd/lib/common/mem.h",
+        "zstd/lib/common/pool.c",
+        "zstd/lib/common/pool.h",
+        "zstd/lib/common/portability_macros.h",
+        "zstd/lib/common/threading.c",
+        "zstd/lib/common/threading.h",
+        "zstd/lib/common/zstd_common.c",
+        "zstd/lib/common/zstd_deps.h",
+        "zstd/lib/common/zstd_internal.h",
+        "zstd/lib/common/zstd_trace.h",
+        "zstd/lib/compress/clevels.h",
+        "zstd/lib/compress/fse_compress.c",
+        "zstd/lib/compress/hist.c",
+        "zstd/lib/compress/hist.h",
+        "zstd/lib/compress/huf_compress.c",
+        "zstd/lib/compress/zstd_compress.c",
+        "zstd/lib/compress/zstd_compress_internal.h",
+        "zstd/lib/compress/zstd_compress_literals.c",
+        "zstd/lib/compress/zstd_compress_literals.h",
+        "zstd/lib/compress/zstd_compress_sequences.c",
+        "zstd/lib/compress/zstd_compress_sequences.h",
+        "zstd/lib/compress/zstd_compress_superblock.c",
+        "zstd/lib/compress/zstd_compress_superblock.h",
+        "zstd/lib/compress/zstd_cwksp.h",
+        "zstd/lib/compress/zstd_double_fast.c",
+        "zstd/lib/compress/zstd_double_fast.h",
+        "zstd/lib/compress/zstd_fast.c",
+        "zstd/lib/compress/zstd_fast.h",
+        "zstd/lib/compress/zstd_lazy.c",
+        "zstd/lib/compress/zstd_lazy.h",
+        "zstd/lib/compress/zstd_ldm.c",
+        "zstd/lib/compress/zstd_ldm.h",
+        "zstd/lib/compress/zstd_ldm_geartab.h",
+        "zstd/lib/compress/zstd_opt.c",
+        "zstd/lib/compress/zstd_opt.h",
+        "zstd/lib/compress/zstdmt_compress.c",
+        "zstd/lib/compress/zstdmt_compress.h",
+        "zstd/lib/decompress/huf_decompress.c",
+        "zstd/lib/decompress/huf_decompress_amd64.S",
+        "zstd/lib/decompress/zstd_ddict.c",
+        "zstd/lib/decompress/zstd_ddict.h",
+        "zstd/lib/decompress/zstd_decompress.c",
+        "zstd/lib/decompress/zstd_decompress_block.c",
+        "zstd/lib/decompress/zstd_decompress_block.h",
+        "zstd/lib/decompress/zstd_decompress_internal.h",
+        "zstd/lib/deprecated/zbuff.h",
+        "zstd/lib/dictBuilder/cover.c",
+        "zstd/lib/dictBuilder/cover.h",
+        "zstd/lib/dictBuilder/divsufsort.c",
+        "zstd/lib/dictBuilder/divsufsort.h",
+        "zstd/lib/dictBuilder/fastcover.c",
+        "zstd/lib/dictBuilder/zdict.c",
+        "zstd/lib/legacy/zstd_legacy.h",
+        "zstd/lib/legacy/zstd_v01.c",
+        "zstd/lib/legacy/zstd_v01.h",
+        "zstd/lib/legacy/zstd_v02.c",
+        "zstd/lib/legacy/zstd_v02.h",
+        "zstd/lib/legacy/zstd_v03.c",
+        "zstd/lib/legacy/zstd_v03.h",
+        "zstd/lib/legacy/zstd_v04.c",
+        "zstd/lib/legacy/zstd_v04.h",
+        "zstd/lib/legacy/zstd_v05.c",
+        "zstd/lib/legacy/zstd_v05.h",
+        "zstd/lib/legacy/zstd_v06.c",
+        "zstd/lib/legacy/zstd_v06.h",
+        "zstd/lib/legacy/zstd_v07.c",
+        "zstd/lib/legacy/zstd_v07.h",
+        "zstd/lib/zdict.h",
+        "zstd/lib/zstd.h",
+        "zstd/lib/zstd_errors.h",
+    ],
     urls = ["https://static.crates.io/crates/zstd-sys/2.0.10+zstd.1.5.6/download"],
     visibility = [],
 )
@@ -14275,5 +14860,109 @@ cargo.rust_library(
         "zdict_builder",
         "zstdmt",
     ],
+    visibility = [],
+    deps = [":zstd-sys-2.0.10+zstd.1.5.6-zstd"],
+)
+
+cxx_library(
+    name = "zstd-sys-2.0.10+zstd.1.5.6-zstd",
+    srcs = [
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/debug.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/entropy_common.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/error_private.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/fse_decompress.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/pool.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/threading.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/zstd_common.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/fse_compress.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/hist.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/huf_compress.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_literals.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_sequences.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_superblock.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_double_fast.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_fast.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_lazy.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_opt.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstdmt_compress.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/huf_decompress.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/huf_decompress_amd64.S]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/zstd_ddict.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_block.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/dictBuilder/cover.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/dictBuilder/divsufsort.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/dictBuilder/fastcover.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/dictBuilder/zdict.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v01.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v02.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v03.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v04.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v05.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v06.c]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v07.c]",
+    ],
+    headers = [
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zdict.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/bitstream.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/compiler.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/cpu.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/debug.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/error_private.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/fse.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/huf.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/mem.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/pool.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/portability_macros.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/threading.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/zstd_deps.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/zstd_internal.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/common/zstd_trace.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/clevels.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/hist.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_internal.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_literals.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_sequences.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_compress_superblock.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_cwksp.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_double_fast.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_fast.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_lazy.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_ldm_geartab.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstd_opt.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/compress/zstdmt_compress.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/zstd_ddict.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_block.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/decompress/zstd_decompress_internal.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/deprecated/zbuff.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/dictBuilder/cover.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/dictBuilder/divsufsort.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_legacy.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v01.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v02.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v03.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v04.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v05.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v06.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/legacy/zstd_v07.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/zdict.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/zstd.h]",
+        ":zstd-sys-2.0.10+zstd.1.5.6.crate[zstd/lib/zstd_errors.h]",
+    ],
+    compiler_flags = [
+        "-O3",
+        "-DZSTD_LIB_DEPRECATED=0",
+        "-fvisibility=hidden",
+        "-DXXH_PRIVATE_API=",
+        "-DZSTDLIB_VISIBILITY=",
+        "-DZDICTLIB_VISIBILITY=",
+        "-DZSTDERRORLIB_VISIBILITY=",
+        "-DZSTD_LEGACY_SUPPORT=1",
+    ],
+    preferred_linkage = "static",
     visibility = [],
 )
