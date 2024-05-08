@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
@@ -98,11 +99,15 @@ def genrule_in_image(
         *,
         name: str,
         default_os: str | None = None,
+        rootless: bool | None = None,
         **kwargs):
     if should_all_images_in_package_use_default_os():
         default_os = default_os or get_default_os_for_package()
+    if rootless == None:
+        rootless = get_antlir2_rootless()
     _genrule_in_image_macro(
         name = name,
         default_os = default_os,
+        rootless = rootless,
         **kwargs
     )
