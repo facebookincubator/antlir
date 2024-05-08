@@ -66,20 +66,18 @@ pub fn so_dependencies<S: AsRef<OsStr> + std::fmt::Debug>(
 
     let mut cmd = Command::new(interpreter);
     if let Some(sysroot) = sysroot {
-        let mut platform = vec![];
+        let mut isol = IsolationContext::builder(sysroot);
         #[cfg(facebook)]
         {
             if sysroot.join("usr/local/fbcode").exists() {
-                platform.push(Path::new("/usr/local/fbcode"));
+                isol.platform(Path::new("/usr/local/fbcode"));
             }
             if sysroot.join("mnt/gvfs").exists() {
-                platform.push(Path::new("/mnt/gvfs"));
+                isol.platform(Path::new("/mnt/gvfs"));
             }
         }
         cmd = unshare(
-            IsolationContext::builder(sysroot)
-                .ephemeral(false)
-                .platform(platform.as_slice())
+            isol.ephemeral(false)
                 .working_directory(Path::new("/"))
                 // There's a memory allocation bug under qemu-aarch64 when
                 // asking the linker to --list an elf binary. This configures
