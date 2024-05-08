@@ -19,7 +19,6 @@ use anyhow::anyhow;
 use anyhow::Context;
 use clap::Parser;
 use tracing_subscriber::filter;
-use tracing_subscriber::fmt::time::LocalTime;
 use tracing_subscriber::prelude::*;
 
 #[derive(Parser, Debug)]
@@ -52,7 +51,6 @@ struct Args {
 fn init_logging() {
     let default_filter = filter::Targets::new().with_default(tracing::Level::DEBUG);
     let log_layer = tracing_subscriber::fmt::layer()
-        .with_timer(LocalTime::rfc_3339())
         .with_ansi(false)
         .with_writer(std::io::stderr)
         .with_filter(default_filter);

@@ -14,7 +14,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "is_facebook", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:systemd.bzl", "systemd")
 
@@ -263,7 +263,7 @@ def image_python_test(
         default_rou: str | None = None,
         **kwargs):
     test_layer = layer
-    if not REPO_CFG.artifacts_require_repo:
+    if not REPO_CFG.artifacts_require_repo and is_facebook:
         # In @mode/opt we need to install fb-xarexec
         test_layer = name + "--with-xarexec"
         image.layer(

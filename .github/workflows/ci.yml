@@ -1,5 +1,9 @@
 name: Tests
-on: [push, pull_request]
+on: [push, pull_request, workflow_call]
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
   test:
@@ -18,6 +22,10 @@ jobs:
           truncate -s 100G ${{ runner.temp }}/image.btrfs
           mkfs.btrfs ${{ runner.temp }}/image.btrfs
           sudo mount ${{ runner.temp }}/image.btrfs antlir2-out
-      - name: Build layer with RPMs
+      - name: Install deps
         run: |
-          ./buck2 build antlir//antlir/antlir2/features/rpm/tests:simple--layer
+          sudo apt install \
+            cpio jq systemd-container
+      - name: Run tests
+        run: |
+          ./buck2 uquery 'kind(".*_test", %s) - attrfilter(labels, disabled, %s)' //antlir/antlir2/features/rpm/tests: | xargs ./buck2 test

@@ -7,6 +7,7 @@ flavor(
     name = "centos9",
     default_build_appliance = ":build-appliance.prebuilt",
     default_dnf_repo_set = "generated//snapshot/rpm/centos9:repos",
+    default_dnf_versionlock = "//antlir/antlir2/package_managers/dnf/build_appliance:empty-dnf-versionlock.json",
     visibility = ["PUBLIC"],
 )
 
