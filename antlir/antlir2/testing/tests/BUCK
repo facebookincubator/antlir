@@ -71,6 +71,7 @@ test_variants(
 )
 
 test_variants(
+    compatible_with = ["ovr_config//cpu:x86_64"],
     lang = "sh",
     test = "test.sh",
     test_rule = image_sh_test,
