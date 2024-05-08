@@ -94,6 +94,9 @@ impl FileEntry {
                 name.into_string()
                     .expect("all xattrs we care about are utf8")
             })
+            // We really don't care about selinux xattrs since they are very
+            // dependent on system configuration
+            .filter(|name| name != "security.selinux")
             .filter_map(|name| {
                 xattr::get(path, &name)
                     .context("while reading xattr")
