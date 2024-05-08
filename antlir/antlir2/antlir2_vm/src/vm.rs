@@ -132,7 +132,7 @@ impl<S: Share> VM<S> {
             &state_dir,
             machine.mem_mib,
         )?;
-        let nics = Self::create_nics(machine.num_nics)?;
+        let nics = Self::create_nics(machine.num_nics, machine.max_combined_channels)?;
         let tpm = match machine.use_tpm {
             true => Some(TPMDevice::new(&state_dir)?),
             false => None,
@@ -246,10 +246,10 @@ impl<S: Share> VM<S> {
     }
 
     /// Create all virtual NICs
-    fn create_nics(count: usize) -> Result<Vec<VirtualNIC>> {
+    fn create_nics(count: usize, max_combined_channels: usize) -> Result<Vec<VirtualNIC>> {
         (0..count)
             .map(|x| -> Result<VirtualNIC> {
-                let nic = VirtualNIC::new(x);
+                let nic = VirtualNIC::new(x, max_combined_channels);
                 nic.create_dev()?;
                 Ok(nic)
             })
@@ -873,7 +873,7 @@ mod test {
             disks: vec![],
             shares: Shares::new(vec![share], 1024, PathBuf::from("/state/units"))
                 .expect("Failed to create Shares"),
-            nics: vec![VirtualNIC::new(0)],
+            nics: vec![VirtualNIC::new(0, 128)],
             state_dir: PathBuf::from("/test/path"),
             sidecar_handles: vec![],
             tpm: None,

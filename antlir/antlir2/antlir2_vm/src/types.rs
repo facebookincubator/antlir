@@ -219,6 +219,8 @@ pub(crate) struct MachineOpts {
     pub(crate) disks: Vec<QCow2DiskOpts>,
     /// Number of NICs for the VM.
     pub(crate) num_nics: usize,
+    /// Maximum number of combined channels for each virtual NIC. Setting it to 1 disables multi-queue
+    pub(crate) max_combined_channels: usize,
     /// initrd and data if not booting from disk
     pub(crate) non_disk_boot_opts: Option<NonDiskBootOpts>,
     /// Index of serial port
