@@ -16,12 +16,15 @@ _attrs = {
 
 def _transition(*, refs, attrs, constraints):
     rootless = refs.rootless[ConstraintValueInfo]
-    if attrs.rootless != None:
-        if attrs.rootless:
-            constraints[rootless.setting.label] = rootless
-        else:
-            constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
-    elif rootless.setting.label not in constraints:
+
+    # If there is already a configuration, keep it
+    if rootless.setting.label in constraints:
+        return constraints
+    elif attrs.rootless:
+        # Otherwise set it to rootless if rootless=True otherwise default to
+        # rooted
+        constraints[rootless.setting.label] = rootless
+    else:
         constraints[rootless.setting.label] = refs.rooted[ConstraintValueInfo]
 
     return constraints
@@ -29,7 +32,7 @@ def _transition(*, refs, attrs, constraints):
 _is_rootless_select = select({
     antlir2_dep("//antlir/antlir2/antlir2_rootless:rootless"): True,
     antlir2_dep("//antlir/antlir2/antlir2_rootless:rooted"): False,
-    "DEFAULT": True,
+    "DEFAULT": False,
 })
 
 def _transition_impl(platform, refs, attrs):
