@@ -8,6 +8,7 @@
 # @oss-disable
 load("@prelude//utils:selects.bzl", "selects")
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
@@ -176,7 +177,7 @@ def _implicit_image_test(
         _add_outer_labels: list[str] = [],
         default_os: str | None = None,
         # @oss-disable
-        rootless: bool = False,
+        rootless: bool | None = None,
         _static_list_wrapper: str | None = None,
         exec_compatible_with: list[str] | Select | None = None,
         target_compatible_with: list[str] | Select | None = None,
@@ -198,6 +199,9 @@ def _implicit_image_test(
 
     # @oss-disable
         # @oss-disable
+
+    if rootless == None:
+        rootless = get_antlir2_rootless()
 
     if boot:
         image.layer(

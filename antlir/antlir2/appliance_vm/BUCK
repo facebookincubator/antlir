@@ -44,5 +44,4 @@ genrule_in_image(
         ),
     ),
     layer = "//kernel/build/image:_appliance.layer",
-    rootless = True,
 )

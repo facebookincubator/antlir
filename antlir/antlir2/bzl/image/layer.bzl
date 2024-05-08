@@ -5,6 +5,7 @@
 
 load("@prelude//utils:expect.bzl", "expect")
 load("@prelude//utils:selects.bzl", "selects")
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "get_antlir2_rootless")
 load("//antlir/antlir2/bzl:build_phase.bzl", "BuildPhase", "verify_build_phases")
 load("//antlir/antlir2/bzl:lazy.bzl", "lazy")
 load("//antlir/antlir2/bzl:macro_dep.bzl", "antlir2_dep")
@@ -625,6 +626,7 @@ def layer(
         # TODO: remove this flag when all images are using this new mechanism
         use_default_os_from_package: bool | None = None,
         default_rou: str | None = None,
+        rootless: bool | None = None,
         visibility: list[str] | None = None,
         **kwargs):
     """
@@ -668,13 +670,17 @@ def layer(
 
     kwargs["default_target_platform"] = config.get_platform_for_current_buildfile().target_platform
 
-    if not kwargs.get("rootless", False):
+    if rootless == None:
+        rootless = get_antlir2_rootless()
+
+    if not rootless:
         kwargs["labels"] = selects.apply(kwargs.pop("labels", []), lambda labels: labels + ["uses_sudo"])
 
     return layer_rule(
         name = name,
         default_os = default_os,
         # @oss-disable
+        rootless = rootless,
         visibility = get_visibility(visibility),
         _implicit_image_test = antlir2_dep("//antlir/antlir2/testing/implicit_image_test:implicit_image_test"),
         _run_container = antlir2_dep("//antlir/antlir2/container_subtarget:run"),
