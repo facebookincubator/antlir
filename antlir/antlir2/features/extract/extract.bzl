@@ -29,6 +29,7 @@ load("//antlir/antlir2/features:defs.bzl", "FeaturePluginInfo")
 load("//antlir/antlir2/features:dependency_layer_info.bzl", "layer_dep_analyze")
 load("//antlir/antlir2/features:feature_info.bzl", "FeatureAnalysis", "ParseTimeFeature")
 load("//antlir/buck2/bzl:ensure_single_output.bzl", "ensure_single_output")
+load("//antlir/bzl:build_defs.bzl", "internal_external")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 
 def extract_from_layer(
@@ -108,7 +109,10 @@ def extract_buck_binary(
             "_analyze": antlir2_dep("//antlir/antlir2/features/extract:extract-buck-binary-analyze"),
         } | (
             {
-                "_objcopy": "fbsource//third-party/binutils:objcopy",
+                "_objcopy": internal_external(
+                    fb = "fbsource//third-party/binutils:objcopy",
+                    oss = "toolchains//:objcopy",
+                ),
             } if _should_strip(strip) else {}
         ),
         kwargs = {

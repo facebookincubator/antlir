@@ -131,7 +131,7 @@ fn main() -> Result<()> {
     ctx.platform([
         // test is built out of the repo, so it needs the
         // repo to be available
-        repo.as_ref(),
+        repo.as_path(),
         #[cfg(facebook)]
         Path::new("/usr/local/fbcode"),
         #[cfg(facebook)]

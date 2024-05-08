@@ -1,7 +1,7 @@
 # (c) Meta Platforms, Inc. and affiliates. Confidential and proprietary.
 
-load("@fbcode_macros//build_defs:export_files.bzl", "export_files")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
+load("//antlir/bzl:build_defs.bzl", "export_file")
 load("//antlir/bzl:third_party.bzl", "third_party")
 
 # NOTE: this build script is similar to the one in public_tld
@@ -11,7 +11,7 @@ load("//antlir/bzl:third_party.bzl", "third_party")
 
 oncall("antlir")
 
-export_files(files = ["00_configure"])
+export_file(name = "00_configure")
 
 third_party.build(
     name = "swtpm",

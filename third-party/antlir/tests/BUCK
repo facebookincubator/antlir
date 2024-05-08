@@ -3,17 +3,16 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
-load("@fbcode_macros//build_defs:export_files.bzl", "export_files")
-load("@fbcode_macros//build_defs:native_rules.bzl", "buck_genrule")
+load("//antlir/bzl:build_defs.bzl", "buck_genrule", "export_file")
 load(":defs.bzl", "hello_world_build_test")
 
 oncall("antlir")
 
-export_files(files = [
+[export_file(name = name) for name in [
     "hello_world.c",
     "00_patch",
     "01_patch",
-])
+]]
 
 buck_genrule(
     name = "hello_world.tgz",
@@ -22,8 +21,7 @@ buck_genrule(
         OUT_DIR=\\$(dirname $OUT)
         mkdir -p "$OUT_DIR/hello_world"
         cp "$(location {})" "$OUT_DIR/hello_world/"
-        cd "$OUT_DIR"
-        tar -czf "$OUT" hello_world/hello_world.c
+        tar -czf "$OUT" -C "$OUT_DIR" hello_world/hello_world.c
         rm -rf hello_world/
     """.format(":hello_world.c"),
 )
