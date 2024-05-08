@@ -63,7 +63,7 @@ def snapshot_repo(args, base_url: ParseResult) -> str:
     repo_id = base_url.path.strip("/").replace("/", "_")
     base_url = urlunparse(base_url)
     repomd = requests.get(urljoin(base_url, "repodata/repomd.xml"))
-    with tempfile.NamedTemporaryFile("wb") as f:
+    with tempfile.NamedTemporaryFile("wb", suffix=".xml") as f:
         f.write(repomd.content)
         f.flush()
         repomd = cr.Repomd(f.name)
@@ -121,9 +121,9 @@ def snapshot_repo(args, base_url: ParseResult) -> str:
 
     targets = sorted(repr(t) for t in targets)
     source = """# \x40generated
-load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
-load("//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
-load("//antlir/antlir2/package_managers/dnf/rules:xml.bzl", "xml")
+load("@antlir//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo")
+load("@antlir//antlir/antlir2/package_managers/dnf/rules:rpm.bzl", "rpm")
+load("@antlir//antlir/antlir2/package_managers/dnf/rules:xml.bzl", "xml")
 
 """
     source += (
@@ -150,7 +150,7 @@ def main(args) -> None:
     with open(args.dst / "BUCK", "w") as f:
         f.write("# \x40generated\n")
         f.write(
-            'load("//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")\n\n'
+            'load("@antlir//antlir/antlir2/package_managers/dnf/rules:repo.bzl", "repo_set")\n\n'
         )
         repo_targets = [
             "//" + str(args.dst) + "/" + path + ":" + repo_id
