@@ -22,6 +22,8 @@ use crate::utils::log_command;
 pub(crate) struct VirtualNIC {
     /// ID of the NIC, start from 0. This affects the NIC name, its MAC and IP.
     id: usize,
+    /// Max Combined Channels of the NIC. Multi-queue is disabled when set to 1
+    max_combined_channels: usize,
 }
 
 #[derive(Error, Debug)]
@@ -35,22 +37,30 @@ pub(crate) enum VirtualNICError {
 type Result<T> = std::result::Result<T, VirtualNICError>;
 
 impl VirtualNIC {
-    /// Create new VirtualNIC instance with assigned ID. The virtual NIC won't be
+    /// Create new VirtualNIC instance with assigned ID and max combined channels. The virtual NIC won't be
     /// created yet.
-    pub(crate) fn new(id: usize) -> Self {
-        Self { id }
+    pub(crate) fn new(id: usize, max_combined_channels: usize) -> Self {
+        Self {
+            id,
+            max_combined_channels,
+        }
     }
 
     /// Create the virtual NIC and assign an IP
     pub(crate) fn create_dev(&self) -> Result<()> {
-        self.ip_command(&["tuntap", "add", "dev", &self.dev_name(), "mode", "tap"])?;
-        self.ip_command(&["link", "set", &self.dev_name(), "up"])?;
+        let dev_name = self.dev_name();
+        let mut ip_command = vec!["tuntap", "add", "dev", &dev_name, "mode", "tap"];
+        if self.max_combined_channels > 1 {
+            ip_command.push("multi_queue");
+        }
+        self.ip_command(&ip_command)?;
+        self.ip_command(&["link", "set", &dev_name, "up"])?;
         self.ip_command(&[
             "addr",
             "add",
             &self.ipv6_net(&self.host_ipv6_addr()),
             "dev",
-            &self.dev_name(),
+            &dev_name,
         ])?;
         Ok(())
     }
@@ -60,15 +70,24 @@ impl VirtualNIC {
         [
             "-netdev",
             &format!(
-                "tap,id=net{id},ifname={dev_name},script=no,downscript=no",
+                "tap,id=net{id},ifname={dev_name},script=no,downscript=no,queues={queues}",
                 id = self.id,
                 dev_name = self.dev_name(),
+                queues = self.max_combined_channels,
             ),
             "-device",
             &format!(
-                "virtio-net-pci,netdev=net{id},mac={mac}",
+                "virtio-net-pci,netdev=net{id},mac={mac},mq={mq},vectors={vectors}",
                 id = self.id,
                 mac = self.guest_mac(),
+                mq = if self.max_combined_channels > 1 {
+                    "on"
+                } else {
+                    "off"
+                },
+                // N for TX queues, N for RX queues, 1 for config, and 1 for possible control vq, where N = max_combined_channels
+                // https://fburl.com/knmbw1a1
+                vectors = self.max_combined_channels * 2 + 2,
             ),
         ]
         .iter()
@@ -125,30 +144,39 @@ mod test {
 
     #[test]
     fn test_guest_mac() {
-        assert_eq!(VirtualNIC::new(0).guest_mac(), "00:00:00:00:00:01");
-        assert_eq!(VirtualNIC::new(10).guest_mac(), "00:00:00:00:00:0b");
-        assert_eq!(VirtualNIC::new(100).guest_mac(), "00:00:00:00:00:65");
-        assert_eq!(VirtualNIC::new(1000).guest_mac(), "00:00:00:00:03:e9");
+        assert_eq!(VirtualNIC::new(0, 1).guest_mac(), "00:00:00:00:00:01");
+        assert_eq!(VirtualNIC::new(10, 2).guest_mac(), "00:00:00:00:00:0b");
+        assert_eq!(VirtualNIC::new(100, 4).guest_mac(), "00:00:00:00:00:65");
+        assert_eq!(VirtualNIC::new(1000, 16).guest_mac(), "00:00:00:00:03:e9");
     }
 
     #[test]
     fn test_ipv6_addr() {
-        let nic = VirtualNIC::new(0);
+        let nic = VirtualNIC::new(0, 1);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00::1/64");
-        let nic = VirtualNIC::new(1);
+        let nic = VirtualNIC::new(1, 2);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00:1::1/64");
-        let nic = VirtualNIC::new(10);
+        let nic = VirtualNIC::new(10, 4);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00:a::1/64");
-        let nic = VirtualNIC::new(100);
+        let nic = VirtualNIC::new(100, 16);
         assert_eq!(nic.ipv6_net(&nic.host_ipv6_addr()), "fd00:64::1/64");
     }
 
     #[test]
     fn test_qemu_args() {
         assert_eq!(
-            VirtualNIC::new(0).qemu_args().join(OsStr::new(" ")),
-            "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no \
-            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01"
+            VirtualNIC::new(0, 1).qemu_args().join(OsStr::new(" ")),
+            "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=1 \
+            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=off,vectors=4"
+        )
+    }
+
+    #[test]
+    fn test_qemu_multiqueue_args() {
+        assert_eq!(
+            VirtualNIC::new(0, 128).qemu_args().join(OsStr::new(" ")),
+            "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=128 \
+            -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=on,vectors=258"
         )
     }
 }

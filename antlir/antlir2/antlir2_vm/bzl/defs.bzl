@@ -52,6 +52,7 @@ def _machine_json(ctx: AnalysisContext) -> (Artifact, typing.Any):
             "arch": ctx.attrs.arch,
             "cpus": ctx.attrs.cpus,
             "disks": [d[DiskInfo] for d in disks],
+            "max_combined_channels": ctx.attrs.max_combined_channels,
             "mem_mib": ctx.attrs.mem_mib,
             "non_disk_boot_opts": {
                 "append": append,
@@ -141,6 +142,7 @@ _vm_host = rule(
             attrs.dep(providers = [DiskInfo]),
             doc = "list of disks to attach to VM",
         ),
+        "max_combined_channels": attrs.int(default = 1),
         "mem_mib": attrs.int(default = 4096, doc = "memory size in MiB"),
         "num_nics": attrs.int(default = 1),
         "serial_index": attrs.int(default = 0, doc = "index of the serial port"),
