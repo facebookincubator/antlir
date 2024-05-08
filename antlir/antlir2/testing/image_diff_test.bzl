@@ -55,6 +55,7 @@ _image_diff_test = rule(
         "diff_type": attrs.enum(["file", "rpm", "all"], default = "all"),
         "exclude": attrs.list(attrs.string(), default = []),
         "image_diff_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_diff_test:image-diff-test")),
+        "labels": attrs.list(attrs.string(), default = []),
         "layer": attrs.dep(providers = [LayerInfo]),
         "running_in_image": attrs.bool(),
         "_rootless": rootless_cfg.is_rootless_attr,

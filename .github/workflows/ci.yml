@@ -26,6 +26,19 @@ jobs:
         run: |
           sudo apt install \
             cpio jq systemd-container
+
+      - name: Find tests
+        run: |
+          ./buck2 uquery 'kind(".*_test", set(%s)) - attrfilter(labels, disabled, set(%s))' \
+            //antlir/antlir2/features/install/tests: \
+            //antlir/antlir2/features/rpm/tests: \
+            //antlir/antlir2/features/tarball/tests: \
+            | tee ${{ runner.temp }}/tests.txt
+
+      - name: Build tests
+        run: |
+          ./buck2 build @${{ runner.temp }}/tests.txt
+
       - name: Run tests
         run: |
-          ./buck2 uquery 'kind(".*_test", %s) - attrfilter(labels, disabled, %s)' //antlir/antlir2/features/rpm/tests: | xargs ./buck2 test
+          ./buck2 test @${{ runner.temp }}/tests.txt
