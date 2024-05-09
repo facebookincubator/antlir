@@ -138,6 +138,28 @@ impl QemuDevice for VirtualNIC {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct VirtualNICs(Vec<VirtualNIC>);
+
+impl VirtualNICs {
+    pub(crate) fn new(count: usize, max_combined_channels: usize) -> Result<Self> {
+        let nics: Result<Vec<_>> = (0..count)
+            .map(|x| -> Result<VirtualNIC> {
+                let nic = VirtualNIC::new(x, max_combined_channels);
+                nic.create_dev()?;
+                Ok(nic)
+            })
+            .collect();
+        Ok(Self(nics?))
+    }
+}
+
+impl QemuDevice for VirtualNICs {
+    fn qemu_args(&self) -> Vec<OsString> {
+        self.0.iter().flat_map(|x| x.qemu_args()).collect()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::ffi::OsStr;
@@ -179,6 +201,18 @@ mod test {
             VirtualNIC::new(0, 128).qemu_args().join(OsStr::new(" ")),
             "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=128 \
             -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=on,vectors=258"
+        )
+    }
+
+    #[test]
+    fn test_nics_qemu_args() {
+        let nics = VirtualNICs(vec![VirtualNIC::new(0, 1), VirtualNIC::new(1, 128)]);
+        assert_eq!(
+            nics.qemu_args().join(OsStr::new(" ")),
+            "-netdev tap,id=net0,ifname=vm0,script=no,downscript=no,queues=1 \
+             -device virtio-net-pci,netdev=net0,mac=00:00:00:00:00:01,mq=off,vectors=4 \
+             -netdev tap,id=net1,ifname=vm1,script=no,downscript=no,queues=128 \
+             -device virtio-net-pci,netdev=net1,mac=00:00:00:00:00:02,mq=on,vectors=258"
         )
     }
 }
