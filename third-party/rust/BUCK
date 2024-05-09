@@ -701,6 +701,7 @@ cargo.rust_library(
     features = [
         "logging",
         "prettyplease",
+        "runtime",
         "static",
     ],
     rustc_flags = ["@$(location :bindgen-0.69.4-build-script-run[rustc_flags])"],
@@ -732,6 +733,7 @@ cargo.rust_binary(
     features = [
         "logging",
         "prettyplease",
+        "runtime",
         "static",
     ],
     visibility = [],
@@ -744,6 +746,7 @@ buildscript_run(
     features = [
         "logging",
         "prettyplease",
+        "runtime",
         "static",
     ],
     version = "0.69.4",
@@ -1064,6 +1067,25 @@ cargo.rust_library(
 )
 
 http_archive(
+    name = "bzip2-sys-0.1.11+1.0.8.crate",
+    sha256 = "736a955f3fa7875102d57c82b8cac37ec45224a07fd32d58f9f7a186b6cd4cdc",
+    strip_prefix = "bzip2-sys-0.1.11+1.0.8",
+    urls = ["https://static.crates.io/crates/bzip2-sys/0.1.11+1.0.8/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "bzip2-sys-0.1.11+1.0.8",
+    srcs = [":bzip2-sys-0.1.11+1.0.8.crate"],
+    crate = "bzip2_sys",
+    crate_root = "bzip2-sys-0.1.11+1.0.8.crate/lib.rs",
+    edition = "2015",
+    features = ["static"],
+    visibility = [],
+    deps = [":libc-0.2.154"],
+)
+
+http_archive(
     name = "castaway-0.2.2.crate",
     sha256 = "8a17ed5635fc8536268e5d4de1e22e81ac34419e5f052d4d51f4e01dcc263fcc",
     strip_prefix = "castaway-0.2.2",
@@ -1369,7 +1391,6 @@ cargo.rust_library(
         "clang_9_0",
         "libloading",
         "runtime",
-        "static",
     ],
     rustc_flags = ["@$(location :clang-sys-1.7.0-build-script-run[rustc_flags])"],
     visibility = [],
@@ -1403,7 +1424,6 @@ cargo.rust_binary(
         "clang_9_0",
         "libloading",
         "runtime",
-        "static",
     ],
     visibility = [],
     deps = [":glob-0.3.1"],
@@ -1430,7 +1450,6 @@ buildscript_run(
         "clang_9_0",
         "libloading",
         "runtime",
-        "static",
     ],
     version = "1.7.0",
 )
@@ -5705,6 +5724,32 @@ buildscript_run(
     version = "0.2.8",
 )
 
+http_archive(
+    name = "librocksdb-sys-0.16.0+8.10.0.crate",
+    sha256 = "ce3d60bc059831dc1c83903fb45c103f75db65c5a7bf22272764d9cc683e348c",
+    strip_prefix = "librocksdb-sys-0.16.0+8.10.0",
+    urls = ["https://static.crates.io/crates/librocksdb-sys/0.16.0+8.10.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "librocksdb-sys-0.16.0+8.10.0",
+    srcs = [":librocksdb-sys-0.16.0+8.10.0.crate"],
+    crate = "librocksdb_sys",
+    crate_root = "librocksdb-sys-0.16.0+8.10.0.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "static",
+    ],
+    visibility = [],
+    deps = [
+        ":bzip2-sys-0.1.11+1.0.8",
+        ":libc-0.2.154",
+        ":libz-sys-1.1.16",
+    ],
+)
+
 alias(
     name = "libz-sys",
     actual = ":libz-sys-1.1.16",
@@ -5731,6 +5776,7 @@ cargo.rust_library(
     features = [
         "default",
         "libc",
+        "static",
         "stock-zlib",
     ],
     rustc_flags = ["@$(location :libz-sys-1.1.16-build-script-run[rustc_flags])"],
@@ -5747,6 +5793,7 @@ cargo.rust_binary(
     features = [
         "default",
         "libc",
+        "static",
         "stock-zlib",
     ],
     visibility = [],
@@ -5764,6 +5811,7 @@ buildscript_run(
     features = [
         "default",
         "libc",
+        "static",
         "stock-zlib",
     ],
     version = "1.1.16",
@@ -8362,7 +8410,7 @@ cargo.rust_library(
     crate_root = "prettyplease-0.2.20.crate/src/lib.rs",
     edition = "2021",
     env = {
-        "OUT_DIR": "$(location :prettyplease-0.2.20-build-script-run[out_dir])",
+        "CARGO_PKG_VERSION": "0.2.20",
     },
     features = ["verbatim"],
     rustc_flags = ["@$(location :prettyplease-0.2.20-build-script-run[rustc_flags])"],
@@ -8379,6 +8427,9 @@ cargo.rust_binary(
     crate = "build_script_build",
     crate_root = "prettyplease-0.2.20.crate/build.rs",
     edition = "2021",
+    env = {
+        "CARGO_PKG_VERSION": "0.2.20",
+    },
     features = ["verbatim"],
     visibility = [],
 )
@@ -9541,6 +9592,33 @@ cargo.rust_library(
     ],
     visibility = [],
     deps = [":rand-0.8.5"],
+)
+
+alias(
+    name = "rocksdb",
+    actual = ":rocksdb-0.22.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "rocksdb-0.22.0.crate",
+    sha256 = "6bd13e55d6d7b8cd0ea569161127567cd587676c99f4472f779a0279aa60a7a7",
+    strip_prefix = "rocksdb-0.22.0",
+    urls = ["https://static.crates.io/crates/rocksdb/0.22.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "rocksdb-0.22.0",
+    srcs = [":rocksdb-0.22.0.crate"],
+    crate = "rocksdb",
+    crate_root = "rocksdb-0.22.0.crate/src/lib.rs",
+    edition = "2018",
+    visibility = [],
+    deps = [
+        ":libc-0.2.154",
+        ":librocksdb-sys-0.16.0+8.10.0",
+    ],
 )
 
 alias(
