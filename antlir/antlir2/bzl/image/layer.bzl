@@ -658,7 +658,7 @@ def layer(
         # chef_solo feature itself, but that's trickier to accomplish
         kwargs.setdefault(
             "available_fbpkgs",
-            "fbcode//bot_generated/antlir/fbpkg/db/main_db/.buck:snapshotted_fbpkgs",
+            "fbcode//bot_generated/antlir/fbpkg/db/main_db:snapshotted_fbpkgs",
         )
 
         # Likewise here, set it as a default in the macro layer so that it
