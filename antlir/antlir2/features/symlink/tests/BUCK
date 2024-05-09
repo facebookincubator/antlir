@@ -41,6 +41,53 @@ image_diff_test(
 )
 
 image.layer(
+    name = "relative-symlink-base",
+    features = [
+        feature.ensure_dirs_exist(
+            dirs = "/foo/bar",
+        ),
+        feature.ensure_dirs_exist(
+            dirs = "/quux",
+        ),
+        feature.install(
+            src = "//antlir:empty",
+            dst = "/foo/bar/file",
+            mode = "a+r",
+        ),
+    ],
+)
+
+image.layer(
+    name = "relative-symlink",
+    features = [
+        feature.ensure_dir_symlink(
+            link = "/foo/baz",
+            target = "bar",
+        ),
+        feature.ensure_dir_symlink(
+            link = "/foo/quux",
+            target = "../quux",
+        ),
+        feature.ensure_file_symlink(
+            link = "/foo/file",
+            target = "bar/file",
+        ),
+        feature.ensure_file_symlink(
+            link = "/quux/file",
+            target = "../foo/bar/file",
+        ),
+    ],
+    parent_layer = ":relative-symlink-base",
+)
+
+image_diff_test(
+    name = "relative-symlink-test",
+    diff = "relative-symlink.toml",
+    diff_type = "file",
+    layer = ":relative-symlink",
+)
+
+image.layer(
     name = "features-under-symlinks-base",
     features = [
         feature.rpms_install(rpms = [

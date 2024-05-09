@@ -52,11 +52,28 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
         // the link
         let absolute_target = match self.target.is_absolute() {
             true => self.target.to_owned(),
-            false => self
-                .link
-                .parent()
-                .expect("the link cannot itself be /")
-                .join(&self.target),
+            false => {
+                let mut absolute_target = self
+                    .link
+                    .parent()
+                    .expect("the link cannot itself be /")
+                    .to_owned();
+
+                for component in self.target.components() {
+                    match component {
+                        std::path::Component::Normal(c) => absolute_target.push(c),
+                        std::path::Component::RootDir => absolute_target.clear(),
+                        std::path::Component::CurDir => {}
+                        std::path::Component::ParentDir => {
+                            absolute_target.pop();
+                        }
+                        std::path::Component::Prefix(_) => {
+                            unimplemented!("Windows-style paths are not supported");
+                        }
+                    };
+                }
+                absolute_target
+            }
         };
         // Allow an image author to create a symlink to certain files without verifying
         // that they exist, when the target indicates that the author knows what
