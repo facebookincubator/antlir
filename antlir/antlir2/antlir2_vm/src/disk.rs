@@ -6,6 +6,7 @@
  */
 
 use std::ffi::OsString;
+use std::path::Path;
 use std::path::PathBuf;
 use std::process::Command;
 
@@ -15,6 +16,7 @@ use tracing::debug;
 
 use crate::isolation::IsolationError;
 use crate::isolation::Platform;
+use crate::pci::PCIBridges;
 use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
 use crate::types::QemuDevice;
@@ -156,14 +158,44 @@ impl QemuDevice for QCow2Disk {
     }
 }
 
+#[derive(Debug)]
+pub(crate) struct QCow2Disks(Vec<QCow2Disk>);
+
+impl QCow2Disks {
+    pub(crate) fn new(
+        opts: &[QCow2DiskOpts],
+        pci_bridges: &PCIBridges,
+        state_dir: &Path,
+    ) -> Result<Self> {
+        let disks: Result<Vec<_>> = opts
+            .iter()
+            .enumerate()
+            .map(|(i, x)| -> Result<_> {
+                QCow2DiskBuilder::default()
+                    .opts(x.clone())
+                    .id(i)
+                    .bus(pci_bridges.bridge_for_device_id(i).name())
+                    .state_dir(state_dir.to_path_buf())
+                    .build()
+            })
+            .collect();
+        Ok(Self(disks?))
+    }
+}
+
+impl QemuDevice for QCow2Disks {
+    fn qemu_args(&self) -> Vec<OsString> {
+        self.0.iter().flat_map(|x| x.qemu_args()).collect()
+    }
+}
+
 #[cfg(test)]
 mod test {
     use std::ffi::OsStr;
 
     use super::*;
 
-    #[test]
-    fn test_qcow2disk() {
+    fn build_test_qcow2disk(id: usize) -> QCow2Disk {
         let opts = QCow2DiskOpts {
             interface: "virtio-blk".to_string(),
             physical_block_size: 512,
@@ -176,12 +208,16 @@ mod test {
             .opts(opts)
             .bus("pci0".to_string())
             .prefix("test-device".to_string())
-            .id(3)
+            .id(id)
             .state_dir(PathBuf::from("/tmp/test"));
         // Can't easily test anything that depends on qemu binaries, so we invoke
         // the internal builder to skip creating the real disk file.
-        let mut disk = builder.build_internal().expect("Failed to build QCow2Disk");
+        builder.build_internal().expect("Failed to build QCow2Disk")
+    }
 
+    #[test]
+    fn test_qcow2disk() {
+        let mut disk = build_test_qcow2disk(3);
         assert_eq!(
             disk.disk_file_name(),
             PathBuf::from("/tmp/test/test-device3.qcow2")
@@ -214,6 +250,25 @@ mod test {
             driver=qcow2,node-name=test-device3,file.driver=file,file.filename=/tmp/test/test-device3.qcow2 \
             -device ahci,id=ahci-test-device3,bus=pci0 \
             -device ide-hd,bus=ahci-test-device3.0,drive=test-device3,serial=serial,\
+            physical_block_size=512,logical_block_size=512"
+        );
+    }
+
+    #[test]
+    fn test_qcow2disks() {
+        let disk1 = build_test_qcow2disk(0);
+        let mut disk2 = build_test_qcow2disk(1);
+        disk2.opts.interface = "nvme".into();
+        let disks = QCow2Disks(vec![disk1, disk2]);
+        assert_eq!(
+            &disks.qemu_args().join(OsStr::new(" ")),
+            "-blockdev \
+            driver=qcow2,node-name=test-device0,file.driver=file,file.filename=/tmp/test/test-device0.qcow2 \
+            -device virtio-blk,bus=pci0,drive=test-device0,serial=test-device0,\
+            physical_block_size=512,logical_block_size=512 \
+            -blockdev \
+            driver=qcow2,node-name=test-device1,file.driver=file,file.filename=/tmp/test/test-device1.qcow2 \
+            -device nvme,bus=pci0,drive=test-device1,serial=test-device1,\
             physical_block_size=512,logical_block_size=512"
         );
     }
