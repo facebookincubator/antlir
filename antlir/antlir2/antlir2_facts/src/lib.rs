@@ -16,14 +16,22 @@ use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 use std::path::PathBuf;
 
+#[cfg(fbrocks)]
+use rocksdb::Db as RocksDb;
+#[cfg(not(fbrocks))]
+use rocksdb::Error as RocksDBError;
+#[cfg(fbrocks)]
+use rocksdb::RocksDBError;
+#[cfg(not(fbrocks))]
+use rocksdb::DB as RocksDb;
+
 pub mod fact;
 use fact::Fact;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
-    #[cfg(fbrocks)]
     #[error(transparent)]
-    Rocksdb(#[from] rocksdb::RocksDBError),
+    Rocksdb(#[from] RocksDBError),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
 }
@@ -31,32 +39,42 @@ pub enum Error {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub struct Database<const RW: bool = false> {
-    #[cfg(fbrocks)]
-    db: rocksdb::Db,
+    db: RocksDb,
 }
 
 impl Database<true> {
-    #[cfg(fbrocks)]
     pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
     where
         P: AsRef<std::path::Path>,
     {
-        let db = rocksdb::Db::open(path, options)?;
+        #[cfg(fbrocks)]
+        let db = RocksDb::open(path, options)?;
+        #[cfg(not(fbrocks))]
+        let db = RocksDb::open(&options, path)?;
         Ok(Self { db })
+    }
+
+    /// Create a new empty database.
+    pub fn create<P>(path: P) -> Result<Self>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        Self::open(path, opts_for_new_db())
     }
 }
 
 impl Database<false> {
-    #[cfg(fbrocks)]
     pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
     where
         P: AsRef<std::path::Path>,
     {
-        let db = rocksdb::Db::open_for_read_only(path, options, false)?;
+        #[cfg(fbrocks)]
+        let db = RocksDb::open_for_read_only(path, options, false)?;
+        #[cfg(not(fbrocks))]
+        let db = RocksDb::open_for_read_only(&options, path, false)?;
         Ok(Self { db })
     }
 
-    #[cfg(fbrocks)]
     pub fn open_read_only<P>(path: P, options: rocksdb::Options) -> Result<Self>
     where
         P: AsRef<std::path::Path>,
@@ -102,9 +120,16 @@ impl Database<true> {
         F: Fact,
     {
         let key = fact_key(fact);
-        let write_opts = rocksdb::WriteOptions::new();
         let fact: &dyn Fact = fact;
-        self.db.put(key, serde_json::to_vec(fact)?, &write_opts)?;
+        let val = serde_json::to_vec(fact)?;
+        #[cfg(fbrocks)]
+        {
+            let write_opts = rocksdb::WriteOptions::new();
+            self.db.put(key, val, &write_opts)?;
+        }
+        #[cfg(not(fbrocks))]
+        self.db.put(key, val)?;
+
         Ok(())
     }
 }
@@ -115,8 +140,11 @@ impl<const RW: bool> Database<{ RW }> {
         F: Fact,
     {
         let key = fact_key_to_rocks::<F>(key.into().as_ref());
-        let read_opts = rocksdb::ReadOptions::new();
-        match self.db.get(key, &read_opts)? {
+        #[cfg(fbrocks)]
+        let get_res = self.db.get(key, &rocksdb::ReadOptions::new());
+        #[cfg(not(fbrocks))]
+        let get_res = self.db.get(key);
+        match get_res? {
             Some(value) => {
                 // TODO: in theory rocksdb has a zero-copy api so we could get a
                 // borrowed byte slice, but the crate doesn't actually expose
@@ -137,15 +165,24 @@ impl<const RW: bool> Database<{ RW }> {
     where
         F: Fact,
     {
-        let read_opts = rocksdb::ReadOptions::new();
         let key_prefix = key_prefix::<F>();
-        let iter = self.db.iterator(
-            rocksdb::IteratorMode::From(&key_prefix, rocksdb::Direction::Forward),
-            &read_opts,
-        );
+        #[cfg(fbrocks)]
+        let iter = {
+            let read_opts = rocksdb::ReadOptions::new();
+            self.db.iterator(
+                rocksdb::IteratorMode::From(&key_prefix, rocksdb::Direction::Forward),
+                &read_opts,
+            )
+        };
+        #[cfg(not(fbrocks))]
+        let iter = self.db.iterator(rocksdb::IteratorMode::From(
+            &key_prefix,
+            rocksdb::Direction::Forward,
+        ));
         FactIter {
             iter,
             key_prefix,
+            #[cfg(fbrocks)]
             first: true,
             phantom: PhantomData,
         }
@@ -155,32 +192,38 @@ impl<const RW: bool> Database<{ RW }> {
     where
         F: Fact,
     {
-        let read_opts = rocksdb::ReadOptions::new();
         let start_key = fact_key_to_rocks::<F>(key.as_ref());
         let iter = self.db.iterator(
             rocksdb::IteratorMode::From(&start_key, rocksdb::Direction::Forward),
-            &read_opts,
+            #[cfg(fbrocks)]
+            &rocksdb::ReadOptions::new(),
         );
         FactIter {
             iter,
             key_prefix: key_prefix::<F>(),
+            #[cfg(fbrocks)]
             first: true,
             phantom: PhantomData,
         }
     }
 }
 
-pub struct FactIter<F>
+pub struct FactIter<'a, F>
 where
     F: for<'de> Fact,
 {
+    #[cfg(fbrocks)]
     iter: rocksdb::DbIterator,
+    #[cfg(not(fbrocks))]
+    iter: rocksdb::DBIterator<'a>,
     key_prefix: Vec<u8>,
+    #[cfg(fbrocks)]
     first: bool,
-    phantom: PhantomData<F>,
+    phantom: PhantomData<&'a F>,
 }
 
-impl<F> Iterator for FactIter<F>
+#[cfg(fbrocks)]
+impl<'a, F> Iterator for FactIter<'a, F>
 where
     F: Fact,
 {
@@ -206,6 +249,35 @@ where
         // (or possibly in the future, pinned into) the repo.
         let fact: Box<dyn Fact> =
             serde_json::from_slice(value).expect("invalid JSON can never be stored in the DB");
+        let fact: Box<dyn Any> = fact;
+        let fact: Box<F> = fact
+            .downcast()
+            .expect("the type name is part of the key, so this should never fail");
+        Some(*fact)
+    }
+}
+
+#[cfg(not(fbrocks))]
+impl<'a, F> Iterator for FactIter<'a, F>
+where
+    F: Fact,
+{
+    type Item = F;
+
+    fn next(&mut self) -> Option<F> {
+        let (key, value) = self.iter.next()?.ok()?;
+        if (key.len() <= self.key_prefix.len())
+            || (key[0..self.key_prefix.len()] != self.key_prefix[..])
+        {
+            return None;
+        }
+        // We can make this strong assertion about deserialization always
+        // working because we know that the databases will only ever be read by
+        // processes that are using the exact same code version as was used to
+        // write them, since all antlir2 binaries are atomically built out of
+        // (or possibly in the future, pinned into) the repo.
+        let fact: Box<dyn Fact> =
+            serde_json::from_slice(&value).expect("invalid JSON can never be stored in the DB");
         let fact: Box<dyn Any> = fact;
         let fact: Box<F> = fact
             .downcast()
@@ -261,6 +333,19 @@ impl From<PathBuf> for Key {
     }
 }
 
+#[cfg(fbrocks)]
+fn opts_for_new_db() -> rocksdb::Options {
+    let opts = rocksdb::Options::new();
+    opts.create_if_missing(true)
+}
+
+#[cfg(not(fbrocks))]
+fn opts_for_new_db() -> rocksdb::Options {
+    let mut opts = rocksdb::Options::default();
+    opts.create_if_missing(true);
+    opts
+}
+
 #[cfg(test)]
 mod tests {
     use tempfile::TempDir;
@@ -273,11 +358,7 @@ mod tests {
         fn open_test_db(name: &str) -> (Self, TempDir) {
             let tmpdir = TempDir::new().expect("failed to create tempdir");
             (
-                Self::open(
-                    tmpdir.path().join(name),
-                    rocksdb::Options::new().create_if_missing(true),
-                )
-                .expect("failed to open db"),
+                Self::create(tmpdir.path().join(name)).expect("failed to open db"),
                 tmpdir,
             )
         }
