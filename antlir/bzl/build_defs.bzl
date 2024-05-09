@@ -109,6 +109,7 @@ def cxx_genrule(*args, **kwargs):
 _PYTHON_BINARY_KWARGS = _make_rule_kwargs_dict(
     [
         "base_module",
+        "compatible_with",
         "deps",
         "labels",
         "main_function",
@@ -133,6 +134,7 @@ def python_binary(*args, **kwargs):
 _PYTHON_LIBRARY_KWARGS = _make_rule_kwargs_dict(
     [
         "base_module",
+        "compatible_with",
         "deps",
         "labels",
         "name",
