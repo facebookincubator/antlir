@@ -1,0 +1,39 @@
+[file."foo/baz"]
+op = "added"
+
+[file."foo/baz".diff]
+mode = "u+rwx,g+rwx,o+rwx"
+user = "root"
+group = "root"
+file-type = "symlink"
+text = "bar"
+
+[file."foo/quux"]
+op = "added"
+
+[file."foo/quux".diff]
+mode = "u+rwx,g+rwx,o+rwx"
+user = "root"
+group = "root"
+file-type = "symlink"
+text = "../quux"
+
+[file."foo/file"]
+op = "added"
+
+[file."foo/file".diff]
+mode = "u+rwx,g+rwx,o+rwx"
+user = "root"
+group = "root"
+file-type = "symlink"
+text = "bar/file"
+
+[file."quux/file"]
+op = "added"
+
+[file."quux/file".diff]
+mode = "u+rwx,g+rwx,o+rwx"
+user = "root"
+group = "root"
+file-type = "symlink"
+text = "../foo/bar/file"
