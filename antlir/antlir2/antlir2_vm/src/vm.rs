@@ -35,8 +35,8 @@ use tracing::info;
 use crate::disk::QCow2DiskError;
 use crate::disk::QCow2Disks;
 use crate::isolation::Platform;
-use crate::net::VirtualNIC;
 use crate::net::VirtualNICError;
+use crate::net::VirtualNICs;
 use crate::pci::PCIBridgeError;
 use crate::pci::PCIBridges;
 use crate::runtime::get_runtime;
@@ -69,7 +69,7 @@ pub(crate) struct VM<S: Share> {
     /// All directories to be shared into the VM
     shares: Shares<S>,
     /// Virtual NICs to create and attach
-    nics: Vec<VirtualNIC>,
+    nics: VirtualNICs,
     /// Directory to keep all ephemeral states
     state_dir: PathBuf,
     /// Handles to sidecar services
@@ -131,7 +131,7 @@ impl<S: Share> VM<S> {
             &state_dir,
             machine.mem_mib,
         )?;
-        let nics = Self::create_nics(machine.num_nics, machine.max_combined_channels)?;
+        let nics = VirtualNICs::new(machine.num_nics, machine.max_combined_channels)?;
         let tpm = match machine.use_tpm {
             true => Some(TPMDevice::new(&state_dir)?),
             false => None,
@@ -214,17 +214,6 @@ impl<S: Share> VM<S> {
         let shares = Shares::new(virtiofs_shares?, mem_mb, unit_files_dir)?;
         shares.generate_unit_files()?;
         Ok(shares)
-    }
-
-    /// Create all virtual NICs
-    fn create_nics(count: usize, max_combined_channels: usize) -> Result<Vec<VirtualNIC>> {
-        (0..count)
-            .map(|x| -> Result<VirtualNIC> {
-                let nic = VirtualNIC::new(x, max_combined_channels);
-                nic.create_dev()?;
-                Ok(nic)
-            })
-            .collect()
     }
 
     /// If timeout is specified, returns time until timeout, or TimeOutError
@@ -395,7 +384,7 @@ impl<S: Share> VM<S> {
         args.extend(self.pci_bridges.qemu_args());
         args.extend(self.disks.qemu_args());
         args.extend(self.shares.qemu_args());
-        args.extend(self.nic_qemu_args());
+        args.extend(self.nics.qemu_args());
         if let Some(tpm) = &self.tpm {
             args.extend(tpm.qemu_args());
         }
@@ -789,10 +778,6 @@ impl<S: Share> VM<S> {
             None => vec![],
         }
     }
-
-    fn nic_qemu_args(&self) -> Vec<OsString> {
-        self.nics.iter().flat_map(|x| x.qemu_args()).collect()
-    }
 }
 
 #[cfg(test)]
@@ -825,6 +810,7 @@ mod test {
         let pci_bridges = PCIBridges::new(0).expect("Failed to create PCIBridges");
         let disks = QCow2Disks::new(&[], &pci_bridges, Path::new("/state/units"))
             .expect("Failed to create disks");
+        let nics = VirtualNICs::new(0, 0).expect("Failed to create NICs");
         VM {
             machine,
             args,
@@ -832,7 +818,7 @@ mod test {
             disks,
             shares: Shares::new(vec![share], 1024, PathBuf::from("/state/units"))
                 .expect("Failed to create Shares"),
-            nics: vec![VirtualNIC::new(0, 128)],
+            nics,
             state_dir: PathBuf::from("/test/path"),
             sidecar_handles: vec![],
             tpm: None,
