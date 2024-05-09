@@ -15,7 +15,6 @@ use tracing::debug;
 
 use crate::isolation::IsolationError;
 use crate::isolation::Platform;
-use crate::pci::PCIBridge;
 use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
 use crate::types::QemuDevice;
@@ -29,8 +28,8 @@ use crate::utils::run_command_capture_output;
 pub(crate) struct QCow2Disk {
     /// Disk property specified by clients
     opts: QCow2DiskOpts,
-    /// The PCI bridge to attach on
-    pci_bridge: PCIBridge,
+    /// The bus name to attache the disk to
+    bus: String,
     /// Name prefix
     #[builder(default = "\"vd\".to_string()")]
     prefix: String,
@@ -136,7 +135,7 @@ impl QemuDevice for QCow2Disk {
             )
             .into(),
         ];
-        let mut bus = self.pci_bridge.name();
+        let mut bus = self.bus.clone();
         // Create AHCI controller for SATA drives
         if self.opts.interface == "ide-hd" {
             args.push("-device".into());
@@ -175,7 +174,7 @@ mod test {
         let mut builder = QCow2DiskBuilder::default();
         builder
             .opts(opts)
-            .pci_bridge(PCIBridge::new(0, 1).expect("Failed to create PCI bridge"))
+            .bus("pci0".to_string())
             .prefix("test-device".to_string())
             .id(3)
             .state_dir(PathBuf::from("/tmp/test"));
