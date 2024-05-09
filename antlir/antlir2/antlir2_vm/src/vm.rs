@@ -51,6 +51,7 @@ use crate::tpm::TPMDevice;
 use crate::tpm::TPMError;
 use crate::types::CpuIsa;
 use crate::types::MachineOpts;
+use crate::types::QemuDevice;
 use crate::types::ShareOpts;
 use crate::types::TypeError;
 use crate::types::VMArgs;
