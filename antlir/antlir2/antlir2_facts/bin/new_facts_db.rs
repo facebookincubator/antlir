@@ -251,8 +251,8 @@ fn main() -> Result<()> {
             args.db.display()
         );
     }
-    let mut db = RwDatabase::open(&args.db, rocksdb::Options::new().create_if_missing(true))
-        .with_context(|| format!("while opening db {}", args.db.display()))?;
+    let mut db = RwDatabase::create(&args.db)
+        .with_context(|| format!("while creating db {}", args.db.display()))?;
 
     let uid = nix::unistd::Uid::effective().as_raw();
     let gid = nix::unistd::Gid::effective().as_raw();

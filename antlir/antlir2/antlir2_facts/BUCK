@@ -1,4 +1,4 @@
-load("//antlir/bzl:build_defs.bzl", "rust_binary", "rust_library")
+load("//antlir/bzl:build_defs.bzl", "internal_external", "rust_binary", "rust_library")
 
 oncall("antlir")
 
@@ -10,9 +10,10 @@ rust_library(
         "ovr_config//os:linux",
         "ovr_config//os:macos",
     ],
-    rustc_flags = [
-        # @oss-disable
-    ],
+    rustc_flags = internal_external(
+        fb = ["--cfg=fbrocks"],
+        oss = [],
+    ),
     test_deps = [
         "tempfile",
         "tracing",
@@ -28,8 +29,10 @@ rust_library(
         "typed-builder",
         "typetag",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
-        # @oss-disable
-    ],
+    ] + internal_external(
+        fb = ["//common/rust/rocksdb:rocksdb"],
+        oss = ["rocksdb"],
+    ),
 )
 
 rust_binary(
@@ -55,6 +58,5 @@ rust_binary(
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
         "//antlir/antlir2/antlir2_users:antlir2_users",
-        # @oss-disable
     ],
 )

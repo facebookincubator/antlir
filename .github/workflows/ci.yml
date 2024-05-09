@@ -30,6 +30,8 @@ jobs:
       - name: Find tests
         run: |
           ./buck2 uquery 'kind(".*_test", set(%s)) - attrfilter(labels, disabled, set(%s))' \
+            //antlir/antlir2/antlir2_facts/... \
+            //antlir/antlir2/features/clone/tests: \
             //antlir/antlir2/features/install/tests: \
             //antlir/antlir2/features/rpm/tests: \
             //antlir/antlir2/features/tarball/tests: \

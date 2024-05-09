@@ -1,6 +1,6 @@
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:build_defs.bzl", "rust_unittest")
+load("//antlir/bzl:build_defs.bzl", "internal_external", "rust_unittest")
 
 oncall("antlir")
 
@@ -92,6 +92,10 @@ feature.new(
 rust_unittest(
     name = "test-db-contents",
     srcs = ["test_db_contents.rs"],
+    labels = internal_external(
+        fb = [],
+        oss = ["disabled"],  # buck_resources does not exist in oss
+    ),
     resources = {
         "test_db": ":test-layer[debug][facts]",
     },
@@ -100,6 +104,8 @@ rust_unittest(
         "tracing-test",
         "//antlir/antlir2/antlir2_facts:antlir2_facts",
         "//antlir/antlir2/antlir2_systemd:antlir2_systemd",
-        "//common/rust/buck_resources:buck_resources",
-    ],
+    ] + internal_external(
+        fb = ["//common/rust/buck_resources:buck_resources"],
+        oss = [],
+    ),
 )
