@@ -17,6 +17,7 @@ use tracing::Level;
 use tracing_subscriber::filter::LevelFilter;
 
 use crate::runtime::get_runtime;
+use crate::types::QemuDevice;
 
 /// TPM 2.0 device
 #[derive(Debug)]
@@ -42,25 +43,6 @@ impl TPMDevice {
         fs::create_dir(&state_dir).map_err(TPMError::StateDirectoryError)?;
         Self::start_tpm(state_dir.as_path())?;
         Ok(Self { state_dir })
-    }
-
-    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
-        [
-            "-chardev",
-            &format!(
-                "socket,id=chrtpm,path={}",
-                self.socket_path()
-                    .to_str()
-                    .expect("Invalid socket file path")
-            ),
-            "-tpmdev",
-            "emulator,id=tpm0,chardev=chrtpm",
-            "-device",
-            "tpm-tis,tpmdev=tpm0",
-        ]
-        .iter()
-        .map(|x| x.into())
-        .collect()
     }
 
     fn socket_path(&self) -> PathBuf {
@@ -93,6 +75,27 @@ impl TPMDevice {
             err,
         })?;
         Ok(())
+    }
+}
+
+impl QemuDevice for TPMDevice {
+    fn qemu_args(&self) -> Vec<OsString> {
+        [
+            "-chardev",
+            &format!(
+                "socket,id=chrtpm,path={}",
+                self.socket_path()
+                    .to_str()
+                    .expect("Invalid socket file path")
+            ),
+            "-tpmdev",
+            "emulator,id=tpm0,chardev=chrtpm",
+            "-device",
+            "tpm-tis,tpmdev=tpm0",
+        ]
+        .iter()
+        .map(|x| x.into())
+        .collect()
     }
 }
 

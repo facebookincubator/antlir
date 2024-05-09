@@ -14,6 +14,7 @@ use std::process::Command;
 
 use thiserror::Error;
 
+use crate::types::QemuDevice;
 use crate::utils::format_command;
 use crate::utils::log_command;
 
@@ -65,36 +66,6 @@ impl VirtualNIC {
         Ok(())
     }
 
-    /// Qemu args to append
-    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
-        [
-            "-netdev",
-            &format!(
-                "tap,id=net{id},ifname={dev_name},script=no,downscript=no,queues={queues}",
-                id = self.id,
-                dev_name = self.dev_name(),
-                queues = self.max_combined_channels,
-            ),
-            "-device",
-            &format!(
-                "virtio-net-pci,netdev=net{id},mac={mac},mq={mq},vectors={vectors}",
-                id = self.id,
-                mac = self.guest_mac(),
-                mq = if self.max_combined_channels > 1 {
-                    "on"
-                } else {
-                    "off"
-                },
-                // N for TX queues, N for RX queues, 1 for config, and 1 for possible control vq, where N = max_combined_channels
-                // https://fburl.com/knmbw1a1
-                vectors = self.max_combined_channels * 2 + 2,
-            ),
-        ]
-        .iter()
-        .map(|x| x.into())
-        .collect()
-    }
-
     /// Name for the virtual interface
     fn dev_name(&self) -> String {
         format!("vm{}", self.id)
@@ -133,6 +104,37 @@ impl VirtualNIC {
             .success()
             .then_some(())
             .ok_or(VirtualNICError::IPCmdReturnError(format_command(&command)))
+    }
+}
+
+impl QemuDevice for VirtualNIC {
+    fn qemu_args(&self) -> Vec<OsString> {
+        [
+            "-netdev",
+            &format!(
+                "tap,id=net{id},ifname={dev_name},script=no,downscript=no,queues={queues}",
+                id = self.id,
+                dev_name = self.dev_name(),
+                queues = self.max_combined_channels,
+            ),
+            "-device",
+            &format!(
+                "virtio-net-pci,netdev=net{id},mac={mac},mq={mq},vectors={vectors}",
+                id = self.id,
+                mac = self.guest_mac(),
+                mq = if self.max_combined_channels > 1 {
+                    "on"
+                } else {
+                    "off"
+                },
+                // N for TX queues, N for RX queues, 2 for config, and 1 for possible control vq, where N = max_combined_channels
+                // https://fburl.com/knmbw1a1
+                vectors = self.max_combined_channels * 2 + 2,
+            ),
+        ]
+        .iter()
+        .map(|x| x.into())
+        .collect()
     }
 }
 

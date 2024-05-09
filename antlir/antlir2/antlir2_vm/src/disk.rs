@@ -18,6 +18,7 @@ use crate::isolation::Platform;
 use crate::pci::PCIBridge;
 use crate::runtime::get_runtime;
 use crate::types::QCow2DiskOpts;
+use crate::types::QemuDevice;
 use crate::utils::run_command_capture_output;
 
 /// A writable QCow2Disk.
@@ -122,8 +123,10 @@ impl QCow2Disk {
             Ok(path.clone())
         }
     }
+}
 
-    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
+impl QemuDevice for QCow2Disk {
+    fn qemu_args(&self) -> Vec<OsString> {
         let mut args = vec![
             "-blockdev".into(),
             format!(

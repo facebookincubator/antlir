@@ -9,6 +9,8 @@ use std::ffi::OsString;
 
 use thiserror::Error;
 
+use crate::types::QemuDevice;
+
 pub(crate) const DEVICE_PER_BRIDGE: usize = 32;
 
 /// PCI Bridge. Each bridge can attach 32 devices
@@ -39,9 +41,10 @@ impl PCIBridge {
     pub(crate) fn name(&self) -> String {
         format!("pci{}", self.id)
     }
+}
 
-    /// Qemu arguments to create the bridge
-    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
+impl QemuDevice for PCIBridge {
+    fn qemu_args(&self) -> Vec<OsString> {
         vec![
             "-device".into(),
             format!(

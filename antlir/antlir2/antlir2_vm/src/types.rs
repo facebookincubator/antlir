@@ -27,6 +27,13 @@ pub(crate) enum TypeError {
     InvalidCpuIsa(String),
 }
 
+/// Public interface for implementing a Qemu device
+pub(crate) trait QemuDevice {
+    /// Returns a list of qemu args that can be joined with others to eventually
+    /// spawn the qemu process
+    fn qemu_args(&self) -> Vec<OsString>;
+}
+
 /// Captures property of the disk specified by user to describe a writable disk
 #[derive(Debug, Clone, Default, Deserialize)]
 pub(crate) struct QCow2DiskOpts {

@@ -18,6 +18,7 @@ use thiserror::Error;
 use tracing::Level;
 use tracing_subscriber::filter::LevelFilter;
 
+use crate::types::QemuDevice;
 use crate::types::ShareOpts;
 use crate::utils::log_command;
 
@@ -35,15 +36,13 @@ pub(crate) enum ShareError {
 
 type Result<T> = std::result::Result<T, ShareError>;
 
-pub(crate) trait Share {
+pub(crate) trait Share: QemuDevice {
     /// Create Share based on full set of ShareOpts
     fn new(opts: ShareOpts, id: usize, state_dir: PathBuf) -> Self;
     /// Run any necessary setup to enable the Share
     fn setup(&self) -> Result<()>;
     /// Mount `Options` string for the mount unit
     fn mount_options(&self) -> String;
-    /// Qemu args for the mounts.
-    fn qemu_args(&self) -> Vec<OsString>;
 
     // Boilerplate getters
     fn get_mount_type(&self) -> &str;
@@ -153,7 +152,9 @@ impl Share for VirtiofsShare {
         }
         .to_owned()
     }
+}
 
+impl QemuDevice for VirtiofsShare {
     fn qemu_args(&self) -> Vec<OsString> {
         [
             "-chardev",
@@ -266,7 +267,9 @@ impl Share for NinePShare {
             ro_rw = if self.opts.read_only { "ro" } else { "rw" },
         )
     }
+}
 
+impl QemuDevice for NinePShare {
     fn qemu_args(&self) -> Vec<OsString> {
         let mut args = vec!["-virtfs".into()];
         args.push(
@@ -354,9 +357,10 @@ impl<T: Share> Shares<T> {
         .map(|x| x.into())
         .collect()
     }
+}
 
-    /// Qemu args for all shares including setup share
-    pub(crate) fn qemu_args(&self) -> Vec<OsString> {
+impl<T: Share> QemuDevice for Shares<T> {
+    fn qemu_args(&self) -> Vec<OsString> {
         let mut args: Vec<_> = self.shares.iter().flat_map(|x| x.qemu_args()).collect();
         args.extend(self.setup_share_qemu_args());
         args.extend(self.memory_file_qemu_args());
