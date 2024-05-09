@@ -32,9 +32,8 @@ use tracing::debug;
 use tracing::error;
 use tracing::info;
 
-use crate::disk::QCow2Disk;
-use crate::disk::QCow2DiskBuilder;
 use crate::disk::QCow2DiskError;
+use crate::disk::QCow2Disks;
 use crate::isolation::Platform;
 use crate::net::VirtualNIC;
 use crate::net::VirtualNICError;
@@ -66,7 +65,7 @@ pub(crate) struct VM<S: Share> {
     pci_bridges: PCIBridges,
     /// List of writable drives created for the VM. We need to hold the ownership
     /// to prevent the temporary disks from getting cleaned up prematuresly.
-    disks: Vec<QCow2Disk>,
+    disks: QCow2Disks,
     /// All directories to be shared into the VM
     shares: Shares<S>,
     /// Virtual NICs to create and attach
@@ -126,7 +125,7 @@ impl<S: Share> VM<S> {
     pub(crate) fn new(machine: MachineOpts, args: VMArgs) -> Result<Self> {
         let state_dir = Self::create_state_dir()?;
         let pci_bridges = PCIBridges::new(machine.disks.len())?;
-        let disks = Self::create_disks(&machine, &pci_bridges, &state_dir)?;
+        let disks = QCow2Disks::new(&machine.disks, &pci_bridges, &state_dir)?;
         let shares = Self::create_shares(
             Self::get_all_shares_opts(&args.get_vm_output_dirs()),
             &state_dir,
@@ -175,26 +174,6 @@ impl<S: Share> VM<S> {
         const STATE_DIR: &str = "/run/vm_state";
         fs::create_dir(STATE_DIR).map_err(VMError::StateDirError)?;
         Ok(PathBuf::from(STATE_DIR))
-    }
-
-    /// Create all writable disks
-    fn create_disks(
-        opts: &MachineOpts,
-        pci_bridges: &PCIBridges,
-        state_dir: &Path,
-    ) -> Result<Vec<QCow2Disk>> {
-        opts.disks
-            .iter()
-            .enumerate()
-            .map(|(i, x)| {
-                Ok(QCow2DiskBuilder::default()
-                    .opts(x.clone())
-                    .id(i)
-                    .bus(pci_bridges.bridge_for_device_id(i).name())
-                    .state_dir(state_dir.to_path_buf())
-                    .build()?)
-            })
-            .collect()
     }
 
     /// All platform paths needs to be mounted inside the VM as read-only shares.
@@ -414,8 +393,8 @@ impl<S: Share> VM<S> {
         let mut args = self.common_qemu_args()?;
         args.extend(self.non_disk_boot_qemu_args());
         args.extend(self.pci_bridges.qemu_args());
-        args.extend(self.disk_qemu_args());
-        args.extend(self.share_qemu_args());
+        args.extend(self.disks.qemu_args());
+        args.extend(self.shares.qemu_args());
         args.extend(self.nic_qemu_args());
         if let Some(tpm) = &self.tpm {
             args.extend(tpm.qemu_args());
@@ -788,10 +767,6 @@ impl<S: Share> VM<S> {
         Ok(args)
     }
 
-    fn disk_qemu_args(&self) -> Vec<OsString> {
-        self.disks.iter().flat_map(|x| x.qemu_args()).collect()
-    }
-
     fn non_disk_boot_qemu_args(&self) -> Vec<OsString> {
         match &self.machine.non_disk_boot_opts {
             Some(opts) => {
@@ -813,10 +788,6 @@ impl<S: Share> VM<S> {
             }
             None => vec![],
         }
-    }
-
-    fn share_qemu_args(&self) -> Vec<OsString> {
-        self.shares.qemu_args()
     }
 
     fn nic_qemu_args(&self) -> Vec<OsString> {
@@ -851,11 +822,14 @@ mod test {
             mount_tag: None,
         };
         let share = VirtiofsShare::new(share_opts, 1, PathBuf::from("/state"));
+        let pci_bridges = PCIBridges::new(0).expect("Failed to create PCIBridges");
+        let disks = QCow2Disks::new(&[], &pci_bridges, Path::new("/state/units"))
+            .expect("Failed to create disks");
         VM {
             machine,
             args,
-            pci_bridges: PCIBridges::new(0).expect("Failed to create PCIBridges"),
-            disks: vec![],
+            pci_bridges,
+            disks,
             shares: Shares::new(vec![share], 1024, PathBuf::from("/state/units"))
                 .expect("Failed to create Shares"),
             nics: vec![VirtualNIC::new(0, 128)],
