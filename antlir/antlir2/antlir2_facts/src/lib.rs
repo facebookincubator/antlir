@@ -8,7 +8,6 @@
 #![feature(trait_upcasting)]
 
 use std::any::Any;
-use std::marker::PhantomData;
 #[cfg(unix)]
 use std::os::unix::ffi::OsStrExt;
 #[cfg(unix)]
@@ -16,14 +15,11 @@ use std::os::unix::ffi::OsStringExt;
 use std::path::Path;
 use std::path::PathBuf;
 
-#[cfg(fbrocks)]
-use rocksdb::Db as RocksDb;
-#[cfg(not(fbrocks))]
-use rocksdb::Error as RocksDBError;
-#[cfg(fbrocks)]
-use rocksdb::RocksDBError;
-#[cfg(not(fbrocks))]
-use rocksdb::DB as RocksDb;
+use rusqlite::Connection;
+use rusqlite::OpenFlags;
+use rusqlite::OptionalExtension;
+use rusqlite::Row;
+use rusqlite::Rows;
 
 pub mod fact;
 use fact::Fact;
@@ -31,7 +27,7 @@ use fact::Fact;
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
-    Rocksdb(#[from] RocksDBError),
+    Sqlite(#[from] rusqlite::Error),
     #[error(transparent)]
     Json(#[from] serde_json::Error),
 }
@@ -39,18 +35,18 @@ pub enum Error {
 pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 pub struct Database<const RW: bool = false> {
-    db: RocksDb,
+    db: Connection,
 }
 
-impl Database<true> {
-    pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
+pub type RwDatabase = Database<true>;
+pub type RoDatabase = Database<false>;
+
+impl RwDatabase {
+    pub fn open<P>(path: P) -> Result<Self>
     where
         P: AsRef<std::path::Path>,
     {
-        #[cfg(fbrocks)]
-        let db = RocksDb::open(path, options)?;
-        #[cfg(not(fbrocks))]
-        let db = RocksDb::open(&options, path)?;
+        let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_WRITE)?;
         Ok(Self { db })
     }
 
@@ -59,78 +55,47 @@ impl Database<true> {
     where
         P: AsRef<std::path::Path>,
     {
-        Self::open(path, opts_for_new_db())
-    }
-}
-
-impl Database<false> {
-    pub fn open<P>(path: P, options: rocksdb::Options) -> Result<Self>
-    where
-        P: AsRef<std::path::Path>,
-    {
-        #[cfg(fbrocks)]
-        let db = RocksDb::open_for_read_only(path, options, false)?;
-        #[cfg(not(fbrocks))]
-        let db = RocksDb::open_for_read_only(&options, path, false)?;
+        let db = Connection::open(path)?;
+        Self::setup_new_db(&db)?;
         Ok(Self { db })
     }
 
-    pub fn open_read_only<P>(path: P, options: rocksdb::Options) -> Result<Self>
-    where
-        P: AsRef<std::path::Path>,
-    {
-        Self::open(path, options)
+    fn setup_new_db(db: &Connection) -> Result<()> {
+        db.execute(
+            "CREATE TABLE IF NOT EXISTS facts (kind TEXT, key BLOB, value TEXT, PRIMARY KEY (kind, key))",
+            (),
+        )?;
+        Ok(())
     }
-}
 
-pub type RwDatabase = Database<true>;
-pub type RoDatabase = Database<false>;
-
-fn key_prefix<F>() -> Vec<u8>
-where
-    F: Fact,
-{
-    let mut rocks_key = F::kind().as_bytes().to_vec();
-    // strings can never have an internal nul-byte, so use that as a separator
-    // that prevents incorrect iteration if one key type is a prefix of another
-    // (eg 'User' and 'UserGroup')
-    rocks_key.push(0);
-    rocks_key
-}
-
-fn fact_key<F>(fact: &F) -> Vec<u8>
-where
-    F: Fact,
-{
-    fact_key_to_rocks::<F>(fact.key().as_ref())
-}
-
-fn fact_key_to_rocks<F>(key: &[u8]) -> Vec<u8>
-where
-    F: Fact,
-{
-    let mut rocks_key = key_prefix::<F>();
-    rocks_key.extend_from_slice(key);
-    rocks_key
-}
-
-impl Database<true> {
-    pub fn insert<'a, F>(&mut self, fact: &'a F) -> Result<()>
+    pub fn insert<'f, F>(&mut self, fact: &'f F) -> Result<()>
     where
         F: Fact,
     {
-        let key = fact_key(fact);
         let fact: &dyn Fact = fact;
-        let val = serde_json::to_vec(fact)?;
-        #[cfg(fbrocks)]
-        {
-            let write_opts = rocksdb::WriteOptions::new();
-            self.db.put(key, val, &write_opts)?;
-        }
-        #[cfg(not(fbrocks))]
-        self.db.put(key, val)?;
-
+        let val = serde_json::to_string(fact)?;
+        self.db.execute(
+            "INSERT INTO facts (kind, key, value) VALUES (?, ?, ?)",
+            (F::kind(), fact.key().as_ref(), val),
+        )?;
         Ok(())
+    }
+}
+
+impl RoDatabase {
+    pub fn open<P>(path: P) -> Result<Self>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        let db = Connection::open_with_flags(path, OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+        Ok(Self { db })
+    }
+
+    pub fn open_read_only<P>(path: P) -> Result<Self>
+    where
+        P: AsRef<std::path::Path>,
+    {
+        Self::open(path)
     }
 }
 
@@ -139,150 +104,101 @@ impl<const RW: bool> Database<{ RW }> {
     where
         F: Fact,
     {
-        let key = fact_key_to_rocks::<F>(key.into().as_ref());
-        #[cfg(fbrocks)]
-        let get_res = self.db.get(key, &rocksdb::ReadOptions::new());
-        #[cfg(not(fbrocks))]
-        let get_res = self.db.get(key);
-        match get_res? {
-            Some(value) => {
-                // TODO: in theory rocksdb has a zero-copy api so we could get a
-                // borrowed byte slice, but the crate doesn't actually expose
-                // that, so we just make our own copy.
-                let fact: Box<dyn Fact> = serde_json::from_slice(value.as_ref())?;
-                let fact: Box<dyn Any> = fact;
-                let fact: Box<F> = fact
-                    .downcast()
-                    .expect("the type name is part of the key, so this should never fail");
-                Ok(Some(*fact))
-            }
-            None => Ok(None),
-        }
+        let key: Key = key.into();
+        let mut stmt = self
+            .db
+            .prepare("SELECT value FROM facts WHERE kind=? AND key=?")?;
+        stmt.query_row((F::kind(), key.as_ref()), row_to_fact)
+            .optional()
+            .map_err(Error::from)
     }
 
     // Iterate over all facts of a given type.
-    pub fn iter<F>(&self) -> FactIter<F>
+    pub fn iter<F>(&self) -> Result<FactIter<F>>
     where
         F: Fact,
     {
-        let key_prefix = key_prefix::<F>();
-        #[cfg(fbrocks)]
-        let iter = {
-            let read_opts = rocksdb::ReadOptions::new();
-            self.db.iterator(
-                rocksdb::IteratorMode::From(&key_prefix, rocksdb::Direction::Forward),
-                &read_opts,
-            )
-        };
-        #[cfg(not(fbrocks))]
-        let iter = self.db.iterator(rocksdb::IteratorMode::From(
-            &key_prefix,
-            rocksdb::Direction::Forward,
-        ));
-        FactIter {
-            iter,
-            key_prefix,
-            #[cfg(fbrocks)]
-            first: true,
-            phantom: PhantomData,
-        }
+        // The lifetimes here are pretty hairy, so this eagerly loads all
+        // matching keys. Most use cases require iterating over the entire Fact
+        // space anyway, so this isn't that bad. `iter_prefix` offers the
+        // ability to collect a narrower set of Facts.
+        let mut stmt = self
+            .db
+            .prepare("SELECT value FROM facts WHERE kind=? ORDER BY key ASC")?;
+        let rows = stmt.query((F::kind(),))?;
+        let facts = rows_to_facts::<F>(rows)?;
+        Ok(FactIter {
+            iter: facts.into_iter(),
+        })
     }
 
-    pub fn iter_from<F>(&self, key: &Key) -> FactIter<F>
+    /// Iterate over facts of this type with a given prefix. For example, you
+    /// can iterate over [fact::DirEntry]s under a certain path.
+    pub fn iter_prefix<F>(&self, key: &Key) -> Result<FactIter<F>>
     where
         F: Fact,
     {
-        let start_key = fact_key_to_rocks::<F>(key.as_ref());
-        let iter = self.db.iterator(
-            rocksdb::IteratorMode::From(&start_key, rocksdb::Direction::Forward),
-            #[cfg(fbrocks)]
-            &rocksdb::ReadOptions::new(),
-        );
-        FactIter {
-            iter,
-            key_prefix: key_prefix::<F>(),
-            #[cfg(fbrocks)]
-            first: true,
-            phantom: PhantomData,
-        }
+        // The lifetimes here are pretty hairy, so this eagerly loads all
+        // matching keys. The 'clone' feature is really the only use case that
+        // has an early exit condition, so a follow-up diff will add some
+        // functionality here to remain performant.
+
+        // Iterate until we see `key` followed by 0xff (max value of a byte)
+        // which ensures that we only return facts with a specific prefix.
+        let mut end = key.as_ref().to_vec();
+        end.push(0xff);
+
+        let mut stmt = self.db.prepare(
+            "SELECT value FROM facts WHERE kind=? AND key>=? AND key<? ORDER BY key ASC",
+        )?;
+        let rows = stmt.query((F::kind(), key.as_ref(), end.as_slice()))?;
+        let facts = rows_to_facts::<F>(rows)?;
+        Ok(FactIter {
+            iter: facts.into_iter(),
+        })
     }
 }
 
-pub struct FactIter<'a, F>
+fn row_to_fact<F>(row: &Row) -> rusqlite::Result<F>
 where
     F: for<'de> Fact,
 {
-    #[cfg(fbrocks)]
-    iter: rocksdb::DbIterator,
-    #[cfg(not(fbrocks))]
-    iter: rocksdb::DBIterator<'a>,
-    key_prefix: Vec<u8>,
-    #[cfg(fbrocks)]
-    first: bool,
-    phantom: PhantomData<&'a F>,
+    // We can make this strong assertion about deserialization always
+    // working because we know that the databases will only ever be read by
+    // processes that are using the exact same code version as was used to
+    // write them, since all antlir2 binaries are atomically built out of
+    // (or possibly in the future, pinned into) the repo.
+    let fact: Box<dyn Fact> = serde_json::from_str(row.get_ref("value")?.as_str()?)
+        .expect("invalid JSON can never be stored in the DB");
+    let fact: Box<dyn Any> = fact;
+    let fact: Box<F> = fact
+        .downcast()
+        .expect("the type name is part of the key, so this should never fail");
+    Ok(*fact)
 }
 
-#[cfg(fbrocks)]
-impl<'a, F> Iterator for FactIter<'a, F>
+fn rows_to_facts<F>(rows: Rows) -> rusqlite::Result<Vec<F>>
+where
+    F: for<'de> Fact,
+{
+    rows.mapped(row_to_fact).collect()
+}
+
+pub struct FactIter<F>
+where
+    F: for<'de> Fact,
+{
+    iter: <Vec<F> as IntoIterator>::IntoIter,
+}
+
+impl<F> Iterator for FactIter<F>
 where
     F: Fact,
 {
     type Item = F;
 
     fn next(&mut self) -> Option<F> {
-        if !self.first {
-            // RocksDB iterators start pointing at the first item, so we need to
-            // skip the iterator advance on the first iteration
-            self.iter.next();
-        }
-        let (key, value) = self.iter.item()?;
-        if (key.len() <= self.key_prefix.len())
-            || (key[0..self.key_prefix.len()] != self.key_prefix[..])
-        {
-            return None;
-        }
-        self.first = false;
-        // We can make this strong assertion about deserialization always
-        // working because we know that the databases will only ever be read by
-        // processes that are using the exact same code version as was used to
-        // write them, since all antlir2 binaries are atomically built out of
-        // (or possibly in the future, pinned into) the repo.
-        let fact: Box<dyn Fact> =
-            serde_json::from_slice(value).expect("invalid JSON can never be stored in the DB");
-        let fact: Box<dyn Any> = fact;
-        let fact: Box<F> = fact
-            .downcast()
-            .expect("the type name is part of the key, so this should never fail");
-        Some(*fact)
-    }
-}
-
-#[cfg(not(fbrocks))]
-impl<'a, F> Iterator for FactIter<'a, F>
-where
-    F: Fact,
-{
-    type Item = F;
-
-    fn next(&mut self) -> Option<F> {
-        let (key, value) = self.iter.next()?.ok()?;
-        if (key.len() <= self.key_prefix.len())
-            || (key[0..self.key_prefix.len()] != self.key_prefix[..])
-        {
-            return None;
-        }
-        // We can make this strong assertion about deserialization always
-        // working because we know that the databases will only ever be read by
-        // processes that are using the exact same code version as was used to
-        // write them, since all antlir2 binaries are atomically built out of
-        // (or possibly in the future, pinned into) the repo.
-        let fact: Box<dyn Fact> =
-            serde_json::from_slice(&value).expect("invalid JSON can never be stored in the DB");
-        let fact: Box<dyn Any> = fact;
-        let fact: Box<F> = fact
-            .downcast()
-            .expect("the type name is part of the key, so this should never fail");
-        Some(*fact)
+        self.iter.next()
     }
 }
 
@@ -333,41 +249,27 @@ impl From<PathBuf> for Key {
     }
 }
 
-#[cfg(fbrocks)]
-fn opts_for_new_db() -> rocksdb::Options {
-    let opts = rocksdb::Options::new();
-    opts.create_if_missing(true)
-}
-
-#[cfg(not(fbrocks))]
-fn opts_for_new_db() -> rocksdb::Options {
-    let mut opts = rocksdb::Options::default();
-    opts.create_if_missing(true);
-    opts
-}
-
 #[cfg(test)]
 mod tests {
-    use tempfile::TempDir;
     use tracing_test::traced_test;
 
     use super::*;
+    use crate::fact::dir_entry::DirEntry;
+    use crate::fact::dir_entry::FileCommon;
     use crate::fact::user::User;
 
     impl RwDatabase {
-        fn open_test_db(name: &str) -> (Self, TempDir) {
-            let tmpdir = TempDir::new().expect("failed to create tempdir");
-            (
-                Self::create(tmpdir.path().join(name)).expect("failed to open db"),
-                tmpdir,
-            )
+        fn new_test_db() -> Self {
+            let db = Connection::open_in_memory().expect("failed to create in-mem db");
+            Self::setup_new_db(&db).expect("failed to setup db");
+            Self { db }
         }
     }
 
     #[test]
     #[traced_test]
     fn test_get() {
-        let (mut db, _tmpdir) = Database::open_test_db("_test_storage");
+        let mut db = Database::new_test_db();
 
         db.insert(&User::new("alice", 1))
             .expect("failed to insert alice");
@@ -383,31 +285,55 @@ mod tests {
     #[test]
     #[traced_test]
     fn test_iter() {
-        let (mut db, _tmpdir) = Database::open_test_db("_test_iter");
+        let mut db = Database::new_test_db();
 
         db.insert(&User::new("alice", 1))
             .expect("failed to insert alice");
 
-        let users: Vec<User> = db.iter().collect();
+        let users: Vec<User> = db.iter().expect("failed to prepare iterator").collect();
         assert_eq!(users.len(), 1);
         assert_eq!(users[0].name(), "alice");
     }
 
     #[test]
     #[traced_test]
-    fn test_iter_from() {
-        let (mut db, _tmpdir) = Database::open_test_db("_test_iter_from");
+    fn test_iter_prefix() {
+        let mut db = Database::new_test_db();
 
+        db.insert(&DirEntry::Directory(
+            FileCommon::new("/foo".into(), 0, 0, 0o755).into(),
+        ))
+        .expect("failed to insert /foo");
+        db.insert(&DirEntry::RegularFile(
+            FileCommon::new("/foo/bar".into(), 0, 0, 0o444).into(),
+        ))
+        .expect("failed to insert /foo/bar");
+        db.insert(&DirEntry::Directory(
+            FileCommon::new("/foo/baz".into(), 0, 0, 0o755).into(),
+        ))
+        .expect("failed to insert /foo/baz");
+        db.insert(&DirEntry::RegularFile(
+            FileCommon::new("/foo/baz/qux".into(), 0, 0, 0o444).into(),
+        ))
+        .expect("failed to insert /foo/baz/qux");
+        db.insert(&DirEntry::RegularFile(
+            FileCommon::new("/fooa".into(), 0, 0, 0o444).into(),
+        ))
+        .expect("failed to insert /fooa");
+        // insert some other facts (that are lexicographically after these) to
+        // make sure we don't iterate over them accidentally
         db.insert(&User::new("alice", 1))
             .expect("failed to insert alice");
-        db.insert(&User::new("bob", 1))
+        db.insert(&User::new("bob", 2))
             .expect("failed to insert bob");
-        db.insert(&User::new("charlie", 1))
-            .expect("failed to insert charlie");
 
-        let users: Vec<User> = db.iter_from(&User::key("bob")).collect();
-        assert_eq!(users.len(), 2);
-        assert_eq!(users[0].name(), "bob");
-        assert_eq!(users[1].name(), "charlie");
+        let entries: Vec<DirEntry> = db
+            .iter_prefix(&DirEntry::key(Path::new("/foo/")))
+            .expect("failed to prepare iterator")
+            .collect();
+        assert_eq!(entries.len(), 3, "{entries:?}");
+        assert_eq!(entries[0].path(), Path::new("/foo/bar"));
+        assert_eq!(entries[1].path(), Path::new("/foo/baz"));
+        assert_eq!(entries[2].path(), Path::new("/foo/baz/qux"));
     }
 }
