@@ -440,29 +440,6 @@ buildscript_run(
     version = "1.0.83",
 )
 
-alias(
-    name = "append-only-vec",
-    actual = ":append-only-vec-0.1.3",
-    visibility = ["PUBLIC"],
-)
-
-http_archive(
-    name = "append-only-vec-0.1.3.crate",
-    sha256 = "f3cb8f874ecf419dd8165d0279746de966cb8966636d028845e3bd65d519812a",
-    strip_prefix = "append-only-vec-0.1.3",
-    urls = ["https://static.crates.io/crates/append-only-vec/0.1.3/download"],
-    visibility = [],
-)
-
-cargo.rust_library(
-    name = "append-only-vec-0.1.3",
-    srcs = [":append-only-vec-0.1.3.crate"],
-    crate = "append_only_vec",
-    crate_root = "append-only-vec-0.1.3.crate/src/lib.rs",
-    edition = "2021",
-    visibility = [],
-)
-
 http_archive(
     name = "arbitrary-1.3.2.crate",
     sha256 = "7d5a26814d8dcb93b0e5a0ff3c6d80a8843bafb21b39e8e18a6f05471870e110",
@@ -3489,6 +3466,77 @@ cargo.rust_library(
 )
 
 http_archive(
+    name = "fallible-iterator-0.2.0.crate",
+    sha256 = "4443176a9f2c162692bd3d352d745ef9413eec5782a80d8fd6f8a1ac692a07f7",
+    strip_prefix = "fallible-iterator-0.2.0",
+    urls = ["https://static.crates.io/crates/fallible-iterator/0.2.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "fallible-iterator-0.2.0",
+    srcs = [":fallible-iterator-0.2.0.crate"],
+    crate = "fallible_iterator",
+    crate_root = "fallible-iterator-0.2.0.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "std",
+    ],
+    visibility = [],
+)
+
+alias(
+    name = "fallible-iterator",
+    actual = ":fallible-iterator-0.3.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "fallible-iterator-0.3.0.crate",
+    sha256 = "2acce4a10f12dc2fb14a218589d4f1f62ef011b2d0cc4b3cb1bba8e94da14649",
+    strip_prefix = "fallible-iterator-0.3.0",
+    urls = ["https://static.crates.io/crates/fallible-iterator/0.3.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "fallible-iterator-0.3.0",
+    srcs = [":fallible-iterator-0.3.0.crate"],
+    crate = "fallible_iterator",
+    crate_root = "fallible-iterator-0.3.0.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "alloc",
+        "default",
+    ],
+    visibility = [],
+)
+
+alias(
+    name = "fallible-streaming-iterator",
+    actual = ":fallible-streaming-iterator-0.1.9",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "fallible-streaming-iterator-0.1.9.crate",
+    sha256 = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a",
+    strip_prefix = "fallible-streaming-iterator-0.1.9",
+    urls = ["https://static.crates.io/crates/fallible-streaming-iterator/0.1.9/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "fallible-streaming-iterator-0.1.9",
+    srcs = [":fallible-streaming-iterator-0.1.9.crate"],
+    crate = "fallible_streaming_iterator",
+    crate_root = "fallible-streaming-iterator-0.1.9.crate/src/lib.rs",
+    edition = "2015",
+    visibility = [],
+)
+
+http_archive(
     name = "fastrand-2.1.0.crate",
     sha256 = "9fc0510504f03c51ada170672ac806f1f105a88aa97a5281117e1ddc3368e51a",
     strip_prefix = "fastrand-2.1.0",
@@ -4518,6 +4566,30 @@ cargo.rust_library(
         ":allocator-api2-0.2.18",
         ":serde-1.0.201",
     ],
+)
+
+alias(
+    name = "hashlink",
+    actual = ":hashlink-0.8.4",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "hashlink-0.8.4.crate",
+    sha256 = "e8094feaf31ff591f651a2664fb9cfd92bba7a60ce3197265e9482ebe753c8f7",
+    strip_prefix = "hashlink-0.8.4",
+    urls = ["https://static.crates.io/crates/hashlink/0.8.4/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "hashlink-0.8.4",
+    srcs = [":hashlink-0.8.4.crate"],
+    crate = "hashlink",
+    crate_root = "hashlink-0.8.4.crate/src/lib.rs",
+    edition = "2018",
+    visibility = [],
+    deps = [":hashbrown-0.14.5"],
 )
 
 alias(
@@ -6408,6 +6480,99 @@ third_party_rust_cxx_library(
         "-I$(location :librocksdb-sys-0.16.0+8.10.0.crate)/rocksdb",
         "-I$(location :librocksdb-sys-0.16.0+8.10.0.crate)/rocksdb/include",
     ],
+    visibility = [],
+)
+
+http_archive(
+    name = "libsqlite3-sys-0.26.0.crate",
+    sha256 = "afc22eff61b133b115c6e8c74e818c628d6d5e7a502afea6f64dee076dd94326",
+    strip_prefix = "libsqlite3-sys-0.26.0",
+    sub_targets = ["sqlite3/sqlite3.c"],
+    urls = ["https://static.crates.io/crates/libsqlite3-sys/0.26.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "libsqlite3-sys-0.26.0",
+    srcs = [":libsqlite3-sys-0.26.0.crate"],
+    crate = "libsqlite3_sys",
+    crate_root = "libsqlite3-sys-0.26.0.crate/src/lib.rs",
+    edition = "2018",
+    env = {
+        "OUT_DIR": "$(location :libsqlite3-sys-0.26.0-build-script-run[out_dir])",
+    },
+    features = [
+        "default",
+        "min_sqlite_version_3_14_0",
+        "pkg-config",
+        "vcpkg",
+    ],
+    visibility = [],
+    deps = [":libsqlite3-sys-0.26.0-sqlite3"],
+)
+
+cargo.rust_binary(
+    name = "libsqlite3-sys-0.26.0-build-script-build",
+    srcs = [":libsqlite3-sys-0.26.0.crate"],
+    crate = "build_script_build",
+    crate_root = "libsqlite3-sys-0.26.0.crate/build.rs",
+    edition = "2018",
+    features = [
+        "default",
+        "min_sqlite_version_3_14_0",
+        "pkg-config",
+        "vcpkg",
+    ],
+    visibility = [],
+    deps = [
+        ":pkg-config-0.3.30",
+        ":vcpkg-0.2.15",
+    ],
+)
+
+buildscript_run(
+    name = "libsqlite3-sys-0.26.0-build-script-run",
+    package_name = "libsqlite3-sys",
+    buildscript_rule = ":libsqlite3-sys-0.26.0-build-script-build",
+    features = [
+        "default",
+        "min_sqlite_version_3_14_0",
+        "pkg-config",
+        "vcpkg",
+    ],
+    version = "0.26.0",
+)
+
+third_party_rust_cxx_library(
+    name = "libsqlite3-sys-0.26.0-sqlite3",
+    srcs = [":libsqlite3-sys-0.26.0.crate[sqlite3/sqlite3.c]"],
+    headers = [],
+    compiler_flags = [
+        "-O3",
+        "-DSQLITE_CORE",
+        "-DSQLITE_DEFAULT_FOREIGN_KEYS=1",
+        "-DSQLITE_ENABLE_API_ARMOR",
+        "-DSQLITE_ENABLE_COLUMN_METADATA",
+        "-DSQLITE_ENABLE_DBSTAT_VTAB",
+        "-DSQLITE_ENABLE_FTS3",
+        "-DSQLITE_ENABLE_FTS3_PARENTHESIS",
+        "-DSQLITE_ENABLE_FTS5",
+        "-DSQLITE_ENABLE_JSON1",
+        "-DSQLITE_ENABLE_LOAD_EXTENSION=1",
+        "-DSQLITE_ENABLE_MEMORY_MANAGEMENT",
+        "-DSQLITE_ENABLE_RTREE",
+        "-DSQLITE_ENABLE_STAT2",
+        "-DSQLITE_ENABLE_STAT4",
+        "-DSQLITE_SOUNDEX",
+        "-DSQLITE_THREADSAFE=1",
+        "-DSQLITE_USE_URI",
+        "-DHAVE_USLEEP=1",
+        "-D_POSIX_THREAD_SAFE_FUNCTIONS",
+        "-DHAVE_ISNAN",
+        "-DHAVE_LOCALTIME_R",
+    ],
+    preferred_linkage = "static",
+    preprocessor_flags = ["-I$(location :libsqlite3-sys-0.26.0.crate)/sqlite3"],
     visibility = [],
 )
 
@@ -10364,6 +10529,43 @@ buildscript_run(
     buildscript_rule = ":rstest_macros-0.18.2-build-script-build",
     features = ["async-timeout"],
     version = "0.18.2",
+)
+
+alias(
+    name = "rusqlite",
+    actual = ":rusqlite-0.29.0",
+    visibility = ["PUBLIC"],
+)
+
+http_archive(
+    name = "rusqlite-0.29.0.crate",
+    sha256 = "549b9d036d571d42e6e85d1c1425e2ac83491075078ca9a15be021c56b1641f2",
+    strip_prefix = "rusqlite-0.29.0",
+    urls = ["https://static.crates.io/crates/rusqlite/0.29.0/download"],
+    visibility = [],
+)
+
+cargo.rust_library(
+    name = "rusqlite-0.29.0",
+    srcs = [":rusqlite-0.29.0.crate"],
+    crate = "rusqlite",
+    crate_root = "rusqlite-0.29.0.crate/src/lib.rs",
+    edition = "2018",
+    features = [
+        "backup",
+        "blob",
+        "column_decltype",
+        "limits",
+    ],
+    visibility = [],
+    deps = [
+        ":bitflags-2.5.0",
+        ":fallible-iterator-0.2.0",
+        ":fallible-streaming-iterator-0.1.9",
+        ":hashlink-0.8.4",
+        ":libsqlite3-sys-0.26.0",
+        ":smallvec-1.13.2",
+    ],
 )
 
 alias(

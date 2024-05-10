@@ -71,10 +71,9 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
                 Validator::FileType(FileType::Directory),
             ));
         }
-        let src_facts =
-            antlir2_facts::RoDatabase::open(&self.src_layer.facts_db, Default::default())
-                .context("while opening src_layer facts db")
-                .map_err(|e| format!("{e:#?}"))?;
+        let src_facts = antlir2_facts::RoDatabase::open(&self.src_layer.facts_db)
+            .context("while opening src_layer facts db")
+            .map_err(|e| format!("{e:#?}"))?;
 
         let root_lookup = self
             .src_path
@@ -124,16 +123,19 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
             // exist in this destination layer
             let mut all_user_names: HashMap<u32, String> = src_facts
                 .iter::<antlir2_facts::fact::user::User>()
+                .map_err(|e| format!("failed to iterate users: {e:#?}"))?
                 .map(|u| (u.id(), u.name().to_owned()))
                 .collect();
             let mut all_group_names: HashMap<u32, String> = src_facts
                 .iter::<antlir2_facts::fact::user::Group>()
+                .map_err(|e| format!("failed to iterate groups: {e:#?}"))?
                 .map(|g| (g.id(), g.name().to_owned()))
                 .collect();
             let mut need_users = HashSet::new();
             let mut need_groups = HashSet::new();
             for entry in src_facts
-                .iter_from::<DirEntry>(&DirEntry::key(&self.src_path))
+                .iter_prefix::<DirEntry>(&DirEntry::key(&self.src_path))
+                .map_err(|e| format!("failed to iterate directory entries: {e:#?}"))?
                 .take_while(|entry| entry.path().starts_with(&self.src_path))
             {
                 if let Some(name) = all_user_names.remove(&entry.uid()) {
@@ -158,10 +160,9 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
     }
 
     fn provides(&self) -> Result<Vec<Item>, String> {
-        let src_facts =
-            antlir2_facts::RoDatabase::open(&self.src_layer.facts_db, Default::default())
-                .context("while opening src_layer facts db")
-                .map_err(|e| format!("{e:#?}"))?;
+        let src_facts = antlir2_facts::RoDatabase::open(&self.src_layer.facts_db)
+            .context("while opening src_layer facts db")
+            .map_err(|e| format!("{e:#?}"))?;
         let mut v = Vec::new();
         // if this is creating the top-level dest, we need to produce that now
         if !self.pre_existing_dest {
@@ -184,7 +185,8 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Clone {
         }
         // find any files or directories that appear underneath the clone source
         for (relpath, entry) in src_facts
-            .iter_from::<DirEntry>(&DirEntry::key(&self.src_path))
+            .iter_prefix::<DirEntry>(&DirEntry::key(&self.src_path))
+            .map_err(|e| format!("failed to iterate directory entries: {e:#?}"))?
             .map_while(|entry| {
                 entry
                     .path()

@@ -78,10 +78,9 @@ impl From<Rpm> for ManifestRpm {
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    let db =
-        RoDatabase::open(&args.facts_db, Default::default()).context("while opening facts db")?;
+    let db = RoDatabase::open(&args.facts_db).context("while opening facts db")?;
     let mut out = BufWriter::new(File::create(&args.out).context("while creating output file")?);
-    let rpms = db.iter::<Rpm>().map(ManifestRpm::from).collect();
+    let rpms = db.iter::<Rpm>()?.map(ManifestRpm::from).collect();
     let manifests = Manifest { rpms };
     serde_json::to_writer(&mut out, &manifests).context("while serializing manifest")?;
     Ok(())
