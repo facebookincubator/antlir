@@ -22,13 +22,9 @@ def _new_facts_db(
         rootless: bool) -> Artifact:
     prefix = phase.value if phase else None
     if prefix:
-        output = actions.declare_output(
-            prefix,
-            "facts",
-            dir = True,
-        )
+        output = actions.declare_output(prefix, "facts")
     else:
-        output = actions.declare_output("facts", dir = True)
+        output = actions.declare_output("facts")
     actions.run(
         cmd_args(
             # Inspecting already-built images often requires root privileges

@@ -19,7 +19,6 @@ fn open_db() -> RoDatabase {
     RoDatabase::open(
         buck_resources::get("antlir/antlir2/antlir2_facts/tests/test_db")
             .expect("test_db resource not set"),
-        Default::default(),
     )
     .expect("failed to open db")
 }
@@ -150,7 +149,10 @@ fn group() {
 fn rpms() {
     let db = open_db();
 
-    let rpms = db.iter::<Rpm>().collect::<Vec<_>>();
+    let rpms = db
+        .iter::<Rpm>()
+        .expect("failed to iterate over rpms")
+        .collect::<Vec<_>>();
     assert!(rpms.len() > 1, "multiple rpm facts should be found");
     let rpms = rpms
         .into_iter()
