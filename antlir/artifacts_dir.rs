@@ -35,7 +35,7 @@ pub fn artifacts_dir(py: Python<'_>, m: &PyModule) -> PyResult<()> {
     #[pyfn(m)]
     fn find_repo_root(py: Python<'_>, path_in_repo: Option<AntlirPath>) -> PyResult<AntlirPath> {
         let path_in_repo = ensure_path_in_repo(py, path_in_repo.map(|p| p.into()))?;
-        match find_root::find_repo_root(&path_in_repo) {
+        match find_root::find_repo_root(path_in_repo) {
             Ok(path) => Ok(path.into()),
             Err(e) => Err(SigilNotFound::new_err(e.to_string())),
         }

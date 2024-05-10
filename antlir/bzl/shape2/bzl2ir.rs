@@ -439,7 +439,7 @@ impl FileLoader for Dependencies {
             })
             .and_then(|p| {
                 let mut f =
-                    std::fs::File::open(&p).with_context(|| format!("while loading {:?}", p))?;
+                    std::fs::File::open(p).with_context(|| format!("while loading {:?}", p))?;
                 serde_json::from_reader(&mut f).with_context(|| format!("while parsing {:?}", p))
             })
             .and_then(ir_to_module)
@@ -529,7 +529,10 @@ fn main() -> Result<()> {
 
     let module =
         starlark_to_ir(f, types, opts.target).context("while converting to high-level IR")?;
-    println!("{}", serde_json::to_string_pretty(&module).unwrap());
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&module).expect("failed to serialize IR")
+    );
     Ok(())
 }
 
@@ -603,7 +606,8 @@ shape.enum("a", "b", 3)
             .to_string(),
             &Dialect::Extended,
         )?;
-        let err = eval_and_freeze_module(&Dependencies(BTreeMap::new()), ast).unwrap_err();
+        let err = eval_and_freeze_module(&Dependencies(BTreeMap::new()), ast)
+            .expect_err("should have failed");
         assert!(
             err.to_string()
                 .contains("Type of parameters mismatch, expected `str`, actual `int`"),
@@ -624,7 +628,7 @@ shape.dict(42, str)
             &Dialect::Extended,
         )?;
         let err = eval_and_freeze_module(&Dependencies(BTreeMap::new()), ast)
-            .unwrap_err()
+            .expect_err("should have failed")
             .to_string();
         assert!(err.contains("dict key must be a type"), "{:?}", err);
         Ok(())
@@ -641,7 +645,7 @@ shape.dict(str, 42)
             &Dialect::Extended,
         )?;
         let err = eval_and_freeze_module(&Dependencies(BTreeMap::new()), ast)
-            .unwrap_err()
+            .expect_err("should have failed")
             .to_string();
         assert!(err.contains("dict value must be a type"), "{:?}", err,);
         Ok(())
@@ -658,7 +662,7 @@ shape.union(str, 42, int)
             &Dialect::Extended,
         )?;
         let err = eval_and_freeze_module(&Dependencies(BTreeMap::new()), ast)
-            .unwrap_err()
+            .expect_err("should have failed")
             .to_string();
         assert!(err.contains("union item at 1 is not a type"), "{:?}", err);
         Ok(())

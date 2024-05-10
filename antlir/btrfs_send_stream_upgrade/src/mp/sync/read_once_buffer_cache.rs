@@ -185,13 +185,14 @@ impl ReadOnceBufferCache {
             }
         };
         // Wait until we're certain that our buffer has been fetched
+        #[allow(clippy::blocks_in_conditions)]
         let metadata = match self.robc_reader_wait_cv.wait_while(metadata, |metadata| {
             // Bail if we're not running
-            if (*metadata).robcm_state != PrimitiveState::Running {
+            if metadata.robcm_state != PrimitiveState::Running {
                 return false;
             }
             // Wait while bytes remaining is not a non-zero value
-            match (*metadata).robcm_bytes_remaining.get(&key) {
+            match metadata.robcm_bytes_remaining.get(&key) {
                 None => true,
                 Some(0) => true,
                 _ => false,
@@ -202,7 +203,7 @@ impl ReadOnceBufferCache {
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to wait with error {}", error),
         };
-        match (*metadata).robcm_state {
+        match metadata.robcm_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Reading buffer failed because of early abort");
@@ -221,7 +222,7 @@ impl ReadOnceBufferCache {
                 anyhow::bail!("Failed to acquire lock on read buffer with error {}", error)
             }
         };
-        let buffer = match (*cache).robci_buffers.get(&key) {
+        let buffer = match cache.robci_buffers.get(&key) {
             Some(buffer) => buffer,
             // This should never happen
             None => anyhow::bail!("Failed to get buffer for read"),
@@ -246,7 +247,7 @@ impl ReadOnceBufferCache {
             };
             // Put the page in place
             if size != 0 {
-                let old_entry = (*cache).robci_buffers.insert(key, buffer);
+                let old_entry = cache.robci_buffers.insert(key, buffer);
 
                 match old_entry {
                     Some(entry) => anyhow::bail!(
@@ -274,7 +275,7 @@ impl ReadOnceBufferCache {
                 anyhow::bail!("Failed to acquire lock on put buffer with error {}", error)
             }
         };
-        match (*metadata).robcm_state {
+        match metadata.robcm_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Putting buffer failed because of early abort");
@@ -287,11 +288,11 @@ impl ReadOnceBufferCache {
         // Update bytes remaining
         if size == 0 {
             // We must have hit an EOF
-            (*metadata).robcm_bytes_remaining.remove(&key);
+            metadata.robcm_bytes_remaining.remove(&key);
             // Mark the state as done
-            (*metadata).robcm_state = PrimitiveState::Done;
+            metadata.robcm_state = PrimitiveState::Done;
         } else {
-            (*metadata).robcm_bytes_remaining.insert(key, size);
+            metadata.robcm_bytes_remaining.insert(key, size);
         }
         self.robc_reader_wait_cv.notify_all();
 
@@ -312,15 +313,15 @@ impl ReadOnceBufferCache {
         let mut metadata = match self
             .robc_prefetcher_wait_cv
             .wait_while(metadata, |metadata| {
-                (*metadata).robcm_bytes_remaining.len() == self.robc_maximum_buffers_to_cache
-                    && (*metadata).robcm_state == PrimitiveState::Running
+                metadata.robcm_bytes_remaining.len() == self.robc_maximum_buffers_to_cache
+                    && metadata.robcm_state == PrimitiveState::Running
             }) {
             Ok(metadata) => metadata,
             // This should only happen if another thread panicked because of
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to wait with error {}", error),
         };
-        match (*metadata).robcm_state {
+        match metadata.robcm_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Putting buffer failed because of early abort");
@@ -331,8 +332,8 @@ impl ReadOnceBufferCache {
             }
         }
         // Get the next key to fetch
-        let key = (*metadata).robcm_next_key_to_fetch;
-        (*metadata).robcm_next_key_to_fetch += 1;
+        let key = metadata.robcm_next_key_to_fetch;
+        metadata.robcm_next_key_to_fetch += 1;
         // Drop the lock
         drop(metadata);
 
@@ -359,14 +360,14 @@ impl ReadOnceBufferCache {
                 error
             ),
         };
-        match (*metadata).robcm_state {
+        match metadata.robcm_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Putting buffer failed because of early abort");
             }
             PrimitiveState::Done => (),
         }
-        let new_value = match (*metadata).robcm_bytes_remaining.get(&key) {
+        let new_value = match metadata.robcm_bytes_remaining.get(&key) {
             Some(current_bytes) => {
                 // Ensure that we don't end up underflowing the bytes read
                 // count. This is a memory leak that can occur when the users
@@ -384,12 +385,12 @@ impl ReadOnceBufferCache {
         };
         if new_value == 0 {
             // Garbage collect the old bytes remaining
-            (*metadata).robcm_bytes_remaining.remove(&key);
+            metadata.robcm_bytes_remaining.remove(&key);
             // Wait any producers
             self.robc_prefetcher_wait_cv.notify_all();
         } else {
             // Update the new value
-            (*metadata).robcm_bytes_remaining.insert(key, new_value);
+            metadata.robcm_bytes_remaining.insert(key, new_value);
         }
         // Drop the lock on the metadata so that we can grab an RW lock if
         // necessary
@@ -407,7 +408,7 @@ impl ReadOnceBufferCache {
                 ),
             };
             // Remove the page
-            (*cache).robci_buffers.remove(&key);
+            cache.robci_buffers.remove(&key);
             // The page should be removed once we exit this scope
         }
 
@@ -548,11 +549,11 @@ impl BlockingSyncPrimitive for ReadOnceBufferCache {
         };
         // Disallow transitions from Aborted to Done
         // We can go from Done to Aborted in the case of a later failure
-        if (*metadata).robcm_state == PrimitiveState::Aborted && !unplanned {
+        if metadata.robcm_state == PrimitiveState::Aborted && !unplanned {
             anyhow::bail!("Transitioning cache from Done to Aborted");
         }
         // Update the state
-        (*metadata).robcm_state = if unplanned {
+        metadata.robcm_state = if unplanned {
             PrimitiveState::Aborted
         } else {
             PrimitiveState::Done

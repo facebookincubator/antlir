@@ -31,8 +31,8 @@ pub struct Symlink {
 impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Path(Path::Symlink {
-            link: self.link.to_owned().into(),
-            target: self.target.to_owned().into(),
+            link: self.link.to_owned(),
+            target: self.target.to_owned(),
         })])
     }
 
@@ -42,8 +42,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
                 self.link
                     .parent()
                     .unwrap_or_else(|| std::path::Path::new("/"))
-                    .to_owned()
-                    .into(),
+                    .to_owned(),
             ),
             Validator::FileType(FileType::Directory),
         )];
@@ -90,7 +89,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Symlink {
             // features that depend on this symlink do, so just always order the
             // symlink after its target
             requires.push(Requirement::ordered(
-                ItemKey::Path(absolute_target.into()),
+                ItemKey::Path(absolute_target),
                 Validator::FileType(match self.is_directory {
                     true => FileType::Directory,
                     false => FileType::File,

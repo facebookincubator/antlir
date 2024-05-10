@@ -156,7 +156,7 @@ impl PartialEq<Label> for Label {
 
 impl PartialOrd<Label> for Label {
     fn partial_cmp(&self, other: &Label) -> Option<Ordering> {
-        self.parts().partial_cmp(&other.parts())
+        Some(self.cmp(other))
     }
 }
 
@@ -230,7 +230,7 @@ impl Serialize for Label {
     where
         S: Serializer,
     {
-        serializer.serialize_str(&self.to_string())
+        serializer.serialize_str(self.as_ref())
     }
 }
 

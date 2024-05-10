@@ -436,7 +436,7 @@ impl<S: Share> VM<S> {
                     debug!("Notify socket closed. VM exited");
                     break;
                 }
-                Ok(_) => debug!("Received unexpected data from VM notify socket"),
+                Ok(_read) => debug!("Received unexpected data from VM notify socket: {buf:?}"),
                 Err(_) => thread::sleep(Duration::from_secs(1)),
             }
         }

@@ -44,7 +44,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Remove {
         Ok(match self.must_exist {
             false => vec![],
             true => vec![Requirement::ordered(
-                ItemKey::Path(self.path.to_owned().into()),
+                ItemKey::Path(self.path.to_owned()),
                 Validator::Exists,
             )],
         })

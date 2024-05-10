@@ -42,20 +42,17 @@ pub struct User {
 impl antlir2_depgraph::requires_provides::RequiresProvides for User {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::User(UserItem {
-            name: self.username.to_owned().into(),
+            name: self.username.to_owned(),
         })])
     }
 
     fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = vec![
             Requirement::unordered(
-                ItemKey::Path(self.home_dir.to_owned().into()),
+                ItemKey::Path(self.home_dir.to_owned()),
                 Validator::FileType(FileType::Directory),
             ),
-            Requirement::unordered(
-                ItemKey::Path(self.shell.to_owned().into()),
-                Validator::Executable,
-            ),
+            Requirement::unordered(ItemKey::Path(self.shell.to_owned()), Validator::Executable),
             Requirement::ordered(
                 ItemKey::Path(std::path::Path::new("/etc/passwd").into()),
                 Validator::Exists,
@@ -69,9 +66,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for User {
             self.supplementary_groups
                 .iter()
                 .chain(vec![&self.primary_group])
-                .map(|g| {
-                    Requirement::ordered(ItemKey::Group(g.to_owned().into()), Validator::Exists)
-                }),
+                .map(|g| Requirement::ordered(ItemKey::Group(g.to_owned()), Validator::Exists)),
         );
         Ok(v)
     }

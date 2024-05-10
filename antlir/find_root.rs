@@ -35,22 +35,6 @@ pub fn find_repo_root(path_in_repo: impl AsRef<Path>) -> Result<PathBuf, FindRoo
     ))
 }
 
-fn first_parent_containing_sigil(path: &Path, sigil_name: &str, is_dir: bool) -> Option<PathBuf> {
-    for dir in path.ancestors() {
-        let target_path = dir.join(sigil_name);
-        if !target_path.exists() {
-            continue;
-        }
-
-        if (is_dir && target_path.is_dir()) || (!is_dir && target_path.is_file()) {
-            return Some(dir.to_owned());
-        } else {
-            continue;
-        }
-    }
-    None
-}
-
 #[cfg(test)]
 mod tests {
     use std::fs::create_dir;

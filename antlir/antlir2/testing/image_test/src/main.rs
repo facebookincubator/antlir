@@ -109,7 +109,7 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while unsharing userns")?;
     }
 
-    let mut setenv: BTreeMap<_, _> = spec.setenv.into_iter().map(|(k, v)| (k, v)).collect();
+    let mut setenv: BTreeMap<_, _> = spec.setenv.into_iter().collect();
     // forward test runner env vars to the inner test
     for (key, val) in std::env::vars() {
         if key.starts_with("TEST_PILOT") {

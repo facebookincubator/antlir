@@ -110,7 +110,7 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to acquire lock on enqueue with error {}", error),
         };
-        match (*queue).oeqi_state {
+        match queue.oeqi_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
@@ -122,7 +122,7 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
         }
         // Add the item to the queue in question
         let key = item.get_first_id();
-        match (*queue).oeqi_map.insert(key, item) {
+        match queue.oeqi_map.insert(key, item) {
             Some(old_item) => {
                 anyhow::bail!(
                     "Inserting duplicate entry in ordered queue old entry {}",
@@ -132,7 +132,7 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
             None => (),
         }
         // If we just added the first element in line, then wake the consumer
-        if (*queue).oeqi_first_id == key {
+        if queue.oeqi_first_id == key {
             self.oeq_cv.notify_one();
         }
         Ok(())
@@ -147,15 +147,15 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
         };
         // Wait until we're certain that the top of the list has been inserted
         let mut queue = match self.oeq_cv.wait_while(queue, |queue| {
-            !(*queue).oeqi_map.contains_key(&(*queue).oeqi_first_id)
-                && (*queue).oeqi_state == PrimitiveState::Running
+            !queue.oeqi_map.contains_key(&queue.oeqi_first_id)
+                && queue.oeqi_state == PrimitiveState::Running
         }) {
             Ok(internal_queue) => internal_queue,
             // This should only happen if another thread panicked because of
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to wait with error {}", error),
         };
-        match (*queue).oeqi_state {
+        match queue.oeqi_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
@@ -164,18 +164,18 @@ impl<T: OrderedElement> BlockingQueue<T> for OrderedElementQueue<T> {
                 return Ok(None);
             }
         }
-        let current_key = (*queue).oeqi_first_id;
-        let item = match (*queue).oeqi_map.remove(&current_key) {
+        let current_key = queue.oeqi_first_id;
+        let item = match queue.oeqi_map.remove(&current_key) {
             Some(item) => item,
             // This should never happen
             None => anyhow::bail!("Failed to remove contained item"),
         };
         // Update the new top element
         // If the last id was shared, ensure that we drop it
-        (*queue).oeqi_first_id = item.get_last_id() + if item.is_last_id_shared() { 0 } else { 1 };
+        queue.oeqi_first_id = item.get_last_id() + if item.is_last_id_shared() { 0 } else { 1 };
         // In case someone has a multi-consumer case in the future avoid a
         // deadlock by notifying the next consumer
-        if (*queue).oeqi_map.contains_key(&(*queue).oeqi_first_id) {
+        if queue.oeqi_map.contains_key(&queue.oeqi_first_id) {
             self.oeq_cv.notify_one();
         }
         // Drop the lock before doing any checks
@@ -202,11 +202,11 @@ impl<T: OrderedElement> BlockingSyncPrimitive for OrderedElementQueue<T> {
         };
         // Disallow transitions from Aborted to Done
         // We can go from Done to Aborted in the case of a later failure
-        if (*queue).oeqi_state == PrimitiveState::Aborted && !unplanned {
+        if queue.oeqi_state == PrimitiveState::Aborted && !unplanned {
             anyhow::bail!("Transitioning queue from Done to Aborted");
         }
         // Update the state
-        (*queue).oeqi_state = if unplanned {
+        queue.oeqi_state = if unplanned {
             PrimitiveState::Aborted
         } else {
             PrimitiveState::Done

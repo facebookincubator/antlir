@@ -66,7 +66,7 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to acquire lock on enqueue with error {}", error),
         };
-        match (*queue).uoeqi_state {
+        match queue.uoeqi_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
@@ -76,7 +76,7 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
                 anyhow::bail!("Enqueueing while done");
             }
         }
-        (*queue).uoeqi_queue.push_back(item);
+        queue.uoeqi_queue.push_back(item);
         // Wake the consumer
         self.uoeq_cv.notify_one();
         Ok(())
@@ -91,14 +91,14 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
         };
         // Wait until we're certain that the top of the list has been inserted
         let mut queue = match self.uoeq_cv.wait_while(queue, |queue| {
-            (*queue).uoeqi_queue.is_empty() && (*queue).uoeqi_state == PrimitiveState::Running
+            queue.uoeqi_queue.is_empty() && queue.uoeqi_state == PrimitiveState::Running
         }) {
             Ok(internal_queue) => internal_queue,
             // This should only happen if another thread panicked because of
             // a recursive lock
             Err(error) => anyhow::bail!("Failed to wait with error {}", error),
         };
-        match (*queue).uoeqi_state {
+        match queue.uoeqi_state {
             PrimitiveState::Running => (),
             PrimitiveState::Aborted => {
                 anyhow::bail!("Enqueue failed because of early abort");
@@ -107,7 +107,7 @@ impl<T: UnorderedElement> BlockingQueue<T> for UnorderedElementQueue<T> {
                 return Ok(None);
             }
         }
-        let item = match (*queue).uoeqi_queue.pop_front() {
+        let item = match queue.uoeqi_queue.pop_front() {
             Some(item) => item,
             // This should only happen if another thread panicked because of
             // a recursive lock
@@ -128,11 +128,11 @@ impl<T: UnorderedElement> BlockingSyncPrimitive for UnorderedElementQueue<T> {
         };
         // Disallow transitions from Aborted to Done
         // We can go from Done to Aborted in the case of a later failure
-        if (*queue).uoeqi_state == PrimitiveState::Aborted && !unplanned {
+        if queue.uoeqi_state == PrimitiveState::Aborted && !unplanned {
             anyhow::bail!("Transitioning queue from Done to Aborted");
         }
         // Update the state
-        (*queue).uoeqi_state = if unplanned {
+        queue.uoeqi_state = if unplanned {
             PrimitiveState::Aborted
         } else {
             PrimitiveState::Done

@@ -160,7 +160,7 @@ impl<'a> IsolatedContext<'a> {
                 .iter()
                 .map(|t| {
                     Path::new(isolate_unshare_preexec::NEWROOT)
-                        .join(t.strip_prefix("/").unwrap_or(&t))
+                        .join(t.strip_prefix("/").unwrap_or(t))
                         .to_owned()
                 })
                 .collect(),

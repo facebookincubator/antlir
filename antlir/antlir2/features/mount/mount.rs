@@ -74,10 +74,10 @@ impl Mount {
 impl antlir2_depgraph::requires_provides::RequiresProvides for Mount {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Path(Path::Mount(item::Mount {
-            path: self.mountpoint().clone().into(),
+            path: self.mountpoint().clone(),
             file_type: FileType::Directory,
             mode: self.mode(),
-            source_description: format!("{self:#?}").into(),
+            source_description: format!("{self:#?}"),
         }))])
     }
 

@@ -93,6 +93,7 @@ macro_rules! tlv_impl {
             type Attr = attr_types::$default_attr;
 
             fn parse(data: &$lt [u8]) -> Self {
+                #[allow(clippy::redundant_closure_call)]
                 $parse(data)
             }
         }
@@ -108,6 +109,7 @@ macro_rules! tlv_impl {
             type Attr = attr_types::$default_attr;
 
             fn parse_exact(data: [u8; $len]) -> Self {
+                #[allow(clippy::redundant_closure_call)]
                 $parse(data)
             }
         }

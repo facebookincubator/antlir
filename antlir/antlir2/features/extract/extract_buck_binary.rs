@@ -81,7 +81,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractBuckBinary
         // fact identical, to prevent insane mismatches like this
         // https://fb.workplace.com/groups/btrmeup/posts/5913570682055882
         Ok(vec![Item::Path(PathItem::Entry(FsEntry {
-            path: self.dst.to_owned().into(),
+            path: self.dst.to_owned(),
             file_type: FileType::File,
             mode: 0o555,
         }))])
@@ -89,13 +89,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for ExtractBuckBinary
 
     fn requires(&self) -> Result<Vec<Requirement>, String> {
         Ok(vec![Requirement::ordered(
-            ItemKey::Path(
-                self.dst
-                    .parent()
-                    .expect("dst always has parent")
-                    .to_owned()
-                    .into(),
-            ),
+            ItemKey::Path(self.dst.parent().expect("dst always has parent").to_owned()),
             Validator::FileType(FileType::Directory),
         )])
     }

@@ -68,10 +68,7 @@ fn producer(
     items_to_enqueue.shuffle(&mut rng);
     // Push everything we have to the consumer; we'll wait a bit between
     // pushes
-    while !items_to_enqueue.is_empty() {
-        let item = items_to_enqueue
-            .pop()
-            .expect("Expected to have an item to pop!");
+    while let Some(item) = items_to_enqueue.pop() {
         if let Err(error) = queue.enqueue(item) {
             // Ignore wacky errors on shutdown
             // Normally we don't expect to gracefully shutdown while there
