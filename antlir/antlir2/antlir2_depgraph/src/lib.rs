@@ -175,13 +175,12 @@ impl GraphBuilder {
                                     false => link
                                         .parent()
                                         .expect("the link cannot itself be /")
-                                        .join(target)
-                                        .into(),
+                                        .join(target),
                                 };
                                 let new_path = target.join(path.strip_prefix(ancestor).expect(
                                     "ancestor path can definitely be stripped as a prefix",
                                 ));
-                                return self.item(&ItemKey::Path(new_path.into()));
+                                return self.item(&ItemKey::Path(new_path));
                             }
                         };
                     }
@@ -247,10 +246,7 @@ impl GraphBuilder {
             for req in requires.iter().filter(|r| r.ordered) {
                 let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
-                    None => {
-                        let nx = self.g.add_node(Node::MissingItem(req.key.clone()));
-                        nx
-                    }
+                    None => self.g.add_node(Node::MissingItem(req.key.clone())),
                 };
                 self.g
                     .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator.clone()));
@@ -321,10 +317,7 @@ impl GraphBuilder {
             for req in requires.iter().filter(|r| !r.ordered) {
                 let req_nx = match self.item(&req.key) {
                     Some(nx) => nx.into_untyped(),
-                    None => {
-                        let nx = self.g.add_node(Node::MissingItem(req.key.clone()));
-                        nx
-                    }
+                    None => self.g.add_node(Node::MissingItem(req.key.clone())),
                 };
                 self.g
                     .update_edge(req_nx, **feature_nx, Edge::Requires(req.validator.clone()));
@@ -440,8 +433,7 @@ impl GraphBuilder {
                                         false => link
                                             .parent()
                                             .expect("the link cannot itself be /")
-                                            .join(target)
-                                            .into(),
+                                            .join(target),
                                     };
                                     match self.item(&ItemKey::Path(target)) {
                                         Some(target_item_nx) => &self.g[target_item_nx],
@@ -565,18 +557,15 @@ impl Graph {
             let path =
                 Path::new("/").join(entry.path().strip_prefix(root).expect("this must succeed"));
             seen_paths.insert(path.clone());
-            let key = ItemKey::Path(path.clone().into());
+            let key = ItemKey::Path(path.clone());
             if let std::collections::hash_map::Entry::Vacant(e) = self.items.entry(key) {
                 let meta = entry.metadata()?;
                 let path_item = if entry.path_is_symlink() {
                     let target = std::fs::read_link(entry.path())?;
-                    item::Path::Symlink {
-                        target: target.into(),
-                        link: path.into(),
-                    }
+                    item::Path::Symlink { target, link: path }
                 } else {
                     item::Path::Entry(item::FsEntry {
-                        path: path.into(),
+                        path,
                         mode: meta.mode(),
                         file_type: meta.file_type().into(),
                     })

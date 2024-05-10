@@ -22,7 +22,6 @@ use test_shape::thrift_new;
 use test_shape::thrift_old;
 use test_shape::union_new;
 use test_shape::union_old;
-use test_shape::weapon_t;
 use test_shape::with_default_trait;
 use test_shape::with_optional_int;
 
@@ -105,7 +104,7 @@ fn thrift() -> Result<()> {
         serde_json::from_slice::<serde_json::Value>(&fbthrift::simplejson_protocol::serialize(
             &luke
         ))
-        .unwrap()
+        .expect("failed to round trip through thrift")
     );
 
     Ok(())

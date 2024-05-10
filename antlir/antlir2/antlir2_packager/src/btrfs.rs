@@ -28,12 +28,11 @@ impl PackageFormat for Btrfs {
     fn build(&self, out: &Path) -> Result<()> {
         let btrfs_packager_path = self
             .btrfs_packager_path
-            .iter()
-            .next()
+            .first()
             .context("Expected exactly one arg to btrfs_packager_path")?;
 
         // The output path must exist before we can make an absolute path for it.
-        let output_file = File::create(&out).context("failed to create output file")?;
+        let output_file = File::create(out).context("failed to create output file")?;
         output_file
             .sync_all()
             .context("Failed to sync output file to disk")?;
@@ -66,7 +65,7 @@ impl PackageFormat for Btrfs {
             .arg("--spec")
             .arg(btrfs_spec_file_abs)
             .arg("--out")
-            .arg(&out);
+            .arg(out);
 
         let output = btrfs_package_cmd
             .output()

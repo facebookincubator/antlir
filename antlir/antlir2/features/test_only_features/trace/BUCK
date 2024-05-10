@@ -4,6 +4,5 @@ oncall("antlir")
 
 feature_impl(
     name = "trace",
-    allow_unused_crate_dependencies = True,
     visibility = ["//antlir/antlir2/features/test_only_features/trace/tests/..."],
 )

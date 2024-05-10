@@ -47,16 +47,20 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Requires {
             .iter()
             .map(|p| {
                 Requirement::ordered(
-                    ItemKey::Path(p.to_owned().into()),
+                    ItemKey::Path(p.to_owned()),
                     Validator::FileType(FileType::File),
                 )
             })
-            .chain(users.iter().map(|u| {
-                Requirement::ordered(ItemKey::User(u.to_owned().into()), Validator::Exists)
-            }))
-            .chain(groups.iter().map(|g| {
-                Requirement::ordered(ItemKey::Group(g.to_owned().into()), Validator::Exists)
-            }))
+            .chain(
+                users
+                    .iter()
+                    .map(|u| Requirement::ordered(ItemKey::User(u.to_owned()), Validator::Exists)),
+            )
+            .chain(
+                groups
+                    .iter()
+                    .map(|g| Requirement::ordered(ItemKey::Group(g.to_owned()), Validator::Exists)),
+            )
             .collect())
     }
 }

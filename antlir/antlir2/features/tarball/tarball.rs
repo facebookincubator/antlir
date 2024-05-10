@@ -99,7 +99,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Tarball {
                 .join(entry.path().expect("infallible on linux"));
             if entry.header().entry_type().is_dir() {
                 provides.push(Item::Path(PathItem::Entry(FsEntry {
-                    path: path.into(),
+                    path,
                     file_type: FileType::Directory,
                     mode: entry
                         .header()
@@ -115,8 +115,8 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Tarball {
                     .context("entry is symlink but missing target")
                     .map_err(|e| e.to_string())?;
                 provides.push(Item::Path(PathItem::Symlink {
-                    link: path.into(),
-                    target: target.into_owned().into(),
+                    link: path,
+                    target: target.into_owned(),
                 }));
             } else if let Some(file_type) = match entry.header().entry_type() {
                 tar::EntryType::Regular => Some(FileType::File),
@@ -127,7 +127,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Tarball {
                 _ => None,
             } {
                 provides.push(Item::Path(PathItem::Entry(FsEntry {
-                    path: path.into(),
+                    path,
                     file_type,
                     mode: entry
                         .header()
@@ -152,7 +152,7 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for Tarball {
             && !parent.as_os_str().is_empty()
         {
             Ok(vec![Requirement::ordered(
-                ItemKey::Path(parent.to_owned().into()),
+                ItemKey::Path(parent.to_owned()),
                 Validator::FileType(FileType::Directory),
             )])
         } else {

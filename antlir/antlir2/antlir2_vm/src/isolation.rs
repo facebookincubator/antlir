@@ -52,7 +52,7 @@ impl Platform {
             env::current_exe().map_err(|e| IsolationError::RepoRootError(e.to_string()))?,
         )
         .map_err(|e| IsolationError::RepoRootError(e.to_string()))?;
-        Ok(PathBuf::from(repo))
+        Ok(repo)
     }
 
     /// Query the environment and set PLATFORM. Should be called exactly once

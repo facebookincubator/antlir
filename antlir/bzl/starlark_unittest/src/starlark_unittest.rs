@@ -142,7 +142,7 @@ fn unittest(gb: &mut GlobalsBuilder) {
 fn native(gb: &mut GlobalsBuilder) {
     fn sha256(val: &str) -> anyhow::Result<String> {
         let hash = Sha256::digest(val.as_bytes());
-        Ok(hex::encode(&hash))
+        Ok(hex::encode(hash))
     }
 }
 
@@ -297,7 +297,7 @@ fn main() -> Result<()> {
 
     let tests: Vec<_> = modules.into_iter().flat_map(|m| m.tests()).collect();
 
-    let mut test_args = vec![std::env::args().next().unwrap()];
+    let mut test_args = vec![std::env::args().next().expect("must have at least argv[0]")];
     test_args.extend(args.test_args);
     ::test::test_main(&test_args, tests, None);
     Ok(())

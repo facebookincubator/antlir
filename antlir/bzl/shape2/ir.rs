@@ -274,7 +274,7 @@ mod tests {
         assert_eq!(
             "shape target must end with '.shape'",
             Target::try_from("//some/target:path")
-                .unwrap_err()
+                .expect_err("should have failed")
                 .to_string()
         );
 

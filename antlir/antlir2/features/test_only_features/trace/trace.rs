@@ -9,6 +9,7 @@ use antlir2_compile::CompilerContext;
 use antlir2_depgraph::item::Item;
 use antlir2_depgraph::requires_provides::Requirement;
 use antlir2_features as _;
+use anyhow as _;
 use serde::Deserialize;
 use serde::Serialize;
 use tracing::trace;

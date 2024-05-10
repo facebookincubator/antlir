@@ -337,12 +337,7 @@ where
 
 #[tracing::instrument(ret, err)]
 pub async fn serve(cfg: Config) -> Result<()> {
-    let rpm_repos: Arc<HashMap<_, _>> = Arc::new(
-        cfg.rpm_repos
-            .into_iter()
-            .map(|(id, repo)| (id, repo))
-            .collect(),
-    );
+    let rpm_repos: Arc<HashMap<_, _>> = Arc::new(cfg.rpm_repos.into_iter().collect());
 
     let path = match &cfg.bind {
         Bind::Path(p) => p.to_path_buf(),

@@ -34,13 +34,13 @@ impl antlir2_depgraph::requires_provides::RequiresProvides for UserMod {
 
     fn requires(&self) -> Result<Vec<Requirement>, String> {
         let mut v = vec![Requirement::ordered(
-            ItemKey::User(self.username.to_owned().into()),
+            ItemKey::User(self.username.to_owned()),
             Validator::Exists,
         )];
         v.extend(
-            self.add_supplementary_groups.iter().map(|g| {
-                Requirement::ordered(ItemKey::Group(g.to_owned().into()), Validator::Exists)
-            }),
+            self.add_supplementary_groups
+                .iter()
+                .map(|g| Requirement::ordered(ItemKey::Group(g.to_owned()), Validator::Exists)),
         );
         Ok(v)
     }

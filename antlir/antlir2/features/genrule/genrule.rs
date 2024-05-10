@@ -22,15 +22,13 @@ use antlir2_isolate::InvocationType;
 use antlir2_isolate::IsolationContext;
 use anyhow::Context;
 use anyhow::Result;
-use derivative::Derivative;
 use itertools::Itertools;
 use serde::Deserialize;
 use serde::Serialize;
 
 pub type Feature = Genrule;
 
-#[derive(Debug, Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
-#[derivative(PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 pub struct Genrule {
     pub cmd: Vec<ResolvedMacro>,
     pub user: UserName,
@@ -38,8 +36,7 @@ pub struct Genrule {
     pub mount_platform: bool,
 }
 
-#[derive(Clone, PartialEq, Eq, Derivative, Deserialize, Serialize)]
-#[derivative(PartialOrd, Ord)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(transparent)]
 pub struct ResolvedMacro(Vec<String>);
 

@@ -31,7 +31,7 @@ pub struct Group {
 impl antlir2_depgraph::requires_provides::RequiresProvides for Group {
     fn provides(&self) -> Result<Vec<Item>, String> {
         Ok(vec![Item::Group(GroupItem {
-            name: self.groupname.to_owned().into(),
+            name: self.groupname.to_owned(),
         })])
     }
 
