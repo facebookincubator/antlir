@@ -19,3 +19,8 @@ def ret_empty_list(*args, **kwargs):
 empty_dict = {}
 
 none = None
+
+special_tags = struct(
+    run_as_bundle = "OSS_NO_OP",
+    enable_artifact_reporting = "OSS_NO_OP",
+)

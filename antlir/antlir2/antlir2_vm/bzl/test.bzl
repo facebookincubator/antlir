@@ -10,6 +10,8 @@ load("//antlir/antlir2/bzl:platform.bzl", "arch_select", "rule_with_default_targ
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/testing:image_test.bzl", "HIDE_TEST_LABELS")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "python_unittest", "rust_unittest")
+
+load("//antlir/bzl/oss:oss_shim.bzl", "special_tags") # @oss-enable
 load(":types.bzl", "VMHostInfo")
 
 def _impl(ctx: AnalysisContext) -> list[Provider]:
