@@ -1,0 +1,3 @@
+load("//antlir/antlir2/os:package.bzl", "set_default_os_for_package")
+
+set_default_os_for_package(default_os = "centos8")

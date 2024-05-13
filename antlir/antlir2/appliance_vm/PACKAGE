@@ -1,0 +1,3 @@
+load("//antlir/antlir2/antlir2_rootless:package.bzl", "antlir2_rootless")
+
+antlir2_rootless(rootless = True)
