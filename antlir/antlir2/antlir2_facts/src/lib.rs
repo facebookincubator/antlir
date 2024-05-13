@@ -80,6 +80,11 @@ impl RwDatabase {
         )?;
         Ok(())
     }
+
+    pub fn transaction(&mut self) -> Result<Transaction> {
+        let tx = self.db.transaction()?;
+        Ok(Transaction { tx })
+    }
 }
 
 impl RoDatabase {
@@ -156,6 +161,33 @@ impl<const RW: bool> Database<{ RW }> {
         Ok(FactIter {
             iter: facts.into_iter(),
         })
+    }
+}
+
+/// Transaction to write a batch of data into the db at once. Caller must call
+/// [Transaction::commit] to preserve all the insertions, otherwise changes are
+/// rolled back on drop.
+pub struct Transaction<'db> {
+    tx: rusqlite::Transaction<'db>,
+}
+
+impl<'db> Transaction<'db> {
+    pub fn insert<'f, F>(&mut self, fact: &'f F) -> Result<()>
+    where
+        F: Fact,
+    {
+        let fact: &dyn Fact = fact;
+        let val = serde_json::to_string(fact)?;
+        self.tx.execute(
+            "INSERT INTO facts (kind, key, value) VALUES (?, ?, ?)",
+            (F::kind(), fact.key().as_ref(), val),
+        )?;
+        Ok(())
+    }
+
+    pub fn commit(self) -> Result<()> {
+        self.tx.commit()?;
+        Ok(())
     }
 }
 
