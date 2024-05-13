@@ -18,6 +18,7 @@ use antlir2_facts::fact::rpm::Rpm;
 use antlir2_facts::fact::user::Group;
 use antlir2_facts::fact::user::User;
 use antlir2_facts::RwDatabase;
+use antlir2_facts::Transaction;
 use antlir2_isolate::sys::unshare;
 use antlir2_isolate::IsolationContext;
 use antlir2_users::group::EtcGroup;
@@ -44,15 +45,15 @@ struct Args {
     rootless: bool,
 }
 
-fn populate(db: &mut RwDatabase, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
+fn populate(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
     let root = root.canonicalize().context("while canonicalizing root")?;
-    populate_files(db, &root)?;
-    populate_usergroups(db, &root)?;
-    populate_rpms(db, &root, build_appliance)?;
+    populate_files(tx, &root)?;
+    populate_usergroups(tx, &root)?;
+    populate_rpms(tx, &root, build_appliance)?;
     Ok(())
 }
 
-fn populate_files(db: &mut RwDatabase, root: &Path) -> Result<()> {
+fn populate_files(tx: &mut Transaction, root: &Path) -> Result<()> {
     for entry in WalkDir::new(root).skip_hidden(false) {
         let entry = entry?;
         let full_path = entry.path();
@@ -66,13 +67,13 @@ fn populate_files(db: &mut RwDatabase, root: &Path) -> Result<()> {
             .with_context(|| format!("while statting {}", full_path.display()))?;
         let common = FileCommon::new_with_metadata(path.clone(), &meta);
         if entry.file_type().is_dir() {
-            db.insert(&DirEntry::Directory(common.into()))?;
+            tx.insert(&DirEntry::Directory(common.into()))?;
         } else if entry.file_type().is_symlink() {
             let raw_target = std::fs::read_link(&full_path)
                 .with_context(|| format!("while reading raw link {}", full_path.display()))?;
-            db.insert(&DirEntry::Symlink(Symlink::new(common, raw_target)))?;
+            tx.insert(&DirEntry::Symlink(Symlink::new(common, raw_target)))?;
         } else if entry.file_type().is_file() {
-            db.insert(&DirEntry::RegularFile(common.into()))?;
+            tx.insert(&DirEntry::RegularFile(common.into()))?;
         } else {
             bail!(
                 "{} was not a directory, symlink or file",
@@ -83,7 +84,7 @@ fn populate_files(db: &mut RwDatabase, root: &Path) -> Result<()> {
     Ok(())
 }
 
-fn populate_usergroups(db: &mut RwDatabase, root: &Path) -> Result<()> {
+fn populate_usergroups(tx: &mut Transaction, root: &Path) -> Result<()> {
     let user_db: EtcPasswd = match std::fs::read_to_string(root.join("etc/passwd")) {
         Ok(contents) => contents.parse().context("while parsing /etc/passwd"),
         Err(e) => match e.kind() {
@@ -92,7 +93,7 @@ fn populate_usergroups(db: &mut RwDatabase, root: &Path) -> Result<()> {
         },
     }?;
     for user in user_db.into_records() {
-        db.insert(&User::new(user.name.clone(), user.uid.into()))
+        tx.insert(&User::new(user.name.clone(), user.uid.into()))
             .with_context(|| format!("while inserting user '{}'", user.name))?;
     }
     let group_db: EtcGroup = match std::fs::read_to_string(root.join("etc/group")) {
@@ -103,7 +104,7 @@ fn populate_usergroups(db: &mut RwDatabase, root: &Path) -> Result<()> {
         },
     }?;
     for group in group_db.into_records() {
-        db.insert(&Group::new(
+        tx.insert(&Group::new(
             group.name.clone(),
             group.gid.into(),
             group.users,
@@ -128,7 +129,7 @@ macro_rules! decode_rpm_field {
     };
 }
 
-fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
+fn populate_rpms(tx: &mut Transaction, root: &Path, build_appliance: Option<&Path>) -> Result<()> {
     let mut list_cmd = match build_appliance {
         Some(build_appliance) => {
             let isol = unshare(
@@ -218,14 +219,14 @@ fn populate_rpms(db: &mut RwDatabase, root: &Path, build_appliance: Option<&Path
             })?)
             .source_rpm(source_rpm)
             .build();
-        db.insert(&rpm)
+        tx.insert(&rpm)
             .with_context(|| format!("while inserting rpm '{rpm}'"))?;
     }
 
     for unit in
         antlir2_systemd::list_unit_files(root).context("while listing systemd unit files")?
     {
-        db.insert(&unit)
+        tx.insert(&unit)
             .with_context(|| format!("while inserting unit {unit:?}"))?;
     }
 
@@ -254,20 +255,20 @@ fn main() -> Result<()> {
     let mut db = RwDatabase::create(&args.db)
         .with_context(|| format!("while creating db {}", args.db.display()))?;
 
+    let mut tx = db.transaction().context("while preparing tx")?;
+
     let uid = nix::unistd::Uid::effective().as_raw();
     let gid = nix::unistd::Gid::effective().as_raw();
 
     let root_guard = rootless.map(|r| r.escalate()).transpose()?;
-    populate(&mut db, &args.root, args.build_appliance.as_deref())?;
+    populate(&mut tx, &args.root, args.build_appliance.as_deref())?;
 
     // make sure all the output files are owned by the unprivileged user
-    for entry in jwalk::WalkDir::new(&args.db) {
-        let entry = entry?;
-        let path = entry.path();
-        std::os::unix::fs::lchown(&path, Some(uid), Some(gid))
-            .with_context(|| format!("while chowning {}", path.display()))?;
-    }
+    std::os::unix::fs::lchown(&args.db, Some(uid), Some(gid))
+        .with_context(|| format!("while chowning {}", args.db.display()))?;
     drop(root_guard);
+
+    tx.commit().context("while committing tx")?;
 
     Ok(())
 }
