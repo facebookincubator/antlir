@@ -3,6 +3,7 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -32,6 +33,8 @@ _rpm_names_test = rule(
     cfg = layer_cfg,
 )
 
+_rpm_names_test_macro = rule_with_default_target_platform(_rpm_names_test)
+
 def image_test_rpm_names(
         name: str,
         src: str | Select,
@@ -51,7 +54,7 @@ def image_test_rpm_names(
         ],
     )
 
-    _rpm_names_test(
+    _rpm_names_test_macro(
         name = name + "--script",
         src = src,
         not_installed = not_installed,
@@ -92,6 +95,8 @@ _rpm_integrity_test = rule(
     },
 )
 
+_rpm_integrity_test_macro = rule_with_default_target_platform(_rpm_integrity_test)
+
 def image_test_rpm_integrity(
         name: str,
         layer: str,
@@ -103,7 +108,7 @@ def image_test_rpm_integrity(
     Verify the integrity of all installed RPMs to ensure that any changes done
     by an image will not be undone by any runtime rpm installation.
     """
-    _rpm_integrity_test(
+    _rpm_integrity_test_macro(
         name = name + "--script",
         ignored_files = ignored_files,
         ignored_rpms = ignored_rpms,
