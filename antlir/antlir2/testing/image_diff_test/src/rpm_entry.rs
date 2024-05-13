@@ -18,9 +18,7 @@ pub(crate) struct RpmEntry {
 }
 
 impl RpmEntry {
-    pub fn new(evra: &str) -> Self {
-        Self {
-            evra: evra.to_owned(),
-        }
+    pub fn new(evra: String) -> Self {
+        Self { evra }
     }
 }

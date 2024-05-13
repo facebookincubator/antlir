@@ -6,18 +6,20 @@
  */
 
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::collections::HashSet;
 use std::io::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
+use antlir2_facts::fact::rpm::Rpm;
+use antlir2_facts::RoDatabase;
 use antlir2_users::group::EtcGroup;
 use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use clap::ValueEnum;
-use image_test_lib::get_installed_rpms;
 use json_arg::TomlFile;
 use similar::TextDiff;
 use walkdir::WalkDir;
@@ -39,8 +41,12 @@ struct Args {
     /// Parent layer
     parent: PathBuf,
     #[clap(long)]
+    parent_facts_db: PathBuf,
+    #[clap(long)]
     /// Child layer
     layer: PathBuf,
+    #[clap(long)]
+    facts_db: PathBuf,
     /// Expected diff in TOML format
     #[clap(long)]
     expected: TomlFile<LayerDiff>,
@@ -164,12 +170,20 @@ fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
 }
 
 fn generate_rpm_diff(args: &Args) -> Result<BTreeMap<String, RpmDiff>> {
-    let parent_rpms = get_installed_rpms(args.parent.clone())?;
-    let layer_rpms = get_installed_rpms(args.layer.clone())?;
+    let parent_facts = RoDatabase::open(&args.parent_facts_db)?;
+    let layer_facts = RoDatabase::open(&args.facts_db)?;
+    let parent_rpms: HashMap<_, _> = parent_facts
+        .iter::<Rpm>()?
+        .map(|r| (r.name().to_owned(), r))
+        .collect();
+    let layer_rpms: HashMap<_, _> = layer_facts
+        .iter::<Rpm>()?
+        .map(|r| (r.name().to_owned(), r))
+        .collect();
     let mut entries = BTreeMap::new();
 
-    for (name, info) in &layer_rpms {
-        let child_entry = RpmEntry::new(info.evra());
+    for (name, rpm) in &layer_rpms {
+        let child_entry = RpmEntry::new(rpm.evra());
 
         match parent_rpms.get(name) {
             Some(parent_info) => {
@@ -184,7 +198,7 @@ fn generate_rpm_diff(args: &Args) -> Result<BTreeMap<String, RpmDiff>> {
             None => {
                 entries.insert(
                     name.clone(),
-                    RpmDiff::Installed(RpmEntry::new("from_snapshot")),
+                    RpmDiff::Installed(RpmEntry::new("from_snapshot".to_owned())),
                 );
             }
         }
@@ -205,7 +219,7 @@ fn generate_rpm_diff(args: &Args) -> Result<BTreeMap<String, RpmDiff>> {
             None => {
                 entries.insert(
                     name.clone(),
-                    RpmDiff::Removed(RpmEntry::new("from_snapshot")),
+                    RpmDiff::Removed(RpmEntry::new("from_snapshot".to_owned())),
                 );
             }
         }

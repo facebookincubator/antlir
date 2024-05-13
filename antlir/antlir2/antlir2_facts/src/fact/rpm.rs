@@ -107,6 +107,13 @@ impl Rpm {
     pub fn source_rpm(&self) -> &str {
         &self.source_rpm
     }
+
+    pub fn evra(&self) -> String {
+        match self.epoch {
+            0 => format!("{}-{}.{}", self.version, self.release, self.arch),
+            epoch => format!("{}:{}-{}.{}", epoch, self.version, self.release, self.arch),
+        }
+    }
 }
 
 impl std::fmt::Display for Rpm {

@@ -17,10 +17,10 @@ rust_binary(
         "toml",
         "walkdir",
         "xattr",
+        "//antlir/antlir2/antlir2_facts:antlir2_facts",
         "//antlir/antlir2/antlir2_mode:antlir2_mode",
         "//antlir/antlir2/antlir2_rootless:antlir2_rootless",
         "//antlir/antlir2/antlir2_users:antlir2_users",
-        "//antlir/antlir2/testing/image_test_lib:image_test_lib",
         "//antlir/util/cli/json_arg:json_arg",
     ],
 )
