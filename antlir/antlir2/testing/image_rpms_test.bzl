@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
+load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -11,22 +12,39 @@ load("//antlir/antlir2/os:package.bzl", "get_default_os_for_package")
 load("//antlir/antlir2/testing:image_test.bzl", "image_sh_test")
 
 def _rpm_names_test_impl(ctx: AnalysisContext) -> list[Provider]:
+    script = ctx.actions.write(
+        "test.sh",
+        cmd_args(
+            "#!/bin/bash",
+            "set -e",
+            cmd_args(
+                ctx.attrs.image_rpms_test[RunInfo],
+                "names",
+                ctx.attrs.src,
+                cmd_args(ctx.attrs.layer[LayerInfo].facts_db, format = "--facts-db={}"),
+                cmd_args("--not-installed") if ctx.attrs.not_installed else cmd_args(),
+                cmd_args("$@"),
+                delimiter = " ",
+            ),
+            delimiter = "\n",
+        ),
+        is_executable = True,
+        with_inputs = True,
+    )
     return [
         DefaultInfo(),
-        RunInfo(cmd_args(
-            ctx.attrs.image_rpms_test[RunInfo],
-            "names",
-            ctx.attrs.src,
-            "--",
-            "--layer=/layer",
-            cmd_args("--not-installed") if ctx.attrs.not_installed else cmd_args(),
-        )),
+        RunInfo(cmd_args(script)),
+        ExternalRunnerTestInfo(
+            type = "simple",
+            command = [script],
+        ),
     ]
 
 _rpm_names_test = rule(
     impl = _rpm_names_test_impl,
     attrs = {
         "image_rpms_test": attrs.default_only(attrs.exec_dep(default = "//antlir/antlir2/testing/image_rpms_test:image-rpms-test")),
+        "layer": attrs.dep(providers = [LayerInfo]),
         "not_installed": attrs.bool(default = False),
         "src": attrs.source(),
     } | cfg_attrs(),
@@ -36,35 +54,10 @@ _rpm_names_test = rule(
 _rpm_names_test_macro = rule_with_default_target_platform(_rpm_names_test)
 
 def image_test_rpm_names(
-        name: str,
-        src: str | Select,
-        layer: str,
-        not_installed: bool = False,
+        *,
         default_os: str | None = None,
         **kwargs):
-    image.layer(
-        name = name + "--layer",
-        force_flavor = layer + "[flavor]",
-        features = [
-            feature.rpms_install(rpms = ["rpm"]),
-            feature.layer_mount(
-                source = layer,
-                mountpoint = "/layer",
-            ),
-        ],
-    )
-
     _rpm_names_test_macro(
-        name = name + "--script",
-        src = src,
-        not_installed = not_installed,
-        default_os = default_os or get_default_os_for_package(),
-    )
-
-    image_sh_test(
-        name = name,
-        test = ":{}--script".format(name),
-        layer = ":{}--layer".format(name),
         default_os = default_os or get_default_os_for_package(),
         **kwargs
     )

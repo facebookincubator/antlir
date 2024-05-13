@@ -15,6 +15,6 @@ rust_binary(
         "tracing",
         "tracing-glog",
         "tracing-subscriber",
-        "//antlir/antlir2/testing/image_test_lib:image_test_lib",
+        "//antlir/antlir2/antlir2_facts:antlir2_facts",
     ],
 )

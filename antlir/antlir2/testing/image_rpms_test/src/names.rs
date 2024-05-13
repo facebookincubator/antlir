@@ -8,16 +8,18 @@
 use std::collections::BTreeSet;
 use std::path::PathBuf;
 
+use antlir2_facts::fact::rpm::Rpm;
+use antlir2_facts::RoDatabase;
 use anyhow::ensure;
+use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
-use image_test_lib::get_installed_rpms;
 
 #[derive(Parser)]
 pub(crate) struct Names {
-    #[clap(long)]
-    layer: PathBuf,
     path: PathBuf,
+    #[clap(long)]
+    facts_db: PathBuf,
     #[clap(long)]
     not_installed: bool,
     #[clap(long)]
@@ -27,15 +29,16 @@ pub(crate) struct Names {
 
 impl Names {
     pub fn run(self) -> Result<()> {
-        let installed = get_installed_rpms(self.layer)?;
+        let facts = RoDatabase::open(&self.facts_db).context("while opening facts db")?;
+        let installed_names: BTreeSet<String> = facts
+            .iter::<Rpm>()
+            .context("while getting rpms")?
+            .map(|r| r.name().to_owned())
+            .collect();
 
         if self.print {
-            let mut name_col_width = installed.keys().map(String::len).max().unwrap_or(0);
-            if name_col_width < 20 {
-                name_col_width = 20;
-            }
-            for (name, info) in installed {
-                println!("{name:name_col_width$} {}", info.rpm_test_format());
+            for name in &installed_names {
+                println!("{name}");
             }
             return Ok(());
         }
@@ -49,7 +52,6 @@ impl Names {
                     .to_string()
             })
             .collect();
-        let installed_names: BTreeSet<String> = installed.keys().cloned().collect();
         if !self.not_installed {
             similar_asserts::assert_eq!(
                 expected: expected_names,
