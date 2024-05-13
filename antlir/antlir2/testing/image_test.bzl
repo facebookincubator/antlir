@@ -18,7 +18,7 @@ load("//antlir/antlir2/bzl/image:defs.bzl", "image")
 load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "is_facebook", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:systemd.bzl", "systemd")
-load("//antlir/bzl/oss:oss_shim.bzl", "special_tags") # @oss-enable
+load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
 
 HIDE_TEST_LABELS = ["disabled", "test_is_invisible_to_testpilot"]
 
