@@ -6,6 +6,7 @@
  */
 
 use std::collections::BTreeMap;
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::fmt::Display;
 use std::os::unix::fs::FileTypeExt;
@@ -13,9 +14,9 @@ use std::os::unix::prelude::MetadataExt;
 use std::path::Path;
 use std::str::FromStr;
 
+use antlir2_facts::fact::user::Group;
+use antlir2_facts::fact::user::User;
 use antlir2_mode::Mode;
-use antlir2_users::group::EtcGroup;
-use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
 use md5::Digest;
@@ -47,7 +48,11 @@ pub(crate) struct FileEntry {
 }
 
 impl FileEntry {
-    pub fn new(path: &Path, users: &EtcPasswd, groups: &EtcGroup) -> Result<Self> {
+    pub fn new(
+        path: &Path,
+        users: &HashMap<u32, User>,
+        groups: &HashMap<u32, Group>,
+    ) -> Result<Self> {
         let meta = std::fs::symlink_metadata(path).context("while statting file")?;
         let mode = Mode::from(meta.permissions());
         if meta.is_symlink() {
@@ -58,15 +63,15 @@ impl FileEntry {
                 mode,
                 file_type: FileType::from(meta.file_type()),
                 user: users
-                    .get_user_by_id(meta.uid().into())
+                    .get(&meta.uid())
                     .with_context(|| format!("no such uid {}", meta.uid()))?
-                    .name
-                    .to_string(),
+                    .name()
+                    .to_owned(),
                 group: groups
-                    .get_group_by_id(meta.gid().into())
+                    .get(&meta.gid())
                     .with_context(|| format!("no such gid {}", meta.gid()))?
-                    .name
-                    .to_string(),
+                    .name()
+                    .to_owned(),
                 text: Some(
                     target
                         .to_str()
@@ -107,15 +112,15 @@ impl FileEntry {
         Ok(Self {
             mode,
             user: users
-                .get_user_by_id(meta.uid().into())
+                .get(&meta.uid())
                 .with_context(|| format!("no such uid {}", meta.uid()))?
-                .name
-                .to_string(),
+                .name()
+                .to_owned(),
             group: groups
-                .get_group_by_id(meta.gid().into())
+                .get(&meta.gid())
                 .with_context(|| format!("no such gid {}", meta.gid()))?
-                .name
-                .to_string(),
+                .name()
+                .to_owned(),
             file_type: FileType::from(meta.file_type()),
             xattrs,
             content_hash: if text.is_none() { content_hash } else { None },

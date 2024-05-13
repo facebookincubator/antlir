@@ -8,14 +8,13 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::collections::HashSet;
-use std::io::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
 use antlir2_facts::fact::rpm::Rpm;
+use antlir2_facts::fact::user::Group;
+use antlir2_facts::fact::user::User;
 use antlir2_facts::RoDatabase;
-use antlir2_users::group::EtcGroup;
-use antlir2_users::passwd::EtcPasswd;
 use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
@@ -78,7 +77,11 @@ fn exclude_entry(entry: &Path, exclude_list: &[String]) -> bool {
         .any(|e| entry.to_string_lossy().starts_with(e))
 }
 
-fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
+fn generate_file_diff(
+    args: &Args,
+    parent_facts: &RoDatabase,
+    layer_facts: &RoDatabase,
+) -> Result<BTreeMap<PathBuf, FileDiff>> {
     let exclude_list: Vec<String> = args
         .exclude
         .iter()
@@ -89,18 +92,14 @@ fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
     let mut entries = BTreeMap::new();
     let mut paths_that_exist_in_layer = HashSet::new();
 
-    let layer_userdb: EtcPasswd = std::fs::read_to_string(args.layer.join("etc/passwd"))
-        .and_then(|s| s.parse().map_err(Error::other))
-        .unwrap_or_else(|_| Default::default());
-    let layer_groupdb: EtcGroup = std::fs::read_to_string(args.layer.join("etc/group"))
-        .and_then(|s| s.parse().map_err(Error::other))
-        .unwrap_or_else(|_| Default::default());
-    let parent_userdb: EtcPasswd = std::fs::read_to_string(args.parent.join("etc/passwd"))
-        .and_then(|s| s.parse().map_err(Error::other))
-        .unwrap_or_else(|_| Default::default());
-    let parent_groupdb: EtcGroup = std::fs::read_to_string(args.parent.join("etc/group"))
-        .and_then(|s| s.parse().map_err(Error::other))
-        .unwrap_or_else(|_| Default::default());
+    let layer_users: HashMap<u32, User> =
+        layer_facts.iter::<User>()?.map(|u| (u.id(), u)).collect();
+    let layer_groups: HashMap<u32, Group> =
+        layer_facts.iter::<Group>()?.map(|g| (g.id(), g)).collect();
+    let parent_users: HashMap<u32, User> =
+        parent_facts.iter::<User>()?.map(|u| (u.id(), u)).collect();
+    let parent_groups: HashMap<u32, Group> =
+        parent_facts.iter::<Group>()?.map(|g| (g.id(), g)).collect();
 
     for fs_entry in WalkDir::new(&args.layer) {
         let fs_entry = fs_entry?;
@@ -117,7 +116,7 @@ fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
         }
 
         let parent_path = args.parent.join(relpath);
-        let entry = FileEntry::new(fs_entry.path(), &layer_userdb, &layer_groupdb)
+        let entry = FileEntry::new(fs_entry.path(), &layer_users, &layer_groups)
             .with_context(|| format!("while building FileEntry for '{}", relpath.display()))?;
         paths_that_exist_in_layer.insert(relpath.to_path_buf());
         // broken symlinks are allowed
@@ -129,7 +128,7 @@ fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
         if !parent_exists {
             entries.insert(relpath.to_path_buf(), FileDiff::Added(entry));
         } else {
-            let parent_entry = FileEntry::new(&parent_path, &parent_userdb, &parent_groupdb)
+            let parent_entry = FileEntry::new(&parent_path, &parent_users, &parent_groups)
                 .with_context(|| {
                     format!(
                         "while building FileEntry for parent version of '{}",
@@ -160,7 +159,7 @@ fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
         }
 
         if !paths_that_exist_in_layer.contains(relpath) {
-            let entry = FileEntry::new(fs_entry.path(), &parent_userdb, &parent_groupdb)
+            let entry = FileEntry::new(fs_entry.path(), &parent_users, &parent_groups)
                 .with_context(|| format!("while building FileEntry for '{}'", relpath.display()))?;
             entries.insert(relpath.to_path_buf(), FileDiff::Removed(entry));
         }
@@ -169,9 +168,10 @@ fn generate_file_diff(args: &Args) -> Result<BTreeMap<PathBuf, FileDiff>> {
     Ok(entries)
 }
 
-fn generate_rpm_diff(args: &Args) -> Result<BTreeMap<String, RpmDiff>> {
-    let parent_facts = RoDatabase::open(&args.parent_facts_db)?;
-    let layer_facts = RoDatabase::open(&args.facts_db)?;
+fn generate_rpm_diff(
+    parent_facts: &RoDatabase,
+    layer_facts: &RoDatabase,
+) -> Result<BTreeMap<String, RpmDiff>> {
     let parent_rpms: HashMap<_, _> = parent_facts
         .iter::<Rpm>()?
         .map(|r| (r.name().to_owned(), r))
@@ -235,12 +235,18 @@ fn main() -> Result<()> {
         antlir2_rootless::unshare_new_userns().context("while unsharing userns")?;
     }
 
+    let parent_facts = RoDatabase::open(&args.parent_facts_db)?;
+    let layer_facts = RoDatabase::open(&args.facts_db)?;
+
     let (file_diff, rpm_diff) = match args.diff_type {
-        DiffType::File => (Some(generate_file_diff(&args)?), None),
-        DiffType::Rpm => (None, Some(generate_rpm_diff(&args)?)),
+        DiffType::File => (
+            Some(generate_file_diff(&args, &parent_facts, &layer_facts)?),
+            None,
+        ),
+        DiffType::Rpm => (None, Some(generate_rpm_diff(&parent_facts, &layer_facts)?)),
         DiffType::All => (
-            Some(generate_file_diff(&args)?),
-            Some(generate_rpm_diff(&args)?),
+            Some(generate_file_diff(&args, &parent_facts, &layer_facts)?),
+            Some(generate_rpm_diff(&parent_facts, &layer_facts)?),
         ),
     };
 
