@@ -248,7 +248,10 @@ image.layer(
 
 image_diff_test(
     name = "test-deterministic-split-debuginfo",
-    diff = "deterministic-split-debuginfo.toml",
+    diff = select({
+        "ovr_config//cpu:arm64": "deterministic-split-debuginfo.aarch64.toml",
+        "ovr_config//cpu:x86_64": "deterministic-split-debuginfo.x86_64.toml",
+    }),
     diff_type = "file",
     layer = ":deterministic-split-debuginfo",
 )

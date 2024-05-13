@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 load("//antlir/antlir2/antlir2_rootless:cfg.bzl", "rootless_cfg")
+load("//antlir/antlir2/bzl:platform.bzl", "rule_with_default_target_platform")
 load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
@@ -63,6 +64,8 @@ _image_diff_test = rule(
     doc = "Test that the only changes between a layer and it's parent is what you expect",
 )
 
+_image_diff_test_macro = rule_with_default_target_platform(_image_diff_test)
+
 def image_diff_test(
         *,
         name: str,
@@ -74,7 +77,7 @@ def image_diff_test(
     needs_rpm = diff_type in ("all", "rpm")
 
     if needs_rpm:
-        _image_diff_test(
+        _image_diff_test_macro(
             name = name + "--script",
             diff = diff,
             layer = layer,
@@ -106,7 +109,7 @@ def image_diff_test(
             test = ":{}--script".format(name),
         )
     else:
-        _image_diff_test(
+        _image_diff_test_macro(
             name = name,
             diff = diff,
             layer = layer,
