@@ -34,19 +34,6 @@ impl InstalledInfo {
     pub fn required_by(&self) -> &BTreeSet<String> {
         &self.required_by
     }
-
-    pub fn rpm_test_format(&self) -> String {
-        let size_mb = self.size / (1024 * 1024);
-        if self.required_by.is_empty() {
-            return format!("{} MiB", size_mb);
-        }
-
-        format!(
-            "{} MiB required by {}",
-            size_mb,
-            &self.required_by.iter().join(" ")
-        )
-    }
 }
 
 pub fn get_installed_rpms(layer: PathBuf) -> Result<BTreeMap<String, InstalledInfo>> {
