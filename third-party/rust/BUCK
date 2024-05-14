@@ -2901,18 +2901,18 @@ cargo.rust_library(
 )
 
 http_archive(
-    name = "deunicode-1.4.4.crate",
-    sha256 = "322ef0094744e63628e6f0eb2295517f79276a5b342a4c2ff3042566ca181d4e",
-    strip_prefix = "deunicode-1.4.4",
-    urls = ["https://static.crates.io/crates/deunicode/1.4.4/download"],
+    name = "deunicode-1.6.0.crate",
+    sha256 = "339544cc9e2c4dc3fc7149fd630c5f22263a4fdf18a98afd0075784968b5cf00",
+    strip_prefix = "deunicode-1.6.0",
+    urls = ["https://static.crates.io/crates/deunicode/1.6.0/download"],
     visibility = [],
 )
 
 cargo.rust_library(
-    name = "deunicode-1.4.4",
-    srcs = [":deunicode-1.4.4.crate"],
+    name = "deunicode-1.6.0",
+    srcs = [":deunicode-1.6.0.crate"],
     crate = "deunicode",
-    crate_root = "deunicode-1.4.4.crate/src/lib.rs",
+    crate_root = "deunicode-1.6.0.crate/src/lib.rs",
     edition = "2021",
     features = [
         "alloc",
@@ -12133,7 +12133,7 @@ cargo.rust_library(
     edition = "2021",
     linkable_alias = "slug",
     visibility = [],
-    deps = [":deunicode-1.4.4"],
+    deps = [":deunicode-1.6.0"],
 )
 
 alias(
