@@ -5,8 +5,11 @@
 # LICENSE file in the root directory of this source tree.
 
 set -e
+
 target="$(zcat "$1" | cpio -i --to-stdout .meta/target)"
-if [ "$target" != "fbcode//antlir/antlir2/features/dot_meta/tests:stamped.cpio.gz" ]; then
+expected="$2"
+if [ "$target" != "$expected" ]; then
     echo "bad target: $target"
+    echo "expected: $expected"
     exit 1
 fi

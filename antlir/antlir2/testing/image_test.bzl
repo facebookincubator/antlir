@@ -15,7 +15,7 @@ load("//antlir/antlir2/bzl:types.bzl", "LayerInfo")
 load("//antlir/antlir2/bzl/feature:defs.bzl", "feature")
 load("//antlir/antlir2/bzl/image:cfg.bzl", "cfg_attrs", "layer_cfg")
 load("//antlir/antlir2/bzl/image:defs.bzl", "image")
-load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "is_facebook", "python_unittest", "rust_unittest")
+load("//antlir/bzl:build_defs.bzl", "add_test_framework_label", "buck_sh_test", "cpp_unittest", "internal_external", "is_facebook", "python_unittest", "rust_unittest")
 load("//antlir/bzl:constants.bzl", "REPO_CFG")
 load("//antlir/bzl:systemd.bzl", "systemd")
 load("//antlir/bzl:oss_shim.bzl", "special_tags") # @oss-enable
@@ -253,7 +253,11 @@ image_cpp_test = partial(
     _implicit_image_test,
     cpp_unittest,
     _static_list_wrapper = antlir2_dep("//antlir/antlir2/testing/image_test:static-list-cpp"),
-    _add_outer_labels = ["tpx:optout-test-result-output-spec"],
+    _add_outer_labels = ["tpx:optout-test-result-output-spec"] + internal_external(
+        fb = [],
+        # don't have working gtest in oss (yet)
+        oss = ["disabled"],
+    ),
 )
 
 image_rust_test = partial(_implicit_image_test, rust_unittest)
