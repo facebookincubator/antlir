@@ -1,0 +1,4 @@
+{
+    "ignore_dirs": ["antlir2-out", "buck-out"],
+    "ignore_vcs": [".git", ".sl"]
+}
